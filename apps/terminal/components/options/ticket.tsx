@@ -25,6 +25,7 @@ import { toast } from "@/lib/notify";
 import { useTerminal } from "@/lib/store";
 import { GuestActions } from "@/components/shell/guest";
 import { Check, Stepper, TSelect } from "@/components/ui/primitives";
+import { FieldRow, IconButton, InlineNumber, QuickStrip, Segmented } from "@/components/ui/kit";
 import { optionsApi } from "@/lib/options/api";
 import { errText, needsOnboarding } from "@/lib/options/errors";
 import { fillOf, usdPerUnitOf, type PayLeg } from "@/lib/options/math";
@@ -133,14 +134,14 @@ function SelectedOption({ leg, locale }: { leg: TicketLeg; locale: string }) {
           {cutAt && <Countdown to={Date.parse(cutAt)} className="text-[10.5px]" />}
         </span>
         {flippable && (
-          <Seg<"call" | "put">
-            size="sm"
-            className="w-[104px] shrink-0"
+          <Segmented<"call" | "put">
+            className="w-[124px] shrink-0"
+            label={`${t("trader.opt.call")} / ${t("trader.opt.put")}`}
             value={leg.right}
             onChange={(v) => opt.flipRight(v)}
             options={[
-              { value: "call", label: t("trader.opt.call"), tone: "up" },
-              { value: "put", label: t("trader.opt.put"), tone: "down" },
+              { value: "call", label: <span className={leg.right === "call" ? "text-up" : undefined}>{t("trader.opt.call")}</span> },
+              { value: "put", label: <span className={leg.right === "put" ? "text-down" : undefined}>{t("trader.opt.put")}</span> },
             ]}
           />
         )}
@@ -153,43 +154,39 @@ function SelectedOption({ leg, locale }: { leg: TicketLeg; locale: string }) {
  * SELL (you receive the bid) | BUY (you pay the ask), USD per contract. The trader chooses one: the outcome card and
  * the order button follow; until then both stay lit.
  */
-function SideButtons({ leg, armed, pipSize, disabled }: { leg: TicketLeg; armed: boolean; pipSize: number; disabled?: boolean }) {
+function SideButtons({ leg, armed, disabled }: { leg: TicketLeg; armed: boolean; pipSize?: number; disabled?: boolean }) {
   const t = useT();
   const q = useSeriesQuote(leg.series);
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div role="radiogroup" aria-label={t("trader.opt.ticket.chooseSide")} className="grid grid-cols-2 gap-1 rounded-[11px] border border-line bg-panel-2 p-1">
       {(["sell", "buy"] as const).map((side) => {
         const on = armed && leg.side === side;
-        const off = armed && leg.side !== side;
-        const v = q ? (side === "buy" ? q.askUsd : q.bidUsd) : 0;
-        const p = q ? (side === "buy" ? q.ask : q.bid) : 0;
-        const size = q?.book ? (side === "buy" ? q.askQty : q.bidQty) : undefined;
+        const buy = side === "buy";
+        const v = q ? (buy ? q.askUsd : q.bidUsd) : 0;
+        const size = q?.book ? (buy ? q.askQty : q.bidQty) : undefined;
         return (
           <button
             key={side}
+            type="button"
+            role="radio"
+            aria-checked={on}
             onClick={() => opt.arm(side)}
             disabled={disabled}
-            aria-pressed={on}
-            title={side === "buy" ? t("trader.opt.clickBuy") : t("trader.opt.clickSell")}
+            title={buy ? t("trader.opt.clickBuy") : t("trader.opt.clickSell")}
             className={cn(
-              "relative overflow-hidden rounded-[12px] border px-3 py-2.5 transition disabled:cursor-not-allowed disabled:opacity-50",
-              side === "buy" ? "text-end" : "text-start",
-              off
-                ? "border-line bg-surface-2 text-fg-2 hover:bg-surface-3"
-                : side === "buy"
-                  ? "border-up bg-[linear-gradient(180deg,color-mix(in_srgb,var(--k-up)_92%,white),var(--k-up))] text-white hover:brightness-110"
-                  : "border-down bg-[linear-gradient(180deg,color-mix(in_srgb,var(--k-down)_92%,white),var(--k-down))] text-white hover:brightness-110",
-              on && (side === "buy" ? "ring-2 ring-up/45 ring-offset-2 ring-offset-panel" : "ring-2 ring-down/45 ring-offset-2 ring-offset-panel"),
+              "flex h-11 min-w-0 flex-col justify-center rounded-[8px] border px-2.5 text-start transition-[background-color,border-color] duration-150 disabled:cursor-not-allowed disabled:opacity-50",
+              on ? (buy ? "border-up/45 bg-up-soft" : "border-down/45 bg-down-soft") : "border-transparent hover:bg-surface-3/70",
             )}
           >
-            <div className={cn("text-[11px] font-semibold uppercase tracking-[0.08em]", off ? (side === "buy" ? "text-up" : "text-down") : "opacity-95")}>{side === "buy" ? t("common.buy") : t("common.sell")}</div>
-            <div className="k-num font-mono text-[19px] font-semibold leading-tight">
-              <Flash value={v}>{v ? money(v) : "—"}</Flash>
-            </div>
-            <div className={cn("text-[10px]", off ? "text-fg-3" : "opacity-85")}>
-              {!q ? " " : size !== undefined ? (size ? t("trader.opt.book.size", { count: size }) : side === "buy" ? t("trader.opt.book.noOffers") : t("trader.opt.book.noBids")) : side === "buy" ? t("trader.opt.ticket.youPayEach") : t("trader.opt.ticket.youGetEach")}
-              {!q?.book && q && <span className="ms-1 font-mono opacity-80">· {pips(p / pipSize)}p</span>}
-            </div>
+            <span className="flex items-baseline gap-1.5">
+              <span className={cn("text-[12.5px] font-semibold", buy ? "text-up" : "text-down")}>{buy ? t("common.buy") : t("common.sell")}</span>
+              <span className="k-num ms-auto font-mono text-[14px] font-semibold text-fg">
+                <Flash value={v}>{v ? money(v) : "—"}</Flash>
+              </span>
+            </span>
+            <span className="truncate text-[11.5px] leading-[15px] text-fg-3">
+              {!q ? " " : size !== undefined ? (size ? t("trader.opt.book.size", { count: size }) : buy ? t("trader.opt.book.noOffers") : t("trader.opt.book.noBids")) : buy ? t("trader.opt.ticket.youPayEach") : t("trader.opt.ticket.youGetEach")}
+            </span>
           </button>
         );
       })}
@@ -201,7 +198,7 @@ function SideButtons({ leg, armed, pipSize, disabled }: { leg: TicketLeg; armed:
 function Fold({ title, hint, open, onToggle, children, active }: { title: React.ReactNode; hint?: React.ReactNode; open: boolean; onToggle: () => void; children: React.ReactNode; active?: boolean }) {
   return (
     <div className="rounded-[10px] border border-line bg-surface-2/30">
-      <button type="button" onClick={onToggle} aria-expanded={open} className="flex h-9 w-full items-center gap-1.5 px-3 text-start text-[12px] font-medium text-fg-2 hover:text-fg">
+      <button type="button" onClick={onToggle} aria-expanded={open} className="flex h-8 w-full items-center gap-1.5 px-3 text-start text-[12.5px] font-medium text-fg-2 hover:text-fg">
         <ChevronRight className={cn("size-3.5 shrink-0 text-fg-3 transition-transform", open && "rotate-90")} />
         <span className="flex-1">{title}</span>
         {active && <span className="size-1.5 rounded-full bg-ember" />}
@@ -232,7 +229,9 @@ export function OptionTicket({ onDone, onAddLeg, onOpenChain, className }: { onD
   // refused as an RFQ with `kalks_quoted`) is placed on the house ticket, one order at Kalks prices
   const [houseRoute, setHouseRoute] = React.useState(false);
   const legKey = legs.map((l) => `${l.series}:${l.side}:${l.contracts}`).join("|");
-  React.useEffect(() => setHouseRoute(false), [legKey]);
+  React.useEffect(() => {
+    setHouseRoute(false);
+  }, [legKey]);
   const barrierLegs = hasBarrierLeg(legs);
   const bookLive = bookLiveRaw && !barrierLegs && !houseRoute;
   const u = legs[0]?.u;
@@ -254,7 +253,9 @@ export function OptionTicket({ onDone, onAddLeg, onOpenChain, className }: { onD
     // a single option on the book previews with the book (./book-ticket)
     armed && !(bookLive && single),
   );
-  React.useEffect(() => setLastErr(null), [legs.length, single?.series]);
+  React.useEffect(() => {
+    setLastErr(null);
+  }, [legs.length, single?.series]);
   React.useEffect(() => {
     if (ticket.type === "limit" || ticket.sl || ticket.tp || ticket.trigger) setMore(true);
     // open the section when the ticket arrives with advanced settings (a depth click, a kept limit type)
@@ -331,10 +332,10 @@ export function OptionTicket({ onDone, onAddLeg, onOpenChain, className }: { onD
   const advancedOn = ticket.type === "limit" || !!ticket.sl || !!ticket.tp || ticket.trigger;
 
   return (
-    <div className={cn("space-y-3 p-3", className)}>
+    <div className={cn("space-y-2.5 px-2.5 pb-2.5", className)}>
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-fg-3">{single ? t("trader.opt.ticket.single") : t("trader.opt.ticket.strategy", { count: legs.length })}</span>
-        <span className="flex items-center gap-0.5">
+        <span className="text-[12.5px] font-semibold text-fg-2">{single ? t("trader.opt.ticket.single") : t("trader.opt.ticket.strategy", { count: legs.length })}</span>
+        <span className="flex items-center gap-1">
           {!T.readOnly && !publicView && (
             <button
               onClick={() => {
@@ -343,19 +344,19 @@ export function OptionTicket({ onDone, onAddLeg, onOpenChain, className }: { onD
               }}
               aria-pressed={ticket.adding}
               title={t("trader.opt.chain.adding")}
-              className={cn("flex h-7 items-center gap-1 rounded-[6px] px-2 text-[11.5px]", ticket.adding ? "bg-ember-soft text-ember" : "text-fg-2 hover:bg-surface-3 hover:text-fg")}
+              className={cn("flex h-6 items-center gap-1 rounded-[6px] border px-2 text-[12px] font-medium transition-colors", ticket.adding ? "border-ember/45 bg-ember-soft text-accent-text" : "border-line bg-panel-2 text-fg-2 hover:bg-surface-3 hover:text-fg")}
             >
               <Plus className="size-3.5" /> {t("trader.opt.builder.addLeg")}
             </button>
           )}
           {legs.length > 1 && (
-            <button onClick={() => opt.openBuilder(true)} className="flex h-7 items-center gap-1 rounded-[6px] px-2 text-[11.5px] text-fg-2 hover:bg-surface-3 hover:text-fg">
+            <button onClick={() => opt.openBuilder(true)} className="flex h-6 items-center gap-1 rounded-[6px] border border-line bg-panel-2 px-2 text-[12px] font-medium text-fg-2 hover:bg-surface-3 hover:text-fg">
               <Wand2 className="size-3.5" /> {t("trader.opt.ticket.payoff")}
             </button>
           )}
-          <button onClick={() => opt.clearTicket()} title={t("trader.opt.ticket.clear")} aria-label={t("trader.opt.ticket.clear")} className="grid size-7 place-items-center rounded-[6px] text-fg-3 hover:bg-surface-3 hover:text-fg">
-            <Trash2 className="size-3.5" />
-          </button>
+          <IconButton size="sm" label={t("trader.opt.ticket.clear")} onClick={() => opt.clearTicket()} className="border border-line bg-panel-2 hover:border-down/40 hover:bg-down-soft hover:text-down">
+            <Trash2 />
+          </IconButton>
         </span>
       </div>
 
@@ -373,9 +374,9 @@ export function OptionTicket({ onDone, onAddLeg, onOpenChain, className }: { onD
         <div>
           <SideButtons leg={single} armed={ticket.armed} pipSize={pipSize} disabled={!q0} />
           {!ticket.armed && (
-            <div className="mt-2 rounded-[10px] border border-dashed border-line px-3 py-2 text-center leading-snug">
+            <div className="mt-1.5 rounded-[10px] bg-panel-2/60 px-3 py-1.5 text-center leading-snug">
               <div className="text-[12px] font-semibold text-fg">{t("trader.opt.ticket.chooseSide")}</div>
-              <div className="mt-0.5 text-[11px] text-fg-3" dir="auto">
+              <div className="mt-0.5 text-[11.5px] text-fg-3" dir="auto">
                 {single.right === "call" ? t("trader.opt.ticket.chooseCall", iso({ u: single.u })) : t("trader.opt.ticket.choosePut", iso({ u: single.u }))}
               </div>
             </div>
@@ -385,22 +386,11 @@ export function OptionTicket({ onDone, onAddLeg, onOpenChain, className }: { onD
 
       {single && (
         <div>
-          <Label
-            help={<Explain topic="contracts" size={12} />}
-            right={
-              <span className="flex gap-0.5">
-                {[1, 2, 5, 10].map((v) => (
-                  <button key={v} onClick={() => opt.updateLeg(single.id, { contracts: v })} aria-pressed={single.contracts === v} className={cn("k-num h-5 min-w-5 rounded-[5px] px-1 font-mono text-[10.5px]", single.contracts === v ? "bg-ember-soft text-ember" : "text-fg-3 hover:bg-surface-3 hover:text-fg-2")}>
-                    {v}
-                  </button>
-                ))}
-              </span>
-            }
-          >
-            {t("trader.opt.ticket.contracts")}
-          </Label>
-          <Stepper ariaLabel={t("trader.opt.ticket.contracts")} value={String(single.contracts)} onChange={(v) => opt.updateLeg(single.id, { contracts: Math.min(maxC, Math.max(minC, Math.round((parseFloat(v) || minC) / stepC) * stepC)) })} step={stepC} min={minC} decimals={0} className="h-9 [&_input]:text-[14px]" />
-          <div className="mt-1 flex justify-between text-[10.5px] text-fg-3">
+          <FieldRow label={t("trader.opt.ticket.contracts")} help={<Explain topic="contracts" size={12} />}>
+            <InlineNumber ariaLabel={t("trader.opt.ticket.contracts")} value={String(single.contracts)} onChange={(v) => opt.updateLeg(single.id, { contracts: Math.min(maxC, Math.max(minC, Math.round((parseFloat(v) || minC) / stepC) * stepC)) })} step={stepC} min={minC} decimals={0} className="[&_input]:w-[64px]" />
+          </FieldRow>
+          <QuickStrip className="mt-1.5" options={[1, 2, 5, 10] as const} value={([1, 2, 5, 10] as const).find((v) => v === single.contracts) ?? null} onPick={(v) => opt.updateLeg(single.id, { contracts: v })} label={t("trader.opt.ticket.contracts")} />
+          <div className="mt-1 flex justify-between text-[11.5px] text-fg-3">
             <span>{t("trader.opt.ticket.notional", { n: ((cur?.contractSize ?? 0) * single.contracts).toLocaleString("en-US"), unit: cur?.contractUnit ?? "" })}</span>
             <span className="font-mono">{t("trader.opt.ticket.minMax", { min: minC, max: maxC })}</span>
           </div>
@@ -518,13 +508,13 @@ export function OptionTicket({ onDone, onAddLeg, onOpenChain, className }: { onD
               onClick={() => void submit()}
               disabled={!!blocked}
               className={cn(
-                "flex h-12 w-full items-center justify-between gap-2 rounded-[12px] px-4 text-[13px] font-semibold text-white shadow-[0_10px_28px_-14px_rgba(0,0,0,0.6)] transition hover:brightness-110 active:brightness-95 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-3 disabled:shadow-none disabled:hover:brightness-100",
-                !armed ? "bg-surface-3 text-fg-3" : single ? (single.side === "buy" ? "bg-up" : "bg-down") : "bg-ember",
+                "flex h-10 w-full items-center justify-between gap-2 rounded-[10px] px-4 text-[13.5px] font-semibold text-white transition hover:brightness-110 active:brightness-95 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-3 disabled:hover:brightness-100",
+                !armed ? "border border-line bg-panel-2 text-fg-3" : "bg-accent-strong",
               )}
             >
               <span className="truncate">{busy ? t("trader.opt.ticket.sending") : tradingSoon && T.live ? t("trader.opt.ticket.soon") : submitLabel}</span>
               {total !== null && armed && (
-                <span className="k-num shrink-0 rounded-[7px] bg-black/15 px-2 py-0.5 text-[12px]">
+                <span className="k-num shrink-0 rounded-[6px] bg-black/15 px-1.5 py-0.5 text-[12px]">
                   {debit ? t("trader.opt.ticket.payAmount", iso({ amount: money(Math.max(0, total)) })) : t("trader.opt.ticket.getAmount", iso({ amount: money(Math.max(0, total)) }))}
                 </span>
               )}
@@ -575,15 +565,15 @@ function EmptyTicket({ className, onOpenChain }: { className?: string; onOpenCha
           <div className="text-[14px] font-semibold text-fg">{t("trader.opt.ticket.emptyTitle")}</div>
           <p className="mt-1 text-[12px] leading-relaxed text-fg-3">{t("trader.opt.ticket.emptyText2")}</p>
           <div className="mt-4 flex flex-col items-stretch gap-2">
-            <button onClick={() => opt.setPrefs({ panel: "simple" })} className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] bg-ember px-3 text-[12.5px] font-semibold text-white hover:brightness-110">
+            <button onClick={() => opt.setPrefs({ panel: "simple" })} className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[8px] bg-accent-strong px-3 text-[12.5px] font-semibold text-white hover:brightness-110">
               {t("trader.opt.guide.start")}
             </button>
             {(onOpenChain || center !== "chain") && (
-              <button onClick={() => (onOpenChain ? onOpenChain() : opt.setCenter("chain"))} className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-line px-3 text-[12.5px] font-medium text-fg-2 hover:border-fg-3/50 hover:text-fg">
+              <button onClick={() => (onOpenChain ? onOpenChain() : opt.setCenter("chain"))} className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[8px] border border-line px-3 text-[12.5px] font-medium text-fg-2 hover:border-fg-3/50 hover:text-fg">
                 <Table2 className="size-3.5" /> {t("trader.opt.chainTitle")}
               </button>
             )}
-            <button onClick={() => opt.openBuilder(true)} className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-line px-3 text-[12.5px] font-medium text-fg-2 hover:border-fg-3/50 hover:text-fg">
+            <button onClick={() => opt.openBuilder(true)} className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[8px] border border-line px-3 text-[12.5px] font-medium text-fg-2 hover:border-fg-3/50 hover:text-fg">
               <Wand2 className="size-3.5" /> {t("trader.opt.builder.open")}
             </button>
           </div>

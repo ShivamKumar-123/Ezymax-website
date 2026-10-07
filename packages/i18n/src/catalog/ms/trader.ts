@@ -62,7 +62,7 @@ const trader: NsMessages<"trader"> = {
   "preset.analysis": "Analisis",
   "preset.analysisHint": "4 carta",
   "preset.scalper": "Scalper",
-  "preset.scalperHint": "DOM + 2 carta",
+  "preset.scalperHint": "Buku pesanan + 2 carta",
   // Workspace profiles (File > Profiles, status bar)
   "profile.default": "Lalai",
   "profile.scalping": "Scalping",

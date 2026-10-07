@@ -69,7 +69,7 @@ function PositionDialogBody({ ticket, onClose }: { ticket: string; onClose: () =
     <TDialog
       open
       onClose={onClose}
-      width={720}
+      width={780}
       icon={<Edit3 />}
       title={
         <span>
@@ -78,29 +78,29 @@ function PositionDialogBody({ ticket, onClose }: { ticket: string; onClose: () =
       }
       subtitle={`${a.login} · ${t.dyn(`order.mode.${a.mode}`, a.mode)}`}
     >
-      <div className="grid md:grid-cols-[260px_1fr]">
+      <div className="grid md:grid-cols-[280px_1fr]">
         {/* left: position summary */}
-        <div className="space-y-3 border-b border-line p-3.5 md:border-b-0 md:border-e">
+        <div className="space-y-3.5 border-b border-line bg-panel-2/40 p-4 md:border-b-0 md:border-e">
           <div className="flex items-center gap-2.5">
             <SymbolAvatar symbol={p.symbol} size={24} />
             <div className="min-w-0">
-              <div className="text-[13px] font-semibold">{p.symbol}</div>
-              <div className="truncate text-[11px] text-fg-3">{inst.name}</div>
+              <div className="text-[14px] font-semibold">{p.symbol}</div>
+              <div className="truncate text-[12px] text-fg-3">{inst.name}</div>
             </div>
             <Badge tone={p.side === "buy" ? "up" : "down"} className="ms-auto">
               {t(`order.side.${p.side}`)}
             </Badge>
           </div>
-          <div className="rounded-[7px] border border-line bg-surface-2/50 p-2.5">
-            <div className="text-[10px] uppercase tracking-[0.08em] text-fg-3">{t("order.position.floatingProfit")}</div>
-            <div className="mt-0.5 text-[22px] font-semibold leading-tight">
+          <div className="rounded-[10px] border border-line bg-panel p-3">
+            <div className="text-[12px] text-fg-3">{t("order.position.floatingProfit")}</div>
+            <div className="mt-0.5 text-[24px] font-semibold leading-tight">
               <Pnl value={pr} text={accMoney(a, pr, { signed: true })} />
-              <span className="ms-1.5 text-[11px] font-normal text-fg-3">{accCcy(a)}</span>
+              <span className="ms-1.5 text-[12px] font-normal text-fg-3">{accCcy(a)}</span>
             </div>
-            <div className="mt-0.5 font-mono text-[11px] text-fg-3">{t("order.unit.pips", { n: pipsFrom(cur) })}</div>
+            <div className="mt-0.5 font-mono text-[12px] text-fg-3">{t("order.unit.pips", { n: pipsFrom(cur) })}</div>
             <TickSpark symbol={p.symbol} height={40} />
           </div>
-          <div className="space-y-1 font-mono text-[11.5px]">
+          <div className="space-y-1.5 font-mono text-[12.5px]">
             {[
               [t("order.position.openPrice"), fmtPrice(p.symbol, p.openPrice)],
               [t("order.position.current"), <PriceText key="c" symbol={p.symbol} value={cur} dir={q.dir} />],
@@ -117,16 +117,16 @@ function PositionDialogBody({ ticket, onClose }: { ticket: string; onClose: () =
         </div>
 
         {/* right: actions */}
-        <div className="space-y-4 p-3.5">
+        <div className="space-y-5 p-4">
           <section>
-            <div className="mb-2 flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-fg-3">
-              <Scissors className="size-3" /> {partial ? t("order.position.closePartially") : t("order.position.closePosition")}
+            <div className="mb-2.5 flex items-center gap-2 text-[13px] font-semibold text-fg [&>svg]:size-4 [&>svg]:text-fg-3">
+              <Scissors /> {partial ? t("order.position.closePartially") : t("order.position.closePosition")}
             </div>
             <div className="flex items-center gap-2">
-              <Stepper ariaLabel={t("order.position.closeVolume")} value={vol} onChange={setVol} step={0.01} min={0.01} decimals={2} className="w-[130px]" />
-              <div className="flex gap-0.5">
+              <Stepper size="md" ariaLabel={t("order.position.closeVolume")} value={vol} onChange={setVol} step={0.01} min={0.01} decimals={2} className="w-[150px]" />
+              <div className="flex gap-1">
                 {[0.25, 0.5, 1].map((f) => (
-                  <button key={f} onClick={() => setVol(fmtVol(Math.max(0.01, Math.floor(p.volume * f * 100) / 100)))} className="h-6 rounded-[5px] border border-line px-1.5 font-mono text-[10.5px] text-fg-2 hover:bg-surface-3">
+                  <button key={f} onClick={() => setVol(fmtVol(Math.max(0.01, Math.floor(p.volume * f * 100) / 100)))} className="h-8 rounded-[7px] border border-line px-2.5 font-mono text-[12.5px] text-fg-2 hover:bg-surface-3 hover:text-fg">
                     {f * 100}%
                   </button>
                 ))}
@@ -138,18 +138,18 @@ function PositionDialogBody({ ticket, onClose }: { ticket: string; onClose: () =
                 if (!partial) onClose();
                 else setVol(fmtVol(Math.max(0.01, p.volume - v)));
               }}
-              className={cn("mt-2 flex h-9 w-full items-center justify-between rounded-[7px] px-3 text-[12.5px] font-semibold text-white hover:brightness-110", p.side === "buy" ? "bg-down" : "bg-up")}
+              className={cn("mt-2.5 flex h-10 w-full items-center justify-between gap-3 rounded-[10px] px-4 text-[13.5px] font-semibold text-white hover:brightness-110", p.side === "buy" ? "bg-sell-fill" : "bg-buy-fill")}
             >
               <span>
                 {t("order.position.closeButton", { ticket: p.ticket, side: t(`order.side.${p.side}`), volume: fmtVol(v), symbol: p.symbol, price: fmtPrice(p.symbol, cur) })}
               </span>
-              <span className="font-mono text-[11.5px] opacity-90">{accMoney(a, profitAt({ ...p, volume: v }, cur), { signed: true })}</span>
+              <span className="shrink-0 font-mono text-[13px] opacity-95">{accMoney(a, profitAt({ ...p, volume: v }, cur), { signed: true })}</span>
             </button>
           </section>
 
           <section>
-            <div className="mb-2 flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-fg-3">
-              <Edit3 className="size-3" /> {t("order.position.modify")}
+            <div className="mb-2.5 flex items-center gap-2 text-[13px] font-semibold text-fg [&>svg]:size-4 [&>svg]:text-fg-3">
+              <Edit3 /> {t("order.position.modify")}
             </div>
             <div className="grid grid-cols-2 gap-2.5">
               {(["sl", "tp"] as const).map((k) => {
@@ -158,23 +158,23 @@ function PositionDialogBody({ ticket, onClose }: { ticket: string; onClose: () =
                 const usd = k === "sl" ? slUsd : tpUsd;
                 return (
                   <div key={k}>
-                    <div className={cn("mb-1 flex items-center justify-between text-[10.5px]", k === "sl" ? "text-down/90" : "text-up/90")}>
+                    <div className={cn("mb-1.5 flex items-center justify-between text-[12.5px] font-medium", k === "sl" ? "text-down" : "text-up")}>
                       <span>{k === "sl" ? t("order.position.stopLoss") : t("order.position.takeProfit")}</span>
                       <span className="flex gap-0.5">
                         {[10, 25, 50].map((n) => (
-                          <button key={n} onClick={() => nudge(k, n)} className="rounded-[3px] px-1 font-mono text-[9.5px] text-fg-3 hover:bg-surface-3 hover:text-fg">
+                          <button key={n} onClick={() => nudge(k, n)} className="h-6 rounded-[5px] px-1.5 font-mono text-[11px] text-fg-3 hover:bg-surface-3 hover:text-fg">
                             {t("order.unit.pipsShort", { n })}
                           </button>
                         ))}
                         {val && (
-                          <button onClick={() => set("")} className="rounded-[3px] px-1 text-[9.5px] text-fg-3 hover:bg-surface-3 hover:text-fg">
+                          <button onClick={() => set("")} className="h-6 rounded-[5px] px-1.5 text-[11px] text-fg-3 hover:bg-surface-3 hover:text-fg">
                             {t("order.position.clear")}
                           </button>
                         )}
                       </span>
                     </div>
-                    <Stepper ariaLabel={k === "sl" ? t("order.ticket.stopLoss") : t("order.ticket.takeProfit")} tone={k === "sl" ? "down" : "up"} value={val} onChange={set} step={pip} placeholder={t("order.ticket.notSet")} decimals={inst.digits} />
-                    <div className="mt-1 flex justify-between font-mono text-[10px] text-fg-3">
+                    <Stepper size="md" ariaLabel={k === "sl" ? t("order.ticket.stopLoss") : t("order.ticket.takeProfit")} tone={k === "sl" ? "down" : "up"} value={val} onChange={set} step={pip} placeholder={t("order.ticket.notSet")} decimals={inst.digits} />
+                    <div className="mt-1 flex justify-between font-mono text-[12px] text-fg-3">
                       <span>{val ? t("order.unit.pips", { n: pipsFrom(parseFloat(val)) }) : "—"}</span>
                       {usd !== null && <span className={usd >= 0 ? "text-up" : "text-down"}>{accMoney(a, usd + p.swap - p.commission, { signed: true })}</span>}
                     </div>
@@ -184,32 +184,32 @@ function PositionDialogBody({ ticket, onClose }: { ticket: string; onClose: () =
             </div>
             <div className="mt-2.5 grid grid-cols-[1fr_auto] items-end gap-2">
               <div>
-                <div className="mb-1 text-[10.5px] text-fg-3">{t("order.position.trailing")}</div>
+                <div className="mb-1.5 text-[12.5px] font-medium text-fg-2">{t("order.position.trailing")}</div>
                 <div className="flex gap-1.5">
-                  <TSelect ariaLabel={t("order.position.trailingAria")} value={trail} onChange={setTrail} options={TRAIL_OPTIONS.map((o) => ({ value: o, label: o === "none" ? t("order.position.trailNone") : o === "custom" ? t("order.position.trailCustom") : t("order.unit.pips", { n: o }) }))} className="w-[130px]" />
+                  <TSelect ariaLabel={t("order.position.trailingAria")} value={trail} onChange={setTrail} options={TRAIL_OPTIONS.map((o) => ({ value: o, label: o === "none" ? t("order.position.trailNone") : o === "custom" ? t("order.position.trailCustom") : t("order.unit.pips", { n: o }) }))} className="w-[150px]" />
                   {trail === "custom" && <Stepper ariaLabel={t("order.position.trailCustomAria")} value={trailCustom} onChange={setTrailCustom} step={1} decimals={0} className="w-[110px]" />}
                 </div>
               </div>
-              <TButton variant="ember" size="md" onClick={modify}>
+              <TButton variant="ember" size="md" onClick={modify} className="px-5">
                 {t("order.position.modify")}
               </TButton>
             </div>
-            <button onClick={() => setSl(fmtPrice(p.symbol, p.openPrice))} className="mt-1.5 text-[11px] text-fg-3 underline-offset-2 hover:text-fg hover:underline">
+            <button onClick={() => setSl(fmtPrice(p.symbol, p.openPrice))} className="mt-2 h-7 rounded-[7px] border border-dashed border-line px-2.5 text-[12px] text-fg-2 hover:border-fg-3/60 hover:text-fg">
               {t("order.position.breakeven", { price: fmtPrice(p.symbol, p.openPrice) })}
             </button>
           </section>
 
           {hedging && (
             <section>
-              <div className="mb-2 flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-fg-3">
-                <ArrowLeftRight className="size-3" /> {t("order.position.closeBy")}
+              <div className="mb-2.5 flex items-center gap-2 text-[13px] font-semibold text-fg [&>svg]:size-4 [&>svg]:text-fg-3">
+                <ArrowLeftRight /> {t("order.position.closeBy")}
               </div>
               {opp.length === 0 ? (
-                <div className="rounded-[6px] border border-dashed border-line px-3 py-2 text-[11.5px] text-fg-3">{p.side === "buy" ? t("order.position.noOppositeSell", { symbol: p.symbol }) : t("order.position.noOppositeBuy", { symbol: p.symbol })}</div>
+                <div className="rounded-[8px] border border-dashed border-line px-3 py-2.5 text-[12.5px] text-fg-3">{p.side === "buy" ? t("order.position.noOppositeSell", { symbol: p.symbol }) : t("order.position.noOppositeBuy", { symbol: p.symbol })}</div>
               ) : (
                 <div className="space-y-1">
                   {opp.map((o) => (
-                    <div key={o.ticket} className="flex items-center gap-2 rounded-[6px] border border-line bg-surface-2/40 px-2.5 py-1.5 font-mono text-[11.5px]">
+                    <div key={o.ticket} className="flex items-center gap-2 rounded-[8px] border border-line bg-panel-2/50 px-3 py-2 font-mono text-[12.5px]">
                       <span className={o.side === "buy" ? "text-up" : "text-down"}>{t(`order.side.${o.side}`)}</span>
                       <span>#{o.ticket}</span>
                       <span className="text-fg-2">
@@ -254,7 +254,7 @@ function PendingBody({ ticket, onClose }: { ticket: string; onClose: () => void 
     <TDialog
       open
       onClose={onClose}
-      width={440}
+      width={480}
       icon={<Edit3 />}
       title={t("order.pendingDialog.title", { ticket: o.ticket, label: t(pendingLabelKey(o)), volume: fmtVol(o.volume), symbol: o.symbol })}
       footer={
@@ -271,8 +271,8 @@ function PendingBody({ ticket, onClose }: { ticket: string; onClose: () => void 
         </>
       }
     >
-      <div className="space-y-3 p-3.5">
-        <div className="flex items-center justify-between font-mono text-[12px]">
+      <div className="space-y-4 p-4">
+        <div className="flex items-center justify-between font-mono text-[12.5px]">
           <span className="flex items-center gap-2 font-sans font-medium">
             <SymbolAvatar symbol={o.symbol} size={18} /> {o.symbol}
           </span>
@@ -281,20 +281,20 @@ function PendingBody({ ticket, onClose }: { ticket: string; onClose: () => void 
           </span>
         </div>
         <div>
-          <div className="mb-1 text-[10.5px] text-fg-3">{t("order.pendingDialog.price")}</div>
-          <Stepper ariaLabel={t("order.ticket.orderPrice")} value={price} onChange={setPrice} step={pip / 10 >= 1 / 10 ** inst.digits ? pip / 10 : 1 / 10 ** inst.digits} decimals={inst.digits} />
+          <div className="mb-1.5 text-[12.5px] font-medium text-fg-2">{t("order.pendingDialog.price")}</div>
+          <Stepper size="lg" ariaLabel={t("order.ticket.orderPrice")} value={price} onChange={setPrice} step={pip / 10 >= 1 / 10 ** inst.digits ? pip / 10 : 1 / 10 ** inst.digits} decimals={inst.digits} />
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <div className="mb-1 text-[10.5px] text-down/90">{t("order.position.stopLoss")}</div>
-            <Stepper ariaLabel={t("order.ticket.stopLoss")} tone="down" value={sl} onChange={setSl} step={pip} placeholder={t("order.ticket.notSet")} decimals={inst.digits} />
+            <div className="mb-1.5 text-[12.5px] font-medium text-down">{t("order.position.stopLoss")}</div>
+            <Stepper size="md" ariaLabel={t("order.ticket.stopLoss")} tone="down" value={sl} onChange={setSl} step={pip} placeholder={t("order.ticket.notSet")} decimals={inst.digits} />
           </div>
           <div>
-            <div className="mb-1 text-[10.5px] text-up/90">{t("order.position.takeProfit")}</div>
-            <Stepper ariaLabel={t("order.ticket.takeProfit")} tone="up" value={tp} onChange={setTp} step={pip} placeholder={t("order.ticket.notSet")} decimals={inst.digits} />
+            <div className="mb-1.5 text-[12.5px] font-medium text-up">{t("order.position.takeProfit")}</div>
+            <Stepper size="md" ariaLabel={t("order.ticket.takeProfit")} tone="up" value={tp} onChange={setTp} step={pip} placeholder={t("order.ticket.notSet")} decimals={inst.digits} />
           </div>
         </div>
-        <div className="font-mono text-[11px] text-fg-3">
+        <div className="font-mono text-[12px] text-fg-3">
           {t("order.pendingDialog.meta", { expiry: o.expiry === "Date" ? o.expiryDate : o.expiry === "GTC" ? t("order.expiry.gtc") : t("order.expiry.today"), placed: fmtServer(o.placed) })} {o.oco && t("order.pendingDialog.ocoLinked")}
         </div>
       </div>

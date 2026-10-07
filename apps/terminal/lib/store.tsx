@@ -3,7 +3,7 @@
 import * as React from "react";
 import { toast } from "@/lib/notify";
 import { tr } from "@kalks/i18n/react";
-import { ACCOUNTS, HISTORY, INSTRUMENTS, IS_LIVE, POSITIONS, getInstrument, isMarketOpen, priceFeed, rebaseTrades, type Quote, type TradingAccount } from "@kalks/mock";
+import { ACCOUNTS, HISTORY, INSTRUMENTS, INSTRUMENT_MAP, IS_LIVE, POSITIONS, getInstrument, isMarketOpen, liveTradable, priceFeed, rebaseTrades, type Quote, type TradingAccount } from "@kalks/mock";
 import { useQuotes } from "@kalks/ui";
 import {
   DEFAULT_SYMBOLS,
@@ -110,9 +110,12 @@ export interface ChartTab {
 export type Layout = "1" | "2h" | "2v" | "4";
 export const LAYOUT_COUNT: Record<Layout, number> = { "1": 1, "2h": 2, "2v": 2, "4": 4 };
 
-export type ToolboxTab = "trade" | "history" | "exposure" | "news" | "calendar" | "alerts" | "journal" | "ai" | "mam" | "options" | "orders" | "closed" | "settlements";
+/** Activity-panel tabs. "trade" is the old combined positions + orders tab (saved workspaces), shown as "positions". */
+export type ToolboxTab = "positions" | "pending" | "trade" | "history" | "exposure" | "news" | "calendar" | "alerts" | "journal" | "ai" | "mam" | "options" | "orders" | "closed" | "settlements";
 export type RightTab = "order" | "depth" | "info";
 export type MwTab = "symbols" | "details" | "favourites";
+/** The right-hand column of the desktop terminal (docs/TERMINAL-DESIGN.md §2.2): instruments, the order book, or the Navigator. */
+export type SideTab = "instruments" | "book" | "ticks" | "navigator";
 /** Instrument list filter: an asset class, everything, or favourites (Market Watch, symbol search). */
 export type Segment = "all" | "forex" | "metals" | "indices" | "energies" | "crypto" | "stocks" | "favourites";
 /** Which chart engine renders chart tiles. "kalks" = the original lightweight-charts engine. */
@@ -122,7 +125,18 @@ export interface Workspace {
   tabs: ChartTab[];
   slots: string[];
   activeId: string;
-  panels: { watch: boolean; right: boolean; toolbox: boolean; navigator: boolean };
+  /**
+   * watch = the right-hand column (Instruments | Order book) is open. right / book / bookOpt / navigator are kept for
+   * older saves and the phone layout; the desktop shows the order form as a popup and the book as a column tab.
+   */
+  panels: { watch: boolean; right: boolean; toolbox: boolean; navigator: boolean; book: boolean; bookOpt: boolean };
+  /** which tab of the right-hand column shows */
+  side: SideTab;
+  /** Options mode: the options panel (chain, analytics, book) is open under the chart */
+  optPanel: boolean;
+  /** where positions / orders / history live: below the chart, reached by scrolling the page ("page"), or in a
+   *  resizable panel under the chart on the first screen ("split") */
+  posLayout: "page" | "split";
   rightTab: RightTab;
   toolboxTab: ToolboxTab;
   mwTab: MwTab;
@@ -138,6 +152,8 @@ export interface Workspace {
   maxDeviation: number | null;
   lot: number; // default one-click lot
   profile: string;
+  /** Workspace format: 3 = the chart-first shell (docs/TERMINAL-DESIGN.md). Older saves are migrated once on load. */
+  uiVersion?: number;
 }
 
 export interface PriceAlert {
@@ -219,19 +235,25 @@ export function defaultWorkspace(): Workspace {
     tabs,
     slots: [tabs[0]!.id],
     activeId: tabs[0]!.id,
-    panels: { watch: true, right: true, toolbox: true, navigator: true },
+    // the Navigator duplicates the account switcher, the indicator list and the Close positions menu: off by default
+    panels: { watch: true, right: true, toolbox: true, navigator: false, book: false, bookOpt: true },
+    side: "instruments",
+    optPanel: false,
+    posLayout: "page",
     rightTab: "order",
-    toolboxTab: "trade",
+    toolboxTab: "positions",
     mwTab: "symbols",
     mwSegment: "all",
     searchSegment: "all",
     favourites: ["XAUUSD", "EURUSD", "NAS100", "BTCUSD", "GBPUSD"],
     hidden: [],
-    oneClick: true,
+    // new traders confirm every order; one-click (instant Sell / Buy) is a setting they switch on
+    oneClick: false,
     sound: true,
     maxDeviation: null,
     lot: 0.5,
     profile: "Default",
+    uiVersion: 3,
   };
 }
 
@@ -259,11 +281,31 @@ function readWorkspace(): Workspace {
     const w = { ...d, ...(JSON.parse(raw) as Partial<Workspace>) };
     w.panels = { ...d.panels, ...w.panels };
     if (!Array.isArray(w.tabs) || w.tabs.length === 0) return d;
-    w.tabs = w.tabs.filter((t) => INSTRUMENTS.some((i) => i.symbol === t.symbol)).map((t) => ({ ...t, drawings: t.drawings ?? [], indicators: migrateIndicators(t.indicators) }));
+    w.tabs = w.tabs.filter((t) => !!INSTRUMENT_MAP[t.symbol]).map((t) => ({ ...t, drawings: t.drawings ?? [], indicators: migrateIndicators(t.indicators) }));
     if (!w.tabs.length) return d;
     w.slots = (w.slots ?? []).filter((s) => w.tabs.some((t) => t.id === s));
     if (!w.slots.length) w.slots = [w.tabs[0]!.id];
     if (!w.tabs.some((t) => t.id === w.activeId)) w.activeId = w.slots[0]!;
+    if ((w.uiVersion ?? 1) < 2) {
+      // redesigned shell: positions and orders are separate tabs, favourites are a chip, the Navigator is optional
+      if (w.toolboxTab === "trade") w.toolboxTab = "positions";
+      if (w.mwTab === "favourites") {
+        w.mwTab = "symbols";
+        w.mwSegment = "favourites";
+      }
+      w.panels = { ...w.panels, navigator: false };
+      w.uiVersion = 2;
+    }
+    if ((w.uiVersion ?? 1) < 3) {
+      // chart-first shell: one right-hand column (Instruments | Order book), the order form is a popup
+      w.panels = { ...w.panels, watch: true, toolbox: true };
+      w.side = w.panels.navigator ? "navigator" : "instruments";
+      w.optPanel = false;
+      w.uiVersion = 3;
+    }
+    if (!["instruments", "book", "ticks", "navigator"].includes(w.side)) w.side = "instruments";
+    if (w.posLayout !== "split") w.posLayout = "page";
+    if (w.toolboxTab === "trade") w.toolboxTab = "positions";
     return fitSlots(w);
   } catch {
     return d;
@@ -382,6 +424,12 @@ interface UiState {
   alertDialog: { symbol: string; price?: number } | null;
   /** live builds: log in to another trading account (kept in the account switcher) */
   loginDialog: boolean;
+  /** first-run tour on screen (desktop) */
+  tour: boolean;
+  /** desktop "Full chart": the chart covers the window (top bar and side column hidden) */
+  fullChart: boolean;
+  /** Help › Trading terms explained */
+  glossary: boolean;
 }
 
 interface Ctx {
@@ -515,7 +563,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
   wsRef.current = ws;
   const sessionRef = React.useRef(session);
   sessionRef.current = session;
-  const [ui, setUiState] = React.useState<UiState>({ newOrder: null, positionDialog: null, pendingDialog: null, search: false, shortcuts: false, spec: null, about: false, options: false, alertDialog: null, loginDialog: false });
+  const [ui, setUiState] = React.useState<UiState>({ newOrder: null, positionDialog: null, pendingDialog: null, search: false, shortcuts: false, spec: null, about: false, options: false, alertDialog: null, loginDialog: false, tour: false, glossary: false, fullChart: false });
   const [drawTool, setDrawTool] = React.useState<DrawTool>("cursor");
   const [selectedDrawing, selectDrawing] = React.useState<string | null>(null);
   const jid = React.useRef(0);
@@ -535,7 +583,9 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
     [commit],
   );
 
+  const accountTypeRef = React.useRef<string>("demo");
   const account: TradingAccount = engine ? (engAccounts[session.login] ?? { ...GUEST_ACCOUNT, login: session.login, server: session.server, type: session.server === "Kalks-Demo" ? "demo" : "live" }) : accountOf(session.login);
+  accountTypeRef.current = account.type;
   const readOnly = session.investor;
 
   const notify = React.useCallback((kind: "fill" | "close" | "alert" | "error") => {
@@ -1165,6 +1215,12 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
 
   const placeOrder = React.useCallback(
     async (o: OrderRequest): Promise<boolean> => {
+      // catalogue markets are demo-only on live accounts until enabled (the engine answers symbol_demo_only);
+      // closing and modifying stay allowed
+      if (accountTypeRef.current === "live" && !liveTradable(o.symbol)) {
+        toast.error(tr("desk.trade.demoOnly"), { description: tr("desk.trade.demoOnlyText", { symbol: o.symbol }) });
+        return false;
+      }
       if (!engine) return placeOrderMock(o);
       if (blocked(o.type === "market" ? tr(o.side === "buy" ? "order.guest.buying" : "order.guest.selling", { symbol: o.symbol }) : tr("order.guest.pendingOrder", { label: tr(pendingLabelKey({ side: o.side, type: o.type as PendingOrder["type"] })) }), o.source)) return false;
       return (await eng.placeOrder(o)).ok;
@@ -1235,10 +1291,29 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
 
   /* ------------------------------ tick engine ------------------------------ */
 
+  // streaming demand beyond the rows on screen (packages/mock prices.ts): favourites, the charts on screen, the
+  // positions and orders, the order form's market
+  const demandKey = React.useMemo(() => {
+    const out = new Set<string>(ws.favourites);
+    for (const t of ws.tabs) if (ws.slots.includes(t.id)) out.add(t.symbol);
+    for (const x of [...core.positions, ...core.pendings]) out.add(x.symbol);
+    if (ui.newOrder) out.add(ui.newOrder.symbol);
+    return [...out].sort().join(",");
+  }, [ws.favourites, ws.tabs, ws.slots, core.positions, core.pendings, ui.newOrder]);
+  React.useEffect(() => {
+    priceFeed().want("terminal", demandKey ? demandKey.split(",") : []);
+  }, [demandKey]);
+
+  // the core instruments always; catalogue markets while a position, order or alert needs their ticks
+  const tickSymbols = React.useMemo(() => {
+    const out = new Set(INSTRUMENTS.map((i) => i.symbol));
+    for (const x of [...core.positions, ...core.pendings, ...core.alerts]) out.add(x.symbol);
+    return [...out].join(",");
+  }, [core.positions, core.pendings, core.alerts]);
   React.useEffect(() => {
     const feed = priceFeed();
     return feed.subscribe(
-      INSTRUMENTS.map((i) => i.symbol),
+      tickSymbols.split(","),
       (q) => {
         const c = coreRef.current;
         // SL / TP / trailing / pending fills run in this tab only for the demo build's sample accounts;
@@ -1301,7 +1376,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
       },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [tickSymbols]);
 
   /* ------------------------------ AI Trader ------------------------------ */
 

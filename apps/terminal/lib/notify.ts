@@ -78,12 +78,16 @@ function show(message: Msg, data?: ExternalToast) {
   return sonner(message, data);
 }
 
-export const toast = Object.assign(show, {
-  success: (message: Msg, data?: ExternalToast) => (record("success", message, data), sonner.success(message, data)),
-  error: (message: Msg, data?: ExternalToast) => (record("error", message, data), sonner.error(message, data)),
-  warning: (message: Msg, data?: ExternalToast) => (record("warning", message, data), sonner.warning(message, data)),
-  info: (message: Msg, data?: ExternalToast) => (record("info", message, data), sonner.info(message, data)),
-  message: (message: Msg, data?: ExternalToast) => (record("info", message, data), sonner.message(message, data)),
+/** How long a toast stays (paused while hovered): quick for news, longer for problems. Explicit durations win. */
+const DURATION: Record<NoteKind, number> = { info: 3000, success: 3000, warning: 5000, error: 6000 };
+const timed = (kind: NoteKind, data?: ExternalToast): ExternalToast => ({ ...data, duration: data?.duration ?? DURATION[kind] });
+
+export const toast = Object.assign((message: Msg, data?: ExternalToast) => show(message, timed("info", data)), {
+  success: (message: Msg, data?: ExternalToast) => (record("success", message, data), sonner.success(message, timed("success", data))),
+  error: (message: Msg, data?: ExternalToast) => (record("error", message, data), sonner.error(message, timed("error", data))),
+  warning: (message: Msg, data?: ExternalToast) => (record("warning", message, data), sonner.warning(message, timed("warning", data))),
+  info: (message: Msg, data?: ExternalToast) => (record("info", message, data), sonner.info(message, timed("info", data))),
+  message: (message: Msg, data?: ExternalToast) => (record("info", message, data), sonner.message(message, timed("info", data))),
   dismiss: sonner.dismiss,
 });
 

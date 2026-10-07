@@ -59,7 +59,7 @@ const trader: NsMessages<"trader"> = {
   "preset.analysis": "பகுப்பாய்வு",
   "preset.analysisHint": "4 சார்ட்கள்",
   "preset.scalper": "ஸ்கால்ப்பர்",
-  "preset.scalperHint": "DOM + 2 சார்ட்கள்",
+  "preset.scalperHint": "ஆர்டர் புக் + 2 சார்ட்கள்",
   "profile.default": "இயல்புநிலை",
   "profile.scalping": "ஸ்கால்ப்பிங்",
   "profile.analysis": "பகுப்பாய்வு",

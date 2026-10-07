@@ -4,9 +4,13 @@
  * Converts a plain-language trading instruction into a StrategySpec with Claude (structured output),
  * validated server-side. Without ANTHROPIC_API_KEY it answers { configured: false } and the terminal
  * falls back to its local parser. The key is read from the server environment only.
+ * Each call costs money: it needs a signed-in terminal session and stays within the per-user budget
+ * (lib/ai-guard.ts: 401 "signin", 429 "rate_minute" / "rate_day").
  */
 import Anthropic from "@anthropic-ai/sdk";
+import type { NextRequest } from "next/server";
 import { INSTRUMENTS } from "@kalks/mock";
+import { aiGate } from "@/lib/ai-guard";
 import { PARSE_RESULT_JSON_SCHEMA, validateSpec, type ParseResult } from "@/lib/ai-trader/schema";
 import { TIMEFRAMES } from "@/lib/trading";
 
@@ -46,7 +50,7 @@ function bad(status: number, error: string) {
   return Response.json({ error }, { status });
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   let body: { prompt?: unknown; symbol?: unknown; timeframe?: unknown };
   try {
     body = await req.json();
@@ -62,6 +66,8 @@ export async function POST(req: Request) {
   if (!process.env.ANTHROPIC_API_KEY) {
     return Response.json({ configured: false, error: "AI not configured: set ANTHROPIC_API_KEY in apps/terminal/.env.local and restart the terminal." });
   }
+  const refused = await aiGate(req);
+  if (refused) return refused;
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const symbols = INSTRUMENTS.map((i) => `${i.symbol} (${i.name}, ${i.digits} digits)`).join("; ");

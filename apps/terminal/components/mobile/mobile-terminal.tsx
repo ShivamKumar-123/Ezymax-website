@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { toast } from "@/lib/notify";
 import { ArrowUpRight, BarChart2, CandlestickChart, ChevronDown, History, Languages, List, LogOut, Moon, RefreshCw, Search, Sun, UserRound, Wallet, X, Zap } from "lucide-react";
-import { INSTRUMENTS, getInstrument } from "@kalks/mock";
+import { ALL_INSTRUMENTS, INSTRUMENTS, getInstrument } from "@kalks/mock";
 import { LogoMark, PriceText, SymbolAvatar, cn, useQuote } from "@kalks/ui";
 import { useMetrics, usePositionProfit, useTerminal } from "@/lib/store";
 import { useT } from "@kalks/i18n/react";
@@ -125,7 +125,10 @@ function MWatch({ onPick }: { onPick: () => void }) {
   const t = useT();
   const [q, setQ] = React.useState("");
   const seg = T.ws.mwSegment;
-  const list = INSTRUMENTS.filter((i) => inSegment(i, seg, T.ws.favourites)).filter((i) => !q || i.symbol.toLowerCase().includes(q.toLowerCase()) || i.name.toLowerCase().includes(q.toLowerCase()));
+  // browsing: the core markets (and favourites); a search looks through the whole catalogue (1,400+), first 60 matches
+  const list = q
+    ? ALL_INSTRUMENTS.filter((i) => inSegment(i, seg, T.ws.favourites)).filter((i) => i.symbol.toLowerCase().includes(q.toLowerCase()) || i.name.toLowerCase().includes(q.toLowerCase())).slice(0, 60)
+    : (seg === "favourites" ? ALL_INSTRUMENTS : INSTRUMENTS).filter((i) => inSegment(i, seg, T.ws.favourites));
   return (
     <div className="flex h-full flex-col">
       <div className="space-y-1.5 p-2">

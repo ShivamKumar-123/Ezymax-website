@@ -20,6 +20,7 @@ export function TDialog({
   footer,
   width = 520,
   className,
+  actions,
 }: {
   open: boolean;
   onClose: () => void;
@@ -30,6 +31,8 @@ export function TDialog({
   footer?: React.ReactNode;
   width?: number;
   className?: string;
+  /** extra header buttons, left of the close button */
+  actions?: React.ReactNode;
 }) {
   const t = useT();
   React.useEffect(() => {
@@ -48,23 +51,25 @@ export function TDialog({
   // Arabic/Urdu/Persian too (see desktop.tsx); translated text still shapes correctly inside.
   return createPortal(
     <div className="fixed inset-0 z-[70] grid place-items-center p-3" role="dialog" aria-modal dir="ltr">
-      <div className="absolute inset-0 bg-black/55 animate-[t-fade_.12s_ease-out]" onMouseDown={onClose} />
+      <div className="absolute inset-0 bg-black/45 backdrop-blur-[2px] animate-[t-fade_.12s_ease-out]" onMouseDown={onClose} />
       <div
-        className={cn("t-pop relative flex max-h-[calc(100dvh-24px)] w-full flex-col overflow-hidden rounded-[10px] border border-line-top bg-panel shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]", className)}
+        className={cn("t-pop t-glass-strong relative flex max-h-[calc(100dvh-24px)] w-full flex-col overflow-hidden rounded-[16px] border border-line-top shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]", className)}
         style={{ maxWidth: width }}
+        aria-label={typeof title === "string" ? title : undefined}
       >
-        <div className="flex h-10 shrink-0 items-center gap-2.5 border-b border-line bg-panel-2 pl-3.5 pr-1.5">
-          {icon && <span className="grid size-5 place-items-center text-ember [&>svg]:size-4">{icon}</span>}
-          <div className="min-w-0 flex-1 truncate text-[13px] font-medium text-fg">
-            {title}
-            {subtitle && <span className="ml-2 font-normal text-fg-3">{subtitle}</span>}
+        <div className="flex min-h-11 shrink-0 items-center gap-2.5 border-b border-line ps-3.5 pe-1.5">
+          {icon && <span className="grid size-7 shrink-0 place-items-center rounded-[7px] bg-ember-soft text-accent-text [&>svg]:size-3.5">{icon}</span>}
+          <div className="min-w-0 flex-1 py-1.5">
+            <div className="truncate text-[14px] font-semibold text-fg">{title}</div>
+            {subtitle && <div className="truncate text-[12px] text-fg-3">{subtitle}</div>}
           </div>
-          <button onClick={onClose} aria-label={t("common.close")} className="grid size-7 place-items-center rounded-md text-fg-3 hover:bg-surface-3 hover:text-fg">
+          {actions}
+          <button onClick={onClose} aria-label={t("common.close")} title={`${t("common.close")} (Esc)`} className="grid size-7 place-items-center rounded-[7px] text-fg-2 hover:bg-surface-3 hover:text-fg">
             <X className="size-4" />
           </button>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
-        {footer && <div className="flex shrink-0 items-center justify-end gap-2 border-t border-line bg-panel-2 px-3.5 py-2.5">{footer}</div>}
+        <div className="t-scroll min-h-0 flex-1 overflow-y-auto">{children}</div>
+        {footer && <div className="flex shrink-0 items-center justify-end gap-2 border-t border-line px-3.5 py-2.5">{footer}</div>}
       </div>
     </div>,
     document.body,
@@ -83,16 +88,16 @@ export const TButton = React.forwardRef<
     <button
       ref={ref}
       className={cn(
-        "inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-[7px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ember/40 disabled:pointer-events-none disabled:opacity-45 [&_svg]:size-3.5 [&_svg]:shrink-0",
-        size === "xs" && "h-6 px-2 text-[11.5px]",
-        size === "sm" && "h-7 px-2.5 text-[12px]",
-        size === "md" && "h-9 px-3.5 text-[13px]",
-        variant === "ember" && "bg-ember text-white hover:brightness-110",
+        "inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-[8px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ember/50 disabled:pointer-events-none disabled:opacity-45 [&_svg]:size-3.5 [&_svg]:shrink-0",
+        size === "xs" && "h-6 px-2 text-[12px]",
+        size === "sm" && "h-7 px-2.5 text-[12.5px]",
+        size === "md" && "h-8 px-3 text-[13px]",
+        variant === "ember" && "bg-accent-strong font-semibold text-white hover:brightness-110",
         variant === "surface" && "border border-line bg-surface-2 text-fg-2 hover:bg-surface-3 hover:text-fg",
         variant === "outline" && "border border-line text-fg-2 hover:border-fg-3/50 hover:text-fg",
         variant === "ghost" && "text-fg-2 hover:bg-surface-3 hover:text-fg",
-        variant === "buy" && "bg-up text-white hover:brightness-110",
-        variant === "sell" && "bg-down text-white hover:brightness-110",
+        variant === "buy" && "bg-buy-fill text-white hover:brightness-110",
+        variant === "sell" && "bg-sell-fill text-white hover:brightness-110",
         className,
       )}
       {...p}
@@ -112,8 +117,8 @@ export function TIcon({
       aria-label={label}
       title={label}
       className={cn(
-        "grid size-6 shrink-0 place-items-center rounded-[5px] text-fg-3 transition-colors hover:bg-surface-3 hover:text-fg [&_svg]:size-3.5",
-        active && "bg-ember-soft text-ember hover:bg-ember-soft hover:text-ember",
+        "grid size-7 shrink-0 place-items-center rounded-[7px] text-fg-2 transition-colors hover:bg-surface-3 hover:text-fg [&_svg]:size-4",
+        active && "bg-ember-soft text-accent-text hover:bg-ember-soft hover:text-accent-text",
         className,
       )}
       {...p}
@@ -131,7 +136,7 @@ export function TInput({ className, ...p }: React.InputHTMLAttributes<HTMLInputE
   return (
     <input
       className={cn(
-        "h-7 w-full min-w-0 rounded-[6px] border border-line bg-surface-2 px-2 text-[12px] text-fg outline-none transition-colors placeholder:text-fg-3 focus:border-ember/60",
+        "h-7 w-full min-w-0 rounded-[7px] border border-line bg-panel-2 px-2.5 text-[13px] text-fg outline-none transition-colors placeholder:text-fg-3 focus:border-ember/60",
         className,
       )}
       {...p}
@@ -149,6 +154,9 @@ export function Stepper({
   min,
   ariaLabel,
   decimals,
+  size = "sm",
+  id,
+  onCommit,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -159,6 +167,11 @@ export function Stepper({
   min?: number;
   ariaLabel?: string;
   decimals?: number;
+  /** sm 28 px (dense, phone lists), md 32 px, lg 40 px (the order panel) */
+  size?: "sm" | "md" | "lg";
+  id?: string;
+  /** Enter pressed in the field */
+  onCommit?: () => void;
 }) {
   const t = useT();
   const bump = (d: number) => {
@@ -171,17 +184,25 @@ export function Stepper({
   return (
     <div
       className={cn(
-        "flex h-7 items-center rounded-[6px] border border-line bg-surface-2 transition-colors focus-within:border-ember/60",
+        "flex items-center border border-line transition-colors focus-within:border-ember/60",
+        size === "lg" ? "h-8 rounded-[8px] bg-panel-2" : size === "md" ? "h-7 rounded-[7px] bg-panel-2" : "h-7 rounded-[6px] bg-surface-2",
         tone === "up" && "focus-within:border-up/60",
         tone === "down" && "focus-within:border-down/60",
         className,
       )}
     >
-      <button type="button" tabIndex={-1} onClick={() => bump(-1)} className="grid h-full w-6 shrink-0 place-items-center text-fg-3 hover:text-fg" aria-label={t("trader.stepper.decrease")}>
-        <Minus className="size-3" />
+      <button type="button" tabIndex={-1} onClick={() => bump(-1)} className={cn("grid h-full shrink-0 place-items-center text-fg-3 hover:text-fg", size === "sm" ? "w-6" : "w-7 rounded-s-[7px] hover:bg-surface-3")} aria-label={t("trader.stepper.decrease")}>
+        <Minus className={size === "sm" ? "size-3" : "size-3.5"} />
       </button>
       <input
+        id={id}
         aria-label={ariaLabel}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+            e.preventDefault();
+            bump(e.key === "ArrowUp" ? 1 : -1);
+          } else if (e.key === "Enter") onCommit?.();
+        }}
         inputMode="decimal"
         value={value}
         placeholder={placeholder}
@@ -190,10 +211,10 @@ export function Stepper({
           if (document.activeElement !== e.currentTarget) return;
           bump(e.deltaY < 0 ? 1 : -1);
         }}
-        className="k-num h-full w-full min-w-0 text-ellipsis bg-transparent text-center font-mono text-[12px] text-fg outline-none placeholder:font-sans placeholder:text-[11px] placeholder:text-fg-3/70"
+        className={cn("k-num h-full w-full min-w-0 text-ellipsis bg-transparent text-center font-mono text-fg outline-none placeholder:font-sans placeholder:text-fg-3", size === "lg" ? "text-[14px] font-medium placeholder:text-[12.5px]" : size === "md" ? "text-[13px] placeholder:text-[12.5px]" : "text-[12px] placeholder:text-[11px]")}
       />
-      <button type="button" tabIndex={-1} onClick={() => bump(1)} className="grid h-full w-6 shrink-0 place-items-center text-fg-3 hover:text-fg" aria-label={t("trader.stepper.increase")}>
-        <Plus className="size-3" />
+      <button type="button" tabIndex={-1} onClick={() => bump(1)} className={cn("grid h-full shrink-0 place-items-center text-fg-3 hover:text-fg", size === "sm" ? "w-6" : "w-7 rounded-e-[7px] hover:bg-surface-3")} aria-label={t("trader.stepper.increase")}>
+        <Plus className={size === "sm" ? "size-3" : "size-3.5"} />
       </button>
     </div>
   );
@@ -205,7 +226,7 @@ export function TSelect<T extends string>({ value, onChange, options, className,
       aria-label={ariaLabel}
       value={value}
       onChange={(e) => onChange(e.target.value as T)}
-      className={cn("t-select h-7 w-full min-w-0 rounded-[6px] border border-line bg-surface-2 ps-2 pe-6 text-[12px] text-fg outline-none focus:border-ember/60", className)}
+      className={cn("t-select h-7 w-full min-w-0 rounded-[7px] border border-line bg-panel-2 ps-2.5 pe-7 text-[13px] text-fg outline-none focus:border-ember/60", className)}
     >
       {options.map((o) => {
         const v = typeof o === "string" ? o : o.value;
@@ -270,7 +291,7 @@ export function Badge({ tone = "neutral", children, className }: { tone?: "neutr
     warn: "border-warn/30 bg-warn-soft text-warn",
     info: "border-info/30 bg-info-soft text-info",
   }[tone];
-  return <span className={cn("inline-flex h-[18px] shrink-0 items-center rounded-[4px] border px-1.5 text-[10px] font-semibold uppercase tracking-[0.05em]", t, className)}>{children}</span>;
+  return <span className={cn("inline-flex h-[18px] shrink-0 items-center rounded-[5px] border px-1.5 text-[11px] font-semibold uppercase tracking-[0.04em]", t, className)}>{children}</span>;
 }
 
 /** Profit number, coloured, with dimmed decimals. */
@@ -323,9 +344,9 @@ export function Empty({ icon, title, sub, action }: { icon?: React.ReactNode; ti
   return (
     <div className="grid h-full min-h-24 place-items-center p-4 text-center">
       <div>
-        {icon && <div className="mx-auto mb-2 grid size-8 place-items-center rounded-full border border-line text-fg-3 [&>svg]:size-4">{icon}</div>}
-        <div className="text-[12.5px] text-fg-2">{title}</div>
-        {sub && <div className="mt-0.5 text-[11.5px] text-fg-3">{sub}</div>}
+        {icon && <div className="mx-auto mb-2.5 grid size-10 place-items-center rounded-full border border-line bg-panel-2 text-fg-3 [&>svg]:size-[18px]">{icon}</div>}
+        <div className="text-[13.5px] font-medium text-fg">{title}</div>
+        {sub && <div className="mt-1 text-[12.5px] leading-[18px] text-fg-3">{sub}</div>}
         {action && <div className="mt-2.5">{action}</div>}
       </div>
     </div>

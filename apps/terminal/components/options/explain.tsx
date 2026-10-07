@@ -104,7 +104,9 @@ function readHidden() {
 /** The intro is hidden once the trader tapped "Got it" (per browser); "How options work" brings it back. */
 export function useIntroHidden(): [boolean, (v: boolean) => void] {
   const [hidden, setHidden] = React.useState(true);
-  React.useEffect(() => setHidden(readHidden()), []);
+  React.useEffect(() => {
+    setHidden(readHidden());
+  }, []);
   const set = React.useCallback((v: boolean) => {
     setHidden(v);
     try {
@@ -137,6 +139,16 @@ export function IntroFacts({ className }: { className?: string }) {
 /** The intro as a dismissible card (guided flow, empty ticket). */
 export function IntroCard({ className, onHide }: { className?: string; onHide?: () => void }) {
   const t = useT();
+  // a one-line banner first, so the Up / Down steps stay in view; the four facts open on a click
+  const [open, setOpen] = React.useState(false);
+  if (!open)
+    return (
+      <button onClick={() => setOpen(true)} className={cn("flex h-9 w-full items-center gap-2 rounded-[10px] border border-ember/25 bg-[linear-gradient(135deg,color-mix(in_srgb,var(--k-ember)_10%,transparent),transparent_60%)] px-2.5 text-start text-[12.5px] font-medium text-fg-2 transition-colors hover:border-ember/45 hover:text-fg", className)}>
+        <GraduationCap className="size-4 shrink-0 text-ember" />
+        <span className="min-w-0 flex-1 truncate">{t("desk.opt.learn30")}</span>
+        <span aria-hidden className="text-accent-text">→</span>
+      </button>
+    );
   return (
     <div className={cn("relative overflow-hidden rounded-[12px] border border-ember/25 bg-[linear-gradient(135deg,color-mix(in_srgb,var(--k-ember)_10%,transparent),transparent_60%)] p-3", className)}>
       <div className="mb-2 flex items-center gap-2">

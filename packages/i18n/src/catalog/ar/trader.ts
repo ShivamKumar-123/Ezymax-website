@@ -62,7 +62,7 @@ const trader: NsMessages<"trader"> = {
   "preset.analysis": "التحليل",
   "preset.analysisHint": "4 رسوم بيانية",
   "preset.scalper": "المضارب السريع",
-  "preset.scalperHint": "DOM + رسمان بيانيان",
+  "preset.scalperHint": "دفتر الأوامر + رسمان بيانيان",
   // Workspace profiles
   "profile.default": "افتراضي",
   "profile.scalping": "المضاربة السريعة",

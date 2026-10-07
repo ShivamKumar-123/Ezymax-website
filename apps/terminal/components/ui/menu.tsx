@@ -46,7 +46,7 @@ const isSheetViewport = () => typeof window !== "undefined" && window.innerWidth
  */
 const LAYER = { "data-kmenu": "", dir: "ltr" } as const;
 
-export function MenuList({ items, onClose, width = 232, className }: { items: MenuItem[]; onClose: () => void; width?: number; className?: string }) {
+export function MenuList({ items, onClose, width = 248, className }: { items: MenuItem[]; onClose: () => void; width?: number; className?: string }) {
   const sheet = React.useContext(SheetCtx);
   return sheet ? <SheetMenu items={items} onClose={onClose} className={className} /> : <PopMenu items={items} onClose={onClose} width={width} className={className} />;
 }
@@ -62,9 +62,9 @@ function Row({ it, active, children, ...p }: { it: Exclude<MenuItem, "sep" | { h
       tabIndex={it.disabled ? undefined : -1}
       {...p}
       className={cn(
-        "relative mx-1 flex cursor-default select-none items-center gap-2 rounded-[5px] pl-2 pr-2 outline-none [&>svg]:size-3.5 [&>svg]:shrink-0",
-        sheet ? "h-10 text-[13.5px]" : "h-[26px]",
-        it.disabled ? "text-fg-3/60" : "text-fg-2 hover:bg-surface-3 hover:text-fg focus-visible:bg-surface-3 focus-visible:text-fg",
+        "relative mx-1 flex cursor-default select-none items-center gap-2 rounded-[6px] pl-2 pr-2 outline-none [&>svg]:size-4 [&>svg]:shrink-0",
+        sheet ? "h-10 text-[13.5px]" : "h-7 text-[13px]",
+        it.disabled ? "text-fg-3/70" : "text-fg hover:bg-surface-3 focus-visible:bg-surface-3",
         active && "bg-surface-3 text-fg",
         it.danger && !it.disabled && "text-down hover:text-down",
         it.tone === "up" && !it.disabled && "text-up hover:text-up",
@@ -72,11 +72,11 @@ function Row({ it, active, children, ...p }: { it: Exclude<MenuItem, "sep" | { h
         it.tone === "ember" && !it.disabled && "text-ember hover:text-ember",
       )}
     >
-      <span className="grid w-4 shrink-0 place-items-center [&>svg]:size-3.5">{it.checked ? <Check className="text-ember" /> : it.icon}</span>
+      <span className="grid w-4 shrink-0 place-items-center text-fg-2 [&>svg]:size-3.5">{it.checked ? <Check className="text-accent-text" /> : it.icon}</span>
       <span className="min-w-0 flex-1 truncate">{it.label}</span>
       {/* keyboard shortcuts (F9, Ctrl+F…) mean nothing in the touch bottom sheet; other hints stay */}
-      {it.hint && !(sheet && isKeyHint(it.hint)) && <span className="shrink-0 pl-3 font-mono text-[10.5px] text-fg-3">{it.hint}</span>}
-      {hasSub && <ChevronRight className="size-3 text-fg-3" />}
+      {it.hint && !(sheet && isKeyHint(it.hint)) && <span className="shrink-0 pl-3 font-mono text-[11px] text-fg-3">{it.hint}</span>}
+      {hasSub && <ChevronRight className="size-3.5 text-fg-3" />}
       {children}
     </div>
   );
@@ -85,10 +85,10 @@ function Row({ it, active, children, ...p }: { it: Exclude<MenuItem, "sep" | { h
 const isKeyHint = (h: React.ReactNode) => typeof h === "string" && /^(F\d{1,2}|(Ctrl|Alt|Shift|⌘)\+.*|[+−=-])$/.test(h);
 
 function Header({ text }: { text: string }) {
-  return <div className="px-3 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-fg-3">{text}</div>;
+  return <div className="px-3 pb-0.5 pt-1.5 text-[10.5px] font-medium uppercase tracking-[0.06em] text-fg-3">{text}</div>;
 }
 
-const MENU_CLS = "t-menu relative rounded-[9px] border border-line-top bg-panel-2 py-1 text-[12.5px] shadow-[0_18px_48px_-12px_rgba(0,0,0,0.55),0_2px_6px_rgba(0,0,0,0.25)]";
+const MENU_CLS = "t-menu t-glass-strong relative rounded-[12px] border border-line-top py-1 text-[13px] shadow-[var(--t-shadow-pop)]";
 
 /** Desktop menu list with fly-out submenus. */
 function PopMenu({ items, onClose, width, className }: { items: MenuItem[]; onClose: () => void; width: number; className?: string }) {
@@ -119,7 +119,7 @@ function PopMenu({ items, onClose, width, className }: { items: MenuItem[]; onCl
       }}
     >
       {items.map((it, i) => {
-        if (it === "sep") return <div key={i} className="mx-2 my-1 h-px bg-line" />;
+        if (it === "sep") return <div key={i} className="mx-2.5 my-1.5 h-px bg-line" />;
         if ("header" in it) return <Header key={i} text={it.header} />;
         const hasSub = !!it.items?.length;
         return (
@@ -180,7 +180,7 @@ function SubMenu({ anchor, items, width, onClose, onBack, onEnter }: { anchor: H
     <div
       {...LAYER}
       ref={ref}
-      className="t-scroll fixed z-[81] overflow-y-auto overscroll-contain rounded-[9px] shadow-[0_18px_48px_-12px_rgba(0,0,0,0.55),0_2px_6px_rgba(0,0,0,0.25)]"
+      className="t-scroll fixed z-[81] overflow-y-auto overscroll-contain rounded-[12px] shadow-[var(--t-shadow-pop)]"
       style={{ left: pos?.left ?? -9999, top: pos?.top ?? 0, maxHeight: pos?.maxH, visibility: pos ? "visible" : "hidden" }}
       onMouseEnter={onEnter}
       onMouseDown={(e) => e.stopPropagation()}
@@ -212,7 +212,7 @@ function SheetMenu({ items, onClose, className }: { items: MenuItem[]; onClose: 
         </button>
       )}
       {list.map((it, i) => {
-        if (it === "sep") return <div key={i} className="mx-2 my-1 h-px bg-line" />;
+        if (it === "sep") return <div key={i} className="mx-2.5 my-1.5 h-px bg-line" />;
         if ("header" in it) return <Header key={i} text={it.header} />;
         const hasSub = !!it.items?.length;
         return (
@@ -328,7 +328,7 @@ export function Floating({ x, y, onClose, children, anchor, sheet, flipX = true 
     <div
       {...LAYER}
       ref={ref}
-      className="t-scroll fixed z-[80] overflow-y-auto overscroll-contain rounded-[9px] shadow-[0_18px_48px_-12px_rgba(0,0,0,0.55),0_2px_6px_rgba(0,0,0,0.25)]"
+      className="t-scroll fixed z-[80] overflow-y-auto overscroll-contain rounded-[12px] shadow-[var(--t-shadow-pop)]"
       style={{ left: pos?.x ?? x, top: pos?.y ?? y, maxHeight: pos?.maxH, visibility: pos ? "visible" : "hidden" }}
     >
       {children}
@@ -345,7 +345,7 @@ export interface CtxState {
 }
 
 /** Hook for right-click menus: `const cm = useContextMenu(); onContextMenu={e => cm.open(e, items)}` + `{cm.node}` */
-export function useContextMenu(width = 232) {
+export function useContextMenu(width = 248) {
   const [st, setSt] = React.useState<CtxState | null>(null);
   const close = React.useCallback(() => setSt(null), []);
   const open = React.useCallback((e: React.MouseEvent | { clientX: number; clientY: number; preventDefault?: () => void }, items: MenuItem[], title?: React.ReactNode) => {
@@ -355,8 +355,8 @@ export function useContextMenu(width = 232) {
   const node = st ? (
     <Floating x={st.x} y={st.y} onClose={close}>
       {st.title ? (
-        <div className="rounded-[9px] border border-line-top bg-panel-2 shadow-[0_18px_48px_-12px_rgba(0,0,0,0.55)]" style={{ width }}>
-          <div className="border-b border-line px-3 py-1.5 font-mono text-[11px] text-fg-3">{st.title}</div>
+        <div className="t-glass-strong rounded-[12px] border border-line-top shadow-[var(--t-shadow-pop)]" style={{ width }}>
+          <div className="border-b border-line px-3 py-1.5 font-mono text-[12px] text-fg-2">{st.title}</div>
           <MenuList items={st.items} onClose={close} width={width} className="border-0 shadow-none" />
         </div>
       ) : (
@@ -371,7 +371,7 @@ export function useContextMenu(width = 232) {
 export function DropMenu({
   trigger,
   items,
-  width = 232,
+  width = 248,
   align = "start",
   children,
 }: {
@@ -395,7 +395,7 @@ export function DropMenu({
       {at && (
         <Floating x={at.x} y={at.y} anchor={at.anchor} onClose={close}>
           {children ? (
-            <div className="rounded-[9px] border border-line-top bg-panel-2 shadow-[0_18px_48px_-12px_rgba(0,0,0,0.55)]" style={{ width }}>
+            <div className="t-glass-strong rounded-[14px] border border-line-top shadow-[var(--t-shadow-pop)]" style={{ width }}>
               {children(close)}
             </div>
           ) : (

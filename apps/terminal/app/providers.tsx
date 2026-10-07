@@ -38,8 +38,10 @@ export function TerminalProviders({ children, locale, messages }: { children: Re
   );
 }
 
-// Toasts keep their slot next to the order panel; in right-to-left layouts the page mirrors, so they stay top-right
-// (clear of the chart toolbar) and only their text direction follows the language.
+// Desktop toasts: a compact stack right under the 🔔 (shell/notifications.tsx sets --t-toast-top / --t-toast-right
+// from the bell; Full chart: the window's top-right corner), at most 3, newest on top, 320 px wide; info and success go
+// after 3 s, warnings 5 s, errors 6 s (lib/notify.ts), paused while hovered; every one stays in the bell's list.
+// In right-to-left layouts they stay top-right too and only their text direction follows the language.
 function TerminalToaster() {
   const narrow = useNarrow();
   const { dir } = useLocale();
@@ -47,16 +49,18 @@ function TerminalToaster() {
     <Toaster
       dir={dir}
       position={narrow ? "top-center" : "top-right"}
-      offset={{ top: "var(--t-toast-top, 16px)", right: "var(--t-toast-right, 16px)" }}
+      offset={{ top: "var(--t-toast-top, 58px)", right: "var(--t-toast-right, 12px)" }}
       mobileOffset={{ top: "var(--t-toast-top-m, 12px)", left: 10, right: 10 }}
       visibleToasts={3}
+      expand
       gap={6}
+      style={{ "--width": "320px" } as React.CSSProperties}
       toastOptions={{
         classNames: {
-          toast: "!rounded-[9px] !border !border-line-top !bg-panel-2 !text-fg !py-2.5 !px-3 !gap-2 !shadow-[0_16px_40px_-18px_rgba(0,0,0,0.7)] !text-[12px]",
+          toast: "t-toast !rounded-[11px] !border !border-line-top !text-fg !py-2 !px-3 !gap-2 !shadow-[var(--t-shadow-pop)] !text-[12.5px]",
           title: "!font-medium",
           description: "!text-fg-3 !font-mono !text-[10.5px] !leading-[14px]",
-          actionButton: "!bg-ember !text-white !text-[11px] !h-6 !rounded-[5px]",
+          actionButton: "!bg-accent-strong !text-white !text-[11px] !h-6 !rounded-[6px]",
         },
       }}
     />

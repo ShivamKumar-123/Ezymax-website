@@ -6,7 +6,7 @@
 import * as React from "react";
 import { ExternalLink, Newspaper, RefreshCw, CalendarDays } from "lucide-react";
 import { Flag, cn } from "@kalks/ui";
-import { INSTRUMENTS } from "@kalks/mock";
+import { ALL_INSTRUMENTS } from "@kalks/mock";
 import { useTerminal } from "@/lib/store";
 import { Td, Th } from "@/components/ui/panel";
 import { Badge, Empty } from "@/components/ui/primitives";
@@ -42,7 +42,7 @@ type CalEvent = {
   symbols: string[];
 };
 
-const KNOWN = new Set(INSTRUMENTS.map((i) => i.symbol));
+const KNOWN = new Set(ALL_INSTRUMENTS.map((i) => i.symbol));
 const CCYS = ["USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "NZD", "CNY"];
 
 /** Currencies of a Kalks symbol (EURUSD → EUR, USD; XAUUSD → USD; indices by country). */

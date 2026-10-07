@@ -239,7 +239,7 @@ export function RfqPanel({ legs, onDone, className, disabled, onKalksQuoted }: {
       {phase === "idle" || phase === "expired" || phase === "done" ? (
         <>
           {phase === "expired" && <div className="flex items-center gap-1.5 text-[11px] text-warn"><Hourglass className="size-3.5" /> {t("trader.opt.rfq.expired")}</div>}
-          <button onClick={() => void request()} disabled={disabled || !legs.length} className="flex h-11 w-full items-center justify-center gap-1.5 rounded-[12px] bg-ember text-[12.5px] font-semibold text-white shadow-[0_6px_18px_-8px_rgba(255,90,31,0.8)] transition hover:brightness-110 disabled:bg-surface-3 disabled:text-fg-3 disabled:shadow-none">
+          <button onClick={() => void request()} disabled={disabled || !legs.length} className="flex h-10 w-full items-center justify-center gap-1.5 rounded-[10px] bg-accent-strong text-[13.5px] font-semibold text-white shadow-[0_6px_18px_-8px_rgba(255,90,31,0.8)] transition hover:brightness-110 disabled:bg-surface-3 disabled:text-fg-3 disabled:shadow-none">
             {phase === "idle" ? <MessagesSquare className="size-3.5" /> : <RefreshCw className="size-3.5" />}
             {phase === "idle" ? t("trader.opt.rfq.request") : t("trader.opt.rfq.again")}
           </button>

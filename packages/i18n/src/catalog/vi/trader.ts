@@ -62,7 +62,7 @@ const trader: NsMessages<"trader"> = {
   "preset.analysis": "Phân tích",
   "preset.analysisHint": "4 biểu đồ",
   "preset.scalper": "Scalper",
-  "preset.scalperHint": "DOM + 2 biểu đồ",
+  "preset.scalperHint": "Sổ lệnh + 2 biểu đồ",
   // Workspace profiles
   "profile.default": "Mặc định",
   "profile.scalping": "Scalping",

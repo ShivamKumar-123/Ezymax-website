@@ -23,13 +23,41 @@ function when(ts: number) {
 }
 
 /** Title-bar bell: account notifications (support inbox) and this browser's toast history, unread badge. */
-export function NotificationBell({ className, size = "md" }: { className?: string; size?: "sm" | "md" }) {
+/**
+ * Desktop toasts stack right under the bell (providers.tsx reads these variables): aligned to its right edge, just below
+ * the top bar. Without a bell on screen (Full chart hides the bar) they fall back to the window's top-right corner.
+ */
+function useToastAnchor(ref: React.RefObject<HTMLElement | null>, enabled: boolean) {
+  React.useEffect(() => {
+    if (!enabled) return;
+    const root = document.documentElement.style;
+    const place = () => {
+      const el = ref.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      root.setProperty("--t-toast-top", `${Math.round(r.bottom + 10)}px`);
+      root.setProperty("--t-toast-right", `${Math.max(8, Math.round(window.innerWidth - r.right))}px`);
+    };
+    place();
+    window.addEventListener("resize", place);
+    return () => {
+      window.removeEventListener("resize", place);
+      root.setProperty("--t-toast-top", "10px");
+      root.setProperty("--t-toast-right", "10px");
+    };
+  }, [ref, enabled]);
+}
+
+export function NotificationBell({ className, size = "md", anchorToasts = false }: { className?: string; size?: "sm" | "md" | "lg"; /** desktop top bar: toasts appear under this bell */ anchorToasts?: boolean }) {
   const t = useT();
+  const anchor = React.useRef<HTMLSpanElement>(null);
+  useToastAnchor(anchor, anchorToasts);
   const list = useNotifications();
   const local = list.filter((n) => !n.read).length;
   const { inbox, enabled } = useAccountBell();
   const unread = local + (enabled ? inbox.unread : 0);
   return (
+    <span ref={anchor} className="inline-flex">
     <DropMenu
       align="end"
       width={360}
@@ -40,17 +68,18 @@ export function NotificationBell({ className, size = "md" }: { className?: strin
             if (!open) toast.dismiss();
             toggle(e);
           }}
-          className={cn("relative grid place-items-center rounded-[7px] text-fg-2 transition-colors hover:bg-surface-3 hover:text-fg", size === "md" ? "size-8" : "size-9", open && "bg-surface-3 text-fg", className)}
+          className={cn("relative grid place-items-center text-fg-2 transition-colors hover:bg-surface-3 hover:text-fg", size === "md" ? "size-8 rounded-[7px]" : "size-9 rounded-[8px]", open && "bg-surface-3 text-fg", className)}
           aria-label={unread ? t("trader.notifications.ariaUnread", { count: unread }) : t("trader.notifications.title")}
           title={t("trader.notifications.title")}
         >
-          <Bell className="size-4" />
+          <Bell className={size === "lg" ? "size-[18px]" : "size-4"} />
           {unread > 0 && <span className="k-num absolute end-0.5 top-0.5 grid h-3.5 min-w-3.5 place-items-center rounded-full bg-ember px-[3px] font-mono text-[9px] font-semibold leading-none text-white">{unread > 99 ? "99+" : unread}</span>}
         </button>
       )}
     >
       {() => <BellTabs inbox={inbox} enabled={enabled} terminalUnread={local} terminal={<Panel list={list} unread={local} />} />}
     </DropMenu>
+    </span>
   );
 }
 

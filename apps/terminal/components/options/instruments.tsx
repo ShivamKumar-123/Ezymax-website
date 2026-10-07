@@ -4,13 +4,11 @@
 // spot, daily change and ATM implied vol, grouped by asset class; the ones not open here yet (NZDUSD…) are listed
 // as "soon". Picking one sets the underlying of the chain, the chart and the ticket.
 import * as React from "react";
-import { ChevronsLeft, Search, Sigma } from "lucide-react";
+import { Search } from "lucide-react";
 import { INSTRUMENT_MAP } from "@kalks/mock";
 import { OPTION_UNDERLYINGS } from "@kalks/mock/options";
 import { cn } from "@kalks/ui";
 import { useT } from "@kalks/i18n/react";
-import { PanelHeader } from "@/components/ui/panel";
-import { TIcon } from "@/components/ui/primitives";
 import { atmIndex } from "@/lib/options/math";
 import { opt, useOpt } from "@/lib/options-store";
 import type { OptionUnderlying } from "@/lib/options/types";
@@ -162,29 +160,3 @@ export function InstrumentList({ mobile, onPick }: { mobile?: boolean; onPick?: 
 }
 
 /** The left panel in Options mode (Market Watch's place, size and collapse button). */
-export function OptionsInstruments({ onCollapse }: { onCollapse?: () => void }) {
-  const t = useT();
-  const n = useOpt((s) => s.underlyings.length);
-  return (
-    <div className="flex h-full min-h-0 flex-col">
-      <PanelHeader
-        icon={<Sigma />}
-        title={
-          <span className="flex items-center gap-1.5">
-            {t("trader.opt.inst.title")}
-            {n > 0 && <span className="font-normal normal-case tracking-normal text-fg-3">· {n}</span>}
-          </span>
-        }
-      >
-        {onCollapse && (
-          <TIcon label={t("market.collapse")} onClick={onCollapse}>
-            <ChevronsLeft />
-          </TIcon>
-        )}
-      </PanelHeader>
-      <div className="min-h-0 flex-1">
-        <InstrumentList />
-      </div>
-    </div>
-  );
-}

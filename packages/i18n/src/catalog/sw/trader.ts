@@ -59,7 +59,7 @@ const trader: NsMessages<"trader"> = {
   "preset.analysis": "Uchambuzi",
   "preset.analysisHint": "Chati 4",
   "preset.scalper": "Scalper",
-  "preset.scalperHint": "DOM + chati 2",
+  "preset.scalperHint": "Kitabu cha oda + chati 2",
   "profile.default": "Chaguo-msingi",
   "profile.scalping": "Scalping",
   "profile.analysis": "Uchambuzi",

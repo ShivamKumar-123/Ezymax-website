@@ -50,7 +50,9 @@ export function engineActions(d: EngineDeps) {
     // the engine's own sentence adds the detail ("Stop loss must be below 83235.95")
     const detail = e.message && e.message !== reason && !/^HTTP \d+$/.test(e.message) ? e.message : "";
     // title in the reader's language (client-side mapping of the engine code); desc/detail stay as the journal/engine wrote them
-    toast.error(tr.dyn(`order.reject.${e.code}`, reason), { description: [desc, detail].filter(Boolean).join(" · ") + extra });
+    // catalogue market on a live account: say it plainly (closing such a position stays allowed)
+    const title = e.code === "symbol_demo_only" ? tr("desk.trade.demoOnly") : tr.dyn(`order.reject.${e.code}`, reason);
+    toast.error(title, { description: [desc, detail].filter(Boolean).join(" · ") + extra });
     d.sound("error");
   };
 

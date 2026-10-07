@@ -15,6 +15,8 @@ import { useLocale, useT } from "@kalks/i18n/react";
 import { toast } from "@/lib/notify";
 import { useTerminal } from "@/lib/store";
 import { GuestActions } from "@/components/shell/guest";
+import { aiDeniedText, aiHeaders } from "@/lib/ai-client";
+import { LOGIN_URL } from "@/lib/guest";
 import { DropMenu } from "@/components/ui/menu";
 import { Stepper } from "@/components/ui/primitives";
 import { optionsApi } from "@/lib/options/api";
@@ -88,7 +90,7 @@ function MarketPicker() {
     <DropMenu
       width={300}
       trigger={({ toggle, open }) => (
-        <button onClick={toggle} aria-expanded={open} aria-label={t("trader.opt.pickUnderlying")} className={cn("flex h-12 w-full items-center gap-2.5 rounded-[12px] border border-line bg-surface-2 px-3 text-start transition-colors hover:border-fg-3/40", open && "border-ember/50")}>
+        <button onClick={toggle} aria-expanded={open} aria-label={t("trader.opt.pickUnderlying")} className={cn("flex h-10 w-full items-center gap-2.5 rounded-[10px] border border-line bg-surface-2 px-3 text-start transition-colors hover:border-fg-3/40", open && "border-ember/50")}>
           <OptAvatar symbol={u} size={22} />
           <span className="min-w-0 flex-1 leading-tight">
             <span className="block text-[14px] font-semibold text-fg">{u}</span>
@@ -283,25 +285,26 @@ export function SimpleMode({ className, onDone }: { className?: string; onDone?:
       </Step>
 
       <Step n={2} title={t("trader.opt.guide.s2", iso({ u }))} done={step2Done}>
-        <div className="grid grid-cols-2 gap-2">
+        <div role="radiogroup" className="grid grid-cols-2 gap-1 rounded-[11px] border border-line bg-panel-2 p-1">
           {(["up", "down"] as const).map((v) => {
             const on = view === v;
             const up = v === "up";
             return (
               <button
                 key={v}
+                role="radio"
                 onClick={() => setView(v)}
-                aria-pressed={on}
+                aria-checked={on}
                 className={cn(
-                  "group flex flex-col items-start gap-1 rounded-[12px] border px-3 py-2.5 text-start transition",
-                  on ? (up ? "border-up bg-up text-white shadow-[0_10px_26px_-14px_var(--k-up)]" : "border-down bg-down text-white shadow-[0_10px_26px_-14px_var(--k-down)]") : up ? "border-up/30 bg-up-soft/50 text-fg hover:border-up/60" : "border-down/30 bg-down-soft/50 text-fg hover:border-down/60",
+                  "flex h-11 min-w-0 flex-col justify-center rounded-[8px] border px-2.5 text-start transition-[background-color,border-color] duration-150",
+                  on ? (up ? "border-up/45 bg-up-soft" : "border-down/45 bg-down-soft") : "border-transparent hover:bg-surface-3/70",
                 )}
               >
-                <span className="flex items-center gap-1.5 text-[15px] font-semibold">
-                  {up ? <TrendingUp className={cn("size-4", !on && "text-up")} /> : <TrendingDown className={cn("size-4", !on && "text-down")} />}
+                <span className={cn("flex items-center gap-1.5 text-[13px] font-semibold", up ? "text-up" : "text-down")}>
+                  {up ? <TrendingUp className="size-3.5" /> : <TrendingDown className="size-3.5" />}
                   {up ? t("trader.opt.simple.up") : t("trader.opt.simple.down")}
                 </span>
-                <span className={cn("text-[11px]", on ? "text-white/85" : "text-fg-3")}>{up ? t("trader.opt.guide.upSub") : t("trader.opt.guide.downSub")}</span>
+                <span className="truncate text-[11.5px] leading-[15px] text-fg-3">{up ? t("trader.opt.guide.upSub") : t("trader.opt.guide.downSub")}</span>
               </button>
             );
           })}
@@ -355,11 +358,11 @@ export function SimpleMode({ className, onDone }: { className?: string; onDone?:
         <Step n={5} title={t("trader.opt.guide.s5")} help={<Explain topic="contracts" size={12} />} done>
           <div className="flex flex-wrap items-center gap-2">
             <div className="w-[132px] shrink-0">
-              <Stepper ariaLabel={t("trader.opt.ticket.contracts")} value={String(contracts)} onChange={(v) => setContracts(Math.min(maxC, Math.max(minC, Math.round((parseFloat(v) || minC) / stepC) * stepC)))} step={stepC} min={minC} decimals={0} className="h-10 [&_input]:text-[15px]" />
+              <Stepper ariaLabel={t("trader.opt.ticket.contracts")} value={String(contracts)} onChange={(v) => setContracts(Math.min(maxC, Math.max(minC, Math.round((parseFloat(v) || minC) / stepC) * stepC)))} step={stepC} min={minC} decimals={0} size="lg" />
             </div>
             <div className="flex gap-1">
               {[1, 2, 5, 10].map((v) => (
-                <button key={v} onClick={() => setContracts(Math.min(maxC, v))} aria-pressed={contracts === v} className={cn("h-8 min-w-8 rounded-[8px] border px-2 font-mono text-[12px]", contracts === v ? "border-ember/50 bg-ember-soft text-ember" : "border-line text-fg-2 hover:bg-surface-3")}>
+                <button key={v} onClick={() => setContracts(Math.min(maxC, v))} aria-pressed={contracts === v} className={cn("h-7 min-w-8 rounded-[7px] border px-2 font-mono text-[12.5px] transition-colors", contracts === v ? "border-ember/50 bg-ember-soft font-semibold text-accent-text" : "border-line bg-panel-2 text-fg-2 hover:bg-surface-3 hover:text-fg")}>
                   {v}
                 </button>
               ))}
@@ -405,8 +408,7 @@ export function SimpleMode({ className, onDone }: { className?: string; onDone?:
               onClick={() => void confirm()}
               disabled={!!blocked}
               className={cn(
-                "flex h-12 w-full items-center justify-between gap-2 rounded-[12px] px-4 text-[13.5px] font-semibold text-white shadow-[0_12px_30px_-14px_rgba(0,0,0,0.6)] transition hover:brightness-110 active:brightness-95 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-3 disabled:shadow-none",
-                view === "up" ? "bg-up" : "bg-down",
+                "flex h-10 w-full items-center justify-between gap-2 rounded-[10px] bg-accent-strong px-4 text-[13.5px] font-semibold text-white transition hover:brightness-110 active:brightness-95 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-3",
               )}
             >
               <span className="truncate">{busy ? t("trader.opt.ticket.sending") : tradingSoon && T.live ? t("trader.opt.ticket.soon") : bookLive ? t("trader.opt.guide.continue") : t("trader.opt.guide.confirm", iso({ n: contracts, u, right: rightWord, strike: target.row.strikeLabel }))}</span>
@@ -431,9 +433,12 @@ export function SimpleMode({ className, onDone }: { className?: string; onDone?:
 /** "Explain it to me": Claude explains the idea in the reader's language (a built-in explanation without it). */
 function ExplainIdea({ chain, target, contracts, view, total, premium, usdU }: { chain: OptionChain; target: Target; contracts: number; view: View; total: number; premium: number; usdU: number }) {
   const t = useT();
+  const T = useTerminal();
   const { locale } = useLocale();
   const [explain, setExplain] = React.useState<{ busy: boolean; text?: string; ai?: boolean; error?: string } | null>(null);
-  React.useEffect(() => setExplain(null), [target.row.strike, view, chain.expiry, chain.underlying]);
+  React.useEffect(() => {
+    setExplain(null);
+  }, [target.row.strike, view, chain.expiry, chain.underlying]);
   const q = (target.right === "call" ? target.row.call : target.row.put)!;
   const be = target.right === "call" ? target.row.strike + premium : target.row.strike - premium;
   const u = chain.underlying;
@@ -460,10 +465,12 @@ function ExplainIdea({ chain, target, contracts, view, total, premium, usdU }: {
       },
     };
     try {
-      const res = await fetch("/api/options/explain", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-      const data = (await res.json().catch(() => ({}))) as { configured?: boolean; text?: string; error?: string };
+      const res = await fetch("/api/options/explain", { method: "POST", headers: aiHeaders(T.account?.login), body: JSON.stringify(body) });
+      const data = (await res.json().catch(() => ({}))) as { configured?: boolean; text?: string; error?: string; code?: string };
       if (data.text) return setExplain({ busy: false, text: data.text, ai: true });
       if (data.configured === false) return setExplain({ busy: false, text: `${plain} ${t("trader.opt.simple.basicMore")}`, ai: false });
+      const denied = aiDeniedText(t, data.code);
+      if (denied) return setExplain({ busy: false, error: denied });
       setExplain({ busy: false, error: data.error ?? t("trader.opt.simple.explainFailed") });
     } catch {
       setExplain({ busy: false, error: t("trader.opt.simple.explainFailed") });
@@ -471,8 +478,14 @@ function ExplainIdea({ chain, target, contracts, view, total, premium, usdU }: {
   };
   return (
     <div>
-      {!explain && (
-        <button onClick={() => void ask()} className="flex h-9 w-full items-center justify-center gap-1.5 rounded-[10px] border border-line text-[12px] font-medium text-fg-2 transition-colors hover:border-ember/40 hover:text-fg">
+      {!explain && T.guest && (
+        // AI explanations need a signed-in session (lib/ai-guard.ts)
+        <a href={LOGIN_URL} className="flex h-8 w-full items-center justify-center gap-1.5 rounded-[8px] border border-line text-[12.5px] font-medium text-fg-2 transition-colors hover:border-ember/40 hover:text-fg">
+          <Sparkles className="size-3.5 text-ember" /> {t("desk.ai.signin")}
+        </a>
+      )}
+      {!explain && !T.guest && (
+        <button onClick={() => void ask()} className="flex h-8 w-full items-center justify-center gap-1.5 rounded-[8px] border border-line text-[12.5px] font-medium text-fg-2 transition-colors hover:border-ember/40 hover:text-fg">
           <Sparkles className="size-3.5 text-ember" /> {t("trader.opt.guide.explain")}
         </button>
       )}

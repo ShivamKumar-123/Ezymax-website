@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, ArrowUpRight, CandlestickChart, Eye, EyeOff, KeyRound, Loader2, Lock, Server, ShieldCheck, Trash2, UserPlus, UserRound } from "lucide-react";
 import { toast } from "@/lib/notify";
-import { ACCOUNTS, INSTRUMENTS, ME } from "@kalks/mock";
+import { ACCOUNTS, ALL_INSTRUMENTS, ME } from "@kalks/mock";
 import { BrandName, LivePrice, LogoMark, SymbolAvatar, ThemeToggle, cn, useQuote } from "@kalks/ui";
 import { Trans, useT } from "@kalks/i18n/react";
 import type { MessageKey } from "@kalks/i18n";
@@ -115,7 +115,7 @@ function LoginForm() {
               <span className="flex items-center gap-1.5">
                 <ShieldCheck className="size-3.5" /> TLS 1.3 · {t("trader.login.twoFaReady")}
               </span>
-              <span>{t("trader.login.instruments", { count: INSTRUMENTS.length })}</span>
+              <span>{t("trader.login.instruments", { count: ALL_INSTRUMENTS.length })}</span>
               <span>{t("trader.login.serverTime")}</span>
             </div>
           </div>

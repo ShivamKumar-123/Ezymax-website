@@ -84,7 +84,7 @@ interface CellProps {
 function Cell({ q, col, right, digits, itm, mark, title, theoLabel, simple, compact, inner }: CellProps) {
   const base = cn(
     "cursor-pointer whitespace-nowrap border-b border-line/40 px-2 font-mono transition-colors",
-    compact ? "h-[46px] text-[13px]" : "h-[36px] text-[12.5px]",
+    compact ? "h-[46px] text-[13px]" : "h-8 text-[12.5px]",
     simple ? (right === "call" ? "text-end" : "text-start") : "text-end",
     COL_W[col],
     itm && "bg-[color-mix(in_srgb,var(--k-gold)_7%,transparent)]",
@@ -130,7 +130,18 @@ function Cell({ q, col, right, digits, itm, mark, title, theoLabel, simple, comp
         );
       return (
         <td {...attrs} className={cn(base, "p-0")}>
-          <button type="button" tabIndex={col === "ask" ? 0 : -1} aria-label={title} className={cn("h-full w-full px-2 text-end outline-none focus-visible:ring-1 focus-visible:ring-ember", col === "bid" ? "text-down" : "text-up", dim, q.book && "flex flex-col items-end justify-center leading-none")}>
+          <button
+            type="button"
+            tabIndex={col === "ask" ? 0 : -1}
+            aria-label={title}
+            className={cn(
+              "my-0.5 me-1.5 ms-auto inline-flex min-w-[64px] items-center justify-end rounded-[6px] border px-1.5 text-end outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ember/50",
+              q.book ? "h-7 flex-col items-end justify-center leading-none" : "h-6",
+              col === "bid" ? "border-down/15 bg-down-soft/50 text-down hover:border-down/45 hover:bg-down-soft" : "border-up/15 bg-up-soft/50 text-up hover:border-up/45 hover:bg-up-soft",
+              mark.sel && "border-ember ring-1 ring-ember/40",
+              dim,
+            )}
+          >
             <Flash value={v}>{v > 0 ? usd(v) : "—"}</Flash>
             {q.book && <span className="mt-0.5 text-[9.5px] text-fg-3">{v > 0 && size ? `×${size.toLocaleString("en-US")}` : " "}</span>}
           </button>
@@ -453,7 +464,7 @@ export function OptionChainTable({ className, compact }: { className?: string; c
   const view: "both" | "calls" | "puts" = both ? "both" : compact ? (prefs.view === "puts" ? "puts" : "calls") : prefs.view;
   const span = view === "both" ? cols.length * 2 + 1 : cols.length + 1;
   const u = chain.underlying;
-  const thBase = "sticky z-[2] whitespace-nowrap border-b border-line bg-panel-2";
+  const thBase = "sticky z-[2] whitespace-nowrap border-b border-line bg-panel";
   const head = (list: Col[], right: OptionRight) =>
     list.map((c) => (
       <th key={c} title={heads[c].title} className={cn(thBase, "top-[34px] h-6 px-2 text-[10px] font-medium uppercase tracking-[0.05em] text-fg-3", simple ? (right === "call" ? "text-end" : "text-start") : "text-end", COL_W[c])}>
@@ -483,7 +494,7 @@ export function OptionChainTable({ className, compact }: { className?: string; c
     </th>
   );
   return (
-    <div className={cn("flex h-full min-h-0 flex-col", className)}>
+    <div className={cn("@container flex h-full min-h-0 flex-col", className)}>
       {chain.error && <div className="shrink-0 border-b border-warn/30 bg-warn-soft px-3 py-1 text-[11.5px] text-warn">{t("trader.opt.noPrice")}</div>}
       {interactive && <ModeBanner />}
       <div ref={scroller} className="t-scroll relative min-h-0 flex-1 overflow-auto">
@@ -525,14 +536,16 @@ export function OptionChainTable({ className, compact }: { className?: string; c
           </tbody>
         </table>
       </div>
-      <div className={cn("flex shrink-0 items-center gap-3 border-t border-line bg-panel-2 px-2.5 text-[11px] text-fg-3", compact ? "h-9" : "h-8")}>
-        <span className="flex items-center gap-1">
+      <div className={cn("flex shrink-0 items-center gap-3 border-t border-line px-2.5 text-[11.5px] text-fg-3", compact ? "h-9" : "h-8")}>
+        <span className="flex items-center gap-1.5">
           <span className="hidden sm:inline">{t("trader.opt.strikes")}</span>
+          <span role="radiogroup" aria-label={t("trader.opt.strikes")} className="flex items-center gap-0.5 rounded-[7px] border border-line bg-panel p-0.5">
           {RANGES.map((n) => (
-            <button key={n} onClick={() => opt.setPrefs({ range: n })} aria-pressed={prefs.range === n} className={cn("k-num h-6 rounded-[5px] px-1.5 font-mono text-[10.5px]", prefs.range === n ? "bg-ember-soft text-ember" : "hover:bg-surface-3 hover:text-fg-2")}>
+            <button key={n} onClick={() => opt.setPrefs({ range: n })} aria-pressed={prefs.range === n} className={cn("k-num h-5 rounded-[5px] px-1.5 font-mono text-[11.5px] transition-colors", prefs.range === n ? "bg-surface-3 font-semibold text-fg shadow-[inset_0_1px_0_var(--k-border-top)]" : "text-fg-2 hover:text-fg")}>
               {n === 0 ? t("trader.opt.all") : `±${n}`}
             </button>
           ))}
+          </span>
         </span>
         {bookLive && chain.pcr !== null && chain.pcr !== undefined && (
           <span className="hidden items-center gap-1 md:flex" title={t("trader.opt.book.pcrHint")}>
@@ -540,12 +553,12 @@ export function OptionChainTable({ className, compact }: { className?: string; c
           </span>
         )}
         {interactive && !compact && (
-          <span className="ms-auto hidden items-center gap-1 xl:flex">
+          <span className="ms-auto hidden items-center gap-1 @[860px]:flex">
             <Layers className="size-3" />
             {t("trader.opt.shiftHint")}
           </span>
         )}
-        <span className={cn("flex items-center gap-1.5", (!interactive || compact) && "ms-auto")}>
+        <span className={cn("flex items-center gap-1.5 whitespace-nowrap", !interactive || compact ? "ms-auto" : "ms-auto @[860px]:ms-0")}>
           <span className="inline-block size-2.5 rounded-[3px] border border-gold/30 bg-[color-mix(in_srgb,var(--k-gold)_14%,transparent)]" /> {t("trader.opt.itm")}
           <Explain topic="itm" size={11} />
         </span>

@@ -1,3 +1,5 @@
+import { CATALOGUE_ROWS, type CatalogueRow } from "./catalogue.generated";
+
 export type AssetClass = "forex" | "metals" | "indices" | "energies" | "crypto" | "stocks";
 
 /** How to draw the instrument avatar: two currency flags, a coin logo, a stock logo, or a country flag for an index. */
@@ -19,6 +21,15 @@ export interface Instrument {
   change: number; // 1D % change reference
   contractSize: number;
   icon: SymbolIcon;
+  /** "core": the 28 hand-maintained instruments (always streamed); "catalogue": generated from the provider catalogue */
+  tier?: "core" | "catalogue";
+  /** tradable on live accounts (catalogue instruments are demo-only until enabled: the engine answers symbol_demo_only) */
+  liveTrading?: boolean;
+  /** trading session key shared with the engine: fx, 24x7, us_equity, hk_equity, jp_equity */
+  session?: string;
+  quoteCcy?: string;
+  baseCcy?: string;
+  exchange?: string;
 }
 
 const pair = (base: string, quote: string): SymbolIcon => ({ kind: "pair", base, quote });
@@ -54,7 +65,52 @@ export const INSTRUMENTS: Instrument[] = [
   { symbol: "NFLX", name: "Netflix Inc.", assetClass: "stocks", digits: 2, price: 709.52, spread: 0.2, change: -0.64, contractSize: 1, icon: { kind: "stock", logo: "netflix", bg: "#e50914" } },
 ];
 
-export const INSTRUMENT_MAP: Record<string, Instrument> = Object.fromEntries(INSTRUMENTS.map((i) => [i.symbol, i]));
+for (const i of INSTRUMENTS) {
+  i.tier = "core";
+  i.liveTrading = true;
+}
+
+function catalogueIcon(code: string): SymbolIcon {
+  const [k, a = "", b = ""] = code.split(":");
+  if (k === "p") return { kind: "pair", base: a, quote: b };
+  if (k === "c") return { kind: "coin", coin: a };
+  if (k === "f") return { kind: "flag", country: a };
+  if (k === "m") return { kind: "metal", metal: a === "silver" ? "silver" : "gold" };
+  return { kind: "energy", code: a };
+}
+
+const fromRow = ([symbol, name, assetClass, digits, spread, price, change, contractSize, session, quoteCcy, baseCcy, exchange, icon]: CatalogueRow): Instrument => ({
+  symbol,
+  name,
+  assetClass: assetClass as AssetClass,
+  digits,
+  price,
+  spread,
+  change,
+  contractSize,
+  icon: catalogueIcon(icon),
+  tier: "catalogue",
+  liveTrading: false,
+  session: session || undefined,
+  quoteCcy: quoteCcy || undefined,
+  baseCcy: baseCcy || undefined,
+  exchange: exchange || undefined,
+});
+
+/**
+ * The provider catalogue (1,381 instruments: forex, metals, energies, indices, crypto, US / Hong Kong / Tokyo stocks),
+ * generated from config/instruments.json and priced from the provider snapshot (scripts/gen-catalogue.mjs). Demo-only
+ * on live accounts until enabled (liveTrading: false).
+ */
+export const CATALOGUE: Instrument[] = CATALOGUE_ROWS.map(fromRow);
+
+/** Every instrument: the 28 core ones first, then the catalogue (the terminal's Instruments list and search). */
+export const ALL_INSTRUMENTS: Instrument[] = [...INSTRUMENTS, ...CATALOGUE];
+
+export const INSTRUMENT_MAP: Record<string, Instrument> = Object.fromEntries(ALL_INSTRUMENTS.map((i) => [i.symbol, i]));
+
+/** Open on live accounts? Core instruments yes; catalogue ones once enabled (demo accounts trade everything). */
+export const liveTradable = (symbol: string) => INSTRUMENT_MAP[symbol]?.liveTrading !== false;
 
 /** Option series code from the options service / engine, e.g. EURUSD-20261002-1.1000-C. */
 const SERIES_RE = /^([A-Z0-9.]+)-(\d{4})(\d{2})(\d{2})-([\d.]+)-([CP])$/;

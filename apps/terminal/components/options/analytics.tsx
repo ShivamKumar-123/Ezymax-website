@@ -182,7 +182,9 @@ function MarketView({ compact }: { compact?: boolean }) {
 export function AnalyticsPane({ compact, onOpenChain }: { compact?: boolean; onOpenChain?: () => void }) {
   const t = useT();
   const [view, setViewState] = React.useState<View>("market");
-  React.useEffect(() => setViewState(readView()), []);
+  React.useEffect(() => {
+    setViewState(readView());
+  }, []);
   const setView = (v: View) => {
     setViewState(v);
     try {

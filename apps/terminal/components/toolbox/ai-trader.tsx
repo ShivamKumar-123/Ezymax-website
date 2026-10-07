@@ -16,6 +16,7 @@ import { EXAMPLE_PROMPTS, parseLocal } from "@/lib/ai-trader/parser";
 import { describeSide } from "@/lib/ai-trader/describe";
 import { SpecSummary, StrategyCard } from "./ai-trader-card";
 import { guestNotice, openRegister } from "@/lib/guest";
+import { aiDeniedText, aiHeaders } from "@/lib/ai-client";
 import { useT } from "@kalks/i18n/react";
 import type { T as Tr } from "@kalks/i18n";
 
@@ -171,15 +172,19 @@ function Composer({ onCreated }: { onCreated: (id: string) => void }) {
     const prompt = text.trim();
     if (!prompt || busy) return;
     if (claude === false) return local(prompt, t("aiTrader.composer.notConfigured"));
+    // AI calls need a signed-in session (lib/ai-guard.ts); guests get the local parser
+    if (T.guest) return local(prompt, t("desk.ai.signin"));
     setBusy(true);
     setNote(null);
     try {
-      const res = await fetch("/api/ai-trader", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ prompt, ...ctx }) });
-      const data = (await res.json()) as { configured?: boolean; error?: string; result?: ParseResult };
+      const res = await fetch("/api/ai-trader", { method: "POST", headers: aiHeaders(T.account.login), body: JSON.stringify({ prompt, ...ctx }) });
+      const data = (await res.json()) as { configured?: boolean; error?: string; code?: string; result?: ParseResult };
       if (data.configured === false) {
         setClaude(false);
         return local(prompt, t("aiTrader.composer.notConfigured"));
       }
+      const denied = aiDeniedText(t, data.code);
+      if (denied) return local(prompt, denied);
       if (!res.ok || !data.result) {
         setNote(t("aiTrader.composer.failedNote", { error: data.error ?? t("aiTrader.composer.failed") }));
         toast.error(t("aiTrader.composer.failedToast"), { description: data.error, action: { label: t("aiTrader.composer.parseLocally"), onClick: () => local(prompt) } });
@@ -201,7 +206,7 @@ function Composer({ onCreated }: { onCreated: (id: string) => void }) {
       <div className="flex h-8 shrink-0 items-center gap-2 border-b border-line px-2.5">
         <Bot className="size-3.5 text-ember" />
         <span className="min-w-0 truncate text-[10.5px] font-semibold uppercase tracking-[0.09em] text-fg-2">{t("aiTrader.composer.title")}</span>
-        <span className="ms-auto shrink-0 whitespace-nowrap">{claude === null ? <Badge>{t("aiTrader.composer.checking")}</Badge> : claude ? <Badge tone="ember">{t("aiTrader.composer.claude")}</Badge> : <Badge tone="warn">{t("aiTrader.composer.local")}</Badge>}</span>
+        <span className="ms-auto shrink-0 whitespace-nowrap">{T.guest && claude ? <Badge tone="warn">{t("desk.ai.signin")}</Badge> : claude === null ? <Badge>{t("aiTrader.composer.checking")}</Badge> : claude ? <Badge tone="ember">{t("aiTrader.composer.claude")}</Badge> : <Badge tone="warn">{t("aiTrader.composer.local")}</Badge>}</span>
       </div>
       <div className="flex min-h-0 flex-1 flex-col gap-2 p-2.5">
         <textarea
@@ -359,7 +364,9 @@ function Detail({ r, onActivate }: { r: StrategyRecord; onActivate: (m: RunMode)
   const t = useT();
   const [tab, setTab] = React.useState<"card" | "log">(r.status === "draft" ? "card" : "log");
   const [draft, setDraft] = React.useState<StrategySpec>(r.spec);
-  React.useEffect(() => setDraft(r.spec), [r.spec]);
+  React.useEffect(() => {
+    setDraft(r.spec);
+  }, [r.spec]);
   const editable = r.status === "draft" || r.status === "stopped";
   const dirty = JSON.stringify(draft) !== JSON.stringify(r.spec);
   const v = React.useMemo(() => validateSpec(draft), [draft]);

@@ -1,13 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { toast } from "@/lib/notify";
-import { tr } from "@kalks/i18n/react";
 import { useTerminal, type Layout } from "@/lib/store";
 import { chartRegistry } from "@/components/chart/engine";
-import { toggleFullscreen } from "./title-bar";
+import { openActivity, showSide, toggleFullChart, toggleFullscreen, toggleOneClick } from "./commands";
 import { openIndicatorList } from "@/components/chart/indicators/state";
-import { guestNotice } from "@/lib/guest";
 
 /** Global terminal keyboard shortcuts (MT5-compatible where possible). */
 export function useHotkeys() {
@@ -37,11 +34,7 @@ export function useHotkeys() {
       }
       if (e.key === "F10") {
         e.preventDefault();
-        if (t.readOnly) return;
-        if (t.guest) return void guestNotice(tr("trader.oneClick.name"));
-        const v = !t.ws.oneClick;
-        t.setWs({ oneClick: v });
-        toast(v ? tr("trader.oneClick.enabled") : tr("trader.oneClick.disabled"), { description: v ? tr("trader.oneClick.enabledHint") : tr("trader.oneClick.disabledHint") });
+        toggleOneClick(t);
         return;
       }
       if (e.key === "F1") {
@@ -63,17 +56,25 @@ export function useHotkeys() {
       }
       if (mod && e.key.toLowerCase() === "m") {
         e.preventDefault();
-        t.togglePanel("watch");
+        showSide(t, "instruments", true);
         return;
       }
       if (mod && e.key.toLowerCase() === "t") {
+        // full page: scroll down to the positions; split: show / hide the panel under the chart
         e.preventDefault();
-        t.togglePanel("toolbox");
+        if (t.ws.posLayout === "split") t.togglePanel("toolbox");
+        else openActivity(t, t.ws.toolboxTab);
+        return;
+      }
+      if (mod && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        showSide(t, "book", true);
         return;
       }
       if (mod && e.key.toLowerCase() === "d") {
+        // the order form is a popup now (F9 too)
         e.preventDefault();
-        t.togglePanel("right");
+        t.openNewOrder();
         return;
       }
       if (mod && e.key.toLowerCase() === "f") {
@@ -82,6 +83,15 @@ export function useHotkeys() {
         return;
       }
       if (typing) return;
+      if (e.key === "F" && e.shiftKey && !mod && !e.altKey) {
+        e.preventDefault();
+        toggleFullChart(t);
+        return;
+      }
+      if (e.key === "Escape" && t.ui.fullChart && t.drawTool === "cursor" && !t.selectedDrawing && !document.querySelector("[role=dialog]")) {
+        toggleFullChart(t, false);
+        return;
+      }
       if (e.key === "Escape") {
         if (t.drawTool !== "cursor") t.setDrawTool("cursor");
         if (t.selectedDrawing) t.selectDrawing(null);

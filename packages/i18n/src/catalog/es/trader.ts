@@ -62,7 +62,7 @@ const trader: NsMessages<"trader"> = {
   "preset.analysis": "Análisis",
   "preset.analysisHint": "4 gráficos",
   "preset.scalper": "Scalper",
-  "preset.scalperHint": "DOM + 2 gráficos",
+  "preset.scalperHint": "Libro de órdenes + 2 gráficos",
   // Perfiles del espacio de trabajo
   "profile.default": "Predeterminado",
   "profile.scalping": "Scalping",

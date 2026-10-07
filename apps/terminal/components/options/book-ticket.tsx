@@ -468,8 +468,8 @@ export function BookOrderForm({ leg, onDone }: { leg: TicketLeg; onDone?: () => 
           onClick={() => void submit()}
           disabled={!!blocked}
           className={cn(
-            "flex h-12 w-full items-center justify-between gap-2 rounded-[12px] px-4 text-[13px] font-semibold text-white shadow-[0_10px_28px_-14px_rgba(0,0,0,0.6)] transition hover:brightness-110 active:brightness-95 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-3 disabled:shadow-none disabled:hover:brightness-100",
-            !armed ? "bg-surface-3 text-fg-3" : leg.side === "buy" ? "bg-up" : "bg-down",
+            "flex h-10 w-full items-center justify-between gap-2 rounded-[10px] px-4 text-[13.5px] font-semibold text-white transition hover:brightness-110 active:brightness-95 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-3 disabled:hover:brightness-100",
+            !armed ? "border border-line bg-panel-2 text-fg-3" : "bg-accent-strong",
           )}
         >
           <span className="truncate">{busy ? t("trader.opt.ticket.sending") : label}</span>

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ACCOUNTS, INSTRUMENTS, priceFeed } from "@kalks/mock";
+import { ACCOUNTS, INSTRUMENT_MAP, priceFeed } from "@kalks/mock";
 import { LogoMark } from "@kalks/ui";
 import { tr, useT } from "@kalks/i18n/react";
 import { toast } from "@/lib/notify";
@@ -18,9 +18,10 @@ import { useHotkeys } from "./shell/hotkeys";
 import { MobileTerminal } from "./mobile/mobile-terminal";
 import { NewOrderDialog } from "./order/new-order-dialog";
 import { PendingDialog, PositionDialog } from "./dialogs/position-dialog";
-import { AboutDialog, OptionsDialog, ShortcutsDialog, SpecDialog, SymbolSearch } from "./dialogs/misc-dialogs";
+import { AboutDialog, GlossaryDialog, OptionsDialog, ShortcutsDialog, SpecDialog, SymbolSearch } from "./dialogs/misc-dialogs";
 import { IndicatorDialogs } from "./chart/indicators/dialogs";
 import { ShareLayer } from "./share/share-dialogs";
+import { ConfirmLayer } from "./dialogs/confirm";
 import { ControlsBanner } from "./shell/controls-banner";
 import { CopyBanner } from "./shell/copy-banner";
 import { applyLinkMode } from "@/lib/options/mode";
@@ -172,8 +173,8 @@ function Shell({ intent }: { intent: { symbol: string | null; side: string | nul
   useHotkeys();
   React.useEffect(() => {
     // CFD | Options from the link; Options opens with its toolbox tab in front
-    if (applyLinkMode(intent.mode, intent.u) && intent.mode?.toLowerCase() === "options" && ["trade", "history", "exposure"].includes(T.ws.toolboxTab)) T.setWs({ toolboxTab: "options" });
-    const sym = intent.symbol && INSTRUMENTS.some((i) => i.symbol === intent.symbol) ? intent.symbol : null;
+    if (applyLinkMode(intent.mode, intent.u) && intent.mode?.toLowerCase() === "options" && ["positions", "pending", "trade", "history", "exposure"].includes(T.ws.toolboxTab)) T.setWs({ toolboxTab: "options" });
+    const sym = intent.symbol && INSTRUMENT_MAP[intent.symbol] ? intent.symbol : null;
     if (sym) T.openSymbol(sym);
     if (intent.side === "buy" || intent.side === "sell") T.openNewOrder({ symbol: sym ?? T.activeSymbol, side: intent.side, type: "market" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -193,9 +194,11 @@ function Shell({ intent }: { intent: { symbol: string | null; side: string | nul
       <ShortcutsDialog />
       <SpecDialog />
       <AboutDialog />
+      <GlossaryDialog />
       <OptionsDialog />
       <IndicatorDialogs />
       <ShareLayer />
+      <ConfirmLayer />
       {T.live && <LoginDialog />}
     </>
   );

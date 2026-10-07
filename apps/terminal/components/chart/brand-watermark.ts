@@ -1,10 +1,10 @@
 import type { IPanePrimitive, IPanePrimitivePaneView, IPrimitivePaneRenderer, PaneAttachedParameter, Time } from "lightweight-charts";
 
 /**
- * Broker branding drawn inside a chart pane (MT5 / cTrader style): the Kalks mark above the
- * "SYMBOL, TF" line and the instrument name, as one faint centred block. Drawn on the chart canvas
- * (bottom z-order), so it never takes pointer events, stays inside the pane (never on the axes) and is
- * part of `chart.takeScreenshot()`.
+ * Broker branding inside a chart pane: only the small Kalks K in the bottom-left corner of the plot (as TradingView
+ * shows its logo); no symbol watermark, so the plot stays clean (docs/TERMINAL-DESIGN.md §2.2). Drawn on the chart
+ * canvas (bottom z-order): never takes pointer events, stays inside the pane (never on the axes) and is part of
+ * `chart.takeScreenshot()`. The symbol / timeframe / name options are kept for callers but no longer drawn.
  */
 
 /** Kalks mark (public/assets/brand/kalks-mark.svg), viewBox 653 x 541. */
@@ -31,40 +31,17 @@ class Renderer implements IPrimitivePaneRenderer {
   drawBackground(target: Target) {
     target.useMediaCoordinateSpace(({ context: ctx, mediaSize }) => {
       const { width: w, height: h } = mediaSize;
-      if (w < 140 || h < 90) return;
-      const o = this.o;
-      // scale with the pane: full size on a single chart, smaller in 2/4-chart layouts and on phones
-      const k = Math.max(0.55, Math.min(1, Math.min(w / 760, h / 420)));
-      const markH = 50 * k;
+      if (w < 120 || h < 80) return;
+      // the Kalks K in the plot's bottom-left corner, the way TradingView shows its logo: small, subtle, inside the
+      // pane (never on the price or time scale), drawn on the canvas so screenshots carry it
+      const markH = h < 220 ? 14 : 18;
       const markW = (markH * MARK_W) / MARK_H;
-      const titleSize = Math.round(40 * k);
-      const subSize = Math.max(10, Math.round(14 * k));
-      const gap = 14 * k;
-      const showSub = h > 170;
-      const block = markH + gap + titleSize + (showSub ? 6 * k + subSize : 0);
-      let y = h / 2 - block / 2;
-      const ink = o.dark ? "255,255,255" : "15,15,20";
-
+      const pad = 10;
       ctx.save();
-      ctx.translate(w / 2 - markW / 2, y);
+      ctx.translate(pad, h - pad - markH);
       ctx.scale(markW / MARK_W, markH / MARK_H);
-      ctx.fillStyle = `rgba(${ink},${o.dark ? 0.05 : 0.06})`;
+      ctx.fillStyle = this.o.dark ? "rgba(255,255,255,0.28)" : "rgba(15,15,20,0.26)";
       ctx.fill(mark(), "evenodd");
-      ctx.restore();
-      y += markH + gap;
-
-      ctx.save();
-      ctx.textAlign = "center";
-      ctx.textBaseline = "top";
-      ctx.fillStyle = `rgba(${ink},${o.dark ? 0.045 : 0.055})`;
-      ctx.font = `600 ${titleSize}px ${o.font}`;
-      ctx.fillText(`${o.symbol}, ${o.tf}`, w / 2, y);
-      if (showSub) {
-        y += titleSize + 6 * k;
-        ctx.fillStyle = `rgba(${ink},${o.dark ? 0.04 : 0.05})`;
-        ctx.font = `500 ${subSize}px ${o.font}`;
-        ctx.fillText(`${o.name}  ·  Kalks`, w / 2, y);
-      }
       ctx.restore();
     });
   }

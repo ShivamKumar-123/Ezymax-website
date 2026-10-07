@@ -3,7 +3,7 @@
 import * as React from "react";
 import { toast } from "@/lib/notify";
 import { Bell, BellOff, Copy, Newspaper, Pencil, Plus, Trash2 } from "lucide-react";
-import { CALENDAR, INSTRUMENTS, NEWS, getInstrument, priceFeed } from "@kalks/mock";
+import { ALL_INSTRUMENTS, CALENDAR, INSTRUMENT_MAP, NEWS, getInstrument, priceFeed } from "@kalks/mock";
 import { Flag, SymbolAvatar, cn, useQuote, useQuotes } from "@kalks/ui";
 import { journalTime, useTerminal, type JournalLine } from "@/lib/store";
 import { accCcy, accMoney, fmtPrice, fmtServer, fmtVol, splitSymbol } from "@/lib/trading";
@@ -17,7 +17,7 @@ import { Badge, Empty, Pnl, Stepper, TButton, TInput, TSelect } from "@/componen
 import { useLocale, useT } from "@kalks/i18n/react";
 import { loadOptionHistory, useOptionBook, type OptClosed } from "@/lib/options/book";
 import type { TClosed } from "@/lib/trading";
-import { sideLabel } from "./trade-tab";
+import { SideChip, sideLabel } from "./trade-tab";
 
 /* ------------------------------------------------------------------ */
 /* History                                                             */
@@ -164,25 +164,25 @@ export function HistoryTab() {
   const cm = useContextMenu(210);
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex h-8 shrink-0 items-center gap-2 border-b border-line px-2">
-        <div className="flex items-center gap-0.5">
+      <div className="flex min-h-11 shrink-0 flex-wrap items-center gap-2 border-b border-line px-3 py-1.5">
+        <div role="radiogroup" aria-label={t("toolbox.tab.history")} className="flex items-center gap-0.5 rounded-[9px] border border-line bg-panel-2 p-[3px]">
           {PERIODS.map((p) => (
-            <button key={p.value} onClick={() => setPeriod(p.value)} className={cn("h-6 rounded-[5px] px-2 text-[11px]", period === p.value ? "bg-surface-3 text-fg" : "text-fg-3 hover:text-fg-2")}>
+            <button key={p.value} role="radio" aria-checked={period === p.value} onClick={() => setPeriod(p.value)} className={cn("h-[26px] rounded-[6px] px-2.5 text-[12.5px] font-medium", period === p.value ? "bg-surface-3 text-fg" : "text-fg-2 hover:text-fg")}>
               {t(p.labelKey)}
             </button>
           ))}
         </div>
-        <TSelect ariaLabel={t("toolbox.history.symbolFilter")} value={sym} onChange={setSym} options={[{ value: "all", label: t("toolbox.history.allSymbols") }, ...syms.map((s) => ({ value: s, label: s }))]} className="h-6 w-[130px] text-[11px]" />
+        <TSelect ariaLabel={t("toolbox.history.symbolFilter")} value={sym} onChange={setSym} options={[{ value: "all", label: t("toolbox.history.allSymbols") }, ...syms.map((s) => ({ value: s, label: s }))]} className="w-[150px]" />
         {/* All / CFD / Options: option trades close as contracts of a series (premiums in USD per contract) */}
-        <div role="radiogroup" aria-label={t("trader.opt.hist.kind")} className="flex items-center gap-0.5 rounded-[6px] border border-line p-0.5">
+        <div role="radiogroup" aria-label={t("trader.opt.hist.kind")} className="flex items-center gap-0.5 rounded-[9px] border border-line bg-panel-2 p-[3px]">
           {(["all", "cfd", "options"] as const).map((k) => (
-            <button key={k} role="radio" aria-checked={kind === k} onClick={() => setKind(k)} className={cn("h-5 rounded-[4px] px-2 text-[11px]", kind === k ? "bg-surface-3 text-fg" : "text-fg-3 hover:text-fg-2")}>
+            <button key={k} role="radio" aria-checked={kind === k} onClick={() => setKind(k)} className={cn("h-[26px] rounded-[6px] px-2.5 text-[12.5px] font-medium", kind === k ? "bg-surface-3 text-fg" : "text-fg-2 hover:text-fg")}>
               {t(`trader.opt.hist.${k}`)}
-              {k === "options" && optClosed.length > 0 && <span className="ms-1 font-mono text-[9.5px] text-fg-3">{optClosed.filter((o) => Date.parse(o.closeTime) >= since).length}</span>}
+              {k === "options" && optClosed.length > 0 && <span className="ms-1 font-mono text-[11px] text-fg-3">{optClosed.filter((o) => Date.parse(o.closeTime) >= since).length}</span>}
             </button>
           ))}
         </div>
-        <div className="ms-auto flex items-center gap-3 font-mono text-[11px] text-fg-3">
+        <div className="ms-auto flex items-center gap-3 font-mono text-[12px] text-fg-3">
           <span>
             {t("toolbox.history.trades")} <span className="text-fg">{rows.length}</span>
           </span>
@@ -246,12 +246,12 @@ export function HistoryTab() {
                   </Td>
                   <Td>
                     <span className="flex items-center gap-1.5 font-medium">
-                      <SymbolAvatar symbol={h.symbol} size={13} />
+                      <SymbolAvatar symbol={h.symbol} size={16} />
                       {h.symbol}
                     </span>
                   </Td>
                   <Td>
-                    <span className={h.side === "buy" ? "text-up" : "text-down"}>{sideLabel(t, h.side)}</span>
+                    <SideChip side={h.side} />
                   </Td>
                   <Td right mono>
                     {fmtVol(h.volume)}
@@ -283,7 +283,7 @@ export function HistoryTab() {
                   <Td className="text-fg-3">
                     <span className="flex items-center gap-1" title={h.comment}>
                       {h.source === "ai" && <Badge tone="ember">AI</Badge>}
-                      {h.reason === "sl" ? <Badge tone="down">SL</Badge> : h.reason === "tp" ? <Badge tone="up">TP</Badge> : <span className="text-[11px]">{h.reason ?? h.source}</span>}
+                      {h.reason === "sl" ? <Badge tone="down">SL</Badge> : h.reason === "tp" ? <Badge tone="up">TP</Badge> : <span className="text-[12px] text-fg-2">{t.dyn(`toolbox.source.${h.reason ?? h.source}`, h.reason ?? h.source)}</span>}
                       {h.source === "ai" && h.comment && <span className="max-w-[160px] truncate text-[11px]">{h.comment}</span>}
                     </span>
                   </Td>
@@ -420,7 +420,7 @@ export function NewsTab() {
           <button
             key={n.id}
             onClick={() => {
-              const s = n.symbols.find((x) => INSTRUMENTS.some((i) => i.symbol === x));
+              const s = n.symbols.find((x) => !!INSTRUMENT_MAP[x]);
               if (s) T.openSymbol(s);
               toast(n.title, { description: t("toolbox.news.minAgo", { source: n.source, count: n.minutesAgo }) });
             }}
@@ -537,12 +537,12 @@ export function AlertsTab() {
   };
   return (
     <div className="flex h-full min-h-0">
-      <div className="w-[250px] shrink-0 space-y-2 border-e border-line p-2.5">
-        <div className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-fg-3">{edit ? t("toolbox.alerts.edit") : t("toolbox.alerts.new")}</div>
-        <TSelect ariaLabel={t("toolbox.alerts.symbolAria")} value={symbol} onChange={setSymbol} options={INSTRUMENTS.map((i) => i.symbol)} />
+      <div className="w-[280px] shrink-0 space-y-2.5 overflow-y-auto border-e border-line p-3">
+        <div className="text-[13.5px] font-semibold text-fg">{edit ? t("toolbox.alerts.edit") : t("toolbox.alerts.new")}</div>
+        <TSelect ariaLabel={t("toolbox.alerts.symbolAria")} value={symbol} onChange={setSymbol} options={ALL_INSTRUMENTS.map((i) => i.symbol)} />
         <div className="grid grid-cols-2 gap-1.5">
           <TSelect ariaLabel={t("toolbox.alerts.condition")} value={cond} onChange={setCond} options={[{ value: "above", label: t("toolbox.alerts.bidAbove") }, { value: "below", label: t("toolbox.alerts.bidBelow") }]} />
-          <Stepper ariaLabel={t("toolbox.alerts.priceAria")} value={price} onChange={setPrice} step={1 / 10 ** d} placeholder={fmtPrice(symbol, q.bid)} decimals={d} />
+          <Stepper size="md" ariaLabel={t("toolbox.alerts.priceAria")} value={price} onChange={setPrice} step={1 / 10 ** d} placeholder={fmtPrice(symbol, q.bid)} decimals={d} />
         </div>
         <TInput value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("toolbox.alerts.notePlaceholder")} />
         <div className="flex gap-1.5">
@@ -555,7 +555,7 @@ export function AlertsTab() {
             </TButton>
           )}
         </div>
-        <p className="text-[10.5px] leading-snug text-fg-3">{T.guest ? t("toolbox.alerts.helpGuest") : t("toolbox.alerts.helpServer")} {t("toolbox.alerts.helpChart")}</p>
+        <p className="text-[12px] leading-[17px] text-fg-3">{T.guest ? t("toolbox.alerts.helpGuest") : t("toolbox.alerts.helpServer")} {t("toolbox.alerts.helpChart")}</p>
       </div>
       <div className="t-scroll min-h-0 flex-1 overflow-auto">
         <table className="w-full min-w-[600px] border-separate border-spacing-0">
@@ -568,7 +568,7 @@ export function AlertsTab() {
               <Th>{t("toolbox.col.note")}</Th>
               <Th>{t("toolbox.col.status")}</Th>
               <Th>{t("toolbox.col.created")}</Th>
-              <Th className="w-20" />
+              <Th className="w-28" />
             </tr>
           </thead>
           <tbody>
@@ -625,14 +625,14 @@ function AlertRow({ a, onEdit }: { a: ReturnType<typeof useTerminal>["alerts"][n
       </Td>
       <Td className="pe-2">
         <span className="flex justify-end gap-0.5">
-          <button title={a.active ? t("toolbox.alerts.disable") : t("toolbox.alerts.enable")} onClick={() => T.updateAlert(a.id, { active: !a.active, triggeredAt: undefined })} className="grid size-5 place-items-center rounded-[4px] text-fg-3 hover:bg-surface-3 hover:text-fg">
-            {a.active ? <BellOff className="size-3.5" /> : <Bell className="size-3.5" />}
+          <button aria-label={a.active ? t("toolbox.alerts.disable") : t("toolbox.alerts.enable")} title={a.active ? t("toolbox.alerts.disable") : t("toolbox.alerts.enable")} onClick={() => T.updateAlert(a.id, { active: !a.active, triggeredAt: undefined })} className="grid size-8 place-items-center rounded-[7px] text-fg-2 hover:bg-surface-3 hover:text-fg">
+            {a.active ? <BellOff className="size-4" /> : <Bell className="size-4" />}
           </button>
-          <button title={t("common.edit")} onClick={onEdit} className="grid size-5 place-items-center rounded-[4px] text-fg-3 hover:bg-surface-3 hover:text-fg">
-            <Pencil className="size-3.5" />
+          <button aria-label={t("common.edit")} title={t("common.edit")} onClick={onEdit} className="grid size-8 place-items-center rounded-[7px] text-fg-2 hover:bg-surface-3 hover:text-fg">
+            <Pencil className="size-4" />
           </button>
-          <button title={t("common.delete")} onClick={() => T.removeAlert(a.id)} className="grid size-5 place-items-center rounded-[4px] text-fg-3 hover:bg-down-soft hover:text-down">
-            <Trash2 className="size-3.5" />
+          <button aria-label={t("common.delete")} title={t("common.delete")} onClick={() => T.removeAlert(a.id)} className="grid size-8 place-items-center rounded-[7px] text-fg-2 hover:bg-down-soft hover:text-down">
+            <Trash2 className="size-4" />
           </button>
         </span>
       </Td>
@@ -657,13 +657,13 @@ export function JournalTab() {
   const text = (l: JournalLine) => `${journalTime(l.ts)}\t${l.src}\t${l.text}`;
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex h-8 shrink-0 items-center gap-2 border-b border-line px-2">
+      <div className="flex min-h-11 shrink-0 flex-wrap items-center gap-1 border-b border-line px-3 py-1.5">
         {(["all", "Trade", "Network", "Terminal", "Alerts", "Experts", "Account"] as const).map((s) => (
-          <button key={s} onClick={() => setSrc(s)} className={cn("h-6 rounded-[5px] px-2 text-[11px]", src === s ? "bg-surface-3 text-fg" : "text-fg-3 hover:text-fg-2")}>
+          <button key={s} onClick={() => setSrc(s)} aria-pressed={src === s} className={cn("h-7 rounded-[7px] px-2.5 text-[12.5px] font-medium", src === s ? "bg-surface-3 text-fg" : "text-fg-2 hover:text-fg")}>
             {s === "all" ? t("common.all") : t.dyn(`toolbox.journal.src.${s.toLowerCase()}`, s)}
           </button>
         ))}
-        <TInput value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("toolbox.journal.filter")} className="ms-auto h-6 w-[180px] text-[11px]" />
+        <TInput value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("toolbox.journal.filter")} className="ms-auto w-[200px]" />
         <TButton
           size="xs"
           variant="ghost"
@@ -678,7 +678,7 @@ export function JournalTab() {
           <Trash2 /> {t("toolbox.journal.clear")}
         </TButton>
       </div>
-      <div ref={ref} className="t-scroll min-h-0 flex-1 overflow-auto py-1 font-mono text-[11.5px] leading-[20px]">
+      <div ref={ref} className="t-scroll min-h-0 flex-1 overflow-auto py-1 font-mono text-[12px] leading-[21px]">
         {lines.map((l) => (
           <div key={l.id} className={cn("flex gap-3 whitespace-nowrap px-3 hover:bg-surface-2/60", l.level === "error" ? "text-down" : l.level === "warn" ? "text-warn" : "text-fg-2")}>
             <span className="text-fg-3">{journalTime(l.ts)}</span>

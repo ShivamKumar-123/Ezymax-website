@@ -63,7 +63,7 @@ const trader: NsMessages<"trader"> = {
   "preset.analysis": "বিশ্লেষণ",
   "preset.analysisHint": "4টি চার্ট",
   "preset.scalper": "স্ক্যাল্পার",
-  "preset.scalperHint": "DOM + 2টি চার্ট",
+  "preset.scalperHint": "অর্ডার বুক + 2টি চার্ট",
   // Workspace profiles
   "profile.default": "ডিফল্ট",
   "profile.scalping": "স্ক্যাল্পিং",

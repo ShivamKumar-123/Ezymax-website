@@ -41,6 +41,7 @@ import { Countdown, RightTag, Seg } from "./bits";
 import { useSeriesUnits } from "./book-bits";
 import { expiryLabel, px, usd, usdSigned } from "./format";
 import { UnderlyingChart } from "./underlying-chart";
+import { closeAt, crosshairBus } from "@/lib/options/crosshair";
 
 const TF_MIN: Partial<Record<Timeframe, number>> = { M1: 1, M5: 5, M15: 15, M30: 30, H1: 60, H4: 240, D1: 1440 };
 
@@ -274,13 +275,29 @@ function usePremiumChart(
       const baseOf = () => (data.length ? data[Math.max(0, data.length - dayBars)]!.open : null);
       const legendAt = (i: number) => opts.current.legend.set({ bar: data[i] ?? null, base: baseOf() });
       legendAt(data.length - 1);
+      // "Both" view: share the crosshair time with the underlying chart (guarded so a synced move doesn't echo back)
+      let syncing = false;
       chart.subscribeCrosshairMove((p) => {
+        if (!syncing) crosshairBus.emit("premium", p.time ? (p.time as number) : null);
         if (p.logical === undefined || p.logical === null || !p.time) {
           hovering = -1;
           return legendAt(data.length - 1);
         }
         hovering = Math.max(0, Math.min(data.length - 1, Math.round(p.logical)));
         legendAt(hovering);
+      });
+      const offSync = crosshairBus.on((src, time) => {
+        if (src === "premium" || !alive.current) return;
+        syncing = true;
+        try {
+          if (time === null) chart.clearCrosshairPosition();
+          else {
+            const price = closeAt(data, time);
+            if (price !== null) chart.setCrosshairPosition(price, time as UTCTimestamp, main);
+          }
+        } finally {
+          syncing = false;
+        }
       });
 
       /* live: the chain's mark moves the forming bar (new bars on the history's own time grid) */
@@ -362,6 +379,7 @@ function usePremiumChart(
 
       setEngine({ chart, main, palette: c, alive, usdPerUnit });
       return () => {
+        offSync();
         themeObs.disconnect();
         cancelAnimationFrame(themeRaf);
         cancelAnimationFrame(raf);
@@ -549,7 +567,7 @@ export function PremiumChart({ code, tf, onUnavailable, className }: { code: str
 /* ------------------------------------------------------------------ */
 
 /** Header (Premium | Underlying, timeframes) + the premium or underlying chart, with the hint / fallback notes. */
-export function OptionChartPane({ compact }: { compact?: boolean }) {
+export function OptionChartPane({ compact, chainOpen, onOpenChain }: { compact?: boolean; /** the chain is on screen (desktop options panel open): no "open the chain" hint */ chainOpen?: boolean; onOpenChain?: () => void }) {
   const t = useT();
   const sel = useOpt((s) => s.sel);
   const u = useOpt((s) => s.u);
@@ -606,13 +624,13 @@ export function OptionChartPane({ compact }: { compact?: boolean }) {
         ) : (
           <>
             <UnderlyingChart bare />
-            {mode === "premium" && (!own || off) && (
+            {mode === "premium" && (!own || off) && !(chainOpen && !(off && own)) && (
               <div className="pointer-events-none absolute inset-x-0 top-10 z-[6] flex justify-center px-3">
                 <div className="pointer-events-auto flex max-w-[460px] items-center gap-2 rounded-[8px] border border-line-top bg-panel-2/95 px-3 py-2 text-[11.5px] text-fg-2 shadow-[0_10px_30px_-14px_rgba(0,0,0,0.6)] backdrop-blur">
                   {off && own ? <Info className="size-4 shrink-0 text-fg-3" /> : <MousePointerClick className="size-4 shrink-0 text-ember" />}
                   <span className="min-w-0">{off && own ? t("trader.opt.chart.fallback") : t("trader.opt.chart.selectHint")}</span>
                   {!(off && own) && (
-                    <button onClick={() => opt.setCenter("chain")} className="ms-1 inline-flex h-6 shrink-0 items-center gap-1 rounded-[6px] bg-ember px-2 text-[11px] font-semibold text-white hover:brightness-110">
+                    <button onClick={() => (onOpenChain ? onOpenChain() : opt.setCenter("chain"))} className="ms-1 inline-flex h-6 shrink-0 items-center gap-1 rounded-[6px] bg-ember px-2 text-[11px] font-semibold text-white hover:brightness-110">
                       <Table2 className="size-3" /> {t("trader.opt.chainTitle")}
                     </button>
                   )}

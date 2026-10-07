@@ -98,7 +98,7 @@ export function GuestUserMenu() {
         { label: t("trader.account.keyboardShortcuts"), icon: <Keyboard />, hint: "F1", onSelect: () => T.setUi({ shortcuts: true }) },
       ]}
       trigger={({ toggle }) => (
-        <button onClick={toggle} className="ms-0.5 grid size-7 place-items-center rounded-full bg-surface-3 text-fg-2 ring-1 ring-line transition hover:text-fg hover:ring-ember/50" aria-label={t("trader.accountMenu")}>
+        <button onClick={toggle} className="ms-0.5 grid size-8 place-items-center rounded-full bg-surface-3 text-fg-2 ring-1 ring-line transition hover:text-fg hover:ring-ember/50" aria-label={t("trader.accountMenu")}>
           <UserRound className="size-4" />
         </button>
       )}

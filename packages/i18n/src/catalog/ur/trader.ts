@@ -62,7 +62,7 @@ const trader: NsMessages<"trader"> = {
   "preset.analysis": "تجزیہ",
   "preset.analysisHint": "4 چارٹس",
   "preset.scalper": "اسکیلپر",
-  "preset.scalperHint": "DOM + 2 چارٹس",
+  "preset.scalperHint": "آرڈر بُک + 2 چارٹس",
   // Workspace profiles
   "profile.default": "ڈیفالٹ",
   "profile.scalping": "اسکیلپنگ",

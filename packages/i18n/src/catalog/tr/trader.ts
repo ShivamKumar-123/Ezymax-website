@@ -62,7 +62,7 @@ const trader: NsMessages<"trader"> = {
   "preset.analysis": "Analiz",
   "preset.analysisHint": "4 grafik",
   "preset.scalper": "Scalper",
-  "preset.scalperHint": "DOM + 2 grafik",
+  "preset.scalperHint": "Emir defteri + 2 grafik",
   // Workspace profiles
   "profile.default": "Varsayılan",
   "profile.scalping": "Scalping",

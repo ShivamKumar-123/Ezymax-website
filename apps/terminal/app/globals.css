@@ -6,26 +6,59 @@
 /* Kalks Trader: trading-room tokens layered on the Kalks design system */
 /* ------------------------------------------------------------------ */
 
+/* Design tokens: docs/TERMINAL-DESIGN.md §2.3. Text colours are tuned for WCAG AA (4.5:1) on the panels; brand
+   colours (ember, replaceable per broker) are never hard-coded: stronger variants are mixed from the brand colour. */
 :root,
 .dark {
-  --t-page: #07070a;
-  --t-panel: #0c0c10;
-  --t-panel-2: #111114;
+  --t-page: #050507;
+  --t-panel: #0e0e12;
+  --t-panel-2: #15151a;
   --t-grid: rgba(255, 255, 255, 0.035);
   --t-chart-bg: #0a0a0d;
+  /* tertiary text: 5.8:1 on the panel (the Kalks default #63636e is 3.3:1) */
+  --k-fg-3: #8b8b96;
+  /* Buy / Sell button fills: white text at 5.0:1 / 4.8:1 */
+  --t-buy-fill: #15803d;
+  --t-sell-fill: #dc2626;
+  /* filled primary buttons (white text) and accent-coloured text */
+  --t-accent-strong: color-mix(in oklab, var(--k-ember) 80%, black);
+  --t-accent-text: var(--k-ember);
+  --t-shadow-pop: 0 18px 48px -12px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 .light {
-  --t-page: #e9e7e3;
+  --t-page: #e7e5e1;
   --t-panel: #ffffff;
-  --t-panel-2: #f7f5f2;
+  --t-panel-2: #f5f3f0;
   --t-grid: rgba(15, 15, 20, 0.055);
   --t-chart-bg: #ffffff;
+  --k-fg-3: #6b6b75;
+  --k-up: #15803d;
+  --k-warn: #b45309;
+  --k-info: #0369a1;
+  --k-gold: #a16207;
+  --t-accent-text: color-mix(in oklab, var(--k-ember) 78%, black);
+  --t-shadow-pop: 0 18px 48px -14px rgba(15, 15, 20, 0.22), 0 2px 6px rgba(15, 15, 20, 0.08);
 }
+
+/* laptop screens of 820 px or less in height: the order panel and others tighten up */
+@custom-variant short (@media (max-height: 820px));
 
 @theme inline {
   --color-page: var(--t-page);
   --color-panel: var(--t-panel);
   --color-panel-2: var(--t-panel-2);
+  --color-buy-fill: var(--t-buy-fill);
+  --color-sell-fill: var(--t-sell-fill);
+  --color-accent-strong: var(--t-accent-strong);
+  --color-accent-text: var(--t-accent-text);
+}
+
+/* Visible keyboard focus on every control (utilities such as focus-visible:ring-* still win: this is the base layer) */
+@layer base {
+  :where(button, a[href], [role="button"], [role="tab"], [role="menuitem"], [role="switch"], [role="checkbox"], [role="radio"], summary):focus-visible {
+    outline: 2px solid color-mix(in oklab, var(--k-ember) 65%, transparent);
+    outline-offset: 1px;
+  }
 }
 
 @keyframes t-fade { from { opacity: 0; } }
@@ -49,8 +82,8 @@
   .t-scroll::-webkit-scrollbar-thumb { background: var(--k-surface-3); border-radius: 999px; border: 2px solid var(--t-panel); }
 
   /* resize handles */
-  .t-handle { position: relative; flex: 0 0 4px; outline: none; }
-  .t-handle[data-panel-group-direction="vertical"] { flex-basis: 4px; }
+  .t-handle { position: relative; flex: 0 0 8px; outline: none; }
+  .t-handle[data-panel-group-direction="vertical"] { flex-basis: 8px; }
   .t-handle::after { content: ""; position: absolute; border-radius: 99px; background: transparent; transition: background 0.15s; }
   .t-handle[data-panel-group-direction="horizontal"]::after { inset: 30% 1px; }
   .t-handle[data-panel-group-direction="vertical"]::after { inset: 1px 30%; }
@@ -59,6 +92,73 @@
 
 html, body { height: 100%; }
 body { background: var(--t-page); }
+
+/* ------------------------------------------------------------------ */
+/* Materials (docs/TERMINAL-DESIGN.md §2.3): frosted, never see-through */
+/* ------------------------------------------------------------------ */
+:root,
+.dark {
+  --t-glass: color-mix(in oklab, var(--t-panel) 90%, transparent);
+  --t-glass-strong: color-mix(in oklab, var(--t-panel-2) 92%, transparent);
+  --t-glass-edge: rgba(255, 255, 255, 0.07);
+  --t-glass-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 12px 32px -18px rgba(0, 0, 0, 0.7);
+  --t-depth: 24%; /* order-book depth bar strength */
+  --t-backdrop: radial-gradient(1200px 520px at 12% -12%, rgba(255, 90, 31, 0.07), transparent 62%), radial-gradient(900px 600px at 100% 0%, rgba(120, 120, 160, 0.06), transparent 60%), linear-gradient(180deg, #0a0a0e 0%, #050507 60%);
+}
+.light {
+  --t-glass: color-mix(in oklab, var(--t-panel) 86%, transparent);
+  --t-glass-strong: color-mix(in oklab, var(--t-panel) 92%, transparent);
+  --t-glass-edge: rgba(255, 255, 255, 0.7);
+  --t-glass-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 10px 28px -18px rgba(20, 20, 30, 0.25);
+  --t-depth: 15%;
+  --t-backdrop: radial-gradient(1200px 520px at 12% -12%, rgba(255, 90, 31, 0.08), transparent 62%), radial-gradient(900px 600px at 100% 0%, rgba(90, 110, 160, 0.08), transparent 60%), linear-gradient(180deg, #ecebe7 0%, #e3e1dc 100%);
+}
+@layer components {
+  /* the terminal's app background: a subtle gradient so the frosted cards read as a material */
+  .t-backdrop { background: var(--t-backdrop); }
+  /* card material: ~90 % opaque surface over the backdrop gradient, 1 px light edge, soft shadow. No backdrop blur:
+     cards hold live prices and sit over a static gradient, where a blur costs frames (measured 57 → 23 fps while
+     prices stream) and shows nothing. Blur is kept for overlays (.t-glass-strong). */
+  .t-glass {
+    background: var(--t-glass);
+    box-shadow: var(--t-glass-shadow);
+  }
+  /* overlays (menus, dialogs, tooltips, the palette, the tour): they float over live content, so they blur it */
+  .t-glass-strong {
+    background: var(--t-glass-strong);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    backdrop-filter: blur(24px) saturate(160%);
+    box-shadow: var(--t-glass-shadow);
+  }
+  /* bars (top bar, status bar, the order form's sticky footer, the mode switch thumb): the strong material without
+     the blur. They sit over the static backdrop or hold ticking values, where a blur shows nothing and re-runs on
+     every tick (measured 26-37 fps with it, 54 without, prices streaming, software rendering). */
+  .t-bar {
+    background: var(--t-glass-strong);
+    box-shadow: var(--t-glass-shadow);
+  }
+  /* order book: a subtle flash on a level whose size changed */
+  .t-flash-up { animation: t-flash-up 0.6s ease-out; }
+  .t-flash-down { animation: t-flash-down 0.6s ease-out; }
+}
+@keyframes t-flash-up { from { background-color: color-mix(in oklab, var(--k-up) 12%, transparent); } }
+@keyframes t-flash-down { from { background-color: color-mix(in oklab, var(--k-down) 12%, transparent); } }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .t-glass-strong { background: var(--t-panel-2); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .t-glass, .t-glass-strong, .t-bar { background: var(--t-panel); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+
+/* Toasts (app/providers.tsx): frosted like the other overlays, and quick (~150 ms in and out instead of sonner's 400) */
+.t-toast {
+  background: var(--t-glass-strong) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  backdrop-filter: blur(24px) saturate(160%);
+}
+[data-sonner-toaster] [data-sonner-toast] {
+  transition-duration: 150ms !important;
+}
 
 /* Options workspace: strategy builder drawer */
 @keyframes opt-drawer { from { transform: translateX(28px); opacity: 0; } }

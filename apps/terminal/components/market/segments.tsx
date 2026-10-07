@@ -35,6 +35,8 @@ export function SegmentChips({
   size = "sm",
   className,
   label,
+  wrap = false,
+  favouritesFirst = false,
 }: {
   instruments: readonly Instrument[];
   value: Segment;
@@ -44,6 +46,10 @@ export function SegmentChips({
   size?: "sm" | "md";
   className?: string;
   label?: string;
+  /** wrap onto more lines instead of scrolling sideways (desktop Markets panel) */
+  wrap?: boolean;
+  /** ★ Favourites as the first chip */
+  favouritesFirst?: boolean;
 }) {
   const t = useT();
   const counts = React.useMemo(() => {
@@ -51,7 +57,8 @@ export function SegmentChips({
     for (const s of SEGMENTS) m.set(s, instruments.filter((i) => inSegment(i, s, favourites)).length);
     return m;
   }, [instruments, favourites]);
-  const shown = SEGMENTS.filter((s) => (s === "favourites" ? withFavourites : s === "all" || (counts.get(s) ?? 0) > 0 || s === value));
+  const order = favouritesFirst ? (["favourites", ...SEGMENTS.filter((s) => s !== "favourites")] as Segment[]) : SEGMENTS;
+  const shown = order.filter((s) => (s === "favourites" ? withFavourites : s === "all" || (counts.get(s) ?? 0) > 0 || s === value));
   const refs = React.useRef(new Map<Segment, HTMLButtonElement>());
   // fade the edge(s) that hide more chips, so a narrow panel shows it scrolls
   const box = React.useRef<HTMLDivElement>(null);
@@ -102,8 +109,8 @@ export function SegmentChips({
       aria-label={label ?? t("market.segment.aria")}
       onKeyDown={move}
       onScroll={measure}
-      style={edge.l || edge.r ? { maskImage: `linear-gradient(to right, ${edge.l ? "transparent, black 18px" : "black"}, ${edge.r ? "black calc(100% - 22px), transparent" : "black"})` } : undefined}
-      className={cn("flex min-w-0 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", className)}
+      style={!wrap && (edge.l || edge.r) ? { maskImage: `linear-gradient(to right, ${edge.l ? "transparent, black 18px" : "black"}, ${edge.r ? "black calc(100% - 22px), transparent" : "black"})` } : undefined}
+      className={cn("flex min-w-0 items-center", wrap ? "flex-wrap gap-1" : "gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", className)}
     >
       {shown.map((s) => {
         const on = s === current;
@@ -122,13 +129,14 @@ export function SegmentChips({
             title={t("market.segment.title", { label: segmentLabel(s, t), count: n })}
             className={cn(
               "flex shrink-0 items-center gap-1 whitespace-nowrap rounded-[5px] font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ember/40",
-              size === "md" ? "h-7 px-2.5 text-[12px]" : "h-[22px] px-1.5 text-[11px]",
-              on ? "bg-ember-soft text-ember" : "text-fg-3 hover:bg-surface-3 hover:text-fg-2",
+              size === "md" ? "h-7 rounded-full border px-2.5 text-[12.5px]" : "h-[22px] px-1.5 text-[11px]",
+              wrap && "h-[26px] px-[9px] text-[12px]",
+              on ? (size === "md" ? "border-ember/45 bg-ember-soft text-accent-text" : "bg-ember-soft text-ember") : size === "md" ? "border-line text-fg-2 hover:bg-surface-3 hover:text-fg" : "text-fg-3 hover:bg-surface-3 hover:text-fg-2",
             )}
           >
-            {s === "favourites" ? <Star className={cn("size-3", on && "fill-ember")} aria-hidden /> : segmentLabel(s, t)}
+            {s === "favourites" ? <Star className={cn(size === "md" ? "size-3.5" : "size-3", on && "fill-current")} aria-hidden /> : segmentLabel(s, t)}
             {s === "favourites" && <span className="sr-only">{t("market.segment.favourites")}</span>}
-            <span className={cn("k-num font-mono text-[9.5px]", on ? "text-ember/80" : "text-fg-3/80")}>{n}</span>
+            {(!wrap || s === "favourites") && <span className={cn("k-num font-mono", size === "md" ? "text-[11px]" : "text-[9.5px]", on ? "opacity-80" : "text-fg-3")}>{n}</span>}
           </button>
         );
       })}

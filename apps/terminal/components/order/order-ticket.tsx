@@ -1,33 +1,25 @@
 "use client";
 
+// Order form (docs/TERMINAL-DESIGN.md §2.2, §2.5), exchange style:
+//   Sell | Buy with live prices · order type ▾ (Market / Limit / Stop / Stop limit, each explained) · label-value rows
+//   (price, expiry, volume with a quick-adjust strip, Stop loss and Take profit with switches, settable by price, pips
+//   or money) · More options (trailing stop, OCO, comment, max price change) · summary rows (margin, pip value, size,
+//   free margin after, reward / risk) · ONE confirm button that names the trade. With one-click trading on, Sell / Buy
+//   send the order at once (as on the chart and the order book) and the confirm button steps aside.
 import * as React from "react";
-import { Calculator, ChevronDown, ChevronUp, Lock, Zap } from "lucide-react";
+import { Calculator, ChevronDown, Lock, Zap } from "lucide-react";
 import { toast } from "@/lib/notify";
-import { INSTRUMENTS, getInstrument, priceFeed, type Quote } from "@kalks/mock";
+import { ALL_INSTRUMENTS, getInstrument, liveTradable, priceFeed, type Quote } from "@kalks/mock";
 import { PriceText, SymbolAvatar, cn, useQuote } from "@kalks/ui";
 import { useMetrics, useTerminal } from "@/lib/store";
 import { useMarketOpen } from "@/lib/market-hours";
 import { useSlowQuote } from "@/lib/market";
-import { accCcy, accMoney, fmtPrice, marginRequired, pendingLabelKey, pipSize, pipValuePerLot, splitSymbol, type Expiry, type OrderType, type PendingOrder } from "@/lib/trading";
-import { Check, MiniSwitch, Stepper, TInput, TSelect } from "@/components/ui/primitives";
+import { accCcy, accMoney, fmtPrice, fmtVol, marginRequired, pendingLabelKey, pipSize, pipValuePerLot, splitSymbol, type Expiry, type OrderType, type PendingOrder } from "@/lib/trading";
+import { TInput, TSelect } from "@/components/ui/primitives";
+import { Button, FieldRow, HelpTip, InlineNumber, QuickStrip, Segmented, SummaryRow, Switch, Tip } from "@/components/ui/kit";
+import { DropMenu } from "@/components/ui/menu";
 import { GuestActions } from "@/components/shell/guest";
 import { useT } from "@kalks/i18n/react";
-
-const TYPES = [
-  { value: "market", labelKey: "order.type.market" },
-  { value: "limit", labelKey: "order.type.limit" },
-  { value: "stop", labelKey: "order.type.stop" },
-  { value: "stop-limit", labelKey: "order.type.stopLimit" },
-] as const satisfies readonly { value: OrderType; labelKey: string }[];
-
-function Label({ children, right }: { children: React.ReactNode; right?: React.ReactNode }) {
-  return (
-    <div className="mb-1 flex items-center justify-between text-[10.5px] font-medium uppercase tracking-[0.05em] text-fg-3">
-      <span>{children}</span>
-      {right && <span className="normal-case tracking-normal">{right}</span>}
-    </div>
-  );
-}
 
 export interface TicketPrefill {
   side?: "buy" | "sell";
@@ -35,35 +27,47 @@ export interface TicketPrefill {
   price?: number;
 }
 
-export function OrderTicket({
-  symbol,
-  onSymbol,
-  prefill,
-  variant = "panel",
-  onDone,
-}: {
-  symbol: string;
-  onSymbol?: (s: string) => void;
-  prefill?: TicketPrefill;
-  variant?: "panel" | "dialog";
-  onDone?: () => void;
-}) {
+type StopMode = "price" | "pips" | "money";
+interface StopState {
+  on: boolean;
+  mode: StopMode;
+  value: string;
+}
+
+const PRESETS = [0.01, 0.1, 0.5, 1, 2] as const;
+const TYPES: OrderType[] = ["market", "limit", "stop", "stop-limit"];
+
+/* The Markets panel (price click), the order book, empty states and the chart ask the form for a side / a price. */
+type Intent = { symbol?: string; side?: "buy" | "sell"; pending?: boolean; price?: number };
+let intent: Intent | null = null;
+if (typeof window !== "undefined")
+  window.addEventListener("kalks:ticket", (e) => {
+    intent = (e as CustomEvent).detail ?? null;
+  });
+
+export function OrderTicket({ symbol, onSymbol, prefill, variant = "panel", onDone }: { symbol: string; onSymbol?: (s: string) => void; prefill?: TicketPrefill; variant?: "panel" | "dialog"; onDone?: () => void }) {
+  const T = useTerminal();
+  if (T.guest) return <GuestTicket symbol={symbol} />;
+  if (T.readOnly) return <ReadOnlyTicket />;
+  return <Ticket symbol={symbol} onSymbol={onSymbol} prefill={prefill} variant={variant} onDone={onDone} />;
+}
+
+function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string; onSymbol?: (s: string) => void; prefill?: TicketPrefill; variant: "panel" | "dialog"; onDone?: () => void }) {
   const T = useTerminal();
   const t = useT();
   const acc = T.account;
-  // derived numbers (pip value, margin, placeholders) follow the price once a second; the live prices, spread
-  // and free margin are leaf components (TicketPrice, TicketSummary), so a tick doesn't re-render the form
+  // derived numbers follow the price once a second; live prices are leaf components (SideButton, LiveSummary)
   const q = useSlowQuote(symbol);
   const inst = getInstrument(symbol);
   const pip = pipSize(inst);
   const marketOpen = useMarketOpen(symbol);
   const [type, setType] = React.useState<OrderType>(prefill?.type ?? "market");
+  const [side, setSide] = React.useState<"buy" | "sell" | null>(prefill?.side ?? null);
   const [volume, setVolume] = React.useState(T.ws.lot.toFixed(2));
   const [price, setPrice] = React.useState(prefill?.price ? fmtPrice(symbol, prefill.price) : "");
   const [stopLimit, setStopLimit] = React.useState("");
-  const [stopMode, setStopMode] = React.useState<"pips" | "price">("pips");
-  const [sl, setSl] = React.useState("");
-  const [tp, setTp] = React.useState("");
+  const [sl, setSl] = React.useState<StopState>({ on: false, mode: "pips", value: "" });
+  const [tp, setTp] = React.useState<StopState>({ on: false, mode: "pips", value: "" });
   const [trailing, setTrailing] = React.useState(false);
   const [trailPips, setTrailPips] = React.useState("20");
   const [expiry, setExpiry] = React.useState<Expiry>("GTC");
@@ -71,92 +75,135 @@ export function OrderTicket({
   const [oco, setOco] = React.useState(false);
   const [ocoPrice, setOcoPrice] = React.useState("");
   const [comment, setComment] = React.useState("");
+  const [more, setMore] = React.useState(false);
   const [calcOpen, setCalcOpen] = React.useState(false);
   const [riskMode, setRiskMode] = React.useState<"pct" | "usd">("pct");
   const [risk, setRisk] = React.useState("1");
   const [riskPips, setRiskPips] = React.useState("25");
   const [busy, setBusy] = React.useState(false);
 
-  const first = React.useRef(true);
+  const apply = React.useCallback(
+    (d: Intent) => {
+      if (d.side) setSide(d.side);
+      if (d.pending || d.price) {
+        setType((ty) => (ty === "market" ? "limit" : ty));
+        if (d.price) setPrice(fmtPrice(symbol, d.price));
+      }
+    },
+    [symbol],
+  );
+  // a new market: prices and price-mode stops no longer apply; the side comes from the click that changed it, if any
+  // compare with the last market (not a "first run" flag: React's dev double-run would reset a prefilled side)
+  const shown = React.useRef(symbol);
   React.useEffect(() => {
-    if (first.current) {
-      first.current = false;
-      return;
+    const it = intent;
+    if (shown.current !== symbol) {
+      shown.current = symbol;
+      setPrice("");
+      setStopLimit("");
+      setOcoPrice("");
+      setSl((s) => (s.mode === "price" ? { ...s, value: "" } : s));
+      setTp((s) => (s.mode === "price" ? { ...s, value: "" } : s));
+      setSide(null);
     }
-    setPrice("");
-    setStopLimit("");
-    setOcoPrice("");
-    if (stopMode === "price") {
-      setSl("");
-      setTp("");
+    if (it && (!it.symbol || it.symbol === symbol)) {
+      apply(it);
+      intent = null;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [symbol]);
-
-  if (T.guest) return <GuestTicket symbol={symbol} />;
-
-  if (T.readOnly) {
-    return (
-      <div className="grid h-full place-items-center p-6 text-center">
-        <div>
-          <div className="mx-auto mb-3 grid size-10 place-items-center rounded-full border border-warn/30 bg-warn-soft text-warn">
-            <Lock className="size-4" />
-          </div>
-          <div className="text-[13px] font-medium">{t("order.ticket.readOnlyTitle")}</div>
-          <p className="mt-1 text-[12px] leading-relaxed text-fg-3">
-            {t("order.ticket.readOnlyText", { login: acc.login })}
-          </p>
-        </div>
-      </div>
-    );
-  }
+  React.useEffect(() => {
+    const on = (e: Event) => {
+      const d = (e as CustomEvent).detail as Intent | null;
+      if (!d || (d.symbol && d.symbol !== symbol)) return;
+      apply(d);
+      intent = null;
+    };
+    window.addEventListener("kalks:ticket", on);
+    return () => window.removeEventListener("kalks:ticket", on);
+  }, [symbol, apply]);
 
   const vol = Math.max(0.01, parseFloat(volume) || 0);
   const pending = type !== "market";
-  const pv = pipValuePerLot(symbol, q.bid);
-  const balance = T.engine ? acc.balance / (acc.cent ? 100 : 1) : (T.balances[acc.login] ?? 0);
-  const riskUsd = riskMode === "pct" ? (balance * (parseFloat(risk) || 0)) / 100 : (parseFloat(risk) || 0) / (acc.cent ? 100 : 1);
-  const calcLots = Math.max(0.01, Math.floor((riskUsd / ((parseFloat(riskPips) || 1) * pv)) * 100) / 100);
-  const units = vol * inst.contractSize;
+  const pv = pipValuePerLot(symbol, q.bid); // USD per pip per lot
+  const cent = acc.cent ? 100 : 1;
+  const balance = T.engine ? acc.balance / cent : (T.balances[acc.login] ?? 0);
   const unitLabel = inst.assetClass === "forex" ? splitSymbol(symbol).base : inst.assetClass === "metals" ? t("order.unit.oz") : inst.assetClass === "energies" ? t("order.unit.bbl") : inst.assetClass === "stocks" ? t("order.unit.shares") : t("order.unit.units");
+  const spreadPips = Math.max(1, (q.ask - q.bid) / pip);
 
-  const entryFor = (side: "buy" | "sell", qq: Quote = q) => (pending ? parseFloat(type === "stop-limit" && stopLimit ? stopLimit : price) || (side === "buy" ? qq.ask : qq.bid) : side === "buy" ? qq.ask : qq.bid);
-  const stopsFor = (side: "buy" | "sell", qq: Quote = q) => {
-    if (stopMode === "price") return { sl: parseFloat(sl) || undefined, tp: parseFloat(tp) || undefined };
-    const e = entryFor(side, qq);
-    const s = parseFloat(sl);
-    const tpv = parseFloat(tp);
-    const dir = side === "buy" ? 1 : -1;
-    return { sl: s > 0 ? +(e - dir * s * pip).toFixed(inst.digits) : undefined, tp: tpv > 0 ? +(e + dir * tpv * pip).toFixed(inst.digits) : undefined };
+  const entryFor = (s: "buy" | "sell", qq: Quote = q) => (pending ? parseFloat(type === "stop-limit" && stopLimit ? stopLimit : price) || (s === "buy" ? qq.ask : qq.bid) : s === "buy" ? qq.ask : qq.bid);
+  /** distance in pips of a stop typed as pips or money (null for price mode) */
+  const distPips = (st: StopState): number | null => {
+    const n = parseFloat(st.value);
+    if (!(n > 0)) return null;
+    if (st.mode === "pips") return n;
+    if (st.mode === "money") return n / cent / Math.max(1e-9, pv * vol);
+    return null;
   };
-  const slUsd = (side: "buy" | "sell") => {
-    const st = stopsFor(side).sl;
-    if (st === undefined) return null;
-    return -Math.abs(entryFor(side) - st) * vol * inst.contractSize * (pv / (pip * inst.contractSize));
+  const stopPrice = (st: StopState, which: "sl" | "tp", s: "buy" | "sell", qq: Quote = q): number | undefined => {
+    if (!st.on) return undefined;
+    if (st.mode === "price") return parseFloat(st.value) || undefined;
+    const d = distPips(st);
+    if (d === null) return undefined;
+    const dir = (which === "tp" ? 1 : -1) * (s === "buy" ? 1 : -1);
+    return +(entryFor(s, qq) + dir * d * pip).toFixed(inst.digits);
   };
-  const tpUsd = (side: "buy" | "sell") => {
-    const st = stopsFor(side).tp;
-    if (st === undefined) return null;
-    return Math.abs(st - entryFor(side)) * vol * inst.contractSize * (pv / (pip * inst.contractSize));
+  /** money at the stop for the current volume (USD), signed: negative for a loss */
+  const stopMoney = (st: StopState, which: "sl" | "tp"): number | null => {
+    if (!st.on) return null;
+    let d = distPips(st);
+    if (d === null && st.mode === "price" && side) {
+      const p = parseFloat(st.value);
+      if (!(p > 0)) return null;
+      d = (side === "buy" ? p - entryFor(side) : entryFor(side) - p) / pip;
+      return d * pv * vol;
+    }
+    if (d === null) return null;
+    return (which === "sl" ? -1 : 1) * d * pv * vol;
+  };
+  const wrongSide = (which: "sl" | "tp"): boolean => {
+    const st = which === "sl" ? sl : tp;
+    if (!side || !st.on || st.mode !== "price") return false;
+    const p = parseFloat(st.value);
+    if (!(p > 0)) return false;
+    const below = p < entryFor(side);
+    return which === "sl" ? (side === "buy" ? !below : below) : side === "buy" ? below : !below;
+  };
+  const toggleStop = (which: "sl" | "tp", on: boolean) => {
+    const set = which === "sl" ? setSl : setTp;
+    // a starting distance: twice the spread, at least 10 pips; take profit twice the stop loss
+    const base = Math.max(10, Math.round(spreadPips * 2));
+    set((s) => ({ ...s, on, mode: on && !s.value ? "pips" : s.mode, value: on && !s.value ? String(which === "sl" ? base : base * 2) : s.value }));
+  };
+  const changeMode = (which: "sl" | "tp", mode: StopMode) => {
+    const st = which === "sl" ? sl : tp;
+    const set = which === "sl" ? setSl : setTp;
+    const s = side ?? "buy";
+    const p = stopPrice(st, which, s);
+    const d = st.mode === "price" ? (p !== undefined ? Math.abs(p - entryFor(s)) / pip : null) : distPips(st);
+    let value = "";
+    if (mode === "price") value = p !== undefined ? fmtPrice(symbol, p) : "";
+    else if (d !== null) value = mode === "pips" ? d.toFixed(1).replace(/\.0$/, "") : (d * pv * vol * cent).toFixed(2);
+    set({ ...st, mode, value });
   };
 
-  const submit = async (side: "buy" | "sell") => {
+  const submit = async (s: "buy" | "sell") => {
     if (!marketOpen || busy) return;
     if (pending && !price) {
       toast.error(t("order.toast.enterPendingPrice"));
       return;
     }
-    const st = stopsFor(side, priceFeed().quote(symbol)); // pips → prices from the price at the moment of the click
+    const qq = priceFeed().quote(symbol); // pips / money → prices from the price at the moment of the click
     setBusy(true);
     const ok = await T.placeOrder({
       symbol,
-      side,
+      side: s,
       type,
       volume: vol,
       price: pending ? parseFloat(price) : undefined,
       stopLimit: type === "stop-limit" ? parseFloat(stopLimit) || parseFloat(price) : undefined,
-      sl: st.sl,
-      tp: st.tp,
+      sl: stopPrice(sl, "sl", s, qq),
+      tp: stopPrice(tp, "tp", s, qq),
       trailing: trailing ? (parseFloat(trailPips) || 0) * pip || undefined : undefined,
       expiry: pending ? expiry : undefined,
       expiryDate: pending && expiry === "Date" ? expiryDate : undefined,
@@ -169,232 +216,275 @@ export function OrderTicket({
       onDone?.();
     }
   };
+  const onSide = (s: "buy" | "sell") => {
+    setSide(s);
+    if (T.ws.oneClick) void submit(s);
+  };
 
+  const riskUsd = riskMode === "pct" ? (balance * (parseFloat(risk) || 0)) / 100 : (parseFloat(risk) || 0) / cent;
+  const calcLots = Math.max(0.01, Math.floor((riskUsd / ((parseFloat(riskPips) || 1) * pv)) * 100) / 100);
   const applyCalc = () => {
     setVolume(calcLots.toFixed(2));
-    setStopMode("pips");
-    setSl(riskPips);
-    setTp(String((parseFloat(riskPips) || 0) * 2));
+    setSl({ on: true, mode: "pips", value: riskPips });
+    setTp({ on: true, mode: "pips", value: String((parseFloat(riskPips) || 0) * 2) });
+    setCalcOpen(false);
     toast.success(t("order.toast.volumeSet", { lots: calcLots.toFixed(2) }), { description: t("order.toast.volumeSetDesc", { amount: accMoney(acc, riskUsd), ccy: accCcy(acc), pips: riskPips }) });
   };
 
   const priceStep = pip / 10 >= 1 / 10 ** inst.digits ? pip / 10 : 1 / 10 ** inst.digits;
   const dialog = variant === "dialog";
+  const sideWord = (s: "buy" | "sell") => (s === "buy" ? t("desk.pos.buy") : t("desk.pos.sell"));
+  const typeWord = (ty: OrderType) => (ty === "market" ? t("desk.op.market") : ty === "limit" ? t("desk.op.type.limit") : ty === "stop" ? t("desk.op.type.stop") : t("desk.op.type.stopLimit"));
+  const pendLabel = (s: "buy" | "sell") => t(pendingLabelKey({ side: s, type: type as PendingOrder["type"] }));
+  const slMoney = stopMoney(sl, "sl");
+  const tpMoney = stopMoney(tp, "tp");
 
-  return (
-    <div className={cn("space-y-2.5", dialog ? "p-0" : "p-2.5")}>
-      {/* symbol + account */}
-      <div className="flex items-center gap-2">
-        <div className="relative min-w-0 flex-1">
-          <span className="pointer-events-none absolute start-2 top-1/2 -translate-y-1/2">
-            <SymbolAvatar symbol={symbol} size={14} />
-          </span>
-          <TSelect ariaLabel={t("order.ticket.symbol")} value={symbol} onChange={(v) => (onSymbol ? onSymbol(v) : T.openSymbol(v))} options={INSTRUMENTS.map((i) => ({ value: i.symbol, label: `${i.symbol} · ${i.name}` }))} className="ps-8 font-medium" />
-        </div>
-      </div>
+  // the confirm button: its words are the order
+  // catalogue market on a live account, or a delayed price: shown, not traded
+  const demoOnly = !T.guest && acc.type === "live" && !liveTradable(symbol);
+  const delayed = !!q.delayed && !pending;
+  let confirm: string;
+  if (demoOnly) confirm = t("desk.trade.demoOnly");
+  else if (delayed) confirm = t("desk.side.delayedTip");
+  else if (!marketOpen) confirm = t("desk.op.confirm.closed");
+  else if (busy) confirm = t("desk.op.confirm.sending");
+  else if (!side) confirm = t("desk.op.confirm.pickSide");
+  else if (pending && !price) confirm = t("desk.op.confirm.enterPrice");
+  else if (pending) confirm = t("desk.op.confirm.pending", { label: pendLabel(side), lots: fmtVol(vol), symbol, price: fmtPrice(symbol, parseFloat(price)) });
+  else confirm = t("desk.op.confirm.market", { side: sideWord(side), lots: fmtVol(vol), symbol });
+  const canConfirm = !demoOnly && !delayed && marketOpen && !busy && !!side && (!pending || !!price);
+  const explain = pending ? (side ? t.dyn(`desk.op.explain.${side}.${type === "stop-limit" ? "stopLimit" : type}`) : t("desk.op.explain.pickSide")) : t("desk.op.marketTip");
 
-      {/* type */}
-      <div className="grid grid-cols-4 gap-0.5 rounded-[7px] border border-line bg-surface-2 p-0.5">
-        {TYPES.map((ty) => (
-          <button key={ty.value} onClick={() => setType(ty.value)} className={cn("h-6 whitespace-nowrap rounded-[5px] px-0.5 text-[11px] font-medium tracking-tight transition-colors", type === ty.value ? "bg-surface-3 text-fg shadow-[inset_0_1px_0_var(--k-border-top)]" : "text-fg-3 hover:text-fg-2")}>
-            {t(ty.labelKey)}
-          </button>
-        ))}
-      </div>
-
-      {/* volume */}
-      <div>
-        <Label
-          right={
-            <span className="flex gap-0.5">
-              {[0.01, 0.1, 0.5, 1, 2].map((v) => (
-                <button key={v} onClick={() => setVolume(v.toFixed(2))} className={cn("k-num rounded-[4px] px-1 font-mono text-[10px]", Math.abs(vol - v) < 1e-9 ? "bg-ember-soft text-ember" : "text-fg-3 hover:bg-surface-3 hover:text-fg-2")}>
-                  {v}
-                </button>
-              ))}
+  const stopRow = (which: "sl" | "tp") => {
+    const st = which === "sl" ? sl : tp;
+    const set = which === "sl" ? setSl : setTp;
+    const money = which === "sl" ? slMoney : tpMoney;
+    const at = side ? stopPrice(st, which, side) : undefined;
+    const d = st.on ? (st.mode === "price" ? (at !== undefined && side ? Math.abs(at - entryFor(side)) / pip : null) : distPips(st)) : null;
+    const bad = wrongSide(which);
+    const name = which === "sl" ? t("desk.op.sl") : t("desk.op.tp");
+    return (
+      <div key={which}>
+        <FieldRow
+          tone={st.on ? (which === "sl" ? "down" : "up") : undefined}
+          label={
+            <span className="flex items-center gap-2">
+              <Switch size="sm" checked={st.on} onChange={(v) => toggleStop(which, v)} label={name} />
+              <span className={cn("whitespace-nowrap", st.on && "text-fg")}>{name}</span>
             </span>
           }
+          help={<HelpTip title={which === "sl" ? t("desk.g.sl.t") : t("desk.g.tp.t")} text={which === "sl" ? t("desk.op.slHint") : t("desk.op.tpHint")} />}
         >
-          {t("order.ticket.volumeLots")}
-        </Label>
-        <Stepper ariaLabel={t("order.ticket.volume")} value={volume} onChange={setVolume} step={0.01} min={0.01} decimals={2} />
-        <div className="mt-1 flex justify-between font-mono text-[10px] text-fg-3">
-          <span>
-            {units.toLocaleString("en-US", { maximumFractionDigits: 2 })} {unitLabel}
-          </span>
-          <span>{t("order.ticket.pipValue", { value: accMoney(acc, pv * vol) })}</span>
-        </div>
-      </div>
-
-      {pending && (
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <Label>{type === "limit" ? t("order.ticket.limitPrice") : t("order.ticket.stopPrice")}</Label>
-            <Stepper ariaLabel={t("order.ticket.orderPrice")} value={price} onChange={setPrice} step={priceStep} placeholder={fmtPrice(symbol, q.ask)} decimals={inst.digits} />
-          </div>
-          {type === "stop-limit" ? (
-            <div>
-              <Label>{t("order.ticket.limitPrice")}</Label>
-              <Stepper ariaLabel={t("order.ticket.stopLimitPrice")} value={stopLimit} onChange={setStopLimit} step={priceStep} placeholder={price || fmtPrice(symbol, q.ask)} decimals={inst.digits} />
-            </div>
+          {st.on ? (
+            <>
+              <InlineNumber
+                value={st.value}
+                onChange={(v) => set({ ...st, value: v })}
+                step={st.mode === "price" ? pip : st.mode === "pips" ? 1 : Math.max(1, Math.round(pv * vol * cent))}
+                decimals={st.mode === "price" ? inst.digits : st.mode === "pips" ? 1 : 2}
+                ariaLabel={which === "sl" ? t("order.ticket.stopLoss") : t("order.ticket.takeProfit")}
+                placeholder={st.mode === "price" ? fmtPrice(symbol, side === "sell" ? q.ask : q.bid) : "0"}
+                tone={which === "sl" ? "down" : "up"}
+                className="[&_input]:w-[70px]"
+              />
+              <DropMenu
+                align="end"
+                width={170}
+                items={(["price", "pips", "money"] as const).map((m) => ({ label: m === "price" ? t("desk.op.mode.price") : m === "pips" ? t("desk.op.mode.pips") : `${t("desk.op.mode.money")} (${accCcy(acc)})`, checked: st.mode === m, onSelect: () => changeMode(which, m) }))}
+                trigger={({ toggle, open }) => (
+                  <button type="button" onClick={toggle} aria-expanded={open} aria-label={`${name}: ${t("desk.op.mode.price")} / ${t("desk.op.mode.pips")} / ${t("desk.op.mode.money")}`} className="flex h-6 items-center gap-0.5 rounded-[6px] border border-line bg-panel px-1.5 text-[11.5px] text-fg-2 hover:text-fg">
+                    {st.mode === "price" ? t("desk.op.mode.price") : st.mode === "pips" ? t("desk.op.mode.pips") : accCcy(acc)}
+                    <ChevronDown className="size-3 text-fg-3" />
+                  </button>
+                )}
+              />
+            </>
           ) : (
-            <div>
-              <Label>{t("order.ticket.expiry")}</Label>
-              <TSelect ariaLabel={t("order.ticket.expiry")} value={expiry} onChange={setExpiry} options={[{ value: "GTC", label: t("order.expiry.gtc") }, { value: "Today", label: t("order.expiry.today") }, { value: "Date", label: t("order.expiry.date") }]} />
-            </div>
+            <span className="pe-2 text-[12px] text-fg-3">{t("desk.op.off")}</span>
           )}
-          {type === "stop-limit" && (
-            <div className="col-span-2">
-              <Label>{t("order.ticket.expiry")}</Label>
-              <TSelect ariaLabel={t("order.ticket.expiry")} value={expiry} onChange={setExpiry} options={[{ value: "GTC", label: t("order.expiry.gtc") }, { value: "Today", label: t("order.expiry.today") }, { value: "Date", label: t("order.expiry.date") }]} />
-            </div>
-          )}
-          {expiry === "Date" && (
-            <div className="col-span-2">
-              <TInput type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} aria-label={t("order.ticket.expiryDate")} className="font-mono" dir="ltr" />
-            </div>
-          )}
-          {type !== "stop-limit" && (
-            <div className="col-span-2 space-y-1.5 rounded-[6px] border border-line bg-surface-2/50 p-2">
-              <Check checked={oco} onChange={setOco} label={<span>{type === "limit" ? t("order.ticket.ocoLimit") : t("order.ticket.ocoStop")}</span>} />
-              {oco && <Stepper ariaLabel={t("order.ticket.ocoPrice")} value={ocoPrice} onChange={setOcoPrice} step={priceStep} placeholder={fmtPrice(symbol, q.bid)} decimals={inst.digits} />}
-            </div>
-          )}
-        </div>
-      )}
+        </FieldRow>
+        {st.on && (
+          <div className="flex flex-wrap items-center gap-x-1.5 px-1 pt-1 text-[12px] text-fg-3">
+            {money !== null && <span className={cn("k-num font-mono font-medium", which === "sl" ? "text-down" : "text-up")}>{which === "sl" ? t("desk.op.risk", { amount: accMoney(acc, money, { signed: true }) }) : t("desk.op.reward", { amount: accMoney(acc, money, { signed: true }) })}</span>}
+            {at !== undefined ? <span className="k-num font-mono">· {t("desk.op.atPrice", { price: fmtPrice(symbol, at) })}</span> : !side && <span>· {t("desk.op.pickSideForPrice")}</span>}
+            {d !== null && st.mode !== "pips" && <span>· {t("desk.op.pipsAway", { n: d.toFixed(1) })}</span>}
+            {bad && <span className="basis-full text-down">{t.dyn(`desk.op.check.${which}${side === "buy" ? "Buy" : "Sell"}`)}</span>}
+          </div>
+        )}
+      </div>
+    );
+  };
 
-      {/* SL / TP */}
-      <div>
-        <div className="mb-1 flex items-center justify-between">
-          <span className="text-[10.5px] font-medium uppercase tracking-[0.05em] text-fg-3">{t("order.ticket.protection")}</span>
-          <div className="flex rounded-[5px] border border-line bg-surface-2 p-px">
-            {(["pips", "price"] as const).map((mm) => (
-              <button
-                key={mm}
-                onClick={() => {
-                  setStopMode(mm);
-                  setSl("");
-                  setTp("");
-                }}
-                className={cn("h-4 rounded-[4px] px-1.5 text-[9.5px] font-medium uppercase", stopMode === mm ? "bg-surface-3 text-fg" : "text-fg-3")}
-              >
-                {mm === "pips" ? t("order.ticket.modePips") : t("order.ticket.modePrice")}
+  return (
+    <div className="flex min-h-full flex-col">
+      <div className={cn("flex-1 space-y-2", dialog ? "pb-3" : "px-2.5 pb-2.5")}>
+        {dialog && (
+          <div className="relative">
+            <span className="pointer-events-none absolute start-2.5 top-1/2 -translate-y-1/2">
+              <SymbolAvatar symbol={symbol} size={16} />
+            </span>
+            <TSelect ariaLabel={t("order.ticket.symbol")} value={symbol} onChange={(v) => (onSymbol ? onSymbol(v) : T.openSymbol(v))} options={ALL_INSTRUMENTS.map((i) => ({ value: i.symbol, label: `${i.symbol} · ${i.name}` }))} className="h-8 ps-9 font-medium" />
+          </div>
+        )}
+
+        {/* side: Sell | Buy with live prices */}
+        <div data-tour="side" role="radiogroup" aria-label={t("desk.op.when")} className="grid grid-cols-2 gap-1 rounded-[11px] border border-line bg-panel-2 p-1">
+          {(["sell", "buy"] as const).map((s) => (
+            <SideButton key={s} symbol={symbol} side={s} chosen={side === s} armed={T.ws.oneClick} disabled={!marketOpen || busy} fixed={pending && price ? parseFloat(price) || undefined : undefined} label={sideWord(s)} hint={s === "buy" ? t("desk.op.buyHint") : t("desk.op.sellHint")} onClick={() => onSide(s)} />
+          ))}
+        </div>
+
+        {/* order type ▾ and the spread */}
+        <div className="flex items-center gap-2">
+          <DropMenu
+            width={300}
+            items={[{ header: t("desk.op.typeTitle") }, ...TYPES.map((ty) => ({ label: typeWord(ty), hint: ty === "market" ? t("desk.op.typeNow") : t("desk.op.typeLater"), checked: type === ty, onSelect: () => setType(ty) }))]}
+            trigger={({ toggle, open }) => (
+              <Tip content={t("desk.op.typeTitle")} side="top">
+                <button type="button" onClick={toggle} aria-expanded={open} className={cn("flex h-7 items-center gap-1.5 rounded-[8px] border border-line bg-panel-2 px-2.5 text-[13px] font-medium text-fg hover:bg-surface-3", open && "bg-surface-3")}>
+                  {typeWord(type)}
+                  <ChevronDown className="size-3.5 text-fg-3" />
+                </button>
+              </Tip>
+            )}
+          />
+          <HelpTip title={t("desk.op.typeTitle")} text={explain} />
+          <span className="flex-1" />
+          <SpreadChip symbol={symbol} />
+        </div>
+        {pending && <p className="rounded-[9px] bg-panel-2/60 px-2.5 py-1.5 text-[12px] leading-[17px] text-fg-2">{explain}</p>}
+        {!marketOpen && (
+          <div role="status" className="flex items-center gap-2 rounded-[9px] border border-warn/30 bg-warn-soft px-2.5 py-1.5 text-[12px] text-warn">
+            <Lock className="size-3.5 shrink-0" /> {t("order.ticket.marketClosedNote", { symbol })}
+          </div>
+        )}
+
+        {pending && (
+          <>
+            <FieldRow label={type === "limit" ? t("desk.op.orderPrice") : t("desk.op.stopPrice")} htmlFor="tk-price">
+              <InlineNumber id="tk-price" value={price} onChange={setPrice} step={priceStep} decimals={inst.digits} ariaLabel={t("order.ticket.orderPrice")} placeholder={fmtPrice(symbol, side === "sell" ? q.bid : q.ask)} />
+            </FieldRow>
+            {type === "stop-limit" && (
+              <FieldRow label={t("desk.op.limitPrice")} htmlFor="tk-sl-price">
+                <InlineNumber id="tk-sl-price" value={stopLimit} onChange={setStopLimit} step={priceStep} decimals={inst.digits} ariaLabel={t("order.ticket.stopLimitPrice")} placeholder={price || fmtPrice(symbol, q.ask)} />
+              </FieldRow>
+            )}
+            <FieldRow label={t("desk.op.expiry")}>
+              <TSelect ariaLabel={t("order.ticket.expiry")} value={expiry} onChange={setExpiry} options={[{ value: "GTC", label: t("order.expiry.gtc") }, { value: "Today", label: t("order.expiry.today") }, { value: "Date", label: t("order.expiry.date") }]} className="h-6 w-auto border-0 bg-transparent text-end" />
+              {expiry === "Date" && <TInput type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} aria-label={t("order.ticket.expiryDate")} className="h-6 w-[130px] font-mono" dir="ltr" />}
+            </FieldRow>
+          </>
+        )}
+
+        <div data-tour="size" className="space-y-2">
+          {/* volume */}
+          <FieldRow label={t("desk.op.volume")} htmlFor="tk-vol" help={<HelpTip title={t("desk.g.lot.t")} text={t("desk.g.lot")} />}>
+            <InlineNumber id="tk-vol" value={volume} onChange={setVolume} step={0.01} min={0.01} decimals={2} ariaLabel={t("order.ticket.volume")} suffix={t("desk.ob.lots").toLowerCase()} />
+          </FieldRow>
+          <div className="flex items-center gap-1.5">
+            <QuickStrip options={PRESETS} value={PRESETS.find((v) => Math.abs(vol - v) < 1e-9) ?? null} onPick={(v) => setVolume(v.toFixed(2))} label={t("desk.op.volume")} className="min-w-0 flex-1" />
+            <Tip content={t("desk.op.calc.text")}>
+              <button type="button" onClick={() => setCalcOpen(!calcOpen)} aria-expanded={calcOpen} aria-label={t("desk.op.byRisk")} className={cn("grid size-7 shrink-0 place-items-center rounded-[8px] border border-line", calcOpen ? "bg-ember-soft text-accent-text" : "bg-panel-2 text-fg-2 hover:text-fg")}>
+                <Calculator className="size-3.5" />
               </button>
-            ))}
+            </Tip>
           </div>
+          {calcOpen && (
+            <div className="space-y-2 rounded-[10px] border border-line bg-panel-2/60 p-2.5">
+              <div className="flex items-center gap-1.5 text-[12.5px] font-semibold text-fg">
+                {t("desk.op.calc.title")}
+                <HelpTip text={t("desk.op.calc.text")} />
+              </div>
+              <FieldRow label={t("order.calc.risk")}>
+                <Segmented size="sm" stretch={false} value={riskMode} onChange={setRiskMode} label={t("order.calc.risk")} options={[{ value: "pct", label: "%" }, { value: "usd", label: acc.cent ? "¢" : "$" }]} />
+                <InlineNumber value={risk} onChange={setRisk} step={riskMode === "pct" ? 0.25 : 25} decimals={riskMode === "pct" ? 2 : 0} ariaLabel={t("order.calc.risk")} className="[&_input]:w-[60px]" />
+              </FieldRow>
+              <FieldRow label={t("order.calc.slDistancePips")}>
+                <InlineNumber value={riskPips} onChange={setRiskPips} step={1} decimals={0} ariaLabel={t("order.calc.slDistance")} className="[&_input]:w-[60px]" />
+              </FieldRow>
+              <SummaryRow label={t("order.calc.lots")}>{calcLots.toFixed(2)}</SummaryRow>
+              <Button variant="soft" className="w-full" onClick={applyCalc}>
+                {t("order.calc.apply", { lots: calcLots.toFixed(2), sl: riskPips, tp: (parseFloat(riskPips) || 0) * 2 })}
+              </Button>
+            </div>
+          )}
+          {stopRow("sl")}
+          {stopRow("tp")}
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <div className="mb-1 text-[10.5px] text-down/90">{stopMode === "pips" ? t("order.ticket.stopLossPips") : t("order.ticket.stopLoss")}</div>
-            <Stepper ariaLabel={t("order.ticket.stopLoss")} tone="down" value={sl} onChange={setSl} step={stopMode === "pips" ? 1 : pip} placeholder={t("order.ticket.notSet")} decimals={stopMode === "pips" ? 0 : inst.digits} />
-          </div>
-          <div>
-            <div className="mb-1 text-[10.5px] text-up/90">{stopMode === "pips" ? t("order.ticket.takeProfitPips") : t("order.ticket.takeProfit")}</div>
-            <Stepper ariaLabel={t("order.ticket.takeProfit")} tone="up" value={tp} onChange={setTp} step={stopMode === "pips" ? 1 : pip} placeholder={t("order.ticket.notSet")} decimals={stopMode === "pips" ? 0 : inst.digits} />
-          </div>
-        </div>
-        {(sl || tp) && (
-          <div className="mt-1 grid grid-cols-2 gap-2 font-mono text-[10px] text-fg-3">
-            <span>{slUsd("buy") !== null && <>{t("order.ticket.buyAt", { price: fmtPrice(symbol, stopsFor("buy").sl!) })} · <span className="text-down">{accMoney(acc, slUsd("buy")!, { signed: true })}</span></>}</span>
-            <span>{tpUsd("buy") !== null && <>{t("order.ticket.buyAt", { price: fmtPrice(symbol, stopsFor("buy").tp!) })} · <span className="text-up">{accMoney(acc, tpUsd("buy")!, { signed: true })}</span></>}</span>
+
+        {/* more options */}
+        <button type="button" onClick={() => setMore(!more)} aria-expanded={more} className="flex h-7 w-full min-w-0 items-center gap-1.5 rounded-[8px] px-1 text-[12.5px] font-medium text-fg-2 hover:text-fg">
+          <ChevronDown className={cn("size-3.5 shrink-0 text-fg-3 transition-transform", more ? "rotate-0" : "-rotate-90")} />
+          <span className="shrink-0">{t("desk.op.more")}</span>
+          <span className="min-w-0 truncate text-[12px] font-normal text-fg-3">{[t("desk.op.trailing"), pending && type !== "stop-limit" ? "OCO" : null, t("desk.op.comment"), t("desk.op.maxDev")].filter(Boolean).join(" · ")}</span>
+        </button>
+        {more && (
+          <div className="space-y-2">
+            <FieldRow
+              label={
+                <span className="flex items-center gap-2">
+                  <Switch size="sm" checked={trailing} onChange={setTrailing} label={t("desk.op.trailing")} />
+                  {t("desk.op.trailing")}
+                </span>
+              }
+              help={<HelpTip title={t("desk.op.trailing")} text={t("desk.op.trailingHint")} />}
+            >
+              {trailing ? <InlineNumber value={trailPips} onChange={setTrailPips} step={1} decimals={0} min={1} ariaLabel={t("order.ticket.trailingPips")} suffix={t("order.pips")} className="[&_input]:w-[48px]" /> : <span className="pe-2 text-[12px] text-fg-3">{t("desk.op.off")}</span>}
+            </FieldRow>
+            {pending && type !== "stop-limit" && (
+              <FieldRow
+                label={
+                  <span className="flex items-center gap-2">
+                    <Switch size="sm" checked={oco} onChange={setOco} label={t("desk.op.oco")} />
+                    OCO
+                  </span>
+                }
+                help={<HelpTip title="OCO" text={t("desk.op.oco")} />}
+              >
+                {oco ? <InlineNumber value={ocoPrice} onChange={setOcoPrice} step={priceStep} decimals={inst.digits} ariaLabel={t("desk.op.ocoPrice")} placeholder={fmtPrice(symbol, q.bid)} /> : <span className="pe-2 text-[12px] text-fg-3">{t("desk.op.off")}</span>}
+              </FieldRow>
+            )}
+            <FieldRow label={t("desk.op.comment")}>
+              <input value={comment} onChange={(e) => setComment(e.target.value)} placeholder={t("common.optional")} maxLength={31} aria-label={t("desk.op.comment")} className="h-7 w-[150px] bg-transparent pe-2 text-end text-[13px] text-fg outline-none placeholder:text-fg-3" />
+            </FieldRow>
+            <FieldRow label={t("desk.op.maxDev")} help={<HelpTip title={t("desk.set.maxDeviation")} text={t("desk.set.maxDeviationHint")} />}>
+              <InlineNumber value={T.ws.maxDeviation === null ? "" : String(T.ws.maxDeviation)} placeholder={t("order.ticket.anyPrice")} onChange={(v) => T.setWs({ maxDeviation: v.trim() === "" ? null : Math.max(0, Math.round(parseFloat(v) || 0)) })} step={1} decimals={0} ariaLabel={t("order.ticket.maxDeviation")} className="[&_input]:w-[80px]" />
+            </FieldRow>
           </div>
         )}
-        <div className="mt-2 flex items-center justify-between gap-2">
-          <Check checked={trailing} onChange={setTrailing} label={t("order.ticket.trailing")} />
-          {trailing && (
-            <div className="flex w-[92px] items-center gap-1">
-              <TInput value={trailPips} onChange={(e) => setTrailPips(e.target.value.replace(/[^0-9.]/g, ""))} className="h-6 text-end font-mono" aria-label={t("order.ticket.trailingPips")} />
-              <span className="text-[10px] text-fg-3">{t("order.pips")}</span>
-            </div>
+
+        {/* summary */}
+        <div className="space-y-0.5 border-t border-line px-1 pt-2">
+          <LiveSummary symbol={symbol} volume={vol} unitLabel={unitLabel} />
+          {sl.on && tp.on && slMoney !== null && tpMoney !== null && slMoney < 0 && (
+            <SummaryRow label={t("desk.op.ratioLabel")}>
+              <span className="text-down">{accMoney(acc, slMoney, { signed: true })}</span>
+              <span className="text-fg-3"> / </span>
+              <span className="text-up">{accMoney(acc, tpMoney, { signed: true })}</span>
+              <span className="ms-1.5 text-fg-2">· {(tpMoney / Math.abs(slMoney)).toFixed(1)}×</span>
+            </SummaryRow>
           )}
         </div>
       </div>
 
-      {/* risk calculator */}
-      <div className="rounded-[7px] border border-gold/20 bg-gold-soft/30">
-        <button onClick={() => setCalcOpen(!calcOpen)} className="flex h-7 w-full items-center gap-1.5 whitespace-nowrap px-2 text-[11.5px] font-medium text-gold">
-          <Calculator className="size-3.5" /> {t("order.calc.title")}
-          <span className="ms-auto font-mono text-[10.5px] font-normal text-fg-3">{t("order.unit.lots", { n: calcLots.toFixed(2) })}</span>
-          {calcOpen ? <ChevronUp className="size-3 text-fg-3" /> : <ChevronDown className="size-3 text-fg-3" />}
-        </button>
-        {calcOpen && (
-          <div className="space-y-2 border-t border-gold/15 p-2">
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <div className="mb-1 flex items-center justify-between text-[10.5px] text-fg-3">
-                  <span>{t("order.calc.risk")}</span>
-                  <span className="flex rounded-[4px] border border-line bg-surface-2 p-px">
-                    {(["pct", "usd"] as const).map((rm) => (
-                      <button key={rm} onClick={() => setRiskMode(rm)} className={cn("h-3.5 rounded-[3px] px-1 text-[9px] font-semibold", riskMode === rm ? "bg-surface-3 text-fg" : "text-fg-3")}>
-                        {rm === "pct" ? "%" : acc.cent ? "¢" : "$"}
-                      </button>
-                    ))}
-                  </span>
-                </div>
-                <Stepper ariaLabel={t("order.calc.risk")} value={risk} onChange={setRisk} step={riskMode === "pct" ? 0.25 : 25} decimals={riskMode === "pct" ? 2 : 0} />
-              </div>
-              <div>
-                <div className="mb-1 text-[10.5px] text-fg-3">{t("order.calc.slDistancePips")}</div>
-                <Stepper ariaLabel={t("order.calc.slDistance")} value={riskPips} onChange={setRiskPips} step={1} decimals={0} />
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-1 text-center">
-              {[
-                [t("order.calc.lots"), calcLots.toFixed(2)],
-                [t("order.calc.pipValue"), accMoney(acc, pv * calcLots)],
-                [t("order.calc.margin"), accMoney(acc, marginRequired(symbol, calcLots, q.ask, acc.leverage), { decimals: 0 })],
-              ].map(([k, v]) => (
-                <div key={k} className="rounded-[5px] bg-panel/70 px-1 py-1">
-                  <div className="text-[9px] uppercase tracking-[0.06em] text-fg-3">{k}</div>
-                  <div className="k-num font-mono text-[11.5px] text-fg">{v}</div>
-                </div>
-              ))}
-            </div>
-            <button onClick={applyCalc} className="h-6 w-full rounded-[5px] bg-gold/90 text-[11px] font-semibold text-[#1a1204] hover:bg-gold">
-              {t("order.calc.apply", { lots: calcLots.toFixed(2), sl: riskPips, tp: (parseFloat(riskPips) || 0) * 2 })}
-            </button>
+      {/* the one primary action (sticky at the bottom of the panel) */}
+      <div className={cn("space-y-2 border-t border-line", dialog ? "pt-3" : "t-bar sticky bottom-0 z-[2] px-2.5 pb-2.5 pt-2.5")}>
+        {T.ws.oneClick ? (
+          <div className="flex items-center gap-2 rounded-[10px] border border-ember/30 bg-ember-soft/50 px-2.5 py-2 text-[12px] leading-[16px] text-fg-2">
+            <Zap className="size-3.5 shrink-0 fill-current text-accent-text" />
+            {t("desk.op.oneClickNote")}
           </div>
+        ) : (
+          <Button data-tour="confirm" size="xl" variant={canConfirm ? "primary" : "secondary"} disabled={!canConfirm} onClick={() => side && void submit(side)} className="w-full disabled:opacity-80">
+            <span className="truncate">{confirm}</span>
+          </Button>
         )}
-      </div>
-
-      {dialog && (
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <Label>{t("order.ticket.comment")}</Label>
-            <TInput value={comment} onChange={(e) => setComment(e.target.value)} placeholder={t("common.optional")} maxLength={31} />
-          </div>
-          <div>
-            <Label>{t("order.ticket.maxDeviationPts")}</Label>
-            <Stepper ariaLabel={t("order.ticket.maxDeviation")} value={T.ws.maxDeviation === null ? "" : String(T.ws.maxDeviation)} placeholder={t("order.ticket.anyPrice")} onChange={(v) => T.setWs({ maxDeviation: v.trim() === "" ? null : Math.max(0, Math.round(parseFloat(v) || 0)) })} step={1} min={0} decimals={0} />
-          </div>
+        <div className="flex items-center gap-2">
+          <Switch checked={T.ws.oneClick} onChange={(v) => T.setWs({ oneClick: v })} label={t("desk.op.oneClick")} size="sm" />
+          <span className="text-[12px] font-medium text-fg-2">{t("desk.op.oneClick")}</span>
+          <HelpTip title={t("desk.op.oneClick")} text={T.ws.oneClick ? t("desk.op.oneClickOn") : t("desk.op.oneClickOff")} />
+          <span className={cn("ms-auto text-[11.5px]", T.ws.oneClick ? "text-accent-text" : "text-fg-3")}>{T.ws.oneClick ? t("trader.oneClick.on") : t("trader.oneClick.off")}</span>
         </div>
-      )}
-
-      {/* summary */}
-      <TicketSummary symbol={symbol} volume={vol} showDeviation={!dialog} />
-
-      {/* sell / buy */}
-      <div className="relative grid grid-cols-2 gap-1.5">
-        <button onClick={() => void submit("sell")} disabled={!marketOpen || busy} title={marketOpen ? undefined : t("order.ticket.marketClosed")} aria-label={pending ? t("order.ticket.placePending", { label: t(pendingLabelKey({ side: "sell", type: type as PendingOrder["type"] })) }) : t("order.ticket.placeSell")} className={cn("group rounded-[7px] bg-down px-2.5 py-1.5 text-start text-white transition hover:brightness-110 active:brightness-95 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-3 disabled:hover:brightness-100 [&:disabled_span]:!text-fg-3", prefill?.side === "sell" && "ring-2 ring-down/40 ring-offset-1 ring-offset-panel")}>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.1em] opacity-85">{pending ? t(pendingLabelKey({ side: "sell", type: type as PendingOrder["type"] })) : t("common.sell")}</div>
-          <TicketPrice symbol={symbol} side="sell" fixed={pending && price ? parseFloat(price) || undefined : undefined} className="text-[16px] [&_span]:!text-white" />
-        </button>
-        <button onClick={() => void submit("buy")} disabled={!marketOpen || busy} title={marketOpen ? undefined : t("order.ticket.marketClosed")} aria-label={pending ? t("order.ticket.placePending", { label: t(pendingLabelKey({ side: "buy", type: type as PendingOrder["type"] })) }) : t("order.ticket.placeBuy")} className={cn("rounded-[7px] bg-up px-2.5 py-1.5 text-end text-white transition hover:brightness-110 active:brightness-95 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-3 disabled:hover:brightness-100 [&:disabled_span]:!text-fg-3", prefill?.side === "buy" && "ring-2 ring-up/40 ring-offset-1 ring-offset-panel")}>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.1em] opacity-85">{pending ? t(pendingLabelKey({ side: "buy", type: type as PendingOrder["type"] })) : t("common.buy")}</div>
-          <TicketPrice symbol={symbol} side="buy" fixed={pending && price ? parseFloat(price) || undefined : undefined} className="justify-end text-[16px] [&_span]:!text-white" />
-        </button>
-        <TicketSpread symbol={symbol} />
-      </div>
-      {!marketOpen && (
-        <div role="status" className="flex items-center gap-1.5 rounded-[6px] border border-warn/30 bg-warn-soft px-2 py-1 text-[11px] text-warn">
-          <Lock className="size-3" /> {t("order.ticket.marketClosedNote", { symbol })}
-        </div>
-      )}
-      <div className="flex items-center justify-between text-[10.5px] text-fg-3">
-        <span className="flex items-center gap-1.5">
-          <Zap className={cn("size-3", T.ws.oneClick ? "text-ember" : "")} /> {t("order.ticket.oneClick")}
-        </span>
-        <MiniSwitch checked={T.ws.oneClick} onChange={(v) => T.setWs({ oneClick: v })} label={t("order.ticket.oneClick")} />
       </div>
     </div>
   );
@@ -407,40 +497,97 @@ function tomorrow() {
 
 /* ---- per-tick leaves ---- */
 
-/** Live bid (sell) / ask (buy) on a ticket button; a pending order's own price when one is entered. */
-function TicketPrice({ symbol, side, fixed, className }: { symbol: string; side: "buy" | "sell"; fixed?: number; className?: string }) {
+/** Sell / Buy: label and live price on one line, one short line under; 44 px. */
+function SideButton({ symbol, side, chosen, armed, disabled, fixed, label, hint, onClick }: { symbol: string; side: "buy" | "sell"; chosen: boolean; armed: boolean; disabled: boolean; fixed?: number; label: string; hint: string; onClick: () => void }) {
   const q = useQuote(symbol);
-  return <PriceText symbol={symbol} value={fixed ?? (side === "buy" ? q.ask : q.bid)} dir={fixed === undefined ? q.dir : 0} className={className} />;
+  const buy = side === "buy";
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={chosen}
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "flex h-11 min-w-0 flex-col justify-center rounded-[8px] border px-2.5 text-start transition-[background-color,border-color,color] duration-150 disabled:cursor-not-allowed disabled:opacity-50",
+        chosen ? (buy ? "border-up/45 bg-up-soft" : "border-down/45 bg-down-soft") : "border-transparent hover:bg-surface-3/70",
+        armed && !chosen && (buy ? "border-up/25" : "border-down/25"),
+      )}
+    >
+      <span className="flex items-baseline gap-1.5">
+        <span className={cn("flex items-center gap-1 text-[12.5px] font-semibold capitalize", buy ? "text-up" : "text-down")}>
+          {armed && <Zap className="size-3 fill-current" aria-hidden />}
+          {label}
+        </span>
+        <PriceText symbol={symbol} value={fixed ?? (buy ? q.ask : q.bid)} dir={fixed === undefined ? q.dir : 0} className="ms-auto text-[14px]" />
+      </span>
+      <span className="truncate text-[11.5px] leading-[15px] text-fg-3">{hint}</span>
+    </button>
+  );
 }
 
-function TicketSpread({ symbol }: { symbol: string }) {
+function SpreadChip({ symbol }: { symbol: string }) {
+  const t = useT();
   const q = useQuote(symbol);
   const spreadPts = Math.round((q.ask - q.bid) * 10 ** getInstrument(symbol).digits);
-  return <span className="k-num absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-[4px] border border-line bg-panel px-1.5 py-px font-mono text-[10px] text-fg-2">{spreadPts}</span>;
+  return (
+    <Tip content={t("desk.op.spreadTip")}>
+      <span tabIndex={0} className="k-num shrink-0 rounded-[6px] bg-panel-2 px-1.5 py-0.5 font-mono text-[11.5px] text-fg-2">
+        {t("desk.op.spread")} {spreadPts}
+      </span>
+    </Tip>
+  );
 }
 
-/** Margin, free margin, leverage · spread and deviation of the order being prepared. */
-function TicketSummary({ symbol, volume, showDeviation }: { symbol: string; volume: number; showDeviation: boolean }) {
+/** Margin, pip value, size and the free margin left after the trade (the volume's consequences in plain words). */
+function LiveSummary({ symbol, volume, unitLabel }: { symbol: string; volume: number; unitLabel: string }) {
   const T = useTerminal();
   const t = useT();
   const m = useMetrics();
-  const q = useQuote(symbol);
+  const q = useSlowQuote(symbol);
   const acc = T.account;
+  const inst = getInstrument(symbol);
   const margin = marginRequired(symbol, volume, q.ask, acc.leverage);
-  const spreadPts = Math.round((q.ask - q.bid) * 10 ** getInstrument(symbol).digits);
+  const pipV = pipValuePerLot(symbol, q.bid) * volume;
+  const pct = m.free > 0 ? (margin / m.free) * 100 : Infinity;
+  const short = margin > m.free;
+  const ccy = accCcy(acc);
   return (
-    <div className="space-y-0.5 rounded-[6px] border border-line bg-surface-2/40 px-2 py-1.5 font-mono text-[11px]">
-      {[
-        ["margin", t("order.ticket.margin"), `${accMoney(acc, margin)} ${accCcy(acc)}`],
-        ["free", t("order.ticket.freeMargin"), `${accMoney(acc, m.free)}`],
-        ["leverage", t("order.ticket.leverageSpread"), `1:${acc.leverage} · ${t("order.unit.pts", { n: spreadPts })}`],
-        ...(showDeviation ? [["deviation", t("order.ticket.deviation"), T.ws.maxDeviation === null ? t("order.ticket.anyPrice") : t("order.unit.pts", { n: T.ws.maxDeviation })]] : []),
-      ].map(([id, k, v]) => (
-        <div key={id} className="flex justify-between">
-          <span className="font-sans text-fg-3">{k}</span>
-          <span className={cn("k-num", id === "free" && margin > m.free ? "text-down" : "text-fg-2")}>{v}</span>
+    <>
+      <SummaryRow label={t("desk.op.summary.margin")} help={<HelpTip title={t("desk.g.margin.t")} text={t("desk.g.margin")} />}>
+        <span className={short ? "text-down" : undefined}>
+          {accMoney(acc, margin)} {ccy}
+        </span>
+        <span className="ms-1.5 text-fg-3">· {Number.isFinite(pct) ? `${pct < 0.1 ? pct.toFixed(2) : pct.toFixed(1)}%` : "—"}</span>
+      </SummaryRow>
+      <SummaryRow label={t("desk.op.summary.pip")} help={<HelpTip title={t("desk.g.pip.t")} text={t("desk.g.pip")} />}>
+        {accMoney(acc, pipV)} {ccy}
+      </SummaryRow>
+      <SummaryRow label={t("desk.op.summary.size")}>
+        {(volume * inst.contractSize).toLocaleString("en-US", { maximumFractionDigits: 2 })} <span className="text-fg-3">{unitLabel}</span>
+      </SummaryRow>
+      <SummaryRow label={t("desk.op.summary.free")}>
+        <span className={short ? "text-down" : undefined}>
+          {accMoney(acc, m.free - margin)} {ccy}
+        </span>
+      </SummaryRow>
+      {short && <div className="text-[12px] font-medium text-down">{t("desk.op.notEnough")}</div>}
+    </>
+  );
+}
+
+function ReadOnlyTicket() {
+  const T = useTerminal();
+  const t = useT();
+  return (
+    <div className="grid h-full place-items-center p-6 text-center">
+      <div>
+        <div className="mx-auto mb-3 grid size-10 place-items-center rounded-full border border-warn/30 bg-warn-soft text-warn">
+          <Lock className="size-4" />
         </div>
-      ))}
+        <div className="text-[13.5px] font-semibold">{t("order.ticket.readOnlyTitle")}</div>
+        <p className="mt-1 text-[12.5px] leading-relaxed text-fg-3">{t("order.ticket.readOnlyText", { login: T.account.login })}</p>
+      </div>
     </div>
   );
 }
@@ -449,39 +596,19 @@ function TicketSummary({ symbol, volume, showDeviation }: { symbol: string; volu
 function GuestTicket({ symbol }: { symbol: string }) {
   const T = useTerminal();
   const t = useT();
-  const q = useQuote(symbol);
-  const inst = getInstrument(symbol);
-  const spreadPts = Math.round((q.ask - q.bid) * 10 ** inst.digits);
   return (
-    <div className="space-y-3 p-2.5">
-      <div className="flex items-center gap-2.5">
-        <SymbolAvatar symbol={symbol} size={24} />
-        <div className="min-w-0">
-          <div className="text-[13px] font-semibold">{symbol}</div>
-          <div className="truncate text-[11px] text-fg-3">{inst.name}</div>
-        </div>
-        <span className="ms-auto font-mono text-[10.5px] text-fg-3">{t("order.guest.spread", { pts: spreadPts })}</span>
+    <div className="space-y-2.5 px-2.5 pb-2.5">
+      <div data-tour="side" className="grid grid-cols-2 gap-1 rounded-[11px] border border-line bg-panel-2 p-1">
+        {(["sell", "buy"] as const).map((s) => (
+          <SideButton key={s} symbol={symbol} side={s} chosen={false} armed={false} disabled={false} label={s === "buy" ? t("desk.pos.buy") : t("desk.pos.sell")} hint={s === "buy" ? t("desk.op.buyHint") : t("desk.op.sellHint")} onClick={() => T.quickTrade(symbol, s)} />
+        ))}
       </div>
-      <div className="grid grid-cols-2 gap-1.5">
-        <button onClick={() => T.quickTrade(symbol, "sell")} title={t("trader.guest.title")} aria-label={t("order.guest.sellAria", { symbol })} className="rounded-[7px] border border-line bg-surface-2 px-2.5 py-1.5 text-start transition-colors hover:bg-surface-3">
-          <span className="flex items-center gap-1 text-[9.5px] font-semibold uppercase tracking-[0.1em] text-down">
-            {t("common.sell")} <Lock className="size-2.5 text-fg-3" />
-          </span>
-          <PriceText symbol={symbol} value={q.bid} dir={q.dir} className="text-[15px]" />
-        </button>
-        <button onClick={() => T.quickTrade(symbol, "buy")} title={t("trader.guest.title")} aria-label={t("order.guest.buyAria", { symbol })} className="rounded-[7px] border border-line bg-surface-2 px-2.5 py-1.5 text-end transition-colors hover:bg-surface-3">
-          <span className="flex items-center justify-end gap-1 text-[9.5px] font-semibold uppercase tracking-[0.1em] text-up">
-            <Lock className="size-2.5 text-fg-3" /> {t("common.buy")}
-          </span>
-          <PriceText symbol={symbol} value={q.ask} dir={q.dir} className="justify-end text-[15px]" />
-        </button>
-      </div>
-      <div className="rounded-[8px] border border-ember/25 bg-ember-soft/40 px-3 py-3 text-center">
-        <div className="mx-auto mb-2 grid size-8 place-items-center rounded-full border border-ember/30 bg-ember-soft text-ember">
+      <div className="rounded-[12px] border border-line bg-panel-2/60 px-3 py-3.5 text-center">
+        <div className="mx-auto mb-2 grid size-8 place-items-center rounded-full border border-ember/30 bg-ember-soft text-accent-text">
           <Lock className="size-3.5" />
         </div>
-        <div className="text-[12.5px] font-semibold text-fg">{t("trader.guest.title")}</div>
-        <p className="mt-1 text-[11.5px] leading-relaxed text-fg-3">{t("order.guest.text")}</p>
+        <div className="text-[13.5px] font-semibold text-fg">{t("trader.guest.title")}</div>
+        <p className="mt-1 text-[12px] leading-relaxed text-fg-2">{t("order.guest.text")}</p>
         <GuestActions className="mt-2.5" />
       </div>
     </div>

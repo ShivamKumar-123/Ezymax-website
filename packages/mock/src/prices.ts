@@ -1,6 +1,7 @@
-import { INSTRUMENTS, INSTRUMENT_MAP, type Instrument } from "./symbols";
+import { ALL_INSTRUMENTS, INSTRUMENTS, INSTRUMENT_MAP, type Instrument } from "./symbols";
 import { seeded, hashString } from "./rng";
 import { HISTORY, POSITIONS } from "./client";
+import { IS_DEMO } from "./mode";
 
 export interface Quote {
   symbol: string;
@@ -14,6 +15,11 @@ export interface Quote {
   dir: 1 | -1 | 0;
   /** provider event time (ms) */
   time: number;
+  /**
+   * A delayed snapshot (the provider's last daily bar), not a live stream: the symbol is not streamed right now
+   * (market-data streams within the plan, by demand). Shown, never traded on.
+   */
+  delayed?: boolean;
 }
 
 export interface DayStats {
@@ -49,7 +55,7 @@ export interface DepthBook {
 
 type Listener = (q: Quote) => void;
 type DepthListener = (d: DepthBook) => void;
-type RawQuotes = Record<string, { bid: number; ask: number; last: number; t: number; o?: number; h?: number; l?: number }>;
+type RawQuotes = Record<string, { bid: number; ask: number; last: number; t: number; o?: number; h?: number; l?: number; d?: boolean }>;
 type BarListener = (b: LiveBar) => void;
 
 declare const process: { env: Record<string, string | undefined> };
@@ -114,7 +120,20 @@ class PriceFeed {
   /** Until the feed goes live (first REST snapshot applied after hydration), stream quotes are held here: the
    *  socket opens at start-up in parallel with the snapshot instead of after it, and nothing reaches React early. */
   private holding = true;
-  private held = new Map<string, { b: number; a: number; l?: number; t: number }>();
+  private held = new Map<string, { b: number; a: number; l?: number; t: number; d?: boolean }>();
+  /**
+   * Streaming demand (services/market-data demand.rs). The socket subscribes to every instrument PASSIVELY (prices
+   * when they stream anyway, delayed snapshots otherwise) and ACTIVELY only to what is wanted: symbols with a live
+   * listener (rows on screen, open tickets, positions tables…) plus explicit wants (favourites, positions and orders,
+   * the active chart). Charts and depth ask through `bars` / `depth`. Changes are debounced and sent as diffs:
+   * `subscribe` (active) for new symbols, `subscribe` with `passive: true` for dropped ones.
+   */
+  private wants = new Map<string, Set<string>>();
+  private activeSent = new Set<string>();
+  private demandTimer: ReturnType<typeof setTimeout> | null = null;
+  /** demo builds: catalogue markets the service has no price for tick on the local simulator (from their reference
+   *  price, the provider's last close) until the service prices them */
+  private simOnly = new Set<string>();
   private hiddenAt = 0;
   private resyncListeners = new Set<() => void>();
   /** symbols the service has no prices for (no provider): removed from INSTRUMENTS in live mode */
@@ -129,7 +148,7 @@ class PriceFeed {
   private resolveHydrated!: () => void;
 
   constructor() {
-    for (const inst of INSTRUMENTS) {
+    for (const inst of ALL_INSTRUMENTS) {
       const openPrice = inst.price / (1 + inst.change / 100);
       this.open.set(inst.symbol, openPrice);
       this.quotes.set(inst.symbol, this.makeQuote(inst, inst.price, 0));
@@ -240,7 +259,7 @@ class PriceFeed {
       const prev = this.quotes.get(symbol);
       // a live stream quote newer than this response wins (the REST reply can be older than the socket)
       if (prev && this.liveTimes.has(symbol) && prev.time > q.t) continue;
-      this.quotes.set(symbol, { symbol, bid: q.bid, ask: q.ask, last: mid, change: inst.change, dir: 0, time: q.t });
+      this.quotes.set(symbol, { symbol, bid: q.bid, ask: q.ask, last: mid, change: inst.change, dir: 0, time: q.t, delayed: q.d ? true : undefined });
     }
     this.fetchedGroup = group;
     this.scheduleDayRoll();
@@ -256,11 +275,24 @@ class PriceFeed {
    */
   private dropUnavailable(data: RawQuotes) {
     if (Object.keys(data).length === 0) return; // an empty reply says nothing about individual symbols
-    for (let i = INSTRUMENTS.length - 1; i >= 0; i--) {
-      const s = INSTRUMENTS[i]!.symbol;
-      if (data[s]) continue;
-      this.unavailable.add(s);
-      INSTRUMENTS.splice(i, 1);
+    for (const list of [INSTRUMENTS, ALL_INSTRUMENTS]) {
+      for (let i = list.length - 1; i >= 0; i--) {
+        const inst = list[i]!;
+        if (data[inst.symbol]) continue;
+        if (inst.tier === "catalogue") {
+          // not priced by the service yet. Live builds: its reference price is the provider's last daily close, i.e.
+          // a delayed snapshot (the service fetches a fresh one, and may stream it, once the symbol is wanted).
+          // Demo builds: simulated from that close, like the rest of the demo.
+          if (IS_DEMO) this.simOnly.add(inst.symbol);
+          else {
+            const q = this.quotes.get(inst.symbol);
+            if (q) this.quotes.set(inst.symbol, { ...q, delayed: true });
+          }
+          continue;
+        }
+        this.unavailable.add(inst.symbol);
+        list.splice(i, 1);
+      }
     }
   }
 
@@ -327,11 +359,12 @@ class PriceFeed {
     // the early socket is kept when it carries the current group; its held quotes are newer than the snapshot
     if (this.ws && this.wsGroup !== this.group) this.dropSocket();
     this.holding = false;
-    for (const [sym, q] of this.held) this.onLiveQuote(sym, q.b, q.a, q.l, q.t);
+    for (const [sym, q] of this.held) this.onLiveQuote(sym, q.b, q.a, q.l, q.t, q.d);
     this.held.clear();
     this.notifyAll();
     if (!this.ws) this.openSocket();
     this.startWatchdog();
+    if (this.simOnly.size) this.ensureSimulator();
   }
 
   /** Reconnects a socket that went silent (no quote or heartbeat for 12s) and resyncs after a hidden tab. */
@@ -374,7 +407,10 @@ class PriceFeed {
     ws.onopen = () => {
       this.backoff = 0;
       this.lastFrame = Date.now();
-      ws.send(JSON.stringify({ op: "subscribe", symbols: INSTRUMENTS.map((i) => i.symbol) }));
+      // every instrument passively (prices if they stream, delayed snapshots otherwise), then the active demand
+      ws.send(JSON.stringify({ op: "subscribe", symbols: ALL_INSTRUMENTS.map((i) => i.symbol), passive: true }));
+      this.activeSent.clear();
+      this.flushDemand();
       for (const key of this.barListeners.keys()) {
         const [symbol, tf] = key.split("|");
         ws.send(JSON.stringify({ op: "bars", symbol, tf }));
@@ -398,8 +434,8 @@ class PriceFeed {
           this.lat.push(now - m.r);
           if (this.lat.length > 500) this.lat.shift();
         }
-        if (this.holding) this.held.set(m.s, { b: m.b, a: m.a, l: m.l, t: m.t });
-        else this.onLiveQuote(m.s, m.b, m.a, m.l, m.t);
+        if (this.holding) this.held.set(m.s, { b: m.b, a: m.a, l: m.l, t: m.t, d: m.d === 1 });
+        else this.onLiveQuote(m.s, m.b, m.a, m.l, m.t, m.d === 1);
       } else if (m.type === "bar") this.barListeners.get(`${m.s}|${m.tf}`)?.forEach((fn) => fn({ t: m.t, o: m.o, h: m.h, l: m.l, c: m.c, v: m.v }));
       else if (m.type === "depth" && Array.isArray(m.b) && Array.isArray(m.a)) {
         const d: DepthBook = { symbol: m.s, src: m.src === "feed" ? "feed" : "indicative", t: m.t, bids: m.b, asks: m.a };
@@ -416,12 +452,13 @@ class PriceFeed {
     };
   }
 
-  private onLiveQuote(symbol: string, bid: number, ask: number, last: number | undefined, time: number) {
+  private onLiveQuote(symbol: string, bid: number, ask: number, last: number | undefined, time: number, delayed = false) {
     if (!(bid > 0) || !(ask > 0)) return;
     this.liveTimes.add(symbol);
+    this.simOnly.delete(symbol); // the service prices it now
     const prev = this.quotes.get(symbol);
     last = last || (bid + ask) / 2; // quotes without a trade price use the mid
-    if (prev && prev.bid === bid && prev.ask === ask && prev.last === last) return;
+    if (prev && prev.bid === bid && prev.ask === ask && prev.last === last && !!prev.delayed === delayed) return;
     if (!this.liveOpen.has(symbol)) {
       // symbol missing from /v1/quotes: its first live price is the reference (0%), not the mock open
       this.open.set(symbol, last);
@@ -434,9 +471,55 @@ class PriceFeed {
       day.low = Math.min(day.low, last);
     }
     const dir: Quote["dir"] = !prev ? 0 : bid > prev.bid ? 1 : bid < prev.bid ? -1 : 0;
-    const q: Quote = { symbol, bid, ask, last, change: ((last - open) / open) * 100, dir, time };
+    const q: Quote = { symbol, bid, ask, last, change: ((last - open) / open) * 100, dir, time, delayed: delayed || undefined };
     this.quotes.set(symbol, q);
     this.listeners.get(symbol)?.forEach((fn) => fn(q));
+  }
+
+  /* ---------------- streaming demand ---------------- */
+
+  /**
+   * Declare symbols `owner` wants streamed live (replaces that owner's previous set; [] clears it): favourites, the
+   * account's positions and orders, the open ticket. Rows on screen need no call: a listener counts as demand.
+   */
+  want(owner: string, symbols: readonly string[]) {
+    if (symbols.length) this.wants.set(owner, new Set(symbols));
+    else this.wants.delete(owner);
+    this.scheduleDemand();
+  }
+
+  private demandSince = 0;
+
+  private scheduleDemand() {
+    if (typeof window === "undefined") return;
+    // trailing debounce: a list being scrolled mounts and unmounts rows all the time, and the service keeps every
+    // symbol asked for 5 minutes, so demand goes out once things settle (700 ms quiet, at most every 3 s)
+    const now = Date.now();
+    if (!this.demandTimer) this.demandSince = now;
+    else clearTimeout(this.demandTimer);
+    const wait = Math.max(0, Math.min(700, this.demandSince + 3000 - now));
+    this.demandTimer = setTimeout(() => {
+      this.demandTimer = null;
+      this.flushDemand();
+    }, wait);
+  }
+
+  private flushDemand() {
+    const ws = this.ws;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    const want = new Set<string>();
+    for (const [symbol, subs] of this.listeners) if (subs.size && INSTRUMENT_MAP[symbol]) want.add(symbol);
+    for (const set of this.wants.values()) for (const symbol of set) if (INSTRUMENT_MAP[symbol]) want.add(symbol);
+    const on = [...want].filter((x) => !this.activeSent.has(x));
+    const off = [...this.activeSent].filter((x) => !want.has(x));
+    if (on.length) ws.send(JSON.stringify({ op: "subscribe", symbols: on }));
+    if (off.length) ws.send(JSON.stringify({ op: "subscribe", symbols: off, passive: true }));
+    this.activeSent = want;
+  }
+
+  /** Is the current price of `symbol` a delayed snapshot (not streaming)? */
+  isDelayed(symbol: string): boolean {
+    return !!this.quotes.get(symbol)?.delayed;
   }
 
   /** Account group whose spread markup the quotes should carry (raw / standard / pro / ecn / cent). */
@@ -518,8 +601,10 @@ class PriceFeed {
       if (!this.listeners.has(s)) this.listeners.set(s, new Set());
       this.listeners.get(s)!.add(fn);
     }
+    this.scheduleDemand();
     return () => {
       for (const s of symbols) this.listeners.get(s)?.delete(fn);
+      this.scheduleDemand();
     };
   }
 
@@ -531,9 +616,13 @@ class PriceFeed {
   }
 
   private tick() {
-    for (const inst of INSTRUMENTS) {
-      const subs = this.listeners.get(inst.symbol);
-      if (!subs || subs.size === 0) continue;
+    // only what someone listens to ticks (with 1,400+ instruments the rest keeps its last price); live: only the demo's
+    // catalogue markets the service doesn't price
+    const live = this.mode === "live";
+    for (const [symbol, subs] of this.listeners) {
+      if (subs.size === 0 || (live && !this.simOnly.has(symbol))) continue;
+      const inst = INSTRUMENT_MAP[symbol];
+      if (!inst) continue;
       if (this.rand.next() > 0.55) continue; // not every symbol ticks every cycle
       const prev = this.quotes.get(inst.symbol)!;
       const mid = (prev.bid + prev.ask) / 2;
@@ -581,16 +670,30 @@ export function serverOffset(unixSec: number): number {
 }
 
 /**
- * Is the market for `symbol` open at `ms`? Same rules as the market-data service: crypto trades 24/7, US stocks
- * 09:30–16:00 New York on weekdays, everything else (FX, metals, indices, energies) Monday–Friday server time.
- * While closed the feed holds the last session price and sends no ticks.
+ * Is the market for `symbol` open at `ms`? Same sessions as the market-data service (crate markethours; exchange
+ * holidays not modelled here): crypto 24/7; US stocks 09:30–16:00 New York; Hong Kong 09:30–12:00 and 13:00–16:00
+ * Hong Kong time; Tokyo 09:00–11:30 and 12:30–15:30 Tokyo time (weekdays); everything else (FX, metals, indices,
+ * energies) Monday–Friday server time. While closed the feed holds the last session price and sends no ticks.
  */
 export function isMarketOpen(symbol: string, ms = Date.now()): boolean {
   const inst = INSTRUMENT_MAP[symbol];
-  if (!inst || inst.assetClass === "crypto") return true;
+  if (!inst || inst.assetClass === "crypto" || inst.session === "24x7") return true;
   const sec = Math.floor(ms / 1000);
   const server = new Date((sec + serverOffset(sec)) * 1000);
   const day = server.getUTCDay();
+  // minutes since local midnight in a fixed-offset market (Hong Kong UTC+8, Tokyo UTC+9: no daylight saving)
+  const local = (offsetH: number) => {
+    const d = new Date((sec + offsetH * 3600) * 1000);
+    return { weekday: d.getUTCDay() !== 0 && d.getUTCDay() !== 6, mins: d.getUTCHours() * 60 + d.getUTCMinutes() };
+  };
+  if (inst.session === "hk_equity") {
+    const { weekday, mins } = local(8);
+    return weekday && ((mins >= 570 && mins < 720) || (mins >= 780 && mins < 960));
+  }
+  if (inst.session === "jp_equity") {
+    const { weekday, mins } = local(9);
+    return weekday && ((mins >= 540 && mins < 690) || (mins >= 750 && mins < 930));
+  }
   if (inst.assetClass === "stocks") {
     const ny = new Date((sec + serverOffset(sec) - 7 * 3600) * 1000); // New York = server time − 7h
     const mins = ny.getUTCHours() * 60 + ny.getUTCMinutes();
@@ -601,7 +704,7 @@ export function isMarketOpen(symbol: string, ms = Date.now()): boolean {
 
 /** Deterministic sparkline/intraday series for a symbol. */
 export function sparkline(symbol: string, points = 32, drift?: number): number[] {
-  const inst = INSTRUMENTS.find((i) => i.symbol === symbol);
+  const inst = INSTRUMENT_MAP[symbol];
   const r = seeded(hashString(symbol) + points);
   const d = drift ?? (inst ? inst.change / 100 / points : 0);
   let v = 100;
@@ -617,7 +720,7 @@ export interface Candle { time: number; open: number; high: number; low: number;
 
 /** Daily OHLC history ending today, seeded per symbol. */
 export function candles(symbol: string, count = 180, stepSec = 86400): Candle[] {
-  const inst = INSTRUMENTS.find((i) => i.symbol === symbol)!;
+  const inst = INSTRUMENT_MAP[symbol] ?? INSTRUMENTS[0]!;
   const r = seeded(hashString(symbol + count));
   const now = Math.floor(Date.parse("2026-09-24T21:00:00Z") / 1000 / stepSec) * stepSec;
   const vol = inst.assetClass === "crypto" ? 0.028 : inst.assetClass === "forex" ? 0.004 : 0.011;

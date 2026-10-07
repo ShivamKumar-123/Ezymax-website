@@ -4,8 +4,8 @@ import * as React from "react";
 import { useTheme } from "next-themes";
 import { LineStyle, type IPriceLine } from "lightweight-charts";
 import { toast } from "@/lib/notify";
-import { ArrowDownRight, ArrowUpRight, Bell, Camera, CandlestickChart, Crosshair, Layers, Minus, Plus, ShoppingCart, SlidersHorizontal, X } from "lucide-react";
-import { getInstrument, isMarketOpen, priceFeed } from "@kalks/mock";
+import { ArrowDownRight, ArrowUpRight, Bell, Camera, CandlestickChart, ChevronUp, Crosshair, GripVertical, Layers, Minus, Plus, ShoppingCart, SlidersHorizontal, X, Zap } from "lucide-react";
+import { getInstrument, liveTradable, isMarketOpen, priceFeed } from "@kalks/mock";
 import { PriceText, cn, useQuote } from "@kalks/ui";
 import { usePositionProfit, useTerminal, type Anchor, type ChartTab, type Drawing } from "@/lib/store";
 import { CHART_TYPES, TIMEFRAMES, accMoney, fmtPrice, fmtVol, profitAt, roundPrice, type TPosition } from "@/lib/trading";
@@ -103,9 +103,11 @@ export interface ChartViewProps {
   onActivate: () => void;
   compact?: boolean;
   hideOneClick?: boolean;
+  /** draw the accent frame of the active chart (default: when active); off with a single chart on screen */
+  highlight?: boolean;
 }
 
-export function ChartView({ tab, active, onActivate, compact, hideOneClick }: ChartViewProps) {
+export function ChartView({ tab, active, onActivate, compact, hideOneClick, highlight = active }: ChartViewProps) {
   const T = useTerminal();
   const t = useT();
   const { resolvedTheme } = useTheme();
@@ -545,7 +547,7 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
       ref={wrap}
       onPointerDown={onActivate}
       onContextMenu={onContext}
-      className={cn("relative h-full min-h-0 w-full select-none overflow-hidden rounded-[8px] border bg-[var(--t-chart-bg)]", active ? "border-ember/70 shadow-[0_0_0_1px_rgba(255,90,31,0.25)]" : "border-line", (hover || drag) && "cursor-ns-resize")}
+      className={cn("relative h-full min-h-0 w-full select-none overflow-hidden rounded-[8px] border bg-[var(--t-chart-bg)]", highlight ? "border-ember/70 shadow-[0_0_0_1px_rgba(255,90,31,0.25)]" : "border-line", (hover || drag) && "cursor-ns-resize")}
       onPointerDownCapture={(e) => {
         if (drawing || e.button !== 0) return;
         const id = hitLine(e.clientY);
@@ -666,7 +668,8 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
               onDoubleClick={() => l.kind === "pos" && T.setUi({ positionDialog: l.ref })}
               title={l.kind === "pos" ? t("chart.line.posTitle") : l.draggable ? t("chart.line.dragTitle") : undefined}
             >
-              <span className="px-1.5">
+              {l.draggable && <GripVertical className="ms-0.5 size-3 shrink-0 opacity-70" aria-hidden />}
+              <span className={l.draggable ? "pe-1.5 ps-0.5" : "px-1.5"}>
                 {l.label}
                 {isDrag && l.kind !== "pos" && <span className="ml-1 opacity-80">{fmtPrice(tab.symbol, price)}</span>}
               </span>
@@ -756,7 +759,6 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick }: Ch
       )}
 
       {/* bid/ask tag */}
-      <QuoteTag symbol={tab.symbol} compact={compact} />
 
       {drawing && active && (
         <div className="pointer-events-none absolute left-1/2 top-2 z-[6] -translate-x-1/2 rounded-[5px] border border-ember/40 bg-panel-2/95 px-2 py-0.5 text-[10.5px] text-fg-2">
@@ -855,43 +857,24 @@ function PositionChipPnl({ p }: { p: TPosition }) {
   return <span className={cn("k-num border-l border-line px-1.5", pnl >= 0 ? "bg-up/15 text-up" : "bg-down/15 text-down")}>{accMoney(T.account, pnl, { signed: true })}</span>;
 }
 
-/** Bid / Ask / Spread / Last strip at the bottom-left of a chart. */
-function QuoteTag({ symbol, compact }: { symbol: string; compact?: boolean }) {
-  const q = useQuote(symbol);
-  const t = useT();
-  const inst = getInstrument(symbol);
-  const spreadPts = Math.round((q.ask - q.bid) * 10 ** inst.digits);
-  return (
-    <div className="pointer-events-none absolute bottom-7 left-2 z-[5] flex items-center gap-2 font-mono text-[10px] text-fg-3">
-      <span>
-        {t("chart.quote.bid")} <span className="text-fg-2">{fmtPrice(symbol, q.bid)}</span>
-      </span>
-      <span>
-        {t("chart.quote.ask")} <span className="text-down">{fmtPrice(symbol, q.ask)}</span>
-      </span>
-      {!compact && <span>{t("chart.quote.spread")} {spreadPts}</span>}
-      {/* candles = raw last trade price (same for every account); Bid/Ask lines = this account's spread */}
-      {!compact && q.last !== undefined && <span>{t("chart.quote.last")} {fmtPrice(symbol, q.last)}</span>}
-      {!compact && !isMarketOpen(symbol) && <span className="text-fg-2">{t("chart.quote.marketClosed")}</span>}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* One-click trading panel (top-left of each chart)                    */
 /* ------------------------------------------------------------------ */
 
 export function OneClickPanel({ symbol, compact, top, left }: { symbol: string; compact?: boolean; top: number; left?: number }) {
   const T = useTerminal();
   const t = useT();
-  const { bid, ask, dir } = useQuote(symbol);
+  const { bid, ask, dir, delayed } = useQuote(symbol);
   const spread = Math.round((ask - bid) * 10 ** getInstrument(symbol).digits);
+  // a delayed snapshot or a demo-only market on a live account: prices shown, Sell / Buy off (with the reason)
+  const demoOnly = !T.guest && T.account.type === "live" && !liveTradable(symbol);
+  const blocked = delayed ? t("desk.side.delayedTip") : demoOnly ? t("desk.side.demoOnlyTip") : null;
   const [lot, setLot] = React.useState(String(T.ws.lot.toFixed(2)));
-  React.useEffect(() => setLot(T.ws.lot.toFixed(2)), [T.ws.lot]);
+  React.useEffect(() => {
+    setLot(T.ws.lot.toFixed(2));
+  }, [T.ws.lot]);
   const vol = Math.max(0.01, parseFloat(lot) || 0.01);
   const open = useMarketOpen(symbol);
   const go = (side: "buy" | "sell") => {
-    if (!open) return;
+    if (!open || blocked) return;
     if (T.guest) return void T.quickTrade(symbol, side, vol); // explains: no trading account yet
     if (T.ws.oneClick) T.quickTrade(symbol, side, vol);
     else T.openNewOrder({ symbol, side, type: "market" });
@@ -911,7 +894,7 @@ export function OneClickPanel({ symbol, compact, top, left }: { symbol: string; 
   if (collapsed)
     return (
       <button
-        className="absolute left-2 z-[6] flex h-7 items-center gap-1.5 rounded-[6px] border border-line-top bg-panel-2/95 px-2 text-[10.5px] font-semibold text-fg-2 shadow-[0_6px_20px_-8px_rgba(0,0,0,0.6)] hover:text-fg"
+        className="absolute left-2 z-[6] flex h-8 items-center gap-1.5 rounded-[8px] border border-line-top bg-panel-2/95 px-2.5 text-[12px] font-semibold text-fg-2 shadow-[0_6px_20px_-8px_rgba(0,0,0,0.6)] hover:text-fg"
         style={{ top, left }}
         onPointerDown={(e) => e.stopPropagation()}
         onClick={() => setCollapsed(false)}
@@ -923,9 +906,9 @@ export function OneClickPanel({ symbol, compact, top, left }: { symbol: string; 
       </button>
     );
   return (
-    <div className="absolute left-2 z-[6] flex items-stretch overflow-hidden rounded-[6px] border border-line-top bg-panel-2 shadow-[0_6px_20px_-8px_rgba(0,0,0,0.6)]" style={{ top, left }} onPointerDown={(e) => e.stopPropagation()} onContextMenu={(e) => e.stopPropagation()}>
-      <button onClick={() => go("sell")} disabled={!open} title={open ? (T.guest ? t("trader.guest.title") : undefined) : t("chart.oneClick.marketClosed")} className={cn("group flex flex-col items-start bg-down/12 px-2 py-1 text-left transition-colors hover:bg-down/25 disabled:cursor-not-allowed disabled:bg-surface-2 disabled:opacity-60", compact ? "min-w-[74px]" : "min-w-[92px]")} aria-label={t(open ? "chart.oneClick.sellAria" : "chart.oneClick.sellClosedAria", { symbol })}>
-        <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-down">{t("common.sell")}</span>
+    <div data-tour="oneclick" className="absolute left-2 z-[6] flex items-stretch overflow-hidden rounded-[9px] border border-line-top bg-panel-2 shadow-[0_6px_20px_-8px_rgba(0,0,0,0.6)]" style={{ top, left }} onPointerDown={(e) => e.stopPropagation()} onContextMenu={(e) => e.stopPropagation()}>
+      <button onClick={() => go("sell")} disabled={!open || !!blocked} title={blocked ?? (open ? (T.guest ? t("trader.guest.title") : undefined) : t("chart.oneClick.marketClosed"))} className={cn("group flex flex-col items-start bg-down/12 px-2 py-1 text-left transition-colors hover:bg-down/25 disabled:cursor-not-allowed disabled:bg-surface-2 disabled:opacity-60", compact ? "min-w-[74px]" : "min-w-[92px]")} aria-label={t(open ? "chart.oneClick.sellAria" : "chart.oneClick.sellClosedAria", { symbol })}>
+        <span className="flex items-center gap-1 text-[11px] font-semibold text-down">{T.ws.oneClick && !T.guest && <Zap className="size-3 fill-current" aria-hidden />}{t("common.sell")}</span>
         <PriceText symbol={symbol} value={bid} dir={dir} className={compact ? "text-[12px]" : "text-[14px]"} />
       </button>
       <div className="flex w-[84px] flex-col items-center justify-center border-x border-line bg-panel px-0.5">
@@ -946,14 +929,14 @@ export function OneClickPanel({ symbol, compact, top, left }: { symbol: string; 
         />
         <button onClick={() => step(1)} className="grid size-5 shrink-0 place-items-center rounded text-[13px] leading-none text-fg-3 hover:bg-surface-3 hover:text-fg" aria-label={t("chart.oneClick.increase")}>+</button>
         </div>
-        {open ? <span className="font-mono text-[9px] text-fg-3">{spread}</span> : <span className="whitespace-nowrap text-[9px] font-semibold uppercase tracking-[0.06em] text-warn">{t("chart.oneClick.marketClosed")}</span>}
+        {!open ? <span className="whitespace-nowrap text-[10px] font-semibold text-warn">{t("chart.oneClick.marketClosed")}</span> : delayed ? <span className="whitespace-nowrap text-[10px] font-semibold text-warn">{t("desk.side.delayed")}</span> : demoOnly ? <span className="whitespace-nowrap text-[10px] font-semibold text-fg-3">{t("desk.side.demoOnly")}</span> : <span className="font-mono text-[10.5px] text-fg-3">{spread}</span>}
       </div>
-      <button onClick={() => go("buy")} disabled={!open} title={open ? (T.guest ? t("trader.guest.title") : undefined) : t("chart.oneClick.marketClosed")} className={cn("flex flex-col items-end bg-up/12 px-2 py-1 text-right transition-colors hover:bg-up/25 disabled:cursor-not-allowed disabled:bg-surface-2 disabled:opacity-60", compact ? "min-w-[74px]" : "min-w-[92px]")} aria-label={t(open ? "chart.oneClick.buyAria" : "chart.oneClick.buyClosedAria", { symbol })}>
-        <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-up">{t("common.buy")}</span>
+      <button onClick={() => go("buy")} disabled={!open || !!blocked} title={blocked ?? (open ? (T.guest ? t("trader.guest.title") : undefined) : t("chart.oneClick.marketClosed"))} className={cn("flex flex-col items-end bg-up/12 px-2 py-1 text-right transition-colors hover:bg-up/25 disabled:cursor-not-allowed disabled:bg-surface-2 disabled:opacity-60", compact ? "min-w-[74px]" : "min-w-[92px]")} aria-label={t(open ? "chart.oneClick.buyAria" : "chart.oneClick.buyClosedAria", { symbol })}>
+        <span className="flex items-center gap-1 text-[11px] font-semibold text-up">{t("common.buy")}{T.ws.oneClick && !T.guest && <Zap className="size-3 fill-current" aria-hidden />}</span>
         <PriceText symbol={symbol} value={ask} dir={dir} className={cn("justify-end", compact ? "text-[12px]" : "text-[14px]")} />
       </button>
-      <button onClick={() => setCollapsed(true)} className="grid w-5 place-items-center border-l border-line bg-panel text-[10px] text-fg-3 hover:text-fg" aria-label={t("chart.oneClick.hide")} title={t("chart.oneClick.hideShort")}>
-        ⌃
+      <button onClick={() => setCollapsed(true)} className="grid w-6 place-items-center border-l border-line bg-panel text-fg-3 hover:text-fg" aria-label={t("chart.oneClick.hide")} title={t("chart.oneClick.hideShort")}>
+        <ChevronUp className="size-3.5" />
       </button>
     </div>
   );

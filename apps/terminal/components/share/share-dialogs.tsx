@@ -6,6 +6,7 @@ import { Copy, ExternalLink, Link2, Loader2, Share2, Trash2, X } from "lucide-re
 import { getInstrument } from "@kalks/mock";
 import { SymbolAvatar, cn } from "@kalks/ui";
 import { useTerminal } from "@/lib/store";
+import { useT } from "@kalks/i18n/react";
 import { PENDING_LABEL, fmtServer, fmtVol } from "@/lib/trading";
 import { buildSnapshot, shareApi, shareLinks, shareUi, shareUrl, snapshotSig, useShareLinks, useShareSync, useShareUi, type ShareLink, type ShareTrade } from "@/lib/share";
 import { Badge, Empty, MiniSwitch, TButton, TDialog, TInput } from "@/components/ui/primitives";
@@ -38,7 +39,9 @@ function AccountShareLayer() {
   const ui = useShareUi();
   // selection belongs to one account
   const login = T.account.login;
-  React.useEffect(() => shareUi.set({ selecting: false, selected: [], dialog: null }), [login]);
+  React.useEffect(() => {
+    shareUi.set({ selecting: false, selected: [], dialog: null });
+  }, [login]);
   return (
     <>
       <CreateShareDialog open={ui.dialog === "create"} />
@@ -51,30 +54,31 @@ function AccountShareLayer() {
 export function ShareControls() {
   const ui = useShareUi();
   const T = useTerminal();
+  const t = useT();
   const n = useShareLinks(T.account.login).filter((l) => (l.status ?? "active") === "active").length;
   if (ui.selecting)
     return (
-      <div className="mr-1 flex items-center gap-1">
-        <span className="px-1 font-mono text-[11px] text-fg-3">{ui.selected.length} selected</span>
+      <div className="flex items-center gap-1.5">
+        <span className="px-1 text-[12.5px] text-fg-2">{t("desk.share.selected", { count: ui.selected.length })}</span>
         <button
           disabled={!ui.selected.length}
           onClick={() => shareUi.set({ dialog: "create" })}
-          className="flex h-6 items-center gap-1 rounded-[5px] bg-ember px-2 text-[11px] font-medium text-white hover:brightness-110 disabled:opacity-45"
+          className="flex h-7 items-center gap-1.5 rounded-[7px] bg-accent-strong px-2.5 text-[12.5px] font-semibold text-white hover:brightness-110 disabled:opacity-45"
         >
-          <Share2 className="size-3" /> Share
+          <Share2 className="size-3.5" /> {t("desk.share.share")}
         </button>
-        <button onClick={() => shareUi.set({ selecting: false, selected: [] })} className="flex h-6 items-center rounded-[5px] border border-line px-2 text-[11px] text-fg-2 hover:bg-surface-3 hover:text-fg">
-          Cancel
+        <button onClick={() => shareUi.set({ selecting: false, selected: [] })} className="flex h-7 items-center rounded-[7px] border border-line px-2.5 text-[12.5px] text-fg-2 hover:bg-surface-3 hover:text-fg">
+          {t("common.cancel")}
         </button>
       </div>
     );
   return (
-    <div className="mr-1 flex items-center gap-1">
-      <button onClick={() => shareUi.set({ selecting: true, selected: [] })} className="flex h-6 items-center gap-1 rounded-[5px] border border-line px-2 text-[11px] font-medium text-fg-2 hover:bg-surface-3 hover:text-fg" title="Select trades to share as a public link">
-        <Share2 className="size-3" /> Share
+    <div className="flex items-center gap-1">
+      <button onClick={() => shareUi.set({ selecting: true, selected: [] })} className="flex h-7 items-center gap-1.5 rounded-[7px] border border-line px-2.5 text-[12.5px] font-medium text-fg-2 hover:bg-surface-3 hover:text-fg" title={t("desk.share.pickTip")}>
+        <Share2 className="size-3.5" /> {t("desk.share.share")}
       </button>
-      <button onClick={() => shareUi.set({ dialog: "links" })} className="flex h-6 items-center gap-1 rounded-[5px] px-1.5 text-[11px] text-fg-3 hover:bg-surface-3 hover:text-fg" title="My share links">
-        <Link2 className="size-3" />
+      <button onClick={() => shareUi.set({ dialog: "links" })} aria-label={t("desk.share.links")} title={t("desk.share.links")} className="flex h-7 min-w-7 items-center justify-center gap-1 rounded-[7px] px-1.5 text-[12.5px] text-fg-2 hover:bg-surface-3 hover:text-fg">
+        <Link2 className="size-3.5" />
         {n > 0 && <span className="k-num font-mono">{n}</span>}
       </button>
     </div>

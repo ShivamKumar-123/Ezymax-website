@@ -63,7 +63,7 @@ const trader: NsMessages<"trader"> = {
   "preset.analysis": "تحلیل",
   "preset.analysisHint": "4 نمودار",
   "preset.scalper": "اسکالپر",
-  "preset.scalperHint": "DOM + 2 نمودار",
+  "preset.scalperHint": "دفتر سفارش + 2 نمودار",
   // Workspace profiles (File > Profiles, status bar)
   "profile.default": "پیش‌فرض",
   "profile.scalping": "اسکالپینگ",

@@ -6,7 +6,8 @@
 // focused position drawn bolder). `bare`: the Chart tab draws the header (Premium | Underlying, timeframes) itself.
 import * as React from "react";
 import { useTheme } from "next-themes";
-import { LineStyle, type IPriceLine } from "lightweight-charts";
+import { LineStyle, type IPriceLine, type UTCTimestamp } from "lightweight-charts";
+import { closeAt, crosshairBus } from "@/lib/options/crosshair";
 import { CandlestickChart } from "lucide-react";
 import { INSTRUMENT_MAP } from "@kalks/mock";
 import { parseSeriesCode } from "@kalks/mock/options";
@@ -127,6 +128,38 @@ function ChartBody({ u, tf, login, className, bare }: { u: string; tf: Timeframe
     }
     return out;
   }, [legs, sel, index, quotes, book.positions, focus, u, digits, t]);
+
+  // "Both" view: share the crosshair time with the option's premium chart
+  React.useEffect(() => {
+    if (!engine) return;
+    const { chart, main } = engine;
+    let syncing = false;
+    const onMove = (p: { time?: unknown }) => {
+      if (!syncing) crosshairBus.emit("underlying", p.time ? (p.time as number) : null);
+    };
+    chart.subscribeCrosshairMove(onMove);
+    const off = crosshairBus.on((src, time) => {
+      if (src === "underlying" || !engine.alive.current) return;
+      syncing = true;
+      try {
+        if (time === null) chart.clearCrosshairPosition();
+        else {
+          const price = closeAt(main.data() as { time: unknown; close?: number }[], time);
+          if (price !== null) chart.setCrosshairPosition(price, time as UTCTimestamp, main);
+        }
+      } finally {
+        syncing = false;
+      }
+    });
+    return () => {
+      off();
+      try {
+        chart.unsubscribeCrosshairMove(onMove);
+      } catch {
+        /* chart already removed */
+      }
+    };
+  }, [engine]);
 
   const lines = React.useRef<{ owner: unknown; map: Map<string, IPriceLine> }>({ owner: null, map: new Map() });
   React.useEffect(() => {

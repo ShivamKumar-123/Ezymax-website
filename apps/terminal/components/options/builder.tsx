@@ -166,7 +166,9 @@ function BuilderBody() {
     .filter((x): x is NonNullable<typeof x> => !!x);
   // other legs: ask the book again
   const legKey = resolved.map((l) => `${l.q.code}:${l.side}:${l.contracts}`).join("|");
-  React.useEffect(() => setHouseRoute(false), [legKey]);
+  React.useEffect(() => {
+    setHouseRoute(false);
+  }, [legKey]);
   const usdPerUnit = usdPerUnitOf(chain);
   const pay: PayLeg[] = resolved.map((l) => ({ right: l.right, strike: l.row.strike, side: l.side, contracts: l.contracts, premium: fillOf(l.q, l.side), iv: l.q.iv }));
   const preview = usePreview(

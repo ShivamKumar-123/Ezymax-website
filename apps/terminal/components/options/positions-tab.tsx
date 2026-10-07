@@ -329,7 +329,9 @@ const PositionCard = React.memo(function PositionCard({ p, readOnly, report, loc
   const spot = useSpot(p.option.underlying);
   const [open, setOpen] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
-  React.useEffect(() => report?.(p.ticket, v));
+  React.useEffect(() => {
+    report?.(p.ticket, v);
+  });
   const cut = cutOf(p);
   const u = p.option.underlying;
   const digits = digitsOf(u);
@@ -418,7 +420,9 @@ function LegLine({ p, report, readOnly, locale }: { p: OptPosition; report?: Rep
   const T = useTerminal();
   const v = useOptionPositionLive(p);
   const [busy, setBusy] = React.useState(false);
-  React.useEffect(() => report?.(p.ticket, v));
+  React.useEffect(() => {
+    report?.(p.ticket, v);
+  });
   const u = p.option.underlying;
   return (
     <div className="rounded-[8px] px-1 py-1.5 text-[11.5px] hover:bg-surface-2/70">
@@ -683,6 +687,7 @@ export function OptionsPositionsTab() {
             </span>
           </span>
           <span className="text-fg-3">{t("trader.opt.pos.count", { count: book.positions.length })}</span>
+          <span className="hidden truncate text-fg-3 lg:inline">· {t("trader.opt.pos.sharedAccount")}</span>
           <span className="ms-auto">
             <GreeksButton totals={total} />
           </span>
@@ -690,18 +695,6 @@ export function OptionsPositionsTab() {
       )}
       <div className="t-scroll min-h-0 flex-1 overflow-auto p-2">
         <OptionPositionsList report={report} />
-      </div>
-      <div className="flex h-8 shrink-0 items-center gap-4 overflow-hidden border-t border-line bg-panel-2 px-3 font-mono text-[11.5px] text-fg-2">
-        <span className="k-num whitespace-nowrap">
-          <span className="font-sans text-fg-3">{t("toolbox.summary.equity")}:</span> <LiveMoney value={m.equity} format={(x) => accMoney(a, x)} className="px-0.5 text-fg" />
-        </span>
-        <span className="k-num whitespace-nowrap">
-          <span className="font-sans text-fg-3">{t("toolbox.summary.margin")}:</span> <span className="text-fg">{accMoney(a, m.margin)}</span>
-        </span>
-        <span className="k-num whitespace-nowrap">
-          <span className="font-sans text-fg-3">{t("toolbox.summary.freeMargin")}:</span> <span className={m.free < 0 ? "text-down" : "text-fg"}>{accMoney(a, m.free)}</span> <span className="font-sans text-[10.5px] text-fg-3">{accCcy(a)}</span>
-        </span>
-        <span className="hidden truncate font-sans text-[10.5px] text-fg-3 md:inline">{t("trader.opt.pos.sharedAccount")}</span>
       </div>
     </div>
   );

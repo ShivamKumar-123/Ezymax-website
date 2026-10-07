@@ -1,56 +1,53 @@
 "use client";
 
+// Desktop layout (docs/TERMINAL-DESIGN.md §2.2): chart-first, MT5 web clean, Delta Exchange full-page scroll.
+//
+//   ┌ top bar (sticky): ☰ · brand · CFD | Options · search · account · Deposit · bell · profile ──────────────┐
+//   │ chart card (one toolbar row, drawing rail, Buy / Sell box on the plot)        │ Instruments | Order book │
+//   │                                                                               │ (collapsible column)     │
+//   └ account health · connection · server time · [Positions (3) ↓] ──────────────────────────────────────────┘
+//   ── page scrolls ──
+//   positions · orders · history · alerts · news … full width
+//
+// The order form is a centred popup (Buy / Sell on the chart, New order, F9). "Full chart" covers the window with the
+// chart; an edge arrow slides the instruments back in. Options mode uses the same frame: the underlying's chart with
+// one toggle for the options panel (chain, analytics, book), the same column and popup order form.
 import * as React from "react";
 import dynamic from "next/dynamic";
-import { Panel, PanelGroup, PanelResizeHandle, type ImperativePanelHandle } from "react-resizable-panels";
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import { ChevronsLeft } from "lucide-react";
+import { cn } from "@kalks/ui";
 import { useTerminal } from "@/lib/store";
 import { useT } from "@kalks/i18n/react";
-import { TPanel } from "@/components/ui/panel";
-import { MarketWatch } from "@/components/market/market-watch";
-import { Navigator } from "@/components/market/navigator";
+import { Tip } from "@/components/ui/kit";
 import { ChartWorkspace } from "@/components/chart/workspace";
-import { RightPanel } from "@/components/order/right-panel";
 import { Toolbox } from "@/components/toolbox/toolbox";
 import { TitleBar } from "./title-bar";
-import { StatusBar } from "./status-bar";
+import { ScreenBar } from "./status-bar";
+import { SideColumn } from "./side-column";
+import { Tour } from "./tour";
+import { ACTIVITY_ID, scrollToChart, showSide } from "./commands";
 import { useTradeMode } from "@/lib/options/mode";
 
-// Options workspace: its own chunk (one module, three panels), downloaded the first time a trader switches to
-// Options. It fills the same panels as CFD mode: instruments where Market Watch is, Chart | Option chain where the
-// chart is, the option ticket where the order panel is, so switching modes never moves a panel.
-const OptionsLeft = dynamic(() => import("@/components/options/desktop").then((m) => m.OptionsLeft), { ssr: false, loading: () => <PanelLoading /> });
-const OptionsCenter = dynamic(() => import("@/components/options/desktop").then((m) => m.OptionsCenter), { ssr: false, loading: () => <PanelLoading framed /> });
-const OptionsRight = dynamic(() => import("@/components/options/desktop").then((m) => m.OptionsRight), { ssr: false, loading: () => <PanelLoading /> });
+// Options workspace: its own chunk, downloaded the first time a trader switches to Options.
+const OptionsMain = dynamic(() => import("@/components/options/desktop").then((m) => m.OptionsMain), { ssr: false, loading: () => <div className="h-full animate-pulse rounded-[14px] border border-line bg-panel" /> });
+const OptionsTicketPopup = dynamic(() => import("@/components/options/desktop").then((m) => m.OptionsTicketPopup), { ssr: false });
 
-function PanelLoading({ framed }: { framed?: boolean }) {
-  return <div className={framed ? "h-full animate-pulse rounded-[8px] border border-line bg-panel" : "h-full animate-pulse bg-panel"} />;
-}
-
-function Handle() {
-  return <PanelResizeHandle className="t-handle" />;
-}
-
-/** Thin edge rail that re-opens a hidden panel. */
-function Rail({ label, side, onClick }: { label: string; side: "left" | "right" | "bottom"; onClick: () => void }) {
+/** Slim edge button that brings the hidden column back (and, in Full chart, slides it in over the chart). */
+function EdgeTab({ label, shortcut, onClick, className }: { label: string; shortcut?: string; onClick: () => void; className?: string }) {
   const t = useT();
-  if (side === "bottom")
-    return (
-      <button onClick={onClick} className="mt-1 flex h-6 shrink-0 items-center justify-center gap-2 rounded-[6px] border border-line bg-panel text-[10.5px] font-semibold uppercase tracking-[0.09em] text-fg-3 hover:border-ember/40 hover:text-fg">
-        {label} ▴
-      </button>
-    );
   return (
-    <button onClick={onClick} className="flex w-6 shrink-0 items-center justify-center rounded-[6px] border border-line bg-panel text-fg-3 hover:border-ember/40 hover:text-fg" title={t("trader.rail.show", { label })}>
-      <span className="text-[10px] font-semibold uppercase tracking-[0.12em] [writing-mode:vertical-rl]" style={side === "left" ? { transform: "rotate(180deg)" } : undefined}>
-        {label}
-      </span>
-    </button>
+    <Tip content={label} shortcut={shortcut} side="left">
+      <button onClick={onClick} aria-label={label} data-tour="edge" className={cn("t-glass flex w-8 shrink-0 flex-col items-center gap-2 rounded-[12px] border border-line py-2.5 text-fg-2 transition-colors hover:border-ember/40 hover:text-fg", className)}>
+        <ChevronsLeft className="size-4 rtl:-scale-x-100" />
+        <span className="text-[12px] font-medium [writing-mode:vertical-rl]">{t("desk.side.instruments")}</span>
+      </button>
+    </Tip>
   );
 }
 
-/** Panel sizes are percentages; convert pixel minimums so side panels never get cramped. */
 function useViewportWidth() {
-  const [w, setW] = React.useState(1600);
+  const [w, setW] = React.useState(() => (typeof window === "undefined" ? 1600 : window.innerWidth));
   React.useEffect(() => {
     const f = () => setW(window.innerWidth);
     f();
@@ -59,138 +56,96 @@ function useViewportWidth() {
   }, []);
   return w;
 }
-/**
- * Toasts sit at the top-right of the chart area: below the chart tabs + toolbar and left of the
- * order panel, so they never cover the chart header or the ticket (see providers.tsx).
- */
-function useToastPlacement(ref: React.RefObject<HTMLDivElement | null>, mode: string) {
-  React.useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const root = document.documentElement.style;
-    // Options: below the Chart | Option chain tabs, the expiry bar and the tab's own toolbar
-    const below = mode === "options" ? 112 : 74;
-    const place = () => {
-      const r = el.getBoundingClientRect();
-      root.setProperty("--t-toast-top", `${Math.round(r.top + below)}px`);
-      root.setProperty("--t-toast-right", `${Math.round(window.innerWidth - r.right + 76)}px`);
-    };
-    place();
-    const ro = new ResizeObserver(place);
-    ro.observe(el);
-    window.addEventListener("resize", place);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", place);
-      root.removeProperty("--t-toast-top");
-      root.removeProperty("--t-toast-right");
-    };
-  }, [ref, mode]);
-}
-
-const pct = (px: number, w: number) => Math.min(45, Math.ceil((px / Math.max(w, 1)) * 100));
 
 export function DesktopTerminal() {
   const T = useTerminal();
   const t = useT();
-  const p = T.ws.panels;
-  const vw = useViewportWidth();
-  // Small laptops: start with Market Watch tucked into its rail so the chart and ticket get room.
-  const autoTucked = React.useRef(false);
-  React.useEffect(() => {
-    if (autoTucked.current || vw === 1600) return;
-    autoTucked.current = true;
-    if (window.innerWidth < 1200 && p.watch) T.togglePanel("watch", false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vw]);
-  const leftMin = pct(230, vw);
-  const rightMin = pct(268, vw);
-  const toolboxRef = React.useRef<ImperativePanelHandle>(null);
-  const center = React.useRef<HTMLDivElement>(null);
   const mode = useTradeMode();
   const options = mode === "options";
-  useToastPlacement(center, mode);
-  const [maxed, setMaxed] = React.useState(false);
-  // dir="ltr": the workspace keeps the MT5 arrangement (Market Watch left, order panel right, chart and
-  // price columns left-to-right) in Arabic/Urdu/Persian as well. Only the text is translated; RTL scripts
-  // still shape correctly inside an LTR container. Portaled layers (dialogs, menus) repeat this.
+  const full = T.ui.fullChart;
+  const split = T.ws.posLayout === "split";
+  const open = T.ws.panels.watch;
+  const [peek, setPeek] = React.useState(false);
+  React.useEffect(() => {
+    setPeek(false);
+  }, [full]);
+  // Esc closes the slid-in column first (then a second Esc leaves Full chart)
+  React.useEffect(() => {
+    if (!peek) return;
+    const k = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || document.querySelector("[role=dialog]")) return;
+      e.stopImmediatePropagation();
+      setPeek(false);
+    };
+    window.addEventListener("keydown", k, true);
+    return () => window.removeEventListener("keydown", k, true);
+  }, [peek]);
+  const vw = useViewportWidth();
+  const center = React.useRef<HTMLDivElement>(null);
+  // the column: ~320 px, resizable between ~280 and ~440
+  const pct = (px: number) => Math.min(45, Math.max(10, (px / Math.max(vw - 16, 1)) * 100));
+  const main = options ? <OptionsMain /> : <ChartWorkspace />;
+  // dir="ltr": the workspace keeps its arrangement (chart left, column right, prices left-to-right) in
+  // Arabic/Urdu/Persian too; only the text is translated. Portaled layers (dialogs, menus) repeat this.
   return (
-    <div dir="ltr" className="flex h-dvh flex-col overflow-hidden bg-page">
-      <TitleBar />
-      <div className="flex min-h-0 flex-1 flex-col p-1">
-        <PanelGroup direction="vertical" autoSaveId="kalks.terminal.v" className="min-h-0 flex-1">
-          <Panel id="main" order={1} minSize={30}>
-            {/* one layout for both modes: the same panels (ids, sizes, collapse state) with CFD or Options content */}
-            <div className="flex h-full min-h-0 gap-1">
-              {!p.watch && <Rail label={options ? t("trader.opt.inst.title") : t("trader.panel.marketWatch")} side="left" onClick={() => T.togglePanel("watch", true)} />}
-              <PanelGroup direction="horizontal" autoSaveId="kalks.terminal.h" className="min-w-0 flex-1">
-                {p.watch && (
-                  <>
-                    <Panel id="left" order={1} defaultSize={Math.max(19, leftMin)} minSize={leftMin} maxSize={Math.max(32, leftMin + 8)}>
-                      {options ? (
-                        <TPanel>
-                          <OptionsLeft onCollapse={() => T.togglePanel("watch", false)} />
-                        </TPanel>
-                      ) : p.navigator ? (
-                        <PanelGroup direction="vertical" autoSaveId="kalks.terminal.left">
-                          <Panel id="mw" order={1} minSize={30} defaultSize={66}>
-                            <TPanel>
-                              <MarketWatch onCollapse={() => T.togglePanel("watch", false)} />
-                            </TPanel>
-                          </Panel>
-                          <Handle />
-                          <Panel id="nav" order={2} minSize={14} defaultSize={34}>
-                            <TPanel>
-                              <Navigator />
-                            </TPanel>
-                          </Panel>
-                        </PanelGroup>
-                      ) : (
-                        <TPanel>
-                          <MarketWatch onCollapse={() => T.togglePanel("watch", false)} />
-                        </TPanel>
-                      )}
-                    </Panel>
-                    <Handle />
-                  </>
-                )}
-                <Panel id="center" order={2} minSize={30}>
-                  <div ref={center} className="h-full min-h-0 min-w-0">
-                    {options ? <OptionsCenter /> : <ChartWorkspace />}
+    <div dir="ltr" className="t-backdrop min-h-dvh">
+      {!full && (
+        <div className="sticky top-0 z-30">
+          <TitleBar />
+        </div>
+      )}
+      {/* the first screen: the chart fills it (split mode: the positions panel shares it, under the chart) */}
+      <section className={cn("flex flex-col gap-2", full ? "t-backdrop fixed inset-0 z-40 p-1.5" : "h-[calc(100dvh-48px)] px-2 pb-2 pt-2")}>
+        {/* one tree for every state, so the chart never remounts when the column, the positions panel or Full chart toggle */}
+        <PanelGroup direction="vertical" autoSaveId="kalks.terminal5.v" className="min-h-0 flex-1">
+          <Panel id="top" order={1} minSize={35}>
+            <div className="relative flex h-full min-h-0 gap-2">
+              <PanelGroup direction="horizontal" autoSaveId="kalks.terminal4.h" className="min-w-0 flex-1">
+                <Panel id="main" order={1} minSize={40}>
+                  <div ref={center} className="h-full min-w-0">
+                    {main}
                   </div>
                 </Panel>
-                {p.right && (
+                {open && !full && (
                   <>
-                    <Handle />
-                    <Panel id="right" order={3} defaultSize={Math.max(18, rightMin)} minSize={rightMin} maxSize={Math.max(32, rightMin + 8)}>
-                      <TPanel>{options ? <OptionsRight onCollapse={() => T.togglePanel("right", false)} /> : <RightPanel onCollapse={() => T.togglePanel("right", false)} />}</TPanel>
+                    <PanelResizeHandle className="t-handle" />
+                    <Panel id="side" order={2} defaultSize={pct(344)} minSize={pct(288)} maxSize={pct(480)}>
+                      <SideColumn options={options} onClose={() => T.togglePanel("watch", false)} />
                     </Panel>
                   </>
                 )}
               </PanelGroup>
-              {!p.right && <Rail label={options ? t("trader.opt.ticket.title") : T.guest ? t("trader.panel.orderInfo") : t("trader.panel.orderDom")} side="right" onClick={() => T.togglePanel("right", true)} />}
+              {!open && !full && <EdgeTab label={t("desk.side.show")} shortcut="Ctrl+M" onClick={() => showSide(T, T.ws.side === "navigator" && options ? "instruments" : T.ws.side)} />}
+              {full && !peek && <EdgeTab label={t("desk.side.show")} onClick={() => setPeek(true)} className="absolute end-1 top-1/2 z-[5] -translate-y-1/2 shadow-[var(--t-shadow-pop)]" />}
+              {full && peek && (
+                // below the chart's toolbar row (it keeps Exit full chart reachable), opaque over the live chart
+                <div className="t-pop absolute bottom-0 end-0 top-[46px] z-[5] w-[344px] rounded-[14px] bg-panel shadow-[var(--t-shadow-pop)]">
+                  <SideColumn options={options} onClose={() => setPeek(false)} />
+                </div>
+              )}
             </div>
           </Panel>
-          {p.toolbox && (
+          {split && !full && T.ws.panels.toolbox && (
             <>
-              <Handle />
-              <Panel id="toolbox" order={2} ref={toolboxRef} defaultSize={29} minSize={12} maxSize={75} onResize={(s) => setMaxed(s > 60)}>
-                <Toolbox
-                  onCollapse={() => T.togglePanel("toolbox", false)}
-                  maximized={maxed}
-                  onMaximize={() => {
-                    const r = toolboxRef.current;
-                    if (!r) return;
-                    r.resize(maxed ? 29 : 72);
-                  }}
-                />
+              <PanelResizeHandle className="t-handle" />
+              <Panel id="positions" order={2} defaultSize={40} minSize={18} maxSize={65}>
+                <Toolbox health={false} />
               </Panel>
             </>
           )}
         </PanelGroup>
-        {!p.toolbox && <Rail label={t("trader.panel.toolbox")} side="bottom" onClick={() => T.togglePanel("toolbox", true)} />}
-      </div>
-      <StatusBar />
+        {!full && <ScreenBar />}
+      </section>
+      {/* full page mode: positions, orders, history… full width below the first screen; the page scrolls down to them */}
+      {!full && !split && (
+        <section id={ACTIVITY_ID} aria-label={t("desk.panel.activity")} className="scroll-mt-14 px-2 pb-2">
+          <div className="h-[calc(100dvh-64px)] min-h-[420px]">
+            <Toolbox onTop={scrollToChart} />
+          </div>
+        </section>
+      )}
+      {options && <OptionsTicketPopup />}
+      <Tour />
     </div>
   );
 }

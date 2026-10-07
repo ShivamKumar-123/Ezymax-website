@@ -62,7 +62,7 @@ const trader: NsMessages<"trader"> = {
   "preset.analysis": "분석",
   "preset.analysisHint": "차트 4개",
   "preset.scalper": "스캘퍼",
-  "preset.scalperHint": "DOM + 차트 2개",
+  "preset.scalperHint": "호가창 + 차트 2개",
   // 작업 공간 프로필
   "profile.default": "기본",
   "profile.scalping": "스캘핑",

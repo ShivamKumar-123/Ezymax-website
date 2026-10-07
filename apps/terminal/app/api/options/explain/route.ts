@@ -4,13 +4,14 @@
  * Kalks FX Options simple mode: Claude explains an option idea (legs, cost, max loss / profit, breakeven) in plain
  * language, in the reader's language. Follows app/api/ai-trader/route.ts: the key is read from the server
  * environment only; without ANTHROPIC_API_KEY it answers { configured: false } and the terminal shows its built-in
- * explanation. Same-origin only, small bodies, a per-IP limit, and Claude is told to use only the numbers given.
+ * explanation. Same-origin only, small bodies, a signed-in terminal session and a per-user budget (lib/ai-guard.ts:
+ * 401 "signin", 429 "rate_minute" / "rate_day"), and Claude is told to use only the numbers given.
  */
 import Anthropic from "@anthropic-ai/sdk";
 import type { NextRequest } from "next/server";
 import { LOCALES } from "@kalks/i18n/locales";
 import { sameOrigin } from "@/lib/engine/server";
-import { clientIp } from "@/lib/gateway";
+import { aiGate } from "@/lib/ai-guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,18 +31,6 @@ Rules:
 /** GET: whether Claude is configured (never exposes the key). */
 export function GET() {
   return Response.json({ configured: !!process.env.ANTHROPIC_API_KEY, model: MODEL });
-}
-
-// a small per-IP budget (each explanation is a paid model call)
-const hits = new Map<string, number[]>();
-function limited(ip: string) {
-  const now = Date.now();
-  const list = (hits.get(ip) ?? []).filter((t) => now - t < 60_000);
-  if (list.length >= 8) return true;
-  list.push(now);
-  if (hits.size > 5000) hits.clear();
-  hits.set(ip, list);
-  return false;
 }
 
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
@@ -74,7 +63,8 @@ export async function POST(req: NextRequest) {
   const locale = LOCALES.find((l) => l.code === body.locale) ?? LOCALES[0]!;
 
   if (!process.env.ANTHROPIC_API_KEY) return Response.json({ configured: false });
-  if (limited(clientIp(req.headers))) return Response.json({ configured: true, error: "Too many explanations in a minute. Try again shortly." }, { status: 429 });
+  const refused = await aiGate(req);
+  if (refused) return refused;
 
   const facts = {
     idea: str(s.name, 60),

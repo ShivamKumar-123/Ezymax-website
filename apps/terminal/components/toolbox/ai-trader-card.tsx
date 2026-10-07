@@ -217,7 +217,9 @@ export function StrategyCard({ spec, onChange, editable }: { spec: StrategySpec;
   const set = (p: Partial<StrategySpec>) => onChange({ ...spec, ...p });
   const dis = !editable;
   const [sessTxt, setSessTxt] = React.useState(spec.sessions.map((s) => `${s.start}-${s.end}`).join(", "));
-  React.useEffect(() => setSessTxt(spec.sessions.map((s) => `${s.start}-${s.end}`).join(", ")), [spec.sessions]);
+  React.useEffect(() => {
+    setSessTxt(spec.sessions.map((s) => `${s.start}-${s.end}`).join(", "));
+  }, [spec.sessions]);
   const buys = spec.long.groups.length > 0;
   const sells = spec.short.groups.length > 0;
   return (

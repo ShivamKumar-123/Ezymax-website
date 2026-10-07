@@ -62,7 +62,7 @@ const trader: NsMessages<"trader"> = {
   "preset.analysis": "分析",
   "preset.analysisHint": "4 个图表",
   "preset.scalper": "剥头皮",
-  "preset.scalperHint": "DOM + 2 个图表",
+  "preset.scalperHint": "订单簿 + 2 个图表",
   // Workspace profiles
   "profile.default": "默认",
   "profile.scalping": "剥头皮",

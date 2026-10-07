@@ -65,7 +65,7 @@ export function DomLadder({ symbol }: { symbol: string }) {
     const key = fmtPrice(symbol, px);
     const my = mine.get(key);
     return (
-      <div className={cn("grid h-[22px] grid-cols-[1fr_88px_1fr] items-center font-mono text-[11px]", best && "bg-surface-2/70")}>
+      <div className={cn("grid h-[24px] grid-cols-[1fr_92px_1fr] items-center font-mono text-[12px]", best && "bg-surface-2/70")}>
         <button
           disabled={T.readOnly || side === "ask"}
           onClick={() => trade("buy", px)}
@@ -82,7 +82,7 @@ export function DomLadder({ symbol }: { symbol: string }) {
         </button>
         <div className={cn("k-num relative text-center font-medium", side === "ask" ? "text-down" : "text-up")}>
           {key}
-          {my && <span className="absolute -end-1 top-1/2 -translate-y-1/2 rounded-[3px] bg-gold px-0.5 text-[8.5px] leading-3 text-[#1a1204]">{my}</span>}
+          {my && <span className="absolute -end-1 top-1/2 -translate-y-1/2 rounded-[3px] bg-gold px-0.5 text-[9.5px] leading-3 text-[#1a1204]">{my}</span>}
         </div>
         <button
           disabled={T.readOnly || side === "bid"}
@@ -104,7 +104,7 @@ export function DomLadder({ symbol }: { symbol: string }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="grid h-6 shrink-0 grid-cols-[1fr_88px_1fr] items-center border-b border-line bg-panel-2 text-[9.5px] font-medium uppercase tracking-[0.06em] text-fg-3">
+      <div className="grid h-8 shrink-0 grid-cols-[1fr_92px_1fr] items-center border-b border-line bg-panel-2 text-[12px] font-medium text-fg-3">
         <span className="pe-2 text-end">{sized ? t("order.dom.bidVol") : t("order.dom.buyLimit")}</span>
         <span className="text-center">{t("order.dom.price")}</span>
         <span className="ps-2">{sized ? t("order.dom.askVol") : t("order.dom.sellLimit")}</span>
@@ -113,7 +113,7 @@ export function DomLadder({ symbol }: { symbol: string }) {
         {asks.map((a, i) => (
           <Row key={`a${i}`} px={a.px} size={a.size} side="ask" best={i === asks.length - 1} />
         ))}
-        <div className="my-0.5 flex h-6 items-center justify-between border-y border-line bg-panel-2 px-2 font-mono text-[10.5px]">
+        <div className="my-0.5 flex h-7 items-center justify-between border-y border-line bg-panel-2 px-2.5 font-mono text-[12px]">
           <span className="text-fg-3">{t("order.dom.spread")}</span>
           <span className="k-num text-fg">{t("order.unit.pts", { n: Math.round((q.ask - q.bid) * 10 ** inst.digits) })}</span>
           <span className="k-num text-fg-3">{t("order.dom.mid", { price: fmtPrice(symbol, (q.ask + q.bid) / 2) })}</span>
@@ -122,10 +122,10 @@ export function DomLadder({ symbol }: { symbol: string }) {
           <Row key={`b${i}`} px={b.px} size={b.size} side="bid" best={i === 0} />
         ))}
       </div>
-      <div className="shrink-0 space-y-2 border-t border-line p-2">
+      <div className="shrink-0 space-y-2.5 border-t border-line p-3">
         {book?.src === "feed" ? (
           <div data-testid="dom-source" data-src="feed">
-            <div className="mb-1 flex justify-between text-[10px]">
+            <div className="mb-1 flex justify-between text-[11.5px]">
               <span className="k-num text-up">{t("order.dom.bids", { pct: bidPct.toFixed(0) })}</span>
               <span className="text-fg-3">{t("order.dom.feed")}</span>
               <span className="k-num text-down">{t("order.dom.asks", { pct: (100 - bidPct).toFixed(0) })}</span>
@@ -136,23 +136,23 @@ export function DomLadder({ symbol }: { symbol: string }) {
             </div>
           </div>
         ) : (
-          <div data-testid="dom-source" data-src={book ? "indicative" : "none"} title={book ? t("order.dom.indicativeTitle") : undefined} className="flex items-center justify-center gap-1.5 text-[10px] text-fg-3">
+          <div data-testid="dom-source" data-src={book ? "indicative" : "none"} title={book ? t("order.dom.indicativeTitle") : undefined} className="flex items-center justify-center gap-1.5 text-[11.5px] text-fg-3">
             {book && <span className="rounded-[3px] border border-line px-1 text-[9px] font-semibold uppercase tracking-[0.06em] text-fg-2">{t("order.dom.indicative")}</span>}
             <span>{book ? t("order.dom.indicativeNote") : t("order.dom.unavailable")}</span>
           </div>
         )}
         {!T.readOnly && (
-          <div className="grid grid-cols-[1fr_84px_1fr] gap-1.5">
-            <button onClick={() => trade("sell", q.bid, true)} disabled={!marketOpen} title={marketOpen ? undefined : t("order.ticket.marketClosed")} aria-label={t("order.dom.sellMarketAria")} className="h-7 rounded-[6px] bg-down text-[11.5px] font-semibold text-white hover:brightness-110 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-3 disabled:hover:brightness-100">
+          <div className="grid grid-cols-[1fr_104px_1fr] gap-1.5">
+            <button onClick={() => trade("sell", q.bid, true)} disabled={!marketOpen} title={marketOpen ? undefined : t("order.ticket.marketClosed")} aria-label={t("order.dom.sellMarketAria")} className="h-9 rounded-[8px] bg-sell-fill text-[13px] font-semibold text-white hover:brightness-110 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-3 disabled:hover:brightness-100">
               {marketOpen ? t("order.dom.sellMkt") : t("order.dom.closed")}
             </button>
-            <Stepper ariaLabel={t("order.dom.volume")} value={vol} onChange={setVol} step={0.01} min={0.01} decimals={2} />
-            <button onClick={() => trade("buy", q.ask, true)} disabled={!marketOpen} title={marketOpen ? undefined : t("order.ticket.marketClosed")} aria-label={t("order.dom.buyMarketAria")} className="h-7 rounded-[6px] bg-up text-[11.5px] font-semibold text-white hover:brightness-110 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-3 disabled:hover:brightness-100">
+            <Stepper size="md" className="h-9" ariaLabel={t("order.dom.volume")} value={vol} onChange={setVol} step={0.01} min={0.01} decimals={2} />
+            <button onClick={() => trade("buy", q.ask, true)} disabled={!marketOpen} title={marketOpen ? undefined : t("order.ticket.marketClosed")} aria-label={t("order.dom.buyMarketAria")} className="h-9 rounded-[8px] bg-buy-fill text-[13px] font-semibold text-white hover:brightness-110 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-3 disabled:hover:brightness-100">
               {marketOpen ? t("order.dom.buyMkt") : t("order.dom.closed")}
             </button>
           </div>
         )}
-        <div className="text-center text-[10px] text-fg-3">{T.readOnly ? t("order.dom.readOnly") : T.ws.oneClick ? t("order.dom.hintOneClick") : t("order.dom.hintDialog")}</div>
+        <div className="text-center text-[11.5px] leading-[16px] text-fg-3">{T.readOnly ? t("order.dom.readOnly") : T.ws.oneClick ? t("order.dom.hintOneClick") : t("order.dom.hintDialog")}</div>
       </div>
     </div>
   );
