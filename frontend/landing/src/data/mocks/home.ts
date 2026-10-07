@@ -3,7 +3,7 @@
  * `src/data/mocks/site.ts`. Components never import this directly — the view
  * passes it down as props (component-conventions.md → "Data rules").
  *
- * The one sentence everything on this page proves: on Ezymax, your broker
+ * The one sentence everything on this page proves: on Ezymex, your broker
  * never holds your money. Only the margin for your open trades is locked — the
  * rest is yours to withdraw, right now, without asking anyone.
  */
@@ -25,7 +25,7 @@ export const problemSolution = {
   eyebrow: "Where your money actually sits",
   heading: "Your broker's balance sheet, or a contract you control.",
   intro:
-    "With a normal broker, your deposit lands in their bank account. They decide when you get it back. Withdrawals go through review, batching, business hours — and if the firm has problems, so do you. Ezymax removes that step entirely: the contract locks margin when you open a position, settles P&L when you close it, and releases your free balance whenever you ask. Nobody approves anything.",
+    "With a normal broker, your deposit lands in their bank account. They decide when you get it back. Withdrawals go through review, batching, business hours — and if the firm has problems, so do you. Ezymex removes that step entirely: the contract locks margin when you open a position, settles P&L when you close it, and releases your free balance whenever you ask. Nobody approves anything.",
   cards: [
     {
       title: "A traditional broker",
@@ -42,7 +42,7 @@ export const problemSolution = {
       image: "/assets/sections/problem.jpg",
     },
     {
-      title: "Ezymax",
+      title: "Ezymex",
       steps: [
         "You allocate from your wallet",
         "Funds enter the trading contract",
@@ -76,7 +76,7 @@ export const marginCalculator = {
 } as const;
 
 export const tickerBand = {
-  label: "The Ezymax promise",
+  label: "The Ezymex promise",
   /** Full sentence for screen readers & crawlers; the strip is decorative. */
   sentence:
     "In every trade, your money stays yours — only margin locks, profits settle automatically, and everything else is free to withdraw, together in your control.",
@@ -117,7 +117,7 @@ export const howItWorks = {
     },
     {
       title: "Open a trading account",
-      body: "Ezymax web platform, or connect MT5 if that's your setup.",
+      body: "Ezymex web platform, or connect MT5 if that's your setup.",
     },
     {
       title: "Allocate funds",
@@ -188,14 +188,14 @@ export const tradingModes = {
   ],
   note: "CFDs are leveraged products. You can lose more than you allocate.",
   image: "/assets/sections/card.jpg",
-  imageAlt: "An ezymax gold card handed across a marble counter",
+  imageAlt: "An ezymex gold card handed across a marble counter",
 } as const;
 
 export const tradeInsurance = {
   eyebrow: "Trade insurance",
   heading: "Cover a week of losses, not just one trade.",
   intro:
-    "Ezymax Shield is a plan you buy for a day, a week or a month. It covers a share of everything you lose across that whole window — no per-trade toggle, no claim form, and the cover lands in your wallet as the losses happen.",
+    "Ezymex Shield is a plan you buy for a day, a week or a month. It covers a share of everything you lose across that whole window — no per-trade toggle, no claim form, and the cover lands in your wallet as the losses happen.",
   // Mirrors the live plan table (insurance_shield_plans). Tiers are the same
   // four at every duration; only the cap and the premium change.
   tiers: [
@@ -315,7 +315,7 @@ export const staking = {
     "Rewards convert into trading utility",
   ],
   note: "Rates and lock terms vary by duration. Staking carries its own risks and is not a guaranteed return. See full terms.",
-  footnote: "Stake, earn, and trade with utility across the Ezymax ecosystem",
+  footnote: "Stake, earn, and trade with utility across the Ezymex ecosystem",
   image: "/assets/sections/staking.jpg",
   imageAlt: "A gold hourglass pouring coins into a city skyline",
   quote: "Make your assets work beyond holding.",
@@ -334,7 +334,7 @@ export const referral = {
   ],
   note: "Advanced features available through partner onboarding.",
   cta: "Become a partner",
-  footnote: "Grow with the Ezymax partner program",
+  footnote: "Grow with the Ezymex partner program",
   quote: "Growth driven by participation, not promises.",
 } as const;
 
@@ -376,9 +376,9 @@ export const rebateLadder = {
   note: "Your tier is worked out again every month, from that month's closed lots and active clients.",
 } as const;
 
-export const whyArtha = {
+export const whyEzymex = {
   id: "why",
-  eyebrow: "Why traders choose Ezymax",
+  eyebrow: "Why traders choose Ezymex",
   heading: "Five things a traditional broker can't say.",
   cards: [
     {
@@ -416,12 +416,12 @@ export const finalCta = {
   primaryCta: "Open account",
   secondaryCta: "Try the demo",
   disclaimer:
-    "Ezymax is a protocol-driven trading ecosystem with automated settlement. Funds stay under your control; execution and settlement run on system-defined logic.",
+    "Ezymex is a protocol-driven trading ecosystem with automated settlement. Funds stay under your control; execution and settlement run on system-defined logic.",
 } as const;
 
 export const introContent = {
-  src: "/assets/intro/ezymax-intro.mp4",
-  label: "Ezymax opening film",
+  src: "/assets/intro/ezymex-intro.mp4",
+  label: "Ezymex opening film",
   skip: "Skip",
   soundOn: "Sound on",
   soundOff: "Sound off",

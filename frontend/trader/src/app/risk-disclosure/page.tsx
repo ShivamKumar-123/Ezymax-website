@@ -1,6 +1,6 @@
 import { AlertTriangle } from 'lucide-react'
 
-export const metadata = { title: 'Risk Disclosure — Ezymax' }
+export const metadata = { title: 'Risk Disclosure — Ezymex' }
 
 export default function RiskDisclosurePage() {
   return (
@@ -14,7 +14,7 @@ export default function RiskDisclosurePage() {
           <h1 className="text-3xl font-bold text-text-primary">Risk Disclosure</h1>
         </div>
 
-        <p className="text-lg font-semibold text-text-primary mt-8 mb-1">Ezymax — Risk Disclosure Statement</p>
+        <p className="text-lg font-semibold text-text-primary mt-8 mb-1">Ezymex — Risk Disclosure Statement</p>
         <p className="text-sm text-text-secondary mb-10">Last updated: February 2026</p>
 
         <div className="space-y-8">
@@ -31,7 +31,7 @@ export default function RiskDisclosurePage() {
           </Section>
 
           <Section title="4. No Guarantee of Profit">
-            Past performance is not indicative of future results. No representation is being made that any account will or is likely to achieve profits or losses similar to those shown. Ezymax does not guarantee any specific outcome or profit from trading on the platform.
+            Past performance is not indicative of future results. No representation is being made that any account will or is likely to achieve profits or losses similar to those shown. Ezymex does not guarantee any specific outcome or profit from trading on the platform.
           </Section>
 
           <Section title="5. Margin Calls and Stop-Out">
@@ -43,7 +43,7 @@ export default function RiskDisclosurePage() {
           </Section>
 
           <Section title="7. Technology & Execution Risk">
-            Online trading carries risks associated with the use of internet-based systems, including hardware and software failures, connectivity issues, and delays in order execution. Ezymax is not liable for losses arising from such technical issues beyond its reasonable control.
+            Online trading carries risks associated with the use of internet-based systems, including hardware and software failures, connectivity issues, and delays in order execution. Ezymex is not liable for losses arising from such technical issues beyond its reasonable control.
           </Section>
 
           <Section title="8. PAMM & Copy Trading Risk">
@@ -51,11 +51,11 @@ export default function RiskDisclosurePage() {
           </Section>
 
           <Section title="9. Independent Advice">
-            The information provided on the Ezymax platform is for general purposes only and does not constitute financial, investment, legal, or tax advice. If you have any doubts about the risks involved, you should seek advice from an independent and suitably licensed financial advisor.
+            The information provided on the Ezymex platform is for general purposes only and does not constitute financial, investment, legal, or tax advice. If you have any doubts about the risks involved, you should seek advice from an independent and suitably licensed financial advisor.
           </Section>
 
           <Section title="10. Your Acknowledgement">
-            By opening an account and trading on Ezymax, you acknowledge that you have read and understood this Risk Disclosure Statement, that you understand the risks involved in leveraged trading, and that you accept full responsibility for your own trading decisions and any resulting losses.
+            By opening an account and trading on Ezymex, you acknowledge that you have read and understood this Risk Disclosure Statement, that you understand the risks involved in leveraged trading, and that you accept full responsibility for your own trading decisions and any resulting losses.
           </Section>
 
           {/* Highlighted warning */}

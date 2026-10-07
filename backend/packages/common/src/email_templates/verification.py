@@ -11,7 +11,7 @@ def render_verification_reminder(
 ) -> tuple[str, str, str]:
     name = (first_name or "trader").strip() or "trader"
     intro = (
-        "It's been a few days since you joined Ezymax and your account "
+        "It's been a few days since you joined Ezymex and your account "
         "isn't fully verified yet. Verify now to remove deposit and "
         "withdrawal limits — it takes about 2 minutes."
     )
@@ -28,7 +28,7 @@ def render_verification_reminder(
       Approval is usually within 24 hours, often much sooner.
     </p>
     """
-    subject = "Finish setting up your Ezymax account"
+    subject = "Finish setting up your Ezymex account"
     html = render_layout(
         title="Complete your verification",
         intro=intro,
@@ -43,7 +43,7 @@ def render_verification_reminder(
     )
     text = (
         f"Hi {name},\n\n"
-        "Your Ezymax account isn't fully verified yet. "
+        "Your Ezymex account isn't fully verified yet. "
         "Verifying takes about 2 minutes and removes deposit / withdrawal limits.\n\n"
         "You'll need:\n"
         "  - Government-issued photo ID\n"

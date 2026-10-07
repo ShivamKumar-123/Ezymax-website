@@ -6,7 +6,7 @@ import { CompanyView } from "@/views/company";
 export const metadata: Metadata = generateMetadata({
   title: "Company — About, Protocol, Legal, Contact",
   description:
-    "What Ezymax is, how the trading contract replaces broker custody, the legal structure behind it, and how to reach us.",
+    "What Ezymex is, how the trading contract replaces broker custody, the legal structure behind it, and how to reach us.",
   url: "/company",
 });
 

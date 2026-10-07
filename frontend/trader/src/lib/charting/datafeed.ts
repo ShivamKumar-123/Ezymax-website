@@ -126,7 +126,7 @@ export function createDatafeed() {
             supports_time: true,
             supports_marks: false,
             supports_timescale_marks: false,
-            exchanges: [{ value: 'Ezymax', name: 'Ezymax', desc: 'Ezymax' }],
+            exchanges: [{ value: 'Ezymex', name: 'Ezymex', desc: 'Ezymex' }],
             symbols_types: [
               { name: 'All', value: '' },
               { name: 'Forex', value: 'forex' },
@@ -159,7 +159,7 @@ export function createDatafeed() {
           symbol: i.symbol,
           full_name: i.symbol,
           description: i.display_name || i.symbol,
-          exchange: 'Ezymax',
+          exchange: 'Ezymex',
           ticker: i.symbol,
           type: segmentToType(i.segment),
         }));
@@ -185,8 +185,8 @@ export function createDatafeed() {
           type: segmentToType(meta?.segment),
           session: '24x7',
           timezone: 'Etc/UTC',
-          exchange: 'Ezymax',
-          listed_exchange: 'Ezymax',
+          exchange: 'Ezymex',
+          listed_exchange: 'Ezymex',
           format: 'price',
           minmov: 1,
           pricescale,

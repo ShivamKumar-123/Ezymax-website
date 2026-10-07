@@ -9,9 +9,9 @@ export default function LandingHeader() {
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <img src="/images/ezymax-logo.png" alt="Ezymax" className="h-9 sm:h-10 w-auto object-contain" />
+            <img src="/images/ezymex-logo.png" alt="Ezymex" className="h-9 sm:h-10 w-auto object-contain" />
             <span className="font-bold italic tracking-tight text-lg select-none">
-              <span className="text-gray-800">FX</span><span className="text-blue-600">Artha</span>
+              <span className="text-gray-800">EZY</span><span className="text-blue-600">MEX</span>
             </span>
           </Link>
 

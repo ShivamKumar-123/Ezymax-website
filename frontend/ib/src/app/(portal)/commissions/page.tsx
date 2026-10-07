@@ -63,7 +63,7 @@ export default function CommissionsPage() {
         subtitle: `Page ${data?.page} · ${data?.total} total`,
         totalsLabel: 'Page total',
         totalsValue: `$${fmt(total)}`,
-        filename: 'ezymax-ib-commissions.pdf',
+        filename: 'ezymex-ib-commissions.pdf',
       },
     ).catch(() => toast.error('PDF export failed.'));
   };

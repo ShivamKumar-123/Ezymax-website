@@ -1,7 +1,7 @@
 /**
- * Copy for the New Era intro experience, written for Ezymax. Mirrors the
+ * Copy for the New Era intro experience, written for Ezymex. Mirrors the
  * shape the ported experience components expect (from the source
- * `data/mocks/home.ts`), but every string is Ezymax's own.
+ * `data/mocks/home.ts`), but every string is Ezymex's own.
  */
 
 export interface ExperienceButton {
@@ -70,7 +70,7 @@ export const homeContent: HomeContent = {
     eyebrow: "Everything revolves around you",
     titleLines: ["Your growth is the only", "thing that matters"],
     subtitle:
-      "Keep your capital, keep the upside. Ezymax only locks the margin a position needs and settles your P&L the moment you close — the rest stays yours.",
+      "Keep your capital, keep the upside. Ezymex only locks the margin a position needs and settles your P&L the moment you close — the rest stays yours.",
     buttons: [
       { label: "Open an account", withArrow: true },
       { label: "View markets", withArrow: false },

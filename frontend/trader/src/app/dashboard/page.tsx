@@ -160,7 +160,7 @@ function BrokerHome() {
   // Rewards state for Level + AC Coin display.
   // Field names mirror /rewards/state exactly (get_state in rewards_service):
   // coins = ac_balance, next-level XP = xp_for_next_level. The old names
-  // (artha_coins / xp_next_level) don't exist on the response, so the AC
+  // (ezymex_coins / xp_next_level) don't exist on the response, so the AC
   // chip read undefined and always showed 0.
   const [rewardsState, setRewardsState] = useState<{
     level?: number; level_label?: string;
@@ -343,7 +343,7 @@ function BrokerHome() {
 
   return (
     <div className="space-y-4 pb-8 max-w-6xl mx-auto w-full">
-      {/* ── Ezymax TV banner — the commercial, full width, slides in R→L ── */}
+      {/* ── Ezymex TV banner — the commercial, full width, slides in R→L ── */}
       <TvCard />
 
       {/* ── Greeting bar ── */}

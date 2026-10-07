@@ -122,7 +122,7 @@ export default function AdminFxaCoinsPage() {
         </button>
       </div>
       <p className="text-xs text-text-tertiary mb-4">
-        Edit any user&apos;s AC (Ezymax Coin) balance, XP and PS. Every change is logged to the rewards ledger.
+        Edit any user&apos;s AC (Ezymex Coin) balance, XP and PS. Every change is logged to the rewards ledger.
       </p>
 
       <form onSubmit={submitSearch} className="flex items-center gap-2 mb-4">

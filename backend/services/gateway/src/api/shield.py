@@ -1,4 +1,4 @@
-"""Ezymax Shield API — aggregate period-plan trade insurance.
+"""Ezymex Shield API — aggregate period-plan trade insurance.
 
 Separate product from the per-trade micro-insurance in `insurance.py`.
 

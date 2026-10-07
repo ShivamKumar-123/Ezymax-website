@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Ezymax — restore Postgres (and optionally uploads + timescaledb) from
+# Ezymex — restore Postgres (and optionally uploads + timescaledb) from
 # backup files produced by scripts/backup.sh.
 #
 # Usage:
@@ -22,7 +22,7 @@ set -euo pipefail
 DUMP="${1:?postgres dump path required (e.g. backups/postgres-...sql.gz or .sql.gz.gpg)}"
 UPLOADS="${2:-}"
 TS_DUMP="${3:-}"
-COMPOSE_DIR="${EZYMAX_DIR:-/opt/ezymax}"
+COMPOSE_DIR="${EZYMEX_DIR:-/opt/ezymex}"
 GPG_PASSPHRASE="${BACKUP_GPG_PASSPHRASE:-}"
 
 [[ -f "$DUMP" ]] || { echo "[restore] $DUMP not found"; exit 1; }
@@ -61,7 +61,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d postgres
 # pg_isready loop — wait up to 30s for the container's healthcheck
 for i in $(seq 1 30); do
   if docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T postgres \
-       pg_isready -U "${POSTGRES_USER:-ezymax}" >/dev/null 2>&1; then
+       pg_isready -U "${POSTGRES_USER:-ezymex}" >/dev/null 2>&1; then
     break
   fi
   sleep 1
@@ -82,16 +82,16 @@ decrypt_to "$DUMP" "$TMP_PG"
 # (schema → data → constraints). Roles are cluster-global; the dump's
 # "role already exists" is harmless, so ON_ERROR_STOP is omitted for this
 # full-cluster load.
-PGDB="${POSTGRES_DB:-ezymax}"
+PGDB="${POSTGRES_DB:-ezymex}"
 docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T postgres \
-  psql -U "${POSTGRES_USER:-ezymax}" -d postgres -c \
+  psql -U "${POSTGRES_USER:-ezymex}" -d postgres -c \
   "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='$PGDB' AND pid<>pg_backend_pid();" >/dev/null 2>&1 || true
 docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T postgres \
-  psql -U "${POSTGRES_USER:-ezymax}" -d postgres -c "DROP DATABASE IF EXISTS $PGDB;"
+  psql -U "${POSTGRES_USER:-ezymex}" -d postgres -c "DROP DATABASE IF EXISTS $PGDB;"
 
 echo "[restore] piping (decrypted) $DUMP → psql"
 gunzip -c "$TMP_PG" | docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-  exec -T postgres psql -U "${POSTGRES_USER:-ezymax}" -d postgres
+  exec -T postgres psql -U "${POSTGRES_USER:-ezymex}" -d postgres
 
 # ─── TimescaleDB (optional) ───────────────────────────────────────────
 if [[ -n "$TS_DUMP" ]]; then
@@ -99,7 +99,7 @@ if [[ -n "$TS_DUMP" ]]; then
   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d timescaledb
   for i in $(seq 1 30); do
     if docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T timescaledb \
-         pg_isready -U "${TIMESCALE_USER:-ezymax}" >/dev/null 2>&1; then
+         pg_isready -U "${TIMESCALE_USER:-ezymex}" >/dev/null 2>&1; then
       break
     fi
     sleep 1
@@ -108,7 +108,7 @@ if [[ -n "$TS_DUMP" ]]; then
   decrypt_to "$TS_DUMP" "$TMP_TS"
   echo "[restore] piping (decrypted) $TS_DUMP → timescale psql"
   gunzip -c "$TMP_TS" | docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-    exec -T timescaledb psql -U "${TIMESCALE_USER:-ezymax}" -d postgres -v ON_ERROR_STOP=1
+    exec -T timescaledb psql -U "${TIMESCALE_USER:-ezymex}" -d postgres -v ON_ERROR_STOP=1
 fi
 
 # ─── Uploads (optional) ───────────────────────────────────────────────

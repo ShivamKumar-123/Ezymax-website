@@ -84,7 +84,7 @@ export default function AppHeader() {
         />
         {/* LEFT — brand lockup: the mandala mark still toggles the sidebar (no
             hamburger), and the wordmark beside it links home. The name is set
-            as text rather than using ezymax-logo.png, whose lockup already
+            as text rather than using ezymex-logo.png, whose lockup already
             contains the mandala and would show the mark twice. */}
         <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
           <button
@@ -95,17 +95,17 @@ export default function AppHeader() {
             aria-label="Toggle menu"
           >
             <img
-              src="/images/ezymax_icon.png"
-              alt="Ezymax"
+              src="/images/ezymex_icon.png"
+              alt="Ezymex"
               className="h-7 w-7 object-contain transition-transform duration-200 group-hover:scale-110"
             />
           </button>
           <Link
             href="/dashboard"
-            aria-label="Ezymax — dashboard"
+            aria-label="Ezymex — dashboard"
             className="hidden select-none items-baseline gap-px text-[19px] font-extrabold leading-none tracking-[-0.02em] text-text-primary transition-opacity hover:opacity-80 sm:inline-flex"
           >
-            Ezymax
+            Ezymex
             <span aria-hidden className="ml-1 h-1.5 w-1.5 self-center rounded-full bg-[#1E88FF]" />
           </Link>
           {/* Hairline separates the brand from the nav capsule */}

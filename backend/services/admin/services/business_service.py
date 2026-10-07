@@ -53,7 +53,7 @@ async def _send_ib_portal_credentials(user, login_id: str, password: str, referr
         ib_base = (os.environ.get("IB_PORTAL_URL") or "http://localhost:3002").rstrip("/")
         portal_url = f"{ib_base}/login"
         first = getattr(user, "first_name", None) or "Partner"
-        subject = "Your Ezymax IB Partner Portal access"
+        subject = "Your Ezymex IB Partner Portal access"
         html = (
             f"<p>Hi {first},</p>"
             "<p>Your Introducing Broker application has been <b>approved</b>. "

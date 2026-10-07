@@ -64,7 +64,7 @@ const config: Config = {
           purple: '#9775FA',
           pink: '#F06595',
         },
-        /* Landing-page palette — Ezymax gold-on-black brand */
+        /* Landing-page palette — Ezymex gold-on-black brand */
         'primary': {
           bg: '#08090b',
           secondary: '#101114',

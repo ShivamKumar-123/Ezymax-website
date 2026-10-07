@@ -38,21 +38,21 @@ def render_email_otp(
     </p>
     """
 
-    subject = f"Ezymax verification code: {code}"
+    subject = f"Ezymex verification code: {code}"
     html = render_layout(
         title="Verify your email",
-        intro=f"Hi {name}, here's your one-time code to confirm this email on Ezymax.",
+        intro=f"Hi {name}, here's your one-time code to confirm this email on Ezymex.",
         body_html=body,
         footer_note=(
             "This code is valid for one verification only. Do not share it "
-            "with anyone — Ezymax staff will never ask you for it."
+            "with anyone — Ezymex staff will never ask you for it."
         ),
     )
 
     text_lines = [
         f"Hi {name},",
         "",
-        "Here's your Ezymax email verification code:",
+        "Here's your Ezymex email verification code:",
         "",
         f"   {code}",
         "",
@@ -60,6 +60,6 @@ def render_email_otp(
         "",
         "If you didn't ask for this code, ignore this email.",
         "",
-        f"— Ezymax team    {base}",
+        f"— Ezymex team    {base}",
     ]
     return subject, html, "\n".join(text_lines)

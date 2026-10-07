@@ -9,7 +9,7 @@
  *      the screen.
  *   2. wallet_linked     →  user must connect a wallet via SIWE.
  *   3. email_verified    →  if the user signed in with a wallet they have
- *      a placeholder @wallet.ezymax.local email; they must add a real
+ *      a placeholder @wallet.ezymex.local email; they must add a real
  *      email and verify via OTP. Same applies to email/password users
  *      who never went through OTP.
  *
@@ -97,7 +97,7 @@ export default function OnboardingGate() {
           </h2>
           <p className="text-xs text-text-secondary mt-1 leading-relaxed">
             {decision === 'wallet'
-              ? "Every Ezymax account must have a verified wallet linked. We'll use it for withdrawals, so make sure you control it."
+              ? "Every Ezymex account must have a verified wallet linked. We'll use it for withdrawals, so make sure you control it."
               : "We need a verified email on file before you can use the platform. Enter the address you want to use and we'll send you a one-time code."}
           </p>
         </header>

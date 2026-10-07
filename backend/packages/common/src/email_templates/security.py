@@ -27,10 +27,10 @@ def render_new_login(
       change your password and reply to this email so support can lock the account.
     </p>
     """
-    subject = "New sign-in to your Ezymax account"
+    subject = "New sign-in to your Ezymex account"
     html = render_layout(
         title="Sign-in detected",
-        intro=f"Hi {name}, we just recorded a sign-in to your Ezymax account.",
+        intro=f"Hi {name}, we just recorded a sign-in to your Ezymex account.",
         body_html=body,
         footer_note=(
             "Wasn't you? Change your password right away and reply to this email "
@@ -40,7 +40,7 @@ def render_new_login(
     text_lines = [
         f"Hi {name},",
         "",
-        "A sign-in to your Ezymax account was just recorded.",
+        "A sign-in to your Ezymex account was just recorded.",
         "",
         f"When (UTC): {when_utc}",
     ]

@@ -57,7 +57,7 @@ export default function ReferralsPage() {
         { header: 'Balance', value: (r: Referral) => `$${fmt(r.total_deposit)}`, align: 'right' },
         { header: 'Commission', value: (r: Referral) => `$${fmt(r.commission_earned)}`, align: 'right' },
       ],
-      { title: 'Referrals statement', subtitle: `Page ${data?.page} · ${data?.total} total`, filename: 'ezymax-ib-referrals.pdf' },
+      { title: 'Referrals statement', subtitle: `Page ${data?.page} · ${data?.total} total`, filename: 'ezymex-ib-referrals.pdf' },
     ).catch(() => toast.error('PDF export failed.'));
   };
 

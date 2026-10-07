@@ -25,7 +25,7 @@ const optionalUrl = () =>
 
 const publicSchema = z.object({
   NEXT_PUBLIC_SITE_URL: optionalUrl(),
-  /** Origin of the Ezymax trader platform the landing CTAs link into. */
+  /** Origin of the Ezymex trader platform the landing CTAs link into. */
   NEXT_PUBLIC_TRADE_URL: optionalUrl(),
 });
 
@@ -33,7 +33,7 @@ const serverSchema = z.object({
   /** Optional upstream the contact endpoint forwards leads to (CRM / webhook). */
   CONTACT_ENDPOINT: optionalUrl(),
   /**
-   * Origin of the Ezymax gateway API (no /api/v1 suffix). The server-side
+   * Origin of the Ezymex gateway API (no /api/v1 suffix). The server-side
    * /api/waitlist route forwards to it so the browser only ever calls
    * same-origin. In prod (docker) this is the internal `http://gateway:8000`.
    */

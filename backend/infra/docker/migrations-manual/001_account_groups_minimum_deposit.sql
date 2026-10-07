@@ -3,10 +3,10 @@
 -- Fixes: UndefinedColumnError: column account_groups.minimum_deposit does not exist
 --
 -- From host (repo root), service name must match compose (often "postgres"):
---   docker compose exec -T postgres psql -U ezymax -d ezymax < backend/infra/docker/migrations-manual/001_account_groups_minimum_deposit.sql
+--   docker compose exec -T postgres psql -U ezymex -d ezymex < backend/infra/docker/migrations-manual/001_account_groups_minimum_deposit.sql
 --
 -- Or inline:
---   docker compose exec postgres psql -U ezymax -d ezymax -c "ALTER TABLE account_groups ADD COLUMN IF NOT EXISTS minimum_deposit DECIMAL(18,8) DEFAULT 0;"
+--   docker compose exec postgres psql -U ezymex -d ezymex -c "ALTER TABLE account_groups ADD COLUMN IF NOT EXISTS minimum_deposit DECIMAL(18,8) DEFAULT 0;"
 -- =============================================================================
 
 ALTER TABLE account_groups

@@ -50,7 +50,7 @@ export const Header = () => {
       }`}
     >
       <div className="shell flex items-center justify-between gap-6 px-5 py-5 sm:px-8 sm:py-6">
-        <Link href="/" aria-label="Ezymax home">
+        <Link href="/" aria-label="Ezymex home">
           <Hover
             tag="span"
             from={{ scale: 1 }}

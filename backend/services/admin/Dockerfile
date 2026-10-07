@@ -25,7 +25,7 @@ WORKDIR /app
 COPY --from=builder /wheels /wheels
 COPY backend/services/admin/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir --no-index --find-links=/wheels \
-        -r /tmp/requirements.txt ezymax-common \
+        -r /tmp/requirements.txt ezymex-common \
  && rm -rf /wheels /tmp/requirements.txt
 
 COPY backend/packages/common /app/packages/common
@@ -36,11 +36,11 @@ ENV PYTHONPATH=/app \
 
 # Drop root — H8 from the security audit. Same uploads/ chown path as
 # gateway so any admin tooling that writes there still works.
-RUN groupadd --system --gid 1001 ezymax \
- && useradd  --system --uid 1001 --gid ezymax --shell /usr/sbin/nologin ezymax \
+RUN groupadd --system --gid 1001 ezymex \
+ && useradd  --system --uid 1001 --gid ezymex --shell /usr/sbin/nologin ezymex \
  && mkdir -p /app/uploads \
- && chown -R ezymax:ezymax /app/uploads
-USER ezymax
+ && chown -R ezymex:ezymex /app/uploads
+USER ezymex
 
 EXPOSE 8001
 

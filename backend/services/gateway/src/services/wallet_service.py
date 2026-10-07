@@ -392,7 +392,7 @@ async def create_deposit(req, user_id: UUID, db: AsyncSession) -> dict:
                 amount=req.amount,
                 crypto_currency=crypto_currency,
                 order_id=str(deposit.id),
-                description=f"Ezymax deposit ${float(req.amount):,.2f}",
+                description=f"Ezymex deposit ${float(req.amount):,.2f}",
             )
             deposit.transaction_id = ox["track_id"]
             payment_url = ox["payment_url"]
@@ -418,7 +418,7 @@ async def create_deposit(req, user_id: UUID, db: AsyncSession) -> dict:
                 amount=req.amount,
                 crypto_currency=crypto_currency,
                 order_id=str(deposit.id),
-                description=f"Ezymax deposit ${float(req.amount):,.2f}",
+                description=f"Ezymex deposit ${float(req.amount):,.2f}",
             )
             deposit.transaction_id = np["invoice_id"]
             payment_url = np["payment_url"]
@@ -781,7 +781,7 @@ async def create_wallet_deposit(
             amount_usd=amount,
             crypto_currency=crypto_currency,
             order_id=str(deposit.id),
-            description=f"Ezymax deposit ${float(amount):,.2f}",
+            description=f"Ezymex deposit ${float(amount):,.2f}",
         )
     except Exception:
         logger.exception("NOWPayments create_direct_payment failed for deposit %s", deposit.id)
@@ -868,7 +868,7 @@ async def create_hosted_invoice_deposit(
             amount=amount,
             crypto_currency=crypto_currency,
             order_id=str(deposit.id),
-            description=f"Ezymax deposit ${float(amount):,.2f}",
+            description=f"Ezymex deposit ${float(amount):,.2f}",
         )
     except Exception:
         logger.exception(

@@ -13,8 +13,8 @@ COPY backend/services/risk-engine /app/services/risk_engine
 ENV PYTHONPATH=/app
 
 # H8 — drop root.
-RUN groupadd --system --gid 1001 ezymax \
- && useradd  --system --uid 1001 --gid ezymax --shell /usr/sbin/nologin ezymax
-USER ezymax
+RUN groupadd --system --gid 1001 ezymex \
+ && useradd  --system --uid 1001 --gid ezymex --shell /usr/sbin/nologin ezymex
+USER ezymex
 
 CMD ["python", "-m", "services.risk_engine.src.main"]

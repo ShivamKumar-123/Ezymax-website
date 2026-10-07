@@ -20,7 +20,7 @@ Rules for handling configuration and secrets.
 | Name | Scope | Purpose |
 |------|-------|---------|
 | `NEXT_PUBLIC_SITE_URL` | public | Site origin (no trailing slash). Drives canonical URLs, OG/Twitter tags, `robots.txt`, `sitemap.xml`, JSON-LD. Falls back to `http://localhost:3000` when unset — **set it in production**. See [[seo-metadata]]. |
-| `NEXT_PUBLIC_TRADE_URL` | public | Origin of the Ezymax **trader platform** (ezymax monorepo `frontend/trader`) that all account CTAs link into (`<url>/auth/login`, `<url>/auth/register` via `tradeConfig` in `src/lib/site.ts`). Falls back to `http://localhost:3001` for local dev — **set it in production**. ADR-0022. |
+| `NEXT_PUBLIC_TRADE_URL` | public | Origin of the Ezymex **trader platform** (ezymex monorepo `frontend/trader`) that all account CTAs link into (`<url>/auth/login`, `<url>/auth/register` via `tradeConfig` in `src/lib/site.ts`). Falls back to `http://localhost:3001` for local dev — **set it in production**. ADR-0022. |
 | `CONTACT_ENDPOINT` | server-only | Optional upstream the `/api/contact` route forwards leads to (CRM / webhook). When unset, submissions are logged server-side. See [[api-architecture]]. |
 
 Documented in `.env.example` (committed). Validated by `src/env.ts` (zod):

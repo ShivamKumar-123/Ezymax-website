@@ -101,7 +101,7 @@ async def get_profile(user_id: UUID, db: AsyncSession) -> dict:
         "id": str(user.id),
         "email": user.email,
         "email_verified": bool(getattr(user, "email_verified", False)),
-        "is_wallet_placeholder": (user.email or "").lower().endswith("@wallet.ezymax.local"),
+        "is_wallet_placeholder": (user.email or "").lower().endswith("@wallet.ezymex.local"),
         "first_name": user.first_name,
         "last_name": user.last_name,
         "phone": user.phone,

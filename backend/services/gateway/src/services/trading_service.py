@@ -482,7 +482,7 @@ async def place_order(
                 )).scalar_one_or_none()
             if not u or not u.email:
                 return
-            if u.email.lower().endswith("@wallet.ezymax.local"):
+            if u.email.lower().endswith("@wallet.ezymex.local"):
                 return
             st = get_settings()
             subject, html, text = render_trade_placed(
@@ -1085,7 +1085,7 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
     # remaining cap is enforced inside evaluate_claim.
     await insurance_maybe_pay(db=db, position=pos, history=history)
 
-    # Ezymax Shield — aggregate period-plan insurance (separate product from the
+    # Ezymex Shield — aggregate period-plan insurance (separate product from the
     # per-trade micro-insurance above). Accumulates this trade's realized loss
     # into the user's active plan and credits the incremental capped payout.
     # Swallows its own exceptions so it can never block the close.

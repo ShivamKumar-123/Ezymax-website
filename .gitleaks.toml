@@ -1,4 +1,4 @@
-# Secret scanning for Ezymax.
+# Secret scanning for Ezymex.
 #
 # This repo has already had a credential handed around outside it, so the point
 # of this file is narrow: stop a NEW secret from being committed. It extends the

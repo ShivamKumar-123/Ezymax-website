@@ -1,4 +1,4 @@
-"""Ezymax Shield — aggregate period-plan claim engine.
+"""Ezymex Shield — aggregate period-plan claim engine.
 
 Separate from the per-trade engine in `claims.py`. Wired into
 `trading_service.close_position` right after `maybe_pay`, inside the same

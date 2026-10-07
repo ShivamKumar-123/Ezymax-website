@@ -28,7 +28,7 @@ implement the chosen version by hand following this vault's rules.
 
 **State:** login + repo init complete (`.superdesign/init/`, six files;
 `.superdesign/design-system.md` written — Obsidian & Lime). First round
-(2026-08-01): project *Ezymax — Ticker Text Section*, three drafts (base /
+(2026-08-01): project *Ezymex — Ticker Text Section*, three drafts (base /
 minimalist / layered); the base draft was implemented as the home
 `TickerBand` section — see [[changelog]].
 

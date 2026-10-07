@@ -25,7 +25,7 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       {/* Brand */}
       <div className="mb-3 flex items-center gap-2.5 px-2 pt-2">
         <img
-          src="/ezymax_icon.png"
+          src="/ezymex_icon.png"
           alt=""
           className="h-8 w-8 shrink-0 object-contain drop-shadow-[0_0_10px_rgba(214,169,61,0.45)]"
         />

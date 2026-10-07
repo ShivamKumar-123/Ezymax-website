@@ -601,10 +601,10 @@ html {
 @keyframes flashRed { 0% { background-color: rgba(239,68,68,0.2); } 100% { background-color: transparent; } }
 
 /* react-hot-toast — library defaults are washed-out white squares; reskin
- * to the Ezymax dark surface with proper padding, gap, and typography so
+ * to the Ezymex dark surface with proper padding, gap, and typography so
  * single-line errors don't wrap mid-word and the icon doesn't crash into
  * the text. */
-.ezymax-hot-toast {
+.ezymex-hot-toast {
   background: var(--toast-bg) !important;
   color: var(--toast-fg) !important;
   border: 1px solid var(--toast-border) !important;
@@ -625,27 +625,27 @@ html {
 
 /* The internal status icon (✓ / ✕) — give it a soft circular halo so it
  * reads as a status badge rather than a punched-out hole. */
-.ezymax-hot-toast > div[role="status"] {
+.ezymex-hot-toast > div[role="status"] {
   flex-shrink: 0;
   margin-right: 2px;
 }
 
 /* The text container — react-hot-toast wraps content in a child div; make
  * sure long error strings flow nicely instead of orphaning a single word. */
-.ezymax-hot-toast > div:not([role="status"]) {
+.ezymex-hot-toast > div:not([role="status"]) {
   flex: 1 1 auto;
   margin: 0 !important;
   word-break: break-word;
 }
 
 /* Tighten the close-button (×) for toasts that ship with one. */
-.ezymax-hot-toast button {
+.ezymex-hot-toast button {
   flex-shrink: 0;
   color: var(--toast-fg) !important;
   opacity: 0.55;
   transition: opacity 0.15s ease;
 }
-.ezymax-hot-toast button:hover {
+.ezymex-hot-toast button:hover {
   opacity: 1;
 }
 

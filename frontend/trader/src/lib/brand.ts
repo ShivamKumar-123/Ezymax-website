@@ -1,8 +1,8 @@
 /** Dashboard / in-app product name. */
-export const BRAND_NAME = 'Ezymax';
+export const BRAND_NAME = 'Ezymex';
 
 /** Zustand persist key for UI preferences (theme, terminal layout). */
-export const STORAGE_KEY_UI = 'ezymax-ui';
+export const STORAGE_KEY_UI = 'ezymex-ui';
 
 /** Previous brand's key. Read once on load so an existing trader keeps
  *  their saved theme and terminal layout across the rebrand; the global

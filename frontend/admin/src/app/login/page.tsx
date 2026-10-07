@@ -80,11 +80,11 @@ export default function LoginPage() {
           <div className="auth-right">
             <form className="auth-form" onSubmit={handleSubmit} noValidate>
               <div className="flex flex-col items-center gap-2 mb-1">
-                <img src="/ezymax_icon.png" alt="Ezymax" className="w-20 h-20 object-contain drop-shadow-[0_2px_10px_rgba(214,169,61,0.35)]" />
+                <img src="/ezymex_icon.png" alt="Ezymex" className="w-20 h-20 object-contain drop-shadow-[0_2px_10px_rgba(214,169,61,0.35)]" />
                 <span className="admin-wordmark">EZY<span className="admin-wordmark__accent">MAX</span></span>
               </div>
               <div>
-                <h2 className="auth-form__title">Ezymax Admin</h2>
+                <h2 className="auth-form__title">Ezymex Admin</h2>
                 <p className="auth-form__subtitle">Broker administration panel — secure access only.</p>
               </div>
 
@@ -176,7 +176,7 @@ export default function LoginPage() {
               </button>
 
               <p className="auth-footer" style={{ marginTop: '0.5rem' }}>
-                Ezymax Admin v1.0 &middot; Secure Access Only
+                Ezymex Admin v1.0 &middot; Secure Access Only
               </p>
             </form>
           </div>

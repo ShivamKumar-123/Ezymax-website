@@ -74,7 +74,7 @@ const Block = ({ block }: { block: LegalBlock }) => {
     case "contact":
       return (
         <div className="rounded-2xl border border-line bg-surface p-6">
-          <p className="font-semibold text-foreground">Ezymax {block.team}</p>
+          <p className="font-semibold text-foreground">Ezymex {block.team}</p>
           <dl className="mt-3 flex flex-col gap-1 text-sm text-foreground/60">
             <div className="flex gap-2">
               <dt className="text-foreground/45">Email</dt>

@@ -6,7 +6,7 @@
   --auth-bg: #08090b;
   --auth-input-bg: #14151a;
   --auth-border: #232428;
-  --auth-accent: #1E88FF;        /* Ezymax gold */
+  --auth-accent: #1E88FF;        /* Ezymex gold */
   --auth-accent-light: #7CC9FF;
   --auth-accent-dark: #0B5BD3;
   --auth-text: #ffffff;
@@ -143,7 +143,7 @@
 .auth-left__mandala {
   position: absolute;
   inset: 0;
-  background-image: url('/ezymax_icon.png');
+  background-image: url('/ezymex_icon.png');
   background-repeat: no-repeat;
   background-position: center 34%;
   background-size: 46% auto;

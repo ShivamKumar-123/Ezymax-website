@@ -10,12 +10,12 @@ consequences. Use [[templates/adr-note]] for new entries. Newest first.
 
 ---
 
-## ADR-0022 — This site is the landing surface of the ezymax platform
+## ADR-0022 — This site is the landing surface of the ezymex platform
 
 - **Status:** Accepted
 - **Date:** 2026-08-03
 
-**Context.** The team's `dagchain-official/ezymax` monorepo is the real
+**Context.** The team's `dagchain-official/ezymex` monorepo is the real
 product — backend microservices (Postgres/Timescale/Redis, gateway, market
 data, b-book & risk engines, Docker Compose) plus three Next.js frontends
 (`trader`, `admin`, `ib`). The trader app carried its own `(landing)` route
@@ -37,7 +37,7 @@ group. Two marketing surfaces would drift.
 **Consequences.** The drawer/final CTAs no longer open the request modal (it
 remains only for contact). Demo login requires the monorepo backend running
 (Docker). Two working copies of the site exist during transition
-(`~/Desktop/fx-website` and `ezymax/frontend/landing`) — treat fx-website as
+(`~/Desktop/fx-website` and `ezymex/frontend/landing`) — treat fx-website as
 the working copy until the branch is merged, then develop in the monorepo.
 
 ---
@@ -107,7 +107,7 @@ components that referenced raw surface classes (`bg-ink/85`, `bg-white/[0.04]`)
 were normalised onto `bg-glass`, shrinking the number of ad-hoc fills. The
 gold-toned photography (hero samurai, section bands) is now off-palette —
 flagged for an asset swap; alt text still describes the real images. Canvas
-palettes (`TubesCursor`, `AnimatedGradient` `Ezymax` preset) carry the lime
+palettes (`TubesCursor`, `AnimatedGradient` `Ezymex` preset) carry the lime
 literals and must be updated together with any future palette change.
 
 ---
@@ -117,7 +117,7 @@ literals and must be updated together with any future palette change.
 - **Status:** Accepted
 - **Date:** 2026-08-01
 
-**Context.** The Ezymax site shipped as a one-pager: a ten-item drawer that
+**Context.** The Ezymex site shipped as a one-pager: a ten-item drawer that
 scroll-jumped to home sections, with `Header`/`NavMenu`/`SiteFooter`/
 `RequestModal`/`TubesCursor` all mounted by `HomeView`. The content plan groups
 the offering into five areas (Trade · Platform · Earn · Protection · Company),

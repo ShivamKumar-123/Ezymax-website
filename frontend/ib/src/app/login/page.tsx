@@ -86,7 +86,7 @@ export default function IBPortalLoginPage() {
         >
           <div className="pointer-events-none absolute right-0 top-1/3 h-72 w-72 translate-x-1/3 rounded-full bg-[#1E88FF]/15 blur-[100px]" aria-hidden />
           <div className="relative flex items-center gap-2.5">
-            <img src="/ezymax_icon.png" alt="" className="h-10 w-10 object-contain drop-shadow-[0_0_16px_rgba(214,169,61,0.5)]" />
+            <img src="/ezymex_icon.png" alt="" className="h-10 w-10 object-contain drop-shadow-[0_0_16px_rgba(214,169,61,0.5)]" />
             <span className="text-lg font-bold tracking-tight"><span className="text-[#1E88FF]">EZY</span>MAX</span>
           </div>
 
@@ -110,18 +110,18 @@ export default function IBPortalLoginPage() {
             </ul>
           </div>
 
-          <p className="relative text-xs text-white/40">Ezymax — Introducing Broker Program</p>
+          <p className="relative text-xs text-white/40">Ezymex — Introducing Broker Program</p>
         </div>
 
         {/* ── Right form ── */}
         <div className="relative p-8 sm:p-10">
           <div className="mb-6 flex items-center gap-2.5 lg:hidden">
-            <img src="/ezymax_icon.png" alt="" className="h-9 w-9 object-contain drop-shadow-[0_0_14px_rgba(214,169,61,0.45)]" />
+            <img src="/ezymex_icon.png" alt="" className="h-9 w-9 object-contain drop-shadow-[0_0_14px_rgba(214,169,61,0.45)]" />
             <span className="text-lg font-bold tracking-tight"><span className="text-[#1E88FF]">EZY</span>MAX</span>
           </div>
 
           <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
-          <p className="mt-1.5 text-sm text-white/55">Sign in with your Ezymax trader email &amp; password.</p>
+          <p className="mt-1.5 text-sm text-white/55">Sign in with your Ezymex trader email &amp; password.</p>
 
           <div className="mt-5 inline-flex items-center gap-2 rounded-lg border border-[#1E88FF]/25 bg-[#1E88FF]/[0.07] px-3 py-2 text-xs font-semibold text-[#1E88FF]">
             <ShieldCheck size={13} /> Same login as your trading account
@@ -193,7 +193,7 @@ export default function IBPortalLoginPage() {
           </form>
 
           <p className="mt-5 text-center text-xs leading-relaxed text-white/45">
-            No separate login — use your Ezymax trader email &amp; password.
+            No separate login — use your Ezymex trader email &amp; password.
             <br className="hidden sm:block" /> Refer one trader to unlock your partner portal.
           </p>
         </div>

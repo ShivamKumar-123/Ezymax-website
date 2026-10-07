@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
-import { EzymaxWordmark } from '@/components/layout/EzymaxWordmark';
+import { EzymexWordmark } from '@/components/layout/EzymexWordmark';
 
 const NAV = [
   { label: 'Dashboard', href: '/dashboard' },
@@ -23,7 +23,7 @@ export function TraderHeader() {
   return (
     <header className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b border-border bg-bg-secondary">
       <div className="flex flex-wrap items-center gap-4">
-        <EzymaxWordmark href="/dashboard" textClassName="text-xl" />
+        <EzymexWordmark href="/dashboard" textClassName="text-xl" />
         <nav className="flex flex-wrap gap-1 ml-0 sm:ml-6">
           {NAV.map((item) => {
             const active = pathname === item.href;

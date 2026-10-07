@@ -232,11 +232,11 @@ body {
    The experience components in src/views/home/experience/ use a viewport-fluid
    type scale + frosted-glass surfaces from the source project. Added here so
    they render correctly. The display font is mapped to Space Grotesk (FX
-   Ezymax's display face) instead of the source's Assistant.
+   Ezymex's display face) instead of the source's Assistant.
    ───────────────────────────────────────────────────────────────────────── */
 :root {
   /* Ported from the source project as salmon/periwinkle; retuned to the FX
-     Ezymax palette so the intro experience matches the rest of the site.
+     Ezymex palette so the intro experience matches the rest of the site.
      Warm = the lime accent family, cool = emerald. */
   --accent-warm: var(--raw-color-lime-300);
   --accent-cool: var(--raw-color-emerald-500);

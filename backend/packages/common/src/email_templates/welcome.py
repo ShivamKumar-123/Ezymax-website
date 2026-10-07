@@ -11,7 +11,7 @@ def render_welcome(
 ) -> tuple[str, str, str]:
     name = (first_name or "trader").strip() or "trader"
     intro = (
-        "Welcome to Ezymax. Your account is ready — your funds stay in "
+        "Welcome to Ezymex. Your account is ready — your funds stay in "
         "your wallet, the system handles execution."
     )
     next_steps = """
@@ -33,7 +33,7 @@ def render_welcome(
             "</p>"
         ) + next_steps
 
-    subject = "Welcome to Ezymax"
+    subject = "Welcome to Ezymex"
     html = render_layout(
         title=f"Welcome aboard, {name}.",
         intro=intro,
@@ -45,7 +45,7 @@ def render_welcome(
         ),
     )
     text = (
-        f"Welcome to Ezymax, {name}.\n\n"
+        f"Welcome to Ezymex, {name}.\n\n"
         "Your account is ready. Get started:\n"
         "  - Open your first trading account from the dashboard\n"
         "  - Complete KYC to unlock higher leverage tiers\n"

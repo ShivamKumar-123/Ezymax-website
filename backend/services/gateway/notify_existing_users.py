@@ -31,7 +31,7 @@ from packages.common.src.config import get_settings
 from packages.common.src.smtp_mail import send_email, email_configured
 from packages.common.src.email_templates import render_existing_user_login_notice
 
-WALLET_PLACEHOLDER = "%@wallet.ezymax.local"
+WALLET_PLACEHOLDER = "%@wallet.ezymex.local"
 
 
 def _eligible_query():

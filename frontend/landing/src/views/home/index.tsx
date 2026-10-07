@@ -27,7 +27,7 @@ import {
   tickerBand,
   tradeInsurance,
   tradingModes,
-  whyArtha,
+  whyEzymex,
 } from "@/data/mocks/home";
 
 /**
@@ -39,7 +39,7 @@ export const HomeView = () => {
     <>
       <main id="main">
         {/* Ported "New Era" intro experience (replaces the old hero). The FX
-            Artha content sections below scroll in after it. */}
+            Ezymex content sections below scroll in after it. */}
         <NewEraExperience />
         <ProblemSolution content={problemSolution} />
         <TickerBand content={tickerBand} />
@@ -64,10 +64,10 @@ export const HomeView = () => {
         <Staking content={staking} />
         <Referral content={referral} />
         <SectionCards
-          id={whyArtha.id}
-          eyebrow={whyArtha.eyebrow}
-          heading={whyArtha.heading}
-          cards={whyArtha.cards}
+          id={whyEzymex.id}
+          eyebrow={whyEzymex.eyebrow}
+          heading={whyEzymex.heading}
+          cards={whyEzymex.cards}
           columns={3}
         />
         <FinalCta content={finalCta} />

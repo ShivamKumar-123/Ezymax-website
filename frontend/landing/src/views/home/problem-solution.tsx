@@ -15,7 +15,7 @@ type Card = (typeof problemSolution)["cards"][number];
 
 /**
  * Hero-scale split row: big art on one side, the step sequence on the other,
- * sides alternating per row (broker = image right, Ezymax = image left).
+ * sides alternating per row (broker = image right, Ezymex = image left).
  * The art carries the meaning — red for the custodial problem, lime for the
  * contract-settled path.
  */
@@ -99,7 +99,7 @@ const SplitRow = ({ card, index }: { card: Card; index: number }) => {
               // painting the "traditional broker" side in it would say the
               // opposite of what the section is arguing. Muted grey is what a
               // panel about the old way should look like next to the accented
-              // Ezymax card.
+              // Ezymex card.
               isSolution ? "" : "grayscale-[0.9] contrast-[1.05]"
             }`}
           />

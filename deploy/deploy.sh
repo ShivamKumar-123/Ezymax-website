@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# Deploy Ezymax to the production host.
+# Deploy Ezymex to the production host.
 #
-# Run on the server, from /opt/ezymax. CI calls it over SSH; a human can call
+# Run on the server, from /opt/ezymex. CI calls it over SSH; a human can call
 # it by hand the same way. Decides what to touch from what actually changed
 # between the deployed commit and the one being deployed, because rebuilding
 # four Next.js images to ship a backend one-liner costs twenty minutes for
@@ -14,7 +14,7 @@
 #
 set -Eeuo pipefail
 
-REPO_DIR="${REPO_DIR:-/opt/ezymax}"
+REPO_DIR="${REPO_DIR:-/opt/ezymex}"
 COMPOSE="docker compose -f docker-compose.yml -f docker-compose.prod.yml"
 TARGET_REF="${1:-origin/main}"
 HEALTH_URL="${HEALTH_URL:-https://api.ezymex.com/api/v1/auth/platform-status}"

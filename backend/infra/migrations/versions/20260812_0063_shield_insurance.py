@@ -1,4 +1,4 @@
-"""Ezymax Shield — aggregate period-plan trade insurance.
+"""Ezymex Shield — aggregate period-plan trade insurance.
 
 Adds the four Shield tables (separate product from the per-trade
 insurance_policies / insurance_claims):

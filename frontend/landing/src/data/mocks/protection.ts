@@ -16,7 +16,7 @@ export const protectionInsurance = {
   eyebrow: "Trade insurance",
   heading: "Cover a whole window, not one position.",
   intro:
-    "Ezymax Shield is bought for a day, a week or a month. It covers a share of everything you lose across that window, up to the plan's cap. No per-trade toggle, no hedging, no claim form.",
+    "Ezymex Shield is bought for a day, a week or a month. It covers a share of everything you lose across that window, up to the plan's cap. No per-trade toggle, no hedging, no claim form.",
   columns: ["Plan", "Loss covered", "Max payout", "Premium"],
   // Mirrors the live plan table (insurance_shield_plans).
   rows: [

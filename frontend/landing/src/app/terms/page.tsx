@@ -6,7 +6,7 @@ import { TermsView } from "@/views/terms";
 export const metadata: Metadata = generateMetadata({
   title: "Terms of Service",
   description:
-    "The agreement governing your access to and use of the Ezymax website, trading platform, and related services.",
+    "The agreement governing your access to and use of the Ezymex website, trading platform, and related services.",
   url: "/terms",
 });
 

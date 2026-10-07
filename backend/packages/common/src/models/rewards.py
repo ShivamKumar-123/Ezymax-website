@@ -1,4 +1,4 @@
-"""Rewards engine — XP / Ezymax Coins / Power Score, missions, store, audit."""
+"""Rewards engine — XP / Ezymex Coins / Power Score, missions, store, audit."""
 import uuid
 from datetime import datetime, date
 from decimal import Decimal

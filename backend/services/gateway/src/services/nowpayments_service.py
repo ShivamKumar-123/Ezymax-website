@@ -120,7 +120,7 @@ async def create_payment(
 #
 # /v1/payment returns a single pay_address + pay_amount + expires_at,
 # rather than redirecting the user to NOWPayments' hosted page. The
-# trader keeps the user on Ezymax and shows the address + a wallet-
+# trader keeps the user on Ezymex and shows the address + a wallet-
 # connect button (wagmi/RainbowKit) that signs the transfer.
 
 # Frontend network IDs we surface back to the wallet-connect layer so

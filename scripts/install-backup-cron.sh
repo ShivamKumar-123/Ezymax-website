@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 #
-# Ezymax — install the daily backup cron entry for the current user.
+# Ezymex — install the daily backup cron entry for the current user.
 #
-# Idempotent: re-runs replace any prior ezymax backup line in the
+# Idempotent: re-runs replace any prior ezymex backup line in the
 # crontab so multiple invocations don't stack up duplicate jobs.
 #
 # Run once per server (typically as root, since `docker compose` and
 # /var/log writes need root on a default Docker install).
 set -euo pipefail
 
-COMPOSE_DIR="${EZYMAX_DIR:-/opt/ezymax}"
+COMPOSE_DIR="${EZYMEX_DIR:-/opt/ezymex}"
 SCRIPT="$COMPOSE_DIR/scripts/backup.sh"
-LOG="/var/log/ezymax-backup.log"
+LOG="/var/log/ezymex-backup.log"
 
 [[ -x "$SCRIPT" ]] || { echo "[install] $SCRIPT not executable — chmod +x scripts/*.sh"; exit 1; }
 [[ -f "$COMPOSE_DIR/.env" ]] || { echo "[install] $COMPOSE_DIR/.env missing"; exit 1; }
@@ -21,7 +21,7 @@ LOG="/var/log/ezymax-backup.log"
 # are diagnosable.
 LINE="0 3 * * * set -a; source $COMPOSE_DIR/.env; set +a; $SCRIPT >> $LOG 2>&1"
 
-# Strip any prior ezymax line, then append the new one. The `|| true` keeps a
+# Strip any prior ezymex line, then append the new one. The `|| true` keeps a
 # fresh server (no existing crontab → `crontab -l` exits non-zero) from tripping
 # `set -e -o pipefail` and aborting mid-subshell, which would leave the crontab
 # empty and the job uninstalled.

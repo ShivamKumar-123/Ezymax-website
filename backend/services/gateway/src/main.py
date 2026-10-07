@@ -1,4 +1,4 @@
-"""Ezymax Gateway — REST + WebSocket API Server."""
+"""Ezymex Gateway — REST + WebSocket API Server."""
 import asyncio
 import contextlib
 import json
@@ -251,7 +251,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Ezymax Gateway",
+    title="Ezymex Gateway",
     version="1.0.0",
     description="Forex CFD B-Book Trading Platform API",
     lifespan=lifespan,

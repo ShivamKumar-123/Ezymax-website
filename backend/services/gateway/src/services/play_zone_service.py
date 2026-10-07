@@ -24,7 +24,7 @@ from packages.common.src.models import (
 
 logger = logging.getLogger("play_zone_service")
 
-# Default cost per spin, in Ezymax Coins (XP_Reward_mechanism doc = 30 EZC).
+# Default cost per spin, in Ezymex Coins (XP_Reward_mechanism doc = 30 EZC).
 # The live value is the `play_spin_cost_ac` system setting so admins can retune
 # it without a deploy; this constant is only the fallback.
 SPIN_COST_AC = Decimal("30")

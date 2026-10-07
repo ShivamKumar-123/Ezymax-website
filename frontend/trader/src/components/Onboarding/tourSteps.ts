@@ -30,7 +30,7 @@ export const TOUR_STEPS: TourStep[] = [
   // ── Phase 1 — Dashboard ──
   {
     page: 'dashboard',
-    title: 'Welcome to Ezymax 👋',
+    title: 'Welcome to Ezymex 👋',
     description:
       "Let's take a quick 60-second tour of the essentials. Click Next to begin — you can Skip anytime.",
   },

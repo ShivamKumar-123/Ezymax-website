@@ -37,7 +37,7 @@ WORKDIR /app
 COPY --from=builder /wheels /wheels
 COPY backend/services/gateway/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir --no-index --find-links=/wheels \
-        -r /tmp/requirements.txt ezymax-common \
+        -r /tmp/requirements.txt ezymex-common \
  && rm -rf /wheels /tmp/requirements.txt
 
 # Source mounted at runtime under dev compose; baked in for prod images.
@@ -50,11 +50,11 @@ ENV PYTHONPATH=/app \
 # Run as a dedicated unprivileged user so a container escape from a
 # code-execution bug doesn't map to host root (audit H8). uploads/ is
 # the only writable path; everything else is read-only at runtime.
-RUN groupadd --system --gid 1001 ezymax \
- && useradd  --system --uid 1001 --gid ezymax --shell /usr/sbin/nologin ezymax \
+RUN groupadd --system --gid 1001 ezymex \
+ && useradd  --system --uid 1001 --gid ezymex --shell /usr/sbin/nologin ezymex \
  && mkdir -p /app/uploads \
- && chown -R ezymax:ezymax /app/uploads
-USER ezymax
+ && chown -R ezymex:ezymex /app/uploads
+USER ezymex
 
 EXPOSE 8000
 

@@ -1,4 +1,4 @@
-"""Rewards engine — XP / Ezymax Coins / Power Score, missions, store, leaderboard.
+"""Rewards engine — XP / Ezymex Coins / Power Score, missions, store, leaderboard.
 
 Mission progress is incremented by call sites (e.g. trading_service.close_position
 calls `mark_progress(user_id, "place_trades", 1, db)`). Users claim rewards

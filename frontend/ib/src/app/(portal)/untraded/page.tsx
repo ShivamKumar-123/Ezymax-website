@@ -48,7 +48,7 @@ export default function UntradedPage() {
         { header: 'Accounts', value: (r: Referral) => String(r.accounts_count), align: 'right' },
         { header: 'Balance', value: (r: Referral) => `$${fmt(r.total_deposit)}`, align: 'right' },
       ],
-      { title: 'Registered — never traded', subtitle: `${data?.total} users`, filename: 'ezymax-ib-untraded.pdf' },
+      { title: 'Registered — never traded', subtitle: `${data?.total} users`, filename: 'ezymex-ib-untraded.pdf' },
     ).catch(() => toast.error('PDF export failed.'));
   };
 

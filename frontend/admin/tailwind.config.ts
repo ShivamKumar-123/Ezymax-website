@@ -28,7 +28,7 @@ const config: Config = {
           tertiary: 'rgb(var(--c-text-tertiary) / <alpha-value>)',
           inverse: 'rgb(var(--c-text-inverse) / <alpha-value>)',
         },
-        /* Ezymax neon-lime accent — matches the landing page (Obsidian & Lime) */
+        /* Ezymex neon-lime accent — matches the landing page (Obsidian & Lime) */
         buy: {
           DEFAULT: '#1E88FF',
           light: '#deff4d',

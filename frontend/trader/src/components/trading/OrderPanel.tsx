@@ -407,7 +407,7 @@ export default function OrderPanel() {
      A direct port of the reference terminal's order panel: no header,
      an angled Sell / spread / Buy strip, a day-change bar, flat order-type
      tabs, card-style price + volume inputs, a lot slider, one TP/SL
-     checkbox, then Margin and Assets readouts. Ezymax's own Fully Funded
+     checkbox, then Margin and Assets readouts. Ezymex's own Fully Funded
      control is kept, placed where it fits.
      The dashboard layout below is untouched.
      ══════════════════════════════════════════════════════════════════ */
@@ -673,10 +673,10 @@ export default function OrderPanel() {
               </dl>
             </div>
 
-            {/* Ezymax-only extras live BELOW Assets so the ticket's
+            {/* Ezymex-only extras live BELOW Assets so the ticket's
                 top half matches the reference exactly. */}
             <div className="space-y-2 border-t border-border-primary pt-2">
-            {/* Fully Funded — Ezymax-only. No leverage, no overnight fee. */}
+            {/* Fully Funded — Ezymex-only. No leverage, no overnight fee. */}
             <label className={clsx('flex items-center justify-between gap-2 rounded-xl px-3 py-1.5 border', fullyFunded ? 'border-buy/40 bg-buy/10' : 'border-transparent bg-card-nested')} title="No leverage. No overnight cost.">
               <span className="flex flex-col">
                 <span className="text-[12px] font-medium text-text-primary">Fully Funded</span>

@@ -20,7 +20,7 @@ class User(Base):
     #   • Google sign-in (Google verifies upstream — backfilled by 0041)
     #   • User completes /auth/email/verify-otp
     # Stays FALSE for password-only signups (until OTP) and for wallet-first
-    # signups with the placeholder @wallet.ezymax.local email.
+    # signups with the placeholder @wallet.ezymex.local email.
     email_verified = Column(Boolean, nullable=False, default=False, server_default="false")
     email_verified_at = Column(DateTime(timezone=True), nullable=True)
     phone = Column(String(20))

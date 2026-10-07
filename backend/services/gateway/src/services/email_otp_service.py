@@ -3,7 +3,7 @@
 Used for two flows:
 
   1. Wallet-first signup: user signed in via SIWE with a placeholder email
-     (`wallet_<addr>@wallet.ezymax.local`). They land on the onboarding gate,
+     (`wallet_<addr>@wallet.ezymex.local`). They land on the onboarding gate,
      enter their real email, get a 6-digit OTP via SMTP, and verify.
 
   2. Change email: any user (password / Google / wallet) can request a new
@@ -43,7 +43,7 @@ OTP_TTL_MINUTES = 10
 OTP_MAX_ATTEMPTS = 5
 SEND_COOLDOWN_SECONDS = 60        # min seconds between two sends to the same user
 SEND_HOURLY_CAP = 3               # max sends per user per rolling hour
-WALLET_PLACEHOLDER_DOMAIN = "wallet.ezymax.local"
+WALLET_PLACEHOLDER_DOMAIN = "wallet.ezymex.local"
 
 _EMAIL_RE_HINT = "user@example.com"
 

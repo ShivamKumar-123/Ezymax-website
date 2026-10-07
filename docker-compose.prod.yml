@@ -1,8 +1,8 @@
 # ============================================================
-# Ezymax — Production overrides
+# Ezymex — Production overrides
 # Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 # ============================================================
-name: ezymax
+name: ezymex
 
 services:
   # ── Infrastructure — restart policy only (no host ports needed) ──

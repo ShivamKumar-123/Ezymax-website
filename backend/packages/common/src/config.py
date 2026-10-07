@@ -6,8 +6,8 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
-    DATABASE_URL: str = "postgresql+asyncpg://ezymax:ezymax_dev@localhost:5432/ezymax"
-    TIMESCALE_URL: str = "postgresql+asyncpg://ezymax:ezymax_dev@localhost:5433/marketdata"
+    DATABASE_URL: str = "postgresql+asyncpg://ezymex:ezymex_dev@localhost:5432/ezymex"
+    TIMESCALE_URL: str = "postgresql+asyncpg://ezymex:ezymex_dev@localhost:5433/marketdata"
     REDIS_URL: str = "redis://localhost:6379/0"
     # KAFKA_BOOTSTRAP_SERVERS retained as a settings field for now so any
     # downstream IaC / .env that still defines it doesn't fail validation
@@ -146,7 +146,7 @@ class Settings(BaseSettings):
     # market-data service stops running its own Infoway / simulator feed and
     # consumes ticks pushed from Corecen via POST /api/lp/prices/batch (HMAC).
     CORECEN_LP_ENABLED: bool = False
-    # HMAC credentials — must match EZYMAX_API_KEY / EZYMAX_API_SECRET in the Corecen .env.
+    # HMAC credentials — must match EZYMEX_API_KEY / EZYMEX_API_SECRET in the Corecen .env.
     CORECEN_LP_API_KEY: str = ""
     CORECEN_LP_API_SECRET: str = ""
     # Reject pushes older than this many ms (same tolerance as Corecen's HMAC middleware).
@@ -163,9 +163,9 @@ class Settings(BaseSettings):
     CRM_API_IP_ALLOWLIST: str = ""
 
     # Corecen Broker API (A-Book trade forwarding). When an A-Book user opens/closes
-    # a position, Ezymax pushes the trade to Corecen's broker API for LP routing.
+    # a position, Ezymex pushes the trade to Corecen's broker API for LP routing.
     # These credentials are the API key/secret registered in Corecen's admin panel
-    # for the Ezymax broker account.
+    # for the Ezymex broker account.
     CORECEN_BROKER_API_URL: str = ""       # e.g. https://api.corecen.com
     CORECEN_BROKER_API_KEY: str = ""       # ck_... from Corecen broker API keys
     CORECEN_BROKER_API_SECRET: str = ""    # cs_... from Corecen broker API keys
@@ -222,7 +222,7 @@ class Settings(BaseSettings):
     TRONGRID_API_KEY: str = ""         # https://www.trongrid.io
     ALCHEMY_API_URL: str = ""          # full URL incl key, e.g. https://eth-mainnet.g.alchemy.com/v2/<KEY>
     BSC_RPC_URL: str = ""              # public default fallback used if blank
-    # BSC testnet RPC for the EzymaxVaultV1 testnet deploy. Falls back
+    # BSC testnet RPC for the EzymexVaultV1 testnet deploy. Falls back
     # to the public binance.org seed if blank. Used by the bscscan vault
     # event verifier to fetch eth_blockNumber for confirmations.
     BSC_TESTNET_RPC_URL: str = ""
@@ -249,7 +249,7 @@ _LEGACY_DEFAULT_JWT_SECRETS = {
 _KNOWN_WEAK_ADMIN_PASSWORDS = {
     # Historical default that shipped with .env.example for a while.
     # Any deployment still using this in 2026+ is effectively unpassworded.
-    "EzymaxAdmin2025!",
+    "EzymexAdmin2025!",
     "admin",
     "password",
     "changeme",
@@ -281,7 +281,7 @@ def _assert_production_secrets(s: Settings) -> None:
         # Dev hygiene: warn but don't refuse to boot — local devs need
         # the convenience of running with no env file at all.
         import logging
-        log = logging.getLogger("ezymax.config")
+        log = logging.getLogger("ezymex.config")
         if weak_jwt:
             log.warning(
                 "Using empty/weak/default JWT secrets for: %s. Acceptable for "
@@ -307,7 +307,7 @@ def _assert_production_secrets(s: Settings) -> None:
             + ", ".join(bad)
             + ". Generate strong JWT secrets with `openssl rand -hex 32` and "
             "a strong ADMIN_PASSWORD with `openssl rand -base64 24`, then "
-            "set them in /opt/ezymax/.env before deploying. If this is a "
+            "set them in /opt/ezymex/.env before deploying. If this is a "
             "local dev box, set ENVIRONMENT=development."
         )
 

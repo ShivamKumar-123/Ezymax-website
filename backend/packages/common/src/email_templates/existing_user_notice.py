@@ -19,7 +19,7 @@ def render_existing_user_login_notice(
 
     body = f"""
     <p style="margin:0 0 12px;color:#f5f5f5;font-size:14px;line-height:1.6;">
-      We've refreshed Ezymax. Your account, balances and positions are exactly
+      We've refreshed Ezymex. Your account, balances and positions are exactly
       where you left them — nothing has changed for you.
     </p>
     <p style="margin:0 0 12px;color:#f5f5f5;font-size:14px;line-height:1.6;">
@@ -34,10 +34,10 @@ def render_existing_user_login_notice(
       <a href="{escape(register_url, quote=True)}" style="color:#d6a93d;text-decoration:none;">{escape(register_url)}</a>
     </p>
     """
-    subject = "Log in to Ezymax"
+    subject = "Log in to Ezymex"
     html = render_layout(
         title="Welcome back",
-        intro=f"Hi {name}, here's your quick link back into Ezymax.",
+        intro=f"Hi {name}, here's your quick link back into Ezymex.",
         body_html=body,
         cta_label="Log in",
         cta_url=login_url,
@@ -48,7 +48,7 @@ def render_existing_user_login_notice(
     )
     text = (
         f"Hi {name},\n\n"
-        "We've refreshed Ezymax. Your account, balances and positions are "
+        "We've refreshed Ezymex. Your account, balances and positions are "
         "exactly where you left them.\n\n"
         f"Log in:              {login_url}\n"
         f"Create a new account: {register_url}\n\n"

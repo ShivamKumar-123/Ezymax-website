@@ -44,7 +44,7 @@ export const ROUTES = {
   // ── Landing ──
   HOME: '/',
   ABOUT: '/company/about',
-  WHY_EZYMAX: '/company/why-ezymax',
+  WHY_EZYMEX: '/company/why-ezymex',
   CONTACT: '/company/contact',
   PLATFORMS: '/platforms',
 

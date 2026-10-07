@@ -5,8 +5,8 @@
 // ── Trading ──────────────────────────────────────────────
 export const MAX_LEVERAGE = 500;
 export const DEFAULT_LEVERAGE = 100;
-export const SYMBOL_STORAGE_KEY = 'ezymax-selected-symbol';
-export const AUTH_STORAGE_KEY = 'ezymax-auth';
+export const SYMBOL_STORAGE_KEY = 'ezymex-selected-symbol';
+export const AUTH_STORAGE_KEY = 'ezymex-auth';
 
 // ── UI ───────────────────────────────────────────────────
 export const TOAST_DURATION_MS = 1500;

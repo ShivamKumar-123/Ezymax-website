@@ -6,7 +6,7 @@ import { PrivacyView } from "@/views/privacy";
 export const metadata: Metadata = generateMetadata({
   title: "Privacy Policy",
   description:
-    "How Ezymax collects, uses, and safeguards your information when you use our website and trading platform.",
+    "How Ezymex collects, uses, and safeguards your information when you use our website and trading platform.",
   url: "/privacy",
 });
 

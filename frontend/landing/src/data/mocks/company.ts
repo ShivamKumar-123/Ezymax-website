@@ -7,13 +7,13 @@ export const companyHero = {
   eyebrow: "Company",
   heading: "Built so you don't have to trust us.",
   intro:
-    "Ezymax is a protocol-driven trading ecosystem with automated settlement. Funds stay under your control; execution and settlement run on system-defined logic.",
+    "Ezymex is a protocol-driven trading ecosystem with automated settlement. Funds stay under your control; execution and settlement run on system-defined logic.",
   backLabel: "Back to home",
 } as const;
 
 export const companyAbout = {
   id: "about",
-  eyebrow: "Why traders choose Ezymax",
+  eyebrow: "Why traders choose Ezymex",
   heading: "Five things a traditional broker can't say.",
   cards: [
     {
@@ -49,7 +49,7 @@ export const companyProtocol = {
   eyebrow: "Where your money actually sits",
   heading: "Your broker's balance sheet, or a contract you control.",
   intro:
-    "With a normal broker, your deposit lands in their bank account and they decide when you get it back. Ezymax removes that step entirely: the contract locks margin when you open a position, settles P&L when you close it, and releases your free balance whenever you ask. Nobody approves anything.",
+    "With a normal broker, your deposit lands in their bank account and they decide when you get it back. Ezymex removes that step entirely: the contract locks margin when you open a position, settles P&L when you close it, and releases your free balance whenever you ask. Nobody approves anything.",
   cards: [
     {
       title: "A traditional broker",
@@ -65,7 +65,7 @@ export const companyProtocol = {
       footnote: "Every step depends on trusting the broker.",
     },
     {
-      title: "Ezymax",
+      title: "Ezymex",
       points: [
         "You allocate from your wallet",
         "Funds enter the trading contract",
@@ -86,8 +86,8 @@ export const companyLegal = {
   eyebrow: "Legal structure",
   heading: "One positioning. Used everywhere.",
   body: [
-    "Ezymax is not a broker holding client money. It is a protocol-driven trading ecosystem: Ezymax Ltd. operates the protocol, the platform and this website, while trade execution and liquidity are provided through licensed execution partners — the partner serving your region is named in your account documents.",
-    "Client funds are never held by Ezymax Ltd. They remain in the on-chain trading contract, allocated from your own wallet, with only open-trade margin locked. Jurisdictions where CFD trading is restricted are excluded from onboarding; the current list is published in the Terms of Service.",
+    "Ezymex is not a broker holding client money. It is a protocol-driven trading ecosystem: Ezymex Ltd. operates the protocol, the platform and this website, while trade execution and liquidity are provided through licensed execution partners — the partner serving your region is named in your account documents.",
+    "Client funds are never held by Ezymex Ltd. They remain in the on-chain trading contract, allocated from your own wallet, with only open-trade margin locked. Jurisdictions where CFD trading is restricted are excluded from onboarding; the current list is published in the Terms of Service.",
   ],
   note: "Withdrawal of free balance is executed by the trading contract under published platform rules and applicable legal and compliance requirements.",
 } as const;

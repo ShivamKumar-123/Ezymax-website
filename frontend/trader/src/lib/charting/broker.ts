@@ -1,5 +1,5 @@
 /**
- * TradingView Trading Terminal — Broker Adapter (ezymax).
+ * TradingView Trading Terminal — Broker Adapter (ezymex).
  *
  * Wires the licensed charting_library (Trading Terminal edition, v31) broker
  * API to OUR trading backend so each open position renders on the chart as:

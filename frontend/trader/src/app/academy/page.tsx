@@ -55,7 +55,7 @@ export default function AcademyPage() {
             <GraduationCap className="w-5 h-5 text-[#1E88FF]" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-xl md:text-2xl font-bold text-text-primary">Ezymax Forex Academy</h1>
+            <h1 className="text-xl md:text-2xl font-bold text-text-primary">Ezymex Forex Academy</h1>
             <p className="text-sm text-text-tertiary">Master forex trading from beginner to professional</p>
           </div>
         </div>
@@ -192,7 +192,7 @@ export default function AcademyPage() {
         </div>
 
         <div className="flex items-center justify-between text-[10px] uppercase tracking-widest text-text-tertiary pt-2">
-          <span>Ezymax Forex Academy</span>
+          <span>Ezymex Forex Academy</span>
           <span>8 Phases · 44 Modules</span>
         </div>
       </div>

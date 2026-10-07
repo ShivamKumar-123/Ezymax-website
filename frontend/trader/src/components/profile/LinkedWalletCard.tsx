@@ -48,7 +48,7 @@ export default function LinkedWalletCard() {
 
   const handleUnlink = async () => {
     if (!canUnlink || unlinking) return;
-    if (!confirm('Unlink this wallet from your Ezymax account?')) return;
+    if (!confirm('Unlink this wallet from your Ezymex account?')) return;
     setUnlinking(true);
     try {
       await api.delete('/profile/wallet/link');

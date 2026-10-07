@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { EzymaxWordmark } from '@/components/layout/EzymaxWordmark';
+import { EzymexWordmark } from '@/components/layout/EzymexWordmark';
 import {
   Search,
   Plus,
@@ -134,7 +134,7 @@ export default function TerminalLeftRail({
     >
       <div className="flex flex-col items-center gap-0.5 pt-2 pb-1 px-1.5 border-b border-border-primary">
         <div className="mb-1 flex justify-center w-full">
-          <EzymaxWordmark href="/accounts" variant="rail" />
+          <EzymexWordmark href="/accounts" variant="rail" />
         </div>
         {/* Search — opens the Markets panel with the instrument search focused. */}
         <RailBtn title="Search symbols" onClick={onFocusSymbolSearch}>

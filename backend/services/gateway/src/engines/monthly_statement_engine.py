@@ -114,7 +114,7 @@ async def send_monthly_statements(
         nonlocal sent_counter
         if not user.email:
             return
-        if user.email.lower().endswith("@wallet.ezymax.local"):
+        if user.email.lower().endswith("@wallet.ezymex.local"):
             return
         if bool(getattr(user, "is_demo", False)):
             return

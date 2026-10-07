@@ -121,7 +121,7 @@ async def _send_via_sendgrid(
     content.append({"type": "text/html", "value": html})
     payload = {
         "personalizations": [{"to": [{"email": to_email}]}],
-        "from": {"email": _from_address(), "name": "Ezymax"},
+        "from": {"email": _from_address(), "name": "Ezymex"},
         "subject": subject,
         "content": content,
         # Disable SendGrid link/open tracking. By default SendGrid rewrites
@@ -288,7 +288,7 @@ def _strip_tags(html: str) -> str:
 
 
 async def send_password_reset_email(
-    to_email: str, reset_link: str, *, app_name: str = "Ezymax",
+    to_email: str, reset_link: str, *, app_name: str = "Ezymex",
 ) -> bool:
     from .email_templates import render_password_reset
     subject, html, text = render_password_reset(app_name=app_name, reset_link=reset_link)

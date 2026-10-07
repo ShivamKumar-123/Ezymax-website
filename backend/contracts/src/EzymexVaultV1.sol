@@ -7,8 +7,8 @@ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 
 /**
- * @title EzymaxVaultV1
- * @notice Custody vault for Ezymax — holds a single ERC20 stablecoin
+ * @title EzymexVaultV1
+ * @notice Custody vault for Ezymex — holds a single ERC20 stablecoin
  *         (USDT in production) on behalf of all platform users.
  *
  * Design intent (Phase 1):
@@ -35,7 +35,7 @@ import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
  *
  * Reference: docs/vault-phase1-spec.md
  */
-contract EzymaxVaultV1 is AccessControl, Pausable {
+contract EzymexVaultV1 is AccessControl, Pausable {
     using SafeERC20 for IERC20;
 
     /// @notice The stablecoin this vault custodies. Set in constructor; never changes.

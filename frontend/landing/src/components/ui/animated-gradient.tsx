@@ -27,15 +27,15 @@ interface PresetParams {
   shapeSize: number;
 }
 
-type PresetName = "Ezymax" | "Aurora" | "Ghost";
+type PresetName = "Ezymex" | "Aurora" | "Ghost";
 
 /**
- * `Ezymax` is the brand preset — black through deep olive to neon lime. The
+ * `Ezymex` is the brand preset — black through deep olive to neon lime. The
  * upstream demo presets (neon pink, toxic green) are off-palette and were
  * dropped rather than shipped as dead configuration.
  */
 const presets: Record<PresetName, PresetParams> = {
-  Artha: {
+  Ezymex: {
     color1: "#000000",
     color2: "#1d2a00",
     color3: "#1E88FF",
@@ -132,7 +132,7 @@ export interface AnimatedGradientProps {
  * every failure path here is inside the effect's try/catch.
  */
 export function AnimatedGradient({
-  config = { preset: "Ezymax" },
+  config = { preset: "Ezymex" },
   noise,
   radius = "0px",
   style,
@@ -169,7 +169,7 @@ export function AnimatedGradient({
         shapeSize: config.shapeSize ?? 10,
       };
     }
-    const preset = presets[config.preset] || presets.Artha;
+    const preset = presets[config.preset] || presets.Ezymex;
     return { ...preset, speed: config.speed ?? preset.speed };
   }, [config]);
 

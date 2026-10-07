@@ -112,7 +112,7 @@ export function useTourState(): void {
       allowClose: true,
       stagePadding: 6,
       stageRadius: 8,
-      popoverClass: 'ezymax-tour',
+      popoverClass: 'ezymex-tour',
       nextBtnText: 'Next',
       prevBtnText: 'Back',
       doneBtnText: 'Done',
@@ -124,7 +124,7 @@ export function useTourState(): void {
         const skip = document.createElement('button');
         skip.type = 'button';
         skip.innerText = 'Skip tour';
-        skip.className = 'ezymax-tour__skip';
+        skip.className = 'ezymex-tour__skip';
         skip.onclick = () => drv.destroy();
         popover.footerButtons.prepend(skip);
       },

@@ -42,7 +42,7 @@ export const privacyDoc: LegalDoc = {
   eyebrow: "Legal",
   title: "Privacy Policy",
   intro:
-    "How Ezymax collects, uses, and safeguards your information when you visit our website and use our trading platform.",
+    "How Ezymex collects, uses, and safeguards your information when you visit our website and use our trading platform.",
   updated: "Last updated: March 2026",
   sections: [
     {
@@ -50,7 +50,7 @@ export const privacyDoc: LegalDoc = {
       blocks: [
         {
           kind: "text",
-          text: 'Ezymax ("we," "us," "our," or "Company") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our trading platform.',
+          text: 'Ezymex ("we," "us," "our," or "Company") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our trading platform.',
         },
       ],
     },
@@ -197,7 +197,7 @@ export const termsDoc: LegalDoc = {
   eyebrow: "Legal",
   title: "Terms of Service",
   intro:
-    "The agreement governing your access to and use of the Ezymax website, trading platform, and related services.",
+    "The agreement governing your access to and use of the Ezymex website, trading platform, and related services.",
   updated: "Last updated: March 2026",
   sections: [
     {
@@ -205,7 +205,7 @@ export const termsDoc: LegalDoc = {
       blocks: [
         {
           kind: "text",
-          text: 'By accessing or using the Ezymax website, trading platform, or any related services (collectively, the "Services"), you agree to be bound by these Terms of Service. If you do not agree to these terms, you must not use the Services.',
+          text: 'By accessing or using the Ezymex website, trading platform, or any related services (collectively, the "Services"), you agree to be bound by these Terms of Service. If you do not agree to these terms, you must not use the Services.',
         },
       ],
     },
@@ -238,7 +238,7 @@ export const termsDoc: LegalDoc = {
       blocks: [
         {
           kind: "text",
-          text: "Ezymax provides an online platform for trading foreign exchange, cryptocurrencies, and other leveraged instruments. We may add, modify, suspend, or discontinue any part of the Services at any time. We do not provide investment, tax, or legal advice; nothing on the platform constitutes a recommendation to trade.",
+          text: "Ezymex provides an online platform for trading foreign exchange, cryptocurrencies, and other leveraged instruments. We may add, modify, suspend, or discontinue any part of the Services at any time. We do not provide investment, tax, or legal advice; nothing on the platform constitutes a recommendation to trade.",
         },
       ],
     },
@@ -301,7 +301,7 @@ export const termsDoc: LegalDoc = {
       blocks: [
         {
           kind: "text",
-          text: "All content, trademarks, software, and materials on the platform are the property of Ezymax or its licensors and are protected by intellectual-property laws. You may not copy, reproduce, or distribute any part of the Services without prior written permission.",
+          text: "All content, trademarks, software, and materials on the platform are the property of Ezymex or its licensors and are protected by intellectual-property laws. You may not copy, reproduce, or distribute any part of the Services without prior written permission.",
         },
       ],
     },
@@ -310,7 +310,7 @@ export const termsDoc: LegalDoc = {
       blocks: [
         {
           kind: "text",
-          text: "To the maximum extent permitted by law, Ezymax shall not be liable for any indirect, incidental, or consequential losses, including trading losses, arising from your use of the Services, technical failures, or market conditions. Our aggregate liability shall not exceed the fees you paid to us in the preceding twelve months.",
+          text: "To the maximum extent permitted by law, Ezymex shall not be liable for any indirect, incidental, or consequential losses, including trading losses, arising from your use of the Services, technical failures, or market conditions. Our aggregate liability shall not exceed the fees you paid to us in the preceding twelve months.",
         },
       ],
     },
@@ -328,7 +328,7 @@ export const termsDoc: LegalDoc = {
       blocks: [
         {
           kind: "text",
-          text: "We may amend these Terms from time to time; continued use of the Services after changes take effect constitutes acceptance. These Terms are governed by the laws of the jurisdiction in which Ezymax is established, without regard to conflict-of-law principles.",
+          text: "We may amend these Terms from time to time; continued use of the Services after changes take effect constitutes acceptance. These Terms are governed by the laws of the jurisdiction in which Ezymex is established, without regard to conflict-of-law principles.",
         },
       ],
     },
@@ -368,7 +368,7 @@ export const riskDoc: LegalDoc = {
       blocks: [
         {
           kind: "text",
-          text: "Ezymax offers leverage up to 1:500 on certain instruments. Leverage amplifies both gains and losses. A small adverse price movement can result in substantial losses or even the complete loss of your deposit.",
+          text: "Ezymex offers leverage up to 1:500 on certain instruments. Leverage amplifies both gains and losses. A small adverse price movement can result in substantial losses or even the complete loss of your deposit.",
         },
         {
           kind: "callout",
@@ -417,7 +417,7 @@ export const riskDoc: LegalDoc = {
       blocks: [
         {
           kind: "text",
-          text: "Your trades are executed through Ezymax's liquidity providers. If a liquidity provider defaults or experiences financial difficulties, your funds may be at risk despite our segregated account structure.",
+          text: "Your trades are executed through Ezymex's liquidity providers. If a liquidity provider defaults or experiences financial difficulties, your funds may be at risk despite our segregated account structure.",
         },
       ],
     },
@@ -495,7 +495,7 @@ export const riskDoc: LegalDoc = {
       blocks: [
         {
           kind: "text",
-          text: "While Ezymax offers negative balance protection, meaning your account cannot go below zero, this protection may not apply in all circumstances, including:",
+          text: "While Ezymex offers negative balance protection, meaning your account cannot go below zero, this protection may not apply in all circumstances, including:",
         },
         {
           kind: "list",
@@ -532,7 +532,7 @@ export const riskDoc: LegalDoc = {
       blocks: [
         {
           kind: "text",
-          text: "By opening an account with Ezymax, you acknowledge that you have read and understood this Risk Disclosure, and you accept all risks associated with trading on our platform. You confirm that you are trading at your own risk and that Ezymax is not responsible for any losses incurred.",
+          text: "By opening an account with Ezymex, you acknowledge that you have read and understood this Risk Disclosure, and you accept all risks associated with trading on our platform. You confirm that you are trading at your own risk and that Ezymex is not responsible for any losses incurred.",
         },
       ],
     },

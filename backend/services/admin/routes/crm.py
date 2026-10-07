@@ -145,7 +145,7 @@ async def crm_products(
     _: bool = Depends(verify_crm_key),
     db: AsyncSession = Depends(get_db),
 ):
-    """Ezymax product catalogue with pricing — account types, instruments,
+    """Ezymex product catalogue with pricing — account types, instruments,
     staking plans, trade insurance, VIP pass, reward store. Single call, not
     paginated (catalogue is small)."""
     return await crm_service.products(db)

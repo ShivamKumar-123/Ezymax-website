@@ -14,10 +14,10 @@ import { GalaxySection } from "./galaxy-section";
 import { homeContent } from "./content";
 
 /**
- * The ported "New Era" intro experience, wired into the Ezymax home in place
+ * The ported "New Era" intro experience, wired into the Ezymex home in place
  * of the old hero. A fixed WebGL stage (particle morph + the four
  * scroll-revealed overlays) plays over a tall scroll driver, then fades out to
- * hand off to the normal Ezymax sections below. Phones get the same thing at
+ * hand off to the normal Ezymex sections below. Phones get the same thing at
  * a lower particle budget; only reduced-motion collapses to a plain hero.
  */
 export const NewEraExperience = () => {
@@ -60,7 +60,7 @@ export const NewEraExperience = () => {
       {/* Desktop scroll driver — gives the experience its scroll length, plus a
           ~2.5-screen tail so the stage fully fades out BEFORE the content
           sections below scroll in (otherwise the last (galaxy) beat overlaps
-          the first Ezymax section). */}
+          the first Ezymex section). */}
       <div
         aria-hidden="true"
         className="block motion-reduce:hidden"
