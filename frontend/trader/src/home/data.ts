@@ -134,6 +134,9 @@ export const HERO = {
   pillBadge: 'Execution on your side of the browser',
   headline: 'Trade forex, metals, indices and crypto on one account',
   sub: 'One balance, one login, and a risk engine that runs on our servers — so your stops, targets and margin are enforced whether or not your browser is open.',
+  // Sits under the rotating headline. Static, because the headline
+  // already changes — two moving blocks is one too many.
+  blurb: 'Trade forex, metals, indices and crypto from a single balance, with execution and risk enforced on our servers rather than in your browser.',
   ctaPrimary: 'Open an Account',
   ctaSecondary: 'Try a Demo',
   ctaHref: SIGNUP_HREF,
@@ -182,6 +185,26 @@ export const HERO_FEATURES = [
   { icon: 'Lock',              label: 'Ledgered Balances', sub: 'Fully auditable' },
   { icon: 'ShieldCheck',       label: 'Server-Side Risk',  sub: 'Stops always armed' },
   { icon: 'MonitorSmartphone', label: 'Multi-Platform',    sub: 'Web, desktop, mobile' },
+] as const;
+
+/**
+ * Stat bar along the foot of the hero.
+ *
+ * The reference design had "500+ Trading Instruments", "10K+ Active
+ * Traders" and "99.9% Uptime Guarantee" here. None of the three is
+ * available to us: there are 59 instruments configured (5 of them
+ * currently quoting), the platform has no userbase to count yet, and
+ * there is no uptime SLA behind a 99.9% figure. Numbers like those are
+ * the first thing a sceptical visitor checks and the first thing a
+ * payment processor asks about.
+ *
+ * These three occupy the same slots and are all verifiable by opening an
+ * account.
+ */
+export const HERO_STATS = [
+  { icon: 'Clock',       value: '24/7',  label: 'Crypto markets' },
+  { icon: 'TrendingUp',  value: '1:100', label: 'Default leverage' },
+  { icon: 'ShieldCheck', value: '50%',   label: 'Published stop-out' },
 ] as const;
 
 /**

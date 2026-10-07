@@ -6,10 +6,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
   ArrowUpRight,
+  Clock,
   Gauge,
   Lock,
   MonitorSmartphone,
   ShieldCheck,
+  TrendingUp,
   type LucideIcon,
 } from 'lucide-react';
 import { LiveTickerBar } from './LiveTickerBar';
@@ -19,6 +21,7 @@ import {
   HERO_FEATURES,
   HERO_ROTATE_MS,
   HERO_ROTATING,
+  HERO_STATS,
   SIGNUP_HREF,
 } from '../data';
 import { BRAND_NAME } from '@/lib/brand';
@@ -36,6 +39,8 @@ const FEATURE_ICONS: Record<string, LucideIcon> = {
   Lock,
   ShieldCheck,
   MonitorSmartphone,
+  Clock,
+  TrendingUp,
 };
 
 /** Chip accent colours, keyed by the `tone` in HERO_ASSET_CHIPS. */
@@ -126,18 +131,45 @@ function RotatingHeadline() {
 export function Hero() {
   return (
     <section className="relative overflow-hidden">
-      {/* Soft wash behind the fold — a flat white plate makes the cutout
-          look pasted on, and a hard gradient competes with it. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            'radial-gradient(120% 90% at 78% 28%, rgba(204,0,0,0.07) 0%, rgba(204,0,0,0) 55%),' +
-            'radial-gradient(90% 70% at 10% 20%, rgba(11,47,82,0.06) 0%, rgba(11,47,82,0) 60%),' +
-            'linear-gradient(180deg, var(--mk-bg-raised) 0%, var(--mk-bg) 70%)',
-        }}
-      />
+      {/* Background plate.
+          Composed from the supplied hero artwork: its two clean edges —
+          the candlestick cityscape on the left, the globe and trading
+          floor on the right — stretched and feathered into a light
+          middle. The middle is deliberately empty because that is where
+          the headline and the cutout go; the source artwork had the
+          model, copy and a stat bar baked into it, none of which can be
+          background on a page that renders all three as live markup. */}
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        {/* A CSS background rather than next/image: the plate is 3.1:1 and
+            the fold is nearer 1.7:1, so object-cover scaled it to the
+            height and cropped the SIDES — losing the cityscape and the
+            globe, which are the only parts worth showing. Stretching to
+            100% x 100% guarantees both edges land; on an out-of-focus
+            plate the vertical stretch is invisible. 61KB, so skipping the
+            optimiser costs nothing. */}
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: 'url(/images/hero-bg.jpg)',
+            backgroundSize: '100% 100%',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+          }}
+        />
+        {/* Scrim. Heaviest under the headline, lifting toward the right so
+            the globe stays visible behind the artwork. */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'linear-gradient(90deg, rgba(255,255,255,0.70) 0%, rgba(255,255,255,0.80) 24%, rgba(255,255,255,0.58) 48%, rgba(255,255,255,0.18) 72%, rgba(255,255,255,0.00) 100%)',
+          }}
+        />
+        <div
+          className="absolute inset-x-0 bottom-0 h-28"
+          style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0) 0%, var(--mk-bg) 92%)' }}
+        />
+      </div>
 
       <div
         className="mk-container mk-container--wide relative"
@@ -176,6 +208,14 @@ export function Hero() {
             <motion.div {...rise(0.12)} style={{ marginTop: 'var(--mk-space-4)' }}>
               <RotatingHeadline />
             </motion.div>
+
+            <motion.p
+              {...rise(0.2)}
+              className="mk-lead"
+              style={{ marginTop: 'var(--mk-space-4)', maxWidth: '46ch' }}
+            >
+              {HERO.blurb}
+            </motion.p>
 
             {/* ── Feature strip ──────────────────────────────────── */}
             <motion.ul
@@ -317,6 +357,51 @@ export function Hero() {
             ))}
           </motion.div>
         </div>
+      </div>
+
+      {/* ── Stat bar ────────────────────────────────────────────────
+          Dark pill straddling the foot of the fold, as the reference has.
+          Figures are platform facts, not traction numbers — see
+          HERO_STATS in data.ts for why. */}
+      <div className="mk-container mk-container--wide relative" style={{ paddingBottom: 'var(--mk-space-7)' }}>
+        <motion.ul
+          {...rise(0.5)}
+          className="mx-auto grid max-w-3xl grid-cols-1 overflow-hidden rounded-2xl sm:grid-cols-3"
+          style={{
+            background: 'linear-gradient(180deg, rgba(10,13,20,0.94) 0%, rgba(6,8,13,0.96) 100%)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            boxShadow: '0 20px 50px -24px rgba(11,27,51,0.55)',
+            listStyle: 'none',
+            padding: 0,
+          }}
+        >
+          {HERO_STATS.map(({ icon, value, label }, i) => {
+            const Icon = FEATURE_ICONS[icon] ?? ShieldCheck;
+            return (
+              <li
+                key={label}
+                className="flex items-center justify-center gap-3 px-5 py-4"
+                style={{
+                  borderLeft: i === 0 ? 'none' : '1px solid rgba(255,255,255,0.08)',
+                }}
+              >
+                <span
+                  aria-hidden
+                  className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg"
+                  style={{ background: 'rgba(204,0,0,0.18)', color: '#FF6B6B' }}
+                >
+                  <Icon size={17} strokeWidth={2.2} />
+                </span>
+                <span className="min-w-0 text-left">
+                  <span className="block font-display text-xl font-extrabold leading-none text-white">
+                    {value}
+                  </span>
+                  <span className="mt-1 block text-xs text-white/55">{label}</span>
+                </span>
+              </li>
+            );
+          })}
+        </motion.ul>
       </div>
 
       {/* The headline rotates, so no single frame of it describes the
