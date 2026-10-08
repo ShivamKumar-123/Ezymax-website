@@ -1,12 +1,9 @@
-import LandingHeader from '@/components/landing/LandingHeader'
-import LandingFooter from '@/components/landing/LandingFooter'
 
 export const metadata = { title: 'Privacy Policy — Ezymax' }
 
 export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-white text-gray-900">
-      <LandingHeader />
 
       <section className="bg-gradient-to-b from-white to-gray-50 pt-16 pb-12">
         <div className="max-w-4xl mx-auto px-6 lg:px-8">
@@ -111,7 +108,6 @@ export default function PrivacyPage() {
         </div>
       </section>
 
-      <LandingFooter />
     </div>
   )
 }

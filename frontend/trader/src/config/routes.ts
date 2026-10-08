@@ -36,7 +36,6 @@ export const ROUTES = {
 
   // ── Business ──
   BUSINESS: '/business',
-  WHITE_LABEL: '/white-label',
 
   // ── Support ──
   SUPPORT: '/support',
@@ -46,7 +45,6 @@ export const ROUTES = {
   ABOUT: '/company/about',
   WHY_EZYMEX: '/company/why-ezymex',
   CONTACT: '/company/contact',
-  PLATFORMS: '/platforms',
 
   // ── Legal ──
   TERMS: '/terms',

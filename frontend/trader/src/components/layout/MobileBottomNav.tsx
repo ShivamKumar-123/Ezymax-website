@@ -161,8 +161,7 @@ export default function MobileBottomNav() {
     ['/accounts/standard', '/accounts/pro', '/accounts/demo'].includes(pathname || '');
   const isPublicPage =
     isLandingPage || pathname === '/privacy' || pathname === '/terms' ||
-    pathname === '/risk' || pathname === '/about' || pathname === '/contact' ||
-    pathname === '/platforms' || pathname === '/white-label';
+    pathname === '/risk';
   if (pathname?.startsWith('/auth') || isPublicPage) return null;
 
   const currentView = searchParams.get('view') || '';
