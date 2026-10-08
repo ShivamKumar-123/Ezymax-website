@@ -243,6 +243,67 @@ class _KSubNavState extends State<KSubNav> {
   }
 }
 
+/// The module's pages as pill chips (the dashboard's sheet): the current one in ink with the page colour on it, the
+/// others outlined. 38 pt pills in a 44 pt row; scrolls sideways when they don't fit.
+class KPillNav extends StatelessWidget {
+  const KPillNav({
+    super.key,
+    required this.labels,
+    required this.current,
+    required this.onSelect,
+    this.icons,
+    this.padding = const EdgeInsets.symmetric(horizontal: 20),
+  });
+  final List<String> labels;
+  final List<IconData>? icons;
+
+  /// Index of the current page (-1 when none).
+  final int current;
+  final ValueChanged<int> onSelect;
+  final EdgeInsets padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final k = context.k;
+    return SizedBox(
+      height: KSize.touch,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: padding,
+        itemCount: labels.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, i) {
+          final on = i == current;
+          final fg = on ? k.bg : k.fg;
+          return KPressable(
+            onTap: () => onSelect(i),
+            pressedScale: 1,
+            child: Container(
+              height: 38,
+              padding: const EdgeInsets.symmetric(horizontal: 15),
+              decoration: BoxDecoration(
+                color: on ? k.fg : Colors.transparent,
+                borderRadius: BorderRadius.circular(19),
+                border: on ? null : Border.all(color: k.line),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (icons != null) ...[Icon(icons![i], size: 15, color: on ? k.bg : k.fg2), const SizedBox(width: 6)],
+                  Text(
+                    labels[i],
+                    style: context.text.label.copyWith(fontSize: 13.5, fontWeight: FontWeight.w600, color: fg),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
 /// A − value + stepper (volume, amounts): taps step by `step`, holding repeats; the value is clamped and rounded to
 /// `decimals`.
 class KStepper extends StatefulWidget {

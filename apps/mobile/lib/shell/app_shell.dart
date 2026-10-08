@@ -2,9 +2,13 @@
 // - a frosted header: brand disc (-> Dashboard), the module title, search, the bell, the Trade button (opens the
 //   full-screen Kalks Trader) and the profile menu; under it the module's pages as text tabs (SubNav);
 // - the page, scrolling under both bars (their heights reach the page as MediaQuery padding);
-// - a floating frosted bottom bar: Dashboard · Accounts · Wallet · Portfolio · More;
+// - a floating ink bottom bar: Dashboard · Accounts · Wallet · Portfolio · More;
 // - in the in-app demo, a slim "Demo · Sample data · Exit demo" strip above the header.
+// The Dashboard of the stock Kalks brand opens on its picture (dashboard_hero.dart): the page gets no top padding,
+// the same controls float over the picture as round white buttons, and the frosted header fades in once the page's
+// sheet reaches the header zone.
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -17,6 +21,7 @@ import '../core/models/user.dart';
 import '../core/notifications/notifications.dart';
 import '../core/prefs.dart';
 import '../env.dart';
+import '../features/dashboard/dashboard_hero.dart';
 import '../features/support/launcher.dart';
 import '../i18n/i18n.dart';
 import '../ui/ui.dart';
@@ -26,6 +31,11 @@ import 'session_keeper.dart';
 
 /// Tab index of each bottom-bar entry (the shell route's branches, in this order).
 const List<String> kTabRoots = ['/', '/accounts', '/wallet', '/portfolio', '/more'];
+
+/// The controls floating over the Dashboard's picture, and the frosted header that replaces them once the page's
+/// sheet is up (tests).
+const Key kShellHeroControls = ValueKey('shell-hero-controls');
+const Key kShellHeroHeader = ValueKey('shell-hero-header');
 
 class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key, required this.shell, required this.path});
@@ -40,6 +50,13 @@ class AppShell extends ConsumerStatefulWidget {
 
 class _AppShellState extends ConsumerState<AppShell> {
   bool _scrolled = false;
+
+  /// Hero page: the page's sheet has reached the header zone (the frosted header is up, the floating controls gone).
+  bool _collapsed = false;
+
+  /// Set by build: whether the page opens on its picture, and the scroll offset where it collapses.
+  bool _hero = false;
+  double _collapseAt = double.infinity;
 
   @override
   void initState() {
@@ -65,6 +82,18 @@ class _AppShellState extends ConsumerState<AppShell> {
     await ref.read(authProvider.notifier).setBiometric(on == true);
   }
 
+  /// The page's own scroll (depth 0, vertical): scroll updates, and the metrics a fresh page reports on its first
+  /// layout (a page replaced in its branch starts at the top again without scrolling).
+  void _onScroll(ScrollMetrics m) {
+    final s = m.pixels > 8;
+    final c = _hero ? m.pixels >= _collapseAt : _collapsed;
+    if (s == _scrolled && c == _collapsed) return;
+    setState(() {
+      _scrolled = s;
+      _collapsed = c;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final k = context.k;
@@ -75,51 +104,76 @@ class _AppShellState extends ConsumerState<AppShell> {
     final module = moduleOf(nav, widget.path);
     final subs = module != null && module.sub.length > 1 ? module.sub : null;
     final demo = ref.watch(demoModeProvider);
-    final headerH = mq.padding.top + (demo ? _DemoStrip.height : 0) + KSize.header + (subs != null ? KSize.subNav : 0);
+    final demoH = demo ? _DemoStrip.height : 0.0;
+    final headerH = mq.padding.top + demoH + KSize.header + (subs != null ? KSize.subNav : 0);
     final barBottom = mq.padding.bottom < 12 ? 12.0 : mq.padding.bottom;
     final barH = KSize.tabBar + barBottom + 8;
+
+    // the Dashboard's picture (stock Kalks brand): the sheet's edge starts under the picture and collapses the chrome
+    // once it reaches the bottom of the header row
+    _hero = widget.path == '/' && cfg.tenantDefault;
+    _collapseAt = _hero ? dashboardHeroHeight(mq) - kDashboardHeroOverlap - (mq.padding.top + demoH + KSize.header) : double.infinity;
+    final collapsed = _hero && _collapsed;
+    final b = Theme.of(context).brightness;
+    // light status-bar icons over the picture
+    final overlay = _hero && !collapsed
+        ? KTheme.overlay(b).copyWith(statusBarIconBrightness: Brightness.light, statusBarBrightness: Brightness.dark)
+        : KTheme.overlay(b);
 
     return SessionKeeper(
       child: Scaffold(
         backgroundColor: k.bg,
         resizeToAvoidBottomInset: false,
-        body: Stack(
-          children: [
-            const Positioned.fill(child: KBackdrop()),
-            Positioned.fill(
-              child: MediaQuery(
-                data: mq.copyWith(
-                  padding: mq.padding.copyWith(top: headerH, bottom: barH),
-                ),
-                child: NotificationListener<ScrollUpdateNotification>(
-                  onNotification: (n) {
-                    if (n.depth == 0 && n.metrics.axis == Axis.vertical) {
-                      final s = n.metrics.pixels > 8;
-                      if (s != _scrolled) setState(() => _scrolled = s);
-                    }
-                    return false;
-                  },
-                  child: widget.shell,
+        body: AnnotatedRegion<SystemUiOverlayStyle>(
+          value: overlay,
+          child: Stack(
+            children: [
+              const Positioned.fill(child: KBackdrop()),
+              Positioned.fill(
+                child: MediaQuery(
+                  data: mq.copyWith(
+                    padding: mq.padding.copyWith(top: _hero ? 0 : headerH, bottom: barH),
+                  ),
+                  child: NotificationListener<ScrollUpdateNotification>(
+                    onNotification: (n) {
+                      if (n.depth == 0 && n.metrics.axis == Axis.vertical) _onScroll(n.metrics);
+                      return false;
+                    },
+                    child: NotificationListener<ScrollMetricsNotification>(
+                      onNotification: (n) {
+                        if (n.depth == 0 && n.metrics.axis == Axis.vertical) _onScroll(n.metrics);
+                        return false;
+                      },
+                      child: widget.shell,
+                    ),
+                  ),
                 ),
               ),
-            ),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: _Header(module: module, subs: subs, path: widget.path, scrolled: _scrolled, nav: nav, demo: demo),
-            ),
-            // the floating support chat (web SupportLauncher: every page but /support, never for view-only logins); it
-            // places itself above the tab bar at the bottom end and takes touches only on its button. Filled, so it
-            // never sizes the stack (it is an empty box on /support).
-            if (me != null && me.viewer == null) Positioned.fill(child: SupportLauncher(path: widget.path)),
-            Positioned(
-              left: 12,
-              right: 12,
-              bottom: barBottom,
-              child: _TabBar(shell: widget.shell, path: widget.path, nav: nav),
-            ),
-          ],
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: _hero
+                    ? _HeroChrome(
+                        collapsed: collapsed,
+                        controls: _HeroControls(key: kShellHeroControls, nav: nav, demo: demo),
+                        header: (fade) =>
+                            _Header(key: kShellHeroHeader, module: module, subs: subs, path: widget.path, scrolled: true, nav: nav, demo: demo, fade: fade),
+                      )
+                    : _Header(module: module, subs: subs, path: widget.path, scrolled: _scrolled, nav: nav, demo: demo),
+              ),
+              // the floating support chat (web SupportLauncher: every page but /support, never for view-only logins); it
+              // places itself above the tab bar at the bottom end and takes touches only on its button. Filled, so it
+              // never sizes the stack (it is an empty box on /support).
+              if (me != null && me.viewer == null) Positioned.fill(child: SupportLauncher(path: widget.path)),
+              Positioned(
+                left: 12,
+                right: 12,
+                bottom: barBottom,
+                child: _TabBar(shell: widget.shell, path: widget.path, nav: nav),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -127,13 +181,26 @@ class _AppShellState extends ConsumerState<AppShell> {
 }
 
 class _Header extends ConsumerWidget {
-  const _Header({required this.module, required this.subs, required this.path, required this.scrolled, required this.nav, required this.demo});
+  const _Header({
+    super.key,
+    required this.module,
+    required this.subs,
+    required this.path,
+    required this.scrolled,
+    required this.nav,
+    required this.demo,
+    this.fade,
+  });
   final NavModule? module;
   final List<NavSub>? subs;
   final String path;
   final bool scrolled;
   final List<NavModule> nav;
   final bool demo;
+
+  /// Over the Dashboard's picture: 0 hidden … 1 the frosted header (the frost and the content come in together; the
+  /// blur is never inside an Opacity, which would blur nothing).
+  final double? fade;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -207,6 +274,17 @@ class _Header extends ConsumerWidget {
         ],
       ),
     );
+    if (fade != null) {
+      final v = fade!;
+      return KFrosted(
+        color: k.bg.withValues(alpha: 0.82 * v),
+        blur: 24 * v,
+        border: Border(
+          bottom: BorderSide(color: k.line.withValues(alpha: k.line.a * v), width: 0.6),
+        ),
+        child: Opacity(opacity: v, child: content),
+      );
+    }
     // frosted once the page scrolls under it (web .k-topbar[data-scrolled])
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
@@ -214,6 +292,141 @@ class _Header extends ConsumerWidget {
         border: Border(bottom: BorderSide(color: scrolled ? k.line : Colors.transparent, width: 0.6)),
       ),
       child: scrolled ? KFrosted(color: k.bg.withValues(alpha: 0.82), child: content) : content,
+    );
+  }
+}
+
+/// Over the Dashboard's picture: the floating controls while the picture shows, the frosted header once the sheet
+/// is up; a 180 ms crossfade, touches only on the layer that is meant to be there.
+class _HeroChrome extends StatefulWidget {
+  const _HeroChrome({required this.collapsed, required this.controls, required this.header});
+  final bool collapsed;
+  final Widget controls;
+  final Widget Function(double fade) header;
+
+  @override
+  State<_HeroChrome> createState() => _HeroChromeState();
+}
+
+class _HeroChromeState extends State<_HeroChrome> with SingleTickerProviderStateMixin {
+  late final AnimationController _fade = AnimationController(vsync: this, duration: const Duration(milliseconds: 180), value: widget.collapsed ? 1 : 0);
+
+  @override
+  void didUpdateWidget(_HeroChrome old) {
+    super.didUpdateWidget(old);
+    if (old.collapsed != widget.collapsed) _fade.animateTo(widget.collapsed ? 1 : 0, curve: Curves.easeOut);
+  }
+
+  @override
+  void dispose() {
+    _fade.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: _fade,
+    builder: (context, _) {
+      final v = _fade.value;
+      return Stack(
+        children: [
+          if (v < 1)
+            IgnorePointer(
+              ignoring: widget.collapsed,
+              child: v == 0 ? widget.controls : Opacity(opacity: 1 - v, child: widget.controls),
+            ),
+          if (v > 0) IgnorePointer(ignoring: !widget.collapsed, child: widget.header(v)),
+        ],
+      );
+    },
+  );
+}
+
+/// The header's controls as round white buttons over the picture: the brand disc at the start; search, the bell,
+/// Trade and the avatar at the end (the same rules as the header: viewer sessions get no bell and no Trade). White in
+/// dark mode too. In the demo, the strip stays at the very top.
+class _HeroControls extends ConsumerWidget {
+  const _HeroControls({super.key, required this.nav, required this.demo});
+  final List<NavModule> nav;
+  final bool demo;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = context.t;
+    final k = context.k;
+    final me = ref.watch(meProvider);
+    final unread = ref.watch(notificationsProvider.select((s) => s.unread));
+    final viewer = me?.viewer != null;
+    // the sheets open from the shell's own context, in the app's theme
+    final shell = context;
+    final shadow = [BoxShadow(color: Colors.black.withValues(alpha: 0.12), offset: const Offset(0, 6), blurRadius: 16)];
+    return SafeArea(
+      bottom: false,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (demo) KFrosted(color: k.bar, child: const _DemoStrip()),
+          Padding(
+            padding: const EdgeInsetsDirectional.only(start: 14, end: 12, top: 8),
+            child: Row(
+              children: [
+                KPressable(onTap: () => context.go('/'), semanticLabel: t('shell.nav.dashboard'), child: const KBrandAvatar(size: 38)),
+                const Spacer(),
+                Theme(
+                  data: KTheme.lightOf(context),
+                  child: Builder(
+                    builder: (context) {
+                      final k = context.k;
+                      final white = Colors.white.withValues(alpha: 0.94);
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          KIconButton(
+                            icon: LucideIcons.search,
+                            size: 44,
+                            iconSize: 20,
+                            fill: white,
+                            shadows: shadow,
+                            color: k.ink,
+                            semanticLabel: t('shell.search'),
+                            onPressed: () => showCommandPalette(shell, nav),
+                          ),
+                          if (!viewer) ...[
+                            const SizedBox(width: 2),
+                            KIconButton(
+                              icon: LucideIcons.bell,
+                              size: 44,
+                              iconSize: 20,
+                              fill: white,
+                              shadows: shadow,
+                              color: k.ink,
+                              badge: unread,
+                              semanticLabel: unread > 0 ? t('dashboard.notifications.ariaUnread', {'count': unread}) : t('dashboard.notifications.title'),
+                              onPressed: () => showBellSheet(shell),
+                            ),
+                            const SizedBox(width: 4),
+                            KButton(label: t('dashboard.home.trade'), icon: LucideIcons.candlestickChart, onPressed: () => shell.push('/trader')),
+                          ],
+                          const SizedBox(width: 4),
+                          KPressable(
+                            onTap: () => showProfileMenu(shell),
+                            semanticLabel: t('shell.accountMenu'),
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(shape: BoxShape.circle, boxShadow: shadow),
+                              child: KAvatar(name: me?.name ?? '', size: 40, verified: me?.kycStatus == KycStatus.verified),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -257,11 +470,15 @@ class _DemoStrip extends ConsumerWidget {
   }
 }
 
+/// The floating ink bar: five white icons on a near-black pill, the open tab in a white disc. The labels stay as
+/// tooltips and for assistive tech.
 class _TabBar extends StatelessWidget {
   const _TabBar({required this.shell, required this.path, required this.nav});
   final StatefulNavigationShell shell;
   final String path;
   final List<NavModule> nav;
+
+  static const Color _ink = Color(0xFF0C0C0F);
 
   @override
   Widget build(BuildContext context) {
@@ -274,50 +491,29 @@ class _TabBar extends StatelessWidget {
         selected: active,
         button: true,
         label: label,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: !enabled
-              ? null
-              : () {
-                  if (index != shell.currentIndex) KHaptics.selection();
-                  // tapping the open tab returns to its first page
-                  shell.goBranch(index, initialLocation: index == shell.currentIndex);
-                },
-          child: SizedBox(
-            height: 56,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                AnimatedPositioned(
+        child: Tooltip(
+          message: label,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: !enabled
+                ? null
+                : () {
+                    if (index != shell.currentIndex) KHaptics.selection();
+                    // tapping the open tab returns to its first page
+                    shell.goBranch(index, initialLocation: index == shell.currentIndex);
+                  },
+            child: SizedBox(
+              height: KSize.tabBar,
+              child: Center(
+                child: AnimatedContainer(
                   duration: const Duration(milliseconds: 220),
-                  top: 0,
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 200),
-                    opacity: active ? 1 : 0,
-                    child: Container(
-                      width: 24,
-                      height: 3,
-                      decoration: BoxDecoration(
-                        color: k.ember,
-                        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(3)),
-                      ),
-                    ),
-                  ),
+                  curve: Curves.easeOutCubic,
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(color: active ? Colors.white : Colors.transparent, shape: BoxShape.circle),
+                  child: Icon(icon, size: 22, color: active ? _ink : Colors.white.withValues(alpha: enabled ? 1 : 0.35)),
                 ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(icon, size: 21, color: active ? k.ember : k.fg3),
-                    const SizedBox(height: 4),
-                    Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.text.micro.copyWith(color: active ? k.ember : k.fg3),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -326,26 +522,23 @@ class _TabBar extends StatelessWidget {
     final mods = ['dashboard', 'accounts', 'wallet', 'portfolio'];
     final fallbackIcons = [LucideIcons.layoutGrid, LucideIcons.layers, LucideIcons.wallet, LucideIcons.chartPie];
     return KFrosted(
-      color: k.bar,
-      borderRadius: BorderRadius.circular(24),
-      border: Border.all(color: k.line),
+      color: _ink.withValues(alpha: 0.96),
+      borderRadius: BorderRadius.circular(32),
+      border: Border.all(color: Colors.white.withValues(alpha: k.dark ? 0.1 : 0.05)),
       shadows: k.shadowPop,
-      child: Padding(
-        padding: const EdgeInsets.all(6),
-        child: Row(
-          children: [
-            for (var i = 0; i < 4; i++)
-              item(
-                i,
-                primary[i]?.icon ?? fallbackIcons[i],
-                t(primary[i]?.labelKey ?? 'shell.nav.${mods[i]}'),
-                primary[i] != null && isActive(path, primary[i]!),
-                // a module the broker switched off (wallet) or a view-only login without it
-                enabled: primary[i] != null,
-              ),
-            item(4, LucideIcons.layoutGrid, t('shell.more'), moreActive),
-          ],
-        ),
+      child: Row(
+        children: [
+          for (var i = 0; i < 4; i++)
+            item(
+              i,
+              primary[i]?.icon ?? fallbackIcons[i],
+              t(primary[i]?.labelKey ?? 'shell.nav.${mods[i]}'),
+              primary[i] != null && isActive(path, primary[i]!),
+              // a module the broker switched off (wallet) or a view-only login without it
+              enabled: primary[i] != null,
+            ),
+          item(4, LucideIcons.layoutGrid, t('shell.more'), moreActive),
+        ],
       ),
     );
   }

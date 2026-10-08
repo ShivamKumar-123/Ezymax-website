@@ -30,14 +30,15 @@ import '../../core/notifications/notifications.dart';
 import '../../core/prefs.dart';
 import '../../data/client_data.dart';
 import '../../i18n/i18n.dart';
+import '../../shell/nav.dart';
 import '../../ui/ui.dart';
 import '../accounts/account_actions.dart';
 import '../support/ask_ai.dart';
 import 'dashboard_data.dart';
+import 'dashboard_hero.dart';
 import 'widgets/accounts_panel.dart';
 import 'widgets/balance_panel.dart';
 import 'widgets/banner_slot.dart';
-import 'widgets/hero_card.dart';
 import 'widgets/list_cards.dart';
 import 'widgets/markets_cards.dart';
 import 'widgets/more_cards.dart';
@@ -145,6 +146,46 @@ const Map<String, (KChipTone, String)> _stateChip = {
 const Map<String, KTone> _stepTone = {'account': KTone.accent, 'email': KTone.sky, 'kyc': KTone.amber, 'account-open': KTone.lavender, 'wallet': KTone.mint};
 
 String _greeting(DateTime now) => now.hour < 12 ? 'morning' : (now.hour < 18 ? 'afternoon' : 'evening');
+
+/// The sheet's side gutters.
+const double _gutter = 20;
+
+/// The greeting as the page title (web: the Overview title + "Good afternoon, Arjun"): the greeting light, the name
+/// bold on its own line, the Verified chip beside it. The web's sentence is split at its {name} placeholder so every
+/// language keeps its own word order.
+class _Greeting extends StatelessWidget {
+  const _Greeting({required this.template, required this.name, required this.verified});
+  final String template;
+  final String name;
+  final bool verified;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.t;
+    final k = context.k;
+    final i = template.indexOf('{name}');
+    final before = (i < 0 ? template : template.substring(0, i)).trim();
+    final after = i < 0 ? '' : template.substring(i + '{name}'.length).trim();
+    final light = context.text.largeTitle.copyWith(fontSize: 30, fontWeight: FontWeight.w300, color: k.fg2, height: 1.15, letterSpacing: -0.5);
+    final bold = light.copyWith(fontWeight: FontWeight.w700, color: k.fg);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (before.isNotEmpty) Text(before, style: light),
+        Wrap(
+          spacing: 10,
+          runSpacing: 6,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(name, style: bold),
+            if (verified) KChip(label: t('common.verified'), tone: KChipTone.up, icon: LucideIcons.badgeCheck, small: true),
+          ],
+        ),
+        if (after.isNotEmpty) Text(after, style: light),
+      ],
+    );
+  }
+}
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -334,196 +375,210 @@ class DashboardScreen extends ConsumerWidget {
     ];
 
     final width = MediaQuery.sizeOf(context).width;
-    final kpiWidth = (width - 2 * KSpace.page) * 0.78;
+    final kpiWidth = (width - 2 * _gutter) * 0.78;
     final rtl = Directionality.of(context) == TextDirection.rtl;
 
-    return KPageScroll(
-      onRefresh: () => _refresh(ref),
-      children: [
-        // 0. targeted banner
-        const DashboardBannerSlot(),
-        // 1. header
-        KPageHeader(
-          title: t('shell.nav.overview'),
-          subtitle: Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Text(t.dyn('dashboard.greeting.${_greeting(DateTime.now())}', vars: {'name': me.firstName})),
-              if (me.kycStatus == KycStatus.verified) KChip(label: t('common.verified'), tone: KChipTone.up, icon: LucideIcons.badgeCheck, small: true),
-            ],
+    final config = ref.watch(configProvider);
+    // the module's pages under the sheet's grabber (the shell's sub-nav, in the sheet while the picture shows)
+    final subs = moduleOf(navFor(config, me), '/')?.sub ?? const <NavSub>[];
+    final hero = config.tenantDefault
+        ? KPageHero(
+            height: dashboardHeroHeight(MediaQuery.of(context)),
+            picture: const DashboardHeroPicture(),
+            child: const DashboardHeroCopy(),
+            top: subs.length > 1
+                ? KPillNav(
+                    labels: [for (final s in subs) t(s.labelKey)],
+                    icons: [for (final s in subs) s.icon],
+                    current: subs.indexOf(activeSub('/', subs) ?? subs.first),
+                    onSelect: (i) => context.go(subs[i].href),
+                  )
+                : null,
+          )
+        : null;
+
+    return KCardTheme(
+      radius: 28,
+      border: false,
+      padding: const EdgeInsets.all(20),
+      shadows: const [BoxShadow(color: Color.fromRGBO(20, 10, 5, 0.06), offset: Offset(0, 10), blurRadius: 30)],
+      child: KPageScroll(
+        onRefresh: () => _refresh(ref),
+        padding: const EdgeInsets.fromLTRB(_gutter, 16, _gutter, 24),
+        hero: hero,
+        children: [
+          // 0. targeted banner
+          const DashboardBannerSlot(),
+          // 1. header: the greeting as the title, the name in bold
+          _Greeting(template: t.dyn('dashboard.greeting.${_greeting(DateTime.now())}'), name: me.firstName, verified: me.kycStatus == KycStatus.verified),
+          // 1b. Ask Kalks AI
+          if (!readOnly) ...[const SizedBox(height: 16), AskAi(chips: aiChips)],
+          const SizedBox(height: 24),
+          // 2. total balance
+          BalancePanel(
+            total: accounts != null || walletTotal != null ? totals.equity + (walletTotal ?? 0) : null,
+            loading: accounts == null && !acc.hasError,
+            changePct: todayPct,
+            readOnly: readOnly,
+            hidden: hidden,
           ),
-        ),
-        // 1a. the Kalks brand hero (website imagery; stock Kalks brand only)
-        if (ref.watch(configProvider).tenantDefault) ...[const SizedBox(height: 16), const DashboardHero()],
-        // 1b. Ask Kalks AI
-        if (!readOnly) ...[const SizedBox(height: 16), AskAi(chips: aiChips)],
-        const SizedBox(height: 24),
-        // 2. total balance
-        BalancePanel(
-          total: accounts != null || walletTotal != null ? totals.equity + (walletTotal ?? 0) : null,
-          loading: accounts == null && !acc.hasError,
-          changePct: todayPct,
-          readOnly: readOnly,
-          hidden: hidden,
-        ),
-        const SizedBox(height: 28),
-        // 3. KPI cards
-        SizedBox(
-          height: 186,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            clipBehavior: Clip.none,
-            physics: const PageScrollPhysics(parent: BouncingScrollPhysics()),
-            children: [
-              KKpiCard(
-                width: kpiWidth,
-                label: t('dashboard.equity.title'),
-                icon: LucideIcons.trendingUp,
-                value: accounts == null ? const Text('—') : KMoney(totals.equity, style: context.text.moneyL, hidden: hidden),
-                chip: KChip(
-                  label: hasLive
-                      ? t('dashboard.home.accountsChip', {'live': totals.live.length, 'positions': totals.positions})
-                      : t('dashboard.accounts.openLive.title'),
+          const SizedBox(height: 24),
+          // 3. KPI cards
+          SizedBox(
+            height: 186,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
+              physics: const PageScrollPhysics(parent: BouncingScrollPhysics()),
+              children: [
+                KKpiCard(
+                  width: kpiWidth,
+                  label: t('dashboard.equity.title'),
+                  icon: LucideIcons.trendingUp,
+                  value: accounts == null ? const Text('—') : KMoney(totals.equity, style: context.text.moneyL, hidden: hidden),
+                  chip: KChip(
+                    label: hasLive
+                        ? t('dashboard.home.accountsChip', {'live': totals.live.length, 'positions': totals.positions})
+                        : t('dashboard.accounts.openLive.title'),
+                  ),
+                  onTap: () => context.go('/accounts'),
                 ),
-                onTap: () => context.go('/accounts'),
-              ),
-              const SizedBox(width: 12),
-              KKpiCard(
-                width: kpiWidth,
-                label: today != null ? t('dashboard.home.todayPnl') : t('dashboard.home.floating'),
-                icon: LucideIcons.chartLine,
-                value: accounts == null
-                    ? const Text('—')
-                    : KMoney(today ?? totals.profit, signed: true, tone: KMoneyTone.auto, style: context.text.moneyL, hidden: hidden),
-                chip: todayPct == null
-                    ? null
-                    : KChip(
-                        label: t('dashboard.home.todayPct', {'pct': '${todayPct >= 0 ? '+' : ''}${todayPct.toStringAsFixed(2)}'}),
-                        tone: (today ?? totals.profit) >= 0 ? KChipTone.up : KChipTone.down,
+                const SizedBox(width: 12),
+                KKpiCard(
+                  width: kpiWidth,
+                  label: today != null ? t('dashboard.home.todayPnl') : t('dashboard.home.floating'),
+                  icon: LucideIcons.chartLine,
+                  value: accounts == null
+                      ? const Text('—')
+                      : KMoney(today ?? totals.profit, signed: true, tone: KMoneyTone.auto, style: context.text.moneyL, hidden: hidden),
+                  chip: todayPct == null
+                      ? null
+                      : KChip(
+                          label: t('dashboard.home.todayPct', {'pct': '${todayPct >= 0 ? '+' : ''}${todayPct.toStringAsFixed(2)}'}),
+                          tone: (today ?? totals.profit) >= 0 ? KChipTone.up : KChipTone.down,
+                        ),
+                  onTap: () => context.go('/portfolio/analytics'),
+                ),
+                const SizedBox(width: 12),
+                KKpiCard(
+                  width: kpiWidth,
+                  label: t('dashboard.home.walletBalance'),
+                  icon: LucideIcons.wallet,
+                  value: walletTotal == null ? const Text('—') : KMoney(walletTotal, style: context.text.moneyL, hidden: hidden),
+                  footer: Row(
+                    children: [
+                      const KCoinIcon('usdt', size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'USDT · TRC20 · BEP20',
+                        style: context.text.caption.copyWith(color: k.fg3, fontWeight: FontWeight.w600),
                       ),
-                onTap: () => context.go('/portfolio/analytics'),
-              ),
-              const SizedBox(width: 12),
-              KKpiCard(
-                width: kpiWidth,
-                label: t('dashboard.home.walletBalance'),
-                icon: LucideIcons.wallet,
-                value: walletTotal == null ? const Text('—') : KMoney(walletTotal, style: context.text.moneyL, hidden: hidden),
-                footer: Row(
-                  children: [
-                    const KCoinIcon('usdt', size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      'USDT · TRC20 · BEP20',
-                      style: context.text.caption.copyWith(color: k.fg3, fontWeight: FontWeight.w600),
-                    ),
-                  ],
+                    ],
+                  ),
+                  onTap: () => context.go('/wallet'),
                 ),
-                onTap: () => context.go('/wallet'),
-              ),
-              const SizedBox(width: 12),
-              KKpiCard(
-                width: kpiWidth,
-                label: t('dashboard.home.rewards'),
-                icon: LucideIcons.award,
-                value: rewards == null ? const Text('—') : KMoney(rewards.points * rewards.pointValue, style: context.text.moneyL, hidden: hidden),
-                chip: KChip(
-                  label: rewards == null ? t('shell.nav.loyalty') : t('dashboard.home.points', {'points': Fmt.number(rewards.points, 0)}),
-                  tone: KChipTone.gold,
+                const SizedBox(width: 12),
+                KKpiCard(
+                  width: kpiWidth,
+                  label: t('dashboard.home.rewards'),
+                  icon: LucideIcons.award,
+                  value: rewards == null ? const Text('—') : KMoney(rewards.points * rewards.pointValue, style: context.text.moneyL, hidden: hidden),
+                  chip: KChip(
+                    label: rewards == null ? t('shell.nav.loyalty') : t('dashboard.home.points', {'points': Fmt.number(rewards.points, 0)}),
+                    tone: KChipTone.gold,
+                  ),
+                  onTap: () => context.go('/rewards/loyalty'),
                 ),
-                onTap: () => context.go('/rewards/loyalty'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          // 4. your accounts
+          AccountsPanel(
+            accounts: accounts == null ? null : ordered.take(8).toList(),
+            loading: !acc.hasValue && !acc.hasError,
+            failed: acc.hasError,
+            onRetry: () => ref.invalidate(accountsProvider),
+            hidden: hidden,
+            onToggleHidden: ref.read(hideBalancesProvider.notifier).toggle,
+            extraCount: (ordered.length - 8).clamp(0, 1 << 20),
+            readOnly: readOnly,
+            actions: readOnly
+                ? null
+                : (a) => Row(
+                    children: [
+                      Expanded(child: TradeButton(account: a, expand: true)),
+                      if (a.live ? !a.prop : true) const SizedBox(width: 8),
+                      if (a.live && !a.prop) FundButton(account: a) else if (!a.live) RefillButton(account: a, onDone: () => ref.invalidate(accountsProvider)),
+                      const SizedBox(width: 4),
+                      AccountMenuButton(account: a, onChanged: () => ref.invalidate(accountsProvider)),
+                    ],
+                  ),
+          ),
+          const SizedBox(height: 24),
+          // 5. quick actions
+          QuickActions(
+            items: [
+              (
+                label: t('common.transfer'),
+                icon: rtl ? LucideIcons.arrowRightLeft : LucideIcons.arrowLeftRight,
+                tone: KTone.lavender,
+                onTap: () => context.go('/wallet/transfer'),
               ),
+              (label: 'Kalks Trader', icon: LucideIcons.candlestickChart, tone: KTone.accent, onTap: () => context.push('/trader')),
+              (label: t('shell.nav.copyTrading'), icon: LucideIcons.copy, tone: KTone.pink, onTap: () => context.go('/social')),
+              (label: t('shell.nav.support'), icon: LucideIcons.lifeBuoy, tone: KTone.amber, onTap: () => context.go('/support')),
             ],
           ),
-        ),
-        const SizedBox(height: 30),
-        // 4. your accounts
-        AccountsPanel(
-          accounts: accounts == null ? null : ordered.take(8).toList(),
-          loading: !acc.hasValue && !acc.hasError,
-          failed: acc.hasError,
-          onRetry: () => ref.invalidate(accountsProvider),
-          hidden: hidden,
-          onToggleHidden: ref.read(hideBalancesProvider.notifier).toggle,
-          extraCount: (ordered.length - 8).clamp(0, 1 << 20),
-          readOnly: readOnly,
-          actions: readOnly
-              ? null
-              : (a) => Row(
-                  children: [
-                    Expanded(child: TradeButton(account: a, expand: true)),
-                    if (a.live ? !a.prop : true) const SizedBox(width: 8),
-                    if (a.live && !a.prop) FundButton(account: a) else if (!a.live) RefillButton(account: a, onDone: () => ref.invalidate(accountsProvider)),
-                    const SizedBox(width: 4),
-                    AccountMenuButton(account: a, onChanged: () => ref.invalidate(accountsProvider)),
-                  ],
-                ),
-        ),
-        const SizedBox(height: 30),
-        // 5. quick actions
-        QuickActions(
-          items: [
-            (
-              label: t('common.transfer'),
-              icon: rtl ? LucideIcons.arrowRightLeft : LucideIcons.arrowLeftRight,
-              tone: KTone.lavender,
-              onTap: () => context.go('/wallet/transfer'),
-            ),
-            (label: 'Kalks Trader', icon: LucideIcons.candlestickChart, tone: KTone.accent, onTap: () => context.push('/trader')),
-            (label: t('shell.nav.copyTrading'), icon: LucideIcons.copy, tone: KTone.pink, onTap: () => context.go('/social')),
-            (label: t('shell.nav.support'), icon: LucideIcons.lifeBuoy, tone: KTone.amber, onTap: () => context.go('/support')),
-          ],
-        ),
-        const SizedBox(height: 30),
-        // 6. statistics
-        const _StatisticSection(),
-        const SizedBox(height: 30),
-        // 7. notifications
-        if (!readOnly) ...[NotificationsPanel(prompts: prompts), const SizedBox(height: 24)],
-        // 8. activity tabs
-        ActivityTabs(
-          tabs: [
-            ActivityTab(
-              key: 'history',
-              label: t('dashboard.home.history'),
-              rows: historyRows,
-              empty: t('wallet.recent.emptyText'),
-              more: (label: t('common.viewAll'), href: '/wallet/history'),
-            ),
-            ActivityTab(key: 'funding', label: t('dashboard.home.funding'), rows: fundingRows, empty: t('wallet.recent.emptyText')),
-            ActivityTab(key: 'linked', label: t('dashboard.home.linked'), rows: linkedRows, empty: ''),
-          ],
-        ),
-        const SizedBox(height: 24),
-        // 9. getting started
-        ChecklistCard(title: t('dashboard.steps.title'), subtitle: t('dashboard.steps.subtitle'), rows: checklist, done: done, total: steps.length),
-        // Markets
-        const SizedBox(height: 40),
-        KSectionTitle(t('dashboard.home.marketsTitle'), large: true),
-        const SizedBox(height: 16),
-        FeedGuard(title: t('dashboard.movers.title'), minHeight: 320, child: const MoversCard()),
-        const SizedBox(height: 20),
-        FeedGuard(title: t('dashboard.heatmap.title'), minHeight: 320, child: const HeatmapCard()),
-        const SizedBox(height: 20),
-        const CalendarCard(),
-        const SizedBox(height: 20),
-        const NewsCard(),
-        const SizedBox(height: 20),
-        const WorldCard(),
-        // More for you
-        const SizedBox(height: 40),
-        KSectionTitle(t('dashboard.home.moreTitle'), large: true),
-        const SizedBox(height: 16),
-        const TraderBanner(),
-        const SizedBox(height: 20),
-        const AccountCard(),
-        const SizedBox(height: 20),
-        const SessionsCard(),
-        const SizedBox(height: 20),
-        const SupportCard(),
-      ],
+          const SizedBox(height: 24),
+          // 6. statistics
+          const _StatisticSection(),
+          const SizedBox(height: 24),
+          // 7. notifications
+          if (!readOnly) ...[NotificationsPanel(prompts: prompts), const SizedBox(height: 24)],
+          // 8. activity tabs
+          ActivityTabs(
+            tabs: [
+              ActivityTab(
+                key: 'history',
+                label: t('dashboard.home.history'),
+                rows: historyRows,
+                empty: t('wallet.recent.emptyText'),
+                more: (label: t('common.viewAll'), href: '/wallet/history'),
+              ),
+              ActivityTab(key: 'funding', label: t('dashboard.home.funding'), rows: fundingRows, empty: t('wallet.recent.emptyText')),
+              ActivityTab(key: 'linked', label: t('dashboard.home.linked'), rows: linkedRows, empty: ''),
+            ],
+          ),
+          const SizedBox(height: 24),
+          // 9. getting started
+          ChecklistCard(title: t('dashboard.steps.title'), subtitle: t('dashboard.steps.subtitle'), rows: checklist, done: done, total: steps.length),
+          // Markets
+          const SizedBox(height: 36),
+          KSectionTitle(t('dashboard.home.marketsTitle'), large: true),
+          const SizedBox(height: 16),
+          FeedGuard(title: t('dashboard.movers.title'), minHeight: 320, child: const MoversCard()),
+          const SizedBox(height: 24),
+          FeedGuard(title: t('dashboard.heatmap.title'), minHeight: 320, child: const HeatmapCard()),
+          const SizedBox(height: 24),
+          const CalendarCard(),
+          const SizedBox(height: 24),
+          const NewsCard(),
+          const SizedBox(height: 24),
+          const WorldCard(),
+          // More for you
+          const SizedBox(height: 36),
+          KSectionTitle(t('dashboard.home.moreTitle'), large: true),
+          const SizedBox(height: 16),
+          const TraderBanner(),
+          const SizedBox(height: 24),
+          const AccountCard(),
+          const SizedBox(height: 24),
+          const SessionsCard(),
+          const SizedBox(height: 24),
+          const SupportCard(),
+        ],
+      ),
     );
   }
 

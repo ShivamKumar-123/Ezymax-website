@@ -56,38 +56,81 @@ class BalancePanel extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: KButton(
-                  label: t('common.deposit'),
-                  trailingIcon: LucideIcons.arrowDownToLine,
-                  variant: KButtonVariant.ink,
-                  size: KButtonSize.lg,
-                  expand: true,
-                  onPressed: () => context.go('/wallet/deposit'),
-                ),
+                child: _Pill(label: t('common.deposit'), icon: LucideIcons.arrowDownToLine, onTap: () => context.go('/wallet/deposit')),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: KButton(
-                  label: t('common.withdraw'),
-                  trailingIcon: LucideIcons.arrowUpFromLine,
-                  variant: KButtonVariant.ink,
-                  size: KButtonSize.lg,
-                  expand: true,
-                  onPressed: () => context.go('/wallet/withdraw'),
-                ),
+                child: _Pill(label: t('common.withdraw'), icon: LucideIcons.arrowUpFromLine, onTap: () => context.go('/wallet/withdraw')),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          KButton(
+          _Pill(
             label: t('dashboard.home.transferFunds'),
             icon: rtl ? LucideIcons.arrowRightLeft : LucideIcons.arrowLeftRight,
-            variant: KButtonVariant.surface,
-            expand: true,
-            onPressed: () => context.go('/wallet/transfer'),
+            ink: false,
+            leading: true,
+            onTap: () => context.go('/wallet/transfer'),
           ),
         ],
       ],
+    );
+  }
+}
+
+/// The money actions as 52 pt fully round pills: ink (Deposit / Withdraw) or white with a soft border (Transfer).
+class _Pill extends StatelessWidget {
+  const _Pill({required this.label, required this.icon, required this.onTap, this.ink = true, this.leading = false});
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool ink;
+
+  /// The icon before the label (after it by default).
+  final bool leading;
+
+  @override
+  Widget build(BuildContext context) {
+    final k = context.k;
+    final fg = ink ? k.inkFg : k.fg;
+    final glyph = Icon(icon, size: 17, color: fg);
+    return KPressable(
+      onTap: onTap,
+      semanticLabel: label,
+      child: Container(
+        height: 52,
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        decoration: BoxDecoration(
+          color: ink ? k.ink : k.surface,
+          borderRadius: BorderRadius.circular(26),
+          border: ink ? null : Border.all(color: k.line),
+          boxShadow: ink
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: k.dark ? 0.3 : 0.22),
+                    offset: const Offset(0, 12),
+                    blurRadius: 26,
+                    spreadRadius: -14,
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (leading) ...[glyph, const SizedBox(width: 8)],
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.text.headline.copyWith(fontSize: 15, color: fg, height: 1.1),
+              ),
+            ),
+            if (!leading) ...[const SizedBox(width: 8), glyph],
+          ],
+        ),
+      ),
     );
   }
 }

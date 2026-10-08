@@ -102,9 +102,11 @@ test/                        unit tests, widget tests, goldens (test/goldens, ge
 - **iOS materials.** Bars, sheets, banners: `KFrosted` (blur + saturate under a ~90 % fill: blurred, never
   see-through). Sheets: `showKSheet` (grabber, drag to close); choices: `showKActionSheet`; confirmations:
   `showKAlert`; lists: `KListSection` + `KListRow` (swipe actions); `KSegmented` (sliding thumb), `KSwitch`,
-  `KStepper`, `KOtpField`, `KTextField`, `KChip`, `KIconTile`, `KCard`, `KKpiCard`, `KEmptyState` (the founder's
-  illustrations, `KIllustrationName`), `KSkeleton`, pull to refresh via `KPageScroll(onRefresh:)`, haptics via
-  `KHaptics` (taps are automatic).
+  `KStepper`, `KOtpField`, `KTextField`, `KChip`, `KIconTile`, `KCard` (a `KCardTheme` above a page sets its cards'
+  radius / padding / border / shadow), `KKpiCard`, `KEmptyState` (the founder's illustrations, `KIllustrationName`),
+  `KSkeleton`, pull to refresh via `KPageScroll(onRefresh:)`, a full-bleed picture with the page in a sheet over it
+  via `KPageScroll(hero: KPageHero(...))` (the Dashboard; the shell floats its controls over it), `KPillNav` (pages as
+  pill chips), haptics via `KHaptics` (taps are automatic).
 - **Feedback.** Never a Material snackbar or dialog: `notificationsProvider.notifier.toast(kind, title)` (a short
   top banner, kept in the bell like the web's toasts); engine events: `.push(...)`.
 - **Icons:** Lucide (`lucide_icons_flutter`, the same set and names as the web's lucide-react). Use the web's icon for

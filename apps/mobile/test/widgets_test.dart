@@ -58,10 +58,11 @@ void main() {
     testWidgets('bottom bar, header and More follow the web navigation', (tester) async {
       await pumpApp(tester, signedIn: true);
       expect(find.byType(DashboardScreen), findsOneWidget);
+      // the ink tab bar: icons only, the labels as tooltips
       for (final tab in ['Dashboard', 'Accounts', 'Wallet', 'Portfolio', 'More']) {
-        expect(find.text(tab), findsWidgets);
+        expect(find.byTooltip(tab), findsOneWidget);
       }
-      // header: the Trade button and the module's pages
+      // the controls over the Dashboard's picture: the Trade button; the module's pages as pills in the sheet
       expect(find.text('Trade'), findsWidgets);
       for (final sub in ['Overview', 'Markets', 'News', 'Calendar']) {
         expect(find.text(sub), findsWidgets);
@@ -84,7 +85,7 @@ void main() {
       await tester.drag(page, const Offset(0, 4000));
       await settle(tester, frames: 4);
 
-      await tester.tap(find.text('More').last);
+      await tester.tap(find.byTooltip('More'));
       await settle(tester);
       expect(find.byType(MoreScreen), findsOneWidget);
       final more = find.descendant(of: find.byType(MoreScreen), matching: find.byType(Scrollable)).first;

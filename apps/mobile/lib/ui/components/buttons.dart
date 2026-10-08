@@ -123,6 +123,9 @@ class KIconButton extends StatelessWidget {
     this.size = KSize.iconButton,
     this.filled = false,
     this.color,
+    this.fill,
+    this.shadows,
+    this.iconSize,
   });
 
   final IconData icon;
@@ -137,15 +140,22 @@ class KIconButton extends StatelessWidget {
   final bool filled;
   final Color? color;
 
+  /// A solid disc in this colour (the white buttons floating over a picture), with [shadows] under it.
+  final Color? fill;
+  final List<BoxShadow>? shadows;
+  final double? iconSize;
+
   @override
   Widget build(BuildContext context) {
     final k = context.k;
-    final glyph = Icon(icon, size: size * 0.48, color: color ?? k.fg2);
+    final glyph = Icon(icon, size: iconSize ?? size * 0.48, color: color ?? k.fg2);
     Widget circle = Container(
       width: size,
       height: size,
       alignment: Alignment.center,
-      decoration: filled
+      decoration: fill != null
+          ? BoxDecoration(color: fill, shape: BoxShape.circle, boxShadow: shadows)
+          : filled
           ? BoxDecoration(
               color: k.surface,
               shape: BoxShape.circle,

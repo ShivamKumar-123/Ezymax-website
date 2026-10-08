@@ -14,6 +14,7 @@ import 'package:kalks/core/api/api_providers.dart';
 import 'package:kalks/core/app_info.dart';
 import 'package:kalks/core/auth/biometrics.dart';
 import 'package:kalks/core/auth/secure_store.dart';
+import 'package:kalks/core/config/app_config.dart';
 import 'package:kalks/core/prefs.dart';
 import 'package:kalks/i18n/i18n.dart';
 import 'package:kalks/preview/preview_adapter.dart';
@@ -59,6 +60,7 @@ Messages _catalog(String code) => (jsonDecode(File('assets/i18n/$code.json').rea
 /// `kalks.demo` flag set, as after a restart in it); `theme`: light | dark; `locale`: any of the 22.
 /// `sampleTransport`: every call answered by the sample-data adapter (the default); false leaves the app its own
 /// choice (the live transport, pointed at a closed local port, or the sample adapter once the demo is on).
+/// `config`: a fixed app config instead of the sample API's (a white-label broker, …).
 Future<ProviderContainer> pumpApp(
   WidgetTester tester, {
   bool signedIn = false,
@@ -67,6 +69,7 @@ Future<ProviderContainer> pumpApp(
   String locale = 'en',
   String? location,
   bool sampleTransport = true,
+  AppConfig? config,
 }) async {
   await loadFonts();
   await initializeDateFormatting();
@@ -96,6 +99,7 @@ Future<ProviderContainer> pumpApp(
       else
         apiBaseProvider.overrideWithValue('http://127.0.0.1:9/api/mobile'),
       biometricsProvider.overrideWithValue(const NoBiometrics()),
+      if (config != null) configProvider.overrideWith(() => _FixedConfig(config)),
     ],
   );
   _current = container;
@@ -126,4 +130,16 @@ Future<void> unmount(WidgetTester tester) async {
   _current?.dispose();
   _current = null;
   await tester.pump(const Duration(seconds: 1));
+}
+
+/// A config that stays as given (no fetch).
+class _FixedConfig extends ConfigController {
+  _FixedConfig(this.config);
+  final AppConfig config;
+
+  @override
+  AppConfig build() => config;
+
+  @override
+  Future<void> refresh() async {}
 }

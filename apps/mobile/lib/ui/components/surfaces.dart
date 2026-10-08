@@ -4,13 +4,33 @@ import '../tokens.dart';
 import '../typography.dart';
 import 'pressable.dart';
 
+/// Card defaults for one part of the app (the dashboard's sheet): a [KCard] takes what its own arguments leave unset
+/// from the nearest one, so a page can round, soften or pad its cards without restyling the design system.
+class KCardTheme extends InheritedWidget {
+  const KCardTheme({super.key, this.radius, this.padding, this.border = true, this.shadows, required super.child});
+
+  final double? radius;
+  final EdgeInsetsGeometry? padding;
+
+  /// The hairline card border (off: the fill and shadow alone).
+  final bool border;
+  final List<BoxShadow>? shadows;
+
+  static KCardTheme? maybeOf(BuildContext context) => context.dependOnInheritedWidgetOfExactType<KCardTheme>();
+
+  @override
+  bool updateShouldNotify(KCardTheme old) => radius != old.radius || padding != old.padding || border != old.border || shadows != old.shadows;
+}
+
 /// The frosted card of the Client Area (web .k-card: radius 24, ~92 % white on the pastel washes, soft brand-tinted
 /// shadow). `hot` adds the ember wash in the corner (.k-card-hot); `onTap` makes the whole card pressable.
 class KCard extends StatelessWidget {
-  const KCard({super.key, required this.child, this.padding = const EdgeInsets.all(KSpace.lg), this.hot = false, this.onTap, this.radius, this.color});
+  const KCard({super.key, required this.child, this.padding, this.hot = false, this.onTap, this.radius, this.color});
 
   final Widget child;
-  final EdgeInsetsGeometry padding;
+
+  /// Defaults to the [KCardTheme]'s padding, else 16.
+  final EdgeInsetsGeometry? padding;
   final bool hot;
   final VoidCallback? onTap;
   final double? radius;
@@ -19,12 +39,15 @@ class KCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final k = context.k;
-    final r = BorderRadius.circular(radius ?? k.cardRadius);
+    final theme = KCardTheme.maybeOf(context);
+    final r = BorderRadius.circular(radius ?? theme?.radius ?? k.cardRadius);
+    final padding = this.padding ?? theme?.padding ?? const EdgeInsets.all(KSpace.lg);
+    final border = theme?.border ?? true;
     Widget card = Container(
       decoration: BoxDecoration(
         color: hot ? null : (color ?? k.cardBg),
         borderRadius: r,
-        border: Border.all(color: hot ? Color.lerp(k.cardBorder, k.ember, 0.22)! : k.cardBorder),
+        border: border ? Border.all(color: hot ? Color.lerp(k.cardBorder, k.ember, 0.22)! : k.cardBorder) : null,
         gradient: hot
             ? RadialGradient(
                 center: const AlignmentDirectional(1, -1).resolve(Directionality.of(context)),
@@ -46,7 +69,7 @@ class KCard extends StatelessWidget {
       );
     }
     // the shadow only outside the card, like CSS box-shadow (under the ~92 % fill it would show as an inner panel)
-    card = KOuterShadow(shadows: k.shadowCard, borderRadius: r, child: card);
+    card = KOuterShadow(shadows: theme?.shadows ?? k.shadowCard, borderRadius: r, child: card);
     return onTap == null ? card : KPressable(onTap: onTap, pressedOpacity: 0.85, child: card);
   }
 }

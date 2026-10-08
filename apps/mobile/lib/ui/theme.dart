@@ -28,6 +28,16 @@ abstract final class KTheme {
   static ThemeData client(Brightness b, {KBrand brand = const KBrand()}) =>
       _build(b == Brightness.light ? KTokens.clientLight(ember: brand.primary) : KTokens.clientDark(ember: brand.primary, gold: brand.accent));
 
+  /// The light Client Area look in this context's brand, for controls floating over a picture (white discs, a white
+  /// pill) that stay white in dark mode too.
+  static ThemeData lightOf(BuildContext context) {
+    final k = Theme.of(context).extension<KTokens>()!;
+    return client(
+      Brightness.light,
+      brand: KBrand(primary: k.ember, accent: k.gold),
+    );
+  }
+
   static ThemeData trader(Brightness b, {KBrand brand = const KBrand()}) =>
       _build(b == Brightness.light ? KTokens.traderLight(ember: brand.primary) : KTokens.traderDark(ember: brand.primary, gold: brand.accent));
 

@@ -399,8 +399,8 @@ abstract final class KSize {
   /// List rows (iOS 44, with a subtitle 60).
   static const double row = 48;
 
-  /// The floating tab bar (web k-mobilebar: 56 + 2 * 6 padding).
-  static const double tabBar = 68;
+  /// The floating tab bar (the ink pill with the five icons; the web's k-mobilebar is 68).
+  static const double tabBar = 64;
 
   /// The header (web h-[68px]) and the module sub-page tabs under it (h-11).
   static const double header = 60, subNav = 40;
