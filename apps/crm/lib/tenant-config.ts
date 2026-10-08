@@ -2,6 +2,7 @@
 // modules (D112), feature flags (D146) and branding (D1). The broker is the one of the visitor's host
 // (tenant_domains, resolved by the gateway). Cached for a few seconds per host per server process so the
 // proxy can check it on every request; the Platform Owner's switches take effect within that window.
+// Which pages and BFF paths each module covers: lib/modules.ts.
 
 import type { TenantBrand } from "@ezymex/ui";
 import { gateway } from "@/lib/gateway";
@@ -44,59 +45,4 @@ export async function tenantConfig(host?: string): Promise<TenantConfig | null> 
 /** The broker brand of the current request (null: gateway unreachable → the stock Ezymex look). */
 export async function tenantBrand(host?: string): Promise<TenantBrand | null> {
   return (await tenantConfig(host))?.branding ?? null;
-}
-
-/**
- * Which module a Client Area page or BFF path belongs to (longest prefix wins). A path shared by two modules
- * ("algo|api") stays open while either of them is on.
- */
-const MODULE_PATHS: [string, string][] = [
-  ["/social/pamm", "pamm"],
-  ["/social/investments", "pamm"],
-  ["/api/social/funds", "pamm"],
-  // PAMM investments and their invest / redeem requests (cancel) belong to PAMM, not copy trading
-  ["/api/social/investments", "pamm"],
-  ["/api/social/requests", "pamm"],
-  ["/social", "copy_trading"],
-  ["/api/social", "copy_trading"],
-  ["/prop", "prop"],
-  ["/api/prop", "prop"],
-  ["/partner", "ib"],
-  ["/api/partner", "ib"],
-  ["/developer/strategies", "algo"],
-  ["/developer/deployments", "algo"],
-  ["/developer/backtests", "algo"],
-  ["/developer/marketplace", "algo"],
-  ["/api/algo/strategies", "algo"],
-  ["/api/algo/deployments", "algo"],
-  ["/api/algo/backtests", "algo"],
-  ["/api/algo/market", "algo"],
-  ["/api/algo/ai", "algo"],
-  ["/api/algo/validate", "algo"],
-  // the kill switch stops running strategies: it follows Algo, where its page lives
-  ["/api/algo/controls", "algo"],
-  // the strategy catalogue and the account picker serve the strategy builder and AI Trader (Algo) as well as API keys
-  // and webhooks (API)
-  ["/api/algo/meta", "algo|api"],
-  ["/api/algo/accounts", "algo|api"],
-  ["/developer", "api"],
-  ["/api/algo", "api"],
-  ["/academy", "academy"],
-  ["/api/academy", "academy"],
-  ["/wallet", "wallet"],
-  ["/api/wallet", "wallet"],
-  ["/rewards", "rewards"],
-  // growth BFF: rewards features follow the module; banners and share cards stay on
-  ...["rewards", "points", "redeem", "redemptions", "vouchers", "cashback", "promotions", "bonuses", "promo", "contests"].map((p): [string, string] => [`/api/growth/${p}`, "rewards"]),
-];
-
-export function moduleFor(pathname: string): string | null {
-  const hit = MODULE_PATHS.filter(([p]) => pathname === p || pathname.startsWith(p + "/")).sort((a, b) => b[0].length - a[0].length)[0];
-  return hit ? hit[1] : null;
-}
-
-/** True when the broker switched off the module(s) a page or BFF path belongs to (every one of them, when shared). */
-export function moduleOff(modules: Record<string, boolean>, pathname: string): boolean {
-  const mod = moduleFor(pathname);
-  return !!mod && mod.split("|").every((m) => modules[m] === false);
 }

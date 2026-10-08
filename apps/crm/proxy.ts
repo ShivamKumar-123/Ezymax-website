@@ -3,7 +3,8 @@ import { IS_DEMO } from "@ezymex/mock/mode";
 import { SESSION_COOKIE, clientIp, gateway, safeNext } from "@/lib/gateway";
 import { REF_COOKIE, cleanRef, trackClick } from "@/lib/ib";
 import { captureAttribution } from "@/lib/attribution";
-import { moduleOff, tenantConfig } from "@/lib/tenant-config";
+import { tenantConfig } from "@/lib/tenant-config";
+import { moduleOff } from "@/lib/modules";
 import { hostOf } from "@/lib/tenant-host";
 import { VIEWER_OUT_OF_SCOPE, VIEWER_READ_ONLY, isViewerToken, viewerApiAllowed, viewerHome, viewerPageAllowed, type ViewerScope } from "@/lib/viewer";
 import { MOBILE_PREFIX, bearerOf, hasCookies, mobileRequestHeaders, mobileRoute } from "@/lib/mobile";
@@ -61,6 +62,11 @@ async function brokerGate(req: NextRequest, pathname: string, api: boolean): Pro
   if (cfg && moduleOff(cfg.modules, pathname)) {
     if (api) return NextResponse.json({ error: { code: "module_disabled", message: "This feature isn't available on your account." } }, { status: 403 });
     return NextResponse.rewrite(new URL("/unavailable", req.url));
+  }
+  // sign-ups closed (flag client_registration, D146): the sign-up pages send visitors to sign-in (the gateway refuses
+  // the sign-up itself too)
+  if (!api && cfg?.flags.client_registration === false && (pathname === "/register" || pathname.startsWith("/register/"))) {
+    return NextResponse.redirect(new URL("/login", req.url));
   }
   return null;
 }

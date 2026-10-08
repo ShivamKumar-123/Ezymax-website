@@ -12,7 +12,7 @@ import { Avatar, Button, Chip, CommandPalette, LanguageMenu, MarketBoundary, The
 import { IS_DEMO } from "@ezymex/mock";
 import { useT } from "@ezymex/i18n/react";
 import { CRM_COMMANDS, NAV, localizeCommands, localizeNav } from "@/lib/nav";
-import { navForFeatures, pageModule, useFeatures } from "@/components/tenant-config";
+import { navForFeatures, useFeatures, useModule, usePageOn } from "@/components/tenant-config";
 import { TERMINAL_URL } from "@/lib/live";
 import { LiveGate } from "@/components/live-gate";
 import { NotificationsBell, NotificationsProvider } from "@/components/notifications";
@@ -70,11 +70,10 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
   const scrolled = useScrolled();
   const signOut = () => void logout();
 
+  const pageOn = usePageOn();
+  const supportOn = useModule("support");
   const commands = localizeCommands(CRM_COMMANDS, t)
-    .filter((c) => {
-      const m = pageModule(c.href);
-      return (!m || features?.modules[m] !== false) && (!viewer || viewerPageAllowed(viewer, c.href));
-    })
+    .filter((c) => pageOn(c.href) && (!viewer || viewerPageAllowed(viewer, c.href)))
     .map((c) => ({ group: c.group, label: c.label, href: c.href, icon: <c.Icon /> }));
 
   const menuHeader = (
@@ -165,7 +164,7 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
         </div>
       </TooltipProvider>
       {!IS_DEMO && <SessionGuard />}
-      {!viewer && <SupportLauncher />}
+      {!viewer && supportOn && <SupportLauncher />}
     </NotificationsProvider>
   );
 }
