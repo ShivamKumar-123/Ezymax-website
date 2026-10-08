@@ -12,6 +12,8 @@
 //   9 getting started checklist
 //   then Markets (movers, heatmap, calendar, news, world) and More for you (Ezymex Trader, your account, market clock,
 //   support).
+// Whatever belongs to a module the broker switched off (wallet, rewards, copy trading, IB, news, calendar, support, AI
+// assistant) is left out, its data isn't loaded (shell/nav.dart pageOn, apps/crm/lib/modules.ts).
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -191,6 +193,7 @@ class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   Future<void> _refresh(WidgetRef ref) async {
+    final walletOn = pageOn(ref.read(configProvider), '/wallet');
     ref
       ..invalidate(accountsProvider)
       ..invalidate(walletOverviewProvider)
@@ -204,7 +207,7 @@ class DashboardScreen extends ConsumerWidget {
       ..invalidate(dashMapProvider);
     await Future.wait<void>([
       ref.read(accountsProvider.future).then((_) {}, onError: (Object _) {}),
-      ref.read(walletOverviewProvider.future).then((_) {}, onError: (Object _) {}),
+      if (walletOn) ref.read(walletOverviewProvider.future).then((_) {}, onError: (Object _) {}),
       ref.read(notificationsProvider.notifier).load(),
     ]);
   }
@@ -218,16 +221,21 @@ class DashboardScreen extends ConsumerWidget {
     final readOnly = me.readOnly;
     final hidden = ref.watch(hideBalancesProvider);
     final f = LocaleFormat(t.locale);
+    // modules the broker switched off leave no trace: their rows, cards and shortcuts go and the rest closes up
+    final config = ref.watch(configProvider);
+    bool on(String href) => pageOn(config, href);
+    final walletOn = on('/wallet');
+    final rewardsOn = on('/rewards');
 
     final acc = ref.watch(accountsProvider);
     final all = acc.value;
     // archived / closed accounts live on the Accounts page's Archived tab only
     final accounts = all?.where((a) => !a.archived).toList();
     final totals = AccountTotals(accounts ?? const []);
-    final walletAsync = ref.watch(walletOverviewProvider);
-    final wallet = walletAsync.value;
+    // the wallet's and the rewards' figures only while they're offered (their API answers 403 module_disabled)
+    final wallet = walletOn ? ref.watch(walletOverviewProvider).value : null;
     final walletTotal = wallet?.usdt.total;
-    final rewards = ref.watch(rewardsProvider).value;
+    final rewards = rewardsOn ? ref.watch(rewardsProvider).value : null;
 
     // today's P&L: today's equity move net of deposits / withdrawals (reports), else the live accounts' floating P&L
     final week = ref.watch(equityCurveProvider(14)).value;
@@ -267,8 +275,11 @@ class DashboardScreen extends ConsumerWidget {
         ),
     ];
 
-    // Getting started
-    final steps = dashboardSteps(me, accounts, wallet, t, f);
+    // Getting started (without the step of a switched-off module: "Fund your wallet" without the wallet)
+    final steps = [
+      for (final s in dashboardSteps(me, accounts, wallet, t, f))
+        if (s.href == null || on(s.href!)) s,
+    ];
     final done = steps.where((s) => s.state == 'done').length;
     final checklist = [
       for (final s in steps)
@@ -287,25 +298,28 @@ class DashboardScreen extends ConsumerWidget {
         ),
     ];
 
-    // activity tabs
-    final activity = ref.watch(walletActivityProvider);
-    final cfg = ref.watch(walletConfigProvider);
-    final historyRows = activity.hasValue ? [for (final x in activity.value!) _historyRow(context, x, f)] : (activity.hasError ? const <ListRowItem>[] : null);
-    final fundingRows = cfg.hasValue
-        ? [
-            for (final c in cfg.value!)
-              ListRowItem(
-                key: c.chain,
-                tone: KTone.neutral,
-                leading: _NetworkCoin(chain: c.chain),
-                title: '${c.token} · ${c.network}',
-                sub: t('wallet.deposit.amountHint', {'min': Fmt.amount(c.minDeposit)}),
-                status: c.depositsEnabled
-                    ? (label: t('dashboard.home.connected'), tone: KChipTone.ember)
-                    : (label: t('dashboard.home.networkUnavailable'), tone: KChipTone.neutral),
-              ),
-          ]
-        : (cfg.hasError ? const <ListRowItem>[] : null);
+    // activity tabs (History and Funding are the wallet's)
+    List<ListRowItem>? historyRows, fundingRows;
+    if (walletOn) {
+      final activity = ref.watch(walletActivityProvider);
+      final cfg = ref.watch(walletConfigProvider);
+      historyRows = activity.hasValue ? [for (final x in activity.value!) _historyRow(context, x, f)] : (activity.hasError ? const <ListRowItem>[] : null);
+      fundingRows = cfg.hasValue
+          ? [
+              for (final c in cfg.value!)
+                ListRowItem(
+                  key: c.chain,
+                  tone: KTone.neutral,
+                  leading: _NetworkCoin(chain: c.chain),
+                  title: '${c.token} · ${c.network}',
+                  sub: t('wallet.deposit.amountHint', {'min': Fmt.amount(c.minDeposit)}),
+                  status: c.depositsEnabled
+                      ? (label: t('dashboard.home.connected'), tone: KChipTone.ember)
+                      : (label: t('dashboard.home.networkUnavailable'), tone: KChipTone.neutral),
+                ),
+            ]
+          : (cfg.hasError ? const <ListRowItem>[] : null);
+    }
     final linkedRows = [
       ListRowItem(
         key: 'trader',
@@ -315,41 +329,45 @@ class DashboardScreen extends ConsumerWidget {
         sub: t('dashboard.trader.chip'),
         action: (label: t('common.open'), href: '/trader', external: false),
       ),
-      ListRowItem(
-        key: 'copy',
-        icon: LucideIcons.copy,
-        tone: KTone.pink,
-        title: t('shell.nav.copyTrading'),
-        sub: t('shell.nav.social'),
-        action: (label: t('common.open'), href: '/social', external: false),
-      ),
-      ListRowItem(
-        key: 'ib',
-        icon: LucideIcons.award,
-        tone: KTone.amber,
-        title: t('shell.nav.partner'),
-        sub: t('dashboard.partner.chip'),
-        action: (label: t('common.open'), href: '/partner', external: false),
-      ),
-      ListRowItem(
-        key: 'loyalty',
-        icon: LucideIcons.gift,
-        tone: KTone.lavender,
-        title: t('shell.nav.loyalty'),
-        sub: rewards != null ? t('dashboard.home.points', {'points': Fmt.number(rewards.points, 0)}) : t('shell.nav.rewards'),
-        status: rewards != null ? (label: rewards.tierName, tone: KChipTone.ember) : null,
-        action: rewards == null ? (label: t('common.open'), href: '/rewards/loyalty', external: false) : null,
-      ),
+      if (on('/social'))
+        ListRowItem(
+          key: 'copy',
+          icon: LucideIcons.copy,
+          tone: KTone.pink,
+          title: t('shell.nav.copyTrading'),
+          sub: t('shell.nav.social'),
+          action: (label: t('common.open'), href: '/social', external: false),
+        ),
+      if (on('/partner'))
+        ListRowItem(
+          key: 'ib',
+          icon: LucideIcons.award,
+          tone: KTone.amber,
+          title: t('shell.nav.partner'),
+          sub: t('dashboard.partner.chip'),
+          action: (label: t('common.open'), href: '/partner', external: false),
+        ),
+      if (rewardsOn)
+        ListRowItem(
+          key: 'loyalty',
+          icon: LucideIcons.gift,
+          tone: KTone.lavender,
+          title: t('shell.nav.loyalty'),
+          sub: rewards != null ? t('dashboard.home.points', {'points': Fmt.number(rewards.points, 0)}) : t('shell.nav.rewards'),
+          status: rewards != null ? (label: rewards.tierName, tone: KChipTone.ember) : null,
+          action: rewards == null ? (label: t('common.open'), href: '/rewards/loyalty', external: false) : null,
+        ),
     ];
 
     // Ask Ezymex AI: suggestions answered by the real support bot; account questions also show the client's own figures
     final liveAccts = totals.live;
     final aiChips = [
-      AiChip(
-        key: 'deposit',
-        label: t('dashboard.ai.chip.deposit'),
-        extra: AiLink(href: '/wallet/deposit', label: t('common.deposit')),
-      ),
+      if (on('/wallet/deposit'))
+        AiChip(
+          key: 'deposit',
+          label: t('dashboard.ai.chip.deposit'),
+          extra: AiLink(href: '/wallet/deposit', label: t('common.deposit')),
+        ),
       AiChip(
         key: 'freeMargin',
         label: t('dashboard.ai.chip.freeMargin'),
@@ -378,7 +396,6 @@ class DashboardScreen extends ConsumerWidget {
     final kpiWidth = (width - 2 * _gutter) * 0.78;
     final rtl = Directionality.of(context) == TextDirection.rtl;
 
-    final config = ref.watch(configProvider);
     // the module's pages under the sheet's grabber (the shell's sub-nav, in the sheet while the picture shows)
     final subs = moduleOf(navFor(config, me), '/')?.sub ?? const <NavSub>[];
     final hero = dashboardHeroAt('/', config)
@@ -411,8 +428,8 @@ class DashboardScreen extends ConsumerWidget {
           const DashboardBannerSlot(),
           // 1. header: the greeting as the title, the name in bold
           _Greeting(template: t.dyn('dashboard.greeting.${_greeting(DateTime.now())}'), name: me.firstName, verified: me.kycStatus == KycStatus.verified),
-          // 1b. Ask Ezymex AI
-          if (!readOnly) ...[const SizedBox(height: 16), AskAi(chips: aiChips)],
+          // 1b. Ask Ezymex AI (the AI assistant, answered over the support chat: both modules)
+          if (!readOnly && modulesOn(config, 'ai_assistant&support')) ...[const SizedBox(height: 16), AskAi(chips: aiChips)],
           const SizedBox(height: 24),
           // 2. total balance
           BalancePanel(
@@ -420,6 +437,7 @@ class DashboardScreen extends ConsumerWidget {
             loading: accounts == null && !acc.hasError,
             changePct: todayPct,
             readOnly: readOnly,
+            wallet: walletOn,
             hidden: hidden,
           ),
           const SizedBox(height: 24),
@@ -459,36 +477,40 @@ class DashboardScreen extends ConsumerWidget {
                         ),
                   onTap: () => context.go('/portfolio/analytics'),
                 ),
-                const SizedBox(width: 12),
-                KKpiCard(
-                  width: kpiWidth,
-                  label: t('dashboard.home.walletBalance'),
-                  icon: LucideIcons.wallet,
-                  value: walletTotal == null ? const Text('—') : KMoney(walletTotal, style: context.text.moneyL, hidden: hidden),
-                  footer: Row(
-                    children: [
-                      const KCoinIcon('usdt', size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        'USDT · TRC20 · BEP20',
-                        style: context.text.caption.copyWith(color: k.fg3, fontWeight: FontWeight.w600),
-                      ),
-                    ],
+                if (walletOn) ...[
+                  const SizedBox(width: 12),
+                  KKpiCard(
+                    width: kpiWidth,
+                    label: t('dashboard.home.walletBalance'),
+                    icon: LucideIcons.wallet,
+                    value: walletTotal == null ? const Text('—') : KMoney(walletTotal, style: context.text.moneyL, hidden: hidden),
+                    footer: Row(
+                      children: [
+                        const KCoinIcon('usdt', size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'USDT · TRC20 · BEP20',
+                          style: context.text.caption.copyWith(color: k.fg3, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                    onTap: () => context.go('/wallet'),
                   ),
-                  onTap: () => context.go('/wallet'),
-                ),
-                const SizedBox(width: 12),
-                KKpiCard(
-                  width: kpiWidth,
-                  label: t('dashboard.home.rewards'),
-                  icon: LucideIcons.award,
-                  value: rewards == null ? const Text('—') : KMoney(rewards.points * rewards.pointValue, style: context.text.moneyL, hidden: hidden),
-                  chip: KChip(
-                    label: rewards == null ? t('shell.nav.loyalty') : t('dashboard.home.points', {'points': Fmt.number(rewards.points, 0)}),
-                    tone: KChipTone.gold,
+                ],
+                if (rewardsOn) ...[
+                  const SizedBox(width: 12),
+                  KKpiCard(
+                    width: kpiWidth,
+                    label: t('dashboard.home.rewards'),
+                    icon: LucideIcons.award,
+                    value: rewards == null ? const Text('—') : KMoney(rewards.points * rewards.pointValue, style: context.text.moneyL, hidden: hidden),
+                    chip: KChip(
+                      label: rewards == null ? t('shell.nav.loyalty') : t('dashboard.home.points', {'points': Fmt.number(rewards.points, 0)}),
+                      tone: KChipTone.gold,
+                    ),
+                    onTap: () => context.go('/rewards/loyalty'),
                   ),
-                  onTap: () => context.go('/rewards/loyalty'),
-                ),
+                ],
               ],
             ),
           ),
@@ -508,8 +530,11 @@ class DashboardScreen extends ConsumerWidget {
                 : (a) => Row(
                     children: [
                       Expanded(child: TradeButton(account: a, expand: true)),
-                      if (a.live ? !a.prop : true) const SizedBox(width: 8),
-                      if (a.live && !a.prop) FundButton(account: a) else if (!a.live) RefillButton(account: a, onDone: () => ref.invalidate(accountsProvider)),
+                      if (a.live ? !a.prop && walletOn : true) const SizedBox(width: 8),
+                      if (a.live && !a.prop && walletOn)
+                        FundButton(account: a)
+                      else if (!a.live)
+                        RefillButton(account: a, onDone: () => ref.invalidate(accountsProvider)),
                       const SizedBox(width: 4),
                       AccountMenuButton(account: a, onChanged: () => ref.invalidate(accountsProvider)),
                     ],
@@ -519,15 +544,16 @@ class DashboardScreen extends ConsumerWidget {
           // 5. quick actions
           QuickActions(
             items: [
-              (
-                label: t('common.transfer'),
-                icon: rtl ? LucideIcons.arrowRightLeft : LucideIcons.arrowLeftRight,
-                tone: KTone.lavender,
-                onTap: () => context.go('/wallet/transfer'),
-              ),
+              if (on('/wallet/transfer'))
+                (
+                  label: t('common.transfer'),
+                  icon: rtl ? LucideIcons.arrowRightLeft : LucideIcons.arrowLeftRight,
+                  tone: KTone.lavender,
+                  onTap: () => context.go('/wallet/transfer'),
+                ),
               (label: 'Ezymex Trader', icon: LucideIcons.candlestickChart, tone: KTone.accent, onTap: () => context.push('/trader')),
-              (label: t('shell.nav.copyTrading'), icon: LucideIcons.copy, tone: KTone.pink, onTap: () => context.go('/social')),
-              (label: t('shell.nav.support'), icon: LucideIcons.lifeBuoy, tone: KTone.amber, onTap: () => context.go('/support')),
+              if (on('/social')) (label: t('shell.nav.copyTrading'), icon: LucideIcons.copy, tone: KTone.pink, onTap: () => context.go('/social')),
+              if (on('/support')) (label: t('shell.nav.support'), icon: LucideIcons.lifeBuoy, tone: KTone.amber, onTap: () => context.go('/support')),
             ],
           ),
           const SizedBox(height: 24),
@@ -539,14 +565,16 @@ class DashboardScreen extends ConsumerWidget {
           // 8. activity tabs
           ActivityTabs(
             tabs: [
-              ActivityTab(
-                key: 'history',
-                label: t('dashboard.home.history'),
-                rows: historyRows,
-                empty: t('wallet.recent.emptyText'),
-                more: (label: t('common.viewAll'), href: '/wallet/history'),
-              ),
-              ActivityTab(key: 'funding', label: t('dashboard.home.funding'), rows: fundingRows, empty: t('wallet.recent.emptyText')),
+              if (walletOn) ...[
+                ActivityTab(
+                  key: 'history',
+                  label: t('dashboard.home.history'),
+                  rows: historyRows,
+                  empty: t('wallet.recent.emptyText'),
+                  more: (label: t('common.viewAll'), href: '/wallet/history'),
+                ),
+                ActivityTab(key: 'funding', label: t('dashboard.home.funding'), rows: fundingRows, empty: t('wallet.recent.emptyText')),
+              ],
               ActivityTab(key: 'linked', label: t('dashboard.home.linked'), rows: linkedRows, empty: ''),
             ],
           ),
@@ -560,12 +588,9 @@ class DashboardScreen extends ConsumerWidget {
           FeedGuard(title: t('dashboard.movers.title'), minHeight: 320, child: const MoversCard()),
           const SizedBox(height: 24),
           FeedGuard(title: t('dashboard.heatmap.title'), minHeight: 320, child: const HeatmapCard()),
-          const SizedBox(height: 24),
-          const CalendarCard(),
-          const SizedBox(height: 24),
-          const NewsCard(),
-          const SizedBox(height: 24),
-          const WorldCard(),
+          if (on('/calendar')) ...[const SizedBox(height: 24), const CalendarCard()],
+          // the headlines and the world map of the day's stories are News
+          if (on('/news')) ...[const SizedBox(height: 24), const NewsCard(), const SizedBox(height: 24), const WorldCard()],
           // More for you
           const SizedBox(height: 36),
           KSectionTitle(t('dashboard.home.moreTitle'), large: true),

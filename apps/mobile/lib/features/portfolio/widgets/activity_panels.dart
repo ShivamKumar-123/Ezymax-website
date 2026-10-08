@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../core/models/account.dart';
 import '../../../core/models/trading.dart';
 import '../../../i18n/i18n.dart';
@@ -110,7 +111,7 @@ class _HistoryPanelState extends ConsumerState<HistoryPanel> {
             spacing: 8,
             runSpacing: 8,
             children: [
-              if (data != null && data.total > 0 && !invalid)
+              if (data != null && data.total > 0 && !invalid && tradeSharingOn(ref.watch(configProvider)))
                 SharePeriodButton(
                   login: a.login,
                   from: q.from ?? isoDay(now.subtract(const Duration(days: 5 * 365))),
@@ -476,15 +477,16 @@ class DealsList extends StatelessWidget {
   );
 }
 
-class DealRow extends StatelessWidget {
+class DealRow extends ConsumerWidget {
   const DealRow({super.key, required this.deal, required this.account});
   final EngineDeal deal;
   final EngineAccount account;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final t = context.t;
     final k = context.k;
+    final sharing = tradeSharingOn(ref.watch(configProvider));
     final d = deal;
     final cur = account.currencyPrefix;
     final exit = d.entry != 'in';
@@ -595,7 +597,7 @@ class DealRow extends StatelessWidget {
                 textDirection: TextDirection.ltr,
                 style: context.text.figure.copyWith(fontSize: 14, color: !exit ? k.fg3 : signColor(k, d.profit, zero: k.fg)),
               ),
-              if (exit && !d.reversed) ...[
+              if (exit && !d.reversed && sharing) ...[
                 const SizedBox(height: 4),
                 ShareTradeButton(login: d.login == 0 ? account.login : d.login, dealId: d.id, symbol: name),
               ],

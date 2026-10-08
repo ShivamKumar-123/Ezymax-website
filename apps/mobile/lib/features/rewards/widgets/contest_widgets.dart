@@ -8,8 +8,10 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/api/api_providers.dart';
 import '../../../core/auth/auth_controller.dart';
+import '../../../core/config/app_config.dart';
 import '../../../core/notifications/notifications.dart';
 import '../../../i18n/i18n.dart';
+import '../../../shell/nav.dart';
 import '../../../ui/ui.dart';
 import '../rewards_api.dart';
 import 'growth_ui.dart';
@@ -119,7 +121,8 @@ class _JoinContestSheetState extends ConsumerState<JoinContestSheet> {
         );
       }
     } on ApiException catch (e) {
-      if (e.code == 'options_intro_required' && mounted) {
+      // the way to the options intro only while the broker offers FX Options (module options)
+      if (e.code == 'options_intro_required' && mounted && pageOn(ref.read(configProvider), '/options')) {
         // the options intro is a 1-minute step in the Client Area (/options)
         final go = await showKAlert<bool>(
           context,
@@ -289,19 +292,21 @@ class _JoinContestSheetState extends ConsumerState<JoinContestSheet> {
           KNotice(
             key: const ValueKey('contest-options-note'),
             text: t('rewards.options.joinNote'),
-            action: KRichText(
-              '${t('rewards.options.eligibility')} <link>${t('rewards.options.openIntro')}</link>',
-              style: context.text.footnote.copyWith(color: k.fg3),
-              tags: {
-                'link': KTag(
-                  onTap: () {
-                    final router = GoRouter.of(context);
-                    Navigator.of(context).maybePop();
-                    router.go('/options');
-                  },
-                ),
-              },
-            ),
+            action: pageOn(ref.watch(configProvider), '/options')
+                ? KRichText(
+                    '${t('rewards.options.eligibility')} <link>${t('rewards.options.openIntro')}</link>',
+                    style: context.text.footnote.copyWith(color: k.fg3),
+                    tags: {
+                      'link': KTag(
+                        onTap: () {
+                          final router = GoRouter.of(context);
+                          Navigator.of(context).maybePop();
+                          router.go('/options');
+                        },
+                      ),
+                    },
+                  )
+                : null,
           ),
         ],
       ],

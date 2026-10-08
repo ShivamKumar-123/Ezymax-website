@@ -10,6 +10,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/api/api_providers.dart';
 import '../../core/auth/auth_api.dart';
 import '../../core/auth/auth_controller.dart';
+import '../../core/config/app_config.dart';
 import '../../core/notifications/notifications.dart';
 import '../../i18n/i18n.dart';
 import '../../ui/ui.dart';
@@ -244,20 +245,23 @@ class _SignInFormState extends ConsumerState<SignInForm> {
               loading: _loading,
               onPressed: _signIn,
             ),
-            const SizedBox(height: 18),
-            Center(
-              child: KRichText(
-                t('auth.login.newToEzymex'),
-                textAlign: TextAlign.center,
-                style: context.text.callout.copyWith(color: k.fg3),
-                tags: {
-                  'link': KTag.link(
-                    () => widget.onExit(SignInExit.register),
-                    style: TextStyle(color: k.fg, fontWeight: FontWeight.w600),
-                  ),
-                },
+            // "New to Ezymex? Create an account" only while the broker takes sign-ups (flag client_registration)
+            if (ref.watch(configProvider.select((c) => c.flag('client_registration', fallback: true)))) ...[
+              const SizedBox(height: 18),
+              Center(
+                child: KRichText(
+                  t('auth.login.newToEzymex'),
+                  textAlign: TextAlign.center,
+                  style: context.text.callout.copyWith(color: k.fg3),
+                  tags: {
+                    'link': KTag.link(
+                      () => widget.onExit(SignInExit.register),
+                      style: TextStyle(color: k.fg, fontWeight: FontWeight.w600),
+                    ),
+                  },
+                ),
               ),
-            ),
+            ],
           ],
         ),
       );

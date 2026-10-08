@@ -82,6 +82,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final ink = onDark ? Colors.white : _inkOnPhoto;
     final inkFg = onDark ? _inkOnPhoto : Colors.white;
     final demo = ezymex && t.has('auth.demo.tryCta');
+    // sign-up switched off by the broker (flag client_registration): Log in only
+    final registration = cfg.flag('client_registration', fallback: true);
 
     return Scaffold(
       backgroundColor: bg,
@@ -170,8 +172,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 14),
                   _Pill(label: t('trader.guest.logIn'), bg: ink, fg: inkFg, onTap: _openSignIn),
-                  const SizedBox(height: 12),
-                  _Pill(label: t('trader.guest.openAccount'), bg: ink, fg: inkFg, onTap: () => context.go('/register')),
+                  if (registration) ...[
+                    const SizedBox(height: 12),
+                    _Pill(label: t('trader.guest.openAccount'), bg: ink, fg: inkFg, onTap: () => context.go('/register')),
+                  ],
                   if (demo) ...[
                     const SizedBox(height: 6),
                     KPressable(

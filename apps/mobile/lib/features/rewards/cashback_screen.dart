@@ -9,8 +9,10 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/api/api_providers.dart';
 import '../../core/auth/auth_controller.dart';
+import '../../core/config/app_config.dart';
 import '../../core/notifications/notifications.dart';
 import '../../i18n/i18n.dart';
+import '../../shell/nav.dart';
 import '../../ui/ui.dart';
 import 'rewards_api.dart';
 import 'widgets/growth_ui.dart';
@@ -23,6 +25,8 @@ class CashbackScreen extends ConsumerWidget {
     final t = context.t;
     final k = context.k;
     final f = GrowthFmt(t);
+    // cashback is paid to the wallet; its links only while the broker offers it
+    final walletOn = pageOn(ref.watch(configProvider), '/wallet');
     final title = t('rewards.cashback.title');
     final subtitle = t('rewards.cashback.subtitle');
     final v = ref.watch(cashbackProvider);
@@ -57,12 +61,15 @@ class CashbackScreen extends ConsumerWidget {
       },
       children: [
         KPageHeader(title: title, subtitle: Text(subtitle)),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            KButton(label: t('rewards.cashback.wallet'), icon: LucideIcons.wallet, variant: KButtonVariant.surface, onPressed: () => context.go('/wallet')),
-          ],
-        ),
+        // the way to the wallet only while the broker offers it
+        if (walletOn) ...[
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              KButton(label: t('rewards.cashback.wallet'), icon: LucideIcons.wallet, variant: KButtonVariant.surface, onPressed: () => context.go('/wallet')),
+            ],
+          ),
+        ],
         const SizedBox(height: 20),
         const BannerSlot(placement: 'rewards'),
         SizedBox(
@@ -98,7 +105,7 @@ class CashbackScreen extends ConsumerWidget {
                       ? t('rewards.cashback.kpiLast', {'date': f.date(lastPayout.paidAt ?? lastPayout.createdAt, year: false)})
                       : t('rewards.cashback.kpiNoPayouts'),
                 ),
-                onTap: () => context.go('/wallet'),
+                onTap: walletOn ? () => context.go('/wallet') : null,
               ),
               const SizedBox(width: 12),
               KKpiCard(

@@ -10,8 +10,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../core/config/app_config.dart';
 import '../../core/format/format.dart';
 import '../../i18n/i18n.dart';
+import '../../shell/nav.dart';
 import '../../ui/ui.dart';
 import 'partner_api.dart';
 import 'widgets/partner_widgets.dart';
@@ -399,13 +401,15 @@ class _CountdownState extends State<_Countdown> {
   }
 }
 
-class _WalletNote extends StatelessWidget {
+class _WalletNote extends ConsumerWidget {
   const _WalletNote();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final t = context.t;
     final k = context.k;
+    // "Open wallet" only while the broker offers the wallet
+    final walletOn = pageOn(ref.watch(configProvider), '/wallet');
     final steps = [
       (LucideIcons.layers, t('partner.pay.accrues'), t('partner.pay.accruesText')),
       (LucideIcons.gavel, t('partner.pay.closesReviewed'), t('partner.pay.closesReviewedText')),
@@ -440,15 +444,17 @@ class _WalletNote extends StatelessWidget {
                 ],
               ),
             ),
-          const SizedBox(height: 4),
-          KButton(
-            label: t('partner.pay.openWallet'),
-            icon: LucideIcons.wallet,
-            variant: KButtonVariant.surface,
-            size: KButtonSize.sm,
-            expand: true,
-            onPressed: () => context.go('/wallet'),
-          ),
+          if (walletOn) ...[
+            const SizedBox(height: 4),
+            KButton(
+              label: t('partner.pay.openWallet'),
+              icon: LucideIcons.wallet,
+              variant: KButtonVariant.surface,
+              size: KButtonSize.sm,
+              expand: true,
+              onPressed: () => context.go('/wallet'),
+            ),
+          ],
         ],
       ),
     );

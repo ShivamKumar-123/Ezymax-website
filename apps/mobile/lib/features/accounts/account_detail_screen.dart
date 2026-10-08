@@ -15,9 +15,11 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/api/api_providers.dart';
 import '../../core/auth/auth_controller.dart';
+import '../../core/config/app_config.dart';
 import '../../core/models/account.dart';
 import '../../core/models/trading.dart';
 import '../../i18n/i18n.dart';
+import '../../shell/nav.dart';
 import '../../ui/ui.dart';
 import '../portfolio/widgets/activity_panels.dart';
 import '../portfolio/widgets/analytics_panel.dart';
@@ -223,6 +225,9 @@ class _HeaderCard extends ConsumerWidget {
     final copying = accountFlavor(a) == 'copy' ? copyingName(a) : null;
     final archivedOn = a.archivedAt ?? a.closedAt;
     final lt = a.margin > 0 ? levelTone(a.marginLevel) : null;
+    // Fund goes through the wallet, Manage to copy trading: not while the broker has them switched off
+    final cfg = ref.watch(configProvider);
+    final fundOn = pageOn(cfg, '/wallet');
     Widget stat(String label, Widget value) => Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -352,9 +357,10 @@ class _HeaderCard extends ConsumerWidget {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 AccountMenuButton(account: a, onChanged: onChanged, onTab: onTab),
-                if (a.live && !a.prop) FundButton(account: a) else if (!a.live) RefillButton(account: a, onDone: onChanged),
+                if (a.live && !a.prop && fundOn) FundButton(account: a) else if (!a.live) RefillButton(account: a, onDone: onChanged),
                 if (accountFlavor(a) == 'copy') ...[
-                  KButton(label: t('accounts.copy.manage'), variant: KButtonVariant.surface, onPressed: () => context.go('/social/copy')),
+                  if (pageOn(cfg, '/social/copy'))
+                    KButton(label: t('accounts.copy.manage'), variant: KButtonVariant.surface, onPressed: () => context.go('/social/copy')),
                   TradeButton(account: a, size: KButtonSize.lg, variant: KButtonVariant.surface, label: t('accounts.copy.watchPnl')),
                 ] else
                   TradeButton(account: a, size: KButtonSize.lg),

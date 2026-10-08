@@ -10,10 +10,12 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/api/api_providers.dart';
 import '../../core/auth/auth_controller.dart';
+import '../../core/config/app_config.dart';
 import '../../core/models/account.dart';
 import '../../core/notifications/notifications.dart';
 import '../../data/client_data.dart';
 import '../../i18n/i18n.dart';
+import '../../shell/nav.dart';
 import '../../ui/ui.dart';
 import 'rewards_api.dart';
 import 'widgets/growth_ui.dart';
@@ -82,12 +84,15 @@ class PromotionsScreen extends ConsumerWidget {
       },
       children: [
         KPageHeader(title: title, subtitle: Text(subtitle)),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            KButton(label: t('common.deposit'), icon: LucideIcons.wallet, variant: KButtonVariant.surface, onPressed: () => context.go('/wallet/deposit')),
-          ],
-        ),
+        // Deposit only while the broker offers the wallet
+        if (pageOn(ref.watch(configProvider), '/wallet/deposit')) ...[
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              KButton(label: t('common.deposit'), icon: LucideIcons.wallet, variant: KButtonVariant.surface, onPressed: () => context.go('/wallet/deposit')),
+            ],
+          ),
+        ],
         const SizedBox(height: 20),
         const BannerSlot(placement: 'rewards'),
         SizedBox(

@@ -143,6 +143,8 @@ class _ClosedRow extends ConsumerWidget {
     final basis = o.usdPerUnit > 0 ? o.openPrice * o.usdPerUnit * o.contracts : 0.0;
     final readOnly = ref.watch(terminalProvider.select((s) => s.readOnly));
     final login = ref.watch(terminalProvider.select((s) => s.login));
+    // share cards switched off by the broker (flag trade_sharing)
+    final sharing = ref.watch(configProvider.select((c) => c.flag('trade_sharing', fallback: true)));
     final closeAt = DateTime.tryParse(o.closeTime);
     final small = context.text.caption.copyWith(fontSize: 11, color: k.fg3, fontWeight: FontWeight.w400);
     return OptCard(
@@ -217,7 +219,7 @@ class _ClosedRow extends ConsumerWidget {
               const SizedBox(width: 8),
               Text(closeAt != null ? fmtServer(closeAt, seconds: false) : '—', style: context.text.mono(10.5, color: k.fg3)),
               const Spacer(),
-              if (!readOnly && login != null && int.tryParse(o.deal) != null)
+              if (!readOnly && sharing && login != null && int.tryParse(o.deal) != null)
                 KIconButton(icon: LucideIcons.share2, size: 32, semanticLabel: t('trader.opt.share.aria'), onPressed: () => showOptionShare(context, o, login)),
             ],
           ),

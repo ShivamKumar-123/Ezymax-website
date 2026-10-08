@@ -25,11 +25,13 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/api/api_providers.dart';
 import '../../core/auth/auth_controller.dart';
+import '../../core/config/app_config.dart';
 import '../../core/files.dart';
 import '../../core/format/format.dart';
 import '../../core/models/account.dart';
 import '../../core/notifications/notifications.dart';
 import '../../i18n/i18n.dart';
+import '../../shell/nav.dart';
 import '../../ui/ui.dart';
 import 'accounts_data.dart';
 import 'widgets/account_bits.dart';
@@ -177,14 +179,18 @@ class FundButton extends ConsumerWidget {
   final bool expand;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => KButton(
-    label: context.t('accounts.fund.button'),
-    icon: LucideIcons.arrowDownToLine,
-    variant: variant,
-    size: size,
-    expand: expand,
-    onPressed: () => showFundSheet(context, account),
-  );
+  Widget build(BuildContext context, WidgetRef ref) {
+    // funding goes through the wallet: nothing while the broker has it switched off (rows leave the button out)
+    if (!pageOn(ref.watch(configProvider), '/wallet')) return const SizedBox.shrink();
+    return KButton(
+      label: context.t('accounts.fund.button'),
+      icon: LucideIcons.arrowDownToLine,
+      variant: variant,
+      size: size,
+      expand: expand,
+      onPressed: () => showFundSheet(context, account),
+    );
+  }
 }
 
 /// Refill: tops a demo account back up to its starting balance (off when none are left today, the balance is full or

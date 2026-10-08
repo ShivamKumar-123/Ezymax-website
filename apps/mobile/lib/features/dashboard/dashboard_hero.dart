@@ -3,11 +3,13 @@
 // rounded sheet that slides up over the picture (KPageScroll.hero; the shell floats its controls over it,
 // app_shell.dart). Stock Ezymex brand only: a white-label broker never sees Ezymex imagery.
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/config/app_config.dart';
 import '../../i18n/i18n.dart';
+import '../../shell/nav.dart';
 import '../../ui/ui.dart';
 
 /// Whether the page at `path` opens on the picture: the Overview of the stock Ezymex brand. The shell (its chrome and
@@ -52,14 +54,16 @@ class DashboardHeroPicture extends StatelessWidget {
 
 /// What scrolls with the page over the picture (KPageHero.child): the gradient that keeps the text readable, the
 /// ember rule + "EZYMEX FX OPTIONS", the headline and the white pill into Ezymex FX Options, at the lower start.
-class DashboardHeroCopy extends StatelessWidget {
+/// Without FX Options (module switched off) only the headline stays.
+class DashboardHeroCopy extends ConsumerWidget {
   const DashboardHeroCopy({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final t = context.t;
     final k = context.k;
     final rtl = Directionality.of(context) == TextDirection.rtl;
+    final options = pageOn(ref.watch(configProvider), '/options');
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -79,21 +83,23 @@ class DashboardHeroCopy extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.end,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(width: 18, height: 1.5, color: k.ember),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      t('options.page.title').toUpperCase(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.text.caption.copyWith(color: Colors.white.withValues(alpha: 0.8), fontWeight: FontWeight.w600, letterSpacing: 1.4),
+              if (options) ...[
+                Row(
+                  children: [
+                    Container(width: 18, height: 1.5, color: k.ember),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        t('options.page.title').toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.text.caption.copyWith(color: Colors.white.withValues(alpha: 0.8), fontWeight: FontWeight.w600, letterSpacing: 1.4),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
+                  ],
+                ),
+                const SizedBox(height: 10),
+              ],
               FractionallySizedBox(
                 widthFactor: 0.78,
                 alignment: AlignmentDirectional.centerStart,
@@ -104,19 +110,21 @@ class DashboardHeroCopy extends StatelessWidget {
                   style: context.text.largeTitle.copyWith(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w700, height: 1.1, letterSpacing: -0.6),
                 ),
               ),
-              const SizedBox(height: 16),
-              // the white pill, white in dark mode too
-              Theme(
-                data: KTheme.lightOf(context),
-                child: Builder(
-                  builder: (context) => KButton(
-                    label: t('options.intro.start'),
-                    variant: KButtonVariant.surface,
-                    trailingIcon: rtl ? LucideIcons.arrowLeft : LucideIcons.arrowRight,
-                    onPressed: () => context.go('/options'),
+              if (options) ...[
+                const SizedBox(height: 16),
+                // the white pill, white in dark mode too
+                Theme(
+                  data: KTheme.lightOf(context),
+                  child: Builder(
+                    builder: (context) => KButton(
+                      label: t('options.intro.start'),
+                      variant: KButtonVariant.surface,
+                      trailingIcon: rtl ? LucideIcons.arrowLeft : LucideIcons.arrowRight,
+                      onPressed: () => context.go('/options'),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         ),

@@ -9,9 +9,11 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/auth/auth_controller.dart';
+import '../../../core/config/app_config.dart';
 import '../../../core/models/account.dart';
 import '../../../core/models/trading.dart';
 import '../../../i18n/i18n.dart';
+import '../../../shell/nav.dart';
 import '../../../ui/ui.dart';
 import '../account_actions.dart';
 import '../accounts_data.dart';
@@ -79,6 +81,8 @@ class LiveAccountRow extends ConsumerWidget {
     final k = context.k;
     final a = account;
     final readOnly = ref.watch(meProvider)?.readOnly ?? false;
+    // Fund goes through the wallet, Manage to copy trading: not while the broker has them switched off
+    final cfg = ref.watch(configProvider);
     final flavor = accountFlavor(a);
     final copying = flavor == 'copy' ? copyingName(a) : null;
     final cur = a.cent ? 'USC' : a.currency;
@@ -190,18 +194,19 @@ class LiveAccountRow extends ConsumerWidget {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 AccountMenuButton(account: a, onChanged: onChanged, size: 36),
-                if (a.live && !a.prop)
+                if (a.live && !a.prop && pageOn(cfg, '/wallet'))
                   FundButton(account: a, size: KButtonSize.sm)
                 else if (!a.live)
                   RefillButton(account: a, onDone: onChanged, size: KButtonSize.sm),
                 if (flavor == 'copy') ...[
-                  KButton(
-                    label: t('accounts.copy.manage'),
-                    icon: LucideIcons.users,
-                    variant: KButtonVariant.surface,
-                    size: KButtonSize.sm,
-                    onPressed: () => context.go('/social/copy'),
-                  ),
+                  if (pageOn(cfg, '/social/copy'))
+                    KButton(
+                      label: t('accounts.copy.manage'),
+                      icon: LucideIcons.users,
+                      variant: KButtonVariant.surface,
+                      size: KButtonSize.sm,
+                      onPressed: () => context.go('/social/copy'),
+                    ),
                   TradeButton(account: a, size: KButtonSize.sm, variant: KButtonVariant.surface, label: t('accounts.copy.watchPnl')),
                 ] else
                   TradeButton(account: a, size: KButtonSize.sm),

@@ -16,6 +16,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/api/api_error.dart';
+import '../../../../core/config/app_config.dart';
 import '../../../../core/notifications/notifications.dart';
 import '../../../../i18n/i18n.dart';
 import '../../../../ui/ui.dart';
@@ -188,6 +189,8 @@ class _QuickTradeState extends ConsumerState<QuickTrade> {
     final readOnly = ref.watch(terminalProvider.select((x) => x.readOnly));
     final live = ref.watch(terminalProvider.select((x) => x.account?.live ?? false));
     final hidden = ref.watch(introHiddenProvider);
+    // "Explain it to me" is the AI assistant (trade/options/explain: options & ai_assistant)
+    final explain = ref.watch(configProvider.select((c) => c.moduleOn('ai_assistant')));
     final targets = _targetsOf(chain);
     final resetKey = '$u|$_view|$_reach|$_contracts|${chain?.expiry}';
     if (resetKey != _resetKey) {
@@ -387,8 +390,10 @@ class _QuickTradeState extends ConsumerState<QuickTrade> {
               trailingIcon: book ? LucideIcons.arrowRight : null,
               onTap: blocked ? null : () => unawaited(_confirm(chain: chain, target: target, q: q, book: book)),
             ),
-          const SizedBox(height: 10),
-          _ExplainIdea(chain: chain, target: target, contracts: _contracts, view: _view!, total: total, premium: premium, usdU: usdU),
+          if (explain) ...[
+            const SizedBox(height: 10),
+            _ExplainIdea(chain: chain, target: target, contracts: _contracts, view: _view!, total: total, premium: premium, usdU: usdU),
+          ],
         ],
         const SizedBox(height: 16),
         Container(height: 0.8, color: k.line),

@@ -13,6 +13,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/api/api_providers.dart';
 import '../../core/auth/auth_controller.dart';
+import '../../core/config/app_config.dart';
 import '../../core/notifications/notifications.dart';
 import '../../i18n/i18n.dart';
 import '../../ui/ui.dart';
@@ -544,17 +545,20 @@ class _DeveloperStrategiesScreenState extends ConsumerState<DeveloperStrategiesS
           ),
         ],
         const SizedBox(height: 16),
-        // 3. AI assistant · deploy · recent backtests
-        AiAssistant(
-          configured: meta.value?.aiConfigured ?? false,
-          readOnly: readOnly,
-          mode: _mode,
-          symbol: jS(_spec['symbol']),
-          timeframe: jS(_spec['timeframe']),
-          current: () => _mode == 'code' ? _code.text : {..._spec, 'name': _name.text},
-          onApply: _applyAi,
-        ),
-        const SizedBox(height: 16),
+        // 3. AI assistant (algo/ai: algo & ai_assistant, so not while the broker has the AI assistant off) · deploy ·
+        // recent backtests
+        if (ref.watch(configProvider.select((c) => c.moduleOn('ai_assistant')))) ...[
+          AiAssistant(
+            configured: meta.value?.aiConfigured ?? false,
+            readOnly: readOnly,
+            mode: _mode,
+            symbol: jS(_spec['symbol']),
+            timeframe: jS(_spec['timeframe']),
+            current: () => _mode == 'code' ? _code.text : {..._spec, 'name': _name.text},
+            onApply: _applyAi,
+          ),
+          const SizedBox(height: 16),
+        ],
         _DeployCard(
           strategy: _dirty ? null : detail,
           readOnly: readOnly,

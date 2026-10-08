@@ -8,7 +8,7 @@ import '../../../i18n/i18n.dart';
 import '../../../ui/ui.dart';
 
 class BalancePanel extends StatelessWidget {
-  const BalancePanel({super.key, required this.total, required this.loading, this.changePct, this.readOnly = false, this.hidden = false});
+  const BalancePanel({super.key, required this.total, required this.loading, this.changePct, this.readOnly = false, this.wallet = true, this.hidden = false});
 
   /// Live accounts' equity + wallet (USD); null when unknown.
   final double? total;
@@ -17,6 +17,9 @@ class BalancePanel extends StatelessWidget {
   /// Today's change in percent (from the reports curve).
   final double? changePct;
   final bool readOnly;
+
+  /// The wallet is offered (its module on): Deposit / Withdraw / Transfer go through it.
+  final bool wallet;
   final bool hidden;
 
   @override
@@ -51,7 +54,7 @@ class BalancePanel extends StatelessWidget {
           t('dashboard.home.totalBalanceSub'),
           style: context.text.caption.copyWith(color: k.fg3, fontWeight: FontWeight.w400, fontSize: 12),
         ),
-        if (!readOnly) ...[
+        if (!readOnly && wallet) ...[
           const SizedBox(height: 20),
           Row(
             children: [

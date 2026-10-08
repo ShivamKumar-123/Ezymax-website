@@ -12,7 +12,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/auth/auth_controller.dart';
+import '../../core/config/app_config.dart';
 import '../../i18n/i18n.dart';
+import '../../shell/nav.dart';
 import '../../ui/ui.dart';
 import 'live_chat.dart';
 import 'support_data.dart';
@@ -21,7 +23,7 @@ import 'support_data.dart';
 Future<void> openSupportChat(BuildContext context) async {
   final container = ProviderScope.containerOf(context, listen: false);
   final me = container.read(meProvider);
-  if (me == null || me.readOnly) return;
+  if (me == null || me.readOnly || !pageOn(container.read(configProvider), '/support')) return;
   final launcher = container.read(supportLauncherProvider.notifier)..opened();
   try {
     await showKSheet<void>(
@@ -46,6 +48,8 @@ class SupportLauncher extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (path == '/support' || path.startsWith('/support/')) return const SizedBox.shrink();
+    // the support chat switched off by the broker (module support; the bell keeps working)
+    if (!pageOn(ref.watch(configProvider), '/support')) return const SizedBox.shrink();
     final me = ref.watch(meProvider);
     if (me == null || me.readOnly) return const SizedBox.shrink();
     final t = context.t;

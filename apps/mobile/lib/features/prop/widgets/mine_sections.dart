@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/config/app_config.dart';
 import '../../../i18n/i18n.dart';
+import '../../../shell/nav.dart';
 import '../../../ui/ui.dart';
 import '../../accounts/widgets/account_bits.dart' show TradeSymbolAvatar, symbolLabel;
 import '../prop_api.dart';
@@ -112,7 +113,7 @@ class ChallengeBanners extends ConsumerWidget {
 
 /* ------------------------------------------------------------------ overview + daily reset */
 
-class ChallengeOverview extends StatelessWidget {
+class ChallengeOverview extends ConsumerWidget {
   const ChallengeOverview({super.key, required this.c, required this.a, required this.v, required this.readOnly});
   final Challenge c;
   final PhaseAccount a;
@@ -128,10 +129,12 @@ class ChallengeOverview extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final t = context.t;
     final k = context.k;
     final live = tradable(c, a);
+    // the support chat may be switched off by the broker (module support)
+    final support = pageOn(ref.watch(configProvider), '/support');
     final pills = [
       (LucideIcons.coins, t('prop.mine.initialBalance'), usd(a.initialBalance, 0)),
       (LucideIcons.gauge, t('prop.mine.drawdown'), '${ddTypeLabel(t, c.plan.ddType)} ${pctText(c.plan.maxDD)}'),
@@ -273,7 +276,8 @@ class ChallengeOverview extends StatelessWidget {
                   runSpacing: 8,
                   children: [
                     if (!readOnly) PropTradeButton(login: a.login, disabled: !live),
-                    KButton(label: t('prop.mine.support'), variant: KButtonVariant.surface, size: KButtonSize.sm, onPressed: () => context.go('/support')),
+                    if (support)
+                      KButton(label: t('prop.mine.support'), variant: KButtonVariant.surface, size: KButtonSize.sm, onPressed: () => context.go('/support')),
                   ],
                 ),
               ],

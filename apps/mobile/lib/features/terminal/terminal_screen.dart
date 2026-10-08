@@ -2,7 +2,8 @@
 // (apps/terminal/components/mobile/mobile-terminal.tsx) in the app's iOS look:
 //   header      back · CFD | Options · account pill (login, Live / Demo / read-only, equity, floating P&L) · bell
 //   CFD         Watchlist · Chart · Trade · History · Account (bottom bar; the chart opens first)
-//   Options     its own body and bottom bar (options/options_terminal.dart)
+//   Options     its own body and bottom bar (options/options_terminal.dart); with the options module switched off no
+//               CFD | Options switch, and an options link shows "Options trading isn't available" (back to CFD)
 // Like the web's mobile terminal (dir="ltr") the terminal keeps its left-to-right layout in Arabic, Urdu and Persian:
 // bid / ask, Sell / Buy and the chart keep their places, only the words are translated.
 import 'dart:async';
@@ -213,6 +214,8 @@ class _Header extends ConsumerWidget {
     final unread = ref.watch(notificationsProvider.select((s) => s.unread));
     final mode = ref.watch(tradeModeProvider);
     final rtl = Directionality.of(context) == TextDirection.rtl;
+    // FX Options switched off by the broker: no CFD | Options switch, CFD only
+    final options = ref.watch(configProvider.select((c) => c.moduleOn('options')));
     return KFrosted(
       color: k.bar,
       border: Border(bottom: BorderSide(color: k.line, width: 0.6)),
@@ -230,17 +233,19 @@ class _Header extends ConsumerWidget {
                   semanticLabel: t('common.back'),
                   onPressed: () => context.canPop() ? context.pop() : context.go('/'),
                 ),
-                SizedBox(
-                  width: 118,
-                  child: KSegmented<String>(
-                    height: 30,
-                    values: const ['cfd', 'options'],
-                    labels: [t('trader.opt.mode.cfd'), t('trader.opt.mode.options')],
-                    selected: mode,
-                    onChanged: (v) => ref.read(tradeModeProvider.notifier).set(v),
+                if (options) ...[
+                  SizedBox(
+                    width: 118,
+                    child: KSegmented<String>(
+                      height: 30,
+                      values: const ['cfd', 'options'],
+                      labels: [t('trader.opt.mode.cfd'), t('trader.opt.mode.options')],
+                      selected: mode,
+                      onChanged: (v) => ref.read(tradeModeProvider.notifier).set(v),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 6),
+                  const SizedBox(width: 6),
+                ],
                 const Expanded(child: _AccountPill()),
                 KIconButton(
                   icon: LucideIcons.bell,
@@ -431,11 +436,26 @@ class _Gate extends ConsumerWidget {
   }
 }
 
-class _OptionsBody extends StatelessWidget {
+class _OptionsBody extends ConsumerWidget {
   const _OptionsBody();
 
   @override
-  Widget build(BuildContext context) => const _Gate(child: OptionsTerminal());
+  Widget build(BuildContext context, WidgetRef ref) {
+    // FX Options switched off by the broker (an options link, or switched off while open): a plain state with the way
+    // back to CFD instead of the options screens and their 403 module_disabled
+    if (!ref.watch(configProvider.select((c) => c.moduleOn('options')))) {
+      final t = context.t;
+      return Center(
+        child: KEmptyState(
+          icon: LucideIcons.chartSpline,
+          title: t('features.options.offTitle'),
+          text: t('features.options.offText'),
+          action: KButton(label: t('trader.opt.mode.cfd'), size: KButtonSize.sm, onPressed: () => ref.read(tradeModeProvider.notifier).set('cfd')),
+        ),
+      );
+    }
+    return const _Gate(child: OptionsTerminal());
+  }
 }
 
 class _CfdBody extends ConsumerStatefulWidget {

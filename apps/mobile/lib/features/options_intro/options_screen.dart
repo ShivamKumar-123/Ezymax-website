@@ -17,11 +17,13 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/api/api_providers.dart';
 import '../../core/auth/auth_controller.dart';
+import '../../core/config/app_config.dart';
 import '../../core/format/format.dart';
 import '../../core/models/account.dart';
 import '../../core/notifications/notifications.dart';
 import '../../data/client_data.dart';
 import '../../i18n/i18n.dart';
+import '../../shell/nav.dart';
 import '../../ui/ui.dart';
 import '../markets/instruments.dart';
 import 'widgets/markdown_text.dart';
@@ -174,6 +176,8 @@ class _OptionsScreenState extends ConsumerState<OptionsScreen> {
     final accounts = acc.value == null ? null : optionsAccounts(acc.value!);
     final readOnly = _readOnly;
     final accountsLoading = accounts == null && !acc.hasError;
+    // the course links lead into the Academy: only while the broker offers it
+    final academy = pageOn(ref.watch(configProvider), kOptionsCourseHref);
 
     final tradeLabel = accounts != null && accounts.isEmpty ? t('options.trade.openAccount') : t('options.trade.cta');
 
@@ -223,7 +227,7 @@ class _OptionsScreenState extends ConsumerState<OptionsScreen> {
                       ),
                       const SizedBox(height: 6),
                       KPressable(
-                        onTap: () => _showHowItWorks(context, data!),
+                        onTap: () => _showHowItWorks(context, data!, academy: academy),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -269,12 +273,13 @@ class _OptionsScreenState extends ConsumerState<OptionsScreen> {
                             )
                           else if (!s.hasError)
                             const KSkeleton(width: 140, height: 40, radius: 20),
-                          KButton(
-                            label: t('options.page.learnCourse'),
-                            icon: LucideIcons.graduationCap,
-                            variant: KButtonVariant.surface,
-                            onPressed: () => context.push(kOptionsCourseHref),
-                          ),
+                          if (academy)
+                            KButton(
+                              label: t('options.page.learnCourse'),
+                              icon: LucideIcons.graduationCap,
+                              variant: KButtonVariant.surface,
+                              onPressed: () => context.push(kOptionsCourseHref),
+                            ),
                         ],
                       ),
                     const SizedBox(height: 20),
@@ -324,6 +329,7 @@ class _OptionsScreenState extends ConsumerState<OptionsScreen> {
                 ? _IntroCard(
                     data: data,
                     readOnly: readOnly,
+                    academy: academy,
                     understood: _understood,
                     busy: _busy,
                     onUnderstood: (v) => setState(() => _understood = v),
@@ -382,44 +388,47 @@ class _OptionsScreenState extends ConsumerState<OptionsScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 16),
-        KCard(
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: k.goldSoft,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: k.gold.withValues(alpha: 0.3)),
+        // the Academy's options course (not while the broker has the Academy off)
+        if (academy) ...[
+          const SizedBox(height: 16),
+          KCard(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: k.goldSoft,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: k.gold.withValues(alpha: 0.3)),
+                  ),
+                  child: Icon(LucideIcons.graduationCap, size: 20, color: k.gold),
                 ),
-                child: Icon(LucideIcons.graduationCap, size: 20, color: k.gold),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(t('options.learn.title'), style: context.text.headline.copyWith(fontWeight: FontWeight.w500)),
-                    const SizedBox(height: 4),
-                    Text(t('options.learn.text'), style: context.text.footnote.copyWith(color: k.fg2, fontSize: 13, height: 1.45)),
-                    const SizedBox(height: 12),
-                    KButton(
-                      label: t('options.learn.cta'),
-                      trailingIcon: Directionality.of(context) == TextDirection.rtl ? LucideIcons.arrowLeft : LucideIcons.arrowRight,
-                      variant: KButtonVariant.surface,
-                      size: KButtonSize.sm,
-                      onPressed: () => context.push(kOptionsCourseHref),
-                    ),
-                  ],
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(t('options.learn.title'), style: context.text.headline.copyWith(fontWeight: FontWeight.w500)),
+                      const SizedBox(height: 4),
+                      Text(t('options.learn.text'), style: context.text.footnote.copyWith(color: k.fg2, fontSize: 13, height: 1.45)),
+                      const SizedBox(height: 12),
+                      KButton(
+                        label: t('options.learn.cta'),
+                        trailingIcon: Directionality.of(context) == TextDirection.rtl ? LucideIcons.arrowLeft : LucideIcons.arrowRight,
+                        variant: KButtonVariant.surface,
+                        size: KButtonSize.sm,
+                        onPressed: () => context.push(kOptionsCourseHref),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -707,6 +716,7 @@ class _IntroCard extends StatelessWidget {
   const _IntroCard({
     required this.data,
     required this.readOnly,
+    required this.academy,
     required this.understood,
     required this.busy,
     required this.onUnderstood,
@@ -715,6 +725,9 @@ class _IntroCard extends StatelessWidget {
   });
   final Suitability data;
   final bool readOnly, understood, busy;
+
+  /// The Academy is offered (the quiz link leads into its options course).
+  final bool academy;
   final ValueChanged<bool> onUnderstood;
   final VoidCallback onTerms, onStart;
 
@@ -729,16 +742,17 @@ class _IntroCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           KCardHeader(title: t('options.intro.title'), subtitle: t('options.intro.subtitle'), icon: LucideIcons.sparkles),
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: KButton(
-              label: t('options.intro.quiz'),
-              icon: LucideIcons.graduationCap,
-              variant: KButtonVariant.ghost,
-              size: KButtonSize.sm,
-              onPressed: () => context.push(kOptionsCourseHref),
+          if (academy)
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: KButton(
+                label: t('options.intro.quiz'),
+                icon: LucideIcons.graduationCap,
+                variant: KButtonVariant.ghost,
+                size: KButtonSize.sm,
+                onPressed: () => context.push(kOptionsCourseHref),
+              ),
             ),
-          ),
           const SizedBox(height: 8),
           const _IdeaCards(),
           const SizedBox(height: 16),
@@ -810,7 +824,7 @@ class _IntroCard extends StatelessWidget {
 
 /* ------------------------------------------------------------------ sheets */
 
-void _showHowItWorks(BuildContext context, Suitability data) {
+void _showHowItWorks(BuildContext context, Suitability data, {required bool academy}) {
   final router = GoRouter.of(context);
   showKSheet<void>(
     context,
@@ -829,17 +843,19 @@ void _showHowItWorks(BuildContext context, Suitability data) {
                   _showTerms(context, data);
                 },
               ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: KTextButton(
-                label: t('options.intro.quiz'),
-                color: ctx.k.fg2,
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                  router.push(kOptionsCourseHref);
-                },
+            if (academy) ...[
+              const SizedBox(width: 10),
+              Flexible(
+                child: KTextButton(
+                  label: t('options.intro.quiz'),
+                  color: ctx.k.fg2,
+                  onPressed: () {
+                    Navigator.of(ctx).pop();
+                    router.push(kOptionsCourseHref);
+                  },
+                ),
               ),
-            ),
+            ],
             const Spacer(),
             KButton(label: t('options.intro.gotIt'), size: KButtonSize.sm, onPressed: () => Navigator.of(ctx).pop()),
           ],

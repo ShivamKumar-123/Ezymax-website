@@ -9,8 +9,10 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/api/api_providers.dart';
 import '../../core/auth/auth_controller.dart';
+import '../../core/config/app_config.dart';
 import '../../core/format/format.dart';
 import '../../i18n/i18n.dart';
+import '../../shell/nav.dart';
 import '../../ui/ui.dart';
 import 'developer_api.dart';
 import 'widgets/algo_widgets.dart';
@@ -257,12 +259,15 @@ class _DeveloperKeysScreenState extends ConsumerState<DeveloperKeysScreen> {
                     ],
                   ),
                 ),
-              const SizedBox(height: 4),
-              KRichText(
-                t('developer.keys.killHint'),
-                style: context.text.footnote.copyWith(color: k.fg3),
-                tags: {'link': KTag.link(() => context.go('/developer/deployments'))},
-              ),
+              // the kill switch lives on Running strategies (Algo): no pointer to it while the broker has Algo off
+              if (pageOn(ref.watch(configProvider), '/developer/deployments')) ...[
+                const SizedBox(height: 4),
+                KRichText(
+                  t('developer.keys.killHint'),
+                  style: context.text.footnote.copyWith(color: k.fg3),
+                  tags: {'link': KTag.link(() => context.go('/developer/deployments'))},
+                ),
+              ],
             ],
           ),
         ),

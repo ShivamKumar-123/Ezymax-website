@@ -9,6 +9,7 @@ import 'package:ezymex/core/models/account.dart';
 import 'package:ezymex/core/models/user.dart';
 import 'package:ezymex/core/models/wallet.dart';
 import 'package:ezymex/data/client_data.dart';
+import 'package:ezymex/features/common/system_screens.dart';
 import 'package:ezymex/features/dashboard/dashboard_data.dart';
 import 'package:ezymex/features/dashboard/dashboard_screen.dart';
 import 'package:ezymex/features/dashboard/widgets/list_cards.dart';
@@ -16,8 +17,10 @@ import 'package:ezymex/features/dashboard/widgets/markets_cards.dart';
 import 'package:ezymex/features/dashboard/widgets/more_cards.dart';
 import 'package:ezymex/features/dashboard/widgets/statistic_card.dart';
 import 'package:ezymex/features/markets/instruments.dart';
+import 'package:ezymex/features/support/ask_ai.dart';
 import 'package:ezymex/i18n/i18n.dart';
 import 'package:ezymex/preview/preview_data.dart';
+import 'package:ezymex/router/router.dart';
 
 import 'helpers/test_app.dart';
 
@@ -291,6 +294,59 @@ void main() {
       await settle(tester, frames: 6);
       expect(find.text('Copy link'), findsOneWidget);
       expect(find.text('Trade XAUUSD'), findsOneWidget);
+      await unmount(tester);
+    });
+  });
+
+  group('modules the broker switched off (apps/crm/lib/modules.ts)', () {
+    final off = AppConfig.fromJson({
+      ...previewConfig,
+      'modules': {
+        ...(previewConfig['modules'] as Map),
+        'news': false,
+        'calendar': false,
+        'support': false,
+        'options': false,
+        'copy_trading': false,
+        'rewards': false,
+      },
+    });
+
+    testWidgets('leave no trace on the dashboard', (tester) async {
+      await pumpApp(tester, signedIn: true, config: off);
+      expect(find.byType(DashboardScreen), findsOneWidget);
+      // the picture keeps its headline, without the way into FX Options
+      expect(find.text('Start trading options'), findsNothing);
+      // Ask Ezymex AI answers over the support chat; the floating chat goes with it
+      expect(find.byType(AskAi), findsNothing);
+      expect(find.byKey(const ValueKey('support-launcher')), findsNothing);
+      final page = find.descendant(of: find.byType(DashboardScreen), matching: find.byType(Scrollable)).first;
+      await tester.scrollUntilVisible(find.text('Quick actions'), 300, scrollable: page);
+      expect(find.text('Copy trading'), findsNothing);
+      expect(find.text('Support'), findsNothing);
+      expect(find.text('Transfer'), findsOneWidget);
+      await tester.scrollUntilVisible(find.text('More for you'), 400, scrollable: page);
+      expect(find.byType(CalendarCard), findsNothing);
+      expect(find.byType(NewsCard), findsNothing);
+      expect(find.byType(WorldCard), findsNothing);
+      expect(find.byType(HeatmapCard), findsOneWidget);
+      await unmount(tester);
+    });
+
+    testWidgets('their pages open "Not available", which leads back to the dashboard', (tester) async {
+      final c = await pumpApp(tester, signedIn: true, config: off);
+      c.read(routerProvider).go('/news');
+      await settle(tester, frames: 4);
+      expect(find.byType(UnavailableScreen), findsOneWidget);
+      expect(find.text('Not available'), findsOneWidget);
+      await tester.tap(find.text('Back to dashboard'));
+      await settle(tester, frames: 4);
+      expect(find.byType(UnavailableScreen), findsNothing);
+      expect(find.byType(DashboardScreen), findsOneWidget);
+      // a page of a module that stays on opens as usual
+      c.read(routerProvider).go('/markets');
+      await settle(tester, frames: 4);
+      expect(find.byType(UnavailableScreen), findsNothing);
       await unmount(tester);
     });
   });

@@ -36,6 +36,10 @@ class PeriodShare extends ShareTarget {
   Map<String, Object?> body(bool showAmounts) => {'kind': 'period', 'login': login, 'from': from, 'to': to, 'showAmounts': showAmounts};
 }
 
+/// Whether the broker offers share cards (flag trade_sharing; on unless switched off). The buttons hide themselves
+/// without it; a row that spaces one out checks it too.
+bool tradeSharingOn(AppConfig cfg) => cfg.flag('trade_sharing', fallback: true);
+
 /// Opens the share sheet for `target`.
 Future<void> showShareSheet(BuildContext context, {required ShareTarget target, required String title}) => showKSheet<void>(
   context,
@@ -44,13 +48,14 @@ Future<void> showShareSheet(BuildContext context, {required ShareTarget target, 
 );
 
 /// The share icon of a closed deal (web ShareTradeButton).
-class ShareTradeButton extends StatelessWidget {
+class ShareTradeButton extends ConsumerWidget {
   const ShareTradeButton({super.key, required this.login, required this.dealId, this.symbol});
   final int login, dealId;
   final String? symbol;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!tradeSharingOn(ref.watch(configProvider))) return const SizedBox.shrink();
     final t = context.t;
     return KIconButton(
       icon: LucideIcons.share2,
@@ -66,13 +71,14 @@ class ShareTradeButton extends StatelessWidget {
 }
 
 /// "Share period P&L" for an account and a range (`to` exclusive) (web SharePeriodButton).
-class SharePeriodButton extends StatelessWidget {
+class SharePeriodButton extends ConsumerWidget {
   const SharePeriodButton({super.key, required this.login, required this.from, required this.to});
   final int login;
   final String from, to;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!tradeSharingOn(ref.watch(configProvider))) return const SizedBox.shrink();
     final t = context.t;
     return KButton(
       label: t('rewards.share.period'),
