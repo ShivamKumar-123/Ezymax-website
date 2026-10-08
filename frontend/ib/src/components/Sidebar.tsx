@@ -20,10 +20,10 @@ export const NAV_ITEMS = [
 
 export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  // Dark in both themes: the wordmark is a glow render and only reads on a
+  // dark ground, and the reference layout keeps its rail dark against a
+  // light page too.
   return (
-    {/* Dark in both themes: the wordmark is a glow render and only
-    reads on a dark ground, and the reference layout keeps its
-    rail dark against a light page too. */}
     <nav className="flex h-full flex-col gap-1.5 bg-[#0b0908] p-3 text-[#f3efe9]">
       {/* Brand */}
       <div className="mb-3 flex items-center gap-2.5 px-2 pt-2">
