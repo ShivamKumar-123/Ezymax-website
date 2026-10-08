@@ -121,7 +121,7 @@ No session needed. Read it at start-up and refresh it on resume. It still answer
     }
   },
   "tenant": { "slug": "ezymex", "name": "Ezymex", "default": true, "logoUrl": null, "primary": null, "accent": null, "supportEmail": null, "website": null },
-  "modules": { "wallet": true, "prop": true, "ib": true, "academy": true, "copy_trading": true, "pamm": true, "algo": true, "api": true, "rewards": true },
+  "modules": { "wallet": true, "prop": true, "ib": true, "academy": true, "copy_trading": true, "pamm": true, "algo": true, "api": true, "rewards": true, "options": true, "news": true, "calendar": true, "ai_assistant": true, "support": true },
   "flags": { "demo_accounts": true },
   "maintenance": { "active": false, "message": "", "until": null }
 }
@@ -129,7 +129,11 @@ No session needed. Read it at start-up and refresh it on resume. It still answer
 
 - `tenant`: the broker's branding, from the same source as the web's `brandCss`. `default: true` means the stock
   Ezymex look. `primary` re-tints the ember accent and `accent` the gold. Both are `#rrggbb` or null.
-- `modules`: a module set to `false` is hidden, and its API answers `403 module_disabled`. Missing means on.
+- `modules`: a module set to `false` is hidden, and its API answers `403 module_disabled`. Missing means on. Which pages
+  and paths each module covers: `apps/crm/lib/modules.ts` (the app's copy of the page part: `lib/shell/nav.dart`).
+  `options` covers `trade/options/*`, `ai_assistant` covers `trade/ai-trader` and (with `options`) `trade/options/explain`,
+  `news` / `calendar` split `news/*`, and `support` covers the support chat routes but not `support/stream-ticket` nor
+  the notifications.
 - `minAppVersion`: when set (env `MOBILE_MIN_APP_VERSION`), an older app must ask the user to update.
 - A white-label broker's `terminal` and `engine` / `options` streams use its own trade domain.
 
