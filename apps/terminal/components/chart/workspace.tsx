@@ -65,7 +65,7 @@ export function ChartWorkspace() {
 }
 
 function Sep({ className }: { className?: string }) {
-  return <span className={cn("mx-0.5 h-5 w-px shrink-0 bg-line", className)} aria-hidden />;
+  return <span className={cn("mx-1 h-6 w-px shrink-0 bg-line", className)} aria-hidden />;
 }
 
 /* ------------------------------------------------------------------ */
@@ -207,7 +207,7 @@ function Timeframes() {
               aria-checked={tab.tf === tf}
               aria-label={t(`chart.tf.${tf}`)}
               onClick={() => changeTf(T, tab, tf)}
-              className={cn("h-7 min-w-[30px] rounded-[6px] px-1 font-mono text-[12px] transition-colors", tab.tf === tf ? "bg-ember-soft font-semibold text-accent-text" : "text-fg-2 hover:bg-surface-3/60 hover:text-fg")}
+              className={cn("h-9 min-w-[36px] rounded-[6px] px-1.5 text-[14px] font-medium transition-colors", tab.tf === tf ? "bg-surface-3 font-semibold text-buy" : "text-fg-2 hover:bg-surface-3/60 hover:text-fg")}
             >
               {TF_SHORT[tf]}
             </button>
@@ -219,15 +219,20 @@ function Timeframes() {
         items={[{ header: t("trader.menu.timeframes") }, ...TIMEFRAMES.map((tf) => ({ label: t(`chart.tf.${tf}`), hint: tf, checked: tab.tf === tf, onSelect: () => changeTf(T, tab, tf) }))]}
         trigger={({ toggle, open }) => (
           <Tip content={t("chart.toolbar.moreTimeframes")} side="bottom">
-            <button onClick={toggle} aria-expanded={open} aria-label={`${t("chart.toolbar.moreTimeframes")}: ${t(`chart.tf.${tab.tf}`)}`} className={cn("flex h-7 shrink-0 items-center gap-0.5 rounded-[6px] px-1 font-mono text-[12px] transition-colors", open ? "bg-surface-3 text-fg" : "text-fg-2 hover:bg-surface-3 hover:text-fg")}>
+            <button onClick={toggle} aria-expanded={open} aria-label={`${t("chart.toolbar.moreTimeframes")}: ${t(`chart.tf.${tab.tf}`)}`} className={cn("flex h-9 shrink-0 items-center gap-0.5 rounded-[6px] px-1.5 text-[14px] font-medium transition-colors", open ? "bg-surface-3 text-fg" : "text-fg-2 hover:bg-surface-3 hover:text-fg")}>
               <span className="@[600px]:hidden">{TF_SHORT[tab.tf]}</span>
-              <ChevronDown className="size-3.5 text-fg-3" />
+              <ChevronDown className="size-4 text-fg-3" />
             </button>
           </Tip>
         )}
       />
     </>
   );
+}
+
+/** A toolbar icon button at TradingView's size: 36 px, a 19 px thin-line icon. */
+function ToolbarButton({ className, ...p }: React.ComponentProps<typeof IconButton>) {
+  return <IconButton {...p} className={cn("size-9 rounded-[6px] [&_svg]:size-[19px] [&_svg]:stroke-[1.6]", className)} />;
 }
 
 function ChartBar() {
@@ -239,12 +244,12 @@ function ChartBar() {
   const history = useDrawingHistory(tab);
   const reg = () => chartRegistry.get(tab.id);
   const full = T.ui.fullChart;
-  const btn = (open?: boolean) => cn("flex h-7 shrink-0 items-center gap-1.5 rounded-[7px] px-1.5 text-[12.5px] font-medium transition-colors [&>svg]:size-4", open ? "bg-surface-3 text-fg" : "text-fg-2 hover:bg-surface-3 hover:text-fg");
+  const btn = (open?: boolean) => cn("flex h-9 shrink-0 items-center gap-1.5 rounded-[6px] px-2 text-[14px] font-medium transition-colors [&>svg]:size-[19px] [&>svg]:stroke-[1.6]", open ? "bg-surface-3 text-fg" : "text-fg-2 hover:bg-surface-3 hover:text-fg");
   return (
-    <div role="toolbar" aria-label={t("desk.ch.toolbar")} className="@container flex h-10 shrink-0 items-center gap-1 border-b border-line px-1.5">
-      <IconButton label={t("chart.toolbar.symbolSearch")} shortcut="Ctrl+K" onClick={() => T.setUi({ search: true })}>
+    <div role="toolbar" aria-label={t("desk.ch.toolbar")} className="@container flex h-[42px] shrink-0 items-center gap-0.5 border-b border-line px-1.5">
+      <ToolbarButton label={t("chart.toolbar.symbolSearch")} shortcut="Ctrl+K" onClick={() => T.setUi({ search: true })}>
         <CirclePlus />
-      </IconButton>
+      </ToolbarButton>
       <Sep />
       <Timeframes />
       <Sep />
@@ -255,7 +260,7 @@ function ChartBar() {
           <Tip content={t("desk.ch.type")} side="bottom">
             <button onClick={toggle} aria-label={`${t("desk.ch.type")}: ${t(`trader.chartType.${tab.type}`)}`} className={cn(btn(open), "gap-0.5 px-1")}>
               {TYPE_ICON[tab.type]}
-              <ChevronDown className="!size-3 text-fg-3" />
+              <ChevronDown className="!size-3.5 text-fg-3" />
             </button>
           </Tip>
         )}
@@ -300,44 +305,44 @@ function ChartBar() {
         )}
       />
       <Sep className="hidden @[560px]:block" />
-      <IconButton label={t("chart.toolbar.undo")} shortcut="Ctrl+Z" disabled={!history.canUndo} onClick={() => undoDrawings(T, tab.id)} className="hidden @[560px]:inline-grid">
+      <ToolbarButton label={t("chart.toolbar.undo")} shortcut="Ctrl+Z" disabled={!history.canUndo} onClick={() => undoDrawings(T, tab.id)} className="hidden @[560px]:inline-grid">
         <Undo2 />
-      </IconButton>
-      <IconButton label={t("chart.toolbar.redo")} shortcut="Ctrl+Shift+Z" disabled={!history.canRedo} onClick={() => redoDrawings(T, tab.id)} className="hidden @[560px]:inline-grid">
+      </ToolbarButton>
+      <ToolbarButton label={t("chart.toolbar.redo")} shortcut="Ctrl+Shift+Z" disabled={!history.canRedo} onClick={() => redoDrawings(T, tab.id)} className="hidden @[560px]:inline-grid">
         <Redo2 />
-      </IconButton>
+      </ToolbarButton>
       <Sep />
       <Tip content={t("trader.newOrder")} shortcut="F9" side="bottom">
-        <button onClick={() => T.openNewOrder({ symbol: tab.symbol })} disabled={T.readOnly} data-tour="new-order" className="flex h-7 shrink-0 items-center gap-1.5 rounded-[7px] border border-line px-2 text-[12.5px] font-semibold text-fg transition-colors hover:border-ember/50 hover:bg-ember-soft/40 disabled:opacity-45 [&>svg]:size-3.5">
+        <button onClick={() => T.openNewOrder({ symbol: tab.symbol })} disabled={T.readOnly} data-tour="new-order" className="flex h-9 shrink-0 items-center gap-1.5 rounded-[6px] border border-line px-2.5 text-[14px] font-semibold text-fg transition-colors hover:border-ember/50 hover:bg-ember-soft/40 disabled:opacity-45 [&>svg]:size-[18px]">
           <ShoppingCart className="text-accent-text" />
           <span className="hidden @[700px]:inline">{t("trader.newOrder")}</span>
         </button>
       </Tip>
-      <IconButton label={t("desk.ch.zoomIn")} shortcut="+" onClick={() => reg()?.zoom(1)} className="hidden @[760px]:inline-grid">
+      <ToolbarButton label={t("desk.ch.zoomIn")} shortcut="+" onClick={() => reg()?.zoom(1)} className="hidden @[760px]:inline-grid">
         <ZoomIn />
-      </IconButton>
-      <IconButton label={t("desk.ch.zoomOut")} shortcut="−" onClick={() => reg()?.zoom(-1)} className="hidden @[760px]:inline-grid">
+      </ToolbarButton>
+      <ToolbarButton label={t("desk.ch.zoomOut")} shortcut="−" onClick={() => reg()?.zoom(-1)} className="hidden @[760px]:inline-grid">
         <ZoomOut />
-      </IconButton>
-      <IconButton label={t("desk.ch.fit")} onClick={() => reg()?.fit()} className="hidden @[1240px]:inline-grid">
+      </ToolbarButton>
+      <ToolbarButton label={t("desk.ch.fit")} onClick={() => reg()?.fit()} className="hidden @[1240px]:inline-grid">
         <Scan />
-      </IconButton>
+      </ToolbarButton>
       <div className="ms-auto flex shrink-0 items-center gap-0.5">
-        <IconButton label={t("chart.toolbar.saveLayout")} onClick={() => saveLayout(T)} className="hidden @[1000px]:inline-grid">
+        <ToolbarButton label={t("chart.toolbar.saveLayout")} onClick={() => saveLayout(T)} className="hidden @[1000px]:inline-grid">
           <Save />
-        </IconButton>
-        <IconButton label={t("desk.ch.alertTip", { symbol: tab.symbol })} onClick={() => openActivity(T, "alerts")} className="hidden @[640px]:inline-grid">
+        </ToolbarButton>
+        <ToolbarButton label={t("desk.ch.alertTip", { symbol: tab.symbol })} onClick={() => openActivity(T, "alerts")} className="hidden @[640px]:inline-grid">
           <Bell />
-        </IconButton>
-        <IconButton label={t("desk.ch.screenshot")} onClick={() => reg()?.screenshot()}>
+        </ToolbarButton>
+        <ToolbarButton label={t("desk.ch.screenshot")} onClick={() => reg()?.screenshot()}>
           <Camera />
-        </IconButton>
-        <IconButton label={full ? t("desk.ch.exitFullChart") : t("desk.ch.fullChart")} shortcut="Shift+F" active={full} onClick={() => toggleFullChart(T)} data-tour="full-chart">
+        </ToolbarButton>
+        <ToolbarButton label={full ? t("desk.ch.exitFullChart") : t("desk.ch.fullChart")} shortcut="Shift+F" active={full} onClick={() => toggleFullChart(T)} data-tour="full-chart">
           {full ? <Minimize2 /> : <Maximize2 />}
-        </IconButton>
-        <IconButton label={t("desk.set.fullScreen")} shortcut="F11" onClick={toggleFullscreen}>
+        </ToolbarButton>
+        <ToolbarButton label={t("desk.set.fullScreen")} shortcut="F11" onClick={toggleFullscreen}>
           <FullscreenIcon />
-        </IconButton>
+        </ToolbarButton>
       </div>
     </div>
   );
@@ -373,11 +378,20 @@ export const DRAW_TOOLS: { id: DrawTool; label: MessageKey; icon: React.ReactNod
 
 function FibIcon() {
   return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3">
-      <path d="M2 3h12M2 6.5h12M2 9.5h12M2 13h12" />
-      <path d="M3 13L13 3" strokeDasharray="1.6 1.6" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <path d="M3 4.5h18M3 9.75h18M3 14.25h18M3 19.5h18" />
+      <path d="M4.5 19.5L19.5 4.5" strokeDasharray="2.4 2.4" />
     </svg>
   );
+}
+
+/** The rail's groups, top to bottom (TradingView order): pointers · lines · Fibonacci · shapes · text · measure. */
+const RAIL_GROUPS: DrawTool[][] = [["cursor", "crosshair"], ["trend", "hline"], ["fib"], ["rect", "brush"], ["text"], ["ruler"]];
+const RAIL_BTN = "size-10 rounded-[6px] [&_svg]:size-[23px] [&_svg]:stroke-[1.4]";
+const RAIL_ON = "bg-buy/15 text-buy hover:bg-buy/20 hover:text-buy";
+
+function RailSep() {
+  return <span className="my-1 h-px w-8 shrink-0 bg-line" aria-hidden />;
 }
 
 function DrawingBar() {
@@ -385,24 +399,34 @@ function DrawingBar() {
   const t = useT();
   const prefs = useDrawPrefs();
   const n = T.activeTab.drawings.length;
+  const tools = new Map(DRAW_TOOLS.map((tl) => [tl.id, tl]));
   return (
-    <div role="toolbar" aria-label={t("desk.ch.drawings")} aria-orientation="vertical" className="flex w-10 shrink-0 flex-col items-center gap-0.5 overflow-y-auto py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {DRAW_TOOLS.map((tl) => (
-        <IconButton key={tl.id} label={t(tl.label)} shortcut={tl.shortcut} tipSide="right" active={T.drawTool === tl.id} onClick={() => T.setDrawTool(T.drawTool === tl.id && tl.id !== "cursor" ? "cursor" : tl.id)} className="[&_svg]:size-4">
-          {tl.icon}
-        </IconButton>
+    <div role="toolbar" aria-label={t("desk.ch.drawings")} aria-orientation="vertical" className="flex w-[52px] shrink-0 flex-col items-center gap-[2px] overflow-y-auto border-e border-line py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {RAIL_GROUPS.map((group, gi) => (
+        <React.Fragment key={group.join("-")}>
+          {gi > 0 && <RailSep />}
+          {group.map((id) => {
+            const tl = tools.get(id)!;
+            const on = T.drawTool === tl.id;
+            return (
+              <IconButton key={tl.id} label={t(tl.label)} shortcut={tl.shortcut} tipSide="right" active={on} onClick={() => T.setDrawTool(on && tl.id !== "cursor" ? "cursor" : tl.id)} className={cn(RAIL_BTN, on && RAIL_ON)}>
+                {tl.icon}
+              </IconButton>
+            );
+          })}
+        </React.Fragment>
       ))}
-      <span className="my-1 h-px w-6 shrink-0 bg-line" />
-      <IconButton label={t("chart.tool.magnet")} tipSide="right" active={prefs.magnet} onClick={() => setDrawPrefs({ magnet: !prefs.magnet })} className="[&_svg]:size-4">
+      <RailSep />
+      <IconButton label={t("chart.tool.magnet")} tipSide="right" active={prefs.magnet} onClick={() => setDrawPrefs({ magnet: !prefs.magnet })} className={cn(RAIL_BTN, prefs.magnet && RAIL_ON)}>
         <Magnet />
       </IconButton>
-      <IconButton label={t(prefs.locked ? "chart.tool.unlock" : "chart.tool.lock")} tipSide="right" active={prefs.locked} onClick={() => setDrawPrefs({ locked: !prefs.locked })} className="[&_svg]:size-4">
+      <IconButton label={t(prefs.locked ? "chart.tool.unlock" : "chart.tool.lock")} tipSide="right" active={prefs.locked} onClick={() => setDrawPrefs({ locked: !prefs.locked })} className={cn(RAIL_BTN, prefs.locked && RAIL_ON)}>
         {prefs.locked ? <Lock /> : <LockOpen />}
       </IconButton>
-      <IconButton label={t(prefs.hidden ? "chart.tool.show" : "chart.tool.hide")} tipSide="right" active={prefs.hidden} onClick={() => setDrawPrefs({ hidden: !prefs.hidden })} className="[&_svg]:size-4">
+      <IconButton label={t(prefs.hidden ? "chart.tool.show" : "chart.tool.hide")} tipSide="right" active={prefs.hidden} onClick={() => setDrawPrefs({ hidden: !prefs.hidden })} className={cn(RAIL_BTN, prefs.hidden && RAIL_ON)}>
         {prefs.hidden ? <EyeOff /> : <Eye />}
       </IconButton>
-      <span className="my-1 h-px w-6 shrink-0 bg-line" />
+      <RailSep />
       <IconButton
         label={t("desk.ch.deleteDrawings")}
         tipSide="right"
@@ -411,7 +435,7 @@ function DrawingBar() {
           clearDrawings(T, T.activeTab.id);
           toast(t("chart.tool.deleted", { count: n }), { description: `${T.activeTab.symbol}, ${T.activeTab.tf}` });
         }}
-        className="hover:bg-down-soft hover:text-down [&_svg]:size-4"
+        className={cn(RAIL_BTN, "hover:bg-down-soft hover:text-down")}
         badge={n > 0 ? <span className="absolute -end-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-ember px-1 font-mono text-[10px] text-white">{n}</span> : undefined}
       >
         <Trash2 />
@@ -449,13 +473,13 @@ function RangeBar() {
     changeTf(T, tab, r.tf);
   };
   return (
-    <div className="flex h-8 shrink-0 items-center gap-0.5 border-t border-line ps-11 pe-2">
+    <div className="flex h-9 shrink-0 items-center gap-0.5 border-t border-line ps-[56px] pe-2">
       <div role="group" aria-label={t("chart.range.label")} className="flex min-w-0 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {RANGES.map((r) => {
           const on = picked?.tab === tab.id && picked.id === r.id && tab.tf === r.tf;
           return (
             <Tip key={r.id} content={t(r.tip)} side="top">
-              <button onClick={() => pick(r)} aria-pressed={on} aria-label={t(r.tip)} className={cn("h-6 shrink-0 rounded-[6px] px-1.5 font-mono text-[11.5px] transition-colors", on ? "bg-ember-soft font-semibold text-accent-text" : "text-fg-2 hover:bg-surface-3 hover:text-fg")}>
+              <button onClick={() => pick(r)} aria-pressed={on} aria-label={t(r.tip)} className={cn("h-7 shrink-0 rounded-[6px] px-2 text-[13px] font-medium transition-colors", on ? "bg-surface-3 font-semibold text-buy" : "text-fg-2 hover:bg-surface-3 hover:text-fg")}>
                 {r.id}
               </button>
             </Tip>
