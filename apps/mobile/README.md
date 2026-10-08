@@ -65,7 +65,8 @@ lib/
                              menu, search), more_screen, nav (the web's nav: modules, pages, keys, icons, module
                              switches, view-only rules), session_keeper (heartbeat 45 s, me 30 s)
   features/                  screens, one folder per web module
-    auth/                    login, register, forgot, unlock (+ auth_widgets)
+    auth/                    login (the signed-out welcome page: picture, headline, Log in / Open account pills),
+                             sign_in_sheet (the sign-in form as a sheet), register, forgot, unlock (+ auth_widgets)
     dashboard/               the reference screen and its section widgets
     terminal/                Kalks Trader (see "Kalks Trader" below): core/ (sessions, the account stream, orders,
                              contract maths, market feed), cfd/ (the five tabs and the sheets), chart/ (the chart page

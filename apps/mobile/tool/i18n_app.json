@@ -32,7 +32,8 @@
     "dashboard.traderText": "Real-time quotes and charts for {count} instruments across forex, metals, indices, energies, crypto and stocks. Built into this app.",
     "dashboard.heroTitle": "Trade like a sovereign.",
     "demo.sampleData": "Sample data",
-    "demo.exit": "Exit demo"
+    "demo.exit": "Exit demo",
+    "welcome.title": "Options on forex, made simple."
   },
   "hi": {
     "unlock.title": "Kalks लॉक है",
@@ -66,7 +67,8 @@
     "dashboard.traderText": "फ़ॉरेक्स, मेटल्स, इंडाइसेस, एनर्जी, क्रिप्टो और स्टॉक्स में {count} इंस्ट्रूमेंट के रियल-टाइम कोट्स और चार्ट। इसी ऐप में शामिल।",
     "dashboard.heroTitle": "एक सम्राट की तरह ट्रेड करें।",
     "demo.sampleData": "सैंपल डेटा",
-    "demo.exit": "डेमो से बाहर निकलें"
+    "demo.exit": "डेमो से बाहर निकलें",
+    "welcome.title": "फ़ॉरेक्स पर ऑप्शंस, आसान बनाए।"
   },
   "ar": {
     "unlock.title": "Kalks مقفل",
@@ -100,7 +102,8 @@
     "dashboard.traderText": "أسعار ورسوم بيانية لحظية لـ {count} أداة في الفوركس والمعادن والمؤشرات والطاقة والعملات المشفرة والأسهم. مدمجة في هذا التطبيق.",
     "dashboard.heroTitle": "تداول كالملوك.",
     "demo.sampleData": "بيانات تجريبية",
-    "demo.exit": "الخروج من النسخة التجريبية"
+    "demo.exit": "الخروج من النسخة التجريبية",
+    "welcome.title": "خيارات على الفوركس، ببساطة."
   },
   "ur": {
     "unlock.title": "Kalks لاک ہے",
@@ -134,7 +137,8 @@
     "dashboard.traderText": "فاریکس، دھاتوں، انڈیکسز، توانائی، کرپٹو اور اسٹاکس کے {count} انسٹرومنٹس کے لیے ریئل ٹائم کوٹس اور چارٹس۔ اسی ایپ میں شامل۔",
     "dashboard.heroTitle": "بادشاہ کی طرح ٹریڈ کریں۔",
     "demo.sampleData": "نمونہ ڈیٹا",
-    "demo.exit": "ڈیمو سے باہر نکلیں"
+    "demo.exit": "ڈیمو سے باہر نکلیں",
+    "welcome.title": "فاریکس پر آپشنز، آسان بنا دیے۔"
   },
   "fa": {
     "unlock.title": "Kalks قفل است",
@@ -168,7 +172,8 @@
     "dashboard.traderText": "قیمت‌ها و نمودارهای لحظه‌ای برای {count} ابزار در فارکس، فلزات، شاخص‌ها، انرژی، رمزارز و سهام. درون همین اپلیکیشن.",
     "dashboard.heroTitle": "مثل یک پادشاه معامله کنید.",
     "demo.sampleData": "داده‌های نمونه",
-    "demo.exit": "خروج از دمو"
+    "demo.exit": "خروج از دمو",
+    "welcome.title": "آپشن‌های فارکس، به سادگی."
   },
   "es": {
     "unlock.title": "Kalks está bloqueado",
@@ -202,7 +207,8 @@
     "dashboard.traderText": "Cotizaciones y gráficos en tiempo real de {count} instrumentos de forex, metales, índices, energías, criptomonedas y acciones. Integrado en esta app.",
     "dashboard.heroTitle": "Opera como un soberano.",
     "demo.sampleData": "Datos de muestra",
-    "demo.exit": "Salir de la demo"
+    "demo.exit": "Salir de la demo",
+    "welcome.title": "Opciones sobre forex, hechas simples."
   },
   "pt": {
     "unlock.title": "O Kalks está bloqueado",
@@ -236,7 +242,8 @@
     "dashboard.traderText": "Cotações e gráficos em tempo real para {count} instrumentos de forex, metais, índices, energia, cripto e ações. Integrado neste app.",
     "dashboard.heroTitle": "Negocie como um soberano.",
     "demo.sampleData": "Dados de exemplo",
-    "demo.exit": "Sair da demo"
+    "demo.exit": "Sair da demo",
+    "welcome.title": "Opções sobre forex, de forma simples."
   },
   "fr": {
     "unlock.title": "Kalks est verrouillé",
@@ -270,7 +277,8 @@
     "dashboard.traderText": "Cotations et graphiques en temps réel pour {count} instruments : forex, métaux, indices, énergies, crypto et actions. Intégré à cette application.",
     "dashboard.heroTitle": "Tradez en souverain.",
     "demo.sampleData": "Données d'exemple",
-    "demo.exit": "Quitter la démo"
+    "demo.exit": "Quitter la démo",
+    "welcome.title": "Les options sur le forex, en toute simplicité."
   },
   "de": {
     "unlock.title": "Kalks ist gesperrt",
@@ -304,7 +312,8 @@
     "dashboard.traderText": "Echtzeitkurse und Charts für {count} Instrumente aus Forex, Metallen, Indizes, Energie, Krypto und Aktien. Direkt in dieser App.",
     "dashboard.heroTitle": "Handeln wie ein Souverän.",
     "demo.sampleData": "Beispieldaten",
-    "demo.exit": "Demo beenden"
+    "demo.exit": "Demo beenden",
+    "welcome.title": "Optionen auf Forex, ganz einfach."
   },
   "it": {
     "unlock.title": "Kalks è bloccato",
@@ -338,7 +347,8 @@
     "dashboard.traderText": "Quotazioni e grafici in tempo reale per {count} strumenti tra forex, metalli, indici, energie, cripto e azioni. Integrato in questa app.",
     "dashboard.heroTitle": "Fai trading da sovrano.",
     "demo.sampleData": "Dati di esempio",
-    "demo.exit": "Esci dalla demo"
+    "demo.exit": "Esci dalla demo",
+    "welcome.title": "Opzioni sul forex, in tutta semplicità."
   },
   "ru": {
     "unlock.title": "Kalks заблокирован",
@@ -372,7 +382,8 @@
     "dashboard.traderText": "Котировки и графики в реальном времени по {count} инструментам: форекс, металлы, индексы, энергоносители, криптовалюты и акции. Встроено в это приложение.",
     "dashboard.heroTitle": "Торгуйте по-королевски.",
     "demo.sampleData": "Пример данных",
-    "demo.exit": "Выйти из демо"
+    "demo.exit": "Выйти из демо",
+    "welcome.title": "Опционы на форекс — это просто."
   },
   "tr": {
     "unlock.title": "Kalks kilitli",
@@ -406,7 +417,8 @@
     "dashboard.traderText": "Forex, metaller, endeksler, enerji, kripto ve hisse senetlerinde {count} enstrüman için gerçek zamanlı kotasyonlar ve grafikler. Bu uygulamada yerleşik.",
     "dashboard.heroTitle": "Bir hükümdar gibi işlem yapın.",
     "demo.sampleData": "Örnek veriler",
-    "demo.exit": "Demodan çık"
+    "demo.exit": "Demodan çık",
+    "welcome.title": "Forex opsiyonları, basitleştirildi."
   },
   "id": {
     "unlock.title": "Kalks terkunci",
@@ -440,7 +452,8 @@
     "dashboard.traderText": "Kuotasi dan grafik real-time untuk {count} instrumen di forex, logam, indeks, energi, kripto, dan saham. Langsung di aplikasi ini.",
     "dashboard.heroTitle": "Trading layaknya penguasa.",
     "demo.sampleData": "Data contoh",
-    "demo.exit": "Keluar dari demo"
+    "demo.exit": "Keluar dari demo",
+    "welcome.title": "Opsi forex, dibuat sederhana."
   },
   "ms": {
     "unlock.title": "Kalks dikunci",
@@ -474,7 +487,8 @@
     "dashboard.traderText": "Sebut harga dan carta masa nyata untuk {count} instrumen merentasi forex, logam, indeks, tenaga, kripto dan saham. Terbina dalam aplikasi ini.",
     "dashboard.heroTitle": "Berdagang bak seorang raja.",
     "demo.sampleData": "Data contoh",
-    "demo.exit": "Keluar daripada demo"
+    "demo.exit": "Keluar daripada demo",
+    "welcome.title": "Opsyen forex, dipermudah."
   },
   "vi": {
     "unlock.title": "Kalks đang bị khóa",
@@ -508,7 +522,8 @@
     "dashboard.traderText": "Báo giá và biểu đồ thời gian thực cho {count} công cụ gồm forex, kim loại, chỉ số, năng lượng, tiền mã hóa và cổ phiếu. Tích hợp sẵn trong ứng dụng này.",
     "dashboard.heroTitle": "Giao dịch như một bậc đế vương.",
     "demo.sampleData": "Dữ liệu mẫu",
-    "demo.exit": "Thoát bản demo"
+    "demo.exit": "Thoát bản demo",
+    "welcome.title": "Quyền chọn ngoại hối, thật đơn giản."
   },
   "th": {
     "unlock.title": "Kalks ถูกล็อกอยู่",
@@ -542,7 +557,8 @@
     "dashboard.traderText": "ราคาและกราฟเรียลไทม์สำหรับ {count} ตราสาร ครอบคลุมฟอเร็กซ์ โลหะ ดัชนี พลังงาน คริปโต และหุ้น ใช้งานได้ในแอปนี้",
     "dashboard.heroTitle": "เทรดอย่างผู้ครองบัลลังก์",
     "demo.sampleData": "ข้อมูลตัวอย่าง",
-    "demo.exit": "ออกจากเดโม"
+    "demo.exit": "ออกจากเดโม",
+    "welcome.title": "ออปชันฟอเร็กซ์ ง่ายกว่าที่เคย"
   },
   "zh": {
     "unlock.title": "Kalks 已锁定",
@@ -576,7 +592,8 @@
     "dashboard.traderText": "涵盖外汇、贵金属、指数、能源、加密货币和股票的 {count} 个交易品种的实时报价和图表。内置于本应用。",
     "dashboard.heroTitle": "如王者般交易。",
     "demo.sampleData": "示例数据",
-    "demo.exit": "退出演示"
+    "demo.exit": "退出演示",
+    "welcome.title": "外汇期权，化繁为简。"
   },
   "ja": {
     "unlock.title": "Kalks はロックされています",
@@ -610,7 +627,8 @@
     "dashboard.traderText": "FX、貴金属、株価指数、エネルギー、暗号資産、株式の{count}銘柄のリアルタイムレートとチャート。このアプリに搭載されています。",
     "dashboard.heroTitle": "王者のようにトレードを。",
     "demo.sampleData": "サンプルデータ",
-    "demo.exit": "デモを終了"
+    "demo.exit": "デモを終了",
+    "welcome.title": "FXオプションを、もっとシンプルに。"
   },
   "ko": {
     "unlock.title": "Kalks가 잠겨 있습니다",
@@ -644,7 +662,8 @@
     "dashboard.traderText": "외환, 금속, 지수, 에너지, 암호화폐, 주식 등 {count}개 종목의 실시간 시세와 차트를 제공합니다. 이 앱에 바로 내장되어 있습니다.",
     "dashboard.heroTitle": "군주처럼 트레이딩하세요.",
     "demo.sampleData": "샘플 데이터",
-    "demo.exit": "데모 종료"
+    "demo.exit": "데모 종료",
+    "welcome.title": "외환 옵션, 더 간단하게."
   },
   "bn": {
     "unlock.title": "Kalks লক করা আছে",
@@ -678,7 +697,8 @@
     "dashboard.traderText": "ফরেক্স, মেটাল, সূচক, এনার্জি, ক্রিপ্টো ও স্টক মিলিয়ে {count}টি ইনস্ট্রুমেন্টের রিয়েল-টাইম কোট ও চার্ট। এই অ্যাপেই রয়েছে।",
     "dashboard.heroTitle": "সম্রাটের মতো ট্রেড করুন।",
     "demo.sampleData": "নমুনা ডেটা",
-    "demo.exit": "ডেমো থেকে বের হন"
+    "demo.exit": "ডেমো থেকে বের হন",
+    "welcome.title": "ফরেক্সে অপশন, সহজ করে।"
   },
   "ta": {
     "unlock.title": "Kalks பூட்டப்பட்டுள்ளது",
@@ -712,7 +732,8 @@
     "dashboard.traderText": "ஃபாரெக்ஸ், உலோகங்கள், குறியீடுகள், எரிசக்தி, கிரிப்டோ மற்றும் பங்குகளில் {count} கருவிகளுக்கான நிகழ்நேர விலைகள் மற்றும் சார்ட்கள். இந்த ஆப்பிலேயே உள்ளது.",
     "dashboard.heroTitle": "ஒரு அரசரைப் போல வர்த்தகம் செய்யுங்கள்.",
     "demo.sampleData": "மாதிரி தரவு",
-    "demo.exit": "டெமோவிலிருந்து வெளியேறு"
+    "demo.exit": "டெமோவிலிருந்து வெளியேறு",
+    "welcome.title": "ஃபாரெக்ஸ் ஆப்ஷன்கள், எளிமையாக."
   },
   "sw": {
     "unlock.title": "Kalks imefungwa",
@@ -746,6 +767,7 @@
     "dashboard.traderText": "Bei na chati za wakati halisi kwa vyombo {count} katika forex, metali, fahirisi, nishati, crypto na hisa. Imo ndani ya programu hii.",
     "dashboard.heroTitle": "Fanya biashara kama mfalme.",
     "demo.sampleData": "Data ya mfano",
-    "demo.exit": "Toka kwenye demo"
+    "demo.exit": "Toka kwenye demo",
+    "welcome.title": "Chaguo za forex, kwa urahisi."
   }
 }

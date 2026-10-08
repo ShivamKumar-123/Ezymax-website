@@ -22,7 +22,7 @@ void main() {
 
   testWidgets('Try the demo opens the Dashboard as the sample client, on sample data, in the app', (tester) async {
     final c = await pumpApp(tester, sampleTransport: false);
-    expect(find.text('Welcome back'), findsOneWidget);
+    expect(find.text('Options on forex, made simple.'), findsOneWidget);
     // signed out: the live transport (Dio's own adapter)
     expect(c.read(demoModeProvider), isFalse);
     expect(c.read(httpAdapterProvider), isNull);

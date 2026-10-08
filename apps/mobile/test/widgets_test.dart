@@ -12,8 +12,17 @@ import 'helpers/test_app.dart';
 
 void main() {
   group('login', () {
-    testWidgets('signs in with the email code, then opens the Client Area', (tester) async {
+    // the welcome page's "Log in" pill opens the sign-in form as a sheet
+    Future<void> openSignIn(WidgetTester tester) async {
+      await tester.tap(find.text('Log in'));
+      await settle(tester, frames: 6);
+    }
+
+    testWidgets('signs in with the email code from the sign-in sheet, then opens the Client Area', (tester) async {
       final c = await pumpApp(tester);
+      expect(find.text('Options on forex, made simple.'), findsOneWidget);
+      expect(find.byType(TextField), findsNothing);
+      await openSignIn(tester);
       expect(find.text('Welcome back'), findsOneWidget);
       expect(find.text('Email or viewer ID'), findsOneWidget);
       expect(find.text('Forgot password?'), findsOneWidget);
@@ -33,6 +42,7 @@ void main() {
 
     testWidgets('a wrong password shows the error and clears the password', (tester) async {
       await pumpApp(tester);
+      await openSignIn(tester);
       await tester.enterText(find.byType(TextField).at(0), 'wrong@example.com');
       await tester.enterText(find.byType(TextField).at(1), 'nope');
       await tester.tap(find.text('Sign in'));
@@ -46,7 +56,7 @@ void main() {
       testWidgets('golden: login $name', (tester) async {
         await pumpApp(tester, theme: theme, locale: locale);
         if (locale == 'ar') {
-          expect(Directionality.of(tester.element(find.byType(KTextField).first)), TextDirection.rtl);
+          expect(Directionality.of(tester.element(find.byKey(const ValueKey('welcome-title')))), TextDirection.rtl);
         }
         if (locale != 'ar' || hasArabicFont) await expectLater(find.byType(KalksApp), matchesGoldenFile('goldens/login_$name.png'));
         await unmount(tester);

@@ -1,18 +1,29 @@
-// Sign in (web apps/crm/app/(auth)/login/page.tsx): email or viewer ID + password, then the 6-digit email code when
-// the device is new or the email isn't verified yet. Same texts, same order, same errors.
+// The signed-out welcome page (/login): the founder's picture full-bleed under the status bar, the headline over the
+// figure's head, and at the bottom the legal line, the two black pills (Log in opens the sign-in sheet, Open account
+// goes to sign-up) and "Try the demo". A white-label broker gets the same page on its own colour with its name as
+// the headline, without the picture or the demo. The route keeps its `next` (the router sends a fresh session there).
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../../core/api/api_providers.dart';
 import '../../core/auth/auth_api.dart';
 import '../../core/auth/auth_controller.dart';
-import '../../core/notifications/notifications.dart';
+import '../../core/config/app_config.dart';
 import '../../i18n/i18n.dart';
 import '../../ui/ui.dart';
-import 'auth_widgets.dart';
+import '../common/pickers.dart';
+import 'sign_in_sheet.dart';
+
+/// The picture's own amber (assets/photos/welcome.jpg: brighter in the middle, a little deeper at the sides); the page
+/// is this colour above the picture, which starts under the headline.
+const Color _amber = Color(0xFFEF9B00);
+const LinearGradient _amberFill = LinearGradient(colors: [Color(0xFFEB9800), Color(0xFFF29E00), Color(0xFFEB9800)]);
+
+/// The headline, the pills and the demo link in the picture's near-black.
+const Color _inkOnPhoto = Color(0xFF0C0C0F);
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -22,235 +33,196 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _email = TextEditingController();
-  final _password = TextEditingController();
-  bool _show = false;
-  bool _loading = false;
-  ApiException? _err;
-  OtpChallenge? _otp;
-  int _otpKey = 0;
-  String _code = '';
+  bool _sheetOpen = false;
 
   @override
-  void dispose() {
-    _email.dispose();
-    _password.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    // a dead session lands here: open the form at once, with its "Signed out" notice
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = ref.read(authProvider);
+      if (mounted && auth is AuthSignedOut && auth.reason == 'expired') _openSignIn();
+    });
   }
 
-  AuthApi get _auth => ref.read(authApiProvider);
-
-  Future<void> _signIn() async {
-    if (_loading) return;
-    FocusScope.of(context).unfocus();
-    setState(() {
-      _err = null;
-      _loading = true;
-    });
-    try {
-      final r = await _auth.login(_email.text, _password.text);
-      if (!mounted) return;
-      if (r is SignedIn) return await _done(r);
-      TextInput.finishAutofillContext();
-      setState(() {
-        _otp = (r as CodeRequired).challenge;
-        _code = '';
-        _otpKey++;
-        _loading = false;
-      });
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _err = e;
-        _loading = false;
-        if (e.code == 'invalid_credentials') _password.clear();
-      });
+  Future<void> _openSignIn() async {
+    if (_sheetOpen) return;
+    _sheetOpen = true;
+    final r = await showSignInSheet(context);
+    _sheetOpen = false;
+    if (!mounted) return;
+    if (r is SignedIn) {
+      KHaptics.success();
+      await ref.read(authProvider.notifier).completeSignIn(r);
+      // the router takes the client to the Client Area (or the page they came from, ?next=)
+    } else if (r == SignInExit.forgot) {
+      unawaited(context.push('/forgot'));
+    } else if (r == SignInExit.register) {
+      context.go('/register');
     }
   }
 
-  Future<void> _verify([String? value]) async {
-    final otp = _otp;
-    final code = value ?? _code;
-    if (otp == null || code.length != 6 || _loading) return;
-    setState(() {
-      _err = null;
-      _loading = true;
-    });
-    try {
-      final r = await _auth.verifyEmail(otp.challenge, code);
-      if (!mounted) return;
-      if (r is SignedIn) return await _done(r);
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _err = e;
-        _loading = false;
-        _code = '';
-        _otpKey++;
-      });
-    }
-  }
-
-  Future<void> _done(SignedIn r) async {
+  void _tryDemo() {
     KHaptics.success();
-    await ref.read(authProvider.notifier).completeSignIn(r);
-    // the router takes the client to the Client Area (or the page they came from)
-  }
-
-  Future<int?> _resend() async {
-    final otp = _otp;
-    if (otp == null) return null;
-    try {
-      final next = await _auth.resend(otp.challenge);
-      if (!mounted) return null;
-      setState(() {
-        _err = null;
-        _otp = next;
-        _otpKey++;
-      });
-      ref
-          .read(notificationsProvider.notifier)
-          .toast(
-            NotificationKind.success,
-            context.t('auth.toast.newCodeSent'),
-            description: context.t('auth.toast.checkEmail', {'email': next.emailMasked}),
-            keep: false,
-          );
-      return null;
-    } on ApiException catch (e) {
-      if (mounted) setState(() => _err = e);
-      return e.retryAfter;
-    }
+    unawaited(ref.read(authProvider.notifier).enterDemo());
+    // the router takes the demo client to the Dashboard
   }
 
   @override
   Widget build(BuildContext context) {
     final t = context.t;
     final k = context.k;
-    final rtl = Directionality.of(context) == TextDirection.rtl;
-    final expired = ref.watch(authProvider) is AuthSignedOut && (ref.watch(authProvider) as AuthSignedOut).reason == 'expired';
-    final fieldErr = _err?.field == null ? null : localizeError(_err!, t);
-    final formErr = _err != null && _err!.field == null ? localizeError(_err!, t) : null;
+    final cfg = ref.watch(configProvider);
+    final kalks = cfg.tenantDefault;
+    final mq = MediaQuery.of(context);
+    final h = mq.size.height;
+    // the broker's colour may be dark: then the texts and pills swap to white
+    final bg = kalks ? _amber : k.ember;
+    final onDark = !kalks && ThemeData.estimateBrightnessForColor(bg) == Brightness.dark;
+    final ink = onDark ? Colors.white : _inkOnPhoto;
+    final inkFg = onDark ? _inkOnPhoto : Colors.white;
+    final demo = kalks && t.has('auth.demo.tryCta');
 
-    if (_otp != null) {
-      final otp = _otp!;
-      return AuthScaffold(
-        child: Column(
-          key: const ValueKey('otp'),
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Scaffold(
+      backgroundColor: bg,
+      resizeToAvoidBottomInset: false,
+      body: AnnotatedRegion<SystemUiOverlayStyle>(
+        // dark status-bar icons over the bright picture
+        value: KTheme.overlay(onDark ? Brightness.dark : Brightness.light),
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            AuthTitle(
-              icon: LucideIcons.shieldCheck,
-              title: otp.purpose == 'verify_email' ? t('auth.login.verifyEmailTitle') : t('auth.login.verifyDeviceTitle'),
-              subtitle: KRichText(
-                '${otp.purpose == 'verify_email' ? t('auth.login.emailNotVerified') : t('auth.login.newDevice')} ${t('auth.login.codeSent', {'email': otp.emailMasked})}',
-                tags: const {'b': KTag()},
-              ),
-            ),
-            const SizedBox(height: 28),
-            if (_err != null) ...[KFormError(localizeError(_err!, t)), const SizedBox(height: 14)],
-            KOtpField(
-              key: ValueKey(_otpKey),
-              onChanged: (v) => setState(() => _code = v),
-              onCompleted: _verify,
-              semanticLabel: t('auth.otp.digit', {'n': 1, 'total': 6}),
-            ),
-            KDevCodeHint(otp.devCode),
-            const SizedBox(height: 22),
-            KButton(
-              label: _loading ? t('auth.otp.verifying') : t('auth.login.verifyContinue'),
-              size: KButtonSize.lg,
-              expand: true,
-              loading: _loading,
-              onPressed: _code.length == 6 ? _verify : null,
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                KTextButton(
-                  label: t('auth.login.back'),
-                  color: k.fg3,
-                  onPressed: () => setState(() {
-                    _err = null;
-                    _otp = null;
-                  }),
+            if (kalks) ...[
+              const DecoratedBox(decoration: BoxDecoration(gradient: _amberFill)),
+              // the picture starts under the headline (its figure's head is right at its top), its top edge fading
+              // into the same amber
+              Positioned(
+                left: 0,
+                right: 0,
+                top: h * 0.34,
+                bottom: 0,
+                child: ShaderMask(
+                  shaderCallback: (r) => LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: const [Color(0x00FFFFFF), Color(0xFFFFFFFF)],
+                    stops: [0, (36 / r.height).clamp(0.0, 1.0)],
+                  ).createShader(r),
+                  blendMode: BlendMode.dstIn,
+                  child: Image.asset('assets/photos/welcome.jpg', fit: BoxFit.cover, alignment: Alignment.topCenter, filterQuality: FilterQuality.high),
                 ),
-                const Spacer(),
-                Text(t('auth.otp.didntGetIt'), style: context.text.footnote.copyWith(color: k.fg3)),
-                KResendLink(key: ValueKey(otp.challenge), seconds: otp.resendIn, onResend: _resend),
-              ],
-            ),
-          ],
-        ),
-      );
-    }
-
-    return AuthScaffold(
-      child: AutofillGroup(
-        child: Column(
-          key: const ValueKey('creds'),
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            AuthTitle(title: t('auth.login.title'), subtitle: Text(t('auth.login.subtitle'))),
-            const SizedBox(height: 28),
-            if (expired && _err == null) ...[KFormError('${t('app.session.expiredTitle')}. ${t('app.session.expiredText')}'), const SizedBox(height: 14)],
-            if (formErr != null) ...[KFormError(formErr), const SizedBox(height: 14)],
-            KTextField(
-              label: t('auth.field.emailOrViewer'),
-              placeholder: t('auth.placeholder.email'),
-              controller: _email,
-              leading: LucideIcons.mail,
-              keyboardType: TextInputType.emailAddress,
-              textInputAction: TextInputAction.next,
-              autofillHints: const [AutofillHints.username, AutofillHints.email],
-              ltr: true,
-              error: _err?.field == 'email' ? fieldErr : null,
-            ),
-            const SizedBox(height: 16),
-            KTextField(
-              label: t('auth.field.password'),
-              hint: KTextButton(label: t('auth.login.forgot'), onPressed: () => context.push('/forgot')),
-              controller: _password,
-              leading: LucideIcons.lock,
-              obscure: !_show,
-              textInputAction: TextInputAction.done,
-              autofillHints: const [AutofillHints.password],
-              onSubmitted: (_) => _signIn(),
-              error: _err?.field == 'password' ? fieldErr : null,
-              trailing: KIconButton(
-                icon: _show ? LucideIcons.eyeOff : LucideIcons.eye,
-                size: 36,
-                semanticLabel: t('auth.togglePassword'),
-                onPressed: () => setState(() => _show = !_show),
               ),
-            ),
-            const SizedBox(height: 22),
-            KButton(
-              label: _loading ? t('auth.login.signingIn') : t('auth.login.signIn'),
-              trailingIcon: _loading ? null : (rtl ? LucideIcons.arrowLeft : LucideIcons.arrowRight),
-              size: KButtonSize.lg,
-              expand: true,
-              loading: _loading,
-              onPressed: _signIn,
-            ),
-            const SizedBox(height: 20),
-            Center(
-              child: KRichText(
-                t('auth.login.newToKalks'),
-                textAlign: TextAlign.center,
-                style: context.text.callout.copyWith(color: k.fg3),
-                tags: {
-                  'link': KTag.link(
-                    () => context.push('/register'),
-                    style: TextStyle(color: k.fg, fontWeight: FontWeight.w600),
+            ],
+            // a soft dark gradient behind the legal line and the buttons only
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: h * 0.42,
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Colors.black.withValues(alpha: 0), Colors.black.withValues(alpha: 0.22), Colors.black.withValues(alpha: 0.6)],
+                      stops: const [0, 0.45, 1],
+                    ),
                   ),
-                },
+                ),
               ),
             ),
-            const TryDemoCard(),
+            Positioned(
+              left: 24,
+              right: 24,
+              top: h * 0.26,
+              child: Text(
+                kalks ? t('app.welcome.title') : cfg.tenantName,
+                key: const ValueKey('welcome-title'),
+                textAlign: TextAlign.center,
+                style: context.text.largeTitle.copyWith(fontSize: 42, fontWeight: FontWeight.w800, height: 1.0, letterSpacing: -1, color: ink),
+              ),
+            ),
+            PositionedDirectional(top: mq.padding.top + 8, end: 12, child: const LanguageButton()),
+            Positioned(
+              left: 24,
+              right: 24,
+              bottom: mq.padding.bottom + 16,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  KRichText(
+                    t('auth.register.terms'),
+                    textAlign: TextAlign.center,
+                    style: context.text.footnote.copyWith(color: Colors.white.withValues(alpha: 0.85), height: 1.4),
+                    tags: const {
+                      'agreement': KTag(
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                      ),
+                      'risk': KTag(
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                      ),
+                      'privacy': KTag(
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                      ),
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  _Pill(label: t('trader.guest.logIn'), bg: ink, fg: inkFg, onTap: _openSignIn),
+                  const SizedBox(height: 12),
+                  _Pill(label: t('trader.guest.openAccount'), bg: ink, fg: inkFg, onTap: () => context.go('/register')),
+                  if (demo) ...[
+                    const SizedBox(height: 6),
+                    KPressable(
+                      onTap: _tryDemo,
+                      semanticLabel: t('auth.demo.tryCta'),
+                      child: SizedBox(
+                        height: 44,
+                        child: Center(
+                          child: Text(
+                            t('auth.demo.tryCta'),
+                            style: context.text.headline.copyWith(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
   }
+}
+
+/// The welcome page's 52 pt pill (taller than the app's compact buttons: the page has nothing else to press).
+class _Pill extends StatelessWidget {
+  const _Pill({required this.label, required this.bg, required this.fg, required this.onTap});
+  final String label;
+  final Color bg, fg;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => KPressable(
+    onTap: onTap,
+    semanticLabel: label,
+    child: Container(
+      height: 52,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: fg.withValues(alpha: 0.12)),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: context.text.headline.copyWith(fontSize: 16, color: fg),
+      ),
+    ),
+  );
 }
