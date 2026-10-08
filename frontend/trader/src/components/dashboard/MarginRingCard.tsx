@@ -31,17 +31,19 @@ export function MarginRingCard({
   freeMargin: number;
   fmt: (n: number) => string;
 }) {
-  const pct = marginLevel === null ? 1 : Math.min(marginLevel / FULL_SCALE, 1);
+  // No open positions means no ratio exists, so the arc is empty rather
+  // than full — a complete ring would read as a healthy maximum.
+  const pct = marginLevel === null ? 0 : Math.min(marginLevel / FULL_SCALE, 1);
   const tone =
     marginLevel === null
-      ? '#FF6A00'
+      ? 'var(--border-secondary)'
       : marginLevel <= STOP_OUT
         ? '#ef4444'
         : marginLevel <= MARGIN_CALL
           ? '#f59e0b'
           : '#22c55e';
 
-  const R = 54;
+  const R = 48;
   const C = 2 * Math.PI * R;
 
   return (
@@ -55,7 +57,7 @@ export function MarginRingCard({
 
       <div className="flex flex-1 items-center justify-center py-3">
         <div className="relative">
-          <svg width="140" height="140" viewBox="0 0 140 140">
+          <svg width="124" height="124" viewBox="0 0 140 140">
             <circle
               cx="70"
               cy="70"
@@ -82,8 +84,8 @@ export function MarginRingCard({
             <span className="text-2xl font-bold tabular-nums text-text-primary">
               {marginLevel === null ? '—' : `${Math.round(marginLevel)}%`}
             </span>
-            <span className="mt-0.5 text-[10px] text-text-tertiary">
-              {marginLevel === null ? 'no open positions' : 'of used margin'}
+            <span className="mt-0.5 max-w-[96px] text-center text-[10px] leading-tight text-text-tertiary">
+              {marginLevel === null ? 'no positions open' : 'of used margin'}
             </span>
           </div>
         </div>

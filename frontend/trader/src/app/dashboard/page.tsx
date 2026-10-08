@@ -152,10 +152,8 @@ function StatTile({ icon: Icon, label, value, negative }: {
       className="lg-surface-raised p-3.5 min-w-0 transition-colors hover:bg-white/[0.09]"
       
     >
-      <div className="flex items-center gap-2 mb-2 min-w-0">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(255,106,0,0.10)' }}>
-          <Icon className="w-4 h-4 text-[#FF6A00]" />
-        </div>
+      <div className="flex items-center gap-1.5 mb-1.5 min-w-0">
+        <Icon className="w-3.5 h-3.5 shrink-0 text-[#FF6A00]" />
         <span className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider truncate">{label}</span>
       </div>
       {/* A balance like $45,815.98 is ~10 characters; at a fixed text-2xl it ran
@@ -163,7 +161,7 @@ function StatTile({ icon: Icon, label, value, negative }: {
           figure down on small screens, and keep truncate as a backstop so an
           unusually long value ellipsises instead of overflowing. */}
       <p
-        className="text-lg sm:text-xl md:text-2xl font-bold tabular-nums leading-none truncate"
+        className="text-lg sm:text-xl font-bold tabular-nums leading-none truncate"
         title={value}
         style={{ color: negative ? '#f87171' : 'var(--text-primary)' }}
       >
@@ -764,7 +762,7 @@ function PortfolioHero({
       </div>
 
       {/* Per-account stat tiles */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 px-4 sm:px-5 pb-5 pt-3">
+      <div className="grid grid-cols-2 gap-2.5 px-4 sm:px-5 pb-5 pt-3">
         <StatTile icon={WalletIcon} label="Balance" value={fmtUsd(a?.balance ?? 0)} />
         <StatTile icon={BarChart3} label="Equity" value={fmtUsd(a?.equity ?? 0)} />
         <StatTile icon={Coins} label="Free margin" value={fmtUsd(a?.free_margin ?? 0)} negative={(a?.free_margin ?? 0) < 0} />
