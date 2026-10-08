@@ -8,7 +8,7 @@ import { LOGIN_RE, clientAccount, csrf, engine, error, readSessions, reply, soft
 
 export const dynamic = "force-dynamic";
 
-const SERVERS: Record<string, "live" | "demo"> = { "Kalks-Live": "live", "Kalks-Demo": "demo" };
+const SERVERS: Record<string, "live" | "demo"> = { "Ezymex-Live": "live", "Ezymex-Demo": "demo" };
 
 export async function POST(req: NextRequest) {
   return soft(req, await login(req));
@@ -32,7 +32,7 @@ async function login(req: NextRequest) {
   const type = r.data.account?.type;
   if (server && type && SERVERS[server] !== type) {
     await engine("/v1/terminal/logout", { method: "POST", bearer: r.data.token, req });
-    const right = type === "demo" ? "Kalks-Demo" : "Kalks-Live";
+    const right = type === "demo" ? "Ezymex-Demo" : "Ezymex-Live";
     return error(409, "wrong_server", `Account ${login} is on ${right}, not ${server}.`);
   }
 

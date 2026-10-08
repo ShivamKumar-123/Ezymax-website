@@ -11,7 +11,7 @@ takeaways:
   - "Most retail CFD accounts lose money; the risk comes mainly from oversized positions and behaviour, not from the product being mysterious."
   - "Practising on a demo account and keeping position sizes small relative to your balance are the most effective early protections."
 practice:
-  label: "On a demo account with 1,000 USD, open 0.01 lot of EURUSD and watch how the margin level in Kalks Trader changes as the price moves."
+  label: "On a demo account with 1,000 USD, open 0.01 lot of EURUSD and watch how the margin level in Ezymex Trader changes as the price moves."
   symbol: "EURUSD"
 quiz:
   - question: "A 1,000 USD account on 1:500 leverage buys 1 lot of EURUSD at 1.0851. Ignoring the spread, how much will the account lose if EURUSD falls 50 pips?"
@@ -30,7 +30,7 @@ quiz:
       - "Because stop losses only work on demo accounts"
     answer: 0
     explanation: "A stop becomes a market order once triggered and fills at the next available price. After a weekend gap or during fast news, that price can be well beyond your stop level."
-  - question: "What happens at stop-out on a typical Kalks account group?"
+  - question: "What happens at stop-out on a typical Ezymex account group?"
     options:
       - "All positions are closed at a profit"
       - "The broker adds funds to your account"
@@ -104,7 +104,7 @@ Now compare the same trader with **0.10 lot**. Value per pip is 1 USD, margin is
 
 ## Margin call and stop-out
 
-Kalks tracks your **margin level**, equity divided by used margin, as a percentage. On typical account groups:
+Ezymex tracks your **margin level**, equity divided by used margin, as a percentage. On typical account groups:
 
 - At **100%** you reach a **margin call**: you cannot open new positions, and it is a warning that your buffer is gone.
 - At **50%** you reach **stop-out**: the system closes your largest losing position first, and repeats until the margin level recovers.
@@ -127,7 +127,7 @@ Stop-out is a last line of defence for the account, not a risk-management plan. 
 
 ## In practice: sensible habits from day one
 
-1. Start on a free demo account in Kalks Trader and stay there until you can follow a plan consistently.
+1. Start on a free demo account in Ezymex Trader and stay there until you can follow a plan consistently.
 2. Size positions so that a normal daily move against you is a small percentage of your balance.
 3. Use a stop loss on every trade, and accept that it is a limit in normal conditions, not a guarantee.
 4. Check the economic calendar and be aware of weekends before holding positions.

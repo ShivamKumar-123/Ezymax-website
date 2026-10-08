@@ -7,7 +7,7 @@
 //!
 //! Hierarchy: Platform Owner (all tenants, `owner.*`) → Tenant Super Admin (everything in the tenant) → staff
 //! with preset or custom roles. Downstream services (trading, wallet, IB, prop, academy, algo) still check a
-//! role name from `x-kalks-staff-role`; the gateway maps each role to the smallest built-in role that covers its
+//! role name from `x-ezymex-staff-role`; the gateway maps each role to the smallest built-in role that covers its
 //! service permissions (`service_role`), and the BFF enforces the exact permission first.
 
 use std::collections::BTreeSet;
@@ -276,7 +276,7 @@ fn service_relevant(k: &str) -> bool {
 /// Built-in roles the downstream services don't know by name: they are always mapped to a covering legacy role.
 const NOT_DOWNSTREAM: &[&str] = &["sales", "options_risk"];
 
-/// Built-in role sent to downstream services as `x-kalks-staff-role`: the least-privileged legacy role whose
+/// Built-in role sent to downstream services as `x-ezymex-staff-role`: the least-privileged legacy role whose
 /// service permissions cover this role's; `admin` when none does. The BFF has already enforced the exact key.
 pub fn service_role(key: &str, perms: &[String]) -> &'static str {
     if let Some(b) = builtin(key)
@@ -339,9 +339,9 @@ pub async fn seed_tenant_roles(pool: &PgPool, tenant_id: i64) -> anyhow::Result<
     Ok(())
 }
 
-/// The Platform Owner's tenant (the first one, `kalks`).
+/// The Platform Owner's tenant (the first one, `ezymex`).
 pub async fn owner_tenant_id(pool: &PgPool) -> anyhow::Result<i64> {
-    Ok(sqlx::query_scalar("SELECT COALESCE((SELECT id FROM tenants WHERE slug = 'kalks'), (SELECT min(id) FROM tenants))").fetch_one(pool).await?)
+    Ok(sqlx::query_scalar("SELECT COALESCE((SELECT id FROM tenants WHERE slug = 'ezymex'), (SELECT min(id) FROM tenants))").fetch_one(pool).await?)
 }
 
 /// Role row → (key, name, kind, effective permissions).

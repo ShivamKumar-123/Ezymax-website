@@ -6,8 +6,8 @@
 // surface's pillars and realized vol; a click opens that expiry) and open interest / volume by strike (calls above,
 // puts below, spot and max pain marked). Every chart reads left to right (dir="ltr") in every locale.
 import * as React from "react";
-import { cn } from "@kalks/ui";
-import { useLocale, useT } from "@kalks/i18n/react";
+import { cn } from "@ezymex/ui";
+import { useLocale, useT } from "@ezymex/i18n/react";
 import type { OptionChain, OptionQuote, OptionRight } from "@/lib/options/types";
 import { RightTag } from "./bits";
 import { countdown, expiryLabel, pct, strikeText } from "./format";

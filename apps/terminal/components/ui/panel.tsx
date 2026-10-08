@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { cn } from "@kalks/ui";
+import { cn } from "@ezymex/ui";
 import { CountBadge } from "./kit";
 
 /** Terminal card: frosted material, 14 px radius, 1 px subtle line (docs/TERMINAL-DESIGN.md §2.4 Panels). */

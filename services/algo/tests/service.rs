@@ -1,4 +1,4 @@
-//! Service tests against a throw-away database `kalks_algo_test_<pid>_<n>` per test on the local Postgres (skipped when
+//! Service tests against a throw-away database `ezymex_algo_test_<pid>_<n>` per test on the local Postgres (skipped when
 //! Postgres is unreachable) with mock trading-engine, market-data and wallet servers:
 //! - webhook auth: unknown URL, passphrase, replay (id / timestamp), rate limit, disabled, kill switch, fan-out;
 //! - API key auth: bearer, wrong secret, HMAC + replay, scopes, IP whitelist, revocation, expiry;
@@ -155,7 +155,7 @@ async fn setup() -> Option<(String, AppState, Arc<Mock>)> {
 /// A service on its own throw-away database (one per test: tests run in parallel); `wallet_timeout` makes the
 /// wallet client give up sooner (lost answers).
 async fn setup_with(wallet_timeout: Option<std::time::Duration>) -> Option<(String, AppState, Arc<Mock>)> {
-    let url = format!("postgres://postgres@127.0.0.1:5433/kalks_algo_test_{}_{}", std::process::id(), DB_SEQ.fetch_add(1, std::sync::atomic::Ordering::SeqCst));
+    let url = format!("postgres://postgres@127.0.0.1:5433/ezymex_algo_test_{}_{}", std::process::id(), DB_SEQ.fetch_add(1, std::sync::atomic::Ordering::SeqCst));
     let pool = match tokio::time::timeout(std::time::Duration::from_secs(5), algo::db::connect(&url)).await {
         Ok(Ok(p)) => p,
         _ => {
@@ -204,7 +204,7 @@ struct C {
 
 impl C {
     async fn user(&self, user: i64, method: reqwest::Method, path: &str, body: Option<Value>) -> (u16, Value) {
-        let mut r = self.http.request(method, format!("{}{path}", self.base)).header("x-kalks-internal", "test-internal").header("x-kalks-user-id", user.to_string()).header("x-kalks-user-name", "Test%20User");
+        let mut r = self.http.request(method, format!("{}{path}", self.base)).header("x-ezymex-internal", "test-internal").header("x-ezymex-user-id", user.to_string()).header("x-ezymex-user-name", "Test%20User");
         if let Some(b) = body {
             r = r.json(&b);
         }
@@ -212,7 +212,7 @@ impl C {
         (r.status().as_u16(), r.json().await.unwrap_or(Value::Null))
     }
     async fn staff(&self, method: reqwest::Method, path: &str, body: Value) -> (u16, Value) {
-        let r = self.http.request(method, format!("{}{path}", self.base)).header("x-kalks-internal", "test-internal").header("x-kalks-staff-id", "1").header("x-kalks-staff-role", "super_admin").json(&body).send().await.unwrap();
+        let r = self.http.request(method, format!("{}{path}", self.base)).header("x-ezymex-internal", "test-internal").header("x-ezymex-staff-id", "1").header("x-ezymex-staff-role", "super_admin").json(&body).send().await.unwrap();
         (r.status().as_u16(), r.json().await.unwrap_or(Value::Null))
     }
     async fn raw(&self, method: reqwest::Method, path: &str, headers: &[(&str, String)], body: &str) -> (u16, Value) {
@@ -233,7 +233,7 @@ async fn service_end_to_end() {
     let c = C { base, http: reqwest::Client::new() };
 
     // internal routes need the internal token
-    let (s, _) = c.raw(M::GET, "/v1/strategies", &[("x-kalks-user-id", "1".into())], "").await;
+    let (s, _) = c.raw(M::GET, "/v1/strategies", &[("x-ezymex-user-id", "1".into())], "").await;
     assert_eq!(s, 403);
 
     /* ---------------- webhooks ---------------- */
@@ -312,14 +312,14 @@ async fn service_end_to_end() {
     // HMAC signature, then the same signature again (replay)
     let ts = chrono::Utc::now().timestamp_millis().to_string();
     let sig = algo::security::hmac_hex(secret.as_bytes(), format!("{ts}POST/public/v1/orders{body}").as_bytes());
-    let hh = vec![("x-kalks-key", kid.clone()), ("x-kalks-timestamp", ts.clone()), ("x-kalks-signature", sig.clone()), ("content-type", "application/json".into())];
+    let hh = vec![("x-ezymex-key", kid.clone()), ("x-ezymex-timestamp", ts.clone()), ("x-ezymex-signature", sig.clone()), ("content-type", "application/json".into())];
     let (s, _) = c.raw(M::POST, "/public/v1/orders", &hh, body).await;
     assert_eq!(s, 200);
     let (s, _) = c.raw(M::POST, "/public/v1/orders", &hh, body).await;
     assert_eq!(s, 401);
     let old = (chrono::Utc::now().timestamp_millis() - 120_000).to_string();
     let sig2 = algo::security::hmac_hex(secret.as_bytes(), format!("{old}POST/public/v1/orders{body}").as_bytes());
-    let (s, _) = c.raw(M::POST, "/public/v1/orders", &[("x-kalks-key", kid.clone()), ("x-kalks-timestamp", old), ("x-kalks-signature", sig2)], body).await;
+    let (s, _) = c.raw(M::POST, "/public/v1/orders", &[("x-ezymex-key", kid.clone()), ("x-ezymex-timestamp", old), ("x-ezymex-signature", sig2)], body).await;
     assert_eq!(s, 401, "stale timestamp");
     // read-only key cannot trade; IP whitelist
     let (_, ro) = c.user(1, M::POST, "/v1/keys", Some(json!({"name": "ro", "login": 50000001, "scopes": ["read"], "ipWhitelist": ["10.9.0.0/16"]}))).await;
@@ -393,7 +393,7 @@ async fn service_end_to_end() {
 
     /* ---------------- house accounts ---------------- */
     // roles: a dealer can't provision
-    let r = c.http.post(format!("{}/v1/admin/house", c.base)).header("x-kalks-internal", "test-internal").header("x-kalks-staff-id", "2").header("x-kalks-staff-role", "dealer").json(&json!({"preset": "gold-ema-trend", "note": "x"})).send().await.unwrap();
+    let r = c.http.post(format!("{}/v1/admin/house", c.base)).header("x-ezymex-internal", "test-internal").header("x-ezymex-staff-id", "2").header("x-ezymex-staff-role", "dealer").json(&json!({"preset": "gold-ema-trend", "note": "x"})).send().await.unwrap();
     assert_eq!(r.status().as_u16(), 403);
     let (s, _) = c.staff(M::POST, "/v1/admin/house", json!({"preset": "gold-ema-trend"})).await;
     assert_eq!(s, 422, "a note is required");

@@ -1,14 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveCorporateActions } from "@/components/live/corporate-actions";
 import { motion } from "motion/react";
 import { CalendarDays, CheckCircle2, Coins, Scissors, TrendingDown, TrendingUp } from "lucide-react";
-import { Button, Card, CardHeader, Chip, KpiCard, PageHeader, Reveal, SymbolAvatar, SymbolCell, cn, formatMoney, formatNumber } from "@kalks/ui";
-import { getInstrument } from "@kalks/mock";
-import { ADMIN_NOW } from "@kalks/mock/admin-clients";
-import { CORPORATE_ACTIONS, type CorporateAction } from "@kalks/mock/admin-trading";
+import { Button, Card, CardHeader, Chip, KpiCard, PageHeader, Reveal, SymbolAvatar, SymbolCell, cn, formatMoney, formatNumber } from "@ezymex/ui";
+import { getInstrument } from "@ezymex/mock";
+import { ADMIN_NOW } from "@ezymex/mock/admin-clients";
+import { CORPORATE_ACTIONS, type CorporateAction } from "@ezymex/mock/admin-trading";
 import { ReasonDialog } from "@/components/command/kit";
 
 const DAY = 86_400_000;

@@ -1,5 +1,5 @@
 //! End-to-end flows against PostgreSQL through the real HTTP router, with a mock chain, engine and gateway.
-//! Each test uses a throw-away database `kalks_wallet_test_<random>` on the local server (127.0.0.1:5433,
+//! Each test uses a throw-away database `ezymex_wallet_test_<random>` on the local server (127.0.0.1:5433,
 //! override with WALLET_TEST_DATABASE_URL); tests are skipped with a note when PostgreSQL is not reachable.
 //! After every flow the ledger invariants are checked (Σ postings = 0 per txn, balances = Σ postings).
 
@@ -54,7 +54,7 @@ impl T {
         }
         let mut b = [0u8; 5];
         getrandom::fill(&mut b).unwrap();
-        let name = format!("kalks_wallet_test_{}", b.iter().map(|x| format!("{x:02x}")).collect::<String>());
+        let name = format!("ezymex_wallet_test_{}", b.iter().map(|x| format!("{x:02x}")).collect::<String>());
         let url = admin.clone().database(&name).to_url_lossy().to_string();
         let pool = db::connect(&url).await.expect("create + migrate test db");
         let cfg = Config::for_tests(&url);
@@ -90,9 +90,9 @@ impl T {
             "PUT" => self.http.put(format!("{}{path}", self.base)),
             _ => self.http.post(format!("{}{path}", self.base)),
         };
-        rb = rb.header("x-kalks-internal", "test-internal-token").header("x-forwarded-for", "203.0.113.7");
+        rb = rb.header("x-ezymex-internal", "test-internal-token").header("x-forwarded-for", "203.0.113.7");
         if let Some(role) = staff_role {
-            rb = rb.header("x-kalks-staff-id", "5").header("x-kalks-staff-name", "Finance%20Desk").header("x-kalks-staff-role", role);
+            rb = rb.header("x-ezymex-staff-id", "5").header("x-ezymex-staff-name", "Finance%20Desk").header("x-ezymex-staff-role", role);
         }
         if let Some(b) = body {
             rb = rb.json(&b);
@@ -186,7 +186,7 @@ async fn transfer_contract_is_idempotent_and_balanced() {
         let url = format!("{}/v1/wallets/transfers", t.base);
         hs.push(tokio::spawn(async move {
             http.post(url)
-                .header("x-kalks-internal", "test-internal-token")
+                .header("x-ezymex-internal", "test-internal-token")
                 .json(&json!({"idempotency_key": "race", "user_id": 42, "currency": "USDT", "amount": "5", "direction": "credit", "kind": "refund"}))
                 .send()
                 .await
@@ -542,7 +542,7 @@ async fn mock_support() -> (Arc<MockSupport>, String) {
                 if m.down.load(std::sync::atomic::Ordering::SeqCst) {
                     return (StatusCode::SERVICE_UNAVAILABLE, axum::Json(json!({})));
                 }
-                let tenant = h.get("x-kalks-tenant").and_then(|v| v.to_str().ok()).unwrap_or("").to_string();
+                let tenant = h.get("x-ezymex-tenant").and_then(|v| v.to_str().ok()).unwrap_or("").to_string();
                 m.calls.lock().unwrap().push((tenant, b));
                 (StatusCode::OK, axum::Json(json!({"results": []})))
             }),
@@ -590,7 +590,7 @@ async fn notifications_are_pushed_to_support_once() {
     let calls = m.calls.lock().unwrap().clone();
     assert_eq!(calls.len(), sent);
     let rejected = calls.iter().find(|(_, b)| b["type"] == "wallet.withdrawal_rejected").expect("rejection pushed");
-    assert_eq!(rejected.0, "kalks");
+    assert_eq!(rejected.0, "ezymex");
     assert_eq!(rejected.1["userId"], 7);
     assert_eq!(rejected.1["link"], "/wallet/history");
     assert_eq!(rejected.1["severity"], "warning");
@@ -653,8 +653,8 @@ async fn a_new_broker_gets_its_wallet_rows_on_its_first_request() {
     let call = |slug: &'static str| {
         let (http, base) = (t.http.clone(), t.base.clone());
         async move {
-            let r = http.get(format!("{base}/v1/admin/settings")).header("x-kalks-internal", "test-internal-token").header("x-kalks-tenant", slug)
-                .header("x-kalks-staff-id", "5").header("x-kalks-staff-name", "Owner").header("x-kalks-staff-role", "super_admin").send().await.unwrap();
+            let r = http.get(format!("{base}/v1/admin/settings")).header("x-ezymex-internal", "test-internal-token").header("x-ezymex-tenant", slug)
+                .header("x-ezymex-staff-id", "5").header("x-ezymex-staff-name", "Owner").header("x-ezymex-staff-role", "super_admin").send().await.unwrap();
             let s = r.status().as_u16();
             (s, r.json::<Value>().await.unwrap_or(Value::Null))
         }

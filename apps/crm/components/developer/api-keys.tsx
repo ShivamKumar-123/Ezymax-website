@@ -47,8 +47,8 @@ import {
   formatNumber,
   type Column,
 } from "@/components/kit";
-import { ACCOUNTS } from "@kalks/mock";
-import { API_STATS, ENDPOINT_USAGE, ORDER_SOURCES, apiUsage, type ApiKey, type ApiScope } from "@kalks/mock/developer";
+import { ACCOUNTS } from "@ezymex/mock";
+import { API_STATS, ENDPOINT_USAGE, ORDER_SOURCES, apiUsage, type ApiKey, type ApiScope } from "@ezymex/mock/developer";
 import { CodeBlock, type CodeLang } from "./code-block";
 
 /** Fixed "now" for mock data so SSR and client agree. */
@@ -294,7 +294,7 @@ export function KeysTable({
           pageSize={8}
           search={(k) => `${k.name} ${k.login} ${k.prefix} ${k.ips.join(" ")}`}
           searchPlaceholder="Search keys, logins, IPs…"
-          exportName="kalks-api-keys"
+          exportName="ezymex-api-keys"
           toolbar={
             <Segmented
               size="xs"
@@ -395,7 +395,7 @@ export function CreateKeyDialog({ open, onOpenChange, onCreated }: { open: boole
     toast.success("API key created", { description: `${name} · ${login}` });
   };
 
-  const envText = secret ? `KALKS_API_KEY=${secret.id}\nKALKS_API_SECRET=${secret.secret}\nKALKS_ACCOUNT=${login}\nKALKS_BASE_URL=https://api.kalks.com/v1\n` : "";
+  const envText = secret ? `EZYMEX_API_KEY=${secret.id}\nEZYMEX_API_SECRET=${secret.secret}\nEZYMEX_ACCOUNT=${login}\nEZYMEX_BASE_URL=https://api.ezymex.com/v1\n` : "";
 
   return (
     <Dialog
@@ -416,7 +416,7 @@ export function CreateKeyDialog({ open, onOpenChange, onCreated }: { open: boole
           </>
         ) : (
           <>
-            <Button variant="surface" onClick={() => toast.success(".env downloaded", { description: "kalks-api.env" })}>
+            <Button variant="surface" onClick={() => toast.success(".env downloaded", { description: "ezymex-api.env" })}>
               <Download /> Download .env
             </Button>
             <Button variant="ember" disabled={!ack} onClick={() => onOpenChange(false)}>
@@ -541,14 +541,14 @@ export function CreateKeyDialog({ open, onOpenChange, onCreated }: { open: boole
               <ShieldAlert className="mt-0.5 size-5 shrink-0 text-warn" />
               <div>
                 <div className="text-[14px] font-medium text-warn">You won&apos;t see this again</div>
-                <div className="mt-0.5 text-[12.5px] text-fg-2">Kalks stores only a hash of the secret. If you lose it, rotate the key to issue a new one.</div>
+                <div className="mt-0.5 text-[12.5px] text-fg-2">Ezymex stores only a hash of the secret. If you lose it, rotate the key to issue a new one.</div>
               </div>
             </div>
             <div className="space-y-2">
               <SecretRow label="API key id" value={secret?.id ?? ""} />
               <SecretRow label="Secret" value={secret?.secret ?? ""} strong />
             </div>
-            <CodeBlock lang="bash" title="kalks-api.env" code={envText} showLang={false} />
+            <CodeBlock lang="bash" title="ezymex-api.env" code={envText} showLang={false} />
             <div className="grid grid-cols-3 gap-2 text-center">
               {[
                 ["Account", login],
@@ -834,13 +834,13 @@ export function OrderSourcesCard() {
 const SDK: Record<"python" | "js" | "fix", { label: string; install: string; lang: CodeLang; file: string; code: string; badge: string }> = {
   python: {
     label: "Python",
-    badge: "kalks 2.4.1",
-    install: "pip install kalks",
+    badge: "ezymex 2.4.1",
+    install: "pip install ezymex",
     lang: "python",
     file: "bot.py",
-    code: `from kalks import Client
+    code: `from ezymex import Client
 
-client = Client(key="kk_live_EXAMPLE1", secret=os.environ["KALKS_SECRET"])
+client = Client(key="kk_live_EXAMPLE1", secret=os.environ["EZYMEX_SECRET"])
 
 # Buy 0.5 lot gold with SL/TP — tagged source=api
 order = client.orders.create(
@@ -854,30 +854,30 @@ async for tick in client.stream(["XAUUSD", "EURUSD"]):
   },
   js: {
     label: "JavaScript",
-    badge: "@kalks/sdk 2.4.0",
-    install: "npm install @kalks/sdk",
+    badge: "@ezymex/sdk 2.4.0",
+    install: "npm install @ezymex/sdk",
     lang: "js",
     file: "bot.ts",
-    code: `import { Kalks } from "@kalks/sdk";
+    code: `import { Ezymex } from "@ezymex/sdk";
 
-const kalks = new Kalks({ key: "kk_live_EXAMPLE1", secret: process.env.KALKS_SECRET });
+const ezymex = new Ezymex({ key: "kk_live_EXAMPLE1", secret: process.env.EZYMEX_SECRET });
 
 // Market order on NAS100 — tagged source=api
-const order = await kalks.orders.create({
+const order = await ezymex.orders.create({
   login: "80412337", symbol: "NAS100", side: "sell",
   volume: 1.2, sl: 20168.0, tp: 19980.0,
 });
 
-kalks.stream(["NAS100"], (t) => console.log(t.bid, t.ask));`,
+ezymex.stream(["NAS100"], (t) => console.log(t.bid, t.ask));`,
   },
   fix: {
     label: "FIX 4.4",
-    badge: "fix.kalks.com:9880",
-    install: "openssl s_client -connect fix.kalks.com:9880",
+    badge: "fix.ezymex.com:9880",
+    install: "openssl s_client -connect fix.ezymex.com:9880",
     lang: "fix",
     file: "logon.fix",
-    code: `8=FIX.4.4|9=112|35=A|49=KLK_80412337|56=KALKS|34=1|52=20260924-14:58:12.184|98=0|108=30|141=Y|553=kk_live_EXAMPLE1|554=••••••|10=087|
-8=FIX.4.4|9=148|35=D|49=KLK_80412337|56=KALKS|34=2|11=gold-bo-0924-01|55=XAUUSD|54=1|38=50|40=1|59=0|60=20260924-14:58:12.201|10=164|`,
+    code: `8=FIX.4.4|9=112|35=A|49=KLK_80412337|56=EZYMEX|34=1|52=20260924-14:58:12.184|98=0|108=30|141=Y|553=kk_live_EXAMPLE1|554=••••••|10=087|
+8=FIX.4.4|9=148|35=D|49=KLK_80412337|56=EZYMEX|34=2|11=gold-bo-0924-01|55=XAUUSD|54=1|38=50|40=1|59=0|60=20260924-14:58:12.201|10=164|`,
   },
 };
 

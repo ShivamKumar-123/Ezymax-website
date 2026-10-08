@@ -3,9 +3,9 @@
 import * as React from "react";
 import { Bell, BellRing, Mail, MousePointerClick, Plus, Save, Send, Smartphone, Sparkles, Zap } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, Field, Icon3D, Input, KpiCard, PageHeader, Reveal, Segmented, Toggle, type ChipTone, cn } from "@kalks/ui";
-import { CNT_NOTIF_SAMPLES, CNT_NOTIF_TEMPLATES, type CntNotifTemplate } from "@kalks/mock/admin-growth-content";
-import { IS_DEMO as IS_DEMO_MODE } from "@kalks/mock/mode";
+import { Button, Card, CardHeader, Chip, Field, Icon3D, Input, KpiCard, PageHeader, Reveal, Segmented, Toggle, type ChipTone, cn } from "@ezymex/ui";
+import { CNT_NOTIF_SAMPLES, CNT_NOTIF_TEMPLATES, type CntNotifTemplate } from "@ezymex/mock/admin-growth-content";
+import { IS_DEMO as IS_DEMO_MODE } from "@ezymex/mock/mode";
 import { LiveBroadcasts } from "@/components/support-live/broadcast";
 
 type Priority = "low" | "normal" | "high" | "critical";
@@ -261,11 +261,11 @@ function DemoNotificationsPage() {
                   <div className="rounded-[20px] bg-[linear-gradient(135deg,#2a1a12,#0e0e12)] p-3">
                     <div className="flex gap-2.5 rounded-[16px] bg-white/10 p-3 backdrop-blur">
                       <span className="grid size-8 shrink-0 place-items-center rounded-[9px] bg-[#111114]">
-                        <span className="block h-3 w-3.5 bg-white" style={{ WebkitMask: "url(/assets/brand/kalks-mark.svg) center / contain no-repeat", mask: "url(/assets/brand/kalks-mark.svg) center / contain no-repeat" }} />
+                        <span className="block h-3 w-3.5 bg-white" style={{ WebkitMask: "url(/assets/brand/ezymex-mark.svg) center / contain no-repeat", mask: "url(/assets/brand/ezymex-mark.svg) center / contain no-repeat" }} />
                       </span>
                       <div className="min-w-0 flex-1 text-white">
                         <div className="flex justify-between text-[11px] text-white/60">
-                          <span>KALKS</span>
+                          <span>EZYMEX</span>
                           <span>now</span>
                         </div>
                         <div className="truncate text-[12.5px] font-semibold">{fill(cur.title)}</div>

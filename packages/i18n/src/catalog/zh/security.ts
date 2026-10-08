@@ -8,7 +8,7 @@ const security: NsMessages<"security"> = {
   "signingOut": "正在退出登录…",
   "resetSigningOut": "正在为您退出登录以重置密码…",
   "error.generic": "出错了。请重试。",
-  "error.network": "无法连接到 Kalks。请检查您的网络连接后重试。",
+  "error.network": "无法连接到 Ezymex。请检查您的网络连接后重试。",
 
   // Device labels from the browser's user agent; browser and OS brand names stay as they are
   "device.unknownBrowser": "未知浏览器",
@@ -226,7 +226,7 @@ const security: NsMessages<"security"> = {
   "page.calendar": "日历",
   // Investor passwords card
   "investor.title": "投资者密码",
-  "investor.text": "每个交易账户还有一个投资者密码，可在 Kalks Trader 中以只读方式访问（与 MT5 相同）：可查看持仓和历史，无法交易。",
+  "investor.text": "每个交易账户还有一个投资者密码，可在 Ezymex Trader 中以只读方式访问（与 MT5 相同）：可查看持仓和历史，无法交易。",
   "investor.hint": "请在账户页面设置或更改。",
   "investor.goToAccounts": "前往账户",
   // Create / edit dialog

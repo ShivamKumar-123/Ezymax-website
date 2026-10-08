@@ -17,7 +17,7 @@
   defs["indicators"] = function (module, exports, require) {
 "use strict";
 /**
- * Kalks indicator library — pure maths, no DOM / chart dependencies (safe to import from workers, the AI trader, tests).
+ * Ezymex indicator library — pure maths, no DOM / chart dependencies (safe to import from workers, the AI trader, tests).
  *
  * Every indicator is a registry entry ({@link INDICATOR_DEFS}) with typed params, outputs and a `calc(ctx, from)` kernel that
  * fills output arrays for bar indices `[from, n)`. Arrays are aligned with the input bars and hold NaN until warm.
@@ -1902,7 +1902,7 @@ function createIndicatorLayer(o) {
   };
   var ind = req("indicators");
   var layer = req("layer");
-  window.KalksInd = {
+  window.EzymexInd = {
     createIndicatorLayer: layer.createIndicatorLayer,
     fmtValue: layer.fmtValue,
     INDICATOR_LIST: ind.INDICATOR_LIST,

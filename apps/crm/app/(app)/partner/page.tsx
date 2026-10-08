@@ -30,7 +30,7 @@ import {
   IconGlyph,
 } from "@/components/kit";
 import type { SeriesPoint } from "@/components/kit";
-import { ME } from "@kalks/mock";
+import { ME } from "@ezymex/mock";
 import {
   CAMPAIGNS,
   COMMISSION_LEDGER,
@@ -40,10 +40,10 @@ import {
   REFERRED_CLIENTS,
   WEEKLY_COMMISSION,
   commissionSeries,
-} from "@kalks/mock/partner";
+} from "@ezymex/mock/partner";
 import { ClientCell, CommissionStatusChip, TierChip, relTime } from "@/components/partner/partner-bits";
 import { ShareButtons } from "@/components/partner/share-buttons";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LivePartnerDashboard } from "@/components/partner/live/dashboard";
 
 /* ------------------------------------------------------------------ */
@@ -219,10 +219,10 @@ function ReferralCard() {
         description="Print it on flyers or show it at events."
         footer={
           <>
-            <Button variant="surface" size="sm" onClick={() => toast.success("QR code saved", { description: "kalks-ARJUN24-qr.svg" })}>
+            <Button variant="surface" size="sm" onClick={() => toast.success("QR code saved", { description: "ezymex-ARJUN24-qr.svg" })}>
               <Download /> SVG
             </Button>
-            <Button variant="ember" size="sm" onClick={() => toast.success("QR code saved", { description: "kalks-ARJUN24-qr.png · 1024×1024" })}>
+            <Button variant="ember" size="sm" onClick={() => toast.success("QR code saved", { description: "ezymex-ARJUN24-qr.png · 1024×1024" })}>
               <Download /> PNG
             </Button>
           </>
@@ -230,7 +230,7 @@ function ReferralCard() {
       >
         <div className="flex flex-col items-center gap-4">
           <div className="rounded-[20px] bg-white p-5 shadow-[0_20px_60px_-20px_color-mix(in_oklab,var(--k-ember)_50%,transparent)]">
-            <QRCodeSVG value={ME.referralLink} size={220} level="H" fgColor="#0b0b0e" bgColor="#ffffff" imageSettings={{ src: "/assets/brand/kalks-mark.svg", height: 44, width: 44, excavate: true }} />
+            <QRCodeSVG value={ME.referralLink} size={220} level="H" fgColor="#0b0b0e" bgColor="#ffffff" imageSettings={{ src: "/assets/brand/ezymex-mark.svg", height: 44, width: 44, excavate: true }} />
           </div>
           <div className="font-mono text-[13px] text-fg-2">{ME.referralLink.replace("https://", "")}</div>
         </div>

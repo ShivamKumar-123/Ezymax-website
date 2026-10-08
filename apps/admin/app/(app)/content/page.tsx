@@ -22,9 +22,9 @@ import {
   Tooltip,
   cn,
   formatNumber,
-} from "@kalks/ui";
-import { INSTRUMENTS } from "@kalks/mock";
-import { CNT_NEWS, CNT_NEWS_SOURCES, CNT_TENANTS, type CntNews } from "@kalks/mock/admin-growth-content";
+} from "@ezymex/ui";
+import { INSTRUMENTS } from "@ezymex/mock";
+import { CNT_NEWS, CNT_NEWS_SOURCES, CNT_TENANTS, type CntNews } from "@ezymex/mock/admin-growth-content";
 
 const CATS = ["All", "Forex", "Metals", "Indices", "Crypto", "Stocks", "Energies", "Macro"] as const;
 const IMPACT_TONE = { high: "down", medium: "warn", low: "neutral" } as const;
@@ -147,7 +147,7 @@ function SourcesDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       description="Feeds ingested into the client news widget. Auto-publish skips the curation queue."
       footer={
         <>
-          <Button variant="surface" size="sm" onClick={() => toast.info("Add a source", { description: "RSS URL, REST API or Kalks Research author" })}><Plus /> Add source</Button>
+          <Button variant="surface" size="sm" onClick={() => toast.info("Add a source", { description: "RSS URL, REST API or Ezymex Research author" })}><Plus /> Add source</Button>
           <Button variant="ember" size="sm" onClick={() => { toast.success("Sources saved", { description: `${src.filter((s) => s.enabled).length} of ${src.length} enabled` }); onOpenChange(false); }}>Save</Button>
         </>
       }
@@ -210,7 +210,7 @@ export default function NewsCurationPage() {
             <Button variant="surface" onClick={() => setSources(true)}>
               <Rss /> Sources
             </Button>
-            <Button variant="ember" onClick={() => toast.success("Draft created in Kalks Research", { description: "Write, tag symbols and publish to all tenants" })}>
+            <Button variant="ember" onClick={() => toast.success("Draft created in Ezymex Research", { description: "Write, tag symbols and publish to all tenants" })}>
               <Plus /> Write article
             </Button>
           </>

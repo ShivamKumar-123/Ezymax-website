@@ -26,8 +26,8 @@ import {
   formatMoney,
   shortHash,
   type Column,
-} from "@kalks/ui";
-import { AML_CASES, AML_RULES, COMPLIANCE_STAFF, getClient, serverTime, staff, timeAgo, type AmlCase } from "@kalks/mock/admin-clients";
+} from "@ezymex/ui";
+import { AML_CASES, AML_RULES, COMPLIANCE_STAFF, getClient, serverTime, staff, timeAgo, type AmlCase } from "@ezymex/mock/admin-clients";
 import { ClientCell, ReasonDialog } from "@/components/command/kit";
 
 const RISK_TONE = { low: "info", medium: "warn", high: "ember", critical: "down" } as const;

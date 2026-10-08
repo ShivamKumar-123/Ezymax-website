@@ -201,7 +201,7 @@ const kyc: NsMessages<"kyc"> = {
   "review.missing": "ناقص",
   "review.flagged": "مُحال للمراجعة",
   "review.passed": "اجتاز الفحوصات",
-  "review.consent": "أؤكد أن المستندات أصلية وتخصّني (أو تخص الشركة ومسؤوليها)، وأوافق على فحص الهوية ومكافحة غسل الأموال (AML) من قِبل Kalks.",
+  "review.consent": "أؤكد أن المستندات أصلية وتخصّني (أو تخص الشركة ومسؤوليها)، وأوافق على فحص الهوية ومكافحة غسل الأموال (AML) من قِبل Ezymex.",
 
   // More information requested by the review team
   "moreInfo.title": "نحتاج إلى المزيد منك",
@@ -380,7 +380,7 @@ const kyc: NsMessages<"kyc"> = {
   // Client-side fallback errors
   "error.sessionEnded": "انتهت جلستك.",
   "error.generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
-  "error.network": "تعذّر الاتصال بـ Kalks. تحقق من اتصالك وحاول مرة أخرى.",
+  "error.network": "تعذّر الاتصال بـ Ezymex. تحقق من اتصالك وحاول مرة أخرى.",
   "error.uploadFailed": "فشل الرفع. يرجى المحاولة مرة أخرى.",
   "error.uploadInterrupted": "انقطع الرفع. تحقق من اتصالك وحاول مرة أخرى.",
 

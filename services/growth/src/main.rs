@@ -1,4 +1,4 @@
-//! Kalks growth service (127.0.0.1:8101): rewards and marketing. See README.md.
+//! Ezymex growth service (127.0.0.1:8101): rewards and marketing. See README.md.
 
 use growth::{api, config, db, state::AppState, workers};
 
@@ -22,7 +22,7 @@ async fn main() -> anyhow::Result<()> {
         tracing::warn!("GROWTH_INTERNAL_TOKEN is empty: any local process can call the growth service (dev only)");
     }
     let pool = db::connect(&cfg.database_url).await?;
-    db::seed(&pool, "kalks").await?;
+    db::seed(&pool, "ezymex").await?;
     let st = AppState::new(pool, cfg);
     if st.cfg.workers {
         workers::spawn(&st);

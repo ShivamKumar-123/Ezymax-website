@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Award, Download, GraduationCap, Lock, RotateCcw, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, Chip, Progress, cn } from "@/components/kit";
-import { tr, useT } from "@kalks/i18n/react";
+import { tr, useT } from "@ezymex/i18n/react";
 import { LEVEL_TONE, academyApi, fmtDay, isElective, levelLabel, pct, useAcademy, type ExamReply, type ExamView } from "./api";
 import { LETTERS, OptionButton } from "./quiz";
 import { AcademyUnavailable, BackLink, PageSkeleton, RISK_NOTE } from "./shared";

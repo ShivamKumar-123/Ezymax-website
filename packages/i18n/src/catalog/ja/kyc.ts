@@ -193,7 +193,7 @@ const kyc: NsMessages<"kyc"> = {
   "review.missing": "未提出",
   "review.flagged": "要確認",
   "review.passed": "チェック合格",
-  "review.consent": "私は、書類が本物であり、私本人（または法人とその役員）のものであることを確認し、Kalksによる本人確認およびAMLスクリーニングに同意します。",
+  "review.consent": "私は、書類が本物であり、私本人（または法人とその役員）のものであることを確認し、Ezymexによる本人確認およびAMLスクリーニングに同意します。",
 
   // More information requested by the review team
   "moreInfo.title": "追加の情報が必要です",
@@ -357,7 +357,7 @@ const kyc: NsMessages<"kyc"> = {
   // Client-side fallback errors
   "error.sessionEnded": "セッションが終了しました。",
   "error.generic": "エラーが発生しました。もう一度お試しください。",
-  "error.network": "Kalksに接続できません。接続を確認して、もう一度お試しください。",
+  "error.network": "Ezymexに接続できません。接続を確認して、もう一度お試しください。",
   "error.uploadFailed": "アップロードに失敗しました。もう一度お試しください。",
   "error.uploadInterrupted": "アップロードが中断されました。接続を確認して、もう一度お試しください。",
 

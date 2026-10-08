@@ -7,7 +7,7 @@
 //!   neighbouring pillars quote them.
 //! * Calendar arbitrage: total variance must not decrease with tenor. It is checked for ATM and for each
 //!   wing pillar vol at fixed delta (25D/10D call and put: `ATM + BF +- RR/2`), the usual approximation.
-//! * Pillar time `t` is in years; the caller decides the time measure (Kalks indexes pillars by calendar
+//! * Pillar time `t` is in years; the caller decides the time measure (Ezymex indexes pillars by calendar
 //!   tenor and prices with the business-time [`crate::volclock::VolClock`]).
 
 use crate::smile::SmileQuotes;

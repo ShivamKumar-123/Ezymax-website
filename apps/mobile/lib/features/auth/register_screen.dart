@@ -74,7 +74,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       _loading = true;
     });
     try {
-      final c = await _auth.register(
+      final r = await _auth.register(
         RegisterForm(
           firstName: _first.text.trim(),
           lastName: _last.text.trim(),
@@ -91,9 +91,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       );
       if (!mounted) return;
       setState(() {
-        _otp = c;
-        _otpKey++;
-        _step = 1;
+        if (r is CodeRequired) {
+          _otp = r.challenge;
+          _otpKey++;
+          _step = 1;
+        } else {
+          _result = r as SignedIn;
+          _step = 2;
+        }
         _loading = false;
       });
     } on ApiException catch (e) {

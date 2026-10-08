@@ -7,7 +7,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { Button, Card, Chip, IconTile, Progress, Tabs, cn, type ChipTone, type TileTone } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 
 export type ListRowItem = {
   key: string;

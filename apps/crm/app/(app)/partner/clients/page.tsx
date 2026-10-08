@@ -24,10 +24,10 @@ import {
   formatMoney,
   type Column,
 } from "@/components/kit";
-import { ME } from "@kalks/mock";
-import { CPA_RULES, REFERRED_CLIENTS, clientActivity, clientTrades, type KycStatus, type ReferredClient } from "@kalks/mock/partner";
+import { ME } from "@ezymex/mock";
+import { CPA_RULES, REFERRED_CLIENTS, clientActivity, clientTrades, type KycStatus, type ReferredClient } from "@ezymex/mock/partner";
 import { ClientCell, TierChip, fmtDate, relTime, subIbName } from "@/components/partner/partner-bits";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LivePartnerClients } from "@/components/partner/live/clients";
 
 type TierF = "all" | "1" | "2" | "3";
@@ -308,7 +308,7 @@ function DemoPartnerClientsPage() {
             onRowClick={setSel}
             search={(c) => `${c.name} ${c.email} ${c.countryName} ${c.login ?? ""}`}
             searchPlaceholder="Search name, email, login…"
-            exportName="kalks-referred-clients"
+            exportName="ezymex-referred-clients"
             toolbar={
               <div className="flex flex-wrap items-center gap-2">
                 <Segmented

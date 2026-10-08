@@ -3,8 +3,8 @@
 import * as React from "react";
 import { CalendarClock, Copy, Eye, MoreHorizontal, Pause, Pencil, Archive, Play } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Chip, Icon3D, IconButton, Menu, Progress, SpotlightCard, StatusChip, Toggle, Tooltip, cn } from "@kalks/ui";
-import type { MktBonusCampaign } from "@kalks/mock/admin-growth-marketing";
+import { Button, Chip, Icon3D, IconButton, Menu, Progress, SpotlightCard, StatusChip, Toggle, Tooltip, cn } from "@ezymex/ui";
+import type { MktBonusCampaign } from "@ezymex/mock/admin-growth-marketing";
 import { FlagStack, fmtInt, fmtK } from "./kit";
 
 const KIND_LABEL: Record<MktBonusCampaign["kind"], string> = { deposit: "Deposit bonus", "no-deposit": "No-deposit", reload: "Reload", crypto: "Crypto boost" };

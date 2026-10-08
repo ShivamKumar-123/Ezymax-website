@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Ban, CheckCircle2, Globe, RotateCcw } from "lucide-react";
-import { Button, Chip, Dialog, EquityChart, KeyValue, cn, type ChipTone } from "@kalks/ui";
+import { Button, Chip, Dialog, EquityChart, KeyValue, cn, type ChipTone } from "@ezymex/ui";
 import { ColumnChart, MiniStat, PersonCell } from "@/components/config/kit";
 import { COPY_MATCHES, HFT_BUCKETS, LATENCY_POINTS, VIOLATION_LABEL, BANNED_TYPES, equityPath, fmtDateTime, type Violation } from "./data";
 
@@ -119,7 +119,7 @@ function Evidence({ v }: { v: Violation }) {
         ["Rule", VIOLATION_LABEL[v.type]],
         ["Measured", v.metric],
         ["Threshold", v.type === "consistency" ? "40% of cycle profit" : v.type === "news" ? "No trades ±2 min of red-folder news" : v.type === "weekend" ? "Flat by Fri 23:55" : "No size escalation after losses"],
-        ["Engine", "Kalks Risk · rule v3.4"],
+        ["Engine", "Ezymex Risk · rule v3.4"],
       ]}
     />
   );

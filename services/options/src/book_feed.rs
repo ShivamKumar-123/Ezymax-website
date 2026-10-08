@@ -1,7 +1,7 @@
 //! The trading engine's order book market data (docs/OPTIONS-EXCHANGE.md §10), merged into chains, the stream and the
 //! public routes. The engine is the source of depth, trades, open interest and volume.
 //!
-//! * `WS {TRADING_URL}/v1/internal/options/book/stream` (with `X-Kalks-Internal: TRADING_INTERNAL_TOKEN`): on connect
+//! * `WS {TRADING_URL}/v1/internal/options/book/stream` (with `X-Ezymex-Internal: TRADING_INTERNAL_TOKEN`): on connect
 //!   a `depth` + `top` frame for every series of every book, then
 //!   `{type:"top", tenant, kind, underlying, series, bid, bidQty, ask, askQty, last, lastQty, mark, oi, vol, state, seq}`
 //!   and `{type:"depth", …, bids:[{price, qty, orders}], asks, seq}` (≤ 4/s per series), `{type:"trade", tenant, kind,
@@ -550,7 +550,7 @@ pub async fn refresh_eod(st: &AppState) -> anyhow::Result<usize> {
 fn engine_get(st: &AppState, path: &str) -> reqwest::RequestBuilder {
     let mut rb = st.http.get(format!("{}{path}", st.cfg.trading_url)).timeout(Duration::from_secs(5));
     if !st.cfg.trading_token.is_empty() {
-        rb = rb.header("x-kalks-internal", &st.cfg.trading_token);
+        rb = rb.header("x-ezymex-internal", &st.cfg.trading_token);
     }
     rb
 }
@@ -653,7 +653,7 @@ async fn stream_once(st: &AppState) -> StreamEnd {
     if !st.cfg.trading_token.is_empty() {
         match st.cfg.trading_token.parse() {
             Ok(h) => {
-                req.headers_mut().insert("x-kalks-internal", h);
+                req.headers_mut().insert("x-ezymex-internal", h);
             }
             Err(_) => return StreamEnd::Error(anyhow::anyhow!("TRADING_INTERNAL_TOKEN is not a valid header value")),
         }
@@ -750,7 +750,7 @@ mod tests {
     use super::*;
 
     fn top(series: &str, bid: Option<(f64, f64)>, ask: Option<(f64, f64)>, seq: u64) -> Value {
-        json!({"type": "top", "tenant": "kalks", "kind": "live", "underlying": "EURUSD", "series": series,
+        json!({"type": "top", "tenant": "ezymex", "kind": "live", "underlying": "EURUSD", "series": series,
                "bid": bid.map(|b| b.0), "bidQty": bid.map(|b| b.1), "ask": ask.map(|a| a.0), "askQty": ask.map(|a| a.1),
                "last": null, "lastQty": null, "mark": 0.0042, "oi": 12, "vol": 3, "state": "open", "seq": seq})
     }
@@ -759,17 +759,17 @@ mod tests {
     fn parses_the_engine_frames() {
         let f = parse_frame(&top("EURUSD-20261009-1.1700-C", Some((0.0041, 5.0)), None, 7)).unwrap();
         let Frame::Top { tenant, kind, underlying, series, top } = f else { panic!() };
-        assert_eq!((tenant.as_str(), kind, underlying.as_str(), series.as_str()), ("kalks", Kind::Live, "EURUSD", "EURUSD-20261009-1.1700-C"));
+        assert_eq!((tenant.as_str(), kind, underlying.as_str(), series.as_str()), ("ezymex", Kind::Live, "EURUSD", "EURUSD-20261009-1.1700-C"));
         assert_eq!((top.bid, top.ask, top.oi, top.volume, top.seq), (Some((0.0041, 5.0)), None, 12.0, 3.0, 7));
 
         // depth levels as objects (the engine) or tuples; decimals as numbers or strings; at most 10 levels
         let lv: Vec<Value> = (0..12).map(|i| json!({"price": format!("0.00{}", 40 - i), "qty": 2, "orders": 1})).collect();
-        let d = json!({"type": "depth", "tenant": "Kalks", "kind": "demo", "underlying": "eurusd", "series": "S", "bids": lv, "asks": [[0.005, 3, 2]], "seq": 9});
+        let d = json!({"type": "depth", "tenant": "Ezymex", "kind": "demo", "underlying": "eurusd", "series": "S", "bids": lv, "asks": [[0.005, 3, 2]], "seq": 9});
         let Some(Frame::Depth { tenant, kind, bids, asks, seq, .. }) = parse_frame(&d) else { panic!() };
-        assert_eq!((tenant.as_str(), kind, bids.len(), asks, seq), ("kalks", Kind::Demo, 10, vec![(0.005, 3.0, 2)], 9));
+        assert_eq!((tenant.as_str(), kind, bids.len(), asks, seq), ("ezymex", Kind::Demo, 10, vec![(0.005, 3.0, 2)], 9));
         assert_eq!(bids[0], (0.0040, 2.0, 1));
 
-        let t = json!({"type": "trade", "tenant": "kalks", "kind": "live", "underlying": "EURUSD", "series": "S", "fillId": "f-1", "price": 0.0043,
+        let t = json!({"type": "trade", "tenant": "ezymex", "kind": "live", "underlying": "EURUSD", "series": "S", "fillId": "f-1", "price": 0.0043,
                        "qty": 2, "side": "sell", "tradeKind": "book", "combo": null, "at": "2026-10-02T12:00:00Z", "seq": 10});
         let Some(Frame::Trade { trade, .. }) = parse_frame(&t) else { panic!() };
         assert_eq!((trade.id.as_str(), trade.taker_side.as_str(), trade.kind.as_str(), trade.at), ("f-1", "sell", "book", 1_790_942_400_000));
@@ -780,76 +780,76 @@ mod tests {
 
         assert_eq!(parse_frame(&json!({"type": "hb", "t": 1})), Some(Frame::Hb));
         assert_eq!(parse_frame(&json!({"type": "resync", "skipped": 3})), Some(Frame::Resync));
-        assert_eq!(parse_frame(&json!({"type": "top", "tenant": "kalks", "kind": "paper", "series": "S"})), None);
+        assert_eq!(parse_frame(&json!({"type": "top", "tenant": "ezymex", "kind": "paper", "series": "S"})), None);
         assert_eq!(parse_frame(&json!({"nope": 1})), None);
     }
 
     #[test]
     fn cache_follows_frames_in_sequence() {
         let mut s = FeedState::default();
-        assert!(!s.active("kalks", Kind::Live));
-        s.set_venue("kalks", Kind::Live, true);
-        let r0 = s.rev("kalks", Kind::Live, "EURUSD");
+        assert!(!s.active("ezymex", Kind::Live));
+        s.set_venue("ezymex", Kind::Live, true);
+        let r0 = s.rev("ezymex", Kind::Live, "EURUSD");
         s.apply(parse_frame(&top("A", Some((0.004, 5.0)), Some((0.005, 5.0)), 5)).unwrap(), 0);
-        let r1 = s.rev("kalks", Kind::Live, "EURUSD");
+        let r1 = s.rev("ezymex", Kind::Live, "EURUSD");
         assert!(r1 > r0);
         // an older top is ignored
         assert!(!s.apply(parse_frame(&top("A", None, None, 4)).unwrap(), 0));
-        assert_eq!(s.book("kalks", Kind::Live, "A").unwrap().bid, Some((0.004, 5.0)));
+        assert_eq!(s.book("ezymex", Kind::Live, "A").unwrap().bid, Some((0.004, 5.0)));
         // the same top again does not move the revision
         s.apply(parse_frame(&top("A", Some((0.004, 5.0)), Some((0.005, 5.0)), 6)).unwrap(), 0);
-        assert_eq!(s.rev("kalks", Kind::Live, "EURUSD"), r1);
+        assert_eq!(s.rev("ezymex", Kind::Live, "EURUSD"), r1);
         // an emptied side
         s.apply(parse_frame(&top("A", None, Some((0.005, 5.0)), 7)).unwrap(), 0);
-        assert_eq!(s.book("kalks", Kind::Live, "A").unwrap().top().bid, None);
-        assert!(s.rev("kalks", Kind::Live, "EURUSD") > r1);
+        assert_eq!(s.book("ezymex", Kind::Live, "A").unwrap().top().bid, None);
+        assert!(s.rev("ezymex", Kind::Live, "EURUSD") > r1);
         // demo is a different book
-        assert!(s.book("kalks", Kind::Demo, "A").is_none());
+        assert!(s.book("ezymex", Kind::Demo, "A").is_none());
 
         // tape: dedupe by id, ring order, cursor
-        let tr = |id: &str| parse_frame(&json!({"type": "trade", "tenant": "kalks", "kind": "live", "underlying": "EURUSD", "series": "A", "fillId": id, "price": 0.0045, "qty": 1, "side": "buy", "at": 1000, "seq": 8})).unwrap();
+        let tr = |id: &str| parse_frame(&json!({"type": "trade", "tenant": "ezymex", "kind": "live", "underlying": "EURUSD", "series": "A", "fillId": id, "price": 0.0045, "qty": 1, "side": "buy", "at": 1000, "seq": 8})).unwrap();
         let c0 = s.counter();
         assert!(s.apply(tr("1"), 0));
         assert!(!s.apply(tr("1"), 0));
         assert!(s.apply(tr("2"), 0));
-        let after = s.trades_after("kalks", Kind::Live, "A", c0);
+        let after = s.trades_after("ezymex", Kind::Live, "A", c0);
         assert_eq!(after.iter().map(|t| t.id.as_str()).collect::<Vec<_>>(), ["1", "2"]);
-        assert_eq!(s.recent("kalks", Kind::Live, "A", 1)[0].id, "2");
+        assert_eq!(s.recent("ezymex", Kind::Live, "A", 1)[0].id, "2");
         assert_eq!(after[0].at, 1_000_000, "unix seconds become ms");
         for i in 0..(TAPE_KEEP + 5) {
             s.apply(tr(&format!("x{i}")), 0);
         }
-        assert_eq!(s.recent("kalks", Kind::Live, "A", 10_000).len(), TAPE_KEEP);
+        assert_eq!(s.recent("ezymex", Kind::Live, "A", 10_000).len(), TAPE_KEEP);
 
         // depth revision moves only on a change
-        let d = |q: f64, seq: u64| Frame::Depth { tenant: "kalks".into(), kind: Kind::Live, underlying: "EURUSD".into(), series: "A".into(), bids: vec![(0.004, q, 1)], asks: vec![], seq };
+        let d = |q: f64, seq: u64| Frame::Depth { tenant: "ezymex".into(), kind: Kind::Live, underlying: "EURUSD".into(), series: "A".into(), bids: vec![(0.004, q, 1)], asks: vec![], seq };
         s.apply(d(5.0, 10), 0);
-        let dr = s.book("kalks", Kind::Live, "A").unwrap().depth_rev;
+        let dr = s.book("ezymex", Kind::Live, "A").unwrap().depth_rev;
         s.apply(d(5.0, 11), 0);
-        assert_eq!(s.book("kalks", Kind::Live, "A").unwrap().depth_rev, dr);
+        assert_eq!(s.book("ezymex", Kind::Live, "A").unwrap().depth_rev, dr);
         s.apply(d(6.0, 12), 0);
-        assert!(s.book("kalks", Kind::Live, "A").unwrap().depth_rev > dr);
+        assert!(s.book("ezymex", Kind::Live, "A").unwrap().depth_rev > dr);
 
         // venue off drops the data; a lost stream clears books but keeps the venue
         s.clear_books();
-        assert!(s.book("kalks", Kind::Live, "A").is_none() && s.active("kalks", Kind::Live));
-        s.set_venue("kalks", Kind::Live, false);
-        assert!(!s.active("kalks", Kind::Live) && s.recent("kalks", Kind::Live, "A", 5).is_empty());
+        assert!(s.book("ezymex", Kind::Live, "A").is_none() && s.active("ezymex", Kind::Live));
+        s.set_venue("ezymex", Kind::Live, false);
+        assert!(!s.active("ezymex", Kind::Live) && s.recent("ezymex", Kind::Live, "A", 5).is_empty());
     }
 
     #[test]
     fn snapshot_sets_the_venue_and_seeds_the_cache() {
         let mut s = FeedState::default();
-        let snap = json!({"tenant": "kalks", "kind": "live", "enabled": true, "books": [{"underlying": "EURUSD", "seq": 40, "series": [
+        let snap = json!({"tenant": "ezymex", "kind": "live", "enabled": true, "books": [{"underlying": "EURUSD", "seq": 40, "series": [
             {"series": "A", "underlying": "EURUSD", "expiry": "2026-10-09", "state": "open", "bids": [{"price": 0.004, "qty": 5, "orders": 2}],
              "asks": [{"price": 0.0046, "qty": 3, "orders": 1}, {"price": 0.0047, "qty": 9, "orders": 1}], "last": 0.0043, "lastQty": 1, "oi": 25, "vol": 4, "seq": 40, "mark": 0.0043}]}]});
-        assert!(s.apply_snapshot("kalks", Kind::Live, &snap, 0));
-        let b = s.book("kalks", Kind::Live, "A").unwrap();
+        assert!(s.apply_snapshot("ezymex", Kind::Live, &snap, 0));
+        let b = s.book("ezymex", Kind::Live, "A").unwrap();
         assert_eq!((b.bid, b.ask, b.last, b.oi, b.volume, b.asks.len()), (Some((0.004, 5.0)), Some((0.0046, 3.0)), Some(0.0043), 25.0, 4.0, 2));
         // not enabled: inactive and nothing cached
-        let off = json!({"tenant": "kalks", "kind": "demo", "enabled": false, "books": []});
-        assert!(!s.apply_snapshot("kalks", Kind::Demo, &off, 0));
-        assert!(!s.active("kalks", Kind::Demo));
+        let off = json!({"tenant": "ezymex", "kind": "demo", "enabled": false, "books": []});
+        assert!(!s.apply_snapshot("ezymex", Kind::Demo, &off, 0));
+        assert!(!s.active("ezymex", Kind::Demo));
     }
 
     #[test]

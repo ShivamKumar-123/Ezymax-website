@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Angry, Frown, Meh, NotebookPen, Plus, Smile, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, Dialog, DialogClose, Field, Input, Segmented, SymbolAvatar, cn, formatDateTime, formatMoney } from "@/components/kit";
-import { JOURNAL, type JournalNote, type Mood } from "@kalks/mock/academy";
+import { JOURNAL, type JournalNote, type Mood } from "@ezymex/mock/academy";
 
 const MOODS: Record<Mood, { label: string; icon: typeof Smile; tone: "up" | "info" | "warn" | "down" | "ember" }> = {
   confident: { label: "Confident", icon: Smile, tone: "up" },
@@ -52,7 +52,7 @@ function AddNoteDialog({ onAdd }: { onAdd: (n: JournalNote) => void }) {
             disabled={!title.trim()}
             onClick={() => {
               onAdd({ id: `j${Date.now()}`, date: new Date().toISOString(), title: title.trim(), body: body.trim() || "No details added.", tags, mood, symbol });
-              toast.success("Journal note saved", { description: "Kalks Coach will factor it into your next review." });
+              toast.success("Journal note saved", { description: "Ezymex Coach will factor it into your next review." });
               setOpen(false);
               reset();
             }}

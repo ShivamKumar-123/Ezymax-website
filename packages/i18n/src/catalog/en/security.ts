@@ -1,6 +1,6 @@
 // Keys for this namespace. English is the source; translations live in ../<lang>/security.ts.
 // Client Area security: sessions, sign-in history, view-only logins (viewers), session guard.
-// "Kalks", "Google" and "JSON" stay as they are.
+// "Ezymex", "Google" and "JSON" stay as they are.
 const security = {
   // Shared
   "retry": "Retry",
@@ -8,7 +8,7 @@ const security = {
   "signingOut": "Signing out…",
   "resetSigningOut": "Signing you out to reset your password…",
   "error.generic": "Something went wrong. Please try again.",
-  "error.network": "Can't reach Kalks. Check your connection and try again.",
+  "error.network": "Can't reach Ezymex. Check your connection and try again.",
 
   // Device labels from the browser's user agent; browser and OS brand names stay as they are
   "device.unknownBrowser": "Unknown browser",
@@ -228,7 +228,7 @@ const security = {
   "page.calendar": "Calendar",
   // Investor passwords card
   "investor.title": "Investor passwords",
-  "investor.text": "Each trading account also has an investor password for read-only access in Kalks Trader, MT5 style: positions and history, no trading.",
+  "investor.text": "Each trading account also has an investor password for read-only access in Ezymex Trader, MT5 style: positions and history, no trading.",
   "investor.hint": "Set or change it on the account page.",
   "investor.goToAccounts": "Go to accounts",
   // Create / edit dialog

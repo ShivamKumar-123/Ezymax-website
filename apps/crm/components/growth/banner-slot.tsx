@@ -4,8 +4,8 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowUpRight, X } from "lucide-react";
 import { Button, cn } from "@/components/kit";
-import { IS_DEMO } from "@kalks/mock/mode";
-import { useT } from "@kalks/i18n/react";
+import { IS_DEMO } from "@ezymex/mock/mode";
+import { useT } from "@ezymex/i18n/react";
 import { growthApi, useGrowth, type BannerView } from "./api";
 
 // Targeted marketing banners (D121) from the growth service. Renders nothing in demo builds, when the service is

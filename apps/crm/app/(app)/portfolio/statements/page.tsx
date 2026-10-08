@@ -4,9 +4,9 @@ import * as React from "react";
 import { toast } from "sonner";
 import { Check, Download, Eye, FileSpreadsheet, FileText, Mail, Printer, Sheet } from "lucide-react";
 import { Button, Card, CardHeader, Chip, Dialog, Field, Icon3D, Input, Money, PageHeader, Reveal, Segmented, Toggle, cn } from "@/components/kit";
-import { LIVE_ACCOUNTS, MONTHLY_STATEMENTS, type MonthlyStatement } from "@kalks/mock/portfolio-extra";
+import { LIVE_ACCOUNTS, MONTHLY_STATEMENTS, type MonthlyStatement } from "@ezymex/mock/portfolio-extra";
 import { StatementPreview } from "@/components/portfolio/statement-preview";
-import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LiveStatementsPage } from "@/components/trading/portfolio";
 
 type Period = "day" | "month" | "year" | "custom";
@@ -56,7 +56,7 @@ function DemoStatementsPage() {
     const id = toast.loading(`Generating ${FORMAT_META[format].label} statement…`, { description: `${accounts.length} account${accounts.length > 1 ? "s" : ""} · ${range.label}` });
     setTimeout(() => {
       setBusy(false);
-      toast.success(`Statement ready: kalks-statement-${accounts.join("-")}.${format}`, {
+      toast.success(`Statement ready: ezymex-statement-${accounts.join("-")}.${format}`, {
         id,
         description: email ? "Downloaded and emailed to arjun.mehta@mail.com" : "Your download has started",
       });
@@ -319,7 +319,7 @@ function DemoStatementsPage() {
             <Button variant="surface" onClick={() => toast.success("Statement emailed", { description: "arjun.mehta@mail.com" })}>
               <Mail /> Email
             </Button>
-            <Button variant="ember" onClick={() => toast.success(`Downloading kalks-statement-${preview?.login}.pdf`)}>
+            <Button variant="ember" onClick={() => toast.success(`Downloading ezymex-statement-${preview?.login}.pdf`)}>
               <Download /> Download PDF
             </Button>
           </>

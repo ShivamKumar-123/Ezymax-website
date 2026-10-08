@@ -10,7 +10,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { AlertTriangle, ArrowRight, ShieldCheck } from "lucide-react";
-import { Button, Chip, Dialog, Input, Segmented, Skeleton, Toggle, cn } from "@kalks/ui";
+import { Button, Chip, Dialog, Input, Segmented, Skeleton, Toggle, cn } from "@ezymex/ui";
 import { MiniField, Select, TextArea } from "@/components/config/kit";
 import { sendJson, useApi, type ApiErr } from "@/components/live/kit";
 
@@ -325,7 +325,7 @@ export function AdjustDialog({
           <div className="k-row flex items-center justify-between gap-3 px-3.5 py-2.5">
             <div>
               <div className="text-[13px] font-medium">Notify the client</div>
-              <div className="text-[11.5px] text-fg-3">Bell in the Client Area and Kalks Trader, and email per their preference</div>
+              <div className="text-[11.5px] text-fg-3">Bell in the Client Area and Ezymex Trader, and email per their preference</div>
             </div>
             <Toggle checked={notify} onChange={setNotify} label="Notify the client" />
           </div>

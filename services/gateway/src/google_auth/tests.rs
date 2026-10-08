@@ -73,7 +73,7 @@ fn input_cleanup() {
 // ---------- flow tests against PostgreSQL ----------
 
 fn ctx(device: &str) -> Ctx {
-    Ctx { ip: "203.0.113.7".into(), user_agent: "test".into(), device: Some(device.into()), tenant_slug: "kalks".into(), bearer: None }
+    Ctx { ip: "203.0.113.7".into(), user_agent: "test".into(), device: Some(device.into()), tenant_slug: "ezymex".into(), bearer: None }
 }
 
 fn greq(sub: &str, email: &str, verified: bool) -> GoogleReq {
@@ -188,13 +188,13 @@ async fn google_flows() {
     assert_eq!(db.count("SELECT count(*) FROM trusted_devices WHERE subject_id = $1", uid).await, 2);
 
     // existing verified password account with the same email -> linked, password kept
-    let priya = password_user(&db, "priya@gmail.com", true, "Kalks@2026").await;
+    let priya = password_user(&db, "priya@gmail.com", true, "Ezymex@2026").await;
     let Json(v) = google(st(), ctx("device-cccccccccccc"), Ok(Json(greq("222", "priya@gmail.com", true)))).await.unwrap();
     assert_eq!(v["status"], "ok");
     assert_eq!(v["user"]["id"], priya);
     assert_eq!(db.count("SELECT count(*) FROM audit_log WHERE actor_id = $1 AND action = 'user.google_linked'", priya).await, 1);
     let hash: String = sqlx::query_scalar("SELECT password_hash FROM users WHERE id = $1").bind(priya).fetch_one(&db.st.pool).await.unwrap();
-    assert!(crypto::verify_password("Kalks@2026", &hash));
+    assert!(crypto::verify_password("Ezymex@2026", &hash));
 
     // a different Google account with an already-linked email is refused
     let e = google(st(), ctx("device-cccccccccccc"), Ok(Json(greq("333", "priya@gmail.com", true)))).await.unwrap_err();
@@ -217,7 +217,7 @@ async fn google_flows() {
     // a Google sign-up for an email that registered in the meantime is refused
     let Json(v) = google(st(), ctx("device-eeeeeeeeeeee"), Ok(Json(greq("555", "race@gmail.com", true)))).await.unwrap();
     let race_ticket = v["ticket"].as_str().unwrap().to_string();
-    password_user(&db, "race@gmail.com", true, "Kalks@2026").await;
+    password_user(&db, "race@gmail.com", true, "Ezymex@2026").await;
     let e = complete(st(), ctx("device-eeeeeeeeeeee"), Ok(Json(creq(&race_ticket, "1990-01-01")))).await.unwrap_err();
     assert_eq!(code(&e), "email_taken");
 

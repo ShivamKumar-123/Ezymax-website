@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { Settings2 } from "lucide-react";
-import { Button, Card, CardHeader, Chip, CoinIcon, Dialog, Toggle, cn } from "@kalks/ui";
-import { FIN_CHAINS, type FinChainConfig } from "@kalks/mock/admin-finance";
+import { Button, Card, CardHeader, Chip, CoinIcon, Dialog, Toggle, cn } from "@ezymex/ui";
+import { FIN_CHAINS, type FinChainConfig } from "@ezymex/mock/admin-finance";
 import { NumInput, auditToast, useReason } from "@/components/config/kit";
 import { fmtDuration } from "./shared";
 

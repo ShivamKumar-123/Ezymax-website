@@ -1,5 +1,5 @@
 -- Outbox columns: every prop notification is also pushed to the support service (POST /v1/notify: bell in
--- the Client Area and Kalks Trader, realtime, email per the trader's `prop` preference) by `notifier`.
+-- the Client Area and Ezymex Trader, realtime, email per the trader's `prop` preference) by `notifier`.
 -- Rows written before this migration count as delivered.
 ALTER TABLE notifications
     ADD COLUMN pushed_at     TIMESTAMPTZ,

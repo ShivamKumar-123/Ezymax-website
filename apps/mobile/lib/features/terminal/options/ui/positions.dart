@@ -407,7 +407,7 @@ class _PositionCardState extends ConsumerState<_PositionCard> {
                               decoration: BoxDecoration(color: k.warnSoft, borderRadius: BorderRadius.circular(4)),
                               child: Text(t('trader.opt.pos.barrier'), style: context.text.caption.copyWith(fontSize: 9.5, color: k.warn)),
                             ),
-                          if (bookLive && (p.option.barrier != null || p.venue == 'house')) const KalksQuotedTag(),
+                          if (bookLive && (p.option.barrier != null || p.venue == 'house')) const EzymexQuotedTag(),
                         ],
                       ),
                       const SizedBox(height: 4),

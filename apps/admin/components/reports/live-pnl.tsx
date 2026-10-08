@@ -6,7 +6,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { ArrowLeftRight, BookOpen, Coins, Handshake, Layers, Percent, RefreshCw, TrendingUp, Wallet } from "lucide-react";
-import { Button, Card, CardHeader, Chip, DataTable, Delta, Donut, EquityChart, Flag, KpiCard, Money, PageHeader, Reveal, Segmented, SymbolCell, cn, formatNumber, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, Delta, Donut, EquityChart, Flag, KpiCard, Money, PageHeader, Reveal, Segmented, SymbolCell, cn, formatNumber, type Column } from "@ezymex/ui";
 import { StackedBars, compactMoney } from "@/components/analytics/stacked-bars";
 import { dayLabel, weekday } from "@/components/analytics/common";
 import { Meter, MiniStat, SplitMeter } from "@/components/analytics/meter";

@@ -20,7 +20,7 @@ questions:
     answer: 3
     explanation: "A short loses when price rises. The move is 2,358.90 - 2,350.40 = 8.50 USD per ounce, and 8.50 x 20 oz = 170 USD lost."
     chapter: "p1-f-what-is-a-cfd"
-  - question: "Which Kalks instrument is most likely to gap sharply at the open after a company reports quarterly results overnight?"
+  - question: "Which Ezymex instrument is most likely to gap sharply at the open after a company reports quarterly results overnight?"
     options: ["EURUSD", "NVDA", "USDCHF", "XAGUSD"]
     answer: 1
     explanation: "Single-share CFDs follow their exchange session and often gap on earnings released outside trading hours."
@@ -55,7 +55,7 @@ questions:
     answer: 3
     explanation: "A line chart joins closes and removes intra-period noise, which makes the big picture easy to see, especially on D1 or W1."
     chapter: "p1-t-reading-a-price-chart"
-  - question: "On Kalks Trader, at what server times do H4 candles open?"
+  - question: "On Ezymex Trader, at what server times do H4 candles open?"
     options: ["01:00, 05:00, 09:00, 13:00, 17:00, 21:00", "00:00, 04:00, 08:00, 12:00, 16:00, 20:00", "Only during the London session", "At random times set by volume"]
     answer: 1
     explanation: "H4 candles are aligned with the server day that starts at 00:00, the New York close, so six H4 candles make one D1 candle."
@@ -70,8 +70,8 @@ questions:
     answer: 3
     explanation: "240 / 18,000 = 0.0133, or about 1.3% of the price."
     chapter: "p1-t-volatility-volume-basics"
-  - question: "What is the main benefit of setting an alert at a key level in Kalks Trader?"
+  - question: "What is the main benefit of setting an alert at a key level in Ezymex Trader?"
     options: ["It automatically opens a trade at that level", "It reduces your spread", "It notifies you when price reaches the level without placing any order", "It prevents stop-out"]
     answer: 2
     explanation: "An alert is a notification only. It lets you prepare for a level without watching the screen and without committing to a trade."
-    chapter: "p1-t-navigating-charts-kalks-trader"
+    chapter: "p1-t-navigating-charts-ezymex-trader"

@@ -3,8 +3,8 @@
 import * as React from "react";
 import { ArrowLeft, ArrowRight, Plus, Rocket, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Dialog, Field, Icon3D, Input, Segmented, Stepper, Toggle, cn } from "@kalks/ui";
-import { MKT_COUNTRIES, MKT_SEGMENTS, type MktSegment } from "@kalks/mock/admin-growth-marketing";
+import { Button, Dialog, Field, Icon3D, Input, Segmented, Stepper, Toggle, cn } from "@ezymex/ui";
+import { MKT_COUNTRIES, MKT_SEGMENTS, type MktSegment } from "@ezymex/mock/admin-growth-marketing";
 import { ChipPicker, CountryPicker, NumField, SectionLabel, fmtInt } from "./kit";
 
 const STEPS = ["Basics", "Rules", "Prizes", "Audience", "Review"];
@@ -106,7 +106,7 @@ export function ContestWizard({ open, onOpenChange }: { open: boolean; onOpenCha
                   { value: "options", label: "Options (contracts)" },
                 ]}
               />
-              {instrument === "options" && <div className="mt-1.5 text-[11.5px] text-fg-3">Only Kalks FX Options trades count, on realised P&L, volume in contracts. Clients need the options intro.</div>}
+              {instrument === "options" && <div className="mt-1.5 text-[11.5px] text-fg-3">Only Ezymex FX Options trades count, on realised P&L, volume in contracts. Clients need the options intro.</div>}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Starts (GMT+3)">

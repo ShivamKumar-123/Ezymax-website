@@ -21,7 +21,7 @@ const shell: NsMessages<"shell"> = {
   security: "Sécurité",
   verification: "Vérification",
   preferences: "Préférences",
-  kalksTrader: "Kalks Trader",
+  ezymexTrader: "Ezymex Trader",
   deposit: "Dépôt",
   // Client Area navigation
   "nav.dashboard": "Tableau de bord",
@@ -92,7 +92,7 @@ const shell: NsMessages<"shell"> = {
   "gate.title": "Pas encore activé pour votre compte",
   "gate.text": "Cette section n'est pas encore activée pour votre compte. Contactez {email} si vous avez besoin d'y accéder.",
   "gate.backToDashboard": "Retour au tableau de bord",
-  "gate.launchTrader": "Lancer Kalks Trader",
+  "gate.launchTrader": "Lancer Ezymex Trader",
   // market sessions clock
   "sessions.title": "Sessions de marché",
   "sessions.openLeft": "Ouverte · encore {h} h {m} min",

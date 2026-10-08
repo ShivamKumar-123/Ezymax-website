@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader (apps/terminal): MT5-style web terminal shell, login and mobile layout.
+// Ezymex Trader (apps/terminal): MT5-style web terminal shell, login and mobile layout.
 const trader: NsMessages<"trader"> = {
   // Shared shell words
   clientArea: "Eneo la Mteja",
@@ -129,7 +129,7 @@ const trader: NsMessages<"trader"> = {
   "menu.keyboardShortcuts": "Njia za Mkato za Kibodi",
   "menu.helpTopics": "Mada za Msaada",
   "menu.contactSupport": "Wasiliana na Msaada",
-  "menu.about": "Kuhusu Kalks Trader",
+  "menu.about": "Kuhusu Ezymex Trader",
   "options.title": "Chaguo",
   "options.trading": "Biashara",
   "options.appearance": "Mwonekano",
@@ -163,7 +163,7 @@ const trader: NsMessages<"trader"> = {
   "guest.noAccount": "Hakuna akaunti ya biashara",
   "guest.liveData": "Data ya soko ya moja kwa moja",
   "guest.cardHeader": "Mgeni · chati na bei",
-  "guest.cardText": "Chati, viashiria, michoro, tahadhari na vipimo vya alama vinaendeshwa kwa data ya soko ya moja kwa moja ya Kalks. Ingia kwa akaunti yako ya biashara ili ufanye biashara, au fungua moja kwenye Eneo la Mteja.",
+  "guest.cardText": "Chati, viashiria, michoro, tahadhari na vipimo vya alama vinaendeshwa kwa data ya soko ya moja kwa moja ya Ezymex. Ingia kwa akaunti yako ya biashara ili ufanye biashara, au fungua moja kwenye Eneo la Mteja.",
 
   // Notifications bell
   "notifications.title": "Arifa",
@@ -273,7 +273,7 @@ const trader: NsMessages<"trader"> = {
   "login.serverTime": "Saa za seva GMT+3",
   "login.notice.expired": "Kipindi chako kimeisha. Ingia tena.",
   "login.notice.expiredFor": "Kipindi chako cha {login} kimeisha. Ingia tena.",
-  "login.notice.ssoExpired": "Kiungo hicho cha kuingia kimeisha muda au kimeshatumika. Fungua Kalks Trader tena kutoka kwenye Eneo la Mteja, au ingia hapa chini.",
+  "login.notice.ssoExpired": "Kiungo hicho cha kuingia kimeisha muda au kimeshatumika. Fungua Ezymex Trader tena kutoka kwenye Eneo la Mteja, au ingia hapa chini.",
   "login.notice.ssoFailed": "Kuingia kutoka kwenye Eneo la Mteja kumeshindwa. Ingia hapa chini.",
   "login.error.invalid": "Akaunti au nenosiri si sahihi.",
   "login.error.locked": "Majaribio mengi mno yaliyoshindwa. Login hii imefungwa kwa dakika 15.",
@@ -296,9 +296,9 @@ const trader: NsMessages<"trader"> = {
   "mobile.tab.history": "Historia",
   "mobile.tab.account": "Akaunti",
   "mobile.guestSubtitle": "Data ya soko ya moja kwa moja · hakuna akaunti ya biashara",
-  "mobile.guestTrade": "Nafasi, oda, salio na margin huonekana hapa ukishafanya biashara kutoka akaunti ya Kalks. Chati na bei zinafanya kazi sasa.",
+  "mobile.guestTrade": "Nafasi, oda, salio na margin huonekana hapa ukishafanya biashara kutoka akaunti ya Ezymex. Chati na bei zinafanya kazi sasa.",
   "mobile.guestHistory": "Biashara zako zilizofungwa huorodheshwa hapa ukishaingia kwenye akaunti ya biashara.",
-  "mobile.guestAccountText": "Ingia kwenye akaunti ya biashara ili ufanye biashara. Chati, viashiria, michoro na tahadhari zinaendeshwa kwa data ya soko ya moja kwa moja ya Kalks sasa.",
+  "mobile.guestAccountText": "Ingia kwenye akaunti ya biashara ili ufanye biashara. Chati, viashiria, michoro na tahadhari zinaendeshwa kwa data ya soko ya moja kwa moja ya Ezymex sasa.",
   "mobile.watchSegment": "Sehemu ya orodha",
   "mobile.noFavourites": "Bado hakuna vipendwa.",
   "mobile.noSymbols": "Hakuna alama zinazolingana.",
@@ -326,14 +326,14 @@ const trader: NsMessages<"trader"> = {
   "copyBanner.textNoName": "Akaunti ya kunakili — biashara zinasimamiwa na master unayemnakili; unaweza kufuatilia P&L hapa.",
   "copyBanner.manage": "Simamia kunakili katika Client Area",
 
-  // ---- Kalks FX Options workspace (CFD | Options switch in Kalks Trader; components/options/*) ----
-  // Keep "Kalks FX Options", "Claude", tickers (EURUSD), "IV", "ATM", "OTM", "ITM", "P&L", "USD", "UTC", "GTC" and the
+  // ---- Ezymex FX Options workspace (CFD | Options switch in Ezymex Trader; components/options/*) ----
+  // Keep "Ezymex FX Options", "Claude", tickers (EURUSD), "IV", "ATM", "OTM", "ITM", "P&L", "USD", "UTC", "GTC" and the
   // Greek letters (Δ Γ Θ) as they are. Premiums are in USD per contract; "pips" are price points of the underlying.
   "opt.mode.label": "Hali ya biashara",
   "opt.mode.cfd": "CFD",
   "opt.mode.options": "Options",
   "opt.mode.cfdHint": "Biashara ya CFD: chati, Market Watch na paneli ya oda",
-  "opt.mode.optionsHint": "Kalks FX Options: jedwali la options, mikakati na faida/hasara",
+  "opt.mode.optionsHint": "Ezymex FX Options: jedwali la options, mikakati na faida/hasara",
   "opt.call": "Call",
   "opt.put": "Put",
   "opt.calls": "Call",
@@ -502,7 +502,7 @@ const trader: NsMessages<"trader"> = {
 
   // Module not open yet / price server down
   "opt.soon.title": "Options zinakuja hivi karibuni",
-  "opt.soon.text": "Kalks FX Options bado haijafunguliwa kwenye akaunti hii. Itakapofunguliwa, jedwali la options litaonekana hapa, kwenye akaunti ile ile ya CFD zako.",
+  "opt.soon.text": "Ezymex FX Options bado haijafunguliwa kwenye akaunti hii. Itakapofunguliwa, jedwali la options litaonekana hapa, kwenye akaunti ile ile ya CFD zako.",
   "opt.soon.point1": "Call na put kwenye forex, dhahabu, fedha na mafuta",
   "opt.soon.point2": "Tarehe za kuisha za kila siku, kila wiki na kila mwezi, hulipwa kwa pesa taslimu kwa USD",
   "opt.soon.point3": "Ukiwa mnunuzi, kamwe huwezi kupoteza zaidi ya premium unayolipa",
@@ -647,14 +647,14 @@ const trader: NsMessages<"trader"> = {
 
   // Public option chain page (/options/chain/EURUSD)
   "opt.public.brand": "Jedwali la options",
-  "opt.public.kicker": "Kalks FX Options",
+  "opt.public.kicker": "Ezymex FX Options",
   "opt.public.title": "Jedwali la options la {name}",
   "opt.public.subtitle": "Call na put za moja kwa moja kwa tarehe za kuisha za kila siku, kila wiki na kila mwezi: bid na ask kwa USD kwa kila mkataba, implied volatility, delta, uwezekano wa kuwa in the money na breakeven. Options za mtindo wa Ulaya, hulipwa kwa pesa taslimu kwa USD.",
   "opt.public.trade": "Fanya biashara ya options za {u}",
   "opt.public.atmStraddle": "Straddle ya ATM",
-  "opt.public.soonText": "Jedwali la umma la options linafunguliwa pamoja na Kalks FX Options. Fungua akaunti ili uwe tayari tangu siku ya kwanza.",
+  "opt.public.soonText": "Jedwali la umma la options linafunguliwa pamoja na Ezymex FX Options. Fungua akaunti ili uwe tayari tangu siku ya kwanza.",
   "opt.public.ctaTitle": "Fanya biashara ya jedwali hili.",
-  "opt.public.ctaText": "Ingia kwenye Kalks Trader ili kununua au kuuza option yoyote hapa, kujenga mikakati na kuona faida/hasara yako.",
+  "opt.public.ctaText": "Ingia kwenye Ezymex Trader ili kununua au kuuza option yoyote hapa, kujenga mikakati na kuona faida/hasara yako.",
   "opt.public.howTitle": "Jinsi ya kusoma jedwali",
   "opt.public.how1": "Call hulipa bei inapoishia juu ya strike, put hulipa inapoishia chini yake.",
   "opt.public.how2": "Bid ndiyo unayopata unapouza, ask ndiyo unayolipa unaponunua, zote kwa USD kwa kila mkataba.",
@@ -686,11 +686,11 @@ const trader: NsMessages<"trader"> = {
   "opt.m.chain": "Jedwali",
   "opt.m.positions": "Nafasi",
 
-  // ---- Options ORDER BOOK (docs/OPTIONS-EXCHANGE.md): clients trade with each other and with the Kalks market maker (MM)
-  // on a price-time order book. Keep GTC, IOC, FOK, GTD, RFQ and MM as they are; "Kalks" is a brand name.
+  // ---- Options ORDER BOOK (docs/OPTIONS-EXCHANGE.md): clients trade with each other and with the Ezymex market maker (MM)
+  // on a price-time order book. Keep GTC, IOC, FOK, GTD, RFQ and MM as they are; "Ezymex" is a brand name.
   "opt.book.tab": "Kitabu cha oda",
   "opt.book.badge": "Kitabu cha oda",
-  "opt.book.badgeHint": "Bei zinatoka kwenye kitabu cha oda: oda za wateja wengine na za market maker wa Kalks, chini ya sheria zilezile kwa kila mtu.",
+  "opt.book.badgeHint": "Bei zinatoka kwenye kitabu cha oda: oda za wateja wengine na za market maker wa Ezymex, chini ya sheria zilezile kwa kila mtu.",
   "opt.book.size": { one: "Mkataba {count}", other: "Mikataba {count}" },
   "opt.book.noOffers": "Hakuna ofa",
   "opt.book.noBids": "Hakuna bid",
@@ -759,7 +759,7 @@ const trader: NsMessages<"trader"> = {
   "opt.bt.needPrice": "Weka bei ya limit.",
   "opt.bt.needGtd": "Chagua oda ibaki kwenye kitabu hadi lini.",
   "opt.bt.needTrigger": "Weka bei ya kuanzisha.",
-  "opt.bt.bookOff": "Kitabu cha oda hakipatikani kwa sasa: bei na oda zimerudi kwenye bei za Kalks.",
+  "opt.bt.bookOff": "Kitabu cha oda hakipatikani kwa sasa: bei na oda zimerudi kwenye bei za Ezymex.",
   "opt.bt.pv.fillsNow": "Inatekelezwa sasa",
   "opt.bt.pv.fillsAt": "{n} kati ya {total} kwa wastani wa {price}",
   "opt.bt.pv.none": "Hakuna kwa bei hii",
@@ -848,7 +848,7 @@ const trader: NsMessages<"trader"> = {
   "opt.rfq.title": "Ombi la bei",
   "opt.rfq.request": "Omba bei",
   "opt.rfq.again": "Omba bei mpya",
-  "opt.rfq.note": "Mkakati mzima unauzwa kama kitu kimoja: market maker wa Kalks hutoa bei moja ya jumla, na sehemu zote hutekelezwa pamoja au hakuna.",
+  "opt.rfq.note": "Mkakati mzima unauzwa kama kitu kimoja: market maker wa Ezymex hutoa bei moja ya jumla, na sehemu zote hutekelezwa pamoja au hakuna.",
   "opt.rfq.builderNote": "Mikakati inauzwa kwa ombi la bei (RFQ): bei moja ya jumla, sehemu zote pamoja.",
   "opt.rfq.size": "Ukubwa: {n} × mkakati",
   "opt.rfq.waiting": "Inasubiri bei…",
@@ -859,17 +859,17 @@ const trader: NsMessages<"trader"> = {
   "opt.rfq.validFor": "halali kwa sekunde {s}",
   "opt.rfq.refreshing": "bei mpya…",
   "opt.rfq.from": "Bei kutoka kwa {who}",
-  "opt.rfq.kalksMm": "market maker wa Kalks",
+  "opt.rfq.ezymexMm": "market maker wa Ezymex",
   "opt.rfq.openFor": "ombi liko wazi kwa sekunde {s}",
   "opt.rfq.expired": "Ombi limeisha muda.",
   "opt.rfq.toast.filled": "Mkakati umetekelezwa",
   "opt.rfq.toast.desc": { one: "Sehemu {count} imetekelezwa · {price} USD jumla", other: "Sehemu {count} zimetekelezwa pamoja · {price} USD jumla" },
-  "opt.rfq.kalksQuoted": "Bei kutoka Kalks (si kitabu cha oda)",
-  "opt.rfq.kalksQuotedHint": "Options za barrier haziorodheshwi kwenye kitabu cha oda: Kalks huzipa bei ya modeli pamoja na spread.",
+  "opt.rfq.ezymexQuoted": "Bei kutoka Ezymex (si kitabu cha oda)",
+  "opt.rfq.ezymexQuotedHint": "Options za barrier haziorodheshwi kwenye kitabu cha oda: Ezymex huzipa bei ya modeli pamoja na spread.",
   // Market-maker rules (public disclosure)
   "opt.mm.link": "Sheria za market maker",
   "opt.mm.title": "Sheria za market maker",
-  "opt.mm.intro": "Kalks huendesha market maker anayetoa bei ya kununua na ya kuuza katika kila option, ili kila wakati kuwe na mtu wa kufanya naye biashara. Hufanya biashara kwenye kitabu kilekile cha oda kama wewe, chini ya sheria zilezile.",
+  "opt.mm.intro": "Ezymex huendesha market maker anayetoa bei ya kununua na ya kuuza katika kila option, ili kila wakati kuwe na mtu wa kufanya naye biashara. Hufanya biashara kwenye kitabu kilekile cha oda kama wewe, chini ya sheria zilezile.",
   "opt.mm.sameTitle": "Sheria zilezile kama kila mteja",
   "opt.mm.rule1": "Hutuma bei zake kupitia njia ileile ya kuingiza oda kama wateja, kwa ukaguzi uleule.",
   "opt.mm.rule2": "Hakuna kipaumbele: oda hutekelezwa kwa bei, kisha kwa muda. Hakuna aliye mbele yako kwa bei ileile kwa sababu ya yeye ni nani.",
@@ -969,7 +969,7 @@ const trader: NsMessages<"trader"> = {
   "opt.an.oi.emptyOi": "Bado hakuna open interest katika tarehe hii ya kuisha.",
   "opt.an.oi.emptyVolume": "Bado hakuna kilichouzwa katika tarehe hii ya kuisha leo.",
   "opt.an.oi.none": "Open interest na uwiano wa put / call vitaonekana hapa options za {u} zitakapoanza kuuzwa kwenye kitabu cha oda.",
-  "opt.an.oi.noneSub": "Kwa sasa Kalks ndiyo inatoa bei za options hizi, kwa hivyo bado hakuna open interest wala kiasi cha kuonyesha. Smile na muundo wa muda hapo juu ni wa moja kwa moja.",
+  "opt.an.oi.noneSub": "Kwa sasa Ezymex ndiyo inatoa bei za options hizi, kwa hivyo bado hakuna open interest wala kiasi cha kuonyesha. Smile na muundo wa muda hapo juu ni wa moja kwa moja.",
   "opt.an.oi.aria": "Open interest kwa strike: call juu, put chini",
   "opt.an.pcr.title": "Uwiano wa put / call",
   "opt.an.pcr.hint": "Put zikigawanywa kwa call katika tarehe hii ya kuisha. Zaidi ya 1: put ni nyingi kuliko call.",
@@ -1027,7 +1027,7 @@ const trader: NsMessages<"trader"> = {
   "opt.share.copy": "Nakili kiungo",
   "opt.share.copied": "Kiungo kimenakiliwa",
   "opt.share.shareTo": "Shiriki kwa",
-  "opt.share.text": "Biashara yangu ya option ya {contract} kwenye Kalks",
+  "opt.share.text": "Biashara yangu ya option ya {contract} kwenye Ezymex",
   "opt.share.error": "Imeshindikana kuunda kadi ya kushiriki",
   "opt.share.readOnly": "Vipindi vya mwekezaji (kusoma tu) haviwezi kuunda kadi za kushiriki.",
   "opt.share.preview": "Onyesho la kadi ya kushiriki",
@@ -1188,7 +1188,7 @@ const trader: NsMessages<"trader"> = {
   "opt.pos.d.nowEach": "Thamani sasa, kwa kila mkataba",
   "opt.pos.d.where": "Imefanyiwa biashara kwenye",
   "opt.pos.d.book": "Kitabu cha oda",
-  "opt.pos.d.house": "Bei za Kalks",
+  "opt.pos.d.house": "Bei za Ezymex",
   "opt.pos.comboPaid": "Ulilipa {amount} kwa mkakati huu.",
   "opt.pos.comboReceived": "Ulipokea {amount} kwa mkakati huu.",
   "opt.pos.emptyTitle": "Bado hakuna options zilizo wazi",
@@ -1214,8 +1214,8 @@ const trader: NsMessages<"trader"> = {
   "opt.err.series_cancel_only": "Biashara ya mojawapo ya options hizi imesitishwa kwa sasa (kughairi tu). Jaribu tena baadaye.",
   "opt.err.series_closed": "Mojawapo ya options hizi imeacha kuuzwa: iko karibu sana na tarehe yake ya kuisha.",
   "opt.err.rfq_underlyings": "Sehemu zote za mkakati lazima ziwe kwenye soko moja, kwa mfano zote EURUSD.",
-  "opt.err.kalks_quoted": "Mkakati huu una sehemu ya barrier. Options za barrier hupewa bei na Kalks, si kwenye kitabu cha oda, kwa hiyo mkakati huu unawekwa kama oda moja kwa bei za Kalks.",
-  "opt.err.mixed_venue": "Mkakati huu una sehemu kwenye kitabu cha oda na sehemu zinazopewa bei na Kalks, kwa hiyo hauwezi kufungwa kwa mara moja. Funga sehemu moja baada ya nyingine.",
+  "opt.err.ezymex_quoted": "Mkakati huu una sehemu ya barrier. Options za barrier hupewa bei na Ezymex, si kwenye kitabu cha oda, kwa hiyo mkakati huu unawekwa kama oda moja kwa bei za Ezymex.",
+  "opt.err.mixed_venue": "Mkakati huu una sehemu kwenye kitabu cha oda na sehemu zinazopewa bei na Ezymex, kwa hiyo hauwezi kufungwa kwa mara moja. Funga sehemu moja baada ya nyingine.",
   "opt.err.book_venue": "Options hizi zinauzwa kwenye kitabu cha oda. Mkakati hauwezi kuchanganya sehemu za kitabu cha oda na sehemu za barrier: ziweke kwa oda tofauti.",
   "opt.rfq.err.quote_expired": "Bei hiyo si halali tena (bei hudumu sekunde chache tu). Pata bei mpya kisha uikubali.",
   "opt.rfq.err.price_moved": "Bei ilibadilika kabla oda yako haijafika, kwa hiyo hakuna biashara iliyofanyika. Pata bei mpya na ujaribu tena.",
@@ -1226,7 +1226,7 @@ const trader: NsMessages<"trader"> = {
   "opt.rfq.err.no_liquidity": "Market maker hawezi kutoa bei ya mkakati huu kwa sasa. Jaribu tena baada ya muda mfupi, au funga sehemu moja baada ya nyingine.",
   "opt.rfq.err.rejected": "Mkakati haukutekelezwa, na hakuna biashara iliyofanyika. Jaribu tena.",
   "opt.rfq.newPrice": "Pata bei mpya",
-  "opt.rfq.houseNote": "Options za barrier hupewa bei na Kalks, si kwenye kitabu cha oda: mkakati huu unawekwa kama oda moja kwa bei za Kalks, sehemu zote pamoja au hakuna.",
+  "opt.rfq.houseNote": "Options za barrier hupewa bei na Ezymex, si kwenye kitabu cha oda: mkakati huu unawekwa kama oda moja kwa bei za Ezymex, sehemu zote pamoja au hakuna.",
   "opt.toast.settling": "takwimu za mwisho baada ya muda mfupi",
   "opt.toast.tryAgain": "Jaribu tena",
   "opt.toast.strategyClosedBook": "Mkakati umefungwa kupitia kitabu cha oda",
@@ -1234,10 +1234,10 @@ const trader: NsMessages<"trader"> = {
   "opt.pos.closedNetGot": "Sehemu zote zimefungwa pamoja: ulipokea {amount} · P&L {pnl}",
   "opt.hist.reason.bust": "Imeghairiwa",
   "opt.hist.why.risk": "Imefungwa na udhibiti wa hatari (margin iko chini mno)",
-  "opt.hist.why.backstop": "Imefungwa na udhibiti wa hatari (margin iko chini mno): market maker wa Kalks aliichukua nafasi hiyo",
+  "opt.hist.why.backstop": "Imefungwa na udhibiti wa hatari (margin iko chini mno): market maker wa Ezymex aliichukua nafasi hiyo",
   "opt.hist.why.bust": "Biashara imeghairiwa na dawati la biashara; imebatilishwa",
   "opt.hist.closedRisk": "Imefungwa na udhibiti wa hatari (margin iko chini mno) kwa {close}, kwa kila mkataba",
-  "opt.hist.closedBackstop": "Imefungwa na udhibiti wa hatari (margin iko chini mno): market maker wa Kalks aliichukua kwa {close}, kwa kila mkataba",
+  "opt.hist.closedBackstop": "Imefungwa na udhibiti wa hatari (margin iko chini mno): market maker wa Ezymex aliichukua kwa {close}, kwa kila mkataba",
   "opt.hist.closedBust": "Biashara imeghairiwa na dawati la biashara na kubatilishwa kwa {close}, kwa kila mkataba",
   "opt.bust.title": "Biashara imeghairiwa na dawati la biashara",
   "opt.bust.text": "{what} × {n}: biashara imebatilishwa na ada yoyote imerudishwa.",

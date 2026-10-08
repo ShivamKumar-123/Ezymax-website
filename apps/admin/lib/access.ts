@@ -1,4 +1,4 @@
-import type { NavModule } from "@kalks/ui";
+import type { NavModule } from "@ezymex/ui";
 
 /**
  * Which permission opens which Back Office page (longest matching prefix wins; any listed key is enough).

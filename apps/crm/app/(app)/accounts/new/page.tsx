@@ -6,13 +6,13 @@ import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, ArrowRight, CandlestickChart, Check, Info, Lock, Moon, Server, ShieldCheck, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { Trans, useT } from "@kalks/i18n/react";
+import { Trans, useT } from "@ezymex/i18n/react";
 import { Button, Card, CardHeader, Chip, Field, Icon3D, Input, KeyValue, PageHeader, Reveal, Starfield, Stepper, Toggle, cn } from "@/components/kit";
-import { ACCOUNT_GROUPS } from "@kalks/mock";
-import { DEMO_RULES } from "@kalks/mock/accounts-extra";
+import { ACCOUNT_GROUPS } from "@ezymex/mock";
+import { DEMO_RULES } from "@ezymex/mock/accounts-extra";
 import { GroupCard } from "@/components/accounts/group-card";
 import { CredentialField, PasswordInput, PasswordStrength, generatePassword, isPasswordValid } from "@/components/accounts/security";
-import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LiveOpenAccount } from "@/components/trading/open-account";
 import { TERMINAL_URL } from "@/lib/live";
 
@@ -106,7 +106,7 @@ function Summary({ cfg, step }: { cfg: Cfg; step: number }) {
       <div className="px-6 pb-5">
         <KeyValue
           rows={[
-            [t("accounts.label.server"), <span key="s" className="font-mono">{cfg.kind === "live" ? (g.cent ? "Kalks-Live02" : "Kalks-Live01") : "Kalks-Demo"}</span>],
+            [t("accounts.label.server"), <span key="s" className="font-mono">{cfg.kind === "live" ? (g.cent ? "Ezymex-Live02" : "Ezymex-Live01") : "Ezymex-Demo"}</span>],
             [t("common.currency"), g.cent ? t("accounts.currency.uscCent") : "USD"],
             [t("accounts.label.leverage"), `1:${cfg.leverage.toLocaleString()}`],
             [t("accounts.label.spreadFrom"), t("accounts.unit.pips", { value: g.spreadFrom })],
@@ -161,7 +161,7 @@ function Wizard() {
     }, 900);
   };
 
-  const server = cfg.kind === "live" ? (g.cent ? "Kalks-Live02" : "Kalks-Live01") : "Kalks-Demo";
+  const server = cfg.kind === "live" ? (g.cent ? "Ezymex-Live02" : "Ezymex-Live01") : "Ezymex-Demo";
 
   return (
     <div className="pb-16">

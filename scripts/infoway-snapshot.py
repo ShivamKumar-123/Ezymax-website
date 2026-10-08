@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """Snapshot of the Infoway instrument universe, the input of scripts/gen-catalogue.mjs.
 
-WHY: config/instruments.json lists every instrument Kalks carries. Its provider-catalogue rows are generated from
+WHY: config/instruments.json lists every instrument Ezymex carries. Its provider-catalogue rows are generated from
 this snapshot (symbol lists, names, currencies, exchanges, a recent price and turnover per symbol), so the
 generation is reproducible and reviewable in git, and no service needs the provider at startup.
 
 HOW (production server only: the provider key is the server's and allows a single stream connection, so never run
 the fetch from a laptop with the production key):
 
-    ssh kalks-vps 'cd ~/kalks && python3 scripts/infoway-snapshot.py fetch' > config/provider/infoway-snapshot.json
+    ssh ezymex-vps 'cd ~/ezymex && python3 scripts/infoway-snapshot.py fetch' > config/provider/infoway-snapshot.json
     node scripts/gen-catalogue.mjs
 
-`fetch` reads INFOWAY_API_KEY from ~/kalks/.env.local (never printed), calls only the provider's read-only REST
+`fetch` reads INFOWAY_API_KEY from ~/ezymex/.env.local (never printed), calls only the provider's read-only REST
 reference endpoints (symbol lists, symbol info, the latest two daily bars, trading days) at ~3 requests/s, under the
 plan's 10/s so the live service keeps its share, and writes the snapshot JSON to stdout. Nothing on the server
 changes.
@@ -107,11 +107,11 @@ def compact(lists, infos, bars, days, plan, fetched_at):
 
 def fetch():
     key = None
-    for line in open(os.path.expanduser("~/kalks/.env.local")):
+    for line in open(os.path.expanduser("~/ezymex/.env.local")):
         if line.startswith("INFOWAY_API_KEY="):
             key = line.split("=", 1)[1].strip().strip('"').strip("'")
     if not key:
-        sys.exit("INFOWAY_API_KEY not found in ~/kalks/.env.local")
+        sys.exit("INFOWAY_API_KEY not found in ~/ezymex/.env.local")
     base = os.environ.get("INFOWAY_REST_URL", "https://data.infoway.io").rstrip("/")
     last = [0.0]
 

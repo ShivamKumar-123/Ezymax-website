@@ -20,7 +20,7 @@ const academy: NsMessages<"academy"> = {
   "practice.demo": "Demoda pratik yapın",
   "practice.openFreeDemo": "Ücretsiz demo hesap açın",
   "practice.openDemo": "Demo aç",
-  "practice.inTrader": "Kalks Trader'da pratik yapın",
+  "practice.inTrader": "Ezymex Trader'da pratik yapın",
 
   // Levels (sent by the Academy service)
   "level.beginner": "Başlangıç",
@@ -31,12 +31,12 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "Temel analiz",
   "track.technical": "Teknik analiz",
-  // Product track of the Kalks FX Options elective (phase 9)
+  // Product track of the Ezymex FX Options elective (phase 9)
   "track.options": "Opsiyon işlemleri",
   "trackShort.fundamental": "Temel",
   "trackShort.technical": "Teknik",
   "trackShort.options": "Opsiyonlar",
-  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  // Chip on a product course (e.g. Ezymex FX Options) that sits outside the eight core phases and can be taken at any time
   elective: "Seçmeli",
 
   // Durations (h = hours, m = minutes)
@@ -52,7 +52,7 @@ const academy: NsMessages<"academy"> = {
   "home.pathText": "Her ana aşamada bir temel ve bir teknik bölüm, bir final sınavı ve bir sertifika bulunur.",
   // Section under the learning path listing the electives
   "home.electivesTitle": "Seçmeli kurslar",
-  "home.electivesText": "Kalks ürünleriyle ilgili kurslar. İstediğiniz zaman alın: her birinin kendi final sınavı ve sertifikası vardır.",
+  "home.electivesText": "Ezymex ürünleriyle ilgili kurslar. İstediğiniz zaman alın: her birinin kendi final sınavı ve sertifikası vardır.",
   "hero.allDone": "Tüm bölümler tamamlandı",
   "hero.continue": "Öğrenmeye devam edin",
   "hero.upNext": "Sıradaki",
@@ -220,7 +220,7 @@ const academy: NsMessages<"academy"> = {
   "callout.example": "Örnek",
   "callout.tip": "İpucu",
   "callout.note": "Not",
-  "callout.inKalksTrader": "Kalks Trader'da",
+  "callout.inEzymexTrader": "Ezymex Trader'da",
   diagram: "Diyagram",
 };
 export default academy;

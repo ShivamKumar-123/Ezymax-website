@@ -6,7 +6,7 @@ import { Gift, History, Medal, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, Icon3D, KpiCard, PageHeader, Reveal } from "@/components/kit";
 import { ContestHero, Leaderboard, PastContests, PrizeCard, UpcomingContests } from "@/components/rewards/contests";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveContestsPage } from "@/components/growth/contests";
 
 function RewardsShortcuts() {
@@ -46,7 +46,7 @@ function DemoContestsPage() {
             <Button variant="surface" onClick={() => toast("Contest history", { description: "You've entered 6 contests · best finish #9 (Demo Sprint · July)" })}>
               <History /> My history
             </Button>
-            <Button variant="ember" shimmer onClick={() => toast.success("Invite link copied", { description: "kalks.com/contest/gold-rush?ref=ARJUN24 · both get +250 pts" })}>
+            <Button variant="ember" shimmer onClick={() => toast.success("Invite link copied", { description: "ezymex.com/contest/gold-rush?ref=ARJUN24 · both get +250 pts" })}>
               <Sparkles /> Invite a friend
             </Button>
           </>

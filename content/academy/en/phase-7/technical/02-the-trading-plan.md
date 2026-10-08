@@ -99,13 +99,13 @@ Risk per 1.00 lot = 25 x 10 USD = 250 USD
 Lot size = 50 / 250 = 0.20 lot
 ```
 
-The daily and weekly limits are there for the days when judgement deteriorates. They are easy to accept in advance and hard to follow in the moment, so decide now what you will physically do when a limit is hit, such as closing Kalks Trader and writing the day's journal entry.
+The daily and weekly limits are there for the days when judgement deteriorates. They are easy to accept in advance and hard to follow in the moment, so decide now what you will physically do when a limit is hit, such as closing Ezymex Trader and writing the day's journal entry.
 
 > **Risk warning:** CFDs are leveraged and losses can exceed what you plan. A plan improves consistency but does not guarantee profits; even a well-tested strategy can have long losing periods.
 
 ## News and exceptional conditions
 
-State in advance how you handle scheduled events: flat before high-impact releases on your currencies, no new trades for a set time after, or a reduced size. Also decide what happens around weekends, holidays and unusual spreads. Kalks Trader shows live spreads; a rule such as "no entry if the spread is more than twice its normal level" is simple and effective.
+State in advance how you handle scheduled events: flat before high-impact releases on your currencies, no new trades for a set time after, or a reduced size. Also decide what happens around weekends, holidays and unusual spreads. Ezymex Trader shows live spreads; a rule such as "no entry if the spread is more than twice its normal level" is simple and effective.
 
 ## Updating the plan without drifting
 

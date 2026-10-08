@@ -22,11 +22,11 @@ import {
   cn,
   formatDateTime,
   type Column,
-} from "@kalks/ui";
-import { PEOPLE } from "@kalks/mock";
-import { ANL_DELIVERY_LOG, ANL_SCHEDULES, anlStaffEmail, type AnlDelivery, type AnlSchedule } from "@kalks/mock/admin-growth-analytics";
+} from "@ezymex/ui";
+import { PEOPLE } from "@ezymex/mock";
+import { ANL_DELIVERY_LOG, ANL_SCHEDULES, anlStaffEmail, type AnlDelivery, type AnlSchedule } from "@ezymex/mock/admin-growth-analytics";
 import { ScheduleDialog, type ScheduleDraft } from "@/components/analytics/schedule-dialog";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveScheduled } from "@/components/reports/live-ops";
 
 const PHOTO_BY_EMAIL = Object.fromEntries(PEOPLE.map((p) => [anlStaffEmail(p), p]));
@@ -217,7 +217,7 @@ function DemoScheduledReportsPage() {
                   toast.success("Schedule duplicated", { description: `${c.name} · paused until you enable it` });
                 },
               },
-              { label: "Send test to me", icon: <Send />, onSelect: () => toast.success("Test sent", { description: `${s.report} → priya.nair@kalks.com` }) },
+              { label: "Send test to me", icon: <Send />, onSelect: () => toast.success("Test sent", { description: `${s.report} → priya.nair@ezymex.com` }) },
               "sep",
               {
                 label: "Delete",

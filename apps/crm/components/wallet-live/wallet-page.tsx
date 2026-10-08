@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, ArrowUpRight, Bell, ChevronRight, History, Lock } from "lucide-react";
 import { Button, Card, CardHeader, Chip, EmptyState, PageHeader, Skeleton, formatDateTime } from "@/components/kit";
-import { Trans, useT } from "@kalks/i18n/react";
+import { Trans, useT } from "@ezymex/i18n/react";
 import { useReadOnly, useSession } from "@/components/session";
 import { toUsd, useAccounts } from "@/components/trading/api";
 import { CHAIN_LABEL, fmt, usdtAvailable, useWallet, walletApi, type ActivityItem, type Notification, type Overview, type Page } from "./api";

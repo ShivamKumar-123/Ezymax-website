@@ -194,7 +194,7 @@ const kyc: NsMessages<"kyc"> = {
   "review.missing": "Eksik",
   "review.flagged": "İncelemeye işaretlendi",
   "review.passed": "Kontroller geçti",
-  "review.consent": "Belgelerin gerçek olduğunu ve bana (veya şirkete ve yetkililerine) ait olduğunu onaylıyor, Kalks tarafından kimlik ve AML taraması yapılmasına izin veriyorum.",
+  "review.consent": "Belgelerin gerçek olduğunu ve bana (veya şirkete ve yetkililerine) ait olduğunu onaylıyor, Ezymex tarafından kimlik ve AML taraması yapılmasına izin veriyorum.",
 
   // More information requested by the review team
   "moreInfo.title": "Sizden biraz daha bilgiye ihtiyacımız var",
@@ -359,7 +359,7 @@ const kyc: NsMessages<"kyc"> = {
   // Client-side fallback errors
   "error.sessionEnded": "Oturumunuz sona erdi.",
   "error.generic": "Bir sorun oluştu. Lütfen tekrar deneyin.",
-  "error.network": "Kalks'a ulaşılamıyor. Bağlantınızı kontrol edip tekrar deneyin.",
+  "error.network": "Ezymex'a ulaşılamıyor. Bağlantınızı kontrol edip tekrar deneyin.",
   "error.uploadFailed": "Yükleme başarısız oldu. Lütfen tekrar deneyin.",
   "error.uploadInterrupted": "Yükleme kesildi. Bağlantınızı kontrol edip tekrar deneyin.",
 

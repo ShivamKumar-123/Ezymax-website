@@ -3,9 +3,9 @@
 import * as React from "react";
 import { Check, Sparkles } from "lucide-react";
 import { cn } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
-import type { MessageKey } from "@kalks/i18n";
-import type { ACCOUNT_GROUPS } from "@kalks/mock";
+import { useT } from "@ezymex/i18n/react";
+import type { MessageKey } from "@ezymex/i18n";
+import type { ACCOUNT_GROUPS } from "@ezymex/mock";
 
 export type AccountGroup = (typeof ACCOUNT_GROUPS)[number];
 

@@ -1,4 +1,4 @@
-//! Public order-book market data (docs/OPTIONS-EXCHANGE.md §10), no login, exposed on `api.*` by Caddy. Tenant `kalks`
+//! Public order-book market data (docs/OPTIONS-EXCHANGE.md §10), no login, exposed on `api.*` by Caddy. Tenant `ezymex`
 //! (the platform book); `?kind=live|demo` picks the account kind's book (default live). Every answer is cached 1 s;
 //! each client IP may make 10 requests / s (429 `rate_limited` beyond).
 //!
@@ -39,7 +39,7 @@ const MAX_TRADES: usize = 200;
 /// The client's IP for the rate limit: the first `X-Forwarded-For` hop (Caddy), else `X-Real-IP`, else the peer.
 /// `None` for internal callers (a valid internal token, or a loopback peer without forwarding headers, e.g. the BFFs).
 pub fn client_ip(h: &HeaderMap, peer: Option<IpAddr>, internal_token: &str) -> Option<IpAddr> {
-    if !internal_token.is_empty() && h.get("x-kalks-internal").is_some_and(|v| bool::from(v.as_bytes().ct_eq(internal_token.as_bytes()))) {
+    if !internal_token.is_empty() && h.get("x-ezymex-internal").is_some_and(|v| bool::from(v.as_bytes().ct_eq(internal_token.as_bytes()))) {
         return None;
     }
     let fwd = h
@@ -263,9 +263,9 @@ mod tests {
         h.insert("x-forwarded-for", "198.51.100.7, 10.0.0.1".parse().unwrap());
         assert_eq!(client_ip(&h, Some(lo), "tok"), Some("198.51.100.7".parse().unwrap()));
         // the internal token exempts
-        h.insert("x-kalks-internal", "tok".parse().unwrap());
+        h.insert("x-ezymex-internal", "tok".parse().unwrap());
         assert_eq!(client_ip(&h, Some(lo), "tok"), None);
-        h.insert("x-kalks-internal", "nope".parse().unwrap());
+        h.insert("x-ezymex-internal", "nope".parse().unwrap());
         assert!(client_ip(&h, Some(lo), "tok").is_some());
         // X-Real-IP when there is no X-Forwarded-For
         let mut h2 = HeaderMap::new();

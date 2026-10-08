@@ -21,7 +21,7 @@ const shell: NsMessages<"shell"> = {
   security: "الأمان",
   verification: "التحقق",
   preferences: "التفضيلات",
-  kalksTrader: "Kalks Trader",
+  ezymexTrader: "Ezymex Trader",
   deposit: "إيداع",
   // Client Area navigation
   "nav.dashboard": "لوحة التحكم",
@@ -92,7 +92,7 @@ const shell: NsMessages<"shell"> = {
   "gate.title": "غير مفعّل لحسابك بعد",
   "gate.text": "هذا القسم غير مفعّل لحسابك بعد. تواصل مع {email} إذا كنت بحاجة إلى الوصول.",
   "gate.backToDashboard": "العودة إلى لوحة التحكم",
-  "gate.launchTrader": "تشغيل Kalks Trader",
+  "gate.launchTrader": "تشغيل Ezymex Trader",
   // market sessions clock
   "sessions.title": "جلسات السوق",
   "sessions.openLeft": "مفتوح · متبقٍ {h}س {m}د",

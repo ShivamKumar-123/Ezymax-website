@@ -98,7 +98,7 @@ const accounts: NsMessages<"accounts"> = {
   "empty.openFirst": "Откройте первый счёт, чтобы начать торговать.",
   "empty.noLive": "Реальных счетов пока нет",
   "empty.noDemo": "Демо-счетов пока нет",
-  "empty.liveText": "Откройте реальный счёт прямо сейчас и мгновенно получите логин и пароли. Пополните его из Вашего кошелька Kalks.",
+  "empty.liveText": "Откройте реальный счёт прямо сейчас и мгновенно получите логин и пароли. Пополните его из Вашего кошелька Ezymex.",
   "empty.demoText": "На демо-счёте — виртуальные средства и котировки в реальном времени, так что Вы можете практиковаться без риска.",
   "error.unavailableTitle": "Торговые счета недоступны",
   "error.unavailableText": "Не удалось связаться с торговым сервисом. Ваши счета и средства в безопасности; пожалуйста, попробуйте чуть позже.",
@@ -120,13 +120,13 @@ const accounts: NsMessages<"accounts"> = {
   // Platforms card (demo build)
   "platform.mt5Compatible": "Совместим с MT5",
   "platform.title": "Торгуйте где угодно",
-  "platform.text": "Kalks WebTerminal, MetaTrader 5 для компьютера и смартфона — один логин, одни учётные данные.",
+  "platform.text": "Ezymex WebTerminal, MetaTrader 5 для компьютера и смартфона — один логин, одни учётные данные.",
   "platform.downloading": "Загрузка MetaTrader 5",
   "platform.mt5Desktop": "MT5 для компьютера",
 
   // Account types section on the accounts list
   "types.title": "Типы счетов",
-  "types.subtitle": "Одинаковые инструменты и Kalks Trader на всех типах. Выберите подходящее ценообразование и режим позиций.",
+  "types.subtitle": "Одинаковые инструменты и Ezymex Trader на всех типах. Выберите подходящее ценообразование и режим позиций.",
   "types.footer": "Защита от отрицательного баланса на каждом счёте · Плечо можно изменить только без открытых позиций · Демо-баланс можно пополнять несколько раз в день.",
   "compare.title": "Сравнение типов счетов",
   "compare.subtitle": "Одинаковые инструменты, платформы и защита — выберите ценообразование под свой стиль.",
@@ -170,7 +170,7 @@ const accounts: NsMessages<"accounts"> = {
   // Account row and its actions menu
   "row.trade": "Торговать",
   "row.refill": "Пополнить",
-  "row.cantOpenTrader": "Этот счёт нельзя открыть в Kalks Trader",
+  "row.cantOpenTrader": "Этот счёт нельзя открыть в Ezymex Trader",
   "row.openPositions": {
     one: "{count} открытая позиция",
     few: "{count} открытые позиции",
@@ -219,7 +219,7 @@ const accounts: NsMessages<"accounts"> = {
   "fund.centAccount": "центовый счёт (USC)",
   "fund.depositUsdt": "Внести USDT",
   "fund.transferFromWallet": "Перевести из кошелька",
-  "fund.fromWallet": "Пополняется из Вашего кошелька Kalks",
+  "fund.fromWallet": "Пополняется из Вашего кошелька Ezymex",
   "fund.text": "Внесите USDT в сети BNB Chain или TRON на кошелёк, затем мгновенно переведите средства на этот счёт. USDT зачисляется 1:1 в USD.",
   "fund.textCent": "Внесите USDT в сети BNB Chain или TRON на кошелёк, затем мгновенно переведите средства на этот счёт. USDT зачисляется 1:1 в USD, а на центовом счёте отображается ×100 в USC.",
 
@@ -285,7 +285,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.swapFreeTitle": "Исламский счёт без свопов",
   "wizard.swapFreeText": "Без свопов за перенос позиций. По некоторым инструментам после 5 ночей может взиматься фиксированная комиссия.",
   "wizard.setPasswordTitle": "Задайте торговый пароль",
-  "wizard.setPasswordSubtitle": "Ваш мастер-пароль для MT5 и терминала Kalks. Инвесторский пароль (только чтение) будет сгенерирован автоматически.",
+  "wizard.setPasswordSubtitle": "Ваш мастер-пароль для MT5 и терминала Ezymex. Инвесторский пароль (только чтение) будет сгенерирован автоматически.",
   "wizard.agreeMock": "Я принимаю <client>Клиентское соглашение</client> и <risk>Уведомление о рисках</risk> и понимаю, что CFD сопряжены с высоким риском потери денежных средств.",
   "wizard.clientAgreementOpened": "Клиентское соглашение открыто",
   "wizard.riskDisclosureOpened": "Уведомление о рисках открыто",
@@ -317,10 +317,10 @@ const accounts: NsMessages<"accounts"> = {
   "kind.demoText": "Практикуйтесь без риска на котировках в реальном времени.",
   "kind.liveTextMock": "Торгуйте на реальных рынках реальными деньгами. Мгновенное пополнение из USDT-кошелька.",
   "kind.demoTextMock": "Практикуйтесь без риска с виртуальными средствами на котировках в реальном времени.",
-  "kind.live.point1": "Реальное исполнение на Kalks-Live",
+  "kind.live.point1": "Реальное исполнение на Ezymex-Live",
   "kind.live.point2": "Открывается с нулевым балансом; пополнение из кошелька",
   "kind.live.point3": "Логин и пароли выдаются мгновенно",
-  "kind.live.mock1": "Реальное исполнение на серверах Kalks-Live",
+  "kind.live.mock1": "Реальное исполнение на серверах Ezymex-Live",
   "kind.live.mock2": "Мгновенное пополнение в USDT, 1:1 к USD",
   "kind.live.mock3": "Вывод прибыли в любое время (после KYC)",
   "kind.demo.virtualFunds": "Виртуальные средства (по умолчанию {amount})",
@@ -336,12 +336,12 @@ const accounts: NsMessages<"accounts"> = {
 
   // Open account wizard: account created
   "created.title": "Ваш счёт готов",
-  "created.liveText": "Счёт открыт с нулевым балансом. Пополните его из Вашего кошелька Kalks, затем войдите в Kalks Trader с этими данными.",
+  "created.liveText": "Счёт открыт с нулевым балансом. Пополните его из Вашего кошелька Ezymex, затем войдите в Ezymex Trader с этими данными.",
   "created.demoText": "Зачислено {amount} виртуальных средств.",
   "created.demoExpires": "Истекает через {days} дн. без входа в терминал.",
   "created.liveTextMock": "Пополните его из USDT-кошелька и начните торговать за секунды.",
   "created.demoTextMock": "Зачислено {amount} виртуальных средств. Истекает через {days} дн.",
-  "created.openInTrader": "Открыть в Kalks Trader",
+  "created.openInTrader": "Открыть в Ezymex Trader",
   "created.openTerminal": "Открыть терминал",
   "created.viewAccount": "Перейти к счёту",
   "created.credentials": "Данные для входа",
@@ -362,7 +362,7 @@ const accounts: NsMessages<"accounts"> = {
   "error.account_limit": "Вы достигли максимального количества счетов этого типа.",
   "error.invalid_leverage": "Это плечо недоступно для группы счёта.",
   "error.unavailable": "Торговый сервис недоступен. Пожалуйста, повторите попытку чуть позже.",
-  "toast.openTraderFailed": "Не удалось открыть Kalks Trader",
+  "toast.openTraderFailed": "Не удалось открыть Ezymex Trader",
   "toast.exportStarted": "Экспорт выписки запущен",
   "toast.exportDesc": "#{login} · {kind} · CSV, время в UTC",
   "export.trades": "сделки",
@@ -443,7 +443,7 @@ const accounts: NsMessages<"accounts"> = {
   "close.subtitle": "Закрытый счёт Вы не сможете восстановить самостоятельно. Если он может понадобиться снова, лучше удалите (архивируйте) его.",
   "close.blocked": "Этот счёт сейчас нельзя закрыть",
   "close.finalTitle": "Закрытие необратимо",
-  "close.final1": "Торговля, переводы и вход в Kalks Trader прекращаются навсегда, а номер логина больше никогда не используется.",
+  "close.final1": "Торговля, переводы и вход в Ezymex Trader прекращаются навсегда, а номер логина больше никогда не используется.",
   "close.final2": "Выписки и история остаются доступны в разделе Счета › В архиве.",
   "close.final3": "Наша команда комплаенса рассмотрит запрос и сообщит Вам по почте и в уведомлениях.",
   "close.whyTitle": "Почему Вы закрываете этот счёт?",
@@ -551,7 +551,7 @@ const accounts: NsMessages<"accounts"> = {
   "dormant.chip": "Неактивен",
   "history.zip": "Скачать всю историю (ZIP)",
 
-  // Kalks FX Options in trade history, positions, orders and exports
+  // Ezymex FX Options in trade history, positions, orders and exports
   "opt.tag": "Опцион",
   "opt.call": "Колл",
   "opt.put": "Пут",
@@ -567,7 +567,7 @@ const accounts: NsMessages<"accounts"> = {
   "opt.filter.cfd": "CFD",
   "opt.filter.options": "Опционы",
   "opt.emptyOptions": "За этот период сделок с опционами нет",
-  "opt.emptyOptionsText": "Здесь появляются опционы, которые Вы покупаете или продаёте в Kalks Trader, и то, чем закончился каждый: закрыт, истёк или выбит (нок-аут).",
+  "opt.emptyOptionsText": "Здесь появляются опционы, которые Вы покупаете или продаёте в Ezymex Trader, и то, чем закончился каждый: закрыт, истёк или выбит (нок-аут).",
   "opt.emptyCfd": "За этот период сделок с CFD нет",
   "opt.truncated": "Показаны {count} последних подходящих сделок. Выберите более короткий период, чтобы увидеть более ранние.",
   // How a deal was closed

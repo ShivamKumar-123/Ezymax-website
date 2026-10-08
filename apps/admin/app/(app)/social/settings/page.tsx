@@ -2,10 +2,10 @@
 
 import * as React from "react";
 import { RotateCcw, Save } from "lucide-react";
-import { Button, Card, CardHeader, Chip, Icon3D, PageHeader, Reveal, Toggle, cn } from "@kalks/ui";
-import { MASTERS, SOCIAL_SETTINGS } from "@kalks/mock/admin-partners";
+import { Button, Card, CardHeader, Chip, Icon3D, PageHeader, Reveal, Toggle, cn } from "@ezymex/ui";
+import { MASTERS, SOCIAL_SETTINGS } from "@ezymex/mock/admin-partners";
 import { ChipList, MiniField, NumInput, Select, SettingRow, Slider, auditToast, useReason } from "@/components/config/kit";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveSocialSettingsPage } from "@/components/social-live/settings";
 
 type S = typeof SOCIAL_SETTINGS;

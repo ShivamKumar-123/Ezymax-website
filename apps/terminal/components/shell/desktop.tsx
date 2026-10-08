@@ -16,9 +16,9 @@ import * as React from "react";
 import dynamic from "next/dynamic";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { ChevronsLeft } from "lucide-react";
-import { cn } from "@kalks/ui";
+import { cn } from "@ezymex/ui";
 import { useTerminal } from "@/lib/store";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { Tip } from "@/components/ui/kit";
 import { ChartWorkspace } from "@/components/chart/workspace";
 import { Toolbox } from "@/components/toolbox/toolbox";
@@ -97,10 +97,10 @@ export function DesktopTerminal() {
       {/* the first screen: the chart fills it (split mode: the positions panel shares it, under the chart) */}
       <section className={cn("flex flex-col gap-2", full ? "t-backdrop fixed inset-0 z-40 p-1.5" : "h-[calc(100dvh-48px)] px-2 pb-2 pt-2")}>
         {/* one tree for every state, so the chart never remounts when the column, the positions panel or Full chart toggle */}
-        <PanelGroup direction="vertical" autoSaveId="kalks.terminal5.v" className="min-h-0 flex-1">
+        <PanelGroup direction="vertical" autoSaveId="ezymex.terminal5.v" className="min-h-0 flex-1">
           <Panel id="top" order={1} minSize={35}>
             <div className="relative flex h-full min-h-0 gap-2">
-              <PanelGroup direction="horizontal" autoSaveId="kalks.terminal4.h" className="min-w-0 flex-1">
+              <PanelGroup direction="horizontal" autoSaveId="ezymex.terminal4.h" className="min-w-0 flex-1">
                 <Panel id="main" order={1} minSize={40}>
                   <div ref={center} className="h-full min-w-0">
                     {main}

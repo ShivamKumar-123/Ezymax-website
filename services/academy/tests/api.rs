@@ -3,10 +3,10 @@
 //! public verification, the certificate image, idempotent re-seeding and the Back Office CMS (tenant override,
 //! unpublish, reset, create, reorder, stats).
 //!
-//! Needs the local Postgres (127.0.0.1:5433). Uses a throw-away database `kalks_academy_test_<pid>`; skipped
+//! Needs the local Postgres (127.0.0.1:5433). Uses a throw-away database `ezymex_academy_test_<pid>`; skipped
 //! with a message when Postgres is not reachable. Override with ACADEMY_TEST_DATABASE_URL (a server URL).
 //! Also lints the real content/academy tree (the same check as `academy-lint`) and checks the shape of the
-//! phase 9 elective (Kalks FX Options: one `options` section, examined chapter by chapter). The fixture has a
+//! phase 9 elective (Ezymex FX Options: one `options` section, examined chapter by chapter). The fixture has a
 //! core phase and an options-only product phase, which is studied, examined and certified independently.
 
 use axum::body::Body;
@@ -72,7 +72,7 @@ fn fixture(root: &Path) {
 async fn test_db() -> Option<String> {
     let server = std::env::var("ACADEMY_TEST_DATABASE_URL").unwrap_or_else(|_| "postgres://postgres@127.0.0.1:5433/postgres".into());
     let opts = PgConnectOptions::from_str(&server).ok()?;
-    let db = format!("kalks_academy_test_{}", std::process::id());
+    let db = format!("ezymex_academy_test_{}", std::process::id());
     let mut conn = match opts.clone().database("postgres").connect().await {
         Ok(c) => c,
         Err(e) => {
@@ -99,7 +99,7 @@ struct Client {
 
 impl Client {
     async fn call(&self, method: &str, path: &str, headers: &[(&str, &str)], body: Option<Value>) -> (StatusCode, Value, String) {
-        let mut rb = Request::builder().method(method).uri(path).header("x-kalks-internal", "test-token");
+        let mut rb = Request::builder().method(method).uri(path).header("x-ezymex-internal", "test-token");
         for (k, v) in headers {
             rb = rb.header(*k, *v);
         }
@@ -117,8 +117,8 @@ impl Client {
     }
 }
 
-const U: &[(&str, &str)] = &[("x-kalks-tenant", "kalks"), ("x-kalks-user-id", "42")];
-const S: &[(&str, &str)] = &[("x-kalks-tenant", "kalks"), ("x-kalks-staff", "editor@kalks.test")];
+const U: &[(&str, &str)] = &[("x-ezymex-tenant", "ezymex"), ("x-ezymex-user-id", "42")];
+const S: &[(&str, &str)] = &[("x-ezymex-tenant", "ezymex"), ("x-ezymex-staff", "editor@ezymex.test")];
 
 #[tokio::test]
 async fn real_content_passes_lint() {
@@ -136,7 +136,7 @@ async fn real_content_passes_lint() {
             let tracks: Vec<&str> = p.sections.iter().map(|s| s.def.track.as_str()).collect();
             assert_eq!(tracks, ["fundamental", "technical"], "{}", p.dir);
         }
-        // phase 9: the Kalks FX Options elective, one options section, every chapter examined
+        // phase 9: the Ezymex FX Options elective, one options section, every chapter examined
         let p9 = b.phases.iter().find(|p| p.slug == "phase-9").expect("phase-9 is missing");
         assert_eq!((p9.order, p9.sections.len()), (9, 1));
         assert_eq!(p9.sections[0].def.track, "options");
@@ -259,7 +259,7 @@ async fn academy_end_to_end() {
     let (_, r, _) = c.call("POST", "/v1/exams/phase-1", U, Some(json!({"answers": [3,3,3,3,3,3,3,3,3,3]}))).await;
     assert_eq!(r["passed"], false);
     assert!(r["certificate"].is_null());
-    let name = [("x-kalks-tenant", "kalks"), ("x-kalks-user-id", "42"), ("x-kalks-user-name", "Ana%20L%C3%B3pez"), ("x-kalks-tenant-name", "Kalks%20Markets")];
+    let name = [("x-ezymex-tenant", "ezymex"), ("x-ezymex-user-id", "42"), ("x-ezymex-user-name", "Ana%20L%C3%B3pez"), ("x-ezymex-tenant-name", "Ezymex%20Markets")];
     let (_, r, _) = c.call("POST", "/v1/exams/phase-1", &name, Some(json!({"answers": [0,1,2,3,0,1,2,3,0,0]}))).await;
     assert_eq!((r["pct"].clone(), r["passed"].clone(), r["certificate_issued"].clone()), (json!(90), json!(true), json!(true)), "{r}");
     let code = r["certificate"]["code"].as_str().unwrap().to_string();
@@ -293,7 +293,7 @@ async fn academy_end_to_end() {
     // a section's track can't be changed (it decides the phase's shape); other edits still work
     let (s, r, _) = c.call("PUT", "/v1/admin/nodes/section/p9-options", S, Some(json!({"data": {"track": "technical"}}))).await;
     assert_eq!(s, StatusCode::UNPROCESSABLE_ENTITY, "{r}");
-    let (s, r, _) = c.call("PUT", "/v1/admin/nodes/section/p9-options", S, Some(json!({"data": {"title": "Options on Kalks", "track": "options"}}))).await;
+    let (s, r, _) = c.call("PUT", "/v1/admin/nodes/section/p9-options", S, Some(json!({"data": {"title": "Options on Ezymex", "track": "options"}}))).await;
     assert_eq!(s, StatusCode::OK, "{r}");
     // chapters created in the options section get the phase prefix, like the core tracks
     let (s, r, _) = c.call("POST", "/v1/admin/chapters", S, Some(json!({"lang": "en", "section": "p9-options", "title": "Choosing a strike"}))).await;
@@ -305,7 +305,7 @@ async fn academy_end_to_end() {
     assert_eq!(r["node"]["source"], "override");
     let (_, ch, _) = c.call("GET", "/v1/chapters/p1-f-c2", U, None).await;
     assert_eq!(ch["chapter"]["title"], "Edited title");
-    let (_, ch, _) = c.call("GET", "/v1/chapters/p1-f-c2", &[("x-kalks-tenant", "other"), ("x-kalks-user-id", "42")], None).await;
+    let (_, ch, _) = c.call("GET", "/v1/chapters/p1-f-c2", &[("x-ezymex-tenant", "other"), ("x-ezymex-user-id", "42")], None).await;
     assert_eq!(ch["chapter"]["title"], "Chapter p1-f-c2");
 
     // invalid quiz rejected
@@ -363,7 +363,7 @@ async fn academy_end_to_end() {
     assert_eq!(again[0].1.updated, 1);
     let (_, ch, _) = c.call("GET", "/v1/chapters/p1-f-c2", U, None).await;
     assert_eq!(ch["chapter"]["title"], "Edited title");
-    let (_, ch, _) = c.call("GET", "/v1/chapters/p1-f-c2", &[("x-kalks-tenant", "other"), ("x-kalks-user-id", "42")], None).await;
+    let (_, ch, _) = c.call("GET", "/v1/chapters/p1-f-c2", &[("x-ezymex-tenant", "other"), ("x-ezymex-user-id", "42")], None).await;
     assert_eq!(ch["chapter"]["title"], "Chapter two v2");
 
     pool.close().await;

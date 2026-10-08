@@ -5,7 +5,7 @@ import { AnimatePresence, motion, animate, useInView } from "motion/react";
 import { ArrowUpRight, ChevronDown, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { Chip, CopyButton, cn } from "@/components/kit";
-import type { RuleState } from "@kalks/mock/prop";
+import type { RuleState } from "@ezymex/mock/prop";
 
 /* ------------------------------------------------------------------ */
 /* Rule state chip                                                     */

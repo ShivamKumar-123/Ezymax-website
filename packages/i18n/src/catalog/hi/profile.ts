@@ -4,7 +4,7 @@ const profile: NsMessages<"profile"> = {
   // Profile page (shared)
   title: "प्रोफ़ाइल",
   subtitle: "आपका व्यक्तिगत विवरण और अकाउंट प्राथमिकताएँ।",
-  liveSubtitle: "Kalks में रजिस्टर्ड आपका व्यक्तिगत विवरण।",
+  liveSubtitle: "Ezymex में रजिस्टर्ड आपका व्यक्तिगत विवरण।",
   memberSince: "{date} से सदस्य",
   notVerified: "वेरिफ़ाइड नहीं",
   "photo.upload": "नई फ़ोटो अपलोड करें",
@@ -59,7 +59,7 @@ const profile: NsMessages<"profile"> = {
   "data.exportRequested": "डेटा एक्सपोर्ट का अनुरोध किया गया",
   "data.exportRequestedHint": "72 घंटों के अंदर आपको ईमेल पर डाउनलोड लिंक मिल जाएगा।",
   "data.export": "मेरा डेटा एक्सपोर्ट करें",
-  "closure.title": "अपना Kalks अकाउंट बंद करें",
+  "closure.title": "अपना Ezymex अकाउंट बंद करें",
   "closure.description": "सभी ट्रेडिंग अकाउंट में बैलेंस शून्य होना चाहिए और कोई खुली पोज़िशन नहीं होनी चाहिए।",
   "closure.request": "अकाउंट बंद करने का अनुरोध करें",
   "closure.submitted": "अकाउंट बंद करने का अनुरोध सबमिट हो गया",

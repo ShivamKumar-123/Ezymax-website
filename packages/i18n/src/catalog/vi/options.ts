@@ -1,18 +1,18 @@
 import type { NsMessages } from "../../core";
 
-// Kalks FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Kalks Trader in options mode.
+// Ezymex FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Ezymex Trader in options mode.
 const options: NsMessages<"options"> = {
   // Navigation entry
   "nav.title": "Quyền chọn",
 
   // Page header
-  "page.title": "Kalks FX Options",
-  "page.subtitle": "Mua hoặc bán quyền chọn trên forex, vàng, bạc và dầu ngay trong Kalks Trader.",
+  "page.title": "Ezymex FX Options",
+  "page.subtitle": "Mua hoặc bán quyền chọn trên forex, vàng, bạc và dầu ngay trong Ezymex Trader.",
   "page.statusReady": "Sẵn sàng giao dịch",
   "page.learnCourse": "Khóa học quyền chọn",
 
   // Hero card
-  "hero.eyebrow": "Mới trên Kalks Trader",
+  "hero.eyebrow": "Mới trên Ezymex Trader",
   "hero.title": "Quyền chọn trên 13 thị trường, thật đơn giản",
   "hero.text": "Quyền chọn kiểu châu Âu trên các cặp forex chính và cặp chéo, vàng, bạc và dầu thô. Chọn kỳ đáo hạn theo ngày, tuần hoặc tháng. Mọi quyền chọn đều được thanh toán bằng tiền mặt bằng đô la Mỹ, nên bạn không bao giờ phải nhận giao bất kỳ tài sản nào.",
   "hero.feature.underlyings.title": "13 tài sản cơ sở",
@@ -56,16 +56,16 @@ const options: NsMessages<"options"> = {
   "terms.inShort": "Tóm tắt",
   "terms.point.buy": "Mua quyền chọn: khoản lỗ tối đa là số tiền bạn trả.",
   "terms.point.sell": "Bán quyền chọn có thể lỗ nhiều hơn số tiền bạn nhận được và cần dùng ký quỹ.",
-  "terms.point.prices": "Giá được hình thành trên sổ lệnh của Kalks và do Kalks đưa ra.",
+  "terms.point.prices": "Giá được hình thành trên sổ lệnh của Ezymex và do Ezymex đưa ra.",
   "terms.point.settle": "Quyền chọn được thanh toán bằng tiền mặt khi đáo hạn.",
   "terms.englishNote": "Toàn văn bên dưới là bản có giá trị ràng buộc, bằng tiếng Anh.",
   "terms.acceptedOn": "Bạn đã chấp nhận phiên bản {version} vào {date}.",
   "terms.close": "Đóng",
   "terms.unavailable": "Hiện không thể hiển thị điều khoản quyền chọn. Vui lòng thử lại sau.",
 
-  // Kalks Trader button
-  "trade.ready": "Mọi thứ đã sẵn sàng. Quyền chọn được giao dịch trong Kalks Trader, trên cùng tài khoản với các CFD của bạn.",
-  "trade.cta": "Giao dịch quyền chọn trong Kalks Trader",
+  // Ezymex Trader button
+  "trade.ready": "Mọi thứ đã sẵn sàng. Quyền chọn được giao dịch trong Ezymex Trader, trên cùng tài khoản với các CFD của bạn.",
+  "trade.cta": "Giao dịch quyền chọn trong Ezymex Trader",
   "trade.chooseAccount": "Chọn tài khoản",
   "trade.noAccount": "Bạn cần có một tài khoản giao dịch đang hoạt động để giao dịch quyền chọn.",
   "trade.openAccount": "Mở tài khoản",
@@ -74,7 +74,7 @@ const options: NsMessages<"options"> = {
   "trade.demo": "Demo",
 
   // Key facts card
-  "facts.title": "Cách Kalks FX Options hoạt động",
+  "facts.title": "Cách Ezymex FX Options hoạt động",
   "facts.style": "Kiểu châu Âu: tự động thực hiện khi đáo hạn, không bao giờ thực hiện trước đó.",
   "facts.premium": "Phí quyền chọn tính bằng USD trên mỗi hợp đồng; người mua trả toàn bộ khi mở vị thế.",
   "facts.contracts": "Một hợp đồng: 10,000 đơn vị tiền tệ, 1 oz vàng, 50 oz bạc hoặc 10 thùng dầu.",

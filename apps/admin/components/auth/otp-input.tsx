@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { cn } from "@kalks/ui";
+import { cn } from "@ezymex/ui";
 
 /** Six single-digit boxes with paste support (shared by staff sign-in and invite acceptance). */
 export function OtpInput({ length = 6, onComplete }: { length?: number; onComplete?: (code: string) => void }) {

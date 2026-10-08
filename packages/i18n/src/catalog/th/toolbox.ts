@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader bottom panel (MT5 "Toolbox"): Trade, History, Exposure, News, Calendar, Alerts, Journal.
+// Ezymex Trader bottom panel (MT5 "Toolbox"): Trade, History, Exposure, News, Calendar, Alerts, Journal.
 const toolbox: NsMessages<"toolbox"> = {
   // Panel header
   title: "กล่องเครื่องมือ",

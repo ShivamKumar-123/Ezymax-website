@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { AlertTriangle, CheckCheck, Sparkles, Timer, UserRound } from "lucide-react";
-import { Chip, cn } from "@kalks/ui";
+import { Chip, cn } from "@ezymex/ui";
 
 /* Types of the support service's Back Office API (services/support, via /api/support). */
 

@@ -9,7 +9,7 @@
  */
 import Anthropic from "@anthropic-ai/sdk";
 import type { NextRequest } from "next/server";
-import { INSTRUMENTS } from "@kalks/mock";
+import { INSTRUMENTS } from "@ezymex/mock";
 import { aiGate } from "@/lib/ai-guard";
 import { PARSE_RESULT_JSON_SCHEMA, validateSpec, type ParseResult } from "@/lib/ai-trader/schema";
 import { TIMEFRAMES } from "@/lib/trading";
@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 
 const MODEL = "claude-opus-5-5";
 
-const SYSTEM = `You convert a trader's plain-language instructions into a strategy for the Kalks Trader terminal's rule engine.
+const SYSTEM = `You convert a trader's plain-language instructions into a strategy for the Ezymex Trader terminal's rule engine.
 The strategy is shown to the trader as a card that they review, edit and explicitly activate; it trades real or demo money, so never invent aggressive settings.
 
 Engine semantics:

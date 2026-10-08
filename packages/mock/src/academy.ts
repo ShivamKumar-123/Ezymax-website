@@ -29,7 +29,7 @@ export const COURSES: Course[] = [
   { id: "crypto", title: "Crypto CFDs, 24/7", summary: "Weekend gaps, funding, correlation to NAS100 and on-chain signals.", level: "Intermediate", lessons: 8, minutes: 61, progress: 0, image: "/assets/photos/bitcoin.jpg", instructor: 22, students: 7340, rating: 4.6 },
   { id: "indices", title: "Index trading around US data", summary: "NFP, CPI and FOMC playbooks for NAS100 and US30.", level: "Advanced", lessons: 11, minutes: 104, progress: 0, image: "/assets/photos/nyc.jpg", instructor: 19, students: 5210, rating: 4.8, tag: "New" },
   { id: "psych", title: "Trading psychology", summary: "Tilt, revenge trading, journaling and building a repeatable process.", level: "Beginner", lessons: 7, minutes: 48, progress: 15, image: "/assets/photos/trader.jpg", instructor: 6, students: 16100, rating: 4.9 },
-  { id: "algo", title: "Algo trading with the Kalks API", summary: "REST + WebSocket, backtesting, and deploying a strategy safely.", level: "Advanced", lessons: 16, minutes: 172, progress: 0, image: "/assets/photos/dashboard.jpg", instructor: 13, students: 3480, rating: 4.7 },
+  { id: "algo", title: "Algo trading with the Ezymex API", summary: "REST + WebSocket, backtesting, and deploying a strategy safely.", level: "Advanced", lessons: 16, minutes: 172, progress: 0, image: "/assets/photos/dashboard.jpg", instructor: 13, students: 3480, rating: 4.7 },
   { id: "prop", title: "Passing a prop challenge", summary: "Daily loss limits, consistency rules and a 30-day plan to get funded.", level: "Advanced", lessons: 9, minutes: 83, progress: 0, image: "/assets/photos/skyscrapers.jpg", instructor: 1, students: 8870, rating: 4.8 },
 ];
 
@@ -76,7 +76,7 @@ export const LEARNING_PATHS = [
 
 export const GLOSSARY: { term: string; def: string; cat: string }[] = [
   { term: "Pip", def: "The standard price increment of a currency pair — 0.0001 for most pairs, 0.01 for JPY pairs. On 1 lot EURUSD, one pip is worth $10.", cat: "Basics" },
-  { term: "Pipette", def: "A fractional pip (the 5th decimal on EURUSD). Kalks quotes show it as the small trailing digit.", cat: "Basics" },
+  { term: "Pipette", def: "A fractional pip (the 5th decimal on EURUSD). Ezymex quotes show it as the small trailing digit.", cat: "Basics" },
   { term: "Lot", def: "A standard trade size: 1 lot = 100,000 units of the base currency, 100 oz of gold, or 1 BTC on BTCUSD.", cat: "Basics" },
   { term: "Leverage", def: "Borrowed exposure relative to your margin. At 1:100, $1,000 of margin controls a $100,000 position.", cat: "Margin" },
   { term: "Margin", def: "The collateral locked to keep a position open. Required margin = position value ÷ leverage.", cat: "Margin" },

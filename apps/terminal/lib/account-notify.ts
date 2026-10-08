@@ -51,7 +51,7 @@ type Page = { items?: AccountNote[]; unread?: number; next?: string | number | n
 
 async function call(method: "GET" | "POST", path: string, body?: unknown): Promise<Page | null> {
   if (!login) return null;
-  const headers: Record<string, string> = { "x-kalks-errors": "body", "x-kalks-login": login };
+  const headers: Record<string, string> = { "x-ezymex-errors": "body", "x-ezymex-login": login };
   if (body !== undefined) headers["content-type"] = "application/json";
   try {
     const res = await fetch(path, { method, headers, body: body !== undefined ? JSON.stringify(body) : undefined, cache: "no-store", credentials: "same-origin", signal: AbortSignal.timeout(12_000) });

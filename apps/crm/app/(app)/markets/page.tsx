@@ -5,11 +5,11 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { ArrowUpRight, CandlestickChart, Search, Star, X } from "lucide-react";
 import { Button, Card, CardHeader, Chip, DataTable, Delta, EmptyState, PageHeader, PriceText, Reveal, Segmented, Sparkline, SymbolCell, Tooltip, cn, formatNumber, useFeedMode, useQuotes, type Column } from "@/components/kit";
-import { ASSET_CLASS_LABEL, INSTRUMENTS, IS_DEMO, fetchCandles, isMarketOpen, sparkline, type AssetClass, type Instrument } from "@kalks/mock";
-import { CONTRACT_SPECS, DEFAULT_FAVOURITES } from "@kalks/mock/markets-extra";
+import { ASSET_CLASS_LABEL, INSTRUMENTS, IS_DEMO, fetchCandles, isMarketOpen, sparkline, type AssetClass, type Instrument } from "@ezymex/mock";
+import { CONTRACT_SPECS, DEFAULT_FAVOURITES } from "@ezymex/mock/markets-extra";
 import { InstrumentDrawer } from "@/components/markets/instrument-drawer";
 import { FeedGuard } from "@/components/feed-guard";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { TERMINAL_URL } from "@/lib/live";
 
 type Tab = "all" | "fav" | AssetClass;

@@ -1,4 +1,4 @@
--- Kalks news + economic calendar (services/news). Platform-wide items; per-tenant staff overrides.
+-- Ezymex news + economic calendar (services/news). Platform-wide items; per-tenant staff overrides.
 
 CREATE TABLE sources (
     id             text PRIMARY KEY,

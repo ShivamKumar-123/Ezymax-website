@@ -7,7 +7,7 @@
 // otherwise a brightness / contrast heuristic inside the oval). Results travel with the upload so the reviewer
 // sees what the client saw. The gateway re-checks type, size and resolution on its side.
 
-import { tr } from "@kalks/i18n/react";
+import { tr } from "@ezymex/i18n/react";
 import type { ClientChecks } from "./api";
 
 export type Purpose = "id" | "poa" | "selfie" | "doc";

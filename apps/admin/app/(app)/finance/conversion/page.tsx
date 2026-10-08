@@ -3,8 +3,8 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { ArrowRight, Calculator, Coins, Lock, Percent, Pencil, Radio, RefreshCw, TrendingUp } from "lucide-react";
-import { Button, Card, CardHeader, Chip, CoinIcon, DataTable, Delta, KpiCard, Money, PageHeader, Reveal, Sparkline, Toggle, cn, type Column } from "@kalks/ui";
-import { FIN_RATES, FIN_TXS, finAgo, type FinRate } from "@kalks/mock/admin-finance";
+import { Button, Card, CardHeader, Chip, CoinIcon, DataTable, Delta, KpiCard, Money, PageHeader, Reveal, Sparkline, Toggle, cn, type Column } from "@ezymex/ui";
+import { FIN_RATES, FIN_TXS, finAgo, type FinRate } from "@ezymex/mock/admin-finance";
 
 const RECENT = FIN_TXS.filter((t) => t.type === "conversion").slice(0, 4);
 import { MiniField, NumInput, Select, auditToast, useReason } from "@/components/config/kit";

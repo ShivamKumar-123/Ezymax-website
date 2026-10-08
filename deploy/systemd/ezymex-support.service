@@ -1,0 +1,22 @@
+[Unit]
+Description=Ezymex support chat, AI help bot and notifications (:8100)
+After=network-online.target postgresql.service ezymex-gateway.service
+Wants=network-online.target
+
+[Service]
+User=ezymex
+WorkingDirectory=/home/ezymex/ezymex/services/support
+EnvironmentFile=/home/ezymex/ezymex/.env.local
+EnvironmentFile=-/home/ezymex/ezymex/.env.claude
+Environment=RUST_LOG=info
+Environment=SUPPORT_ENV=production
+Environment=SUPPORT_BIND=127.0.0.1:8100
+ExecStart=/home/ezymex/ezymex/target/release/support
+Restart=always
+RestartSec=3
+KillSignal=SIGINT
+TimeoutStopSec=20
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

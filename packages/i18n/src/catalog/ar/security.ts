@@ -8,7 +8,7 @@ const security: NsMessages<"security"> = {
   "signingOut": "جارٍ تسجيل الخروج…",
   "resetSigningOut": "جارٍ تسجيل خروجك لإعادة تعيين كلمة المرور…",
   "error.generic": "حدث خطأ ما. يُرجى المحاولة مرة أخرى.",
-  "error.network": "تعذّر الوصول إلى Kalks. تحقّق من اتصالك وحاول مرة أخرى.",
+  "error.network": "تعذّر الوصول إلى Ezymex. تحقّق من اتصالك وحاول مرة أخرى.",
 
   // Device labels from the browser's user agent
   "device.unknownBrowser": "متصفح غير معروف",
@@ -261,7 +261,7 @@ const security: NsMessages<"security"> = {
   "page.calendar": "التقويم",
   // Investor passwords card
   "investor.title": "كلمات مرور المستثمر",
-  "investor.text": "لكل حساب تداول أيضًا كلمة مرور مستثمر للوصول للقراءة فقط في Kalks Trader، على غرار MT5: الصفقات والسجل دون تداول.",
+  "investor.text": "لكل حساب تداول أيضًا كلمة مرور مستثمر للوصول للقراءة فقط في Ezymex Trader، على غرار MT5: الصفقات والسجل دون تداول.",
   "investor.hint": "عيّنها أو غيّرها من صفحة الحساب.",
   "investor.goToAccounts": "الانتقال إلى الحسابات",
   // Create / edit dialog

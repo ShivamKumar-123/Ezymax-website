@@ -3,8 +3,8 @@
 import * as React from "react";
 import { Clock, Mail, X } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Dialog, Field, Input, Segmented, Toggle, cn } from "@kalks/ui";
-import { ANL_REPORT_TYPES, type AnlFreq, type AnlSchedule } from "@kalks/mock/admin-growth-analytics";
+import { Button, Dialog, Field, Input, Segmented, Toggle, cn } from "@ezymex/ui";
+import { ANL_REPORT_TYPES, type AnlFreq, type AnlSchedule } from "@ezymex/mock/admin-growth-analytics";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const MDAYS = ["1st", "2nd", "5th", "15th", "Last"];
@@ -24,7 +24,7 @@ export function ScheduleDialog({
   initial?: AnlSchedule | null;
   onSave: (d: ScheduleDraft) => void;
 }) {
-  const blank: ScheduleDraft = { name: "", report: ANL_REPORT_TYPES[0]!, frequency: "daily", day: undefined, time: "08:00", recipients: ["priya.nair@kalks.com"], format: "PDF", enabled: true };
+  const blank: ScheduleDraft = { name: "", report: ANL_REPORT_TYPES[0]!, frequency: "daily", day: undefined, time: "08:00", recipients: ["priya.nair@ezymex.com"], format: "PDF", enabled: true };
   const [d, setD] = React.useState<ScheduleDraft>(blank);
   const [entry, setEntry] = React.useState("");
   const [err, setErr] = React.useState<string | undefined>();
@@ -150,7 +150,7 @@ export function ScheduleDialog({
                 }
               }}
               onBlur={() => entry && add(entry)}
-              placeholder={d.recipients.length ? "" : "name@kalks.com"}
+              placeholder={d.recipients.length ? "" : "name@ezymex.com"}
               className="h-7 min-w-[140px] flex-1 bg-transparent px-1 text-[13px] text-fg outline-none placeholder:text-fg-3"
             />
           </div>

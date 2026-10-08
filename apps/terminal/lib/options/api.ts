@@ -1,18 +1,18 @@
 "use client";
 
-// Browser side of Kalks FX Options. Live builds: chain data from /api/options/* (options service) and trading from
-// /api/engine/options/* (trading engine), every call naming the acting login. Demo builds (NEXT_PUBLIC_KALKS_MODE=
+// Browser side of Ezymex FX Options. Live builds: chain data from /api/options/* (options service) and trading from
+// /api/engine/options/* (trading engine), every call naming the acting login. Demo builds (NEXT_PUBLIC_EZYMEX_MODE=
 // demo): the same calls answered in the browser by ./mock-engine (the GK / BS / Black-76 pricer in
-// @kalks/mock/options), so the workspace works without any service. Errors come back as values, never thrown.
-import { IS_LIVE } from "@kalks/mock";
+// @ezymex/mock/options), so the workspace works without any service. Errors come back as values, never thrown.
+import { IS_LIVE } from "@ezymex/mock";
 import type { EngineErr } from "@/lib/engine/map";
 import type { Result } from "@/lib/engine/client";
 import type { ComboCloseResult, OptionCandles, OptionChain, OptionExpiry, OptionUnderlying, OrderRequest, OrderResult, Preview, PreviewRequest, Settlement } from "./types";
 import { mockApi } from "./mock-engine";
 
 async function call<T>(method: "GET" | "POST", path: string, opts: { login?: string; body?: unknown; timeoutMs?: number } = {}): Promise<Result<T>> {
-  const headers: Record<string, string> = { "x-kalks-errors": "body" };
-  if (opts.login) headers["x-kalks-login"] = opts.login;
+  const headers: Record<string, string> = { "x-ezymex-errors": "body" };
+  if (opts.login) headers["x-ezymex-login"] = opts.login;
   if (method === "POST") headers["content-type"] = "application/json";
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), opts.timeoutMs ?? 12_000);
@@ -79,7 +79,7 @@ const liveApi: OptionsApi = {
   closePosition: (login, ticket, contracts) => call("POST", `/api/engine/positions/${ticket}/close`, { login, body: contracts ? { volume: contracts } : {}, timeoutMs: 20_000 }),
   closeCombo: (login, comboId) => call("POST", `/api/engine/options/combos/${encodeURIComponent(comboId)}/close`, { login, timeoutMs: 20_000 }),
   cancelOrder: async (login, ticket) => {
-    const headers: Record<string, string> = { "x-kalks-errors": "body", "x-kalks-login": login };
+    const headers: Record<string, string> = { "x-ezymex-errors": "body", "x-ezymex-login": login };
     try {
       const res = await fetch(`/api/engine/orders/${ticket}`, { method: "DELETE", headers, credentials: "same-origin" });
       const data = (await res.json().catch(() => ({}))) as { status?: string; error?: Partial<EngineErr> };

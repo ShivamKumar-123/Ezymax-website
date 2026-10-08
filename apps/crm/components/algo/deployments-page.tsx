@@ -9,7 +9,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, OctagonX, Pause, Play, Power, ShieldAlert, Square, Workflow, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, Dialog, EmptyState, EquityChart, PageHeader, Reveal, Skeleton, SymbolAvatar, Tabs, Toggle, cn } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { DEP_TONE, SIGNAL_LABEL, ago, algoApi, algoError, fmtDateTime, fmtMoney, fmtSigned, useAlgo, type Controls, type Deployment, type DeploymentDetail } from "./api";
 
 const LOG_TONE: Record<string, string> = { error: "text-down", warn: "text-warn", info: "text-fg-2" };

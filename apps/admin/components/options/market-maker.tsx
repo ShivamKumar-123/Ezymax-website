@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Options › Market maker (docs/OPTIONS-EXCHANGE.md §4, decision O49): the Kalks MM bot that quotes every listed series
+ * Options › Market maker (docs/OPTIONS-EXCHANGE.md §4, decision O49): the Ezymex MM bot that quotes every listed series
  * both sides on the order book, under the same rules as clients. Live status every 5 seconds (quoting state, uptime,
  * in-process latency, quote coverage, its account), its Greeks against the limits per underlying, pauses (cancel-all
  * of its quotes per scope) and the quoting parameters (`mm_settings` in the options service; most specific row wins:
@@ -24,7 +24,7 @@
  */
 import * as React from "react";
 import { Activity, Bot, ChartSpline, Clock, Gauge, Pause, Pencil, Play, Plus, RefreshCw, Scale, ShieldCheck, Sigma, SlidersHorizontal, Trash2 } from "lucide-react";
-import { Button, Card, CardHeader, Chip, DataTable, EmptyState, Field, IconButton, KpiCard, PageHeader, Progress, Reveal, Segmented, Toggle, Tooltip, cn, formatNumber, type ChipTone, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, EmptyState, Field, IconButton, KpiCard, PageHeader, Progress, Reveal, Segmented, Toggle, Tooltip, cn, formatNumber, type ChipTone, type Column } from "@ezymex/ui";
 import { ErrorState, TableSkeleton, ago, useNow, when } from "@/components/live/kit";
 import type { AdminExpiry, MmPause, MmSettings, MmState, MmUnderlying, TenantSettings, Underlying } from "./types";
 import { EnginePending, KIND_OPTIONS, LoginLink, NumInput, REASONS, ReadOnlyHint, ReasonDialog, Select, UnderlyingCell, agoSecs, duration, enginePending, kindLabel, optSend, parseNum, signedNum, signedUsdCompact, tenantLabel, usd, useKind, useOpt, useOptPerms, volPts } from "./kit";
@@ -77,7 +77,7 @@ export function MarketMakerPage() {
     <div className="pb-10">
       <PageHeader
         title="Market maker"
-        subtitle="Kalks's market maker quotes every listed series on both sides from the model, under the same rules as clients. Status updates every 5 seconds."
+        subtitle="Ezymex's market maker quotes every listed series on both sides from the model, under the same rules as clients. Status updates every 5 seconds."
         actions={
           <>
             <Segmented size="sm" value={kind} onChange={setKind} options={KIND_OPTIONS} />
@@ -526,7 +526,7 @@ function SettingsCard({ underlyings }: { underlyings: Underlying[] }) {
   const [del, setDel] = React.useState<MmSettings | null>(null);
   const rows = React.useMemo(() => [...(list.data?.settings ?? [])].sort((a, b) => specificity(a) - specificity(b) || keyOf(a).localeCompare(keyOf(b))), [list.data]);
   const canEdit = (r: { tenant: string }) => perms.config && (perms.platform || r.tenant === perms.tenant);
-  const block = !perms.config ? "Read-only for your role" : !perms.platform ? "Rows for all brokers are Kalks's; you can add rows for your broker" : null;
+  const block = !perms.config ? "Read-only for your role" : !perms.platform ? "Rows for all brokers are Ezymex's; you can add rows for your broker" : null;
   const tenantChoices = React.useMemo(() => Array.from(new Set([perms.tenant, ...(tenants.data?.tenants ?? []).map((t) => t.tenant)])).sort(), [perms.tenant, tenants.data]);
   const def = rows.find(isDefault) ?? null;
 

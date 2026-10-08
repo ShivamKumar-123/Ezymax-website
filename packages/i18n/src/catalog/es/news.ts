@@ -45,7 +45,7 @@ const news: NsMessages<"news"> = {
   "markets.trade": "Operar",
   "markets.searchPlaceholder": "Buscar símbolo o nombre…",
   "markets.clearSearch": "Borrar",
-  "markets.liveTooltip": "Las cotizaciones provienen del feed de precios de Kalks",
+  "markets.liveTooltip": "Las cotizaciones provienen del feed de precios de Ezymex",
   "markets.footnote": "Spreads del grupo Standard: pips en FX, unidades de precio en el resto · los mercados cerrados muestran su último precio · haga clic en una fila para ver las especificaciones del contrato",
   // Resumen breve del horario por clase de activo (24/5 = 24 horas, 5 días a la semana)
   "hoursShort.forex": "24/5",
@@ -270,7 +270,7 @@ const news: NsMessages<"news"> = {
   "cal.removeReminder": "Eliminar recordatorio",
   "cal.remindMe": "Avisarme 15 min antes",
   "cal.toWatch": "Instrumentos a vigilar",
-  "cal.noLinked": "Ningún instrumento de Kalks está vinculado directamente a esta divisa.",
+  "cal.noLinked": "Ningún instrumento de Ezymex está vinculado directamente a esta divisa.",
   // Tarjeta de alertas de alto impacto
   "alerts.title": "Alertas de alto impacto",
   "alerts.toggle": "Avisarme antes de eventos de alto impacto",

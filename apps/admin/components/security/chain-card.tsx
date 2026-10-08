@@ -4,8 +4,8 @@ import * as React from "react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
 import { Link2, ShieldCheck } from "lucide-react";
-import { Button, Card, Chip, CopyButton, Icon3D, Starfield, shortHash } from "@kalks/ui";
-import { SEC_AUDIT, SEC_CHAIN_HEAD, SEC_CHAIN_VERIFIED_AT } from "@kalks/mock/admin-platform-security";
+import { Button, Card, Chip, CopyButton, Icon3D, Starfield, shortHash } from "@ezymex/ui";
+import { SEC_AUDIT, SEC_CHAIN_HEAD, SEC_CHAIN_VERIFIED_AT } from "@ezymex/mock/admin-platform-security";
 import { ago, timeGmt3 } from "./shared";
 
 /** Hero card: tamper-evident, hash-chained ledger with a mini block chain. */

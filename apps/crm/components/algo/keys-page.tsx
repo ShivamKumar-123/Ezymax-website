@@ -8,7 +8,7 @@ import Link from "next/link";
 import { Activity, AlertCircle, BookOpen, Gauge as GaugeIcon, KeyRound, Loader2, Plus, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, KpiCard, MiniBars, PageHeader, Reveal, type Column } from "@/components/kit";
-import { Trans, useFormat, useT } from "@kalks/i18n/react";
+import { Trans, useFormat, useT } from "@ezymex/i18n/react";
 import { algoApi, algoError, ago, fmtDateTime, useAlgo, type TradingAccount } from "./api";
 
 interface Key {

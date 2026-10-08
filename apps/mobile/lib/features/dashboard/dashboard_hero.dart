@@ -1,7 +1,7 @@
-// The Dashboard's opening picture: the website's robot (kalks-website public/images/brand/src-hero-robot.png) full
-// bleed under the status bar, "Trade like a sovereign." and the way into Kalks FX Options over it, the page in a
+// The Dashboard's opening picture: the website's robot (ezymex-website public/images/brand/src-hero-robot.png) full
+// bleed under the status bar, "Trade like a sovereign." and the way into Ezymex FX Options over it, the page in a
 // rounded sheet that slides up over the picture (KPageScroll.hero; the shell floats its controls over it,
-// app_shell.dart). Stock Kalks brand only: a white-label broker never sees Kalks imagery.
+// app_shell.dart). Stock Ezymex brand only: a white-label broker never sees Ezymex imagery.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -10,7 +10,7 @@ import '../../core/config/app_config.dart';
 import '../../i18n/i18n.dart';
 import '../../ui/ui.dart';
 
-/// Whether the page at `path` opens on the picture: the Overview of the stock Kalks brand. The shell (its chrome and
+/// Whether the page at `path` opens on the picture: the Overview of the stock Ezymex brand. The shell (its chrome and
 /// the page's top padding), the module pager and the page itself decide by this one rule.
 bool dashboardHeroAt(String path, AppConfig cfg) => path == '/' && cfg.tenantDefault;
 
@@ -51,7 +51,7 @@ class DashboardHeroPicture extends StatelessWidget {
 }
 
 /// What scrolls with the page over the picture (KPageHero.child): the gradient that keeps the text readable, the
-/// ember rule + "KALKS FX OPTIONS", the headline and the white pill into Kalks FX Options, at the lower start.
+/// ember rule + "EZYMEX FX OPTIONS", the headline and the white pill into Ezymex FX Options, at the lower start.
 class DashboardHeroCopy extends StatelessWidget {
   const DashboardHeroCopy({super.key});
 

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { isMarketOpen } from "@kalks/mock";
+import { isMarketOpen } from "@ezymex/mock";
 
 /** Re-evaluates the symbol's session every 15 s so buttons flip at the open/close without a reload. */
 export function useMarketOpen(symbol: string): boolean {

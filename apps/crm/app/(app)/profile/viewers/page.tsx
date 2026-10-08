@@ -1,13 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LiveViewers } from "@/components/security/live-viewers";
 import { Eye, EyeOff, Plus, ShieldOff, UserRound, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Button, Card, CardHeader, Chip, CopyButton, Dialog, Field, Icon3D, Input, PageHeader, Reveal, StatusChip, Toggle } from "@/components/kit";
-import { ACCOUNTS, PEOPLE } from "@kalks/mock";
-import { useT } from "@kalks/i18n/react";
+import { ACCOUNTS, PEOPLE } from "@ezymex/mock";
+import { useT } from "@ezymex/i18n/react";
 
 const SECTIONS = ["profile.viewers.section.dashboard", "profile.viewers.section.accounts", "profile.viewers.section.history", "profile.viewers.section.portfolio", "profile.viewers.section.wallet", "profile.viewers.section.partner"] as const;
 
@@ -36,7 +36,7 @@ function DemoViewersPage() {
         actions={
           <Dialog
             title={t("profile.viewers.createTitle")}
-            description={t("profile.viewers.createDescription", { host: "app.kalks.com" })}
+            description={t("profile.viewers.createDescription", { host: "app.ezymex.com" })}
             trigger={
               <Button variant="ember">
                 <Plus /> {t("profile.viewers.new")}

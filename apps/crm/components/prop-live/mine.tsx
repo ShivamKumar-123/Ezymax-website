@@ -26,10 +26,10 @@ import {
   Wallet,
 } from "lucide-react";
 import { Button, Card, CardHeader, Chip, CopyButton, DataTable, EmptyState, Gauge, KpiCard, Money, PageHeader, Progress, Reveal, Segmented, Skeleton, Stepper,  cn, type Column } from "@/components/kit";
-// engine symbols include Kalks FX Options series codes, which @kalks/ui SymbolAvatar / SymbolCell (static list) throw on
+// engine symbols include Ezymex FX Options series codes, which @ezymex/ui SymbolAvatar / SymbolCell (static list) throw on
 import { TradeSymbolAvatar as SymbolAvatar, symbolLabel } from "@/components/trading/instrument";
-import type { T } from "@kalks/i18n";
-import { Trans, useT } from "@kalks/i18n/react";
+import type { T } from "@ezymex/i18n";
+import { Trans, useT } from "@ezymex/i18n/react";
 import {
   CHALLENGE_STATUS,
   bannedLabel,
@@ -256,7 +256,7 @@ function Overview({ c, a, v }: { c: ChallengeDetail; a: PhaseAccount; v: View })
             </div>
             <div>
               <div className="mb-1.5 text-[11px] text-fg-3">{t("prop.cred.server")}</div>
-              <div className="flex h-10 items-center rounded-[12px] border border-line bg-surface-2 px-3 text-[13px]">Kalks-Live</div>
+              <div className="flex h-10 items-center rounded-[12px] border border-line bg-surface-2 px-3 text-[13px]">Ezymex-Live</div>
             </div>
           </div>
           <p className="mt-3 text-[12px] text-fg-3">

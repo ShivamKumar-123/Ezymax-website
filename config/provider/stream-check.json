@@ -1,6 +1,6 @@
 {
 "checkedAt": "2026-10-07T17:46Z",
-"source": "production market-data public stream (wss://api.kalkstrade.com/v1/stream?group=raw), every forex / metals / energies / indices / crypto catalogue symbol subscribed for 100 s on a Wednesday 17:46-17:48 UTC (US session; Asian cash indices closed)",
+"source": "production market-data public stream (wss://api.ezymex.com/v1/stream?group=raw), every forex / metals / energies / indices / crypto catalogue symbol subscribed for 100 s on a Wednesday 17:46-17:48 UTC (US session; Asian cash indices closed)",
 "generatedBy": "scripts/gen-catalogue.mjs reads it; refresh with scripts/stream-check.mjs",
 "symbols": {
 "1000CHEEMSUSD": {

@@ -1,16 +1,16 @@
 // Profile & Security screenshots (light, dark, Arabic) on the sample-data API, for comparing with the phone web:
-//   flutter test test_shots/c1_profile_shots_test.dart --update-goldens --dart-define=KALKS_PREVIEW=true
+//   flutter test test_shots/c1_profile_shots_test.dart --update-goldens --dart-define=EZYMEX_PREVIEW=true
 // PNGs land in the scratchpad (shots.dart shotsDir).
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/app.dart';
-import 'package:kalks/features/profile/kyc/kyc_upload.dart';
-import 'package:kalks/preview/c1/preview_profile.dart';
-import 'package:kalks/router/router.dart';
-import 'package:kalks/ui/ui.dart';
+import 'package:ezymex/app.dart';
+import 'package:ezymex/features/profile/kyc/kyc_upload.dart';
+import 'package:ezymex/preview/c1/preview_profile.dart';
+import 'package:ezymex/router/router.dart';
+import 'package:ezymex/ui/ui.dart';
 
 import '../test/helpers/test_app.dart';
 import 'shots.dart';
@@ -88,7 +88,7 @@ void main() {
     await tester.scrollUntilVisible(cam, 250, scrollable: find.byType(Scrollable).hitTestable().first);
     await tester.tap(cam);
     await settle(tester);
-    await expectLater(find.byType(KalksApp), matchesGoldenFile(Uri.file('$shotsDir/profile-verification-id-checks.png')));
+    await expectLater(find.byType(EzymexApp), matchesGoldenFile(Uri.file('$shotsDir/profile-verification-id-checks.png')));
     await unmount(tester);
   });
 

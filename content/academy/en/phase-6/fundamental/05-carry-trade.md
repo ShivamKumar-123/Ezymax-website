@@ -10,7 +10,7 @@ takeaways:
   - "Carry trades do best in calm, risk-on regimes and unwind together when volatility rises, which is why funding currencies such as the yen rally in risk-off episodes."
   - "Comparing the rate differential with volatility (carry-to-risk) is a better guide than the differential alone."
 practice:
-  label: "In Kalks Trader, open the contract specification for USDJPY and note the long and short swap rates and the day on which triple swap is charged."
+  label: "In Ezymex Trader, open the contract specification for USDJPY and note the long and short swap rates and the day on which triple swap is charged."
   symbol: "USDJPY"
 quiz:
   - question: "In a CFD account, how does a trader holding a carry trade overnight actually receive or pay the interest differential?"
@@ -55,7 +55,7 @@ In CFD trading, the interest differential arrives through the **swap**, charged 
 
 Swap-free accounts exist for clients who cannot receive or pay interest. On those accounts, carry cannot be earned, although other fees may apply instead.
 
-> **In Kalks Trader:** The contract specification for each symbol shows the current long and short swap rates and the triple-swap day. Swap rates change when central-bank rates change, so check them again after policy decisions.
+> **In Ezymex Trader:** The contract specification for each symbol shows the current long and short swap rates and the triple-swap day. Swap rates change when central-bank rates change, so check them again after policy decisions.
 
 ## Worked example: long USDJPY
 

@@ -8,11 +8,11 @@ import Link from "next/link";
 import { Settings } from "lucide-react";
 import { Button, IconTile, cn, type TileTone } from "@/components/kit";
 import { useNotifications } from "@/components/notifications";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 
 export type Prompt = { id: string; title: string; text: string; icon: React.ReactNode; tone: TileTone; action: { label: string; href: string }; time?: string };
 
-const LATER_KEY = "kalks.crm.prompts.later";
+const LATER_KEY = "ezymex.crm.prompts.later";
 
 function useLater() {
   const [later, setLater] = React.useState<string[]>([]);

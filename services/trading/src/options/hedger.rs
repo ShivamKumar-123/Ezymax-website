@@ -144,7 +144,7 @@ pub async fn hedge_tenant(st: &AppState, t: &TenantConfig) -> anyhow::Result<usi
         return Ok(0);
     }
     let mut clients = client_delta(st, t.tenant_id, None).await;
-    // the Kalks market maker's order-book positions are the house's own exposure (docs §4 "delta hedge"): the
+    // the Ezymex market maker's order-book positions are the house's own exposure (docs §4 "delta hedge"): the
     // house holds −clients (house venue) + the MM's delta
     for (u, d) in mm_delta(st, t.tenant_id).await {
         *clients.entry(u).or_default() -= d;

@@ -1,6 +1,6 @@
 /**
  * Back Office — Finance module mock data.
- * Import via `@kalks/mock/admin-finance`. All exports are FIN_-prefixed.
+ * Import via `@ezymex/mock/admin-finance`. All exports are FIN_-prefixed.
  * Everything is derived from the seeded PRNG so server & client renders match.
  * "Now" is 2026-09-24 14:32 server time (GMT+3).
  */
@@ -345,8 +345,8 @@ export const FIN_HD = {
   nextIndex: 18_443,
   hsm: "Thales Luna 7 · FIPS 140-3 L3",
   keyCeremony: "12 Mar 2026",
-  tenant: "Kalks Markets",
-  tenantId: "tn_kalks_01",
+  tenant: "Ezymex Markets",
+  tenantId: "tn_ezymex_01",
 };
 
 /* ------------------------------------------------------------------ */

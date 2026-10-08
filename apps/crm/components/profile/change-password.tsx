@@ -8,7 +8,7 @@ import { FormError, PasswordStrength } from "@/components/auth";
 import { PasswordInput } from "@/components/accounts/security";
 import { STEPUP_CODES, StepUpDialog } from "@/components/stepup";
 import { authPost } from "@/lib/auth-client";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 
 /** Same rules as the gateway (validate::password). */
 function passwordProblem(p: string) {

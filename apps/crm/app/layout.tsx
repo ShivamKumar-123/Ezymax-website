@@ -2,22 +2,22 @@ import { preconnect, preload } from "react-dom";
 import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
-// subpath imports: a server layout importing the "@kalks/ui" barrel ships every client module of it on every page
-import { BrandProvider } from "@kalks/ui/brand";
-import { brandCss, isCustomBrand } from "@kalks/ui/brand-vars";
-import { Providers } from "@kalks/ui/providers";
-import { getI18n } from "@kalks/i18n/server";
+// subpath imports: a server layout importing the "@ezymex/ui" barrel ships every client module of it on every page
+import { BrandProvider } from "@ezymex/ui/brand";
+import { brandCss, isCustomBrand } from "@ezymex/ui/brand-vars";
+import { Providers } from "@ezymex/ui/providers";
+import { getI18n } from "@ezymex/i18n/server";
 import { tenantBrand } from "@/lib/tenant-config";
 import "./globals.css";
 
-// The broker brand of the visitor's host (gateway tenant_domains); Kalks keeps its stock look.
+// The broker brand of the visitor's host (gateway tenant_domains); Ezymex keeps its stock look.
 export async function generateMetadata(): Promise<Metadata> {
   const b = await tenantBrand();
-  const name = isCustomBrand(b) ? b.name : "Kalks";
+  const name = isCustomBrand(b) ? b.name : "Ezymex";
   return {
     title: { default: `${name} — Client Area`, template: `%s · ${name}` },
     description: `Trade Forex, Metals, Indices, Crypto and Stocks with ${name}.`,
-    icons: { icon: isCustomBrand(b) && b.logo_url ? b.logo_url : "/assets/brand/kalks-mark.svg" },
+    icons: { icon: isCustomBrand(b) && b.logo_url ? b.logo_url : "/assets/brand/ezymex-mark.svg" },
   };
 }
 
@@ -46,7 +46,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   if (MARKET_DATA_ORIGIN) preconnect(MARKET_DATA_ORIGIN, { crossOrigin: "anonymous" });
   // the display face (latin subset) is on every page: fetch it with the HTML instead of after the stylesheet
   preload("/fonts/plus-jakarta-sans-latin.woff2", { as: "font", type: "font/woff2", crossOrigin: "anonymous" });
-  // language from the kalks_locale cookie (set by the switcher) or the browser's Accept-Language
+  // language from the ezymex_locale cookie (set by the switcher) or the browser's Accept-Language
   const [{ locale, dir, messages }, brand] = await Promise.all([getI18n(), tenantBrand()]);
   const css = brandCss(brand);
   return (

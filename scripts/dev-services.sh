@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Start the whole Kalks stack locally (after a reboot or crash). Safe to re-run: anything already
-# listening is left alone. Logs go to ~/.kalks-local/<name>.log.
+# Start the whole Ezymex stack locally (after a reboot or crash). Safe to re-run: anything already
+# listening is left alone. Logs go to ~/.ezymex-local/<name>.log.
 #
 #   scripts/dev-services.sh            # Postgres + all services + the three apps
 #   scripts/dev-services.sh services   # Postgres + services only
@@ -10,15 +10,15 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 ROOT=$PWD
-LOGS=~/.kalks-local
+LOGS=~/.ezymex-local
 mkdir -p "$LOGS"
 export PATH="$HOME/.cargo/bin:$PATH"
 
 up() { lsof -iTCP:"$1" -sTCP:LISTEN -n -P >/dev/null 2>&1; }
 
-# ---- Postgres (dedicated Kalks cluster on :5433) ----
-PG_BIN=${KALKS_PG_BIN:-$HOME/.swisscresta-local/postgres/bin}
-PG_DATA=${KALKS_PG_DATA:-$HOME/.kalks-local/pgdata}
+# ---- Postgres (dedicated Ezymex cluster on :5433) ----
+PG_BIN=${EZYMEX_PG_BIN:-$HOME/.swisscresta-local/postgres/bin}
+PG_DATA=${EZYMEX_PG_DATA:-$HOME/.ezymex-local/pgdata}
 if up 5433; then
   echo "postgres   :5433 already up"
 else

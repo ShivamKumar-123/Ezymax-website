@@ -8,7 +8,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { ArrowUpRight, Coins, Plus } from "lucide-react";
-import { Button, Card, CardHeader, Chip, Skeleton, cn, type ChipTone } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Skeleton, cn, type ChipTone } from "@ezymex/ui";
 import { ErrorState, ago, useApi, useNow, when } from "@/components/live/kit";
 import { useCan } from "@/components/staff-session";
 import { AdjustDialog, OP_LABEL, fmt, signedOf, type Adjustment, type AdjustPreset, type Targets } from "./adjust-dialog";

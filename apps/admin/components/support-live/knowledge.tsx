@@ -3,7 +3,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { FilePlus2, Loader2, Save, Search, Sparkles, Trash2 } from "lucide-react";
-import { Button, Card, CardHeader, Chip, Field, Input, KpiCard, PageHeader, Segmented, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Field, Input, KpiCard, PageHeader, Segmented, cn } from "@ezymex/ui";
 import { Rich, errMsg, sapi, usePerms } from "./common";
 import { useConfirm } from "@/components/confirm";
 

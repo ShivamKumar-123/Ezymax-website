@@ -1,5 +1,5 @@
 {
-  "name": "@kalks/terminal",
+  "name": "@ezymex/terminal",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,9 +10,9 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.128.0",
-    "@kalks/i18n": "workspace:*",
-    "@kalks/mock": "workspace:*",
-    "@kalks/ui": "workspace:*",
+    "@ezymex/i18n": "workspace:*",
+    "@ezymex/mock": "workspace:*",
+    "@ezymex/ui": "workspace:*",
     "geist": "1.7.2",
     "lightweight-charts": "5.2.1",
     "lucide-react": "1.48.0",

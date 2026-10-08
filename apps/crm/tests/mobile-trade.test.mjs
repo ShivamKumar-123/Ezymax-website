@@ -5,7 +5,7 @@
 // What it guards: engine sessions are minted server-side for the client's own account and handed out as trade tokens
 // bound to that client; another client's trade token (or a bare engine token) is refused; orders carry the phone's
 // platform; the options reads use the acting account's kind and group; view-only and read-only staff sessions never
-// trade; the paid AI routes keep Kalks Trader's per-client budget.
+// trade; the paid AI routes keep Ezymex Trader's per-client budget.
 
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
@@ -55,8 +55,8 @@ before(async () => {
     if (url.pathname === "/v1/auth/impersonation/event") return [200, { status: "ok" }];
     if (url.pathname === "/v1/auth/me") {
       const t = bearer(req);
-      if (t === TOKENS.viewer) return [200, { user: { id: 42, email: "v@x", tenant: { slug: "kalks" } }, viewer: { id: 1, accounts: ["50000001"], sections: ["accounts"], status: "active" } }];
-      if (USERS[t]) return [200, { user: { id: USERS[t], email: "c@x", name: "Client", first_name: "C", last_name: "L", tenant: { slug: "kalks" } }, viewer: null }];
+      if (t === TOKENS.viewer) return [200, { user: { id: 42, email: "v@x", tenant: { slug: "ezymex" } }, viewer: { id: 1, accounts: ["50000001"], sections: ["accounts"], status: "active" } }];
+      if (USERS[t]) return [200, { user: { id: USERS[t], email: "c@x", name: "Client", first_name: "C", last_name: "L", tenant: { slug: "ezymex" } }, viewer: null }];
       return [401, { error: { code: "unauthorized", message: "Please sign in." } }];
     }
     return [404, {}];
@@ -66,7 +66,7 @@ before(async () => {
     const p = url.pathname;
     const t = bearer(req);
     const sso = /^\/v1\/accounts\/(\d{8})\/sso$/.exec(p);
-    if (sso) return String(ssoOwner[sso[1]]) === req.headers["x-kalks-user-id"] ? [200, { token: `sso-${sso[1]}-one-time-0001` }] : [404, { error: { code: "not_found", message: "Account not found." } }];
+    if (sso) return String(ssoOwner[sso[1]]) === req.headers["x-ezymex-user-id"] ? [200, { token: `sso-${sso[1]}-one-time-0001` }] : [404, { error: { code: "not_found", message: "Account not found." } }];
     if (p === "/v1/terminal/sso") {
       const login = /^sso-(\d{8})-/.exec(body?.token ?? "")?.[1];
       const tok = { "50000001": ENGINE.own, "50000009": ENGINE.otherOwn, "50000002": ENGINE.moved }[login];
@@ -111,7 +111,7 @@ before(async () => {
   process.env.TRADING_URL = `http://127.0.0.1:${engine.address().port}`;
   process.env.OPTIONS_URL = `http://127.0.0.1:${optionsSvc.address().port}`;
   process.env.SUPPORT_URL = `http://127.0.0.1:${supportSvc.address().port}`;
-  process.env.NEXT_PUBLIC_TERMINAL_URL = "https://trade.kalkstrade.com";
+  process.env.NEXT_PUBLIC_TERMINAL_URL = "https://trade.ezymex.com";
   process.env.TRADING_INTERNAL_TOKEN = "test-internal-token";
 });
 
@@ -130,13 +130,13 @@ const load = async () => ({
   mt: await import("../lib/mobile-trade.ts"),
 });
 
-const BASE = "https://app.kalkstrade.com";
+const BASE = "https://app.ezymex.com";
 
 /** A call through the proxy and (when it lets the request through) the trade route. */
 async function call(m, method, path, { token, trade, body, headers = {} } = {}) {
-  const h = { host: "app.kalkstrade.com", "x-forwarded-proto": "https", ...headers };
+  const h = { host: "app.ezymex.com", "x-forwarded-proto": "https", ...headers };
   if (token) h.authorization = `Bearer ${token}`;
-  if (trade) h["x-kalks-trade"] = trade;
+  if (trade) h["x-ezymex-trade"] = trade;
   if (body !== undefined) h["content-type"] = "application/json";
   const init = { method, headers: h, body: body !== undefined ? JSON.stringify(body) : undefined };
   const res0 = await m.proxy(new m.NextRequest(`${BASE}/api/mobile/trade/${path}`, init));
@@ -165,8 +165,8 @@ test("POST sessions mints the engine session server-side for the client's own ac
   assert.equal(data.account.spreadGroup, "pro");
   for (const hidden of ["userId", "route", "version"]) assert.equal(data.account[hidden], undefined, hidden);
   const sso = calls.findLast((c) => c.path === "/v1/accounts/50000001/sso");
-  assert.equal(sso.headers["x-kalks-user-id"], "42", "the owner comes from the gateway session");
-  assert.equal(sso.headers["x-kalks-internal"], "test-internal-token");
+  assert.equal(sso.headers["x-ezymex-user-id"], "42", "the owner comes from the gateway session");
+  assert.equal(sso.headers["x-ezymex-internal"], "test-internal-token");
   // someone else's account: the engine's 404 comes back, no session
   const other = await open(m, TOKENS.user, "50000009");
   assert.equal(other.res.status, 404);
@@ -240,7 +240,7 @@ test("orders record the phone's platform and stay manual; engine rejections keep
   const m = await load();
   const mine = (await open(m, TOKENS.user, "50000001")).data.token;
   const order = { symbol: "EURUSD", side: "buy", type: "market", volume: 0.1, sl: 1.05, source: "copy", comment: "x".repeat(50), userId: 999 };
-  const a = await call(m, "POST", "orders", { token: TOKENS.user, trade: mine, body: order, headers: { "x-kalks-platform": "android" } });
+  const a = await call(m, "POST", "orders", { token: TOKENS.user, trade: mine, body: order, headers: { "x-ezymex-platform": "android" } });
   assert.equal(a.status, 200);
   const sent = (await a.json()).received;
   assert.equal(sent.platform, "Android");
@@ -249,7 +249,7 @@ test("orders record the phone's platform and stay manual; engine rejections keep
   assert.equal(sent.userId, undefined, "only the order fields reach the engine");
   const engineCall = calls.findLast((c) => c.path === "/v1/terminal/orders");
   assert.equal(engineCall.headers.authorization, `Bearer ${ENGINE.own}`);
-  const ios = await call(m, "POST", "orders", { token: TOKENS.user, trade: mine, body: { ...order, source: "ai" }, headers: { "x-kalks-platform": "ios" } });
+  const ios = await call(m, "POST", "orders", { token: TOKENS.user, trade: mine, body: { ...order, source: "ai" }, headers: { "x-ezymex-platform": "ios" } });
   const iosSent = (await ios.json()).received;
   assert.equal(iosSent.platform, "iOS");
   assert.equal(iosSent.source, "ai");
@@ -273,14 +273,14 @@ test("state is scrubbed and carries the spread group; the stream ticket names th
   assert.equal(st.positions[0].parentTicket, undefined);
   assert.ok(calls.some((c) => c.path === "/v1/terminal/state?historyLimit=5"));
   const t = await (await call(m, "POST", "stream-ticket", { token: TOKENS.user, trade: mine, body: {} })).json();
-  assert.deepEqual(t, { ticket: "eng-ticket-1", expiresIn: 30, url: "wss://trade.kalkstrade.com/engine/stream" });
+  assert.deepEqual(t, { ticket: "eng-ticket-1", expiresIn: 30, url: "wss://trade.ezymex.com/engine/stream" });
   const ctl = await (await call(m, "GET", "controls", { token: TOKENS.user, trade: mine })).json();
   assert.equal(ctl.userId, undefined);
 });
 
 test("MT5-style login: investor = read-only, any account; wrong server refused; the trade token is bound to the client", async () => {
   const m = await load();
-  const inv = await call(m, "POST", "login", { token: TOKENS.user, body: { login: "50000009", password: "Investor1", server: "Kalks-Live" } });
+  const inv = await call(m, "POST", "login", { token: TOKENS.user, body: { login: "50000009", password: "Investor1", server: "Ezymex-Live" } });
   assert.equal(inv.status, 200);
   const d = await inv.json();
   assert.equal(d.readOnly, true);
@@ -296,7 +296,7 @@ test("MT5-style login: investor = read-only, any account; wrong server refused; 
   assert.equal((await o.json()).error.code, "read_only");
   assert.equal(calls.filter((c) => c.path === "/v1/terminal/options/orders").length, before);
   // wrong server: the engine session is closed again
-  const wrong = await call(m, "POST", "login", { token: TOKENS.user, body: { login: "50000005", password: "Trading1", server: "Kalks-Live" } });
+  const wrong = await call(m, "POST", "login", { token: TOKENS.user, body: { login: "50000005", password: "Trading1", server: "Ezymex-Live" } });
   assert.equal(wrong.status, 409);
   assert.equal((await wrong.json()).error.code, "wrong_server");
   assert.equal(bearer({ headers: calls.findLast((c) => c.path === "/v1/terminal/logout").headers }), ENGINE.demo);
@@ -307,11 +307,11 @@ test("MT5-style login: investor = read-only, any account; wrong server refused; 
 
 test("demo refill acts for the account's owner (the engine's view), never a read-only session", async () => {
   const m = await load();
-  const demo = (await (await call(m, "POST", "login", { token: TOKENS.user, body: { login: "50000005", password: "Trading1", server: "Kalks-Demo" } })).json()).token;
+  const demo = (await (await call(m, "POST", "login", { token: TOKENS.user, body: { login: "50000005", password: "Trading1", server: "Ezymex-Demo" } })).json()).token;
   const r = await call(m, "POST", "demo-refill", { token: TOKENS.user, trade: demo, body: {} });
   assert.equal(r.status, 200);
   const sent = calls.findLast((c) => c.path === "/v1/accounts/50000005/demo-refill");
-  assert.equal(sent.headers["x-kalks-user-id"], "7");
+  assert.equal(sent.headers["x-ezymex-user-id"], "7");
   const inv = (await (await call(m, "POST", "login", { token: TOKENS.user, body: { login: "50000009", password: "Investor1" } })).json()).token;
   assert.equal((await call(m, "POST", "demo-refill", { token: TOKENS.user, trade: inv, body: {} })).status, 403);
 });
@@ -319,7 +319,7 @@ test("demo refill acts for the account's owner (the engine's view), never a read
 test("options: option orders carry the platform; reads use the account's kind and group; the stream ticket names the options stream", async () => {
   const m = await load();
   const mine = (await open(m, TOKENS.user, "50000001")).data.token;
-  const o = await call(m, "POST", "options/orders", { token: TOKENS.user, trade: mine, body: { legs: [{ series: "EURUSD-20261009-1.1650-C", side: "buy", contracts: 2 }], clientOrderId: "abcdefgh-2" }, headers: { "x-kalks-platform": "android" } });
+  const o = await call(m, "POST", "options/orders", { token: TOKENS.user, trade: mine, body: { legs: [{ series: "EURUSD-20261009-1.1650-C", side: "buy", contracts: 2 }], clientOrderId: "abcdefgh-2" }, headers: { "x-ezymex-platform": "android" } });
   assert.equal(o.status, 200);
   const sent = (await o.json()).received;
   assert.equal(sent.platform, "Android");
@@ -329,11 +329,11 @@ test("options: option orders carry the platform; reads use the account's kind an
   assert.equal(chain.status, 200);
   const q = calls.findLast((c) => c.path.startsWith("/v1/options/chain"));
   assert.equal(q.path, "/v1/options/chain?u=EURUSD&expiry=2026-10-09&group=pro-netting");
-  assert.equal(q.headers["x-kalks-account-kind"], "live");
-  assert.equal(q.headers["x-kalks-tenant"], "kalks");
+  assert.equal(q.headers["x-ezymex-account-kind"], "live");
+  assert.equal(q.headers["x-ezymex-tenant"], "ezymex");
   assert.equal((await call(m, "GET", "options/chain?u=EUR-USD", { token: TOKENS.user, trade: mine })).status, 400);
   const t = await (await call(m, "POST", "options/stream-ticket", { token: TOKENS.user, trade: mine, body: {} })).json();
-  assert.deepEqual(t, { ticket: "opt-ticket-1", expiresIn: 30, url: "wss://trade.kalkstrade.com/options/stream" });
+  assert.deepEqual(t, { ticket: "opt-ticket-1", expiresIn: 30, url: "wss://trade.ezymex.com/options/stream" });
   const book = await call(m, "GET", "options/book/orders?status=open&series=EURUSD-20261009-1.1650-C", { token: TOKENS.user, trade: mine });
   assert.equal(book.status, 200);
   assert.equal((await call(m, "GET", "options/public/book/EURUSD-20261009-1.1650-C", { token: TOKENS.user })).status, 200, "public book data needs no trade session");
@@ -352,7 +352,7 @@ test("contract specs are public; notifications are the client's own inbox", asyn
   assert.equal(n.status, 200);
   const sent = calls.findLast((c) => c.path.startsWith("/v1/notifications/me"));
   assert.equal(sent.path, "/v1/notifications/me?limit=20");
-  assert.equal(sent.headers["x-kalks-user-id"], "42");
+  assert.equal(sent.headers["x-ezymex-user-id"], "42");
   assert.equal((await call(m, "POST", "notifications/read", { token: TOKENS.user, body: { all: true } })).status, 200);
 });
 
@@ -366,7 +366,7 @@ test("view-only logins and read-only staff sessions never trade; bearer + cookie
   const staff = await call(m, "POST", "sessions", { token: TOKENS.staffRead, body: { login: "50000001" } });
   assert.equal(staff.status, 403);
   assert.equal((await staff.json()).error.code, "staff_read_only");
-  const mixed = await call(m, "GET", "state", { token: TOKENS.user, headers: { cookie: `kalks_session=${TOKENS.user}` } });
+  const mixed = await call(m, "GET", "state", { token: TOKENS.user, headers: { cookie: `ezymex_session=${TOKENS.user}` } });
   assert.equal(mixed.status, 400);
   assert.equal((await mixed.json()).error.code, "bearer_with_cookies");
 });
@@ -423,7 +423,7 @@ test("the AI routes are wired to the gate (no model call without a session) and 
     if (saved === undefined) delete process.env.ANTHROPIC_API_KEY;
     else process.env.ANTHROPIC_API_KEY = saved;
   }
-  // the ported strategy checks match Kalks Trader's
+  // the ported strategy checks match Ezymex Trader's
   const { validateSpec } = await import("../lib/ai-trader/schema.ts");
   assert.ok(validateSpec({ symbol: "XAUUSD", timeframe: "M5", sizing: { mode: "lots", lots: 0.001 } }).errors.includes("Volume must be at least 0.01 lot"));
 });

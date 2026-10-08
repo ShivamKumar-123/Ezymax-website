@@ -3,7 +3,7 @@
 //   2 Market heatmap: today's move, best to worst, 3 tiles a row (hollow dot: market closed); tap -> instrument sheet
 //   3 the list card: filters (All · ★ n · asset classes), search, the table (★, instrument, bid, ask, daily change;
 //     the 7-day line, spread and hours columns are hidden on phones like the web), empty states, "● Live" footnote
-//   instrument sheet: components/markets/instrument-drawer.tsx (Sell / Buy / Trade -> Kalks Trader)
+//   instrument sheet: components/markets/instrument-drawer.tsx (Sell / Buy / Trade -> Ezymex Trader)
 // Each row also swipes to Trade (the web's Trade link sits at the end of the row).
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

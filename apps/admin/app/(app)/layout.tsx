@@ -1,6 +1,6 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { DEMO_STAFF, STAFF_COOKIE, fetchStaff, safeNext } from "@/lib/gateway";
 import { StaffProvider } from "@/components/staff-session";
 import { BackOfficeShell } from "@/components/shell";
@@ -18,7 +18,7 @@ export default async function BackOfficeLayout({ children }: { children: React.R
   }
 
   const h = await headers();
-  const next = safeNext(h.get("x-kalks-path"), "");
+  const next = safeNext(h.get("x-ezymex-path"), "");
   const token = (await cookies()).get(STAFF_COOKIE)?.value;
   if (!token) redirect(next ? `/login?next=${encodeURIComponent(next)}` : "/login");
 

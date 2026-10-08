@@ -1,6 +1,6 @@
-// Server-only helper for talking to the Kalks Academy service (services/academy, 127.0.0.1:8098).
+// Server-only helper for talking to the Ezymex Academy service (services/academy, 127.0.0.1:8098).
 // The browser never sees the service or its internal token: /api/academy route handlers resolve the signed-in
-// client from the gateway session cookie and forward the gateway user id (X-Kalks-User-Id), the tenant and,
+// client from the gateway session cookie and forward the gateway user id (X-Ezymex-User-Id), the tenant and,
 // for exams, the learner's name for the certificate.
 
 import type { GatewayUser } from "@/lib/gateway";
@@ -11,11 +11,11 @@ const ACADEMY_TOKEN = process.env.ACADEMY_INTERNAL_TOKEN ?? "";
 export type AcademyResult = { status: number; data: unknown; contentType?: string; text?: string };
 
 export async function academy(path: string, init: { method?: "GET" | "POST"; body?: unknown; user?: GatewayUser | null; raw?: boolean } = {}): Promise<AcademyResult> {
-  const headers: Record<string, string> = { "x-kalks-internal": ACADEMY_TOKEN, "x-kalks-tenant": init.user?.tenant?.slug || "kalks" };
+  const headers: Record<string, string> = { "x-ezymex-internal": ACADEMY_TOKEN, "x-ezymex-tenant": init.user?.tenant?.slug || "ezymex" };
   if (init.user) {
-    headers["x-kalks-user-id"] = String(init.user.id);
-    headers["x-kalks-user-name"] = encodeURIComponent(init.user.name || `${init.user.first_name} ${init.user.last_name}`.trim());
-    headers["x-kalks-tenant-name"] = encodeURIComponent(init.user.tenant?.name || "Kalks");
+    headers["x-ezymex-user-id"] = String(init.user.id);
+    headers["x-ezymex-user-name"] = encodeURIComponent(init.user.name || `${init.user.first_name} ${init.user.last_name}`.trim());
+    headers["x-ezymex-tenant-name"] = encodeURIComponent(init.user.tenant?.name || "Ezymex");
   }
   if (init.body !== undefined) headers["content-type"] = "application/json";
   try {

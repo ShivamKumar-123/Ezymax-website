@@ -1,4 +1,4 @@
-//! Suitability for complex products (O41). Kalks FX Options onboarding is light (founder decision 2026-10-02): a
+//! Suitability for complex products (O41). Ezymex FX Options onboarding is light (founder decision 2026-10-02): a
 //! client is **eligible** for options, demo and live, once they have accepted the options disclosure, any published
 //! version (time, IP and user agent recorded). Verified identity and the knowledge quiz no longer affect eligibility:
 //! the responses still carry `kycVerified` / `quizPassed` for information, and the quiz stays available as an
@@ -8,7 +8,7 @@
 //! Storage (migrations `20261002150000_options_suitability.sql`, `20261002190000_options_onboarding_light.sql`;
 //! row-level security like every tenant table): `disclosures` (append-only versions per tenant and product) and
 //! `suitability` (one row per client and product). A broker without its own disclosure gets a copy of the platform's
-//! current one (tenant `kalks`) on first use. A newer version doesn't undo an earlier acceptance; accepting again
+//! current one (tenant `ezymex`) on first use. A newer version doesn't undo an earlier acceptance; accepting again
 //! records the newer version.
 //!
 //! Client (session bearer, via the Client Area BFF `/api/suitability/*`):
@@ -23,7 +23,7 @@
 //!
 //! Internal (trading engine, before it opens an options position):
 //! * `GET /v1/internal/suitability/{user_id}?product=options` → `{eligible, kycVerified, disclosureAccepted,
-//!   quizPassed, missing[], ...}`; `missing` is `["disclosure"]` or empty. With `X-Kalks-Tenant` / `X-Kalks-Host` the
+//!   quizPassed, missing[], ...}`; `missing` is `["disclosure"]` or empty. With `X-Ezymex-Tenant` / `X-Ezymex-Host` the
 //!   client must belong to that broker (404 otherwise); without either the user id alone decides.
 
 #[cfg(test)]
@@ -53,7 +53,7 @@ pub const PRODUCTS: &[&str] = &["options"];
 pub const PASS_MARK: usize = 8;
 
 /// Tenant whose current disclosure is copied to a broker that has none yet.
-const PLATFORM_TENANT: &str = "kalks";
+const PLATFORM_TENANT: &str = "ezymex";
 
 fn product(raw: &str) -> ApiResult<&'static str> {
     PRODUCTS.iter().copied().find(|p| *p == raw.trim()).ok_or(ApiError::NotFound)
@@ -71,7 +71,7 @@ pub struct Question {
     pub explanation: &'static str,
 }
 
-/// Kalks FX Options knowledge check (an optional self-test; it doesn't affect eligibility): calls and puts, premium,
+/// Ezymex FX Options knowledge check (an optional self-test; it doesn't affect eligibility): calls and puts, premium,
 /// the buyer's and the seller's maximum loss, seller margin, breakeven, expiry and settlement, time decay, barriers
 /// and delta. Changing a question's meaning needs a new id (attempts are audited by id).
 pub const OPTIONS_QUIZ: &[Question] = &[
@@ -85,7 +85,7 @@ pub const OPTIONS_QUIZ: &[Question] = &[
             "The right to sell the underlying at the strike price",
         ],
         answer: 1,
-        explanation: "A call gives the buyer a right, not an obligation. Kalks FX Options are cash-settled: at expiry a call pays the amount by which the settlement price is above the strike, times the contract size. At or below the strike it expires worthless.",
+        explanation: "A call gives the buyer a right, not an obligation. Ezymex FX Options are cash-settled: at expiry a call pays the amount by which the settlement price is above the strike, times the contract size. At or below the strike it expires worthless.",
     },
     Question {
         id: "put-payout",
@@ -144,7 +144,7 @@ pub const OPTIONS_QUIZ: &[Question] = &[
     },
     Question {
         id: "settlement",
-        text: "How are Kalks FX Options settled at expiry?",
+        text: "How are Ezymex FX Options settled at expiry?",
         options: [
             "You receive the currency, metal or oil",
             "In cash, at the last traded price of the day",

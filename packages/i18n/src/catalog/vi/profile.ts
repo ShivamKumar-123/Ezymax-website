@@ -4,7 +4,7 @@ const profile: NsMessages<"profile"> = {
   // Profile page (shared)
   title: "Hồ sơ",
   subtitle: "Thông tin cá nhân và tùy chọn tài khoản của bạn.",
-  liveSubtitle: "Thông tin cá nhân của bạn như đã đăng ký với Kalks.",
+  liveSubtitle: "Thông tin cá nhân của bạn như đã đăng ký với Ezymex.",
   memberSince: "Thành viên từ {date}",
   notVerified: "Chưa xác minh",
   "photo.upload": "Tải lên ảnh mới",
@@ -59,7 +59,7 @@ const profile: NsMessages<"profile"> = {
   "data.exportRequested": "Đã yêu cầu xuất dữ liệu",
   "data.exportRequestedHint": "Bạn sẽ nhận được liên kết tải xuống qua email trong vòng 72 giờ.",
   "data.export": "Xuất dữ liệu của tôi",
-  "closure.title": "Đóng tài khoản Kalks",
+  "closure.title": "Đóng tài khoản Ezymex",
   "closure.description": "Tất cả tài khoản giao dịch phải có số dư bằng 0 và không có lệnh đang mở.",
   "closure.request": "Yêu cầu đóng tài khoản",
   "closure.submitted": "Đã gửi yêu cầu đóng tài khoản",

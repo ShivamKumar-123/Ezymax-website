@@ -1,9 +1,9 @@
 @import "tailwindcss";
-@import "@kalks/ui/styles.css";
+@import "@ezymex/ui/styles.css";
 @source "../../../packages/ui/src";
 
 /* ------------------------------------------------------------------ */
-/* Kalks Trader: trading-room tokens layered on the Kalks design system */
+/* Ezymex Trader: trading-room tokens layered on the Ezymex design system */
 /* ------------------------------------------------------------------ */
 
 /* Design tokens: docs/TERMINAL-DESIGN.md §2.3. Text colours are tuned for WCAG AA (4.5:1) on the panels; brand
@@ -15,7 +15,7 @@
   --t-panel-2: #15151a;
   --t-grid: rgba(255, 255, 255, 0.035);
   --t-chart-bg: #0a0a0d;
-  /* tertiary text: 5.8:1 on the panel (the Kalks default #63636e is 3.3:1) */
+  /* tertiary text: 5.8:1 on the panel (the Ezymex default #63636e is 3.3:1) */
   --k-fg-3: #8b8b96;
   /* Buy / Sell button fills: white text at 5.0:1 / 4.8:1 */
   --t-buy-fill: #15803d;

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { BadgeCheck, CalendarPlus, Copy, RotateCcw, XCircle } from "lucide-react";
-import { Button, Chip, CopyButton, Dialog, EquityChart, Menu, StatusChip, KeyValue } from "@kalks/ui";
+import { Button, Chip, CopyButton, Dialog, EquityChart, Menu, StatusChip, KeyValue } from "@ezymex/ui";
 import { MiniStat, NumInput, PersonCell, auditToast, type useReason } from "@/components/config/kit";
 import { challengeRules, equityPath, fmtDate, type Challenge, type ChallengeStatus } from "./data";
 import { PlanTypeChip, RuleMeter, TargetProgress } from "./rules";

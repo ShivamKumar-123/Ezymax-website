@@ -95,7 +95,7 @@ CREATE TABLE kyc_notes (
 CREATE INDEX kyc_notes_case_idx ON kyc_notes (case_id, id);
 
 -- D92: name and date of birth are locked once identity is verified. Enforced in the database so no code
--- path can change them; a deliberate correction runs in a transaction with SET LOCAL kalks.identity_unlock = 'on'.
+-- path can change them; a deliberate correction runs in a transaction with SET LOCAL ezymex.identity_unlock = 'on'.
 ALTER TABLE users ADD COLUMN identity_locked_at TIMESTAMPTZ;
 
 CREATE FUNCTION users_identity_lock() RETURNS trigger AS $$
@@ -104,7 +104,7 @@ BEGIN
        AND (NEW.first_name IS DISTINCT FROM OLD.first_name
             OR NEW.last_name IS DISTINCT FROM OLD.last_name
             OR NEW.date_of_birth IS DISTINCT FROM OLD.date_of_birth)
-       AND coalesce(current_setting('kalks.identity_unlock', true), '') <> 'on' THEN
+       AND coalesce(current_setting('ezymex.identity_unlock', true), '') <> 'on' THEN
         RAISE EXCEPTION 'name and date of birth are locked after identity verification';
     END IF;
     RETURN NEW;

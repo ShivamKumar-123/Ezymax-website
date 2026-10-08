@@ -6,9 +6,9 @@ const dashboard: NsMessages<"dashboard"> = {
   "greeting.afternoon": "こんにちは、{name}様",
   "greeting.evening": "こんばんは、{name}様",
   "greeting.welcome": "ようこそ、{name}様",
-  "subtitle.live": "Kalksへようこそ。お客様のアカウントと本日の市場です。",
+  "subtitle.live": "Ezymexへようこそ。お客様のアカウントと本日の市場です。",
   "subtitle.demo": "本日の口座のパフォーマンスです。",
-  launchTrader: "Kalks Traderを起動",
+  launchTrader: "Ezymex Traderを起動",
   openTerminal: "取引ターミナルを開く",
 
   // Getting started checklist
@@ -62,7 +62,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "account.memberSince": "登録日",
   "account.profile": "プロフィール",
 
-  // Kalks Trader banner
+  // Ezymex Trader banner
   "trader.chip": "リアルタイム価格",
   "trader.text": "FX、貴金属、株価指数、エネルギー、暗号資産、株式の{count}銘柄のリアルタイムレートとチャート。ブラウザで動作し、インストールは不要です。",
 
@@ -214,7 +214,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "home.marketsTitle": "マーケット",
   "home.moreTitle": "おすすめ",
 
-  // Ask Kalks AI on the Overview
+  // Ask Ezymex AI on the Overview
   "ai.title": "{name}に質問",
   "ai.subtitle": "口座、入金、取引についてすぐに回答します。",
   "ai.placeholder": "口座や取引について何でも質問してください…",

@@ -1,5 +1,5 @@
 /**
- * GET /api/engine/controls (X-Kalks-Login): what the broker restricted on this account's owner and, for a staff
+ * GET /api/engine/controls (X-Ezymex-Login): what the broker restricted on this account's owner and, for a staff
  * session opened from the Back Office ("Log in as client"), who is acting and until when. Polled by the banner
  * (components/shell/controls-banner.tsx). The owner's user id never reaches the browser.
  */

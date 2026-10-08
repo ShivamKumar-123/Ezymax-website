@@ -15,7 +15,7 @@ type Ctx = {
   pending: boolean;
 };
 
-/** Writes the language cookie on the parent domain so the Client Area and Kalks Trader share it. */
+/** Writes the language cookie on the parent domain so the Client Area and Ezymex Trader share it. */
 export function writeLocaleCookie(code: string) {
   if (typeof document === "undefined") return;
   const host = location.hostname;

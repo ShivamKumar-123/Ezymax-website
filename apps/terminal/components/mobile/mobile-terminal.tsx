@@ -5,11 +5,11 @@ import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { toast } from "@/lib/notify";
 import { ArrowUpRight, BarChart2, CandlestickChart, ChevronDown, History, Languages, List, LogOut, Moon, RefreshCw, Search, Sun, UserRound, Wallet, X, Zap } from "lucide-react";
-import { INSTRUMENTS, getInstrument } from "@kalks/mock";
+import { INSTRUMENTS, getInstrument } from "@ezymex/mock";
 import { useMarketScope } from "@/lib/scope";
-import { LogoMark, PriceText, SymbolAvatar, cn, useQuote } from "@kalks/ui";
+import { LogoMark, PriceText, SymbolAvatar, cn, useQuote } from "@ezymex/ui";
 import { useMetrics, usePositionProfit, useTerminal } from "@/lib/store";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { LanguageMenu } from "@/components/shell/language-menu";
 import { useMarketOpen } from "@/lib/market-hours";
 import { PENDING_LABEL, TIMEFRAMES, accCcy, accMoney, fmtPrice, fmtServer, fmtVol, marginState } from "@/lib/trading";
@@ -63,7 +63,7 @@ export function MobileTerminal() {
           <>
             <div className="min-w-0 leading-tight">
               <div className="flex items-center gap-1.5 text-[12.5px] font-semibold">
-                Kalks Trader <Badge>{t("trader.guest.badge")}</Badge>
+                Ezymex Trader <Badge>{t("trader.guest.badge")}</Badge>
               </div>
               <div className="truncate text-[10.5px] text-fg-3">{t("trader.mobile.guestSubtitle")}</div>
             </div>

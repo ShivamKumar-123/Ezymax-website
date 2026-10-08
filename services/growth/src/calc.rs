@@ -175,7 +175,7 @@ pub fn contest_score(scoring: &str, realised: D, floating: D, volume: D, start_e
 
 // ---------------------------------------------------------------- options contests (O36)
 
-/// What a contest is traded on: CFDs (lots) or Kalks FX Options (contracts).
+/// What a contest is traded on: CFDs (lots) or Ezymex FX Options (contracts).
 pub const CONTEST_INSTRUMENTS: &[&str] = &["cfd", "options"];
 
 /// Scoring modes per instrument: the same P&L modes, and volume in the instrument's own unit (lots for CFDs,
@@ -330,7 +330,7 @@ pub fn trade_flags(trades: &[(D, i64)], ac: &AntiCheat) -> Vec<(&'static str, Va
 }
 
 /// Ledger kinds that change a contest account's balance other than by trading. An allow-list: trading flows
-/// (`trade_pnl`, `commission`, `swap`, and the Kalks FX Options `option_premium` / `option_settlement`, which
+/// (`trade_pnl`, `commission`, `swap`, and the Ezymex FX Options `option_premium` / `option_settlement`, which
 /// are premiums paid / received and expiry payouts, never deposits or withdrawals) are not balance changes.
 pub fn is_balance_change(kind: &str) -> bool {
     matches!(kind, "transfer_in" | "transfer_out" | "deposit" | "withdrawal" | "demo_refill" | "adjustment" | "credit" | "bonus")
@@ -360,7 +360,7 @@ pub fn is_option_series(symbol: &str) -> bool {
         && matches!(p[3], "C" | "P" | "c" | "p")
 }
 
-/// Whether an engine deal JSON (dealing feed or client history) is a Kalks FX Options deal: the `option`
+/// Whether an engine deal JSON (dealing feed or client history) is a Ezymex FX Options deal: the `option`
 /// object or `instrument: "option"`, with the series code as a fallback.
 pub fn is_option_deal(v: &Value) -> bool {
     v["option"].is_object() || v["instrument"].as_str() == Some("option") || v["symbol"].as_str().is_some_and(is_option_series)

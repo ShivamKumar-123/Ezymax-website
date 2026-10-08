@@ -1,11 +1,11 @@
 "use client";
 
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveRoles } from "@/components/rbac/roles";
 
 import { toast } from "sonner";
 import { History, ShieldCheck } from "lucide-react";
-import { Button, PageHeader } from "@kalks/ui";
+import { Button, PageHeader } from "@ezymex/ui";
 import { PermissionBuilder } from "@/components/org/permission-builder";
 
 function RolesPage() {

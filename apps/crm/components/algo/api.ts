@@ -4,8 +4,8 @@
 
 import * as React from "react";
 import { toast } from "sonner";
-import { tr } from "@kalks/i18n/react";
-import { readCached, writeCached } from "@kalks/ui/swr-cache";
+import { tr } from "@ezymex/i18n/react";
+import { readCached, writeCached } from "@ezymex/ui/swr-cache";
 
 /* ------------------------------------------------------------------ */
 /* Strategy spec (visual builder)                                      */
@@ -400,7 +400,7 @@ export function algoError(title: string, e: unknown) {
 }
 
 /** Polls `path` every `ms` (0 = once) while the tab is visible.
- *  Opened again, a page starts from this tab's last answer while it refetches (@kalks/ui/swr-cache). */
+ *  Opened again, a page starts from this tab's last answer while it refetches (@ezymex/ui/swr-cache). */
 export function useAlgo<T>(path: string | null, ms = 0) {
   const [data, setData] = React.useState<T | null>(() => (path ? (readCached<T>(`algo:${path}`) ?? null) : null));
   const [error, setError] = React.useState<AlgoError | null>(null);

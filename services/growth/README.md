@@ -1,6 +1,6 @@
 # growth
 
-Kalks rewards and marketing (D29, D121, D135, D136, D144, O36): loyalty points per lot with tiers and a redemption catalogue, cashback programmes, trading contests (CFD or Kalks FX Options) with live leaderboards and prizes, deposit / credit bonus campaigns with per-lot release, promo codes, targeted banners, and share P&L cards (incl. options share cards). It is a Rust service (axum 0.8, sqlx 0.9, PostgreSQL) on `127.0.0.1:8101`, database `kalks_growth`.
+Ezymex rewards and marketing (D29, D121, D135, D136, D144, O36): loyalty points per lot with tiers and a redemption catalogue, cashback programmes, trading contests (CFD or Ezymex FX Options) with live leaderboards and prizes, deposit / credit bonus campaigns with per-lot release, promo codes, targeted banners, and share P&L cards (incl. options share cards). It is a Rust service (axum 0.8, sqlx 0.9, PostgreSQL) on `127.0.0.1:8101`, database `ezymex_growth`.
 
 - [Run locally](#run-locally)
 - [How it works](#how-it-works)
@@ -18,12 +18,12 @@ PostgreSQL on `127.0.0.1:5433`, the gateway on `:8080`, the trading engine on `:
 
 ```bash
 cargo build -p growth
-(cd services/growth && GROWTH_LOG_FORMAT=pretty nohup ../../target/debug/growth > ~/.kalks-local/growth.log 2>&1 &)
+(cd services/growth && GROWTH_LOG_FORMAT=pretty nohup ../../target/debug/growth > ~/.ezymex-local/growth.log 2>&1 &)
 curl -s localhost:8101/health
 cargo test -p growth
 ```
 
-On first start it creates `kalks_growth`, runs `migrations/`, and seeds tenant `kalks` with default settings, tiers (Bronze → Platinum), earning rules per asset class and a starter catalogue. It reads `GROWTH_*`, `GATEWAY_INTERNAL_TOKEN`, `TRADING_INTERNAL_TOKEN` and `WALLET_INTERNAL_TOKEN` from the repo-root `.env.local`.
+On first start it creates `ezymex_growth`, runs `migrations/`, and seeds tenant `ezymex` with default settings, tiers (Bronze → Platinum), earning rules per asset class and a starter catalogue. It reads `GROWTH_*`, `GATEWAY_INTERNAL_TOKEN`, `TRADING_INTERNAL_TOKEN` and `WALLET_INTERNAL_TOKEN` from the repo-root `.env.local`.
 
 ## How it works
 
@@ -69,7 +69,7 @@ Every engine / wallet write carries an idempotency key derived from a row id (`g
 | Anti-cheat | Flags (open for review): `balance_change` (deposit, withdrawal, transfer, refill or staff adjustment on the account during the contest; auto-disqualifies when `antiCheat.disqualifyOnBalanceChange`), `single_trade` (one trade > `maxSingleTradePct` of positive profit, with ≥ 3 trades), `short_holds` (> 50% of trades held < `minHoldSeconds`). Disqualified entries keep their row but get no rank and no prize |
 | Prizes | Admin finalizes after the end (ranks frozen), then pays: `wallet` = wallet credit (`adjustment`), `credit` = engine `credit` on the entered live account (or the client's first live account) |
 | Banners (D121) | Placement `dashboard` / `wallet` / `rewards` / `terminal`. Targeting: countries (ISO-2, empty = all), KYC statuses, account types (`live`, `demo`, `none` = no account), new users within N days. Active inside the window, highest priority first, dismissed ones hidden for that client |
-| Kalks FX Options (O34) | Option deals (`instrument: "option"` / an `option` object in the engine feed, or an option series symbol such as `EURUSD-20261009-1.1650-C`) earn **no** points, cashback or bonus lot-release, and never count in a CFD contest. They are recorded once with 0 lots (`deals.instrument = 'option'`, plus `premium` = opening premium in USD and `fill_id` = the order-book fill when the engine sends one). CFD contests use CFD P&L only: floating = equity − balance − credit − bonus − `optionValue`, and the start / minimum equity exclude the options. `option_premium` / `option_settlement` ledger postings are trading flows: never a contest balance change, a deposit (deposit bonus) or a withdrawal (bonus forfeiture). Share cards show option contracts as `contracts`, never as lots |
+| Ezymex FX Options (O34) | Option deals (`instrument: "option"` / an `option` object in the engine feed, or an option series symbol such as `EURUSD-20261009-1.1650-C`) earn **no** points, cashback or bonus lot-release, and never count in a CFD contest. They are recorded once with 0 lots (`deals.instrument = 'option'`, plus `premium` = opening premium in USD and `fill_id` = the order-book fill when the engine sends one). CFD contests use CFD P&L only: floating = equity − balance − credit − bonus − `optionValue`, and the start / minimum equity exclude the options. `option_premium` / `option_settlement` ledger postings are trading flows: never a contest balance change, a deposit (deposit bonus) or a withdrawal (bonus forfeiture). Share cards show option contracts as `contracts`, never as lots |
 | Options contests (O36) | `instrument: "options"` (default `cfd`). Only option exits count (manual closes, stop-outs, expiry settlements, knock-outs) closed inside the window on the entered account and opened at or after the start; CFD deals on that account don't. Scoring `return_pct` = realised option P&L ÷ start equity × 100, `profit` = realised option P&L (net of commission, USD), `contracts` = contracts of the trades that count (no floating part: no model prices). Join: the client must be options-eligible (gateway `GET /v1/internal/suitability/{user}?product=options` → `eligible`, else 409 `options_intro_required`; gateway down = 503) and a live account must not be in a copy / PAMM / MAM / prop group (the engine never lets those trade options). Anti-abuse: `minPremium` (USD per trade, admin-set) = a trade whose opening premium (|price P&L − exit cash|) is below it adds no contracts and no trade count, but its P&L still counts so a loss can't be hidden; **self-trades** between the client's own accounts of the same type (live / demo) count for nothing and raise a `self_trade` flag (high): the same order-book fill on both accounts, the opposite side of the same series held at the same time (a hedge), or the opposite direction in the same series within 2 s of this trade's open or close (a cross). Closed legs come from the deals feed (re-checked every refresh); legs still open are read from the engine (`GET /v1/dealing/positions?login=`) once the contest has ended and before finalize (an engine error stops the refresh, so finalize answers 503 rather than freeze unchecked scores). `minTrades` counts only trades that fully count |
 | Share cards (D136) | Snapshot of one closed trade or a period on one account. Without `showAmounts` only the symbol, side, prices, % move / % return, trade count and win rate are stored; money amounts are stored only when the client opts in. Carries the client's referral code; the public page and image are at `/s/<code>` on the Client Area |
 | Options share cards (O36) | A closed option trade's card also stores `option`: underlying, strike, call / put, expiry, side, contracts, entry → exit premium in USD per contract (entry = |price P&L − exit cash| ÷ contracts, exit = |exit cash| ÷ contracts), `pnlPct` = price P&L ÷ opening premium (also the card's `movePct`), why it closed (`closed`, `expired`, `knocked_out`, `stop_out`, `sl`, `tp`), and `breakeven` / `settle` (fixing or spot) for the payoff sketch. Never the account balance; the USD P&L only with `showAmounts` |
@@ -102,11 +102,11 @@ The runner leases due enrolments (`next_run_at + 5 min`, `FOR UPDATE SKIP LOCKED
 
 ## API
 
-Every route except `GET /health` needs `X-Kalks-Internal: $GROWTH_INTERNAL_TOKEN` and takes `X-Kalks-Tenant` (default `kalks`). JSON in and out, camelCase, money in USD as JSON numbers, times RFC 3339. Errors: `{"error": {"code", "message", "field"?}}` with 400 `bad_request`, 401 `unauthorized`, 403 `forbidden`, 404 `not_found`, 409 (`limit_reached`, `already_joined`, `already_claimed`, `insufficient_points`, `out_of_stock`, `not_eligible`, `contest_closed`, `state`), 422 `validation` (+`field`), 503 `unavailable`.
+Every route except `GET /health` needs `X-Ezymex-Internal: $GROWTH_INTERNAL_TOKEN` and takes `X-Ezymex-Tenant` (default `ezymex`). JSON in and out, camelCase, money in USD as JSON numbers, times RFC 3339. Errors: `{"error": {"code", "message", "field"?}}` with 400 `bad_request`, 401 `unauthorized`, 403 `forbidden`, 404 `not_found`, 409 (`limit_reached`, `already_joined`, `already_claimed`, `insufficient_points`, `out_of_stock`, `not_eligible`, `contest_closed`, `state`), 422 `validation` (+`field`), 503 `unavailable`.
 
 ### Client routes (Client Area BFF)
 
-Headers: `X-Kalks-User-Id` (gateway user id, required), plus segment headers the BFF takes from the gateway session: `X-Kalks-Country`, `X-Kalks-Kyc` (`unverified|pending|verified|rejected`), `X-Kalks-Created-At` (RFC 3339), `X-Kalks-Name` (percent-encoded "First Last"), `X-Kalks-Referral-Code`. They also refresh the client's profile row.
+Headers: `X-Ezymex-User-Id` (gateway user id, required), plus segment headers the BFF takes from the gateway session: `X-Ezymex-Country`, `X-Ezymex-Kyc` (`unverified|pending|verified|rejected`), `X-Ezymex-Created-At` (RFC 3339), `X-Ezymex-Name` (percent-encoded "First Last"), `X-Ezymex-Referral-Code`. They also refresh the client's profile row.
 
 | Method & path | Body / query | Response |
 |---|---|---|
@@ -170,7 +170,7 @@ BannerView = { id, title, body, ctaLabel|null, ctaUrl|null, imageUrl|null, tone:
 Share = { code, kind: "trade"|"period", login, showAmounts, createdAt, views, url: "/s/<code>", data: ShareData }
 ShareData = { name, symbol|null, side|null, openPrice|null, closePrice|null, openTime|null, closeTime|null, movePct|null,
               returnPct|null, trades|null, winRate|null, lots|null, profit|null (only with showAmounts), currency, from|null, to|null,
-              referralCode|null, brand: "Kalks",
+              referralCode|null, brand: "Ezymex",
               // option trades (O36): instrument: "option", contracts, lots: null, and
               option?: { series, underlying, right: "call"|"put", strike, expiry, style, side, contracts, entryPremium, exitPremium (USD per contract),
                          pnlPct, reason, openPremiumUnit, closePremiumUnit, breakeven, settle } }
@@ -190,7 +190,7 @@ ShareData = { name, symbol|null, side|null, openPrice|null, closePrice|null, ope
 
 ### Back Office routes
 
-Headers: `X-Kalks-Staff-Id`, `X-Kalks-Staff-Name` (percent-encoded), `X-Kalks-Staff-Role` and `X-Kalks-Staff-Perms`, set by the admin BFF after it verified the staff session. Writes are audited.
+Headers: `X-Ezymex-Staff-Id`, `X-Ezymex-Staff-Name` (percent-encoded), `X-Ezymex-Staff-Role` and `X-Ezymex-Staff-Perms`, set by the admin BFF after it verified the staff session. Writes are audited.
 
 | Method & path | Perm | Body / query | Response |
 |---|---|---|---|
@@ -244,7 +244,7 @@ Headers: `X-Kalks-Staff-Id`, `X-Kalks-Staff-Name` (percent-encoded), `X-Kalks-St
 
 ## Permissions
 
-The gateway RBAC (`services/gateway/src/rbac.rs`) defines `marketing.read`, `marketing.write` and `marketing.approve`. The Back Office BFF (`apps/admin/lib/marketing-perms.ts`) checks them per route and forwards the resolved list in `X-Kalks-Staff-Perms`; the service checks it again. Without that header (older sessions, other callers) the service falls back to these role lists:
+The gateway RBAC (`services/gateway/src/rbac.rs`) defines `marketing.read`, `marketing.write` and `marketing.approve`. The Back Office BFF (`apps/admin/lib/marketing-perms.ts`) checks them per route and forwards the resolved list in `X-Ezymex-Staff-Perms`; the service checks it again. Without that header (older sessions, other callers) the service falls back to these role lists:
 
 | permission | allows | fallback roles |
 |---|---|---|
@@ -257,17 +257,17 @@ The gateway RBAC (`services/gateway/src/rbac.rs`) defines `marketing.read`, `mar
 | App | Integration |
 |---|---|
 | Client Area | BFF `app/api/growth/[[...path]]` → `/v1/growth/me/*` with the session user and segment headers. Pages: `/rewards` (contests, with an OPTIONS badge, contracts and the options rules on options contests), `/rewards/contests/[id]`, `/rewards/loyalty`, `/rewards/cashback`, `/rewards/promotions`. Banner slots (`components/growth/banner-slot.tsx`) on the dashboard and wallet. "Share P&L" on trade history. Public share page `/s/[code]` and PNG `/s/[code]/image` (next/og; option trades get the contract, premiums per contract and a payoff sketch). |
-| Kalks Trader | `POST /api/growth/shares {dealId, showAmounts}` (owner of the acting engine session; not investor or staff sessions) → `POST /v1/growth/me/shares`. The Share button on closed option trades (Options › Closed, History option rows) opens the card, served by the Client Area. |
+| Ezymex Trader | `POST /api/growth/shares {dealId, showAmounts}` (owner of the acting engine session; not investor or staff sessions) → `POST /v1/growth/me/shares`. The Share button on closed option trades (Options › Closed, History option rows) opens the card, served by the Client Area. |
 | Back Office | BFF `app/api/marketing/[...path]` → `/v1/growth/admin/*` with permissions from `lib/marketing-perms.ts`. Pages under `/marketing`: bonuses, promo codes, banners, contests, rewards (rules, tiers, catalogue, redemptions), cashback, reports, automation (journeys) and campaigns (UTM attribution, served by the reports service `GET /v1/admin/campaigns`). |
 | Other services | `POST /v1/growth/internal/vouchers/redeem` for fee-discount vouchers (prop checkout, commission rebates). |
-| Notifications | Best effort `POST $NOTIFY_URL/v1/notify` `{userId, type, title, body, link}` (header `X-Kalks-Service: growth`) for bonus granted / released / forfeited, prize paid, redemption completed; journeys' in-app steps. |
+| Notifications | Best effort `POST $NOTIFY_URL/v1/notify` `{userId, type, title, body, link}` (header `X-Ezymex-Service: growth`) for bonus granted / released / forfeited, prize paid, redemption completed; journeys' in-app steps. |
 
 ## Environment
 
 | Variable | Default | |
 |---|---|---|
 | `GROWTH_BIND` | `127.0.0.1:8101` | |
-| `GROWTH_DATABASE_URL` | `postgres://postgres@127.0.0.1:5433/kalks_growth` | created and migrated on first start |
+| `GROWTH_DATABASE_URL` | `postgres://postgres@127.0.0.1:5433/ezymex_growth` | created and migrated on first start |
 | `GROWTH_INTERNAL_TOKEN` | – | required when `GROWTH_ENV=production` |
 | `GROWTH_ENV` | `development` | |
 | `GROWTH_WORKERS` | `true` | tests turn the loops off |
@@ -280,7 +280,7 @@ The gateway RBAC (`services/gateway/src/rbac.rs`) defines `marketing.read`, `mar
 | `REPORTS_URL` / `REPORTS_INTERNAL_TOKEN` | `http://127.0.0.1:8102` | client facts for journey triggers |
 | `INSTRUMENTS_FILE` | `config/instruments.json` | symbol → asset class |
 
-Production runs `deploy/systemd/kalks-growth.service`. `deploy/deploy.sh` builds it, generates `GROWTH_INTERNAL_TOKEN` once, derives `GROWTH_DATABASE_URL` (database `kalks_growth`) from the gateway's, and writes `GROWTH_URL` / `GROWTH_INTERNAL_TOKEN` into the Client Area and Back Office env files.
+Production runs `deploy/systemd/ezymex-growth.service`. `deploy/deploy.sh` builds it, generates `GROWTH_INTERNAL_TOKEN` once, derives `GROWTH_DATABASE_URL` (database `ezymex_growth`) from the gateway's, and writes `GROWTH_URL` / `GROWTH_INTERNAL_TOKEN` into the Client Area and Back Office env files.
 
 ## Tests
 
@@ -290,7 +290,7 @@ cargo test -p growth
 
 - Unit (`src/calc.rs`): points per lot with rule matching, tier multiplier and cent lots; cashback with the monthly cap; bonus amount (pct + cap, min deposit) and release per lot (partial, capped, completion); promo eligibility (window, limits, per-user, segments); contest scoring, ranking (min trades, ties, disqualified) and prize allocation; anti-cheat flags; options contests: scoring per instrument, system groups, opening premium of an exit, exclusions (self-trade over minimum premium, unknown premium) and self-trade detection (shared fill, hedge, cross within 2 s, and what is not one).
 - Journeys (`tests/journeys.rs`, gateway mailer and support notify mocked): enrolment once per client after `live_since`, email → condition → in-app → wait, suppressed email for an unsubscribed client, retry after a mailer outage, per-step stats, paused journeys don't move, `no_deposit` after N days.
-- Integration (`tests/growth.rs`, throw-away database `kalks_growth_test_<pid>_<n>`, skipped without PostgreSQL; engine and wallet are mock HTTP servers): deal ingest → points / cashback / bonus release / contest trades once per deal; promo limits under 20 concurrent redemptions; bonus grant → release legs → completion; redemption → wallet credit with idempotent retry; option deals earn no points / cashback / bonus release / CFD-contest trade (also when only the series code identifies them), contest floating and start equity exclude `optionValue`, and option premium / settlement postings neither disqualify a contest entry nor forfeit a bonus; options contests (eligibility via the gateway suitability mock and the prop group, realised option P&L, contracts, the minimum premium, self-trades by hedge / shared fill / a leg still open at the end, CFD trades kept out, ranks and prizes after finalize); options share cards (terms, premiums per contract, P&L on premium, expiry of a short put from the series code only, no balance, amounts only on opt-in).
+- Integration (`tests/growth.rs`, throw-away database `ezymex_growth_test_<pid>_<n>`, skipped without PostgreSQL; engine and wallet are mock HTTP servers): deal ingest → points / cashback / bonus release / contest trades once per deal; promo limits under 20 concurrent redemptions; bonus grant → release legs → completion; redemption → wallet credit with idempotent retry; option deals earn no points / cashback / bonus release / CFD-contest trade (also when only the series code identifies them), contest floating and start equity exclude `optionValue`, and option premium / settlement postings neither disqualify a contest entry nor forfeit a bonus; options contests (eligibility via the gateway suitability mock and the prop group, realised option P&L, contracts, the minimum premium, self-trades by hedge / shared fill / a leg still open at the end, CFD trades kept out, ranks and prizes after finalize); options share cards (terms, premiums per contract, P&L on premium, expiry of a short put from the series code only, no balance, amounts only on opt-in).
 
 ## Known gaps
 

@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Brand and network names stay as they are: Kalks, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
+// Brand and network names stay as they are: Ezymex, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
 // MetaMask, TronLink, Tronscan, USD, USC, KYC.
 const wallet: NsMessages<"wallet"> = {
   // Shared labels
@@ -388,17 +388,17 @@ const wallet: NsMessages<"wallet"> = {
   "demo.linkCopied": "Kiungo kimenakiliwa kwenye ubao wa kunakili",
   "demo.sendOnlyWarning": "<b>Tuma USDT pekee kupitia TRON (TRC20).</b> Kutuma tokeni nyingine yoyote, au kutumia ERC20 / BEP20, kutasababisha kupoteza fedha kwa kudumu.",
   "demo.arrival": "Kufika",
-  "demo.kalksFee": "Ada ya Kalks",
+  "demo.ezymexFee": "Ada ya Ezymex",
   "demo.noKycDeposit": "Huhitaji KYC ili kuweka pesa. Uthibitishaji unahitajika tu kabla ya utoaji wako wa kwanza.",
   // Withdraw
   "demo.addrStartT": "Anwani za TRC20 huanza na “T”",
   "demo.addrLength": "Lazima iwe herufi 34 ({length}/34)",
   "demo.addrChars": "Ina herufi zisizo sahihi (0, O, I, l haziruhusiwi)",
-  "demo.addrOwn": "Hii ni anwani yako mwenyewe ya kuweka ya Kalks",
+  "demo.addrOwn": "Hii ni anwani yako mwenyewe ya kuweka ya Ezymex",
   "demo.justNow": "Sasa hivi",
   "demo.codeConfirmed": "Msimbo umethibitishwa kupitia {email}",
   "demo.financeReviews": "Timu ya fedha hukagua kila utoaji · kwa kawaida chini ya saa 2",
-  "demo.sentFromHot": "Hutumwa kutoka pochi ya moto ya Kalks ukishaidhinishwa",
+  "demo.sentFromHot": "Hutumwa kutoka pochi ya moto ya Ezymex ukishaidhinishwa",
   "demo.arriveAfter": "Fedha hufika kwenye anwani yako baada ya uthibitisho 20",
   "demo.pendingTitle": "Utoaji unaosubiri",
   "demo.awaitingCompletion": "{count} zinasubiri kukamilika",
@@ -457,7 +457,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.alwaysReviewed": "Hukaguliwa kila wakati na timu ya fedha",
   "demo.unrecoverable": "Utoaji kwenda masoko ya kubadilishana yasiyounga mkono USDT ya TRC20, au kwenda anwani za mikataba-erevu, hauwezi kurejeshwa.",
   // Transfer
-  "demo.kalksWallet": "Pochi ya Kalks",
+  "demo.ezymexWallet": "Pochi ya Ezymex",
   "demo.freeMargin": "Margin huru",
   "demo.assetAvailable": "{amount} {asset} inapatikana · {network}",
   "demo.throughWallet": "Uhamisho daima hupitia pochi yako.",
@@ -492,7 +492,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.rule4Title": "Margin huru imelindwa",
   "demo.rule4Text": "Unaweza kuhamisha tu kile margin huru yako inaruhusu, ili biashara zilizo wazi zibaki salama.",
   "demo.into": "kwenda",
-  "demo.intoKalksWallet": "kwenda Pochi yako ya Kalks",
+  "demo.intoEzymexWallet": "kwenda Pochi yako ya Ezymex",
   "demo.freeMarginAfter": "Margin huru baadaye",
   "demo.marginLevelAfter": "Kiwango cha margin baadaye",
   "demo.convertedNote": "{asset} hubadilishwa kuwa USD kwa kiwango cha moja kwa moja ukitoa nyongeza ya {markup}%. Kiwango husasishwa kila tiki hadi uthibitishe.",

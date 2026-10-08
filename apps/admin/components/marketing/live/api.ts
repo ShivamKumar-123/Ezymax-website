@@ -161,7 +161,7 @@ export type BannerView = { id: number; title: string; body: string; ctaLabel: st
 export type ContestStatus = "draft" | "scheduled" | "running" | "ended" | "finalized" | "paid" | "cancelled";
 /** Volume scoring is `lots` in a CFD contest and `contracts` in an options contest (O36). */
 export type Scoring = "return_pct" | "profit" | "lots" | "contracts";
-/** What the contest is traded on: CFDs (default) or Kalks FX Options. */
+/** What the contest is traded on: CFDs (default) or Ezymex FX Options. */
 export type ContestInstrument = "cfd" | "options";
 export type Prize = { rankFrom: number; rankTo: number; amount: number; payout: "wallet" | "credit" };
 export type AntiCheat = { minHoldSeconds: number; maxSingleTradePct: number; disqualifyOnBalanceChange: boolean };

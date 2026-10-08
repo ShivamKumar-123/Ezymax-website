@@ -4,22 +4,22 @@ import * as React from "react";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { MessageCircle, X } from "lucide-react";
-import { IS_DEMO } from "@kalks/mock";
+import { IS_DEMO } from "@ezymex/mock";
 import { cn } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { ChatPanel } from "@/components/support/chat-panel";
 import { LiveChat } from "@/components/support/live-chat";
 import { realtime } from "@/lib/realtime";
 
-const OPEN_EVENT = "kalks:support-open";
+const OPEN_EVENT = "ezymex:support-open";
 
-/** Opens the floating support chat (e.g. "Continue in chat" from the dashboard's Ask Kalks AI). */
+/** Opens the floating support chat (e.g. "Continue in chat" from the dashboard's Ask Ezymex AI). */
 export function openSupportChat() {
   window.dispatchEvent(new Event(OPEN_EVENT));
 }
 
 /**
- * Floating support button on every Client Area page (not on /support itself, and never in Kalks Trader).
+ * Floating support button on every Client Area page (not on /support itself, and never in Ezymex Trader).
  * Opens the same live chat as the Support page in a compact panel; shows a dot when an agent replied.
  */
 export function SupportLauncher() {

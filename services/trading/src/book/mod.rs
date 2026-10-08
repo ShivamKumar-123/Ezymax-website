@@ -1,5 +1,5 @@
-//! Kalks FX Options **order book exchange** (docs/OPTIONS-EXCHANGE.md, decision O49): clients trade options with
-//! each other (and with the Kalks market maker under the same rules) in a price-time priority book per series.
+//! Ezymex FX Options **order book exchange** (docs/OPTIONS-EXCHANGE.md, decision O49): clients trade options with
+//! each other (and with the Ezymex market maker under the same rules) in a price-time priority book per series.
 //!
 //! * `types`: ticks / steps, orders, series books, commands, outputs.
 //! * `matching`: the pure matching function (`apply`), deterministic, no IO, no clock.
@@ -96,7 +96,7 @@ pub struct Books {
     pub applied: broadcast::Sender<outbox::Applied>,
     pub deadman: Mutex<HashMap<i64, Deadman>>,
     pub hooks: Hooks,
-    /// User ids of liquidity-provider accounts (besides the `options-mm` group): the Kalks MM user.
+    /// User ids of liquidity-provider accounts (besides the `options-mm` group): the Ezymex MM user.
     pub lp_users: RwLock<HashSet<i64>>,
     /// While crash recovery runs, new dispatchers wait for its go.
     recovering: AtomicBool,
@@ -107,7 +107,7 @@ pub struct Books {
     pub hub: std::sync::OnceLock<Hub>,
     /// Accounts the stop-out handed to the liquidator (docs §8); None until the liquidator runs.
     pub liquidator: Mutex<Option<tokio::sync::mpsc::UnboundedSender<i64>>>,
-    /// The Kalks market maker (docs §4): accounts, pauses, live status.
+    /// The Ezymex market maker (docs §4): accounts, pauses, live status.
     pub mm: mm::Mm,
     /// Open combo RFQs (docs §5).
     pub rfqs: rfq::Registry,

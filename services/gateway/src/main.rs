@@ -1,8 +1,8 @@
-//! Kalks gateway: identity and sessions for the Client Area (clients) and Back Office (staff).
+//! Ezymex gateway: identity and sessions for the Client Area (clients) and Back Office (staff).
 //!
 //! Browsers never talk to this service directly. Each Next.js app proxies `/api/auth/*` through its own
 //! route handlers, which keep the opaque session token in a first-party HttpOnly cookie and forward it here
-//! as a bearer token together with `X-Kalks-Internal`.
+//! as a bearer token together with `X-Ezymex-Internal`.
 
 mod admin;
 mod audit;
@@ -142,7 +142,7 @@ async fn main() -> anyhow::Result<()> {
             }
         });
     }
-    // client controls: expired restrictions and staff sessions, stale Kalks Trader connections (client_controls.rs)
+    // client controls: expired restrictions and staff sessions, stale Ezymex Trader connections (client_controls.rs)
     {
         let st = st.clone();
         tokio::spawn(async move {
@@ -320,11 +320,11 @@ async fn health(State(st): State<AppState>) -> impl IntoResponse {
     Json(serde_json::json!({ "status": if db { "ok" } else { "degraded" }, "db": db, "service": "gateway" }))
 }
 
-/// Only the apps' server-side route handlers may call /v1 (shared secret in `X-Kalks-Internal`).
+/// Only the apps' server-side route handlers may call /v1 (shared secret in `X-Ezymex-Internal`).
 async fn internal_only(State(st): State<AppState>, req: Request, next: Next) -> Response {
     let expected = st.cfg.internal_token.as_bytes();
     if !expected.is_empty() {
-        let got = req.headers().get("x-kalks-internal").map(|v| v.as_bytes()).unwrap_or_default();
+        let got = req.headers().get("x-ezymex-internal").map(|v| v.as_bytes()).unwrap_or_default();
         if !crypto::ct_eq(got, expected) {
             return ApiError::Forbidden.into_response();
         }
@@ -332,9 +332,9 @@ async fn internal_only(State(st): State<AppState>, req: Request, next: Next) -> 
     next.run(req).await
 }
 
-/// Approximate location of the caller (`X-Kalks-Country`, from the edge's CF-IPCountry via the apps), available to
+/// Approximate location of the caller (`X-Ezymex-Country`, from the edge's CF-IPCountry via the apps), available to
 /// session creation for the request's lifetime.
 async fn edge_country(req: Request, next: Next) -> Response {
-    let c = identity::clean_country(req.headers().get("x-kalks-country").and_then(|v| v.to_str().ok()));
+    let c = identity::clean_country(req.headers().get("x-ezymex-country").and_then(|v| v.to_str().ok()));
     identity::COUNTRY.scope(c, next.run(req)).await
 }

@@ -1,14 +1,14 @@
 "use client";
 
 // Browser side of the partner BFF (app/api/partner/[[...path]]/route.ts -> services/ib /v1/ib/me/*).
-// Live builds only: demo builds keep the mock partner data from @kalks/mock/partner.
+// Live builds only: demo builds keep the mock partner data from @ezymex/mock/partner.
 // Shapes mirror services/ib/src/api/client.rs. Money is USD, sent as JSON numbers.
 
 import * as React from "react";
 import { toast } from "sonner";
-import { tr } from "@kalks/i18n/react";
-import { intlTag } from "@kalks/i18n/locales";
-import { readCached, writeCached } from "@kalks/ui/swr-cache";
+import { tr } from "@ezymex/i18n/react";
+import { intlTag } from "@ezymex/i18n/locales";
+import { readCached, writeCached } from "@ezymex/ui/swr-cache";
 
 /* ------------------------------------------------------------------ */
 /* Shapes                                                              */
@@ -25,7 +25,7 @@ export interface Level {
   cpaAmount: number;
   /** USD per standard lot, per symbol group key. */
   rates: Record<string, number>;
-  /** Kalks FX Options: USD per option contract (0 = options earn no commission). */
+  /** Ezymex FX Options: USD per option contract (0 = options earn no commission). */
   optionsRate?: number;
 }
 
@@ -342,7 +342,7 @@ export function errorToast(title: string, e: unknown) {
 }
 
 /** Loads `path` once (and again on `reload()`); refreshes quietly every `ms` while the tab is visible.
- *  Opened again, a page starts from this tab's last answer while it refetches (@kalks/ui/swr-cache). */
+ *  Opened again, a page starts from this tab's last answer while it refetches (@ezymex/ui/swr-cache). */
 export function usePartner<T>(path: string | null, ms = 0) {
   const [data, setData] = React.useState<T | null>(() => (path !== null ? (readCached<T>(`partner:${path}`) ?? null) : null));
   const [error, setError] = React.useState<PartnerApiError | null>(null);

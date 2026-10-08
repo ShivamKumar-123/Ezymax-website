@@ -1,6 +1,6 @@
 "use client";
 
-// Engines behind "Ask Kalks AI" on the Overview.
+// Engines behind "Ask Ezymex AI" on the Overview.
 //
 // Live: the question goes to the client's support conversation through the same BFF the support chat uses
 // (POST /api/support/messages; signed-in session, same-origin, the support service's per-client message and bot

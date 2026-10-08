@@ -58,7 +58,7 @@ const accountDetail: NsMessages<"accountDetail"> = {
   "overview.openPositions": "Posições abertas",
   "overview.positionsSubtitle": "{open} abertas · {pending} pendentes",
   "overview.allPositions": "Todas as posições",
-  "overview.noPositions": "Nenhuma posição aberta. Negocie no Kalks Trader e elas aparecerão aqui.",
+  "overview.noPositions": "Nenhuma posição aberta. Negocie no Ezymex Trader e elas aparecerão aqui.",
   "overview.recentDeals": "Operações recentes",
   "overview.dealsCount": { one: "{count} operação nesta conta", other: "{count} operações nesta conta" },
   "overview.recentDealsSubtitle": "Entradas e saídas mais recentes",
@@ -109,10 +109,10 @@ const accountDetail: NsMessages<"accountDetail"> = {
 
   // Aba Posições (real)
   "positions.emptyTitle": "Nenhuma posição aberta ou ordem pendente",
-  "positions.emptyText": "Negocie no Kalks Trader; as posições abertas e seu L/P aparecem aqui e são atualizados a cada poucos segundos.",
-  "positions.openTrader": "Abrir o Kalks Trader",
+  "positions.emptyText": "Negocie no Ezymex Trader; as posições abertas e seu L/P aparecem aqui e são atualizados a cada poucos segundos.",
+  "positions.openTrader": "Abrir o Ezymex Trader",
   // <pnl>…</pnl> envolve o L/P flutuante colorido
-  "positions.subtitleTrader": "{count} abertas · flutuante <pnl>{amount}</pnl> · gerencie e feche-as no Kalks Trader",
+  "positions.subtitleTrader": "{count} abertas · flutuante <pnl>{amount}</pnl> · gerencie e feche-as no Ezymex Trader",
   "positions.manageInTrader": "Gerenciar no Trader",
   "positions.none": "Nenhuma posição aberta.",
   "orders.title": "Ordens pendentes",
@@ -161,7 +161,7 @@ const accountDetail: NsMessages<"accountDetail"> = {
   "history.subtitle": "Todas as operações de entrada e saída, no horário do servidor",
   "history.loadError": "Não foi possível carregar o histórico",
   "history.emptyTitle": "Nenhuma operação neste período",
-  "history.emptyText": "As negociações que você faz no Kalks Trader aparecem aqui com suas operações de entrada e saída.",
+  "history.emptyText": "As negociações que você faz no Ezymex Trader aparecem aqui com suas operações de entrada e saída.",
   "history.closedSummary": "{count} negociações fechadas · líquido <net>{amount}</net>",
   "history.searchPlaceholder": "Símbolo ou bilhete",
 
@@ -271,9 +271,9 @@ const accountDetail: NsMessages<"accountDetail"> = {
 
   // Aba Credenciais
   "creds.title": "Credenciais de login",
-  "creds.subtitle": "Use-as para entrar no Kalks Trader.",
+  "creds.subtitle": "Use-as para entrar no Ezymex Trader.",
   "creds.mt5Title": "Credenciais MT5",
-  "creds.mt5Subtitle": "Use-as para entrar no terminal Kalks ou em qualquer app MetaTrader 5.",
+  "creds.mt5Subtitle": "Use-as para entrar no terminal Ezymex ou em qualquer app MetaTrader 5.",
   "creds.fullAccess": "Acesso total",
   "creds.master": "Master",
   "creds.readOnly": "Somente leitura",
@@ -282,13 +282,13 @@ const accountDetail: NsMessages<"accountDetail"> = {
   "creds.tradingDescDemo": "Acesso total — abrir, modificar e fechar negociações. Última alteração em 12 fev 2026.",
   "creds.investorDesc": "Ver posições e histórico sem poder negociar.",
   "creds.investorDescDemo": "Acesso somente leitura para mentores, auditores e investidores. Não permite negociar.",
-  "creds.securityNote": "Para sua segurança, a Kalks nunca exibe nem envia por e-mail as senhas existentes. Se perder uma, defina uma nova aqui.",
-  "creds.securityNoteDemo": "Para sua segurança, a Kalks nunca exibe nem envia por e-mail as senhas existentes. Alterar qualquer uma das senhas exige um código único enviado ao seu e-mail.",
+  "creds.securityNote": "Para sua segurança, a Ezymex nunca exibe nem envia por e-mail as senhas existentes. Se perder uma, defina uma nova aqui.",
+  "creds.securityNoteDemo": "Para sua segurança, a Ezymex nunca exibe nem envia por e-mail as senhas existentes. Alterar qualquer uma das senhas exige um código único enviado ao seu e-mail.",
   "investor.title": "Acesso de investidor",
   "investor.subtitle": "Permita que um mentor, auditor ou investidor acompanhe esta conta",
   "investor.step1": "Defina uma senha de investidor que você aceite compartilhar.",
   "investor.step2": "Compartilhe o login {login}, o servidor {server} e essa senha.",
-  "investor.step3": "A pessoa entra no Kalks Trader com ela e vê as posições e o histórico em tempo real, somente leitura.",
+  "investor.step3": "A pessoa entra no Ezymex Trader com ela e vê as posições e o histórico em tempo real, somente leitura.",
   "investor.step4": "Altere a senha de investidor a qualquer momento para revogar o acesso; a sessão da pessoa termina na hora.",
   "investor.webTerminal": "Terminal web · sem download",
   "platforms.title": "Conectar uma plataforma",
@@ -301,7 +301,7 @@ const accountDetail: NsMessages<"accountDetail"> = {
   "platforms.sendLink": "Enviar link",
   "platforms.storeLinksSent": "Links das lojas enviados para seu e-mail",
   // 2FA = autenticação de dois fatores
-  "platforms.twoFaHint": "Ative o 2FA no seu perfil Kalks para proteger saques e alterações de credenciais.",
+  "platforms.twoFaHint": "Ative o 2FA no seu perfil Ezymex para proteger saques e alterações de credenciais.",
 
   // Diálogo de alteração de senha
   "pw.trading": "Senha de negociação",
@@ -321,7 +321,7 @@ const accountDetail: NsMessages<"accountDetail"> = {
   "pw.stepUpWhat.investor": "definir a nova senha de investidor de #{login}",
   "pw.sessionsSignedOut": { one: "{count} sessão aberta desconectada", other: "{count} sessões abertas desconectadas" },
   "pw.confirmWithCode": "Confirme com o código que enviamos por e-mail.",
-  "pw.descTrading": "Senha de acesso total para #{login}. As sessões do Kalks Trader conectadas com a senha antiga serão desconectadas.",
+  "pw.descTrading": "Senha de acesso total para #{login}. As sessões do Ezymex Trader conectadas com a senha antiga serão desconectadas.",
   "pw.descInvestor": "Senha somente leitura para #{login}. Compartilhe-a para que alguém veja a conta sem negociar. As sessões que usam a senha antiga serão desconectadas.",
   "pw.descTradingDemo": "Senha master para #{login}. As sessões abertas no terminal serão desconectadas.",
   "pw.descInvestorDemo": "Acesso somente leitura para #{login} — compartilhe com um mentor ou investidor para que ele possa ver, sem negociar.",
@@ -331,7 +331,7 @@ const accountDetail: NsMessages<"accountDetail"> = {
   "pw.sendingCode": "Enviando código…",
   "pw.updating": "Atualizando…",
   "pw.update": "Atualizar senha",
-  "pw.shownOnce": "Exibida uma única vez. Copie-a agora; a Kalks nunca exibe nem envia por e-mail as senhas existentes.",
+  "pw.shownOnce": "Exibida uma única vez. Copie-a agora; a Ezymex nunca exibe nem envia por e-mail as senhas existentes.",
   "pw.new": "Nova senha",
   "pw.confirmNew": "Confirmar nova senha",
   "pw.mismatch": "As senhas não coincidem",
@@ -351,8 +351,8 @@ const accountDetail: NsMessages<"accountDetail"> = {
   "leverage.changeError": "Não foi possível alterar a alavancagem",
   "leverage.lockedTitle": "A alavancagem fica bloqueada enquanto houver posições abertas",
   "leverage.lockedTextTrader": {
-    one: "Feche sua {count} posição aberta no Kalks Trader para alterar a alavancagem. Isso evita mudanças bruscas de margem em negociações em andamento.",
-    other: "Feche suas {count} posições abertas no Kalks Trader para alterar a alavancagem. Isso evita mudanças bruscas de margem em negociações em andamento.",
+    one: "Feche sua {count} posição aberta no Ezymex Trader para alterar a alavancagem. Isso evita mudanças bruscas de margem em negociações em andamento.",
+    other: "Feche suas {count} posições abertas no Ezymex Trader para alterar a alavancagem. Isso evita mudanças bruscas de margem em negociações em andamento.",
   },
   "leverage.lockedText": {
     one: "Feche sua {count} posição aberta para alterar a alavancagem. Isso evita mudanças bruscas de margem em negociações em andamento.",
@@ -372,7 +372,7 @@ const accountDetail: NsMessages<"accountDetail"> = {
   // <n>…</n> envolve o número de recargas restantes
   "demoFunds.refillsLeft": "<n>{left}</n> de {total} recargas restantes hoje",
   "demoFunds.full": "O saldo está no valor inicial, então não há o que recarregar.",
-  "demoFunds.resetNote": "As recargas são renovadas às 00:00 no horário do servidor. A conta expira após {days} dias sem login no Kalks Trader.",
+  "demoFunds.resetNote": "As recargas são renovadas às 00:00 no horário do servidor. A conta expira após {days} dias sem login no Ezymex Trader.",
   "demoFunds.expiresIn": "Expira em",
   "demoFunds.refilled": "Saldo demo recarregado",
   "demoFunds.refilledDesc": "#{login} redefinida para {amount} · {left} restantes hoje",

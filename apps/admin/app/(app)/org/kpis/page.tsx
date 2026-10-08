@@ -3,8 +3,8 @@
 import * as React from "react";
 import { BadgeCheck, Crown, FileDown, HandCoins, PhoneCall, Star, Target, Trophy, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardHeader, Chip, DataTable, Dialog, DialogClose, Flag, Icon3D, KpiCard, Money, PageHeader, Progress, Reveal, Segmented, Sparkline, type Column, cn } from "@kalks/ui";
-import { KPI_AGENTS, KPI_PERIOD_FACTOR, KPI_PERIOD_LABEL, KPI_PLANS, type KpiAgent, type KpiPeriod } from "@kalks/mock/admin-desks";
+import { Avatar, Button, Card, CardHeader, Chip, DataTable, Dialog, DialogClose, Flag, Icon3D, KpiCard, Money, PageHeader, Progress, Reveal, Segmented, Sparkline, type Column, cn } from "@ezymex/ui";
+import { KPI_AGENTS, KPI_PERIOD_FACTOR, KPI_PERIOD_LABEL, KPI_PLANS, type KpiAgent, type KpiPeriod } from "@ezymex/mock/admin-desks";
 
 type DeskFilter = "all" | "sales" | "retention" | "support";
 type Row = KpiAgent & { rank: number };
@@ -253,7 +253,7 @@ export default function KpisPage() {
                 <div className="flex items-center gap-1.5 text-[16px] font-medium">
                   {open.person.name} <Flag country={open.person.country} className="size-4" />
                 </div>
-                <div className="text-[12.5px] text-fg-3">{open.person.email.replace(/@.*/, "@kalks.com")}</div>
+                <div className="text-[12.5px] text-fg-3">{open.person.email.replace(/@.*/, "@ezymex.com")}</div>
               </div>
               <Sparkline data={open.trend} width={96} height={36} tone="gold" />
             </div>

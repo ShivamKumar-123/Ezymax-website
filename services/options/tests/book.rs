@@ -14,7 +14,7 @@
 //! * `book_feed_against_the_real_engine` (`--ignored`): the same consumer against a running trading engine
 //!   (`TRADING_URL`, default :8090, `TRADING_INTERNAL_TOKEN`).
 //!
-//! Needs the local Postgres (127.0.0.1:5433); uses `kalks_options_test_<pid>_<tag>` databases.
+//! Needs the local Postgres (127.0.0.1:5433); uses `ezymex_options_test_<pid>_<tag>` databases.
 
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -41,15 +41,15 @@ use options::book_feed::{self, Kind};
 use options::config::Config;
 use options::{AppState, feed, jobs, seed, store};
 
-const STAFF: (&str, &str) = ("x-kalks-staff", "ops@kalks");
-const LIVE: (&str, &str) = ("x-kalks-account-kind", "live");
-const DEMO: (&str, &str) = ("x-kalks-account-kind", "demo");
+const STAFF: (&str, &str) = ("x-ezymex-staff", "ops@ezymex");
+const LIVE: (&str, &str) = ("x-ezymex-account-kind", "live");
+const DEMO: (&str, &str) = ("x-ezymex-account-kind", "demo");
 const ENGINE_TOKEN: &str = "engine-test-token";
 
 async fn test_db(tag: &str) -> Option<String> {
     let server = std::env::var("OPTIONS_TEST_DATABASE_URL").unwrap_or_else(|_| "postgres://postgres@127.0.0.1:5433/postgres".into());
     let opts = PgConnectOptions::from_str(&server).ok()?;
-    let db = format!("kalks_options_test_{}_{tag}", std::process::id());
+    let db = format!("ezymex_options_test_{}_{tag}", std::process::id());
     let mut conn = match opts.clone().database("postgres").connect().await {
         Ok(c) => c,
         Err(e) => {
@@ -82,7 +82,7 @@ impl T {
         (s, v)
     }
     async fn call_h(&self, method: &str, path: &str, headers: &[(&str, &str)], body: Option<Value>) -> (StatusCode, HeaderMap, Value) {
-        let mut req = Request::builder().method(method).uri(path).header("x-kalks-internal", "test-token");
+        let mut req = Request::builder().method(method).uri(path).header("x-ezymex-internal", "test-token");
         for (k, v) in headers {
             req = req.header(*k, *v);
         }
@@ -193,7 +193,7 @@ async fn order_book_settings_and_snapshot() {
     // the client underlying list carries the order book parameters and the barrier label
     let ul = t.get("/v1/options/underlyings", &[LIVE]).await;
     let eur = ul["underlyings"].as_array().unwrap().iter().find(|u| u["symbol"] == "EURUSD").unwrap().clone();
-    assert_eq!((eur["premiumTick"].as_f64(), eur["orderBook"].as_bool(), eur["barrierVenue"].as_str(), eur["barrierLabel"].as_str()), (Some(0.00001), Some(false), Some("rfq"), Some("Kalks-quoted (RFQ only)")));
+    assert_eq!((eur["premiumTick"].as_f64(), eur["orderBook"].as_bool(), eur["barrierVenue"].as_str(), eur["barrierLabel"].as_str()), (Some(0.00001), Some(false), Some("rfq"), Some("Ezymex-quoted (RFQ only)")));
 
     // ---------------- underlying order-book fields: validation, platform only, audited, in the snapshot
     let v0 = snap["version"].as_i64().unwrap();
@@ -211,7 +211,7 @@ async fn order_book_settings_and_snapshot() {
         let (s, v) = put(bad.clone()).await;
         assert_eq!(s, StatusCode::UNPROCESSABLE_ENTITY, "{bad} -> {v}");
     }
-    let (s, _) = t.call("PUT", "/v1/admin/options/underlyings/EURUSD", &[STAFF, ("x-kalks-tenant", "otherbroker")], Some(json!({"premiumTick": 0.00002, "reason": "x"}))).await;
+    let (s, _) = t.call("PUT", "/v1/admin/options/underlyings/EURUSD", &[STAFF, ("x-ezymex-tenant", "otherbroker")], Some(json!({"premiumTick": 0.00002, "reason": "x"}))).await;
     assert_eq!(s, StatusCode::FORBIDDEN, "platform data");
     let (s, v) = put(json!({"premiumTick": 0.00002, "marketBandPct": 8, "limitBandPct": 40, "bandMinTicks": 3, "liqBandPct": 4, "liqFeePct": 1.5, "rfqQuoteTtlSecs": 7, "markMinQty": 2, "markMaxSpreadMult": 2.5, "contractStep": 0.5, "minContracts": 0.5, "reason": "tick test"})).await;
     assert_eq!(s, StatusCode::OK, "{v}");
@@ -241,40 +241,40 @@ async fn order_book_settings_and_snapshot() {
     assert_eq!(s, StatusCode::UNPROCESSABLE_ENTITY, "{v}");
     assert!(v["error"]["message"].as_str().unwrap().contains("vip"), "{v}");
     // another broker's rows are checked on their own
-    let (s, v) = t.call("PUT", "/v1/admin/options/groups/*/*", &[STAFF, ("x-kalks-tenant", "otherbroker")], Some(json!({"makerFeePerContract": -0.3, "takerFeePerContract": 0.3, "reason": "own"}))).await;
+    let (s, v) = t.call("PUT", "/v1/admin/options/groups/*/*", &[STAFF, ("x-ezymex-tenant", "otherbroker")], Some(json!({"makerFeePerContract": -0.3, "takerFeePerContract": 0.3, "reason": "own"}))).await;
     assert_eq!(s, StatusCode::OK, "{v}");
     let snap3 = t.snapshot().await;
-    let vip = snap3["groups"].as_array().unwrap().iter().find(|g| g["tenant"] == "kalks" && g["groupCode"] == "vip").unwrap().clone();
+    let vip = snap3["groups"].as_array().unwrap().iter().find(|g| g["tenant"] == "ezymex" && g["groupCode"] == "vip").unwrap().clone();
     assert_eq!((vip["makerFeePerContract"].as_f64(), vip["takerFeePerContract"].as_f64()), (Some(-0.02), Some(0.1)));
 
     // ---------------- mm_settings CRUD (§4)
     let base = "/v1/admin/options/mm-settings";
-    let (s, v) = t.call("PUT", &format!("{base}/kalks/live/XAUUSD"), &[STAFF], Some(json!({"baseSize": 5}))).await;
+    let (s, v) = t.call("PUT", &format!("{base}/ezymex/live/XAUUSD"), &[STAFF], Some(json!({"baseSize": 5}))).await;
     assert_eq!(s, StatusCode::UNPROCESSABLE_ENTITY, "reason required: {v}");
     for bad in [json!({"spreadVol7d": 0.5, "reason": "x"}), json!({"baseSize": 2.5, "reason": "x"}), json!({"minSpreadTicks": 0, "reason": "x"}), json!({"maxGamma": 0, "reason": "x"})] {
-        let (s, v) = t.call("PUT", &format!("{base}/kalks/live/XAUUSD"), &[STAFF], Some(bad.clone())).await;
+        let (s, v) = t.call("PUT", &format!("{base}/ezymex/live/XAUUSD"), &[STAFF], Some(bad.clone())).await;
         assert_eq!(s, StatusCode::UNPROCESSABLE_ENTITY, "{bad} -> {v}");
     }
-    for path in ["kalks/paper/XAUUSD", "kalks/live/NOPE", "Bad Tenant/live/*"] {
+    for path in ["ezymex/paper/XAUUSD", "ezymex/live/NOPE", "Bad Tenant/live/*"] {
         let (s, _) = t.call("PUT", &format!("{base}/{}", path.replace(' ', "%20")), &[STAFF], Some(json!({"baseSize": 5, "reason": "x"}))).await;
         assert_eq!(s, StatusCode::UNPROCESSABLE_ENTITY, "{path}");
     }
-    let (s, v) = t.call("PUT", &format!("{base}/kalks/live/XAUUSD"), &[STAFF], Some(json!({"baseSize": 5, "spreadVol0dte": 0.012, "maxVega": 15000, "reason": "gold is jumpy"}))).await;
+    let (s, v) = t.call("PUT", &format!("{base}/ezymex/live/XAUUSD"), &[STAFF], Some(json!({"baseSize": 5, "spreadVol0dte": 0.012, "maxVega": 15000, "reason": "gold is jumpy"}))).await;
     assert_eq!(s, StatusCode::OK, "{v}");
     let row = &v["settings"];
-    assert_eq!((row["baseSize"].as_f64(), row["spreadVol0dte"].as_f64(), row["maxVega"].as_f64(), row["spreadVol7d"].as_f64(), row["updatedBy"].as_str()), (Some(5.0), Some(0.012), Some(15000.0), Some(0.005), Some("ops@kalks")));
+    assert_eq!((row["baseSize"].as_f64(), row["spreadVol0dte"].as_f64(), row["maxVega"].as_f64(), row["spreadVol7d"].as_f64(), row["updatedBy"].as_str()), (Some(5.0), Some(0.012), Some(15000.0), Some(0.005), Some("ops@ezymex")));
     let (s, v) = t.call("PUT", &format!("{base}/*/demo/*"), &[STAFF], Some(json!({"baseSize": 25, "maxNetDelta": 2000, "reason": "demo depth"}))).await;
     assert_eq!(s, StatusCode::OK, "{v}");
     let rd = t.st.refdata().await;
-    assert_eq!(rd.mm_for("kalks", "live", "XAUUSD").base_size, 5.0);
-    assert_eq!(rd.mm_for("kalks", "demo", "XAUUSD").base_size, 25.0);
+    assert_eq!(rd.mm_for("ezymex", "live", "XAUUSD").base_size, 5.0);
+    assert_eq!(rd.mm_for("ezymex", "demo", "XAUUSD").base_size, 25.0);
     assert_eq!(rd.mm_for("otherbroker", "live", "EURUSD").base_size, 10.0);
     drop(rd);
     // a broker tunes only its own rows and sees the platform's plus its own
-    let ob = [STAFF, ("x-kalks-tenant", "otherbroker")];
+    let ob = [STAFF, ("x-ezymex-tenant", "otherbroker")];
     let (s, _) = t.call("PUT", &format!("{base}/*/*/*"), &ob, Some(json!({"baseSize": 1, "reason": "mine"}))).await;
     assert_eq!(s, StatusCode::FORBIDDEN);
-    let (s, _) = t.call("PUT", &format!("{base}/kalks/live/*"), &ob, Some(json!({"baseSize": 1, "reason": "mine"}))).await;
+    let (s, _) = t.call("PUT", &format!("{base}/ezymex/live/*"), &ob, Some(json!({"baseSize": 1, "reason": "mine"}))).await;
     assert_eq!(s, StatusCode::FORBIDDEN);
     let (s, v) = t.call("PUT", &format!("{base}/otherbroker/demo/*"), &ob, Some(json!({"enabled": false, "reason": "pilot off"}))).await;
     assert_eq!(s, StatusCode::OK, "{v}");
@@ -288,13 +288,13 @@ async fn order_book_settings_and_snapshot() {
     // delete: reason required, the default stays, then gone
     let (s, _) = t.call("DELETE", &format!("{base}/*/*/*?reason=cleanup"), &[STAFF], None).await;
     assert_eq!(s, StatusCode::UNPROCESSABLE_ENTITY);
-    let (s, _) = t.call("DELETE", &format!("{base}/kalks/live/XAUUSD"), &[STAFF], None).await;
+    let (s, _) = t.call("DELETE", &format!("{base}/ezymex/live/XAUUSD"), &[STAFF], None).await;
     assert_eq!(s, StatusCode::UNPROCESSABLE_ENTITY);
-    let (s, _) = t.call("DELETE", &format!("{base}/kalks/live/XAUUSD?reason=back%20to%20default"), &[STAFF], None).await;
+    let (s, _) = t.call("DELETE", &format!("{base}/ezymex/live/XAUUSD?reason=back%20to%20default"), &[STAFF], None).await;
     assert_eq!(s, StatusCode::OK);
-    let (s, _) = t.call("DELETE", &format!("{base}/kalks/live/XAUUSD?reason=again"), &[STAFF], None).await;
+    let (s, _) = t.call("DELETE", &format!("{base}/ezymex/live/XAUUSD?reason=again"), &[STAFF], None).await;
     assert_eq!(s, StatusCode::NOT_FOUND);
-    assert_eq!(t.st.refdata().await.mm_for("kalks", "live", "XAUUSD").base_size, 10.0);
+    assert_eq!(t.st.refdata().await.mm_for("ezymex", "live", "XAUUSD").base_size, 10.0);
     let audit = t.get("/v1/admin/options/audit?limit=100", &[STAFF]).await;
     let actions: Vec<&str> = audit["audit"].as_array().unwrap().iter().map(|a| a["action"].as_str().unwrap()).collect();
     for a in ["mm_settings.upsert", "mm_settings.delete", "group.upsert", "underlying.update"] {
@@ -309,7 +309,7 @@ async fn order_book_settings_and_snapshot() {
 /* ------------------------------------------------------------------ */
 
 /// `services/trading/src/api/book_feed.rs` + `book/md.rs`: series views, `top` / `depth` / `trade` frames, the
-/// `snapshot` and `trades` routes, internal token required. Only tenant `kalks` live has a book.
+/// `snapshot` and `trades` routes, internal token required. Only tenant `ezymex` live has a book.
 #[derive(Clone)]
 struct FakeEngine {
     views: Arc<Mutex<Vec<Value>>>,
@@ -328,7 +328,7 @@ fn view(series: &str, bids: &[(f64, f64, u32)], asks: &[(f64, f64, u32)], last: 
 
 /// The engine's `depth` and `top` frames of a view (`book::md::frames`).
 fn engine_frames(v: &Value) -> [Value; 2] {
-    let base = |ty: &str| json!({"type": ty, "tenant": "kalks", "kind": "live", "underlying": v["underlying"], "series": v["series"]});
+    let base = |ty: &str| json!({"type": ty, "tenant": "ezymex", "kind": "live", "underlying": v["underlying"], "series": v["series"]});
     let mut depth = base("depth");
     depth["bids"] = v["bids"].clone();
     depth["asks"] = v["asks"].clone();
@@ -368,14 +368,14 @@ impl FakeEngine {
     }
     fn trade(&self, series: &str, id: &str, price: f64, qty: f64, side: &str, seq: u64) {
         let at = chrono::Utc::now().to_rfc3339();
-        let f = json!({"type": "trade", "tenant": "kalks", "kind": "live", "underlying": "EURUSD", "series": series, "fillId": id, "price": price, "qty": qty,
+        let f = json!({"type": "trade", "tenant": "ezymex", "kind": "live", "underlying": "EURUSD", "series": series, "fillId": id, "price": price, "qty": qty,
                        "side": side, "tradeKind": "book", "combo": null, "at": at, "seq": seq});
         self.trades.lock().unwrap().insert(0, json!({"fillId": id, "underlying": "EURUSD", "series": series, "price": price, "qty": qty, "side": side, "tradeKind": "book", "combo": null, "at": at, "seq": seq}));
         let _ = self.tx.send(f.to_string());
     }
     async fn serve(self) -> String {
         fn authed(e: &FakeEngine, h: &HeaderMap) -> bool {
-            let ok = h.get("x-kalks-internal").is_some_and(|v| v.as_bytes() == ENGINE_TOKEN.as_bytes());
+            let ok = h.get("x-ezymex-internal").is_some_and(|v| v.as_bytes() == ENGINE_TOKEN.as_bytes());
             if !ok {
                 e.unauthorized.fetch_add(1, Ordering::Relaxed);
             }
@@ -411,7 +411,7 @@ impl FakeEngine {
             if !authed(&e, &h) {
                 return StatusCode::UNAUTHORIZED.into_response();
             }
-            if tenant != "kalks" {
+            if tenant != "ezymex" {
                 return (StatusCode::NOT_FOUND, axum::Json(json!({"code": "not_found", "message": format!("Unknown tenant {tenant}")}))).into_response();
             }
             let live = kind == "live";
@@ -495,7 +495,7 @@ async fn book_feed_merges_into_chain_stream_and_public_routes() {
     let house = t.get("/v1/options/chain?u=EURUSD", &[LIVE]).await;
     assert_eq!(house["book"]["active"], false, "{}", house["book"]);
     assert_eq!((house["book"]["premiumTick"].as_f64(), house["book"]["bands"]["minTicks"].as_i64()), (Some(0.00001), Some(5)));
-    assert_eq!(house["barriers"]["label"], "Kalks-quoted (RFQ only)");
+    assert_eq!(house["barriers"]["label"], "Ezymex-quoted (RFQ only)");
     assert!(house["pcr"].is_null());
     let expiry = house["expiry"].as_str().unwrap().to_string();
     let spot = house["spot"]["mid"].as_f64().unwrap();
@@ -521,10 +521,10 @@ async fn book_feed_merges_into_chain_stream_and_public_routes() {
     book_feed::spawn(t.st.clone());
     let st = t.st.clone();
     let c2 = call.clone();
-    wait_for("the live book", 10, || st.books.active("kalks", Kind::Live) && st.books.book("kalks", Kind::Live, &c2).is_some_and(|b| b.bid.is_some())).await;
+    wait_for("the live book", 10, || st.books.active("ezymex", Kind::Live) && st.books.book("ezymex", Kind::Live, &c2).is_some_and(|b| b.bid.is_some())).await;
     wait_for("the stream", 10, || st.books.connected()).await;
     assert_eq!(engine.unauthorized.load(Ordering::Relaxed), 0, "the engine token is sent");
-    assert!(!t.st.books.active("kalks", Kind::Demo), "demo has no book");
+    assert!(!t.st.books.active("ezymex", Kind::Demo), "demo has no book");
     let status = t.get("/v1/internal/options/status", &[]).await;
     assert_eq!((status["bookFeed"]["connected"].as_bool(), status["bookFeed"]["engineHasBook"].as_bool()), (Some(true), Some(true)), "{}", status["bookFeed"]);
 
@@ -562,11 +562,11 @@ async fn book_feed_merges_into_chain_stream_and_public_routes() {
     assert!((dc["mark"].as_f64().unwrap() - c["theo"].as_f64().unwrap()).abs() < tick, "theo = the house model mid");
     assert!((dc["delta"].as_f64().unwrap() - c["delta"].as_f64().unwrap()).abs() < 0.005, "same Greeks as the house quote");
 
-    // series metadata: the vanilla trades on the book; a barrier code is Kalks-quoted, RFQ only
+    // series metadata: the vanilla trades on the book; a barrier code is Ezymex-quoted, RFQ only
     let sv = t.get(&format!("/v1/options/series/{call}"), &[LIVE]).await;
     assert_eq!((sv["venue"].as_str(), sv["quote"]["bidQty"].as_f64()), (Some("book"), Some(4.0)));
     let bar = t.get(&format!("/v1/options/series/{call}-UO1.5000"), &[LIVE]).await;
-    assert_eq!((bar["venue"].as_str(), bar["kalksQuoted"].as_bool(), bar["label"].as_str(), bar["barrier"]["kind"].as_str()), (Some("rfq"), Some(true), Some("Kalks-quoted (RFQ only)"), Some("UO")));
+    assert_eq!((bar["venue"].as_str(), bar["ezymexQuoted"].as_bool(), bar["label"].as_str(), bar["barrier"]["kind"].as_str()), (Some("rfq"), Some(true), Some("Ezymex-quoted (RFQ only)"), Some("UO")));
     assert!(bar["quote"].is_null() && bar["series"]["code"] == call.as_str());
     let ul = t.get("/v1/options/underlyings", &[LIVE]).await;
     assert_eq!(ul["underlyings"].as_array().unwrap().iter().find(|u| u["symbol"] == "EURUSD").unwrap()["orderBook"], true);
@@ -625,7 +625,7 @@ async fn book_feed_merges_into_chain_stream_and_public_routes() {
     // ---------------- public routes: depth, tape, stats; cached 1 s; 10 requests / s per IP
     let c3 = call.clone();
     let st = t.st.clone();
-    wait_for("bid size 5", 5, || st.books.book("kalks", Kind::Live, &c3).is_some_and(|b| b.bid == Some((bid, 5.0)))).await;
+    wait_for("bid size 5", 5, || st.books.book("ezymex", Kind::Live, &c3).is_some_and(|b| b.bid == Some((bid, 5.0)))).await;
     let t0 = Instant::now();
     let (s, h, pb) = t.public(&format!("/v1/public/options/book/{call}"), &[]).await;
     assert_eq!(s, StatusCode::OK, "{pb}");
@@ -635,7 +635,7 @@ async fn book_feed_merges_into_chain_stream_and_public_routes() {
     engine.publish(view(&call, &[(bid, 9.0, 3)], &[(ask, 1.0, 1)], Some((ask, 1.0)), 26.0, 1.0, 103, bid));
     let st = t.st.clone();
     let c4 = call.clone();
-    wait_for("bid size 9", 5, || st.books.book("kalks", Kind::Live, &c4).is_some_and(|b| b.bid == Some((bid, 9.0)))).await;
+    wait_for("bid size 9", 5, || st.books.book("ezymex", Kind::Live, &c4).is_some_and(|b| b.bid == Some((bid, 9.0)))).await;
     let (_, _, again) = t.public(&format!("/v1/public/options/book/{call}"), &[]).await;
     if t0.elapsed() < Duration::from_millis(900) {
         assert_eq!(again["bids"], json!([[bid, 5.0, 2]]), "served from the 1 s cache");
@@ -711,7 +711,7 @@ async fn absent_engine_keeps_house_prices() {
         }
         book_feed::spawn(t.st.clone());
         tokio::time::sleep(Duration::from_millis(1500)).await;
-        assert!(!t.st.books.active("kalks", Kind::Live) && !t.st.books.connected(), "{tag}");
+        assert!(!t.st.books.active("ezymex", Kind::Live) && !t.st.books.connected(), "{tag}");
         let status = t.get("/v1/internal/options/status", &[]).await;
         assert_eq!((status["bookFeed"]["connected"].as_bool(), status["bookFeed"]["engineHasBook"].as_bool()), (Some(false), Some(false)), "{tag}");
         if priced {
@@ -741,9 +741,9 @@ async fn book_feed_against_the_real_engine() {
     let trading = std::env::var("TRADING_URL").unwrap_or_else(|_| "http://127.0.0.1:8090".into());
     let token = std::env::var("TRADING_INTERNAL_TOKEN").unwrap_or_default();
     let http = reqwest::Client::new();
-    let mut rb = http.get(format!("{trading}/v1/internal/options/book/kalks/live/snapshot"));
+    let mut rb = http.get(format!("{trading}/v1/internal/options/book/ezymex/live/snapshot"));
     if !token.is_empty() {
-        rb = rb.header("x-kalks-internal", &token);
+        rb = rb.header("x-ezymex-internal", &token);
     }
     let snap: Value = match rb.send().await {
         Ok(r) if r.status().is_success() => r.json().await.unwrap(),
@@ -767,7 +767,7 @@ async fn book_feed_against_the_real_engine() {
     let st = t.st.clone();
     wait_for("the engine stream", 15, || st.books.connected()).await;
     let st = t.st.clone();
-    wait_for("the venue flag", 20, || st.books.active("kalks", Kind::Live) == enabled).await;
+    wait_for("the venue flag", 20, || st.books.active("ezymex", Kind::Live) == enabled).await;
     let chain = t.get("/v1/options/chain?u=EURUSD", &[LIVE]).await;
     assert_eq!(chain["book"]["active"].as_bool(), Some(enabled));
     if enabled {
@@ -789,6 +789,6 @@ async fn book_feed_against_the_real_engine() {
     } else {
         assert!(chain["rows"][0]["call"]["bid"].is_number(), "house prices while the engine's book is dormant");
     }
-    eprintln!("real engine at {trading}: book enabled for kalks/live = {enabled}, feed status {}", t.st.books.status());
+    eprintln!("real engine at {trading}: book enabled for ezymex/live = {enabled}, feed status {}", t.st.books.status());
     finish(t).await;
 }

@@ -70,20 +70,20 @@ impl Upstream {
 
     pub async fn get(&self, t: Target, tenant: &str, who: As, path: &str) -> Result<Value, UpErr> {
         let (base, token) = self.base(t);
-        let mut rb = self.http.get(format!("{base}{path}")).header("x-kalks-tenant", tenant);
+        let mut rb = self.http.get(format!("{base}{path}")).header("x-ezymex-tenant", tenant);
         if t == Target::MarketData {
             rb = rb.header("authorization", format!("Bearer {token}"));
         } else {
-            rb = rb.header("x-kalks-internal", token);
+            rb = rb.header("x-ezymex-internal", token);
         }
         match who {
             As::Staff => {
-                rb = rb.header("x-kalks-staff-id", "reports-service").header("x-kalks-staff-name", "Reports%20service").header("x-kalks-staff-role", "admin");
+                rb = rb.header("x-ezymex-staff-id", "reports-service").header("x-ezymex-staff-name", "Reports%20service").header("x-ezymex-staff-role", "admin");
                 if t == Target::Wallet {
-                    rb = rb.header("x-kalks-service", "reports");
+                    rb = rb.header("x-ezymex-service", "reports");
                 }
             }
-            As::User(id) => rb = rb.header("x-kalks-user-id", id.to_string()),
+            As::User(id) => rb = rb.header("x-ezymex-user-id", id.to_string()),
             As::None => {}
         }
         let res = rb.send().await.map_err(|e| UpErr { status: 503, message: e.to_string() })?;

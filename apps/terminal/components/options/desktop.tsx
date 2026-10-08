@@ -1,6 +1,6 @@
 "use client";
 
-// The Options workspace on desktop (Kalks Trader in Options mode), docs/TERMINAL-DESIGN.md §2.2. Same frame as CFD:
+// The Options workspace on desktop (Ezymex Trader in Options mode), docs/TERMINAL-DESIGN.md §2.2. Same frame as CFD:
 //   main card     one row (underlying ▾, spot, expiry, time to the cut, ATM IV, Quick trade, Strategy builder, Full
 //                 chart), then ONE tab row: Option chain · Underlying · Option · Both · Analytics · Book (keys 1–6),
 //                 each view at full size, with the expiries and the selected option kept on screen across views
@@ -11,9 +11,9 @@
 // Loaded on demand (next/dynamic) the first time a trader switches to Options, so CFD-only traders never download it.
 import * as React from "react";
 import { BookOpen, BookOpenText, CandlestickChart, ChartSpline, ChevronDown, Columns2, Expand, LineChart, Maximize2, Minimize2, MousePointerClick, Rows2, Sparkles, Table2, Wand2 } from "lucide-react";
-import { parseSeriesCode } from "@kalks/mock/options";
-import { cn } from "@kalks/ui";
-import { useLocale, useT } from "@kalks/i18n/react";
+import { parseSeriesCode } from "@ezymex/mock/options";
+import { cn } from "@ezymex/ui";
+import { useLocale, useT } from "@ezymex/i18n/react";
 import { toast } from "@/lib/notify";
 import { useTerminal } from "@/lib/store";
 import { PanelTabs } from "@/components/ui/panel";
@@ -222,8 +222,8 @@ function OptionsBar() {
 /* ------------------------------------------------------------------ */
 
 export type DeskTab = "chain" | "underlying" | "option" | "both" | "analytics" | "book";
-const DESK_TAB_KEY = "kalks.options.deskTab";
-const BOTH_STACK_KEY = "kalks.options.bothStacked";
+const DESK_TAB_KEY = "ezymex.options.deskTab";
+const BOTH_STACK_KEY = "ezymex.options.bothStacked";
 
 function readLocal(key: string): string | null {
   try {
@@ -361,8 +361,8 @@ export function OptionsMain() {
   // a wide desktop chain shows Buy and Sell, chance and breakeven: Standard columns instead of Simple, once
   React.useEffect(() => {
     try {
-      if (localStorage.getItem("kalks.options.deskStd")) return;
-      localStorage.setItem("kalks.options.deskStd", "1");
+      if (localStorage.getItem("ezymex.options.deskStd")) return;
+      localStorage.setItem("ezymex.options.deskStd", "1");
       if (getOpt().prefs.colPreset === "simple") opt.setPrefs({ colPreset: "standard", cols: COL_PRESETS.standard });
     } catch {
       /* private mode */

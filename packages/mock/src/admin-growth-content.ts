@@ -7,7 +7,7 @@ import { seeded } from "./rng";
 /* ------------------------------------------------------------------ */
 
 export const CNT_TENANTS = [
-  { id: "kalks", name: "Kalks Markets", color: "#ff5a1f", domain: "kalks.com", languages: 22 },
+  { id: "ezymex", name: "Ezymex Markets", color: "#ff5a1f", domain: "ezymex.com", languages: 22 },
   { id: "aurum", name: "Aurum FX", color: "#e9b949", domain: "aurumfx.com", languages: 14 },
   { id: "nova", name: "NovaTrade Asia", color: "#38bdf8", domain: "novatrade.asia", languages: 11 },
   { id: "dunes", name: "Dunes Capital", color: "#22c55e", domain: "dunescapital.ae", languages: 6 },
@@ -46,7 +46,7 @@ export const CNT_NEWS: CntNews[] = [
   { id: "n6", title: "Yen weakens past 149 as BoJ minutes show no rush to hike", summary: "USDJPY up 0.4%; traders scale back bets on a December move.", source: "Reuters", image: "/assets/photos/skyline.jpg", symbols: ["USDJPY", "JP225"], category: "Forex", time: "12:31", ago: "1h", pinned: false, hidden: false, tags: ["boj", "yen"], impact: "medium", views: 5840, ctr: 4.2, aiTagged: true },
   { id: "n7", title: "Tesla drops 3% after delivery estimates are cut by two brokers", summary: "Analysts lower Q3 deliveries forecast to 452k on weaker China demand.", source: "Bloomberg", image: "/assets/photos/nyc.jpg", symbols: ["TSLA"], category: "Stocks", time: "11:55", ago: "2h", pinned: false, hidden: false, tags: ["ev", "earnings"], impact: "low", views: 4112, ctr: 3.8, aiTagged: true },
   { id: "n8", title: "Guaranteed 300% returns: new XRP signal group goes viral", summary: "Promotional piece from an unverified Telegram channel.", source: "CryptoWire PR", image: "/assets/photos/crypto-coins.jpg", symbols: ["XRPUSD"], category: "Crypto", time: "11:40", ago: "2h", pinned: false, hidden: true, tags: ["promo", "unverified"], impact: "low", views: 0, ctr: 0, aiTagged: true },
-  { id: "n9", title: "Kalks Research: three levels to watch on XAUUSD this week", summary: "Resistance at 2,670, support at 2,628 and 2,604; bias remains bullish above the 20-day MA.", source: "Kalks Research", image: "/assets/photos/charts.jpg", symbols: ["XAUUSD"], category: "Metals", time: "10:00", ago: "4h", pinned: true, hidden: false, tags: ["analysis", "levels"], impact: "low", views: 22804, ctr: 11.4, aiTagged: false },
+  { id: "n9", title: "Ezymex Research: three levels to watch on XAUUSD this week", summary: "Resistance at 2,670, support at 2,628 and 2,604; bias remains bullish above the 20-day MA.", source: "Ezymex Research", image: "/assets/photos/charts.jpg", symbols: ["XAUUSD"], category: "Metals", time: "10:00", ago: "4h", pinned: true, hidden: false, tags: ["analysis", "levels"], impact: "low", views: 22804, ctr: 11.4, aiTagged: false },
   { id: "n10", title: "Singapore dollar steady as MAS keeps policy band unchanged", summary: "Central bank maintains slope and width, citing easing core inflation.", source: "Trading Central", image: "/assets/photos/singapore.jpg", symbols: ["USDJPY", "AUDUSD"], category: "Macro", time: "09:18", ago: "5h", pinned: false, hidden: false, tags: ["mas", "asia"], impact: "low", views: 2104, ctr: 2.9, aiTagged: true },
   { id: "n11", title: "FTSE 100 slips as miners lag on weaker iron ore prices", summary: "UK100 down 0.1%; Rio Tinto and Anglo American lead losses.", source: "FXStreet", image: "/assets/photos/finance.jpg", symbols: ["UK100"], category: "Indices", time: "08:44", ago: "6h", pinned: false, hidden: false, tags: ["uk", "miners"], impact: "low", views: 1880, ctr: 2.4, aiTagged: true },
   { id: "n12", title: "Ethereum developers set date for next network upgrade", summary: "Upgrade targets lower L2 fees; ETHUSD up 1.9% on the day.", source: "CoinDesk", image: "/assets/photos/crypto.jpg", symbols: ["ETHUSD"], category: "Crypto", time: "08:10", ago: "6h", pinned: false, hidden: false, tags: ["upgrade"], impact: "low", views: 3302, ctr: 3.6, aiTagged: true },
@@ -59,7 +59,7 @@ export const CNT_NEWS_SOURCES = [
   { id: "s4", name: "Dow Jones Newswires", type: "API", enabled: true, latency: "1.4s", today: 121, autoPublish: false, languages: 3 },
   { id: "s5", name: "CoinDesk", type: "RSS", enabled: true, latency: "58s", today: 64, autoPublish: true, languages: 5 },
   { id: "s6", name: "Trading Central", type: "API", enabled: true, latency: "2.0s", today: 48, autoPublish: true, languages: 22 },
-  { id: "s7", name: "Kalks Research", type: "Internal", enabled: true, latency: "—", today: 3, autoPublish: false, languages: 22 },
+  { id: "s7", name: "Ezymex Research", type: "Internal", enabled: true, latency: "—", today: 3, autoPublish: false, languages: 22 },
   { id: "s8", name: "CryptoWire PR", type: "RSS", enabled: false, latency: "3m", today: 0, autoPublish: false, languages: 1 },
 ];
 
@@ -162,7 +162,7 @@ export interface CntAcceptance {
   method: "checkbox" | "modal" | "signup";
 }
 
-const DEVICES = ["iPhone 15 · iOS 19.2", "Pixel 9 · Android 16", "Chrome 141 · Windows 11", "Safari 19 · macOS", "Kalks app · Android 16", "Kalks app · iOS 19", "Edge 140 · Windows 11", "Firefox 142 · Ubuntu"];
+const DEVICES = ["iPhone 15 · iOS 19.2", "Pixel 9 · Android 16", "Chrome 141 · Windows 11", "Safari 19 · macOS", "Ezymex app · Android 16", "Ezymex app · iOS 19", "Edge 140 · Windows 11", "Firefox 142 · Ubuntu"];
 const accR = seeded(4242);
 export const CNT_ACCEPTANCE_LOG: CntAcceptance[] = Array.from({ length: 64 }, (_, i) => {
   const p = person(accR.int(0, 23));
@@ -209,7 +209,7 @@ export interface CntEmailTemplate {
 export const CNT_EMAIL_VARIABLES: { key: string; label: string; sample: string }[] = [
   { key: "first_name", label: "First name", sample: "Arjun" },
   { key: "last_name", label: "Last name", sample: "Mehta" },
-  { key: "tenant_name", label: "Broker name", sample: "Kalks Markets" },
+  { key: "tenant_name", label: "Broker name", sample: "Ezymex Markets" },
   { key: "login", label: "Account login", sample: "80412337" },
   { key: "amount", label: "Amount", sample: "2,500.00 USDT" },
   { key: "otp", label: "One-time code", sample: "482 915" },
@@ -217,11 +217,11 @@ export const CNT_EMAIL_VARIABLES: { key: string; label: string; sample: string }
   { key: "tx_id", label: "Transaction ID", sample: "TX904412" },
   { key: "margin_level", label: "Margin level", sample: "84.2%" },
   { key: "reason", label: "Rejection reason", sample: "Proof of address older than 90 days" },
-  { key: "reset_link", label: "Reset link", sample: "https://kalks.com/reset/4f1c…" },
-  { key: "support_email", label: "Support email", sample: "support@kalks.com" },
+  { key: "reset_link", label: "Reset link", sample: "https://ezymex.com/reset/4f1c…" },
+  { key: "support_email", label: "Support email", sample: "support@ezymex.com" },
   { key: "date", label: "Date", sample: "24 Sep 2026, 14:32 GMT+3" },
   { key: "commission", label: "IB commission", sample: "$4,812.40" },
-  { key: "server", label: "Trading server", sample: "Kalks-Live01" },
+  { key: "server", label: "Trading server", sample: "Ezymex-Live01" },
 ];
 
 export const CNT_EMAIL_TEMPLATES: CntEmailTemplate[] = [
@@ -345,12 +345,12 @@ const L = (id: string, title: string, type: CntLesson["type"], duration: string)
 export const CNT_COURSES: CntCourse[] = [
   { id: "c1", title: "Forex trading foundations", subtitle: "Pips, lots, leverage and your first trade", cover: "/assets/photos/trading-screen.jpg", level: "Beginner", category: "Forex", lessons: [L("l1", "What moves currency prices", "video", "8:42"), L("l2", "Pips, lots and contract size", "video", "11:05"), L("l3", "Leverage and margin explained", "article", "6 min"), L("l4", "Placing your first order in the terminal", "video", "9:30"), L("l5", "Stop loss and take profit", "video", "7:18"), L("l6", "Check your understanding", "quiz", "10 Q")], quizzes: 2, enrolments: 18420, completion: 64, rating: 4.8, status: "published", author: PEOPLE[9]!, languages: 22, updated: "12 Sep 2026", tenants: "All tenants" },
   { id: "c2", title: "Trading gold like a pro", subtitle: "XAUUSD drivers, sessions and risk", cover: "/assets/photos/gold.jpg", level: "Intermediate", category: "Metals", lessons: [L("l1", "Why gold reacts to real yields", "video", "12:14"), L("l2", "London and New York sessions", "video", "9:02"), L("l3", "Trading around US data releases", "article", "8 min"), L("l4", "Position sizing on volatile instruments", "video", "10:40"), L("l5", "Case study: PCE day", "video", "14:22"), L("l6", "Final quiz", "quiz", "12 Q")], quizzes: 2, enrolments: 9840, completion: 52, rating: 4.9, status: "published", author: PEOPLE[4]!, languages: 18, updated: "20 Sep 2026", tenants: "All tenants" },
-  { id: "c3", title: "Crypto CFDs: 24/7 markets", subtitle: "BTC, ETH and weekend risk", cover: "/assets/photos/bitcoin.jpg", level: "Intermediate", category: "Crypto", lessons: [L("l1", "How crypto CFDs differ from spot", "video", "7:55"), L("l2", "Weekend gaps and funding", "article", "5 min"), L("l3", "Volatility-adjusted stops", "video", "9:48"), L("l4", "Quiz", "quiz", "8 Q")], quizzes: 1, enrolments: 7210, completion: 47, rating: 4.6, status: "published", author: PEOPLE[8]!, languages: 14, updated: "02 Sep 2026", tenants: "Kalks Markets, NovaTrade Asia" },
+  { id: "c3", title: "Crypto CFDs: 24/7 markets", subtitle: "BTC, ETH and weekend risk", cover: "/assets/photos/bitcoin.jpg", level: "Intermediate", category: "Crypto", lessons: [L("l1", "How crypto CFDs differ from spot", "video", "7:55"), L("l2", "Weekend gaps and funding", "article", "5 min"), L("l3", "Volatility-adjusted stops", "video", "9:48"), L("l4", "Quiz", "quiz", "8 Q")], quizzes: 1, enrolments: 7210, completion: 47, rating: 4.6, status: "published", author: PEOPLE[8]!, languages: 14, updated: "02 Sep 2026", tenants: "Ezymex Markets, NovaTrade Asia" },
   { id: "c4", title: "Risk management masterclass", subtitle: "Drawdown, correlation and position sizing", cover: "/assets/photos/analytics.jpg", level: "Advanced", category: "Risk", lessons: [L("l1", "The maths of drawdown", "video", "13:10"), L("l2", "Correlated exposure across pairs", "video", "11:44"), L("l3", "Kelly, fixed-fractional and volatility sizing", "article", "12 min"), L("l4", "Building a trading journal", "video", "8:20"), L("l5", "Stress-testing a portfolio", "video", "10:05"), L("l6", "Scenario quiz", "quiz", "15 Q"), L("l7", "Capstone assessment", "quiz", "20 Q")], quizzes: 3, enrolments: 4380, completion: 38, rating: 4.9, status: "published", author: PEOPLE[4]!, languages: 12, updated: "15 Sep 2026", tenants: "All tenants" },
-  { id: "c5", title: "Passing your prop challenge", subtitle: "Rules, daily loss and consistency", cover: "/assets/photos/trader.jpg", level: "Intermediate", category: "Prop", lessons: [L("l1", "How evaluation rules work", "video", "9:12"), L("l2", "Daily loss vs max loss", "article", "7 min"), L("l3", "Consistency and news rules", "video", "8:35"), L("l4", "Rule check", "quiz", "10 Q")], quizzes: 1, enrolments: 6120, completion: 58, rating: 4.7, status: "published", author: PEOPLE[8]!, languages: 16, updated: "21 Sep 2026", tenants: "Kalks Markets" },
+  { id: "c5", title: "Passing your prop challenge", subtitle: "Rules, daily loss and consistency", cover: "/assets/photos/trader.jpg", level: "Intermediate", category: "Prop", lessons: [L("l1", "How evaluation rules work", "video", "9:12"), L("l2", "Daily loss vs max loss", "article", "7 min"), L("l3", "Consistency and news rules", "video", "8:35"), L("l4", "Rule check", "quiz", "10 Q")], quizzes: 1, enrolments: 6120, completion: 58, rating: 4.7, status: "published", author: PEOPLE[8]!, languages: 16, updated: "21 Sep 2026", tenants: "Ezymex Markets" },
   { id: "c6", title: "Indices and stock CFDs", subtitle: "NAS100, US30 and earnings season", cover: "/assets/photos/stock-market.jpg", level: "Beginner", category: "Indices", lessons: [L("l1", "What an index CFD is", "video", "6:40"), L("l2", "Trading earnings announcements", "video", "10:18"), L("l3", "Dividends and adjustments", "article", "5 min")], quizzes: 1, enrolments: 3210, completion: 44, rating: 4.5, status: "scheduled", author: PEOPLE[9]!, languages: 10, updated: "23 Sep 2026", tenants: "All tenants" },
   { id: "c7", title: "Copy trading & PAMM for investors", subtitle: "Choosing masters and managing risk", cover: "/assets/photos/finance.jpg", level: "Beginner", category: "Social", lessons: [L("l1", "How copy trading works", "video", "7:30"), L("l2", "Reading a master's statistics", "video", "9:15"), L("l3", "Setting copy limits", "article", "4 min")], quizzes: 1, enrolments: 0, completion: 0, rating: 0, status: "draft", author: PEOPLE[12]!, languages: 1, updated: "24 Sep 2026", tenants: "Aurum FX" },
-  { id: "c8", title: "Algo trading with the Kalks API", subtitle: "From REST orders to WebSocket quotes", cover: "/assets/photos/dashboard.jpg", level: "Advanced", category: "Algo", lessons: [L("l1", "API keys and permissions", "video", "6:20"), L("l2", "Placing orders over REST", "video", "12:48"), L("l3", "Streaming quotes over WebSocket", "video", "11:02"), L("l4", "Backtesting in the strategy builder", "article", "9 min"), L("l5", "Code review quiz", "quiz", "10 Q")], quizzes: 1, enrolments: 1840, completion: 31, rating: 4.8, status: "published", author: PEOPLE[21]!, languages: 4, updated: "08 Sep 2026", tenants: "All tenants" },
+  { id: "c8", title: "Algo trading with the Ezymex API", subtitle: "From REST orders to WebSocket quotes", cover: "/assets/photos/dashboard.jpg", level: "Advanced", category: "Algo", lessons: [L("l1", "API keys and permissions", "video", "6:20"), L("l2", "Placing orders over REST", "video", "12:48"), L("l3", "Streaming quotes over WebSocket", "video", "11:02"), L("l4", "Backtesting in the strategy builder", "article", "9 min"), L("l5", "Code review quiz", "quiz", "10 Q")], quizzes: 1, enrolments: 1840, completion: 31, rating: 4.8, status: "published", author: PEOPLE[21]!, languages: 4, updated: "08 Sep 2026", tenants: "All tenants" },
 ];
 
 /* ------------------------------------------------------------------ */

@@ -5,21 +5,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/features/dashboard/dashboard_hero.dart';
-import 'package:kalks/features/dashboard/dashboard_screen.dart';
-import 'package:kalks/features/markets/markets_screen.dart';
-import 'package:kalks/features/portfolio/ledger_screen.dart';
-import 'package:kalks/features/portfolio/portfolio_screen.dart';
-import 'package:kalks/features/wallet/deposit_screen.dart';
-import 'package:kalks/features/wallet/transfer_screen.dart';
-import 'package:kalks/features/wallet/wallet_history_screen.dart';
-import 'package:kalks/features/wallet/wallet_screen.dart';
-import 'package:kalks/features/wallet/withdraw_screen.dart';
-import 'package:kalks/router/router.dart';
-import 'package:kalks/shell/app_shell.dart';
-import 'package:kalks/shell/chrome.dart';
-import 'package:kalks/shell/module_pager.dart';
-import 'package:kalks/ui/ui.dart';
+import 'package:ezymex/features/dashboard/dashboard_hero.dart';
+import 'package:ezymex/features/dashboard/dashboard_screen.dart';
+import 'package:ezymex/features/markets/markets_screen.dart';
+import 'package:ezymex/features/portfolio/ledger_screen.dart';
+import 'package:ezymex/features/portfolio/portfolio_screen.dart';
+import 'package:ezymex/features/wallet/deposit_screen.dart';
+import 'package:ezymex/features/wallet/transfer_screen.dart';
+import 'package:ezymex/features/wallet/wallet_history_screen.dart';
+import 'package:ezymex/features/wallet/wallet_screen.dart';
+import 'package:ezymex/features/wallet/withdraw_screen.dart';
+import 'package:ezymex/router/router.dart';
+import 'package:ezymex/shell/app_shell.dart';
+import 'package:ezymex/shell/chrome.dart';
+import 'package:ezymex/shell/module_pager.dart';
+import 'package:ezymex/ui/ui.dart';
 
 import 'helpers/test_app.dart';
 

@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowLeft, Ban, Building2, Globe, Mail, Play, Save } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, Dialog, EmptyState, Field, Input, KeyValue, KpiCard, PageHeader, Toggle, formatNumber } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Dialog, EmptyState, Field, Input, KeyValue, KpiCard, PageHeader, Toggle, formatNumber } from "@ezymex/ui";
 import { ErrorState, TableSkeleton, ago, day, useApi, useNow } from "@/components/live/kit";
 import { InviteLink, STATUS_TONE, act, call, cap, money, pct } from "@/components/rbac/kit";
 import { TenantMark } from "./tenants";

@@ -1,9 +1,9 @@
 //! MAM routes (see README "MAM (multi-account manager)"):
-//! - Client Area (BFF sends the signed-in user in `X-Kalks-User-Id`): find a programme, link an existing live
+//! - Client Area (BFF sends the signed-in user in `X-Ezymex-User-Id`): find a programme, link an existing live
 //!   account with an explicit consent to the terms, see and limit the link, revoke it;
 //! - manager (the same user as the approved master): open the programme, dashboard, per-account multiplier /
 //!   percent, allocation preview and audit;
-//! - Kalks Trader (terminal session): the MAM role and allocation summary of the signed-in account;
+//! - Ezymex Trader (terminal session): the MAM role and allocation summary of the signed-in account;
 //! - Back Office (`/v1/social/admin/mam/*`): programmes, links, allocation audit, emergency stop, stop a link.
 //!   Reads: any staff role. Writes: `ROLES_SOCIAL_WRITE`, with a note, audited as `social.mam.*`.
 
@@ -377,7 +377,7 @@ pub async fn manager_allocations(State(st): State<AppState>, ctx: Ctx, h: Header
 }
 
 /* ------------------------------------------------------------------ */
-/* Kalks Trader                                                        */
+/* Ezymex Trader                                                        */
 /* ------------------------------------------------------------------ */
 
 pub async fn terminal(State(st): State<AppState>, ctx: Ctx, Query(q): Query<PreviewQ>) -> ApiResult<Json<Value>> {

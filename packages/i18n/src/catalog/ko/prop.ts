@@ -1,7 +1,7 @@
 import type { NsMessages } from "../../core";
 
 // Client Area 프롭 트레이딩: 챌린지 카탈로그, 내 챌린지, 지급, 인증서.
-// "Kalks", "Kalks Prop", "Kalks Trader", "USDT", "17:00"은 그대로 유지합니다.
+// "Ezymex", "Ezymex Prop", "Ezymex Trader", "USDT", "17:00"은 그대로 유지합니다.
 const prop: NsMessages<"prop"> = {
   // 오류 후속 조치 버튼
   "errorLink.deposit": "USDT 입금",
@@ -102,13 +102,13 @@ const prop: NsMessages<"prop"> = {
 
   // 공개 인증서 확인 페이지 (/verify/<code>)
   "verify.shellTitle": "인증서 확인",
-  "verify.footer": "Kalks Prop 계좌는 모의 계좌입니다. 인증서는 Kalks Prop 챌린지에서의 트레이더 성과를 보여주며, 트레이더 이름은 이름과 성의 첫 글자로 축약됩니다.",
+  "verify.footer": "Ezymex Prop 계좌는 모의 계좌입니다. 인증서는 Ezymex Prop 챌린지에서의 트레이더 성과를 보여주며, 트레이더 이름은 이름과 성의 첫 글자로 축약됩니다.",
   "verify.linkCopied": "링크가 복사되었습니다",
   "verify.copyFailed": "링크를 복사하지 못했습니다",
   "verify.copyLink": "링크 복사",
   "verify.downloadPng": "PNG 다운로드",
   "verify.notFoundTitle": "인증서를 찾을 수 없습니다",
-  "verify.notFoundText": "이 번호의 Kalks Prop 인증서가 없습니다. 링크를 확인하거나 트레이더에게 다시 공유해 달라고 요청하세요.",
+  "verify.notFoundText": "이 번호의 Ezymex Prop 인증서가 없습니다. 링크를 확인하거나 트레이더에게 다시 공유해 달라고 요청하세요.",
   "verify.unavailableTitle": "지금은 확인할 수 없습니다",
   "verify.unavailableText": "지금은 이 인증서를 확인할 수 없습니다. 몇 분 후 다시 시도해 주세요.",
   "verify.kind.pass": "단계 통과",
@@ -122,9 +122,9 @@ const prop: NsMessages<"prop"> = {
   "verify.row.issued": "발급일",
   "verify.row.number": "인증서 번호",
   "verify.validTitle": "유효한 인증서",
-  "verify.validText": "Kalks Prop이 발급했으며 당사 기록과 대조하여 확인되었습니다.",
+  "verify.validText": "Ezymex Prop이 발급했으며 당사 기록과 대조하여 확인되었습니다.",
   "verify.revokedTitle": "취소된 인증서",
-  "verify.revokedText": "이 인증서는 Kalks에 의해 취소되어 더 이상 유효하지 않습니다.",
+  "verify.revokedText": "이 인증서는 Ezymex에 의해 취소되어 더 이상 유효하지 않습니다.",
   "verify.valid": "유효",
   "verify.revoked": "취소됨",
   // 인증서 제목
@@ -249,8 +249,8 @@ const prop: NsMessages<"prop"> = {
   "checkout.goToMine": "내 챌린지로 이동",
   "checkout.readyTitle": "챌린지가 준비되었습니다",
   "checkout.paidText": "USDT 지갑에서 {fee}이(가) 결제되었고 {size} 계좌가 개설되었습니다. 지금부터 규칙이 적용됩니다.",
-  "checkout.savePasswords": "지금 이 비밀번호를 저장하세요: 한 번만 표시되며 당사는 저장하지 않습니다. 거래 버튼을 누르면 비밀번호 없이 Kalks Trader에 로그인되므로 언제든 여기에서 거래할 수 있습니다.",
-  "checkout.passwordsShown": "거래 비밀번호는 이 구매가 처음 확인될 때 표시되었습니다. 거래 버튼으로 Kalks Trader를 여세요: 비밀번호 없이 로그인됩니다.",
+  "checkout.savePasswords": "지금 이 비밀번호를 저장하세요: 한 번만 표시되며 당사는 저장하지 않습니다. 거래 버튼을 누르면 비밀번호 없이 Ezymex Trader에 로그인되므로 언제든 여기에서 거래할 수 있습니다.",
+  "checkout.passwordsShown": "거래 비밀번호는 이 구매가 처음 확인될 때 표시되었습니다. 거래 버튼으로 Ezymex Trader를 여세요: 비밀번호 없이 로그인됩니다.",
 
   // 계좌 로그인 정보
   "cred.login": "로그인",
@@ -376,7 +376,7 @@ const prop: NsMessages<"prop"> = {
   "account.passed": "통과 · 읽기 전용",
   "account.failed": "실패 · 비활성화됨",
   "account.opening": "개설 중",
-  "account.tradableText": "거래를 누르면 이 계좌로 로그인된 Kalks Trader가 열립니다. 비밀번호는 구매 시 한 번 표시되었습니다.",
+  "account.tradableText": "거래를 누르면 이 계좌로 로그인된 Ezymex Trader가 열립니다. 비밀번호는 구매 시 한 번 표시되었습니다.",
   "account.passedText": "이 단계는 완료되었습니다. 계좌는 읽기 전용이며, 다음 단계에서 거래하세요.",
   "account.failedText": "이 계좌의 거래가 비활성화되었습니다.",
   "account.unavailableText": "이 계좌에서는 거래할 수 없습니다.",

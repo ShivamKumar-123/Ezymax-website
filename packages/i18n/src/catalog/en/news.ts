@@ -44,7 +44,7 @@ const news = {
   "markets.trade": "Trade",
   "markets.searchPlaceholder": "Search symbol or name…",
   "markets.clearSearch": "Clear",
-  "markets.liveTooltip": "Quotes stream from the Kalks price feed",
+  "markets.liveTooltip": "Quotes stream from the Ezymex price feed",
   "markets.footnote": "Standard group spreads: pips for FX, price units for others · closed markets show their last price · click a row for contract specs",
   // Short trading-hours summary per asset class (24/5 = 24 hours, 5 days a week)
   "hoursShort.forex": "24/5",
@@ -269,7 +269,7 @@ const news = {
   "cal.removeReminder": "Remove reminder",
   "cal.remindMe": "Remind me 15 min before",
   "cal.toWatch": "Instruments to watch",
-  "cal.noLinked": "No Kalks instruments are directly linked to this currency.",
+  "cal.noLinked": "No Ezymex instruments are directly linked to this currency.",
   // High-impact alerts card
   "alerts.title": "High-impact alerts",
   "alerts.toggle": "Alert me before high-impact events",

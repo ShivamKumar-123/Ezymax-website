@@ -8,15 +8,15 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:kalks/core/models/account.dart';
-import 'package:kalks/features/accounts/account_actions.dart';
-import 'package:kalks/features/accounts/account_detail_screen.dart';
-import 'package:kalks/features/accounts/accounts_data.dart';
-import 'package:kalks/features/accounts/accounts_screen.dart';
-import 'package:kalks/features/accounts/open_account_screen.dart';
-import 'package:kalks/preview/c1/preview_accounts.dart';
-import 'package:kalks/preview/preview_data.dart' as sample;
-import 'package:kalks/router/router.dart';
+import 'package:ezymex/core/models/account.dart';
+import 'package:ezymex/features/accounts/account_actions.dart';
+import 'package:ezymex/features/accounts/account_detail_screen.dart';
+import 'package:ezymex/features/accounts/accounts_data.dart';
+import 'package:ezymex/features/accounts/accounts_screen.dart';
+import 'package:ezymex/features/accounts/open_account_screen.dart';
+import 'package:ezymex/preview/c1/preview_accounts.dart';
+import 'package:ezymex/preview/preview_data.dart' as sample;
+import 'package:ezymex/router/router.dart';
 
 import 'helpers/test_app.dart';
 

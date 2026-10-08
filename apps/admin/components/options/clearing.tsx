@@ -5,7 +5,7 @@
  * fill moves premium through the expiry's clearing account `house:options_clearing.{UNDERLYING}.{YYYYMMDD}:USD` (buyer
  * −P / clearing +P, seller +P / clearing −P), so each account MUST be 0 once the outbox is empty; after settlement any
  * rounding residue is swept to `house:options_rounding`. The liquidation log lists every step of a stop-out run: book
- * first within a band, combos by RFQ, then the Kalks backstop at mark ∓ the liquidation fee.
+ * first within a band, combos by RFQ, then the Ezymex backstop at mark ∓ the liquidation fee.
  *
  *   GET /api/trading/admin/options/clearing?kind=live|demo&expiry=YYYY-MM-DD&u=SYMBOL
  *       { items: [{ account, underlying, expiry, balanceUsd, pendingOutbox, fills, lastFillAt, swept?: {amountUsd, at} }] }
@@ -18,7 +18,7 @@
  */
 import * as React from "react";
 import { CircleCheck, Flame, Landmark, RefreshCw, Scale, ShieldAlert, TriangleAlert } from "lucide-react";
-import { Button, Card, CardHeader, Chip, DataTable, EmptyState, Input, KpiCard, PageHeader, Reveal, Segmented, Tooltip, cn, formatNumber, type ChipTone, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, EmptyState, Input, KpiCard, PageHeader, Reveal, Segmented, Tooltip, cn, formatNumber, type ChipTone, type Column } from "@ezymex/ui";
 import { ErrorState, TableSkeleton, ago, useDebounced, useNow, when } from "@/components/live/kit";
 import type { AdminExpiry, ClearingRow, Liquidation } from "./types";
 import { EnginePending, KIND_OPTIONS, LoginLink, UnderlyingCell, enginePending, kindLabel, usd, useKind, useOpt } from "./kit";
@@ -27,7 +27,7 @@ import { ApprovalsPanel, BustFillCard } from "./fill-bust";
 const ROUTE: Record<string, { label: string; tone: ChipTone; text: string }> = {
   book: { label: "Book", tone: "info", text: "Reduce-only IOC on the book at mark × (1 ∓ liquidation band)" },
   rfq: { label: "RFQ", tone: "gold", text: "Combo closed by an RFQ to the market maker, auto-accepted" },
-  backstop: { label: "Backstop", tone: "down", text: "The rest taken by the Kalks MM at mark ∓ the liquidation fee" },
+  backstop: { label: "Backstop", tone: "down", text: "The rest taken by the Ezymex MM at mark ∓ the liquidation fee" },
   cfd: { label: "CFD", tone: "neutral", text: "A CFD position closed in the account shard" },
 };
 const STATUS: Record<string, { label: string; tone: ChipTone }> = { done: { label: "Done", tone: "up" }, partial: { label: "Partial", tone: "warn" }, failed: { label: "Failed", tone: "down" } };

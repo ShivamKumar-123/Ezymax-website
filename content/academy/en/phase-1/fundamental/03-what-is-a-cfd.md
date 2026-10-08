@@ -48,7 +48,7 @@ quiz:
     explanation: "Leverage means your exposure is much larger than your margin. A 1% move on the full position can be 50% or more of the margin, which is why position size matters so much."
 ---
 
-When you trade on Kalks you are not buying euros, gold bars, barrels of oil or Apple shares. You are trading **contracts for difference**, or CFDs. Understanding exactly what that means will save you from several common misunderstandings about costs, ownership and risk.
+When you trade on Ezymex you are not buying euros, gold bars, barrels of oil or Apple shares. You are trading **contracts for difference**, or CFDs. Understanding exactly what that means will save you from several common misunderstandings about costs, ownership and risk.
 
 ## The core idea
 
@@ -61,7 +61,7 @@ Profit or loss = (closing price - opening price) x position size in units   (for
 Profit or loss = (opening price - closing price) x position size in units   (for a sell)
 ```
 
-The CFD's price is derived from the underlying market. EURUSD on Kalks follows the interbank FX price, XAUUSD follows spot gold, US30 follows the Dow Jones Industrial Average, and AAPL follows the share price on its US exchange.
+The CFD's price is derived from the underlying market. EURUSD on Ezymex follows the interbank FX price, XAUUSD follows spot gold, US30 follows the Dow Jones Industrial Average, and AAPL follows the share price on its US exchange.
 
 ## Long and short
 
@@ -109,7 +109,7 @@ Three costs appear on almost every CFD trade:
 2. **Commission.** Some account types charge a fixed commission per lot, usually in exchange for tighter spreads.
 3. **Swap (overnight financing).** A position still open at 00:00 server time is credited or debited a swap, reflecting interest-rate differences and financing. FX and metals take a triple swap on Wednesday night to cover the weekend; indices, energies and stocks do so on Friday; crypto is charged every night. Swap-free accounts are available for clients who need them.
 
-For a trade held a few hours, the spread is usually the main cost. For a trade held for weeks, swaps can become significant, so check the swap rates in the symbol's contract specification in Kalks Trader.
+For a trade held a few hours, the spread is usually the main cost. For a trade held for weeks, swaps can become significant, so check the swap rates in the symbol's contract specification in Ezymex Trader.
 
 ## Common mistakes
 
@@ -117,4 +117,4 @@ For a trade held a few hours, the spread is usually the main cost. For a trade h
 - **Forgetting the spread on the close.** A buy closes at the bid. If the spread widens when you exit, your result is worse than the chart suggests.
 - **Holding CFDs like investments without checking swaps.** Holding a leveraged index CFD for months can cost more in financing than expected.
 
-Try both a buy and a sell on a free demo account in Kalks Trader and check that your results match the formula above.
+Try both a buy and a sell on a free demo account in Ezymex Trader and check that your results match the formula above.

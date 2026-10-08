@@ -47,7 +47,7 @@ quiz:
     explanation: "Energy is a direct component of headline inflation and feeds into transport and production costs. Higher inflation expectations raise breakevens and can lift nominal yields."
 ---
 
-Crude oil is the world's most important commodity. It fuels transport, feeds plastics and chemicals, and appears directly in every consumer price index. That gives oil a double role in intermarket analysis: its price reflects the health of global demand, and its moves feed back into inflation, interest rates and currencies. On Kalks you can trade it through USOIL and UKOIL.
+Crude oil is the world's most important commodity. It fuels transport, feeds plastics and chemicals, and appears directly in every consumer price index. That gives oil a double role in intermarket analysis: its price reflects the health of global demand, and its moves feed back into inflation, interest rates and currencies. On Ezymex you can trade it through USOIL and UKOIL.
 
 ## The two benchmarks
 
@@ -56,7 +56,7 @@ Crude oil is the world's most important commodity. It fuels transport, feeds pla
 
 They usually move in the same direction. The **Brent-WTI spread**, typically a few dollars with Brent above WTI, widens or narrows with US production, pipeline and export capacity, and events in the Middle East or Europe. A supply shock in a shipping lane tends to affect Brent first; a problem at US storage hubs affects WTI first.
 
-> **Note:** Oil CFDs are commonly based on futures contracts, which expire monthly. Depending on how the symbol is built, your position may be subject to a roll adjustment or the symbol may track a specific contract month. Check the contract specification in Kalks Trader, including contract size, before trading.
+> **Note:** Oil CFDs are commonly based on futures contracts, which expire monthly. Depending on how the symbol is built, your position may be subject to a roll adjustment or the symbol may track a specific contract month. Check the contract specification in Ezymex Trader, including contract size, before trading.
 
 ## What drives the price
 
@@ -96,6 +96,6 @@ The most important question when oil moves is **why**. A rally driven by strong 
 - **Trading through inventory releases without a plan.** Spreads widen and price can jump several dollars; a tight stop may be hit by the initial spike.
 - **Ignoring contract details.** Contract size, trading hours and roll treatment differ between symbols and accounts.
 - **Assuming USOIL and UKOIL are different trades.** They are highly correlated; holding both in the same direction roughly doubles your oil exposure.
-- **Forgetting the triple swap.** On Kalks energies carry triple swap on Friday night, which affects the cost of holding positions over the weekend.
+- **Forgetting the triple swap.** On Ezymex energies carry triple swap on Friday night, which affects the cost of holding positions over the weekend.
 
 > **Risk warning:** Oil can gap sharply on OPEC+ announcements and weekend geopolitical events. CFDs are leveraged, and a gap through your stop can produce a loss larger than planned.

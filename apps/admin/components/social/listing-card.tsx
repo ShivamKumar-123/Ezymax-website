@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { AlertTriangle, CheckCircle2, PencilLine, Star, XCircle } from "lucide-react";
-import { Avatar, Button, Chip, SpotlightCard, SymbolAvatar, cn } from "@kalks/ui";
-import type { Listing } from "@kalks/mock/admin-partners";
+import { Avatar, Button, Chip, SpotlightCard, SymbolAvatar, cn } from "@ezymex/ui";
+import type { Listing } from "@ezymex/mock/admin-partners";
 import { ago } from "@/components/partners/common";
 
 export const CAT_TONE: Record<Listing["category"], "ember" | "gold" | "info" | "neutral"> = { Strategy: "ember", EA: "gold", Signal: "info", Indicator: "neutral" };

@@ -84,7 +84,7 @@ fn plan_streams_core_always_and_catalogue_on_demand_within_the_limit() {
 #[tokio::test]
 async fn sync_restore_and_delayed_quotes_against_postgres() {
     let base = std::env::var("MARKET_DATA_TEST_DATABASE_URL").unwrap_or_else(|_| "postgres://postgres@127.0.0.1:5433/postgres".into());
-    let db_name = format!("kalks_md_test_{}", std::process::id());
+    let db_name = format!("ezymex_md_test_{}", std::process::id());
     let server = sqlx::postgres::PgConnectOptions::from_str(&base).unwrap();
     let url = sqlx::ConnectOptions::to_url_lossy(&server.clone().database(&db_name)).to_string();
     let pool = db::connect(&url).await.expect("PostgreSQL :5433 must be running for this test");

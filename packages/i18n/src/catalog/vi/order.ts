@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader order ticket, New Order window, DOM ladder, position/pending dialogs and trade toasts.
+// Ezymex Trader order ticket, New Order window, DOM ladder, position/pending dialogs and trade toasts.
 const order: NsMessages<"order"> = {
   // Order types (ticket type switcher)
   "type.market": "Thị trường",
@@ -269,9 +269,9 @@ const order: NsMessages<"order"> = {
 
   // Specification / About dialogs
   "spec.title": "Thông số kỹ thuật · {symbol}",
-  "about.title": "Giới thiệu Kalks Trader",
+  "about.title": "Giới thiệu Ezymex Trader",
   "about.version": "Phiên bản {version} · bản dựng {build} · Web x64",
-  "about.text": "Phòng giao dịch đa tài sản của Kalks Global Markets. Báo giá được truyền từ cổng giá Kalks; giờ máy chủ là GMT+3.",
+  "about.text": "Phòng giao dịch đa tài sản của Ezymex Global Markets. Báo giá được truyền từ cổng giá Ezymex; giờ máy chủ là GMT+3.",
 
   // Rejection reasons (MT5 journal wording)
   "reject.market_closed": "Thị trường đóng cửa",

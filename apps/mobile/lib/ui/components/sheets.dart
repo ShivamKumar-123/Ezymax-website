@@ -223,7 +223,7 @@ Future<V?> showKActionSheet<V>(BuildContext context, {String? title, String? mes
 Future<V?> showKAlert<V>(BuildContext context, {required String title, String? message, Widget? content, required List<KAction<V>> actions}) {
   KHaptics.medium();
   final k = context.k;
-  // the alert takes the look of the screen it opens from (Kalks Trader's theme), like sheets do
+  // the alert takes the look of the screen it opens from (Ezymex Trader's theme), like sheets do
   final themes = InheritedTheme.capture(from: context, to: Navigator.of(context, rootNavigator: true).context);
   return showGeneralDialog<V>(
     context: context,

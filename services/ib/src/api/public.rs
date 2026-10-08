@@ -43,7 +43,7 @@ pub fn clean_slug(raw: &str) -> Option<String> {
 }
 
 fn visitor(st: &AppState, ip: &str, ua: &str) -> String {
-    let key = if st.cfg.internal_token.is_empty() { b"kalks-ib-dev".to_vec() } else { st.cfg.internal_token.as_bytes().to_vec() };
+    let key = if st.cfg.internal_token.is_empty() { b"ezymex-ib-dev".to_vec() } else { st.cfg.internal_token.as_bytes().to_vec() };
     let mut mac = <Hmac<Sha256> as KeyInit>::new_from_slice(&key).expect("hmac key");
     mac.update(ip.as_bytes());
     mac.update(b"|");

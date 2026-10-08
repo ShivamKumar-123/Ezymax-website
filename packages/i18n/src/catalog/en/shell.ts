@@ -19,7 +19,7 @@ const shell = {
   security: "Security",
   verification: "Verification",
   preferences: "Preferences",
-  kalksTrader: "Kalks Trader",
+  ezymexTrader: "Ezymex Trader",
   deposit: "Deposit",
   // Client Area navigation
   "nav.dashboard": "Dashboard",
@@ -90,7 +90,7 @@ const shell = {
   "gate.title": "Not enabled for your account yet",
   "gate.text": "This section isn't enabled for your account yet. Contact {email} if you need access.",
   "gate.backToDashboard": "Back to dashboard",
-  "gate.launchTrader": "Launch Kalks Trader",
+  "gate.launchTrader": "Launch Ezymex Trader",
   // market sessions clock (server time GMT+3); {h} hours, {m} minutes
   "sessions.title": "Market sessions",
   "sessions.openLeft": "Open · {h}h {m}m left",

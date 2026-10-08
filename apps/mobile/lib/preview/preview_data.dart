@@ -1,4 +1,4 @@
-// Sample data for development previews (`--dart-define=KALKS_PREVIEW=true`): web screenshots of the design system and
+// Sample data for development previews (`--dart-define=EZYMEX_PREVIEW=true`): web screenshots of the design system and
 // golden tests run without a server or an account. The shapes are the real API's (docs/MOBILE-API.md); the values
 // are made up. The in-app demo ("Try the demo" on the sign-in page, demoModeProvider) runs on the same data.
 //
@@ -11,7 +11,7 @@ import '../env.dart';
 Map<String, String> get _query => Env.preview ? Uri.base.queryParameters : const {};
 
 /// Start signed in as the sample client.
-bool get previewSignedIn => const bool.fromEnvironment('KALKS_PREVIEW_SIGNED_IN') || _query['signedIn'] == '1';
+bool get previewSignedIn => const bool.fromEnvironment('EZYMEX_PREVIEW_SIGNED_IN') || _query['signedIn'] == '1';
 
 /// Start on the biometric lock screen (?locked=1).
 bool get previewLocked => _query['locked'] == '1';
@@ -37,7 +37,7 @@ final Map<String, dynamic> previewMe = {
     'email_verified': true,
     'referral_code': 'ARJUN24',
     'created_at': '2026-03-02T09:00:00Z',
-    'tenant': {'slug': 'kalks', 'name': 'Kalks'},
+    'tenant': {'slug': 'ezymex', 'name': 'Ezymex'},
   },
   'viewer': null,
   'session': {'id': 1, 'idle_minutes': 60, 'expires_at': DateTime.now().add(const Duration(days: 7)).toIso8601String()},
@@ -49,24 +49,24 @@ final Map<String, dynamic> previewConfig = {
   'apiVersion': 1,
   'minAppVersion': null,
   'urls': {
-    'app': 'https://app.kalkstrade.com',
-    'terminal': 'https://trade.kalkstrade.com',
-    'marketData': {'http': 'https://api.kalkstrade.com', 'ws': 'wss://api.kalkstrade.com/v1/stream'},
+    'app': 'https://app.ezymex.com',
+    'terminal': 'https://trade.ezymex.com',
+    'marketData': {'http': 'https://api.ezymex.com', 'ws': 'wss://api.ezymex.com/v1/stream'},
     'streams': {
-      'engine': 'wss://trade.kalkstrade.com/engine/stream',
-      'options': 'wss://trade.kalkstrade.com/options/stream',
-      'support': 'wss://app.kalkstrade.com/support/stream',
+      'engine': 'wss://trade.ezymex.com/engine/stream',
+      'options': 'wss://trade.ezymex.com/options/stream',
+      'support': 'wss://app.ezymex.com/support/stream',
     },
   },
   'tenant': {
-    'slug': 'kalks',
-    'name': 'Kalks Markets',
+    'slug': 'ezymex',
+    'name': 'Ezymex Markets',
     'default': true,
     'logoUrl': null,
     'primary': '#ff5a1f',
     'accent': '#e9b949',
-    'supportEmail': 'support@kalkstrade.com',
-    'website': 'https://kalkstrade.com',
+    'supportEmail': 'support@ezymex.com',
+    'website': 'https://ezymex.com',
   },
   'modules': {'academy': true, 'algo': true, 'api': true, 'copy_trading': true, 'ib': true, 'pamm': true, 'prop': true, 'rewards': true, 'wallet': true},
   'flags': {'client_registration': true, 'demo_accounts': true, 'google_login': true, 'trade_sharing': true},

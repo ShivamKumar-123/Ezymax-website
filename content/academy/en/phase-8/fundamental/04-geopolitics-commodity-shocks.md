@@ -82,7 +82,7 @@ The old saying that markets "buy the invasion" reflects the fade case, but it is
 
 ## Gap risk and position management
 
-The largest practical risk is the gap. Crises often escalate over weekends, when FX, metals, indices and energies are closed on Kalks Trader while news keeps flowing.
+The largest practical risk is the gap. Crises often escalate over weekends, when FX, metals, indices and energies are closed on Ezymex Trader while news keeps flowing.
 
 ```text
 Short USOIL, example contract of 100 barrels per lot, 1.00 lot
@@ -94,7 +94,7 @@ Stop filled near 84.00   actual loss  = 6.00 x 100 = 600 USD
 Actual loss is three times the planned risk.
 ```
 
-Check the contract specification in Kalks Trader for the real contract size of each energy symbol. Ways to manage this risk include reducing position size before weekends during active crises, avoiding holding positions that are directly exposed to the conflict, and accepting that stops do not guarantee a fill price. Crypto trades through the weekend, so BTCUSD can give an early read on risk appetite, although its signal is noisy.
+Check the contract specification in Ezymex Trader for the real contract size of each energy symbol. Ways to manage this risk include reducing position size before weekends during active crises, avoiding holding positions that are directly exposed to the conflict, and accepting that stops do not guarantee a fill price. Crypto trades through the weekend, so BTCUSD can give an early read on risk appetite, although its signal is noisy.
 
 ## Common mistakes
 

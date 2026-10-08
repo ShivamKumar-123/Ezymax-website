@@ -1,4 +1,4 @@
--- Kalks growth: loyalty, cashback, contests, bonuses, promo codes, banners, share cards (services/growth).
+-- Ezymex growth: loyalty, cashback, contests, bonuses, promo codes, banners, share cards (services/growth).
 -- Money is NUMERIC (USD), never float. `tenant` is the gateway tenant slug; every query filters by it.
 
 CREATE TABLE settings (

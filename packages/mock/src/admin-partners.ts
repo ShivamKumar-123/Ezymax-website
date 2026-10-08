@@ -616,7 +616,7 @@ export interface PammFund {
 
 export const PAMM_FUNDS: PammFund[] = (() => {
   const r = seeded(6060);
-  const names = ["Kalks Gold Alpha", "Majors Balanced", "Index Momentum", "Crypto Quant I", "Conservative Yield", "Emerging FX Carry", "Energy Macro", "Asia Swing Fund"];
+  const names = ["Ezymex Gold Alpha", "Majors Balanced", "Index Momentum", "Crypto Quant I", "Conservative Yield", "Emerging FX Carry", "Energy Macro", "Asia Swing Fund"];
   const rolls: PammFund["rollover"][] = ["Weekly", "Monthly", "Daily", "Weekly", "Monthly", "Weekly", "Daily", "Monthly"];
   return names.map((name, i) => {
     const p = PEOPLE[(i * 5 + 2) % PEOPLE.length]!;

@@ -14,10 +14,10 @@ export type AlgoMethod = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
 export async function algo(path: string, init: { method: AlgoMethod; body?: unknown; user: GatewayUser; req: NextRequest; timeoutMs?: number }): Promise<{ status: number; data: unknown }> {
   const name = init.user.name || [init.user.first_name, init.user.last_name].filter(Boolean).join(" ") || `Trader ${init.user.id}`;
   const headers: Record<string, string> = {
-    "x-kalks-internal": ALGO_TOKEN,
-    "x-kalks-tenant": init.user.tenant?.slug || "kalks",
-    "x-kalks-user-id": String(init.user.id),
-    "x-kalks-user-name": encodeURIComponent(name),
+    "x-ezymex-internal": ALGO_TOKEN,
+    "x-ezymex-tenant": init.user.tenant?.slug || "ezymex",
+    "x-ezymex-user-id": String(init.user.id),
+    "x-ezymex-user-name": encodeURIComponent(name),
     "x-forwarded-for": clientIp(init.req.headers),
   };
   if (init.body !== undefined) headers["content-type"] = "application/json";

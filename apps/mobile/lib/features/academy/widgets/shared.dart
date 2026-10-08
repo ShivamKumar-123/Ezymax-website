@@ -1,5 +1,5 @@
 // Academy building blocks (web components/academy/live/shared.tsx and the small pieces the pages share): the
-// unavailable / not-found state, back link, chapter segments, status dots, track badges, "Practise in Kalks Trader",
+// unavailable / not-found state, back link, chapter segments, status dots, track badges, "Practise in Ezymex Trader",
 // the risk note, phase covers, certificate image and its actions.
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -322,7 +322,7 @@ class CoverWash extends StatelessWidget {
   }
 }
 
-/// "Practise in Kalks Trader": opens the client's active demo account in Kalks Trader, or offers a free demo account.
+/// "Practise in Ezymex Trader": opens the client's active demo account in Ezymex Trader, or offers a free demo account.
 class PracticeButton extends ConsumerWidget {
   const PracticeButton({super.key, this.small = false, this.label});
   final bool small;
@@ -432,7 +432,7 @@ Future<void> downloadCertificate(BuildContext context, WidgetRef ref, String cod
   final notes = ref.read(notificationsProvider.notifier);
   try {
     final f = await ref.read(academyApiProvider).certificateFile(code);
-    final ok = await shareFile(f, fallbackName: 'kalks-academy-$code.svg', subject: t('academy.cert.title'));
+    final ok = await shareFile(f, fallbackName: 'ezymex-academy-$code.svg', subject: t('academy.cert.title'));
     if (!ok) notes.toast(NotificationKind.error, t('common.errorRetry'));
   } on ApiException catch (e) {
     notes.toast(NotificationKind.error, localizeError(e, t));

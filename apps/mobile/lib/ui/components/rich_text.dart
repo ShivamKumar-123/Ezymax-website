@@ -15,7 +15,7 @@ class KTag {
   final TextStyle? style;
 }
 
-/// A translated message with inline markup (web `<Trans>`): `"New to Kalks? <link>Create an account</link>"` with
+/// A translated message with inline markup (web `<Trans>`): `"New to Ezymex? <link>Create an account</link>"` with
 /// {'link': KTag.link(() => …)}. Unknown tags render their text plainly.
 class KRichText extends StatefulWidget {
   const KRichText(this.text, {super.key, this.tags = const {}, this.style, this.textAlign});

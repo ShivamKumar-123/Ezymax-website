@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Construction, Flag, Layers, Power, RotateCcw } from "lucide-react";
-import { Button, Card, CardHeader, Chip, EmptyState, Field, Input, KpiCard, PageHeader, Toggle } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, EmptyState, Field, Input, KpiCard, PageHeader, Toggle } from "@ezymex/ui";
 import { useCan } from "@/components/staff-session";
 import { ErrorState, TableSkeleton, ago, useApi, useNow, when } from "@/components/live/kit";
 import { Textarea, act } from "./kit";

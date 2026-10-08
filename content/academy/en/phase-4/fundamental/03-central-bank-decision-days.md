@@ -22,7 +22,7 @@ quiz:
       - "It weakens by exactly the size of the cut"
     answer: 1
     explanation: "The cut itself was almost fully priced. The new information is the guidance, which points to fewer cuts than expected, so the currency tends to rise."
-  - question: "An FOMC statement is released at 14:00 New York time. When is that on a Kalks Trader chart?"
+  - question: "An FOMC statement is released at 14:00 New York time. When is that on a Ezymex Trader chart?"
     options:
       - "19:00 server time"
       - "20:00 server time"

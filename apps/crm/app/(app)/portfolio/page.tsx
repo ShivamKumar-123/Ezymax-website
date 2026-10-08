@@ -29,7 +29,7 @@ import {
   type Column,
   type SeriesPoint,
 } from "@/components/kit";
-import { accountUsd, equitySeries } from "@kalks/mock";
+import { accountUsd, equitySeries } from "@ezymex/mock";
 import {
   ASSET_ALLOCATION,
   COPY_SUBSCRIPTIONS,
@@ -39,8 +39,8 @@ import {
   LIVE_ACCOUNTS,
   PAMM_INVESTMENTS,
   PORTFOLIO_TOTALS as T,
-} from "@kalks/mock/portfolio-extra";
-import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+} from "@ezymex/mock/portfolio-extra";
+import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LivePortfolio } from "@/components/trading/portfolio";
 import { TERMINAL_URL } from "@/lib/live";
 
@@ -320,7 +320,7 @@ function BreakdownCard() {
           columns={cols}
           rows={rows}
           rowKey={(r) => r.id}
-          exportName="kalks-portfolio-breakdown"
+          exportName="ezymex-portfolio-breakdown"
           toolbar={
             <Segmented
               size="xs"

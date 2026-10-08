@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { motion } from "motion/react";
-import { cn, formatNumber } from "@kalks/ui";
+import { cn, formatNumber } from "@ezymex/ui";
 
 /** Stacked monthly bars: licence (gold) + revenue share (ember), with hover tooltip. */
 export function MrrChart({ data, height = 260 }: { data: { month: string; licence: number; revShare: number; tenants: number }[]; height?: number }) {

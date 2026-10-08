@@ -1,7 +1,7 @@
 "use client";
 
-import { ComingSoon } from "@kalks/ui";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { ComingSoon } from "@ezymex/ui";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveWalletSettingsPage } from "@/components/finance-live/settings";
 
 /** Wallet settings: company addresses, confirmations, limits and fees (live builds; the demo has no mock for it). */

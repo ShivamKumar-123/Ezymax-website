@@ -36,8 +36,8 @@ import {
   formatNumber,
   shortHash,
   useQuotes,
-} from "@kalks/ui";
-import { getClient, REASON_CODES, KYC_QUEUE, timeAgo, serverTime, staff } from "@kalks/mock/admin-clients";
+} from "@ezymex/ui";
+import { getClient, REASON_CODES, KYC_QUEUE, timeAgo, serverTime, staff } from "@ezymex/mock/admin-clients";
 import {
   ALERTS,
   AB_SPLIT,
@@ -52,8 +52,8 @@ import {
   notionalUsd,
   type WithdrawalRequest,
   type RiskCheck,
-} from "@kalks/mock/admin-ops";
-import { seeded } from "@kalks/mock";
+} from "@ezymex/mock/admin-ops";
+import { seeded } from "@ezymex/mock";
 import { IntradayChart, PnlText, ReasonDialog, RiskScore, SEVERITY_BAR, SeverityChip, ShareBar, SlaTimer, usdCompact, type IntradaySeriesPoint } from "./kit";
 
 /* ------------------------------------------------------------------ */

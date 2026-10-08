@@ -1,17 +1,17 @@
-# Kalks FX Options: order book exchange (design, decision O49)
+# Ezymex FX Options: order book exchange (design, decision O49)
 
 This document is the build contract for the options order book. Founder decisions (2026-10-02):
 - **Liquidity:** everyone can rest orders; clients trade with each other.
-- **Kalks MM bot:** always quotes every series both sides from the model, under the **same rules** (no priority, no early view, no last look). External MMs come later.
+- **Ezymex MM bot:** always quotes every series both sides from the model, under the **same rules** (no priority, no early view, no last look). External MMs come later.
 - **Order types:** price-time priority; limit GTC/IOC/FOK; post-only; market with price band; reduce-only; stop orders.
-- **Strategies:** combo RFQ with atomic fills; the Kalks MM always quotes.
+- **Strategies:** combo RFQ with atomic fills; the Ezymex MM always quotes.
 - **Fees:** maker rebate / taker fee, capped at % of premium.
 - **Mark:** model mark clamped inside best bid/ask.
-- **Liquidation:** book first with a band, then the Kalks backstop at mark ± liquidation fee.
+- **Liquidation:** book first with a band, then the Ezymex backstop at mark ± liquidation fee.
 - **Public data:** depth (10 levels), trade tape, OI and volume per strike.
 - **Rollout:** all series at once with the MM quoting.
-- **Legacy positions are novated** to the book: the client keeps the position and P&L; Kalks's implied opposite moves into the MM account.
-- **Barriers are not listed:** they become RFQ-only, Kalks-quoted and labelled.
+- **Legacy positions are novated** to the book: the client keeps the position and P&L; Ezymex's implied opposite moves into the MM account.
+- **Barriers are not listed:** they become RFQ-only, Ezymex-quoted and labelled.
 - **The MM may keep quoting until cut − 1 min** (publicly disclosed exemption from the 15-minute no-open rule for liquidity-provider accounts).
 - **Go-live:** live for everyone once tests pass.
 - **No mocked market data in tests.** Pure-logic property tests are fine; end-to-end tests run against the real local market-data (:8081) and options service (:8104).
@@ -87,7 +87,7 @@ This document is the build contract for the options order book. Founder decision
 - **Metrics** gain `order_reserve`: `free_margin = equity − margin − order_reserve`, and `free_cash` and `withdrawable` also subtract it. The margin level stays equity / position margin.
 - **Release:** pro rata on fill, fully on cancel, expiry or reject. A test asserts the reserve is 0 when no orders are working.
 
-## 4. Kalks MM bot (`book/mm.rs`)
+## 4. Ezymex MM bot (`book/mm.rs`)
 - **Account:** one house MM account per (tenant, kind), opened like `hedger::hedge_account`.
   - User `OPTIONS_MM_USER_ID`, group `options-mm` with fees 0/0 (published as the MM tier).
   - Capital: `house_capital` (demo accounts use demo funding).
@@ -121,7 +121,7 @@ This document is the build contract for the options order book. Founder decision
    - The tape shows the legs plus one `combo` print. Outright books are not touched.
 - **Later:** external responders go in `rfq_responders`; best price wins, and ties go to the earliest quote.
 - **Users:** the strategy builder and `combos/{id}/close` use RFQ.
-- **Barriers:** RFQ only, Kalks-quoted at the model price ± spread, labelled "Kalks-quoted (not order book)", settled against `house:options_settlement` as today (venue = house).
+- **Barriers:** RFQ only, Ezymex-quoted at the model price ± spread, labelled "Ezymex-quoted (not order book)", settled against `house:options_settlement` as today (venue = house).
 
 ## 6. Mark
 - **Formula:** `mark = clamp(model mid, bestBid, bestAsk)` when both sides have at least `markMinQty` and the spread is ≤ `markMaxSpreadMult` × the model spread. With one side only: `max(model, bid)` or `min(model, ask)`. Otherwise the model mid.
@@ -220,7 +220,7 @@ What the MM, RFQ, liquidator, enable and Back Office build does where this desig
 - **MM spot staleness:** quotes are pulled after **10 s** without a raw tick (not 3 s): the production relay has multi-second gaps on quiet pairs and pulling the whole chain on every gap would empty the book.
 - **MM load:** at most 400 series are requoted per 250 ms pass (nearest the money first, the starting underlying rotates), in mass quotes of 40 series, so the MM account's shard stays responsive; the MM's own in-memory removals are applied in one account transaction per batch.
 - **MM tier:** liquidity-provider quotes trade at 0 / 0 fees and are exempt from the per-client contract limit (their own `maxContractsPerSeries` and Greek limits apply). MM capital: `OPTIONS_MM_CAPITAL` (default 25 M USD) must cover the order reserve of a full-chain quote.
-- **RFQ:** legs must be listed vanilla series of one underlying (`rfq_underlyings`); a barrier leg answers `kalks_quoted` (barrier strategies stay on the house ticket). The leg split is integer (`matching::rfq_split`); when no whole-tick split makes the net, the last tick goes the taker's way. RFQ fills move positions and volume but not the outright levels or the last trade price.
+- **RFQ:** legs must be listed vanilla series of one underlying (`rfq_underlyings`); a barrier leg answers `ezymex_quoted` (barrier strategies stay on the house ticket). The leg split is integer (`matching::rfq_split`); when no whole-tick split makes the net, the last tick goes the taker's way. RFQ fills move positions and volume but not the outright levels or the last trade price.
 - **Halt modes:** `halt` cancels the resting orders in scope (reservations released) and accepts cancels only; `cancel_only` keeps them.
 - **Bust:** a fill of an expired series cannot be busted (settlement already used it).
 - **Restart:** `RestartCancel` also drops series left empty, so a book loaded after a restart and its journal replay stay identical when only MM quotes had created a series.

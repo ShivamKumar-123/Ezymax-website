@@ -1,10 +1,10 @@
 // The Client Area shell, like the phone web (apps/crm/components/chrome/client-shell.tsx + mobile-nav.tsx):
 // - a frosted header: brand disc (-> Dashboard), the module title, search, the bell, the Trade button (opens the
-//   full-screen Kalks Trader) and the profile menu; under it the module's pages as text tabs (SubNav);
+//   full-screen Ezymex Trader) and the profile menu; under it the module's pages as text tabs (SubNav);
 // - the page, scrolling under both bars (their heights reach the page as MediaQuery padding);
 // - a floating ink bottom bar: Dashboard · Accounts · Wallet · Portfolio · More;
 // - in the in-app demo, a slim "Demo · Sample data · Exit demo" strip above the header.
-// The Dashboard of the stock Kalks brand opens on its picture (dashboard_hero.dart): the page gets no top padding,
+// The Dashboard of the stock Ezymex brand opens on its picture (dashboard_hero.dart): the page gets no top padding,
 // the same controls float over the picture as round white buttons, and the frosted header fades in once the page's
 // sheet reaches the header zone — or as soon as the module pager (module_pager.dart) starts sliding the picture page
 // out; the hero chrome stays while the picture is still partly on screen and comes back with it.
@@ -131,7 +131,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     final barBottom = mq.padding.bottom < 12 ? 12.0 : mq.padding.bottom;
     final barH = KSize.tabBar + barBottom + 8;
 
-    // the Dashboard's picture (stock Kalks brand): the sheet's edge starts under the picture and collapses the chrome
+    // the Dashboard's picture (stock Ezymex brand): the sheet's edge starts under the picture and collapses the chrome
     // once it reaches the bottom of the header row; while the pager slides the picture page in or out, the hero
     // chrome stays (collapsed by the slide itself)
     _hero = dashboardHeroAt(widget.path, cfg) || (_sliding && cfg.tenantDefault && module?.key == 'dashboard');

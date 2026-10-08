@@ -7,8 +7,8 @@ export type Result<T> = { ok: true; data: T } | { ok: false; err: EngineErr };
 
 async function call<T>(method: "GET" | "POST" | "PATCH" | "DELETE", path: string, opts: { login?: string; body?: unknown; timeoutMs?: number } = {}): Promise<Result<T>> {
   // rejections come back in the body (HTTP 200 + error.status): expected answers, not console errors
-  const headers: Record<string, string> = { "x-kalks-errors": "body" };
-  if (opts.login) headers["x-kalks-login"] = opts.login;
+  const headers: Record<string, string> = { "x-ezymex-errors": "body" };
+  if (opts.login) headers["x-ezymex-login"] = opts.login;
   if (method === "POST" || method === "PATCH") headers["content-type"] = "application/json";
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), opts.timeoutMs ?? 15_000);

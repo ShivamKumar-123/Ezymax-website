@@ -1,4 +1,4 @@
-// Request validation of the mobile trading BFF (app/api/mobile/trade/*), ported from Kalks Trader's BFF
+// Request validation of the mobile trading BFF (app/api/mobile/trade/*), ported from Ezymex Trader's BFF
 // (apps/terminal/app/api/engine/[...path]/route.ts and app/api/options/[...path]/route.ts) so the app and the web
 // terminal send the engine exactly the same shapes. The engine and the options service re-check everything; this
 // keeps junk out. Each function returns the clean body / query, or a string: the message of a 422 (bodies) or a
@@ -90,7 +90,7 @@ export function bulkCloseBody(b: Obj): Obj | string {
   return { filter, ...(symbol ? { symbol } : {}) };
 }
 
-/** Option legs + order type of a preview / order (Kalks FX Options, house venue). */
+/** Option legs + order type of a preview / order (Ezymex FX Options, house venue). */
 export function optionBody(b: Obj, order: boolean, platform?: string): Obj | string {
   if (!Array.isArray(b.legs) || b.legs.length < 1 || b.legs.length > MAX_LEGS) return `Give 1 to ${MAX_LEGS} legs.`;
   const legs: Obj[] = [];
@@ -101,7 +101,7 @@ export function optionBody(b: Obj, order: boolean, platform?: string): Obj | str
     if (l.side !== "buy" && l.side !== "sell") return "Invalid side.";
     if (contracts === undefined || contracts <= 0 || contracts > 100_000) return "Invalid contracts.";
     const leg: Obj = { series: l.series, side: l.side, contracts };
-    // a barrier leg (Kalks-quoted, house ticket): {kind: UO|DO|UI|DI, level, rebate?}
+    // a barrier leg (Ezymex-quoted, house ticket): {kind: UO|DO|UI|DI, level, rebate?}
     if (l.barrier !== undefined && l.barrier !== null) {
       const x = l.barrier as Obj;
       const level = num(x.level);

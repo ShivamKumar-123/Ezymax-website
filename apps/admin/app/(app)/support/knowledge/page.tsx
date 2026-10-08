@@ -22,10 +22,10 @@ import {
   cn,
   formatNumber,
   type Column,
-} from "@kalks/ui";
-import { SUP_ARTICLES, SUP_BOT_TESTS, SUP_KB_CATEGORIES, type SupArticle } from "@kalks/mock/admin-growth-support";
+} from "@ezymex/ui";
+import { SUP_ARTICLES, SUP_BOT_TESTS, SUP_KB_CATEGORIES, type SupArticle } from "@ezymex/mock/admin-growth-support";
 import { AiSpark } from "@/components/support/shared";
-import { IS_DEMO as IS_DEMO_MODE } from "@kalks/mock/mode";
+import { IS_DEMO as IS_DEMO_MODE } from "@ezymex/mock/mode";
 import { LiveKnowledge } from "@/components/support-live/knowledge";
 
 const STATUS_MAP: Record<SupArticle["status"], { s: string; label: string }> = {

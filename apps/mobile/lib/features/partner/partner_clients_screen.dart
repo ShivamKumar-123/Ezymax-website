@@ -242,7 +242,7 @@ class _PartnerClientsScreenState extends ConsumerState<PartnerClientsScreen> {
                       onPressed: () => exportCsv(
                         context,
                         ref,
-                        name: 'kalks-referred-clients',
+                        name: 'ezymex-referred-clients',
                         headers: [
                           t('partner.client'),
                           t('partner.tier'),

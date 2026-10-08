@@ -114,7 +114,7 @@ pub struct RegisterReq {
 
 pub(crate) fn referral_prefix(first: &str) -> String {
     let p: String = first.chars().filter(|c| c.is_ascii_alphabetic()).take(6).collect::<String>().to_uppercase();
-    if p.len() >= 2 { p } else { "KALKS".into() }
+    if p.len() >= 2 { p } else { "EZYMEX".into() }
 }
 
 /// A client account about to be created (email sign-up or Google sign-up).
@@ -257,6 +257,10 @@ pub async fn register(State(st): State<AppState>, ctx: Ctx, req: Result<Json<Reg
     .await;
     tracing::info!(user_id, "client registered");
 
+    // no email delivery yet: the account signs in straight away (its email stays unverified until codes are on)
+    if st.cfg.password_only {
+        return Ok((StatusCode::CREATED, Json(signed_in(&st, &ctx, tenant_id, user_id, "register").await?)));
+    }
     let (challenge, code) = identity::send_otp(&st, &ctx, K, tenant_id, user_id, &email, Purpose::VerifyEmail).await?;
     Ok((StatusCode::CREATED, Json(identity::challenge_json(&st, &challenge, &email, Purpose::VerifyEmail, K, Some(&code)))))
 }
@@ -291,11 +295,11 @@ pub async fn login(State(st): State<AppState>, ctx: Ctx, req: Result<Json<LoginR
     crate::tenancy::client_gate(&st, tenant_id).await?;
     let p = flows::check_password(&st, &ctx, K, tenant_id, &email, &r.password).await?;
 
-    if !p.email_verified {
+    if !p.email_verified && !st.cfg.password_only {
         let (challenge, code) = identity::send_otp(&st, &ctx, K, tenant_id, p.id, &p.email, Purpose::VerifyEmail).await?;
         return Ok(Json(identity::challenge_json(&st, &challenge, &p.email, Purpose::VerifyEmail, K, Some(&code))));
     }
-    if !identity::device_trusted(&st, &ctx, K, p.id).await? {
+    if !st.cfg.password_only && !identity::device_trusted(&st, &ctx, K, p.id).await? {
         let (challenge, code) = identity::send_otp(&st, &ctx, K, tenant_id, p.id, &p.email, Purpose::Login).await?;
         audit::record(&st.pool, &ctx, Entry { tenant_id, actor_kind: "user", actor_id: Some(p.id), action: "user.login_challenge", target: None, meta: json!({"reason": "new_device"}) }).await;
         return Ok(Json(identity::challenge_json(&st, &challenge, &p.email, Purpose::Login, K, Some(&code))));

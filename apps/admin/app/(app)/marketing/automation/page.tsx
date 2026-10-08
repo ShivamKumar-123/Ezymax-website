@@ -4,11 +4,11 @@ import * as React from "react";
 import { FlaskConical, History, LayoutTemplate, Plus, Rocket, Target, Users, Workflow } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "motion/react";
-import { Avatar, Button, Card, Chip, KpiCard, PageHeader, Reveal, StatusChip, Toggle, cn } from "@kalks/ui";
-import { MKT_JOURNEYS, type MktJourney } from "@kalks/mock/admin-growth-marketing";
+import { Avatar, Button, Card, Chip, KpiCard, PageHeader, Reveal, StatusChip, Toggle, cn } from "@ezymex/ui";
+import { MKT_JOURNEYS, type MktJourney } from "@ezymex/mock/admin-growth-marketing";
 import { JourneyCanvas } from "@/components/marketing/journey-canvas";
 import { fmtDateTime, fmtInt } from "@/components/marketing/kit";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveJourneys } from "@/components/marketing/live/journeys";
 
 /** Live workspaces run journeys on the growth service; the demo showcase keeps the mock canvas. */

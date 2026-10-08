@@ -67,9 +67,9 @@ ALTER TABLE tenants
     ADD COLUMN ip_allowlist_enabled  BOOLEAN NOT NULL DEFAULT false,
     ADD COLUMN ip_owner_bypass       BOOLEAN NOT NULL DEFAULT true;
 
-UPDATE tenants SET legal_name = name, domains = ARRAY['kalkstrade.com', 'app.kalkstrade.com', 'admin.kalkstrade.com', 'trade.kalkstrade.com'],
+UPDATE tenants SET legal_name = name, domains = ARRAY['ezymex.com', 'app.ezymex.com', 'admin.ezymex.com', 'trade.ezymex.com'],
                    brand = '{"primary": "#ff5a1f", "accent": "#e9b949"}'::jsonb, plan = 'owner'
- WHERE slug = 'kalks';
+ WHERE slug = 'ezymex';
 
 CREATE TABLE tenant_ip_allowlist (
     id          BIGSERIAL PRIMARY KEY,

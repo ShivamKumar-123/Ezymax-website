@@ -4,9 +4,9 @@
 // the options order book is live; otherwise the underlying's spot depth and ticks, labelled as such. Same BookView as
 // the CFD depth. A click on an option level fills the ticket (an offer → Buy, a bid → Sell, as in the chain's book).
 import * as React from "react";
-import { INSTRUMENT_MAP } from "@kalks/mock";
-import { parseSeriesCode } from "@kalks/mock/options";
-import { useT } from "@kalks/i18n/react";
+import { INSTRUMENT_MAP } from "@ezymex/mock";
+import { parseSeriesCode } from "@ezymex/mock/options";
+import { useT } from "@ezymex/i18n/react";
 import { useTerminal } from "@/lib/store";
 import { EmptyState } from "@/components/ui/kit";
 import { BookView, CfdOrderBook, TickTape, type BookLevel } from "@/components/order/order-book";

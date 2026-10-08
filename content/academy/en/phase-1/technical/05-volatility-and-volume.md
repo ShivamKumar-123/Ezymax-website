@@ -63,7 +63,7 @@ Sum:             72 + 58 + 91 + 64 + 70 = 355
 Average range:   355 / 5 = 71 pips
 ```
 
-A more refined version of this idea, the Average True Range (ATR), also accounts for gaps between candles. It is available in the Volatility category of the indicators menu in Kalks Trader and is covered in Phase 4.
+A more refined version of this idea, the Average True Range (ATR), also accounts for gaps between candles. It is available in the Volatility category of the indicators menu in Ezymex Trader and is covered in Phase 4.
 
 ## Comparing volatility across instruments
 
@@ -71,7 +71,7 @@ Ranges in pips or dollars cannot be compared directly between instruments. Conve
 
 > **Example:** EURUSD at 1.0850 averages a 71-pip daily range: 0.0071 / 1.0850 = about 0.65% of the price. XAUUSD at 2,350.40 averages 31.50 USD a day: 31.50 / 2,350.40 = about 1.34%. In this example gold moves roughly twice as much as EURUSD in percentage terms, so a position of the same notional value carries roughly twice the day-to-day risk.
 
-Across the instruments on Kalks, a rough ordering from typically calmer to typically more volatile is: major FX pairs, then gold and major indices, then oil and single shares, then crypto. Individual periods can break this pattern, which is exactly why you measure rather than assume.
+Across the instruments on Ezymex, a rough ordering from typically calmer to typically more volatile is: major FX pairs, then gold and major indices, then oil and single shares, then crypto. Individual periods can break this pattern, which is exactly why you measure rather than assume.
 
 ## How volatility behaves
 
@@ -93,7 +93,7 @@ On an exchange, **volume** is the number of shares or contracts traded in each p
 
 Spot FX and most CFDs are OTC, so there is no central volume figure. Charts instead show **tick volume**, the number of price updates in each period. More participants and more orders produce more price changes, so tick volume tends to track real activity reasonably well, even though it does not measure lots traded.
 
-You can display it in Kalks Trader with the **Volumes** indicator in the Volume category. Useful first observations:
+You can display it in Ezymex Trader with the **Volumes** indicator in the Volume category. Useful first observations:
 
 - Tick volume rises sharply around session opens and news, and falls around the daily rollover and holidays.
 - A strong move with rising volume suggests broad participation.
@@ -115,4 +115,4 @@ Before you trade any symbol, answer three questions:
 - **Ignoring the clock.** Judging a market as "dead" during Asian hours and then being surprised by the London open.
 - **Treating tick volume as exchange volume.** It is an activity proxy, not a count of lots.
 
-Measure the average range of three symbols on a free demo account in Kalks Trader and rank them by percentage volatility.
+Measure the average range of three symbols on a free demo account in Ezymex Trader and rank them by percentage volatility.

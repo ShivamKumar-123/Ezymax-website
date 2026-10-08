@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader charts: toolbar, drawing tools, legend, trade lines, context menu, one-click panel.
+// Ezymex Trader charts: toolbar, drawing tools, legend, trade lines, context menu, one-click panel.
 const chart: NsMessages<"chart"> = {
   // Chart tabs
   "tab.visibleInGrid": "கிரிடில் தெரியும்",
@@ -46,7 +46,7 @@ const chart: NsMessages<"chart"> = {
   "tool.text": "உரை",
   "tool.ruler": "அளவுகோல்",
   "tool.coming": "{tool} விரைவில் வருகிறது",
-  "tool.comingText": "Kalks Trader இன் அடுத்த பதிப்பில் கிடைக்கும்.",
+  "tool.comingText": "Ezymex Trader இன் அடுத்த பதிப்பில் கிடைக்கும்.",
   "tool.deleteAll": "எல்லா ஆப்ஜெக்ட்களையும் நீக்கு",
   "tool.noObjects": "இந்த சார்ட்டில் ஆப்ஜெக்ட்கள் இல்லை",
   "tool.deleted": { one: "{count} ஆப்ஜெக்ட் நீக்கப்பட்டது", other: "{count} ஆப்ஜெக்ட்கள் நீக்கப்பட்டன" },

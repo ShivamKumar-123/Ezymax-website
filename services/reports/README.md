@@ -1,8 +1,8 @@
 # reports
 
-The Kalks statements, analytics and reports service: branded PDF account statements with CSV / Excel exports (D48, D50), client analytics (D91), broker reports (D120) and cohorts, LTV, funnel and scheduled reports (D145). It is a Rust service (axum 0.8, sqlx 0.9, PostgreSQL) on `127.0.0.1:8102`.
+The Ezymex statements, analytics and reports service: branded PDF account statements with CSV / Excel exports (D48, D50), client analytics (D91), broker reports (D120) and cohorts, LTV, funnel and scheduled reports (D145). It is a Rust service (axum 0.8, sqlx 0.9, PostgreSQL) on `127.0.0.1:8102`.
 
-It never writes to another service. It mirrors what it needs into its own database `kalks_reports` through the documented APIs of the trading engine, wallet, gateway and IB service, and computes everything from that mirror.
+It never writes to another service. It mirrors what it needs into its own database `ezymex_reports` through the documented APIs of the trading engine, wallet, gateway and IB service, and computes everything from that mirror.
 
 - [Run locally](#run-locally)
 - [How it works](#how-it-works)
@@ -20,12 +20,12 @@ You need PostgreSQL on `127.0.0.1:5433`, the gateway (`:8080`) and the trading e
 
 ```bash
 cargo build -p reports
-(cd services/reports && REPORTS_LOG_FORMAT=pretty nohup ../../target/debug/reports > ~/.kalks-local/reports.log 2>&1 &)
+(cd services/reports && REPORTS_LOG_FORMAT=pretty nohup ../../target/debug/reports > ~/.ezymex-local/reports.log 2>&1 &)
 curl -s localhost:8102/health
 cargo test -p reports
 ```
 
-It creates and migrates `kalks_reports` on first start and reads `REPORTS_*` plus the other services' tokens from the repo-root `.env.local`.
+It creates and migrates `ezymex_reports` on first start and reads `REPORTS_*` plus the other services' tokens from the repo-root `.env.local`.
 
 ## How it works
 
@@ -41,7 +41,7 @@ It creates and migrates `kalks_reports` on first start and reads `REPORTS_*` plu
  IB       /v1/ib/admin/commissions ─────┘ partner cost lines
                          │ every REPORTS_SYNC_SECS (30 s); wallet / IB every 5th pass
                          ▼
- kalks_reports: clients, accounts, deals, ledger, snapshots, wallet_*, ib_commissions, schedules, audit_log
+ ezymex_reports: clients, accounts, deals, ledger, snapshots, wallet_*, ib_commissions, schedules, audit_log
 ```
 
 - **Snapshots.** Each pass upserts today's row per account (`snapshots`, server day) from the engine's live balance and equity, so the last write of a day is its end-of-day value. The first sync of an account backfills past days from its ledger (`source = backfill`: equity = balance + credit + bonus, since past floating P&L is unknown). Days without a row carry the previous day forward.
@@ -77,9 +77,9 @@ Server time is GMT+3 during US DST and GMT+2 otherwise (MT5 convention). Periods
 
 ## API
 
-Every route except `GET /health` needs `X-Kalks-Internal: $REPORTS_INTERNAL_TOKEN`. Tenant: `X-Kalks-Tenant` (default `kalks`, must be listed in `REPORTS_TENANTS`). JSON camelCase; money as JSON numbers. Errors: `{"error": {"code", "message", "field"?}}`. Query `from` / `to` accept `YYYY-MM-DD` (server day start) or RFC 3339; `to` is exclusive.
+Every route except `GET /health` needs `X-Ezymex-Internal: $REPORTS_INTERNAL_TOKEN`. Tenant: `X-Ezymex-Tenant` (default `ezymex`, must be listed in `REPORTS_TENANTS`). JSON camelCase; money as JSON numbers. Errors: `{"error": {"code", "message", "field"?}}`. Query `from` / `to` accept `YYYY-MM-DD` (server day start) or RFC 3339; `to` is exclusive.
 
-**Client routes** (`X-Kalks-User-Id` = signed-in gateway user; other users' accounts return 404)
+**Client routes** (`X-Ezymex-User-Id` = signed-in gateway user; other users' accounts return 404)
 
 | Method & path | Query | Response |
 |---|---|---|
@@ -87,7 +87,7 @@ Every route except `GET /health` needs `X-Kalks-Internal: $REPORTS_INTERNAL_TOKE
 | `GET /v1/me/accounts/{login}/months` | – | `{login, currency, months:[{month, from, to, net, deposits, withdrawals, trades}]}` newest first |
 | `GET /v1/me/accounts/{login}/statement` | `from`, `to` (default 30 days), `format=pdf\|csv\|xlsx\|json`, `open=0`, `charges=0`, `deals=0` to leave sections out | the file (`Content-Disposition: attachment`) or the statement JSON |
 
-**Staff routes** (`X-Kalks-Staff-Id`, `X-Kalks-Staff-Name` percent-encoded, `X-Kalks-Staff-Role`, `X-Kalks-Staff-Perms` = the caller's gateway permissions; only `reports.*` entries are read)
+**Staff routes** (`X-Ezymex-Staff-Id`, `X-Ezymex-Staff-Name` percent-encoded, `X-Ezymex-Staff-Role`, `X-Ezymex-Staff-Perms` = the caller's gateway permissions; only `reports.*` entries are read)
 
 | Method & path | Permission | |
 |---|---|---|
@@ -96,7 +96,7 @@ Every route except `GET /health` needs `X-Kalks-Internal: $REPORTS_INTERNAL_TOKE
 | `GET /v1/admin/deposits?from&to` | reports.read | `{totals, daily[], byCountry[], byIb[], byCampaign[], topDepositors[], ftdList[]}` |
 | `GET /v1/admin/funnel?from&to` | reports.read | `{stages[], medianDaysToFtd, byCampaign[], byCountry[], daily[]}` |
 | `GET /v1/admin/campaigns?from&to` | reports.read or marketing.read | UTM attribution of clients who signed up in the period: `{totals, items: {source, medium, campaign, signups, emailVerified, kycVerified, ftds, ftdAmount, deposits, withdrawals, net, conversion}[], bySource[]}`; no UTM = `(direct)` or `(IB link)` |
-| `GET /v1/internal/client-facts` (X-Kalks-Tenant) | internal token | `{items: {userId, firstDepositAt, firstLiveAccountAt, firstTradeAt}[]}` for growth journey triggers |
+| `GET /v1/internal/client-facts` (X-Ezymex-Tenant) | internal token | `{items: {userId, firstDepositAt, firstLiveAccountAt, firstTradeAt}[]}` for growth journey triggers |
 | `GET /v1/admin/cohorts?months=12` | reports.read | `{cohorts:[{cohort, clients, funded, retention[], ltv[]}], totals}` |
 | `GET /v1/admin/activity?from&to` | reports.read | `{totals, daily[], byGroup[], topAccounts[]}` |
 | `GET /v1/admin/partners?from&to` | reports.read | IB lines by kind, top IBs, IB / social / prop overviews |
@@ -111,7 +111,7 @@ Every route except `GET /health` needs `X-Kalks-Internal: $REPORTS_INTERNAL_TOKE
 
 ## Permissions
 
-The gateway RBAC already defines `reports.read` ("View reports") and `reports.export` ("Export reports"). Presets: platform owner / super admin / admin (all), finance (read + export), risk manager, compliance, sales, partner manager, marketing (read). The Back Office BFF (`apps/admin/app/api/reports`) checks the permission from the verified staff session and forwards the `reports.*` list in `X-Kalks-Staff-Perms`; the service checks it again. Downloads and schedule changes need `reports.export`.
+The gateway RBAC already defines `reports.read` ("View reports") and `reports.export` ("Export reports"). Presets: platform owner / super admin / admin (all), finance (read + export), risk manager, compliance, sales, partner manager, marketing (read). The Back Office BFF (`apps/admin/app/api/reports`) checks the permission from the verified staff session and forwards the `reports.*` list in `X-Ezymex-Staff-Perms`; the service checks it again. Downloads and schedule changes need `reports.export`.
 
 ## How the apps integrate
 
@@ -125,19 +125,19 @@ The gateway RBAC already defines `reports.read` ("View reports") and `reports.ex
 | Variable | Default | |
 |---|---|---|
 | `REPORTS_BIND` | `127.0.0.1:8102` | |
-| `REPORTS_DATABASE_URL` | `postgres://postgres@127.0.0.1:5433/kalks_reports` | created and migrated on first start |
+| `REPORTS_DATABASE_URL` | `postgres://postgres@127.0.0.1:5433/ezymex_reports` | created and migrated on first start |
 | `REPORTS_INTERNAL_TOKEN` | – | required when `REPORTS_ENV=production`; also in the CRM and admin env |
 | `REPORTS_ENV` | `development` | |
-| `REPORTS_TENANTS` | `kalks` | tenants mirrored |
+| `REPORTS_TENANTS` | `ezymex` | tenants mirrored |
 | `REPORTS_WORKERS` | `true` | mirror + scheduler (exactly one instance) |
 | `REPORTS_SYNC_SECS` | `30` | |
 | `REPORTS_LOG_FORMAT` | `json` | `json` or `pretty` |
-| `REPORTS_COMPANY_NAME` / `_SITE` / `_SUPPORT_EMAIL` | `Kalks` / `kalkstrade.com` / `support@kalkstrade.com` | statement footer |
+| `REPORTS_COMPANY_NAME` / `_SITE` / `_SUPPORT_EMAIL` | `Ezymex` / `ezymex.com` / `support@ezymex.com` | statement footer |
 | `TRADING_URL` / `TRADING_INTERNAL_TOKEN`, `WALLET_*`, `GATEWAY_*`, `IB_*`, `PROP_*` | local defaults | sources |
 | `MARKET_DATA_URL` / `MARKET_DATA_ADMIN_TOKEN` | `http://127.0.0.1:8081` | spread markups |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `REPORTS_SMTP_FROM` | – / 587 / – / – / `Kalks Reports <no-reply@kalkstrade.com>` | scheduled report emails (same relay as the gateway) |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `REPORTS_SMTP_FROM` | – / 587 / – / – / `Ezymex Reports <no-reply@ezymex.com>` | scheduled report emails (same relay as the gateway) |
 
-Production runs `deploy/systemd/kalks-reports.service`; `deploy/deploy.sh` builds it, generates `REPORTS_INTERNAL_TOKEN` once, derives `REPORTS_DATABASE_URL` (database `kalks_reports`) from `GATEWAY_DATABASE_URL`, and writes `REPORTS_URL` / `REPORTS_INTERNAL_TOKEN` into the CRM and admin env.
+Production runs `deploy/systemd/ezymex-reports.service`; `deploy/deploy.sh` builds it, generates `REPORTS_INTERNAL_TOKEN` once, derives `REPORTS_DATABASE_URL` (database `ezymex_reports`) from `GATEWAY_DATABASE_URL`, and writes `REPORTS_URL` / `REPORTS_INTERNAL_TOKEN` into the CRM and admin env.
 
 ## Tests
 
@@ -145,7 +145,7 @@ Production runs `deploy/systemd/kalks-reports.service`; `deploy/deploy.sh` build
 
 - **Metrics**: win rate, gross profit / loss, profit factor (and infinite PF), expectancy, reward:risk, average holding time (all / winners / losers), best / worst, streaks; drawdown and return with deposits and withdrawals removed; Sharpe, Sortino and volatility against a hand computation; carry-forward of missing days; revenge trades, risk per trade, overtrading; sessions; the P&L calendar's server days.
 - **Statements**: summary totals and running balance reconcile with the ledger (deposits, trade results, commission, performance fees, bonus), charges, deal ↔ ledger checks, a missing trade result is detected, cent → USD conversion; options: own summary lines, the options section (premiums, settlements with the fixing, commission, realised P&L, counts), CFD-only closed trades, the option cash reconciliation (a missing settlement is detected), option trades in the statistics but never in lots, reason and ledger labels.
-- **Options in files and the mirror**: the CSV / XLSX "Options summary" and "Options" tables and the PDF Options section (content streams decompressed and checked); `option_premium` / `option_settlement` are not money flows; broker revenue books option commission on every trade with no lots. `tests/options.rs` (throw-away `kalks_reports_test_<pid>` database, skipped without PostgreSQL): the deal mirror keeps the `option` object, the statement, the monthly result (realised) and the P&L / activity reports end to end.
+- **Options in files and the mirror**: the CSV / XLSX "Options summary" and "Options" tables and the PDF Options section (content streams decompressed and checked); `option_premium` / `option_settlement` are not money flows; broker revenue books option commission on every trade with no lots. `tests/options.rs` (throw-away `ezymex_reports_test_<pid>` database, skipped without PostgreSQL): the deal mirror keeps the `option` object, the statement, the monthly result (realised) and the P&L / activity reports end to end.
 - **Files**: CSV quoting and formula-injection guard, XLSX container, PDF structure (every xref offset points at its object), Helvetica metrics and truncation, the logo paths.
 - **Time and schedules**: DST offsets and server-day starts, next run times and report periods, recipient validation.
 

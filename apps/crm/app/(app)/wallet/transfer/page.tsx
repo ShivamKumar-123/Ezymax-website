@@ -7,12 +7,12 @@ import { motion } from "motion/react";
 import { ArrowDownUp, ArrowLeft, ArrowRight, Check, ChevronDown, CircleAlert, Info, ShieldCheck, Wallet, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, CoinIcon, Dialog, Input, KeyValue, Menu, PageHeader, Reveal, Segmented, cn, formatNumber, useQuote } from "@/components/kit";
-import { Trans, useT } from "@kalks/i18n/react";
-import { WALLET, WALLET_TXS, freeMargin, type TradingAccount, type WalletTx } from "@kalks/mock";
-import { CONVERSION, WALLET_LIMITS, liveAccounts, walletAvailableUsdt } from "@kalks/mock/wallet-extra";
+import { Trans, useT } from "@ezymex/i18n/react";
+import { WALLET, WALLET_TXS, freeMargin, type TradingAccount, type WalletTx } from "@ezymex/mock";
+import { CONVERSION, WALLET_LIMITS, liveAccounts, walletAvailableUsdt } from "@ezymex/mock/wallet-extra";
 import { AccountBadge, accountTitle } from "@/components/account-row";
 import { TxDetailDrawer, TxRow } from "@/components/wallet/wallet-ui";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveTransferPage } from "@/components/wallet-live/transfer-page";
 
 type Asset = "USDT" | "TRX" | "BTC";
@@ -43,7 +43,7 @@ function EndpointCard({ label, value, onPick, lockedWallet, asset, onAsset }: { 
               {accountTitle(acc)} <span className="font-mono text-[12px] text-fg-3">#{acc.login}</span>
             </>
           ) : (
-            t("wallet.demo.kalksWallet")
+            t("wallet.demo.ezymexWallet")
           )}
         </div>
         <div className="k-num truncate text-[12px] text-fg-3">
@@ -81,7 +81,7 @@ function EndpointCard({ label, value, onPick, lockedWallet, asset, onAsset }: { 
         align="start"
         trigger={trigger}
         items={[
-          { label: <span className="flex items-center justify-between gap-2">{t("wallet.demo.kalksWallet")} <span className="k-num text-[12px] text-fg-3">${formatNumber(walletAvailableUsdt())}</span></span>, icon: <Wallet />, onSelect: () => onPick(WALLET_ID), hint: value === WALLET_ID ? <Check className="size-3.5 text-ember" /> : undefined },
+          { label: <span className="flex items-center justify-between gap-2">{t("wallet.demo.ezymexWallet")} <span className="k-num text-[12px] text-fg-3">${formatNumber(walletAvailableUsdt())}</span></span>, icon: <Wallet />, onSelect: () => onPick(WALLET_ID), hint: value === WALLET_ID ? <Check className="size-3.5 text-ember" /> : undefined },
           "sep",
           ...ACCS.map((a) => ({
             label: (
@@ -339,7 +339,7 @@ function Transfer() {
                       {t("wallet.demo.into")} <AccountBadge a={toAcc} /> #{toAcc.login}
                     </span>
                   ) : (
-                    t("wallet.demo.intoKalksWallet")
+                    t("wallet.demo.intoEzymexWallet")
                   )}
                 </div>
                 <div className="mt-5 rounded-[14px] border border-white/10 bg-black/20 light:border-black/5 light:bg-white/70 px-4">
@@ -402,7 +402,7 @@ function Transfer() {
           <div className="k-row flex items-center gap-3 px-4 py-3">
             <div className="min-w-0 flex-1">
               <div className="text-[12px] text-fg-3">{t("wallet.from")}</div>
-              <div className="truncate text-[13.5px] font-medium">{fromAcc ? `#${fromAcc.login}` : t("wallet.demo.kalksWallet")}</div>
+              <div className="truncate text-[13.5px] font-medium">{fromAcc ? `#${fromAcc.login}` : t("wallet.demo.ezymexWallet")}</div>
               <div dir="ltr" className="k-num text-[15px] font-semibold">
                 {formatNumber(amt, dec)} {srcCur}
               </div>
@@ -410,7 +410,7 @@ function Transfer() {
             <ArrowRight className="size-4 text-ember rtl:-scale-x-100" />
             <div className="min-w-0 flex-1 text-end">
               <div className="text-[12px] text-fg-3">{t("wallet.to")}</div>
-              <div className="truncate text-[13.5px] font-medium">{toAcc ? `#${toAcc.login}` : t("wallet.demo.kalksWallet")}</div>
+              <div className="truncate text-[13.5px] font-medium">{toAcc ? `#${toAcc.login}` : t("wallet.demo.ezymexWallet")}</div>
               <div dir="ltr" className="k-num text-[15px] font-semibold text-up">
                 {formatNumber(receive)} {receiveCur}
               </div>

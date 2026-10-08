@@ -4,7 +4,7 @@
 //     reminders count)
 //   5 the week card: day tabs (today, high-impact dots, count), impact and currency filters, the events (the "now"
 //     line on today), tap -> the event's detail inline: release history, this release, the time in both zones,
-//     "Remind me 15 min before" / "Remove reminder", instruments to watch (-> Kalks Trader); the colour legend
+//     "Remind me 15 min before" / "Remove reminder", instruments to watch (-> Ezymex Trader); the colour legend
 // The web's 8-column table scrolls sideways on phones; here each event is a compact two-line row with the same
 // columns (time, currency, event, impact, actual / forecast / previous).
 import 'dart:async';

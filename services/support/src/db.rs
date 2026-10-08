@@ -8,7 +8,7 @@ use std::str::FromStr;
 /// Connects, creating the database on first run, and applies migrations.
 pub async fn connect(url: &str) -> anyhow::Result<PgPool> {
     let opts = PgConnectOptions::from_str(url)?;
-    let db = opts.get_database().unwrap_or("kalks_support").to_string();
+    let db = opts.get_database().unwrap_or("ezymex_support").to_string();
     let mut admin = opts.clone().database("postgres").connect().await?;
     let exists: Option<i32> = sqlx::query_scalar("SELECT 1 FROM pg_database WHERE datname = $1").bind(&db).fetch_optional(&mut admin).await?;
     if exists.is_none() {
@@ -43,8 +43,8 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             autopilot: true,
-            bot_name: "Kalks AI".into(),
-            greeting: "Hi, I'm Kalks AI. Ask me anything about your account, deposits, verification or trading. I can connect you with our support team at any time.".into(),
+            bot_name: "Ezymex AI".into(),
+            greeting: "Hi, I'm Ezymex AI. Ask me anything about your account, deposits, verification or trading. I can connect you with our support team at any time.".into(),
             sla_first_secs: 300,
             sla_reply_secs: 600,
             bot_per_hour: 40,

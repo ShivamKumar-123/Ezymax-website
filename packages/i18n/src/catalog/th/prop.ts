@@ -1,7 +1,7 @@
 import type { NsMessages } from "../../core";
 
 // Client Area prop trading: challenge catalogue, my challenges, payouts, certificates.
-// "Kalks", "Kalks Prop", "Kalks Trader", "USDT", "New York" and "17:00" stay as they are.
+// "Ezymex", "Ezymex Prop", "Ezymex Trader", "USDT", "New York" and "17:00" stay as they are.
 const prop: NsMessages<"prop"> = {
   // Error next-step buttons
   "errorLink.deposit": "ฝาก USDT",
@@ -102,13 +102,13 @@ const prop: NsMessages<"prop"> = {
 
   // Public certificate verification page (/verify/<code>)
   "verify.shellTitle": "การยืนยันใบรับรอง",
-  "verify.footer": "บัญชี Kalks Prop เป็นบัญชีจำลอง ใบรับรองแสดงผลงานของเทรดเดอร์ในชาเลนจ์ Kalks Prop โดยชื่อเทรดเดอร์จะย่อเหลือชื่อจริงและอักษรแรกของนามสกุล",
+  "verify.footer": "บัญชี Ezymex Prop เป็นบัญชีจำลอง ใบรับรองแสดงผลงานของเทรดเดอร์ในชาเลนจ์ Ezymex Prop โดยชื่อเทรดเดอร์จะย่อเหลือชื่อจริงและอักษรแรกของนามสกุล",
   "verify.linkCopied": "คัดลอกลิงก์แล้ว",
   "verify.copyFailed": "ไม่สามารถคัดลอกลิงก์ได้",
   "verify.copyLink": "คัดลอกลิงก์",
   "verify.downloadPng": "ดาวน์โหลด PNG",
   "verify.notFoundTitle": "ไม่พบใบรับรอง",
-  "verify.notFoundText": "ไม่มีใบรับรอง Kalks Prop หมายเลขนี้ ตรวจสอบลิงก์หรือขอให้เทรดเดอร์แชร์อีกครั้ง",
+  "verify.notFoundText": "ไม่มีใบรับรอง Ezymex Prop หมายเลขนี้ ตรวจสอบลิงก์หรือขอให้เทรดเดอร์แชร์อีกครั้ง",
   "verify.unavailableTitle": "การยืนยันไม่พร้อมใช้งานในขณะนี้",
   "verify.unavailableText": "เราไม่สามารถตรวจสอบใบรับรองนี้ได้ในขณะนี้ โปรดลองอีกครั้งในอีกไม่กี่นาที",
   "verify.kind.pass": "ผ่านระยะ",
@@ -122,9 +122,9 @@ const prop: NsMessages<"prop"> = {
   "verify.row.issued": "ออกเมื่อ",
   "verify.row.number": "เลขที่ใบรับรอง",
   "verify.validTitle": "ใบรับรองถูกต้อง",
-  "verify.validText": "ออกโดย Kalks Prop และตรวจสอบกับบันทึกของเราแล้ว",
+  "verify.validText": "ออกโดย Ezymex Prop และตรวจสอบกับบันทึกของเราแล้ว",
   "verify.revokedTitle": "ใบรับรองถูกเพิกถอน",
-  "verify.revokedText": "ใบรับรองนี้ถูกเพิกถอนโดย Kalks และไม่มีผลแล้ว",
+  "verify.revokedText": "ใบรับรองนี้ถูกเพิกถอนโดย Ezymex และไม่มีผลแล้ว",
   "verify.valid": "ถูกต้อง",
   "verify.revoked": "ถูกเพิกถอน",
   // Certificate titles
@@ -249,8 +249,8 @@ const prop: NsMessages<"prop"> = {
   "checkout.goToMine": "ไปที่ชาเลนจ์ของฉัน",
   "checkout.readyTitle": "ชาเลนจ์ของคุณพร้อมแล้ว",
   "checkout.paidText": "ชำระ {fee} จากวอลเล็ต USDT ของคุณแล้ว และบัญชี {size} ของคุณเปิดแล้ว กฎมีผลตั้งแต่ตอนนี้",
-  "checkout.savePasswords": "บันทึกรหัสผ่านเหล่านี้ทันที: จะแสดงเพียงครั้งเดียวและเราไม่ได้จัดเก็บไว้ ปุ่มเทรดจะพาคุณเข้าสู่ Kalks Trader โดยไม่ต้องใช้รหัสผ่าน คุณจึงเทรดจากที่นี่ได้เสมอ",
-  "checkout.passwordsShown": "รหัสผ่านเทรดแสดงไปแล้วตอนยืนยันการซื้อครั้งแรก ใช้ปุ่มเทรดเพื่อเปิด Kalks Trader ซึ่งจะเข้าสู่ระบบให้โดยไม่ต้องใช้รหัสผ่าน",
+  "checkout.savePasswords": "บันทึกรหัสผ่านเหล่านี้ทันที: จะแสดงเพียงครั้งเดียวและเราไม่ได้จัดเก็บไว้ ปุ่มเทรดจะพาคุณเข้าสู่ Ezymex Trader โดยไม่ต้องใช้รหัสผ่าน คุณจึงเทรดจากที่นี่ได้เสมอ",
+  "checkout.passwordsShown": "รหัสผ่านเทรดแสดงไปแล้วตอนยืนยันการซื้อครั้งแรก ใช้ปุ่มเทรดเพื่อเปิด Ezymex Trader ซึ่งจะเข้าสู่ระบบให้โดยไม่ต้องใช้รหัสผ่าน",
 
   // Account credentials
   "cred.login": "ล็อกอิน",
@@ -377,7 +377,7 @@ const prop: NsMessages<"prop"> = {
   "account.passed": "ผ่าน · อ่านอย่างเดียว",
   "account.failed": "ไม่ผ่าน · ปิดใช้งาน",
   "account.opening": "กำลังเปิด",
-  "account.tradableText": "ปุ่มเทรดจะเปิด Kalks Trader ที่ลงชื่อเข้าใช้บัญชีนี้ รหัสผ่านแสดงเพียงครั้งเดียวตอนซื้อ",
+  "account.tradableText": "ปุ่มเทรดจะเปิด Ezymex Trader ที่ลงชื่อเข้าใช้บัญชีนี้ รหัสผ่านแสดงเพียงครั้งเดียวตอนซื้อ",
   "account.passedText": "ระยะนี้เสร็จสมบูรณ์แล้ว บัญชีเป็นแบบอ่านอย่างเดียว โปรดเทรดในระยะถัดไป",
   "account.failedText": "การเทรดในบัญชีนี้ถูกปิดใช้งาน",
   "account.unavailableText": "ไม่สามารถเทรดในบัญชีนี้ได้",

@@ -38,7 +38,7 @@ final demoModeProvider = NotifierProvider<DemoMode, bool>(DemoMode.new);
 /// `apiProvider` watches it, so every API client is rebuilt when the demo starts or ends.
 final httpAdapterProvider = Provider<HttpClientAdapter?>((ref) => Env.preview || ref.watch(demoModeProvider) ? PreviewAdapter() : null);
 
-/// The API base (`--dart-define=KALKS_API_BASE`; override in tests).
+/// The API base (`--dart-define=EZYMEX_API_BASE`; override in tests).
 final apiBaseProvider = Provider<String>((ref) => Env.apiBase);
 
 /// The broker's maintenance mode was reported by an API call (503 maintenance).

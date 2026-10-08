@@ -1,10 +1,10 @@
 import type { NsMessages } from "../../core";
 
-// Client Area 고객 지원: 라이브 채팅, 런처, 지원 페이지. "Kalks" 및 "Kalks AI"는 그대로 유지합니다.
+// Client Area 고객 지원: 라이브 채팅, 런처, 지원 페이지. "Ezymex" 및 "Ezymex AI"는 그대로 유지합니다.
 const support: NsMessages<"support"> = {
   // 지원 페이지
   "page.title": "고객 지원",
-  "page.subtitle": "Kalks AI와 채팅하여 즉시 답변을 받으세요. 언제든지 상담원 연결을 요청하시면 전체 대화 내용을 바탕으로 저희 팀이 이어서 도와드립니다.",
+  "page.subtitle": "Ezymex AI와 채팅하여 즉시 답변을 받으세요. 언제든지 상담원 연결을 요청하시면 전체 대화 내용을 바탕으로 저희 팀이 이어서 도와드립니다.",
   "email.prefer": "이메일을 선호하시나요?",
   // <email> 및 <id>는 고객의 이메일 주소와 고객 ID를 감쌉니다
   "email.writeFrom": "<email>{email}</email>에서 보내시고 고객 ID <id>{id}</id>를 포함해 주세요.",
@@ -46,7 +46,7 @@ const support: NsMessages<"support"> = {
   "quick.withdrawal": "출금은 언제 도착하나요?",
   "quick.stopOut": "스톱아웃이란 무엇인가요?",
   "header.supportTeam": "고객 지원팀",
-  "header.agentSub": "고객 지원 · Kalks",
+  "header.agentSub": "고객 지원 · Ezymex",
   "header.connecting": "상담원과 연결 중…",
   "header.replySoon": "저희 팀이 곧 여기에서 답변드립니다",
   "header.helpCentre": "도움말 센터 답변 · 언제든 상담원 연결 가능",

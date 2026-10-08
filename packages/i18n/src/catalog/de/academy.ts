@@ -20,7 +20,7 @@ const academy: NsMessages<"academy"> = {
   "practice.demo": "Auf Demo üben",
   "practice.openFreeDemo": "Kostenloses Demokonto eröffnen",
   "practice.openDemo": "Demo eröffnen",
-  "practice.inTrader": "In Kalks Trader üben",
+  "practice.inTrader": "In Ezymex Trader üben",
 
   // Levels (sent by the Academy service)
   "level.beginner": "Einsteiger",
@@ -31,12 +31,12 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "Fundamentalanalyse",
   "track.technical": "Technische Analyse",
-  // Product track of the Kalks FX Options elective (phase 9)
+  // Product track of the Ezymex FX Options elective (phase 9)
   "track.options": "Optionshandel",
   "trackShort.fundamental": "Fundamental",
   "trackShort.technical": "Technisch",
   "trackShort.options": "Optionen",
-  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  // Chip on a product course (e.g. Ezymex FX Options) that sits outside the eight core phases and can be taken at any time
   elective: "Wahlkurs",
 
   // Durations (h = hours, m = minutes)
@@ -52,7 +52,7 @@ const academy: NsMessages<"academy"> = {
   "home.pathText": "Jede Kernphase hat einen fundamentalen und einen technischen Lernpfad, eine Abschlussprüfung und ein Zertifikat.",
   // Section under the learning path listing the electives
   "home.electivesTitle": "Wahlkurse",
-  "home.electivesText": "Kurse zu Kalks-Produkten. Belegen Sie sie jederzeit: Jeder hat eine eigene Abschlussprüfung und ein eigenes Zertifikat.",
+  "home.electivesText": "Kurse zu Ezymex-Produkten. Belegen Sie sie jederzeit: Jeder hat eine eigene Abschlussprüfung und ein eigenes Zertifikat.",
   "hero.allDone": "Alle Kapitel abgeschlossen",
   "hero.continue": "Weiterlernen",
   "hero.upNext": "Als Nächstes",
@@ -220,7 +220,7 @@ const academy: NsMessages<"academy"> = {
   "callout.example": "Beispiel",
   "callout.tip": "Tipp",
   "callout.note": "Hinweis",
-  "callout.inKalksTrader": "In Kalks Trader",
+  "callout.inEzymexTrader": "In Ezymex Trader",
   diagram: "Diagramm",
 };
 export default academy;

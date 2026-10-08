@@ -45,7 +45,7 @@ const news: NsMessages<"news"> = {
   "markets.trade": "டிரேட்",
   "markets.searchPlaceholder": "சிம்பல் அல்லது பெயரைத் தேடு…",
   "markets.clearSearch": "அழி",
-  "markets.liveTooltip": "விலைகள் Kalks விலை ஊட்டத்திலிருந்து நேரலையாக வருகின்றன",
+  "markets.liveTooltip": "விலைகள் Ezymex விலை ஊட்டத்திலிருந்து நேரலையாக வருகின்றன",
   "markets.footnote": "Standard குழு ஸ்ப்ரெட்கள்: FX க்கு பிப்ஸ், பிறவற்றுக்கு விலை அலகுகள் · மூடப்பட்ட சந்தைகள் கடைசி விலையைக் காட்டும் · ஒப்பந்த விவரங்களுக்கு ஒரு வரிசையைக் கிளிக் செய்யவும்",
   // Short trading-hours summary per asset class (24/5 = 24 hours, 5 days a week)
   "hoursShort.forex": "24/5",
@@ -270,7 +270,7 @@ const news: NsMessages<"news"> = {
   "cal.removeReminder": "நினைவூட்டலை நீக்கு",
   "cal.remindMe": "15 நிமி முன்பு நினைவூட்டு",
   "cal.toWatch": "கவனிக்க வேண்டிய கருவிகள்",
-  "cal.noLinked": "இந்த நாணயத்துடன் நேரடியாக இணைக்கப்பட்ட Kalks கருவிகள் இல்லை.",
+  "cal.noLinked": "இந்த நாணயத்துடன் நேரடியாக இணைக்கப்பட்ட Ezymex கருவிகள் இல்லை.",
   // High-impact alerts card
   "alerts.title": "அதிக தாக்க எச்சரிக்கைகள்",
   "alerts.toggle": "அதிக தாக்க நிகழ்வுகளுக்கு முன் எனக்கு எச்சரிக்கை அனுப்பு",

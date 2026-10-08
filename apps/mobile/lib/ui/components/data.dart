@@ -9,7 +9,7 @@ import 'brand.dart';
 import 'pressable.dart';
 import 'surfaces.dart';
 
-/// The signature Kalks number: money with dimmed decimals (`$54,208.11`, the `.11` dimmed), Latin digits, kept left-to-right
+/// The signature Ezymex number: money with dimmed decimals (`$54,208.11`, the `.11` dimmed), Latin digits, kept left-to-right
 /// inside right-to-left text (web Money + .k-num).
 class KMoney extends StatelessWidget {
   const KMoney(

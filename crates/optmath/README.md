@@ -1,6 +1,6 @@
 # optmath
 
-Option pricing maths for **Kalks FX Options**. It is pure Rust with no dependencies (proptest is a dev-dependency only) and uses `f64` throughout. The trading engine and the options service (`services/options`) both depend on this crate, so they always compute the same numbers.
+Option pricing maths for **Ezymex FX Options**. It is pure Rust with no dependencies (proptest is a dev-dependency only) and uses `f64` throughout. The trading engine and the options service (`services/options`) both depend on this crate, so they always compute the same numbers.
 
 ## Conventions
 

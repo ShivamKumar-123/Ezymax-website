@@ -2,7 +2,7 @@
 //! the client ("log in as client").
 //!
 //! **Presence.** `users.last_active_at` moves forward (at most every 30 s) with the client's own Client Area
-//! requests and heartbeat (`identity::resolve_session_any`) and with the trading engine's reports of live Kalks
+//! requests and heartbeat (`identity::resolve_session_any`) and with the trading engine's reports of live Ezymex
 //! Trader connections (`POST /v1/internal/presence/trader`, every 15 s, table `client_presence`). A client is
 //! Online when active in the last 2 minutes, Away up to 15 minutes, Offline after that. View-only logins and
 //! staff sessions never count as the client being online.
@@ -37,7 +37,7 @@
 //! * `POST /v1/auth/impersonation/event`                       `{kind: action|write_refused|page_view, method, path}` (staff sessions only)
 //! * `GET  /v1/internal/restrictions`                          every active restriction (trading engine cache)
 //! * `POST /v1/internal/presence/trader`                       `{items[], ended[]}` (trading engine)
-//! * `POST /v1/internal/impersonation/ended`                   `{staff_id, user_id, login}` (Kalks Trader BFF)
+//! * `POST /v1/internal/impersonation/ended`                   `{staff_id, user_id, login}` (Ezymex Trader BFF)
 
 use axum::Json;
 use axum::extract::rejection::{JsonRejection, QueryRejection};
@@ -63,7 +63,7 @@ use crate::state::{AppState, Ctx};
 pub const ONLINE_SECS: i64 = 120;
 /// Idle for 2–15 minutes.
 pub const AWAY_SECS: i64 = 15 * 60;
-/// A Kalks Trader connection is live while the engine reported it in the last 60 s (it reports every 15 s).
+/// A Ezymex Trader connection is live while the engine reported it in the last 60 s (it reports every 15 s).
 pub const TRADER_LIVE_SECS: i64 = 60;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -399,7 +399,7 @@ pub async fn redeem(State(st): State<AppState>, ctx: Ctx, req: Result<Json<Redee
 }
 
 /// `POST /v1/admin/users/{id}/impersonate/trader`: permission check + audit before the Back Office BFF asks the
-/// trading engine for a Kalks Trader session of one of the client's accounts in the same mode.
+/// trading engine for a Ezymex Trader session of one of the client's accounts in the same mode.
 pub async fn impersonate_trader(State(st): State<AppState>, ctx: Ctx, Path(id): Path<i64>, req: Result<Json<ImpersonateReq>, JsonRejection>) -> ApiResult<Json<Value>> {
     let r = body(req)?;
     let me = require_key(&st, &ctx, "clients.impersonate").await?;
@@ -482,7 +482,7 @@ pub struct TraderEndedReq {
     via: Option<String>,
 }
 
-/// `POST /v1/internal/impersonation/ended`: a Kalks Trader staff session was ended (terminal BFF).
+/// `POST /v1/internal/impersonation/ended`: a Ezymex Trader staff session was ended (terminal BFF).
 pub async fn trader_ended(State(st): State<AppState>, ctx: Ctx, req: Result<Json<TraderEndedReq>, JsonRejection>) -> ApiResult<Json<Value>> {
     let r = body(req)?;
     let tenant: Option<i64> = sqlx::query_scalar("SELECT u.tenant_id FROM users u JOIN staff s ON s.tenant_id = u.tenant_id AND s.id = $2 WHERE u.id = $1")
@@ -1008,7 +1008,7 @@ pub struct TraderReport {
     ended: Vec<String>,
 }
 
-/// `POST /v1/internal/presence/trader`: live Kalks Trader connections (the client's own sessions only; staff
+/// `POST /v1/internal/presence/trader`: live Ezymex Trader connections (the client's own sessions only; staff
 /// sessions are never reported) and the ones that closed since the last report.
 pub async fn trader_report(State(st): State<AppState>, req: Result<Json<TraderReport>, JsonRejection>) -> ApiResult<Json<Value>> {
     let r = body(req)?;
@@ -1055,7 +1055,7 @@ pub async fn trader_report(State(st): State<AppState>, req: Result<Json<TraderRe
             .bind(&r.ended)
             .fetch_all(&mut *tx)
             .await?;
-        // the moment the client closed Kalks Trader is their last activity there
+        // the moment the client closed Ezymex Trader is their last activity there
         sqlx::query("UPDATE users SET last_active_at = now() WHERE id = ANY($1)").bind(&gone).execute(&mut *tx).await?;
         gone.len()
     };
@@ -1066,7 +1066,7 @@ pub async fn trader_report(State(st): State<AppState>, req: Result<Json<TraderRe
 // ---------- housekeeping ----------
 
 /// Every 30 s: expired restrictions are closed (a lifted sign-in block re-activates the client), expired staff
-/// sessions are ended and audited, stale Kalks Trader connections (engine gone) are closed, old rows purged.
+/// sessions are ended and audited, stale Ezymex Trader connections (engine gone) are closed, old rows purged.
 pub async fn sweep(st: &AppState) -> anyhow::Result<()> {
     let ctx = Ctx { ip: "system".into(), user_agent: String::new(), device: None, tenant_slug: String::new(), bearer: None };
     let expired: Vec<(i64, i64, String, String)> = sqlx::query_as(

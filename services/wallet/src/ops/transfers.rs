@@ -78,7 +78,7 @@ pub async fn transfer(st: &AppState, tenant_id: i64, actor: &str, key_ns: &str, 
     }
     // IB commissions and payouts on hold for this partner (client restrictions set in the Back Office)
     if credit && matches!(r.kind.as_str(), "commission" | "ib_payout") {
-        crate::users::gate(st, &st.tenants.slug_of(tenant_id).unwrap_or_else(|| "kalks".into()), r.user_id, "ib").await?;
+        crate::users::gate(st, &st.tenants.slug_of(tenant_id).unwrap_or_else(|| "ezymex".into()), r.user_id, "ib").await?;
     }
 
     let ccy = r.currency.clone();

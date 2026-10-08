@@ -23,7 +23,7 @@ function useCtx() {
   return c;
 }
 
-/** Header action: "Log in as client" (Client Area or Kalks Trader). */
+/** Header action: "Log in as client" (Client Area or Ezymex Trader). */
 export function ClientStaffActions() {
   const { id, name, controls } = useCtx();
   return <ImpersonateButton id={id} name={name} controls={controls.data} />;

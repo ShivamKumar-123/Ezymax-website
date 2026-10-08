@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { EmptyState, buttonVariants } from "@kalks/ui";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { EmptyState, buttonVariants } from "@ezymex/ui";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { KycCaseView } from "@/components/kyc/case-view";
 
 /** One KYC case: document viewer, automatic checks, checklist and decision (live builds). */

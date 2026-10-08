@@ -20,7 +20,7 @@ const SCAN_START_BACK_MS: i64 = 10 * 60 * 1000;
 
 impl Tron {
     pub fn new(base: String, key: String) -> Self {
-        let http = reqwest::Client::builder().timeout(Duration::from_secs(12)).user_agent("kalks-wallet/0.1").build().expect("http client");
+        let http = reqwest::Client::builder().timeout(Duration::from_secs(12)).user_agent("ezymex-wallet/0.1").build().expect("http client");
         Self { http, base, key }
     }
 

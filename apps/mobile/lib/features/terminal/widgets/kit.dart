@@ -1,4 +1,4 @@
-// Small building blocks of Kalks Trader (web: packages/ui price.tsx / avatars.tsx, apps/terminal components/ui
+// Small building blocks of Ezymex Trader (web: packages/ui price.tsx / avatars.tsx, apps/terminal components/ui
 // primitives.tsx + kit.tsx), in the app's design system: symbol avatars, MT5-style prices, live quotes, P&L text,
 // badges, section labels, compact steppers and the order form's number fields.
 import 'dart:async';

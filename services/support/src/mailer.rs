@@ -54,7 +54,7 @@ pub fn render(title: &str, body: &str, button: Option<(&str, &str)>, footer_note
     if let Some((label, url)) = button {
         text.push_str(&format!("\n{label}: {url}\n"));
     }
-    text.push_str(&format!("\n{footer_note}\n\nKalks · kalkstrade.com\n"));
+    text.push_str(&format!("\n{footer_note}\n\nEzymex · ezymex.com\n"));
     let body_html: String = paras
         .iter()
         .map(|p| format!(r#"<p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:#c7c7cf">{}</p>"#, html_escape(p).replace('\n', "<br>")))
@@ -72,7 +72,7 @@ pub fn render(title: &str, body: &str, button: Option<(&str, &str)>, footer_note
         r#"<!doctype html><html><body style="margin:0;background:#0b0b0e;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0b0b0e;padding:32px 12px"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px">
-<tr><td style="padding:0 4px 18px;font-size:18px;font-weight:700;letter-spacing:0.5px;color:#f5f5f7">Kalks</td></tr>
+<tr><td style="padding:0 4px 18px;font-size:18px;font-weight:700;letter-spacing:0.5px;color:#f5f5f7">Ezymex</td></tr>
 <tr><td style="background:#141418;border:1px solid #26262e;border-radius:16px;padding:28px 26px">
 <h1 style="margin:0 0 14px;font-size:21px;line-height:1.3;font-weight:700;color:#f5f5f7">{}</h1>
 {body_html}{button_html}

@@ -5,8 +5,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, ArrowRight, Coins, Info, Layers, Percent, ShieldCheck, Wallet, X as XIcon, Scale } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Dialog, Field, Input, KeyValue, Money, Stepper, SymbolAvatar, cn, formatMoney } from "@/components/kit";
-import { WALLET } from "@kalks/mock";
-import { SIZING_MODES, SOCIAL_POLICY, type Master, type SizingMode } from "@kalks/mock/social";
+import { WALLET } from "@ezymex/mock";
+import { SIZING_MODES, SOCIAL_POLICY, type Master, type SizingMode } from "@ezymex/mock/social";
 import { Checkbox, RadioCard, RangeSlider, ToggleChip } from "./controls";
 import { MasterIdentity, RiskBadge } from "./master-bits";
 
@@ -221,7 +221,7 @@ export function CopyDialog({ master: m, open, onOpenChange }: { master: Master |
                 <div className="flex items-center gap-3">
                   <ShieldCheck className="size-5 text-ember" />
                   <div className="text-[14px]">
-                    A dedicated copy account <span className="font-mono font-semibold text-fg">#{login}</span> will be created on Kalks-Live01.
+                    A dedicated copy account <span className="font-mono font-semibold text-fg">#{login}</span> will be created on Ezymex-Live01.
                   </div>
                 </div>
               </div>

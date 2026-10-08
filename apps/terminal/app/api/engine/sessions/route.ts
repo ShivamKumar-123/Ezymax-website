@@ -21,5 +21,5 @@ export async function GET(req: NextRequest) {
     sessions: alive.map((c) => ({ login: c.s.l, readOnly: c.gone ? c.s.r : c.readOnly, expiresAt: new Date(c.s.e).toISOString(), account: c.gone ? null : c.account })),
     unavailable: alive.some((c) => !c.gone && c.unavailable),
   });
-  return alive.length !== list.length || req.cookies.get("kalks_trade")?.value && !list.length ? writeSessions(req, res, alive.map((c) => c.s)) : res;
+  return alive.length !== list.length || req.cookies.get("ezymex_trade")?.value && !list.length ? writeSessions(req, res, alive.map((c) => c.s)) : res;
 }

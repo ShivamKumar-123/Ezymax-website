@@ -1,4 +1,4 @@
-// Kalks Trader data shapes, parsed from the engine JSON the mobile API returns (docs/MOBILE-API.md §6; web:
+// Ezymex Trader data shapes, parsed from the engine JSON the mobile API returns (docs/MOBILE-API.md §6; web:
 // apps/terminal/lib/engine/types.ts + map.ts). Money convention (same as the web store): every amount is kept in USD;
 // cent accounts report USC from the engine (x 100) and are divided by 100 here, the UI multiplies back (accMoney).
 import 'package:flutter/foundation.dart';
@@ -183,8 +183,8 @@ class TAccount {
   bool get demo => type == 'demo';
   bool get hedging => mode == 'hedging';
 
-  /// "Kalks-Live" / "Kalks-Demo" (web serverName).
-  String get server => demo ? 'Kalks-Demo' : 'Kalks-Live';
+  /// "Ezymex-Live" / "Ezymex-Demo" (web serverName).
+  String get server => demo ? 'Ezymex-Demo' : 'Ezymex-Live';
 
   /// USC on cent accounts, else the account currency.
   String get ccy => cent ? 'USC' : currency;
@@ -581,6 +581,6 @@ class Metrics {
   }
 }
 
-/// True for an engine position / order / deal of Kalks FX Options (they carry `option`), which the options mode shows.
+/// True for an engine position / order / deal of Ezymex FX Options (they carry `option`), which the options mode shows.
 bool isOptionEntry(Map<String, dynamic> j) =>
     j['option'] is Map || (j['symbol'] is String && RegExp(r'^[A-Z0-9]{3,12}-\d{8}-').hasMatch(j['symbol'] as String));

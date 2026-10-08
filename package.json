@@ -1,12 +1,12 @@
 {
-  "name": "kalks",
+  "name": "ezymex",
   "private": true,
   "packageManager": "pnpm@12.6.0",
   "scripts": {
     "dev": "node scripts/sync-assets.mjs && turbo run dev --parallel",
-    "dev:crm": "pnpm --filter @kalks/crm dev",
-    "dev:admin": "pnpm --filter @kalks/admin dev",
-    "dev:terminal": "pnpm --filter @kalks/terminal dev",
+    "dev:crm": "pnpm --filter @ezymex/crm dev",
+    "dev:admin": "pnpm --filter @ezymex/admin dev",
+    "dev:terminal": "pnpm --filter @ezymex/terminal dev",
     "dev:gateway": "cargo run -p gateway",
     "dev:market-data": "cargo run -p market-data",
     "build": "turbo run build",

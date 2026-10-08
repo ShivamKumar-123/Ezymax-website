@@ -1,5 +1,5 @@
 // Server-safe helpers for share pages (no React, no hooks): totals and formatting.
-import { getInstrument } from "@kalks/mock";
+import { getInstrument } from "@ezymex/mock";
 import { pipSize } from "./trading";
 import type { ShareTrade } from "./share";
 

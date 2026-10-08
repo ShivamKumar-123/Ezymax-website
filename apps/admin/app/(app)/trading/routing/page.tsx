@@ -22,15 +22,15 @@ import {
   cn,
   formatMoney,
   formatNumber,
-} from "@kalks/ui";
-import { LP_CONNECTIONS, ROUTING_DEFAULT, type RoutingCondition, type RoutingRule } from "@kalks/mock/admin-trading";
-import { IS_DEMO } from "@kalks/mock/mode";
+} from "@ezymex/ui";
+import { LP_CONNECTIONS, ROUTING_DEFAULT, type RoutingCondition, type RoutingRule } from "@ezymex/mock/admin-trading";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { clientName, currentPriceOf, getAccount, groupOptions, notionalUsd as deskNotional, positionPnl, useDesk, useLiveDirectory, type Book } from "@/lib/trading-desk";
 import { DeskStatusChip } from "@/components/trading-desk/status";
 import { useCan } from "@/components/staff-session";
 import { AccountPicker, BookChip, DeskDialog } from "@/components/trading-desk/kit";
-import { EXPOSURE, notionalUsd } from "@kalks/mock/admin-ops";
-import { getInstrument } from "@kalks/mock";
+import { EXPOSURE, notionalUsd } from "@ezymex/mock/admin-ops";
+import { getInstrument } from "@ezymex/mock";
 import { ShareBar, usdCompact } from "@/components/command/kit";
 
 const FIELDS: RoutingCondition["field"][] = ["Risk score", "Avg hold time", "Lot size", "Symbol", "Group", "Login", "Win rate (30d)", "Equity", "Country", "News window"];
@@ -175,7 +175,7 @@ function ConnectLp() {
       }
     >
       <div className="grid grid-cols-2 gap-3">
-        <Field label="SenderCompID"><Input defaultValue="KALKS_PROD" className="font-mono" /></Field>
+        <Field label="SenderCompID"><Input defaultValue="EZYMEX_PROD" className="font-mono" /></Field>
         <Field label="TargetCompID"><Input placeholder="LP_TRADE" className="font-mono" /></Field>
         <Field label="Host"><Input placeholder="fix.lp-example.net" className="font-mono" /></Field>
         <Field label="Port"><Input placeholder="9876" className="font-mono" /></Field>

@@ -21,7 +21,7 @@ const shell: NsMessages<"shell"> = {
   security: "Keamanan",
   verification: "Verifikasi",
   preferences: "Preferensi",
-  kalksTrader: "Kalks Trader",
+  ezymexTrader: "Ezymex Trader",
   deposit: "Deposit",
   // Client Area navigation
   "nav.dashboard": "Dasbor",
@@ -92,7 +92,7 @@ const shell: NsMessages<"shell"> = {
   "gate.title": "Belum diaktifkan untuk akun Anda",
   "gate.text": "Bagian ini belum diaktifkan untuk akun Anda. Hubungi {email} jika Anda memerlukan akses.",
   "gate.backToDashboard": "Kembali ke dasbor",
-  "gate.launchTrader": "Buka Kalks Trader",
+  "gate.launchTrader": "Buka Ezymex Trader",
   // market sessions clock
   "sessions.title": "Sesi pasar",
   "sessions.openLeft": "Buka · sisa {h}j {m}m",

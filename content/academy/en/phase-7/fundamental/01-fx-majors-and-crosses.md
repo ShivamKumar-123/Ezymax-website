@@ -120,7 +120,7 @@ A 40-pip stop on 0.50 lot GBPJPY:
                  40 x 6.36 x 0.50 = 127.20 USD at risk
 ```
 
-If you size a GBPJPY trade as if a pip were 10 USD, your real risk will be lower than planned. On USDCHF the opposite happens: with the rate below 1.00, a pip is worth more than 10 USD (10 / 0.9000 = about 11.11 USD at 0.9000), so the same shortcut would make you risk more than planned. Kalks Trader shows the pip value and margin for the selected volume in the order ticket, so check it before you confirm.
+If you size a GBPJPY trade as if a pip were 10 USD, your real risk will be lower than planned. On USDCHF the opposite happens: with the rate below 1.00, a pip is worth more than 10 USD (10 / 0.9000 = about 11.11 USD at 0.9000), so the same shortcut would make you risk more than planned. Ezymex Trader shows the pip value and margin for the selected volume in the order ticket, so check it before you confirm.
 
 ## Choosing pairs for your strategy
 

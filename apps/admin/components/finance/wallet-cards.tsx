@@ -2,9 +2,9 @@
 
 import * as React from "react";
 import { AlertTriangle, ArrowDownLeft, ArrowUpRight, Eye, EyeOff, Fuel, KeyRound, Lock, Server, Vault, Zap } from "lucide-react";
-import { Avatar, Button, Card, CardHeader, Chip, CoinIcon, Dialog, Money, Progress, Segmented, cn } from "@kalks/ui";
-import { PEOPLE } from "@kalks/mock";
-import { FIN_COLD_WALLETS, FIN_HD, FIN_HOT_WALLET, FIN_SWEEP_QUEUE, finAgo } from "@kalks/mock/admin-finance";
+import { Avatar, Button, Card, CardHeader, Chip, CoinIcon, Dialog, Money, Progress, Segmented, cn } from "@ezymex/ui";
+import { PEOPLE } from "@ezymex/mock";
+import { FIN_COLD_WALLETS, FIN_HD, FIN_HOT_WALLET, FIN_SWEEP_QUEUE, finAgo } from "@ezymex/mock/admin-finance";
 import { Addr, MiniField, MiniStat, NumInput, auditToast, useReason } from "@/components/config/kit";
 import { Line, num, usd } from "./shared";
 

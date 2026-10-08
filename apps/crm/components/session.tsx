@@ -1,9 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { IS_DEMO, ME } from "@kalks/mock";
+import { IS_DEMO, ME } from "@ezymex/mock";
 import type { GatewayUser } from "@/lib/gateway";
-import { setReadCacheOwner } from "@kalks/ui/swr-cache";
+import { setReadCacheOwner } from "@ezymex/ui/swr-cache";
 
 export type SessionUser = GatewayUser;
 
@@ -22,7 +22,7 @@ export const DEMO_USER: SessionUser = {
   email_verified: true,
   referral_code: ME.referralCode,
   created_at: `${ME.memberSince}T09:00:00Z`,
-  tenant: { slug: "kalks", name: "Kalks" },
+  tenant: { slug: "ezymex", name: "Ezymex" },
 };
 
 const SessionContext = React.createContext<SessionUser | null>(null);

@@ -10,8 +10,8 @@ pub struct Config {
     pub infoway_key: String,
     pub infoway_rest: String,
     pub infoway_ws: String,
-    /// Relay mode (development): take quotes from another Kalks market-data stream instead of the provider,
-    /// e.g. wss://api.kalkstrade.com/v1/stream. The provider allows one connection per key, so only
+    /// Relay mode (development): take quotes from another Ezymex market-data stream instead of the provider,
+    /// e.g. wss://api.ezymex.com/v1/stream. The provider allows one connection per key, so only
     /// production connects to it. Backfill and reconciliation are off in relay mode.
     pub upstream: String,
     /// Max provider REST requests per second (keep under the plan limit).
@@ -112,7 +112,7 @@ impl Config {
     pub fn from_env() -> anyhow::Result<Self> {
         let infoway_key = env::var("INFOWAY_API_KEY").map_err(|_| anyhow::anyhow!("INFOWAY_API_KEY is not set (add it to .env.local)"))?;
         Ok(Self {
-            database_url: var("DATABASE_URL", "postgres://postgres@127.0.0.1:5433/kalks"),
+            database_url: var("DATABASE_URL", "postgres://postgres@127.0.0.1:5433/ezymex"),
             bind: var("MARKET_DATA_BIND", "127.0.0.1:8081"),
             infoway_key,
             infoway_rest: var("INFOWAY_REST_URL", "https://data.infoway.io"),

@@ -21,7 +21,7 @@ const shell: NsMessages<"shell"> = {
   security: "सुरक्षा",
   verification: "वेरिफ़िकेशन",
   preferences: "प्राथमिकताएँ",
-  kalksTrader: "Kalks Trader",
+  ezymexTrader: "Ezymex Trader",
   deposit: "जमा करें",
   // Client Area navigation
   "nav.dashboard": "डैशबोर्ड",
@@ -92,7 +92,7 @@ const shell: NsMessages<"shell"> = {
   "gate.title": "आपके अकाउंट के लिए अभी चालू नहीं है",
   "gate.text": "यह सेक्शन आपके अकाउंट के लिए अभी चालू नहीं है। एक्सेस चाहिए तो {email} पर संपर्क करें।",
   "gate.backToDashboard": "डैशबोर्ड पर वापस जाएँ",
-  "gate.launchTrader": "Kalks Trader खोलें",
+  "gate.launchTrader": "Ezymex Trader खोलें",
   // market sessions clock
   "sessions.title": "मार्केट सेशन",
   "sessions.openLeft": "खुला · {h}घं {m}मि शेष",

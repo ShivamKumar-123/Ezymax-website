@@ -43,7 +43,7 @@ const Set<String> optionErrorCodes = {
   'series_cancel_only',
   'series_closed',
   'rfq_underlyings',
-  'kalks_quoted',
+  'ezymex_quoted',
   'mixed_venue',
   'book_venue',
 };

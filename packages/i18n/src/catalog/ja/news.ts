@@ -45,7 +45,7 @@ const news: NsMessages<"news"> = {
   "markets.trade": "取引",
   "markets.searchPlaceholder": "銘柄コードまたは名称で検索…",
   "markets.clearSearch": "クリア",
-  "markets.liveTooltip": "気配値はKalksの価格フィードから配信されています",
+  "markets.liveTooltip": "気配値はEzymexの価格フィードから配信されています",
   "markets.footnote": "Standardグループのスプレッド：FXはpips、その他は価格単位 · 休場中の市場は最終価格を表示 · 行をクリックすると契約仕様を表示",
   // Short trading-hours summary per asset class (24/5 = 24 hours, 5 days a week)
   "hoursShort.forex": "24/5",
@@ -270,7 +270,7 @@ const news: NsMessages<"news"> = {
   "cal.removeReminder": "リマインダーを削除",
   "cal.remindMe": "15分前に通知",
   "cal.toWatch": "注目銘柄",
-  "cal.noLinked": "この通貨に直接関連するKalksの銘柄はありません。",
+  "cal.noLinked": "この通貨に直接関連するEzymexの銘柄はありません。",
   // High-impact alerts card
   "alerts.title": "重要度・高のアラート",
   "alerts.toggle": "重要度の高いイベントの前に通知する",

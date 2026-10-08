@@ -7,7 +7,7 @@ use std::fmt;
 pub struct Config {
     pub bind: String,
     pub database_url: String,
-    /// Shared secret the BFFs / internal services send in `X-Kalks-Internal`. Empty = check disabled (dev only).
+    /// Shared secret the BFFs / internal services send in `X-Ezymex-Internal`. Empty = check disabled (dev only).
     pub internal_token: String,
     pub dev_mode: bool,
     pub json_logs: bool,
@@ -106,7 +106,7 @@ impl Config {
         }
         Ok(Self {
             bind: var("WALLET_BIND", "127.0.0.1:8095"),
-            database_url: var("WALLET_DATABASE_URL", "postgres://postgres@127.0.0.1:5433/kalks_wallet"),
+            database_url: var("WALLET_DATABASE_URL", "postgres://postgres@127.0.0.1:5433/ezymex_wallet"),
             internal_token,
             dev_mode,
             json_logs: var("WALLET_LOG_FORMAT", "json") == "json",
@@ -163,8 +163,8 @@ mod tests {
 
     #[test]
     fn masks_secrets() {
-        assert_eq!(redact_url("postgres://kalks:s3cret@127.0.0.1:5432/kalks_wallet"), "postgres://kalks:***@127.0.0.1:5432/kalks_wallet");
-        assert_eq!(redact_url("postgres://postgres@127.0.0.1:5433/kalks_wallet"), "postgres://postgres@127.0.0.1:5433/kalks_wallet");
+        assert_eq!(redact_url("postgres://ezymex:s3cret@127.0.0.1:5432/ezymex_wallet"), "postgres://ezymex:***@127.0.0.1:5432/ezymex_wallet");
+        assert_eq!(redact_url("postgres://postgres@127.0.0.1:5433/ezymex_wallet"), "postgres://postgres@127.0.0.1:5433/ezymex_wallet");
         assert_eq!(redact_rpc("https://bsc.example.com/v1/?apikey=abc"), "https://bsc.example.com/v1/?***");
         assert_eq!(redact_rpc("https://rpc.example.com/0123456789abcdef0123456789"), "https://rpc.example.com/***");
         assert_eq!(redact_rpc("https://bsc-dataseed.binance.org"), "https://bsc-dataseed.binance.org");

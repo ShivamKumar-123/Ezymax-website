@@ -7,7 +7,7 @@
 //! * `GET  /v1/admin/symbols/catalogue/audit`         the last changes
 //!
 //! Reading is open to the dealing and configuration roles of any broker. Changing the live switch or a template is
-//! a platform decision: only the platform owner / super admin of the Kalks platform tenant may do it (the
+//! a platform decision: only the platform owner / super admin of the Ezymex platform tenant may do it (the
 //! founder's switch for risky money features). Core instruments are not affected by either.
 
 use axum::Json;
@@ -25,7 +25,7 @@ use crate::specs::{RawSpec, Spec, raw_json};
 
 /// Roles that may change the live switch and templates (platform tenant only).
 const ROLES_PLATFORM: &[&str] = &["platform_owner", "super_admin"];
-const PLATFORM_TENANT: &str = "kalks";
+const PLATFORM_TENANT: &str = "ezymex";
 
 fn can_change(s: &StaffCtx) -> bool {
     s.ctx.tenant.slug == PLATFORM_TENANT && ROLES_PLATFORM.contains(&s.staff.role.as_str())

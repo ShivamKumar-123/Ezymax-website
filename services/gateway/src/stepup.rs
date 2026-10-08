@@ -6,7 +6,7 @@
 //!    hash is stored.
 //! 3. The app's server hands the token back right before performing the change:
 //!    `POST /v1/auth/stepup/consume {token, user_id, action, target?}` succeeds once. Like every /v1 route it
-//!    requires `X-Kalks-Internal`, so browsers can't reach it.
+//!    requires `X-Ezymex-Internal`, so browsers can't reach it.
 //!
 //! `POST /v1/auth/password {current, new, stepup_token, sign_out_others}` changes the Client Area password
 //! itself and consumes an `account_password` token internally.
@@ -50,22 +50,22 @@ pub fn clean_target(raw: Option<&str>) -> Option<String> {
     Some(t.to_string())
 }
 
-/// Human wording of the change, used in the email: "You asked to <describe> in the Kalks Client Area."
+/// Human wording of the change, used in the email: "You asked to <describe> in the Ezymex Client Area."
 pub fn describe(action: &str, target: &str) -> String {
     let acct = |what: &str| if target.is_empty() { format!("change the {what} of a trading account") } else { format!("change the {what} of trading account #{target}") };
     match action {
         "trading_password" => acct("trading password"),
         "investor_password" => acct("investor password"),
         "leverage" => acct("leverage"),
-        "withdrawal" => "withdraw funds from your Kalks wallet".into(),
+        "withdrawal" => "withdraw funds from your Ezymex wallet".into(),
         "account_password" => "change your Client Area password".into(),
-        "profile_email" => "change the email address of your Kalks account".into(),
-        "profile_phone" => "change the phone number of your Kalks account".into(),
+        "profile_email" => "change the email address of your Ezymex account".into(),
+        "profile_phone" => "change the phone number of your Ezymex account".into(),
         "viewer_access" => "create a view-only login or set a new password for one".into(),
         "account_archive" => if target.is_empty() { "delete (archive) a live trading account".into() } else { format!("delete (archive) live trading account #{target}") },
         "account_close" => if target.is_empty() { "close a live trading account permanently".into() } else { format!("close live trading account #{target} permanently") },
         "internal_transfer" => if target.is_empty() { "move money between your trading accounts".into() } else { format!("move money out of trading account #{target} to another of your accounts") },
-        _ => "make a change to your Kalks account".into(),
+        _ => "make a change to your Ezymex account".into(),
     }
 }
 
@@ -270,7 +270,7 @@ pub struct ConsumeReq {
     pub(crate) target: Option<String>,
 }
 
-/// Server-to-server only (the /v1 router requires `X-Kalks-Internal`): the app calls this right before it
+/// Server-to-server only (the /v1 router requires `X-Ezymex-Internal`): the app calls this right before it
 /// performs the change, with the user id it resolved from the session cookie.
 pub async fn consume(State(st): State<AppState>, ctx: Ctx, req: Result<Json<ConsumeReq>, JsonRejection>) -> ApiResult<Json<Value>> {
     let r = body(req)?;

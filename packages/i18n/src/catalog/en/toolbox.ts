@@ -1,5 +1,5 @@
 // Keys for this namespace. English is the source; translations live in ../<lang>/toolbox.ts.
-// Kalks Trader bottom panel ("Toolbox", MT5 style): Trade, History, Exposure, News, Calendar, Alerts, Journal.
+// Ezymex Trader bottom panel ("Toolbox", MT5 style): Trade, History, Exposure, News, Calendar, Alerts, Journal.
 const toolbox = {
   // Panel header
   title: "Toolbox",

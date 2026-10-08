@@ -1,7 +1,7 @@
 import type { NsMessages } from "../../core";
 
 // Área de clientes, seguridad: sesiones, historial de accesos, accesos de solo lectura (observadores), control de sesión.
-// "Kalks", "Google" y "JSON" se mantienen.
+// "Ezymex", "Google" y "JSON" se mantienen.
 const security: NsMessages<"security"> = {
   // Compartido
   "retry": "Reintentar",
@@ -9,7 +9,7 @@ const security: NsMessages<"security"> = {
   "signingOut": "Cerrando sesión…",
   "resetSigningOut": "Cerrando su sesión para restablecer la contraseña…",
   "error.generic": "Algo salió mal. Inténtelo de nuevo.",
-  "error.network": "No se puede conectar con Kalks. Compruebe su conexión e inténtelo de nuevo.",
+  "error.network": "No se puede conectar con Ezymex. Compruebe su conexión e inténtelo de nuevo.",
 
   // Etiquetas de dispositivo según el agente de usuario; los nombres de navegadores y sistemas se mantienen
   "device.unknownBrowser": "Navegador desconocido",
@@ -227,7 +227,7 @@ const security: NsMessages<"security"> = {
   "page.calendar": "Calendario",
   // Tarjeta de contraseñas de inversor
   "investor.title": "Contraseñas de inversor",
-  "investor.text": "Cada cuenta de trading tiene también una contraseña de inversor para acceso de solo lectura en Kalks Trader, al estilo MT5: posiciones e historial, sin operar.",
+  "investor.text": "Cada cuenta de trading tiene también una contraseña de inversor para acceso de solo lectura en Ezymex Trader, al estilo MT5: posiciones e historial, sin operar.",
   "investor.hint": "Establézcala o cámbiela en la página de la cuenta.",
   "investor.goToAccounts": "Ir a las cuentas",
   // Diálogo de creación / edición

@@ -1,7 +1,7 @@
 "use client";
 
-import { IS_DEMO } from "@kalks/mock/mode";
-import { ComingSoon } from "@kalks/ui";
+import { IS_DEMO } from "@ezymex/mock/mode";
+import { ComingSoon } from "@ezymex/ui";
 import { LiveFeatures } from "@/components/rbac/settings";
 
 export default function Page() {

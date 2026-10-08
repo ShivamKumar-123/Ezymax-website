@@ -6,9 +6,9 @@ const dashboard: NsMessages<"dashboard"> = {
   "greeting.afternoon": "{name}님, 좋은 오후입니다",
   "greeting.evening": "{name}님, 좋은 저녁입니다",
   "greeting.welcome": "{name}님, 환영합니다",
-  "subtitle.live": "Kalks에 오신 것을 환영합니다. 계정 현황과 오늘의 시장을 확인하세요.",
+  "subtitle.live": "Ezymex에 오신 것을 환영합니다. 계정 현황과 오늘의 시장을 확인하세요.",
   "subtitle.demo": "오늘 계좌 운용 현황입니다.",
-  launchTrader: "Kalks Trader 실행",
+  launchTrader: "Ezymex Trader 실행",
   openTerminal: "거래 터미널 열기",
 
   // 시작하기 체크리스트
@@ -62,7 +62,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "account.memberSince": "가입일",
   "account.profile": "프로필",
 
-  // Kalks Trader 배너
+  // Ezymex Trader 배너
   "trader.chip": "실시간 가격",
   "trader.text": "외환, 금속, 지수, 에너지, 암호화폐, 주식 등 {count}개 종목의 실시간 시세와 차트를 제공합니다. 설치 없이 브라우저에서 실행됩니다.",
 
@@ -214,7 +214,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "home.marketsTitle": "시장",
   "home.moreTitle": "추천",
 
-  // Ask Kalks AI on the Overview
+  // Ask Ezymex AI on the Overview
   "ai.title": "{name}에게 질문",
   "ai.subtitle": "계좌, 입금, 거래에 대해 즉시 답변해 드립니다.",
   "ai.placeholder": "계좌나 거래에 대해 무엇이든 물어보세요…",

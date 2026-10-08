@@ -44,7 +44,7 @@ quiz:
     explanation: "A full hedge freezes the floating result but does not remove it. Both legs pay costs, and you still have to decide later which side to close."
 ---
 
-Suppose you are long EURUSD and you place a sell order on EURUSD. What should happen? There are two legitimate answers, and your account's **position mode** decides which one applies. Kalks supports both modes, set per trading account: **netting** and **hedging**. Knowing which you are using is essential, because the same click produces a different result in each.
+Suppose you are long EURUSD and you place a sell order on EURUSD. What should happen? There are two legitimate answers, and your account's **position mode** decides which one applies. Ezymex supports both modes, set per trading account: **netting** and **hedging**. Knowing which you are using is essential, because the same click produces a different result in each.
 
 ## Netting: one position per symbol
 

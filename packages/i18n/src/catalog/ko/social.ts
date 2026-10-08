@@ -1,7 +1,7 @@
 import type { NsMessages } from "../../core";
 
 // Client Area 소셜 트레이딩: 카피 트레이딩 순위표, 전략 제공자, 구독, PAMM 펀드, MAM, 투자.
-// 그대로 유지: Kalks, Kalks Trader, Kalks-Live, PAMM, MAM, NAV, HWM, AUM, DD, SL/TP, USD.
+// 그대로 유지: Ezymex, Ezymex Trader, Ezymex-Live, PAMM, MAM, NAV, HWM, AUM, DD, SL/TP, USD.
 // "마스터" = 다른 사람이 거래를 복사하거나 펀드에 투자하는 승인된 전략 제공자.
 const social: NsMessages<"social"> = {
   // 서버 오류 코드별 오류 메시지
@@ -70,8 +70,8 @@ const social: NsMessages<"social"> = {
   master: "마스터",
   // {r} = 점수 1-10, {level} = 낮음 / 중간 / 높음
   "riskBadge.tooltip": "시스템 위험 점수 {r}/10 · 위험 {level} (최대 손실폭 및 변동성 기준)",
-  "house.disclosure": "Kalks가 운영하는 하우스 전략: 브로커 소유의 실계좌에서 자동화 전략을 실행합니다. 통계는 시작 이후의 실제 거래만 포함하며, 시뮬레이션이나 소급 데이터는 없습니다.",
-  "house.badge": "하우스 전략 · Kalks 운영",
+  "house.disclosure": "Ezymex가 운영하는 하우스 전략: 브로커 소유의 실계좌에서 자동화 전략을 실행합니다. 통계는 시작 이후의 실제 거래만 포함하며, 시뮬레이션이나 소급 데이터는 없습니다.",
+  "house.badge": "하우스 전략 · Ezymex 운영",
   // 프로그램 태그 칩
   "program.copy": "카피",
   "errorState.title": "카피 트레이딩을 이용할 수 없습니다",
@@ -126,7 +126,7 @@ const social: NsMessages<"social"> = {
   "lb.empty.text": "당사 팀이 승인하면 전략 제공자가 여기에 표시됩니다. 실계좌로 거래하고 첫 번째로 신청해 보세요.",
   "lb.searchPlaceholder": "닉네임 또는 전략…",
   "lb.disclaimer": "수익률은 입출금을 제외한 일말 평가 잔액 기준 시간 가중 방식으로 계산됩니다. 과거 성과는 미래 결과를 보장하지 않습니다. 카피 트레이딩과 PAMM 투자에는 손실 위험이 따릅니다.",
-  "lb.houseNote": "“하우스 전략 · Kalks 운영”으로 표시된 마스터는 자동화 전략을 실행하는 브로커 소유의 실계좌입니다. 통계는 시작 이후의 실제 거래만 포함하며, 시뮬레이션이나 소급 데이터는 없습니다.",
+  "lb.houseNote": "“하우스 전략 · Ezymex 운영”으로 표시된 마스터는 자동화 전략을 실행하는 브로커 소유의 실계좌입니다. 통계는 시작 이후의 실제 거래만 포함하며, 시뮬레이션이나 소급 데이터는 없습니다.",
   allocation: "배분액",
   equityStop: "평가 잔액 스톱",
   maxLot: "최대 랏",
@@ -136,7 +136,7 @@ const social: NsMessages<"social"> = {
   lotsUnit: "랏",
   lotsValue: "{lots}랏",
   minAmount: "최소 {amount}",
-  openInTrader: "Kalks Trader에서 열기",
+  openInTrader: "Ezymex Trader에서 열기",
 
   // 팔로우 (마스터 복사) 대화 상자
   "follow.step.sizing": "크기",
@@ -158,13 +158,13 @@ const social: NsMessages<"social"> = {
   "follow.toast.createdDesc": "지갑에서 입금되지 않았습니다. 지갑에서 입금할 수 있습니다.",
   "follow.toast.failed": "복사를 시작하지 못했습니다",
   "follow.done.createdTitle": "카피 계좌가 생성되었습니다",
-  "follow.done.description": "카피 계좌 #{login} · Kalks-Live",
+  "follow.done.description": "카피 계좌 #{login} · Ezymex-Live",
   // <acc>…</acc>는 계좌 번호를 감쌉니다
   "follow.done.okText": "지갑에서 카피 계좌 <acc>#{login}</acc>(으)로 {amount}이(가) 이동했습니다. 지금부터 {name}의 새 거래가 복사됩니다.",
   // 뒤에 서버 사유 (": …") 또는 마침표가 붙습니다
   "follow.done.failText": "카피 계좌 <acc>#{login}</acc>이(가) 생성되었지만 지갑 이체가 처리되지 않았습니다",
   "follow.done.failHint": "지갑에서 입금할 수 있으며, 잔고가 생기면 복사가 시작됩니다.",
-  "follow.done.exitNote": "복사된 거래는 Kalks Trader에서 개별적으로 청산할 수 없습니다. 종료하려면 카피 트레이딩 → 내 구독에서 복사를 중지하세요: 복사된 모든 포지션이 청산되며 잔고를 지갑으로 되돌릴 수 있습니다.",
+  "follow.done.exitNote": "복사된 거래는 Ezymex Trader에서 개별적으로 청산할 수 없습니다. 종료하려면 카피 트레이딩 → 내 구독에서 복사를 중지하세요: 복사된 모든 포지션이 청산되며 잔고를 지갑으로 되돌릴 수 있습니다.",
   "follow.title": "{name} 복사",
   "follow.description": "각 구독은 지갑에서 입금되는 전용 카피 계좌에서 실행됩니다.",
   "follow.confirm": "확인 및 복사 시작",
@@ -198,7 +198,7 @@ const social: NsMessages<"social"> = {
   // {amount} = "$500" 같은 금액 또는 "해당 금액"
   "follow.amountNote": "이 구독을 위해 새 카피 계좌가 개설되고 지갑에서 {amount}이(가) 이동합니다. 이후 카피 계좌의 입출금은 최고 수위에 반영되므로 수수료는 거래 수익에만 부과됩니다.",
   "follow.theAmount": "해당 금액",
-  "follow.reviewBanner": "Kalks-Live에 전용 카피 계좌가 개설되고 지갑에서 입금됩니다.",
+  "follow.reviewBanner": "Ezymex-Live에 전용 카피 계좌가 개설되고 지갑에서 입금됩니다.",
   "follow.excludedSymbols": "제외된 종목",
   // {period} = 매일 / 매주 / 매월
   "follow.feeTerms": "최고 수위 초과분 {fee}% · {period} 정산",
@@ -477,7 +477,7 @@ const social: NsMessages<"social"> = {
   "subs.stop.moveBack": "잔고를 지갑으로 반환",
   "subs.stop.closeAll": "지금 모두 청산",
   "subs.stop.keepOpen": "포지션 유지",
-  "subs.stop.keepText": "복사가 중지됩니다. 복사된 미결 포지션과 주문은 카피 계좌 #{login}에 남아 Kalks Trader에서 직접 관리하는 일반 거래가 됩니다.",
+  "subs.stop.keepText": "복사가 중지됩니다. 복사된 미결 포지션과 주문은 카피 계좌 #{login}에 남아 Ezymex Trader에서 직접 관리하는 일반 거래가 됩니다.",
   "subs.stop.keepFunds": "포지션이 열려 있는 동안에는 가용 증거금만 지갑으로 옮길 수 있으며, 옮기면 마진콜까지의 여유가 줄어듭니다.",
   "subs.stop.confirmKeep": "복사 중지",
   "subs.stop.kept": "복사된 포지션은 카피 계좌 #{login}에 그대로 열려 있으며, 이제 직접 관리합니다.",
@@ -697,7 +697,7 @@ const social: NsMessages<"social"> = {
   "md.fund.credsCopied": "로그인 정보가 복사되었습니다",
   "md.fund.credsCopiedDesc": "비밀번호 관리자에 저장하세요.",
   "md.fund.copyFailed": "복사하지 못했습니다. 각 항목을 개별적으로 복사하세요",
-  "md.fund.credsDesc": "이 로그인 정보로 Kalks Trader에서 펀드 계좌를 거래하세요.",
+  "md.fund.credsDesc": "이 로그인 정보로 Ezymex Trader에서 펀드 계좌를 거래하세요.",
   "md.fund.trade": "펀드 거래",
   "md.fund.creds": "펀드 계좌 로그인 정보",
   "md.fund.copyAll": "모두 복사",
@@ -746,7 +746,7 @@ const social: NsMessages<"social"> = {
   "md.performanceSub": "전략 계좌를 기준으로 플랫폼이 계산",
   "md.pamm.notInProgramme": "내 프로그램에 포함되지 않음",
   "md.pamm.copyOnly": "내 프로그램은 카피 트레이딩 전용입니다. PAMM으로 전환하려면 새로운 검토가 필요하니 고객 지원팀에 문의하세요.",
-  "md.pamm.openText": "투자자가 롤오버 시 매입하는 공동 펀드를 개설하세요. Kalks Trader에서 거래합니다.",
+  "md.pamm.openText": "투자자가 롤오버 시 매입하는 공동 펀드를 개설하세요. Ezymex Trader에서 거래합니다.",
   "md.pamm.create": "PAMM 펀드 만들기",
   "md.yourFunds": "내 펀드",
   "md.yourFundsSub": "투자자, 대기 중인 요청 및 펀드 계좌",
@@ -818,7 +818,7 @@ const social: NsMessages<"social"> = {
   "mam.revoke.now": "지금 취소",
   "mam.revoke.text": "지금부터 계좌에 새 거래가 배분되지 않습니다. 현재까지 발생한 수수료는 즉시 정산됩니다.",
   "mam.revoke.closeTrades": { other: "보유 중인 MAM 거래 {count}건을 지금 시장가로 청산" },
-  "mam.revoke.keepNote": "유지하면 Kalks Trader에서 직접 관리하는 일반 거래가 됩니다.",
+  "mam.revoke.keepNote": "유지하면 Ezymex Trader에서 직접 관리하는 일반 거래가 됩니다.",
   "mam.revoke.noTrades": "이 계좌에는 보유 중인 MAM 거래가 없습니다.",
   "mam.programme": "MAM 프로그램",
   "mam.revoked": "취소됨",
@@ -833,7 +833,7 @@ const social: NsMessages<"social"> = {
   "mam.page.title": "관리 계좌",
   "mam.page.subtitle": "승인된 MAM 매니저에게 실계좌 중 하나에 대한 거래 권한을 부여하세요. 계좌와 자금은 계속 고객님의 소유이며, 언제든지 취소할 수 있습니다.",
   "mam.page.run": "MAM 프로그램 운영",
-  "mam.page.info": "매니저는 연결된 계좌에서 거래를 진입, 변경 및 청산만 할 수 있습니다. 입금, 출금 또는 이체는 절대 할 수 없으며, 보유 거래의 증거금 이하로는 출금할 수 없습니다. 모든 거래는 Kalks Trader에서 MAM 태그와 함께 확인할 수 있습니다.",
+  "mam.page.info": "매니저는 연결된 계좌에서 거래를 진입, 변경 및 청산만 할 수 있습니다. 입금, 출금 또는 이체는 절대 할 수 없으며, 보유 거래의 증거금 이하로는 출금할 수 없습니다. 모든 거래는 Ezymex Trader에서 MAM 태그와 함께 확인할 수 있습니다.",
   "mam.page.yours": "내 관리 계좌",
   "mam.page.activeLinks": { other: "활성 연결 {count}개" },
   "mam.page.noneManaged": "아직 관리 중인 계좌가 없습니다",
@@ -929,7 +929,7 @@ const social: NsMessages<"social"> = {
   "mm.noLinks": "아직 연결된 계좌가 없습니다. 고객은 소셜 → 관리 계좌에서 프로그램을 찾을 수 있습니다.",
   "mm.audit": "배분 감사",
   "mm.auditSub": "마스터 계좌의 모든 블록과 배분 내역",
-  "mm.noBlocks": "아직 블록이 없습니다. Kalks Trader에서 마스터 계좌로 거래하면 각 진입 거래가 연결된 계좌에 배분됩니다.",
+  "mm.noBlocks": "아직 블록이 없습니다. Ezymex Trader에서 마스터 계좌로 거래하면 각 진입 거래가 연결된 계좌에 배분됩니다.",
   "mm.edit.title": "프로그램 편집",
   "mm.edit.description": "수수료 변경은 지금부터 연결되는 계좌에 적용됩니다.",
   "mm.termsTitle": "고객이 동의하는 약관",
@@ -1191,6 +1191,6 @@ const social: NsMessages<"social"> = {
   "md.ann.err": "3자 이상의 제목을 입력하세요.",
   "md.ann.past": "보낸 공지",
   "md.ann.empty": "아직 공지가 없습니다.",
-  "md.ann.rules": "공지는 현재 나를 복사 중인 모든 팔로워에게 알림으로 전달되며, 팔로워가 선택한 경우 이메일로도 전달됩니다. 수익을 약속하거나 Kalks 밖에서 연락하도록 팔로워에게 요청하지 마세요.",
+  "md.ann.rules": "공지는 현재 나를 복사 중인 모든 팔로워에게 알림으로 전달되며, 팔로워가 선택한 경우 이메일로도 전달됩니다. 수익을 약속하거나 Ezymex 밖에서 연락하도록 팔로워에게 요청하지 마세요.",
 };
 export default social;

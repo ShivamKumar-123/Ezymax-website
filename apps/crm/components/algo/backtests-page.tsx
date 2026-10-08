@@ -9,7 +9,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FlaskConical, Loader2, Play, Workflow, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, EmptyState, Menu, PageHeader, Progress, Reveal, Segmented, Skeleton, SymbolAvatar, cn } from "@/components/kit";
-import { Trans, useT } from "@kalks/i18n/react";
+import { Trans, useT } from "@ezymex/i18n/react";
 import { NumInput } from "./builder";
 import { BacktestReport } from "./report";
 import { algoApi, algoError, fmtDate, fmtPct, fmtNum, useAlgo, type BacktestDetail, type BacktestRow, type StrategyItem, type TradingAccount } from "./api";

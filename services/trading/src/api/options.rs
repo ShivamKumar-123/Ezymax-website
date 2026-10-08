@@ -1,6 +1,6 @@
-//! Kalks FX Options HTTP API (README "Kalks FX Options").
+//! Ezymex FX Options HTTP API (README "Ezymex FX Options").
 //!
-//! Terminal (Kalks Trader session, `Authorization: Bearer`):
+//! Terminal (Ezymex Trader session, `Authorization: Bearer`):
 //! * `POST /v1/terminal/options/preview` — prices, money impact, payoff, Greeks; never changes the account.
 //! * `POST /v1/terminal/options/orders` — market, limit (premium) and underlying-trigger orders, 1–8 legs filled
 //!   all or nothing; `clientOrderId` makes a repeat harmless.
@@ -270,7 +270,7 @@ pub async fn place(State(st): State<AppState>, ctx: Ctx, Body(b): Body<OrderBody
         return Err(validation("clientOrderId", "clientOrderId is required (it makes a repeated submit harmless)"));
     }
     // once the order book is live for this account kind, listed (vanilla) options trade there only; barriers stay
-    // Kalks-quoted (docs/OPTIONS-EXCHANGE.md §11: house opens halted)
+    // Ezymex-quoted (docs/OPTIONS-EXCHANGE.md §11: house opens halted)
     if let Some(m) = st.hub.meta(s.login)
         && st.hub.shared.books.venue_enabled(s.tenant_id, m.kind)
         && req.legs.iter().any(|l| l.barrier.is_none())

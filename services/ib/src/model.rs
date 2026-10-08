@@ -90,7 +90,7 @@ pub struct Settings {
     pub wash: WashRules,
     /// Monthly evaluation may also move an IB down (off by default: promotions only).
     pub allow_demotion: bool,
-    /// Public link base for referral links, e.g. `https://app.kalkstrade.com`.
+    /// Public link base for referral links, e.g. `https://app.ezymex.com`.
     pub link_base: String,
 }
 
@@ -124,7 +124,7 @@ impl Default for Settings {
             self_referral: SelfReferral { ip: "block".into(), device: "block".into(), identity: "block".into() },
             wash: WashRules { enabled: true, window_secs: 60, volume_tolerance_pct: dec("10"), short_trades_min: 10, short_trades_pct: dec("50") },
             allow_demotion: false,
-            link_base: "https://app.kalkstrade.com".into(),
+            link_base: "https://app.ezymex.com".into(),
         }
     }
 }
@@ -212,7 +212,7 @@ pub struct Level {
     pub perks: Vec<String>,
     #[serde(default = "default_icon")]
     pub icon: String,
-    /// Kalks FX Options (O34): USD per option **contract** (round turn, paid on the closing deal), separate from
+    /// Ezymex FX Options (O34): USD per option **contract** (round turn, paid on the closing deal), separate from
     /// the CFD per-lot `rates`. 0 until the broker sets it. `None` in a PUT = keep the level's current rate (a
     /// Back Office build that does not know the field yet can never reset it).
     #[serde(default, skip_serializing_if = "Option::is_none")]

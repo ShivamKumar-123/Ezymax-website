@@ -9,7 +9,7 @@ import Link from "next/link";
 import { ArrowUpRight, Briefcase, FileText, Loader2, Settings2, ShieldCheck, Unlink, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, Field, Input, PageHeader, StatusChip, cn, type Column } from "@/components/kit";
-import { Trans, useT } from "@kalks/i18n/react";
+import { Trans, useT } from "@ezymex/i18n/react";
 import { Checkbox } from "@/components/social/controls";
 import { TradeButton } from "@/components/trading/ui";
 import { fmtDate, fmtPrice, serverTime } from "@/components/trading/api";

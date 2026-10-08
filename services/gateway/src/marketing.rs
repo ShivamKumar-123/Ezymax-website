@@ -177,18 +177,18 @@ pub async fn tenant_brand(st: &AppState, slug: &str) -> ApiResult<TenantBrand> {
     let slug: String = r.get("slug");
     let brand: Value = r.get::<sqlx::types::Json<Value>, _>("brand").0;
     let domains: Vec<String> = r.get("domains");
-    let is_kalks = slug == "kalks";
+    let is_ezymex = slug == "ezymex";
     let pick = |prefix: &str| domains.iter().find(|d| d.starts_with(prefix)).map(|d| https(d));
-    let site = if is_kalks && !st.cfg.site_url.is_empty() {
+    let site = if is_ezymex && !st.cfg.site_url.is_empty() {
         st.cfg.site_url.clone()
     } else {
         domains.iter().find(|d| !d.starts_with("app.") && !d.starts_with("admin.") && !d.starts_with("trade.")).map(|d| https(d)).unwrap_or_else(|| st.cfg.site_url.clone())
     };
-    let app_url = if is_kalks && !st.cfg.app_url.is_empty() { st.cfg.app_url.clone() } else { pick("app.").unwrap_or_else(|| st.cfg.app_url.clone()) };
+    let app_url = if is_ezymex && !st.cfg.app_url.is_empty() { st.cfg.app_url.clone() } else { pick("app.").unwrap_or_else(|| st.cfg.app_url.clone()) };
     let support_email = brand["support_email"]
         .as_str()
         .map(str::to_string)
-        .or_else(|| if is_kalks { None } else { r.get::<Option<String>, _>("contact_email") })
+        .or_else(|| if is_ezymex { None } else { r.get::<Option<String>, _>("contact_email") })
         .filter(|e| e.contains('@'))
         .unwrap_or_else(|| st.cfg.support_email.clone());
     Ok(TenantBrand {
@@ -198,7 +198,7 @@ pub async fn tenant_brand(st: &AppState, slug: &str) -> ApiResult<TenantBrand> {
             primary: brand["primary"].as_str().unwrap_or("#ff5a1f").to_string(),
             accent: brand["accent"].as_str().unwrap_or("#e9b949").to_string(),
             logo_url: brand["logo_url"].as_str().filter(|u| u.starts_with("https://")).map(str::to_string),
-            kalks_logo: is_kalks,
+            ezymex_logo: is_ezymex,
             site_url: site.trim_end_matches('/').to_string(),
             support_email,
         },
@@ -399,7 +399,7 @@ mod tests {
 
     #[test]
     fn marketing_email_has_brand_and_unsubscribe() {
-        let b = MailBrand { name: "Broker Two".into(), primary: "#2255ff".into(), accent: "bad".into(), logo_url: None, kalks_logo: false, site_url: "https://b2.test".into(), support_email: "help@b2.test".into() };
+        let b = MailBrand { name: "Broker Two".into(), primary: "#2255ff".into(), accent: "bad".into(), logo_url: None, ezymex_logo: false, site_url: "https://b2.test".into(), support_email: "help@b2.test".into() };
         let m = MarketingMail { subject: "Hi".into(), preheader: String::new(), heading: "Welcome <b>".into(), body: "One\n\nTwo".into(), button: Some(("Deposit".into(), "https://app.b2.test/wallet".into())), unsubscribe_url: "https://app.b2.test/unsubscribe?u=1&s=x".into() };
         let (text, html) = render_marketing(&b, &m);
         assert!(text.contains("Unsubscribe: https://app.b2.test/unsubscribe?u=1&s=x"));
@@ -412,7 +412,7 @@ mod tests {
     async fn consent_suppresses_and_unsubscribe_link_works() {
         let Some(db) = TestDb::new("marketing").await else { return };
         let st = db.st.clone();
-        let tid: i64 = sqlx::query_scalar("SELECT id FROM tenants WHERE slug = 'kalks'").fetch_one(&st.pool).await.unwrap();
+        let tid: i64 = sqlx::query_scalar("SELECT id FROM tenants WHERE slug = 'ezymex'").fetch_one(&st.pool).await.unwrap();
         let uid: i64 = sqlx::query_scalar(
             "INSERT INTO users (tenant_id, email, password_hash, first_name, last_name, phone_dial, phone, country, date_of_birth, referral_code, terms_accepted_at)
              VALUES ($1, 'm@example.com', 'x', 'Ann', 'Lee', '+91', '9000000000', 'IN', '1990-01-01', 'ANN1234', now()) RETURNING id",
@@ -427,8 +427,8 @@ mod tests {
         assert_eq!(attr["utm_campaign"], "launch");
         assert_eq!(attr["marketing_consent"], true);
 
-        let ctx = || Ctx { ip: "127.0.0.1".into(), user_agent: String::new(), device: None, tenant_slug: "kalks".into(), bearer: None };
-        let mail = |test: bool| MailReq { tenant: Some("kalks".into()), user_id: Some(uid), to: Some("staff@example.com".into()), test, subject: "S".into(), preheader: None, heading: "H".into(), body: "B".into(), button_label: Some("Go".into()), button_url: Some("/wallet".into()) };
+        let ctx = || Ctx { ip: "127.0.0.1".into(), user_agent: String::new(), device: None, tenant_slug: "ezymex".into(), bearer: None };
+        let mail = |test: bool| MailReq { tenant: Some("ezymex".into()), user_id: Some(uid), to: Some("staff@example.com".into()), test, subject: "S".into(), preheader: None, heading: "H".into(), body: "B".into(), button_label: Some("Go".into()), button_url: Some("/wallet".into()) };
         let v = send_marketing(State(st.clone()), ctx(), Ok(Json(mail(false)))).await.unwrap().0;
         assert_eq!(v["status"], "logged");
 

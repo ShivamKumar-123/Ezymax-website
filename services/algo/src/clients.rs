@@ -1,5 +1,5 @@
 //! HTTP clients for the services ALGO depends on: market-data (candles, quotes), the trading engine
-//! (documented APIs only: Client Area routes with X-Kalks-User-Id, and terminal sessions obtained through
+//! (documented APIs only: Client Area routes with X-Ezymex-User-Id, and terminal sessions obtained through
 //! the one-time SSO flow, so every order goes through the same checks as a manual one) and the wallet.
 
 use std::collections::HashMap;
@@ -162,9 +162,9 @@ impl Engine {
     }
 
     async fn send(&self, method: Method, path: &str, tenant: &str, user: Option<i64>, bearer: Option<&str>, body: Option<&Value>) -> anyhow::Result<EngineReply> {
-        let mut rb = self.http.request(method, format!("{}{path}", self.base)).header("x-kalks-internal", &self.token).header("x-kalks-tenant", tenant).header("x-forwarded-for", "127.0.0.1").header("user-agent", "kalks-algo");
+        let mut rb = self.http.request(method, format!("{}{path}", self.base)).header("x-ezymex-internal", &self.token).header("x-ezymex-tenant", tenant).header("x-forwarded-for", "127.0.0.1").header("user-agent", "ezymex-algo");
         if let Some(u) = user {
-            rb = rb.header("x-kalks-user-id", u.to_string());
+            rb = rb.header("x-ezymex-user-id", u.to_string());
         }
         if let Some(b) = bearer {
             rb = rb.bearer_auth(b);
@@ -185,13 +185,13 @@ impl Engine {
         let mut rb = self
             .http
             .request(method, format!("{}{path}", self.base))
-            .header("x-kalks-internal", &self.token)
-            .header("x-kalks-tenant", &staff.tenant)
-            .header("x-kalks-staff-id", staff.id.to_string())
-            .header("x-kalks-staff-name", staff.name.bytes().map(|b| if b.is_ascii_alphanumeric() { (b as char).to_string() } else { format!("%{b:02X}") }).collect::<String>())
-            .header("x-kalks-staff-role", &staff.role)
+            .header("x-ezymex-internal", &self.token)
+            .header("x-ezymex-tenant", &staff.tenant)
+            .header("x-ezymex-staff-id", staff.id.to_string())
+            .header("x-ezymex-staff-name", staff.name.bytes().map(|b| if b.is_ascii_alphanumeric() { (b as char).to_string() } else { format!("%{b:02X}") }).collect::<String>())
+            .header("x-ezymex-staff-role", &staff.role)
             .header("x-forwarded-for", "127.0.0.1")
-            .header("user-agent", "kalks-algo");
+            .header("user-agent", "ezymex-algo");
         if let Some(b) = body {
             rb = rb.json(b);
         }
@@ -293,9 +293,9 @@ impl Wallet {
         let r = self
             .http
             .post(format!("{}/v1/wallets/transfers", self.base))
-            .header("x-kalks-internal", &self.token)
-            .header("x-kalks-tenant", tenant)
-            .header("x-kalks-service", "algo")
+            .header("x-ezymex-internal", &self.token)
+            .header("x-ezymex-tenant", tenant)
+            .header("x-ezymex-service", "algo")
             .json(&body)
             .send()
             .await?;

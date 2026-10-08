@@ -6,7 +6,7 @@
 // column on top, the other two side by side. Phones: one column, the most used blocks first.
 
 import * as React from "react";
-import { cn } from "@kalks/ui";
+import { cn } from "@ezymex/ui";
 
 export function OverviewLayout({
   header,
@@ -21,7 +21,7 @@ export function OverviewLayout({
   notifications,
 }: {
   header: React.ReactNode;
-  /** Ask Kalks AI: a card under the title (a compact pill on phones). */
+  /** Ask Ezymex AI: a card under the title (a compact pill on phones). */
   ai?: React.ReactNode;
   kpis: React.ReactNode;
   statistic: React.ReactNode;

@@ -631,9 +631,9 @@ class OrderStatusChip extends StatelessWidget {
   }
 }
 
-/// Barrier legs and house positions are priced by Kalks, not traded on the order book.
-class KalksQuotedTag extends StatelessWidget {
-  const KalksQuotedTag({super.key});
+/// Barrier legs and house positions are priced by Ezymex, not traded on the order book.
+class EzymexQuotedTag extends StatelessWidget {
+  const EzymexQuotedTag({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -647,12 +647,12 @@ class KalksQuotedTag extends StatelessWidget {
         borderRadius: BorderRadius.circular(3),
         border: Border.all(color: k.gold.withValues(alpha: 0.35)),
       ),
-      child: Text(context.t('trader.opt.rfq.kalksQuoted'), style: context.text.micro.copyWith(fontSize: 9, color: k.gold)),
+      child: Text(context.t('trader.opt.rfq.ezymexQuoted'), style: context.text.micro.copyWith(fontSize: 9, color: k.gold)),
     );
   }
 }
 
-/// The ticket's "Kalks-quoted" note while the book is on.
+/// The ticket's "Ezymex-quoted" note while the book is on.
 class HouseRouteNote extends StatelessWidget {
   const HouseRouteNote({super.key});
 
@@ -669,7 +669,7 @@ class HouseRouteNote extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const KalksQuotedTag(),
+          const EzymexQuotedTag(),
           const SizedBox(width: 8),
           Expanded(
             child: Text(

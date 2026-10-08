@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardHeader, useFeedMode } from "@/components/kit";
-import { IS_DEMO } from "@kalks/mock";
+import { IS_DEMO } from "@ezymex/mock";
 
 /**
  * Live builds show prices only from the real feed. While it connects, or if it drops and the price

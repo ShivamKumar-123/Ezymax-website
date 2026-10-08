@@ -1,7 +1,7 @@
 import type { NsMessages } from "../../core";
 
 // Client Area security: sessions, sign-in history, view-only logins (viewers), session guard.
-// "Kalks", "Google" and "JSON" stay as they are.
+// "Ezymex", "Google" and "JSON" stay as they are.
 const security: NsMessages<"security"> = {
   // Shared
   "retry": "আবার চেষ্টা করুন",
@@ -9,7 +9,7 @@ const security: NsMessages<"security"> = {
   "signingOut": "সাইন আউট হচ্ছে…",
   "resetSigningOut": "পাসওয়ার্ড রিসেট করতে আপনাকে সাইন আউট করা হচ্ছে…",
   "error.generic": "কিছু একটা ভুল হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।",
-  "error.network": "Kalks-এর সাথে সংযোগ করা যাচ্ছে না। আপনার সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।",
+  "error.network": "Ezymex-এর সাথে সংযোগ করা যাচ্ছে না। আপনার সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।",
 
   // Device labels from the browser's user agent; browser and OS brand names stay as they are
   "device.unknownBrowser": "অজানা ব্রাউজার",
@@ -227,7 +227,7 @@ const security: NsMessages<"security"> = {
   "page.calendar": "ক্যালেন্ডার",
   // Investor passwords card
   "investor.title": "ইনভেস্টর পাসওয়ার্ড",
-  "investor.text": "প্রতিটি ট্রেডিং অ্যাকাউন্টে Kalks Trader-এ শুধু পড়ার অ্যাক্সেসের জন্য একটি ইনভেস্টর পাসওয়ার্ডও আছে, MT5-এর মতো: পজিশন ও ইতিহাস দেখা যায়, ট্রেড করা যায় না।",
+  "investor.text": "প্রতিটি ট্রেডিং অ্যাকাউন্টে Ezymex Trader-এ শুধু পড়ার অ্যাক্সেসের জন্য একটি ইনভেস্টর পাসওয়ার্ডও আছে, MT5-এর মতো: পজিশন ও ইতিহাস দেখা যায়, ট্রেড করা যায় না।",
   "investor.hint": "অ্যাকাউন্ট পেজে এটি সেট বা পরিবর্তন করুন।",
   "investor.goToAccounts": "অ্যাকাউন্টে যান",
   // Create / edit dialog

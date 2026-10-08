@@ -43,7 +43,7 @@ async fn gw_tenant(State(g): State<MockGateway>, Path(slug): Path<String>) -> ax
 }
 
 async fn ctx_for(st: &AppState, slug: &str) -> Result<Ctx, trading::api::ApiError> {
-    let req = axum::http::Request::builder().header("x-kalks-tenant", slug).body(()).unwrap();
+    let req = axum::http::Request::builder().header("x-ezymex-tenant", slug).body(()).unwrap();
     let (mut parts, _) = req.into_parts();
     Ctx::from_request_parts(&mut parts, st).await
 }
@@ -51,7 +51,7 @@ async fn ctx_for(st: &AppState, slug: &str) -> Result<Ctx, trading::api::ApiErro
 #[tokio::test]
 async fn a_new_broker_is_provisioned_on_its_first_request() {
     let base = std::env::var("TRADING_TEST_DATABASE_URL").unwrap_or_else(|_| "postgres://postgres@127.0.0.1:5433/postgres".into());
-    let db = format!("kalks_trading_tenants_{}", std::process::id());
+    let db = format!("ezymex_trading_tenants_{}", std::process::id());
     let Ok(server) = PgConnectOptions::from_str(&base) else { return };
     if server.clone().database("postgres").connect().await.is_err() {
         eprintln!("SKIP: PostgreSQL not reachable at {base}");
@@ -112,7 +112,7 @@ async fn a_new_broker_is_provisioned_on_its_first_request() {
     };
 
     // the platform broker is served from memory, no lookup
-    assert_eq!(ctx_for(&st, "kalks").await.unwrap().tenant.tenant_id, 1);
+    assert_eq!(ctx_for(&st, "ezymex").await.unwrap().tenant.tenant_id, 1);
     assert_eq!(gw.lookups.load(Ordering::SeqCst), 0);
 
     // a broker the gateway knows: provisioned with the gateway's id and the platform broker's groups
@@ -141,10 +141,10 @@ async fn a_new_broker_is_provisioned_on_its_first_request() {
     // the broker's Back Office can't point a group at the platform broker's spread group (its markups)
     let staff = {
         let req = axum::http::Request::builder()
-            .header("x-kalks-tenant", "qa-northwind")
-            .header("x-kalks-staff-id", "3")
-            .header("x-kalks-staff-name", "Owner")
-            .header("x-kalks-staff-role", "super_admin")
+            .header("x-ezymex-tenant", "qa-northwind")
+            .header("x-ezymex-staff-id", "3")
+            .header("x-ezymex-staff-name", "Owner")
+            .header("x-ezymex-staff-role", "super_admin")
             .body(())
             .unwrap();
         let (mut parts, _) = req.into_parts();

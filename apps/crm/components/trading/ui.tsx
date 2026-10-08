@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowDownToLine, ArrowLeftRight, CandlestickChart, Check, Coins, KeyRound, Layers, Loader2, Lock, MoreHorizontal, PencilLine, RefreshCcw, Gauge as GaugeIcon, Star, StarOff, Trash2, Users, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Chip, CopyButton, Dialog, IconButton, Menu, Money, cn, type ButtonProps } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { useReadOnly } from "@/components/session";
 import { STATUS_LABEL, curOf, errorToast, fmtLevel, levelTone, openTerminal, serverOf, tradingApi, type EngineAccount } from "./api";
 import { DeleteAccountDialog, FlavorChip, RenameDialog, accountFlavor, copyingName } from "./archive";
@@ -48,7 +48,7 @@ export function StatusBadge({ a }: { a: Pick<EngineAccount, "status"> }) {
   );
 }
 
-/** Opens Kalks Trader signed in to this account (one-time SSO token). */
+/** Opens Ezymex Trader signed in to this account (one-time SSO token). */
 export function TradeButton({ a, size = "sm", label, ...rest }: { a: Pick<EngineAccount, "login" | "status"> } & Omit<ButtonProps, "onClick"> & { label?: string }) {
   const t = useT();
   const [busy, setBusy] = React.useState(false);
@@ -232,7 +232,7 @@ export function AccountActions({ a, onChanged }: { a: EngineAccount; onChanged?:
   );
 }
 
-/** Kalks Trader for a copy-trading account: the copy service trades it, the client watches P&L and manages the copy. */
+/** Ezymex Trader for a copy-trading account: the copy service trades it, the client watches P&L and manages the copy. */
 function CopyActions({ a }: { a: EngineAccount }) {
   const t = useT();
   return (

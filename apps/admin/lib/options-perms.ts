@@ -15,7 +15,7 @@
  * | options.config  | underlyings (incl. order-book tick / bands / liquidation / RFQ / mark parameters), vol  | platform_owner, super_admin, admin, options_risk |
  * |                 | surface publish, rates, holidays, group spreads / fees (maker rebate, taker fee) /      |                                                  |
  * |                 | limits, market-maker quoting settings, the listing run and the per-broker module        |                                                  |
- * |                 | switches (Kalks only, checked by the service)                                           |                                                  |
+ * |                 | switches (Ezymex only, checked by the service)                                           |                                                  |
  * | options.dealing | halt / close-only / freeze / manual vol, per-client limits, void option trades; order   | platform_owner, super_admin, admin, dealer,      |
  * |                 | book halt / cancel-only and clearing them, market-maker pause / resume, and the depth   | options_risk                                     |
  * |                 | drill-down WITH OWNERS (an audited view)                                                |                                                  |
@@ -23,9 +23,9 @@
  * |                 | book fill and enable the order book (both FOUR-EYES: a second staff member with this   |                                                  |
  * |                 | permission confirms)                                                                    |                                                  |
  *
- * Platform-wide data (underlyings, rates, holidays, surfaces, fixings, module switches) can only be changed by Kalks
- * staff (tenant `kalks`); the options service enforces that whatever the role. Market-maker settings for every broker
- * (`*`) or another broker are Kalks staff's too (the BFF and the service check it).
+ * Platform-wide data (underlyings, rates, holidays, surfaces, fixings, module switches) can only be changed by Ezymex
+ * staff (tenant `ezymex`); the options service enforces that whatever the role. Market-maker settings for every broker
+ * (`*`) or another broker are Ezymex staff's too (the BFF and the service check it).
  */
 
 export const OPTIONS_PERMS = ["options.read", "options.config", "options.dealing", "options.settle"] as const;
@@ -52,4 +52,4 @@ export function optionsAllows(staff: { role: string; permissions?: string[]; rba
 }
 
 /** The platform broker: only its staff change platform-wide options data (the options service checks it too). */
-export const PLATFORM_TENANT = "kalks";
+export const PLATFORM_TENANT = "ezymex";

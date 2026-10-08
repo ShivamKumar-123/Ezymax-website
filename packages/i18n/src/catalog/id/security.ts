@@ -8,7 +8,7 @@ const security: NsMessages<"security"> = {
   "signingOut": "Sedang keluar…",
   "resetSigningOut": "Mengeluarkan Anda untuk mengatur ulang kata sandi…",
   "error.generic": "Terjadi kesalahan. Silakan coba lagi.",
-  "error.network": "Tidak dapat terhubung ke Kalks. Periksa koneksi Anda dan coba lagi.",
+  "error.network": "Tidak dapat terhubung ke Ezymex. Periksa koneksi Anda dan coba lagi.",
 
   // Device labels from the browser's user agent; browser and OS brand names stay as they are
   "device.unknownBrowser": "Browser tidak dikenal",
@@ -226,7 +226,7 @@ const security: NsMessages<"security"> = {
   "page.calendar": "Kalender",
   // Investor passwords card
   "investor.title": "Kata sandi investor",
-  "investor.text": "Setiap akun trading juga memiliki kata sandi investor untuk akses hanya baca di Kalks Trader, seperti MT5: posisi dan riwayat, tanpa trading.",
+  "investor.text": "Setiap akun trading juga memiliki kata sandi investor untuk akses hanya baca di Ezymex Trader, seperti MT5: posisi dan riwayat, tanpa trading.",
   "investor.hint": "Atur atau ubah di halaman akun.",
   "investor.goToAccounts": "Ke akun",
   // Create / edit dialog

@@ -53,9 +53,9 @@ import {
   Bell,
   ChartSpline,
 } from "lucide-react";
-import type { NavModule } from "@kalks/ui";
-import { IS_DEMO } from "@kalks/mock/mode";
-import type { MessageKey, T } from "@kalks/i18n";
+import type { NavModule } from "@ezymex/ui";
+import { IS_DEMO } from "@ezymex/mock/mode";
+import type { MessageKey, T } from "@ezymex/i18n";
 import { LIVE_GATED } from "@/lib/live";
 
 export const CRM_NAV: NavModule[] = [

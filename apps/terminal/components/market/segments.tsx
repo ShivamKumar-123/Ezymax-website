@@ -2,11 +2,11 @@
 
 import * as React from "react";
 import { Star } from "lucide-react";
-import { ASSET_CLASS_LABEL, type Instrument } from "@kalks/mock";
-import { cn } from "@kalks/ui";
+import { ASSET_CLASS_LABEL, type Instrument } from "@ezymex/mock";
+import { cn } from "@ezymex/ui";
 import type { Segment } from "@/lib/store";
-import { useT } from "@kalks/i18n/react";
-import type { T as Translate } from "@kalks/i18n";
+import { useT } from "@ezymex/i18n/react";
+import type { T as Translate } from "@ezymex/i18n";
 
 export type { Segment };
 

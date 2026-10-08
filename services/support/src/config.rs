@@ -6,7 +6,7 @@ use std::fmt;
 pub struct Config {
     pub bind: String,
     pub database_url: String,
-    /// Shared secret callers send in `X-Kalks-Internal`. Empty = check disabled (development only).
+    /// Shared secret callers send in `X-Ezymex-Internal`. Empty = check disabled (development only).
     pub internal_token: String,
     pub production: bool,
     /// Where chat attachments are stored (private, outside any web root).
@@ -95,10 +95,10 @@ impl Config {
         }
         Ok(Self {
             bind: var("SUPPORT_BIND", "127.0.0.1:8100"),
-            database_url: var("SUPPORT_DATABASE_URL", "postgres://postgres@127.0.0.1:5433/kalks_support"),
+            database_url: var("SUPPORT_DATABASE_URL", "postgres://postgres@127.0.0.1:5433/ezymex_support"),
             internal_token,
             production,
-            storage_dir: var("SUPPORT_STORAGE_DIR", &format!("{}/.kalks-data/support", home())),
+            storage_dir: var("SUPPORT_STORAGE_DIR", &format!("{}/.ezymex-data/support", home())),
             max_attachment_bytes: var("SUPPORT_MAX_ATTACHMENT_MB", "10").parse::<usize>().unwrap_or(10).clamp(1, 25) * 1024 * 1024,
             anthropic_key: var("ANTHROPIC_API_KEY", ""),
             ai_model: var("SUPPORT_AI_MODEL", "claude-opus-5-5"),
@@ -115,7 +115,7 @@ impl Config {
             smtp_port: var("SMTP_PORT", "587").parse().unwrap_or(587),
             smtp_user: var("SMTP_USER", ""),
             smtp_password: var("SMTP_PASSWORD", ""),
-            smtp_from: var("SMTP_FROM", "Kalks <no-reply@kalkstrade.com>"),
+            smtp_from: var("SMTP_FROM", "Ezymex <no-reply@ezymex.com>"),
             academy_glossary: var("SUPPORT_GLOSSARY_FILE", concat!(env!("CARGO_MANIFEST_DIR"), "/../../content/academy/en/glossary.yaml")),
             workers: var("SUPPORT_WORKERS", "true") != "false",
             adapters: var("SUPPORT_ADAPTERS", "true") != "false",
@@ -148,7 +148,7 @@ impl Config {
             smtp_port: 587,
             smtp_user: String::new(),
             smtp_password: String::new(),
-            smtp_from: "Kalks <no-reply@kalkstrade.com>".into(),
+            smtp_from: "Ezymex <no-reply@ezymex.com>".into(),
             academy_glossary: concat!(env!("CARGO_MANIFEST_DIR"), "/../../content/academy/en/glossary.yaml").into(),
             workers: false,
             adapters: false,

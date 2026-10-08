@@ -7,7 +7,7 @@ import * as React from "react";
 import Link from "next/link";
 import { BookOpen, KeyRound, Webhook, Workflow } from "lucide-react";
 import { Button, Card, CardHeader, Chip, CopyButton, PageHeader, Reveal, Segmented, cn } from "@/components/kit";
-import { Trans, useFormat, useT } from "@kalks/i18n/react";
+import { Trans, useFormat, useT } from "@ezymex/i18n/react";
 import { useMeta } from "./api";
 
 const ENDPOINTS: { m: string; p: string; scope: string; text: `developer.docs.ep.${string}`; body?: string }[] = [
@@ -48,7 +48,7 @@ export function LiveDocsPage() {
   const t = useT();
   const f = useFormat();
   const meta = useMeta();
-  const root = meta?.publicUrl ?? "https://api.kalkstrade.com/algo";
+  const root = meta?.publicUrl ?? "https://api.ezymex.com/algo";
   const base = `${root}/public/v1`;
   const [lang, setLang] = React.useState<"curl" | "python" | "node">("curl");
   const sign = {
@@ -58,7 +58,7 @@ TS=$(date +%s000)
 BODY='{"symbol":"EURUSD","side":"buy","volume":0.1}'
 SIG=$(printf '%s' "\${TS}POST/public/v1/orders\${BODY}" | openssl dgst -sha256 -hmac "$SECRET" -hex | sed 's/^.* //')
 curl -X POST ${base}/orders \\
-  -H "X-Kalks-Key: $KEY_ID" -H "X-Kalks-Timestamp: $TS" -H "X-Kalks-Signature: $SIG" \\
+  -H "X-Ezymex-Key: $KEY_ID" -H "X-Ezymex-Timestamp: $TS" -H "X-Ezymex-Signature: $SIG" \\
   -H "content-type: application/json" -d "$BODY"`,
     python: `import hashlib, hmac, json, time, requests
 
@@ -69,7 +69,7 @@ def call(method, path, body=None):
     data = json.dumps(body, separators=(",", ":")) if body is not None else ""
     ts = str(int(time.time() * 1000))
     sig = hmac.new(SECRET.encode(), f"{ts}{method}/public/v1{path}{data}".encode(), hashlib.sha256).hexdigest()
-    h = {"X-Kalks-Key": KEY_ID, "X-Kalks-Timestamp": ts, "X-Kalks-Signature": sig, "content-type": "application/json"}
+    h = {"X-Ezymex-Key": KEY_ID, "X-Ezymex-Timestamp": ts, "X-Ezymex-Signature": sig, "content-type": "application/json"}
     r = requests.request(method, BASE + path, headers=h, data=data or None, timeout=10)
     r.raise_for_status()
     return r.json()
@@ -85,7 +85,7 @@ async function call(method, path, body) {
   const data = body === undefined ? "" : JSON.stringify(body);
   const ts = String(Date.now());
   const sig = crypto.createHmac("sha256", SECRET).update(ts + method + "/public/v1" + path + data).digest("hex");
-  const r = await fetch(BASE + path, { method, body: data || undefined, headers: { "X-Kalks-Key": KEY_ID, "X-Kalks-Timestamp": ts, "X-Kalks-Signature": sig, "content-type": "application/json" } });
+  const r = await fetch(BASE + path, { method, body: data || undefined, headers: { "X-Ezymex-Key": KEY_ID, "X-Ezymex-Timestamp": ts, "X-Ezymex-Signature": sig, "content-type": "application/json" } });
   if (!r.ok) throw new Error((await r.json()).error?.message);
   return r.json();
 }

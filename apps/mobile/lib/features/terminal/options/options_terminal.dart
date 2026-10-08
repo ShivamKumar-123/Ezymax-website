@@ -1,4 +1,4 @@
-// Kalks FX Options mode of Kalks Trader on phones (web: apps/terminal/components/options/mobile.tsx), under the shared
+// Ezymex FX Options mode of Ezymex Trader on phones (web: apps/terminal/components/options/mobile.tsx), under the shared
 // terminal header, with its own bottom bar:
 //   Markets    pick the underlying
 //   Chart      the selected option's premium, or the underlying (and Book while the order book is live, Analytics)

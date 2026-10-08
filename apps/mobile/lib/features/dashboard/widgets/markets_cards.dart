@@ -19,7 +19,7 @@ import '../../markets/markets_feed.dart';
 import '../../news/widgets/world_dots.dart';
 import '../dashboard_data.dart';
 
-/// Opens Kalks Trader on a market (web `${TERMINAL_URL}/?symbol=`).
+/// Opens Ezymex Trader on a market (web `${TERMINAL_URL}/?symbol=`).
 void openTraderSymbol(BuildContext context, String symbol) => context.push('/trader?symbol=$symbol');
 
 /// Live builds show prices only from the real feed: until the first prices arrive, a neutral state instead of

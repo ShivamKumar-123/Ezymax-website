@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Brand and network names stay as they are: Kalks, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
+// Brand and network names stay as they are: Ezymex, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
 // MetaMask, TronLink, Tronscan, USD, USC, KYC.
 const wallet: NsMessages<"wallet"> = {
   // Shared labels
@@ -403,17 +403,17 @@ const wallet: NsMessages<"wallet"> = {
   "demo.linkCopied": "تم نسخ الرابط إلى الحافظة",
   "demo.sendOnlyWarning": "<b>أرسل USDT فقط عبر TRON (TRC20).</b> إرسال أي رمز آخر، أو استخدام ERC20 / BEP20، سيؤدي إلى فقدان الأموال نهائيًا.",
   "demo.arrival": "الوصول",
-  "demo.kalksFee": "رسوم Kalks",
+  "demo.ezymexFee": "رسوم Ezymex",
   "demo.noKycDeposit": "لا يلزم التحقق من الهوية (KYC) للإيداع. التحقق مطلوب فقط قبل أول عملية سحب.",
   // Withdraw
   "demo.addrStartT": "تبدأ عناوين TRC20 بالحرف «T»",
   "demo.addrLength": "يجب أن يتكون من 34 حرفًا ({length}/34)",
   "demo.addrChars": "يحتوي على أحرف غير صالحة (0 وO وI وl غير مسموح بها)",
-  "demo.addrOwn": "هذا هو عنوان إيداع Kalks الخاص بك",
+  "demo.addrOwn": "هذا هو عنوان إيداع Ezymex الخاص بك",
   "demo.justNow": "الآن",
   "demo.codeConfirmed": "تم تأكيد الرمز عبر {email}",
   "demo.financeReviews": "يراجع الفريق المالي كل عملية سحب · عادةً خلال أقل من ساعتين",
-  "demo.sentFromHot": "تُرسل من المحفظة الساخنة لـ Kalks بعد الموافقة",
+  "demo.sentFromHot": "تُرسل من المحفظة الساخنة لـ Ezymex بعد الموافقة",
   "demo.arriveAfter": "تصل الأموال إلى عنوانك بعد 20 تأكيدًا",
   "demo.pendingTitle": "عمليات السحب المعلّقة",
   "demo.awaitingCompletion": "{count} بانتظار الاكتمال",
@@ -472,7 +472,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.alwaysReviewed": "يراجعها الفريق المالي دائمًا",
   "demo.unrecoverable": "لا يمكن استرداد عمليات السحب إلى منصات تداول لا تدعم USDT على TRC20، أو إلى عناوين العقود الذكية.",
   // Transfer
-  "demo.kalksWallet": "محفظة Kalks",
+  "demo.ezymexWallet": "محفظة Ezymex",
   "demo.freeMargin": "الهامش الحر",
   "demo.assetAvailable": "{amount} {asset} متاح · {network}",
   "demo.throughWallet": "تمر التحويلات دائمًا عبر محفظتك.",
@@ -507,7 +507,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.rule4Title": "حماية الهامش الحر",
   "demo.rule4Text": "يمكنك نقل ما يسمح به هامشك الحر فقط، لتبقى صفقاتك المفتوحة في أمان.",
   "demo.into": "إلى",
-  "demo.intoKalksWallet": "إلى محفظة Kalks الخاصة بك",
+  "demo.intoEzymexWallet": "إلى محفظة Ezymex الخاصة بك",
   "demo.freeMarginAfter": "الهامش الحر بعد التحويل",
   "demo.marginLevelAfter": "مستوى الهامش بعد التحويل",
   "demo.convertedNote": "يتم تحويل {asset} إلى USD بالسعر المباشر ناقص هامش {markup}%. يتحدّث السعر مع كل تيك حتى تؤكد.",

@@ -1,4 +1,4 @@
-//! Kalks strategy language (D82): a small, safe, Python-like expression language interpreted in a sandbox.
+//! Ezymex strategy language (D82): a small, safe, Python-like expression language interpreted in a sandbox.
 //!
 //! ```text
 //! # settings (calls)                       # signals (assignments)

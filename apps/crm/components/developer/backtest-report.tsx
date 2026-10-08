@@ -3,8 +3,8 @@
 import * as React from "react";
 import { motion } from "motion/react";
 import { Card, CardHeader, Chip, DataTable, KeyValue, Money, Starfield, cn, formatMoney, type Column } from "@/components/kit";
-import { getInstrument } from "@kalks/mock";
-import { MONTH_LABELS, monteCarlo, serverTime, type BacktestResult, type BtPoint, type BtTrade } from "@kalks/mock/algo";
+import { getInstrument } from "@ezymex/mock";
+import { MONTH_LABELS, monteCarlo, serverTime, type BacktestResult, type BtPoint, type BtTrade } from "@ezymex/mock/algo";
 
 function useWidth(initial = 600) {
   const ref = React.useRef<HTMLDivElement>(null);

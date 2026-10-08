@@ -1,14 +1,14 @@
 "use client";
 
 // Browser side of the trading BFF (app/api/trading/[...path]/route.ts). Live builds only: demo builds keep
-// the mock accounts from @kalks/mock.
+// the mock accounts from @ezymex/mock.
 
 import * as React from "react";
 import { toast } from "sonner";
-import { tr } from "@kalks/i18n/react";
-import { intlTag } from "@kalks/i18n/locales";
-import type { MessageKey } from "@kalks/i18n";
-import { readCached, writeCached } from "@kalks/ui/swr-cache";
+import { tr } from "@ezymex/i18n/react";
+import { intlTag } from "@ezymex/i18n/locales";
+import type { MessageKey } from "@ezymex/i18n";
+import { readCached, writeCached } from "@ezymex/ui/swr-cache";
 import type { DealOption, InstrumentFilter, PositionOption } from "./option-deal";
 
 /* ------------------------------------------------------------------ */
@@ -100,7 +100,7 @@ export interface EnginePosition {
   source: string;
   platform: string;
   comment: string;
-  /** Kalks FX Options position: `symbol` is the series code, `volume` the contracts, prices are premiums per unit
+  /** Ezymex FX Options position: `symbol` is the series code, `volume` the contracts, prices are premiums per unit
    *  of the underlying (null on CFD positions). */
   option?: PositionOption | null;
   /** Options: value now and signed premium booked at open, both in the account currency. */
@@ -125,7 +125,7 @@ export interface EngineOrder {
   doneAt?: string | null;
   fillPrice?: number | null;
   reason?: string | null;
-  /** Kalks FX Options pending order (`symbol` = the first leg's series code). */
+  /** Ezymex FX Options pending order (`symbol` = the first leg's series code). */
   option?: { legs?: { series: string; side: "buy" | "sell"; contracts: number; option?: PositionOption }[]; limitPremium?: number | null } | null;
 }
 
@@ -150,7 +150,7 @@ export interface EngineDeal {
   source: string;
   comment: string;
   reversed?: boolean;
-  /** "option" for Kalks FX Options deals (volume = contracts, price = premium per unit), "cfd" otherwise. */
+  /** "option" for Ezymex FX Options deals (volume = contracts, price = premium per unit), "cfd" otherwise. */
   instrument?: "option" | "cfd" | null;
   option?: DealOption | null;
 }
@@ -251,7 +251,7 @@ export function errorToast(title: string, e: unknown) {
 }
 
 /** Polls `path` every `ms` while the tab is visible. `reload()` refetches at once.
- *  A page opened again starts from this tab's last answer while it refetches (@kalks/ui/swr-cache: per session,
+ *  A page opened again starts from this tab's last answer while it refetches (@ezymex/ui/swr-cache: per session,
  *  cleared by any write, so nothing from before a change the client just made is shown). */
 export function usePoll<T>(path: string | null, ms: number) {
   const [data, setData] = React.useState<T | null>(() => (path ? (readCached<T>(`trading:${path}`) ?? null) : null));
@@ -297,7 +297,7 @@ export const useAccounts = (ms = 5000) => usePoll<{ accounts: EngineAccount[] }>
 export const useGroups = () => usePoll<{ groups: EngineGroup[] }>("groups", 0);
 
 /**
- * Trade button: asks for a one-time SSO token and opens Kalks Trader at `/?sso=<token>`.
+ * Trade button: asks for a one-time SSO token and opens Ezymex Trader at `/?sso=<token>`.
  * The tab is opened synchronously (inside the click) so popup blockers let it through.
  */
 export async function openTerminal(login: number) {
@@ -331,7 +331,7 @@ export const modeLabel = (m: string) => (m === "netting" ? "Netting" : "Hedging"
 export const accountTitle = (a: Pick<EngineAccount, "groupName" | "mode">) => `${a.groupName} · ${modeLabel(a.mode)}`;
 
 /** MT5-style server name shown next to the login (D4). */
-export const serverOf = (a: { type: AccountKind }) => (a.type === "live" ? "Kalks-Live" : "Kalks-Demo");
+export const serverOf = (a: { type: AccountKind }) => (a.type === "live" ? "Ezymex-Live" : "Ezymex-Demo");
 
 export function levelTone(ml: number | null | undefined): "up" | "warn" | "down" | undefined {
   if (ml === null || ml === undefined || !Number.isFinite(ml)) return undefined;

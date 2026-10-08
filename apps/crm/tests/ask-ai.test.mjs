@@ -1,4 +1,4 @@
-// Ask Kalks AI routing (lib/ask-ai.ts): `node --test apps/crm/tests`.
+// Ask Ezymex AI routing (lib/ask-ai.ts): `node --test apps/crm/tests`.
 // Guards the production bug of 2026-10-07: questions asked while a request for a person was open were appended to
 // that "waiting" conversation, which the bot never answers, so the card waited forever.
 

@@ -1,5 +1,5 @@
 // Keys for this namespace. English is the source; translations live in ../<lang>/market.ts.
-// Kalks Trader left panels: Market Watch (quotes list), segment chips and Navigator.
+// Ezymex Trader left panels: Market Watch (quotes list), segment chips and Navigator.
 const market = {
   // Market Watch header and tabs
   title: "Market Watch",
@@ -72,7 +72,7 @@ const market = {
   "nav.guest": "guest",
   "nav.noAccount": "No trading account yet",
   "nav.openAccount": "Open account",
-  "nav.openAccountTitle": "Create your Kalks account (opens the Client Area)",
+  "nav.openAccountTitle": "Create your Ezymex account (opens the Client Area)",
   "nav.signIn": "Sign in",
   "nav.signInTitle": "Sign in to the Client Area",
   "nav.accountType.live": "live",

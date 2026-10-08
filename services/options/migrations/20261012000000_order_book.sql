@@ -1,8 +1,8 @@
--- Kalks FX Options order book (docs/OPTIONS-EXCHANGE.md, decision O49): the options-service side.
+-- Ezymex FX Options order book (docs/OPTIONS-EXCHANGE.md, decision O49): the options-service side.
 -- * Per-underlying order-book parameters (§2, §5, §6, §8): price tick, market / limit bands, liquidation band and
 --   backstop fee, RFQ quote lifetime, mark clamp rules. minContracts / contractStep / maxContracts already exist.
 -- * Group maker / taker fees per contract (§7).
--- * The Kalks market maker's quoting parameters (§4), delivered to the engine in the snapshot as `mm[]`.
+-- * The Ezymex market maker's quoting parameters (§4), delivered to the engine in the snapshot as `mm[]`.
 -- Everything here is published in the versioned engine snapshot (every write bumps meta.version).
 
 -- ---------------------------------------------------------------- underlyings (§2, §5, §6, §8)
@@ -61,9 +61,9 @@ ALTER TABLE group_settings
 
 -- The platform default row: a 0.05 USD maker rebate and a 0.25 USD taker fee per contract.
 UPDATE group_settings SET maker_fee_per_contract = -0.05, taker_fee_per_contract = 0.25
- WHERE tenant = 'kalks' AND group_code = '*' AND symbol = '*' AND maker_fee_per_contract IS NULL AND taker_fee_per_contract IS NULL;
+ WHERE tenant = 'ezymex' AND group_code = '*' AND symbol = '*' AND maker_fee_per_contract IS NULL AND taker_fee_per_contract IS NULL;
 
--- ---------------------------------------------------------------- Kalks market maker (§4)
+-- ---------------------------------------------------------------- Ezymex market maker (§4)
 -- Quoting parameters per (tenant or '*', account kind live / demo / '*', underlying or '*'). The most specific row
 -- wins: tenant > kind > underlying (tenant + kind + underlying first, '*, *, *' last). Spreads are decimal vols each
 -- side of the smile vol per tenor bucket (0DTE, <= 7 days, <= 30 days, longer). Limits withdraw a side: net delta in

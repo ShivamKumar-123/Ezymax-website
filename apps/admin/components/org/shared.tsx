@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { Check } from "lucide-react";
-import { Chip, cn } from "@kalks/ui";
-import { ORG_DESKS, ORG_ROLE_META, type OrgDeskKey, type OrgRoleKey, type OrgTwoFa } from "@kalks/mock/admin-platform-security";
+import { Chip, cn } from "@ezymex/ui";
+import { ORG_DESKS, ORG_ROLE_META, type OrgDeskKey, type OrgRoleKey, type OrgTwoFa } from "@ezymex/mock/admin-platform-security";
 
 export function RoleChip({ role, size = "sm" }: { role: OrgRoleKey; size?: "sm" | "md" }) {
   const m = ORG_ROLE_META[role];

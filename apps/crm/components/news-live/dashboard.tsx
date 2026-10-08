@@ -6,7 +6,7 @@ import { Button, Card, CardHeader, Chip, Skeleton, WorldMap, cn } from "@/compon
 import { useNewsApi, type CalendarWeek, type Feed, type NewsItem, type NewsMap } from "./api";
 import { StoryDialog, useMapPins } from "./news-page";
 import { Flag, ago, coverFor, gmt, useNow } from "./shared";
-import { useFormat, useT } from "@kalks/i18n/react";
+import { useFormat, useT } from "@ezymex/i18n/react";
 
 /** Dashboard: latest headlines (pinned first). */
 export function LiveNewsCard() {

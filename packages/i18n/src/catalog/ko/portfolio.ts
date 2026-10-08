@@ -72,7 +72,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "kpi.demo": "데모 {count}",
   "alloc.title": "평가 잔액 배분",
   "alloc.subtitle": "실계좌, USD 환산",
-  "alloc.noEquity": "실계좌에 아직 평가 잔액이 없습니다. Kalks 지갑에서 입금하세요.",
+  "alloc.noEquity": "실계좌에 아직 평가 잔액이 없습니다. Ezymex 지갑에서 입금하세요.",
   "alloc.noLive": "실계좌를 개설하면 평가 잔액 배분이 여기에 표시됩니다.",
   "accounts.subtitle": "계좌별 평가 잔액 및 증거금",
   "accounts.manage": "관리",

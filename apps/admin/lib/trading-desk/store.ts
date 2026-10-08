@@ -3,7 +3,7 @@
  *
  * There is no trading-engine backend yet, so LocalTradingDesk keeps the desk state (positions, pending
  * orders, closing deals, controls, routing rules and the audit log) in memory, persisted to localStorage,
- * seeded from the @kalks/mock admin-trading data. Every mutation goes through a typed method of
+ * seeded from the @ezymex/mock admin-trading data. Every mutation goes through a typed method of
  * TradingDeskApi and appends immutable AuditEntry records (staff, action, tickets, before/after, reason).
  *
  * Intended trading-engine REST contract (a RestTradingDesk implements the same interface; every write
@@ -28,9 +28,9 @@
  *   PUT    /v1/dealing/routing/rules             RoutingRule[]   · PUT /v1/dealing/routing/quick { login|group, book|null }
  *   GET    /v1/dealing/audit?staff=&action=&ticket=&from=&to=      → AuditEntry[] (append-only)
  */
-import { INSTRUMENT_MAP, getInstrument, priceFeed, rebaseTrades } from "@kalks/mock";
-import { ADMIN_ORDERS, ADMIN_POSITIONS, DEALER_OVERRIDES, ROUTING_RULES, type AdminOrder, type RoutingRule, type TradingGroup } from "@kalks/mock/admin-trading";
-import { getClient } from "@kalks/mock/admin-clients";
+import { INSTRUMENT_MAP, getInstrument, priceFeed, rebaseTrades } from "@ezymex/mock";
+import { ADMIN_ORDERS, ADMIN_POSITIONS, DEALER_OVERRIDES, ROUTING_RULES, type AdminOrder, type RoutingRule, type TradingGroup } from "@ezymex/mock/admin-trading";
+import { getClient } from "@ezymex/mock/admin-clients";
 import {
   REASON_ERROR_CORRECTION,
   accountMetrics,
@@ -69,7 +69,7 @@ import type {
   TradingDeskApi,
 } from "./types";
 
-const STORAGE_KEY = "kalks.tradingDesk.v1";
+const STORAGE_KEY = "ezymex.tradingDesk.v1";
 const VERSION = 1;
 const nowIso = () => new Date().toISOString();
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T;

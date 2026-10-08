@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader charts: toolbar, drawing tools, legend, trade lines, context menu, one-click panel.
+// Ezymex Trader charts: toolbar, drawing tools, legend, trade lines, context menu, one-click panel.
 const chart: NsMessages<"chart"> = {
   // Tab biểu đồ
   "tab.visibleInGrid": "Hiển thị trong lưới",
@@ -46,7 +46,7 @@ const chart: NsMessages<"chart"> = {
   "tool.text": "Văn bản",
   "tool.ruler": "Thước đo",
   "tool.coming": "{tool} sắp ra mắt",
-  "tool.comingText": "Có trong bản Kalks Trader tiếp theo.",
+  "tool.comingText": "Có trong bản Ezymex Trader tiếp theo.",
   "tool.deleteAll": "Xóa tất cả đối tượng",
   "tool.noObjects": "Không có đối tượng trên biểu đồ này",
   "tool.deleted": { other: "Đã xóa {count} đối tượng" },

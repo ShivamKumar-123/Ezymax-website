@@ -1,10 +1,10 @@
--- Kalks ALGO service (services/algo): strategies, backtests, runtime deployments, webhook signals,
+-- Ezymex ALGO service (services/algo): strategies, backtests, runtime deployments, webhook signals,
 -- public API keys, marketplace. Every table carries tenant_id with an RLS policy on
--- current_setting('kalks.tenant_id'); the service connects as the table owner and filters by tenant itself.
+-- current_setting('ezymex.tenant_id'); the service connects as the table owner and filters by tenant itself.
 
 CREATE TABLE strategies (
     id              BIGSERIAL PRIMARY KEY,
-    tenant_id       TEXT NOT NULL DEFAULT 'kalks',
+    tenant_id       TEXT NOT NULL DEFAULT 'ezymex',
     user_id         BIGINT NOT NULL,
     name            TEXT NOT NULL,
     symbol          TEXT NOT NULL,
@@ -22,7 +22,7 @@ CREATE INDEX strategies_user ON strategies (tenant_id, user_id, updated_at DESC)
 -- Versions are immutable: deployments, backtests and listings point at an exact version.
 CREATE TABLE strategy_versions (
     id              BIGSERIAL PRIMARY KEY,
-    tenant_id       TEXT NOT NULL DEFAULT 'kalks',
+    tenant_id       TEXT NOT NULL DEFAULT 'ezymex',
     strategy_id     BIGINT NOT NULL REFERENCES strategies(id) ON DELETE CASCADE,
     version         INT NOT NULL,
     kind            TEXT NOT NULL CHECK (kind IN ('visual', 'code')),
@@ -39,7 +39,7 @@ CREATE TABLE strategy_versions (
 
 CREATE TABLE backtests (
     id              BIGSERIAL PRIMARY KEY,
-    tenant_id       TEXT NOT NULL DEFAULT 'kalks',
+    tenant_id       TEXT NOT NULL DEFAULT 'ezymex',
     user_id         BIGINT NOT NULL,
     strategy_id     BIGINT NOT NULL REFERENCES strategies(id) ON DELETE CASCADE,
     version_id      BIGINT NOT NULL REFERENCES strategy_versions(id),
@@ -61,7 +61,7 @@ CREATE INDEX backtests_queue ON backtests (status, created_at) WHERE status IN (
 -- A strategy version running 24/7 on one trading account.
 CREATE TABLE deployments (
     id              BIGSERIAL PRIMARY KEY,
-    tenant_id       TEXT NOT NULL DEFAULT 'kalks',
+    tenant_id       TEXT NOT NULL DEFAULT 'ezymex',
     user_id         BIGINT NOT NULL,
     strategy_id     BIGINT NOT NULL REFERENCES strategies(id),
     version_id      BIGINT NOT NULL REFERENCES strategy_versions(id),
@@ -84,7 +84,7 @@ CREATE INDEX deployments_running ON deployments (status) WHERE status IN ('runni
 
 CREATE TABLE deployment_positions (
     ticket          BIGINT PRIMARY KEY,
-    tenant_id       TEXT NOT NULL DEFAULT 'kalks',
+    tenant_id       TEXT NOT NULL DEFAULT 'ezymex',
     deployment_id   BIGINT NOT NULL REFERENCES deployments(id) ON DELETE CASCADE,
     symbol          TEXT NOT NULL,
     side            TEXT NOT NULL,
@@ -101,7 +101,7 @@ CREATE INDEX deployment_positions_dep ON deployment_positions (deployment_id, op
 
 CREATE TABLE deployment_logs (
     id              BIGSERIAL PRIMARY KEY,
-    tenant_id       TEXT NOT NULL DEFAULT 'kalks',
+    tenant_id       TEXT NOT NULL DEFAULT 'ezymex',
     deployment_id   BIGINT NOT NULL REFERENCES deployments(id) ON DELETE CASCADE,
     at              TIMESTAMPTZ NOT NULL DEFAULT now(),
     level           TEXT NOT NULL DEFAULT 'info',
@@ -113,7 +113,7 @@ CREATE INDEX deployment_logs_dep ON deployment_logs (deployment_id, id DESC);
 -- Verified track record: realized P&L per server day, from the engine's deals.
 CREATE TABLE deployment_daily (
     deployment_id   BIGINT NOT NULL REFERENCES deployments(id) ON DELETE CASCADE,
-    tenant_id       TEXT NOT NULL DEFAULT 'kalks',
+    tenant_id       TEXT NOT NULL DEFAULT 'ezymex',
     day             DATE NOT NULL,
     realized        NUMERIC(20, 2) NOT NULL DEFAULT 0,
     trades          INT NOT NULL DEFAULT 0,
@@ -123,7 +123,7 @@ CREATE TABLE deployment_daily (
 
 -- Per-user kill switch (D84): stops every deployment, webhook and API trade of the user.
 CREATE TABLE user_controls (
-    tenant_id       TEXT NOT NULL DEFAULT 'kalks',
+    tenant_id       TEXT NOT NULL DEFAULT 'ezymex',
     user_id         BIGINT NOT NULL,
     killed          BOOLEAN NOT NULL DEFAULT FALSE,
     killed_at       TIMESTAMPTZ,
@@ -133,7 +133,7 @@ CREATE TABLE user_controls (
 );
 
 CREATE TABLE settings (
-    tenant_id       TEXT NOT NULL DEFAULT 'kalks',
+    tenant_id       TEXT NOT NULL DEFAULT 'ezymex',
     key             TEXT NOT NULL,
     value           JSONB NOT NULL,
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -143,7 +143,7 @@ CREATE TABLE settings (
 
 CREATE TABLE webhooks (
     id              BIGSERIAL PRIMARY KEY,
-    tenant_id       TEXT NOT NULL DEFAULT 'kalks',
+    tenant_id       TEXT NOT NULL DEFAULT 'ezymex',
     user_id         BIGINT NOT NULL,
     name            TEXT NOT NULL,
     token_hash      TEXT NOT NULL UNIQUE,
@@ -158,7 +158,7 @@ CREATE INDEX webhooks_user ON webhooks (tenant_id, user_id);
 -- Fan-out (D85): one alert → several of the user's own accounts, each with its own sizing.
 CREATE TABLE webhook_routes (
     id              BIGSERIAL PRIMARY KEY,
-    tenant_id       TEXT NOT NULL DEFAULT 'kalks',
+    tenant_id       TEXT NOT NULL DEFAULT 'ezymex',
     webhook_id      BIGINT NOT NULL REFERENCES webhooks(id) ON DELETE CASCADE,
     login           BIGINT NOT NULL,
     account_type    TEXT NOT NULL,
@@ -170,7 +170,7 @@ CREATE TABLE webhook_routes (
 
 CREATE TABLE webhook_events (
     id              BIGSERIAL PRIMARY KEY,
-    tenant_id       TEXT NOT NULL DEFAULT 'kalks',
+    tenant_id       TEXT NOT NULL DEFAULT 'ezymex',
     webhook_id      BIGINT NOT NULL REFERENCES webhooks(id) ON DELETE CASCADE,
     user_id         BIGINT NOT NULL,
     received_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -188,7 +188,7 @@ CREATE INDEX webhook_events_recent ON webhook_events (tenant_id, received_at DES
 -- recomputed to verify a request, so the database alone cannot reveal or forge a key.
 CREATE TABLE api_keys (
     id              BIGSERIAL PRIMARY KEY,
-    tenant_id       TEXT NOT NULL DEFAULT 'kalks',
+    tenant_id       TEXT NOT NULL DEFAULT 'ezymex',
     user_id         BIGINT NOT NULL,
     login           BIGINT NOT NULL,
     account_type    TEXT NOT NULL,
@@ -210,7 +210,7 @@ CREATE INDEX api_keys_user ON api_keys (tenant_id, user_id);
 
 CREATE TABLE api_requests (
     id              BIGSERIAL PRIMARY KEY,
-    tenant_id       TEXT NOT NULL DEFAULT 'kalks',
+    tenant_id       TEXT NOT NULL DEFAULT 'ezymex',
     key_id          BIGINT NOT NULL REFERENCES api_keys(id) ON DELETE CASCADE,
     at              TIMESTAMPTZ NOT NULL DEFAULT now(),
     method          TEXT NOT NULL,
@@ -224,7 +224,7 @@ CREATE INDEX api_requests_key ON api_requests (key_id, at DESC);
 -- Marketplace (D83).
 CREATE TABLE listings (
     id              BIGSERIAL PRIMARY KEY,
-    tenant_id       TEXT NOT NULL DEFAULT 'kalks',
+    tenant_id       TEXT NOT NULL DEFAULT 'ezymex',
     author_user_id  BIGINT NOT NULL,
     author_name     TEXT NOT NULL,
     strategy_id     BIGINT NOT NULL REFERENCES strategies(id),
@@ -251,7 +251,7 @@ CREATE INDEX listings_status ON listings (tenant_id, status, updated_at DESC);
 
 CREATE TABLE subscriptions (
     id              BIGSERIAL PRIMARY KEY,
-    tenant_id       TEXT NOT NULL DEFAULT 'kalks',
+    tenant_id       TEXT NOT NULL DEFAULT 'ezymex',
     listing_id      BIGINT NOT NULL REFERENCES listings(id),
     user_id         BIGINT NOT NULL,
     mode            TEXT NOT NULL CHECK (mode IN ('copy', 'clone')),
@@ -271,7 +271,7 @@ CREATE INDEX subscriptions_listing ON subscriptions (listing_id);
 
 CREATE TABLE subscription_payments (
     id              BIGSERIAL PRIMARY KEY,
-    tenant_id       TEXT NOT NULL DEFAULT 'kalks',
+    tenant_id       TEXT NOT NULL DEFAULT 'ezymex',
     subscription_id BIGINT NOT NULL REFERENCES subscriptions(id),
     amount          NUMERIC(20, 2) NOT NULL,
     platform_fee    NUMERIC(20, 2) NOT NULL,
@@ -286,7 +286,7 @@ CREATE TABLE subscription_payments (
 
 CREATE TABLE reviews (
     id              BIGSERIAL PRIMARY KEY,
-    tenant_id       TEXT NOT NULL DEFAULT 'kalks',
+    tenant_id       TEXT NOT NULL DEFAULT 'ezymex',
     listing_id      BIGINT NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
     user_id         BIGINT NOT NULL,
     user_name       TEXT NOT NULL,
@@ -299,7 +299,7 @@ CREATE TABLE reviews (
 
 CREATE TABLE ai_requests (
     id              BIGSERIAL PRIMARY KEY,
-    tenant_id       TEXT NOT NULL DEFAULT 'kalks',
+    tenant_id       TEXT NOT NULL DEFAULT 'ezymex',
     user_id         BIGINT NOT NULL,
     at              TIMESTAMPTZ NOT NULL DEFAULT now(),
     target          TEXT NOT NULL,
@@ -312,7 +312,7 @@ CREATE INDEX ai_requests_user ON ai_requests (tenant_id, user_id, at DESC);
 
 CREATE TABLE audit_log (
     id              BIGSERIAL PRIMARY KEY,
-    tenant_id       TEXT NOT NULL DEFAULT 'kalks',
+    tenant_id       TEXT NOT NULL DEFAULT 'ezymex',
     at              TIMESTAMPTZ NOT NULL DEFAULT now(),
     actor           TEXT NOT NULL,
     action          TEXT NOT NULL,
@@ -329,6 +329,6 @@ BEGIN
         'listings','subscriptions','subscription_payments','reviews','ai_requests','audit_log']
     LOOP
         EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
-        EXECUTE format('CREATE POLICY tenant_isolation ON %I USING (tenant_id = current_setting(''kalks.tenant_id'', true))', t);
+        EXECUTE format('CREATE POLICY tenant_isolation ON %I USING (tenant_id = current_setting(''ezymex.tenant_id'', true))', t);
     END LOOP;
 END $$;

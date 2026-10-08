@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Download, RefreshCw, Search, ShieldCheck, X } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, EmptyState, KeyValue, PageHeader, Reveal, Segmented, type Column } from "@kalks/ui";
+import { Avatar, Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, EmptyState, KeyValue, PageHeader, Reveal, Segmented, type Column } from "@ezymex/ui";
 import { ErrorState, FilterSelect, Mono, Pager, TableSkeleton, actionLabel, actionTone, ago, device, downloadCsv, qs, useApi, useDebounced, useNow, when } from "./kit";
 import type { AuditEvent, AuditPage, Stats } from "./types";
 import { useCan } from "@/components/staff-session";

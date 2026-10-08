@@ -301,7 +301,7 @@ pub async fn deliver(st: &AppState, tenant: &str, n: NewNotification) -> anyhow:
             Some(to) => {
                 let url = n.link.as_deref().map(|l| if l.starts_with("http") { l.to_string() } else { format!("{}{}", st.cfg.app_url, l) });
                 let footer = format!("You get this email because {} notifications are on. Change it in the Client Area under Profile -> Notifications.", PREF_KEYS.iter().find(|x| x.key == key).map(|x| x.label.to_lowercase()).unwrap_or_default());
-                let (text, html) = mailer::render(&title, &body, url.as_deref().map(|u| ("Open Kalks", u)), &footer);
+                let (text, html) = mailer::render(&title, &body, url.as_deref().map(|u| ("Open Ezymex", u)), &footer);
                 let subject = n.email_subject.clone().unwrap_or_else(|| title.clone());
                 queue_email(st, tenant, &to, &subject, &text, &html, &n.kind).await?;
                 emailed = true;

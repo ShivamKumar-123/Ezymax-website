@@ -5,8 +5,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { ArrowUp, Check, Sparkles, Undo2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Card, CardHeader, Chip, cn } from "@/components/kit";
-import { ME } from "@kalks/mock";
-import { AI_SUGGESTIONS, aiDraft, type StrategyRules } from "@kalks/mock/algo";
+import { ME } from "@ezymex/mock";
+import { AI_SUGGESTIONS, aiDraft, type StrategyRules } from "@ezymex/mock/algo";
 
 interface Msg {
   id: number;

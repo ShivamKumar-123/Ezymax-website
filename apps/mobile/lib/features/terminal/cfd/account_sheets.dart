@@ -1,4 +1,4 @@
-// Accounts of Kalks Trader: the list used by the Account tab and the header's switcher (web MAccountRow: Live / Demo,
+// Accounts of Ezymex Trader: the list used by the Account tab and the header's switcher (web MAccountRow: Live / Demo,
 // login, group · mode · leverage, equity; one tap switches, opening the client's own account if needed), and the
 // MT5-style "Login to trade account" sheet (web EngineLoginForm: login, password, server; the investor password opens
 // a read-only session).
@@ -210,7 +210,7 @@ Future<void> showAddAccountSheet(BuildContext context, {String? login}) => showK
 );
 
 /// Demo logins start at 50 000 001, live at 10 000 001 (web serverForLogin).
-String? serverForLogin(String login) => RegExp(r'^\d{8}$').hasMatch(login) ? (login.startsWith('5') ? 'Kalks-Demo' : 'Kalks-Live') : null;
+String? serverForLogin(String login) => RegExp(r'^\d{8}$').hasMatch(login) ? (login.startsWith('5') ? 'Ezymex-Demo' : 'Ezymex-Live') : null;
 
 class _AddAccountForm extends ConsumerStatefulWidget {
   const _AddAccountForm({this.initialLogin});
@@ -223,7 +223,7 @@ class _AddAccountForm extends ConsumerStatefulWidget {
 class _AddAccountFormState extends ConsumerState<_AddAccountForm> {
   late final TextEditingController _login = TextEditingController(text: widget.initialLogin ?? '');
   final TextEditingController _password = TextEditingController();
-  late String _server = serverForLogin(widget.initialLogin ?? '') ?? 'Kalks-Live';
+  late String _server = serverForLogin(widget.initialLogin ?? '') ?? 'Ezymex-Live';
   bool _show = false;
   bool _busy = false;
   String? _error;
@@ -319,14 +319,14 @@ class _AddAccountFormState extends ConsumerState<_AddAccountForm> {
           const SizedBox(height: 6),
           KSegmented<String>(
             plain: true,
-            values: const ['Kalks-Live', 'Kalks-Demo'],
-            labels: const ['Kalks-Live', 'Kalks-Demo'],
+            values: const ['Ezymex-Live', 'Ezymex-Demo'],
+            labels: const ['Ezymex-Live', 'Ezymex-Demo'],
             selected: _server,
             onChanged: (v) => setState(() => _server = v),
           ),
           const SizedBox(height: 5),
           Text(
-            _server == 'Kalks-Demo' ? t('trader.login.demoAccounts') : t('trader.login.realAccounts'),
+            _server == 'Ezymex-Demo' ? t('trader.login.demoAccounts') : t('trader.login.realAccounts'),
             style: context.text.footnote.copyWith(color: k.fg3, fontSize: 11.5),
           ),
           const SizedBox(height: 8),

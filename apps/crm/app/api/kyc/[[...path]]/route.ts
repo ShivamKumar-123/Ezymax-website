@@ -94,16 +94,16 @@ async function upload(req: NextRequest, token: string) {
   }
 
   const headers: Record<string, string> = {
-    "x-kalks-internal": INTERNAL_TOKEN,
-    "x-kalks-tenant": "kalks",
+    "x-ezymex-internal": INTERNAL_TOKEN,
+    "x-ezymex-tenant": "ezymex",
     authorization: `Bearer ${token}`,
     "content-type": file.type || "application/octet-stream",
     "x-forwarded-for": clientIp(req.headers),
-    "x-kalks-filename": encodeURIComponent((file.name || "document").slice(0, 120)),
+    "x-ezymex-filename": encodeURIComponent((file.name || "document").slice(0, 120)),
   };
   const ua = req.headers.get("user-agent");
   if (ua) headers["user-agent"] = ua;
-  if (checksHeader) headers["x-kalks-kyc-checks"] = checksHeader;
+  if (checksHeader) headers["x-ezymex-kyc-checks"] = checksHeader;
   try {
     const res = await fetch(`${GATEWAY_URL}/v1/kyc/documents?${q}`, { method: "POST", headers, body: Buffer.from(await file.arrayBuffer()), cache: "no-store" });
     const data = await res.json().catch(() => ({}));

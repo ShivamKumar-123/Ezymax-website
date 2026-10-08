@@ -2,7 +2,7 @@
 // The founder's illustrations (repo illustrator/), cut out like the web copies, as resolution-aware PNGs in
 // assets/illustrations/ (1x 240 px, 2.0x 480 px, 3.0x 720 px).
 
-/// Illustration names: the same keys as the web (`<Illustration name>` / `<EmptyState art>` in @kalks/ui).
+/// Illustration names: the same keys as the web (`<Illustration name>` / `<EmptyState art>` in @ezymex/ui).
 enum KIllustrationName {
   welcome('assets/illustrations/welcome.png', 0.6971),
   security('assets/illustrations/security.png', 1.0962),

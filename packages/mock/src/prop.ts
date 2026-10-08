@@ -119,7 +119,7 @@ export const PROP_MODELS: PropModel[] = [
 export const BANNED_STRATEGIES = [
   { name: "Latency arbitrage", text: "Exploiting delayed price feeds between venues." },
   { name: "Tick scalping", text: "Positions held < 60 seconds to farm tick-level inefficiencies." },
-  { name: "Cross-account hedging", text: "Opposite positions across Kalks or third-party accounts." },
+  { name: "Cross-account hedging", text: "Opposite positions across Ezymex or third-party accounts." },
   { name: "High-frequency trading", text: "> 200 orders per day or sub-second order bursts." },
 ];
 
@@ -147,7 +147,7 @@ export const RECENT_PAYOUTS = [3, 5, 9, 1, 12, 7, 14, 2].map((pi, i) => {
 export const PROP_FAQ = [
   {
     q: "Is this real money? What does \"funded\" mean?",
-    a: "Funded accounts are simulated. You trade simulated capital on Kalks-Prop servers with live market pricing, and you're paid a share of the simulated profit. Your payouts are real and land in your Kalks wallet in USDT.",
+    a: "Funded accounts are simulated. You trade simulated capital on Ezymex-Prop servers with live market pricing, and you're paid a share of the simulated profit. Your payouts are real and land in your Ezymex wallet in USDT.",
   },
   {
     q: "How are the rules enforced?",
@@ -167,7 +167,7 @@ export const PROP_FAQ = [
   },
   {
     q: "How do payouts work?",
-    a: "Request a payout from the Payouts page once you're eligible. The request goes to our risk desk for approval, usually within 8 hours, and is then credited to your Kalks wallet. From there you can withdraw to TRC20 or fund a live account.",
+    a: "Request a payout from the Payouts page once you're eligible. The request goes to our risk desk for approval, usually within 8 hours, and is then credited to your Ezymex wallet. From there you can withdraw to TRC20 or fund a live account.",
   },
   {
     q: "Can I use Expert Advisors?",
@@ -223,7 +223,7 @@ export const MY_CHALLENGES: MyChallenge[] = [
     stageIndex: 0,
     status: "active",
     login: "80520114",
-    server: "Kalks-Prop01",
+    server: "Ezymex-Prop01",
     investorPassword: "demo-inv1",
     masterPassword: "demo-mast1",
     startDate: "2026-09-21",
@@ -254,7 +254,7 @@ export const MY_CHALLENGES: MyChallenge[] = [
     stageIndex: 1,
     status: "passed",
     login: "80519406",
-    server: "Kalks-Prop01",
+    server: "Ezymex-Prop01",
     investorPassword: "demo-inv2",
     masterPassword: "demo-mast2",
     startDate: "2026-09-08",
@@ -286,7 +286,7 @@ export const MY_CHALLENGES: MyChallenge[] = [
     stageIndex: 2,
     status: "funded",
     login: "80519877",
-    server: "Kalks-Prop02",
+    server: "Ezymex-Prop02",
     investorPassword: "demo-inv3",
     masterPassword: "demo-mast3",
     startDate: "2026-06-02",

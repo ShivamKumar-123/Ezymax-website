@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader charts: toolbar, drawing tools, legend, trade lines, context menu, one-click panel.
+// Ezymex Trader charts: toolbar, drawing tools, legend, trade lines, context menu, one-click panel.
 const chart: NsMessages<"chart"> = {
   // Abas de gráficos
   "tab.visibleInGrid": "Visível na grade",
@@ -46,7 +46,7 @@ const chart: NsMessages<"chart"> = {
   "tool.text": "Texto",
   "tool.ruler": "Régua",
   "tool.coming": "{tool} em breve",
-  "tool.comingText": "Disponível na próxima versão do Kalks Trader.",
+  "tool.comingText": "Disponível na próxima versão do Ezymex Trader.",
   "tool.deleteAll": "Excluir todos os objetos",
   "tool.noObjects": "Nenhum objeto neste gráfico",
   "tool.deleted": { one: "{count} objeto excluído", other: "{count} objetos excluídos" },

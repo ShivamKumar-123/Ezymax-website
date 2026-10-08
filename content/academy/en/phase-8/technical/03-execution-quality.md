@@ -83,7 +83,7 @@ Costs take 45% of the gross edge here. Cutting slippage from 0.3 to 0.1 pips wou
 You cannot improve what you do not measure. For every trade, record:
 
 1. The **decision price**: the bid or ask shown when you decided to trade, or the level of the pending order.
-2. The **fill price** from the trade history in Kalks Trader or the Portfolio section of the Client Area.
+2. The **fill price** from the trade history in Ezymex Trader or the Portfolio section of the Client Area.
 3. The time, symbol, order type and whether news was due.
 
 Slippage = fill price minus decision price, signed so that negative means worse for you. Averaging over at least 30 trades per symbol and order type gives a useful picture. You will usually find that slippage is concentrated in a few situations: news releases, market opens, the daily rollover and fast breakouts.
@@ -112,6 +112,6 @@ Liquidity varies across the day. For FX majors it is deepest during the London s
 - Include realistic spread, commission and slippage in every backtest in Developer, Backtests; run a stress test with double the costs.
 - Review execution statistics monthly alongside performance.
 - Avoid placing stops exactly at round numbers or obvious levels where many orders cluster.
-- Use the contract specification in Kalks Trader to check the commission and swap for each symbol and account type.
+- Use the contract specification in Ezymex Trader to check the commission and swap for each symbol and account type.
 
 > **Risk warning:** In fast markets, especially around news, orders can fill far from the requested price and stop losses do not guarantee execution at the stop level. CFDs are leveraged and costs and slippage can turn a small edge into a loss.

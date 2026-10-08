@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
-import { INSTRUMENT_MAP, IS_LIVE } from "@kalks/mock";
-import { OPTION_SPEC, OPTION_UNDERLYINGS, mockChain, mockExpiries, type OptionChain } from "@kalks/mock/options";
+import { INSTRUMENT_MAP, IS_LIVE } from "@ezymex/mock";
+import { OPTION_SPEC, OPTION_UNDERLYINGS, mockChain, mockExpiries, type OptionChain } from "@ezymex/mock/options";
 import { publicChain } from "@/lib/options/server";
 import { PublicChainView } from "@/components/options/public-chain";
 
 // Public option chain (guest view, plan O29): trade.<domain>/options/chain/EURUSD. Server-rendered for search
 // engines from the options service's public chain (`/v1/public/options/chain/{u}`, 1 s cache), then live in the
 // browser (public stream / polling). Read-only: trading needs a signed-in account. While the public chain is
-// switched off for Kalks the page explains that options are launching soon.
+// switched off for Ezymex the page explains that options are launching soon.
 
 export const dynamic = "force-dynamic";
 
@@ -34,14 +34,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!u) return { title: "Option chain not found", robots: { index: false, follow: false } };
   const name = NAMES[u] ?? u;
   const title = `${name} options chain: calls, puts, IV and Greeks`;
-  const description = `Live ${name} option chain on Kalks FX Options: calls and puts for daily, weekly and monthly expiries with bid and ask in USD per contract, implied volatility, delta, probability in the money and breakeven. European, cash-settled in USD.`;
+  const description = `Live ${name} option chain on Ezymex FX Options: calls and puts for daily, weekly and monthly expiries with bid and ask in USD per contract, implied volatility, delta, probability in the money and breakeven. European, cash-settled in USD.`;
   return {
     title,
     description,
     metadataBase: new URL(await origin()),
     alternates: { canonical: `/options/chain/${u}` },
     robots: { index: true, follow: true },
-    openGraph: { type: "website", siteName: "Kalks Trader", title, description, url: `/options/chain/${u}` },
+    openGraph: { type: "website", siteName: "Ezymex Trader", title, description, url: `/options/chain/${u}` },
     twitter: { card: "summary", title, description },
   };
 }

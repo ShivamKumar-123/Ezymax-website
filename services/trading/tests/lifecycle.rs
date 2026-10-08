@@ -31,7 +31,7 @@ const USER: i64 = 4242;
 
 fn headers() -> HeaderMap {
     let mut h = HeaderMap::new();
-    h.insert("x-kalks-user-id", USER.to_string().parse().unwrap());
+    h.insert("x-ezymex-user-id", USER.to_string().parse().unwrap());
     h
 }
 
@@ -44,7 +44,7 @@ fn body<T: serde::de::DeserializeOwned>(v: Value) -> Body<T> {
 }
 
 async fn ctx(st: &AppState) -> Ctx {
-    let req = axum::http::Request::builder().header("x-kalks-tenant", "kalks").body(()).unwrap();
+    let req = axum::http::Request::builder().header("x-ezymex-tenant", "ezymex").body(()).unwrap();
     let (mut parts, _) = req.into_parts();
     Ctx::from_request_parts(&mut parts, st).await.unwrap_or_else(|_| panic!("tenant"))
 }
@@ -78,7 +78,7 @@ fn account_json_without_lifecycle_still_reads() {
 #[tokio::test]
 async fn archive_restore_rename_and_replay() {
     let base = std::env::var("TRADING_TEST_DATABASE_URL").unwrap_or_else(|_| "postgres://postgres@127.0.0.1:5433/postgres".into());
-    let db = format!("kalks_trading_lifecycle_{}", std::process::id());
+    let db = format!("ezymex_trading_lifecycle_{}", std::process::id());
     let Ok(server) = PgConnectOptions::from_str(&base) else { return };
     if server.clone().database("postgres").connect().await.is_err() {
         eprintln!("SKIP: PostgreSQL not reachable at {base}");
@@ -153,7 +153,7 @@ async fn archive_restore_rename_and_replay() {
 
     // someone else's account is a 404
     let mut other = HeaderMap::new();
-    other.insert("x-kalks-user-id", "999".parse().unwrap());
+    other.insert("x-ezymex-user-id", "999".parse().unwrap());
     assert!(lifecycle::archive_check(State(st.clone()), ctx(&st).await, other, Path(a), q()).await.is_err());
 
     // empty = true: the position is closed and the demo archived
@@ -200,7 +200,7 @@ async fn archive_restore_rename_and_replay() {
 
 async fn setup(tag: &str) -> Option<(AppState, Arc<QuoteBook>, sqlx::PgPool)> {
     let base = std::env::var("TRADING_TEST_DATABASE_URL").unwrap_or_else(|_| "postgres://postgres@127.0.0.1:5433/postgres".into());
-    let db = format!("kalks_trading_{tag}_{}", std::process::id());
+    let db = format!("ezymex_trading_{tag}_{}", std::process::id());
     let server = PgConnectOptions::from_str(&base).ok()?;
     if server.clone().database("postgres").connect().await.is_err() {
         eprintln!("SKIP: PostgreSQL not reachable at {base}");

@@ -1,7 +1,7 @@
 //! Trading contests (D135): join (dedicated demo account or a chosen live account), live scores from engine
 //! deals + floating P&L, ranks, anti-cheat flags, finalize and prize payout (wallet or trading credit).
 //!
-//! Options contests (O36, `instrument = 'options'`): only Kalks FX Options exits count (manual closes, stop-outs,
+//! Options contests (O36, `instrument = 'options'`): only Ezymex FX Options exits count (manual closes, stop-outs,
 //! expiry settlements, knock-outs), scored on realised option P&L (no floating part), volume in contracts. Open
 //! to clients who may trade options (gateway suitability) on accounts outside the system groups. Trades whose
 //! opening premium is below the contest minimum add no volume or trade count; self-trades between a client's own
@@ -141,13 +141,13 @@ pub async fn join(st: &AppState, tenant: &str, user_id: i64, contest_id: i64, lo
     let name: String = c.get("name");
     let options = c.get::<String, _>("instrument") == "options";
     if options {
-        // only clients who may trade Kalks FX Options (the options intro accepted), checked before any account opens
+        // only clients who may trade Ezymex FX Options (the options intro accepted), checked before any account opens
         match clients::options_eligible(st, tenant, user_id).await {
             Ok(true) => {}
             Ok(false) => {
                 return Err(ApiError::Conflict {
                     code: "options_intro_required",
-                    message: "Options contests are for clients who can trade Kalks FX Options. Take the 1-minute options intro in the Client Area first.".into(),
+                    message: "Options contests are for clients who can trade Ezymex FX Options. Take the 1-minute options intro in the Client Area first.".into(),
                 });
             }
             Err(e) => return Err(ApiError::Unavailable(format!("Options eligibility can't be checked right now ({e}). Please try again shortly."))),

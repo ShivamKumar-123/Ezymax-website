@@ -19,7 +19,7 @@ pub struct DealFacts {
     pub volume: D,
     pub open_time: DateTime<Utc>,
     pub close_time: DateTime<Utc>,
-    /// Kalks FX Options deal (O34): volume is contracts, paid per contract at the level's options rate.
+    /// Ezymex FX Options deal (O34): volume is contracts, paid per contract at the level's options rate.
     pub option: bool,
 }
 

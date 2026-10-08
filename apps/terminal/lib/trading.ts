@@ -1,5 +1,5 @@
-import { INSTRUMENTS, getInstrument, instrumentSpec, priceFeed, type Instrument, type Position, type TradingAccount } from "@kalks/mock";
-import type { T as Translate } from "@kalks/i18n";
+import { INSTRUMENTS, getInstrument, instrumentSpec, priceFeed, type Instrument, type Position, type TradingAccount } from "@ezymex/mock";
+import type { T as Translate } from "@ezymex/i18n";
 
 /* ------------------------------------------------------------------ */
 /* Timeframes                                                          */
@@ -207,7 +207,7 @@ export const SEED_POSITIONS_EXTRA: TPosition[] = [
 
 export const SOURCE_LABEL: Record<TradeSource, string> = { manual: "Manual", copy: "Copy", api: "API", strategy: "Strategy", ai: "AI", pamm: "PAMM", mam: "MAM" };
 
-export const SERVERS = ["Kalks-Live01", "Kalks-Live02", "Kalks-Demo", "Kalks-Prop01"] as const;
+export const SERVERS = ["Ezymex-Live01", "Ezymex-Live02", "Ezymex-Demo", "Ezymex-Prop01"] as const;
 
 export const DEFAULT_SYMBOLS = ["XAUUSD", "EURUSD", "NAS100", "BTCUSD"];
 export const ALL_SYMBOLS = INSTRUMENTS.map((i) => i.symbol);

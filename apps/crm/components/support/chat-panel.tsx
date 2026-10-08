@@ -5,8 +5,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import { FileText, Mail, MoreHorizontal, Paperclip, RotateCcw, SendHorizontal, Sparkles, Star, UserRound } from "lucide-react";
 import { Avatar, Chip, IconButton, Menu, cn } from "@/components/kit";
-import { ME } from "@kalks/mock";
-import { QUICK_REPLIES, SUPPORT_AGENT, agentAnswer, botAnswer } from "@kalks/mock/support-extra";
+import { ME } from "@ezymex/mock";
+import { QUICK_REPLIES, SUPPORT_AGENT, agentAnswer, botAnswer } from "@ezymex/mock/support-extra";
 
 type From = "bot" | "user" | "agent" | "system";
 interface Msg {
@@ -20,7 +20,7 @@ interface Msg {
 
 const SEED: Msg[] = [
   { id: 1, from: "system", text: "Chat started · Thu 24 Sep, 18:31 GMT+3", time: "18:31" },
-  { id: 2, from: "bot", text: "Hi Arjun, I'm **Kalks AI**. I can check deposits, withdrawals, accounts and trading questions instantly, or connect you with our support team.", time: "18:31" },
+  { id: 2, from: "bot", text: "Hi Arjun, I'm **Ezymex AI**. I can check deposits, withdrawals, accounts and trading questions instantly, or connect you with our support team.", time: "18:31" },
   { id: 3, from: "user", text: "My withdrawal from earlier still shows processing", time: "18:32" },
   { id: 4, from: "bot", text: botAnswer("withdraw").text, time: "18:32" },
   { id: 5, from: "user", text: "Can I talk to a human?", time: "18:33" },
@@ -31,7 +31,7 @@ const SEED: Msg[] = [
 
 const FRESH: Msg[] = [
   { id: 1, from: "system", text: "New chat · replies in under 5 seconds", time: "" },
-  { id: 2, from: "bot", text: "Hi Arjun, I'm **Kalks AI**. How can I help you today? Pick a topic below or type your question.", time: "" },
+  { id: 2, from: "bot", text: "Hi Arjun, I'm **Ezymex AI**. How can I help you today? Pick a topic below or type your question.", time: "" },
 ];
 
 /** Server clock (GMT+3) continuing from the seeded conversation at 18:34. */
@@ -122,7 +122,7 @@ export function ChatPanel({ variant = "page", onClose }: { variant?: "page" | "w
           setTyping("agent");
           later(1500, () => {
             setTyping(null);
-            push({ from: "agent", text: "Hi Arjun, Mei Lin here from Client Support. I've read your conversation with Kalks AI. How can I help?" });
+            push({ from: "agent", text: "Hi Arjun, Mei Lin here from Client Support. I've read your conversation with Ezymex AI. How can I help?" });
           });
         });
       }
@@ -146,7 +146,7 @@ export function ChatPanel({ variant = "page", onClose }: { variant?: "page" | "w
         setTyping("agent");
         later(1400, () => {
           setTyping(null);
-          push({ from: "agent", text: `Hi ${ME.firstName}, ${SUPPORT_AGENT.name.split(" ")[0]} here from Client Support. I've read your chat with Kalks AI. How can I help?` });
+          push({ from: "agent", text: `Hi ${ME.firstName}, ${SUPPORT_AGENT.name.split(" ")[0]} here from Client Support. I've read your chat with Ezymex AI. How can I help?` });
         });
       });
     });
@@ -197,7 +197,7 @@ export function ChatPanel({ variant = "page", onClose }: { variant?: "page" | "w
         )}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 text-[15px] font-medium">
-            {agent ? SUPPORT_AGENT.name : "Kalks AI"}
+            {agent ? SUPPORT_AGENT.name : "Ezymex AI"}
             <Chip size="sm" tone={agent ? "up" : "ember"} dot>
               {agent ? "Live agent" : "AI assistant"}
             </Chip>
@@ -248,7 +248,7 @@ export function ChatPanel({ variant = "page", onClose }: { variant?: "page" | "w
                 {mine && <Avatar src={ME.photo} name={ME.name} size={28} />}
                 <div className={cn("max-w-[78%]", mine && "text-right")}>
                   <div className={cn("mb-1 flex items-center gap-2 text-[11px] text-fg-3", mine && "justify-end")}>
-                    <span className="font-medium text-fg-2">{mine ? "You" : m.from === "bot" ? "Kalks AI" : SUPPORT_AGENT.name}</span>
+                    <span className="font-medium text-fg-2">{mine ? "You" : m.from === "bot" ? "Ezymex AI" : SUPPORT_AGENT.name}</span>
                     {m.time && <span className="font-mono">{m.time}</span>}
                   </div>
                   {m.file ? (
@@ -320,12 +320,12 @@ export function ChatPanel({ variant = "page", onClose }: { variant?: "page" | "w
           <button type="button" onClick={() => fileRef.current?.click()} aria-label="Attach file" className="grid size-9 shrink-0 place-items-center rounded-full text-fg-3 transition-colors hover:bg-surface-3 hover:text-fg">
             <Paperclip className="size-4" />
           </button>
-          <input value={input} onChange={(e) => setInput(e.target.value)} placeholder={agent ? `Message ${SUPPORT_AGENT.name.split(" ")[0]}…` : "Ask Kalks AI anything…"} className="h-9 min-w-0 flex-1 bg-transparent text-[14px] outline-none placeholder:text-fg-3" />
+          <input value={input} onChange={(e) => setInput(e.target.value)} placeholder={agent ? `Message ${SUPPORT_AGENT.name.split(" ")[0]}…` : "Ask Ezymex AI anything…"} className="h-9 min-w-0 flex-1 bg-transparent text-[14px] outline-none placeholder:text-fg-3" />
           <button type="submit" disabled={!input.trim() || !!typing} aria-label="Send" className="k-ember-btn grid size-9 shrink-0 place-items-center rounded-full transition-opacity disabled:opacity-40">
             <SendHorizontal className="size-4" />
           </button>
         </form>
-        <div className="mt-2 text-center text-[10.5px] text-fg-3">Kalks AI can make mistakes. A human agent is available 24/7 · chats are recorded for quality.</div>
+        <div className="mt-2 text-center text-[10.5px] text-fg-3">Ezymex AI can make mistakes. A human agent is available 24/7 · chats are recorded for quality.</div>
       </div>
     </div>
   );

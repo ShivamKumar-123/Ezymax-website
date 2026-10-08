@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Copy, Lock, Plus, RotateCcw, Save, ShieldCheck, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, Dialog, EmptyState, Field, Input, PageHeader, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Dialog, EmptyState, Field, Input, PageHeader, cn } from "@ezymex/ui";
 import { useCan } from "@/components/staff-session";
 import { ErrorState, TableSkeleton, useApi } from "@/components/live/kit";
 import { Select, act, call, type Catalogue, type Role, type RolesResp } from "./kit";

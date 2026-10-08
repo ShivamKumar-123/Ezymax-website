@@ -3,12 +3,12 @@
 import * as React from "react";
 import { Copy, History, RotateCcw, Save } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Chip, Icon3D, PageHeader, Reveal, SpotlightCard, cn } from "@kalks/ui";
-import { PLANS, type CommissionPlan } from "@kalks/mock/admin-partners";
+import { Button, Chip, Icon3D, PageHeader, Reveal, SpotlightCard, cn } from "@ezymex/ui";
+import { PLANS, type CommissionPlan } from "@ezymex/mock/admin-partners";
 import { auditToast, useReason } from "@/components/config/kit";
 import { fmtDT, fmtInt } from "@/components/partners/common";
 import { CpaCard, RateMatrix, TiersCard } from "@/components/partners/plan-editor";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveProgrammeSettings } from "@/components/partners-live/settings";
 
 const KIND: Record<CommissionPlan["kind"], { label: string; tone: "ember" | "gold" | "info"; icon: string }> = {

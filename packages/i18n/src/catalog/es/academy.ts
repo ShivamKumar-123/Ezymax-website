@@ -1,7 +1,7 @@
 import type { NsMessages } from "../../core";
 
 // Área de clientes, Academia: fases de aprendizaje, capítulos, cuestionarios, exámenes, glosario, progreso.
-// Solo la interfaz de la página; el contenido lo sirve el servicio de la Academia. Se mantiene "Kalks Trader".
+// Solo la interfaz de la página; el contenido lo sirve el servicio de la Academia. Se mantiene "Ezymex Trader".
 const academy: NsMessages<"academy"> = {
   // Compartido
   title: "Academia",
@@ -21,7 +21,7 @@ const academy: NsMessages<"academy"> = {
   "practice.demo": "Practicar en demo",
   "practice.openFreeDemo": "Abrir una cuenta demo gratuita",
   "practice.openDemo": "Abrir demo",
-  "practice.inTrader": "Practicar en Kalks Trader",
+  "practice.inTrader": "Practicar en Ezymex Trader",
 
   // Niveles (enviados por el servicio de la Academia)
   "level.beginner": "Principiante",
@@ -32,12 +32,12 @@ const academy: NsMessages<"academy"> = {
   // Itinerarios
   "track.fundamental": "Análisis fundamental",
   "track.technical": "Análisis técnico",
-  // Product track of the Kalks FX Options elective (phase 9)
+  // Product track of the Ezymex FX Options elective (phase 9)
   "track.options": "Trading de opciones",
   "trackShort.fundamental": "Fundamental",
   "trackShort.technical": "Técnico",
   "trackShort.options": "Opciones",
-  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  // Chip on a product course (e.g. Ezymex FX Options) that sits outside the eight core phases and can be taken at any time
   elective: "Optativa",
 
   // Duraciones (h = horas, m = minutos)
@@ -53,7 +53,7 @@ const academy: NsMessages<"academy"> = {
   "home.pathText": "Cada fase principal tiene un itinerario fundamental y otro técnico, un examen final y un certificado.",
   // Section under the learning path listing the electives
   "home.electivesTitle": "Cursos optativos",
-  "home.electivesText": "Cursos sobre los productos de Kalks. Puede hacerlos en cualquier momento: cada uno tiene su propio examen final y certificado.",
+  "home.electivesText": "Cursos sobre los productos de Ezymex. Puede hacerlos en cualquier momento: cada uno tiene su propio examen final y certificado.",
   "hero.allDone": "Todos los capítulos completados",
   "hero.continue": "Seguir aprendiendo",
   "hero.upNext": "A continuación",
@@ -226,7 +226,7 @@ const academy: NsMessages<"academy"> = {
   "callout.example": "Ejemplo",
   "callout.tip": "Consejo",
   "callout.note": "Nota",
-  "callout.inKalksTrader": "En Kalks Trader",
+  "callout.inEzymexTrader": "En Ezymex Trader",
   diagram: "Diagrama",
 };
 export default academy;

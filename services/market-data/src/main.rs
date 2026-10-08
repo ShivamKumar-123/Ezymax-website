@@ -1,4 +1,4 @@
-//! Kalks market-data service.
+//! Ezymex market-data service.
 //!
 //! Ingests live prices from Infoway, builds broker-standard OHLC candles (M1…MN) from the raw feed,
 //! backfills history, stores everything in PostgreSQL and serves candles + live quotes to the apps.

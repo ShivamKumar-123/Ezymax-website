@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Clock, Download, Eye, FileArchive, History, KeyRound, LogOut, MailCheck, MonitorSmartphone, ShieldCheck, UserX } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, Field, Flag, PageHeader, Skeleton, type ChipTone, type Column } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { ChangePasswordCard } from "@/components/profile/change-password";
 import { useSession } from "@/components/session";
 import { DeviceIcon, ago, countryName, day, idleLabel, parseDevice, secApi, useSec, when, type SecError } from "./common";

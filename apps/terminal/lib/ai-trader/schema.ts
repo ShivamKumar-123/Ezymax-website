@@ -7,7 +7,7 @@
  *
  * Rule tree: RuleSet (all/any) -> RuleGroup (all/any) -> Condition (left op right).
  */
-import { INSTRUMENTS, getInstrument } from "@kalks/mock";
+import { INSTRUMENTS, getInstrument } from "@ezymex/mock";
 import { TIMEFRAMES, contractSpec, type Timeframe } from "../trading";
 
 export const PRICE_FIELDS = ["close", "open", "high", "low", "hl2", "hlc3"] as const;

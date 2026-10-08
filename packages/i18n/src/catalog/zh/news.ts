@@ -45,7 +45,7 @@ const news: NsMessages<"news"> = {
   "markets.trade": "交易",
   "markets.searchPlaceholder": "搜索代码或名称…",
   "markets.clearSearch": "清除",
-  "markets.liveTooltip": "报价来自 Kalks 实时行情",
+  "markets.liveTooltip": "报价来自 Ezymex 实时行情",
   "markets.footnote": "Standard 组点差：外汇以点计，其他以价格单位计 · 休市品种显示最新价格 · 点击一行查看合约规格",
   // Short trading-hours summary per asset class (24/5 = 24 hours, 5 days a week)
   "hoursShort.forex": "24/5",
@@ -270,7 +270,7 @@ const news: NsMessages<"news"> = {
   "cal.removeReminder": "移除提醒",
   "cal.remindMe": "提前 15 分钟提醒我",
   "cal.toWatch": "值得关注的交易品种",
-  "cal.noLinked": "没有与该货币直接关联的 Kalks 交易品种。",
+  "cal.noLinked": "没有与该货币直接关联的 Ezymex 交易品种。",
   // High-impact alerts card
   "alerts.title": "高影响事件提醒",
   "alerts.toggle": "在高影响事件前提醒我",

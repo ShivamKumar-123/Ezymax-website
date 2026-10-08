@@ -4,8 +4,8 @@ import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Check, Circle, RotateCcw, UserRound } from "lucide-react";
-import { Button, Chip, Dialog, StatusChip, cn } from "@kalks/ui";
-import { FIN_TX_TYPE_LABEL, finTime, type FinTx } from "@kalks/mock/admin-finance";
+import { Button, Chip, Dialog, StatusChip, cn } from "@ezymex/ui";
+import { FIN_TX_TYPE_LABEL, finTime, type FinTx } from "@ezymex/mock/admin-finance";
 import { Addr, PersonCell, Section, TxHash, auditToast, useReason } from "@/components/config/kit";
 import { CoinAmount, Line, NetworkChip, usd } from "./shared";
 

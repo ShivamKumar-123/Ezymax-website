@@ -233,8 +233,8 @@ const developer: NsMessages<"developer"> = {
   "assetClass.crypto": "kripto",
   "assetClass.stocks": "hisseler",
 
-  // Code editor (Kalks strategy language)
-  "code.language": "Kalks strateji dili",
+  // Code editor (Ezymex strategy language)
+  "code.language": "Ezymex strateji dili",
   "code.checking": "Kontrol ediliyor…",
   "code.errors": { other: "{count} hata" },
   "code.compiles": "Derleme başarılı",
@@ -281,7 +281,7 @@ const developer: NsMessages<"developer"> = {
   // Kill switch
   "kill.title": "Acil durdurma",
   "kill.subtitle": "Hesaplarınızdaki tüm stratejileri, webhook'ları ve API emirlerini durdurur",
-  "kill.globalPaused": "Otomatik işlemler, Kalks risk yönetimi tarafından platform genelinde duraklatıldı.",
+  "kill.globalPaused": "Otomatik işlemler, Ezymex risk yönetimi tarafından platform genelinde duraklatıldı.",
   "kill.onSince": "{at} tarihinden beri açık",
   "kill.release": "Acil durdurmayı kaldır",
   "kill.stopAll": "Tüm otomasyonu durdur",
@@ -363,7 +363,7 @@ const developer: NsMessages<"developer"> = {
   "docs.bearer": "Bearer (en basit)",
   "docs.hmac": "HMAC imzası (botlar için önerilir)",
   // <code> wraps header names and paths; keep them untranslated
-  "docs.signature": "İmza = hex(HMAC-SHA256(secret, timestamp + METHOD + sorgu dahil yol + gövde)); <code>X-Kalks-Key</code>, <code>X-Kalks-Timestamp</code> (unix ms, ±30 sn) ve <code>X-Kalks-Signature</code> ile gönderilir. Yol <code>/public/v1/…</code> olarak imzalanır. Her imza yalnızca bir kez kabul edilir.",
+  "docs.signature": "İmza = hex(HMAC-SHA256(secret, timestamp + METHOD + sorgu dahil yol + gövde)); <code>X-Ezymex-Key</code>, <code>X-Ezymex-Timestamp</code> (unix ms, ±30 sn) ve <code>X-Ezymex-Signature</code> ile gönderilir. Yol <code>/public/v1/…</code> olarak imzalanır. Her imza yalnızca bir kez kabul edilir.",
   // "api", clientOrderId and duplicate are API values; keep them
   "docs.endpointsSub": "Giriş ve çıkış JSON'dur. Her emir “api” kaynağını taşır; tekrarlanan bir clientOrderId, duplicate durumunu döndürür.",
   "docs.errorsSub": "Hatalar {shape} biçimindedir",
@@ -473,9 +473,9 @@ const developer: NsMessages<"developer"> = {
 
   // Strategy marketplace
   "market.title": "Strateji pazar yeri",
-  "market.subtitle": "Kalks hesaplarından doğrulanmış geçmiş performansa sahip stratejiler. Birini hesabınıza kopyalayın veya kendinizinkini yayınlayıp aboneliklerden kazanın.",
-  "market.houseChip": "Kurum stratejisi · Kalks tarafından işletilir",
-  "market.houseNote": "Kalks tarafından işletilen kurum stratejisi: bu stratejiyi çalıştıran, aracı kuruma ait bir gerçek hesap. Geçmiş performans yalnızca başlangıcından bu yana kendi gerçek işlemlerini içerir; hiçbir şey simüle edilmemiş veya geriye dönük doldurulmamıştır.",
+  "market.subtitle": "Ezymex hesaplarından doğrulanmış geçmiş performansa sahip stratejiler. Birini hesabınıza kopyalayın veya kendinizinkini yayınlayıp aboneliklerden kazanın.",
+  "market.houseChip": "Kurum stratejisi · Ezymex tarafından işletilir",
+  "market.houseNote": "Ezymex tarafından işletilen kurum stratejisi: bu stratejiyi çalıştıran, aracı kuruma ait bir gerçek hesap. Geçmiş performans yalnızca başlangıcından bu yana kendi gerçek işlemlerini içerir; hiçbir şey simüle edilmemiş veya geriye dönük doldurulmamıştır.",
   // Date range, e.g. "2025-01-01 to 2025-12-31"
   "market.range": "{from} – {to}",
   "market.backtestSimulated": "Backtest · simülasyon",
@@ -502,7 +502,7 @@ const developer: NsMessages<"developer"> = {
   "market.subscriptionStatus": "Abonelik {status}",
   "market.reviewSaved": "Değerlendirme kaydedildi",
   "market.reviewFailed": "Değerlendirme kaydedilemedi",
-  "market.trackNote": "Yazarın {since} tarihinden bu yana Kalks'taki kendi dağıtımından elde edilen performans geçmişi: {days} gün, net {net}. İşlem motorundaki kapanan anlaşmalardan hesaplanır, yazar tarafından girilmez.",
+  "market.trackNote": "Yazarın {since} tarihinden bu yana Ezymex'taki kendi dağıtımından elde edilen performans geçmişi: {days} gün, net {net}. İşlem motorundaki kapanan anlaşmalardan hesaplanır, yazar tarafından girilmez.",
   "market.riskSettings": "Risk ayarları",
   "market.riskLine": "Büyüklük {size} · stop {stop} · hedef {target}",
   "market.riskPct": "%{pct} risk",
@@ -520,7 +520,7 @@ const developer: NsMessages<"developer"> = {
   "market.cloneRules": "Kuralları klonla",
   "market.subscribePaid": "Abone ol · {price} USDT / ay",
   "market.subscribeFree": "Ücretsiz abone ol",
-  "market.paidNote": "Kalks cüzdanınızdan (USDT) ödenir. Her 30 günde bir yenilenir; istediğiniz zaman iptal edin.",
+  "market.paidNote": "Ezymex cüzdanınızdan (USDT) ödenir. Her 30 günde bir yenilenir; istediğiniz zaman iptal edin.",
   "market.reviews": "Değerlendirmeler ({n})",
   "market.stars": { other: "{count} yıldız" },
   "market.reviewPlaceholder": "Sizin için nasıl işlem yaptı?",
@@ -552,7 +552,7 @@ const developer: NsMessages<"developer"> = {
   "market.popular": "Popüler",
   "market.emptyTitle": "Henüz listelenmiş strateji yok",
   "market.emptyText": "İlk siz olun: bir stratejiyi demo hesapta dağıtın, ardından doğrulanmış performans geçmişiyle yayınlayın.",
-  "market.disclaimer": "Geçmiş performans gelecekteki sonuçları garanti etmez. Performans geçmişleri Kalks'taki gerçek veya demo hesaplardan gelir ve buna göre etiketlenir. Ücretli aboneliklerde platform ücreti: %{pct}.",
+  "market.disclaimer": "Geçmiş performans gelecekteki sonuçları garanti etmez. Performans geçmişleri Ezymex'taki gerçek veya demo hesaplardan gelir ve buna göre etiketlenir. Ücretli aboneliklerde platform ücreti: %{pct}.",
   "market.mode": "Mod",
   "market.renews": "Yenileme",
   "market.copyOn": "#{login} hesabında kopya",

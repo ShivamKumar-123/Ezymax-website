@@ -1,7 +1,7 @@
 import type { NsMessages } from "../../core";
 
 // Client Area security: sessions, sign-in history, view-only logins (viewers), session guard.
-// "Kalks", "Google" and "JSON" stay as they are.
+// "Ezymex", "Google" and "JSON" stay as they are.
 const security: NsMessages<"security"> = {
   // Shared
   "retry": "Jaribu tena",
@@ -9,7 +9,7 @@ const security: NsMessages<"security"> = {
   "signingOut": "Inatoka…",
   "resetSigningOut": "Tunakutoa ili uweke upya nenosiri lako…",
   "error.generic": "Hitilafu imetokea. Tafadhali jaribu tena.",
-  "error.network": "Imeshindwa kufikia Kalks. Angalia muunganisho wako kisha ujaribu tena.",
+  "error.network": "Imeshindwa kufikia Ezymex. Angalia muunganisho wako kisha ujaribu tena.",
 
   // Device labels from the browser's user agent; browser and OS brand names stay as they are
   "device.unknownBrowser": "Kivinjari kisichojulikana",
@@ -227,7 +227,7 @@ const security: NsMessages<"security"> = {
   "page.calendar": "Kalenda",
   // Investor passwords card
   "investor.title": "Manenosiri ya mwekezaji",
-  "investor.text": "Kila akaunti ya biashara pia ina nenosiri la mwekezaji kwa ufikiaji wa kusoma tu kwenye Kalks Trader, kwa mtindo wa MT5: nafasi na historia, bila biashara.",
+  "investor.text": "Kila akaunti ya biashara pia ina nenosiri la mwekezaji kwa ufikiaji wa kusoma tu kwenye Ezymex Trader, kwa mtindo wa MT5: nafasi na historia, bila biashara.",
   "investor.hint": "Liweke au libadilishe kwenye ukurasa wa akaunti.",
   "investor.goToAccounts": "Nenda kwenye akaunti",
   // Create / edit dialog

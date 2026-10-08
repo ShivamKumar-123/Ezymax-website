@@ -19,9 +19,9 @@ let owner: string | null = null;
 const browser = typeof window !== "undefined";
 
 if (browser) {
-  const w = window as typeof window & { __kalksReadCache?: true };
-  if (!w.__kalksReadCache) {
-    w.__kalksReadCache = true;
+  const w = window as typeof window & { __ezymexReadCache?: true };
+  if (!w.__ezymexReadCache) {
+    w.__ezymexReadCache = true;
     const original = window.fetch.bind(window);
     window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
       const method = (init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();

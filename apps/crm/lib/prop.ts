@@ -1,6 +1,6 @@
-// Server-only helpers for talking to the Kalks prop service (services/prop, 127.0.0.1:8097).
+// Server-only helpers for talking to the Ezymex prop service (services/prop, 127.0.0.1:8097).
 // The browser never sees the service or its internal token: route handlers under /api/prop resolve the signed-in
-// client from the gateway session cookie and forward X-Kalks-User-Id / -Name / -Kyc. The public certificate
+// client from the gateway session cookie and forward X-Ezymex-User-Id / -Name / -Kyc. The public certificate
 // page (/verify/<code>) calls the public routes server-side with the same token.
 // Contract: services/prop/README.md ("Client routes", "Public routes").
 
@@ -22,13 +22,13 @@ export async function prop<T = Record<string, unknown>>(
   init: { method?: "GET" | "POST"; body?: unknown; user?: GatewayUser; req?: NextRequest } = {},
 ): Promise<PropResult<T>> {
   const headers: Record<string, string> = {
-    "x-kalks-internal": PROP_TOKEN,
-    "x-kalks-tenant": init.user?.tenant?.slug || "kalks",
+    "x-ezymex-internal": PROP_TOKEN,
+    "x-ezymex-tenant": init.user?.tenant?.slug || "ezymex",
   };
   if (init.user) {
-    headers["x-kalks-user-id"] = String(init.user.id);
-    headers["x-kalks-user-name"] = encodeURIComponent(displayName(init.user));
-    if (init.user.kyc_status) headers["x-kalks-user-kyc"] = init.user.kyc_status;
+    headers["x-ezymex-user-id"] = String(init.user.id);
+    headers["x-ezymex-user-name"] = encodeURIComponent(displayName(init.user));
+    if (init.user.kyc_status) headers["x-ezymex-user-kyc"] = init.user.kyc_status;
   }
   if (init.req) {
     headers["x-forwarded-for"] = clientIp(init.req.headers);

@@ -43,7 +43,7 @@ quiz:
       - "Because it is always drawn in the wrong colour"
       - "Because it uses ask prices instead of bid prices"
       - "Because its open, high, low and close can still change until the period ends"
-      - "Because Kalks Trader hides its wicks"
+      - "Because Ezymex Trader hides its wicks"
     answer: 2
     explanation: "Until the period ends, the close is just the latest price, and the high or low can still be extended. A candle that looks strong halfway through can close very differently."
 ---
@@ -93,7 +93,7 @@ A candlestick packs four prices into one symbol, but its real value is the story
 </svg>
 ```
 
-- **Body:** the filled rectangle between the open and the close. In Kalks Trader it is green when the close is above the open (bullish) and red when the close is below the open (bearish).
+- **Body:** the filled rectangle between the open and the close. In Ezymex Trader it is green when the close is above the open (bullish) and red when the close is below the open (bearish).
 - **Upper wick (or shadow):** the thin line from the top of the body to the high.
 - **Lower wick:** the thin line from the bottom of the body to the low.
 
@@ -157,4 +157,4 @@ Named candlestick patterns, such as engulfing candles and pin bars, are covered 
 - **Judging by colour alone.** Check body size and closing position.
 - **Ignoring wicks.** Wicks show where the market refused to stay, which is often where the next decision will be made.
 
-Use the crosshair in Kalks Trader on a free demo account to measure the parts of recent candles and describe each one in a sentence.
+Use the crosshair in Ezymex Trader on a free demo account to measure the parts of recent candles and describe each one in a sentence.

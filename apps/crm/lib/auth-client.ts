@@ -1,6 +1,6 @@
 // Browser-side calls to this app's /api/auth route handlers (same origin, HttpOnly cookies).
 
-import { tr } from "@kalks/i18n/react";
+import { tr } from "@ezymex/i18n/react";
 
 export type ApiError = { code: string; message: string; field?: string; retry_after?: number; attempts_left?: number };
 
@@ -98,7 +98,7 @@ export async function authPost<T = Record<string, unknown>>(action: string, body
     if (res.ok) return { ok: true, data: data as T };
     return { ok: false, error: localizeError((data?.error as ApiError) ?? { code: "unknown", message: "Something went wrong. Please try again." }) };
   } catch {
-    return { ok: false, error: localizeError({ code: "network", message: "Can't reach Kalks. Check your connection and try again." }) };
+    return { ok: false, error: localizeError({ code: "network", message: "Can't reach Ezymex. Check your connection and try again." }) };
   }
 }
 
@@ -109,7 +109,7 @@ export async function authGet<T = Record<string, unknown>>(action: string): Prom
     if (res.ok) return { ok: true, data: data as T };
     return { ok: false, error: localizeError((data?.error as ApiError) ?? { code: "unknown", message: "Something went wrong. Please try again." }) };
   } catch {
-    return { ok: false, error: localizeError({ code: "network", message: "Can't reach Kalks. Check your connection and try again." }) };
+    return { ok: false, error: localizeError({ code: "network", message: "Can't reach Ezymex. Check your connection and try again." }) };
   }
 }
 

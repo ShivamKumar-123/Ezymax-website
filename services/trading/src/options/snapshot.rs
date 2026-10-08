@@ -10,7 +10,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 
 /// Platform tenant: its settings are the fallback of every broker (group resolution).
-pub const PLATFORM_TENANT: &str = "kalks";
+pub const PLATFORM_TENANT: &str = "ezymex";
 
 fn d300() -> u64 {
     300
@@ -292,7 +292,7 @@ fn yes() -> bool {
     true
 }
 
-/// The Kalks market maker's quoting parameters (options service `mm_settings`, docs §4), delivered as `mm[]`. The
+/// The Ezymex market maker's quoting parameters (options service `mm_settings`, docs §4), delivered as `mm[]`. The
 /// most specific row for (tenant, kind, underlying) wins: tenant > kind > underlying.
 #[derive(Clone, Debug, Deserialize, serde::Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -627,7 +627,7 @@ impl OptSnapshot {
         self.tenants.get(tenant).is_some_and(|t| t.allows(symbol))
     }
 
-    /// Group settings: (group, symbol) > (group, *) > (*, symbol) > (*, *) > tenant kalks (*, *) > built-in.
+    /// Group settings: (group, symbol) > (group, *) > (*, symbol) > (*, *) > tenant ezymex (*, *) > built-in.
     pub fn group(&self, tenant: &str, group: &str, symbol: &str) -> GroupSettings {
         let rank = |g: &GroupSettings| -> Option<u8> {
             if g.tenant != tenant {
@@ -716,9 +716,9 @@ mod tests {
                              "enabled": true}],
             "holidays": {"USD": ["2026-12-25"], "EUR": ["2026-12-25", "2026-12-26"]},
             "expiries": [{"id": 1, "symbol": "EURUSD", "expiryDate": "2026-10-09", "cutAt": "2026-10-09T14:00:00Z", "status": "listed"}],
-            "tenants": [{"tenant": "kalks", "enabledDemo": true, "enabledLive": false}],
-            "groups": [{"tenant": "kalks", "groupCode": "*", "symbol": "*", "volSpread": 0.004, "minSpreadUsd": 0.5, "commissionPerContract": 0.25, "commissionCapPct": 10},
-                       {"tenant": "kalks", "groupCode": "vip", "symbol": "*", "volSpread": 0.002}],
+            "tenants": [{"tenant": "ezymex", "enabledDemo": true, "enabledLive": false}],
+            "groups": [{"tenant": "ezymex", "groupCode": "*", "symbol": "*", "volSpread": 0.004, "minSpreadUsd": 0.5, "commissionPerContract": 0.25, "commissionCapPct": 10},
+                       {"tenant": "ezymex", "groupCode": "vip", "symbol": "*", "volSpread": 0.002}],
             "controls": [{"id": 5, "tenant": "*", "scope": "expiry", "target": "EURUSD:2026-10-09", "mode": "manual_vol", "manualVol": 0.09},
                          {"id": 6, "tenant": "other", "scope": "all", "mode": "halt"}],
         }))
@@ -732,22 +732,22 @@ mod tests {
     #[test]
     fn module_switch_group_resolution_and_trade_state() {
         let s = snap();
-        assert!(s.enabled("kalks", false) && !s.enabled("kalks", true) && !s.enabled("broker2", false));
-        assert_eq!(s.group("kalks", "vip", "EURUSD").vol_spread, 0.002);
-        assert_eq!(s.group("kalks", "standard", "EURUSD").vol_spread, 0.004);
+        assert!(s.enabled("ezymex", false) && !s.enabled("ezymex", true) && !s.enabled("broker2", false));
+        assert_eq!(s.group("ezymex", "vip", "EURUSD").vol_spread, 0.002);
+        assert_eq!(s.group("ezymex", "standard", "EURUSD").vol_spread, 0.004);
         // another broker without rows falls back to the platform's (*, *)
         assert_eq!(s.group("broker2", "standard", "EURUSD").commission_cap_pct, 10.0);
         assert_eq!(s.pair_calendar("EURUSD").len(), 2);
         let u = s.underlying("EURUSD").unwrap();
         let cut = t("2026-10-09T14:00:00Z");
         let d = NaiveDate::from_ymd_opt(2026, 10, 9).unwrap();
-        assert_eq!(s.trade_state("kalks", u, d, cut, None, t("2026-10-09T13:44:00Z")), TradeState::Open);
-        assert_eq!(s.trade_state("kalks", u, d, cut, None, t("2026-10-09T13:45:00Z")), TradeState::CloseOnly);
-        assert_eq!(s.trade_state("kalks", u, d, cut, None, t("2026-10-09T13:59:00Z")), TradeState::Closed);
+        assert_eq!(s.trade_state("ezymex", u, d, cut, None, t("2026-10-09T13:44:00Z")), TradeState::Open);
+        assert_eq!(s.trade_state("ezymex", u, d, cut, None, t("2026-10-09T13:45:00Z")), TradeState::CloseOnly);
+        assert_eq!(s.trade_state("ezymex", u, d, cut, None, t("2026-10-09T13:59:00Z")), TradeState::Closed);
         // the halt is for another broker only
         assert_eq!(s.trade_state("other", u, d, cut, None, t("2026-10-09T10:00:00Z")), TradeState::Halted);
-        assert_eq!(s.overrides("kalks", "EURUSD", "EURUSD:2026-10-09", t("2026-10-09T10:00:00Z")).0, Some(0.09));
+        assert_eq!(s.overrides("ezymex", "EURUSD", "EURUSD:2026-10-09", t("2026-10-09T10:00:00Z")).0, Some(0.09));
         // unknown expiry = closed
-        assert_eq!(s.trade_state("kalks", u, NaiveDate::from_ymd_opt(2026, 10, 16).unwrap(), cut, None, t("2026-10-09T10:00:00Z")), TradeState::Closed);
+        assert_eq!(s.trade_state("ezymex", u, NaiveDate::from_ymd_opt(2026, 10, 16).unwrap(), cut, None, t("2026-10-09T10:00:00Z")), TradeState::Closed);
     }
 }

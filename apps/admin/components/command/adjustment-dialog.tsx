@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { Search } from "lucide-react";
-import { Avatar, Field, Flag, Input, Segmented, cn, formatMoney } from "@kalks/ui";
-import { CLIENTS, REASON_CODES, type AdminClient } from "@kalks/mock/admin-clients";
+import { Avatar, Field, Flag, Input, Segmented, cn, formatMoney } from "@ezymex/ui";
+import { CLIENTS, REASON_CODES, type AdminClient } from "@ezymex/mock/admin-clients";
 import { ReasonDialog } from "./kit";
 
 /** Balance / credit adjustment with a mandatory reason code (audited). */

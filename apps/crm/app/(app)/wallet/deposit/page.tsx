@@ -6,11 +6,11 @@ import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, Blocks, Check, ChevronDown, Clock, Copy, ExternalLink, Radar, Share2, ShieldAlert, Wallet, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, CoinIcon, PageHeader, Reveal, Starfield, cn, formatNumber, shortHash } from "@/components/kit";
-import { Trans, useT } from "@kalks/i18n/react";
-import { WALLET } from "@kalks/mock";
-import { DEPOSIT_FAQ, DEPOSIT_NETWORKS, INCOMING_DEPOSIT } from "@kalks/mock/wallet-extra";
+import { Trans, useT } from "@ezymex/i18n/react";
+import { WALLET } from "@ezymex/mock";
+import { DEPOSIT_FAQ, DEPOSIT_NETWORKS, INCOMING_DEPOSIT } from "@ezymex/mock/wallet-extra";
 import { AddressBox, AddressQr, tronscan } from "@/components/wallet/wallet-ui";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveDepositPage } from "@/components/wallet-live/deposit-page";
 
 const CHAIN: Record<string, string> = { TRC20: "trx", ERC20: "eth", BEP20: "bnb" };
@@ -275,7 +275,7 @@ function DemoDepositPage() {
                       [t("wallet.demo.minDeposit"), `${net.minDeposit} USDT`],
                       [t("wallet.demo.confirmations"), `${net.confirmations}`],
                       [t("wallet.demo.arrival"), net.eta],
-                      [t("wallet.demo.kalksFee"), t("wallet.free")],
+                      [t("wallet.demo.ezymexFee"), t("wallet.free")],
                     ].map(([k, v]) => (
                       <div key={k} className="k-row px-3 py-2.5">
                         <div className="text-[11.5px] text-fg-3">{k}</div>

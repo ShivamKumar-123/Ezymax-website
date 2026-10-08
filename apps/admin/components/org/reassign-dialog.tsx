@@ -3,8 +3,8 @@
 import * as React from "react";
 import { ArrowRight, Shuffle } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Dialog, DialogClose, Field, Toggle, cn } from "@kalks/ui";
-import type { DskDesk } from "@kalks/mock/admin-desks";
+import { Avatar, Button, Dialog, DialogClose, Field, Toggle, cn } from "@ezymex/ui";
+import type { DskDesk } from "@ezymex/mock/admin-desks";
 import { RangeSlider } from "@/components/brokers/kit";
 
 export interface ReassignResult {

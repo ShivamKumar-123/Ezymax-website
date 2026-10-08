@@ -8,7 +8,7 @@ const security: NsMessages<"security"> = {
   "signingOut": "வெளியேறுகிறது…",
   "resetSigningOut": "கடவுச்சொல்லை மீட்டமைக்க உங்களை வெளியேற்றுகிறோம்…",
   "error.generic": "ஏதோ தவறு நடந்தது. மீண்டும் முயற்சிக்கவும்.",
-  "error.network": "Kalks ஐ அணுக முடியவில்லை. உங்கள் இணைப்பைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.",
+  "error.network": "Ezymex ஐ அணுக முடியவில்லை. உங்கள் இணைப்பைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.",
 
   // Device labels from the browser's user agent; browser and OS brand names stay as they are
   "device.unknownBrowser": "அறியப்படாத உலாவி",
@@ -226,7 +226,7 @@ const security: NsMessages<"security"> = {
   "page.calendar": "காலண்டர்",
   // Investor passwords card
   "investor.title": "முதலீட்டாளர் கடவுச்சொற்கள்",
-  "investor.text": "ஒவ்வொரு டிரேடிங் கணக்குக்கும் Kalks Trader இல் படிக்க-மட்டும் அணுகலுக்கான முதலீட்டாளர் கடவுச்சொல் உண்டு, MT5 பாணியில்: பொசிஷன்களும் வரலாறும், டிரேடிங் இல்லை.",
+  "investor.text": "ஒவ்வொரு டிரேடிங் கணக்குக்கும் Ezymex Trader இல் படிக்க-மட்டும் அணுகலுக்கான முதலீட்டாளர் கடவுச்சொல் உண்டு, MT5 பாணியில்: பொசிஷன்களும் வரலாறும், டிரேடிங் இல்லை.",
   "investor.hint": "கணக்குப் பக்கத்தில் அதை அமைக்கலாம் அல்லது மாற்றலாம்.",
   "investor.goToAccounts": "கணக்குகளுக்குச் செல்",
   // Create / edit dialog

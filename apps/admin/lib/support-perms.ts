@@ -3,7 +3,7 @@
  *
  * The gateway's RBAC (services/gateway/src/rbac.rs) is the source of truth: the staff member's permission list
  * decides. The role map below is only the fallback for a gateway that returns no permission list. The support
- * service checks the same permissions again: the BFF sends what it resolved in `X-Kalks-Staff-Perms`.
+ * service checks the same permissions again: the BFF sends what it resolved in `X-Ezymex-Staff-Perms`.
  *
  * | permission           | what it allows                                                                  | roles                                                        |
  * |----------------------|---------------------------------------------------------------------------------|--------------------------------------------------------------|

@@ -1,6 +1,6 @@
 /**
  * Back Office · Organization · Desks & teams + staff KPIs / commissions.
- * Import via `@kalks/mock/admin-desks`. Exports are prefixed DSK_ / KPI_.
+ * Import via `@ezymex/mock/admin-desks`. Exports are prefixed DSK_ / KPI_.
  */
 import { PEOPLE, type Person } from "./people";
 import { seeded } from "./rng";

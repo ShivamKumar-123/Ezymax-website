@@ -11,8 +11,8 @@ import { bearerOf, deviceOf, platformOf } from "@/lib/mobile";
 // Differences from the cookie route, because the app has no cookies:
 // - the session comes back in the JSON body (`session: {token, expires_at}`); the app keeps it in the Keystore and
 //   sends it as `Authorization: Bearer <token>`;
-// - the device id comes from `X-Kalks-Device`; when the app has none yet one is minted here and returned as `device`
-//   (the gateway trusts a device after its first email code, like the browser's kalks_did cookie);
+// - the device id comes from `X-Ezymex-Device`; when the app has none yet one is minted here and returned as `device`
+//   (the gateway trusts a device after its first email code, like the browser's ezymex_did cookie);
 // - no same-origin check: nothing here is authenticated by a cookie (the proxy drops cookies on /api/mobile/*).
 // Session tokens are never logged.
 //
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ act
     // partner campaign from the referral code the app sends; attribution never comes from the request body
     withCampaign(fields, req);
     withAttribution(fields, req);
-    if (!fields.attribution) fields.attribution = { utm_source: "kalks_app", utm_medium: platformOf(req.headers).toLowerCase() };
+    if (!fields.attribution) fields.attribution = { utm_source: "ezymex_app", utm_medium: platformOf(req.headers).toLowerCase() };
   }
   const known = deviceOf(req.headers);
   // a device id is minted for the sign-in flows only (session actions just pass the app's own along)

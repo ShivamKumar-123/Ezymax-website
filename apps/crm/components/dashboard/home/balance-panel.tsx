@@ -7,7 +7,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, Plus } from "lucide-react";
 import { Button, ChangeChip, IconTile, Money, Skeleton, cn, type ChipTone, type TileTone } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 
 export function BalancePanel({ total, chip, chipTone = "up", sub, loading, readOnly }: { total: number | null; chip?: React.ReactNode; chipTone?: ChipTone; sub?: React.ReactNode; loading?: boolean; readOnly?: boolean }) {
   const t = useT();

@@ -37,8 +37,8 @@ import {
   WorldMap,
   cn,
   type Column,
-} from "@kalks/ui";
-import { SEC_ACTIVITY_HOURLY, SEC_USER_EVENTS, SEC_USER_STATS, type SecRiskFlag, type SecUserEvent, type SecUserEventType } from "@kalks/mock/admin-platform-security";
+} from "@ezymex/ui";
+import { SEC_ACTIVITY_HOURLY, SEC_USER_EVENTS, SEC_USER_STATS, type SecRiskFlag, type SecUserEvent, type SecUserEventType } from "@ezymex/mock/admin-platform-security";
 import { ActivityChart } from "@/components/security/activity-chart";
 import { Mono, TenantDot, ago, timeGmt3 } from "@/components/security/shared";
 

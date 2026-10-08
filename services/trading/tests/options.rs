@@ -1,4 +1,4 @@
-//! Kalks FX Options through the real API handlers, shards and PostgreSQL, with a mock options service (snapshot
+//! Ezymex FX Options through the real API handlers, shards and PostgreSQL, with a mock options service (snapshot
 //! with ETag, fixings) and a mock gateway (suitability):
 //! eligibility (404 = not eligible, live and demo alike), preview, market orders, the position JSON contract,
 //! combos (fill and close together), partial close through the generic close route, a barrier knocked once by a
@@ -89,8 +89,8 @@ fn snapshot(version: i64, fixing: Option<(f64, i32)>) -> Value {
         "expiries": [{"id": 1, "symbol": "EURUSD", "expiryDate": "2026-09-25", "cutAt": "2026-09-25T14:00:00Z", "twapStart": "2026-09-25T13:30:00Z",
                       "status": status, "fixing": fx, "fixingSource": "twap", "fixingRun": run}],
         "series": series,
-        "tenants": [{"tenant": "kalks", "enabledDemo": true, "enabledLive": true, "publicChain": false, "underlyings": null}],
-        "groups": [{"tenant": "kalks", "groupCode": "*", "symbol": "*", "volSpread": 0.004, "minSpreadUsd": 0.5, "commissionPerContract": 0.25,
+        "tenants": [{"tenant": "ezymex", "enabledDemo": true, "enabledLive": true, "publicChain": false, "underlyings": null}],
+        "groups": [{"tenant": "ezymex", "groupCode": "*", "symbol": "*", "volSpread": 0.004, "minSpreadUsd": 0.5, "commissionPerContract": 0.25,
                     "commissionCapPct": 10, "maxContractsPerClient": 200, "weekendMarginPct": 25, "enabled": true}],
         "controls": [], "clientLimits": []
     })
@@ -160,16 +160,16 @@ fn account(login: i64, user: i64, kind: AccountKind) -> Account {
 }
 
 async fn staff(st: &AppState) -> StaffCtx {
-    let req = axum::http::Request::builder().header("x-kalks-staff-id", "44").header("x-kalks-staff-name", "Rita%20Risk").header("x-kalks-staff-role", "admin").body(()).unwrap();
+    let req = axum::http::Request::builder().header("x-ezymex-staff-id", "44").header("x-ezymex-staff-name", "Rita%20Risk").header("x-ezymex-staff-role", "admin").body(()).unwrap();
     let (mut parts, _) = req.into_parts();
     StaffCtx::from_request_parts(&mut parts, st).await.unwrap()
 }
 
-/// A Kalks Trader session through the Client Area's Trade button (SSO).
+/// A Ezymex Trader session through the Client Area's Trade button (SSO).
 async fn token(st: &AppState, tenant: &Arc<trading::rules::TenantConfig>, login: i64, user: i64) -> String {
     let ctx = || Ctx { tenant: tenant.clone(), ip: "198.51.100.7".into(), user_agent: "it".into(), bearer: None };
     let mut h = HeaderMap::new();
-    h.insert("x-kalks-user-id", user.to_string().parse().unwrap());
+    h.insert("x-ezymex-user-id", user.to_string().parse().unwrap());
     let Json(sso) = api::accounts::sso(State(st.clone()), ctx(), h, Path(login), Query(serde_json::from_value(json!({})).unwrap())).await.unwrap();
     let Json(s) = api::terminal::sso(State(st.clone()), ctx(), body(json!({"token": sso["token"]}))).await.unwrap();
     s["token"].as_str().unwrap().to_string()
@@ -186,7 +186,7 @@ async fn balance(hub: &Hub, login: i64) -> D {
 #[tokio::test]
 async fn options_through_the_api_shards_and_postgres() {
     let base = std::env::var("TRADING_TEST_DATABASE_URL").unwrap_or_else(|_| "postgres://postgres@127.0.0.1:5433/postgres".into());
-    let db = format!("kalks_trading_options_{}", std::process::id());
+    let db = format!("ezymex_trading_options_{}", std::process::id());
     let Ok(server) = PgConnectOptions::from_str(&base) else { return };
     if server.clone().database("postgres").connect().await.is_err() {
         eprintln!("SKIP: PostgreSQL not reachable at {base}");
@@ -258,7 +258,7 @@ async fn options_through_the_api_shards_and_postgres() {
         presence: Arc::new(trading::controls::Presence::default()),
         gateway: Arc::new(trading::controls::Gateway::new(&cfg.gateway_url, &cfg.gateway_token)),
     };
-    let tenant = registry.by_slug("kalks").unwrap();
+    let tenant = registry.by_slug("ezymex").unwrap();
     let ctx = |bearer: Option<&str>| Ctx { tenant: tenant.clone(), ip: "198.51.100.7".into(), user_agent: "it".into(), bearer: bearer.map(str::to_string) };
 
     // accounts: live (eligible client), live (no answer for this client yet), demo of the eligible client, demo of the other

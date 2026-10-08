@@ -1,7 +1,7 @@
 import type { NsMessages } from "../../core";
 
 // Client Area prop trading: challenge catalogue, my challenges, payouts, certificates.
-// "Kalks", "Kalks Prop", "Kalks Trader", "USDT", "New York" and "17:00" stay as they are.
+// "Ezymex", "Ezymex Prop", "Ezymex Trader", "USDT", "New York" and "17:00" stay as they are.
 const prop: NsMessages<"prop"> = {
   // Error next-step buttons
   "errorLink.deposit": "USDT জমা করুন",
@@ -102,13 +102,13 @@ const prop: NsMessages<"prop"> = {
 
   // Public certificate verification page (/verify/<code>)
   "verify.shellTitle": "সার্টিফিকেট যাচাই",
-  "verify.footer": "Kalks Prop অ্যাকাউন্টগুলো সিমুলেটেড। সার্টিফিকেট একটি Kalks Prop চ্যালেঞ্জে ট্রেডারের ফলাফল দেখায়; ট্রেডারের নাম সংক্ষিপ্ত করে প্রথম নাম ও পদবির প্রথম অক্ষর দেখানো হয়।",
+  "verify.footer": "Ezymex Prop অ্যাকাউন্টগুলো সিমুলেটেড। সার্টিফিকেট একটি Ezymex Prop চ্যালেঞ্জে ট্রেডারের ফলাফল দেখায়; ট্রেডারের নাম সংক্ষিপ্ত করে প্রথম নাম ও পদবির প্রথম অক্ষর দেখানো হয়।",
   "verify.linkCopied": "লিংক কপি হয়েছে",
   "verify.copyFailed": "লিংক কপি করা যায়নি",
   "verify.copyLink": "লিংক কপি করুন",
   "verify.downloadPng": "PNG ডাউনলোড",
   "verify.notFoundTitle": "সার্টিফিকেট পাওয়া যায়নি",
-  "verify.notFoundText": "এই নম্বরে কোনো Kalks Prop সার্টিফিকেট নেই। লিংকটি পরীক্ষা করুন বা ট্রেডারকে আবার শেয়ার করতে বলুন।",
+  "verify.notFoundText": "এই নম্বরে কোনো Ezymex Prop সার্টিফিকেট নেই। লিংকটি পরীক্ষা করুন বা ট্রেডারকে আবার শেয়ার করতে বলুন।",
   "verify.unavailableTitle": "যাচাই এই মুহূর্তে উপলব্ধ নয়",
   "verify.unavailableText": "এই মুহূর্তে সার্টিফিকেটটি যাচাই করা যায়নি। কয়েক মিনিট পরে আবার চেষ্টা করুন।",
   "verify.kind.pass": "ফেজ পাস",
@@ -122,9 +122,9 @@ const prop: NsMessages<"prop"> = {
   "verify.row.issued": "ইস্যুর তারিখ",
   "verify.row.number": "সার্টিফিকেট নং",
   "verify.validTitle": "বৈধ সার্টিফিকেট",
-  "verify.validText": "Kalks Prop কর্তৃক ইস্যু করা এবং আমাদের রেকর্ডের সাথে যাচাই করা।",
+  "verify.validText": "Ezymex Prop কর্তৃক ইস্যু করা এবং আমাদের রেকর্ডের সাথে যাচাই করা।",
   "verify.revokedTitle": "বাতিল সার্টিফিকেট",
-  "verify.revokedText": "এই সার্টিফিকেটটি Kalks বাতিল করেছে এবং এটি আর বৈধ নয়।",
+  "verify.revokedText": "এই সার্টিফিকেটটি Ezymex বাতিল করেছে এবং এটি আর বৈধ নয়।",
   "verify.valid": "বৈধ",
   "verify.revoked": "বাতিল",
   // Certificate titles
@@ -249,8 +249,8 @@ const prop: NsMessages<"prop"> = {
   "checkout.goToMine": "আমার চ্যালেঞ্জ-এ যান",
   "checkout.readyTitle": "আপনার চ্যালেঞ্জ প্রস্তুত",
   "checkout.paidText": "আপনার USDT ওয়ালেট থেকে {fee} পরিশোধ করা হয়েছে এবং আপনার {size} অ্যাকাউন্ট খোলা হয়েছে। এখন থেকে নিয়মগুলো কার্যকর।",
-  "checkout.savePasswords": "এই পাসওয়ার্ডগুলো এখনই সংরক্ষণ করুন: এগুলো শুধু একবার দেখানো হয় এবং আমরা এগুলো সংরক্ষণ করি না। ট্রেড বাটন পাসওয়ার্ড ছাড়াই আপনাকে Kalks Trader-এ সাইন ইন করায়, তাই আপনি সবসময় এখান থেকে ট্রেড করতে পারবেন।",
-  "checkout.passwordsShown": "এই কেনাকাটা প্রথম নিশ্চিত হওয়ার সময় ট্রেডিং পাসওয়ার্ড দেখানো হয়েছিল। Kalks Trader খুলতে ট্রেড বাটন ব্যবহার করুন: এটি পাসওয়ার্ড ছাড়াই আপনাকে সাইন ইন করায়।",
+  "checkout.savePasswords": "এই পাসওয়ার্ডগুলো এখনই সংরক্ষণ করুন: এগুলো শুধু একবার দেখানো হয় এবং আমরা এগুলো সংরক্ষণ করি না। ট্রেড বাটন পাসওয়ার্ড ছাড়াই আপনাকে Ezymex Trader-এ সাইন ইন করায়, তাই আপনি সবসময় এখান থেকে ট্রেড করতে পারবেন।",
+  "checkout.passwordsShown": "এই কেনাকাটা প্রথম নিশ্চিত হওয়ার সময় ট্রেডিং পাসওয়ার্ড দেখানো হয়েছিল। Ezymex Trader খুলতে ট্রেড বাটন ব্যবহার করুন: এটি পাসওয়ার্ড ছাড়াই আপনাকে সাইন ইন করায়।",
 
   // Account credentials
   "cred.login": "লগইন",
@@ -377,7 +377,7 @@ const prop: NsMessages<"prop"> = {
   "account.passed": "পাস · শুধু দেখা",
   "account.failed": "ব্যর্থ · নিষ্ক্রিয়",
   "account.opening": "খোলা হচ্ছে",
-  "account.tradableText": "ট্রেড বাটন এই অ্যাকাউন্টে সাইন ইন করা অবস্থায় Kalks Trader খোলে। কেনার সময় পাসওয়ার্ড একবার দেখানো হয়েছিল।",
+  "account.tradableText": "ট্রেড বাটন এই অ্যাকাউন্টে সাইন ইন করা অবস্থায় Ezymex Trader খোলে। কেনার সময় পাসওয়ার্ড একবার দেখানো হয়েছিল।",
   "account.passedText": "এই ফেজ সম্পন্ন হয়েছে। অ্যাকাউন্টটি শুধু দেখার জন্য; আপনার পরবর্তী ফেজে ট্রেড করুন।",
   "account.failedText": "এই অ্যাকাউন্টে ট্রেডিং নিষ্ক্রিয়।",
   "account.unavailableText": "এই অ্যাকাউন্টে ট্রেডিং উপলব্ধ নয়।",

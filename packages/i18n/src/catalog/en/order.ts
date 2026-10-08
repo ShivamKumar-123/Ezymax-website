@@ -1,5 +1,5 @@
 // Keys for this namespace. English is the source; translations live in ../<lang>/order.ts.
-// Kalks Trader order ticket, New Order window, DOM ladder, position/pending dialogs and trade toasts.
+// Ezymex Trader order ticket, New Order window, DOM ladder, position/pending dialogs and trade toasts.
 // TRANSLATORS: trading terms (Stop Loss, Take Profit, Buy Limit, Sell Stop, Volume, lots, pips, points,
 // Market execution, Pending order, Deviation, Expiration, Good till cancelled, Margin, Free margin, Swap,
 // Close By, Trailing stop, Margin call, Stop out, Requote) must follow the standard MetaTrader 5 localisation
@@ -273,9 +273,9 @@ const order = {
 
   // Specification / About dialogs
   "spec.title": "Specification · {symbol}",
-  "about.title": "About Kalks Trader",
+  "about.title": "About Ezymex Trader",
   "about.version": "Version {version} · build {build} · Web x64",
-  "about.text": "Multi-asset trading room for Kalks Global Markets. Quotes stream from the Kalks price gateway; server time is GMT+3.",
+  "about.text": "Multi-asset trading room for Ezymex Global Markets. Quotes stream from the Ezymex price gateway; server time is GMT+3.",
 
   // Rejection reasons (MT5 journal wording; engine codes mapped on the client)
   "reject.market_closed": "Market closed",

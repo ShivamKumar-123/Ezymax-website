@@ -2,8 +2,8 @@
 // the comment, the account's restrictions, the market state), the body of `POST trade/orders`, SL / TP by pips or
 // money (cent accounts type money in USC) and sizing by risk.
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/features/terminal/core/order.dart';
-import 'package:kalks/features/terminal/core/trade_math.dart';
+import 'package:ezymex/features/terminal/core/order.dart';
+import 'package:ezymex/features/terminal/core/trade_math.dart';
 
 import 'fixtures.dart';
 

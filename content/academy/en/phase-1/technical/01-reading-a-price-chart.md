@@ -9,7 +9,7 @@ takeaways:
   - "Each period can be summarised by four prices: open, high, low and close, known together as OHLC."
   - "A line chart joins only the closing prices, which makes the overall direction easy to see but hides the range of each period."
   - "Bar and candlestick charts show the full OHLC of every period; candlesticks make the direction and size of each period easier to read at a glance."
-  - "Charts in Kalks Trader are normally drawn from bid prices, so buy orders fill slightly above the plotted price by the spread."
+  - "Charts in Ezymex Trader are normally drawn from bid prices, so buy orders fill slightly above the plotted price by the spread."
 practice:
   label: "Open an XAUUSD H1 chart on your demo account and switch between line, bars and candles, noting what each view shows or hides about the last ten hours."
   symbol: "XAUUSD"
@@ -52,10 +52,10 @@ A price chart is the most compact record of a market's history. Every trend, eve
 
 ## The two axes
 
-Every price chart in Kalks Trader has the same basic layout:
+Every price chart in Ezymex Trader has the same basic layout:
 
 - The **vertical axis** (on the right) shows price. Higher on the chart means a higher price.
-- The **horizontal axis** (at the bottom) shows time, in Kalks server time. The newest data is on the right.
+- The **horizontal axis** (at the bottom) shows time, in Ezymex server time. The newest data is on the right.
 
 The chart is split into equal periods set by the **timeframe**. On an H1 chart each period is one hour; on a D1 chart each period is one trading day. Timeframes get their own chapter, so for now remember: one bar or candle equals one period.
 
@@ -127,13 +127,13 @@ The same OHLC data can be drawn in different ways. The diagram shows five identi
 
 **Bar chart (OHLC bars).** Each period is a vertical line from the high to the low, with a small tick on the left for the open and on the right for the close. It shows all four prices but can be harder to read quickly.
 
-**Candlestick chart.** Shows the same four prices, but draws the area between open and close as a filled **body**, coloured by direction. In Kalks Trader green means the close was above the open and red means it was below. Thin **wicks** extend to the high and low. Most traders use candlesticks because direction and strength stand out immediately. The next chapter covers candle anatomy in detail.
+**Candlestick chart.** Shows the same four prices, but draws the area between open and close as a filled **body**, coloured by direction. In Ezymex Trader green means the close was above the open and red means it was below. Thin **wicks** extend to the high and low. Most traders use candlesticks because direction and strength stand out immediately. The next chapter covers candle anatomy in detail.
 
-Kalks Trader also offers an **area** chart, a line chart with the space beneath it shaded. It is a presentation choice, useful for clean overviews.
+Ezymex Trader also offers an **area** chart, a line chart with the space beneath it shaded. It is a presentation choice, useful for clean overviews.
 
 ## Which price is plotted?
 
-Charts in Kalks Trader are normally built from the **bid** price. That has a practical consequence: when you buy, you pay the ask, which sits above the plotted price by the spread.
+Charts in Ezymex Trader are normally built from the **bid** price. That has a practical consequence: when you buy, you pay the ask, which sits above the plotted price by the spread.
 
 ```text
 Chart shows XAUUSD high at 2,350.40 (bid)
@@ -151,4 +151,4 @@ This is why sell orders and stop losses on long positions behave as the chart su
 - **Judging a period by its colour only.** A small green candle with a long upper wick tells a different story from a large green candle that closed at its high.
 - **Forgetting the spread.** The chart is the bid; your buy fills at the ask.
 
-Switch between chart types on a free demo account in Kalks Trader and describe the last five candles of any symbol out loud: open, high, low, close.
+Switch between chart types on a free demo account in Ezymex Trader and describe the last five candles of any symbol out loud: open, high, low, close.

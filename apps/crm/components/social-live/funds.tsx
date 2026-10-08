@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowUpRight, CalendarClock, Coins, Crown, LayoutGrid, Lock, Rows3, ShieldAlert, Snowflake, TrendingUp, Users, Wallet } from "lucide-react";
 import { Avatar, Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, EquityChart, KeyValue, KpiCard, PageHeader, Segmented, cn, type Column, type SeriesPoint } from "@/components/kit";
-import { useFormat, useT } from "@kalks/i18n/react";
+import { useFormat, useT } from "@ezymex/i18n/react";
 import { fmtDate, serverTime } from "@/components/trading/api";
 import { PERIOD_LABEL, compactUsd, nav4, pct, usd, useSocial, type FeePeriod, type FundDetail, type FundView } from "./api";
 import { BlockSkeleton, InfoBox, MasterIdentity, SocialError, Tile } from "./bits";

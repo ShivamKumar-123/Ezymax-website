@@ -1,7 +1,7 @@
-# Kalks mobile app API (`/api/mobile/*`)
+# Ezymex mobile app API (`/api/mobile/*`)
 
 The Flutter app (`apps/mobile`, Android first) talks to **one** server: the Client Area (`apps/crm`), at
-`https://app.kalkstrade.com` in production (or a broker's own `app.` domain). Every call goes to
+`https://app.ezymex.com` in production (or a broker's own `app.` domain). Every call goes to
 `<base>/api/mobile/...`. The app never holds an internal service token and never calls the gateway, the trading
 engine or any other service directly. The only exceptions are the WebSocket streams and market data, whose URLs come
 from `GET /api/mobile/config`.
@@ -20,11 +20,11 @@ Tests: `node --test apps/crm/tests` (`mobile.test.mjs`, `mobile-trade.test.mjs`)
 - **No cookies, ever.** The app must not send a `Cookie` header to `/api/mobile/*`. A request with a bearer token
   **and** cookies is refused with `400 bearer_with_cookies`. Cookies sent without a bearer are dropped, so they never
   authenticate anything. Do not attach a cookie jar to the HTTP client (Dio).
-- **Device id.** Send `X-Kalks-Device` on every call. If the app has no id yet, the first sign-in call (`login`,
+- **Device id.** Send `X-Ezymex-Device` on every call. If the app has no id yet, the first sign-in call (`login`,
   `register`, `verify-email`, `resend`, `forgot`, `reset`) mints one and returns it as `device`. Store it next to the
   session and keep it for the life of the install. The gateway trusts a device
   after its first email code, so a known device skips the new-device code at the next sign-in.
-- **Trade token.** Kalks Trader calls need a second token, `X-Kalks-Trade`, for the trading account being used (see
+- **Trade token.** Ezymex Trader calls need a second token, `X-Ezymex-Trade`, for the trading account being used (see
   section 6). It is bound to the signed-in client and useless with anyone else's session.
 - **Policies are the web's.** Most paths are rewrites of the Client Area's cookie routes, so the same rules apply
   unchanged: view-only logins (D90), read-only staff sessions, module switches, maintenance mode, step-up codes and the
@@ -35,13 +35,13 @@ Tests: `node --test apps/crm/tests` (`mobile.test.mjs`, `mobile-trade.test.mjs`)
 | Header | Where | Value |
 |---|---|---|
 | `Authorization` | signed-in calls | `Bearer <gateway session token>` (view-only tokens start with `v.`, staff sessions with `i.` / `s.`) |
-| `X-Kalks-Device` | every call | base64url, 16–128 characters; minted by `auth/*` when missing |
-| `X-Kalks-Platform` | every call | `android` or `ios` (default `android`). Recorded on orders as `Android` / `iOS`, and on sign-up attribution |
-| `X-Kalks-App-Version` | every call | e.g. `1.0.0+12`; compare with `config.minAppVersion` |
-| `X-Kalks-Locale` | every call | one of the 22 locales (`en`, `hi`, `ar`, …). The gateway writes codes, emails and some errors in it |
-| `X-Kalks-Trade` | `trade/*` account calls | the trade token from `trade/sessions` or `trade/login` |
-| `X-Kalks-Stepup` | step-up protected writes | alternative to the `stepup_token` body field |
-| `User-Agent` | every call | please send something descriptive, e.g. `KalksApp/1.0.0 (Android 15; Pixel 8)`. The Security page shows it in the session list |
+| `X-Ezymex-Device` | every call | base64url, 16–128 characters; minted by `auth/*` when missing |
+| `X-Ezymex-Platform` | every call | `android` or `ios` (default `android`). Recorded on orders as `Android` / `iOS`, and on sign-up attribution |
+| `X-Ezymex-App-Version` | every call | e.g. `1.0.0+12`; compare with `config.minAppVersion` |
+| `X-Ezymex-Locale` | every call | one of the 22 locales (`en`, `hi`, `ar`, …). The gateway writes codes, emails and some errors in it |
+| `X-Ezymex-Trade` | `trade/*` account calls | the trade token from `trade/sessions` or `trade/login` |
+| `X-Ezymex-Stepup` | step-up protected writes | alternative to the `stepup_token` body field |
+| `User-Agent` | every call | please send something descriptive, e.g. `EzymexApp/1.0.0 (Android 15; Pixel 8)`. The Security page shows it in the session list |
 | `Content-Type` | writes | `application/json`, except the two uploads (section 8) |
 
 ## 3. Errors
@@ -97,7 +97,7 @@ sign-in yet.
 **Step-up actions:** `trading_password`, `investor_password`, `leverage` and `account_archive` / `account_close`
 (target: the login); `withdrawal`, `internal_transfer` (target: the from-login), `account_password`, `profile_email`,
 `profile_phone` and `viewer_access`. The protected request then carries `stepup_token` in its body, or the
-`X-Kalks-Stepup` header.
+`X-Ezymex-Stepup` header.
 
 **Rate limits:** the gateway's own limits, applied per client IP and per email exactly as for the web
 (`429 rate_limited` with `retry_after`). A wrong code answers `400 invalid_code` with `attempts_left`.
@@ -111,16 +111,16 @@ No session needed. Read it at start-up and refresh it on resume. It still answer
   "apiVersion": 1,
   "minAppVersion": null,
   "urls": {
-    "app": "https://app.kalkstrade.com",
-    "terminal": "https://trade.kalkstrade.com",
-    "marketData": { "http": "https://api.kalkstrade.com", "ws": "wss://api.kalkstrade.com/v1/stream" },
+    "app": "https://app.ezymex.com",
+    "terminal": "https://trade.ezymex.com",
+    "marketData": { "http": "https://api.ezymex.com", "ws": "wss://api.ezymex.com/v1/stream" },
     "streams": {
-      "engine": "wss://trade.kalkstrade.com/engine/stream",
-      "options": "wss://trade.kalkstrade.com/options/stream",
-      "support": "wss://app.kalkstrade.com/support/stream"
+      "engine": "wss://trade.ezymex.com/engine/stream",
+      "options": "wss://trade.ezymex.com/options/stream",
+      "support": "wss://app.ezymex.com/support/stream"
     }
   },
-  "tenant": { "slug": "kalks", "name": "Kalks", "default": true, "logoUrl": null, "primary": null, "accent": null, "supportEmail": null, "website": null },
+  "tenant": { "slug": "ezymex", "name": "Ezymex", "default": true, "logoUrl": null, "primary": null, "accent": null, "supportEmail": null, "website": null },
   "modules": { "wallet": true, "prop": true, "ib": true, "academy": true, "copy_trading": true, "pamm": true, "algo": true, "api": true, "rewards": true },
   "flags": { "demo_accounts": true },
   "maintenance": { "active": false, "message": "", "until": null }
@@ -128,14 +128,14 @@ No session needed. Read it at start-up and refresh it on resume. It still answer
 ```
 
 - `tenant`: the broker's branding, from the same source as the web's `brandCss`. `default: true` means the stock
-  Kalks look. `primary` re-tints the ember accent and `accent` the gold. Both are `#rrggbb` or null.
+  Ezymex look. `primary` re-tints the ember accent and `accent` the gold. Both are `#rrggbb` or null.
 - `modules`: a module set to `false` is hidden, and its API answers `403 module_disabled`. Missing means on.
 - `minAppVersion`: when set (env `MOBILE_MIN_APP_VERSION`), an older app must ask the user to update.
 - A white-label broker's `terminal` and `engine` / `options` streams use its own trade domain.
 
-## 6. Kalks Trader — `/api/mobile/trade/*` (native)
+## 6. Ezymex Trader — `/api/mobile/trade/*` (native)
 
-The same routes and validation as Kalks Trader's web BFF (`apps/terminal/app/api/engine/*`, `app/api/options/*`).
+The same routes and validation as Ezymex Trader's web BFF (`apps/terminal/app/api/engine/*`, `app/api/options/*`).
 
 ### Trade tokens
 
@@ -144,25 +144,25 @@ The same routes and validation as Kalks Trader's web BFF (`apps/terminal/app/api
    returns `{token, expiresAt, readOnly, login, account}`. `account` is the engine's account view, without dealer
    fields and with `spreadGroup` added.
 2. **Or log in MT5-style** (the Account tab's "add account login"):
-   `POST trade/login {login, password, server?}` with the bearer token. `server` is `Kalks-Live` or `Kalks-Demo`.
+   `POST trade/login {login, password, server?}` with the bearer token. `server` is `Ezymex-Live` or `Ezymex-Demo`.
    - A trading password gives full access, and an investor password gives read-only access (`readOnly: true`).
    - Any account works, as in MT5.
    - The answer has the same shape as `trade/sessions`.
    - A wrong server answers `409 wrong_server`.
    - A wrong password answers the engine's `401 invalid_credentials`, and repeated failures give `409 locked`.
-3. Store the `token` (e.g. `kt1.s.…`) per login in the Keystore. Send it as `X-Kalks-Trade`, **together with**
+3. Store the `token` (e.g. `kt1.s.…`) per login in the Keystore. Send it as `X-Ezymex-Trade`, **together with**
    `Authorization: Bearer`, on every account call. It is bound to the signed-in client: with another client's session
    it answers `403 trade_session_foreign`.
 4. `POST trade/sessions/check {tokens: [≤8]}` returns which stored tokens are still alive:
    `{sessions: [{alive, login?, readOnly?, expiresAt?, account?}]}`, in the same order. Use it for the account
    switcher on start.
-5. `POST trade/logout` (with `X-Kalks-Trade`) ends that engine session.
+5. `POST trade/logout` (with `X-Ezymex-Trade`) ends that engine session.
 
 Signing out of the gateway stops trading at once, because every trade call re-checks the bearer session.
 
 | Status | Code | What the app does |
 |---|---|---|
-| 401 | `trade_session_required` | No `X-Kalks-Trade`: open the account first |
+| 401 | `trade_session_required` | No `X-Ezymex-Trade`: open the account first |
 | 401 | `session_expired` | The engine session ended (expiry, password change, sign-out): call `trade/sessions` (own account) again, or ask for the password |
 | 403 | `trade_session_foreign` | The token belongs to another client (or its SSO account changed owner): drop it |
 | 403 | `read_only` | Investor session: trading is disabled |
@@ -178,7 +178,7 @@ Signing out of the gateway stops trading at once, because every trade call re-ch
 | `GET trade/history?from&to&page&limit` | closed deals + done pending orders |
 | `GET trade/controls` | the broker's restrictions on the account (`tradingDisabled`, `closeOnly`, …) |
 | `GET trade/mam?symbol&volume` | MAM role + allocation summary |
-| `POST trade/orders` | `{symbol, side: buy\|sell, type: market\|limit\|stop\|stop_limit, volume, price?, stopLimit?, sl?, tp?, trailingPoints?, expiry?, expiryAt?, requestedPrice?, deviationPoints?, ocoWith?, comment? (≤31), clientOrderId?, source?: manual\|ai}`. `platform` is set from `X-Kalks-Platform`. |
+| `POST trade/orders` | `{symbol, side: buy\|sell, type: market\|limit\|stop\|stop_limit, volume, price?, stopLimit?, sl?, tp?, trailingPoints?, expiry?, expiryAt?, requestedPrice?, deviationPoints?, ocoWith?, comment? (≤31), clientOrderId?, source?: manual\|ai}`. `platform` is set from `X-Ezymex-Platform`. |
 | `PATCH trade/orders/{ticket}` · `DELETE trade/orders/{ticket}` | `{price?, stopLimit?, volume?, sl?, tp?, trailingPoints?, expiry?, expiryAt?}` (null clears) |
 | `POST trade/positions/{ticket}/close` | `{volume?, deviationPoints?, requestedPrice?}`. Without `volume` the whole position closes. |
 | `PATCH trade/positions/{ticket}` | `{sl?, tp?, trailingPoints?}` (null clears) |
@@ -230,7 +230,7 @@ header comment of its route file in `apps/crm/app/api/<family>/…/route.ts`.
 | `notifications` | the bell: inbox, `read`, `clear`, `prefs` |
 | `kyc` | status, `start`, `details`, `documents` (upload), `submit` |
 | `security` | sessions, sign-in history, view-only logins, closure / data-export requests |
-| `support` | chat (`me`, `messages`, `handover`, conversations, `read`, `typing`, rate / resolve), attachments, `stream-ticket`. **Ask Kalks AI** is the support assistant in this chat: post a message and the reply streams over the support stream. |
+| `support` | chat (`me`, `messages`, `handover`, conversations, `read`, `typing`, rate / resolve), attachments, `stream-ticket`. **Ask Ezymex AI** is the support assistant in this chat: post a message and the reply streams over the support stream. |
 | `status` | public status page data |
 | `growth` | rewards, points, redeem, cashback, promotions, bonuses, promo codes, contests, banners, share cards |
 | `partner` | IB dashboard, programme, campaigns, clients, network, commissions, payouts, settings |
@@ -239,7 +239,7 @@ header comment of its route file in `apps/crm/app/api/<family>/…/route.ts`.
 | `academy` | catalogue, chapters, quizzes, exams, certificates, glossary |
 | `reports` | analytics, monthly figures, statements (PDF / CSV / XLSX downloads) |
 | `algo` | strategies, backtests, deployments, marketplace, AI, API keys, webhooks, kill switch |
-| `suitability` | Kalks FX Options onboarding: disclosure, accept, quiz |
+| `suitability` | Ezymex FX Options onboarding: disclosure, accept, quiz |
 
 **Uploads:**
 - KYC: `POST /api/mobile/kyc/documents` as `multipart/form-data` with `file`, `kind`, `side?`, `party?`, `issue_date?`,
@@ -256,7 +256,7 @@ header comment of its route file in `apps/crm/app/api/<family>/…/route.ts`.
 - On a USB phone, use `adb reverse tcp:3000 tcp:3000` and do the same for the service ports in the config (8081
   market-data, 8090 engine stream, 8104 options, 8100 support). On a local stack, `config.urls` points at
   `localhost` / `127.0.0.1` ports, so the phone reaches them through the reverse tunnels.
-- The email codes are in the gateway log (`~/.kalks-local/gateway.log`), or in the dev mail sink when one is
+- The email codes are in the gateway log (`~/.ezymex-local/gateway.log`), or in the dev mail sink when one is
   configured.
 - Server env (apps/crm), all optional:
   - `MOBILE_MIN_APP_VERSION`;

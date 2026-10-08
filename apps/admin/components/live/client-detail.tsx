@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { ArrowUpRight, Clock, Gift, Mail, Monitor, Phone, ShieldCheck, UserRound } from "lucide-react";
-import { Avatar, Card, CardHeader, Chip, CopyButton, DataTable, EmptyState, Flag, KeyValue, Skeleton, cn } from "@kalks/ui";
+import { Avatar, Card, CardHeader, Chip, CopyButton, DataTable, EmptyState, Flag, KeyValue, Skeleton, cn } from "@ezymex/ui";
 import { useCan } from "@/components/staff-session";
 import { EmailChip, ErrorState, KycChip, Mono, actionLabel, actionTone, ago, countryName, day, device, useApi, useNow, when } from "./kit";
 import { RevokeDialog, sessionColumns } from "./sessions";

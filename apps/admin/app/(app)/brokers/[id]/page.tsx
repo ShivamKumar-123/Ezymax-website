@@ -1,8 +1,8 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { IS_DEMO } from "@kalks/mock/mode";
-import { ComingSoon } from "@kalks/ui";
+import { IS_DEMO } from "@ezymex/mock/mode";
+import { ComingSoon } from "@ezymex/ui";
 import { LiveTenantDetail } from "@/components/owner/tenant-detail";
 
 export default function Page() {

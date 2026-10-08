@@ -1,19 +1,19 @@
-// Copies the shared Kalks assets into the Flutter app and draws its brand images. Run from the repo root after the
+// Copies the shared Ezymex assets into the Flutter app and draws its brand images. Run from the repo root after the
 // repo's `pnpm install` (sharp, geist and flag-icons come from the root node_modules):
 //
 //   node apps/mobile/tool/sync_assets.mjs
 //   cd apps/mobile && dart run flutter_launcher_icons && dart run flutter_native_splash:create
 //
 // Writes (everything below apps/mobile, rewritten on every run):
-// - assets/brand/: the logos (kalks-logo.svg, kalks-mark.svg, kalks_logo_black.png, kalks_logo_white.png) and the
-//   images drawn from the Kalks mark (ember #FF5A1F on the canvas #07070A, flat fills), after the old Expo app's
+// - assets/brand/: the logos (ezymex-logo.svg, ezymex-mark.svg, ezymex_logo_black.png, ezymex_logo_white.png) and the
+//   images drawn from the Ezymex mark (ember #FF5A1F on the canvas #07070A, flat fills), after the old Expo app's
 //   recipe (git show df273f4^:apps/mobile/scripts/brand-assets.mjs):
 //     icon.png                     1024 px, opaque: the launcher icon (legacy Android, web)
 //     adaptive-icon.png            1024 px, transparent: the adaptive icon's foreground (background is #07070A)
 //     adaptive-icon-monochrome.png 1024 px, white on transparent: Android 13 themed icons
 //     splash.png                   600 px wide ember mark: the launch screen before Android 12 (xxxhdpi)
 //     splash-android12.png         1152 px, the mark inside the 768 px circle Android 12+ shows
-// - android/app/src/main/res/drawable-*dpi/ic_stat_kalks.png: the status-bar notification icon (white mark on
+// - android/app/src/main/res/drawable-*dpi/ic_stat_ezymex.png: the status-bar notification icon (white mark on
 //   transparent, 24 dp)
 // - assets/coins/*.svg, assets/stocks/*.svg, assets/people/*.jpg: copies of the repo assets/
 // - assets/flags/<cc>.png: round-ready square flags (flag-icons 1x1, the web's `fi fis`) as 72 px PNGs
@@ -42,10 +42,10 @@ const fresh = (dir) => {
 
 const brandDir = out("assets", "brand");
 fresh(brandDir);
-for (const f of ["kalks-logo.svg", "kalks-mark.svg"]) copyFileSync(join(root, "assets", "brand", f), join(brandDir, f));
-for (const f of ["kalks_logo_black.png", "kalks_logo_white.png"]) copyFileSync(join(root, "brand", f), join(brandDir, f));
+for (const f of ["ezymex-logo.svg", "ezymex-mark.svg"]) copyFileSync(join(root, "assets", "brand", f), join(brandDir, f));
+for (const f of ["ezymex_logo_black.png", "ezymex_logo_white.png"]) copyFileSync(join(root, "brand", f), join(brandDir, f));
 
-const mark = readFileSync(join(root, "assets", "brand", "kalks-mark.svg"), "utf8");
+const mark = readFileSync(join(root, "assets", "brand", "ezymex-mark.svg"), "utf8");
 const colored = (c) => Buffer.from(mark.replace('fill="currentColor"', `fill="${c}"`));
 
 async function onSquare(size, bg, markColor, markScale) {
@@ -72,7 +72,7 @@ const DENSITIES = { mdpi: 24, hdpi: 36, xhdpi: 48, xxhdpi: 72, xxxhdpi: 96 };
 for (const [d, px] of Object.entries(DENSITIES)) {
   const dir = out("android", "app", "src", "main", "res", `drawable-${d}`);
   mkdirSync(dir, { recursive: true });
-  await (await onSquare(px, CLEAR, "#FFFFFF", 0.8)).toFile(join(dir, "ic_stat_kalks.png"));
+  await (await onSquare(px, CLEAR, "#FFFFFF", 0.8)).toFile(join(dir, "ic_stat_ezymex.png"));
 }
 
 /* ---------------- shared pictures ---------------- */

@@ -45,7 +45,7 @@ const news: NsMessages<"news"> = {
   "markets.trade": "Handeln",
   "markets.searchPlaceholder": "Symbol oder Name suchen…",
   "markets.clearSearch": "Leeren",
-  "markets.liveTooltip": "Kurse stammen aus dem Kalks-Kursfeed",
+  "markets.liveTooltip": "Kurse stammen aus dem Ezymex-Kursfeed",
   "markets.footnote": "Spreads der Gruppe Standard: Pips für FX, Preiseinheiten für andere · geschlossene Märkte zeigen ihren letzten Kurs · klicken Sie auf eine Zeile für die Kontraktspezifikation",
   // Short trading-hours summary per asset class (24/5 = 24 hours, 5 days a week)
   "hoursShort.forex": "24/5",
@@ -270,7 +270,7 @@ const news: NsMessages<"news"> = {
   "cal.removeReminder": "Erinnerung entfernen",
   "cal.remindMe": "15 Min. vorher erinnern",
   "cal.toWatch": "Zu beobachtende Instrumente",
-  "cal.noLinked": "Mit dieser Währung sind keine Kalks-Instrumente direkt verknüpft.",
+  "cal.noLinked": "Mit dieser Währung sind keine Ezymex-Instrumente direkt verknüpft.",
   // High-impact alerts card
   "alerts.title": "Alarme bei hoher Auswirkung",
   "alerts.toggle": "Vor Ereignissen mit hoher Auswirkung benachrichtigen",

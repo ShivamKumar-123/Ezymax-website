@@ -112,7 +112,7 @@ mod tests {
     fn svg_escapes_names() {
         let s = svg(&CertView {
             code: "KA-ABCDE-FGHJK",
-            tenant_name: "Kalks <Markets>",
+            tenant_name: "Ezymex <Markets>",
             learner: "A \"B\" & <script>",
             phase_order: 1,
             phase_title: "Markets",

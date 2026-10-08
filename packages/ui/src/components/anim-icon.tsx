@@ -117,7 +117,7 @@ const TONE_VAR: Record<AnimIconTone, string> = {
 };
 
 /**
- * Kalks icon tile: a crisp line icon on a quiet tinted tile with a hairline border.
+ * Ezymex icon tile: a crisp line icon on a quiet tinted tile with a hairline border.
  * Deliberately static (no blur, glow or motion). `motion`/`idle` props are accepted for compatibility and ignored.
  */
 export function AnimIcon({

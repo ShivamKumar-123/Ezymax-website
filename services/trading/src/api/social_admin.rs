@@ -393,7 +393,7 @@ pub async fn review_fee(State(st): State<AppState>, s: StaffCtx, Path(id): Path<
     let a = st.social.audit(tenant, &s.staff, if approve { "social.fee.approve" } else { "social.fee.reject" }, Some(row.get("login")), &format!("fee:{id}"), Some(json!({"feeId": id, "status": "pending"})), Some(json!({"feeId": id, "status": fee["status"], "amount": fee["amount"], "masterAmount": fee["masterAmount"]})), &n).await;
     // deliver the payout right away when the wallet is up (the outbox retries otherwise)
     let slugs = st.hub.shared.registry.clone();
-    crate::social::wallet::flush(&st.pool, &st.social.wallet, |t| slugs.get(t).map(|x| x.slug.clone()).unwrap_or_else(|| "kalks".into())).await;
+    crate::social::wallet::flush(&st.pool, &st.social.wallet, |t| slugs.get(t).map(|x| x.slug.clone()).unwrap_or_else(|| "ezymex".into())).await;
     let row = sqlx::query("SELECT f.*, m.nickname FROM social_fees f JOIN social_masters m ON m.id = f.master_id WHERE f.id = $1").bind(id).fetch_one(&st.pool).await?;
     Ok(Json(json!({"fee": fee_json(&row), "audit": [a]})))
 }

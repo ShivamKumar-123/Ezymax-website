@@ -1,6 +1,6 @@
 /**
  * Back Office · Marketing · Promo codes.
- * Import via `@kalks/mock/admin-promo-codes`. Exports are prefixed PROMO_.
+ * Import via `@ezymex/mock/admin-promo-codes`. Exports are prefixed PROMO_.
  */
 import { PEOPLE, type Person } from "./people";
 import { seeded } from "./rng";

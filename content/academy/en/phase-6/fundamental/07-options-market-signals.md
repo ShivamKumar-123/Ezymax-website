@@ -92,7 +92,7 @@ Options create positioning that affects the underlying market through hedging.
 - **Dealer gamma.** Banks that sell options hedge by trading the underlying. When dealers are **long gamma**, they sell as price rises and buy as it falls, which dampens moves and can keep a market in a tight range. When they are **short gamma**, they must buy as price rises and sell as it falls, which amplifies moves. Equity-index commentary often estimates whether dealers are long or short gamma; treat such estimates as rough.
 - **After expiry.** Once a large option expires, the hedging that was holding price in place disappears, and ranges can widen.
 
-> **In Kalks Trader:** Options data is not shown on your CFD chart, but you can use what you learn from market commentary on the News page in the Client Area. Mark reported large expiry strikes as horizontal lines on the chart for that day, and be alert to stalling near them before 10:00 New York time, which is 17:00 server time.
+> **In Ezymex Trader:** Options data is not shown on your CFD chart, but you can use what you learn from market commentary on the News page in the Client Area. Mark reported large expiry strikes as horizontal lines on the chart for that day, and be alert to stalling near them before 10:00 New York time, which is 17:00 server time.
 
 ## Putting it together
 

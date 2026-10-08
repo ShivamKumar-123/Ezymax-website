@@ -137,7 +137,7 @@ class AcademyPhase {
   final String slug, title, level, summary;
   final int order, minutes, done, total;
 
-  /// Product (elective) phase, e.g. phase 9 "Kalks FX Options".
+  /// Product (elective) phase, e.g. phase 9 "Ezymex FX Options".
   final bool elective;
   final List<AcademySection> sections;
   final ExamState? exam;
@@ -556,7 +556,7 @@ class AcademyApi {
   Future<DownloadedFile> certificateFile(String code) async {
     final f = await api.download('academy/certificates/$code/image', query: {'download': '1'});
     final svg = _svgText(f.bytes);
-    return (bytes: Uint8List.fromList(utf8.encode(svg)), fileName: f.fileName ?? 'kalks-academy-$code.svg', contentType: 'image/svg+xml');
+    return (bytes: Uint8List.fromList(utf8.encode(svg)), fileName: f.fileName ?? 'ezymex-academy-$code.svg', contentType: 'image/svg+xml');
   }
 }
 

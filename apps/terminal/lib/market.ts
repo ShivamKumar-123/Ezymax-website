@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { INSTRUMENTS, INSTRUMENT_MAP, priceFeed, type Quote } from "@kalks/mock";
+import { INSTRUMENTS, INSTRUMENT_MAP, priceFeed, type Quote } from "@ezymex/mock";
 
 /**
  * Market-wide stats built on the shared price feed: today's high/low per symbol,

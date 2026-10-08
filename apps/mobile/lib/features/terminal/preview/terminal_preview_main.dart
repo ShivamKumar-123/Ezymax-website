@@ -1,5 +1,5 @@
-// Kalks Trader on its own, for design previews and screenshots while other parts of the app are being built:
-//   flutter build web -t lib/features/terminal/preview/terminal_preview_main.dart --dart-define=KALKS_PREVIEW=true \
+// Ezymex Trader on its own, for design previews and screenshots while other parts of the app are being built:
+//   flutter build web -t lib/features/terminal/preview/terminal_preview_main.dart --dart-define=EZYMEX_PREVIEW=true \
 //     --no-web-resources-cdn --output build/web-d
 // then open `?signedIn=1#/trader?login=10042817` (also `&lang=ar`). The same screen, providers and sample data as the
 // app (lib/main.dart + lib/app.dart), without the Client Area's router. Never part of a build that ships (the app's
@@ -62,7 +62,7 @@ class _TerminalPreviewApp extends ConsumerWidget {
     final brand = ref.watch(configProvider.select((c) => c.brand));
     final banners = ref.watch(bannerProvider);
     return MaterialApp.router(
-      title: 'Kalks Trader',
+      title: 'Ezymex Trader',
       debugShowCheckedModeBanner: false,
       routerConfig: _router,
       theme: KTheme.client(Brightness.light, brand: brand),

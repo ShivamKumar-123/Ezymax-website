@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { Logo } from "@kalks/ui/logo";
-import { getFormatter, getT } from "@kalks/i18n/server";
+import { Logo } from "@ezymex/ui/logo";
+import { getFormatter, getT } from "@ezymex/i18n/server";
 import { publicStatus } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +11,7 @@ const HEADLINE = { operational: "shell.system.status.headlineOperational", maint
 const UTC: Intl.DateTimeFormatOptions = { dateStyle: "medium", timeStyle: "long", timeZone: "UTC" };
 const DOT = { operational: "bg-up", degraded: "bg-warn", outage: "bg-down", maintenance: "bg-warn" } as const;
 
-/** Public status page (app.kalkstrade.com/status): no sign-in, no internal details. */
+/** Public status page (app.ezymex.com/status): no sign-in, no internal details. */
 export default async function StatusPage() {
   const [s, t, f] = await Promise.all([publicStatus(), getT(), getFormatter()]);
   const headline = t(HEADLINE[s.status === "operational" || s.status === "maintenance" || s.status === "degraded" ? s.status : "outage"]);
@@ -40,7 +40,7 @@ export default async function StatusPage() {
             </li>
           ))}
         </ul>
-        <p className="mt-6 text-[12.5px] text-fg-3">{t("shell.system.status.questions", { email: "support@kalkstrade.com" })}</p>
+        <p className="mt-6 text-[12.5px] text-fg-3">{t("shell.system.status.questions", { email: "support@ezymex.com" })}</p>
       </div>
     </main>
   );

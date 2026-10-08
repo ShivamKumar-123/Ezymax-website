@@ -28,13 +28,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (t.open) parts.push(`${t.open} live`);
   if (t.winRate !== null) parts.push(`${t.winRate.toFixed(0)}% win rate`);
   if (t.closed) parts.push(`${signed(t.pips)} pips`);
-  const description = `${parts.join(" · ")} · shared by ${s.alias} on Kalks Trader, ${dateLabel(s.created_at)}`;
+  const description = `${parts.join(" · ")} · shared by ${s.alias} on Ezymex Trader, ${dateLabel(s.created_at)}`;
   return {
     title: `${s.title} · ${s.alias}`,
     description,
     metadataBase: base,
     robots,
-    openGraph: { type: "website", siteName: "Kalks Trader", title: `${s.title} · shared trades`, description, url: `/share/${code}` },
+    openGraph: { type: "website", siteName: "Ezymex Trader", title: `${s.title} · shared trades`, description, url: `/share/${code}` },
     twitter: { card: "summary_large_image", title: `${s.title} · shared trades`, description },
   };
 }

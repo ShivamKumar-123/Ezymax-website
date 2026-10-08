@@ -1,13 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { getInstrument, priceFeed, type DepthBook } from "@kalks/mock";
-import { cn, useQuote } from "@kalks/ui";
+import { getInstrument, priceFeed, type DepthBook } from "@ezymex/mock";
+import { cn, useQuote } from "@ezymex/ui";
 import { useTerminal } from "@/lib/store";
 import { useMarketOpen } from "@/lib/market-hours";
 import { fmtPrice, fmtVol, pipSize } from "@/lib/trading";
 import { Stepper } from "@/components/ui/primitives";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 
 /** The market-data depth stream for `symbol` (null until the first book, or while the service is unreachable). */
 function useDepth(symbol: string): DepthBook | null {

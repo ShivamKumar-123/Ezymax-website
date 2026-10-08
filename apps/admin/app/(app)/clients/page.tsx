@@ -1,6 +1,6 @@
 "use client";
 
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveClients } from "@/components/live/clients";
 
 import * as React from "react";
@@ -28,8 +28,8 @@ import {
   cn,
   formatMoney,
   type Column,
-} from "@kalks/ui";
-import { ADMIN_NOW, CLIENTS, CLIENT_GROUPS, CLIENT_TAGS, REASON_CODES, SALES_AGENTS, staff, timeAgo, type AdminClient } from "@kalks/mock/admin-clients";
+} from "@ezymex/ui";
+import { ADMIN_NOW, CLIENTS, CLIENT_GROUPS, CLIENT_TAGS, REASON_CODES, SALES_AGENTS, staff, timeAgo, type AdminClient } from "@ezymex/mock/admin-clients";
 import { Check, ClientCell, KycChip, ReasonDialog, RiskScore } from "@/components/command/kit";
 
 type Filter = "all" | "verified" | "pending" | "funded" | "inactive";
@@ -112,14 +112,14 @@ function BulkDialogs({ bulk, setBulk, count, onDone }: { bulk: Bulk; setBulk: (b
         <div className="space-y-4">
           <Segmented size="xs" value={tpl} onChange={setTpl} options={[{ value: "kyc", label: "KYC reminder" }, { value: "promo", label: "Gold swap-free promo" }, { value: "custom", label: "Custom" }]} />
           <Field label="Subject">
-            <Input key={tpl} defaultValue={tpl === "kyc" ? "Finish verifying your Kalks account" : tpl === "promo" ? "Trade gold swap-free this month" : ""} placeholder="Subject" />
+            <Input key={tpl} defaultValue={tpl === "kyc" ? "Finish verifying your Ezymex account" : tpl === "promo" ? "Trade gold swap-free this month" : ""} placeholder="Subject" />
           </Field>
           <label className="block">
             <span className="mb-1.5 block text-[12.5px] font-medium text-fg-2">Body</span>
             <textarea
               key={tpl}
               rows={6}
-              defaultValue={tpl === "kyc" ? "Hi {{first_name}},\n\nYou're one step away from withdrawals and higher limits. Upload your ID and a selfie — it takes about 2 minutes.\n\nThe Kalks team" : tpl === "promo" ? "Hi {{first_name}},\n\nFrom 1 Oct, XAUUSD is swap-free on Standard and Pro accounts.\n\nThe Kalks team" : ""}
+              defaultValue={tpl === "kyc" ? "Hi {{first_name}},\n\nYou're one step away from withdrawals and higher limits. Upload your ID and a selfie — it takes about 2 minutes.\n\nThe Ezymex team" : tpl === "promo" ? "Hi {{first_name}},\n\nFrom 1 Oct, XAUUSD is swap-free on Standard and Pro accounts.\n\nThe Ezymex team" : ""}
               className="w-full resize-none rounded-[14px] border border-line bg-surface-2 px-3.5 py-2.5 font-mono text-[12.5px] outline-none focus:border-ember/50"
             />
           </label>
@@ -230,7 +230,7 @@ function DemoUsersPage() {
     <div className="pb-10">
       <PageHeader
         title="Users"
-        subtitle="Every client across Kalks Markets — KYC, funding, desk ownership and risk at a glance."
+        subtitle="Every client across Ezymex Markets — KYC, funding, desk ownership and risk at a glance."
         actions={
           <Button variant="ember" size="lg" onClick={() => toast("Create client", { description: "Manual onboarding is disabled for this tenant — invite via link instead." })}>
             <Plus /> Invite client

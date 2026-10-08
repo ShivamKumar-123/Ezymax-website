@@ -3,11 +3,11 @@
 import * as React from "react";
 import { AlertTriangle, Ban, Bot, ShieldAlert, Sliders } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, DataTable, KpiCard, PageHeader, Reveal, Segmented, StatusChip, Tabs, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, KpiCard, PageHeader, Reveal, Segmented, StatusChip, Tabs, type Column } from "@ezymex/ui";
 import { PersonCell, auditToast, useReason } from "@/components/config/kit";
 import { BANNED_TYPES, VIOLATIONS, VIOLATION_LABEL, fmtAgo, type Violation, type ViolationType } from "@/components/prop/data";
 import { SEVERITY_TONE, ViolationDrawer } from "@/components/prop/violation-drawer";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveViolationsPage } from "@/components/prop-live/violations";
 
 export default function ViolationsPage() {

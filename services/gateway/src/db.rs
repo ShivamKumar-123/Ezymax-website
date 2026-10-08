@@ -9,7 +9,7 @@ use crate::validate;
 /// Connects, creating the database on first run, and applies migrations.
 pub async fn connect(url: &str) -> anyhow::Result<PgPool> {
     let opts = PgConnectOptions::from_str(url)?;
-    let db = opts.get_database().unwrap_or("kalks_core").to_string();
+    let db = opts.get_database().unwrap_or("ezymex_core").to_string();
     let admin = opts.clone().database("postgres");
     let mut conn = admin.connect().await?;
     let exists: Option<i32> = sqlx::query_scalar("SELECT 1 FROM pg_database WHERE datname = $1").bind(&db).fetch_optional(&mut conn).await?;
@@ -24,7 +24,7 @@ pub async fn connect(url: &str) -> anyhow::Result<PgPool> {
     Ok(pool)
 }
 
-/// Creates the Platform Owner staff account for tenant `kalks` from SUPER_ADMIN_EMAIL / SUPER_ADMIN_PASSWORD.
+/// Creates the Platform Owner staff account for tenant `ezymex` from SUPER_ADMIN_EMAIL / SUPER_ADMIN_PASSWORD.
 /// Idempotent: an existing account (and its password) is never modified.
 pub async fn seed_super_admin(pool: &PgPool, cfg: &Config) -> anyhow::Result<()> {
     if cfg.super_admin_email.is_empty() || cfg.super_admin_password.is_empty() {
@@ -32,7 +32,7 @@ pub async fn seed_super_admin(pool: &PgPool, cfg: &Config) -> anyhow::Result<()>
         return Ok(());
     }
     let email = validate::email(&cfg.super_admin_email).map_err(|m| anyhow::anyhow!("SUPER_ADMIN_EMAIL: {m}"))?;
-    let tenant_id: i64 = sqlx::query_scalar("SELECT id FROM tenants WHERE slug = 'kalks'").fetch_one(pool).await?;
+    let tenant_id: i64 = sqlx::query_scalar("SELECT id FROM tenants WHERE slug = 'ezymex'").fetch_one(pool).await?;
     let exists: Option<i64> = sqlx::query_scalar("SELECT id FROM staff WHERE tenant_id = $1 AND email = $2").bind(tenant_id).bind(&email).fetch_optional(pool).await?;
     if exists.is_some() {
         tracing::info!(%email, "super admin present");

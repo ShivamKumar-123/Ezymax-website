@@ -3,7 +3,7 @@
  * Used when Claude is not configured, and as an offline fallback. Anything it cannot read is
  * reported back as a clarifying question instead of being guessed.
  */
-import { INSTRUMENTS, priceFeed } from "@kalks/mock";
+import { INSTRUMENTS, priceFeed } from "@ezymex/mock";
 import { TIMEFRAMES, type Timeframe } from "../trading";
 import {
   candle,

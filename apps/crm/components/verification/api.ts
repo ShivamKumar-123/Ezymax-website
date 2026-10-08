@@ -3,8 +3,8 @@
 // Browser side of the KYC BFF (app/api/kyc/[[...path]]/route.ts). Shapes mirror services/gateway/src/kyc.rs.
 
 import * as React from "react";
-import { tr } from "@kalks/i18n/react";
-import type { MessageKey } from "@kalks/i18n";
+import { tr } from "@ezymex/i18n/react";
+import type { MessageKey } from "@ezymex/i18n";
 
 export type CaseStatus = "draft" | "submitted" | "in_review" | "more_info" | "approved" | "rejected";
 export type IdType = "passport" | "national_id" | "driving_licence";

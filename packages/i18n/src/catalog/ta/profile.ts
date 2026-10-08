@@ -4,7 +4,7 @@ const profile: NsMessages<"profile"> = {
   // Profile page (shared)
   title: "சுயவிவரம்",
   subtitle: "உங்கள் தனிப்பட்ட விவரங்கள் மற்றும் கணக்கு விருப்பங்கள்.",
-  liveSubtitle: "Kalks இல் பதிவுசெய்யப்பட்ட உங்கள் தனிப்பட்ட விவரங்கள்.",
+  liveSubtitle: "Ezymex இல் பதிவுசெய்யப்பட்ட உங்கள் தனிப்பட்ட விவரங்கள்.",
   memberSince: "{date} முதல் உறுப்பினர்",
   notVerified: "சரிபார்க்கப்படவில்லை",
   "photo.upload": "புதிய புகைப்படத்தைப் பதிவேற்றுங்கள்",
@@ -59,7 +59,7 @@ const profile: NsMessages<"profile"> = {
   "data.exportRequested": "தரவு ஏற்றுமதி கோரப்பட்டது",
   "data.exportRequestedHint": "72 மணி நேரத்திற்குள் மின்னஞ்சலில் பதிவிறக்க இணைப்பைப் பெறுவீர்கள்.",
   "data.export": "எனது தரவை ஏற்றுமதி செய்",
-  "closure.title": "உங்கள் Kalks கணக்கை மூடுங்கள்",
+  "closure.title": "உங்கள் Ezymex கணக்கை மூடுங்கள்",
   "closure.description": "அனைத்து டிரேடிங் கணக்குகளிலும் பூஜ்ஜிய பேலன்ஸ் இருக்க வேண்டும், திறந்த பொசிஷன்கள் இருக்கக்கூடாது.",
   "closure.request": "கணக்கு மூடலைக் கோருங்கள்",
   "closure.submitted": "மூடல் கோரிக்கை சமர்ப்பிக்கப்பட்டது",

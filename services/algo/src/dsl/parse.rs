@@ -1,4 +1,4 @@
-//! Lexer and parser for the Kalks strategy DSL (Python-like expressions, see `dsl/mod.rs` for the
+//! Lexer and parser for the Ezymex strategy DSL (Python-like expressions, see `dsl/mod.rs` for the
 //! language reference and limits). The parser only builds an expression tree: there are no loops, no
 //! function definitions, no imports and no attribute access, so a program cannot do anything except
 //! compute series from the bars it is given.

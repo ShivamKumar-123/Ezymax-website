@@ -120,13 +120,13 @@ pub fn header(parts: &Parts, name: &str) -> Option<String> {
     parts.headers.get(name).and_then(|v| v.to_str().ok()).map(str::trim).filter(|v| !v.is_empty()).map(str::to_string)
 }
 
-/// Tenant (`X-Kalks-Tenant`, default `kalks`), client ip, user agent and the calling service.
+/// Tenant (`X-Ezymex-Tenant`, default `ezymex`), client ip, user agent and the calling service.
 #[derive(Clone, Debug)]
 pub struct Ctx {
     pub tenant: Tenant,
     pub ip: Option<String>,
     pub user_agent: Option<String>,
-    /// `X-Kalks-Service` (ib, prop, pamm, copy, crm, …), recorded as the actor of external transfers.
+    /// `X-Ezymex-Service` (ib, prop, pamm, copy, crm, …), recorded as the actor of external transfers.
     pub service: Option<String>,
 }
 
@@ -139,7 +139,7 @@ impl Ctx {
 impl FromRequestParts<AppState> for Ctx {
     type Rejection = ApiError;
     async fn from_request_parts(parts: &mut Parts, st: &AppState) -> Result<Self, Self::Rejection> {
-        let slug = header(parts, "x-kalks-tenant").unwrap_or_else(|| "kalks".into()).to_lowercase();
+        let slug = header(parts, "x-ezymex-tenant").unwrap_or_else(|| "ezymex".into()).to_lowercase();
         let id = match st.tenants.get(&slug) {
             Some(id) => id,
             None => {
@@ -152,7 +152,7 @@ impl FromRequestParts<AppState> for Ctx {
         };
         let ip = header(parts, "x-forwarded-for").and_then(|v| v.split(',').next().map(|s| s.trim().to_string())).filter(|v| !v.is_empty() && v.len() <= 64);
         let user_agent = header(parts, "user-agent").map(|u| u.chars().take(400).collect());
-        let service = header(parts, "x-kalks-service").filter(|s| s.len() <= 32 && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_'));
+        let service = header(parts, "x-ezymex-service").filter(|s| s.len() <= 32 && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_'));
         Ok(Ctx { tenant: Tenant { id, slug }, ip, user_agent, service })
     }
 }
@@ -163,7 +163,7 @@ pub struct Staff {
     pub id: String,
     pub name: String,
     pub role: String,
-    /// `X-Kalks-Staff-Perms`: the staff member's gateway permission keys as forwarded by the admin BFF. None when
+    /// `X-Ezymex-Staff-Perms`: the staff member's gateway permission keys as forwarded by the admin BFF. None when
     /// the caller sent no list (older BFFs): then only the role is checked.
     pub perms: Option<Vec<String>>,
 }
@@ -228,13 +228,13 @@ impl FromRequestParts<AppState> for StaffCtx {
     type Rejection = ApiError;
     async fn from_request_parts(parts: &mut Parts, st: &AppState) -> Result<Self, Self::Rejection> {
         let ctx = Ctx::from_request_parts(parts, st).await?;
-        let id = header(parts, "x-kalks-staff-id").ok_or(ApiError::Unauthorized)?;
-        let role = header(parts, "x-kalks-staff-role").ok_or(ApiError::Unauthorized)?;
+        let id = header(parts, "x-ezymex-staff-id").ok_or(ApiError::Unauthorized)?;
+        let role = header(parts, "x-ezymex-staff-role").ok_or(ApiError::Unauthorized)?;
         if id.len() > 64 || role.len() > 32 {
             return Err(ApiError::BadRequest("Invalid staff headers".into()));
         }
-        let name = header(parts, "x-kalks-staff-name").map(|n| percent_decode(&n)).unwrap_or_else(|| format!("Staff {id}"));
-        let perms = header(parts, "x-kalks-staff-perms").map(|v| v.split(',').map(|p| p.trim().to_string()).filter(|p| !p.is_empty() && p.len() <= 64).take(200).collect());
+        let name = header(parts, "x-ezymex-staff-name").map(|n| percent_decode(&n)).unwrap_or_else(|| format!("Staff {id}"));
+        let perms = header(parts, "x-ezymex-staff-perms").map(|v| v.split(',').map(|p| p.trim().to_string()).filter(|p| !p.is_empty() && p.len() <= 64).take(200).collect());
         Ok(StaffCtx { ctx, staff: Staff { id, name: name.chars().take(120).collect(), role, perms } })
     }
 }

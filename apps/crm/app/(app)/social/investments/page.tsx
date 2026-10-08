@@ -35,11 +35,11 @@ import {
   type CopySubscription,
   type PammFund,
   type PammHolding,
-} from "@kalks/mock/social";
+} from "@ezymex/mock/social";
 import { MasterIdentity, RiskBadge } from "@/components/social/master-bits";
 import { InvestDialog } from "@/components/social/invest-dialog";
 import { RangeSlider, ToggleChip } from "@/components/social/controls";
-import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LiveInvestmentsPage } from "@/components/social-live/investments";
 
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

@@ -3,7 +3,7 @@
 import * as React from "react";
 import { motion } from "motion/react";
 import { ChevronRight } from "lucide-react";
-import { cn, formatNumber } from "@kalks/ui";
+import { cn, formatNumber } from "@ezymex/ui";
 
 export interface FunnelStage {
   key: string;

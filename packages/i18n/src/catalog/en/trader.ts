@@ -1,6 +1,6 @@
 // Keys for this namespace. English is the source; translations live in ../<lang>/trader.ts.
-// Kalks Trader (apps/terminal): MT5-style web terminal shell, login and mobile layout.
-// Keep brand names (Kalks, Kalks Trader), server names (Kalks-Live01), keyboard keys (F1, F10, F11)
+// Ezymex Trader (apps/terminal): MT5-style web terminal shell, login and mobile layout.
+// Keep brand names (Ezymex, Ezymex Trader), server names (Ezymex-Live01), keyboard keys (F1, F10, F11)
 // and "GMT+3" as they are. "Client Area" is the client portal's name and may be translated.
 const trader = {
   // Shared shell words
@@ -138,7 +138,7 @@ const trader = {
   "menu.keyboardShortcuts": "Keyboard shortcuts",
   "menu.helpTopics": "Help topics",
   "menu.contactSupport": "Contact support",
-  "menu.about": "About Kalks Trader",
+  "menu.about": "About Ezymex Trader",
   // Tools > Options toast
   "options.title": "Options",
   // Tools > Options dialog: section titles and rows
@@ -176,7 +176,7 @@ const trader = {
   "guest.noAccount": "No trading account",
   "guest.liveData": "Live market data",
   "guest.cardHeader": "Guest · charts and quotes",
-  "guest.cardText": "Charts, indicators, drawings, alerts and symbol specs run on live Kalks market data. Log in with your trading account to trade, or open one in the Client Area.",
+  "guest.cardText": "Charts, indicators, drawings, alerts and symbol specs run on live Ezymex market data. Log in with your trading account to trade, or open one in the Client Area.",
 
   // Notifications bell
   "notifications.title": "Notifications",
@@ -291,7 +291,7 @@ const trader = {
   "login.serverTime": "Server time GMT+3",
   "login.notice.expired": "Your session has expired. Log in again.",
   "login.notice.expiredFor": "Your session for {login} has expired. Log in again.",
-  "login.notice.ssoExpired": "That sign-in link has expired or was already used. Open Kalks Trader again from the Client Area, or log in below.",
+  "login.notice.ssoExpired": "That sign-in link has expired or was already used. Open Ezymex Trader again from the Client Area, or log in below.",
   "login.notice.ssoFailed": "Signing in from the Client Area failed. Log in below.",
   "login.error.invalid": "Invalid account or password.",
   "login.error.locked": "Too many failed attempts. This login is locked for 15 minutes.",
@@ -314,9 +314,9 @@ const trader = {
   "mobile.tab.history": "History",
   "mobile.tab.account": "Account",
   "mobile.guestSubtitle": "Live market data · no trading account",
-  "mobile.guestTrade": "Positions, orders, balance and margin appear here once you trade from a Kalks account. Charts and quotes work now.",
+  "mobile.guestTrade": "Positions, orders, balance and margin appear here once you trade from a Ezymex account. Charts and quotes work now.",
   "mobile.guestHistory": "Your closed trades are listed here once you log in to a trading account.",
-  "mobile.guestAccountText": "Log in to a trading account to trade. Charts, indicators, drawings and alerts run on live Kalks market data now.",
+  "mobile.guestAccountText": "Log in to a trading account to trade. Charts, indicators, drawings and alerts run on live Ezymex market data now.",
   "mobile.watchSegment": "Watchlist segment",
   "mobile.noFavourites": "No favourites yet.",
   "mobile.noSymbols": "No symbols match.",
@@ -347,14 +347,14 @@ const trader = {
   "copyBanner.textNoName": "Copy account — trades are managed by the master you copy; you can watch P&L here.",
   "copyBanner.manage": "Manage copy in the Client Area",
 
-  // ---- Kalks FX Options workspace (CFD | Options switch in Kalks Trader; components/options/*) ----
-  // Keep "Kalks FX Options", "Claude", tickers (EURUSD), "IV", "ATM", "OTM", "ITM", "P&L", "USD", "UTC", "GTC" and the
+  // ---- Ezymex FX Options workspace (CFD | Options switch in Ezymex Trader; components/options/*) ----
+  // Keep "Ezymex FX Options", "Claude", tickers (EURUSD), "IV", "ATM", "OTM", "ITM", "P&L", "USD", "UTC", "GTC" and the
   // Greek letters (Δ Γ Θ) as they are. Premiums are in USD per contract; "pips" are price points of the underlying.
   "opt.mode.label": "Trading mode",
   "opt.mode.cfd": "CFD",
   "opt.mode.options": "Options",
   "opt.mode.cfdHint": "CFD trading: charts, Market Watch and the order panel",
-  "opt.mode.optionsHint": "Kalks FX Options: option chain, strategies and payoff",
+  "opt.mode.optionsHint": "Ezymex FX Options: option chain, strategies and payoff",
   "opt.call": "Call",
   "opt.put": "Put",
   "opt.calls": "Calls",
@@ -523,7 +523,7 @@ const trader = {
 
   // Module not open yet / price server down
   "opt.soon.title": "Options launching soon",
-  "opt.soon.text": "Kalks FX Options isn't open on this account yet. As soon as it is, the option chain appears here, on the same account as your CFDs.",
+  "opt.soon.text": "Ezymex FX Options isn't open on this account yet. As soon as it is, the option chain appears here, on the same account as your CFDs.",
   "opt.soon.point1": "Calls and puts on forex, gold, silver and oil",
   "opt.soon.point2": "Daily, weekly and monthly expiries, cash-settled in USD",
   "opt.soon.point3": "As a buyer you can never lose more than the premium you pay",
@@ -668,14 +668,14 @@ const trader = {
 
   // Public option chain page (/options/chain/EURUSD)
   "opt.public.brand": "Option chain",
-  "opt.public.kicker": "Kalks FX Options",
+  "opt.public.kicker": "Ezymex FX Options",
   "opt.public.title": "{name} option chain",
   "opt.public.subtitle": "Live calls and puts for daily, weekly and monthly expiries: bid and ask in USD per contract, implied volatility, delta, probability in the money and breakeven. European options, cash-settled in USD.",
   "opt.public.trade": "Trade {u} options",
   "opt.public.atmStraddle": "ATM straddle",
-  "opt.public.soonText": "The public option chain opens with Kalks FX Options. Open an account to be ready on day one.",
+  "opt.public.soonText": "The public option chain opens with Ezymex FX Options. Open an account to be ready on day one.",
   "opt.public.ctaTitle": "Trade this chain.",
-  "opt.public.ctaText": "Log in to Kalks Trader to buy or sell any option here, build strategies and see your payoff.",
+  "opt.public.ctaText": "Log in to Ezymex Trader to buy or sell any option here, build strategies and see your payoff.",
   "opt.public.howTitle": "How to read the chain",
   "opt.public.how1": "Calls pay when the price ends above the strike, puts when it ends below.",
   "opt.public.how2": "The bid is what you get when you sell, the ask is what you pay when you buy, both in USD per contract.",
@@ -712,15 +712,15 @@ const trader = {
   "opt.m.chain": "Chain",
   "opt.m.positions": "Positions",
   // ---------------------------------------------------------------------------------------------------------------
-  // Options ORDER BOOK (docs/OPTIONS-EXCHANGE.md): clients trade with each other and with the Kalks market maker
+  // Options ORDER BOOK (docs/OPTIONS-EXCHANGE.md): clients trade with each other and with the Ezymex market maker
   // (MM) on a price-time order book. "Book" = the order book. Bid = best buy order, ask / offer = best sell order.
   // "Mark" = the fair price used for P&L (model price kept inside the best bid and ask); "theo" = the model's
   // theoretical value. Maker = the resting order that was traded against; taker = the order that traded at once.
-  // Keep GTC, IOC, FOK, GTD, RFQ and MM as they are (trading abbreviations); "Kalks" is a brand name.
+  // Keep GTC, IOC, FOK, GTD, RFQ and MM as they are (trading abbreviations); "Ezymex" is a brand name.
   // ---------------------------------------------------------------------------------------------------------------
   "opt.book.tab": "Book",
   "opt.book.badge": "Book",
-  "opt.book.badgeHint": "Prices come from the order book: orders of other clients and of the Kalks market maker, under the same rules for everyone.",
+  "opt.book.badgeHint": "Prices come from the order book: orders of other clients and of the Ezymex market maker, under the same rules for everyone.",
   "opt.book.size": { one: "{count} contract", other: "{count} contracts" },
   "opt.book.noOffers": "No offers",
   "opt.book.noBids": "No bids",
@@ -789,7 +789,7 @@ const trader = {
   "opt.bt.needPrice": "Enter a limit price.",
   "opt.bt.needGtd": "Choose until when the order stays in the book.",
   "opt.bt.needTrigger": "Enter a trigger price.",
-  "opt.bt.bookOff": "The order book isn't available right now: prices and orders are back to Kalks prices.",
+  "opt.bt.bookOff": "The order book isn't available right now: prices and orders are back to Ezymex prices.",
   "opt.bt.pv.fillsNow": "Fills now",
   "opt.bt.pv.fillsAt": "{n} of {total} at {price} avg.",
   "opt.bt.pv.none": "None at this price",
@@ -878,7 +878,7 @@ const trader = {
   "opt.rfq.title": "Request for quote",
   "opt.rfq.request": "Request quote",
   "opt.rfq.again": "Request a new quote",
-  "opt.rfq.note": "The whole strategy trades as one: the Kalks market maker quotes a net price, and all legs fill together or none do.",
+  "opt.rfq.note": "The whole strategy trades as one: the Ezymex market maker quotes a net price, and all legs fill together or none do.",
   "opt.rfq.builderNote": "Strategies trade by request for quote: one net price, all legs together.",
   "opt.rfq.size": "Size: {n} × the strategy",
   "opt.rfq.waiting": "Waiting for a quote…",
@@ -889,17 +889,17 @@ const trader = {
   "opt.rfq.validFor": "valid {s}s",
   "opt.rfq.refreshing": "new quote…",
   "opt.rfq.from": "Quote from {who}",
-  "opt.rfq.kalksMm": "the Kalks market maker",
+  "opt.rfq.ezymexMm": "the Ezymex market maker",
   "opt.rfq.openFor": "request open {s}s",
   "opt.rfq.expired": "The request expired.",
   "opt.rfq.toast.filled": "Strategy filled",
   "opt.rfq.toast.desc": { one: "{count} leg filled · {price} USD net", other: "{count} legs filled together · {price} USD net" },
-  "opt.rfq.kalksQuoted": "Kalks-quoted (not order book)",
-  "opt.rfq.kalksQuotedHint": "Barrier options aren't listed on the order book: Kalks quotes them at the model price plus a spread.",
+  "opt.rfq.ezymexQuoted": "Ezymex-quoted (not order book)",
+  "opt.rfq.ezymexQuotedHint": "Barrier options aren't listed on the order book: Ezymex quotes them at the model price plus a spread.",
   // Market-maker rules (public disclosure)
   "opt.mm.link": "Market-maker rules",
   "opt.mm.title": "Market-maker rules",
-  "opt.mm.intro": "Kalks runs a market maker that quotes a buy and a sell price in every option, so there is always someone to trade with. It trades on the same order book as you, under the same rules.",
+  "opt.mm.intro": "Ezymex runs a market maker that quotes a buy and a sell price in every option, so there is always someone to trade with. It trades on the same order book as you, under the same rules.",
   "opt.mm.sameTitle": "Same rules as every client",
   "opt.mm.rule1": "It sends its quotes through the same order entry as clients, with the same checks.",
   "opt.mm.rule2": "No priority: orders fill by price, then by time. Nobody is ahead of you at the same price because of who they are.",
@@ -999,7 +999,7 @@ const trader = {
   "opt.an.oi.emptyOi": "No open interest in this expiry yet.",
   "opt.an.oi.emptyVolume": "Nothing has traded in this expiry today yet.",
   "opt.an.oi.none": "Open interest and the put / call ratio show here once {u} options trade on the order book.",
-  "opt.an.oi.noneSub": "Kalks quotes these options for now, so there is no open interest or volume to show yet. The smile and the term structure above are live.",
+  "opt.an.oi.noneSub": "Ezymex quotes these options for now, so there is no open interest or volume to show yet. The smile and the term structure above are live.",
   "opt.an.oi.aria": "Open interest by strike: calls above, puts below",
   "opt.an.pcr.title": "Put / call ratio",
   "opt.an.pcr.hint": "Puts divided by calls in this expiry. Above 1: more puts than calls.",
@@ -1057,7 +1057,7 @@ const trader = {
   "opt.share.copy": "Copy link",
   "opt.share.copied": "Link copied",
   "opt.share.shareTo": "Share to",
-  "opt.share.text": "My {contract} option trade on Kalks",
+  "opt.share.text": "My {contract} option trade on Ezymex",
   "opt.share.error": "Couldn't create the share card",
   "opt.share.readOnly": "Investor (read-only) logins can't create share cards.",
   "opt.share.preview": "Share card preview",
@@ -1218,7 +1218,7 @@ const trader = {
   "opt.pos.d.nowEach": "Value now, each",
   "opt.pos.d.where": "Traded on",
   "opt.pos.d.book": "Order book",
-  "opt.pos.d.house": "Kalks prices",
+  "opt.pos.d.house": "Ezymex prices",
   "opt.pos.comboPaid": "You paid {amount} for this strategy.",
   "opt.pos.comboReceived": "You received {amount} for this strategy.",
   "opt.pos.emptyTitle": "No open options yet",
@@ -1244,8 +1244,8 @@ const trader = {
   "opt.err.series_cancel_only": "Trading in one of these options is paused right now (cancel only). Try again later.",
   "opt.err.series_closed": "One of these options has stopped trading: it's too close to its expiry.",
   "opt.err.rfq_underlyings": "All legs of a strategy must be on the same market, for example all EURUSD.",
-  "opt.err.kalks_quoted": "This strategy has a barrier leg. Barrier options are priced by Kalks, not on the order book, so it is placed as one order at Kalks prices.",
-  "opt.err.mixed_venue": "This strategy has legs on the order book and legs priced by Kalks, so it can't close in one go. Close the legs one by one.",
+  "opt.err.ezymex_quoted": "This strategy has a barrier leg. Barrier options are priced by Ezymex, not on the order book, so it is placed as one order at Ezymex prices.",
+  "opt.err.mixed_venue": "This strategy has legs on the order book and legs priced by Ezymex, so it can't close in one go. Close the legs one by one.",
   "opt.err.book_venue": "These options trade on the order book. A strategy can't mix order-book legs and barrier legs: place them separately.",
   "opt.rfq.err.quote_expired": "That price is no longer valid (quotes last a few seconds). Get a new price and accept it.",
   "opt.rfq.err.price_moved": "The price moved before your order arrived, so nothing was traded. Get a new price and try again.",
@@ -1256,7 +1256,7 @@ const trader = {
   "opt.rfq.err.no_liquidity": "The market maker can't price this strategy right now. Try again in a moment, or close the legs one by one.",
   "opt.rfq.err.rejected": "The strategy wasn't filled, and nothing was traded. Try again.",
   "opt.rfq.newPrice": "Get a new price",
-  "opt.rfq.houseNote": "Barrier options are priced by Kalks, not on the order book: this strategy is placed as one order at Kalks prices, all legs together or none.",
+  "opt.rfq.houseNote": "Barrier options are priced by Ezymex, not on the order book: this strategy is placed as one order at Ezymex prices, all legs together or none.",
   "opt.toast.settling": "final numbers in a moment",
   "opt.toast.tryAgain": "Try again",
   "opt.toast.strategyClosedBook": "Strategy closed through the order book",
@@ -1264,10 +1264,10 @@ const trader = {
   "opt.pos.closedNetGot": "All legs closed together: you received {amount} · P&L {pnl}",
   "opt.hist.reason.bust": "Cancelled",
   "opt.hist.why.risk": "Closed by risk control (margin too low)",
-  "opt.hist.why.backstop": "Closed by risk control (margin too low): the Kalks market maker took the position over",
+  "opt.hist.why.backstop": "Closed by risk control (margin too low): the Ezymex market maker took the position over",
   "opt.hist.why.bust": "Trade cancelled by the dealing desk; reversed",
   "opt.hist.closedRisk": "Closed by risk control (margin too low) at {close}, per contract",
-  "opt.hist.closedBackstop": "Closed by risk control (margin too low): the Kalks market maker took it over at {close}, per contract",
+  "opt.hist.closedBackstop": "Closed by risk control (margin too low): the Ezymex market maker took it over at {close}, per contract",
   "opt.hist.closedBust": "Trade cancelled by the dealing desk and reversed at {close}, per contract",
   "opt.bust.title": "Trade cancelled by the dealing desk",
   "opt.bust.text": "{what} × {n}: the trade was reversed and any fee refunded.",

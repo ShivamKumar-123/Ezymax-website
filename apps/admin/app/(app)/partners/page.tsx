@@ -4,12 +4,12 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowUpRight, BarChart3, Download, Handshake, Layers, ShieldAlert, Users, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardHeader, Chip, Donut, Flag, KpiCard, ListRow, Money, PageHeader, Reveal, Segmented, Sparkline, StatusChip, cn } from "@kalks/ui";
-import { COMMISSION_MONTHS, FRAUD_FLAGS, FRAUD_LABEL, IB_KPIS, LEVELS, PARTNERS, PAYOUT_BATCHES, type PayoutBatch } from "@kalks/mock/admin-partners";
+import { Avatar, Button, Card, CardHeader, Chip, Donut, Flag, KpiCard, ListRow, Money, PageHeader, Reveal, Segmented, Sparkline, StatusChip, cn } from "@ezymex/ui";
+import { COMMISSION_MONTHS, FRAUD_FLAGS, FRAUD_LABEL, IB_KPIS, LEVELS, PARTNERS, PAYOUT_BATCHES, type PayoutBatch } from "@ezymex/mock/admin-partners";
 import { ColumnChart, FunnelBars, MiniStat } from "@/components/config/kit";
 import { LEVEL_COLOR, LevelChip, ago, fmtInt, fmtLots, fmtUsdK } from "@/components/partners/common";
 import { BatchLinesDialog, PendingBatchCard } from "@/components/partners/payout-batch";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LivePartnersOverview } from "@/components/partners-live/overview";
 
 function CommissionsCard() {

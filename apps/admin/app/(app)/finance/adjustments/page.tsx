@@ -3,12 +3,12 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { Check, Clock3, Download, FileText, Minus, Plus, ShieldCheck, TrendingDown, TrendingUp, UserCheck, X } from "lucide-react";
-import { Avatar, Button, Card, CardHeader, Chip, DataTable, KpiCard, Money, PageHeader, Reveal, Segmented, StatusChip, Tooltip, cn, type Column } from "@kalks/ui";
-import { FIN_ADJUSTMENTS, FIN_ADJ_REASONS, FIN_ADJ_THRESHOLD, FIN_STAFF, finAgo, finTime, type FinAdjustment } from "@kalks/mock/admin-finance";
+import { Avatar, Button, Card, CardHeader, Chip, DataTable, KpiCard, Money, PageHeader, Reveal, Segmented, StatusChip, Tooltip, cn, type Column } from "@ezymex/ui";
+import { FIN_ADJUSTMENTS, FIN_ADJ_REASONS, FIN_ADJ_THRESHOLD, FIN_STAFF, finAgo, finTime, type FinAdjustment } from "@ezymex/mock/admin-finance";
 import { PersonCell, auditToast, useReason } from "@/components/config/kit";
 import { AdjustmentCreate, type NewAdjustment } from "@/components/finance/adjustment-create";
 import { ShareBars, usd } from "@/components/finance/shared";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveAdjustmentsPage } from "@/components/finance-live/adjustments";
 
 const ME = FIN_STAFF[0]!; // Priya Nair — signed-in Risk Manager

@@ -3,8 +3,8 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { Mail, Send, UserPlus } from "lucide-react";
-import { Button, Dialog, DialogClose, Field, Input, Toggle } from "@kalks/ui";
-import { ORG_DESKS, ORG_ROLE_META, ORG_TENANTS, type OrgDeskKey, type OrgRoleKey, type OrgTenantKey } from "@kalks/mock/admin-platform-security";
+import { Button, Dialog, DialogClose, Field, Input, Toggle } from "@ezymex/ui";
+import { ORG_DESKS, ORG_ROLE_META, ORG_TENANTS, type OrgDeskKey, type OrgRoleKey, type OrgTenantKey } from "@ezymex/mock/admin-platform-security";
 import { PickPill } from "./shared";
 
 export interface InviteDraft {
@@ -24,21 +24,21 @@ export function InviteDialog({ onInvite }: { onInvite: (d: InviteDraft) => void 
   const [name, setName] = React.useState("");
   const [role, setRole] = React.useState<OrgRoleKey>("support");
   const [desk, setDesk] = React.useState<OrgDeskKey | null>("support-en");
-  const [tenants, setTenants] = React.useState<OrgTenantKey[]>(["kalks"]);
+  const [tenants, setTenants] = React.useState<OrgTenantKey[]>(["ezymex"]);
   const [hw, setHw] = React.useState(true);
   const [touched, setTouched] = React.useState(false);
 
   const emailErr = !EMAIL.test(email) ? "Enter a valid work email" : undefined;
   const nameErr = name.trim().length < 3 ? "Enter the full name" : undefined;
   const tenantErr = tenants.length === 0 ? "Grant access to at least one broker" : undefined;
-  const external = EMAIL.test(email) && !email.toLowerCase().endsWith("@kalks.com");
+  const external = EMAIL.test(email) && !email.toLowerCase().endsWith("@ezymex.com");
 
   const reset = () => {
     setEmail("");
     setName("");
     setRole("support");
     setDesk("support-en");
-    setTenants(["kalks"]);
+    setTenants(["ezymex"]);
     setHw(true);
     setTouched(false);
   };
@@ -89,7 +89,7 @@ export function InviteDialog({ onInvite }: { onInvite: (d: InviteDraft) => void 
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nadia Khoury" />
           </Field>
           <Field label="Work email" error={touched ? emailErr : undefined} hint={external ? <span className="text-warn">External domain</span> : undefined}>
-            <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nadia.khoury@kalks.com" leading={<Mail />} />
+            <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nadia.khoury@ezymex.com" leading={<Mail />} />
           </Field>
         </div>
         <div>

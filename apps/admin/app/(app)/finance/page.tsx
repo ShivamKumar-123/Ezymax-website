@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { AlertTriangle, ArrowDownToLine, Blocks, Clock3, Download, Gauge as GaugeIcon, HandCoins, Radio, Settings2, Zap } from "lucide-react";
-import { Button, Card, CardHeader, Chip, DataTable, Donut, KpiCard, Money, PageHeader, Reveal, Segmented, StatusChip, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, Donut, KpiCard, Money, PageHeader, Reveal, Segmented, StatusChip, type Column } from "@ezymex/ui";
 import {
   FIN_CHAINS,
   FIN_DEPOSITS,
@@ -15,12 +15,12 @@ import {
   type FinChainConfig,
   type FinClient,
   type FinDeposit,
-} from "@kalks/mock/admin-finance";
+} from "@ezymex/mock/admin-finance";
 import { ColumnChart, PersonCell, TxHash, auditToast } from "@/components/config/kit";
 import { ChainRulesCard, ChainRulesDialog } from "@/components/finance/chain-rules";
 import { UnmatchedDialog, type ResolveAction } from "@/components/finance/unmatched-dialog";
 import { CoinAmount, ConfProgress, LiveDot, NetworkChip, fmtDuration, usd } from "@/components/finance/shared";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveDepositsPage } from "@/components/finance-live/deposits";
 
 type Dep = Omit<FinDeposit, "status"> & { status: FinDeposit["status"] | "refunded" | "held" };

@@ -45,7 +45,7 @@ const news: NsMessages<"news"> = {
   "markets.trade": "Giao dịch",
   "markets.searchPlaceholder": "Tìm mã hoặc tên…",
   "markets.clearSearch": "Xóa",
-  "markets.liveTooltip": "Báo giá được truyền từ nguồn giá Kalks",
+  "markets.liveTooltip": "Báo giá được truyền từ nguồn giá Ezymex",
   "markets.footnote": "Spread nhóm Standard: pip cho FX, đơn vị giá cho sản phẩm khác · thị trường đóng cửa hiển thị giá gần nhất · nhấp vào một dòng để xem thông số hợp đồng",
   // Short trading-hours summary per asset class (24/5 = 24 hours, 5 days a week)
   "hoursShort.forex": "24/5",
@@ -270,7 +270,7 @@ const news: NsMessages<"news"> = {
   "cal.removeReminder": "Xóa nhắc nhở",
   "cal.remindMe": "Nhắc tôi trước 15 phút",
   "cal.toWatch": "Sản phẩm cần theo dõi",
-  "cal.noLinked": "Không có sản phẩm Kalks nào liên kết trực tiếp với đồng tiền này.",
+  "cal.noLinked": "Không có sản phẩm Ezymex nào liên kết trực tiếp với đồng tiền này.",
   // High-impact alerts card
   "alerts.title": "Cảnh báo sự kiện ảnh hưởng cao",
   "alerts.toggle": "Cảnh báo tôi trước sự kiện ảnh hưởng cao",

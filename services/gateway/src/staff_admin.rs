@@ -199,7 +199,7 @@ async fn assignable_role(st: &AppState, me: &Staff, role_id: i64) -> ApiResult<r
 }
 
 fn admin_url() -> String {
-    std::env::var("PUBLIC_ADMIN_URL").ok().filter(|v| !v.trim().is_empty()).unwrap_or_else(|| "https://admin.kalkstrade.com".into()).trim_end_matches('/').to_string()
+    std::env::var("PUBLIC_ADMIN_URL").ok().filter(|v| !v.trim().is_empty()).unwrap_or_else(|| "https://admin.ezymex.com".into()).trim_end_matches('/').to_string()
 }
 
 /// Creates a fresh invite (older pending ones are revoked) and emails the link. Returns (token, expires_at).

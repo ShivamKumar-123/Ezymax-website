@@ -4,8 +4,8 @@
 // level with a safe / low / margin call / stop out meter, each with a plain-language (?) explanation. One slim line at
 // the foot of the positions card; it stays on screen when the card is collapsed.
 import * as React from "react";
-import { cn } from "@kalks/ui";
-import { useT } from "@kalks/i18n/react";
+import { cn } from "@ezymex/ui";
+import { useT } from "@ezymex/i18n/react";
 import { useMetrics, useTerminal } from "@/lib/store";
 import { accCcy, accMoney, marginState } from "@/lib/trading";
 import { LiveMoney, Pnl } from "@/components/ui/primitives";

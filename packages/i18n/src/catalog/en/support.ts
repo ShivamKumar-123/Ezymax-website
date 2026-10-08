@@ -1,10 +1,10 @@
 // Keys for this namespace. English is the source; translations live in ../<lang>/support.ts.
 // Client Area support: live chat, launcher, support page.
-// Keep "Kalks" and "Kalks AI" as they are. {placeholders} are filled in by the app.
+// Keep "Ezymex" and "Ezymex AI" as they are. {placeholders} are filled in by the app.
 const support = {
   // Support page
   "page.title": "Support",
-  "page.subtitle": "Chat with Kalks AI for instant answers. Ask for a person at any time and our team takes over with the full conversation.",
+  "page.subtitle": "Chat with Ezymex AI for instant answers. Ask for a person at any time and our team takes over with the full conversation.",
   "email.prefer": "Prefer email?",
   // <email> and <id> wrap the client's email address and client ID
   "email.writeFrom": "Write from <email>{email}</email> and include your client ID <id>{id}</id>.",
@@ -46,7 +46,7 @@ const support = {
   "quick.withdrawal": "When will my withdrawal arrive?",
   "quick.stopOut": "What is a stop-out?",
   "header.supportTeam": "Support team",
-  "header.agentSub": "Client Support · Kalks",
+  "header.agentSub": "Client Support · Ezymex",
   "header.connecting": "Connecting you with an agent…",
   "header.replySoon": "Our team will reply here soon",
   "header.helpCentre": "Help centre answers · a person can join anytime",

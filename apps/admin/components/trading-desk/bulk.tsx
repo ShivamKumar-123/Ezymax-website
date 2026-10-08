@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { ArrowLeftRight, Crosshair, TrendingDown, TrendingUp, X, XCircle } from "lucide-react";
-import { Button, Field, Input, Segmented, Toggle, cn, formatNumber } from "@kalks/ui";
+import { Button, Field, Input, Segmented, Toggle, cn, formatNumber } from "@ezymex/ui";
 import { positionPnl, useDesk, type Book, type DeskPosition, type QuoteFn } from "@/lib/trading-desk";
 import { DeskDialog, MetaTile, signedMoney } from "./kit";
 

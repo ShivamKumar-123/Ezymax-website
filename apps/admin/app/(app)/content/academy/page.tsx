@@ -3,12 +3,12 @@
 import * as React from "react";
 import { Award, BookOpen, GraduationCap, Pencil, Plus, Search, Star, Users } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardHeader, Chip, Flag, KpiCard, PageHeader, Progress, Reveal, Segmented, type ChipTone, cn } from "@kalks/ui";
-import { CNT_COURSES, CNT_LANGS } from "@kalks/mock/admin-growth-content";
-import { PEOPLE } from "@kalks/mock";
+import { Avatar, Button, Card, CardHeader, Chip, Flag, KpiCard, PageHeader, Progress, Reveal, Segmented, type ChipTone, cn } from "@ezymex/ui";
+import { CNT_COURSES, CNT_LANGS } from "@ezymex/mock/admin-growth-content";
+import { PEOPLE } from "@ezymex/mock";
 import { CourseEditor, type CourseState } from "@/components/content/course-editor";
 import { RingPct } from "@/components/marketing/kit";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveAcademyCms } from "@/components/academy-live/cms";
 
 const LEVEL_TONE: Record<string, ChipTone> = { Beginner: "up", Intermediate: "gold", Advanced: "ember" };
@@ -70,7 +70,7 @@ function DemoAcademyPage() {
         subtitle="Courses, lessons and quizzes shown in the Client Area Academy. Completion feeds the AI Coach and Rewards."
         actions={
           <>
-            <Button variant="surface" onClick={() => toast.success("Certificates", { description: "12,480 issued · template “Kalks Academy 2026” · auto-sent at 100% completion" })}>
+            <Button variant="surface" onClick={() => toast.success("Certificates", { description: "12,480 issued · template “Ezymex Academy 2026” · auto-sent at 100% completion" })}>
               <Award /> Certificates
             </Button>
             <Button variant="ember" shimmer onClick={create}>

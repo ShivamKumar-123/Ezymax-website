@@ -1,9 +1,9 @@
-//! HTTP API (internal; every route except /health needs `X-Kalks-Internal`).
+//! HTTP API (internal; every route except /health needs `X-Ezymex-Internal`).
 //!
-//! Common headers: `X-Kalks-Tenant` (tenant slug, default "kalks"). `?lang=` picks the content language
+//! Common headers: `X-Ezymex-Tenant` (tenant slug, default "ezymex"). `?lang=` picks the content language
 //! (default "en"; missing translations fall back to English).
 //!
-//! Client Area (CRM BFF adds `X-Kalks-User-Id`, and for exams `X-Kalks-User-Name` + `X-Kalks-Tenant-Name`,
+//! Client Area (CRM BFF adds `X-Ezymex-User-Id`, and for exams `X-Ezymex-User-Name` + `X-Ezymex-Tenant-Name`,
 //! both percent-encoded):
 //!
 //! | route                                   | body                         | response                                               |
@@ -24,10 +24,10 @@
 //! phase is complete; passing it (>= the exam's pass mark) issues the phase certificate.
 //!
 //! Phases are independent: no phase is locked behind an earlier one. Core phases have a fundamental and a
-//! technical section; product phases (`elective: true` in the catalogue and admin tree, e.g. phase 9 "Kalks FX
+//! technical section; product phases (`elective: true` in the catalogue and admin tree, e.g. phase 9 "Ezymex FX
 //! Options" with a single `options` section) can be studied, examined and certified at any time.
 //!
-//! Back Office (admin BFF checks `content.read` / `content.write` and adds `X-Kalks-Staff`). Writes are
+//! Back Office (admin BFF checks `content.read` / `content.write` and adds `X-Ezymex-Staff`). Writes are
 //! copy-on-write overrides for the staff member's tenant; `DELETE` resets a node to the platform default:
 //!
 //! `GET /v1/admin/tree` · `GET|PUT|DELETE /v1/admin/nodes/{kind}/{slug}` · `POST /v1/admin/chapters` ·
@@ -103,12 +103,12 @@ impl IntoResponse for ApiError {
 type R<T = Json<Value>> = Result<T, ApiError>;
 
 fn tenant(h: &HeaderMap) -> String {
-    let t = h.get("x-kalks-tenant").and_then(|v| v.to_str().ok()).unwrap_or("kalks").trim().to_ascii_lowercase();
-    if content::is_slug(&t) { t } else { "kalks".into() }
+    let t = h.get("x-ezymex-tenant").and_then(|v| v.to_str().ok()).unwrap_or("ezymex").trim().to_ascii_lowercase();
+    if content::is_slug(&t) { t } else { "ezymex".into() }
 }
 
 fn user_id(h: &HeaderMap) -> R<i64> {
-    h.get("x-kalks-user-id")
+    h.get("x-ezymex-user-id")
         .and_then(|v| v.to_str().ok())
         .and_then(|v| v.parse::<i64>().ok())
         .filter(|v| *v > 0)
@@ -116,7 +116,7 @@ fn user_id(h: &HeaderMap) -> R<i64> {
 }
 
 fn staff(h: &HeaderMap) -> R<String> {
-    h.get("x-kalks-staff")
+    h.get("x-ezymex-staff")
         .and_then(|v| v.to_str().ok())
         .map(|s| s.trim().chars().take(120).collect::<String>())
         .filter(|s| !s.is_empty())
@@ -157,7 +157,7 @@ fn lang(q: &LangQ) -> String {
 
 async fn require_internal(State(st): State<AppState>, req: Request, next: Next) -> Response {
     if !st.cfg.internal_token.is_empty() {
-        let got = req.headers().get("x-kalks-internal").map(|v| v.as_bytes()).unwrap_or(b"");
+        let got = req.headers().get("x-ezymex-internal").map(|v| v.as_bytes()).unwrap_or(b"");
         if !bool::from(got.ct_eq(st.cfg.internal_token.as_bytes())) {
             return ApiError::new(StatusCode::UNAUTHORIZED, "unauthorized", "Internal token required.").into_response();
         }
@@ -571,10 +571,10 @@ async fn exam_submit(State(st): State<AppState>, h: HeaderMap, Path(phase): Path
     touch_day(&st.pool, &t, user).await;
     let mut issued = false;
     if passed {
-        let learner = header_text(&h, "x-kalks-user-name", 80);
-        let learner = if learner.is_empty() { "Kalks learner".to_string() } else { learner };
-        let brand = header_text(&h, "x-kalks-tenant-name", 60);
-        let brand = if brand.is_empty() { "Kalks".to_string() } else { brand };
+        let learner = header_text(&h, "x-ezymex-user-name", 80);
+        let learner = if learner.is_empty() { "Ezymex learner".to_string() } else { learner };
+        let brand = header_text(&h, "x-ezymex-tenant-name", 60);
+        let brand = if brand.is_empty() { "Ezymex".to_string() } else { brand };
         for _ in 0..3 {
             let r = sqlx::query(
                 "INSERT INTO certificates (code, tenant, tenant_name, user_id, learner_name, phase, phase_order, phase_title, level, score_pct)
@@ -1170,10 +1170,10 @@ mod tests {
     #[test]
     fn percent_decoding() {
         let mut h = HeaderMap::new();
-        h.insert("x-kalks-user-name", HeaderValue::from_static("Jos%C3%A9%20P%C3%A9rez"));
-        assert_eq!(header_text(&h, "x-kalks-user-name", 80), "José Pérez");
-        h.insert("x-kalks-user-name", HeaderValue::from_static("100%"));
-        assert_eq!(header_text(&h, "x-kalks-user-name", 80), "100%");
+        h.insert("x-ezymex-user-name", HeaderValue::from_static("Jos%C3%A9%20P%C3%A9rez"));
+        assert_eq!(header_text(&h, "x-ezymex-user-name", 80), "José Pérez");
+        h.insert("x-ezymex-user-name", HeaderValue::from_static("100%"));
+        assert_eq!(header_text(&h, "x-ezymex-user-name", 80), "100%");
     }
 
     #[test]

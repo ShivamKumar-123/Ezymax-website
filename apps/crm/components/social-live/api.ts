@@ -4,10 +4,10 @@
 // Shapes follow the engine contract (services/trading README, "Copy trading and PAMM" → "Social API").
 
 import * as React from "react";
-import { tr } from "@kalks/i18n/react";
+import { tr } from "@ezymex/i18n/react";
 import { ApiError } from "@/components/trading/api";
 import type { EngineOrder, EnginePosition } from "@/components/trading/api";
-import { readCached, writeCached } from "@kalks/ui/swr-cache";
+import { readCached, writeCached } from "@ezymex/ui/swr-cache";
 
 export { ApiError };
 
@@ -540,7 +540,7 @@ export async function socialApi<T>(path: string, init?: { method?: "GET" | "POST
 }
 
 /** Polls `path` every `ms` (0 = once) while the tab is visible. `reload()` refetches at once.
- *  Opened again, a page starts from this tab's last answer while it refetches (@kalks/ui/swr-cache). */
+ *  Opened again, a page starts from this tab's last answer while it refetches (@ezymex/ui/swr-cache). */
 export function useSocial<T>(path: string | null, ms = 0) {
   const [data, setData] = React.useState<T | null>(() => (path ? (readCached<T>(`social:${path}`) ?? null) : null));
   const [error, setError] = React.useState<ApiError | null>(null);

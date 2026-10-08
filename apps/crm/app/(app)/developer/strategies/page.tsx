@@ -6,14 +6,14 @@ import { AnimatePresence, motion } from "motion/react";
 import { ArrowUpRight, Code2, Copy, Download, FlaskConical, LayoutGrid, MoreHorizontal, Pencil, Play, RotateCcw, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, Chip, IconButton, Menu, PageHeader, Reveal, Segmented, Sparkline, SymbolAvatar, cn } from "@/components/kit";
-import { hashString } from "@kalks/mock";
-import { MY_STRATEGIES, SESSIONS, TEMPLATES, cloneRules, generateCode, runBacktest, slugify, type StrategyRules } from "@kalks/mock/algo";
+import { hashString } from "@ezymex/mock";
+import { MY_STRATEGIES, SESSIONS, TEMPLATES, cloneRules, generateCode, runBacktest, slugify, type StrategyRules } from "@ezymex/mock/algo";
 import { RulesSentence, VisualBuilder } from "@/components/developer/strategy-builder";
 import { CodeEditor } from "@/components/developer/strategy-code";
 import { ExecutionFilters, SignalPreview } from "@/components/developer/strategy-preview";
 import { AiAssistant } from "@/components/developer/strategy-ai";
 import { AlgoStatsStrip, DeployCard, MyStrategiesCard, SignalsCard, TemplatesCard } from "@/components/developer/strategy-panels";
-import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LiveStrategiesPage } from "@/components/algo/strategies-page";
 
 type Mode = "visual" | "code";

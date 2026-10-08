@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { IS_DEMO } from "@kalks/mock";
+import { IS_DEMO } from "@ezymex/mock";
 import { LiveDashboard } from "@/components/dashboard/live-dashboard";
 import { MoversCard } from "@/components/dashboard/movers";
 

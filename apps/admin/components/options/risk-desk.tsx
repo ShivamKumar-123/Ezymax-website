@@ -13,7 +13,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Activity, ChartSpline, Clock, Flame, Gauge, RefreshCw, ShieldAlert, Sigma, Timer, TrendingDown } from "lucide-react";
-import { Button, Card, CardHeader, Chip, DataTable, DivergingBar, EmptyState, KpiCard, PageHeader, Progress, Reveal, Segmented,  Tooltip, cn, formatNumber, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, DivergingBar, EmptyState, KpiCard, PageHeader, Progress, Reveal, Segmented,  Tooltip, cn, formatNumber, type Column } from "@ezymex/ui";
 import { ErrorState, TableSkeleton, ago, useNow, when } from "@/components/live/kit";
 import type { AdminExpiry, Book, BookClient, BookUnderlying, Overview, Underlying } from "./types";
 import { EnginePending, ExpiryStatusChip, UnderlyingCell, countdown, enginePending, signedUsd, signedUsdCompact, useOpt, useOptPerms } from "./kit";
@@ -86,7 +86,7 @@ export function RiskDeskPage() {
     <div className="pb-10">
       <PageHeader
         title="Options risk desk"
-        subtitle="House Greeks, hedges and scenario P&L across Kalks FX Options, with the settlement pipeline. Updates every 5 seconds."
+        subtitle="House Greeks, hedges and scenario P&L across Ezymex FX Options, with the settlement pipeline. Updates every 5 seconds."
         actions={
           <>
             <Segmented size="sm" value={kind} onChange={setKind} options={[{ value: "live", label: "Live" }, { value: "demo", label: "Demo" }, { value: "all", label: "All" }]} />

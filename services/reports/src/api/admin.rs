@@ -1,4 +1,4 @@
-//! Back Office routes (staff headers + `X-Kalks-Staff-Perms`). `reports.read` opens every report; downloads
+//! Back Office routes (staff headers + `X-Ezymex-Staff-Perms`). `reports.read` opens every report; downloads
 //! (exports, client statements) and scheduled-report changes need `reports.export`.
 
 use axum::Json;
@@ -84,7 +84,7 @@ pub async fn export(State(app): State<App>, s: StaffCtx, Path(report): Path<Stri
     };
     let format = q.format.clone().unwrap_or_else(|| "csv".into());
     db::audit(&app.pool, &s.tenant, &s.actor, "report.export", Some(&report), Some(json!({"from": from, "to": to, "format": format, "rows": tables.iter().map(|t| t.rows.len()).sum::<usize>()}))).await;
-    let name = format!("kalks-{report}-{}-{}", time::server_day(from), time::server_day(to - chrono::Duration::seconds(1)));
+    let name = format!("ezymex-{report}-{}-{}", time::server_day(from), time::server_day(to - chrono::Duration::seconds(1)));
     Ok(match format.as_str() {
         "xlsx" => file(export::xlsx(&tables).map_err(ApiError::Internal)?, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", &format!("{name}.xlsx")),
         "csv" => file(export::csv(&tables), "text/csv; charset=utf-8", &format!("{name}.csv")),

@@ -1,24 +1,24 @@
 "use client";
 
 import * as React from "react";
-import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LiveSecurity } from "@/components/security/live-security";
 import { KeyRound, Laptop, LogOut, Mail, MonitorSmartphone, ShieldCheck, Smartphone, Globe2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, DataTable, Dialog, Field, Flag, Icon3D, Input, PageHeader, Reveal, Toggle, type Column } from "@/components/kit";
 import { OtpInput, PasswordStrength } from "@/components/auth";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 
 const SESSIONS = [
   { id: "s1", device: "MacBook Pro · Chrome 131", icon: Laptop, ip: "103.21.58.14", location: "Mumbai, IN", country: "in", lastMin: 0, current: true },
-  { id: "s2", device: "iPhone 16 Pro · Kalks PWA", icon: Smartphone, ip: "103.21.58.90", location: "Mumbai, IN", country: "in", lastMin: 12 },
+  { id: "s2", device: "iPhone 16 Pro · Ezymex PWA", icon: Smartphone, ip: "103.21.58.90", location: "Mumbai, IN", country: "in", lastMin: 12 },
   { id: "s3", device: "Windows 11 · Edge", icon: MonitorSmartphone, ip: "94.200.12.7", location: "Dubai, AE", country: "ae", lastMin: 3 * 1440 },
 ];
 
 type LoginRow = { time: string; ip: string; location: string; country: string; device: string; result: "success" | "otp" | "failed" };
 const LOGINS: LoginRow[] = [
   { time: "24 Sep, 21:40", ip: "103.21.58.14", location: "Mumbai", country: "in", device: "Chrome · macOS", result: "success" },
-  { time: "24 Sep, 09:12", ip: "103.21.58.90", location: "Mumbai", country: "in", device: "Kalks PWA · iOS", result: "success" },
+  { time: "24 Sep, 09:12", ip: "103.21.58.90", location: "Mumbai", country: "in", device: "Ezymex PWA · iOS", result: "success" },
   { time: "21 Sep, 18:03", ip: "94.200.12.7", location: "Dubai", country: "ae", device: "Edge · Windows", result: "otp" },
   { time: "21 Sep, 18:01", ip: "94.200.12.7", location: "Dubai", country: "ae", device: "Edge · Windows", result: "failed" },
   { time: "18 Sep, 11:47", ip: "103.21.58.14", location: "Mumbai", country: "in", device: "Chrome · macOS", result: "success" },

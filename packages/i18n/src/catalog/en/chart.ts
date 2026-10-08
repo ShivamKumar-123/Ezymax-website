@@ -1,5 +1,5 @@
 // Keys for this namespace. English is the source; translations live in ../<lang>/chart.ts.
-// Kalks Trader (apps/terminal) charts: chart tabs, chart toolbar, drawing tools, indicator legend,
+// Ezymex Trader (apps/terminal) charts: chart tabs, chart toolbar, drawing tools, indicator legend,
 // on-chart trade lines, the chart context menu and the one-click SELL / BUY panel.
 // Keep symbols (EURUSD), timeframes (M1, H1), SL / TP, keyboard keys (Ctrl+I, Esc) and PNG as they are.
 // {symbol} = instrument, {tf} = timeframe, {price} = a price, {lot} = volume in lots, {label} = an indicator or line label.
@@ -50,7 +50,7 @@ const chart = {
   "tool.ruler": "Ruler",
   // {tool} = a drawing tool name
   "tool.coming": "{tool} is coming",
-  "tool.comingText": "Available in the next Kalks Trader build.",
+  "tool.comingText": "Available in the next Ezymex Trader build.",
   "tool.deleteAll": "Delete all objects",
   "tool.noObjects": "No objects on this chart",
   "tool.deleted": { one: "Deleted {count} object", other: "Deleted {count} objects" },

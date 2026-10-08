@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader desktop shell (see ../en/desk.ts).
+// Ezymex Trader desktop shell (see ../en/desk.ts).
 const desk: NsMessages<"desk"> = {
   // Top bar
   "top.search": "சந்தைகள், செயல்களைத் தேடு",
@@ -55,7 +55,7 @@ const desk: NsMessages<"desk"> = {
   "help.tour": "அறிமுக வழிகாட்டி",
   "help.topics": "உதவி மையம்",
   "help.support": "உதவிக் குழுவைத் தொடர்புகொள்",
-  "help.about": "Kalks Trader பற்றி",
+  "help.about": "Ezymex Trader பற்றி",
   "help.glossary": "டிரேடிங் சொற்களின் விளக்கம்",
   "help.whatIs": "{term} என்றால் என்ன?",
   "help.explain": "விளக்கு",

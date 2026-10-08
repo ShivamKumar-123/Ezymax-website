@@ -31,7 +31,7 @@ import 'dart:math' as math;
 }
 
 const String _code = 'ARJUN24';
-const String _base = 'https://app.kalkstrade.com';
+const String _base = 'https://app.ezymex.com';
 
 Map<String, dynamic> _err(String code, String message, [String? field]) => {
   'error': {'code': code, 'message': message, 'field': ?field},

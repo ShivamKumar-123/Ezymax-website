@@ -1,7 +1,7 @@
 /**
  * POST /api/mobile/trade/options/explain  { locale, strategy }   (docs/MOBILE-API.md)
  *
- * The mobile app's "Explain it to me" (Kalks FX Options simple mode): Kalks Trader's /api/options/explain
+ * The mobile app's "Explain it to me" (Ezymex FX Options simple mode): Ezymex Trader's /api/options/explain
  * (apps/terminal/app/api/options/explain/route.ts) with the app's auth. Claude explains an option idea (legs, cost,
  * max loss / profit, breakeven) in plain language, in the reader's language. The key is read from the server
  * environment only; without ANTHROPIC_API_KEY it answers { configured: false } and the app shows its built-in
@@ -10,7 +10,7 @@
  */
 import Anthropic from "@anthropic-ai/sdk";
 import type { NextRequest } from "next/server";
-import { LOCALES } from "@kalks/i18n/locales";
+import { LOCALES } from "@ezymex/i18n/locales";
 import { mobileAiGate } from "@/lib/mobile-ai";
 
 export const runtime = "nodejs";
@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 
 const MODEL = "claude-opus-5-5";
 
-const SYSTEM = `You explain one options trading idea to a retail trader of Kalks FX Options, in plain everyday language.
+const SYSTEM = `You explain one options trading idea to a retail trader of Ezymex FX Options, in plain everyday language.
 Product facts (apply them, never contradict them):
 - European options on forex, gold, silver and oil, cash-settled in USD. At the cut (normally 10:00 New York) an option that is in the money pays automatically; one that is out of the money expires worthless. The settlement price is the average of the mid price over the last 30 minutes before the cut.
 - A buyer pays the premium upfront and can never lose more than that. A seller receives the premium, needs margin, and can lose more than the premium.

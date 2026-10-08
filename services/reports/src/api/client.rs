@@ -1,4 +1,4 @@
-//! Client Area routes (`X-Kalks-User-Id`): analytics, monthly statement list, statement downloads.
+//! Client Area routes (`X-Ezymex-User-Id`): analytics, monthly statement list, statement downloads.
 
 use axum::Json;
 use axum::extract::{Path, Query, State};
@@ -43,7 +43,7 @@ pub fn sections(q: &RangeQ) -> Sections {
 
 pub fn render(app: &App, s: &Statement, format: &str, sec: &Sections) -> ApiResult<Response> {
     let day = |t| time::server_day(t);
-    let base = format!("kalks-statement-{}-{}-{}", s.account.login, day(s.from), day(s.to - chrono::Duration::seconds(1)));
+    let base = format!("ezymex-statement-{}-{}-{}", s.account.login, day(s.from), day(s.to - chrono::Duration::seconds(1)));
     Ok(match format {
         "pdf" => file(export::statement_pdf(s, &app.cfg.company_name, &app.cfg.company_site, &app.cfg.support_email, sec), "application/pdf", &format!("{base}.pdf")),
         "csv" => file(export::csv(&export::statement_tables(s, sec)), "text/csv; charset=utf-8", &format!("{base}.csv")),
@@ -81,7 +81,7 @@ pub async fn history_zip(State(app): State<App>, u: UserCtx, Path(login): Path<i
     let tables = export::statement_tables(&s, &sec);
     let csv = export::csv(&tables);
     let xlsx = export::xlsx(&tables).map_err(ApiError::Internal)?;
-    let base = format!("kalks-{login}-history");
+    let base = format!("ezymex-{login}-history");
     let names = [format!("{base}/statement.pdf"), format!("{base}/statement.csv"), format!("{base}/statement.xlsx")];
     let zip = crate::zip::store(&[(&names[0], &pdf), (&names[1], &csv), (&names[2], &xlsx)], to);
     db::audit(&app.pool, &u.tenant, &Actor::user(u.user_id), "statement.history_zip", Some(&login.to_string()), None).await;
@@ -125,7 +125,7 @@ pub async fn final_statement(State(app): State<App>, super::Tenant(tenant): supe
         "<p>Your trading account <b>#{login}</b> was {what}. Attached is its final statement with the full history.</p><p>The statement and history also stay available in the Client Area under Accounts &rsaquo; Archived.</p><p>{}</p>",
         app.cfg.company_name
     );
-    let file = format!("kalks-{login}-final-statement.pdf");
+    let file = format!("ezymex-{login}-final-statement.pdf");
     let size = pdf.len();
     let status = match &app.mailer {
         Some(m) => {

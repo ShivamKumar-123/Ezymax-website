@@ -1,5 +1,5 @@
 {
-  "name": "@kalks/ui",
+  "name": "@ezymex/ui",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -20,8 +20,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@kalks/i18n": "workspace:*",
-    "@kalks/mock": "workspace:*",
+    "@ezymex/i18n": "workspace:*",
+    "@ezymex/mock": "workspace:*",
     "@radix-ui/react-dialog": "1.1.23",
     "@radix-ui/react-dropdown-menu": "2.1.24",
     "@radix-ui/react-popover": "1.1.23",

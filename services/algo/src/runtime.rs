@@ -248,7 +248,7 @@ pub fn in_session(spec: &crate::spec::StrategySpec, t: i64) -> bool {
     })
 }
 
-/// Whether an engine deal / position JSON is a Kalks FX Options one (`option` object, `instrument`, or the
+/// Whether an engine deal / position JSON is a Ezymex FX Options one (`option` object, `instrument`, or the
 /// series code `EURUSD-20261009-1.1650-C`). Strategies only ever trade CFDs.
 pub fn is_option(v: &Value) -> bool {
     if v.get("option").is_some_and(Value::is_object) || v.get("instrument").and_then(Value::as_str) == Some("option") {

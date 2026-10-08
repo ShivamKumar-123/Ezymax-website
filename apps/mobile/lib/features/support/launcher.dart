@@ -6,7 +6,7 @@
 //   SupportLauncher(path:)        the floating button (hidden on /support). Put it in the shell's Stack as a plain
 //                                 (non-Positioned) child, outside the page's MediaQuery override: it aligns itself to
 //                                 the bottom end, above the tab bar, and only the button takes touches.
-//   openSupportChat(context)      opens the same chat sheet (e.g. "Continue in chat" from Ask Kalks AI)
+//   openSupportChat(context)      opens the same chat sheet (e.g. "Continue in chat" from Ask Ezymex AI)
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -17,7 +17,7 @@ import '../../ui/ui.dart';
 import 'live_chat.dart';
 import 'support_data.dart';
 
-/// Opens the support chat sheet (the floating chat; also "Continue in chat" from Ask Kalks AI).
+/// Opens the support chat sheet (the floating chat; also "Continue in chat" from Ask Ezymex AI).
 Future<void> openSupportChat(BuildContext context) async {
   final container = ProviderScope.containerOf(context, listen: false);
   final me = container.read(meProvider);

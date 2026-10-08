@@ -56,7 +56,7 @@ const _catalogue = [
   {
     'id': 1,
     'name': r'$25 cashback',
-    'description': 'Straight to your Kalks Wallet.',
+    'description': 'Straight to your Ezymex Wallet.',
     'kind': 'cashback',
     'costPoints': 2500,
     'value': 25,
@@ -92,7 +92,7 @@ const _catalogue = [
   {
     'id': 4,
     'name': r'$100 cashback',
-    'description': 'Straight to your Kalks Wallet.',
+    'description': 'Straight to your Ezymex Wallet.',
     'kind': 'cashback',
     'costPoints': 9500,
     'value': 100,
@@ -735,7 +735,7 @@ Map<String, dynamic> get _sprint => _contest(
 Map<String, dynamic> get _optionsCup => _contest(
   103,
   name: 'FX Options Cup',
-  description: 'Kalks FX Options only: the most contracts traded wins.',
+  description: 'Ezymex FX Options only: the most contracts traded wins.',
   kind: 'live',
   status: 'scheduled',
   start: const Duration(days: 5, hours: 4),
@@ -867,7 +867,7 @@ Map<String, dynamic> _detail(int id) {
   final c = _contestById(id);
   if (c == null) return (404, _err('not_found', 'Contest not found.'));
   if (c['instrument'] == 'options') {
-    return (403, _err('options_intro_required', 'Options contests are for clients who can trade Kalks FX Options.'));
+    return (403, _err('options_intro_required', 'Options contests are for clients who can trade Ezymex FX Options.'));
   }
   if (_myEntry(id) != null) return (409, _err('already_joined', 'You have already joined this contest.'));
   final entry = _standing(9300, null, 'Arjun Mehta', 'in', ret: 0, trades: 0, me: true, login: body['login'] as int? ?? 20031188, qualified: false);

@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Eye, EyeOff, KeyRound, Lock, MailCheck, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Field, Input, Skeleton } from "@kalks/ui";
+import { Button, Field, Input, Skeleton } from "@ezymex/ui";
 import { OtpInput } from "@/components/auth/otp-input";
 
 // Staff invite (D111): the link proves the invite, a new password activates the account, and the emailed

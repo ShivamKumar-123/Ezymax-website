@@ -116,9 +116,9 @@ A stop loss inside a gap cannot be filled at its level, because nobody traded th
 
 Gaps can also help. A buy limit at 1.0800 in the same scenario would typically fill at the 1.0780 open, a better price than requested.
 
-## Weekend and session risk on Kalks
+## Weekend and session risk on Ezymex
 
-Sessions on Kalks, in server time, create predictable closed periods:
+Sessions on Ezymex, in server time, create predictable closed periods:
 
 - **FX, metals, indices and energies** are closed on Saturday and Sunday. Anything that happens in between is priced in at the open.
 - **Crypto** trades 24/7, so BTCUSD or ETHUSD can move sharply while your FX positions are frozen. Because margin level is calculated across the whole account, a weekend crypto loss can affect the margin available to your other positions.

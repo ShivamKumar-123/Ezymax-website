@@ -3,7 +3,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { Save, Star } from "lucide-react";
-import { Button, Card, CardHeader, Field, Input, KpiCard, PageHeader, Segmented, Toggle, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Field, Input, KpiCard, PageHeader, Segmented, Toggle, cn } from "@ezymex/ui";
 import { dur, errMsg, sapi, usePerms } from "./common";
 
 type Stats = {

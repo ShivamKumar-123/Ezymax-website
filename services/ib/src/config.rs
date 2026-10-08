@@ -6,7 +6,7 @@ use std::fmt;
 pub struct Config {
     pub bind: String,
     pub database_url: String,
-    /// Shared secret callers send in `X-Kalks-Internal`. Empty = check disabled (development only).
+    /// Shared secret callers send in `X-Ezymex-Internal`. Empty = check disabled (development only).
     pub internal_token: String,
     pub production: bool,
     pub gateway_url: String,
@@ -79,7 +79,7 @@ impl Config {
         }
         Ok(Self {
             bind: var("IB_BIND", "127.0.0.1:8096"),
-            database_url: var("IB_DATABASE_URL", "postgres://postgres@127.0.0.1:5433/kalks_ib"),
+            database_url: var("IB_DATABASE_URL", "postgres://postgres@127.0.0.1:5433/ezymex_ib"),
             internal_token,
             production,
             gateway_url: var("GATEWAY_URL", "http://127.0.0.1:8080").trim_end_matches('/').to_string(),

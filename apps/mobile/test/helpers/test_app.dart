@@ -9,16 +9,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:kalks/app.dart';
-import 'package:kalks/core/api/api_providers.dart';
-import 'package:kalks/core/app_info.dart';
-import 'package:kalks/core/auth/biometrics.dart';
-import 'package:kalks/core/auth/secure_store.dart';
-import 'package:kalks/core/config/app_config.dart';
-import 'package:kalks/core/prefs.dart';
-import 'package:kalks/i18n/i18n.dart';
-import 'package:kalks/preview/preview_adapter.dart';
-import 'package:kalks/preview/preview_data.dart';
+import 'package:ezymex/app.dart';
+import 'package:ezymex/core/api/api_providers.dart';
+import 'package:ezymex/core/app_info.dart';
+import 'package:ezymex/core/auth/biometrics.dart';
+import 'package:ezymex/core/auth/secure_store.dart';
+import 'package:ezymex/core/config/app_config.dart';
+import 'package:ezymex/core/prefs.dart';
+import 'package:ezymex/i18n/i18n.dart';
+import 'package:ezymex/preview/preview_adapter.dart';
+import 'package:ezymex/preview/preview_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 bool _fontsLoaded = false;
@@ -57,7 +57,7 @@ Future<void> loadFonts() async {
 Messages _catalog(String code) => (jsonDecode(File('assets/i18n/$code.json').readAsStringSync()) as Map).cast<String, Object?>();
 
 /// Pumps the app. `signedIn`: a stored session of the sample client; `demo`: the same inside the in-app demo (the
-/// `kalks.demo` flag set, as after a restart in it); `theme`: light | dark; `locale`: any of the 22.
+/// `ezymex.demo` flag set, as after a restart in it); `theme`: light | dark; `locale`: any of the 22.
 /// `sampleTransport`: every call answered by the sample-data adapter (the default); false leaves the app its own
 /// choice (the live transport, pointed at a closed local port, or the sample adapter once the demo is on).
 /// `config`: a fixed app config instead of the sample API's (a white-label broker, …).
@@ -78,14 +78,14 @@ Future<ProviderContainer> pumpApp(
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
 
-  SharedPreferences.setMockInitialValues({'kalks.theme': theme, 'kalks.locale': locale, 'kalks.biometric.asked': true, if (demo) 'kalks.demo': true});
+  SharedPreferences.setMockInitialValues({'ezymex.theme': theme, 'ezymex.locale': locale, 'ezymex.biometric.asked': true, if (demo) 'ezymex.demo': true});
   final prefs = await Prefs.open();
   final en = _catalog('en');
   final bundle = I18nBundle(locale: locale, english: en, messages: locale == 'en' ? en : _catalog(locale));
   final secrets = MemorySecureStore({
-    if (signedIn || demo) 'kalks.session': jsonEncode(previewSession().toJson()),
-    if (signedIn || demo) 'kalks.user': jsonEncode(previewMe),
-    'kalks.device': 'test-device-0000000000',
+    if (signedIn || demo) 'ezymex.session': jsonEncode(previewSession().toJson()),
+    if (signedIn || demo) 'ezymex.user': jsonEncode(previewMe),
+    'ezymex.device': 'test-device-0000000000',
   });
 
   final container = ProviderContainer(
@@ -103,7 +103,7 @@ Future<ProviderContainer> pumpApp(
     ],
   );
   _current = container;
-  await tester.pumpWidget(UncontrolledProviderScope(container: container, child: const KalksApp()));
+  await tester.pumpWidget(UncontrolledProviderScope(container: container, child: const EzymexApp()));
   await settle(tester);
   return container;
 }

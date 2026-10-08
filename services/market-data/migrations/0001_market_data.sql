@@ -1,4 +1,4 @@
--- Kalks market data: raw-price candles (all timeframes), optional tick archive, spread markups per account group.
+-- Ezymex market data: raw-price candles (all timeframes), optional tick archive, spread markups per account group.
 -- Prices here are the RAW provider price. Group spreads are applied only when quotes are sent to clients,
 -- so chart history is identical for everyone and matches the wider market.
 

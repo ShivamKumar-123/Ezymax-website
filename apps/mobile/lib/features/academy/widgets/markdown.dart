@@ -263,7 +263,7 @@ const Map<String, String> _calloutLabels = {
   'example': 'academy.callout.example',
   'tip': 'academy.callout.tip',
   'note': 'academy.callout.note',
-  'in kalks trader': 'academy.callout.inKalksTrader',
+  'in ezymex trader': 'academy.callout.inEzymexTrader',
 };
 
 final _calloutRe = RegExp(r'^\*\*([^*:]+):?\*\*:?\s*(.*)$');
@@ -294,7 +294,7 @@ class _Callout extends StatelessWidget {
       'risk warning' || 'warning' => (k.downSoft, k.down.withValues(alpha: 0.3), k.down),
       'example' => (k.infoSoft, k.info.withValues(alpha: 0.25), k.info),
       'tip' => (k.upSoft, k.up.withValues(alpha: 0.25), k.up),
-      'in kalks trader' => (k.emberSoft, k.ember.withValues(alpha: 0.3), k.ember),
+      'in ezymex trader' => (k.emberSoft, k.ember.withValues(alpha: 0.3), k.ember),
       _ => (k.surface2, k.line, k.fg2),
     };
     return Container(

@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { Ban, Fingerprint, Globe, Home, Lock, Snowflake, Undo2, Wallet, XCircle, CreditCard } from "lucide-react";
-import { Button, Chip, CopyButton, Dialog, Money, cn } from "@kalks/ui";
-import { FRAUD_LABEL, type FraudFlag } from "@kalks/mock/admin-partners";
+import { Button, Chip, CopyButton, Dialog, Money, cn } from "@ezymex/ui";
+import { FRAUD_LABEL, type FraudFlag } from "@ezymex/mock/admin-partners";
 import { MiniStat, PersonCell, RiskScore, Section, auditToast, useReason } from "@/components/config/kit";
 import { fmtDT, fmtTime } from "./common";
 

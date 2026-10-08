@@ -1,0 +1,23 @@
+[Unit]
+Description=Ezymex FX Options: reference data, listings, fixings, chain (:8104)
+After=network-online.target postgresql.service ezymex-market-data.service
+Wants=network-online.target
+
+[Service]
+User=ezymex
+WorkingDirectory=/home/ezymex/ezymex/services/options
+EnvironmentFile=/home/ezymex/ezymex/.env.local
+Environment=RUST_LOG=info
+Environment=OPTIONS_ENV=production
+Environment=OPTIONS_BIND=127.0.0.1:8104
+Environment=OPTIONS_HOLIDAYS_DIR=/home/ezymex/ezymex/config/holidays
+ExecStart=/home/ezymex/ezymex/target/release/options
+Restart=always
+RestartSec=3
+KillSignal=SIGINT
+TimeoutStopSec=10
+NoNewPrivileges=true
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

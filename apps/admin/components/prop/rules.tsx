@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { AlertTriangle, CheckCircle2, CircleDashed, MinusCircle, XCircle } from "lucide-react";
-import { Chip, Tooltip, cn, type ChipTone } from "@kalks/ui";
+import { Chip, Tooltip, cn, type ChipTone } from "@ezymex/ui";
 import type { PlanType, RuleCheck, RuleState, Violation } from "./data";
 
 export const RULE_TONE: Record<RuleState, ChipTone> = { ok: "up", warn: "warn", breach: "down", pending: "neutral", off: "neutral" };

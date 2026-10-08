@@ -3,8 +3,8 @@
 import * as React from "react";
 import { Download, Loader2, Share2 } from "lucide-react";
 import { Button, CopyButton, Dialog, IconButton, Skeleton, Toggle, cn, type ButtonProps } from "@/components/kit";
-import { IS_DEMO } from "@kalks/mock/mode";
-import { useT } from "@kalks/i18n/react";
+import { IS_DEMO } from "@ezymex/mock/mode";
+import { useT } from "@ezymex/i18n/react";
 import { errorToast, growthApi, linkBase, optionStrikeLabel, type Share } from "./api";
 
 // Share P&L cards (D136). The client picks whether money amounts are shown (off by default: only symbol, side,

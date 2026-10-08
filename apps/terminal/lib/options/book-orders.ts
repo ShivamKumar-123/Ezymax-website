@@ -6,7 +6,7 @@
 // every change from the in-browser book as it happens. An engine without the book routes reports `missing` once, and
 // the workspace falls back to the house-priced flow.
 import * as React from "react";
-import { IS_LIVE } from "@kalks/mock";
+import { IS_LIVE } from "@ezymex/mock";
 import { bookApi, bookMissing } from "./book-api";
 import { bookFlag } from "./book-flag";
 import { onDemoBookChange } from "./mock-engine";

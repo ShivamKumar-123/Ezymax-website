@@ -7,7 +7,7 @@ use std::fmt;
 pub struct Config {
     pub bind: String,
     pub database_url: String,
-    /// Shared secret the BFFs / internal services send in `X-Kalks-Internal`. Empty = check disabled (dev only).
+    /// Shared secret the BFFs / internal services send in `X-Ezymex-Internal`. Empty = check disabled (dev only).
     pub internal_token: String,
     /// HMAC key for terminal session / SSO / stream-ticket hashes (>= 32 chars).
     pub session_secret: String,
@@ -30,10 +30,10 @@ pub struct Config {
     /// IB service (PAMM lots allocated to investors, D64).
     pub ib_url: String,
     pub ib_token: String,
-    /// Gateway (client restrictions, Kalks Trader presence; controls.rs).
+    /// Gateway (client restrictions, Ezymex Trader presence; controls.rs).
     pub gateway_url: String,
     pub gateway_token: String,
-    /// Kalks FX Options service (snapshot, fixings; src/options). Empty = options off in the engine.
+    /// Ezymex FX Options service (snapshot, fixings; src/options). Empty = options off in the engine.
     pub options_url: String,
     pub options_token: String,
     /// House delta hedger (src/options/hedger.rs): on unless `OPTIONS_HEDGER=false`.
@@ -46,7 +46,7 @@ pub struct Config {
     pub options_hedge_capital: i64,
     /// Net delta (USD notional) the house carries per underlying before it hedges.
     pub options_hedge_limit_usd: i64,
-    /// The Kalks market-maker user (`OPTIONS_MM_USER_ID`): its accounts are options order book liquidity
+    /// The Ezymex market-maker user (`OPTIONS_MM_USER_ID`): its accounts are options order book liquidity
     /// providers (mass quotes, no-open exemption until cut − 1 min). 0 = none (the `options-mm` group still is).
     pub options_mm_user: i64,
     /// House capital (USD) booked on a new market-maker account (`OPTIONS_MM_CAPITAL`; demo: its demo funding).
@@ -171,7 +171,7 @@ impl Config {
         }
         Ok(Self {
             bind: var("TRADING_BIND", "127.0.0.1:8090"),
-            database_url: var("TRADING_DATABASE_URL", "postgres://postgres@127.0.0.1:5433/kalks_trading"),
+            database_url: var("TRADING_DATABASE_URL", "postgres://postgres@127.0.0.1:5433/ezymex_trading"),
             internal_token,
             session_secret,
             dev_mode,
@@ -212,7 +212,7 @@ mod tests {
 
     #[test]
     fn masks_database_password() {
-        assert_eq!(redact_url("postgres://kalks:s3cret@127.0.0.1:5432/kalks_trading"), "postgres://kalks:***@127.0.0.1:5432/kalks_trading");
-        assert_eq!(redact_url("postgres://postgres@127.0.0.1:5433/kalks_trading"), "postgres://postgres@127.0.0.1:5433/kalks_trading");
+        assert_eq!(redact_url("postgres://ezymex:s3cret@127.0.0.1:5432/ezymex_trading"), "postgres://ezymex:***@127.0.0.1:5432/ezymex_trading");
+        assert_eq!(redact_url("postgres://postgres@127.0.0.1:5433/ezymex_trading"), "postgres://postgres@127.0.0.1:5433/ezymex_trading");
     }
 }

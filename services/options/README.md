@@ -1,8 +1,8 @@
-# options: Kalks FX Options service (:8104)
+# options: Ezymex FX Options service (:8104)
 
-This service holds the reference data and runs the market side of **Kalks FX Options** (plan "Task 2", milestones M0–M2 plus parts of M5). Money stays in the trading engine: positions, premiums, margin and settlement live there. The engine prices fills itself with `crates/optmath` from the versioned **snapshot** this service publishes, so both always compute the same numbers. If this service is down, the engine keeps using the last snapshot. Once it is older than `staleAfterSecs`, options go close-only.
+This service holds the reference data and runs the market side of **Ezymex FX Options** (plan "Task 2", milestones M0–M2 plus parts of M5). Money stays in the trading engine: positions, premiums, margin and settlement live there. The engine prices fills itself with `crates/optmath` from the versioned **snapshot** this service publishes, so both always compute the same numbers. If this service is down, the engine keeps using the last snapshot. Once it is older than `staleAfterSecs`, options go close-only.
 
-> **Safety.** The module is **OFF per broker** unless `tenant_settings` switches it on. Demo and live are separate switches (`enabled_demo`, `enabled_live`). The seed turns tenant #1 `kalks` on for **demo only** (live off, public chain off). Every other broker is off. Only Kalks staff can change the switches, and every change is audited and needs a reason. The engine must check the switch for every order.
+> **Safety.** The module is **OFF per broker** unless `tenant_settings` switches it on. Demo and live are separate switches (`enabled_demo`, `enabled_live`). The seed turns tenant #1 `ezymex` on for **demo only** (live off, public chain off). Every other broker is off. Only Ezymex staff can change the switches, and every change is audited and needs a reason. The engine must check the switch for every order.
 
 ## What it does
 
@@ -14,11 +14,11 @@ This service holds the reference data and runs the market side of **Kalks FX Opt
 | vol surfaces | append-only versions per underlying: pillars `{tenor, days, atm, rr25, bf25, rr10?, bf10?}` plus `blendWeight`. A publish is rejected on a calendar arbitrage or a non-positive wing. |
 | realized vol | every 15 min from market-data D1 candles: Yang-Zhang 20/60, Garman-Klass 20, close-to-close 20, EWMA (λ 0.94), annualized with 260. Pricing prefers YZ20. |
 | listing | every 30 s: daily (next 5 business days), weekly (next 4 Fridays, rolled), monthly (next 3 last Fridays, rolled), cut 10:00 New York (DST-aware). Strikes are ATM ± max(configured, about 2.5 σ√t) steps, up to 40 per side. When spot comes within `extend_threshold` steps of an edge, strikes are added. Strikes are never removed. Series code `EURUSD-20261009-1.1650-C`. |
-| fixings | 1 s raw mids in `[cut − 30 min, cut)` go to `twap_samples`. At the cut the expiry status becomes `fixing`; 8 s later (`FIXING_GRACE_SECS`: the sampler writes every 5 s, so the window's last seconds are stored first) the TWAP is computed (gaps hold the last mid). With coverage < 50 % (`OPTIONS_MIN_TWAP_COVERAGE`) it falls back to M1 candles after cut + 90 s. Each run is a `fixings` row recording samples, expected samples, coverage and the longest gap. Kalks staff can re-fix within 1 h, with a reason. |
+| fixings | 1 s raw mids in `[cut − 30 min, cut)` go to `twap_samples`. At the cut the expiry status becomes `fixing`; 8 s later (`FIXING_GRACE_SECS`: the sampler writes every 5 s, so the window's last seconds are stored first) the TWAP is computed (gaps hold the last mid). With coverage < 50 % (`OPTIONS_MIN_TWAP_COVERAGE`) it falls back to M1 candles after cut + 90 s. Each run is a `fixings` row recording samples, expected samples, coverage and the longest gap. Ezymex staff can re-fix within 1 h, with a reason. |
 | chain | bid / ask / mark / IV / Greeks per strike for calls and puts, with the group's vol spread and minimum USD spread. REST, a 1 s cached public route, and a WebSocket that sends changed rows only, at most 4 frames/s per chain. |
-| premium candles | an option series' model mid premium (USD per contract) per underlying bar from market-data candles, for the Kalks Trader chart: it moves when the underlying moves, by the option's amount, and melts toward intrinsic as the cut approaches. History is cached 30 s; the latest bar is the live price. See [Premium candles](#premium-candles). |
+| premium candles | an option series' model mid premium (USD per contract) per underlying bar from market-data candles, for the Ezymex Trader chart: it moves when the underlying moves, by the option's amount, and melts toward intrinsic as the cut approaches. History is cached 30 s; the latest bar is the live price. See [Premium candles](#premium-candles). |
 | EOD marks | after 17:00 New York on weekdays, the model marks of every active series go to `marks_eod`. |
-| order book | docs/OPTIONS-EXCHANGE.md (O49). Per-underlying tick, bands, contract limits, liquidation / RFQ / mark parameters and the group maker / taker fees go to the engine in the snapshot, with the Kalks market maker's quoting parameters (`mm_settings` → `mm[]`). The engine's book feed is merged into chains (best bid / offer, sizes, last, change, OI, volume, the mark clamped inside the book, theo, implied vols, PCR), the stream (`depth` / `tape` ops) and public depth / trades / stats routes. Barriers stay RFQ only, Kalks-quoted. See [Order book](#order-book). |
+| order book | docs/OPTIONS-EXCHANGE.md (O49). Per-underlying tick, bands, contract limits, liquidation / RFQ / mark parameters and the group maker / taker fees go to the engine in the snapshot, with the Ezymex market maker's quoting parameters (`mm_settings` → `mm[]`). The engine's book feed is merged into chains (best bid / offer, sizes, last, change, OI, volume, the mark clamped inside the book, theo, implied vols, PCR), the stream (`depth` / `tape` ops) and public depth / trades / stats routes. Barriers stay RFQ only, Ezymex-quoted. See [Order book](#order-book). |
 
 market-data is optional in development. Without it the feed polls REST, logs one warning and keeps trying. Expiries are still listed, but strikes wait for the first price, chains answer `no_price`, and the TWAP sampler records gaps.
 
@@ -27,8 +27,8 @@ market-data is optional in development. Without it the feed polls REST, logs one
 | var | default | |
 |---|---|---|
 | `OPTIONS_BIND` | `127.0.0.1:8104` | |
-| `OPTIONS_DATABASE_URL` | `GATEWAY_DATABASE_URL` with database `kalks_options` | created and migrated on start |
-| `OPTIONS_INTERNAL_TOKEN` | — | **required when `OPTIONS_ENV=production`**; sent as `X-Kalks-Internal` |
+| `OPTIONS_DATABASE_URL` | `GATEWAY_DATABASE_URL` with database `ezymex_options` | created and migrated on start |
+| `OPTIONS_INTERNAL_TOKEN` | — | **required when `OPTIONS_ENV=production`**; sent as `X-Ezymex-Internal` |
 | `OPTIONS_ENV` | `development` | `production` = token required, JSON logs |
 | `OPTIONS_WORKERS` | `true` | background jobs (off in tests) |
 | `MARKET_DATA_URL` | `http://127.0.0.1:8081` | candles, REST quote fallback |
@@ -37,7 +37,7 @@ market-data is optional in development. Without it the feed polls REST, logs one
 | `OPTIONS_MIN_TWAP_COVERAGE` | `0.5` | below it, use the M1 fallback |
 | `OPTIONS_SNAPSHOT_STALE_SECS` | `300` | published to the engine |
 | `TRADING_URL` | `http://127.0.0.1:8090` | the engine's order book feed (`/v1/internal/options/book/*`) |
-| `TRADING_INTERNAL_TOKEN` | — | the engine's internal token, sent as `X-Kalks-Internal` to the book feed |
+| `TRADING_INTERNAL_TOKEN` | — | the engine's internal token, sent as `X-Ezymex-Internal` to the book feed |
 | `OPTIONS_BOOK_FEED` | `true` | consume the book feed (with `OPTIONS_WORKERS`); off = house model quotes only |
 | `OPTIONS_TEST_EXPIRIES` | `false` | LOCAL TESTING ONLY: exposes `POST /v1/admin/options/test/expiries` (ad-hoc expiry minutes ahead); ignored when `OPTIONS_ENV=production` |
 | `OPTIONS_LOG_FORMAT` | `text` (dev) / `json` (prod) | |
@@ -46,22 +46,22 @@ Apps / engine: `OPTIONS_URL=http://127.0.0.1:8104` and `OPTIONS_INTERNAL_TOKEN` 
 
 ## API
 
-Every route except `/health`, `/v1/public/options/*` and the WebSocket needs `X-Kalks-Internal`. `X-Kalks-Tenant` selects the broker (default `kalks`). Errors look like `{"error": {"code", "message"}}`.
+Every route except `/health`, `/v1/public/options/*` and the WebSocket needs `X-Ezymex-Internal`. `X-Ezymex-Tenant` selects the broker (default `ezymex`). Errors look like `{"error": {"code", "message"}}`.
 
 ### Client (BFFs)
-Every client route answers **404 `options_disabled`** when the tenant has the module off. Send `X-Kalks-Account-Kind: demo|live` to check that specific switch.
+Every client route answers **404 `options_disabled`** when the tenant has the module off. Send `X-Ezymex-Account-Kind: demo|live` to check that specific switch.
 
 | route | response |
 |---|---|
 | `GET /v1/options/underlyings` | `{underlyings[{symbol, name, assetClass, model, baseCcy, quoteCcy, contractSize, contractUnit, digits, pipSize, strikeStep, cut{time, zone}, twapMinutes, noOpenMinutes, closeOnlyMinutes, minContracts, maxContracts, contractStep, barriers, expiryKinds, nextExpiry{date, cutAt}, atmVol, realizedVol, orderBook, premiumTick, marketBandPct, limitBandPct, bandMinTicks, liqBandPct, liqFeePct, rfqQuoteTtlSecs, markMinQty, markMaxSpreadMult, barrierVenue: "rfq", barrierLabel}], version}` (`orderBook` = the book is live for this tenant and account kind) |
 | `GET /v1/options/expiries?u=` | `{underlying, expiries[{id, date, kinds[], cutAt, twapStart, status, state, series, secondsToCut}], version}` |
 | `GET /v1/options/chain?u=&expiry=&group=` | header + `rows[]` (below); `expiry` defaults to the nearest |
-| `GET /v1/options/series/{code}?group=` | `{series, expiry{id, date, cutAt, status, fixing, fixingSource}, underlying, contractSize, spot, venue: book\|house, quote}`. A barrier code (`…-C-UO1.1800`) answers its vanilla series with `venue: "rfq", kalksQuoted: true, orderBook: false, label: "Kalks-quoted (RFQ only)", barrier{kind, level}, quote: null` |
+| `GET /v1/options/series/{code}?group=` | `{series, expiry{id, date, cutAt, status, fixing, fixingSource}, underlying, contractSize, spot, venue: book\|house, quote}`. A barrier code (`…-C-UO1.1800`) answers its vanilla series with `venue: "rfq", ezymexQuoted: true, orderBook: false, label: "Ezymex-quoted (RFQ only)", barrier{kind, level}, quote: null` |
 | `GET /v1/options/smile?u=&expiry=` | `{underlying, expiry, atmVol, points[{strike, vol}], pillars[{callDelta, vol, strike}], termStructure[pillars], inputs}` |
 | `GET /v1/options/candles?series=&tf=&limit=&to=` | premium candles of one series, see [Premium candles](#premium-candles) |
 | `POST /v1/options/stream/ticket {group?}` | `{ticket, expiresIn: 30, path: "/options/stream?ticket=…"}` |
 
-Chain header: `{underlying, name, model, expiry, kinds, cutAt, cut, twapStart, status, state, contractSize, contractUnit, quoteCcy, digits, pipSize, group, volSpread, minSpreadUsd, commission{perContract, capPct}, spot{bid, ask, mid, t, ageMs}, fixing, version, book{…}, barriers{…}, atmStrike, modelInputs{spot, spotSource, forward, r, b, rf, tCal, tVol, atmVol, surfaceAtm, realized, blendWeight, manualVol, surfaceVersion, quotes, usdPerQuote}, error?}` plus, while the book is live, `pcr`, `pcrVolume`, `oi{calls, puts}`, `volume{calls, puts}`. Without a price it carries `error: {code: "no_price"}` and rows that list strikes only. `X-Kalks-Account-Kind` (default live) picks the book; `book` and `barriers` are described under [Order book](#order-book).
+Chain header: `{underlying, name, model, expiry, kinds, cutAt, cut, twapStart, status, state, contractSize, contractUnit, quoteCcy, digits, pipSize, group, volSpread, minSpreadUsd, commission{perContract, capPct}, spot{bid, ask, mid, t, ageMs}, fixing, version, book{…}, barriers{…}, atmStrike, modelInputs{spot, spotSource, forward, r, b, rf, tCal, tVol, atmVol, surfaceAtm, realized, blendWeight, manualVol, surfaceVersion, quotes, usdPerQuote}, error?}` plus, while the book is live, `pcr`, `pcrVolume`, `oi{calls, puts}`, `volume{calls, puts}`. Without a price it carries `error: {code: "no_price"}` and rows that list strikes only. `X-Ezymex-Account-Kind` (default live) picks the book; `book` and `barriers` are described under [Order book](#order-book).
 
 Row: `{strike, strikeLabel, call, put}`. Each side has:
 `{code, bid, ask, mark` (premium per unit in the quote currency)`, bidUsd, askUsd, markUsd` (per contract)`, markPips, iv, ivBid, ivAsk, delta, gamma` (delta change per 1 % spot move)`, vega` (USD per contract per vol point)`, theta` (USD per contract over the next calendar day, business-time clock)`, probItm, breakeven, state}`.
@@ -74,7 +74,7 @@ While the tenant's order book is live for the account kind, each side also has t
 
 `GET /v1/options/candles?series={code}&tf={1|5|15|30|60|240|1440}&limit={1..1500, default 500}&to={unix seconds, optional}`
 
-Same gates as `/v1/options/chain`: internal token, `X-Kalks-Tenant`, `X-Kalks-Account-Kind`, and 404 `options_disabled` when the module is off. `tf` is in minutes (`M1`…`D1` names are accepted too). A `limit` outside 1..1500 is clamped. `to` pages back: it returns the bars that open at or before `to`.
+Same gates as `/v1/options/chain`: internal token, `X-Ezymex-Tenant`, `X-Ezymex-Account-Kind`, and 404 `options_disabled` when the module is off. `tf` is in minutes (`M1`…`D1` names are accepted too). A `limit` outside 1..1500 is clamped. `to` pages back: it returns the bars that open at or before `to`.
 
 ```jsonc
 {
@@ -107,10 +107,10 @@ Same gates as `/v1/options/chain`: internal token, `X-Kalks-Tenant`, `X-Kalks-Ac
   - 404: unknown series.
   - 503 `no_price`: no volatility, or no USD rate for a cross.
   - 503 `candles_unavailable`: market-data is down.
-- **Kalks Trader:** the terminal's options BFF must allow-list `GET /v1/options/candles` (the BFF is not changed here).
+- **Ezymex Trader:** the terminal's options BFF must allow-list `GET /v1/options/candles` (the BFF is not changed here).
 
 ### Public
-- `GET /v1/public/options/chain/{u}?expiry=`: guest chain (tenant `kalks`, default group, without `modelInputs`) plus `expiries[]`, cached for 1 s. It answers 404 until `publicChain` is switched on. Caddy exposes it on `api.*`.
+- `GET /v1/public/options/chain/{u}?expiry=`: guest chain (tenant `ezymex`, default group, without `modelInputs`) plus `expiries[]`, cached for 1 s. It answers 404 until `publicChain` is switched on. Caddy exposes it on `api.*`.
 - `WS /v1/options/stream?ticket=` (Caddy: `wss://trade.*/options/stream`). Without a ticket the connection is a guest view, which needs `publicChain`.
   - Client sends `{"op":"subscribe","u","expiry"}` (8 chains max), `{"op":"subscribe","series":[codes]}` (200 max), or `unsubscribe` with the same fields.
   - Server sends `{"type":"chain", …header, rows}` on subscribe, then `{"type":"rows", u, expiry, spot, state, rows:[changed]}` and `{"type":"series", quotes:[changed]}` at most every 250 ms. It also sends `{"type":"hb"}` every 10 s and `{"type":"error"}` on errors.
@@ -120,7 +120,7 @@ Same gates as `/v1/options/chain`: internal token, `X-Kalks-Tenant`, `X-Kalks-Ac
 docs/OPTIONS-EXCHANGE.md is the contract (decision O49). The engine runs the book; this service publishes its parameters and merges its market data.
 
 **Engine feed** (`src/book_feed.rs`, with `OPTIONS_WORKERS` and `OPTIONS_BOOK_FEED`):
-- `WS {TRADING_URL}/v1/internal/options/book/stream` with `X-Kalks-Internal: TRADING_INTERNAL_TOKEN`: `top` (`{tenant, kind, underlying, series, bid, bidQty, ask, askQty, last, lastQty, mark, oi, vol, state, seq}`), `depth` (10 levels, `{price, qty, orders}`), `trade` (`{fillId, price, qty, side, tradeKind, combo, at, seq}`), `hb`, `resync`. Reconnects with backoff (1 s doubling to 30 s, jittered; 60 s while the engine has no book feed).
+- `WS {TRADING_URL}/v1/internal/options/book/stream` with `X-Ezymex-Internal: TRADING_INTERNAL_TOKEN`: `top` (`{tenant, kind, underlying, series, bid, bidQty, ask, askQty, last, lastQty, mark, oi, vol, state, seq}`), `depth` (10 levels, `{price, qty, orders}`), `trade` (`{fillId, price, qty, side, tradeKind, combo, at, seq}`), `hb`, `resync`. Reconnects with backoff (1 s doubling to 30 s, jittered; 60 s while the engine has no book feed).
 - `GET …/book/{tenant}/{kind}/snapshot` every 15 s for each tenant with the module on: `enabled` = the book is live for that tenant and account kind (forward-only); the series views seed the cache. 404 = no book there.
 - `GET …/book/{tenant}/{kind}/trades`: the public tape.
 - Engine absent (refused or 404): nothing is live and every chain keeps today's house quotes exactly. A dropped stream empties the cached books (empty sides, the model mark) until the reconnect replays them.
@@ -130,14 +130,14 @@ docs/OPTIONS-EXCHANGE.md is the contract (decision O49). The engine runs the boo
 - `mark` = `optmath::mark::clamp_mark(model mid, model ask − model bid, best bid, best ask, markMinQty, markMaxSpreadMult)`, the engine's rule (§6); `markSource`: `model` | `bid` | `ask`; `markUsd`, `markPips`.
 - `theo` / `theoUsd` / `theoIv`: the model mid and its smile vol. `markIv`, `bidIv`, `askIv`: implied vols of those prices on the vol clock (`iv` = `markIv`, `ivBid` / `ivAsk` = `bidIv` / `askIv`).
 - `last`, `lastQty`, `lastUsd`, `change` (last − the previous 17:00 New York EOD mark), `oi` (Σ long contracts), `volume` (today). Greeks stay the model's. `breakeven` uses the book's ask (else the mark).
-- Header `book`: `{active, kind, venue: book|house, premiumTick, bands{market, limit, minTicks}, makerFee, takerFee, feeCapPct, marketBandPct, limitBandPct, bandMinTicks, makerFeePerContract, takerFeePerContract, minContracts, contractStep, maxContracts, markMinQty, markMaxSpreadMult, rfqQuoteTtlSecs}` (fees = the group's effective §7 fees). Header `barriers`: `{enabled, venue: "rfq", quotedBy: "kalks", kalksQuoted: true, orderBook: false, label: "Kalks-quoted (RFQ only)"}`.
+- Header `book`: `{active, kind, venue: book|house, premiumTick, bands{market, limit, minTicks}, makerFee, takerFee, feeCapPct, marketBandPct, limitBandPct, bandMinTicks, makerFeePerContract, takerFeePerContract, minContracts, contractStep, maxContracts, markMinQty, markMaxSpreadMult, rfqQuoteTtlSecs}` (fees = the group's effective §7 fees). Header `barriers`: `{enabled, venue: "rfq", quotedBy: "ezymex", ezymexQuoted: true, orderBook: false, label: "Ezymex-quoted (RFQ only)"}`.
 
-**Stream ops** (the ticket keeps the BFF's `X-Kalks-Account-Kind`; guests see the platform's live book):
+**Stream ops** (the ticket keeps the BFF's `X-Ezymex-Account-Kind`; guests see the platform's live book):
 - `{"op":"depth","series":[codes]}` (at most 20) → `{"type":"depth","series","bids":[[price,qty,orders]],"asks":[…],"seq","t"}` at once for each newly followed series, then on change (≤ 4/s per series).
 - `{"op":"tape","series":[codes]}` (at most 50) → `{"type":"tape","trades":[{id, series, time, t, price, qty, takerSide, side, kind, combo}]}` batched every 250 ms (`time` / `t` in ms).
 - Each op replaces the previous set; an empty list stops it; more than the cap → `{"type":"error","code":"too_many"}` and the first ones are kept. Chains re-price when the book changes.
 
-**Public** (no login, `?kind=live|demo`, default live, tenant `kalks`; cached 1 s; 10 requests / s per client IP = the first `X-Forwarded-For` hop, else `X-Real-IP`, else the peer; internal callers with the token or a loopback peer without forwarding headers are not limited; 429 `rate_limited` + `Retry-After: 1`; 404 `book_inactive` while the book is not live):
+**Public** (no login, `?kind=live|demo`, default live, tenant `ezymex`; cached 1 s; 10 requests / s per client IP = the first `X-Forwarded-For` hop, else `X-Real-IP`, else the peer; internal callers with the token or a loopback peer without forwarding headers are not limited; 429 `rate_limited` + `Retry-After: 1`; 404 `book_inactive` while the book is not live):
 - `GET /v1/public/options/book/{series}` → `{series, underlying, kind, bids:[[price, qty, orders]], asks, seq, t, bid, bidQty, ask, askQty, last, lastQty, mark (the engine's), oi, volume, state}`.
 - `GET /v1/public/options/trades/{series}?limit=` (1–200, default 50) → `{series, kind, trades[…]}` newest first.
 - `GET /v1/public/options/stats/{u}?expiry=` → `{underlying, kind, at, totals{callOi, putOi, callVolume, putVolume, pcr, pcrVolume}, expiries[{date, cutAt, …totals, strikes[{strike, strikeLabel, call{series, oi, volume, last}, put}]}]}`.
@@ -173,13 +173,13 @@ Snapshot shape (camelCase, every list complete; expiries are the open ones plus 
                  "twapStart": "2026-10-09T13:30:00Z", "status": "listed", "fixing": null, "fixingSource": null, "fixingRun": 0,
                  "fixingSamples": null, "fixingExpected": null, "fixingCoverage": null, "fixingMaxGapMs": null, "fixedAt": null, "fixingError": null }],
   "series": [{ "code": "EURUSD-20261009-1.1650-C", "symbol": "EURUSD", "expiryId": 12, "strike": 1.165, "strikeTicks": 466, "kind": "call", "status": "active" }],
-  "tenants": [{ "tenant": "kalks", "enabledDemo": true, "enabledLive": false, "publicChain": false, "underlyings": null, "updatedAt": "…", "updatedBy": "seed" }],
-  "groups": [{ "tenant": "kalks", "groupCode": "*", "symbol": "*", "volSpread": 0.004, "minSpreadUsd": 0.5, "commissionPerContract": 0.25,
+  "tenants": [{ "tenant": "ezymex", "enabledDemo": true, "enabledLive": false, "publicChain": false, "underlyings": null, "updatedAt": "…", "updatedBy": "seed" }],
+  "groups": [{ "tenant": "ezymex", "groupCode": "*", "symbol": "*", "volSpread": 0.004, "minSpreadUsd": 0.5, "commissionPerContract": 0.25,
                "commissionCapPct": 10, "maxContractsPerClient": 200, "weekendMarginPct": 25, "enabled": true, "updatedAt": "…", "updatedBy": "seed",
                "makerFeePerContract": -0.05, "takerFeePerContract": 0.25 }],
   "controls": [{ "id": 3, "tenant": "*", "scope": "expiry", "target": "EURUSD:2026-10-09", "mode": "halt", "manualVol": null, "frozenSpot": null,
                  "reason": "…", "active": true, "expiresAt": null, "createdBy": "…", "createdAt": "…" }],
-  "clientLimits": [{ "tenant": "kalks", "userId": 42, "maxContracts": 5, "maxShortContracts": null, "closeOnly": false, "blocked": false,
+  "clientLimits": [{ "tenant": "ezymex", "userId": 42, "maxContracts": 5, "maxShortContracts": null, "closeOnly": false, "blocked": false,
                      "reason": "…", "updatedAt": "…", "updatedBy": "…" }],
   "mm": [{ "tenant": "*", "kind": "*", "underlying": "*", "enabled": true, "spreadVol0dte": 0.008, "spreadVol7d": 0.005, "spreadVol30d": 0.004,
            "spreadVolLong": 0.0035, "minSpreadTicks": 2, "skewVol": 0.002, "skewTicksPerContract": 0.05, "baseSize": 10, "maxNetDelta": 500,
@@ -209,10 +209,10 @@ How the engine reproduces a price (also in `conventions`):
 7. Order book (also in `conventions.orderBook` / `mark` / `bookFees` / `marketMaker`):
    - Per underlying: `premiumTick` (quote currency per unit; default FX pip / 10, XAU 0.01, other metals and oil 0.001), `marketBandPct` / `limitBandPct` (percent of the mark) + `bandMinTicks`, `minContracts` / `contractStep` / `maxContracts` per order, `liqBandPct` / `liqFeePct` (percent), `rfqQuoteTtlSecs`, `markMinQty` / `markMaxSpreadMult` (the mark clamp, `optmath::mark::clamp_mark`).
    - Groups: `makerFeePerContract` (negative = rebate) and `takerFeePerContract`, USD per contract; null = `commissionPerContract`. `fee = sign × min(|rate| × contracts, commissionCapPct % × premiumUsd)`.
-   - `mm[]`: the Kalks market maker's parameters; the most specific row wins (tenant 4, kind 2, underlying 1; `*` = any).
+   - `mm[]`: the Ezymex market maker's parameters; the most specific row wins (tenant 4, kind 2, underlying 1; `*` = any).
 
 ### Back Office
-These routes need the internal token plus `X-Kalks-Staff` (the admin BFF checks `options.read` / `options.config` / `options.dealing` / `options.settle`). **P** marks routes only tenant `kalks` may call. Every write is audited and bumps the version.
+These routes need the internal token plus `X-Ezymex-Staff` (the admin BFF checks `options.read` / `options.config` / `options.dealing` / `options.settle`). **P** marks routes only tenant `ezymex` may call. Every write is audited and bumps the version.
 
 | route | |
 |---|---|
@@ -223,8 +223,8 @@ These routes need the internal token plus `X-Kalks-Staff` (the admin BFF checks 
 | `GET /v1/admin/options/surfaces/{symbol}` · `GET …/surfaces/{symbol}/{version}` · `POST …/surfaces/{symbol} {pillars, blendWeight?, reason}` **P** | publish = new version |
 | `GET /v1/admin/options/tenants` · `PUT …/tenants/{tenant} {enabledDemo?, enabledLive?, publicChain?, underlyings?, reason}` **P** | module switches |
 | `GET /v1/admin/options/groups` · `PUT …/groups/{group}/{symbol}` · `DELETE …/groups/{group}/{symbol}` | `*` = any; the broker's own rows. Order book fees: `makerFeePerContract` (−1000 – 1000, negative = rebate), `takerFeePerContract` (0 – 1000); over the broker's rows (effective values, a missing fee = the row's commission) min(taker) ≥ max(\|maker rebate\|), else 422 naming both rows |
-| `GET /v1/admin/options/mm-settings` · `PUT …/mm-settings/{tenant}/{kind}/{underlying}` · `DELETE …?reason=` | the Kalks market maker (`{settings[], defaults}`; PUT `{enabled?, spreadVol0dte?, spreadVol7d?, spreadVol30d?, spreadVolLong?, minSpreadTicks?, skewVol?, skewTicksPerContract?, baseSize?, maxNetDelta?, maxGamma?, maxVega?, maxContractsPerSeries?, reason}` → `{settings, version}`, a new row starts from what applies to its key; DELETE → `{ok, version}`, not `*, *, *`). Keys: tenant or `*`, `live\|demo\|*`, underlying or `*`. Kalks staff any row; a broker reads the `*` rows and its own, writes only its own |
-| `GET /v1/admin/options/controls?all=` · `POST …/controls {tenant?, scope, target, mode, manualVol?, frozenSpot?, expiresAt?, reason}` · `DELETE …/controls/{id}?reason=` | halt / close_only / freeze / manual_vol; `tenant: "*"` is Kalks only |
+| `GET /v1/admin/options/mm-settings` · `PUT …/mm-settings/{tenant}/{kind}/{underlying}` · `DELETE …?reason=` | the Ezymex market maker (`{settings[], defaults}`; PUT `{enabled?, spreadVol0dte?, spreadVol7d?, spreadVol30d?, spreadVolLong?, minSpreadTicks?, skewVol?, skewTicksPerContract?, baseSize?, maxNetDelta?, maxGamma?, maxVega?, maxContractsPerSeries?, reason}` → `{settings, version}`, a new row starts from what applies to its key; DELETE → `{ok, version}`, not `*, *, *`). Keys: tenant or `*`, `live\|demo\|*`, underlying or `*`. Ezymex staff any row; a broker reads the `*` rows and its own, writes only its own |
+| `GET /v1/admin/options/controls?all=` · `POST …/controls {tenant?, scope, target, mode, manualVol?, frozenSpot?, expiresAt?, reason}` · `DELETE …/controls/{id}?reason=` | halt / close_only / freeze / manual_vol; `tenant: "*"` is Ezymex only |
 | `GET /v1/admin/options/limits` · `PUT …/limits/{userId} {maxContracts?, maxShortContracts?, closeOnly?, blocked?, reason}` · `DELETE …/limits/{userId}?reason=` | per client |
 | `GET /v1/admin/options/expiries?u=&status=&limit=` · `POST …/expiries/{id}/refix {price?, reason}` **P** | settlement monitor; re-fix within 1 h |
 | `POST /v1/admin/options/test/expiries {symbol, cutInMinutes, twapMinutes?, reason?}` **P**, LOCAL TESTING ONLY | the route exists only with `OPTIONS_TEST_EXPIRIES=1` and `OPTIONS_ENV` ≠ `production` (ignored there): lists an ad-hoc expiry whose cut is 20–360 min ahead, dated the next free Saturday / Sunday (never a real listing date), with strikes from the live mid; the TWAP sampler and fixing job treat it like any other (services/trading/tests/expiry_e2e.rs) |
@@ -250,8 +250,8 @@ The schema is `migrations/20261002120000_options.sql`. It has these tables:
 
 ## Tests
 
-`cargo test -p options` needs the local Postgres on :5433. It creates throw-away `kalks_options_test_*` databases and skips if Postgres is down. It covers:
-- **Seed:** idempotent; tenant `kalks` is demo-only.
+`cargo test -p options` needs the local Postgres on :5433. It creates throw-away `ezymex_options_test_*` databases and skips if Postgres is down. It covers:
+- **Seed:** idempotent; tenant `ezymex` is demo-only.
 - **Module switches:** the gates for tenant, account kind and public chain.
 - **Listing:** works and is idempotent.
 - **Chain:** bid ≤ mark ≤ ask, the minimum USD spread, put-call parity on marks, JPY→USD conversion.
@@ -294,6 +294,6 @@ Unit tests (no database) cover the book frame parser and cache, frame shapes, th
 - Engine integration (M3/M4): positions, margin, fills, settlement.
 - Risk desk, hedger, alerts, OI/LTP, strategy ideas.
 - Premium candles with historical vol / rates replayed (today's model is used for every bar).
-- Barrier series listing: barrier options are priced by the engine from the snapshot, RFQ only and Kalks-quoted (never on the order book).
+- Barrier series listing: barrier options are priced by the engine from the snapshot, RFQ only and Ezymex-quoted (never on the order book).
 - News-calendar mismatch alerts for holidays.
 - Intraday vol seasonality.

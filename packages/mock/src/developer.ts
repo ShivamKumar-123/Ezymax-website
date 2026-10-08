@@ -126,7 +126,7 @@ export const WEBHOOKS: SignalWebhook[] = [
     name: "TradingView Gold breakout",
     source: "TradingView",
     symbols: ["XAUUSD"],
-    url: "https://hooks.kalks.com/v1/signal/wh_9f3a1c7e2b",
+    url: "https://hooks.ezymex.com/v1/signal/wh_9f3a1c7e2b",
     secret: "whsec_EXAMPLE000000000000001",
     enabled: true,
     createdAt: "2026-07-02T10:00:00Z",
@@ -145,7 +145,7 @@ export const WEBHOOKS: SignalWebhook[] = [
     name: "NAS100 momentum",
     source: "TradingView",
     symbols: ["NAS100", "US30"],
-    url: "https://hooks.kalks.com/v1/signal/wh_2b77e04d91",
+    url: "https://hooks.ezymex.com/v1/signal/wh_2b77e04d91",
     secret: "whsec_EXAMPLE000000000000002",
     enabled: true,
     createdAt: "2026-08-11T08:30:00Z",
@@ -163,7 +163,7 @@ export const WEBHOOKS: SignalWebhook[] = [
     name: "EURUSD mean-revert",
     source: "Custom",
     symbols: ["EURUSD", "GBPUSD"],
-    url: "https://hooks.kalks.com/v1/signal/wh_c410d85a3f",
+    url: "https://hooks.ezymex.com/v1/signal/wh_c410d85a3f",
     secret: "whsec_EXAMPLE000000000000003",
     enabled: false,
     createdAt: "2026-05-19T12:10:00Z",
@@ -195,7 +195,7 @@ export const WEBHOOK_DELIVERIES: WebhookDelivery[] = (() => {
   const errs: [WebhookDelivery["status"], string][] = [
     [422, "Invalid volume: 0.001 below min lot 0.01"],
     [422, "Market closed for symbol"],
-    [401, "Signature mismatch (X-Kalks-Signature)"],
+    [401, "Signature mismatch (X-Ezymex-Signature)"],
     [429, "Rate limit: 5 signals / 10s"],
   ];
   for (let i = 0; i < 42; i++) {
@@ -309,7 +309,7 @@ export interface ApiEndpoint {
   response: unknown;
 }
 
-export const API_BASE = "https://api.kalks.com/v1";
+export const API_BASE = "https://api.ezymex.com/v1";
 
 export const API_ENDPOINTS: Record<"accounts" | "orders" | "positions", ApiEndpoint[]> = {
   accounts: [
@@ -331,7 +331,7 @@ export const API_ENDPOINTS: Record<"accounts" | "orders" | "positions", ApiEndpo
       desc: "Detailed snapshot of one account, including free margin, margin level and server.",
       scope: "read",
       params: [{ name: "login", in: "path", type: "string", required: true, desc: "Trading account login, e.g. 80412337" }],
-      response: { login: "80412337", server: "Kalks-Live01", equity: 26204.18, free_margin: 24163.08, margin_level: 1283.8 },
+      response: { login: "80412337", server: "Ezymex-Live01", equity: 26204.18, free_margin: 24163.08, margin_level: 1283.8 },
     },
   ],
   orders: [
@@ -419,10 +419,10 @@ export const API_ERRORS = [
 ];
 
 export const FIX_SESSION = {
-  host: "fix.kalks.com",
+  host: "fix.ezymex.com",
   port: 9880,
   senderCompId: "KLK_80412337",
-  targetCompId: "KALKS",
+  targetCompId: "EZYMEX",
   heartbeat: 30,
   version: "FIX.4.4",
   tls: "TLS 1.3 required",

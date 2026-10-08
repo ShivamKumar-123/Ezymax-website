@@ -25,11 +25,11 @@ const QUERY = ["q", "status", "user_id", "limit"];
 
 async function forward(path: string, method: Method, body: unknown, staff: GatewayStaff, req: NextRequest) {
   const headers: Record<string, string> = {
-    "x-kalks-internal": ALGO_TOKEN,
-    "x-kalks-tenant": staff.tenant?.slug || "kalks",
-    "x-kalks-staff-id": String(staff.id),
-    "x-kalks-staff-name": encodeURIComponent(staff.name || staff.email),
-    "x-kalks-staff-role": staff.role,
+    "x-ezymex-internal": ALGO_TOKEN,
+    "x-ezymex-tenant": staff.tenant?.slug || "ezymex",
+    "x-ezymex-staff-id": String(staff.id),
+    "x-ezymex-staff-name": encodeURIComponent(staff.name || staff.email),
+    "x-ezymex-staff-role": staff.role,
     "x-forwarded-for": clientIp(req.headers),
   };
   if (body !== undefined) headers["content-type"] = "application/json";

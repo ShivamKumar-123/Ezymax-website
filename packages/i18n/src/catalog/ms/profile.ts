@@ -4,7 +4,7 @@ const profile: NsMessages<"profile"> = {
   // Profile page (shared)
   title: "Profil",
   subtitle: "Butiran peribadi dan keutamaan akaun anda.",
-  liveSubtitle: "Butiran peribadi anda seperti yang didaftarkan dengan Kalks.",
+  liveSubtitle: "Butiran peribadi anda seperti yang didaftarkan dengan Ezymex.",
   memberSince: "Ahli sejak {date}",
   notVerified: "Belum disahkan",
   "photo.upload": "Muat naik foto baharu",
@@ -59,7 +59,7 @@ const profile: NsMessages<"profile"> = {
   "data.exportRequested": "Eksport data telah dimohon",
   "data.exportRequestedHint": "Anda akan menerima pautan muat turun melalui e-mel dalam masa 72 jam.",
   "data.export": "Eksport data saya",
-  "closure.title": "Tutup akaun Kalks anda",
+  "closure.title": "Tutup akaun Ezymex anda",
   "closure.description": "Semua akaun dagangan mesti mempunyai baki sifar dan tiada posisi terbuka.",
   "closure.request": "Mohon penutupan akaun",
   "closure.submitted": "Permohonan penutupan telah dihantar",

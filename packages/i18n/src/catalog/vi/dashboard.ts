@@ -6,9 +6,9 @@ const dashboard: NsMessages<"dashboard"> = {
   "greeting.afternoon": "Chào buổi chiều, {name}",
   "greeting.evening": "Chào buổi tối, {name}",
   "greeting.welcome": "Chào mừng, {name}",
-  "subtitle.live": "Chào mừng bạn đến với Kalks. Đây là tài khoản của bạn và thị trường hôm nay.",
+  "subtitle.live": "Chào mừng bạn đến với Ezymex. Đây là tài khoản của bạn và thị trường hôm nay.",
   "subtitle.demo": "Hiệu suất các tài khoản của bạn hôm nay.",
-  launchTrader: "Mở Kalks Trader",
+  launchTrader: "Mở Ezymex Trader",
   openTerminal: "Mở nền tảng giao dịch",
 
   // Getting started checklist
@@ -62,7 +62,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "account.memberSince": "Thành viên từ",
   "account.profile": "Hồ sơ",
 
-  // Kalks Trader banner
+  // Ezymex Trader banner
   "trader.chip": "Giá trực tiếp",
   "trader.text": "Báo giá và biểu đồ thời gian thực cho {count} công cụ gồm forex, kim loại, chỉ số, năng lượng, tiền mã hóa và cổ phiếu. Chạy trên trình duyệt, không cần cài đặt.",
 
@@ -214,7 +214,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "home.marketsTitle": "Thị trường",
   "home.moreTitle": "Dành cho bạn",
 
-  // Ask Kalks AI on the Overview
+  // Ask Ezymex AI on the Overview
   "ai.title": "Hỏi {name}",
   "ai.subtitle": "Giải đáp tức thì về tài khoản, nạp tiền và giao dịch của bạn.",
   "ai.placeholder": "Hỏi bất cứ điều gì về tài khoản hoặc giao dịch…",

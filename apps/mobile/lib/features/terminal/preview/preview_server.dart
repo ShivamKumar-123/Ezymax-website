@@ -1,4 +1,4 @@
-// Kalks Trader in previews (`--dart-define=KALKS_PREVIEW=true`) and widget tests: a small in-memory trade server that
+// Ezymex Trader in previews (`--dart-define=EZYMEX_PREVIEW=true`) and widget tests: a small in-memory trade server that
 // answers the `trade/*` calls (lib/preview/preview_adapter.dart hands them over), and plays the market-data and engine
 // WebSockets (fake channels given to MarketStream / EngineStream as their connector). Quotes walk randomly, orders
 // fill, pending orders trigger, SL / TP close positions, and the stream pushes the same frames as the real engine, so
@@ -542,7 +542,7 @@ class PreviewServer {
         final a = login == null ? null : _accounts[login];
         final server = '${body['server'] ?? ''}';
         if (a == null) return (401, _err('invalid_credentials', 'Invalid account or password.'));
-        if (server == 'Kalks-Prop') return (409, _err('wrong_server', 'Account $login is not on $server.'));
+        if (server == 'Ezymex-Prop') return (409, _err('wrong_server', 'Account $login is not on $server.'));
         final pw = '${body['password'] ?? ''}';
         if (pw == 'wrong') return (401, _err('invalid_credentials', 'Invalid account or password.'));
         final investor = pw.toLowerCase().startsWith('investor');

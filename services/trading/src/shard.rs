@@ -277,10 +277,10 @@ pub struct Shared {
     pub max_quote_age_ms: i64,
     /// Client restrictions from the gateway (controls.rs), checked by `trade::gate` for client actions.
     pub restrictions: Arc<crate::controls::Restrictions>,
-    /// Kalks FX Options: snapshot, raw spots, pricer (src/options).
+    /// Ezymex FX Options: snapshot, raw spots, pricer (src/options).
     pub options: Arc<crate::options::OptionsCtx>,
     pub clock: Arc<Clock>,
-    /// Kalks FX Options order book: actors, venues, outbox state (src/book).
+    /// Ezymex FX Options order book: actors, venues, outbox state (src/book).
     pub books: Arc<crate::book::Books>,
     /// Corporate actions due and not yet applied everywhere (src/corporate.rs).
     pub corp: crate::engine::corporate::CorpDue,

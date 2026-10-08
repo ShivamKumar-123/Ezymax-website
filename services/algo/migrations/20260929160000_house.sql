@@ -5,7 +5,7 @@
 -- (shown labelled as a backtest), the runtime deployment and the marketplace listing.
 CREATE TABLE house_accounts (
     id              BIGSERIAL PRIMARY KEY,
-    tenant_id       TEXT NOT NULL DEFAULT 'kalks',
+    tenant_id       TEXT NOT NULL DEFAULT 'ezymex',
     preset          TEXT NOT NULL,
     nickname        TEXT NOT NULL,
     capital         NUMERIC(20, 2) NOT NULL,           -- house capital booked so far (initial + top-ups − withdrawals)

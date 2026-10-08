@@ -1,4 +1,4 @@
-// Kalks: the Client Area and Kalks Trader as one native app (Android first). See README.md.
+// Ezymex: the Client Area and Ezymex Trader as one native app (Android first). See README.md.
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -31,7 +31,7 @@ Future<void> main() async {
         i18nBootProvider.overrideWithValue(results[0] as I18nBundle),
         appInfoProvider.overrideWithValue(results[1] as AppInfo),
       ],
-      child: const KalksApp(),
+      child: const EzymexApp(),
     ),
   );
 }

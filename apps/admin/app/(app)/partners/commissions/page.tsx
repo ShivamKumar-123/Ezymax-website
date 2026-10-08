@@ -1,7 +1,7 @@
 "use client";
 
-import { Card, EmptyState, PageHeader } from "@kalks/ui";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { Card, EmptyState, PageHeader } from "@ezymex/ui";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveCommissions } from "@/components/partners-live/commissions";
 
 /** Read from the IB service; the demo showcase has no mock for this page. */

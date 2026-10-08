@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Building2, Check, Globe2, LayoutDashboard, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, Field, Input, KpiCard, PageHeader, Segmented, Stepper, Toggle, cn, formatNumber, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, Field, Input, KpiCard, PageHeader, Segmented, Stepper, Toggle, cn, formatNumber, type Column } from "@ezymex/ui";
 import { ErrorState, TableSkeleton, day, useApi } from "@/components/live/kit";
 import { InviteLink, STATUS_TONE, call, cap } from "@/components/rbac/kit";
 import type { FeatureCatalogue, TenantRow } from "./types";

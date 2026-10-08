@@ -1,8 +1,8 @@
 "use client";
 
-// Kalks FX Options page (Client Area /options): what the product is, a friendly three-card intro (Buy a Call, Buy a
+// Ezymex FX Options page (Client Area /options): what the product is, a friendly three-card intro (Buy a Call, Buy a
 // Put, limited risk when you buy) and one step before the first trade: tick "I understand how options work" and press
-// "Start trading options", which records the acceptance of the options terms and opens Kalks Trader in options mode.
+// "Start trading options", which records the acceptance of the options terms and opens Ezymex Trader in options mode.
 // Verified identity and the knowledge quiz aren't needed (gateway suitability.rs); the Academy course stays as an
 // optional "Test yourself". Rendered by the live page (gateway suitability via /api/suitability) and the demo page
 // (local state) through the same OptionsController.
@@ -37,10 +37,10 @@ import {
   Wallet,
 } from "lucide-react";
 import { Button, Card, CardHeader, Chip, Dialog, Menu, PageHeader, Reveal, Skeleton, SymbolAvatar, cn } from "@/components/kit";
-import { INSTRUMENT_MAP } from "@kalks/mock";
-import { IS_DEMO } from "@kalks/mock/mode";
-import type { MessageKey } from "@kalks/i18n";
-import { useFormat, useT } from "@kalks/i18n/react";
+import { INSTRUMENT_MAP } from "@ezymex/mock";
+import { IS_DEMO } from "@ezymex/mock/mode";
+import type { MessageKey } from "@ezymex/i18n";
+import { useFormat, useT } from "@ezymex/i18n/react";
 import { Markdown } from "@/components/academy/live/markdown";
 import type { Suitability } from "./api";
 
@@ -59,9 +59,9 @@ export type OptionsController = {
   accept: (version: number) => Promise<boolean>;
   /** Accounts options can be traded on; null while loading. */
   accounts: TradeAccount[] | null;
-  /** Plain Kalks Trader link (options mode) when the accounts can't be listed: the terminal signs in by itself. */
+  /** Plain Ezymex Trader link (options mode) when the accounts can't be listed: the terminal signs in by itself. */
   traderHref?: string | null;
-  /** Opens Kalks Trader in options mode on `a`. The tab opens inside the click; `before` runs next (false = cancel). */
+  /** Opens Ezymex Trader in options mode on `a`. The tab opens inside the click; `before` runs next (false = cancel). */
   openTrader: (a: TradeAccount, before?: () => Promise<boolean>) => void | Promise<void>;
   /** View-only login or staff session: can read, never accept for the client. */
   readOnly: boolean;
@@ -158,7 +158,7 @@ function IdeaCards() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Kalks Trader button (options mode)                                  */
+/* Ezymex Trader button (options mode)                                  */
 /* ------------------------------------------------------------------ */
 
 /** Opens `href` in a new tab after `before` succeeds; the tab opens inside the click (popup blockers). */
@@ -174,7 +174,7 @@ async function openHrefAfter(href: string, before: () => Promise<boolean>) {
   } else window.location.assign(href);
 }
 
-/** Opens Kalks Trader in options mode: one account directly, several through a menu, none -> open an account.
+/** Opens Ezymex Trader in options mode: one account directly, several through a menu, none -> open an account.
  *  With `before` (the first start) it runs first and must succeed. */
 function TraderButton({
   ctl,

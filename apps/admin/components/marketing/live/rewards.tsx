@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Check, Coins, Gift, Pencil, Plus, RefreshCw, RotateCcw, Trash2, Users, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, DataTable, Input, KpiCard, PageHeader, Reveal, Toggle, cn, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, Input, KpiCard, PageHeader, Reveal, Toggle, cn, type Column } from "@ezymex/ui";
 import { FilterSelect, Pager, TableSkeleton, day, qs, useApi, useDebounced, when } from "@/components/live/kit";
 import { ErrorBanner } from "@/components/trading-desk/kit";
 import { M, errText, mkSend, type AppliesTo, type CatalogueItem, type CatalogueKind, type EarnRule, type Member, type Overview, type Paged, type Redemption, type Settings, type Tier } from "./api";

@@ -58,7 +58,7 @@ export function walletAllows(staff: { role: string; permissions?: string[]; rbac
   return WALLET_ROLE_MAP[perm].includes(staff.role);
 }
 
-/** Finance permission keys forwarded to the wallet service as `x-kalks-staff-perms`, so it can enforce the exact key
+/** Finance permission keys forwarded to the wallet service as `x-ezymex-staff-perms`, so it can enforce the exact key
  *  (the gateway's list when authoritative, else the role map above plus finance.adjust from the trading map). */
 export function financePerms(staff: { role: string; permissions?: string[]; rbac?: boolean }): string[] {
   if (staff.rbac || staff.permissions?.includes("finance.read")) return (staff.permissions ?? []).filter((p) => p.startsWith("finance."));

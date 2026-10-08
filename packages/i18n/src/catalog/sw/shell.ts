@@ -21,7 +21,7 @@ const shell: NsMessages<"shell"> = {
   security: "Usalama",
   verification: "Uthibitishaji",
   preferences: "Mapendeleo",
-  kalksTrader: "Kalks Trader",
+  ezymexTrader: "Ezymex Trader",
   deposit: "Weka pesa",
   // Client Area navigation
   "nav.dashboard": "Dashibodi",
@@ -92,7 +92,7 @@ const shell: NsMessages<"shell"> = {
   "gate.title": "Bado haijawezeshwa kwa akaunti yako",
   "gate.text": "Sehemu hii bado haijawezeshwa kwa akaunti yako. Wasiliana na {email} ikiwa unahitaji ufikiaji.",
   "gate.backToDashboard": "Rudi kwenye dashibodi",
-  "gate.launchTrader": "Fungua Kalks Trader",
+  "gate.launchTrader": "Fungua Ezymex Trader",
   // market sessions clock
   "sessions.title": "Vipindi vya soko",
   "sessions.openLeft": "Wazi · zimebaki saa {h} dak {m}",

@@ -8,7 +8,7 @@
 // The budget lives in this server process's memory (one Node process per deployment); a restart resets it.
 
 import type { NextRequest } from "next/server";
-import { IS_DEMO } from "@kalks/mock";
+import { IS_DEMO } from "@ezymex/mock";
 import { engine, readSessions, sameOrigin, sessionFor } from "@/lib/engine/server";
 import { clientIp } from "@/lib/gateway";
 

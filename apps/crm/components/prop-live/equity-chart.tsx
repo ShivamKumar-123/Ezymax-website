@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { cn } from "@/components/kit";
-import { intlTag } from "@kalks/i18n";
-import { useT } from "@kalks/i18n/react";
+import { intlTag } from "@ezymex/i18n";
+import { useT } from "@ezymex/i18n/react";
 import { usd } from "./api";
 
 export interface ChartLine {

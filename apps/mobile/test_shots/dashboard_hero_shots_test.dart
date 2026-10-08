@@ -1,6 +1,6 @@
 // The Dashboard's picture + sheet (light / dark / Arabic, at the top and scrolled 700 px) and the Accounts tab for the
 // ink tab bar on a normal page. Run:
-//   flutter test test_shots/dashboard_hero_shots_test.dart --update-goldens --dart-define=KALKS_PREVIEW=true
+//   flutter test test_shots/dashboard_hero_shots_test.dart --update-goldens --dart-define=EZYMEX_PREVIEW=true
 import 'package:flutter_test/flutter_test.dart';
 
 import 'shots.dart';

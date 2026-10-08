@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Check, CircleDollarSign, Clock, HandCoins, X } from "lucide-react";
-import { Button, Card, CardHeader, DataTable, KpiCard, PageHeader, Reveal, Tabs, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, DataTable, KpiCard, PageHeader, Reveal, Tabs, type Column } from "@ezymex/ui";
 import { MiniStat } from "@/components/config/kit";
 import { TableSkeleton, ago, useApi, useNow, when } from "@/components/live/kit";
 import { ChallengeDrawer } from "./challenge-drawer";

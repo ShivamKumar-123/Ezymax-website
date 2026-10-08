@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Button, Dialog, Icon3D, Toggle } from "@kalks/ui";
-import type { PartnerLevel } from "@kalks/mock/admin-partners";
+import { Button, Dialog, Icon3D, Toggle } from "@ezymex/ui";
+import type { PartnerLevel } from "@ezymex/mock/admin-partners";
 import { MiniField, NumInput, Section, Select, SettingRow, auditToast } from "@/components/config/kit";
 
 export function LevelEditDialog({ level, open, onOpenChange, onSave }: { level: PartnerLevel | null; open: boolean; onOpenChange: (o: boolean) => void; onSave: (l: PartnerLevel) => void }) {

@@ -24,12 +24,12 @@ import {
   cn,
   formatNumber,
   type Column,
-} from "@kalks/ui";
-import { ANL_IB_MONTHLY, ANL_IB_TIERS, ANL_PARTNERS, type AnlPartner, type AnlTier } from "@kalks/mock/admin-growth-analytics";
+} from "@ezymex/ui";
+import { ANL_IB_MONTHLY, ANL_IB_TIERS, ANL_PARTNERS, type AnlPartner, type AnlTier } from "@ezymex/mock/admin-growth-analytics";
 import { StackedBars, compactMoney } from "@/components/analytics/stacked-bars";
 import { ExportActions } from "@/components/analytics/common";
 import { Meter } from "@/components/analytics/meter";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LivePartners } from "@/components/reports/live-growth";
 
 const TIER_TONE: Record<AnlTier, "ember" | "gold" | "up" | "info" | "neutral"> = { Elite: "ember", Platinum: "gold", Gold: "up", Silver: "info", Starter: "neutral" };

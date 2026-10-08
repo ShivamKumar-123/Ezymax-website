@@ -13,8 +13,8 @@
 // "Add leg" in the ticket, or a strategy already in the ticket adds the option as a leg instead.
 import * as React from "react";
 import { Check as CheckIcon, Columns3, Layers, MousePointerClick, X } from "lucide-react";
-import { cn } from "@kalks/ui";
-import { useT } from "@kalks/i18n/react";
+import { cn } from "@ezymex/ui";
+import { useT } from "@ezymex/i18n/react";
 import { DropMenu } from "@/components/ui/menu";
 import { atmIndex } from "@/lib/options/math";
 import { ALL_COLS, COL_PRESETS, getOpt, opt, useBookLive, useOpt, visibleRows, type ChainCol, type ColPreset } from "@/lib/options-store";

@@ -119,8 +119,9 @@ class AuthApi {
   Future<OtpChallenge> resend(String challenge) async =>
       OtpChallenge.fromJson(await _api.post<Map<String, dynamic>>('auth/resend', body: {'challenge': challenge}, auth: false));
 
-  Future<OtpChallenge> register(RegisterForm f) async =>
-      OtpChallenge.fromJson(await _api.post<Map<String, dynamic>>('auth/register', body: f.toJson(), auth: false));
+  /// A code to confirm the email, or (password-only sign-in, no email delivery yet) the new account signed in.
+  Future<SignInResult> register(RegisterForm f) async =>
+      _result(await _api.post<Map<String, dynamic>>('auth/register', body: f.toJson(), auth: false));
 
   Future<OtpChallenge> forgot(String email) async =>
       OtpChallenge.fromJson(await _api.post<Map<String, dynamic>>('auth/forgot', body: {'email': email.trim()}, auth: false));

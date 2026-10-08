@@ -10,7 +10,7 @@ takeaways:
   - "One lot means a very different amount of money on different symbols, so never copy a lot size from one market to another."
   - "Lot size is the main dial that sets how much a pip or point is worth, and therefore how much you can gain or lose."
 practice:
-  label: "Open the contract specification for XAUUSD and US30 in Kalks Trader and write down the contract size, digits and minimum lot for each."
+  label: "Open the contract specification for XAUUSD and US30 in Ezymex Trader and write down the contract size, digits and minimum lot for each."
   symbol: "XAUUSD"
 quiz:
   - question: "How many units of the base currency are in a 0.25 lot EURUSD position?"
@@ -37,7 +37,7 @@ quiz:
       - "The spread cost will be identical"
     answer: 1
     explanation: "A gold lot is 100 oz, about 235,000 USD at 2,350.40, and each 1.00 move is worth 100 USD. That is not the same risk as a EURUSD lot, which is worth 10 USD per pip."
-  - question: "What is the smallest position size you can normally open on Kalks?"
+  - question: "What is the smallest position size you can normally open on Ezymex?"
     options:
       - "1.00 lot"
       - "0.10 lot"
@@ -53,7 +53,7 @@ When you open a position you do not type "I want to risk 50 dollars". You type a
 
 On currency pairs, one standard lot is **100,000 units of the base currency**, the first currency in the pair. Buying 1.00 lot of EURUSD means buying 100,000 euros and paying for them in dollars; selling 1.00 lot of USDJPY means selling 100,000 dollars for yen.
 
-Smaller sizes are expressed as decimals of a lot. The minimum on Kalks is 0.01 lot, and sizes move in steps of 0.01.
+Smaller sizes are expressed as decimals of a lot. The minimum on Ezymex is 0.01 lot, and sizes move in steps of 0.01.
 
 | Lots | Common name | Units of base currency | EURUSD pip value |
 |---|---|---|---|
@@ -72,7 +72,7 @@ For non-FX symbols the lot is defined by the **contract size** in the symbol spe
 - **Silver (XAGUSD), indices, energies and crypto:** contract sizes vary between brokers and symbols. As an illustration, on a 1-unit-per-point index contract, 1 lot of US30 is worth 1 USD per index point; on a 1-coin-per-lot crypto contract, 0.10 lot of BTCUSD is 0.1 BTC.
 - **Stock CFDs (AAPL, TSLA, NVDA and others):** often defined per share, but check the specification rather than assuming.
 
-The rule is simple: check the contract specification in Kalks Trader for each symbol before trading it the first time. It shows contract size, digits, minimum and maximum volume and the volume step.
+The rule is simple: check the contract specification in Ezymex Trader for each symbol before trading it the first time. It shows contract size, digits, minimum and maximum volume and the volume step.
 
 ## Notional value: your real exposure
 

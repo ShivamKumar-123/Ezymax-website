@@ -1,8 +1,8 @@
-// Test catalogue for the Instruments panel: `?stress=1500` (or localStorage "kalks.stress" = "1500") adds that many
+// Test catalogue for the Instruments panel: `?stress=1500` (or localStorage "ezymex.stress" = "1500") adds that many
 // generated markets to the list, each with its own simulated price, so the virtualised list can be checked at the size
 // the real catalogue is growing to (1,000+ instruments). Generated rows are list-only: they don't open charts or orders.
 // The simulated prices tick only for rows that are listening (the rows on screen), like the real feed's simulator.
-import { INSTRUMENTS, INSTRUMENT_MAP, type AssetClass, type Instrument, type Quote } from "@kalks/mock";
+import { INSTRUMENTS, INSTRUMENT_MAP, type AssetClass, type Instrument, type Quote } from "@ezymex/mock";
 
 const MAX = 5000;
 
@@ -10,8 +10,8 @@ function readCount(): number {
   if (typeof window === "undefined") return 0;
   try {
     const q = new URLSearchParams(window.location.search).get("stress");
-    if (q !== null) sessionStorage.setItem("kalks.stress", q);
-    const raw = q ?? sessionStorage.getItem("kalks.stress") ?? localStorage.getItem("kalks.stress");
+    if (q !== null) sessionStorage.setItem("ezymex.stress", q);
+    const raw = q ?? sessionStorage.getItem("ezymex.stress") ?? localStorage.getItem("ezymex.stress");
     const n = Math.floor(Number(raw ?? 0));
     return Number.isFinite(n) && n > 0 ? Math.min(MAX, n) : 0;
   } catch {

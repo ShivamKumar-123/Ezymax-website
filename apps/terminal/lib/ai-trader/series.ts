@@ -3,7 +3,7 @@
  * (SMA, EMA, RSI, MACD, Bollinger). ATR, Stochastic, rolling high/low and candle
  * patterns are computed here because indicators.ts does not provide them yet.
  */
-import type { Candle } from "@kalks/mock";
+import type { Candle } from "@ezymex/mock";
 import { bollinger, ema, macd, rsi, sma } from "../indicators";
 import type { Condition, Operand, PriceField, RuleSet } from "./schema";
 

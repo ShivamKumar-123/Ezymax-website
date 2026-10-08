@@ -495,7 +495,7 @@ class _StrategyBuilderState extends ConsumerState<StrategyBuilder> {
                 RfqPanel(
                   legs: [for (final x in resolved) (series: x.q.code, side: x.l.side, contracts: x.l.contracts)],
                   disabled: dup || resolved.isEmpty,
-                  onKalksQuoted: () => setState(() => _houseRoute = true),
+                  onEzymexQuoted: () => setState(() => _houseRoute = true),
                   onDone: () => Navigator.of(context).pop(),
                 ),
               ],

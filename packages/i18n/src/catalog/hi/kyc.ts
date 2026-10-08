@@ -199,7 +199,7 @@ const kyc: NsMessages<"kyc"> = {
   "review.flagged": "समीक्षा के लिए फ़्लैग किया गया",
   "review.passed": "जाँच पास",
   // AML = Anti-Money Laundering; keep abbreviation
-  "review.consent": "मैं पुष्टि करता/करती हूँ कि दस्तावेज़ असली हैं और मेरे (या कंपनी और उसके अधिकारियों के) हैं, और मैं Kalks द्वारा पहचान और AML स्क्रीनिंग के लिए सहमति देता/देती हूँ।",
+  "review.consent": "मैं पुष्टि करता/करती हूँ कि दस्तावेज़ असली हैं और मेरे (या कंपनी और उसके अधिकारियों के) हैं, और मैं Ezymex द्वारा पहचान और AML स्क्रीनिंग के लिए सहमति देता/देती हूँ।",
 
   // More information requested by the review team
   "moreInfo.title": "हमें आपसे थोड़ी और जानकारी चाहिए",
@@ -364,7 +364,7 @@ const kyc: NsMessages<"kyc"> = {
   // Client-side fallback errors (the server's own message is shown when it sends one)
   "error.sessionEnded": "आपका सेशन समाप्त हो गया है।",
   "error.generic": "कुछ गलत हो गया। कृपया फिर से कोशिश करें।",
-  "error.network": "Kalks से कनेक्ट नहीं हो पा रहा। अपना कनेक्शन जाँचें और फिर से कोशिश करें।",
+  "error.network": "Ezymex से कनेक्ट नहीं हो पा रहा। अपना कनेक्शन जाँचें और फिर से कोशिश करें।",
   "error.uploadFailed": "अपलोड विफल रहा। कृपया फिर से कोशिश करें।",
   "error.uploadInterrupted": "अपलोड बीच में रुक गया। अपना कनेक्शन जाँचें और फिर से कोशिश करें।",
 

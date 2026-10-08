@@ -8,17 +8,17 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
-import 'package:kalks/core/api/api_providers.dart';
-import 'package:kalks/core/app_info.dart';
-import 'package:kalks/core/auth/secure_store.dart';
-import 'package:kalks/core/notifications/notifications.dart';
-import 'package:kalks/core/prefs.dart';
-import 'package:kalks/features/terminal/core/market.dart';
-import 'package:kalks/features/terminal/core/terminal_controller.dart';
-import 'package:kalks/features/terminal/options/core/store.dart';
-import 'package:kalks/features/terminal/options/options_preview.dart';
-import 'package:kalks/i18n/i18n.dart';
-import 'package:kalks/preview/preview_adapter.dart';
+import 'package:ezymex/core/api/api_providers.dart';
+import 'package:ezymex/core/app_info.dart';
+import 'package:ezymex/core/auth/secure_store.dart';
+import 'package:ezymex/core/notifications/notifications.dart';
+import 'package:ezymex/core/prefs.dart';
+import 'package:ezymex/features/terminal/core/market.dart';
+import 'package:ezymex/features/terminal/core/terminal_controller.dart';
+import 'package:ezymex/features/terminal/options/core/store.dart';
+import 'package:ezymex/features/terminal/options/options_preview.dart';
+import 'package:ezymex/i18n/i18n.dart';
+import 'package:ezymex/preview/preview_adapter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -84,7 +84,7 @@ class RecordedNotes extends NotificationsController {
 Messages catalog(String code) => (jsonDecode(File('assets/i18n/$code.json').readAsStringSync()) as Map).cast<String, Object?>();
 
 Future<ProviderContainer> optionsContainer({List<Override> extra = const []}) async {
-  SharedPreferences.setMockInitialValues({'kalks.locale': 'en'});
+  SharedPreferences.setMockInitialValues({'ezymex.locale': 'en'});
   final prefs = await Prefs.open();
   final en = catalog('en');
   return ProviderContainer(
@@ -92,7 +92,7 @@ Future<ProviderContainer> optionsContainer({List<Override> extra = const []}) as
       prefsProvider.overrideWithValue(prefs),
       i18nBootProvider.overrideWithValue(I18nBundle(locale: 'en', english: en, messages: en)),
       appInfoProvider.overrideWithValue(const AppInfo(version: '1.0.0', build: '1', osVersion: 'Android 15', model: 'Pixel 8')),
-      secureStoreProvider.overrideWithValue(MemorySecureStore({'kalks.device': 'test-device-0000000000'})),
+      secureStoreProvider.overrideWithValue(MemorySecureStore({'ezymex.device': 'test-device-0000000000'})),
       httpAdapterProvider.overrideWithValue(PreviewAdapter(latency: Duration.zero)),
       notificationsProvider.overrideWith(RecordedNotes.new),
       engineConnectorProvider.overrideWithValue(SilentChannel.new),

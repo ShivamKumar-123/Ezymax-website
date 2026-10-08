@@ -1,14 +1,14 @@
 "use client";
 
 /**
- * Top banner of Kalks Trader for the active account (gateway client_controls.rs, engine controls.rs):
+ * Top banner of Ezymex Trader for the active account (gateway client_controls.rs, engine controls.rs):
  * - a staff session opened from the Back Office: "Staff session as <client> — started by <staff> · End";
  * - restrictions the broker set on the account's owner (trading disabled, close-only, …).
  * Polled every 30 s and whenever the active account changes. Nothing shows for normal, unrestricted sessions.
  */
 import * as React from "react";
 import { LogOut, ShieldAlert, UserRound } from "lucide-react";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { useTerminal } from "@/lib/store";
 
 type Controls = { login: number; accountName?: string | null; clientName?: string; readOnly: boolean; restrictions: string[]; staff: { id: number; name: string } | null; expiresAt: string };
@@ -34,7 +34,7 @@ export function ControlsBanner() {
     if (!login) return;
     let alive = true;
     const load = async () => {
-      const r = await fetch("/api/engine/controls", { headers: { "x-kalks-login": login, "x-kalks-errors": "body" }, cache: "no-store" }).catch(() => null);
+      const r = await fetch("/api/engine/controls", { headers: { "x-ezymex-login": login, "x-ezymex-errors": "body" }, cache: "no-store" }).catch(() => null);
       if (!alive || !r) return;
       const d = (await r.json().catch(() => null)) as (Controls & { error?: unknown }) | null;
       if (d && !d.error) setC(d);

@@ -8,7 +8,7 @@ const security: NsMessages<"security"> = {
   "signingOut": "ログアウト中…",
   "resetSigningOut": "パスワードを再設定するためにログアウトしています…",
   "error.generic": "問題が発生しました。もう一度お試しください。",
-  "error.network": "Kalksに接続できません。接続を確認して、もう一度お試しください。",
+  "error.network": "Ezymexに接続できません。接続を確認して、もう一度お試しください。",
 
   // Device labels from the browser's user agent; browser and OS brand names stay as they are
   "device.unknownBrowser": "不明なブラウザ",
@@ -226,7 +226,7 @@ const security: NsMessages<"security"> = {
   "page.calendar": "カレンダー",
   // Investor passwords card
   "investor.title": "投資家パスワード",
-  "investor.text": "各取引口座には、Kalks Traderで閲覧専用アクセスができる投資家パスワード（MT5と同様）もあります。ポジションと履歴を閲覧でき、取引はできません。",
+  "investor.text": "各取引口座には、Ezymex Traderで閲覧専用アクセスができる投資家パスワード（MT5と同様）もあります。ポジションと履歴を閲覧でき、取引はできません。",
   "investor.hint": "口座ページで設定または変更できます。",
   "investor.goToAccounts": "口座へ移動",
   // Create / edit dialog

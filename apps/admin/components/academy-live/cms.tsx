@@ -3,7 +3,7 @@
 import * as React from "react";
 import { ArrowDown, ArrowUp, Award, BookOpen, ChevronDown, ChevronRight, Eye, FileText, GraduationCap, History, Plus, RotateCcw, RotateCw, Save, Users } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, Dialog, EmptyState, KpiCard, PageHeader, Progress, Reveal, Segmented, Skeleton, Toggle, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Dialog, EmptyState, KpiCard, PageHeader, Progress, Reveal, Segmented, Skeleton, Toggle, cn } from "@ezymex/ui";
 import { useStaff } from "@/components/staff-session";
 import { contentAllows } from "@/lib/academy";
 import { CmsError, LEVELS, TRACK_ORDER, cms, fmtWhen, trackText, useCms, type AuditRow, type Kind, type NodeData, type NodeFull, type QuizQ, type Stats, type Track, type Tree, type TreePhase } from "./api";
@@ -280,7 +280,7 @@ function Editor({ sel, lang, canWrite, onSaved }: { sel: Sel; lang: string; canW
               </label>
             ) : sel.kind === "chapter" ? (
               <label className="block">
-                <span className="mb-1.5 block text-[12.5px] font-medium text-fg-2">Practise in Kalks Trader · symbol</span>
+                <span className="mb-1.5 block text-[12.5px] font-medium text-fg-2">Practise in Ezymex Trader · symbol</span>
                 <input value={d.practice?.symbol ?? ""} disabled={ro} placeholder="e.g. EURUSD" onChange={(e) => set({ practice: { label: d.practice?.label ?? "", symbol: e.target.value || null } })} className={inputCls} />
               </label>
             ) : (

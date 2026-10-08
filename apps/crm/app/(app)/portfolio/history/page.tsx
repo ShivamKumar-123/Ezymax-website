@@ -4,10 +4,10 @@ import * as React from "react";
 import Link from "next/link";
 import { Bot, Code2, Copy as CopyIcon, Download, Hand, Search, Workflow, X } from "lucide-react";
 import { Button, Card, Chip, DataTable, Menu, Money, PageHeader, Reveal, Segmented, SymbolCell, cn, formatMoney, formatNumber, type Column } from "@/components/kit";
-import { HISTORY, getInstrument, type ClosedTrade } from "@kalks/mock";
-import { LIVE_ACCOUNTS, PORTFOLIO_NOW } from "@kalks/mock/portfolio-extra";
+import { HISTORY, getInstrument, type ClosedTrade } from "@ezymex/mock";
+import { LIVE_ACCOUNTS, PORTFOLIO_NOW } from "@ezymex/mock/portfolio-extra";
 import { downloadCsv, serverTime } from "@/components/portfolio/export";
-import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LiveHistoryPage } from "@/components/trading/portfolio";
 
 const PRESETS = ["Today", "7D", "30D", "90D", "All"] as const;
@@ -113,7 +113,7 @@ function DemoTradeHistoryPage() {
 
   const exportCsv = () =>
     downloadCsv(
-      `kalks-trades-${preset.toLowerCase()}`,
+      `ezymex-trades-${preset.toLowerCase()}`,
       rows.map((t) => ({
         ticket: t.ticket,
         account: t.login,

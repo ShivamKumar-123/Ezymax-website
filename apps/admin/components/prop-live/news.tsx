@@ -3,7 +3,7 @@
 import * as React from "react";
 import { CalendarClock, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, DataTable, IconButton, PageHeader, Reveal, Segmented, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, IconButton, PageHeader, Reveal, Segmented, type Column } from "@ezymex/ui";
 import { MiniField, TextInput } from "@/components/config/kit";
 import { TableSkeleton, ago, useApi, useNow } from "@/components/live/kit";
 import { FilterPills } from "@/components/prop/rules";

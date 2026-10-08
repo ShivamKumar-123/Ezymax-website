@@ -1,6 +1,6 @@
 // Number and date formatting of the options workspace (web: components/options/format.ts). Premiums are shown in USD
 // per contract; strikes keep the ladder's own decimals; expiries are dated by their cut (10:00 New York), in UTC.
-// Figures use en-US grouping and Latin digits in every language, like the rest of Kalks Trader.
+// Figures use en-US grouping and Latin digits in every language, like the rest of Ezymex Trader.
 import 'package:intl/intl.dart';
 
 import '../../../../core/format/format.dart';

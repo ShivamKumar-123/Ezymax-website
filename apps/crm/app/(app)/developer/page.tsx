@@ -4,9 +4,9 @@ import * as React from "react";
 import Link from "next/link";
 import { Activity, AlertCircle, BookOpen, Gauge as GaugeIcon, KeyRound, Plus } from "lucide-react";
 import { Button, Chip, KpiCard, MiniBars, PageHeader, Reveal, formatNumber } from "@/components/kit";
-import { API_KEYS, API_STATS, apiUsage, type ApiKey } from "@kalks/mock/developer";
+import { API_KEYS, API_STATS, apiUsage, type ApiKey } from "@ezymex/mock/developer";
 import { CreateKeyDialog, KeysTable, KillSwitchCard, OrderSourcesCard, SdkQuickstart, SecurityChecklist, UsageCard } from "@/components/developer/api-keys";
-import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LiveKeysPage } from "@/components/algo/keys-page";
 
 function DemoApiKeysPage() {

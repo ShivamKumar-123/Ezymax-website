@@ -21,8 +21,8 @@ import {
   Segmented,
   cn,
   formatMoney,
-} from "@kalks/ui";
-import { ADMIN_NOW, DESKS, LEADS, LEAD_STAGES, LEAD_STAGE_LABEL, SALES_AGENTS, serverTime, staff, timeAgo, type Lead, type LeadStage } from "@kalks/mock/admin-clients";
+} from "@ezymex/ui";
+import { ADMIN_NOW, DESKS, LEADS, LEAD_STAGES, LEAD_STAGE_LABEL, SALES_AGENTS, serverTime, staff, timeAgo, type Lead, type LeadStage } from "@ezymex/mock/admin-clients";
 import { ReasonDialog } from "@/components/command/kit";
 
 const STAGE_ACCENT: Record<LeadStage, string> = {

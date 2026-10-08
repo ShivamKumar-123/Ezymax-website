@@ -4,13 +4,13 @@
  * House accounts (Social & Algo → House accounts). Platform-owned accounts that each run one automated strategy
  * on a live account through the ALGO runtime, so copy trading and the strategy marketplace are not empty at
  * launch. Their track record is only what they trade live; clients see them labelled "House strategy ·
- * Operated by Kalks". The backtest shown here is a backtest (simulated), never presented as live history.
+ * Operated by Ezymex". The backtest shown here is a backtest (simulated), never presented as live history.
  *
  * Data: /api/house/* (app/api/house/[...path]/route.ts) → algo service /v1/admin/house/*.
  */
 import * as React from "react";
 import { Building2, Eye, EyeOff, MoreHorizontal, Play, Plus, Power, RefreshCw, RotateCcw, Trash2, Wallet } from "lucide-react";
-import { Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, EquityChart, IconButton, Input, KpiCard, Menu, PageHeader, Reveal, Toggle, cn, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, EquityChart, IconButton, Input, KpiCard, Menu, PageHeader, Reveal, Toggle, cn, type Column } from "@ezymex/ui";
 import { MiniStat, Section } from "@/components/config/kit";
 import { TableSkeleton, ago, sendJson, useApi, useNow, when } from "@/components/live/kit";
 import { Checkbox } from "@/components/trading-desk/kit";
@@ -450,7 +450,7 @@ export function LiveHousePage() {
 
           <p className="mt-4 max-w-3xl text-[12px] leading-relaxed text-fg-3">
             House capital is booked on the ledger as <span className="font-mono">house_capital</span>, never as a client deposit, so it is not counted in deposit or FTD reports. House users cannot sign in and are left out of client lists. Clients see every house account labelled
-            &ldquo;House strategy · Operated by Kalks&rdquo; on the leaderboard, the master profile, their subscriptions and the marketplace.
+            &ldquo;House strategy · Operated by Ezymex&rdquo; on the leaderboard, the master profile, their subscriptions and the marketplace.
           </p>
         </>
       )}

@@ -2,9 +2,9 @@
 
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ACCOUNTS, INSTRUMENT_MAP, priceFeed } from "@kalks/mock";
-import { LogoMark } from "@kalks/ui";
-import { tr, useT } from "@kalks/i18n/react";
+import { ACCOUNTS, INSTRUMENT_MAP, priceFeed } from "@ezymex/mock";
+import { LogoMark } from "@ezymex/ui";
+import { tr, useT } from "@ezymex/i18n/react";
 import { toast } from "@/lib/notify";
 import { TerminalProvider, engineSession, guestSession, readActive, readSession, savedCharts, useTerminal, writeActive, writeSession, type Session } from "@/lib/store";
 import { prefetchHistory } from "@/components/chart/engine";
@@ -40,7 +40,7 @@ function useIsMobile() {
 
 export function Splash({ text }: { text?: string }) {
   const t = useT();
-  const label = text ?? (GUEST_MODE ? t("trader.splash.connecting", { server: "Kalks" }) : t("trader.splash.connecting", { server: "Kalks-Live01" }));
+  const label = text ?? (GUEST_MODE ? t("trader.splash.connecting", { server: "Ezymex" }) : t("trader.splash.connecting", { server: "Ezymex-Live01" }));
   return (
     <div className="grid h-dvh place-items-center bg-page">
       <div className="flex flex-col items-center gap-3">
@@ -48,7 +48,7 @@ export function Splash({ text }: { text?: string }) {
           <LogoMark size={22} className="text-fg" />
         </span>
         <div className="text-[13px] font-semibold">
-          Kalks <span className="font-normal text-fg-2">Trader</span>
+          Ezymex <span className="font-normal text-fg-2">Trader</span>
         </div>
         <div className="flex items-center gap-2 font-mono text-[11px] text-fg-3">
           <span className="size-1.5 rounded-full bg-ember" />

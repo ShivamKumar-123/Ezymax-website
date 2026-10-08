@@ -3,13 +3,13 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { ArrowDownToLine, Building2, Fuel, History, Layers, Loader2, Lock, ShieldCheck, Wand2 } from "lucide-react";
-import { Button, Card, CardHeader, Chip, DataTable, Dialog, Icon3D, Money, PageHeader, Reveal, Starfield, StatusChip, type Column } from "@kalks/ui";
-import { hashString, seeded } from "@kalks/mock";
-import { FIN_COLD_WALLETS, FIN_HD, FIN_HOT_WALLET, FIN_SWEEP_HISTORY, FIN_SWEEP_QUEUE, finAgo, finHex, finTime, type FinSweepItem } from "@kalks/mock/admin-finance";
+import { Button, Card, CardHeader, Chip, DataTable, Dialog, Icon3D, Money, PageHeader, Reveal, Starfield, StatusChip, type Column } from "@ezymex/ui";
+import { hashString, seeded } from "@ezymex/mock";
+import { FIN_COLD_WALLETS, FIN_HD, FIN_HOT_WALLET, FIN_SWEEP_HISTORY, FIN_SWEEP_QUEUE, finAgo, finHex, finTime, type FinSweepItem } from "@ezymex/mock/admin-finance";
 import { Addr, Checkbox, PersonCell, TxHash, auditToast } from "@/components/config/kit";
 import { ColdWalletsCard, HdCard, HotWalletCard, TopUpGasDialog, type HotState } from "@/components/finance/wallet-cards";
 import { Line, num, usd } from "@/components/finance/shared";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveWalletsPage } from "@/components/finance-live/wallets";
 
 type SweepRow = (typeof FIN_SWEEP_HISTORY)[number];
@@ -93,7 +93,7 @@ function DemoWalletsPage() {
             <Button variant="surface" onClick={() => setTopUp(true)}>
               <Fuel /> Top up gas
             </Button>
-            <Button variant="surface" onClick={() => toast.success("Proof-of-reserves snapshot generated", { description: "por-kalks-2026-09-24.json · signed with tenant key" })}>
+            <Button variant="surface" onClick={() => toast.success("Proof-of-reserves snapshot generated", { description: "por-ezymex-2026-09-24.json · signed with tenant key" })}>
               <ShieldCheck /> Proof of reserves
             </Button>
             <Button variant="ember" disabled={queue.length === 0} onClick={() => setSweepOpen(true)}>
@@ -117,7 +117,7 @@ function DemoWalletsPage() {
                   </Chip>
                 </div>
                 <p className="mt-1 max-w-xl text-[13px] text-fg-2">
-                  Each broker tenant has its own HD wallet and keys held in a dedicated HSM partition. Kalks never commingles client funds across tenants — every address, sweep and payout on this page belongs to <span className="font-mono text-fg">{FIN_HD.tenantId}</span> only.
+                  Each broker tenant has its own HD wallet and keys held in a dedicated HSM partition. Ezymex never commingles client funds across tenants — every address, sweep and payout on this page belongs to <span className="font-mono text-fg">{FIN_HD.tenantId}</span> only.
                 </p>
               </div>
             </div>

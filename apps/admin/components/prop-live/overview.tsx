@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Activity, Award, CalendarClock, CircleDollarSign, Layers, Percent, ShieldAlert, Trophy, XCircle } from "lucide-react";
-import { Button, Card, CardHeader, Chip, KpiCard, PageHeader, Reveal, Skeleton, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, KpiCard, PageHeader, Reveal, Skeleton, cn } from "@ezymex/ui";
 import { useApi } from "@/components/live/kit";
 import { PropError, PlanTypeChip, int, pct, ruleLabel, usd, usdK, type Overview, type PlanRow } from "./kit";
 

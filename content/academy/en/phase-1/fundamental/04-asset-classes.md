@@ -1,20 +1,20 @@
 ---
 slug: "p1-f-asset-classes"
-title: "Asset classes you can trade on Kalks"
+title: "Asset classes you can trade on Ezymex"
 summary: "Forex, metals, indices, energies, crypto and US shares: what each one represents, when it trades and how differently it behaves."
 order: 4
 version: 1
 takeaways:
-  - "Kalks offers CFDs on six asset classes: forex, metals, stock indices, energies, cryptocurrencies and US shares."
+  - "Ezymex offers CFDs on six asset classes: forex, metals, stock indices, energies, cryptocurrencies and US shares."
   - "Each class has its own drivers, trading hours and typical volatility, so the same position size carries very different risk across classes."
-  - "Contract sizes differ by symbol, so always check the contract specification in Kalks Trader before sizing a trade."
+  - "Contract sizes differ by symbol, so always check the contract specification in Ezymex Trader before sizing a trade."
   - "Crypto trades every day of the week, US shares only during New York exchange hours, and the other classes Monday to Friday."
   - "Many instruments are linked, for example the US dollar, gold and US indices, so several trades can end up being one bet."
 practice:
-  label: "Open the symbol specification for EURUSD, XAUUSD, US30 and BTCUSD in Kalks Trader and write down the contract size and trading hours of each."
+  label: "Open the symbol specification for EURUSD, XAUUSD, US30 and BTCUSD in Ezymex Trader and write down the contract size and trading hours of each."
   symbol: "US30"
 quiz:
-  - question: "Which asset class on Kalks can be traded on Saturday and Sunday?"
+  - question: "Which asset class on Ezymex can be traded on Saturday and Sunday?"
     options:
       - "Forex"
       - "Stock indices"
@@ -45,14 +45,14 @@ quiz:
       - "Only during the Tokyo session"
       - "Monday 00:00 to Friday 24:00 server time without interruption"
     answer: 1
-    explanation: "Share CFDs follow the underlying exchange, which trades 09:30 to 16:00 New York time. That is 16:30 to 23:00 in Kalks server time."
+    explanation: "Share CFDs follow the underlying exchange, which trades 09:30 to 16:00 New York time. That is 16:30 to 23:00 in Ezymex server time."
 ---
 
-A trading account on Kalks gives you access to far more than currencies. You can trade gold, the Dow Jones, crude oil, Bitcoin and Nvidia from the same terminal. That convenience hides a trap: these markets behave very differently, and treating them the same way is one of the fastest routes to oversized risk. This chapter maps out each asset class, what drives it and what to check before you trade it.
+A trading account on Ezymex gives you access to far more than currencies. You can trade gold, the Dow Jones, crude oil, Bitcoin and Nvidia from the same terminal. That convenience hides a trap: these markets behave very differently, and treating them the same way is one of the fastest routes to oversized risk. This chapter maps out each asset class, what drives it and what to check before you trade it.
 
 ## The six asset classes at a glance
 
-| Class | Kalks symbols (examples) | What it tracks | When it trades |
+| Class | Ezymex symbols (examples) | What it tracks | When it trades |
 |---|---|---|---|
 | Forex | EURUSD, GBPUSD, USDJPY, EURJPY, USDINR | Exchange rates between currencies | Monday to Friday, around the clock |
 | Metals | XAUUSD, XAGUSD | Spot gold and silver priced in USD | Monday to Friday, with a daily break |
@@ -61,7 +61,7 @@ A trading account on Kalks gives you access to far more than currencies. You can
 | Crypto | BTCUSD, ETHUSD, SOLUSD, XRPUSD | Cryptocurrency prices in USD | 24 hours, 7 days a week |
 | US shares | AAPL, TSLA, NVDA, META, NFLX | Individual company share prices | 09:30 to 16:00 New York time |
 
-Exact trading hours, including any daily breaks, are listed in each symbol's specification in Kalks Trader.
+Exact trading hours, including any daily breaks, are listed in each symbol's specification in Ezymex Trader.
 
 ## Forex and metals
 
@@ -109,4 +109,4 @@ The same lot size, or the same margin, can represent completely different risk d
 - **Holding share CFDs through earnings without realising it.** Check the company's reporting date in the economic calendar or news.
 - **Forgetting weekend crypto trading.** A crypto position stays open and exposed on Saturday and Sunday, when you might not be watching.
 
-Explore each class on a free demo account in Kalks Trader before trading any of them with real money.
+Explore each class on a free demo account in Ezymex Trader before trading any of them with real money.

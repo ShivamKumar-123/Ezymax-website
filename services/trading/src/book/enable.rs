@@ -2,7 +2,7 @@
 //! automatically: the founder (staff with `options.settle`, four-eyes) switches it on in the Back Office.
 //!
 //! 1. **Halt house opens**: the venue is switched on in memory first, so `/v1/terminal/options/orders` refuses
-//!    listed legs from now on (`book_venue`); barrier-only orders stay Kalks-quoted.
+//!    listed legs from now on (`book_venue`); barrier-only orders stay Ezymex-quoted.
 //! 2. **Cancel legacy pending option orders** (house-priced limit / trigger orders on listed series); clients are
 //!    notified.
 //! 3. **Start the actors and the market maker** and wait for its quote coverage (a closed market is a warning).
@@ -120,7 +120,7 @@ pub async fn plan(st: &AppState, tenant_id: i64, kind: AccountKind) -> Value {
         Some(s) => {
             let slug = st.hub.shared.registry.get(tenant_id).map(|t| t.slug.clone()).unwrap_or_default();
             if !s.enabled(&slug, kind == AccountKind::Live) {
-                blockers.push(format!("Kalks FX Options are switched off for {} accounts of this broker.", kind.as_str()));
+                blockers.push(format!("Ezymex FX Options are switched off for {} accounts of this broker.", kind.as_str()));
             }
             if opts.stale(now) {
                 blockers.push("The options snapshot is stale.".into());
@@ -132,10 +132,10 @@ pub async fn plan(st: &AppState, tenant_id: i64, kind: AccountKind) -> Value {
         }
     }
     if st.cfg.options_mm_user <= 0 && books.mm.login(tenant_id, kind).is_none() {
-        blockers.push("OPTIONS_MM_USER_ID is not set: the Kalks market maker has no user.".into());
+        blockers.push("OPTIONS_MM_USER_ID is not set: the Ezymex market maker has no user.".into());
     }
     if barriers > 0 {
-        warnings.push(format!("{barriers} barrier position(s) stay Kalks-quoted (house venue)."));
+        warnings.push(format!("{barriers} barrier position(s) stay Ezymex-quoted (house venue)."));
     }
     let not_whole = pos.iter().filter(|p| p.contracts.fract() != ZERO).count();
     if not_whole > 0 {

@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { Award } from "lucide-react";
-import { Card, CardHeader, Chip, PageHeader } from "@kalks/ui";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { Card, CardHeader, Chip, PageHeader } from "@ezymex/ui";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveCertificatesPage } from "@/components/prop-live/certificates";
 
 export default function CertificatesPage() {
@@ -11,10 +11,10 @@ export default function CertificatesPage() {
 }
 
 const DEMO_CERTS = [
-  { code: "K7Q2M9TX4P", kind: "Funded trader", trader: "Aarav S.", plan: "Kalks Classic 2-Step", amount: "$100,000", issued: "22 Sep 2026" },
-  { code: "R3N8WJ5CZL", kind: "Payout", trader: "Lina M.", plan: "Kalks Rapid 1-Step", amount: "$4,812.50", issued: "21 Sep 2026" },
-  { code: "D9F4HB2QVE", kind: "Phase passed", trader: "Tomás R.", plan: "Kalks Classic 2-Step", amount: "$50,000", issued: "19 Sep 2026" },
-  { code: "P6Y1KX8MSA", kind: "Phase passed", trader: "Chen W.", plan: "Kalks Classic 2-Step", amount: "$25,000", issued: "17 Sep 2026" },
+  { code: "K7Q2M9TX4P", kind: "Funded trader", trader: "Aarav S.", plan: "Ezymex Classic 2-Step", amount: "$100,000", issued: "22 Sep 2026" },
+  { code: "R3N8WJ5CZL", kind: "Payout", trader: "Lina M.", plan: "Ezymex Rapid 1-Step", amount: "$4,812.50", issued: "21 Sep 2026" },
+  { code: "D9F4HB2QVE", kind: "Phase passed", trader: "Tomás R.", plan: "Ezymex Classic 2-Step", amount: "$50,000", issued: "19 Sep 2026" },
+  { code: "P6Y1KX8MSA", kind: "Phase passed", trader: "Chen W.", plan: "Ezymex Classic 2-Step", amount: "$25,000", issued: "17 Sep 2026" },
 ];
 
 function DemoCertificatesPage() {

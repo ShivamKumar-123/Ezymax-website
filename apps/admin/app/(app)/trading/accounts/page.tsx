@@ -3,15 +3,15 @@
 import * as React from "react";
 import { ArrowLeftRight, Ban, CandlestickChart, CirclePause, Gauge as GaugeIcon, KeyRound, Layers, List, MoreHorizontal, ShieldAlert, SlidersHorizontal, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { Chip, Card, DataTable, KpiCard, Menu, PageHeader, Reveal, Segmented, cn, formatMoney, formatNumber, type Column } from "@kalks/ui";
-import { ADMIN_ACCOUNTS, TRADING_GROUPS, type AdminAccountRow } from "@kalks/mock/admin-trading";
-import { CLIENT_GROUPS, REASON_CODES, getClient } from "@kalks/mock/admin-clients";
+import { Chip, Card, DataTable, KpiCard, Menu, PageHeader, Reveal, Segmented, cn, formatMoney, formatNumber, type Column } from "@ezymex/ui";
+import { ADMIN_ACCOUNTS, TRADING_GROUPS, type AdminAccountRow } from "@ezymex/mock/admin-trading";
+import { CLIENT_GROUPS, REASON_CODES, getClient } from "@ezymex/mock/admin-clients";
 import { ReasonDialog } from "@/components/command/kit";
 import { MiniClient } from "@/components/trading/shared";
 import { resolveRoute, useDesk, type Book } from "@/lib/trading-desk";
 import { BookChip, DeskDialog } from "@/components/trading-desk/kit";
 import { CreateTradeDrawer } from "@/components/trading-desk/create-trade";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveAccountsPage } from "@/components/trading-live/accounts";
 
 const usd = (a: AdminAccountRow, v: number) => (a.currency === "USC" ? v / 100 : v);
@@ -112,7 +112,7 @@ function DemoAccountsPage() {
 
   return (
     <div className="pb-10">
-      <PageHeader title="Trading accounts" subtitle="Every live account across Kalks-Live01 and Kalks-Live02 — group, leverage, margin and routing." />
+      <PageHeader title="Trading accounts" subtitle="Every live account across Ezymex-Live01 and Ezymex-Live02 — group, leverage, margin and routing." />
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         <KpiCard label="Live accounts" icon={<Wallet />} value={<span className="k-num">{rows.length}</span>} chip={`${accounts.length} total`} />
         <KpiCard label="Equity (filtered)" icon={<GaugeIcon />} value={<span className="k-num">{formatMoney(total, "USD", 0)}</span>} chip="USD equivalent" delay={0.04} />

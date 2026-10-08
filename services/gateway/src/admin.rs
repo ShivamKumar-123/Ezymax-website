@@ -432,7 +432,7 @@ pub async fn users(State(st): State<AppState>, ctx: Ctx, q: Result<Query<UsersQu
          ORDER BY CASE WHEN $11 THEN u.last_active_at END DESC NULLS LAST, u.created_at DESC, u.id DESC
          LIMIT $7 OFFSET $8"
     ), 14);
-    // defense in depth: the listing runs under the tenant's RLS scope (kalks_tenant role), not only `WHERE tenant_id`
+    // defense in depth: the listing runs under the tenant's RLS scope (ezymex_tenant role), not only `WHERE tenant_id`
     let mut tx = crate::domains::tenant_tx(&st.pool, me.tenant_id).await?;
     let rows = sqlx::query(sqlx::AssertSqlSafe(sql))
         .bind(me.tenant_id)
@@ -968,7 +968,7 @@ mod tests {
 }
 
 /// Database-backed tests. They use `GATEWAY_TEST_DATABASE_URL` (default: the local dev cluster, database
-/// `kalks_core_test`, created and migrated on first run) and skip when no database is reachable.
+/// `ezymex_core_test`, created and migrated on first run) and skip when no database is reachable.
 #[cfg(test)]
 mod db_tests {
     use super::*;
@@ -977,7 +977,7 @@ mod db_tests {
     use std::sync::Arc;
 
     async fn test_state() -> Option<AppState> {
-        let url = std::env::var("GATEWAY_TEST_DATABASE_URL").unwrap_or_else(|_| "postgres://postgres@127.0.0.1:5433/kalks_core_test".into());
+        let url = std::env::var("GATEWAY_TEST_DATABASE_URL").unwrap_or_else(|_| "postgres://postgres@127.0.0.1:5433/ezymex_core_test".into());
         let pool = match tokio::time::timeout(std::time::Duration::from_secs(5), crate::db::connect(&url)).await {
             Ok(Ok(p)) => p,
             _ => {
@@ -1003,6 +1003,7 @@ mod db_tests {
             trade_url: String::new(),
             support_email: String::new(),
             staff_otp_every_login: true,
+            password_only: false,
             super_admin_email: String::new(),
             super_admin_password: String::new(),
             super_admin_name: String::new(),
@@ -1011,7 +1012,7 @@ mod db_tests {
     }
 
     fn ctx(bearer: Option<&str>) -> Ctx {
-        Ctx { ip: "203.0.113.9".into(), user_agent: "test-agent".into(), device: None, tenant_slug: "kalks".into(), bearer: bearer.map(str::to_string) }
+        Ctx { ip: "203.0.113.9".into(), user_agent: "test-agent".into(), device: None, tenant_slug: "ezymex".into(), bearer: bearer.map(str::to_string) }
     }
 
     async fn tenant(st: &AppState, tag: &str) -> i64 {

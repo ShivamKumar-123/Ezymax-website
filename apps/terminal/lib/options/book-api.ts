@@ -6,7 +6,7 @@
 // Demo builds: the same calls answered by the in-browser matching simulator (./mock-engine). Errors come back as
 // values, never thrown. An engine without the book (404 / 405 / 501) is reported with `bookMissing`, and the
 // workspace falls back to today's house-priced flow.
-import { IS_LIVE } from "@kalks/mock";
+import { IS_LIVE } from "@ezymex/mock";
 import type { EngineErr } from "@/lib/engine/map";
 import type { Result } from "@/lib/engine/client";
 import { mockBookApi } from "./mock-engine";
@@ -16,8 +16,8 @@ import type { BookFill, BookOrder, BookOrderRequest, BookOrderResult, BookPrevie
 type Method = "GET" | "POST" | "PATCH" | "DELETE";
 
 async function call<T>(method: Method, path: string, opts: { login?: string; body?: unknown; timeoutMs?: number } = {}): Promise<Result<T>> {
-  const headers: Record<string, string> = { "x-kalks-errors": "body" };
-  if (opts.login) headers["x-kalks-login"] = opts.login;
+  const headers: Record<string, string> = { "x-ezymex-errors": "body" };
+  if (opts.login) headers["x-ezymex-login"] = opts.login;
   const hasBody = method === "POST" || method === "PATCH";
   if (hasBody) headers["content-type"] = "application/json";
   const ctrl = new AbortController();

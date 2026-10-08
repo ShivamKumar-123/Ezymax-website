@@ -6,9 +6,9 @@ import { toast, useSonner } from "sonner";
 import { ArrowDownToLine, Bell, CandlestickChart, CheckCircle2, Coins, IdCard, Info, LifeBuoy, Megaphone, ShieldCheck, Trophy, TriangleAlert, Users, Wallet, XCircle } from "lucide-react";
 import { EmptyState, IconButton, Popover, cn } from "@/components/kit";
 import type { TileTone } from "@/components/kit";
-import { IS_DEMO, NOTIFICATIONS } from "@kalks/mock";
+import { IS_DEMO, NOTIFICATIONS } from "@ezymex/mock";
 import { realtime, type Frame } from "@/lib/realtime";
-import { useFormat, useT } from "@kalks/i18n/react";
+import { useFormat, useT } from "@ezymex/i18n/react";
 
 /* ------------------------------------------------------------------ */
 /* In-app event log: every toast is kept as a notification             */
@@ -45,7 +45,7 @@ function write(next: LoggedEvent[]) {
 
 /** Per-browser, per-client log (so two clients sharing a browser never see each other's events). */
 function useEventLog(userKey: string): LoggedEvent[] {
-  const key = `kalks.crm.notifications.${userKey}`;
+  const key = `ezymex.crm.notifications.${userKey}`;
   if (typeof window !== "undefined" && storeKey !== key) {
     storeKey = key;
     cache = read(key);

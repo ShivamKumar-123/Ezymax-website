@@ -97,7 +97,7 @@ pub fn strategy_schema() -> Value {
     ])
 }
 
-const SYSTEM: &str = "You convert a trader's plain-language instructions into a strategy for the Kalks strategy engine.
+const SYSTEM: &str = "You convert a trader's plain-language instructions into a strategy for the Ezymex strategy engine.
 The strategy is shown to the trader, who reviews, backtests and explicitly deploys it; it can trade real or demo money, so never invent aggressive settings.
 
 Engine semantics:
@@ -120,7 +120,7 @@ Rules for you:
 - Never add conditions, limits or indicators the trader did not ask for.
 - When a current strategy is given, apply the new instruction to it and keep everything else unchanged.";
 
-const CODE_RULES: &str = "Write the strategy in the Kalks strategy language (Python-like, expressions only):
+const CODE_RULES: &str = "Write the strategy in the Ezymex strategy language (Python-like, expressions only):
 - Settings are calls, one per line: name(\"…\"), symbol(\"EURUSD\"), timeframe(\"H1\"), lots(0.1) or risk(1.0), max_lots(n), stop_loss(pips=20 | points=… | price=… | percent=… | atr=2, period=14 | level=…), take_profit(same, or rr=2), trailing(pips=15 | points=… | atr=1.5, period=14), breakeven(trigger=150, offset=10) (points), session(\"08:00\", \"17:00\"), days(1, 2, 3, 4, 5), close_outside_session(true), max_trades_per_day(3), max_daily_loss(200), one_at_a_time(true).
 - Signals are assignments: buy = …, sell = …, exit_buy = …, exit_sell = … (booleans, evaluated on each closed bar). Helper names can be assigned first (fast = ema(close, 20)); each name is assigned once and before use.
 - Functions: sma/ema/wma/rma(src, n), rsi(src, n), macd(src, fast, slow, signal), macd_signal(…), macd_hist(…), bb_upper/bb_middle/bb_lower(src, n, dev), stddev(src, n), atr(n), adx(n), plus_di(n), minus_di(n), stoch_k(n, d), stoch_d(n, d), cci(n), willr(n), momentum(src, n), roc(src, n), change(src, n), highest(n) / lowest(n) (previous N bars), highest(src, n), crosses_above(a, b), crosses_below(a, b), crosses(a, b), abs, min, max, round, sqrt, nz, htf(\"H4\", expr) for a higher timeframe, candle patterns bullish(), bearish(), bullish_engulfing(), bearish_engulfing(), hammer(), shooting_star(), doji(), inside_bar().

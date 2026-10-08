@@ -5,7 +5,7 @@ questions:
     answer: 1
     explanation: "The market compares actual with consensus. A 0.3 percentage point upside surprise points to tighter Bank of England policy, which usually supports the pound."
     chapter: "p4-f-reading-the-economic-calendar"
-  - question: "A German release is published at 10:00 Frankfurt time in winter (GMT+1). What is that in Kalks server time, which is GMT+2 in winter?"
+  - question: "A German release is published at 10:00 Frankfurt time in winter (GMT+1). What is that in Ezymex server time, which is GMT+2 in winter?"
     options: ["09:00", "10:00", "11:00", "12:00"]
     answer: 2
     explanation: "10:00 at GMT+1 is 09:00 GMT, which is 11:00 at GMT+2."

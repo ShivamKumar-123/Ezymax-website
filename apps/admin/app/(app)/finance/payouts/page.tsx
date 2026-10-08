@@ -3,8 +3,8 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { AlertTriangle, CalendarClock, Check, Download, Handshake, ListChecks, Plus, Repeat, Send, Trophy } from "lucide-react";
-import { Avatar, Button, Card, CardHeader, Chip, DataTable, Icon3D, KpiCard, Money, PageHeader, Reveal, Segmented, cn, type Column } from "@kalks/ui";
-import { FIN_PAYOUT_BATCHES, FIN_PAYOUT_KIND_LABEL, FIN_PAYOUT_REASONS, finAgo, type FinPayoutBatch, type FinPayoutKind } from "@kalks/mock/admin-finance";
+import { Avatar, Button, Card, CardHeader, Chip, DataTable, Icon3D, KpiCard, Money, PageHeader, Reveal, Segmented, cn, type Column } from "@ezymex/ui";
+import { FIN_PAYOUT_BATCHES, FIN_PAYOUT_KIND_LABEL, FIN_PAYOUT_REASONS, finAgo, type FinPayoutBatch, type FinPayoutKind } from "@ezymex/mock/admin-finance";
 import { auditToast, useReason } from "@/components/config/kit";
 import { BATCH_STATUS, PayoutLinesDrawer, batchFlags, batchTotal } from "@/components/finance/payout-lines";
 import { usd } from "@/components/finance/shared";

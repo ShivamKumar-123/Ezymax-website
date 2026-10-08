@@ -3,8 +3,8 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { AlertCircle, CheckCircle2, Globe, Network, Tag } from "lucide-react";
-import { Button, Dialog, DialogClose, Field, Input, Segmented, Toggle, cn } from "@kalks/ui";
-import { ORG_EMPLOYEES, SEC_CURRENT_IP, type SecIpRule } from "@kalks/mock/admin-platform-security";
+import { Button, Dialog, DialogClose, Field, Input, Segmented, Toggle, cn } from "@ezymex/ui";
+import { ORG_EMPLOYEES, SEC_CURRENT_IP, type SecIpRule } from "@ezymex/mock/admin-platform-security";
 import { cidrContains, cidrSize, validateCidr } from "./cidr";
 
 export type RuleDraft = Pick<SecIpRule, "cidr" | "label" | "scope" | "scopeValue" | "enabled">;

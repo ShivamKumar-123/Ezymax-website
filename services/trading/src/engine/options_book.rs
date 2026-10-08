@@ -369,7 +369,7 @@ pub fn enter_with(tx: &mut Tx, env: &Env, req: BookReq, agg: &mut reserve::Agg, 
     // fees stamped now (maker < 0 = rebate)
     let gs = snap.group(&env.tenant.slug, &env.group.code, &u.symbol);
     let (maker, taker) = gs.book_fees();
-    // the market-maker programme tier (docs §4, §7): liquidity providers' quotes trade at 0 / 0 (for the Kalks MM
+    // the market-maker programme tier (docs §4, §7): liquidity providers' quotes trade at 0 / 0 (for the Ezymex MM
     // a house-to-house wash)
     let (fee_maker, fee_taker) = if req.lp && req.ephemeral { (ZERO, ZERO) } else { (dec(maker), dec(taker)) };
     let fee_wc = fee_maker.max(fee_taker).max(ZERO);

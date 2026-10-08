@@ -1,11 +1,11 @@
 // Where a location may go: sign-in state, biometric lock, maintenance, forced update, view-only logins, deep links.
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/core/auth/auth_controller.dart';
-import 'package:kalks/core/auth/secure_store.dart';
-import 'package:kalks/core/config/app_config.dart';
-import 'package:kalks/core/models/user.dart';
-import 'package:kalks/router/router.dart';
-import 'package:kalks/shell/nav.dart';
+import 'package:ezymex/core/auth/auth_controller.dart';
+import 'package:ezymex/core/auth/secure_store.dart';
+import 'package:ezymex/core/config/app_config.dart';
+import 'package:ezymex/core/models/user.dart';
+import 'package:ezymex/router/router.dart';
+import 'package:ezymex/shell/nav.dart';
 
 void main() {
   final session = Session(token: 'x' * 40, expiresAt: DateTime.now().add(const Duration(days: 7)));
@@ -46,8 +46,8 @@ void main() {
     expect(go(s, '/wallet', maintenance: true), '/maintenance');
     expect(go(s, '/maintenance'), '/');
     expect(go(s, '/', update: true), '/update');
-    expect(go(s, 'https://trade.kalkstrade.com/'), '/trader');
-    expect(go(const AuthSignedOut(), 'kalks://app/wallet/deposit'), '/login?next=%2Fwallet%2Fdeposit');
+    expect(go(s, 'https://trade.ezymex.com/'), '/trader');
+    expect(go(const AuthSignedOut(), 'ezymex://app/wallet/deposit'), '/login?next=%2Fwallet%2Fdeposit');
   });
 
   test('view-only logins stay inside their sections', () {

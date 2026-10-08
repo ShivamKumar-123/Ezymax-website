@@ -4,10 +4,10 @@ import * as React from "react";
 import Link from "next/link";
 import { CalendarClock, Coins, Loader2, Percent, TrendingUp, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import type { T } from "@kalks/i18n";
-import { useT } from "@kalks/i18n/react";
+import type { T } from "@ezymex/i18n";
+import { useT } from "@ezymex/i18n/react";
 import { Button, Card, CardHeader, Chip, DataTable, KpiCard, Money, PageHeader, Reveal,  cn, type Column } from "@/components/kit";
-// engine symbols include Kalks FX Options series codes, which @kalks/ui SymbolAvatar / SymbolCell (static list) throw on
+// engine symbols include Ezymex FX Options series codes, which @ezymex/ui SymbolAvatar / SymbolCell (static list) throw on
 import { TradeSymbolCell as SymbolCell } from "@/components/trading/instrument";
 import { BannerSlot } from "./banner-slot";
 import { errorToast, fmtDate, fmtDateTime, fmtDay, fmtLots, fmtUsd, growthApi, titleCase, useGrowth, type CashbackAccrual, type CashbackMe, type CashbackPayout, type CashbackProgramme } from "./api";
@@ -190,7 +190,7 @@ export function LiveCashbackPage() {
               rowKey={(r) => String(r.id)}
               search={(r) => `${r.symbol} ${r.login} ${r.dealId} ${r.programme}`}
               searchPlaceholder={t("rewards.cashback.search")}
-              exportName="kalks-cashback"
+              exportName="ezymex-cashback"
               dense
               empty={<CardEmpty title={t("rewards.cashback.historyEmptyTitle")} text={t("rewards.cashback.historyEmptyText")} />}
             />

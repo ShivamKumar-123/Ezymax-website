@@ -10,7 +10,7 @@ import { AlertTriangle, Archive, Code2, FlaskConical, LayoutGrid, Loader2, Play,
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, Menu, PageHeader, Reveal, Segmented, Skeleton, SymbolAvatar, cn } from "@/components/kit";
 import { MoreHorizontal } from "lucide-react";
-import { tr, useT } from "@kalks/i18n/react";
+import { tr, useT } from "@ezymex/i18n/react";
 import { AiAssistant } from "./ai-chat";
 import { SettingsEditor, SymbolPicker, VisualEditor, NumInput } from "./builder";
 import { CodeEditor, DslReference } from "./code-editor";

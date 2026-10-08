@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Activity, Building2, Coins, Receipt, RefreshCw, Users } from "lucide-react";
-import { Button, Card, CardHeader, Chip, DataTable, EmptyState, KpiCard, MiniBars, PageHeader, formatNumber, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, EmptyState, KpiCard, MiniBars, PageHeader, formatNumber, type Column } from "@ezymex/ui";
 import { ErrorState, TableSkeleton, ago, day, useApi, useNow } from "@/components/live/kit";
 import { STATUS_TONE, cap, money, pct } from "@/components/rbac/kit";
 import type { Dashboard } from "./types";

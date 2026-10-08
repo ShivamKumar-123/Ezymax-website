@@ -1,16 +1,16 @@
 // Server-only: trading-engine and options-service access for the mobile app (/api/mobile/trade/*,
 // docs/MOBILE-API.md).
 //
-// The app obtains engine access like Kalks Trader on the web:
+// The app obtains engine access like Ezymex Trader on the web:
 // - `POST trade/sessions {login}`: the Client Area mints a one-time SSO token for the client's OWN account (engine
-//   Client Area API, X-Kalks-User-Id from the gateway session) and redeems it at once for a terminal session
+//   Client Area API, X-Ezymex-User-Id from the gateway session) and redeems it at once for a terminal session
 //   (POST /v1/terminal/sso) — the Trade button's flow, without the browser hop;
 // - `POST trade/login {login, password, server?}`: MT5-style login with a trading or investor password (any account,
 //   as on the web terminal; investor = read-only).
 //
 // The engine's terminal session token is handed to the app wrapped in a trade token bound to the signed-in client:
 // `kt1.<kind>.<engine token>.<HMAC(client id, kind, engine token)>`. The app keeps it in the Keystore (the web
-// terminal keeps the bare engine token in an HttpOnly cookie) and sends it back in `X-Kalks-Trade` with every trade
+// terminal keeps the bare engine token in an HttpOnly cookie) and sends it back in `X-Ezymex-Trade` with every trade
 // call, next to its gateway session (`Authorization: Bearer`). Every call checks:
 // 1. the gateway session is alive (sign-out, block or expiry on the gateway stops trading at once);
 // 2. the trade token was issued to THIS client (HMAC), so a leaked trade token is useless with another client's
@@ -37,11 +37,11 @@ export const LOGIN_RE = /^\d{8}$/;
 /** Engine terminal session tokens (base64url). */
 const ENGINE_TOKEN_RE = /^[A-Za-z0-9_-]{16,256}$/;
 
-/** One call to the engine: `bearer` = terminal session; `userId` = Client Area API (X-Kalks-User-Id). */
+/** One call to the engine: `bearer` = terminal session; `userId` = Client Area API (X-Ezymex-User-Id). */
 export async function engineCall<T = Obj>(path: string, init: { method?: Method; body?: unknown; bearer?: string; userId?: number; tenant?: string; req: NextRequest }): Promise<Result<T>> {
-  const headers: Record<string, string> = { "x-kalks-internal": TRADING_TOKEN, "x-kalks-tenant": init.tenant || "kalks", "x-forwarded-for": clientIp(init.req.headers) };
+  const headers: Record<string, string> = { "x-ezymex-internal": TRADING_TOKEN, "x-ezymex-tenant": init.tenant || "ezymex", "x-forwarded-for": clientIp(init.req.headers) };
   if (init.bearer) headers.authorization = `Bearer ${init.bearer}`;
-  if (init.userId !== undefined) headers["x-kalks-user-id"] = String(init.userId);
+  if (init.userId !== undefined) headers["x-ezymex-user-id"] = String(init.userId);
   const ua = init.req.headers.get("user-agent");
   if (ua) headers["user-agent"] = ua.slice(0, 400);
   const method = init.method ?? (init.body !== undefined ? "POST" : "GET");
@@ -65,9 +65,9 @@ export async function engineCall<T = Obj>(path: string, init: { method?: Method;
 
 /** One call to the options service with the broker and the acting account's kind (live/demo). */
 export async function optionsCall<T = Obj>(path: string, init: { method?: "GET" | "POST"; body?: unknown; tenant: string; kind?: "live" | "demo" | null; internal?: boolean; timeoutMs?: number }): Promise<Result<T>> {
-  const headers: Record<string, string> = { "x-kalks-tenant": init.tenant };
-  if (init.internal !== false) headers["x-kalks-internal"] = OPTIONS_TOKEN;
-  if (init.kind) headers["x-kalks-account-kind"] = init.kind;
+  const headers: Record<string, string> = { "x-ezymex-tenant": init.tenant };
+  if (init.internal !== false) headers["x-ezymex-internal"] = OPTIONS_TOKEN;
+  if (init.kind) headers["x-ezymex-account-kind"] = init.kind;
   if (init.body !== undefined) headers["content-type"] = "application/json";
   try {
     const res = await fetch(`${OPTIONS_URL}${path}`, {
@@ -144,7 +144,7 @@ const TRADE_TOKEN_RE = /^kt1\.([sp])\.([A-Za-z0-9_-]{16,256})\.([A-Za-z0-9_-]{43
 function bindingKey(): Buffer {
   const own = process.env.MOBILE_TRADE_SECRET;
   return createHash("sha256")
-    .update(own ? `own|${own}` : `kalks-mobile-trade|${TRADING_TOKEN}|${process.env.GATEWAY_INTERNAL_TOKEN ?? ""}`)
+    .update(own ? `own|${own}` : `ezymex-mobile-trade|${TRADING_TOKEN}|${process.env.GATEWAY_INTERNAL_TOKEN ?? ""}`)
     .digest();
 }
 

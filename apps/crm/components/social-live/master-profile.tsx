@@ -27,9 +27,9 @@ import {
   type Column,
   type SeriesPoint,
 } from "@/components/kit";
-// engine symbols include Kalks FX Options series codes, which @kalks/ui SymbolAvatar / SymbolCell (static list) throw on
+// engine symbols include Ezymex FX Options series codes, which @ezymex/ui SymbolAvatar / SymbolCell (static list) throw on
 import { TradeSymbolAvatar as SymbolAvatar, TradeSymbolCell as SymbolCell, symbolLabel } from "@/components/trading/instrument";
-import { useFormat, useT } from "@kalks/i18n/react";
+import { useFormat, useT } from "@ezymex/i18n/react";
 import { fmtDate, fmtPrice, serverTime } from "@/components/trading/api";
 import { INVITE_RE, PERIOD_LABEL, compactUsd, formatAge, nav4, pct, riskLabel, usd, useSocial, type MasterProfile } from "./api";
 import { HouseBadge, InfoBox, ProgramTags, RiskBadge, SocialError } from "./bits";

@@ -60,7 +60,7 @@ type BarListener = (b: LiveBar) => void;
 
 declare const process: { env: Record<string, string | undefined> };
 
-/** Kalks market-data service (Rust). Same host in every app; override per environment. */
+/** Ezymex market-data service (Rust). Same host in every app; override per environment. */
 export const MARKET_DATA_URL = (process.env.NEXT_PUBLIC_MARKET_DATA_URL || "http://127.0.0.1:8081").replace(/\/$/, "");
 
 /** Per-symbol factor that moved the mock reference price onto the live price (1 = unchanged). */

@@ -128,13 +128,13 @@ pub fn subscription_messages(business: &str, current: &BTreeSet<String>, want: &
     let removed: Vec<&str> = current.difference(want).map(String::as_str).collect();
     if !removed.is_empty() {
         let codes = removed.join(",");
-        out.push(json!({"code": 11000, "trace": format!("kalks-{business}-untrade"), "data": {"codes": codes}}).to_string());
-        out.push(json!({"code": 11001, "trace": format!("kalks-{business}-undepth"), "data": {"codes": codes}}).to_string());
+        out.push(json!({"code": 11000, "trace": format!("ezymex-{business}-untrade"), "data": {"codes": codes}}).to_string());
+        out.push(json!({"code": 11001, "trace": format!("ezymex-{business}-undepth"), "data": {"codes": codes}}).to_string());
     }
     if !want.is_empty() && want.difference(current).next().is_some() {
         let codes = want.iter().map(String::as_str).collect::<Vec<_>>().join(",");
-        out.push(json!({"code": 10000, "trace": format!("kalks-{business}-trade"), "data": {"codes": codes}}).to_string());
-        out.push(json!({"code": 10003, "trace": format!("kalks-{business}-depth"), "data": {"codes": codes}}).to_string());
+        out.push(json!({"code": 10000, "trace": format!("ezymex-{business}-trade"), "data": {"codes": codes}}).to_string());
+        out.push(json!({"code": 10003, "trace": format!("ezymex-{business}-depth"), "data": {"codes": codes}}).to_string());
     }
     out
 }
@@ -281,7 +281,7 @@ where
         for m in subscription_messages(business, current, &BTreeSet::new()) {
             tx.send(Message::text(m)).await?;
         }
-        tx.send(Message::Close(Some(CloseFrame { code: CloseCode::Normal, reason: "kalks market-data shutting down".into() }))).await?;
+        tx.send(Message::Close(Some(CloseFrame { code: CloseCode::Normal, reason: "ezymex market-data shutting down".into() }))).await?;
         // the provider answers with its own close frame (or just drops the socket)
         while let Some(m) = rx.next().await {
             if matches!(m, Ok(Message::Close(_)) | Err(_)) {
@@ -336,7 +336,7 @@ async fn session(business: &str, url: &str, mut plan: watch::Receiver<Arc<BTreeS
                 return Ok(());
             }
             _ = heartbeat.tick() => {
-                tx.send(Message::text(json!({"code": 10010, "trace": format!("kalks-{business}-hb")}).to_string())).await?;
+                tx.send(Message::text(json!({"code": 10010, "trace": format!("ezymex-{business}-hb")}).to_string())).await?;
             }
             _ = watchdog.tick() => {
                 // the provider does not answer heartbeats, so silence only means "dead" while a symbol of this
@@ -432,7 +432,7 @@ fn handle(business: &str, text: &str, market: &Arc<Market>) -> bool {
     false
 }
 
-/// Relay mode: mirror quotes from another Kalks market-data stream (`{"type":"quote","s","b","a","l","t"}`).
+/// Relay mode: mirror quotes from another Ezymex market-data stream (`{"type":"quote","s","b","a","l","t"}`).
 /// Every catalogue symbol is subscribed passively (whatever the upstream streams arrives here); the symbols wanted
 /// locally (this service's own plan) are subscribed actively, so the upstream streams them too.
 async fn relay(url: String, market: Arc<Market>, mut plans: Vec<watch::Receiver<Arc<BTreeSet<String>>>>, mut stop: Stop) {

@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader charts: toolbar, drawing tools, legend, trade lines, context menu, one-click panel.
+// Ezymex Trader charts: toolbar, drawing tools, legend, trade lines, context menu, one-click panel.
 const chart: NsMessages<"chart"> = {
   // แท็บกราฟ
   "tab.visibleInGrid": "แสดงในตาราง",
@@ -46,7 +46,7 @@ const chart: NsMessages<"chart"> = {
   "tool.text": "ข้อความ",
   "tool.ruler": "ไม้บรรทัด",
   "tool.coming": "{tool} กำลังจะมา",
-  "tool.comingText": "พร้อมใช้งานใน Kalks Trader รุ่นถัดไป",
+  "tool.comingText": "พร้อมใช้งานใน Ezymex Trader รุ่นถัดไป",
   "tool.deleteAll": "ลบวัตถุทั้งหมด",
   "tool.noObjects": "ไม่มีวัตถุบนกราฟนี้",
   "tool.deleted": { other: "ลบวัตถุ {count} รายการแล้ว" },

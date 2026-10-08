@@ -3,8 +3,8 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { Ban, ExternalLink, KeyRound, Palette, PlayCircle, Receipt } from "lucide-react";
-import { Avatar, Button, Chip, CopyButton, Dialog, Flag, Money, Progress, Sparkline, formatDateTime, formatNumber } from "@kalks/ui";
-import { BRK_INVOICES, BRK_MODULES, type BrkTenant } from "@kalks/mock/admin-platform-brokers";
+import { Avatar, Button, Chip, CopyButton, Dialog, Flag, Money, Progress, Sparkline, formatDateTime, formatNumber } from "@ezymex/ui";
+import { BRK_INVOICES, BRK_MODULES, type BrkTenant } from "@ezymex/mock/admin-platform-brokers";
 import { ConfirmDialog, PlanChip, SectionLabel, TenantLogo, TenantStatus, compactUsd } from "./kit";
 import { MODULE_ICON } from "./module-icons";
 

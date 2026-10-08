@@ -260,7 +260,7 @@ export const REDEEM_CATALOGUE = [
   { id: "r_cash50", title: "$50 cashback", text: "Credited to your USDT wallet instantly", cost: 5000, icon: "money_with_wings", tag: "Popular" },
   { id: "r_cash100", title: "$100 cashback", text: "Credited to your USDT wallet instantly", cost: 9500, icon: "money_bag", tag: "Best value" },
   { id: "r_spread", title: "VIP spreads · 30 days", text: "Pro account spreads −20% on all FX majors", cost: 8000, icon: "gem_stone" },
-  { id: "r_prop", title: "Free prop challenge", text: "$25k Kalks Funded evaluation, 1 attempt", cost: 16000, icon: "rocket", tag: "Gold+" },
+  { id: "r_prop", title: "Free prop challenge", text: "$25k Ezymex Funded evaluation, 1 attempt", cost: 16000, icon: "rocket", tag: "Gold+" },
   { id: "r_swap", title: "Swap-free week", text: "No overnight swaps on one live account", cost: 3500, icon: "hourglass_not_done" },
   { id: "r_contest", title: "Contest entry ticket", text: "Paid entry to any live contest", cost: 2500, icon: "trophy" },
   { id: "r_academy", title: "Academy Pro · 3 months", text: "All advanced courses and live mentoring", cost: 6000, icon: "graduation_cap" },

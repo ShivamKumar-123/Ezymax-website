@@ -11,8 +11,8 @@
 //! The same loader feeds the service seed (idempotent upsert on start) and the `academy-lint` binary.
 //!
 //! Phases come in two shapes. A **core** phase (1-8) has exactly one `fundamental` and one `technical`
-//! section. A **product** (elective) phase covers one Kalks product and consists of a single section on a
-//! product track, e.g. phase 9 "Kalks FX Options" = one `options` section. Phases are independent: nothing
+//! section. A **product** (elective) phase covers one Ezymex product and consists of a single section on a
+//! product track, e.g. phase 9 "Ezymex FX Options" = one `options` section. Phases are independent: nothing
 //! in the service locks a phase behind an earlier one (only the phase's own exam waits for its chapters).
 
 use serde::{Deserialize, Serialize};

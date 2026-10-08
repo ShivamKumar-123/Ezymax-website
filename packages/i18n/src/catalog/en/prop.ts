@@ -1,6 +1,6 @@
 // Keys for this namespace. English is the source; translations live in ../<lang>/prop.ts.
 // Client Area prop trading: challenge catalogue, my challenges, payouts, certificates.
-// "Kalks", "Kalks Prop", "Kalks Trader", "USDT", "New York" and "17:00" stay as they are.
+// "Ezymex", "Ezymex Prop", "Ezymex Trader", "USDT", "New York" and "17:00" stay as they are.
 const prop = {
   // Error next-step buttons
   "errorLink.deposit": "Deposit USDT",
@@ -101,13 +101,13 @@ const prop = {
 
   // Public certificate verification page (/verify/<code>)
   "verify.shellTitle": "Certificate verification",
-  "verify.footer": "Kalks Prop accounts are simulated. Certificates show a trader's results on a Kalks Prop challenge; the trader's name is shortened to first name and last initial.",
+  "verify.footer": "Ezymex Prop accounts are simulated. Certificates show a trader's results on a Ezymex Prop challenge; the trader's name is shortened to first name and last initial.",
   "verify.linkCopied": "Link copied",
   "verify.copyFailed": "Couldn't copy the link",
   "verify.copyLink": "Copy link",
   "verify.downloadPng": "Download PNG",
   "verify.notFoundTitle": "Certificate not found",
-  "verify.notFoundText": "There is no Kalks Prop certificate with this number. Check the link or ask the trader to share it again.",
+  "verify.notFoundText": "There is no Ezymex Prop certificate with this number. Check the link or ask the trader to share it again.",
   "verify.unavailableTitle": "Verification is unavailable right now",
   "verify.unavailableText": "We couldn't check this certificate at the moment. Please try again in a few minutes.",
   "verify.kind.pass": "Phase passed",
@@ -121,9 +121,9 @@ const prop = {
   "verify.row.issued": "Issued",
   "verify.row.number": "Certificate no.",
   "verify.validTitle": "Valid certificate",
-  "verify.validText": "Issued by Kalks Prop and verified against our records.",
+  "verify.validText": "Issued by Ezymex Prop and verified against our records.",
   "verify.revokedTitle": "Revoked certificate",
-  "verify.revokedText": "This certificate was revoked by Kalks and is no longer valid.",
+  "verify.revokedText": "This certificate was revoked by Ezymex and is no longer valid.",
   "verify.valid": "Valid",
   "verify.revoked": "Revoked",
   // Certificate titles
@@ -248,8 +248,8 @@ const prop = {
   "checkout.goToMine": "Go to My challenges",
   "checkout.readyTitle": "Your challenge is ready",
   "checkout.paidText": "{fee} was paid from your USDT wallet and your {size} account is open. The rules are live from now on.",
-  "checkout.savePasswords": "Save these passwords now: they are shown only once and we don't store them. The Trade button signs you in to Kalks Trader without a password, so you can always trade from here.",
-  "checkout.passwordsShown": "The trading passwords were shown when this purchase was first confirmed. Use the Trade button to open Kalks Trader: it signs you in without a password.",
+  "checkout.savePasswords": "Save these passwords now: they are shown only once and we don't store them. The Trade button signs you in to Ezymex Trader without a password, so you can always trade from here.",
+  "checkout.passwordsShown": "The trading passwords were shown when this purchase was first confirmed. Use the Trade button to open Ezymex Trader: it signs you in without a password.",
 
   // Account credentials
   "cred.login": "Login",
@@ -376,7 +376,7 @@ const prop = {
   "account.passed": "Passed · read-only",
   "account.failed": "Failed · disabled",
   "account.opening": "Opening",
-  "account.tradableText": "Trade opens Kalks Trader signed in to this account. Passwords were shown once at purchase.",
+  "account.tradableText": "Trade opens Ezymex Trader signed in to this account. Passwords were shown once at purchase.",
   "account.passedText": "This phase is complete. The account is read-only; trade on your next phase.",
   "account.failedText": "Trading on this account is disabled.",
   "account.unavailableText": "Trading isn't available on this account.",

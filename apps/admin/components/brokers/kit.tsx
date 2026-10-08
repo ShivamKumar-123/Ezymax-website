@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { ChevronDown } from "lucide-react";
-import { Button, Chip, Dialog, DialogClose, cn, type ChipTone } from "@kalks/ui";
-import { BRK_PLAN_LABEL, brkTenant, type BrkPlan, type BrkTenant, type BrkTenantStatus } from "@kalks/mock/admin-platform-brokers";
+import { Button, Chip, Dialog, DialogClose, cn, type ChipTone } from "@ezymex/ui";
+import { BRK_PLAN_LABEL, brkTenant, type BrkPlan, type BrkTenant, type BrkTenantStatus } from "@ezymex/mock/admin-platform-brokers";
 
 /* ------------------------------------------------------------------ */
 /* Tenant logo square                                                  */

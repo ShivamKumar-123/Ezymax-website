@@ -3,13 +3,13 @@
 import * as React from "react";
 import { CalendarClock, CheckCheck, Download, Timer, Users, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, DataTable, Delta, KpiCard, Money, PageHeader, Reveal, Segmented, StatusChip, type Column } from "@kalks/ui";
-import { PAMM_FUNDS, PAMM_REQUESTS, type PammFund, type PammRequest } from "@kalks/mock/admin-partners";
+import { Button, Card, CardHeader, Chip, DataTable, Delta, KpiCard, Money, PageHeader, Reveal, Segmented, StatusChip, type Column } from "@ezymex/ui";
+import { PAMM_FUNDS, PAMM_REQUESTS, type PammFund, type PammRequest } from "@ezymex/mock/admin-partners";
 import { PersonCell, auditToast, useReason } from "@/components/config/kit";
 import { fmtInt, fmtUsdK } from "@/components/partners/common";
 import { EmergencyStopDialog, STATUS_LABEL, type StopTarget } from "@/components/social/common";
 import { Countdown, FundDrawer, RequestRow, useClock } from "@/components/social/pamm-parts";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LivePammPage } from "@/components/social-live/pamm";
 
 function DemoPammPage() {

@@ -4,12 +4,12 @@
 // order panel is gone: the order form is a popup (components/order/new-order-dialog.tsx).
 import * as React from "react";
 import { Clock, Info, Layers3 } from "lucide-react";
-import { getInstrument } from "@kalks/mock";
-import { PriceText, SymbolAvatar, cn, useQuote } from "@kalks/ui";
+import { getInstrument } from "@ezymex/mock";
+import { PriceText, SymbolAvatar, cn, useQuote } from "@ezymex/ui";
 import { getRange, getTicks, useMarketClock } from "@/lib/market";
 import { contractSpec, fmtPrice, pipSize, swapRateText } from "@/lib/trading";
 import { KV } from "@/components/ui/primitives";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 
 export function SymbolInfo({ symbol }: { symbol: string }) {
   useMarketClock();

@@ -4,13 +4,13 @@ import * as React from "react";
 import { motion } from "motion/react";
 import { Clock, Filter, Globe2, Handshake, Leaf, Link2, Megaphone, Search, Send, Target, TrendingUp, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
-import { Card, CardHeader, Chip, Delta, Flag, KpiCard, Money, PageHeader, Reveal, Segmented, cn, formatNumber } from "@kalks/ui";
-import { ANL_FUNNEL_30D, ANL_FUNNEL_COUNTRIES, ANL_FUNNEL_DAILY, ANL_FUNNEL_PREV, ANL_FUNNEL_SOURCES, ANL_FUNNEL_STAGES, ANL_TIME_TO_FTD, type AnlFunnelRow } from "@kalks/mock/admin-growth-analytics";
+import { Card, CardHeader, Chip, Delta, Flag, KpiCard, Money, PageHeader, Reveal, Segmented, cn, formatNumber } from "@ezymex/ui";
+import { ANL_FUNNEL_30D, ANL_FUNNEL_COUNTRIES, ANL_FUNNEL_DAILY, ANL_FUNNEL_PREV, ANL_FUNNEL_SOURCES, ANL_FUNNEL_STAGES, ANL_TIME_TO_FTD, type AnlFunnelRow } from "@ezymex/mock/admin-growth-analytics";
 import { FunnelViz } from "@/components/analytics/funnel";
 import { LineChart } from "@/components/analytics/line-chart";
 import { ExportActions, dayLabel } from "@/components/analytics/common";
 import { Meter, heat } from "@/components/analytics/meter";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveFunnel } from "@/components/reports/live-growth";
 
 const RANGES = ["7D", "30D", "90D"] as const;

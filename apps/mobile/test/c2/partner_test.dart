@@ -5,13 +5,13 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/features/partner/partner_commissions_screen.dart';
-import 'package:kalks/features/partner/partner_dashboard_screen.dart';
-import 'package:kalks/features/partner/partner_links_screen.dart';
-import 'package:kalks/features/partner/partner_payouts_screen.dart';
-import 'package:kalks/preview/c2/partner.dart';
-import 'package:kalks/router/router.dart';
-import 'package:kalks/ui/ui.dart';
+import 'package:ezymex/features/partner/partner_commissions_screen.dart';
+import 'package:ezymex/features/partner/partner_dashboard_screen.dart';
+import 'package:ezymex/features/partner/partner_links_screen.dart';
+import 'package:ezymex/features/partner/partner_payouts_screen.dart';
+import 'package:ezymex/preview/c2/partner.dart';
+import 'package:ezymex/router/router.dart';
+import 'package:ezymex/ui/ui.dart';
 
 import '../helpers/test_app.dart';
 
@@ -40,7 +40,7 @@ void main() {
     await tester.tap(find.text('Copy referral link'));
     await settle(tester, frames: 3);
     expect(find.text('Referral link copied'), findsWidgets);
-    expect(find.text('app.kalkstrade.com/r/ARJUN24'), findsWidgets);
+    expect(find.text('app.ezymex.com/r/ARJUN24'), findsWidgets);
 
     // the referral card's QR sheet
     final page = _page<PartnerDashboardScreen>();
@@ -81,7 +81,7 @@ void main() {
     await tester.enterText(name, 'Instagram reels');
     await settle(tester, frames: 3);
     // the ending is made from the name
-    expect(find.text('app.kalkstrade.com/r/ARJUN24/instagram-reels'), findsOneWidget);
+    expect(find.text('app.ezymex.com/r/ARJUN24/instagram-reels'), findsOneWidget);
     await tester.tap(create);
     await settle(tester);
 

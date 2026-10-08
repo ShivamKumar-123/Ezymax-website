@@ -4,13 +4,13 @@ import * as React from "react";
 import Link from "next/link";
 import { Ban, Download, Eye, EyeOff, MoreHorizontal, OctagonAlert, PlayCircle, Settings2, Users, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardHeader, Chip, DataTable, Delta, IconButton, KpiCard, ListRow, Menu, Money, PageHeader, Reveal, Segmented, Sparkline, StatusChip, type Column } from "@kalks/ui";
-import { MASTERS, SOCIAL_KPIS, SOCIAL_SETTINGS, type Master } from "@kalks/mock/admin-partners";
+import { Avatar, Button, Card, CardHeader, Chip, DataTable, Delta, IconButton, KpiCard, ListRow, Menu, Money, PageHeader, Reveal, Segmented, Sparkline, StatusChip, type Column } from "@ezymex/ui";
+import { MASTERS, SOCIAL_KPIS, SOCIAL_SETTINGS, type Master } from "@ezymex/mock/admin-partners";
 import { ColumnChart, PersonCell, RiskScore, auditToast, useReason } from "@/components/config/kit";
 import { EmergencyStopDialog, STATUS_LABEL, TypeChip, type StopTarget } from "@/components/social/common";
 import { MasterDrawer } from "@/components/social/master-drawer";
 import { fmtInt, fmtUsdK } from "@/components/partners/common";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveMastersPage } from "@/components/social-live/masters";
 
 const FEE_MONTHS = ["Apr", "May", "Jun", "Jul", "Aug", "Sep"].map((label, i) => {

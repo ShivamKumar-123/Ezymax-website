@@ -67,7 +67,7 @@ export async function GET(req: NextRequest, { params }: Ctx) {
         "cache-control": "private, max-age=300",
         "content-security-policy": "default-src 'none'; style-src 'unsafe-inline'",
         "x-content-type-options": "nosniff",
-        ...(download ? { "content-disposition": `attachment; filename="kalks-academy-${code}.svg"` } : {}),
+        ...(download ? { "content-disposition": `attachment; filename="ezymex-academy-${code}.svg"` } : {}),
       },
     });
   }

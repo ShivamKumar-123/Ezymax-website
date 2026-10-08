@@ -73,15 +73,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final t = context.t;
     final k = context.k;
     final cfg = ref.watch(configProvider);
-    final kalks = cfg.tenantDefault;
+    final ezymex = cfg.tenantDefault;
     final mq = MediaQuery.of(context);
     final h = mq.size.height;
     // the broker's colour may be dark: then the texts and pills swap to white
-    final bg = kalks ? _amber : k.ember;
-    final onDark = !kalks && ThemeData.estimateBrightnessForColor(bg) == Brightness.dark;
+    final bg = ezymex ? _amber : k.ember;
+    final onDark = !ezymex && ThemeData.estimateBrightnessForColor(bg) == Brightness.dark;
     final ink = onDark ? Colors.white : _inkOnPhoto;
     final inkFg = onDark ? _inkOnPhoto : Colors.white;
-    final demo = kalks && t.has('auth.demo.tryCta');
+    final demo = ezymex && t.has('auth.demo.tryCta');
 
     return Scaffold(
       backgroundColor: bg,
@@ -92,7 +92,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (kalks) ...[
+            if (ezymex) ...[
               const DecoratedBox(decoration: BoxDecoration(gradient: _amberFill)),
               // the picture starts under the headline (its figure's head is right at its top), its top edge fading
               // into the same amber
@@ -137,7 +137,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               right: 24,
               top: h * 0.26,
               child: Text(
-                kalks ? t('app.welcome.title') : cfg.tenantName,
+                ezymex ? t('app.welcome.title') : cfg.tenantName,
                 key: const ValueKey('welcome-title'),
                 textAlign: TextAlign.center,
                 style: context.text.largeTitle.copyWith(fontSize: 42, fontWeight: FontWeight.w800, height: 1.0, letterSpacing: -1, color: ink),

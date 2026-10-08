@@ -70,13 +70,13 @@ async fn session(st: &AppState) -> anyhow::Result<()> {
     let url = format!("wss://data.infoway.io/news?apikey={}", st.cfg.infoway_key);
     let (ws, _) = tokio::time::timeout(Duration::from_secs(15), connect_async(url.as_str())).await.map_err(|_| anyhow::anyhow!("connect timeout"))?.map_err(|e| anyhow::anyhow!("connect failed: {}", e.to_string().replace(&st.cfg.infoway_key, "***")))?;
     let (mut tx, mut rx) = ws.split();
-    tx.send(Message::text(json!({"code": 10020, "trace": "kalks-news", "data": {"lang": "en"}}).to_string())).await?;
+    tx.send(Message::text(json!({"code": 10020, "trace": "ezymex-news", "data": {"lang": "en"}}).to_string())).await?;
     let mut heartbeat = tokio::time::interval(Duration::from_secs(30));
     heartbeat.tick().await;
     loop {
         tokio::select! {
             _ = heartbeat.tick() => {
-                tx.send(Message::text(json!({"code": 10010, "trace": "kalks-news-hb"}).to_string())).await?;
+                tx.send(Message::text(json!({"code": 10010, "trace": "ezymex-news-hb"}).to_string())).await?;
             }
             msg = tokio::time::timeout(Duration::from_secs(120), rx.next()) => {
                 let Ok(msg) = msg else { anyhow::bail!("no frame for 120 s") };

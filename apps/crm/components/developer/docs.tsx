@@ -3,7 +3,7 @@
 import * as React from "react";
 import { motion } from "motion/react";
 import { Card, Chip, CopyButton, Segmented, cn } from "@/components/kit";
-import { API_BASE, type ApiEndpoint, type HttpMethod } from "@kalks/mock/developer";
+import { API_BASE, type ApiEndpoint, type HttpMethod } from "@ezymex/mock/developer";
 import { CodeBlock, toJson, type CodeLang } from "./code-block";
 
 export type SampleLang = "curl" | "python" | "js";
@@ -72,13 +72,13 @@ export function sampleFor(e: ApiEndpoint, lang: SampleLang) {
   const path = resolvePath(e);
   const body = e.body;
   if (lang === "curl") {
-    const lines = [`curl -X ${e.method} "${API_BASE}${path}" \\`, `  -H "X-KALKS-KEY: kk_live_EXAMPLE1" \\`, `  -H "X-KALKS-TIMESTAMP: 1790261892184" \\`, `  -H "X-KALKS-SIGNATURE: $SIG"${body ? " \\" : ""}`];
+    const lines = [`curl -X ${e.method} "${API_BASE}${path}" \\`, `  -H "X-EZYMEX-KEY: kk_live_EXAMPLE1" \\`, `  -H "X-EZYMEX-TIMESTAMP: 1790261892184" \\`, `  -H "X-EZYMEX-SIGNATURE: $SIG"${body ? " \\" : ""}`];
     if (body) lines.push(`  -H "Content-Type: application/json" \\`, `  -d '${JSON.stringify(body)}'`);
     return lines.join("\n");
   }
   if (lang === "python") {
     const fn = e.method.toLowerCase();
-    const head = [`from kalks import Client`, ``, `client = Client(key="kk_live_EXAMPLE1", secret=os.environ["KALKS_SECRET"])`, ``];
+    const head = [`from ezymex import Client`, ``, `client = Client(key="kk_live_EXAMPLE1", secret=os.environ["EZYMEX_SECRET"])`, ``];
     if (body) {
       const kv = Object.entries(body).map(([k, v]) => `    "${k}": ${pyValue(v)},`);
       return [...head, `resp = client.${fn}("${path}", json={`, ...kv, `})`, `print(resp.status_code, resp.json())`].join("\n");
@@ -86,12 +86,12 @@ export function sampleFor(e: ApiEndpoint, lang: SampleLang) {
     return [...head, `resp = client.${fn}("${path}")`, `print(resp.json())  # ${e.title.toLowerCase()}`].join("\n");
   }
   const fn = e.method === "DELETE" ? "del" : e.method.toLowerCase();
-  const head = [`import { Kalks } from "@kalks/sdk";`, ``, `const kalks = new Kalks({ key: "kk_live_EXAMPLE1", secret: process.env.KALKS_SECRET });`, ``];
+  const head = [`import { Ezymex } from "@ezymex/sdk";`, ``, `const ezymex = new Ezymex({ key: "kk_live_EXAMPLE1", secret: process.env.EZYMEX_SECRET });`, ``];
   if (body) {
     const kv = Object.entries(body).map(([k, v]) => `  ${k}: ${typeof v === "string" ? `"${v}"` : String(v)},`);
-    return [...head, `const res = await kalks.${fn}("${path}", {`, ...kv, `});`, `console.log(res.status, res.data);`].join("\n");
+    return [...head, `const res = await ezymex.${fn}("${path}", {`, ...kv, `});`, `console.log(res.status, res.data);`].join("\n");
   }
-  return [...head, `const res = await kalks.${fn}("${path}");`, `console.log(res.data); // ${e.title.toLowerCase()}`].join("\n");
+  return [...head, `const res = await ezymex.${fn}("${path}");`, `console.log(res.data); // ${e.title.toLowerCase()}`].join("\n");
 }
 
 /** Code sample with the page-wide language tabs. */

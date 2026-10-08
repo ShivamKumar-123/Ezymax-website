@@ -1,4 +1,4 @@
--- Kalks support + notifications (services/support). `tenant` is the gateway tenant slug; every query filters by it.
+-- Ezymex support + notifications (services/support). `tenant` is the gateway tenant slug; every query filters by it.
 
 CREATE TABLE settings (
     tenant      TEXT PRIMARY KEY,

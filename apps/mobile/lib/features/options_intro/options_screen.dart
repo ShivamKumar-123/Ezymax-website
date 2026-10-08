@@ -1,11 +1,11 @@
 // Options (web apps/crm/app/(app)/options/page.tsx -> components/options/live.tsx + ui.tsx, phone order):
-//   1 header: Kalks FX Options (+ "Ready to trade" once accepted)
-//   2 hero: eyebrow, title, text; accepted: "Trade options in Kalks Trader" + How options work; else Get started
+//   1 header: Ezymex FX Options (+ "Ready to trade" once accepted)
+//   2 hero: eyebrow, title, text; accepted: "Trade options in Ezymex Trader" + How options work; else Get started
 //     (scrolls to the intro) + Options course; the 13 underlyings by class; four features
 //   3 not accepted yet: "Options in three simple ideas" (Buy a Call / Buy a Put / limited risk, payoff sketches),
 //     "I understand how options work", the terms link, "Start trading options" (records the acceptance through
-//     suitability, then opens Kalks Trader in options mode on the chosen account)
-//   4 How Kalks FX Options work (facts) and New to options? (the Academy course)
+//     suitability, then opens Ezymex Trader in options mode on the chosen account)
+//   4 How Ezymex FX Options work (facts) and New to options? (the Academy course)
 //   sheets: the full terms (key points translated + the binding English text), How options work
 // API: GET suitability/options · POST suitability/options/accept {version}; accounts from trading/accounts.
 import 'dart:async';
@@ -122,7 +122,7 @@ class _OptionsScreenState extends ConsumerState<OptionsScreen> {
     }
   }
 
-  /// Opens Kalks Trader in options mode: one account directly, several through a choice, none -> open an account
+  /// Opens Ezymex Trader in options mode: one account directly, several through a choice, none -> open an account
   /// (the web's TraderButton). `before` runs first and must succeed.
   Future<void> _trade({Future<bool> Function()? before}) async {
     final t = context.t;

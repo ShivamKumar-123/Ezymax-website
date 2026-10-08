@@ -14,7 +14,7 @@ pub const BASE_LANG: &str = "en";
 
 pub async fn connect(url: &str) -> anyhow::Result<PgPool> {
     let opts = PgConnectOptions::from_str(url)?;
-    let db = opts.get_database().unwrap_or("kalks_academy").to_string();
+    let db = opts.get_database().unwrap_or("ezymex_academy").to_string();
     let admin = opts.clone().database("postgres");
     let mut conn = admin.connect().await?;
     let exists: Option<i32> = sqlx::query_scalar("SELECT 1 FROM pg_database WHERE datname = $1").bind(&db).fetch_optional(&mut conn).await?;
@@ -292,7 +292,7 @@ impl TreePhase {
         self.sections.iter().flat_map(|s| s.chapters.iter())
     }
 
-    /// A product phase (e.g. phase 9, Kalks FX Options: a single `options` section) rather than a core
+    /// A product phase (e.g. phase 9, Ezymex FX Options: a single `options` section) rather than a core
     /// fundamental + technical phase. Shown to clients as an elective; it never depends on earlier phases.
     pub fn is_elective(&self) -> bool {
         let tracks: Vec<String> = self.sections.iter().map(|s| s.node.s("track")).collect();

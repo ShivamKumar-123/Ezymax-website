@@ -1,8 +1,8 @@
 //! Client controls routes (see controls.rs and the gateway's client_controls.rs):
 //!
-//! * `GET  /v1/terminal/controls`                    the session's restrictions and staff banner (Kalks Trader)
+//! * `GET  /v1/terminal/controls`                    the session's restrictions and staff banner (Ezymex Trader)
 //! * `POST /v1/admin/accounts/{login}/staff-sso`     `{userId, readOnly, minutes?, reason?}` (staff headers): a
-//!   one-time SSO token for a Kalks Trader session a staff member opens as the client. The Back Office BFF has
+//!   one-time SSO token for a Ezymex Trader session a staff member opens as the client. The Back Office BFF has
 //!   checked `clients.impersonate` (and `clients.impersonate_full` for full access) and audited it with the
 //!   gateway first; the engine checks the account belongs to that client.
 //! * `POST /v1/internal/restrictions/refresh`        `{userId}`: reload one client's restrictions from the gateway now
@@ -21,7 +21,7 @@ pub fn suspended() -> ApiError {
     ApiError::Status { status: 403, code: "account_suspended", message: crate::controls::SUSPENDED_MESSAGE.into() }
 }
 
-/// Refuses Kalks Trader access for a client whose sign-in is blocked.
+/// Refuses Ezymex Trader access for a client whose sign-in is blocked.
 pub fn login_gate(st: &AppState, login: i64) -> ApiResult<()> {
     match st.hub.meta(login) {
         Some(m) if st.hub.shared.restrictions.login_blocked(m.user_id, Utc::now()) => Err(suspended()),
@@ -90,7 +90,7 @@ pub async fn staff_sso(State(st): State<AppState>, sc: StaffCtx, Path(login): Pa
         .bind(minutes as i32)
         .execute(&st.pool)
         .await?;
-    tracing::info!(login, staff = staff_id, read_only = r.read_only, minutes, "staff session link issued for Kalks Trader");
+    tracing::info!(login, staff = staff_id, read_only = r.read_only, minutes, "staff session link issued for Ezymex Trader");
     Ok(Json(json!({"token": token, "expiresAt": expires, "login": login, "readOnly": r.read_only, "minutes": minutes})))
 }
 

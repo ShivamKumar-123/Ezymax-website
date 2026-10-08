@@ -90,7 +90,7 @@ pub async fn create_intent(st: &AppState, tenant_id: i64, user_id: i64, chain_ra
         return Err(ApiError::validation("user_id", "user_id is required"));
     }
     // deposits disabled in the Back Office (client restrictions)
-    crate::users::gate(st, &st.tenants.slug_of(tenant_id).unwrap_or_else(|| "kalks".into()), user_id, "deposits").await?;
+    crate::users::gate(st, &st.tenants.slug_of(tenant_id).unwrap_or_else(|| "ezymex".into()), user_id, "deposits").await?;
     let chain = parse_chain(chain_raw)?;
     let cfg = settings::chain(&st.pool, tenant_id, chain).await?.filter(|c| c.deposits_enabled).ok_or_else(|| ApiError::unprocessable("chain_disabled", format!("Deposits on {} are not available", chain.network())))?;
     let amount = check_amount(amount, WALLET_DP).map_err(|m| ApiError::validation("amount", m))?;
@@ -140,7 +140,7 @@ pub async fn get_intent(st: &AppState, tenant_id: i64, user_id: Option<i64>, id:
 }
 
 pub async fn submit(st: &AppState, tenant_id: i64, user_id: i64, intent_id: &str, tx_hash: &str) -> ApiResult<Value> {
-    crate::users::gate(st, &st.tenants.slug_of(tenant_id).unwrap_or_else(|| "kalks".into()), user_id, "deposits").await?;
+    crate::users::gate(st, &st.tenants.slug_of(tenant_id).unwrap_or_else(|| "ezymex".into()), user_id, "deposits").await?;
     let intent = sqlx::query("SELECT * FROM deposit_intents WHERE tenant_id = $1 AND id = $2 AND user_id = $3")
         .bind(tenant_id)
         .bind(intent_id.trim())

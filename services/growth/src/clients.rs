@@ -78,7 +78,7 @@ pub async fn gateway_users(st: &AppState, since: Option<&str>, after_id: i64, li
     if let Some(s) = since {
         q.push(("since", s.to_string()));
     }
-    let res = st.http.get(format!("{}/v1/internal/referrals/users?{}", st.cfg.gateway_url, qs(&q))).header("x-kalks-internal", &st.cfg.gateway_token).send().await?;
+    let res = st.http.get(format!("{}/v1/internal/referrals/users?{}", st.cfg.gateway_url, qs(&q))).header("x-ezymex-internal", &st.cfg.gateway_token).send().await?;
     if !res.status().is_success() {
         anyhow::bail!("gateway users feed returned {}", res.status());
     }
@@ -89,14 +89,14 @@ pub async fn gateway_users(st: &AppState, since: Option<&str>, after_id: i64, li
     Ok(res.json::<R>().await?.items)
 }
 
-/// Whether the client may trade Kalks FX Options (gateway suitability, O41: the options intro accepted). `Ok(false)`
+/// Whether the client may trade Ezymex FX Options (gateway suitability, O41: the options intro accepted). `Ok(false)`
 /// for an unknown client; `Err` when the gateway can't answer (the caller must not guess).
 pub async fn options_eligible(st: &AppState, tenant: &str, user_id: i64) -> anyhow::Result<bool> {
     let res = st
         .http
         .get(format!("{}/v1/internal/suitability/{user_id}?product=options", st.cfg.gateway_url))
-        .header("x-kalks-internal", &st.cfg.gateway_token)
-        .header("x-kalks-tenant", tenant)
+        .header("x-ezymex-internal", &st.cfg.gateway_token)
+        .header("x-ezymex-tenant", tenant)
         .timeout(std::time::Duration::from_secs(5))
         .send()
         .await?;
@@ -114,15 +114,15 @@ pub async fn options_eligible(st: &AppState, tenant: &str, user_id: i64) -> anyh
 
 /// Staff identity for engine admin calls. `finance` may post balance, credit and bonus.
 fn engine_staff(st: &AppState, tenant: &str, rb: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
-    rb.header("x-kalks-internal", &st.cfg.trading_token)
-        .header("x-kalks-tenant", tenant)
-        .header("x-kalks-staff-id", "growth-service")
-        .header("x-kalks-staff-name", "Growth%20service")
-        .header("x-kalks-staff-role", "finance")
+    rb.header("x-ezymex-internal", &st.cfg.trading_token)
+        .header("x-ezymex-tenant", tenant)
+        .header("x-ezymex-staff-id", "growth-service")
+        .header("x-ezymex-staff-name", "Growth%20service")
+        .header("x-ezymex-staff-role", "finance")
 }
 
 fn engine_user(st: &AppState, tenant: &str, user_id: i64, rb: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
-    rb.header("x-kalks-internal", &st.cfg.trading_token).header("x-kalks-tenant", tenant).header("x-kalks-user-id", user_id.to_string())
+    rb.header("x-ezymex-internal", &st.cfg.trading_token).header("x-ezymex-tenant", tenant).header("x-ezymex-user-id", user_id.to_string())
 }
 
 /// A closing deal from `GET /v1/dealing/deals` (DeskDeal).
@@ -139,7 +139,7 @@ pub struct EngineDeal {
     pub close_time: DateTime<Utc>,
     pub kind: String,
     pub reversed: bool,
-    /// Kalks FX Options deal (volume = contracts): never earns points, cashback or bonus release; counts only in
+    /// Ezymex FX Options deal (volume = contracts): never earns points, cashback or bonus release; counts only in
     /// options contests (O36).
     pub option: bool,
     /// Options: opening premium of the closed contracts (account currency, unsigned) = |price P&L − exit cash|.
@@ -204,7 +204,7 @@ pub struct Account {
     pub credit: D,
     pub bonus: D,
     pub equity: D,
-    /// Kalks FX Options at their mark (long +, short −), included in `equity` by the engine.
+    /// Ezymex FX Options at their mark (long +, short −), included in `equity` by the engine.
     pub option_value: D,
 }
 
@@ -406,9 +406,9 @@ pub async fn wallet_credit(st: &AppState, tenant: &str, key: &str, user_id: i64,
     let res = st
         .http
         .post(format!("{}/v1/wallets/transfers", st.cfg.wallet_url))
-        .header("x-kalks-internal", &st.cfg.wallet_token)
-        .header("x-kalks-tenant", tenant)
-        .header("x-kalks-service", "growth")
+        .header("x-ezymex-internal", &st.cfg.wallet_token)
+        .header("x-ezymex-tenant", tenant)
+        .header("x-ezymex-service", "growth")
         .json(&body)
         .send()
         .await;
@@ -443,9 +443,9 @@ pub fn notify(st: &AppState, tenant: &str, user_id: i64, kind: &str, title: Stri
         let r = st
             .http
             .post(format!("{}/v1/notify", st.cfg.notify_url))
-            .header("x-kalks-internal", &st.cfg.notify_token)
-            .header("x-kalks-tenant", tenant)
-            .header("x-kalks-service", "growth")
+            .header("x-ezymex-internal", &st.cfg.notify_token)
+            .header("x-ezymex-tenant", tenant)
+            .header("x-ezymex-service", "growth")
             .timeout(std::time::Duration::from_secs(3))
             .json(&payload)
             .send()

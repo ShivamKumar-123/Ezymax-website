@@ -5,11 +5,11 @@ import Link from "next/link";
 import { ArrowDownLeft, ArrowLeft, ArrowUpRight, Clock, Download, Receipt } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, DataTable, KpiCard, Money, PageHeader, Reveal, Segmented, StatusChip, formatDateTime, formatNumber, type Column } from "@/components/kit";
-import { tr, useT } from "@kalks/i18n/react";
-import { WALLET_TXS, type WalletTx } from "@kalks/mock";
-import { TX_TYPE_LABEL, fullHash, txDirection } from "@kalks/mock/wallet-extra";
+import { tr, useT } from "@ezymex/i18n/react";
+import { WALLET_TXS, type WalletTx } from "@ezymex/mock";
+import { TX_TYPE_LABEL, fullHash, txDirection } from "@ezymex/mock/wallet-extra";
 import { HashLink, TxAmount, TxDetailDrawer, TxIcon, txCounterparty, txStatusLabel, txTypeLabel } from "@/components/wallet/wallet-ui";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveHistoryPage } from "@/components/wallet-live/history-page";
 
 type TypeF = "all" | "deposit" | "withdrawal" | "transfer" | "other";
@@ -26,7 +26,7 @@ function downloadCsv(rows: WalletTx[]) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `kalks-wallet-history-${new Date(NOW).toISOString().slice(0, 10)}.csv`;
+  a.download = `ezymex-wallet-history-${new Date(NOW).toISOString().slice(0, 10)}.csv`;
   a.click();
   URL.revokeObjectURL(url);
   toast.success(tr("wallet.demo.csvExported"), { description: tr("wallet.demo.transactionsCount", { count: rows.length }) });

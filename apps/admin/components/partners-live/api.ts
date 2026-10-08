@@ -82,7 +82,7 @@ export type Level = {
   minMonthlyLots: number;
   cpaAmount: number;
   rates: Record<string, number>;
-  /** Kalks FX Options: USD per option contract (round turn, paid on the closing deal). Absent from a service that predates it. */
+  /** Ezymex FX Options: USD per option contract (round turn, paid on the closing deal). Absent from a service that predates it. */
   optionsRate?: number;
   members?: number;
 };

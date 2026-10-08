@@ -53,7 +53,7 @@ Four times a year, listed companies publish their quarterly results. For traders
 
 Most large US companies report in a window that starts about two weeks after each quarter ends, so the busiest periods are mid-January to mid-February, mid-April to mid-May, mid-July to mid-August and mid-October to mid-November. Banks usually report first, followed by the large technology companies.
 
-US stocks trade from 09:30 to 16:00 New York time, which is 16:30 to 23:00 on the Kalks server clock. Companies almost always report outside those hours, either before the open or after the close. The reaction therefore appears at the next open as a gap, not as a gradual move you can trade out of.
+US stocks trade from 09:30 to 16:00 New York time, which is 16:30 to 23:00 on the Ezymex server clock. Companies almost always report outside those hours, either before the open or after the close. The reaction therefore appears at the next open as a gap, not as a gradual move you can trade out of.
 
 ## What the market judges
 

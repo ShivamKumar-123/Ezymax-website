@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowUpRight, Ban, Download, LogIn, MailCheck, RefreshCw, Search, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, DataTable, Dialog, EmptyState, Field, Flag, PageHeader, Reveal, Segmented, buttonVariants, type Column } from "@kalks/ui";
+import { Avatar, Button, Card, DataTable, Dialog, EmptyState, Field, Flag, PageHeader, Reveal, Segmented, buttonVariants, type Column } from "@ezymex/ui";
 import { useCan } from "@/components/staff-session";
 import { Check } from "@/components/command/kit";
 import { TextArea } from "@/components/config/kit";
@@ -325,7 +325,7 @@ function BulkBlockDialog({ action, ids, onClose, onDone }: { action: "set" | "li
       onOpenChange={(o) => !o && onClose()}
       width={480}
       title={action === "set" ? `Block sign-in for ${n} client${n === 1 ? "" : "s"}` : `Unblock ${n} client${n === 1 ? "" : "s"}`}
-      description={action === "set" ? "Every session ends at once, including view-only logins and Kalks Trader. Sign-in shows “This account is suspended. Contact support.”" : "They can sign in again at once."}
+      description={action === "set" ? "Every session ends at once, including view-only logins and Ezymex Trader. Sign-in shows “This account is suspended. Contact support.”" : "They can sign in again at once."}
       footer={
         <>
           <Button size="sm" variant="ghost" onClick={onClose}>

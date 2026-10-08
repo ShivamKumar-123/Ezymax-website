@@ -5,14 +5,14 @@
  * 28 core instruments plus the provider catalogue. Every instrument trades on demo accounts. Forex, metals, energies,
  * indices and crypto trade live by default (stocks and symbols kept off for a reason do not); the asset-class and
  * per-symbol switches here override that, and the spec templates are edited here. Only the
- * platform owner / super admin of the Kalks platform may change either (the engine enforces it); everyone else with
+ * platform owner / super admin of the Ezymex platform may change either (the engine enforces it); everyone else with
  * dealing access sees the same page read-only. Every change needs a reason and is audited.
  */
 import * as React from "react";
 import { History, Info, Lock, Pencil, RefreshCw, RotateCcw, Save, ShieldCheck, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, IconButton, PageHeader, Reveal, Segmented, Skeleton, Toggle, cn, type ChipTone, type Column } from "@kalks/ui";
-import { ASSET_CLASS_LABEL } from "@kalks/mock";
+import { Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, IconButton, PageHeader, Reveal, Segmented, Skeleton, Toggle, cn, type ChipTone, type Column } from "@ezymex/ui";
+import { ASSET_CLASS_LABEL } from "@ezymex/mock";
 import { MiniField, MiniStat, NumInput, Select, TextArea } from "@/components/config/kit";
 import { ErrorState, ago, sendJson, useApi, useNow, when } from "./kit";
 

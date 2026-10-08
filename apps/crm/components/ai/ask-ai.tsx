@@ -1,6 +1,6 @@
 "use client";
 
-// "Ask Kalks AI" on the Overview: a card on tablets and desktops, a compact pill on phones that opens a bottom sheet
+// "Ask Ezymex AI" on the Overview: a card on tablets and desktops, a compact pill on phones that opens a bottom sheet
 // (in the page flow, so it never covers the content or the bottom bar). Questions go to the real support bot in live
 // builds (components/ai/engine.ts) and to canned answers in demo builds; the floating support chat continues the
 // same conversation.
@@ -11,12 +11,12 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowUp, ChevronRight, MessageCircle, RotateCcw, Sparkles, UserRound, X } from "lucide-react";
 import { Avatar, Button, cn } from "@/components/kit";
-import { IS_DEMO } from "@kalks/mock";
-import { SUPPORT_AGENT, agentAnswer, botAnswer } from "@kalks/mock/support-extra";
+import { IS_DEMO } from "@ezymex/mock";
+import { SUPPORT_AGENT, agentAnswer, botAnswer } from "@ezymex/mock/support-extra";
 import { useSession } from "@/components/session";
 import { Rich } from "@/components/support/live-chat";
 import { openSupportChat } from "@/components/support/launcher";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { useDemoAi, useLiveAi, type AiEngine, type Turn } from "./engine";
 
 export type AiChip = { key: string; label: string; question?: string; extra?: React.ReactNode };
@@ -360,14 +360,14 @@ function View({ e, chips }: { e: AiEngine; chips: AiChip[] }) {
 
 function LiveAskAi({ chips }: { chips: AiChip[] }) {
   const t = useT();
-  const e = useLiveAi("Kalks AI", t("support.unavailable"));
+  const e = useLiveAi("Ezymex AI", t("support.unavailable"));
   return <View e={e} chips={chips} />;
 }
 
 function DemoAskAi({ chips, answer }: { chips: AiChip[]; answer: (q: string, chip?: string) => string }) {
   const t = useT();
   const me = useSession();
-  const e = useDemoAi("Kalks AI", answer, { name: SUPPORT_AGENT.name, reply: (q) => `Hi ${me.first_name}, ${SUPPORT_AGENT.name.split(" ")[0]} here from Client Support. ${agentAnswer(q)}` }, t("dashboard.ai.connecting"));
+  const e = useDemoAi("Ezymex AI", answer, { name: SUPPORT_AGENT.name, reply: (q) => `Hi ${me.first_name}, ${SUPPORT_AGENT.name.split(" ")[0]} here from Client Support. ${agentAnswer(q)}` }, t("dashboard.ai.connecting"));
   return <View e={e} chips={chips} />;
 }
 

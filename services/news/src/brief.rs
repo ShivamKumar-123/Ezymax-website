@@ -1,7 +1,7 @@
 //! D138 daily AI market brief: once per server-time day (after 06:00), Claude summarises the last 24 hours of
 //! stored headlines and the day's medium / high impact calendar into a short structured brief. The model only
 //! sees our own headline + teaser rows and calendar figures; the reply is schema-constrained JSON, validated
-//! again here (instrument names are checked against the Kalks list) before it is stored.
+//! again here (instrument names are checked against the Ezymex list) before it is stored.
 
 use chrono::{Duration, NaiveDate, Timelike, Utc};
 use serde_json::{Value, json};
@@ -65,7 +65,7 @@ pub async fn generate(st: &AppState, day: NaiveDate, by: &str) -> anyhow::Result
     let news = sqlx::query(
         "SELECT i.title, i.summary, s.name AS source, i.symbols, i.published_at FROM items i JOIN sources s ON s.id = i.source_id
           WHERE i.published_at > $1 AND i.importance >= 20
-            AND NOT EXISTS (SELECT 1 FROM item_overrides o WHERE o.item_id = i.id AND o.tenant = 'kalks' AND o.hidden)
+            AND NOT EXISTS (SELECT 1 FROM item_overrides o WHERE o.item_id = i.id AND o.tenant = 'ezymex' AND o.hidden)
           ORDER BY i.importance DESC, i.published_at DESC LIMIT 30",
     )
     .bind(since)

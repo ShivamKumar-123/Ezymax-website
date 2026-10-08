@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowUpRight, CalendarDays, Check, ChevronDown, ChevronUp, Crown, Minus, Timer, Trophy, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Button, Card, CardHeader, Chip, Delta, Dialog, DialogClose, Flag, Icon3D, KeyValue, Money, Segmented, Sparkline, Starfield, cn, formatMoney } from "@/components/kit";
-import { ACTIVE_CONTEST, LEADERBOARD, PAST_CONTESTS, UPCOMING_CONTESTS, type Contest, type LeaderRow } from "@kalks/mock/rewards";
+import { ACTIVE_CONTEST, LEADERBOARD, PAST_CONTESTS, UPCOMING_CONTESTS, type Contest, type LeaderRow } from "@ezymex/mock/rewards";
 import { Countdown } from "./countdown";
 import { TERMINAL_URL } from "@/lib/live";
 
@@ -112,7 +112,7 @@ export function ContestHero() {
                 shimmer
                 onClick={() => {
                   setJoined(true);
-                  toast.success("You're in! Contest account #70220418 created", { description: "$1,000 starting balance · Kalks-Contest01" });
+                  toast.success("You're in! Contest account #70220418 created", { description: "$1,000 starting balance · Ezymex-Contest01" });
                 }}
               >
                 Join contest <ArrowUpRight />

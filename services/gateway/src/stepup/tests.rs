@@ -47,7 +47,7 @@ fn code(e: &ApiError) -> String {
 }
 
 fn ctx(bearer: Option<&str>) -> Ctx {
-    Ctx { ip: "203.0.113.9".into(), user_agent: "test".into(), device: Some("device-stepup-aaaa".into()), tenant_slug: "kalks".into(), bearer: bearer.map(str::to_string) }
+    Ctx { ip: "203.0.113.9".into(), user_agent: "test".into(), device: Some("device-stepup-aaaa".into()), tenant_slug: "ezymex".into(), bearer: bearer.map(str::to_string) }
 }
 
 async fn user(db: &TestDb, email: &str, password: &str) -> i64 {
@@ -85,8 +85,8 @@ fn wrong(code: &str) -> String {
 async fn stepup_flows() {
     let Some(db) = TestDb::new("step-up").await else { return };
     let st = || State(db.st.clone());
-    let uid = user(&db, "stepup@gmail.com", "Kalks@2026").await;
-    let other = user(&db, "other@gmail.com", "Kalks@2026").await;
+    let uid = user(&db, "stepup@gmail.com", "Ezymex@2026").await;
+    let other = user(&db, "other@gmail.com", "Ezymex@2026").await;
     let sess = identity::create_session(&db.st, &ctx(None), K, 1, uid).await.unwrap();
     let other_sess = identity::create_session(&db.st, &ctx(None), K, 1, other).await.unwrap();
     let me = || ctx(Some(&sess.token));
@@ -184,14 +184,14 @@ async fn stepup_flows() {
     let second = identity::create_session(&db.st, &ctx(None), K, 1, uid).await.unwrap();
     let preq = |current: &str, new: &str, token: &str, others: bool| Json(PasswordReq { current: current.into(), new_password: new.into(), stepup_token: token.into(), sign_out_others: others });
     // weak / unchanged new password
-    assert_eq!(code(&change_password(st(), me(), Ok(preq("Kalks@2026", "short", "", true))).await.unwrap_err()), "field:new");
-    assert_eq!(code(&change_password(st(), me(), Ok(preq("Kalks@2026", "Kalks@2026", "", true))).await.unwrap_err()), "field:new");
+    assert_eq!(code(&change_password(st(), me(), Ok(preq("Ezymex@2026", "short", "", true))).await.unwrap_err()), "field:new");
+    assert_eq!(code(&change_password(st(), me(), Ok(preq("Ezymex@2026", "Ezymex@2026", "", true))).await.unwrap_err()), "field:new");
     // no step-up token
-    assert_eq!(code(&change_password(st(), me(), Ok(preq("Kalks@2026", "Better#Pass9", "", true))).await.unwrap_err()), "stepup_required");
+    assert_eq!(code(&change_password(st(), me(), Ok(preq("Ezymex@2026", "Better#Pass9", "", true))).await.unwrap_err()), "stepup_required");
     // a token for another action doesn't work
     let Json(ch) = request(st(), me(), Ok(sreq("leverage", None))).await.unwrap();
     let Json(ok) = verify(st(), me(), Ok(vreq(ch["challenge"].as_str().unwrap(), ch["dev_code"].as_str().unwrap(), "leverage", None))).await.unwrap();
-    let e = change_password(st(), me(), Ok(preq("Kalks@2026", "Better#Pass9", ok["stepup_token"].as_str().unwrap(), true))).await.unwrap_err();
+    let e = change_password(st(), me(), Ok(preq("Ezymex@2026", "Better#Pass9", ok["stepup_token"].as_str().unwrap(), true))).await.unwrap_err();
     assert_eq!(code(&e), "stepup_invalid");
 
     let Json(ch) = request(st(), me(), Ok(sreq("account_password", None))).await.unwrap();
@@ -201,7 +201,7 @@ async fn stepup_flows() {
     let e = change_password(st(), me(), Ok(preq("Wrong@2026", "Better#Pass9", &pw_token, true))).await.unwrap_err();
     assert_eq!(code(&e), "field:current");
     assert_eq!(db.count("SELECT failed_logins::bigint FROM users WHERE id = $1", uid).await, 1);
-    let Json(v) = change_password(st(), me(), Ok(preq("Kalks@2026", "Better#Pass9", &pw_token, true))).await.unwrap();
+    let Json(v) = change_password(st(), me(), Ok(preq("Ezymex@2026", "Better#Pass9", &pw_token, true))).await.unwrap();
     assert_eq!(v["status"], "ok");
     // the other session (and nothing else) was signed out; this one stays
     assert!(v["sessions_revoked"].as_u64().unwrap() >= 1);

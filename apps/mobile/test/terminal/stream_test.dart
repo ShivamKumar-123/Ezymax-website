@@ -2,8 +2,8 @@
 // account (`trade/sessions`), loads `trade/state`, then every frame keeps it current. Option entries stay apart for
 // the options mode; engine notifications become banners in the bell; resync / ended reconnect with a fresh ticket.
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/features/terminal/core/sessions.dart';
-import 'package:kalks/features/terminal/core/terminal_controller.dart';
+import 'package:ezymex/features/terminal/core/sessions.dart';
+import 'package:ezymex/features/terminal/core/terminal_controller.dart';
 
 import 'fixtures.dart';
 import 'harness.dart';
@@ -201,7 +201,7 @@ void main() {
     expect(await s.activate('20017734'), isTrue);
     expect(c.read(activeTradeSessionProvider)!.login, '20017734');
     expect(c.read(tradeSessionsProvider).sessions.keys, containsAll(['10042817', '20017734']));
-    final inv = await s.loginWithPassword(login: '10051123', password: 'investor-pass', server: 'Kalks-Live');
+    final inv = await s.loginWithPassword(login: '10051123', password: 'investor-pass', server: 'Ezymex-Live');
     expect(inv.readOnly, isTrue);
     expect(inv.own, isFalse);
     expect(c.read(activeTradeSessionProvider)!.login, '10051123');

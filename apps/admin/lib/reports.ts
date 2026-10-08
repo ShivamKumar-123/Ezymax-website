@@ -12,12 +12,12 @@ export const reportsConfigured = () => TOKEN.length > 0 || process.env.NODE_ENV 
 
 export async function reportsFetch(path: string, init: { method?: "GET" | "POST" | "PUT" | "DELETE"; body?: unknown; staff: GatewayStaff; timeoutMs?: number; perms?: string[] }): Promise<Response | null> {
   const headers: Record<string, string> = {
-    "x-kalks-internal": TOKEN,
-    "x-kalks-tenant": init.staff.tenant?.slug || "kalks",
-    "x-kalks-staff-id": String(init.staff.id),
-    "x-kalks-staff-name": encodeURIComponent(init.staff.name || init.staff.email),
-    "x-kalks-staff-role": init.staff.role,
-    "x-kalks-staff-perms": [...reportsPermsOf(init.staff), ...(init.perms ?? [])].join(","),
+    "x-ezymex-internal": TOKEN,
+    "x-ezymex-tenant": init.staff.tenant?.slug || "ezymex",
+    "x-ezymex-staff-id": String(init.staff.id),
+    "x-ezymex-staff-name": encodeURIComponent(init.staff.name || init.staff.email),
+    "x-ezymex-staff-role": init.staff.role,
+    "x-ezymex-staff-perms": [...reportsPermsOf(init.staff), ...(init.perms ?? [])].join(","),
   };
   if (init.body !== undefined) headers["content-type"] = "application/json";
   try {

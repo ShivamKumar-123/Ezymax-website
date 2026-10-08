@@ -3,8 +3,8 @@
 import * as React from "react";
 import { motion } from "motion/react";
 import { Chip, Toggle, cn } from "@/components/kit";
-import { candles, getInstrument } from "@kalks/mock";
-import { operandLabel, type Operand, type StrategyRules } from "@kalks/mock/algo";
+import { candles, getInstrument } from "@ezymex/mock";
+import { operandLabel, type Operand, type StrategyRules } from "@ezymex/mock/algo";
 import { toast } from "sonner";
 
 const TF_SEC: Record<string, number> = { M1: 60, M5: 300, M15: 900, M30: 1800, H1: 3600, H4: 14400, D1: 86400 };

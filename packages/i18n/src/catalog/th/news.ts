@@ -45,7 +45,7 @@ const news: NsMessages<"news"> = {
   "markets.trade": "เทรด",
   "markets.searchPlaceholder": "ค้นหาสัญลักษณ์หรือชื่อ…",
   "markets.clearSearch": "ล้าง",
-  "markets.liveTooltip": "ราคาสตรีมจากฟีดราคาของ Kalks",
+  "markets.liveTooltip": "ราคาสตรีมจากฟีดราคาของ Ezymex",
   "markets.footnote": "สเปรดของกลุ่ม Standard: หน่วยเป็น pip สำหรับ FX และหน่วยราคาสำหรับตราสารอื่น · ตลาดที่ปิดแสดงราคาล่าสุด · คลิกแถวเพื่อดูข้อมูลจำเพาะสัญญา",
   // Short trading-hours summary per asset class (24/5 = 24 hours, 5 days a week)
   "hoursShort.forex": "24/5",
@@ -270,7 +270,7 @@ const news: NsMessages<"news"> = {
   "cal.removeReminder": "ลบการเตือน",
   "cal.remindMe": "เตือนฉันก่อน 15 นาที",
   "cal.toWatch": "ตราสารที่ควรจับตา",
-  "cal.noLinked": "ไม่มีตราสารของ Kalks ที่เชื่อมโยงกับสกุลเงินนี้โดยตรง",
+  "cal.noLinked": "ไม่มีตราสารของ Ezymex ที่เชื่อมโยงกับสกุลเงินนี้โดยตรง",
   // High-impact alerts card
   "alerts.title": "การแจ้งเตือนผลกระทบสูง",
   "alerts.toggle": "แจ้งเตือนฉันก่อนเหตุการณ์ผลกระทบสูง",

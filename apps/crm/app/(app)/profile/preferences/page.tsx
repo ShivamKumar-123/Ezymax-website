@@ -6,8 +6,8 @@ import { Bell, ChevronRight, Clock, Languages, MonitorSmartphone, Moon, Sun, Mai
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { Card, CardHeader, Flag, LANGUAGES, PageHeader, Reveal, Segmented, Toggle, cn } from "@/components/kit";
-import { useLocale, useT } from "@kalks/i18n/react";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { useLocale, useT } from "@ezymex/i18n/react";
+import { IS_DEMO } from "@ezymex/mock/mode";
 
 const NOTIFS = [
   ["profile.prefs.notif.fills", true, true],

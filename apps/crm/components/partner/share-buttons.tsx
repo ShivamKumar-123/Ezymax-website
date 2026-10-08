@@ -4,7 +4,7 @@ import * as React from "react";
 import { Mail } from "lucide-react";
 import { toast } from "sonner";
 import { Tooltip, cn } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 
 const WA = (
   <svg viewBox="0 0 24 24" className="size-4 fill-current">

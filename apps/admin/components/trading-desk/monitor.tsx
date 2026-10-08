@@ -3,8 +3,8 @@
 import * as React from "react";
 import Link from "next/link";
 import { ExternalLink, TrendingDown } from "lucide-react";
-import { Button, Chip, DataTable, Segmented, SymbolAvatar, cn, formatNumber, useQuotes, type Column } from "@kalks/ui";
-import { priceFeed } from "@kalks/mock";
+import { Button, Chip, DataTable, Segmented, SymbolAvatar, cn, formatNumber, useQuotes, type Column } from "@ezymex/ui";
+import { priceFeed } from "@ezymex/mock";
 import { MiniClient } from "@/components/trading/shared";
 import { REASON_STOP_OUT, accountMetrics, clientName, getAccount, groupLabel, positionPnl, useDesk, type AccountMetrics, type DeskPosition } from "@/lib/trading-desk";
 import { DeskDialog, MetaTile, money, signedMoney } from "./kit";

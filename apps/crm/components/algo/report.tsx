@@ -5,8 +5,8 @@
 import * as React from "react";
 import { Info } from "lucide-react";
 import { Card, CardHeader, Chip, DataTable, EquityChart, Tabs, cn, type Column } from "@/components/kit";
-import { useFormat, useT } from "@kalks/i18n/react";
-import { INSTRUMENT_MAP } from "@kalks/mock";
+import { useFormat, useT } from "@ezymex/i18n/react";
+import { INSTRUMENT_MAP } from "@ezymex/mock";
 import { fmtDate, fmtDateTime, fmtMoney, fmtNum, fmtPct, fmtSigned, type BacktestDetail, type Trade } from "./api";
 
 const MONTHS = ["developer.month.jan", "developer.month.feb", "developer.month.mar", "developer.month.apr", "developer.month.may", "developer.month.jun", "developer.month.jul", "developer.month.aug", "developer.month.sep", "developer.month.oct", "developer.month.nov", "developer.month.dec"] as const;

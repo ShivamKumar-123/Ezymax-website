@@ -100,13 +100,13 @@ const prop: NsMessages<"prop"> = {
 
   // Public certificate verification page (/verify/<code>)
   "verify.shellTitle": "Проверка сертификата",
-  "verify.footer": "Счета Kalks Prop являются симулированными. Сертификаты отражают результаты трейдера в челлендже Kalks Prop; имя трейдера сокращено до имени и первой буквы фамилии.",
+  "verify.footer": "Счета Ezymex Prop являются симулированными. Сертификаты отражают результаты трейдера в челлендже Ezymex Prop; имя трейдера сокращено до имени и первой буквы фамилии.",
   "verify.linkCopied": "Ссылка скопирована",
   "verify.copyFailed": "Не удалось скопировать ссылку",
   "verify.copyLink": "Скопировать ссылку",
   "verify.downloadPng": "Скачать PNG",
   "verify.notFoundTitle": "Сертификат не найден",
-  "verify.notFoundText": "Сертификата Kalks Prop с таким номером нет. Проверьте ссылку или попросите трейдера отправить её ещё раз.",
+  "verify.notFoundText": "Сертификата Ezymex Prop с таким номером нет. Проверьте ссылку или попросите трейдера отправить её ещё раз.",
   "verify.unavailableTitle": "Проверка сейчас недоступна",
   "verify.unavailableText": "Сейчас не удалось проверить этот сертификат. Пожалуйста, повторите попытку через несколько минут.",
   "verify.kind.pass": "Этап пройден",
@@ -120,9 +120,9 @@ const prop: NsMessages<"prop"> = {
   "verify.row.issued": "Выдан",
   "verify.row.number": "№ сертификата",
   "verify.validTitle": "Действительный сертификат",
-  "verify.validText": "Выдан Kalks Prop и проверен по нашим записям.",
+  "verify.validText": "Выдан Ezymex Prop и проверен по нашим записям.",
   "verify.revokedTitle": "Отозванный сертификат",
-  "verify.revokedText": "Этот сертификат был отозван Kalks и больше не действителен.",
+  "verify.revokedText": "Этот сертификат был отозван Ezymex и больше не действителен.",
   "verify.valid": "Действителен",
   "verify.revoked": "Отозван",
   // Certificate titles
@@ -250,8 +250,8 @@ const prop: NsMessages<"prop"> = {
   "checkout.goToMine": "Перейти в «Мои челленджи»",
   "checkout.readyTitle": "Ваш челлендж готов",
   "checkout.paidText": "{fee} оплачено из Вашего USDT-кошелька, счёт {size} открыт. Правила действуют с этого момента.",
-  "checkout.savePasswords": "Сохраните эти пароли сейчас: они показываются только один раз, и мы их не храним. Кнопка «Торговать» выполняет вход в Kalks Trader без пароля, поэтому отсюда Вы всегда сможете торговать.",
-  "checkout.passwordsShown": "Торговые пароли были показаны при первом подтверждении покупки. Используйте кнопку «Торговать», чтобы открыть Kalks Trader: вход выполняется без пароля.",
+  "checkout.savePasswords": "Сохраните эти пароли сейчас: они показываются только один раз, и мы их не храним. Кнопка «Торговать» выполняет вход в Ezymex Trader без пароля, поэтому отсюда Вы всегда сможете торговать.",
+  "checkout.passwordsShown": "Торговые пароли были показаны при первом подтверждении покупки. Используйте кнопку «Торговать», чтобы открыть Ezymex Trader: вход выполняется без пароля.",
 
   // Account credentials
   "cred.login": "Логин",
@@ -394,7 +394,7 @@ const prop: NsMessages<"prop"> = {
   "account.passed": "Пройден · только чтение",
   "account.failed": "Не пройден · отключён",
   "account.opening": "Открывается",
-  "account.tradableText": "Кнопка «Торговать» открывает Kalks Trader с входом в этот счёт. Пароли были показаны один раз при покупке.",
+  "account.tradableText": "Кнопка «Торговать» открывает Ezymex Trader с входом в этот счёт. Пароли были показаны один раз при покупке.",
   "account.passedText": "Этот этап завершён. Счёт доступен только для чтения; торгуйте на следующем этапе.",
   "account.failedText": "Торговля на этом счёте отключена.",
   "account.unavailableText": "Торговля на этом счёте недоступна.",

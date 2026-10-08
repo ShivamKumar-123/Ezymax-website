@@ -4,13 +4,13 @@ import * as React from "react";
 import Link from "next/link";
 import { Archive, ArrowRight, ArrowUpRight, Download, FlaskConical, Layers, Plus, RotateCcw, ShieldCheck, TrendingUp, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { Button, Card, CardHeader, Chip, Donut, EmptyState, Icon3D, KpiCard, Money, PageHeader, Reveal, Segmented, cn } from "@/components/kit";
-import { ACCOUNTS, ACCOUNT_GROUPS, POSITIONS, accountUsd, freeMargin, type TradingAccount } from "@kalks/mock";
-import { ARCHIVED_ACCOUNTS } from "@kalks/mock/accounts-extra";
+import { ACCOUNTS, ACCOUNT_GROUPS, POSITIONS, accountUsd, freeMargin, type TradingAccount } from "@ezymex/mock";
+import { ARCHIVED_ACCOUNTS } from "@ezymex/mock/accounts-extra";
 import { AccountBadge, AccountRow, accountTitle } from "@/components/account-row";
 import { GroupCard } from "@/components/accounts/group-card";
-import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LiveAccountsPage } from "@/components/trading/accounts-page";
 import { TERMINAL_URL } from "@/lib/live";
 
@@ -114,7 +114,7 @@ function PlatformCard() {
               WebTerminal <ArrowUpRight />
             </Button>
           </Link>
-          <Button size="sm" variant="surface" onClick={() => toast.success(t("accounts.platform.downloading"), { description: "kalks5setup.exe · 24.1 MB" })}>
+          <Button size="sm" variant="surface" onClick={() => toast.success(t("accounts.platform.downloading"), { description: "ezymex5setup.exe · 24.1 MB" })}>
             <Download /> {t("accounts.platform.mt5Desktop")}
           </Button>
         </div>

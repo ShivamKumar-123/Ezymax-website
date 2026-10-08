@@ -8,8 +8,8 @@ import Link from "next/link";
 import { Activity, AlertTriangle, ArrowDownRight, ArrowUpRight, Clock3, Download, FileText, Gauge as GaugeIcon, Percent, RefreshCw, Scale, ShieldCheck, Target, TrendingDown, Trophy, Zap } from "lucide-react";
 import { Button, Card, CardHeader, Chip, Donut, EmptyState, KpiCard, Menu, Money, PageHeader, Reveal, Segmented, Skeleton, cn, formatMoney } from "@/components/kit";
 import { ColumnBars, DrawdownChart, HourHeatmap, MultiLineChart, PnlBars, Waterfall } from "@/components/portfolio/charts";
-import { tr, useT } from "@kalks/i18n/react";
-// engine symbols include Kalks FX Options series codes, which the static instrument list (SymbolAvatar) doesn't know
+import { tr, useT } from "@ezymex/i18n/react";
+// engine symbols include Ezymex FX Options series codes, which the static instrument list (SymbolAvatar) doesn't know
 import { TradeSymbolAvatar, symbolLabel } from "@/components/trading/instrument";
 
 /* ------------------------------------------------------------------ */
@@ -75,7 +75,7 @@ export type Analytics = {
     bonus: number;
     adjustments: number;
     earnings: number;
-    /** Kalks FX Options premiums paid / received and expiry settlements (their own buckets in the reports service). */
+    /** Ezymex FX Options premiums paid / received and expiry settlements (their own buckets in the reports service). */
     optionPremiums?: number;
     optionSettlements?: number;
     equityNow: number;

@@ -17,8 +17,8 @@ export const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 export const GOOGLE_JWKS_URL = "https://www.googleapis.com/oauth2/v3/certs";
 export const GOOGLE_ISSUERS = ["https://accounts.google.com", "accounts.google.com"];
 
-export const STATE_COOKIE = "kalks_google_state";
-export const TICKET_COOKIE = "kalks_google_ticket";
+export const STATE_COOKIE = "ezymex_google_state";
+export const TICKET_COOKIE = "ezymex_google_ticket";
 export const STATE_TTL_SECONDS = 600;
 export const CALLBACK_PATH = "/api/auth/google/callback";
 
@@ -57,7 +57,7 @@ export function cleanRef(ref: string | null | undefined): string {
 
 /**
  * Public origin of this app as the browser sees it. Behind Caddy that comes from X-Forwarded-Proto/Host
- * (app.kalkstrade.com); in development it is the request's own origin (http://localhost:3000).
+ * (app.ezymex.com); in development it is the request's own origin (http://localhost:3000).
  * Google only redirects to URIs registered on the OAuth client, so a forged host cannot receive a code.
  */
 export function publicOrigin(headers: Headers, requestUrl: string): string {
@@ -86,7 +86,7 @@ export type OAuthState = {
 };
 
 function stateKey(cfg: GoogleConfig): Buffer {
-  return createHmac("sha256", cfg.clientSecret).update("kalks-google-state-cookie-v1").digest();
+  return createHmac("sha256", cfg.clientSecret).update("ezymex-google-state-cookie-v1").digest();
 }
 
 export function sealState(s: OAuthState, cfg: GoogleConfig): string {

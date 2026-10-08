@@ -429,7 +429,7 @@ class _AccrualsCardState extends State<_AccrualsCard> {
                     ? null
                     : () => shareCsv(
                         context,
-                        'kalks-cashback',
+                        'ezymex-cashback',
                         [
                           t('common.date'),
                           t('rewards.cashback.colDeal'),

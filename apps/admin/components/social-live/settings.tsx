@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { RotateCcw, Save } from "lucide-react";
-import { Button, Card, CardHeader, Chip, PageHeader, Reveal, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, PageHeader, Reveal, cn } from "@ezymex/ui";
 import { MiniField, NumInput, SettingRow, Slider } from "@/components/config/kit";
 import { useApi } from "@/components/live/kit";
 import { ReadOnlyNote, SocialError, socialWrite, useNoteAction, useSocialCan, usd, type SocialSettings } from "./kit";

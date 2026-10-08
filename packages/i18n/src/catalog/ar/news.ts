@@ -45,7 +45,7 @@ const news: NsMessages<"news"> = {
   "markets.trade": "تداول",
   "markets.searchPlaceholder": "ابحث عن رمز أو اسم…",
   "markets.clearSearch": "مسح",
-  "markets.liveTooltip": "تُبث الأسعار من موجز أسعار Kalks",
+  "markets.liveTooltip": "تُبث الأسعار من موجز أسعار Ezymex",
   "markets.footnote": "سبريد المجموعة Standard: بالنقاط للفوركس وبوحدات السعر لغيرها · تعرض الأسواق المغلقة آخر سعر · انقر على صف لعرض مواصفات العقد",
   // Short trading-hours summary per asset class (24/5 = 24 hours, 5 days a week)
   "hoursShort.forex": "24/5",
@@ -291,7 +291,7 @@ const news: NsMessages<"news"> = {
   "cal.removeReminder": "إزالة التذكير",
   "cal.remindMe": "ذكّرني قبل 15 دقيقة",
   "cal.toWatch": "أدوات للمتابعة",
-  "cal.noLinked": "لا توجد أدوات Kalks مرتبطة مباشرةً بهذه العملة.",
+  "cal.noLinked": "لا توجد أدوات Ezymex مرتبطة مباشرةً بهذه العملة.",
   // High-impact alerts card
   "alerts.title": "تنبيهات الأحداث عالية التأثير",
   "alerts.toggle": "نبّهني قبل الأحداث عالية التأثير",

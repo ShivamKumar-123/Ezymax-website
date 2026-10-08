@@ -1,4 +1,4 @@
-//! Kalks FX Options service (:8104). See src/lib.rs and README.md.
+//! Ezymex FX Options service (:8104). See src/lib.rs and README.md.
 
 use options::config::Config;
 use options::{AppState, api, jobs, seed, store};

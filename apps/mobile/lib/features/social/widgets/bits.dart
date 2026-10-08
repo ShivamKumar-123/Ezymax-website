@@ -931,7 +931,7 @@ class TextArea extends StatelessWidget {
   }
 }
 
-/// Opens Kalks Trader on a login (web TradeButton).
+/// Opens Ezymex Trader on a login (web TradeButton).
 class TraderButton extends StatelessWidget {
   const TraderButton({
     super.key,

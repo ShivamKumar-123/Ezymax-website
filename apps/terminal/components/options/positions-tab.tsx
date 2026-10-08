@@ -14,9 +14,9 @@
 // buys back at the ask (house) or reduce-only at market through the book: the close button shows that amount.
 import * as React from "react";
 import { CalendarClock, ChevronDown, Crosshair, Layers, Scissors, Sigma, Zap } from "lucide-react";
-import { OPTION_SPEC } from "@kalks/mock/options";
-import { cn, useQuote } from "@kalks/ui";
-import { useLocale, useT } from "@kalks/i18n/react";
+import { OPTION_SPEC } from "@ezymex/mock/options";
+import { cn, useQuote } from "@ezymex/ui";
+import { useLocale, useT } from "@ezymex/i18n/react";
 import { toast } from "@/lib/notify";
 import { useMetrics, useTerminal } from "@/lib/store";
 import { accCcy, accMoney, fmtServer } from "@/lib/trading";
@@ -34,7 +34,7 @@ import { setTradeMode } from "@/lib/options/mode";
 import { opt, quoteOf, useBookLive, useOpt, useOptionsAttach, useSeriesQuote } from "@/lib/options-store";
 import type { OptOrder, OptPosition, OptionQuote } from "@/lib/options/types";
 import { OptAvatar, useNow } from "./bits";
-import { KalksQuotedTag } from "./book-bits";
+import { EzymexQuotedTag } from "./book-bits";
 import { Explain } from "./explain";
 import { countdown, cutWhen, expiryLabel, greek, iso, money, moneySigned, nyCut, pct, pctSigned, px, strikeOf, usd, usdSigned } from "./format";
 
@@ -145,7 +145,7 @@ export async function closeOptionPosition(T: ReturnType<typeof useTerminal>, t: 
 
 /**
  * Close a whole strategy. House strategies close at the house prices; a strategy held on the order book closes through
- * a reduce-only combo RFQ to the Kalks market maker (`venue: "book"`, the `net` paid or received per strategy unit),
+ * a reduce-only combo RFQ to the Ezymex market maker (`venue: "book"`, the `net` paid or received per strategy unit),
  * every leg at once or none. Refusals read in plain words; a stale price or no quote offers "Try again".
  * The engine's money is in the account's currency (USC on cent accounts): shown in USD.
  */
@@ -355,7 +355,7 @@ const PositionCard = React.memo(function PositionCard({ p, readOnly, report, loc
               <span className="font-mono text-[13px] font-semibold text-fg">{strike}</span>
               <SideChip side={p.side} n={p.contracts} />
               {p.option.barrier && <span className="rounded-[4px] bg-warn-soft px-1 text-[9.5px] font-semibold text-warn">{t("trader.opt.pos.barrier")}</span>}
-              {bookLive && (p.option.barrier || p.venue === "house") && <KalksQuotedTag />}
+              {bookLive && (p.option.barrier || p.venue === "house") && <EzymexQuotedTag />}
             </div>
             <div className="mt-1">
               <ExpiryLine cut={cut} locale={locale} now={now} />

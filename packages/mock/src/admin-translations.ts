@@ -1,6 +1,6 @@
 /**
  * Back Office · Content · Translations manager.
- * Import via `@kalks/mock/admin-translations`. Exports are prefixed I18N_.
+ * Import via `@ezymex/mock/admin-translations`. Exports are prefixed I18N_.
  * Builds on the CNT_ translation rows (same 22 languages) and regroups them
  * into the product namespaces used by the Client Area bundles.
  */

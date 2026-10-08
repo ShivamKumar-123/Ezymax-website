@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { CalendarRange, Eye, Image as ImageIcon, MousePointerClick, Pencil, Plus, RefreshCw, Users, X } from "lucide-react";
-import { Button, Card, CardHeader, Chip, KpiCard, PageHeader, Reveal, Segmented, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, KpiCard, PageHeader, Reveal, Segmented, cn } from "@ezymex/ui";
 import { TableSkeleton, day, qs, useApi, useDebounced } from "@/components/live/kit";
 import { M, mkSend, type AccountType, type Banner, type BannerInput, type BannerView, type Kyc, type Overview, type Placement, type Tone } from "./api";
 import {

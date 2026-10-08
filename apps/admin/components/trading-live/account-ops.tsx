@@ -12,7 +12,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Archive, Check, Download, Mail, MoreHorizontal, X } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Dialog, Field, Input, Menu, Toggle, cn } from "@kalks/ui";
+import { Button, Dialog, Field, Input, Menu, Toggle, cn } from "@ezymex/ui";
 import { qs, sendJson, useApi } from "@/components/live/kit";
 import { useCan } from "@/components/staff-session";
 import { DeskDialog, MetaTile } from "@/components/trading-desk/kit";

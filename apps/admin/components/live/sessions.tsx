@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { LogOut, Monitor, RefreshCw, ShieldCheck, Users } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, Flag, PageHeader, Reveal, Segmented, Tabs, type Column } from "@kalks/ui";
+import { Avatar, Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, Flag, PageHeader, Reveal, Segmented, Tabs, type Column } from "@ezymex/ui";
 import { TextArea } from "@/components/config/kit";
 import { useCan } from "@/components/staff-session";
 import { ErrorState, Mono, Pager, TableSkeleton, ago, device, qs, sendJson, useApi, useNow, when } from "./kit";

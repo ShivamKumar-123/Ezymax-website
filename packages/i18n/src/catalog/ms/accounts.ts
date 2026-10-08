@@ -88,7 +88,7 @@ const accounts: NsMessages<"accounts"> = {
   "empty.openFirst": "Buka akaun pertama anda untuk mula berdagang.",
   "empty.noLive": "Belum ada akaun sebenar",
   "empty.noDemo": "Belum ada akaun demo",
-  "empty.liveText": "Buka akaun sebenar sekarang dan dapatkan log masuk serta kata laluan anda dengan segera. Danai akaun daripada dompet Kalks anda.",
+  "empty.liveText": "Buka akaun sebenar sekarang dan dapatkan log masuk serta kata laluan anda dengan segera. Danai akaun daripada dompet Ezymex anda.",
   "empty.demoText": "Akaun demo disertakan dengan dana maya pada harga masa nyata, supaya anda boleh berlatih tanpa risiko.",
   "error.unavailableTitle": "Akaun dagangan tidak tersedia",
   "error.unavailableText": "Kami tidak dapat menghubungi perkhidmatan dagangan. Akaun dan baki anda selamat; sila cuba lagi sebentar nanti.",
@@ -110,13 +110,13 @@ const accounts: NsMessages<"accounts"> = {
   // Platforms card (demo build). WebTerminal is a product name.
   "platform.mt5Compatible": "Serasi MT5",
   "platform.title": "Berdagang di mana-mana",
-  "platform.text": "Kalks WebTerminal, MetaTrader 5 desktop dan mudah alih — satu log masuk, kelayakan yang sama.",
+  "platform.text": "Ezymex WebTerminal, MetaTrader 5 desktop dan mudah alih — satu log masuk, kelayakan yang sama.",
   "platform.downloading": "Memuat turun MetaTrader 5",
   "platform.mt5Desktop": "MT5 desktop",
 
   // Account types section on the accounts list
   "types.title": "Jenis akaun",
-  "types.subtitle": "Instrumen yang sama dan Kalks Trader pada setiap jenis. Pilih harga dan mod posisi yang sesuai dengan anda.",
+  "types.subtitle": "Instrumen yang sama dan Ezymex Trader pada setiap jenis. Pilih harga dan mod posisi yang sesuai dengan anda.",
   "types.footer": "Perlindungan baki negatif pada setiap akaun · Leveraj hanya boleh ditukar tanpa posisi terbuka · Baki demo boleh diisi semula beberapa kali sehari.",
   "compare.title": "Bandingkan jenis akaun",
   "compare.subtitle": "Instrumen, platform dan perlindungan yang sama — pilih harga yang sesuai dengan gaya anda.",
@@ -160,7 +160,7 @@ const accounts: NsMessages<"accounts"> = {
   // Account row and its actions menu
   "row.trade": "Dagang",
   "row.refill": "Isi semula",
-  "row.cantOpenTrader": "Akaun ini tidak boleh dibuka dalam Kalks Trader",
+  "row.cantOpenTrader": "Akaun ini tidak boleh dibuka dalam Ezymex Trader",
   "row.openPositions": { other: "{count} posisi terbuka" },
   "row.pendingOrders": { other: "{count} pesanan belum selesai" },
   // Followed by the floating profit/loss amount
@@ -195,7 +195,7 @@ const accounts: NsMessages<"accounts"> = {
   "fund.centAccount": "akaun sen (USC)",
   "fund.depositUsdt": "Deposit USDT",
   "fund.transferFromWallet": "Pindah dari dompet",
-  "fund.fromWallet": "Didanai dari dompet Kalks anda",
+  "fund.fromWallet": "Didanai dari dompet Ezymex anda",
   "fund.text": "Deposit USDT melalui BNB Chain atau TRON ke dompet anda, kemudian pindahkannya ke akaun ini dengan segera. USDT dikreditkan 1:1 dalam USD.",
   "fund.textCent": "Deposit USDT melalui BNB Chain atau TRON ke dompet anda, kemudian pindahkannya ke akaun ini dengan segera. USDT dikreditkan 1:1 dalam USD, dipaparkan ×100 dalam USC pada akaun sen.",
 
@@ -251,7 +251,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.swapFreeTitle": "Akaun bebas swap (Islamik)",
   "wizard.swapFreeText": "Tiada swap semalaman. Yuran pentadbiran tetap mungkin dikenakan selepas 5 malam pada sesetengah instrumen.",
   "wizard.setPasswordTitle": "Tetapkan kata laluan dagangan",
-  "wizard.setPasswordSubtitle": "Kata laluan master anda untuk MT5 dan terminal Kalks. Kata laluan pelabur (baca sahaja) dijana untuk anda.",
+  "wizard.setPasswordSubtitle": "Kata laluan master anda untuk MT5 dan terminal Ezymex. Kata laluan pelabur (baca sahaja) dijana untuk anda.",
   "wizard.agreeMock": "Saya bersetuju dengan <client>Perjanjian Pelanggan</client> dan <risk>Pendedahan Risiko</risk>, dan memahami bahawa CFD membawa risiko tinggi kehilangan wang.",
   "wizard.clientAgreementOpened": "Perjanjian pelanggan dibuka",
   "wizard.riskDisclosureOpened": "Pendedahan risiko dibuka",
@@ -283,10 +283,10 @@ const accounts: NsMessages<"accounts"> = {
   "kind.demoText": "Berlatih tanpa risiko pada harga masa nyata.",
   "kind.liveTextMock": "Dagangkan pasaran sebenar dengan wang sebenar. Dana dengan segera dari dompet USDT anda.",
   "kind.demoTextMock": "Berlatih tanpa risiko dengan dana maya pada harga masa nyata.",
-  "kind.live.point1": "Pelaksanaan sebenar pada Kalks-Live",
+  "kind.live.point1": "Pelaksanaan sebenar pada Ezymex-Live",
   "kind.live.point2": "Bermula dengan baki sifar; didanai dari dompet anda",
   "kind.live.point3": "Log masuk dan kata laluan dikeluarkan dengan segera",
-  "kind.live.mock1": "Pelaksanaan sebenar pada pelayan Kalks-Live",
+  "kind.live.mock1": "Pelaksanaan sebenar pada pelayan Ezymex-Live",
   "kind.live.mock2": "Pendanaan USDT segera, 1:1 kepada USD",
   "kind.live.mock3": "Keluarkan keuntungan bila-bila masa (selepas KYC)",
   "kind.demo.virtualFunds": "Dana maya (lalai {amount})",
@@ -302,12 +302,12 @@ const accounts: NsMessages<"accounts"> = {
 
   // Open account wizard: account created
   "created.title": "Akaun anda sudah sedia",
-  "created.liveText": "Ia bermula dengan baki sifar. Danai akaun daripada dompet Kalks anda, kemudian log masuk ke Kalks Trader dengan kelayakan ini.",
+  "created.liveText": "Ia bermula dengan baki sifar. Danai akaun daripada dompet Ezymex anda, kemudian log masuk ke Ezymex Trader dengan kelayakan ini.",
   "created.demoText": "Dimuatkan dengan {amount} dalam dana maya.",
   "created.demoExpires": "Tamat tempoh selepas {days} hari tanpa log masuk terminal.",
   "created.liveTextMock": "Dana dari dompet USDT anda dan mula berdagang dalam beberapa saat.",
   "created.demoTextMock": "Dimuatkan dengan {amount} dalam dana maya. Tamat tempoh dalam {days} hari.",
-  "created.openInTrader": "Buka dalam Kalks Trader",
+  "created.openInTrader": "Buka dalam Ezymex Trader",
   "created.openTerminal": "Buka terminal",
   "created.viewAccount": "Lihat akaun",
   "created.credentials": "Kelayakan log masuk",
@@ -328,7 +328,7 @@ const accounts: NsMessages<"accounts"> = {
   "error.account_limit": "Anda telah mencapai bilangan maksimum akaun bagi jenis ini.",
   "error.invalid_leverage": "Leveraj ini tidak tersedia untuk kumpulan akaun ini.",
   "error.unavailable": "Perkhidmatan dagangan tidak tersedia. Sila cuba sebentar lagi.",
-  "toast.openTraderFailed": "Tidak dapat membuka Kalks Trader",
+  "toast.openTraderFailed": "Tidak dapat membuka Ezymex Trader",
   "toast.exportStarted": "Eksport penyata dimulakan",
   // {kind} is "dagangan" or "lejar" (export.trades / export.ledger)
   "toast.exportDesc": "#{login} · {kind} · CSV, masa dalam UTC",
@@ -405,7 +405,7 @@ const accounts: NsMessages<"accounts"> = {
   "close.subtitle": "Akaun yang ditutup tidak boleh dipulihkan oleh anda. Jika anda mungkin memerlukannya semula, padam (arkib) sahaja.",
   "close.blocked": "Akaun ini tidak boleh ditutup sekarang",
   "close.finalTitle": "Penutupan adalah muktamad",
-  "close.final1": "Dagangan, pemindahan dan log masuk Kalks Trader dihentikan selama-lamanya, dan nombor log masuk tidak akan digunakan semula.",
+  "close.final1": "Dagangan, pemindahan dan log masuk Ezymex Trader dihentikan selama-lamanya, dan nombor log masuk tidak akan digunakan semula.",
   "close.final2": "Penyata dan sejarah kekal tersedia di Akaun › Diarkibkan.",
   "close.final3": "Pasukan pematuhan kami menyemak permohonan dan memaklumkan anda melalui e-mel dan pemberitahuan.",
   "close.whyTitle": "Mengapa anda menutup akaun ini?",
@@ -513,7 +513,7 @@ const accounts: NsMessages<"accounts"> = {
   "dormant.chip": "Tidak aktif",
   "history.zip": "Muat turun sejarah penuh (ZIP)",
 
-  // Kalks FX Options in trade history, positions, orders and exports
+  // Ezymex FX Options in trade history, positions, orders and exports
   "opt.tag": "Opsyen",
   "opt.call": "Call",
   "opt.put": "Put",
@@ -529,7 +529,7 @@ const accounts: NsMessages<"accounts"> = {
   "opt.filter.cfd": "CFD",
   "opt.filter.options": "Opsyen",
   "opt.emptyOptions": "Tiada dagangan opsyen dalam tempoh ini",
-  "opt.emptyOptionsText": "Opsyen yang anda beli atau jual dalam Kalks Trader dipaparkan di sini, bersama cara setiap satu berakhir: ditutup, tamat tempoh atau knock-out.",
+  "opt.emptyOptionsText": "Opsyen yang anda beli atau jual dalam Ezymex Trader dipaparkan di sini, bersama cara setiap satu berakhir: ditutup, tamat tempoh atau knock-out.",
   "opt.emptyCfd": "Tiada dagangan CFD dalam tempoh ini",
   "opt.truncated": "Memaparkan {count} urus niaga terkini yang sepadan. Pilih tempoh yang lebih pendek untuk melihat yang lebih lama.",
   // How a deal was closed

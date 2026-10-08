@@ -5,14 +5,14 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import { ArrowUpFromLine, Check, Clock3, Download, Flame, ListChecks, Send, ShieldAlert, Timer, Wallet, X } from "lucide-react";
-import { Button, Card, CardHeader, Chip, DataTable, KpiCard, Money, PageHeader, Reveal, Segmented, StatusChip, Tabs, Tooltip, type Column } from "@kalks/ui";
-import { hashString, seeded } from "@kalks/mock";
-import { FIN_HOT_WALLET, FIN_SWEEP_HISTORY, FIN_WITHDRAWALS, FIN_WITHDRAW_REASONS, finAgo, finHex, finTime, type FinWithdrawal, type FinWithdrawalStatus } from "@kalks/mock/admin-finance";
+import { Button, Card, CardHeader, Chip, DataTable, KpiCard, Money, PageHeader, Reveal, Segmented, StatusChip, Tabs, Tooltip, type Column } from "@ezymex/ui";
+import { hashString, seeded } from "@ezymex/mock";
+import { FIN_HOT_WALLET, FIN_SWEEP_HISTORY, FIN_WITHDRAWALS, FIN_WITHDRAW_REASONS, finAgo, finHex, finTime, type FinWithdrawal, type FinWithdrawalStatus } from "@ezymex/mock/admin-finance";
 import { Addr, Checkbox, PersonCell, RiskScore, TxHash, auditToast, useReason } from "@/components/config/kit";
 import { BatchSendDialog } from "@/components/finance/batch-send";
 import { WithdrawalReview } from "@/components/finance/withdrawal-review";
 import { CheckRow, num, usd } from "@/components/finance/shared";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveWithdrawalsPage } from "@/components/finance-live/withdrawals";
 
 type RiskFilter = "all" | "high" | "clean";

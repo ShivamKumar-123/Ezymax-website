@@ -149,7 +149,7 @@ List<Map<String, dynamic>> previewDeals(int login) {
     });
   }
   if (login == 10042817) {
-    // a Kalks FX Options round trip: bought 2 contracts at $30 each, sold at $42 each (+$24)
+    // a Ezymex FX Options round trip: bought 2 contracts at $30 each, sold at $42 each (+$24)
     final terms = _optionTerms();
     final close = now.subtract(const Duration(days: 3, hours: 4));
     final open = close.subtract(const Duration(hours: 20));
@@ -513,7 +513,7 @@ List<Map<String, dynamic>> _months(int login) {
 
 /// The bytes of a sample statement / CSV (the preview adapter sends them as a JSON string).
 String previewFile(String kind, String format) => switch (format) {
-  'pdf' => '%PDF-1.4 Kalks sample $kind',
+  'pdf' => '%PDF-1.4 Ezymex sample $kind',
   'xlsx' => 'PK sample $kind workbook',
   _ => 'time,deal,symbol,side,volume,price,profit\n2026-10-01T10:00:00Z,4281001,EURUSD,buy,0.50,1.08412,124.50\n',
 };
@@ -568,13 +568,13 @@ String previewFile(String kind, String format) => switch (format) {
           'showAmounts': body['showAmounts'] == true,
           'createdAt': DateTime.now().toUtc().toIso8601String(),
           'views': 0,
-          'url': 'https://app.kalkstrade.com/s/${trade ? 'T${body['dealId']}' : 'P${body['login']}'}',
+          'url': 'https://app.ezymex.com/s/${trade ? 'T${body['dealId']}' : 'P${body['login']}'}',
           'data': {
             'name': 'Arjun',
             'symbol': trade ? 'XAUUSD' : null,
             'side': trade ? 'buy' : null,
             'currency': 'USD',
-            'brand': 'Kalks',
+            'brand': 'Ezymex',
             'referralCode': 'ARJUN26',
           },
         },

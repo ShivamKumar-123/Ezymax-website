@@ -2,8 +2,8 @@ import type { NextRequest } from "next/server";
 import { csrf, error, reply, soft } from "@/lib/engine/server";
 import { ownerOf, support } from "@/lib/support";
 
-// Kalks Trader notifications BFF (the title-bar bell). Browser -> /api/notifications[/read] -> services/support
-// /v1/notifications/me… as the owner of the acting trading account (x-kalks-login; engine session cookie).
+// Ezymex Trader notifications BFF (the title-bar bell). Browser -> /api/notifications[/read] -> services/support
+// /v1/notifications/me… as the owner of the acting trading account (x-ezymex-login; engine session cookie).
 // The same inbox as the Client Area bell: wallet, prop, partner, KYC, trading and support notifications.
 //
 //   GET  (root)?before&limit&unread   {items, unread, next}

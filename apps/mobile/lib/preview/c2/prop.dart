@@ -1,6 +1,6 @@
 // Sample answers for the prop screens (previews and widget tests only; shapes of the real API: services/prop/README.md
-// through apps/crm/app/api/prop/[...path]/route.ts). Three challenges of the sample client: Kalks Classic 2-Step $50k
-// in Phase 2 (54 % of today's loss limit used), Kalks Classic 1-Step $100k funded with an eligible payout, and a
+// through apps/crm/app/api/prop/[...path]/route.ts). Three challenges of the sample client: Ezymex Classic 2-Step $50k
+// in Phase 2 (54 % of today's loss limit used), Ezymex Classic 1-Step $100k funded with an eligible payout, and a
 // failed $25k. Dates are relative to now; every figure is fixed.
 import 'dart:math' as math;
 
@@ -150,7 +150,7 @@ Map<String, dynamic> _phase(String name, num target, int minDays, int timeLimit)
 
 final Map<String, dynamic> _oneStep = _plan(
   id: 'classic-1-step',
-  name: 'Kalks Classic 1-Step',
+  name: 'Ezymex Classic 1-Step',
   type: '1-step',
   sizes: [
     [10000, 99, 100],
@@ -175,7 +175,7 @@ final Map<String, dynamic> _oneStep = _plan(
 
 final Map<String, dynamic> _twoStep = _plan(
   id: 'classic-2-step',
-  name: 'Kalks Classic 2-Step',
+  name: 'Ezymex Classic 2-Step',
   type: '2-step',
   sizes: [
     [10000, 89, 100],
@@ -203,7 +203,7 @@ final List<Map<String, dynamic>> _plans = [
   _twoStep,
   _plan(
     id: 'swift-2-step',
-    name: 'Kalks Swift 2-Step',
+    name: 'Ezymex Swift 2-Step',
     type: '2-step',
     sizes: [
       [25000, 149, 100],
@@ -232,7 +232,7 @@ final List<Map<String, dynamic>> _plans = [
   ),
   _plan(
     id: 'instant-funded',
-    name: 'Kalks Instant',
+    name: 'Ezymex Instant',
     type: 'instant',
     sizes: [
       [5000, 249, 50],
@@ -427,14 +427,14 @@ Map<String, dynamic> _cert(String code, String kind, String title, String plan, 
   'issuedAt': _iso(at),
   'revoked': false,
   'challengeId': challengeId,
-  'verifyUrl': 'https://app.kalkstrade.com/verify/$code',
+  'verifyUrl': 'https://app.ezymex.com/verify/$code',
 };
 
 List<Map<String, dynamic>> _certificates(DateTime now) => [
-  _cert('KC-2026-3010-0077', 'payout', 'Payout certificate', 'Kalks Classic 1-Step', 100000, now.subtract(const Duration(days: 23)), 1038, amount: 3829),
-  _cert('KC-2026-3101-0001', 'pass', 'Phase 1 passed', 'Kalks Classic 2-Step', 50000, now.subtract(const Duration(days: 9)), 1051, phase: 'Phase 1'),
-  _cert('KC-2026-3010-0002', 'funded', 'Funded trader', 'Kalks Classic 1-Step', 100000, now.subtract(const Duration(days: 45)), 1038),
-  _cert('KC-2026-2980-0001', 'pass', 'Phase 1 passed', 'Kalks Classic 1-Step', 100000, now.subtract(const Duration(days: 45)), 1038, phase: 'Phase 1'),
+  _cert('KC-2026-3010-0077', 'payout', 'Payout certificate', 'Ezymex Classic 1-Step', 100000, now.subtract(const Duration(days: 23)), 1038, amount: 3829),
+  _cert('KC-2026-3101-0001', 'pass', 'Phase 1 passed', 'Ezymex Classic 2-Step', 50000, now.subtract(const Duration(days: 9)), 1051, phase: 'Phase 1'),
+  _cert('KC-2026-3010-0002', 'funded', 'Funded trader', 'Ezymex Classic 1-Step', 100000, now.subtract(const Duration(days: 45)), 1038),
+  _cert('KC-2026-2980-0001', 'pass', 'Phase 1 passed', 'Ezymex Classic 1-Step', 100000, now.subtract(const Duration(days: 45)), 1038, phase: 'Phase 1'),
 ];
 
 Map<String, dynamic> _quote(DateTime now) => {
@@ -851,7 +851,7 @@ Map<String, dynamic> _payouts(DateTime now) => {
       'decidedAt': _iso(now.subtract(const Duration(days: 23))),
       'note': null,
       'error': null,
-      'planName': 'Kalks Classic 1-Step',
+      'planName': 'Ezymex Classic 1-Step',
       'size': 100000,
     },
     {
@@ -870,14 +870,14 @@ Map<String, dynamic> _payouts(DateTime now) => {
       'decidedAt': _iso(now.subtract(const Duration(days: 30))),
       'note': 'Consistency rule not met in this cycle; the profit was returned to the account.',
       'error': null,
-      'planName': 'Kalks Classic 1-Step',
+      'planName': 'Ezymex Classic 1-Step',
       'size': 100000,
     },
   ],
   'funded': [
     {
       'challengeId': 1038,
-      'planName': 'Kalks Classic 1-Step',
+      'planName': 'Ezymex Classic 1-Step',
       'size': 100000,
       'login': 80519120,
       'balance': 106240,

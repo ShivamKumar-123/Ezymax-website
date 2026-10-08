@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Activity, ArrowUpRight, CandlestickChart, Download, KeyRound, Layers, MailCheck, Receipt, RefreshCw, Scale, ShieldAlert, UserPlus, Users, Wallet } from "lucide-react";
-import { Avatar, Button, Card, CardHeader, Chip, EmptyState, Flag, KpiCard, PageHeader, Reveal, Skeleton, cn } from "@kalks/ui";
+import { Avatar, Button, Card, CardHeader, Chip, EmptyState, Flag, KpiCard, PageHeader, Reveal, Skeleton, cn } from "@ezymex/ui";
 import { useServerClock } from "@/components/command/kit";
 import { ColumnChart } from "@/components/config/kit";
 import { useCan } from "@/components/staff-session";

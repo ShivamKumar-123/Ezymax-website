@@ -37,7 +37,7 @@ import {
   type Payout,
   type PayoutsResp,
 } from "./api";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { CardEmpty, PageFallback, PayoutStatusChip, SkeletonGrid } from "./ui";
 
 const DAY_MS = 86400_000;
@@ -447,7 +447,7 @@ export function LivePartnerPayouts() {
               rows={data.items}
               rowKey={(p) => String(p.id)}
               pageSize={10}
-              exportName={data.items.length ? "kalks-ib-payouts" : undefined}
+              exportName={data.items.length ? "ezymex-ib-payouts" : undefined}
               empty={
                 <div className="py-6">
                   <CardEmpty

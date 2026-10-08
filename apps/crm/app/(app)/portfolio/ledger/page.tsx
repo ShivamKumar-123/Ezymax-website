@@ -3,9 +3,9 @@
 import * as React from "react";
 import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, BadgePercent, CandlestickChart, Coins, Download, Gift, Handshake, Moon, Receipt, Search, X } from "lucide-react";
 import { Button, Card, Chip, DataTable, Menu, Money, PageHeader, Reveal, Segmented, cn, type ChipTone, type Column } from "@/components/kit";
-import { LEDGER, LEDGER_TYPE_LABEL, LIVE_ACCOUNTS, PORTFOLIO_NOW, type LedgerEntry, type LedgerType } from "@kalks/mock/portfolio-extra";
+import { LEDGER, LEDGER_TYPE_LABEL, LIVE_ACCOUNTS, PORTFOLIO_NOW, type LedgerEntry, type LedgerType } from "@ezymex/mock/portfolio-extra";
 import { downloadCsv, serverTime } from "@/components/portfolio/export";
-import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LiveLedgerPage } from "@/components/trading/portfolio";
 
 const TYPE_META: Record<LedgerType, { tone: ChipTone; icon: React.ReactNode }> = {
@@ -116,7 +116,7 @@ function DemoLedgerPage() {
             variant="ember"
             onClick={() =>
               downloadCsv(
-                `kalks-ledger-${preset.toLowerCase()}`,
+                `ezymex-ledger-${preset.toLowerCase()}`,
                 rows.map((e) => ({ id: e.id, time: serverTime(e.time, true), account: e.login, type: LEDGER_TYPE_LABEL[e.type], reference: e.ref, description: e.note, amount: e.amount, balance: account === "all" ? e.total : e.balance })),
               )
             }

@@ -329,7 +329,7 @@ class _PagerPageState extends State<_PagerPage> with AutomaticKeepAliveClientMix
 }
 
 /// Tells Scrollable.ensureVisible that the page is already in view sideways: a page scrolling one of its sections
-/// into view (Ask Kalks AI, a partner table) moves its own scroll only, never the pager. (ensureVisible asks every
+/// into view (Ask Ezymex AI, a partner table) moves its own scroll only, never the pager. (ensureVisible asks every
 /// viewport above the target, and the pager's would centre the section between two pages.)
 class _InView extends SingleChildRenderObjectWidget {
   const _InView({required this.pager, required super.child});

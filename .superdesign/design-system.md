@@ -1,7 +1,7 @@
-# Kalks Design System v2 (reference-driven)
+# Ezymex Design System v2 (reference-driven)
 
 ## 1. Product context
-Kalks is a global multi-asset broker platform (Forex, Metals, Indices, Energies, Crypto CFDs, Stocks, Prop challenges) competing with Exness, XM and Vantage. There are two surfaces:
+Ezymex is a global multi-asset broker platform (Forex, Metals, Indices, Energies, Crypto CFDs, Stocks, Prop challenges) competing with Exness, XM and Vantage. There are two surfaces:
 
 1. **Client Area (CRM):**
    - Dashboard, trading accounts (Live/Demo · Standard/Pro/Cent/ECN · Hedging/Netting), wallet (USDT-TRC20)
@@ -22,7 +22,7 @@ Premium **dark-first** trading UI:
 It must feel luxurious, cinematic and alive, but still readable and dense enough for real trading data. Not flat SaaS.
 
 ## 3. Logo
-Use the founder's real logo (files in `brand/`): the **"Kalks"** wordmark, a bold geometric rounded sans with a split angled **K** (a vertical bar with a cut top-left corner + two parallelogram strokes). White version on dark, black version on light. Never redraw or restyle the wordmark. In the 76px icon rail, use the **K glyph alone** as the mark, white on a --surface-3 rounded square with a faint ember glow.
+Use the founder's real logo (files in `brand/`): the **"Ezymex"** wordmark, a bold geometric rounded sans with a split angled **K** (a vertical bar with a cut top-left corner + two parallelogram strokes). White version on dark, black version on light. Never redraw or restyle the wordmark. In the 76px icon rail, use the **K glyph alone** as the mark, white on a --surface-3 rounded square with a faint ember glow.
 
 ## 4. Colour tokens
 
@@ -40,7 +40,7 @@ Use the founder's real logo (files in `brand/`): the **"Kalks"** wordmark, a bol
 | --text | #F5F5F7 | |
 | --text-2 | #A1A1AA | |
 | --text-3 | #63636E | labels, dimmed decimals |
-| --ember | #FF5A1F | Kalks primary: CTAs, active pill, glow |
+| --ember | #FF5A1F | Ezymex primary: CTAs, active pill, glow |
 | --ember-2 | #FF8A3D | gradient end: CTA = linear-gradient(135deg,#FF7A2F,#E8431A) |
 | --ember-soft | rgba(255,90,31,.12) | active backgrounds, chips |
 | --gold | #E9B949 | charts, premium (IB level, prop, VIP), highlights |
@@ -81,7 +81,7 @@ Scale:
   - Bottom: support, avatar, logout.
   - Hovering an icon shows a tooltip label.
 - **Top bar** (transparent over the glow):
-  - Left: KALKS wordmark or page title.
+  - Left: EZYMEX wordmark or page title.
   - Center: a **floating pill tab group** with the current module's sub-pages. E.g. Dashboard module: Overview · Accounts · Wallet · Portfolio · Analytics. The active pill is filled --surface-3 with a white icon + label and a bright top border; inactive pills are round icon-only or text-only.
   - Right: round icon buttons (search ⌘K, language flag, theme moon/sun, notifications with an ember dot), an ember "Deposit" CTA pill, and an avatar with a verified tick.
 - **Page header:** large greeting or page title + subtitle; primary CTA on the right.
@@ -107,7 +107,7 @@ Scale:
   - On the right: a percentage in bold and status pills (BUY green-outline, SELL red-outline, ● RUNNING ember-outline).
   - The last row fades out with a gradient mask.
 - **Account card:**
-  - Top: account type pill (LIVE ember / DEMO gold outline), group "Pro · Hedging", login in mono with a copy icon, server "Kalks-Live01".
+  - Top: account type pill (LIVE ember / DEMO gold outline), group "Pro · Hedging", login in mono with a copy icon, server "Ezymex-Live01".
   - Balance (big, dimmed decimals); Equity / Free margin / Margin level / Leverage in a 4-up mini grid of inner rounded rows.
   - Actions: Trade (ember pill), Deposit, Withdraw (surface pills), ⋯.
   - Credential fields in rounded inputs (Login, Investor pass, Master pass with eye toggle), as in ref 2.
@@ -147,7 +147,7 @@ Scale:
 Realistic data only:
 - Symbols: EURUSD 1.08456, XAUUSD 2,654.30, BTCUSD 63,412.00, NAS100 20,118.4.
 - Names: Arjun Mehta, Fatima Al-Sayed, Lucas Ferreira, Nguyen Thu Ha.
-- Logins like 80412337, server "Kalks-Live01", USDT TRC20 addresses TQ7x…9KfE, server time GMT+3.
+- Logins like 80412337, server "Ezymex-Live01", USDT TRC20 addresses TQ7x…9KfE, server time GMT+3.
 - Cent accounts in USC.
 
 ## 12. Fidelity constraint

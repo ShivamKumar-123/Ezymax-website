@@ -19,7 +19,7 @@ const portfolio: NsMessages<"portfolio"> = {
 
   // Statements page
   "st.title": "Relevés",
-  "st.subtitle": "Relevés PDF à l'image de Kalks et exports Excel / CSV des trades, du grand livre et des frais pour n'importe quelle période.",
+  "st.subtitle": "Relevés PDF à l'image de Ezymex et exports Excel / CSV des trades, du grand livre et des frais pour n'importe quelle période.",
   "st.format.pdf": "Relevé complet : résumé, trades, positions, grand livre",
   "st.format.xlsx": "Une feuille par section",
   "st.format.csv": "Toutes les sections dans un seul fichier",
@@ -72,7 +72,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "kpi.demo": "{count} démo",
   "alloc.title": "Répartition des fonds propres",
   "alloc.subtitle": "Comptes réels, équivalent USD",
-  "alloc.noEquity": "Vos comptes réels n'ont pas encore de fonds propres. Approvisionnez-les depuis votre portefeuille Kalks.",
+  "alloc.noEquity": "Vos comptes réels n'ont pas encore de fonds propres. Approvisionnez-les depuis votre portefeuille Ezymex.",
   "alloc.noLive": "Ouvrez un compte réel pour voir ici la répartition de vos fonds propres.",
   "accounts.subtitle": "Fonds propres et marge par compte",
   "accounts.manage": "Gérer",

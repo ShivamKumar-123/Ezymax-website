@@ -5,7 +5,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { Download, ExternalLink, Link2, Trophy } from "lucide-react";
 import { Button, Card, Chip, EmptyState, PageHeader, Skeleton, Tooltip } from "@/components/kit";
-import { tr, useT } from "@kalks/i18n/react";
+import { tr, useT } from "@ezymex/i18n/react";
 import { fmtDate, sizeLabel, usd, usePropPoll, type Certificate } from "./api";
 import { LoadError } from "./ui";
 
@@ -82,7 +82,7 @@ function CertCard({ c }: { c: Certificate }) {
             <ExternalLink className="size-3.5" />
           </IconAction>
           <Tooltip content={t("prop.verify.downloadPng")}>
-            <a href={`/verify/${c.code}/image?download=1`} download={`kalks-certificate-${c.code}.png`} aria-label={t("prop.verify.downloadPng")} className="grid size-8 place-items-center rounded-full border border-line bg-surface-2 text-fg-2 transition-colors hover:border-ember/40 hover:text-ember">
+            <a href={`/verify/${c.code}/image?download=1`} download={`ezymex-certificate-${c.code}.png`} aria-label={t("prop.verify.downloadPng")} className="grid size-8 place-items-center rounded-full border border-line bg-surface-2 text-fg-2 transition-colors hover:border-ember/40 hover:text-ember">
               <Download className="size-3.5" />
             </a>
           </Tooltip>

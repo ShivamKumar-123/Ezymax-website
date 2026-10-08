@@ -21,11 +21,11 @@ import {
   Sparkline,
   StatusChip,
   cn,
-} from "@kalks/ui";
-import { MKT_CONTESTS, MKT_LEADERBOARD, type MktContest } from "@kalks/mock/admin-growth-marketing";
+} from "@ezymex/ui";
+import { MKT_CONTESTS, MKT_LEADERBOARD, type MktContest } from "@ezymex/mock/admin-growth-marketing";
 import { ContestWizard, rankIcon } from "@/components/marketing/contest-wizard";
 import { daysFromToday, fmtDate, fmtInt, fmtK } from "@/components/marketing/kit";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveContests } from "@/components/marketing/live/contests";
 
 type F = "all" | "running" | "scheduled" | "completed";

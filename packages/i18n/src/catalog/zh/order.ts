@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader order ticket, New Order window, DOM ladder, position/pending dialogs and trade toasts.
+// Ezymex Trader order ticket, New Order window, DOM ladder, position/pending dialogs and trade toasts.
 const order: NsMessages<"order"> = {
   // Order types (ticket type switcher)
   "type.market": "市价",
@@ -269,9 +269,9 @@ const order: NsMessages<"order"> = {
 
   // Specification / About dialogs
   "spec.title": "规格 · {symbol}",
-  "about.title": "关于 Kalks Trader",
+  "about.title": "关于 Ezymex Trader",
   "about.version": "版本 {version} · 构建 {build} · Web x64",
-  "about.text": "Kalks Global Markets 的多资产交易室。报价来自 Kalks 价格网关；服务器时间为 GMT+3。",
+  "about.text": "Ezymex Global Markets 的多资产交易室。报价来自 Ezymex 价格网关；服务器时间为 GMT+3。",
 
   // Rejection reasons (MT5 journal wording)
   "reject.market_closed": "休市",

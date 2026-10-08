@@ -45,14 +45,14 @@ import {
   formatMoney,
   useQuotes,
 } from "@/components/kit";
-import { ACCOUNTS, CALENDAR, DASHBOARD, ME, NEWS, ONBOARDING, POSITIONS, WALLET, WALLET_TXS, equitySeries, freeMargin, marginLevel, positionProfit, type TradingAccount, type WalletTx } from "@kalks/mock";
-import { COPY_SUBSCRIPTIONS } from "@kalks/mock/portfolio-extra";
-import { LOYALTY } from "@kalks/mock/rewards";
+import { ACCOUNTS, CALENDAR, DASHBOARD, ME, NEWS, ONBOARDING, POSITIONS, WALLET, WALLET_TXS, equitySeries, freeMargin, marginLevel, positionProfit, type TradingAccount, type WalletTx } from "@ezymex/mock";
+import { COPY_SUBSCRIPTIONS } from "@ezymex/mock/portfolio-extra";
+import { LOYALTY } from "@ezymex/mock/rewards";
 import { AccountMenu, accountTitle } from "@/components/account-row";
 import { MoversCard } from "@/components/dashboard/movers";
 import { useSession } from "@/components/session";
 import { TERMINAL_URL } from "@/lib/live";
-import { Trans, useFormat, useT } from "@kalks/i18n/react";
+import { Trans, useFormat, useT } from "@ezymex/i18n/react";
 import { AccountsPanel, type CardAccount } from "@/components/dashboard/home/accounts-panel";
 import { BalancePanel, QuickActions } from "@/components/dashboard/home/balance-panel";
 import { ActivityTabs, ChecklistCard, type ListRowItem } from "@/components/dashboard/home/list-cards";
@@ -61,9 +61,9 @@ import { OverviewLayout, SectionTitle } from "@/components/dashboard/home/overvi
 import { RANGE_DAYS, StatisticCard, type StatMode, type StatRange } from "@/components/dashboard/home/statistic-card";
 import type { TrendPoint } from "@/components/dashboard/home/trend-chart";
 import { AiFacts, AiLink, AskAi, type AiChip } from "@/components/ai/ask-ai";
-import { botAnswer } from "@kalks/mock/support-extra";
+import { botAnswer } from "@ezymex/mock/support-extra";
 
-/** Demo answers for Ask Kalks AI (sample data; live builds ask the real support bot). */
+/** Demo answers for Ask Ezymex AI (sample data; live builds ask the real support bot). */
 function demoAnswer(q: string, chip?: string): string {
   const live = ACCOUNTS.filter((a) => a.type === "live" && !a.cent);
   const free = live.reduce((s, a) => s + freeMargin(a), 0);
@@ -191,7 +191,7 @@ function DemoOverview() {
     })),
   ];
   const linkedRows: ListRowItem[] = [
-    { key: "trader", icon: <CandlestickChart />, tone: "accent", title: "Kalks Trader", sub: t("dashboard.trader.chip"), action: { label: t("common.open"), href: TERMINAL_URL, external: true } },
+    { key: "trader", icon: <CandlestickChart />, tone: "accent", title: "Ezymex Trader", sub: t("dashboard.trader.chip"), action: { label: t("common.open"), href: TERMINAL_URL, external: true } },
     { key: "ib", icon: <Award />, tone: "amber", title: t("shell.nav.partner"), sub: ME.ibLevelName, status: { label: t("common.active"), tone: "ember" } },
     { key: "copy", icon: <Copy />, tone: "pink", title: t("shell.nav.copyTrading"), sub: t("dashboard.home.subscriptions", { count: COPY_SUBSCRIPTIONS.length }), status: { label: t("common.active"), tone: "ember" } },
     { key: "loyalty", icon: <Gift />, tone: "lavender", title: t("shell.nav.loyalty"), sub: t("dashboard.home.points", { points: LOYALTY.balance.toLocaleString("en-US") }), action: { label: t("dashboard.home.redeem"), href: "/rewards/loyalty" } },
@@ -313,7 +313,7 @@ function DemoOverview() {
           title={t("dashboard.home.quickActions")}
           items={[
             { key: "transfer", label: t("common.transfer"), href: "/wallet/transfer", icon: <ArrowLeftRight className="rtl:-scale-x-100" />, tone: "lavender" },
-            { key: "trader", label: "Kalks Trader", href: TERMINAL_URL, icon: <CandlestickChart />, tone: "accent", external: true },
+            { key: "trader", label: "Ezymex Trader", href: TERMINAL_URL, icon: <CandlestickChart />, tone: "accent", external: true },
             { key: "copy", label: t("shell.nav.copyTrading"), href: "/social", icon: <Copy />, tone: "pink" },
             { key: "support", label: t("shell.nav.support"), href: "/support", icon: <LifeBuoy />, tone: "amber" },
           ]}
@@ -577,7 +577,7 @@ function PartnerBanner() {
           </Chip>
           <h3 className="k-display text-[22px] font-bold tracking-[-0.02em] sm:text-2xl">{t("dashboard.partner.title")}</h3>
           <p className="mt-2 text-sm text-fg-2">
-            <Trans k="dashboard.partner.text" vars={{ url: `kalks.com/r/${me.referral_code}` }} tags={{ link: (c) => <span className="font-mono text-fg" dir="ltr">{c}</span> }} />
+            <Trans k="dashboard.partner.text" vars={{ url: `ezymex.com/r/${me.referral_code}` }} tags={{ link: (c) => <span className="font-mono text-fg" dir="ltr">{c}</span> }} />
           </p>
         </div>
         <div className="flex items-center gap-4">

@@ -1,14 +1,14 @@
 "use client";
 
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveAudit } from "@/components/live/audit";
 
 import * as React from "react";
 import { toast } from "sonner";
 import { Activity, BadgeDollarSign, Download, FileDown, Settings2, SlidersHorizontal } from "lucide-react";
-import { Avatar, Button, Card, CardHeader, Chip, KpiCard, PageHeader, Reveal, cn } from "@kalks/ui";
-import { PEOPLE } from "@kalks/mock";
-import { SEC_AUDIT, orgEmployee } from "@kalks/mock/admin-platform-security";
+import { Avatar, Button, Card, CardHeader, Chip, KpiCard, PageHeader, Reveal, cn } from "@ezymex/ui";
+import { PEOPLE } from "@ezymex/mock";
+import { SEC_AUDIT, orgEmployee } from "@ezymex/mock/admin-platform-security";
 import { AuditLog } from "@/components/security/audit-log";
 import { ChainCard } from "@/components/security/chain-card";
 

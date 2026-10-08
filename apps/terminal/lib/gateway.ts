@@ -1,4 +1,4 @@
-// Server-only helpers for the Kalks gateway (services/gateway). The browser never talks to the gateway:
+// Server-only helpers for the Ezymex gateway (services/gateway). The browser never talks to the gateway:
 // route handlers under /api/shares and the public share page call it with the internal token.
 import { NextResponse, type NextRequest } from "next/server";
 import { requestHost } from "@/lib/tenant-host";
@@ -12,14 +12,14 @@ export async function gateway<T = Record<string, unknown>>(
   path: string,
   init: { method?: "GET" | "POST" | "PATCH"; body?: unknown; ip?: string | null; userAgent?: string | null; shareKey?: string | null; host?: string | null } = {},
 ): Promise<GatewayResult<T>> {
-  const headers: Record<string, string> = { "x-kalks-internal": INTERNAL_TOKEN, "x-kalks-tenant": "kalks" };
+  const headers: Record<string, string> = { "x-ezymex-internal": INTERNAL_TOKEN, "x-ezymex-tenant": "ezymex" };
   if (init.body !== undefined) headers["content-type"] = "application/json";
   if (init.ip) headers["x-forwarded-for"] = init.ip;
   if (init.userAgent) headers["user-agent"] = init.userAgent.slice(0, 400);
   if (init.shareKey) headers["x-share-key"] = init.shareKey;
   // the broker (tenant) is resolved by the gateway from the visitor's host (tenant_domains)
   const host = init.host ?? (await requestHost());
-  if (host) headers["x-kalks-host"] = host;
+  if (host) headers["x-ezymex-host"] = host;
   try {
     const res = await fetch(`${GATEWAY_URL}${path}`, {
       method: init.method ?? (init.body !== undefined ? "POST" : "GET"),

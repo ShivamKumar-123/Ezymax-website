@@ -23,11 +23,11 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Button, Card, CardHeader, Chip, Flag, Icon3D, Money, PageHeader, Reveal, Segmented, Starfield, cn, formatMoney } from "@/components/kit";
-import { WALLET } from "@kalks/mock";
-import { BANNED_STRATEGIES, PROP_FAQ, PROP_MODELS, PROP_SIZES, PROP_STATS, RECENT_PAYOUTS, type PropModelId, type PropSize } from "@kalks/mock/prop";
+import { WALLET } from "@ezymex/mock";
+import { BANNED_STRATEGIES, PROP_FAQ, PROP_MODELS, PROP_SIZES, PROP_STATS, RECENT_PAYOUTS, type PropModelId, type PropSize } from "@ezymex/mock/prop";
 import { BuyChallengeDialog } from "@/components/prop/buy-dialog";
 import { Accordion, CountUp } from "@/components/prop/prop-ui";
-import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LivePropStore } from "@/components/prop-live/catalogue";
 
 const MODEL_ICON: Record<PropModelId, React.ReactNode> = {
@@ -51,7 +51,7 @@ function Hero() {
       <div className="relative grid grid-cols-1 gap-6 p-6 sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center">
         <div className="max-w-2xl">
           <Chip tone="gold" className="mb-4">
-            <Sparkles className="size-3.5" /> Kalks Prop · simulated capital, real payouts
+            <Sparkles className="size-3.5" /> Ezymex Prop · simulated capital, real payouts
           </Chip>
           <h2 className="text-[28px] font-medium leading-[1.1] tracking-[-0.02em] sm:text-[40px]">
             Trade up to <span className="bg-gradient-to-r from-[color-mix(in_oklab,var(--k-ember)_55%,#fff)] to-[var(--k-ember)] bg-clip-text text-transparent">$200,000</span>.
@@ -214,7 +214,7 @@ function Configurator({ modelId, setModelId, size, setSize }: { modelId: PropMod
           <div className="k-label mb-2.5">Included with every challenge</div>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {[
-              { n: "chart_increasing", t: "MT5 + Kalks WebTrader", d: "Forex, metals, indices & crypto CFDs" },
+              { n: "chart_increasing", t: "MT5 + Ezymex WebTrader", d: "Forex, metals, indices & crypto CFDs" },
               { n: "shield", t: "Live rules dashboard", d: "Countdown, warnings & breach reports" },
               { n: "robot", t: "EAs & AI Coach", d: "Automate your edge, get daily feedback" },
               { n: "money_with_wings", t: "Payouts to your wallet", d: "USDT on TRC20, approved in ~7h" },

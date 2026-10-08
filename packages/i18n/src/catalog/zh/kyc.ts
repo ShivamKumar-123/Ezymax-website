@@ -193,7 +193,7 @@ const kyc: NsMessages<"kyc"> = {
   "review.missing": "缺失",
   "review.flagged": "已标记待审核",
   "review.passed": "检查通过",
-  "review.consent": "我确认上述文件真实有效且属于本人（或属于公司及其高级职员），并同意 Kalks 进行身份及反洗钱（AML）筛查。",
+  "review.consent": "我确认上述文件真实有效且属于本人（或属于公司及其高级职员），并同意 Ezymex 进行身份及反洗钱（AML）筛查。",
 
   // More information requested by the review team
   "moreInfo.title": "我们还需要您补充一些资料",
@@ -357,7 +357,7 @@ const kyc: NsMessages<"kyc"> = {
   // Client-side fallback errors
   "error.sessionEnded": "您的会话已结束。",
   "error.generic": "出错了，请重试。",
-  "error.network": "无法连接到 Kalks。请检查您的网络连接后重试。",
+  "error.network": "无法连接到 Ezymex。请检查您的网络连接后重试。",
   "error.uploadFailed": "上传失败，请重试。",
   "error.uploadInterrupted": "上传中断。请检查您的网络连接后重试。",
 

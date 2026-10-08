@@ -3,8 +3,8 @@
 import * as React from "react";
 import { ArrowUpRight, Calculator, Check, Clock, Info, Loader2, Lock, Sparkles, Ticket } from "lucide-react";
 import { toast } from "sonner";
-import type { MessageKey } from "@kalks/i18n";
-import { Trans, useT } from "@kalks/i18n/react";
+import type { MessageKey } from "@ezymex/i18n";
+import { Trans, useT } from "@ezymex/i18n/react";
 import { Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, DialogClose, Icon3D, Input, KeyValue, MiniBars, PageHeader, Reveal, Segmented, cn, type Column } from "@/components/kit";
 import { BannerSlot } from "./banner-slot";
 import {
@@ -520,7 +520,7 @@ function PointsHistory({ version }: { version: number }) {
           rowKey={(x) => String(x.id)}
           search={(x) => `${x.description} ${x.login ?? ""}`}
           searchPlaceholder={t("rewards.history.search")}
-          exportName="kalks-points-history"
+          exportName="ezymex-points-history"
           toolbar={
             <Segmented<KindFilter>
               size="xs"

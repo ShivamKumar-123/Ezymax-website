@@ -23,10 +23,10 @@ import {
   formatMoney,
   type Column,
 } from "@/components/kit";
-import { WALLET } from "@kalks/mock";
-import { PARTNER, PAYOUT_BATCHES, PAYOUT_SCHEDULE, type PayoutBatch } from "@kalks/mock/partner";
+import { WALLET } from "@ezymex/mock";
+import { PARTNER, PAYOUT_BATCHES, PAYOUT_SCHEDULE, type PayoutBatch } from "@ezymex/mock/partner";
 import { fmtDT } from "@/components/partner/partner-bits";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LivePartnerPayouts } from "@/components/partner/live/payouts";
 
 function useCountdown(target: string) {
@@ -121,7 +121,7 @@ function WalletNote() {
   const usdt = WALLET.assets[0]!;
   return (
     <Card className="flex h-full flex-col">
-      <CardHeader title="Where payouts go" subtitle="Straight to your Kalks wallet" icon={<Wallet />} />
+      <CardHeader title="Where payouts go" subtitle="Straight to your Ezymex wallet" icon={<Wallet />} />
       <div className="flex flex-1 flex-col gap-4 px-4 pb-5 pt-4 sm:px-6">
         <div className="k-row flex items-center gap-3 px-4 py-3">
           <img src="/assets/coins/usdt.svg" alt="USDT" className="size-9 rounded-full" />
@@ -267,7 +267,7 @@ function DemoPartnerPayoutsPage() {
         title="Payouts"
         subtitle="Commission is paid weekly in batches, after admin approval, into your wallet."
         actions={
-          <Button variant="surface" size="lg" onClick={() => toast.success("Payout statement generated", { description: "kalks-ib-payouts-2026.pdf" })}>
+          <Button variant="surface" size="lg" onClick={() => toast.success("Payout statement generated", { description: "ezymex-ib-payouts-2026.pdf" })}>
             <FileText /> Annual statement
           </Button>
         }
@@ -302,7 +302,7 @@ function DemoPartnerPayoutsPage() {
         <Card>
           <CardHeader title="Batch history" subtitle="Every weekly batch and where it was credited" />
           <div className="px-4 pb-5 pt-4 sm:px-6">
-            <DataTable columns={columns} rows={PAYOUT_BATCHES} rowKey={(b) => b.id} pageSize={10} exportName="kalks-ib-payouts" />
+            <DataTable columns={columns} rows={PAYOUT_BATCHES} rowKey={(b) => b.id} pageSize={10} exportName="ezymex-ib-payouts" />
           </div>
         </Card>
       </Reveal>

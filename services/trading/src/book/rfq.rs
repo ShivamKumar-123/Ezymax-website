@@ -2,7 +2,7 @@
 //!
 //! 1. **Request** `{legs[{series, side, ratio}], qty, reduceOnly?}`: 1–8 listed vanilla series of ONE underlying,
 //!    each once, whole ratios; it lives 30 s. Responders see it without its side.
-//! 2. **Quote**: the Kalks market maker always answers (`mm::rfq_price`): net bid / ask per combo unit from the
+//! 2. **Quote**: the Ezymex market maker always answers (`mm::rfq_price`): net bid / ask per combo unit from the
 //!    summed theos ± a combo spread, firm for the underlying's `rfqQuoteTtlSecs` (5 s). It reserves for its worst
 //!    side (`rfq_hold`), then the quote is journaled (`Cmd::RfqQuote`). A lapsed quote is replaced on the next read.
 //! 3. **Accept** `{quoteId, side, limitNet}`: the requester's legs go through `enter` (gates, limits, a reservation
@@ -11,7 +11,7 @@
 //!    (`matching::rfq_split`). Each account gets ONE outbox item holding all its legs (atomic per account). The
 //!    tape shows the legs (kind `rfq`, same combo id) plus one `combo` print; outright books are not touched.
 //!
-//! Barrier legs are not listed: a strategy with a barrier leg is Kalks-quoted through the house ticket.
+//! Barrier legs are not listed: a strategy with a barrier leg is Ezymex-quoted through the house ticket.
 //! External responders (`rfq_responders`) come later: best price wins, ties go to the earliest quote.
 
 use chrono::DateTime;
@@ -29,7 +29,7 @@ use crate::shard::{ExecError, Hub};
 /// An RFQ is open this long.
 pub const RFQ_LIFE_MS: i64 = 30_000;
 pub const MAX_LEGS: usize = 8;
-pub const RESPONDER_MM: &str = "kalks-mm";
+pub const RESPONDER_MM: &str = "ezymex-mm";
 
 #[derive(Clone, Debug)]
 pub struct Leg {
@@ -150,11 +150,11 @@ pub async fn open(hub: &Hub, pool: &sqlx::PgPool, tenant_id: i64, kind: AccountK
             return Err(RfqError::Code("validation", "Ratios are whole numbers from 1 to 100".into()));
         }
     }
-    let snap = crate::options::OptionPricing::snapshot(hub.shared.options.as_ref()).ok_or_else(|| RfqError::Code("options_disabled", "Kalks FX Options are not available right now".into()))?;
+    let snap = crate::options::OptionPricing::snapshot(hub.shared.options.as_ref()).ok_or_else(|| RfqError::Code("options_disabled", "Ezymex FX Options are not available right now".into()))?;
     let mut legs = Vec::new();
     for (series, side, ratio) in legs_in {
         if snap.series.get(&series).is_none() && series.split('-').count() > 4 {
-            return Err(RfqError::Code("kalks_quoted", format!("{series} is a barrier: barrier strategies are Kalks-quoted (not order book), use the strategy ticket")));
+            return Err(RfqError::Code("ezymex_quoted", format!("{series} is a barrier: barrier strategies are Ezymex-quoted (not order book), use the strategy ticket")));
         }
         let (terms, u) = ob::terms_of(&snap, &series).map_err(|r| RfqError::Code(r.code, r.message))?;
         let (tick, step) = ob::units(&u);
@@ -227,7 +227,7 @@ pub async fn refresh(hub: &Hub, id: i64) -> Option<Rfq> {
     Some(r)
 }
 
-/// The Kalks market maker's firm quote on `r`: priced, held on its account, journaled in the book.
+/// The Ezymex market maker's firm quote on `r`: priced, held on its account, journaled in the book.
 async fn mm_quote(hub: &Hub, r: &Rfq) -> Result<QuoteView, String> {
     let books = &hub.shared.books;
     let login = books.mm.login(r.tenant_id, r.kind).ok_or("The market maker is not running")?;

@@ -1,14 +1,14 @@
 "use client";
 
 /*
- * Kalks Trader design-system pieces (docs/TERMINAL-DESIGN.md §2.4). Desktop and phone layouts share them: sizes are
+ * Ezymex Trader design-system pieces (docs/TERMINAL-DESIGN.md §2.4). Desktop and phone layouts share them: sizes are
  * props, never breakpoints. Older dense primitives (TButton, TIcon, Stepper…) stay in primitives.tsx.
  */
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { CircleHelp, Minus, Plus } from "lucide-react";
-import { cn } from "@kalks/ui";
-import { useLocale, useT } from "@kalks/i18n/react";
+import { cn } from "@ezymex/ui";
+import { useLocale, useT } from "@ezymex/i18n/react";
 
 /* ------------------------------------------------------------------ */
 /* Tooltip                                                             */

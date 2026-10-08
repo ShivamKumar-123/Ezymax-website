@@ -8,10 +8,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/app.dart';
-import 'package:kalks/core/api/api_providers.dart';
-import 'package:kalks/preview/c1/preview_portfolio.dart';
-import 'package:kalks/router/router.dart';
+import 'package:ezymex/app.dart';
+import 'package:ezymex/core/api/api_providers.dart';
+import 'package:ezymex/preview/c1/preview_portfolio.dart';
+import 'package:ezymex/router/router.dart';
 
 import '../test/helpers/test_app.dart';
 import 'shots.dart';
@@ -70,7 +70,7 @@ Future<void> _shot(
       if ((pos.pixels - scroll.clamp(0, pos.maxScrollExtent)).abs() < 1) break;
     }
   }
-  await expectLater(find.byType(KalksApp), matchesGoldenFile(Uri.file('$shotsDir/$name.png')));
+  await expectLater(find.byType(EzymexApp), matchesGoldenFile(Uri.file('$shotsDir/$name.png')));
   await unmount(tester);
 }
 

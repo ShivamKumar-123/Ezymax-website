@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Keep brand and network names as they are: Kalks, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
+// Keep brand and network names as they are: Ezymex, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
 // MetaMask, TronLink, Tronscan, USD, USC, KYC.
 const wallet: NsMessages<"wallet"> = {
   // Shared labels
@@ -389,17 +389,17 @@ const wallet: NsMessages<"wallet"> = {
   "demo.linkCopied": "Lien copié dans le presse-papiers",
   "demo.sendOnlyWarning": "<b>Envoyez uniquement des USDT via TRON (TRC20).</b> L'envoi de tout autre jeton, ou l'utilisation d'ERC20 / BEP20, entraînera une perte définitive des fonds.",
   "demo.arrival": "Arrivée",
-  "demo.kalksFee": "Frais Kalks",
+  "demo.ezymexFee": "Frais Ezymex",
   "demo.noKycDeposit": "Aucun KYC requis pour déposer. La vérification n'est requise qu'avant votre premier retrait.",
   // Withdraw
   "demo.addrStartT": "Les adresses TRC20 commencent par « T »",
   "demo.addrLength": "Doit comporter 34 caractères ({length}/34)",
   "demo.addrChars": "Contient des caractères invalides (0, O, I, l ne sont pas autorisés)",
-  "demo.addrOwn": "Il s'agit de votre propre adresse de dépôt Kalks",
+  "demo.addrOwn": "Il s'agit de votre propre adresse de dépôt Ezymex",
   "demo.justNow": "À l'instant",
   "demo.codeConfirmed": "Code confirmé via {email}",
   "demo.financeReviews": "L'équipe financière examine chaque retrait · généralement en moins de 2 heures",
-  "demo.sentFromHot": "Envoyé depuis le hot wallet Kalks après approbation",
+  "demo.sentFromHot": "Envoyé depuis le hot wallet Ezymex après approbation",
   "demo.arriveAfter": "Les fonds arrivent à votre adresse après 20 confirmations",
   "demo.pendingTitle": "Retraits en attente",
   "demo.awaitingCompletion": "{count} en attente de finalisation",
@@ -458,7 +458,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.alwaysReviewed": "Toujours examiné par l'équipe financière",
   "demo.unrecoverable": "Les retraits vers des plateformes d'échange ne prenant pas en charge les USDT TRC20, ou vers des adresses de smart contract, ne peuvent pas être récupérés.",
   // Transfer
-  "demo.kalksWallet": "Portefeuille Kalks",
+  "demo.ezymexWallet": "Portefeuille Ezymex",
   "demo.freeMargin": "Marge libre",
   "demo.assetAvailable": "{amount} {asset} disponibles · {network}",
   "demo.throughWallet": "Les transferts passent toujours par votre portefeuille.",
@@ -493,7 +493,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.rule4Title": "Marge libre protégée",
   "demo.rule4Text": "Vous ne pouvez transférer que ce que votre marge libre permet, afin de protéger vos trades ouverts.",
   "demo.into": "vers",
-  "demo.intoKalksWallet": "vers votre portefeuille Kalks",
+  "demo.intoEzymexWallet": "vers votre portefeuille Ezymex",
   "demo.freeMarginAfter": "Marge libre après",
   "demo.marginLevelAfter": "Niveau de marge après",
   "demo.convertedNote": "{asset} est converti en USD au taux en direct moins {markup} % de marge. Le taux est actualisé à chaque tick jusqu'à votre confirmation.",

@@ -4,7 +4,7 @@ import { sameOrigin, sessionUser } from "@/lib/trading";
 
 // Partner (IB programme) BFF. Browser -> /api/partner/<route> (same origin) -> IB service /v1/ib/me/…
 // The client is resolved from the HttpOnly gateway session cookie; the IB service gets that user id in
-// X-Kalks-User-Id. A user id sent by the browser is never used. Mutations must be same-origin JSON.
+// X-Ezymex-User-Id. A user id sent by the browser is never used. Mutations must be same-origin JSON.
 //
 //   GET   (root)                     dashboard: member, level + progress, earnings, funnel, series, top clients, recent
 //                                    + linkBase (this app's public origin, for referral links)

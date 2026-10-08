@@ -1,5 +1,5 @@
-//! HTTP API on 127.0.0.1:8101. Every route except `GET /health` needs `X-Kalks-Internal: $GROWTH_INTERNAL_TOKEN`.
-//! Client routes take the signed-in gateway user in `X-Kalks-User-Id` plus segment headers (country, KYC,
+//! HTTP API on 127.0.0.1:8101. Every route except `GET /health` needs `X-Ezymex-Internal: $GROWTH_INTERNAL_TOKEN`.
+//! Client routes take the signed-in gateway user in `X-Ezymex-User-Id` plus segment headers (country, KYC,
 //! sign-up time, name, referral code) the Client Area BFF reads from the gateway session; admin routes take the
 //! staff identity headers the admin BFF verified with the gateway.
 
@@ -107,7 +107,7 @@ async fn health(State(st): State<AppState>) -> impl IntoResponse {
 async fn internal_only(State(st): State<AppState>, req: Request, next: Next) -> Response {
     let expected = st.cfg.internal_token.as_bytes();
     if !expected.is_empty() {
-        let got = req.headers().get("x-kalks-internal").map(|v| v.as_bytes()).unwrap_or_default();
+        let got = req.headers().get("x-ezymex-internal").map(|v| v.as_bytes()).unwrap_or_default();
         if got.len() != expected.len() || !bool::from(got.ct_eq(expected)) {
             return ApiError::Forbidden("Missing or wrong internal token.".into()).into_response();
         }
@@ -120,7 +120,7 @@ fn header(parts: &Parts, name: &str) -> Option<String> {
 }
 
 fn tenant_of(parts: &Parts) -> ApiResult<String> {
-    let t = header(parts, "x-kalks-tenant").unwrap_or_else(|| "kalks".into()).to_lowercase();
+    let t = header(parts, "x-ezymex-tenant").unwrap_or_else(|| "ezymex".into()).to_lowercase();
     if t.len() > 40 || !t.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_') {
         return Err(ApiError::BadRequest("Invalid tenant.".into()));
     }
@@ -147,9 +147,9 @@ pub struct UserCtx {
 impl<S: Send + Sync> FromRequestParts<S> for UserCtx {
     type Rejection = ApiError;
     async fn from_request_parts(parts: &mut Parts, _: &S) -> Result<Self, Self::Rejection> {
-        let user_id = header(parts, "x-kalks-user-id").and_then(|v| v.parse::<i64>().ok()).filter(|v| *v > 0).ok_or(ApiError::Unauthorized)?;
+        let user_id = header(parts, "x-ezymex-user-id").and_then(|v| v.parse::<i64>().ok()).filter(|v| *v > 0).ok_or(ApiError::Unauthorized)?;
         let clip = |v: String, n: usize| -> String { v.chars().take(n).collect() };
-        let name = header(parts, "x-kalks-name").map(|n| clip(percent_decode(&n), 80));
+        let name = header(parts, "x-ezymex-name").map(|n| clip(percent_decode(&n), 80));
         let (first, last) = match name.as_deref().map(str::trim) {
             Some(n) if !n.is_empty() => match n.split_once(' ') {
                 Some((f, l)) => (Some(f.to_string()), Some(l.trim().to_string())),
@@ -158,12 +158,12 @@ impl<S: Send + Sync> FromRequestParts<S> for UserCtx {
             _ => (None, None),
         };
         let hints = Hints {
-            country: header(parts, "x-kalks-country").filter(|c| c.len() == 2 && c.chars().all(|x| x.is_ascii_alphabetic())),
-            kyc: header(parts, "x-kalks-kyc").filter(|k| matches!(k.as_str(), "unverified" | "pending" | "verified" | "rejected")),
-            created_at: header(parts, "x-kalks-created-at").and_then(|t| chrono::DateTime::parse_from_rfc3339(&t).ok()).map(|t| t.with_timezone(&chrono::Utc)),
+            country: header(parts, "x-ezymex-country").filter(|c| c.len() == 2 && c.chars().all(|x| x.is_ascii_alphabetic())),
+            kyc: header(parts, "x-ezymex-kyc").filter(|k| matches!(k.as_str(), "unverified" | "pending" | "verified" | "rejected")),
+            created_at: header(parts, "x-ezymex-created-at").and_then(|t| chrono::DateTime::parse_from_rfc3339(&t).ok()).map(|t| t.with_timezone(&chrono::Utc)),
             first_name: first,
             last_name: last,
-            referral_code: header(parts, "x-kalks-referral-code").filter(|c| c.len() <= 24 && c.chars().all(|x| x.is_ascii_alphanumeric())),
+            referral_code: header(parts, "x-ezymex-referral-code").filter(|c| c.len() <= 24 && c.chars().all(|x| x.is_ascii_alphanumeric())),
         };
         Ok(UserCtx { tenant: tenant_of(parts)?, user_id, hints })
     }
@@ -175,7 +175,7 @@ pub struct StaffCtx {
     pub id: String,
     pub name: String,
     pub role: String,
-    /// `marketing.*` permissions the admin BFF resolved from the gateway RBAC (`X-Kalks-Staff-Perms`). When
+    /// `marketing.*` permissions the admin BFF resolved from the gateway RBAC (`X-Ezymex-Staff-Perms`). When
     /// present they decide; the role lists are the fallback.
     pub perms: Option<Vec<String>>,
 }
@@ -228,13 +228,13 @@ fn percent_decode(s: &str) -> String {
 impl<S: Send + Sync> FromRequestParts<S> for StaffCtx {
     type Rejection = ApiError;
     async fn from_request_parts(parts: &mut Parts, _: &S) -> Result<Self, Self::Rejection> {
-        let id = header(parts, "x-kalks-staff-id").ok_or(ApiError::Unauthorized)?;
-        let role = header(parts, "x-kalks-staff-role").ok_or(ApiError::Unauthorized)?;
+        let id = header(parts, "x-ezymex-staff-id").ok_or(ApiError::Unauthorized)?;
+        let role = header(parts, "x-ezymex-staff-role").ok_or(ApiError::Unauthorized)?;
         if id.len() > 64 || role.len() > 32 {
             return Err(ApiError::BadRequest("Invalid staff headers.".into()));
         }
-        let name = header(parts, "x-kalks-staff-name").map(|n| percent_decode(&n)).unwrap_or_else(|| format!("Staff {id}"));
-        let perms = header(parts, "x-kalks-staff-perms").map(|p| p.split(',').map(|x| x.trim().to_string()).filter(|x| x.starts_with("marketing.")).collect());
+        let name = header(parts, "x-ezymex-staff-name").map(|n| percent_decode(&n)).unwrap_or_else(|| format!("Staff {id}"));
+        let perms = header(parts, "x-ezymex-staff-perms").map(|p| p.split(',').map(|x| x.trim().to_string()).filter(|x| x.starts_with("marketing.")).collect());
         Ok(StaffCtx { tenant: tenant_of(parts)?, id, name: name.chars().take(80).collect(), role, perms })
     }
 }

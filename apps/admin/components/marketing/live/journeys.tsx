@@ -3,7 +3,7 @@
 import * as React from "react";
 import { ArrowDown, ArrowUp, Bell, Clock, GitBranch, Mail, Pause, Play, Plus, RefreshCw, Send, Trash2, Users, Workflow } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, DataTable, IconButton, KpiCard, PageHeader, Reveal, Tabs, cn, type ChipTone, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, IconButton, KpiCard, PageHeader, Reveal, Tabs, cn, type ChipTone, type Column } from "@ezymex/ui";
 import { FilterSelect, Pager, TableSkeleton, qs, useApi, when } from "@/components/live/kit";
 import { M, mkSend } from "./api";
 import { AreaF, ClientCell, EmptyNote, FormDialog, FormSection, MkError, NumF, ReadOnlyNote, SelectF, TextF, Tile, int, useAction, usePerms } from "./kit";

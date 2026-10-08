@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Вкладка AI Trader в Kalks Trader: описание стратегии, список, карточка стратегии, журнал и окно активации.
+// Вкладка AI Trader в Ezymex Trader: описание стратегии, список, карточка стратегии, журнал и окно активации.
 const aiTrader: NsMessages<"aiTrader"> = {
   // Заголовок вкладки
   strategies: "Стратегии",

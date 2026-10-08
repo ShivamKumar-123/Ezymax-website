@@ -53,7 +53,7 @@ fn disclosure_v2_is_short_up_front_and_the_demo_copy_matches() {
     assert!(demo.contains(body), "demo.ts: the disclosure differs from migration 20261002190000");
     let (key_points, full) = body.split_once("\n\n## Full terms\n").expect("a key-points paragraph, then ## Full terms");
     assert!(!key_points.contains('\n') && key_points.len() < 600, "the key points stay one short paragraph");
-    for must in ["the most you can lose is what you pay", "you can lose more than you receive", "uses margin", "Kalks order book", "settle in cash at expiry"] {
+    for must in ["the most you can lose is what you pay", "you can lose more than you receive", "uses margin", "Ezymex order book", "settle in cash at expiry"] {
         assert!(key_points.contains(must), "key points must say: {must}");
     }
     for calm in ["high level of risk", "complex instruments", "WARNING"] {
@@ -144,7 +144,7 @@ fn eligible_needs_only_the_disclosure() {
 // ---------- flows ----------
 
 fn ctx(bearer: Option<&str>) -> Ctx {
-    Ctx { ip: "203.0.113.40".into(), user_agent: "Mozilla/5.0 (Macintosh) Chrome/131".into(), device: Some("device-suitability-aaaa".into()), tenant_slug: "kalks".into(), bearer: bearer.map(str::to_string) }
+    Ctx { ip: "203.0.113.40".into(), user_agent: "Mozilla/5.0 (Macintosh) Chrome/131".into(), device: Some("device-suitability-aaaa".into()), tenant_slug: "ezymex".into(), bearer: bearer.map(str::to_string) }
 }
 
 async fn user(db: &TestDb, tenant: i64, email: &str) -> i64 {
@@ -190,7 +190,7 @@ async fn check(db: &TestDb, uid: i64, headers: &[(&'static str, &'static str)], 
 #[tokio::test]
 async fn onboarding_flow_needs_only_the_disclosure() {
     let Some(db) = TestDb::new("suitability flow").await else { return };
-    let uid = user(&db, 1, "arjun@kalks.test").await;
+    let uid = user(&db, 1, "arjun@ezymex.test").await;
     let tok = session(&db, 1, uid).await;
 
     // a fresh client: v2 of the options disclosure (key points, then the full terms), only the disclosure to do
@@ -199,9 +199,9 @@ async fn onboarding_flow_needs_only_the_disclosure() {
     assert_eq!(v["kycVerified"], false);
     assert_eq!(v["kycStatus"], "unverified");
     assert_eq!(v["disclosure"]["version"], 2);
-    assert_eq!(v["disclosure"]["title"], "Kalks FX Options: key points and terms");
+    assert_eq!(v["disclosure"]["title"], "Ezymex FX Options: key points and terms");
     let body = v["disclosure"]["bodyMd"].as_str().unwrap();
-    for must in ["the most you can lose is what you pay", "## Full terms", "lose the whole premium", "knock-out option is cancelled", "30 minutes before the cut", "Kalks order book"] {
+    for must in ["the most you can lose is what you pay", "## Full terms", "lose the whole premium", "knock-out option is cancelled", "30 minutes before the cut", "Ezymex order book"] {
         assert!(body.contains(must), "disclosure must say: {must}");
     }
     assert!(!body.starts_with('\n') && !body.ends_with('\n'));
@@ -267,7 +267,7 @@ async fn onboarding_flow_needs_only_the_disclosure() {
     assert_eq!(db.count("SELECT count(*) FROM audit_log WHERE actor_id = $1 AND action LIKE 'suitability.quiz_%'", uid).await, 3);
 
     // a new disclosure version doesn't undo the acceptance; accepting it records the newer version
-    sqlx::query("INSERT INTO disclosures (tenant_id, product, version, title, body_md) VALUES (1, 'options', 3, 'Kalks FX Options: key points and terms (v3)', $1)")
+    sqlx::query("INSERT INTO disclosures (tenant_id, product, version, title, body_md) VALUES (1, 'options', 3, 'Ezymex FX Options: key points and terms (v3)', $1)")
         .bind("Updated text. ".repeat(10))
         .execute(&db.st.pool)
         .await
@@ -290,7 +290,7 @@ async fn onboarding_flow_needs_only_the_disclosure() {
     assert_eq!(get_state(&db, &tok).await["disclosure"]["version"], 3);
 
     // a client who accepted v1 before v2 was published stays eligible
-    let early = user(&db, 1, "early@kalks.test").await;
+    let early = user(&db, 1, "early@ezymex.test").await;
     sqlx::query("INSERT INTO suitability (tenant_id, user_id, product, disclosure_version, accepted_at) VALUES (1, $1, 'options', 1, now() - interval '1 hour')")
         .bind(early)
         .execute(&db.st.pool)
@@ -300,7 +300,7 @@ async fn onboarding_flow_needs_only_the_disclosure() {
     assert_eq!((c["eligible"].as_bool(), c["acceptedVersion"].as_i64(), c["missing"].clone()), (Some(true), Some(1), json!([])));
 
     // the self-test works before the disclosure too, and never makes a client eligible on its own
-    let quizzer = user(&db, 1, "quiz-first@kalks.test").await;
+    let quizzer = user(&db, 1, "quiz-first@ezymex.test").await;
     let qtok = session(&db, 1, quizzer).await;
     let r = take_quiz(&db, &qtok, answers(10)).await.unwrap();
     assert_eq!((r["passed"].as_bool(), r["quizPassed"].as_bool(), r["eligible"].as_bool()), (Some(true), Some(true), Some(false)));
@@ -320,7 +320,7 @@ async fn onboarding_flow_needs_only_the_disclosure() {
 #[tokio::test]
 async fn view_only_logins_can_read_but_not_attest() {
     let Some(db) = TestDb::new("suitability viewer").await else { return };
-    let uid = user(&db, 1, "owner@kalks.test").await;
+    let uid = user(&db, 1, "owner@ezymex.test").await;
     let vid: i64 = sqlx::query_scalar("INSERT INTO client_viewers (tenant_id, user_id, label, username, password_hash) VALUES (1, $1, 'Accountant', 'acct-view', 'x') RETURNING id")
         .bind(uid)
         .fetch_one(&db.st.pool)
@@ -338,7 +338,7 @@ async fn view_only_logins_can_read_but_not_attest() {
 async fn brokers_are_isolated_and_disclosures_append_only() {
     let Some(db) = TestDb::new("suitability tenants").await else { return };
     let t2: i64 = sqlx::query_scalar("INSERT INTO tenants (slug, name) VALUES ('broker-two', 'Broker Two') RETURNING id").fetch_one(&db.st.pool).await.unwrap();
-    let u1 = user(&db, 1, "one@kalks.test").await;
+    let u1 = user(&db, 1, "one@ezymex.test").await;
     let u2 = user(&db, t2, "two@broker2.test").await;
     let tok1 = session(&db, 1, u1).await;
     let tok2 = session(&db, t2, u2).await;
@@ -347,7 +347,7 @@ async fn brokers_are_isolated_and_disclosures_append_only() {
     assert_eq!(db.count("SELECT count(*) FROM disclosures WHERE tenant_id = $1", t2).await, 0);
     let v = get_state(&db, &tok2).await;
     assert_eq!(v["disclosure"]["version"], 2);
-    assert_eq!(v["disclosure"]["title"], "Kalks FX Options: key points and terms");
+    assert_eq!(v["disclosure"]["title"], "Ezymex FX Options: key points and terms");
     assert_eq!(db.count("SELECT count(*) FROM disclosures WHERE tenant_id = $1", t2).await, 1);
     get_state(&db, &tok2).await;
     assert_eq!(db.count("SELECT count(*) FROM disclosures WHERE tenant_id = $1", t2).await, 1);
@@ -365,10 +365,10 @@ async fn brokers_are_isolated_and_disclosures_append_only() {
     tx.rollback().await.unwrap();
 
     // the engine naming a broker only sees that broker's clients
-    assert_eq!(code(&check(&db, u2, &[("x-kalks-tenant", "kalks")], None).await.unwrap_err()), "not_found");
-    assert_eq!(check(&db, u2, &[("x-kalks-tenant", "broker-two")], None).await.unwrap()["tenantId"], t2);
+    assert_eq!(code(&check(&db, u2, &[("x-ezymex-tenant", "ezymex")], None).await.unwrap_err()), "not_found");
+    assert_eq!(check(&db, u2, &[("x-ezymex-tenant", "broker-two")], None).await.unwrap()["tenantId"], t2);
     assert_eq!(check(&db, u2, &[], None).await.unwrap()["disclosureAccepted"], true);
-    assert_eq!(check(&db, u1, &[("x-kalks-tenant", "kalks")], None).await.unwrap()["tenantId"], 1);
+    assert_eq!(check(&db, u1, &[("x-ezymex-tenant", "ezymex")], None).await.unwrap()["tenantId"], 1);
 
     // what a client accepted can't be rewritten or removed
     let e = sqlx::query("UPDATE disclosures SET body_md = body_md || ' edited' WHERE tenant_id = 1").execute(&db.st.pool).await.unwrap_err().to_string();

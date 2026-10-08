@@ -1,4 +1,4 @@
-// Server-only: probes every Kalks service's /health (Back Office → Brokers → System ops, owner.system).
+// Server-only: probes every Ezymex service's /health (Back Office → Brokers → System ops, owner.system).
 // Each service listens on loopback; URLs come from the same env vars the BFFs use, with the local defaults.
 
 export type ServiceDef = { key: string; name: string; detail: string; url: string; optional?: boolean };

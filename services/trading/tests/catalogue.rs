@@ -54,7 +54,7 @@ async fn exec(hub: &Hub, login: i64, op: Op) -> Result<Value, ExecError> {
 }
 
 fn staff(st: &AppState, role: &str) -> StaffCtx {
-    let tenant = st.hub.shared.registry.by_slug("kalks").unwrap();
+    let tenant = st.hub.shared.registry.by_slug("ezymex").unwrap();
     StaffCtx { ctx: Ctx { tenant, ip: "127.0.0.1".into(), user_agent: "it".into(), bearer: None }, staff: Staff { id: "1".into(), name: format!("IT {role}"), role: role.into() }, perms: None }
 }
 
@@ -75,7 +75,7 @@ fn code(e: ApiError) -> String {
 #[tokio::test]
 async fn back_office_live_switch_and_templates_drive_the_engine() {
     let base = std::env::var("TRADING_TEST_DATABASE_URL").unwrap_or_else(|_| "postgres://postgres@127.0.0.1:5433/postgres".into());
-    let db = format!("kalks_trading_catalogue_{}", std::process::id());
+    let db = format!("ezymex_trading_catalogue_{}", std::process::id());
     let server = PgConnectOptions::from_str(&base).unwrap();
     server.clone().database("postgres").connect().await.expect("PostgreSQL :5433 must be running for this test");
     let url = server.clone().database(&db).to_url_lossy().to_string();

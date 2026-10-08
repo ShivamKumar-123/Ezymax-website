@@ -22,7 +22,7 @@ const int _pageSize = 10;
 
 String _esc(String s) => s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 
-String _fileBase(String code, String slug) => 'kalks-$code${slug.isNotEmpty ? '-$slug' : ''}-qr';
+String _fileBase(String code, String slug) => 'ezymex-$code${slug.isNotEmpty ? '-$slug' : ''}-qr';
 
 class PartnerLinksScreen extends ConsumerStatefulWidget {
   const PartnerLinksScreen({super.key});
@@ -244,7 +244,7 @@ class _PartnerLinksScreenState extends ConsumerState<PartnerLinksScreen> {
                       onPressed: () => exportCsv(
                         context,
                         ref,
-                        name: 'kalks-campaign-links',
+                        name: 'ezymex-campaign-links',
                         headers: [t('partner.links.link'), t('partner.links.colFunnel'), t('partner.firstDeposits'), t('partner.lots')],
                         rows: [
                           for (final c in shown) [c.name, '${c.uniqueClicks}/${c.signups}/${c.ftds}', c.deposits, c.lots],

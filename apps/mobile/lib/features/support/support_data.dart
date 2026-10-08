@@ -1,4 +1,4 @@
-// Shared plumbing of the Support module: the support stream's frames for the chat, Ask Kalks AI and the launcher;
+// Shared plumbing of the Support module: the support stream's frames for the chat, Ask Ezymex AI and the launcher;
 // the file picker of the chat's paperclip (injectable for tests); attachment downloads; the launcher's unread badge.
 import 'dart:async';
 import 'dart:typed_data';
@@ -15,7 +15,7 @@ import 'support_models.dart';
 
 /// The frames of the support stream (web lib/realtime.ts subscribers), plus frames the app adds itself with `add`
 /// (tests and the screenshot harness play a streamed answer that way). `live` is false without a connected socket
-/// (previews, tests, view-only, a dropped connection): the chat and Ask Kalks AI then poll instead.
+/// (previews, tests, view-only, a dropped connection): the chat and Ask Ezymex AI then poll instead.
 class SupportFrames {
   SupportFrames(this.socket);
   final SupportStream? socket;

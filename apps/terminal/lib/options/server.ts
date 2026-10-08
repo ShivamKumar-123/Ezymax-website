@@ -1,6 +1,6 @@
-// Server-only helpers for the Kalks FX Options service (services/options, 127.0.0.1:8104). The browser never sees
-// OPTIONS_INTERNAL_TOKEN: app/api/options/* calls the service with it, plus the broker (`X-Kalks-Tenant`, from the
-// visitor's host like the brand) and the acting account's kind (`X-Kalks-Account-Kind: live|demo`, from the
+// Server-only helpers for the Ezymex FX Options service (services/options, 127.0.0.1:8104). The browser never sees
+// OPTIONS_INTERNAL_TOKEN: app/api/options/* calls the service with it, plus the broker (`X-Ezymex-Tenant`, from the
+// visitor's host like the brand) and the acting account's kind (`X-Ezymex-Account-Kind: live|demo`, from the
 // terminal's own engine session) so the service applies the right module switch and the account group's pricing.
 // Contract: services/options/README.md ("Client (BFFs)", "Public").
 import type { NextRequest } from "next/server";
@@ -14,20 +14,20 @@ const OPTIONS_TOKEN = process.env.OPTIONS_INTERNAL_TOKEN ?? "";
 
 export type OptResult<T = Record<string, unknown>> = { status: number; data: T };
 
-/** The broker of the visitor's host (gateway tenant_domains, as for the brand); Kalks when unknown. */
+/** The broker of the visitor's host (gateway tenant_domains, as for the brand); Ezymex when unknown. */
 export async function tenantOf(req: NextRequest): Promise<string> {
   const b = await tenantBrand(hostOf(req.headers)).catch(() => null);
   const slug = b?.slug?.toLowerCase();
-  return slug && /^[a-z0-9_-]{1,64}$/.test(slug) ? slug : "kalks";
+  return slug && /^[a-z0-9_-]{1,64}$/.test(slug) ? slug : "ezymex";
 }
 
 export async function options<T = Record<string, unknown>>(
   path: string,
   init: { method?: "GET" | "POST"; body?: unknown; tenant: string; kind?: "live" | "demo" | null; internal?: boolean; timeoutMs?: number },
 ): Promise<OptResult<T>> {
-  const headers: Record<string, string> = { "x-kalks-tenant": init.tenant };
-  if (init.internal !== false) headers["x-kalks-internal"] = OPTIONS_TOKEN;
-  if (init.kind) headers["x-kalks-account-kind"] = init.kind;
+  const headers: Record<string, string> = { "x-ezymex-tenant": init.tenant };
+  if (init.internal !== false) headers["x-ezymex-internal"] = OPTIONS_TOKEN;
+  if (init.kind) headers["x-ezymex-account-kind"] = init.kind;
   if (init.body !== undefined) headers["content-type"] = "application/json";
   try {
     const res = await fetch(`${OPTIONS_URL}${path}`, {
@@ -66,7 +66,7 @@ const accounts = new Memo<{ status: number; kind?: "live" | "demo"; group?: stri
 
 export type Acting = { ok: true; account: ActingAccount } | { ok: false; status: number; code: string; message: string };
 
-/** The account named in `x-kalks-login` (this browser's engine session cookie). */
+/** The account named in `x-ezymex-login` (this browser's engine session cookie). */
 export async function actingAccount(req: NextRequest): Promise<Acting> {
   const s = sessionFor(req, readSessions(req));
   if (!s) return { ok: false, status: 401, code: "unauthorized", message: "Log in to your trading account." };
@@ -109,11 +109,11 @@ const publicReads = new Memo<OptResult>(1_000, 500);
  * `trades/{series}` (tape) and `stats/{u}` (OI / volume per strike), shared by every visitor for a second.
  */
 export function publicBook(path: string): Promise<OptResult> {
-  return publicReads.get(`book|${path}`, () => options(`/v1/public/options/${path}`, { tenant: "kalks", internal: false, timeoutMs: 5_000 }), (v) => v.status === 200 || v.status === 404);
+  return publicReads.get(`book|${path}`, () => options(`/v1/public/options/${path}`, { tenant: "ezymex", internal: false, timeoutMs: 5_000 }), (v) => v.status === 200 || v.status === 404);
 }
 
 /** `GET /v1/public/options/chain/{u}?expiry=` shared by every visitor for a second (the service caches 1 s too). */
 export function publicChain(u: string, expiry?: string | null): Promise<OptResult> {
   const q = expiry ? `?expiry=${expiry}` : "";
-  return publicReads.get(`${u}|${expiry ?? ""}`, () => options(`/v1/public/options/chain/${u}${q}`, { tenant: "kalks", internal: false, timeoutMs: 5_000 }), (v) => v.status === 200 || v.status === 404);
+  return publicReads.get(`${u}|${expiry ?? ""}`, () => options(`/v1/public/options/chain/${u}${q}`, { tenant: "ezymex", internal: false, timeoutMs: 5_000 }), (v) => v.status === 200 || v.status === 404);
 }

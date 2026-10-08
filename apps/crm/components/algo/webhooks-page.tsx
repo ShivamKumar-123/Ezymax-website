@@ -8,7 +8,7 @@ import { Loader2, Plus, RefreshCcw, Send, Trash2, Webhook } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, CopyButton, Dialog, EmptyState, Menu, PageHeader, Reveal, Skeleton, Toggle, cn } from "@/components/kit";
 import { MoreHorizontal } from "lucide-react";
-import { Trans, useT } from "@kalks/i18n/react";
+import { Trans, useT } from "@ezymex/i18n/react";
 import { NumInput } from "./builder";
 import { algoApi, algoError, ago, fmtDateTime, useAlgo, type TradingAccount } from "./api";
 

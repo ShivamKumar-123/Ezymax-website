@@ -1,7 +1,7 @@
 // Keys for this namespace. English is the source; translations live in ../<lang>/options.ts.
-// Kalks FX Options in the Client Area: the Options page (what the product is), a friendly three-card intro (Buy a Call,
+// Ezymex FX Options in the Client Area: the Options page (what the product is), a friendly three-card intro (Buy a Call,
 // Buy a Put, limited risk when you buy) and the one step before the first trade: accept the options terms with
-// "Start trading options", which opens Kalks Trader in options mode. No identity check or quiz is needed for options.
+// "Start trading options", which opens Ezymex Trader in options mode. No identity check or quiz is needed for options.
 // The full options terms come from the server and are shown exactly as published (it is the text clients accept),
 // so they are not in this file; the short translated key points are.
 const options = {
@@ -9,13 +9,13 @@ const options = {
   "nav.title": "Options",
 
   // Page header
-  "page.title": "Kalks FX Options",
-  "page.subtitle": "Buy or sell options on forex, gold, silver and oil, right inside Kalks Trader.",
+  "page.title": "Ezymex FX Options",
+  "page.subtitle": "Buy or sell options on forex, gold, silver and oil, right inside Ezymex Trader.",
   "page.statusReady": "Ready to trade",
   "page.learnCourse": "Options course",
 
   // Hero card
-  "hero.eyebrow": "New in Kalks Trader",
+  "hero.eyebrow": "New in Ezymex Trader",
   "hero.title": "Options on 13 markets, made simple",
   "hero.text": "European options on forex majors and crosses, gold, silver and crude oil. Choose daily, weekly or monthly expiries. Every option is settled in cash, in US dollars, so you never take delivery of anything.",
   "hero.feature.underlyings.title": "13 underlyings",
@@ -59,16 +59,16 @@ const options = {
   "terms.inShort": "In short",
   "terms.point.buy": "Buying an option: the most you can lose is what you pay.",
   "terms.point.sell": "Selling an option can lose more than you receive, and it uses margin.",
-  "terms.point.prices": "Prices are set on the Kalks order book and by Kalks.",
+  "terms.point.prices": "Prices are set on the Ezymex order book and by Ezymex.",
   "terms.point.settle": "Options settle in cash at expiry.",
   "terms.englishNote": "The full text below is the binding version, in English.",
   "terms.acceptedOn": "You accepted version {version} on {date}.",
   "terms.close": "Close",
   "terms.unavailable": "The options terms aren't available right now. Please try again later.",
 
-  // Kalks Trader button
-  "trade.ready": "You're all set. Options open in Kalks Trader, on the same account as your CFDs.",
-  "trade.cta": "Trade options in Kalks Trader",
+  // Ezymex Trader button
+  "trade.ready": "You're all set. Options open in Ezymex Trader, on the same account as your CFDs.",
+  "trade.cta": "Trade options in Ezymex Trader",
   "trade.chooseAccount": "Choose an account",
   "trade.noAccount": "You need an active trading account to trade options.",
   "trade.openAccount": "Open an account",
@@ -77,7 +77,7 @@ const options = {
   "trade.demo": "Demo",
 
   // Key facts card
-  "facts.title": "How Kalks FX Options work",
+  "facts.title": "How Ezymex FX Options work",
   "facts.style": "European style: exercised automatically at expiry, never before.",
   "facts.premium": "Premium in USD per contract; buyers pay it in full when they open.",
   "facts.contracts": "One contract: 10,000 units of a currency, 1 oz of gold, 50 oz of silver or 10 barrels of oil.",

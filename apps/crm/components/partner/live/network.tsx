@@ -34,7 +34,7 @@ import {
   type NetworkResp,
   type Programme,
 } from "./api";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { CardEmpty, PageFallback, SkeletonGrid, TierChip } from "./ui";
 
 const TIER_COLORS = ["var(--k-ember)", "#e9b949", "#22c55e", "#38bdf8", "#a1a1aa"];

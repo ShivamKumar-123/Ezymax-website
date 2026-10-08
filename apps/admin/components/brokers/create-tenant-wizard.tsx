@@ -22,8 +22,8 @@ import {
   Sparkles,
   User,
 } from "lucide-react";
-import { Button, Chip, CopyButton, Dialog, Field, Flag, Input, Segmented, Stepper, Toggle, cn, formatNumber } from "@kalks/ui";
-import { BRK_COUNTRIES, BRK_MODULES, BRK_PLANS, BRK_REGULATORS, type BrkModuleKey } from "@kalks/mock/admin-platform-brokers";
+import { Button, Chip, CopyButton, Dialog, Field, Flag, Input, Segmented, Stepper, Toggle, cn, formatNumber } from "@ezymex/ui";
+import { BRK_COUNTRIES, BRK_MODULES, BRK_PLANS, BRK_REGULATORS, type BrkModuleKey } from "@ezymex/mock/admin-platform-brokers";
 import { SectionLabel, Select, TenantLogo } from "./kit";
 import { MODULE_ICON } from "./module-icons";
 
@@ -138,7 +138,7 @@ export function CreateTenantWizard({ open, onOpenChange, onCreate }: { open: boo
           New tenant{t.brand ? <span className="text-fg-3">· {t.brand}</span> : null}
         </span>
       }
-      description="Provision a white-label broker on the Kalks platform. Nothing goes live until DNS is verified and the setup invoice is paid."
+      description="Provision a white-label broker on the Ezymex platform. Nothing goes live until DNS is verified and the setup invoice is paid."
       footer={
         <div className="flex w-full items-center justify-between gap-3">
           <span className="k-num hidden text-[12.5px] text-fg-3 sm:block">
@@ -280,9 +280,9 @@ function CompanyStep({ t, set }: { t: NewTenant; set: Setter }) {
 function DomainsStep({ t, set, dns, setDns }: { t: NewTenant; set: Setter; dns: DnsState; setDns: (d: DnsState) => void }) {
   const root = t.domain.trim() || "yourbroker.com";
   const records = [
-    ...SUBS.filter((s) => t.subs[s.key]).map((s) => ({ type: "CNAME", host: `${s.label}.${root}`, value: `${s.key === "api" ? "api" : "edge"}.tenants.kalks.net`, ttl: 3600 })),
-    { type: "TXT", host: `_kalks-verify.${root}`, value: `kalks-site-verification=7f3c9a41e2b8d05c6a1f`, ttl: 300 },
-    { type: "TXT", host: root, value: "v=spf1 include:mail.kalks.net ~all", ttl: 3600 },
+    ...SUBS.filter((s) => t.subs[s.key]).map((s) => ({ type: "CNAME", host: `${s.label}.${root}`, value: `${s.key === "api" ? "api" : "edge"}.tenants.ezymex.net`, ttl: 3600 })),
+    { type: "TXT", host: `_ezymex-verify.${root}`, value: `ezymex-site-verification=7f3c9a41e2b8d05c6a1f`, ttl: 300 },
+    { type: "TXT", host: root, value: "v=spf1 include:mail.ezymex.net ~all", ttl: 3600 },
   ];
   const verify = () => {
     setDns("checking");

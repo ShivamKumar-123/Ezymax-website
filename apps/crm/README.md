@@ -1,12 +1,12 @@
 # Client Area (apps/crm)
 
-Next.js app on http://localhost:3000. Live builds (default) show real data only. Demo builds (`NEXT_PUBLIC_KALKS_MODE=demo`) show the mock showcase. Design rules are in `docs/CONVENTIONS.md`.
+Next.js app on http://localhost:3000. Live builds (default) show real data only. Demo builds (`NEXT_PUBLIC_EZYMEX_MODE=demo`) show the mock showcase. Design rules are in `docs/CONVENTIONS.md`.
 
 ## Trading accounts (live builds)
 
 `/accounts`, `/accounts/new`, `/accounts/[login]`, `/portfolio`, `/portfolio/history`, `/portfolio/ledger` and `/portfolio/statements` read from the trading engine (`services/trading`, see its README "Client Area API"). They go through the BFF at `app/api/trading/[...path]/route.ts`:
 
-- The client is resolved on the server from the HttpOnly `kalks_session` cookie, using the gateway's `/v1/auth/me`. The engine receives that id in `X-Kalks-User-Id`. The BFF never uses a user id sent by the browser.
+- The client is resolved on the server from the HttpOnly `ezymex_session` cookie, using the gateway's `/v1/auth/me`. The engine receives that id in `X-Ezymex-User-Id`. The BFF never uses a user id sent by the browser.
 - CSRF protection: POSTs must be JSON and carry a same-origin `Origin` header.
 - Dealer-only fields (route, book, execution delay, markup) are stripped before responses reach the browser.
 - The engine's internal token stays on the server.
@@ -28,13 +28,13 @@ Trading and investor password changes, leverage changes and the Client Area pass
 
 1. `POST /api/auth/stepup {action, target}` emails the code (`action`: `trading_password`, `investor_password`, `leverage`, `account_password`, `withdrawal`, …; `target`: the account login where it applies). Resend with `POST /api/auth/stepup-resend {challenge}`.
 2. `POST /api/auth/stepup-verify {challenge, code, action, target}` returns `stepup_token`: single use, valid for 5 minutes, bound to the client, the action and the target.
-3. The change request carries `stepup_token` (body field, or the `X-Kalks-Stepup` header). The trading BFF checks the request against the account first, then redeems the token with the gateway (`POST /v1/auth/stepup/consume`, server to server only) and only then calls the engine. Without a valid token it answers 403 `stepup_required` / `stepup_invalid`.
+3. The change request carries `stepup_token` (body field, or the `X-Ezymex-Stepup` header). The trading BFF checks the request against the account first, then redeems the token with the gateway (`POST /v1/auth/stepup/consume`, server to server only) and only then calls the engine. Without a valid token it answers 403 `stepup_required` / `stepup_invalid`.
 
 The Client Area password is changed with `POST /api/auth/password {current, new, stepup_token, sign_out_others}` (gateway `POST /v1/auth/password`). UI: `components/stepup.tsx` (`useStepUp`, `StepUpCode`, `StepUpDialog`).
 
-### Kalks Trader SSO
+### Ezymex Trader SSO
 
-The Trade button opens `NEXT_PUBLIC_TERMINAL_URL + "/?sso=<token>"`. The token is one-time and valid for 60 s. Kalks Trader redeems it through its own BFF with `POST /v1/terminal/sso {token}`, stores the resulting session and removes `sso` from the URL.
+The Trade button opens `NEXT_PUBLIC_TERMINAL_URL + "/?sso=<token>"`. The token is one-time and valid for 60 s. Ezymex Trader redeems it through its own BFF with `POST /v1/terminal/sso {token}`, stores the resulting session and removes `sso` from the URL.
 
 ## Mobile app API (`/api/mobile/*`)
 
@@ -45,12 +45,12 @@ The Flutter app talks only to this Client Area, with the gateway session as `Aut
 - **Native routes:**
   - `app/api/mobile/auth/[action]`: the session comes back in JSON, and a device id is minted when the app has none.
   - `app/api/mobile/config`: public service URLs, stream URLs, branding, modules, maintenance.
-  - `app/api/mobile/trade/*`: the engine session, minted server-side through the account SSO or an MT5-style login, and handed out as a trade token bound to the client (`lib/mobile-trade.ts`). Also everything Kalks Trader's BFF exposes (`lib/trade-bodies.ts`), plus the AI routes with Kalks Trader's budget rules (`lib/mobile-ai.ts`).
+  - `app/api/mobile/trade/*`: the engine session, minted server-side through the account SSO or an MT5-style login, and handed out as a trade token bound to the client (`lib/mobile-trade.ts`). Also everything Ezymex Trader's BFF exposes (`lib/trade-bodies.ts`), plus the AI routes with Ezymex Trader's budget rules (`lib/mobile-ai.ts`).
 - **Tests:** `node --test tests/` (`mobile.test.mjs`, `mobile-trade.test.mjs`).
 
 ## Prop challenges (live builds)
 
-`/prop` (catalogue and checkout), `/prop/mine` (live rule dashboard, polled every 2 s while the tab is visible), `/prop/payouts` and `/prop/certificates` read from the prop service (`services/prop`, see its README). Components: `components/prop-live/*`; demo builds keep the mock pages. BFF: `app/api/prop/[...path]/route.ts` (server helper `lib/prop.ts`), same session, CSRF and 401 handling as the trading BFF. It forwards `X-Kalks-User-Id`, `X-Kalks-User-Name` (percent-encoded, used on certificates), `X-Kalks-User-Kyc` and `X-Kalks-Tenant`.
+`/prop` (catalogue and checkout), `/prop/mine` (live rule dashboard, polled every 2 s while the tab is visible), `/prop/payouts` and `/prop/certificates` read from the prop service (`services/prop`, see its README). Components: `components/prop-live/*`; demo builds keep the mock pages. BFF: `app/api/prop/[...path]/route.ts` (server helper `lib/prop.ts`), same session, CSRF and 401 handling as the trading BFF. It forwards `X-Ezymex-User-Id`, `X-Ezymex-User-Name` (percent-encoded, used on certificates), `X-Ezymex-User-Kyc` and `X-Ezymex-Tenant`.
 
 | BFF route | Prop service |
 |---|---|
@@ -75,7 +75,7 @@ These go in `apps/crm/.env.local` for local runs, or `apps/crm/.env.production.l
 | `GATEWAY_URL`, `GATEWAY_INTERNAL_TOKEN` | gateway (sign-in, session check) |
 | `TRADING_URL` | trading engine, default `http://127.0.0.1:8090` |
 | `TRADING_INTERNAL_TOKEN` | same value as the engine's `TRADING_INTERNAL_TOKEN` (repo-root `.env.local` / server env) |
-| `NEXT_PUBLIC_TERMINAL_URL` | Kalks Trader origin, for example `https://trade.kalkstrade.com` (build time) |
+| `NEXT_PUBLIC_TERMINAL_URL` | Ezymex Trader origin, for example `https://trade.ezymex.com` (build time) |
 | `PROP_URL`, `PROP_INTERNAL_TOKEN` | prop service, default `http://127.0.0.1:8097`; token = the service's `PROP_INTERNAL_TOKEN` |
 | `OPTIONS_URL`, `OPTIONS_INTERNAL_TOKEN` | options service (the mobile app's options reads), default `http://127.0.0.1:8104` |
 | `ANTHROPIC_API_KEY` | the mobile app's AI routes (`trade/ai-trader`, `trade/options/explain`); unset = `{configured: false}` |

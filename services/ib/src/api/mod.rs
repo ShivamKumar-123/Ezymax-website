@@ -1,5 +1,5 @@
-//! HTTP API on 127.0.0.1:8096. Every route except `GET /health` needs `X-Kalks-Internal: $IB_INTERNAL_TOKEN`.
-//! Client routes take the signed-in gateway user in `X-Kalks-User-Id` (the CRM BFF resolves it from the
+//! HTTP API on 127.0.0.1:8096. Every route except `GET /health` needs `X-Ezymex-Internal: $IB_INTERNAL_TOKEN`.
+//! Client routes take the signed-in gateway user in `X-Ezymex-User-Id` (the CRM BFF resolves it from the
 //! session cookie); admin routes take the staff identity headers the admin BFF verified with the gateway.
 
 pub mod admin;
@@ -70,7 +70,7 @@ async fn health(State(st): State<AppState>) -> impl IntoResponse {
 async fn internal_only(State(st): State<AppState>, req: Request, next: Next) -> Response {
     let expected = st.cfg.internal_token.as_bytes();
     if !expected.is_empty() {
-        let got = req.headers().get("x-kalks-internal").map(|v| v.as_bytes()).unwrap_or_default();
+        let got = req.headers().get("x-ezymex-internal").map(|v| v.as_bytes()).unwrap_or_default();
         if got.len() != expected.len() || !bool::from(got.ct_eq(expected)) {
             return ApiError::Forbidden("Missing or wrong internal token.".into()).into_response();
         }
@@ -83,7 +83,7 @@ fn header(parts: &Parts, name: &str) -> Option<String> {
 }
 
 fn tenant_of(parts: &Parts) -> ApiResult<String> {
-    let t = header(parts, "x-kalks-tenant").unwrap_or_else(|| "kalks".into()).to_lowercase();
+    let t = header(parts, "x-ezymex-tenant").unwrap_or_else(|| "ezymex".into()).to_lowercase();
     if t.len() > 40 || !t.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_') {
         return Err(ApiError::BadRequest("Invalid tenant.".into()));
     }
@@ -109,7 +109,7 @@ pub struct UserCtx {
 impl<S: Send + Sync> FromRequestParts<S> for UserCtx {
     type Rejection = ApiError;
     async fn from_request_parts(parts: &mut Parts, _: &S) -> Result<Self, Self::Rejection> {
-        let user_id = header(parts, "x-kalks-user-id").and_then(|v| v.parse::<i64>().ok()).filter(|v| *v > 0).ok_or(ApiError::Unauthorized)?;
+        let user_id = header(parts, "x-ezymex-user-id").and_then(|v| v.parse::<i64>().ok()).filter(|v| *v > 0).ok_or(ApiError::Unauthorized)?;
         Ok(UserCtx { tenant: tenant_of(parts)?, user_id })
     }
 }
@@ -157,12 +157,12 @@ fn percent_decode(s: &str) -> String {
 impl<S: Send + Sync> FromRequestParts<S> for StaffCtx {
     type Rejection = ApiError;
     async fn from_request_parts(parts: &mut Parts, _: &S) -> Result<Self, Self::Rejection> {
-        let id = header(parts, "x-kalks-staff-id").ok_or(ApiError::Unauthorized)?;
-        let role = header(parts, "x-kalks-staff-role").ok_or(ApiError::Unauthorized)?;
+        let id = header(parts, "x-ezymex-staff-id").ok_or(ApiError::Unauthorized)?;
+        let role = header(parts, "x-ezymex-staff-role").ok_or(ApiError::Unauthorized)?;
         if id.len() > 64 || role.len() > 32 {
             return Err(ApiError::BadRequest("Invalid staff headers.".into()));
         }
-        let name = header(parts, "x-kalks-staff-name").map(|n| percent_decode(&n)).unwrap_or_else(|| format!("Staff {id}"));
+        let name = header(parts, "x-ezymex-staff-name").map(|n| percent_decode(&n)).unwrap_or_else(|| format!("Staff {id}"));
         Ok(StaffCtx { tenant: tenant_of(parts)?, id, name: name.chars().take(80).collect(), role })
     }
 }

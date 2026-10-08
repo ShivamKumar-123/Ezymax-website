@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Button, Dialog } from "@kalks/ui";
+import { Button, Dialog } from "@ezymex/ui";
 
 type Ask = { title: string; text?: React.ReactNode; confirm?: string; tone?: "ember" | "danger" };
 

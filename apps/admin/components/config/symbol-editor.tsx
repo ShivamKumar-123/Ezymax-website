@@ -2,9 +2,9 @@
 
 import * as React from "react";
 import { Save } from "lucide-react";
-import { Button, Chip, Dialog, Segmented, SymbolAvatar, Toggle, formatNumber } from "@kalks/ui";
-import { getInstrument, ASSET_CLASS_LABEL } from "@kalks/mock";
-import { SESSIONS, WEEKDAYS, type SymbolSpec, type TradeMode, type Weekday } from "@kalks/mock/admin-config";
+import { Button, Chip, Dialog, Segmented, SymbolAvatar, Toggle, formatNumber } from "@ezymex/ui";
+import { getInstrument, ASSET_CLASS_LABEL } from "@ezymex/mock";
+import { SESSIONS, WEEKDAYS, type SymbolSpec, type TradeMode, type Weekday } from "@ezymex/mock/admin-config";
 import { MiniField, NumInput, Section, Select, SettingRow, auditToast } from "./kit";
 
 export const TRADE_MODE_LABEL: Record<TradeMode, string> = { full: "Full access", "close-only": "Close-only", "long-only": "Long-only", disabled: "Disabled" };
@@ -46,7 +46,7 @@ export function SymbolEditor({ spec, open, onOpenChange, onSave }: { spec: Symbo
             disabled={!changed || lotInvalid}
             onClick={() => {
               onSave(s);
-              auditToast(`${s.symbol} contract spec saved`, "Pushed to Kalks-Live01/02 and Demo");
+              auditToast(`${s.symbol} contract spec saved`, "Pushed to Ezymex-Live01/02 and Demo");
               onOpenChange(false);
             }}
           >

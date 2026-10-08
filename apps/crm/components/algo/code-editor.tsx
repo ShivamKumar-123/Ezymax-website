@@ -1,12 +1,12 @@
 "use client";
 
-// Code editor for the Kalks strategy language: a textarea over a highlighted layer, a gutter with the
+// Code editor for the Ezymex strategy language: a textarea over a highlighted layer, a gutter with the
 // compiler's error markers, and the reference. Validation runs on the server (POST /api/algo/validate).
 
 import * as React from "react";
 import { AlertTriangle, BookOpen, CircleCheck, Loader2 } from "lucide-react";
 import { cn } from "@/components/kit";
-import { Trans, useT, useFormat } from "@kalks/i18n/react";
+import { Trans, useT, useFormat } from "@ezymex/i18n/react";
 import type { BuildError } from "./api";
 
 const KEYWORDS = new Set(["and", "or", "not", "if", "else", "True", "False", "true", "false"]);

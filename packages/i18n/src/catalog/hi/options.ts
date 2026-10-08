@@ -1,19 +1,19 @@
 import type { NsMessages } from "../../core";
 
-// Kalks FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Kalks Trader in options mode.
-// Kalks, Kalks Trader and Kalks FX Options stay in English.
+// Ezymex FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Ezymex Trader in options mode.
+// Ezymex, Ezymex Trader and Ezymex FX Options stay in English.
 const options: NsMessages<"options"> = {
   // Navigation entry
   "nav.title": "ऑप्शंस",
 
   // Page header
-  "page.title": "Kalks FX Options",
-  "page.subtitle": "फ़ॉरेक्स, गोल्ड, सिल्वर और ऑयल पर ऑप्शन खरीदें या बेचें, सीधे Kalks Trader में।",
+  "page.title": "Ezymex FX Options",
+  "page.subtitle": "फ़ॉरेक्स, गोल्ड, सिल्वर और ऑयल पर ऑप्शन खरीदें या बेचें, सीधे Ezymex Trader में।",
   "page.statusReady": "ट्रेड के लिए तैयार",
   "page.learnCourse": "ऑप्शंस कोर्स",
 
   // Hero card
-  "hero.eyebrow": "Kalks Trader में नया",
+  "hero.eyebrow": "Ezymex Trader में नया",
   "hero.title": "13 मार्केट पर ऑप्शंस, बिल्कुल आसान",
   "hero.text": "फ़ॉरेक्स मेजर और क्रॉस, गोल्ड, सिल्वर और क्रूड ऑयल पर यूरोपियन ऑप्शन। डेली, वीकली या मंथली एक्सपायरी चुनें। हर ऑप्शन का सेटलमेंट कैश में, US डॉलर में होता है, इसलिए आपको कभी किसी चीज़ की डिलीवरी नहीं लेनी पड़ती।",
   "hero.feature.underlyings.title": "13 अंडरलाइंग",
@@ -57,16 +57,16 @@ const options: NsMessages<"options"> = {
   "terms.inShort": "संक्षेप में",
   "terms.point.buy": "ऑप्शन खरीदने पर: आपका अधिकतम नुकसान उतना ही है जितना आप चुकाते हैं।",
   "terms.point.sell": "ऑप्शन बेचने पर मिलने वाली रकम से ज़्यादा नुकसान हो सकता है, और इसमें मार्जिन लगता है।",
-  "terms.point.prices": "प्राइस Kalks ऑर्डर बुक पर और Kalks द्वारा तय किए जाते हैं।",
+  "terms.point.prices": "प्राइस Ezymex ऑर्डर बुक पर और Ezymex द्वारा तय किए जाते हैं।",
   "terms.point.settle": "ऑप्शंस का सेटलमेंट एक्सपायरी पर कैश में होता है।",
   "terms.englishNote": "नीचे दिया गया पूरा टेक्स्ट अंग्रेज़ी में है, और यही बाध्यकारी वर्ज़न है।",
   "terms.acceptedOn": "आपने वर्ज़न {version} {date} को स्वीकार किया।",
   "terms.close": "बंद करें",
   "terms.unavailable": "ऑप्शंस की शर्तें अभी उपलब्ध नहीं हैं। कृपया बाद में फिर से कोशिश करें।",
 
-  // Kalks Trader button
-  "trade.ready": "आप पूरी तरह तैयार हैं। ऑप्शंस Kalks Trader में खुलते हैं, उसी अकाउंट पर जिस पर आपके CFD हैं।",
-  "trade.cta": "Kalks Trader में ऑप्शंस ट्रेड करें",
+  // Ezymex Trader button
+  "trade.ready": "आप पूरी तरह तैयार हैं। ऑप्शंस Ezymex Trader में खुलते हैं, उसी अकाउंट पर जिस पर आपके CFD हैं।",
+  "trade.cta": "Ezymex Trader में ऑप्शंस ट्रेड करें",
   "trade.chooseAccount": "अकाउंट चुनें",
   "trade.noAccount": "ऑप्शंस ट्रेड करने के लिए आपके पास एक सक्रिय ट्रेडिंग अकाउंट होना चाहिए।",
   "trade.openAccount": "अकाउंट खोलें",
@@ -75,7 +75,7 @@ const options: NsMessages<"options"> = {
   "trade.demo": "डेमो",
 
   // Key facts card
-  "facts.title": "Kalks FX Options कैसे काम करते हैं",
+  "facts.title": "Ezymex FX Options कैसे काम करते हैं",
   "facts.style": "यूरोपियन स्टाइल: एक्सपायरी पर अपने-आप एक्सरसाइज़, उससे पहले कभी नहीं।",
   "facts.premium": "प्रीमियम USD में, प्रति कॉन्ट्रैक्ट; खरीदार पोज़िशन खोलते समय इसे पूरा चुकाते हैं।",
   "facts.contracts": "एक कॉन्ट्रैक्ट: किसी करेंसी की 10,000 यूनिट, 1 औंस गोल्ड, 50 औंस सिल्वर या 10 बैरल ऑयल।",

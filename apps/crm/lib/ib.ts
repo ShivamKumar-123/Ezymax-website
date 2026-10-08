@@ -1,6 +1,6 @@
 // Server-only helpers for the IB / referral service (services/ib, 127.0.0.1:8096).
 // The browser never sees the service or its internal token: /api/partner/* resolves the signed-in client from
-// the gateway session cookie and forwards the gateway user id as X-Kalks-User-Id. Link clicks are recorded
+// the gateway session cookie and forwards the gateway user id as X-Ezymex-User-Id. Link clicks are recorded
 // from the proxy (proxy.ts) before the visitor reaches /register.
 
 import type { NextRequest, NextResponse } from "next/server";
@@ -10,7 +10,7 @@ const IB_URL = (process.env.IB_URL ?? "http://127.0.0.1:8096").replace(/\/+$/, "
 const IB_TOKEN = process.env.IB_INTERNAL_TOKEN ?? "";
 
 /** First-party cookie carrying the referral a visitor arrived with: `CODE` or `CODE:campaign`. */
-export const REF_COOKIE = "kalks_ref";
+export const REF_COOKIE = "ezymex_ref";
 const REF_MAX_AGE = 90 * 24 * 3600;
 
 export type IbResult<T = Record<string, unknown>> = { status: number; data: T };
@@ -19,8 +19,8 @@ export async function ib<T = Record<string, unknown>>(
   path: string,
   init: { method?: "GET" | "POST" | "PUT" | "PATCH"; body?: unknown; userId?: number; tenant?: string; timeoutMs?: number } = {},
 ): Promise<IbResult<T>> {
-  const headers: Record<string, string> = { "x-kalks-internal": IB_TOKEN, "x-kalks-tenant": init.tenant || "kalks" };
-  if (init.userId !== undefined) headers["x-kalks-user-id"] = String(init.userId);
+  const headers: Record<string, string> = { "x-ezymex-internal": IB_TOKEN, "x-ezymex-tenant": init.tenant || "ezymex" };
+  if (init.userId !== undefined) headers["x-ezymex-user-id"] = String(init.userId);
   if (init.body !== undefined) headers["content-type"] = "application/json";
   try {
     const res = await fetch(`${IB_URL}${path}`, {
@@ -37,7 +37,7 @@ export async function ib<T = Record<string, unknown>>(
   }
 }
 
-export const ibFor = (user: GatewayUser) => ({ userId: user.id, tenant: user.tenant?.slug || "kalks" });
+export const ibFor = (user: GatewayUser) => ({ userId: user.id, tenant: user.tenant?.slug || "ezymex" });
 
 const CODE_RE = /^[A-Za-z0-9]{3,24}$/;
 const SLUG_RE = /^[A-Za-z0-9_-]{1,40}$/;

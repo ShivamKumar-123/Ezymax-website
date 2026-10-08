@@ -192,7 +192,7 @@ const kyc: NsMessages<"kyc"> = {
   "review.missing": "Haipo",
   "review.flagged": "Imewekwa alama kwa ukaguzi",
   "review.passed": "Ukaguzi umepita",
-  "review.consent": "Ninathibitisha kuwa hati ni halisi na ni zangu (au za kampuni na maafisa wake), na ninakubali ukaguzi wa utambulisho na AML unaofanywa na Kalks.",
+  "review.consent": "Ninathibitisha kuwa hati ni halisi na ni zangu (au za kampuni na maafisa wake), na ninakubali ukaguzi wa utambulisho na AML unaofanywa na Ezymex.",
 
   // More information requested by the review team
   "moreInfo.title": "Tunahitaji zaidi kidogo kutoka kwako",
@@ -356,7 +356,7 @@ const kyc: NsMessages<"kyc"> = {
   // Client-side fallback errors
   "error.sessionEnded": "Kipindi chako kimeisha.",
   "error.generic": "Hitilafu imetokea. Tafadhali jaribu tena.",
-  "error.network": "Imeshindwa kufikia Kalks. Angalia muunganisho wako kisha ujaribu tena.",
+  "error.network": "Imeshindwa kufikia Ezymex. Angalia muunganisho wako kisha ujaribu tena.",
   "error.uploadFailed": "Kupakia kumeshindwa. Tafadhali jaribu tena.",
   "error.uploadInterrupted": "Kupakia kumekatizwa. Angalia muunganisho wako kisha ujaribu tena.",
 

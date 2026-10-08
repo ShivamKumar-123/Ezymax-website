@@ -1,6 +1,6 @@
-//! HTTP API. Every route except `GET /health` needs `X-Kalks-Internal: $REPORTS_INTERNAL_TOKEN`.
-//! Client routes need `X-Kalks-User-Id` (set by the Client Area BFF from the session); staff routes need the staff
-//! identity headers plus `X-Kalks-Staff-Perms` (the caller's `reports.*` permissions from the gateway session).
+//! HTTP API. Every route except `GET /health` needs `X-Ezymex-Internal: $REPORTS_INTERNAL_TOKEN`.
+//! Client routes need `X-Ezymex-User-Id` (set by the Client Area BFF from the session); staff routes need the staff
+//! identity headers plus `X-Ezymex-Staff-Perms` (the caller's `reports.*` permissions from the gateway session).
 
 use axum::Router;
 use axum::body::Body;
@@ -62,7 +62,7 @@ async fn health(State(app): State<App>) -> impl IntoResponse {
 async fn internal_only(State(app): State<App>, req: Request, next: Next) -> Response {
     let expected = app.cfg.internal_token.as_bytes();
     if !expected.is_empty() {
-        let got = req.headers().get("x-kalks-internal").map(|v| v.as_bytes()).unwrap_or_default();
+        let got = req.headers().get("x-ezymex-internal").map(|v| v.as_bytes()).unwrap_or_default();
         if got.len() != expected.len() || !bool::from(got.ct_eq(expected)) {
             return ApiError::Forbidden("Missing or invalid internal token.".into()).into_response();
         }
@@ -92,13 +92,13 @@ fn percent_decode(s: &str) -> String {
     String::from_utf8_lossy(&out).into_owned()
 }
 
-/// Tenant slug from `X-Kalks-Tenant` (default kalks); must be a mirrored tenant.
+/// Tenant slug from `X-Ezymex-Tenant` (default ezymex); must be a mirrored tenant.
 pub struct Tenant(pub String);
 
 impl FromRequestParts<App> for Tenant {
     type Rejection = ApiError;
     async fn from_request_parts(parts: &mut Parts, app: &App) -> Result<Self, ApiError> {
-        let t = header(&parts.headers, "x-kalks-tenant").unwrap_or_else(|| "kalks".into());
+        let t = header(&parts.headers, "x-ezymex-tenant").unwrap_or_else(|| "ezymex".into());
         if !app.cfg.tenants.contains(&t) {
             return Err(ApiError::NotFound("Unknown tenant.".into()));
         }
@@ -115,7 +115,7 @@ impl FromRequestParts<App> for UserCtx {
     type Rejection = ApiError;
     async fn from_request_parts(parts: &mut Parts, app: &App) -> Result<Self, ApiError> {
         let Tenant(tenant) = Tenant::from_request_parts(parts, app).await?;
-        let user_id = header(&parts.headers, "x-kalks-user-id").and_then(|v| v.parse::<i64>().ok()).filter(|v| *v > 0).ok_or(ApiError::Unauthorized)?;
+        let user_id = header(&parts.headers, "x-ezymex-user-id").and_then(|v| v.parse::<i64>().ok()).filter(|v| *v > 0).ok_or(ApiError::Unauthorized)?;
         Ok(UserCtx { tenant, user_id })
     }
 }
@@ -136,13 +136,13 @@ impl FromRequestParts<App> for StaffCtx {
     type Rejection = ApiError;
     async fn from_request_parts(parts: &mut Parts, app: &App) -> Result<Self, ApiError> {
         let Tenant(tenant) = Tenant::from_request_parts(parts, app).await?;
-        let id = header(&parts.headers, "x-kalks-staff-id").ok_or(ApiError::Unauthorized)?;
-        let role = header(&parts.headers, "x-kalks-staff-role").ok_or(ApiError::Unauthorized)?;
+        let id = header(&parts.headers, "x-ezymex-staff-id").ok_or(ApiError::Unauthorized)?;
+        let role = header(&parts.headers, "x-ezymex-staff-role").ok_or(ApiError::Unauthorized)?;
         if id.len() > 64 || role.len() > 32 {
             return Err(ApiError::BadRequest("Invalid staff headers.".into()));
         }
-        let name = header(&parts.headers, "x-kalks-staff-name").map(|n| percent_decode(&n)).unwrap_or_else(|| format!("Staff {id}"));
-        let perms = header(&parts.headers, "x-kalks-staff-perms").map(|p| p.split(',').map(|x| x.trim().to_string()).filter(|x| x.starts_with("reports.") || x == "marketing.read").collect()).unwrap_or_default();
+        let name = header(&parts.headers, "x-ezymex-staff-name").map(|n| percent_decode(&n)).unwrap_or_else(|| format!("Staff {id}"));
+        let perms = header(&parts.headers, "x-ezymex-staff-perms").map(|p| p.split(',').map(|x| x.trim().to_string()).filter(|x| x.starts_with("reports.") || x == "marketing.read").collect()).unwrap_or_default();
         Ok(StaffCtx { tenant, actor: Actor { id: format!("staff:{id}"), name: name.chars().take(120).collect(), role }, perms })
     }
 }

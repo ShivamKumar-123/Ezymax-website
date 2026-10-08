@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Check, CheckCircle2, X, XCircle } from "lucide-react";
-import { Button, Chip, Dialog, StatusChip, Tooltip, cn } from "@kalks/ui";
+import { Button, Chip, Dialog, StatusChip, Tooltip, cn } from "@ezymex/ui";
 import { Addr, MiniStat, PersonCell, TxHash } from "@/components/config/kit";
 import { fmtDate, fmtDateTime, type PayoutRequest } from "./data";
 

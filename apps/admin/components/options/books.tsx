@@ -26,7 +26,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { ArrowRight, Ban, BookOpenCheck, Eye, Gavel, Layers, OctagonPause, RefreshCw, ScrollText, ShieldCheck, Timer, Undo2, Wallet } from "lucide-react";
-import { Button, Card, CardHeader, Chip, DataTable, Dialog, DialogClose, EmptyState, Field, IconButton, Input, KpiCard, PageHeader, Progress, Reveal, Segmented, Tooltip, cn, formatNumber, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, Dialog, DialogClose, EmptyState, Field, IconButton, Input, KpiCard, PageHeader, Progress, Reveal, Segmented, Tooltip, cn, formatNumber, type Column } from "@ezymex/ui";
 import { ErrorState, TableSkeleton, ago, useNow, when } from "@/components/live/kit";
 import type { AdminExpiry, BookHalt, BookRow, BookTrade, BooksMonitor, Chain, DepthLevel, HaltScope, SeriesDepth, Underlying } from "./types";
 import { BookStateChip, EnginePending, KIND_OPTIONS, LoginLink, REASONS, ReasonDialog, Select, UnderlyingCell, agoSecs, enginePending, kindLabel, optSend, usd, useKind, useOpt, useOptPerms } from "./kit";

@@ -1,6 +1,6 @@
 // The account on screen, kept live (web: apps/terminal/lib/store.tsx engine mode). `GET trade/state` loads it, then
 // the engine stream (EngineStream, a one-time ticket per connect) keeps it current: snapshot / position / order / deal /
-// ledger / account / notification / equity frames; `resync` and `ended` reconnect with a fresh ticket. Kalks FX Options
+// ledger / account / notification / equity frames; `resync` and `ended` reconnect with a fresh ticket. Ezymex FX Options
 // entries (positions, orders and deals with `option`) are kept apart for the options mode. Engine notifications
 // (SL / TP hits, pending fills, margin call, stop out, balance, corrections…) become top banners and land in the bell.
 import 'dart:async';
@@ -56,7 +56,7 @@ class TerminalState {
   final bool synced;
   final SocketStatus stream;
 
-  /// Kalks FX Options entries (raw engine JSON, account currency), for the options mode.
+  /// Ezymex FX Options entries (raw engine JSON, account currency), for the options mode.
   final List<Map<String, dynamic>> optPositions, optOrders, optDeals;
   final ApiException? error;
 

@@ -1,7 +1,7 @@
 import type { NsMessages } from "../../core";
 
 // Área de clientes, trading prop: catálogo de desafíos, mis desafíos, pagos, certificados.
-// Se mantienen "Kalks", "Kalks Prop", "Kalks Trader", "USDT", "New York" y "17:00".
+// Se mantienen "Ezymex", "Ezymex Prop", "Ezymex Trader", "USDT", "New York" y "17:00".
 const prop: NsMessages<"prop"> = {
   // Botones de siguiente paso en errores
   "errorLink.deposit": "Depositar USDT",
@@ -102,13 +102,13 @@ const prop: NsMessages<"prop"> = {
 
   // Página pública de verificación de certificados (/verify/<code>)
   "verify.shellTitle": "Verificación de certificado",
-  "verify.footer": "Las cuentas de Kalks Prop son simuladas. Los certificados muestran los resultados de un trader en un desafío de Kalks Prop; el nombre del trader se abrevia al nombre y la inicial del apellido.",
+  "verify.footer": "Las cuentas de Ezymex Prop son simuladas. Los certificados muestran los resultados de un trader en un desafío de Ezymex Prop; el nombre del trader se abrevia al nombre y la inicial del apellido.",
   "verify.linkCopied": "Enlace copiado",
   "verify.copyFailed": "No se pudo copiar el enlace",
   "verify.copyLink": "Copiar enlace",
   "verify.downloadPng": "Descargar PNG",
   "verify.notFoundTitle": "Certificado no encontrado",
-  "verify.notFoundText": "No existe ningún certificado de Kalks Prop con este número. Compruebe el enlace o pida al trader que lo comparta de nuevo.",
+  "verify.notFoundText": "No existe ningún certificado de Ezymex Prop con este número. Compruebe el enlace o pida al trader que lo comparta de nuevo.",
   "verify.unavailableTitle": "La verificación no está disponible en este momento",
   "verify.unavailableText": "No hemos podido comprobar este certificado en este momento. Inténtelo de nuevo en unos minutos.",
   "verify.kind.pass": "Fase superada",
@@ -122,9 +122,9 @@ const prop: NsMessages<"prop"> = {
   "verify.row.issued": "Emitido",
   "verify.row.number": "N.º de certificado",
   "verify.validTitle": "Certificado válido",
-  "verify.validText": "Emitido por Kalks Prop y verificado con nuestros registros.",
+  "verify.validText": "Emitido por Ezymex Prop y verificado con nuestros registros.",
   "verify.revokedTitle": "Certificado revocado",
-  "verify.revokedText": "Kalks revocó este certificado y ya no es válido.",
+  "verify.revokedText": "Ezymex revocó este certificado y ya no es válido.",
   "verify.valid": "Válido",
   "verify.revoked": "Revocado",
   // Títulos de certificados
@@ -249,8 +249,8 @@ const prop: NsMessages<"prop"> = {
   "checkout.goToMine": "Ir a Mis desafíos",
   "checkout.readyTitle": "Su desafío está listo",
   "checkout.paidText": "Se pagaron {fee} desde su billetera USDT y su cuenta de {size} está abierta. Las reglas se aplican desde ahora.",
-  "checkout.savePasswords": "Guarde estas contraseñas ahora: solo se muestran una vez y no las almacenamos. El botón Operar inicia sesión en Kalks Trader sin contraseña, así que siempre podrá operar desde aquí.",
-  "checkout.passwordsShown": "Las contraseñas de trading se mostraron cuando se confirmó esta compra. Use el botón Operar para abrir Kalks Trader: inicia sesión sin contraseña.",
+  "checkout.savePasswords": "Guarde estas contraseñas ahora: solo se muestran una vez y no las almacenamos. El botón Operar inicia sesión en Ezymex Trader sin contraseña, así que siempre podrá operar desde aquí.",
+  "checkout.passwordsShown": "Las contraseñas de trading se mostraron cuando se confirmó esta compra. Use el botón Operar para abrir Ezymex Trader: inicia sesión sin contraseña.",
 
   // Credenciales de la cuenta
   "cred.login": "Login",
@@ -377,7 +377,7 @@ const prop: NsMessages<"prop"> = {
   "account.passed": "Superada · solo lectura",
   "account.failed": "Suspendida · desactivada",
   "account.opening": "Abriendo",
-  "account.tradableText": "Operar abre Kalks Trader con la sesión iniciada en esta cuenta. Las contraseñas se mostraron una vez en la compra.",
+  "account.tradableText": "Operar abre Ezymex Trader con la sesión iniciada en esta cuenta. Las contraseñas se mostraron una vez en la compra.",
   "account.passedText": "Esta fase está completada. La cuenta es de solo lectura; opere en su siguiente fase.",
   "account.failedText": "El trading en esta cuenta está desactivado.",
   "account.unavailableText": "El trading no está disponible en esta cuenta.",

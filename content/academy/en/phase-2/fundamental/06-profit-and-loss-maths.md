@@ -94,7 +94,7 @@ Long 0.10 lot GBPJPY, open 195.00, close 196.20
   USDJPY at 155.00: 12,000 / 155.00 = +77.42 USD
 ```
 
-If your account is in a currency other than USD, the same logic applies with one more conversion. A 126 USD profit on a EUR account, with EURUSD at 1.0893, is 126 / 1.0893 = 115.67 EUR. Kalks Trader performs these conversions automatically at current rates, which is also why the value of an open JPY or CAD position drifts slightly even when the pair itself is still.
+If your account is in a currency other than USD, the same logic applies with one more conversion. A 126 USD profit on a EUR account, with EURUSD at 1.0893, is 126 / 1.0893 = 115.67 EUR. Ezymex Trader performs these conversions automatically at current rates, which is also why the value of an open JPY or CAD position drifts slightly even when the pair itself is still.
 
 ## Step 3: subtract costs to get net P&L
 

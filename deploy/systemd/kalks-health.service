@@ -1,6 +1,0 @@
-[Unit]
-Description=Kalks production watchdog
-
-[Service]
-Type=oneshot
-ExecStart=/home/kalks/kalks/deploy/healthcheck.sh

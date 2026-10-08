@@ -11,4 +11,4 @@ sections:
   - slug: "p6-technical"
     track: "technical"
     title: "Strategy design and backtesting"
-    summary: "Define a trading system, build it in the Kalks strategy builder, backtest it properly, avoid overfitting, judge the metrics and forward-test on demo."
+    summary: "Define a trading system, build it in the Ezymex strategy builder, backtest it properly, avoid overfitting, judge the metrics and forward-test on demo."

@@ -135,4 +135,4 @@ Correlation is the hidden danger. Suppose you hold long NAS100, long AUDUSD and 
 - **Counting positions instead of exposures.** Five risk-on trades are one theme. Measure the combined loss if the regime turns.
 - **Seeing regimes everywhere.** A 0.5% dip in equities on a quiet day is not a regime change. Wait for several markets to confirm.
 
-In Kalks Trader you can keep a watchlist that contains one representative from each group above. A glance at it before every session tells you whether the day is driven by broad risk appetite or by individual stories.
+In Ezymex Trader you can keep a watchlist that contains one representative from each group above. A glance at it before every session tells you whether the day is driven by broad risk appetite or by individual stories.

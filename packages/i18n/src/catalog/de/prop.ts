@@ -101,13 +101,13 @@ const prop: NsMessages<"prop"> = {
 
   // Public certificate verification page (/verify/<code>)
   "verify.shellTitle": "Zertifikatsprüfung",
-  "verify.footer": "Kalks-Prop-Konten sind simuliert. Zertifikate zeigen die Ergebnisse eines Traders in einer Kalks Prop Challenge; der Name des Traders wird auf Vornamen und Initiale des Nachnamens gekürzt.",
+  "verify.footer": "Ezymex-Prop-Konten sind simuliert. Zertifikate zeigen die Ergebnisse eines Traders in einer Ezymex Prop Challenge; der Name des Traders wird auf Vornamen und Initiale des Nachnamens gekürzt.",
   "verify.linkCopied": "Link kopiert",
   "verify.copyFailed": "Link konnte nicht kopiert werden",
   "verify.copyLink": "Link kopieren",
   "verify.downloadPng": "PNG herunterladen",
   "verify.notFoundTitle": "Zertifikat nicht gefunden",
-  "verify.notFoundText": "Es gibt kein Kalks-Prop-Zertifikat mit dieser Nummer. Prüfen Sie den Link oder bitten Sie den Trader, ihn erneut zu teilen.",
+  "verify.notFoundText": "Es gibt kein Ezymex-Prop-Zertifikat mit dieser Nummer. Prüfen Sie den Link oder bitten Sie den Trader, ihn erneut zu teilen.",
   "verify.unavailableTitle": "Die Prüfung ist derzeit nicht verfügbar",
   "verify.unavailableText": "Dieses Zertifikat konnte gerade nicht geprüft werden. Bitte versuchen Sie es in einigen Minuten erneut.",
   "verify.kind.pass": "Phase bestanden",
@@ -121,9 +121,9 @@ const prop: NsMessages<"prop"> = {
   "verify.row.issued": "Ausgestellt",
   "verify.row.number": "Zertifikat-Nr.",
   "verify.validTitle": "Gültiges Zertifikat",
-  "verify.validText": "Von Kalks Prop ausgestellt und mit unseren Aufzeichnungen abgeglichen.",
+  "verify.validText": "Von Ezymex Prop ausgestellt und mit unseren Aufzeichnungen abgeglichen.",
   "verify.revokedTitle": "Widerrufenes Zertifikat",
-  "verify.revokedText": "Dieses Zertifikat wurde von Kalks widerrufen und ist nicht mehr gültig.",
+  "verify.revokedText": "Dieses Zertifikat wurde von Ezymex widerrufen und ist nicht mehr gültig.",
   "verify.valid": "Gültig",
   "verify.revoked": "Widerrufen",
   // Certificate titles
@@ -248,8 +248,8 @@ const prop: NsMessages<"prop"> = {
   "checkout.goToMine": "Zu Meine Challenges",
   "checkout.readyTitle": "Ihre Challenge ist bereit",
   "checkout.paidText": "{fee} wurde aus Ihrer USDT-Wallet bezahlt und Ihr Konto über {size} ist eröffnet. Die Regeln gelten ab sofort.",
-  "checkout.savePasswords": "Speichern Sie diese Passwörter jetzt: Sie werden nur einmal angezeigt und nicht von uns gespeichert. Der Button Handeln meldet Sie ohne Passwort in Kalks Trader an, sodass Sie von hier aus jederzeit handeln können.",
-  "checkout.passwordsShown": "Die Handelspasswörter wurden bei der ersten Bestätigung dieses Kaufs angezeigt. Nutzen Sie den Button Handeln, um Kalks Trader zu öffnen: Er meldet Sie ohne Passwort an.",
+  "checkout.savePasswords": "Speichern Sie diese Passwörter jetzt: Sie werden nur einmal angezeigt und nicht von uns gespeichert. Der Button Handeln meldet Sie ohne Passwort in Ezymex Trader an, sodass Sie von hier aus jederzeit handeln können.",
+  "checkout.passwordsShown": "Die Handelspasswörter wurden bei der ersten Bestätigung dieses Kaufs angezeigt. Nutzen Sie den Button Handeln, um Ezymex Trader zu öffnen: Er meldet Sie ohne Passwort an.",
 
   // Account credentials
   "cred.login": "Login",
@@ -376,7 +376,7 @@ const prop: NsMessages<"prop"> = {
   "account.passed": "Bestanden · nur lesen",
   "account.failed": "Nicht bestanden · deaktiviert",
   "account.opening": "Wird eröffnet",
-  "account.tradableText": "Handeln öffnet Kalks Trader mit Anmeldung bei diesem Konto. Die Passwörter wurden beim Kauf einmalig angezeigt.",
+  "account.tradableText": "Handeln öffnet Ezymex Trader mit Anmeldung bei diesem Konto. Die Passwörter wurden beim Kauf einmalig angezeigt.",
   "account.passedText": "Diese Phase ist abgeschlossen. Das Konto ist schreibgeschützt; handeln Sie in Ihrer nächsten Phase.",
   "account.failedText": "Der Handel auf diesem Konto ist deaktiviert.",
   "account.unavailableText": "Auf diesem Konto ist kein Handel möglich.",

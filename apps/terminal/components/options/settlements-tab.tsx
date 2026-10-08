@@ -7,9 +7,9 @@
 // answers in the account's currency (USC on cent accounts): amounts are shown in USD like the rest of the workspace.
 import * as React from "react";
 import { CalendarCheck2, RefreshCw } from "lucide-react";
-import { OPTION_SPEC, parseSeriesCode } from "@kalks/mock/options";
-import { cn } from "@kalks/ui";
-import { useLocale, useT } from "@kalks/i18n/react";
+import { OPTION_SPEC, parseSeriesCode } from "@ezymex/mock/options";
+import { cn } from "@ezymex/ui";
+import { useLocale, useT } from "@ezymex/i18n/react";
 import { useTerminal } from "@/lib/store";
 import { fmtServer } from "@/lib/trading";
 import { Pnl } from "@/components/ui/primitives";

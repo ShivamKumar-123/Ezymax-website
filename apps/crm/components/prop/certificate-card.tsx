@@ -4,7 +4,7 @@ import * as React from "react";
 import { Download, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { Logo, Starfield, Tooltip, cn, formatMoney } from "@/components/kit";
-import type { PropCertificate } from "@kalks/mock/prop";
+import type { PropCertificate } from "@ezymex/mock/prop";
 
 function XIcon({ className }: { className?: string }) {
   return (
@@ -30,7 +30,7 @@ const HEAD: Record<PropCertificate["kind"], string> = {
 
 /** Dark premium certificate (always dark, regardless of theme) with share actions. */
 export function CertificateCard({ cert, name, className }: { cert: PropCertificate; name: string; className?: string }) {
-  const url = `https://kalks.com/cert/${cert.id}`;
+  const url = `https://ezymex.com/cert/${cert.id}`;
   const date = new Date(cert.date).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
   const amountText = cert.kind === "payout" ? formatMoney(cert.amount) : `$${cert.amount.toLocaleString("en-US")}`;
   const share = (where: string) => toast.success(`Shared to ${where}`, { description: `${cert.title} · ${amountText}` });

@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { Ban, Eye, EyeOff, OctagonAlert, PlayCircle, Save } from "lucide-react";
-import { Avatar, Button, Chip, CopyButton, Dialog, Delta, EquityChart, Flag, Money, StatusChip } from "@kalks/ui";
-import { SOCIAL_SETTINGS, type Master } from "@kalks/mock/admin-partners";
+import { Avatar, Button, Chip, CopyButton, Dialog, Delta, EquityChart, Flag, Money, StatusChip } from "@ezymex/ui";
+import { SOCIAL_SETTINGS, type Master } from "@ezymex/mock/admin-partners";
 import { MiniField, MiniStat, NumInput, RiskScore, Section, auditToast, useReason } from "@/components/config/kit";
 import { STATUS_LABEL, TypeChip } from "./common";
 

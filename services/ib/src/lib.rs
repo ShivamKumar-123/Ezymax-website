@@ -1,4 +1,4 @@
-//! Kalks IB / referral programme (Round 3, D53–D64).
+//! Ezymex IB / referral programme (Round 3, D53–D64).
 //!
 //! Every client is an IB from sign-up (level 1). The service mirrors the referral tree from the gateway,
 //! consumes closed live deals from the trading engine, computes multi-tier per-lot commissions with rebates

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { flushSync } from "react-dom";
-import { fetchCandles, priceFeed, getInstrument, type Quote } from "@kalks/mock";
+import { fetchCandles, priceFeed, getInstrument, type Quote } from "@ezymex/mock";
 import { cn } from "../lib/cn";
 import { splitPrice } from "../lib/format";
 

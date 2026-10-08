@@ -233,8 +233,8 @@ const developer: NsMessages<"developer"> = {
   "assetClass.crypto": "क्रिप्टो",
   "assetClass.stocks": "स्टॉक",
 
-  // Code editor (Kalks strategy language)
-  "code.language": "Kalks स्ट्रैटेजी भाषा",
+  // Code editor (Ezymex strategy language)
+  "code.language": "Ezymex स्ट्रैटेजी भाषा",
   "code.checking": "जाँच हो रही है…",
   "code.errors": { one: "{count} त्रुटि", other: "{count} त्रुटियाँ" },
   "code.compiles": "कंपाइल होता है",
@@ -281,7 +281,7 @@ const developer: NsMessages<"developer"> = {
   // Kill switch
   "kill.title": "किल स्विच",
   "kill.subtitle": "आपके अकाउंट पर हर स्ट्रैटेजी, वेबहुक और API ऑर्डर रोकता है",
-  "kill.globalPaused": "Kalks रिस्क मैनेजमेंट ने पूरे प्लेटफ़ॉर्म पर ऑटोमेटेड ट्रेडिंग रोक दी है।",
+  "kill.globalPaused": "Ezymex रिस्क मैनेजमेंट ने पूरे प्लेटफ़ॉर्म पर ऑटोमेटेड ट्रेडिंग रोक दी है।",
   "kill.onSince": "{at} से चालू",
   "kill.release": "किल स्विच हटाएँ",
   "kill.stopAll": "सारा ऑटोमेशन रोकें",
@@ -363,7 +363,7 @@ const developer: NsMessages<"developer"> = {
   "docs.bearer": "Bearer (सबसे आसान)",
   "docs.hmac": "HMAC सिग्नेचर (बॉट के लिए अनुशंसित)",
   // <code> wraps header names and paths; keep them untranslated
-  "docs.signature": "सिग्नेचर = hex(HMAC-SHA256(secret, timestamp + METHOD + query सहित path + body)), जिसे <code>X-Kalks-Key</code>, <code>X-Kalks-Timestamp</code> (unix ms, ±30 s) और <code>X-Kalks-Signature</code> के साथ भेजा जाता है। path को <code>/public/v1/…</code> के रूप में साइन किया जाता है। हर सिग्नेचर केवल एक बार स्वीकार होता है।",
+  "docs.signature": "सिग्नेचर = hex(HMAC-SHA256(secret, timestamp + METHOD + query सहित path + body)), जिसे <code>X-Ezymex-Key</code>, <code>X-Ezymex-Timestamp</code> (unix ms, ±30 s) और <code>X-Ezymex-Signature</code> के साथ भेजा जाता है। path को <code>/public/v1/…</code> के रूप में साइन किया जाता है। हर सिग्नेचर केवल एक बार स्वीकार होता है।",
   // "api", clientOrderId and duplicate are API values; keep them
   "docs.endpointsSub": "इनपुट और आउटपुट JSON में। हर ऑर्डर का source “api” होता है; दोहराया गया clientOrderId status duplicate लौटाता है।",
   "docs.errorsSub": "त्रुटियों का प्रारूप {shape} है",
@@ -473,9 +473,9 @@ const developer: NsMessages<"developer"> = {
 
   // Strategy marketplace
   "market.title": "स्ट्रैटेजी मार्केटप्लेस",
-  "market.subtitle": "Kalks अकाउंट से सत्यापित ट्रैक रिकॉर्ड वाली स्ट्रैटेजी। किसी एक को अपने अकाउंट पर कॉपी करें, या अपनी स्ट्रैटेजी पब्लिश करें और सब्सक्रिप्शन से कमाएँ।",
-  "market.houseChip": "हाउस स्ट्रैटेजी · Kalks द्वारा संचालित",
-  "market.houseNote": "Kalks द्वारा संचालित हाउस स्ट्रैटेजी: ब्रोकर का अपना लाइव अकाउंट, जिस पर यह स्ट्रैटेजी चलती है। ट्रैक रिकॉर्ड शुरुआत से केवल इसके अपने लाइव ट्रेड हैं; कुछ भी सिम्युलेटेड या बैकफ़िल नहीं किया गया है।",
+  "market.subtitle": "Ezymex अकाउंट से सत्यापित ट्रैक रिकॉर्ड वाली स्ट्रैटेजी। किसी एक को अपने अकाउंट पर कॉपी करें, या अपनी स्ट्रैटेजी पब्लिश करें और सब्सक्रिप्शन से कमाएँ।",
+  "market.houseChip": "हाउस स्ट्रैटेजी · Ezymex द्वारा संचालित",
+  "market.houseNote": "Ezymex द्वारा संचालित हाउस स्ट्रैटेजी: ब्रोकर का अपना लाइव अकाउंट, जिस पर यह स्ट्रैटेजी चलती है। ट्रैक रिकॉर्ड शुरुआत से केवल इसके अपने लाइव ट्रेड हैं; कुछ भी सिम्युलेटेड या बैकफ़िल नहीं किया गया है।",
   // Date range, e.g. "2025-01-01 to 2025-12-31"
   "market.range": "{from} से {to}",
   "market.backtestSimulated": "बैकटेस्ट · सिम्युलेटेड",
@@ -502,7 +502,7 @@ const developer: NsMessages<"developer"> = {
   "market.subscriptionStatus": "सब्सक्रिप्शन {status}",
   "market.reviewSaved": "रिव्यू सेव हुआ",
   "market.reviewFailed": "रिव्यू सेव नहीं हो सका",
-  "market.trackNote": "{since} से Kalks पर लेखक के अपने डिप्लॉयमेंट का ट्रैक रिकॉर्ड: {days} दिन, शुद्ध {net}। ट्रेडिंग इंजन पर बंद डील से गणना, लेखक द्वारा दर्ज नहीं।",
+  "market.trackNote": "{since} से Ezymex पर लेखक के अपने डिप्लॉयमेंट का ट्रैक रिकॉर्ड: {days} दिन, शुद्ध {net}। ट्रेडिंग इंजन पर बंद डील से गणना, लेखक द्वारा दर्ज नहीं।",
   "market.riskSettings": "रिस्क सेटिंग्स",
   "market.riskLine": "साइज़ {size} · स्टॉप {stop} · टारगेट {target}",
   "market.riskPct": "{pct}% रिस्क",
@@ -520,7 +520,7 @@ const developer: NsMessages<"developer"> = {
   "market.cloneRules": "नियम क्लोन करें",
   "market.subscribePaid": "सब्सक्राइब करें · {price} USDT / माह",
   "market.subscribeFree": "मुफ़्त सब्सक्राइब करें",
-  "market.paidNote": "आपके Kalks वॉलेट (USDT) से भुगतान। हर 30 दिन में रिन्यू होता है; कभी भी रद्द करें।",
+  "market.paidNote": "आपके Ezymex वॉलेट (USDT) से भुगतान। हर 30 दिन में रिन्यू होता है; कभी भी रद्द करें।",
   "market.reviews": "रिव्यू ({n})",
   "market.stars": { one: "{count} स्टार", other: "{count} स्टार" },
   "market.reviewPlaceholder": "आपके लिए इसने कैसा ट्रेड किया?",
@@ -552,7 +552,7 @@ const developer: NsMessages<"developer"> = {
   "market.popular": "लोकप्रिय",
   "market.emptyTitle": "अभी कोई स्ट्रैटेजी लिस्टेड नहीं",
   "market.emptyText": "सबसे पहले बनें: डेमो अकाउंट पर स्ट्रैटेजी डिप्लॉय करें, फिर उसके सत्यापित ट्रैक रिकॉर्ड के साथ पब्लिश करें।",
-  "market.disclaimer": "पिछला प्रदर्शन भविष्य के परिणामों की गारंटी नहीं है। ट्रैक रिकॉर्ड Kalks के लाइव या डेमो अकाउंट से आते हैं और उसी अनुसार लेबल किए जाते हैं। पेड सब्सक्रिप्शन पर प्लेटफ़ॉर्म फ़ीस: {pct}%।",
+  "market.disclaimer": "पिछला प्रदर्शन भविष्य के परिणामों की गारंटी नहीं है। ट्रैक रिकॉर्ड Ezymex के लाइव या डेमो अकाउंट से आते हैं और उसी अनुसार लेबल किए जाते हैं। पेड सब्सक्रिप्शन पर प्लेटफ़ॉर्म फ़ीस: {pct}%।",
   "market.mode": "मोड",
   "market.renews": "रिन्यू",
   "market.copyOn": "#{login} पर कॉपी",

@@ -562,9 +562,9 @@ pub fn book_header(u: &Underlying, gs: &GroupSettings, active: bool) -> Value {
     })
 }
 
-/// Barrier options are RFQ only, quoted by Kalks (never on the order book, §5).
+/// Barrier options are RFQ only, quoted by Ezymex (never on the order book, §5).
 pub fn barriers_header(u: &Underlying) -> Value {
-    json!({"enabled": u.barriers_enabled, "venue": BARRIER_VENUE, "quotedBy": "kalks", "kalksQuoted": true, "orderBook": false, "label": BARRIER_LABEL})
+    json!({"enabled": u.barriers_enabled, "venue": BARRIER_VENUE, "quotedBy": "ezymex", "ezymexQuoted": true, "orderBook": false, "label": BARRIER_LABEL})
 }
 
 /// Put / call ratio (`None` without call interest).
@@ -772,7 +772,7 @@ mod tests {
     }
 
     fn gs() -> GroupSettings {
-        GroupSettings::builtin("kalks")
+        GroupSettings::builtin("ezymex")
     }
 
     #[test]
@@ -904,7 +904,7 @@ mod tests {
         assert_eq!((h["makerFeePerContract"].as_f64(), h["takerFeePerContract"].as_f64(), h["feeCapPct"].as_f64()), (Some(-0.05), Some(0.25), Some(10.0)));
         assert_eq!(book_header(&u, &g, false)["active"], false);
         let b = barriers_header(&u);
-        assert_eq!((b["venue"].as_str(), b["label"].as_str(), b["orderBook"].as_bool()), (Some("rfq"), Some("Kalks-quoted (RFQ only)"), Some(false)));
+        assert_eq!((b["venue"].as_str(), b["label"].as_str(), b["orderBook"].as_bool()), (Some("rfq"), Some("Ezymex-quoted (RFQ only)"), Some(false)));
         assert_eq!(ratio(30.0, 20.0), Some(1.5));
         assert_eq!(ratio(30.0, 0.0), None);
     }

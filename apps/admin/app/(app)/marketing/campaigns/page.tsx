@@ -20,13 +20,13 @@ import {
   StatusChip,
   type Column,
   cn,
-} from "@kalks/ui";
-import { UTM_CAMPAIGNS as MKT_CAMPAIGNS, UTM_SPEND_REVENUE as MKT_SPEND_REVENUE, type UtmCampaign as MktCampaign } from "@kalks/mock/admin-campaigns";
+} from "@ezymex/ui";
+import { UTM_CAMPAIGNS as MKT_CAMPAIGNS, UTM_SPEND_REVENUE as MKT_SPEND_REVENUE, type UtmCampaign as MktCampaign } from "@ezymex/mock/admin-campaigns";
 import { FunnelViz } from "@/components/analytics/funnel";
 import { ComboChart } from "@/components/marketing/charts";
 import { MiniStat, fmtK } from "@/components/marketing/kit";
 import { UtmBuilderDialog } from "@/components/marketing/utm-builder-dialog";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveCampaigns } from "@/components/marketing/live/campaigns";
 
 const SRC_COLOR: Record<string, string> = {
@@ -148,7 +148,7 @@ function DemoCampaigns() {
               c.status === "completed"
                 ? { label: "Duplicate campaign", icon: <Plus />, onSelect: () => toast.success(`${c.campaign}_v2 drafted`) }
                 : { label: c.status === "running" ? "Pause" : "Resume", icon: c.status === "running" ? <Pause /> : <Play />, onSelect: () => toggle(c.id) },
-              { label: "Copy tracked link", icon: <Plug />, onSelect: () => (navigator.clipboard?.writeText(`https://kalks.com/open-account?utm_source=${c.source}&utm_medium=${c.medium}&utm_campaign=${c.campaign}`).catch(() => {}), toast.success("Tracked link copied")) },
+              { label: "Copy tracked link", icon: <Plug />, onSelect: () => (navigator.clipboard?.writeText(`https://ezymex.com/open-account?utm_source=${c.source}&utm_medium=${c.medium}&utm_campaign=${c.campaign}`).catch(() => {}), toast.success("Tracked link copied")) },
               { label: "Open cohort in Analytics", icon: <TrendingUp />, href: "/analytics/cohorts" },
             ]}
           />

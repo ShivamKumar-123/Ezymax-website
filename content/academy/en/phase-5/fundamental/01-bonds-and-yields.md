@@ -47,7 +47,7 @@ quiz:
     explanation: "This is duration: the longer the time until the cash flows arrive, the more their present value changes when the discount rate changes."
 ---
 
-Most people who trade FX, gold or indices never buy a bond. Yet the government bond market is the largest and most rate-sensitive market in the world, and its prices are quietly built into the valuation of almost everything on your watchlist. When a currency pair moves sharply on an inflation release, it is usually because bond yields moved first. This chapter explains how bonds work, what yields tell you and how to use them as context for trades in Kalks Trader.
+Most people who trade FX, gold or indices never buy a bond. Yet the government bond market is the largest and most rate-sensitive market in the world, and its prices are quietly built into the valuation of almost everything on your watchlist. When a currency pair moves sharply on an inflation release, it is usually because bond yields moved first. This chapter explains how bonds work, what yields tell you and how to use them as context for trades in Ezymex Trader.
 
 ## How a bond works
 
@@ -99,7 +99,7 @@ Money moves towards a better risk-adjusted return. If US yields rise relative to
 
 For short-term FX moves the 2-year spread often tracks the pair more closely than the 10-year spread, because it reflects the policy gap between the two central banks. USDJPY has historically been one of the pairs most tightly linked to US-Japan yield spreads, which is why many JPY traders watch US yields as closely as the chart itself.
 
-> **In Kalks Trader:** Government bonds may not be available as tradable symbols on your account, but you can still follow yields through the News and Economic calendar modules in the Client Area and use them as context for FX, gold and index trades.
+> **In Ezymex Trader:** Government bonds may not be available as tradable symbols on your account, but you can still follow yields through the News and Economic calendar modules in the Client Area and use them as context for FX, gold and index trades.
 
 ## In practice
 

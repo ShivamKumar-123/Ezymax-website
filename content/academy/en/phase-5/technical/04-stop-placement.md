@@ -116,7 +116,7 @@ Once a trade is working, a stop can be moved to reduce risk, never to increase i
 
 - **To breakeven** after price has moved a meaningful distance, commonly 1R, or after a new swing forms.
 - **Trailing behind structure**, moving the stop under each new higher low in a long trade.
-- **Server-side trailing stop** in Kalks Trader, which follows price at a fixed distance and keeps working when you are offline.
+- **Server-side trailing stop** in Ezymex Trader, which follows price at a fixed distance and keeps working when you are offline.
 
 Moving to breakeven too early is a common error: it turns many trades that would have worked into scratch trades after normal pullbacks.
 

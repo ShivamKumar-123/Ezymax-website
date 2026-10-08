@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { AppShell, Avatar, Tooltip } from "@kalks/ui";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { AppShell, Avatar, Tooltip } from "@ezymex/ui";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { NAV } from "@/lib/live";
 import { navFor } from "@/lib/access";
 import { AdminTopRight } from "@/components/topbar";

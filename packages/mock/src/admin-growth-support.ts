@@ -100,7 +100,7 @@ const P = (name: string) => PEOPLE.find((p) => p.name === name)!;
 const baseCtx = (over: Partial<SupContext> & Pick<SupContext, "accounts" | "aiSummary">): SupContext => ({
   kyc: "verified",
   segment: "Retail",
-  tenant: "Kalks Markets",
+  tenant: "Ezymex Markets",
   since: "Mar 2025",
   wallet: 1240.5,
   lastDeposit: { amount: 1000, method: "USDT · TRC20", at: "19 Sep, 11:42" },
@@ -215,7 +215,7 @@ export const SUP_CONVERSATIONS: SupConversation[] = [
     ],
     context: baseCtx({
       segment: "Retail",
-      tenant: "Kalks Markets",
+      tenant: "Ezymex Markets",
       since: "Feb 2026",
       accounts: [{ login: "80433610", type: "live", group: "Standard · Hedging", equity: 42.18 }],
       wallet: 0,
@@ -225,7 +225,7 @@ export const SUP_CONVERSATIONS: SupConversation[] = [
       sentiment: "frustrated",
       ltv: 750,
       tags: ["stop-out", "news-spread"],
-      device: "Kalks app · Android 16",
+      device: "Ezymex app · Android 16",
     }),
   },
   {
@@ -254,7 +254,7 @@ export const SUP_CONVERSATIONS: SupConversation[] = [
       sentiment: "positive",
       ltv: 300,
       language: "Vietnamese",
-      device: "Kalks app · iOS 19",
+      device: "Ezymex app · iOS 19",
     }),
   },
   {
@@ -365,7 +365,7 @@ export const SUP_CONVERSATIONS: SupConversation[] = [
       segment: "Prop trader",
       accounts: [{ login: "90120348", type: "live", group: "Prop · 50K Phase 1", equity: 47590 }],
       aiSummary: "Challenge breached on daily loss using equity-based midnight snapshot. Agent offered one free reset.",
-      tenant: "Kalks Markets",
+      tenant: "Ezymex Markets",
       language: "Malay · English",
     }),
   },
@@ -527,11 +527,11 @@ export const SUP_ARTICLES: SupArticle[] = [
   { id: "kb102", title: "Why a withdrawal goes to manual review", category: "Withdrawals", body: "A withdrawal is reviewed manually when: the amount exceeds 3× the 30-day average; the destination was whitelisted within 72 hours; deposits came from a different wallet; or the account has an open AML flag. Agents must never promise a release time before Finance confirms.", tags: ["withdrawal", "review", "aml"], usedIn: 2107, helpful: 84, updated: "20 Sep 2026", updatedBy: "Elena Petrova", status: "published", languages: 22, tenants: "All tenants" },
   { id: "kb103", title: "USDT TRC20 deposit confirmations", category: "Deposits", body: "Deposits are credited after 20 TRON network confirmations, usually about one minute. Deposits below 10 USDT are not credited. Sending on the wrong network (ERC20, BEP20) requires a manual recovery ticket with a $25 fee.", tags: ["deposit", "usdt", "confirmations"], usedIn: 6390, helpful: 95, updated: "11 Sep 2026", updatedBy: "Mei Lin", status: "published", languages: 22, tenants: "All tenants" },
   { id: "kb104", title: "Swap-free (Islamic) accounts", category: "Accounts", body: "Swap-free accounts are available on Standard and Pro groups. No overnight swaps are charged; an administration fee of $3.50 per lot applies after 5 consecutive nights on metals and indices. Accounts can be converted when no positions are open.", tags: ["islamic", "swap-free"], usedIn: 1488, helpful: 93, updated: "05 Sep 2026", updatedBy: "Omar Haddad", status: "published", languages: 18, tenants: "All tenants" },
-  { id: "kb105", title: "Spreads during high-impact news", category: "Trading", body: "During high-impact releases (NFP, CPI, PCE, central bank decisions) liquidity providers widen quotes, typically for 5–30 seconds. Kalks passes through LP prices with no dealer intervention. Compensation is only considered if execution was outside the prevailing LP range.", tags: ["spread", "news", "execution"], usedIn: 912, helpful: 72, updated: "24 Sep 2026", updatedBy: "Priya Nair", status: "review", languages: 12, tenants: "All tenants" },
+  { id: "kb105", title: "Spreads during high-impact news", category: "Trading", body: "During high-impact releases (NFP, CPI, PCE, central bank decisions) liquidity providers widen quotes, typically for 5–30 seconds. Ezymex passes through LP prices with no dealer intervention. Compensation is only considered if execution was outside the prevailing LP range.", tags: ["spread", "news", "execution"], usedIn: 912, helpful: 72, updated: "24 Sep 2026", updatedBy: "Priya Nair", status: "review", languages: 12, tenants: "All tenants" },
   { id: "kb106", title: "Stop out level explained", category: "Trading", body: "Stop out occurs when margin level falls to 50% (Standard) or 30% (Pro, ECN). Positions are closed starting with the largest floating loss until margin level recovers.", tags: ["margin", "stop-out"], usedIn: 1765, helpful: 88, updated: "01 Aug 2026", updatedBy: "Priya Nair", status: "published", languages: 22, tenants: "All tenants" },
   { id: "kb107", title: "Accepted proof of address documents", category: "KYC", body: "Utility bills, bank statements, tax letters or government correspondence issued within 90 days, showing the full legal name and residential address. Name variations (married names) require supporting evidence such as a marriage certificate.", tags: ["kyc", "poa"], usedIn: 3021, helpful: 86, updated: "09 Sep 2026", updatedBy: "Zara Sheikh", status: "published", languages: 22, tenants: "All tenants" },
-  { id: "kb108", title: "IB commission payout schedule", category: "Partners", body: "IB commissions are calculated daily and paid to the partner wallet on the 1st of each month for the previous month. Commissions from accounts under fraud review are held until the review completes.", tags: ["ib", "commission", "payout"], usedIn: 804, helpful: 89, updated: "28 Aug 2026", updatedBy: "Omar Haddad", status: "published", languages: 16, tenants: "Kalks Markets, Aurum FX" },
-  { id: "kb109", title: "Prop daily loss rule", category: "Prop", body: "Daily loss is measured from the higher of balance or equity at 00:00 server time (GMT+3). Breaching 5% (Phase 1/2) or 4% (Funded) fails the account immediately.", tags: ["prop", "daily-loss"], usedIn: 1322, helpful: 81, updated: "15 Sep 2026", updatedBy: "Mei Lin", status: "published", languages: 20, tenants: "Kalks Markets" },
+  { id: "kb108", title: "IB commission payout schedule", category: "Partners", body: "IB commissions are calculated daily and paid to the partner wallet on the 1st of each month for the previous month. Commissions from accounts under fraud review are held until the review completes.", tags: ["ib", "commission", "payout"], usedIn: 804, helpful: 89, updated: "28 Aug 2026", updatedBy: "Omar Haddad", status: "published", languages: 16, tenants: "Ezymex Markets, Aurum FX" },
+  { id: "kb109", title: "Prop daily loss rule", category: "Prop", body: "Daily loss is measured from the higher of balance or equity at 00:00 server time (GMT+3). Breaching 5% (Phase 1/2) or 4% (Funded) fails the account immediately.", tags: ["prop", "daily-loss"], usedIn: 1322, helpful: 81, updated: "15 Sep 2026", updatedBy: "Mei Lin", status: "published", languages: 20, tenants: "Ezymex Markets" },
   { id: "kb110", title: "Leverage tiers by equity", category: "Accounts", body: "Maximum leverage: 1:1000 up to $5,000 equity, 1:500 up to $50,000, 1:200 up to $250,000 and 1:100 above. Some jurisdictions are capped at 1:30.", tags: ["leverage"], usedIn: 2240, helpful: 94, updated: "18 Jul 2026", updatedBy: "Carlos Mendoza", status: "stale", languages: 22, tenants: "All tenants" },
   { id: "kb111", title: "Account lock & 2FA recovery", category: "Security", body: "Accounts lock for 30 minutes after 5 failed logins. If 2FA is unavailable, the client must pass a selfie liveness check before an agent resets 2FA.", tags: ["2fa", "security", "lock"], usedIn: 690, helpful: 83, updated: "12 Sep 2026", updatedBy: "Elena Petrova", status: "published", languages: 22, tenants: "All tenants" },
   { id: "kb112", title: "Trading API quick start", category: "Platform", body: "Create a key in API & Algo → Keys, restrict to IP, use REST (orders, positions) or WebSocket (quotes, account). Rate limit: 20 req/s per key.", tags: ["api", "algo"], usedIn: 238, helpful: 90, updated: "03 Sep 2026", updatedBy: "Mei Lin", status: "published", languages: 6, tenants: "All tenants" },
@@ -604,14 +604,14 @@ export interface SupFeedback {
 }
 
 export const SUP_FEEDBACK: SupFeedback[] = [
-  { id: "f1", client: person(9), rating: 5, comment: "Claude sorted my statement in seconds. Didn't even need a human.", agent: "Claude", conv: "CV-20922", at: "13:22", channel: "email", tenant: "Kalks Markets" },
+  { id: "f1", client: person(9), rating: 5, comment: "Claude sorted my statement in seconds. Didn't even need a human.", agent: "Claude", conv: "CV-20922", at: "13:22", channel: "email", tenant: "Ezymex Markets" },
   { id: "f2", client: person(3), rating: 5, comment: "Deposit issue explained clearly, it arrived exactly when the bot said.", agent: "Claude", conv: "CV-20928", at: "14:05", channel: "app", tenant: "NovaTrade Asia" },
   { id: "f3", client: person(20), rating: 4, comment: "Elena was quick, but the selfie check was a bit annoying.", agent: "Elena Petrova", conv: "CV-20920", at: "12:45", channel: "app", tenant: "Dunes Capital" },
-  { id: "f4", client: person(15), rating: 2, comment: "Waited 20 minutes for a human after the bot could not unlock my account.", agent: "Claude", conv: "CV-20899", at: "11:31", channel: "whatsapp", tenant: "Kalks Markets" },
-  { id: "f5", client: person(22), rating: 5, comment: "Mei Lin gave me a free reset on my challenge. Very fair.", agent: "Mei Lin", conv: "CV-20881", at: "10:58", channel: "app", tenant: "Kalks Markets" },
+  { id: "f4", client: person(15), rating: 2, comment: "Waited 20 minutes for a human after the bot could not unlock my account.", agent: "Claude", conv: "CV-20899", at: "11:31", channel: "whatsapp", tenant: "Ezymex Markets" },
+  { id: "f5", client: person(22), rating: 5, comment: "Mei Lin gave me a free reset on my challenge. Very fair.", agent: "Mei Lin", conv: "CV-20881", at: "10:58", channel: "app", tenant: "Ezymex Markets" },
   { id: "f6", client: person(13), rating: 3, comment: "Answer was correct but I had to ask twice to get the IB payout date.", agent: "Claude", conv: "CV-20874", at: "10:12", channel: "web", tenant: "Aurum FX" },
   { id: "f7", client: person(10), rating: 5, comment: "Omar replied in Arabic and fixed my commission hold same day.", agent: "Omar Haddad", conv: "CV-20870", at: "09:40", channel: "whatsapp", tenant: "Dunes Capital" },
-  { id: "f8", client: person(7), rating: 1, comment: "Refund refused for news spread. Very disappointed.", agent: "Priya Nair", conv: "CV-20862", at: "09:02", channel: "web", tenant: "Kalks Markets" },
+  { id: "f8", client: person(7), rating: 1, comment: "Refund refused for news spread. Very disappointed.", agent: "Priya Nair", conv: "CV-20862", at: "09:02", channel: "web", tenant: "Ezymex Markets" },
 ];
 
 /** CSAT per agent including the AI bot row. */

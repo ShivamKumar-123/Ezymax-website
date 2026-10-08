@@ -7,8 +7,8 @@
 import * as React from "react";
 import { toast } from "@/lib/notify";
 import { ArrowLeftRight, Check, Crosshair, Edit3, Layers, MoreHorizontal, Plus, Scissors, Share2, ShoppingCart, X, XCircle } from "lucide-react";
-import { getInstrument, priceFeed } from "@kalks/mock";
-import { SymbolAvatar, cn, useQuote } from "@kalks/ui";
+import { getInstrument, priceFeed } from "@ezymex/mock";
+import { SymbolAvatar, cn, useQuote } from "@ezymex/ui";
 import { usePositionProfit, useTerminal } from "@/lib/store";
 import { PENDING_LABEL, SOURCE_LABEL, accMoney, fmtPrice, fmtServer, fmtVol, pipSize, profitAt, type PendingOrder, type TPosition, swapSummary } from "@/lib/trading";
 import { Td, Th } from "@/components/ui/panel";
@@ -18,8 +18,8 @@ import { useContextMenu, type MenuItem } from "@/components/ui/menu";
 import { PickBox } from "@/components/share/share-dialogs";
 import { shareUi, useShareUi } from "@/lib/share";
 import { askConfirm } from "@/components/dialogs/confirm";
-import { tr, useT } from "@kalks/i18n/react";
-import type { T as Translate } from "@kalks/i18n";
+import { tr, useT } from "@ezymex/i18n/react";
+import type { T as Translate } from "@ezymex/i18n";
 
 /** Translated trade direction, order type and source labels (lowercase as in MT5). */
 export const sideLabel = (t: Translate, side: string) => t.dyn(`toolbox.side.${side}`, side);

@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Wallet (Client Area). Brand and network names (Kalks, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
+// Wallet (Client Area). Brand and network names (Ezymex, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
 // MetaMask, TronLink, Tronscan, USD, USC, KYC) stay as they are.
 const wallet: NsMessages<"wallet"> = {
   // Shared labels
@@ -387,17 +387,17 @@ const wallet: NsMessages<"wallet"> = {
   "demo.linkCopied": "คัดลอกลิงก์ไปยังคลิปบอร์ดแล้ว",
   "demo.sendOnlyWarning": "<b>ส่งเฉพาะ USDT ผ่าน TRON (TRC20)</b> การส่งโทเคนอื่นหรือใช้ ERC20 / BEP20 จะทำให้เงินสูญหายถาวร",
   "demo.arrival": "ระยะเวลาเข้าบัญชี",
-  "demo.kalksFee": "ค่าธรรมเนียม Kalks",
+  "demo.ezymexFee": "ค่าธรรมเนียม Ezymex",
   "demo.noKycDeposit": "ไม่ต้อง KYC เพื่อฝากเงิน ต้องยืนยันตัวตนก่อนการถอนเงินครั้งแรกเท่านั้น",
   // Withdraw
   "demo.addrStartT": "ที่อยู่ TRC20 ขึ้นต้นด้วย “T”",
   "demo.addrLength": "ต้องมี 34 ตัวอักษร ({length}/34)",
   "demo.addrChars": "มีอักขระที่ไม่ถูกต้อง (ไม่อนุญาต 0, O, I, l)",
-  "demo.addrOwn": "นี่คือที่อยู่ฝากเงิน Kalks ของคุณเอง",
+  "demo.addrOwn": "นี่คือที่อยู่ฝากเงิน Ezymex ของคุณเอง",
   "demo.justNow": "เมื่อสักครู่",
   "demo.codeConfirmed": "ยืนยันรหัสผ่าน {email} แล้ว",
   "demo.financeReviews": "ทีมการเงินตรวจสอบการถอนทุกรายการ · โดยปกติไม่เกิน 2 ชั่วโมง",
-  "demo.sentFromHot": "ส่งจาก hot wallet ของ Kalks เมื่อได้รับอนุมัติ",
+  "demo.sentFromHot": "ส่งจาก hot wallet ของ Ezymex เมื่อได้รับอนุมัติ",
   "demo.arriveAfter": "เงินจะเข้าที่อยู่ของคุณหลังการยืนยัน 20 ครั้ง",
   "demo.pendingTitle": "การถอนที่รอดำเนินการ",
   "demo.awaitingCompletion": "รอเสร็จสิ้น {count} รายการ",
@@ -455,7 +455,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.alwaysReviewed": "ตรวจสอบโดยฝ่ายการเงินทุกครั้ง",
   "demo.unrecoverable": "การถอนไปยังกระดานเทรดที่ไม่รองรับ USDT TRC20 หรือไปยังที่อยู่สมาร์ตคอนแทรกต์ ไม่สามารถกู้คืนได้",
   // Transfer
-  "demo.kalksWallet": "Kalks Wallet",
+  "demo.ezymexWallet": "Ezymex Wallet",
   "demo.freeMargin": "ฟรีมาร์จิ้น",
   "demo.assetAvailable": "ใช้ได้ {amount} {asset} · {network}",
   "demo.throughWallet": "การโอนเงินจะผ่านวอลเล็ตของคุณเสมอ",
@@ -490,7 +490,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.rule4Title": "ปกป้องฟรีมาร์จิ้น",
   "demo.rule4Text": "คุณย้ายออกได้เฉพาะจำนวนที่ฟรีมาร์จิ้นอนุญาต เพื่อให้เทรดที่เปิดอยู่ปลอดภัย",
   "demo.into": "เข้า",
-  "demo.intoKalksWallet": "เข้า Kalks Wallet ของคุณ",
+  "demo.intoEzymexWallet": "เข้า Ezymex Wallet ของคุณ",
   "demo.freeMarginAfter": "ฟรีมาร์จิ้นหลังโอน",
   "demo.marginLevelAfter": "ระดับมาร์จิ้นหลังโอน",
   "demo.convertedNote": "{asset} จะแปลงเป็น USD ที่อัตราปัจจุบันหักส่วนเพิ่ม {markup}% อัตราจะรีเฟรชทุกติกจนกว่าคุณจะยืนยัน",

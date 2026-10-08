@@ -3,21 +3,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:kalks/core/config/app_config.dart';
-import 'package:kalks/core/format/format.dart';
-import 'package:kalks/core/models/account.dart';
-import 'package:kalks/core/models/user.dart';
-import 'package:kalks/core/models/wallet.dart';
-import 'package:kalks/data/client_data.dart';
-import 'package:kalks/features/dashboard/dashboard_data.dart';
-import 'package:kalks/features/dashboard/dashboard_screen.dart';
-import 'package:kalks/features/dashboard/widgets/list_cards.dart';
-import 'package:kalks/features/dashboard/widgets/markets_cards.dart';
-import 'package:kalks/features/dashboard/widgets/more_cards.dart';
-import 'package:kalks/features/dashboard/widgets/statistic_card.dart';
-import 'package:kalks/features/markets/instruments.dart';
-import 'package:kalks/i18n/i18n.dart';
-import 'package:kalks/preview/preview_data.dart';
+import 'package:ezymex/core/config/app_config.dart';
+import 'package:ezymex/core/format/format.dart';
+import 'package:ezymex/core/models/account.dart';
+import 'package:ezymex/core/models/user.dart';
+import 'package:ezymex/core/models/wallet.dart';
+import 'package:ezymex/data/client_data.dart';
+import 'package:ezymex/features/dashboard/dashboard_data.dart';
+import 'package:ezymex/features/dashboard/dashboard_screen.dart';
+import 'package:ezymex/features/dashboard/widgets/list_cards.dart';
+import 'package:ezymex/features/dashboard/widgets/markets_cards.dart';
+import 'package:ezymex/features/dashboard/widgets/more_cards.dart';
+import 'package:ezymex/features/dashboard/widgets/statistic_card.dart';
+import 'package:ezymex/features/markets/instruments.dart';
+import 'package:ezymex/i18n/i18n.dart';
+import 'package:ezymex/preview/preview_data.dart';
 
 import 'helpers/test_app.dart';
 
@@ -222,7 +222,7 @@ void main() {
         'Market news',
         'Markets & news around the world',
         'More for you',
-        'Launch Kalks Trader',
+        'Launch Ezymex Trader',
         'Your account',
         'Market clock',
         'Need help?',
@@ -261,7 +261,7 @@ void main() {
       expect(find.text('Connected'), findsWidgets);
       await tester.tap(find.descendant(of: find.byType(ActivityTabs), matching: find.text('Linked')));
       await settle(tester, frames: 4);
-      expect(find.text('Kalks Trader'), findsWidgets);
+      expect(find.text('Ezymex Trader'), findsWidgets);
       expect(find.text('Gold'), findsOneWidget);
       await unmount(tester);
     });
@@ -295,7 +295,7 @@ void main() {
     });
   });
 
-  test('the support address falls back to Kalks\' own', () {
-    expect(supportEmailOf(AppConfig.fallback), 'support@kalkstrade.com');
+  test('the support address falls back to Ezymex\' own', () {
+    expect(supportEmailOf(AppConfig.fallback), 'support@ezymex.com');
   });
 }

@@ -54,7 +54,7 @@ import {
   type Campaign,
   type CampaignsResp,
 } from "./api";
-import { Trans, useFormat, useT } from "@kalks/i18n/react";
+import { Trans, useFormat, useT } from "@ezymex/i18n/react";
 import { CardEmpty, PageFallback, SkeletonGrid } from "./ui";
 import { QrDialog, useQrCode, type QrTheme } from "./qr";
 
@@ -349,7 +349,7 @@ function QrCard({
     size: px,
     theme,
     logo,
-    fileBase: `kalks-${code}${c.slug ? `-${c.slug}` : ""}-qr`,
+    fileBase: `ezymex-${code}${c.slug ? `-${c.slug}` : ""}-qr`,
   });
   return (
     <Card className="flex h-full flex-col">
@@ -869,7 +869,7 @@ export function LivePartnerLinks() {
                   : undefined
               }
               searchPlaceholder={t("partner.links.search")}
-              exportName={own ? "kalks-campaign-links" : undefined}
+              exportName={own ? "ezymex-campaign-links" : undefined}
             />
             {own === 0 && (
               <CardEmpty
@@ -929,8 +929,8 @@ export function LivePartnerLinks() {
         }
         fileBase={
           qrFor
-            ? `kalks-${code}${qrFor.slug ? `-${qrFor.slug}` : ""}-qr`
-            : "kalks-qr"
+            ? `ezymex-${code}${qrFor.slug ? `-${qrFor.slug}` : ""}-qr`
+            : "ezymex-qr"
         }
       />
     </div>

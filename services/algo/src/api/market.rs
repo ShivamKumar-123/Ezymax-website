@@ -52,7 +52,7 @@ pub async fn track_record(st: &AppState, dep: i64) -> Result<Value, ApiError> {
     let end = d.get::<Option<chrono::DateTime<chrono::Utc>>, _>("stopped_at").unwrap_or_else(chrono::Utc::now);
     Ok(json!({
         "verified": true,
-        "source": "Kalks runtime (closed deals on the trading engine)",
+        "source": "Ezymex runtime (closed deals on the trading engine)",
         "accountType": d.get::<String, _>("account_type"),
         "deploymentId": dep,
         "deploymentStatus": d.get::<String, _>("status"),

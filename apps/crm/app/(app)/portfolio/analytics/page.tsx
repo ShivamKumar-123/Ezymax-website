@@ -22,7 +22,7 @@ import {
   cn,
   formatMoney,
 } from "@/components/kit";
-import { HISTORY, equitySeries, seeded } from "@kalks/mock";
+import { HISTORY, equitySeries, seeded } from "@ezymex/mock";
 import {
   CHARGES_BREAKDOWN,
   HOUR_HEATMAP,
@@ -35,9 +35,9 @@ import {
   groupPnl,
   serverParts,
   tradeStats,
-} from "@kalks/mock/portfolio-extra";
+} from "@ezymex/mock/portfolio-extra";
 import { ColumnBars, DrawdownChart, HourHeatmap, MultiLineChart, PnlBars, Waterfall } from "@/components/portfolio/charts";
-import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LiveAnalyticsPage } from "@/components/reports/live-analytics";
 import { TERMINAL_URL } from "@/lib/live";
 

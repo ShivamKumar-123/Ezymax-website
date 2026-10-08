@@ -1,4 +1,4 @@
--- Kalks IB / referral programme (services/ib). Money is NUMERIC (USD), never float.
+-- Ezymex IB / referral programme (services/ib). Money is NUMERIC (USD), never float.
 -- `tenant` is the gateway tenant slug (white-label); every query filters by it.
 
 CREATE TABLE settings (

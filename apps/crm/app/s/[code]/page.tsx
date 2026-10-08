@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { ArrowUpRight, ImageOff } from "lucide-react";
-import { Logo } from "@kalks/ui/logo";
+import { Logo } from "@ezymex/ui/logo";
 import { optionStrikeLabel, publicShare, type PublicShare, type ShareOption } from "@/lib/growth";
-import type { T } from "@kalks/i18n";
-import { intlTag } from "@kalks/i18n/locales";
-import { getT } from "@kalks/i18n/server";
+import type { T } from "@ezymex/i18n";
+import { intlTag } from "@ezymex/i18n/locales";
+import { getT } from "@ezymex/i18n/server";
 
 // Public share card (D136): /s/<code>. No sign-in (proxy.ts lets /s/** through) and outside the (app) group, so
 // no Client Area shell or LiveGate. The card is read server-side with the internal token; the page render counts
@@ -75,7 +75,7 @@ function summaryText(s: PublicShare, t: T) {
 }
 
 function summary(s: PublicShare, t: T) {
-  return `${summaryText(s, t)} ${t("rewards.public.tradeWithKalks")}`;
+  return `${summaryText(s, t)} ${t("rewards.public.tradeWithEzymex")}`;
 }
 
 async function origin() {
@@ -90,7 +90,7 @@ async function origin() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { code } = await params;
   const s = await publicShare(code);
-  if (!s || s === "unavailable") return { title: "Kalks", robots: { index: false } };
+  if (!s || s === "unavailable") return { title: "Ezymex", robots: { index: false } };
   const t = await getT();
   const base = await origin();
   const image = `${base}/s/${s.code}/image`;

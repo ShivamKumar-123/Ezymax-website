@@ -45,7 +45,7 @@ const news: NsMessages<"news"> = {
   "markets.trade": "Fanya biashara",
   "markets.searchPlaceholder": "Tafuta alama au jina…",
   "markets.clearSearch": "Futa",
-  "markets.liveTooltip": "Bei hutiririka kutoka kwenye mlisho wa bei wa Kalks",
+  "markets.liveTooltip": "Bei hutiririka kutoka kwenye mlisho wa bei wa Ezymex",
   "markets.footnote": "Spread za kundi la Standard: pips kwa FX, vipimo vya bei kwa vingine · masoko yaliyofungwa huonyesha bei yake ya mwisho · bofya safu kuona vipimo vya mkataba",
   // Short trading-hours summary per asset class (24/5 = 24 hours, 5 days a week)
   "hoursShort.forex": "24/5",
@@ -270,7 +270,7 @@ const news: NsMessages<"news"> = {
   "cal.removeReminder": "Ondoa kikumbusho",
   "cal.remindMe": "Nikumbushe dak 15 kabla",
   "cal.toWatch": "Vyombo vya kufuatilia",
-  "cal.noLinked": "Hakuna vyombo vya Kalks vilivyounganishwa moja kwa moja na sarafu hii.",
+  "cal.noLinked": "Hakuna vyombo vya Ezymex vilivyounganishwa moja kwa moja na sarafu hii.",
   // High-impact alerts card
   "alerts.title": "Tahadhari za athari ya juu",
   "alerts.toggle": "Nitahadharishe kabla ya matukio ya athari ya juu",

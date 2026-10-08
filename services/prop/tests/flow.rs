@@ -1,4 +1,4 @@
-//! Phase state machine end to end against a throw-away database (`kalks_prop_test_<pid>`) with an in-process
+//! Phase state machine end to end against a throw-away database (`ezymex_prop_test_<pid>`) with an in-process
 //! mock trading engine and mock wallet. Skipped when the local Postgres (127.0.0.1:5433) is unreachable.
 
 use axum::extract::{Path, Query, State};
@@ -182,7 +182,7 @@ fn deal(ticket: &str, profit: &str) -> Value {
 
 #[tokio::test]
 async fn phase_state_machine_and_payouts() {
-    let db = format!("postgres://postgres@127.0.0.1:5433/kalks_prop_test_{}", std::process::id());
+    let db = format!("postgres://postgres@127.0.0.1:5433/ezymex_prop_test_{}", std::process::id());
     let pool = match store::connect(&db).await {
         Ok(p) => p,
         Err(e) => {
@@ -193,7 +193,7 @@ async fn phase_state_machine_and_payouts() {
     let m: M = Arc::new(Mutex::new(Mock::default()));
     let url = start_mock(m.clone()).await;
     let app = Arc::new(Svc::new(config(&db, &url), pool.clone(), None));
-    let t = "kalks";
+    let t = "ezymex";
 
     // a fast 2-step plan: 1 trading day per phase, payouts from day 0, fee refunded on the first payout
     let mut p = plans::get(&pool, t, "classic-2-step").await.unwrap();
@@ -378,5 +378,5 @@ async fn phase_state_machine_and_payouts() {
 
     pool.close().await;
     let admin = sqlx::PgPool::connect("postgres://postgres@127.0.0.1:5433/postgres").await.unwrap();
-    let _ = sqlx::query(sqlx::AssertSqlSafe(format!("DROP DATABASE IF EXISTS kalks_prop_test_{} WITH (FORCE)", std::process::id()))).execute(&admin).await;
+    let _ = sqlx::query(sqlx::AssertSqlSafe(format!("DROP DATABASE IF EXISTS ezymex_prop_test_{} WITH (FORCE)", std::process::id()))).execute(&admin).await;
 }

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, ArrowUpFromLine, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, CoinIcon, EmptyState, Field, Illustration, Input, PageHeader, Progress, Skeleton, cn, formatDateTime, shortHash } from "@/components/kit";
-import { Trans, tr, useT } from "@kalks/i18n/react";
+import { Trans, tr, useT } from "@ezymex/i18n/react";
 import { useSession } from "@/components/session";
 import { STEPUP_CODES, StepUpDialog } from "@/components/stepup";
 import { CHAIN_LABEL, WalletError, addressLooksValid, fmt, requestId, usdtAvailable, useWallet, walletApi, type Chain, type Overview, type Page, type WalletConfig, type Withdrawal } from "./api";

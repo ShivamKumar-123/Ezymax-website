@@ -24,8 +24,8 @@ import {
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Button, IconButton, Input, Tooltip, cn } from "@kalks/ui";
-import type { MktJourney, MktNode, MktNodeKind } from "@kalks/mock/admin-growth-marketing";
+import { Button, IconButton, Input, Tooltip, cn } from "@ezymex/ui";
+import type { MktJourney, MktNode, MktNodeKind } from "@ezymex/mock/admin-growth-marketing";
 import { fmtInt } from "./kit";
 
 export const NODE_W = 196;

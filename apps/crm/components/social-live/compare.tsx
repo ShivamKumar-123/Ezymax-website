@@ -6,7 +6,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowUpRight, X as XIcon } from "lucide-react";
 import { Chip, Dialog, Skeleton, cn } from "@/components/kit";
-import { useFormat, useT } from "@kalks/i18n/react";
+import { useFormat, useT } from "@ezymex/i18n/react";
 import { PERIOD_LABEL, compactUsd, formatAge, pct, socialApi, usd, type MasterProfile, type MasterView } from "./api";
 import { MasterIdentity, RiskBadge } from "./bits";
 

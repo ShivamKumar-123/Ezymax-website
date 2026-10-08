@@ -1,6 +1,6 @@
 # prop
 
-The Kalks prop firm service (module 15, D147–D150): challenge plans, purchases paid from the USDT wallet, the phase state machine (Phase 1 → Phase 2 → Funded, or Failed), a real-time rule evaluator on top of the trading engine, funded payouts with profit split, the scaling plan, certificates with a public verify link, and banned-strategy heuristics for the risk desk. It is a Rust service (axum 0.8, sqlx 0.9, PostgreSQL) on `127.0.0.1:8097`.
+The Ezymex prop firm service (module 15, D147–D150): challenge plans, purchases paid from the USDT wallet, the phase state machine (Phase 1 → Phase 2 → Funded, or Failed), a real-time rule evaluator on top of the trading engine, funded payouts with profit split, the scaling plan, certificates with a public verify link, and banned-strategy heuristics for the risk desk. It is a Rust service (axum 0.8, sqlx 0.9, PostgreSQL) on `127.0.0.1:8097`.
 
 Funded accounts are simulated (B-book, D150): the capital is a balance adjustment on an engine account in the plan's group, never client money.
 
@@ -21,19 +21,19 @@ You need PostgreSQL on `127.0.0.1:5433` and the trading engine on `:8090` (see `
 ```bash
 export PATH="$HOME/.cargo/bin:$PATH"
 cargo build -p prop
-(cd services/prop && nohup ../../target/debug/prop > ~/.kalks-local/prop.log 2>&1 &)
+(cd services/prop && nohup ../../target/debug/prop > ~/.ezymex-local/prop.log 2>&1 &)
 curl -s localhost:8097/health
 cargo test -p prop
 ```
 
-On first start the service creates the `kalks_prop` database, runs `migrations/` and seeds three active plans (Classic 2-Step, Rapid 1-Step, Instant Funding). It reads `PROP_*`, `TRADING_*` and `WALLET_*` from the repo-root `.env.local`.
+On first start the service creates the `ezymex_prop` database, runs `migrations/` and seeds three active plans (Classic 2-Step, Rapid 1-Step, Instant Funding). It reads `PROP_*`, `TRADING_*` and `WALLET_*` from the repo-root `.env.local`.
 
 ## How it works
 
 ```
- CRM BFF ──(X-Kalks-User-Id)──┐                     ┌── wallet :8095  POST /v1/wallets/transfers (debit fee, credit payouts)
- Admin BFF ─(X-Kalks-Staff-*)─┤→ prop :8097 ────────┤
-                              │   ├ plans / challenges / payouts / certificates / flags (kalks_prop)
+ CRM BFF ──(X-Ezymex-User-Id)──┐                     ┌── wallet :8095  POST /v1/wallets/transfers (debit fee, credit payouts)
+ Admin BFF ─(X-Ezymex-Staff-*)─┤→ prop :8097 ────────┤
+                              │   ├ plans / challenges / payouts / certificates / flags (ezymex_prop)
                               │   └ evaluator (every PROP_POLL_MS) ─┴── trading :8090  admin accounts, dealing close-all, balance adjustments
 ```
 
@@ -80,7 +80,7 @@ Late first look of a day (service restart): the balance at the reset is reconstr
 
 ## Data model
 
-Database `kalks_prop` (`migrations/0001_prop.sql`). Every table has `tenant` and an RLS policy on `current_setting('kalks.tenant')`; money is `NUMERIC` / `rust_decimal`.
+Database `ezymex_prop` (`migrations/0001_prop.sql`). Every table has `tenant` and an RLS policy on `current_setting('ezymex.tenant')`; money is `NUMERIC` / `rust_decimal`.
 
 | Table | Contents |
 |---|---|
@@ -100,14 +100,14 @@ Database `kalks_prop` (`migrations/0001_prop.sql`). Every table has `tenant` and
 
 ## API
 
-Base `http://127.0.0.1:8097`, JSON, camelCase. Every route except `GET /health` needs `X-Kalks-Internal: $PROP_INTERNAL_TOKEN`. Tenant: `X-Kalks-Tenant` (default `kalks`). Errors: `{"error": {"code", "message", "field"?}}` — `400 bad_request`, `401 unauthorized`, `403 forbidden`, `404 not_found`, `409 exists | already_decided | idempotency_conflict | not_active`, `422 validation | insufficient_funds | payment_failed | plan_unavailable | kyc_required | not_yet_eligible | below_minimum | positions_open | payout_pending | consistency | not_funded | account_unavailable | wallet_rejected`, `502 payment_pending | provisioning | wallet_pending | engine_*`.
+Base `http://127.0.0.1:8097`, JSON, camelCase. Every route except `GET /health` needs `X-Ezymex-Internal: $PROP_INTERNAL_TOKEN`. Tenant: `X-Ezymex-Tenant` (default `ezymex`). Errors: `{"error": {"code", "message", "field"?}}` — `400 bad_request`, `401 unauthorized`, `403 forbidden`, `404 not_found`, `409 exists | already_decided | idempotency_conflict | not_active`, `422 validation | insufficient_funds | payment_failed | plan_unavailable | kyc_required | not_yet_eligible | below_minimum | positions_open | payout_pending | consistency | not_funded | account_unavailable | wallet_rejected`, `502 payment_pending | provisioning | wallet_pending | engine_*`.
 
 Money is a JSON number (requests also accept numeric strings).
 
 ### Plan object
 
 ```json
-{"id": "classic-2-step", "name": "Kalks Classic 2-Step", "type": "1-step | 2-step | instant", "status": "draft | active | paused | archived",
+{"id": "classic-2-step", "name": "Ezymex Classic 2-Step", "type": "1-step | 2-step | instant", "status": "draft | active | paused | archived",
  "version": 3, "group": "prop",
  "sizes": [{"size": 10000, "fee": 89, "leverage": 100, "enabled": true}],
  "phases": [{"name": "Phase 1", "target": 8, "minDays": 4, "timeLimit": 0}, {"name": "Phase 2", "target": 5, "minDays": 4, "timeLimit": 0}],
@@ -146,7 +146,7 @@ PhaseAccount: `id, challengeId, phaseIndex, phase ("Phase 1" | "Phase 2" | "Eval
 
 ### Client routes (Client Area BFF)
 
-The BFF forwards the signed-in gateway user: `X-Kalks-User-Id` (required), `X-Kalks-User-Name` (percent-encoded, used on certificates) and `X-Kalks-User-Kyc` (the user's `kyc_status`; used for the payout gate when the service has no gateway DB connection).
+The BFF forwards the signed-in gateway user: `X-Ezymex-User-Id` (required), `X-Ezymex-User-Name` (percent-encoded, used on certificates) and `X-Ezymex-User-Kyc` (the user's `kyc_status`; used for the payout gate when the service has no gateway DB connection).
 
 | Method & path | Body / query | Response |
 |---|---|---|
@@ -177,7 +177,7 @@ Certificate: `{code, kind (pass | funded | payout), title, traderName, planName,
 
 ### Staff routes (Back Office BFF)
 
-The BFF forwards the verified staff session: `X-Kalks-Staff-Id`, `X-Kalks-Staff-Name` (percent-encoded), `X-Kalks-Staff-Role`. The service checks the role against the permission map below (the admin BFF keeps the same map in `apps/admin/lib/prop-perms.ts`):
+The BFF forwards the verified staff session: `X-Ezymex-Staff-Id`, `X-Ezymex-Staff-Name` (percent-encoded), `X-Ezymex-Staff-Role`. The service checks the role against the permission map below (the admin BFF keeps the same map in `apps/admin/lib/prop-perms.ts`):
 
 | permission | allows | roles |
 |---|---|---|
@@ -209,28 +209,28 @@ The BFF forwards the verified staff session: `X-Kalks-Staff-Id`, `X-Kalks-Staff-
 | `GET /v1/admin/audit?entity=&entityId=&limit=&before=` | – | `{items: [{id, at, actor, actorName, actorRole, action, entity, entityId, before, after, reason, note}]}` |
 
 ```bash
-H='-H x-kalks-internal:'$PROP_INTERNAL_TOKEN' -H content-type:application/json'
-curl -s localhost:8097/v1/plans $H -H x-kalks-user-id:42
-curl -s -X POST localhost:8097/v1/challenges $H -H x-kalks-user-id:42 -d '{"planId":"classic-2-step","size":10000,"idempotencyKey":"buy-1"}'
-curl -s -X POST localhost:8097/v1/admin/payouts/1/approve $H -H x-kalks-staff-id:1 -H x-kalks-staff-role:finance -d '{"note":"ok"}'
+H='-H x-ezymex-internal:'$PROP_INTERNAL_TOKEN' -H content-type:application/json'
+curl -s localhost:8097/v1/plans $H -H x-ezymex-user-id:42
+curl -s -X POST localhost:8097/v1/challenges $H -H x-ezymex-user-id:42 -d '{"planId":"classic-2-step","size":10000,"idempotencyKey":"buy-1"}'
+curl -s -X POST localhost:8097/v1/admin/payouts/1/approve $H -H x-ezymex-staff-id:1 -H x-ezymex-staff-role:finance -d '{"note":"ok"}'
 ```
 
 ## Integrations
 
 | With | How |
 |---|---|
-| Trading engine | As system staff (`X-Kalks-Staff-Id: prop-service`, role `admin`) with `TRADING_INTERNAL_TOKEN`: `POST /v1/accounts` (open, owned by the client), `POST /v1/admin/accounts/{login}/balance` type `adjustment` (capital, payouts, scaling; reason codes `PRP-01`…`PRP-06`), `GET /v1/admin/accounts/{login}` (evaluator), `GET /v1/dealing/deals?login=&from=` (closed trades), `POST /v1/dealing/positions/bulk` + `/v1/dealing/orders/cancel` (close-all), `POST /v1/dealing/positions/{ticket}/close` (news), `POST /v1/admin/accounts/{login}/status`, `GET /v1/admin/groups` |
+| Trading engine | As system staff (`X-Ezymex-Staff-Id: prop-service`, role `admin`) with `TRADING_INTERNAL_TOKEN`: `POST /v1/accounts` (open, owned by the client), `POST /v1/admin/accounts/{login}/balance` type `adjustment` (capital, payouts, scaling; reason codes `PRP-01`…`PRP-06`), `GET /v1/admin/accounts/{login}` (evaluator), `GET /v1/dealing/deals?login=&from=` (closed trades), `POST /v1/dealing/positions/bulk` + `/v1/dealing/orders/cancel` (close-all), `POST /v1/dealing/positions/{ticket}/close` (news), `POST /v1/admin/accounts/{login}/status`, `GET /v1/admin/groups` |
 | Wallet | `POST /v1/wallets/transfers` `{idempotency_key, user_id, currency: "USDT", amount, direction, kind, ref, note}` with `WALLET_INTERNAL_TOKEN`: fee debit `prop_purchase`, purchase refund `refund` credit, payouts and fee refunds `prop_payout` credit. 2xx = booked, 4xx = refused, 5xx / network = unknown and retried with the same key |
 | Gateway | Optional read-only `PROP_GATEWAY_DATABASE_URL` (defaults to `GATEWAY_DATABASE_URL`) for `users.kyc_status`: payouts need `verified` at request and at approval. Without it the service uses the status the BFF forwards |
-| Client Area | `/api/prop/*` BFF (session → `X-Kalks-User-*`), live pages `/prop`, `/prop/mine`, `/prop/payouts`, `/prop/certificates`, public `/verify/<code>` with a PNG image route |
-| Back Office | `/api/prop/*` BFF (staff session → `X-Kalks-Staff-*`, `lib/prop-perms.ts`), live pages under `/prop` |
+| Client Area | `/api/prop/*` BFF (session → `X-Ezymex-User-*`), live pages `/prop`, `/prop/mine`, `/prop/payouts`, `/prop/certificates`, public `/verify/<code>` with a PNG image route |
+| Back Office | `/api/prop/*` BFF (staff session → `X-Ezymex-Staff-*`, `lib/prop-perms.ts`), live pages under `/prop` |
 
 ## Environment
 
 | Variable | Default | |
 |---|---|---|
 | `PROP_BIND` | `127.0.0.1:8097` | |
-| `PROP_DATABASE_URL` | `postgres://postgres@127.0.0.1:5433/kalks_prop` | created and migrated on first start |
+| `PROP_DATABASE_URL` | `postgres://postgres@127.0.0.1:5433/ezymex_prop` | created and migrated on first start |
 | `PROP_INTERNAL_TOKEN` | – | required when `PROP_ENV=production` |
 | `PROP_ENV` | `development` | |
 | `TRADING_URL` / `TRADING_INTERNAL_TOKEN` | `http://127.0.0.1:8090` / – | engine |
@@ -240,10 +240,10 @@ curl -s -X POST localhost:8097/v1/admin/payouts/1/approve $H -H x-kalks-staff-id
 | `PROP_POLL_MS` | `1000` | evaluator interval (200 – 60 000) |
 | `PROP_POLL_CONCURRENCY` | `16` | parallel engine requests |
 | `PROP_EVALUATOR` | `true` | only one instance may run the evaluator |
-| `PROP_VERIFY_BASE_URL` | `http://localhost:3000/verify` | public certificate link base, e.g. `https://app.kalkstrade.com/verify` |
+| `PROP_VERIFY_BASE_URL` | `http://localhost:3000/verify` | public certificate link base, e.g. `https://app.ezymex.com/verify` |
 | `PROP_LOG_FORMAT` | `json` | |
 
-Production runs `deploy/systemd/kalks-prop.service`. `deploy/deploy.sh` builds it, generates `PROP_INTERNAL_TOKEN` on first deploy and derives `PROP_DATABASE_URL` from `GATEWAY_DATABASE_URL` (database `kalks_prop`).
+Production runs `deploy/systemd/ezymex-prop.service`. `deploy/deploy.sh` builds it, generates `PROP_INTERNAL_TOKEN` on first deploy and derives `PROP_DATABASE_URL` from `GATEWAY_DATABASE_URL` (database `ezymex_prop`).
 
 ## Tests
 
@@ -255,16 +255,16 @@ cargo test -p prop
 - **Server time** (`src/time.rs`): NY-close day boundaries, the DST switch instants in March and November, the weekend window.
 - **Heuristics**: tick scalping, latency arbitrage, HFT bursts, cross-account copying and hedging with thresholds.
 - **Plans**: JSON round trip and validation.
-- **Flow test** (`tests/flow.rs`): runs the real service logic against a throw-away database `kalks_prop_test_<pid>` with an in-process mock engine and mock wallet (skipped when Postgres is unreachable): purchase → daily-loss breach → close-all + disabled; purchase → profit target → Phase 2 opened → Funded opened; funded payout request → approval → wallet credit with the fee refund; rejected payout returns the profit; insufficient wallet funds.
+- **Flow test** (`tests/flow.rs`): runs the real service logic against a throw-away database `ezymex_prop_test_<pid>` with an in-process mock engine and mock wallet (skipped when Postgres is unreachable): purchase → daily-loss breach → close-all + disabled; purchase → profit target → Phase 2 opened → Funded opened; funded payout request → approval → wallet credit with the fee refund; rejected payout returns the profit; insufficient wallet funds.
 
 ## Known gaps
 
-- **Options.** The engine refuses Kalks FX Options on prop groups (`prop*`), so prop accounts are CFD only. Defensively, option deals and positions (engine `option` / `instrument: "option"`, or an option series symbol) are flagged and their contracts never count as lots in the trading statistics; their P&L (real money on the account) still counts in equity, day profits and the rules.
+- **Options.** The engine refuses Ezymex FX Options on prop groups (`prop*`), so prop accounts are CFD only. Defensively, option deals and positions (engine `option` / `instrument: "option"`, or an option series symbol) are flagged and their contracts never count as lots in the trading statistics; their P&L (real money on the account) still counts in equity, day profits and the rules.
 
 - **Polling, not streaming** (see [latency](#latency)). A server-to-server account stream in the engine would cut detection to the tick.
 - **Wallet transfers out of prop accounts.** The engine lets the wallet move `withdrawable` funds from any live account. The wallet must refuse transfers for accounts in prop groups (group `prop`, or any plan's `group`), otherwise simulated capital could be withdrawn.
 - **Account limit per group.** The engine's `maxAccountsPerUser` applies to prop groups too (seeded `prop`: 5). Raise it for the prop group in Back Office → Config → Account groups; a refused open refunds the fee.
 - **Heuristics** cover the five listed strategies; martingale / grid or other labels on a plan are shown to traders but not detected. Cross-account checks only see prop accounts.
 - **News calendar** is managed by staff in the Back Office; there is no feed ingest yet.
-- **Notifications** are stored in the prop inbox and pushed by `src/notifier.rs` (with the evaluator instance) to the support service: `prop.passed`, `prop.failed` (breach), `prop.funded`, `prop.phase_started`, `prop.scaled`, `prop.loss_warning`, `prop.violation`, `prop.payout_requested`, `prop.payout_paid`, `prop.payout_rejected`, links `/prop/mine` / `/prop/payouts`, `dedupeKey prop:n:<id>`. Support shows them in the Client Area and Kalks Trader bells and emails them per the trader's `prop` preference; delivery retries with backoff and never blocks the evaluator or a payout.
+- **Notifications** are stored in the prop inbox and pushed by `src/notifier.rs` (with the evaluator instance) to the support service: `prop.passed`, `prop.failed` (breach), `prop.funded`, `prop.phase_started`, `prop.scaled`, `prop.loss_warning`, `prop.violation`, `prop.payout_requested`, `prop.payout_paid`, `prop.payout_rejected`, links `/prop/mine` / `/prop/payouts`, `dedupeKey prop:n:<id>`. Support shows them in the Client Area and Ezymex Trader bells and emails them per the trader's `prop` preference; delivery retries with backoff and never blocks the evaluator or a payout.
 - **Certificates** use first name + last initial; there is no opt-out setting yet.

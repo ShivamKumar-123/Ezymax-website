@@ -1,4 +1,4 @@
-//! Kalks trading engine service (:8090). See services/trading/README.md.
+//! Ezymex trading engine service (:8090). See services/trading/README.md.
 
 use chrono::{Duration, NaiveDate, Utc};
 use serde_json::Value;
@@ -69,7 +69,7 @@ async fn main() -> anyhow::Result<()> {
 
     let (ticket, deal, txn, live, demo) = persist::max_ids(&pool).await?;
     let quotes = Arc::new(QuoteBook::default());
-    // Kalks FX Options: snapshot from the options service, raw spots from market-data (src/options)
+    // Ezymex FX Options: snapshot from the options service, raw spots from market-data (src/options)
     let options = Arc::new(trading::options::OptionsCtx::new(&cfg.options_url, &cfg.options_token, quotes.clone()));
     if options.configured() {
         let _ = options.load_stored(&pool).await;
@@ -119,10 +119,10 @@ async fn main() -> anyhow::Result<()> {
         presence: Arc::new(trading::controls::Presence::default()),
         gateway: Arc::new(trading::controls::Gateway::new(&cfg.gateway_url, &cfg.gateway_token)),
     };
-    // client controls: restrictions cache from the gateway, Kalks Trader presence reports (controls.rs)
+    // client controls: restrictions cache from the gateway, Ezymex Trader presence reports (controls.rs)
     trading::controls::spawn(hub.clone(), pool.clone(), st.gateway.clone(), st.presence.clone());
 
-    // Kalks FX Options order book (src/book): venues, then crash recovery — load every stored book (ephemeral MM
+    // Ezymex FX Options order book (src/book): venues, then crash recovery — load every stored book (ephemeral MM
     // quotes are gone), rebuild the shards' reservations, reconcile book and account positions (a mismatch puts
     // that underlying in cancel-only; CFD trading stays up), re-dispatch the outbox, resubmit fired stops
     if cfg.options_mm_user > 0 {
@@ -146,7 +146,7 @@ async fn main() -> anyhow::Result<()> {
         // options order book housekeeping: GTD expiry, deadman switches, expiry cut-off, session-open band check,
         // the throttled market-data feed
         trading::book::spawn_scheduler(hub.clone());
-        // the liquidator of order-book positions at stop-out (docs §8) and the Kalks market maker (docs §4): it
+        // the liquidator of order-book positions at stop-out (docs §8) and the Ezymex market maker (docs §4): it
         // quotes only where a tenant's order book is enabled
         trading::book::liquidator::spawn(st.clone());
         if options.configured() {

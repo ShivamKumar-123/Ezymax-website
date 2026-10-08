@@ -1,9 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { Avatar, Chip, Tooltip, cn, formatDateTime } from "@kalks/ui";
-import { PEOPLE } from "@kalks/mock";
-import { ORG_TENANTS, SEC_NOW, orgEmployee, type OrgTenantKey } from "@kalks/mock/admin-platform-security";
+import { Avatar, Chip, Tooltip, cn, formatDateTime } from "@ezymex/ui";
+import { PEOPLE } from "@ezymex/mock";
+import { ORG_TENANTS, SEC_NOW, orgEmployee, type OrgTenantKey } from "@ezymex/mock/admin-platform-security";
 
 /** "14:27:08" in server time (GMT+3). */
 export function timeGmt3(iso: string, seconds = true) {

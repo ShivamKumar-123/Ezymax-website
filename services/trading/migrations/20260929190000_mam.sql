@@ -125,6 +125,6 @@ DECLARE t TEXT;
 BEGIN
     FOREACH t IN ARRAY ARRAY['mam_managers','mam_links','mam_allocations','mam_log'] LOOP
         EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
-        EXECUTE format('CREATE POLICY tenant_isolation ON %I USING (tenant_id = NULLIF(current_setting(''kalks.tenant_id'', true), '''')::bigint)', t);
+        EXECUTE format('CREATE POLICY tenant_isolation ON %I USING (tenant_id = NULLIF(current_setting(''ezymex.tenant_id'', true), '''')::bigint)', t);
     END LOOP;
 END $$;

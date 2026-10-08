@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { ArrowDown, ArrowLeft, ArrowLeftRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, EmptyState, Field, Input, PageHeader, Segmented, Skeleton, cn, formatDateTime } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { toUsd, useAccounts, type EngineAccount } from "@/components/trading/api";
 import { TransferBetweenDialog } from "@/components/trading/extras";
 import { fmt, requestId, usdtAvailable, useWallet, walletApi, type Overview, type Page, type TradingTransfer } from "./api";

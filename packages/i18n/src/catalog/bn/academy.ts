@@ -20,7 +20,7 @@ const academy: NsMessages<"academy"> = {
   "practice.demo": "ডেমোতে অনুশীলন করুন",
   "practice.openFreeDemo": "একটি ফ্রি ডেমো অ্যাকাউন্ট খুলুন",
   "practice.openDemo": "ডেমো খুলুন",
-  "practice.inTrader": "Kalks Trader-এ অনুশীলন করুন",
+  "practice.inTrader": "Ezymex Trader-এ অনুশীলন করুন",
 
   // Levels (sent by the Academy service)
   "level.beginner": "প্রাথমিক",
@@ -31,12 +31,12 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "ফান্ডামেন্টাল অ্যানালাইসিস",
   "track.technical": "টেকনিক্যাল অ্যানালাইসিস",
-  // Product track of the Kalks FX Options elective (phase 9)
+  // Product track of the Ezymex FX Options elective (phase 9)
   "track.options": "অপশন ট্রেডিং",
   "trackShort.fundamental": "ফান্ডামেন্টাল",
   "trackShort.technical": "টেকনিক্যাল",
   "trackShort.options": "অপশন",
-  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  // Chip on a product course (e.g. Ezymex FX Options) that sits outside the eight core phases and can be taken at any time
   elective: "ঐচ্ছিক",
 
   // Durations (h = hours, m = minutes)
@@ -52,7 +52,7 @@ const academy: NsMessages<"academy"> = {
   "home.pathText": "প্রতিটি মূল ধাপে একটি ফান্ডামেন্টাল ও একটি টেকনিক্যাল ট্র্যাক, একটি চূড়ান্ত পরীক্ষা এবং একটি সার্টিফিকেট রয়েছে।",
   // Section under the learning path listing the electives
   "home.electivesTitle": "ঐচ্ছিক কোর্স",
-  "home.electivesText": "Kalks-এর পণ্য নিয়ে কোর্স। যেকোনো সময় নিতে পারেন: প্রতিটির নিজস্ব চূড়ান্ত পরীক্ষা ও সার্টিফিকেট আছে।",
+  "home.electivesText": "Ezymex-এর পণ্য নিয়ে কোর্স। যেকোনো সময় নিতে পারেন: প্রতিটির নিজস্ব চূড়ান্ত পরীক্ষা ও সার্টিফিকেট আছে।",
   "hero.allDone": "সব অধ্যায় সম্পন্ন",
   "hero.continue": "শেখা চালিয়ে যান",
   "hero.upNext": "এরপর",
@@ -220,7 +220,7 @@ const academy: NsMessages<"academy"> = {
   "callout.example": "উদাহরণ",
   "callout.tip": "টিপ",
   "callout.note": "নোট",
-  "callout.inKalksTrader": "Kalks Trader-এ",
+  "callout.inEzymexTrader": "Ezymex Trader-এ",
   diagram: "ডায়াগ্রাম",
 };
 export default academy;

@@ -5,8 +5,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { ArrowUp, Bot, Copy, RefreshCw, Sparkles, ThumbsDown, ThumbsUp } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Chip, IconButton, SymbolAvatar, cn, formatMoney } from "@/components/kit";
-import { ME } from "@kalks/mock";
-import { COACH } from "@kalks/mock/academy";
+import { ME } from "@ezymex/mock";
+import { COACH } from "@ezymex/mock/academy";
 
 /* ------------------------------------------------------------------ */
 /* Message model                                                       */
@@ -142,7 +142,7 @@ function Bubble({ m, streamed, done }: { m: Msg; streamed: string; done: boolean
       <CoachAvatar size={30} />
       <div className="min-w-0 max-w-[92%] flex-1">
         <div className="mb-1 flex items-center gap-2 text-[11.5px] text-fg-3">
-          <span className="font-medium text-fg-2">Kalks Coach</span> · {m.time}
+          <span className="font-medium text-fg-2">Ezymex Coach</span> · {m.time}
         </div>
         <div className="rounded-[18px] rounded-tl-md border border-line bg-surface-2 px-4 py-3 text-[13.5px] leading-relaxed text-fg-2 shadow-[inset_0_1px_0_var(--k-border-top)]">
           <p>
@@ -285,7 +285,7 @@ export const CoachChat = React.forwardRef<CoachChatHandle, { className?: string 
           <CoachAvatar size={40} />
           <div>
             <div className="flex items-center gap-2 text-[15px] font-medium">
-              Kalks Coach
+              Ezymex Coach
               <Chip size="sm" tone="ember">
                 AI · Claude
               </Chip>

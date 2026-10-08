@@ -1,4 +1,4 @@
-import { Skeleton } from "@kalks/ui/primitives";
+import { Skeleton } from "@ezymex/ui/primitives";
 
 // Shown inside the Client Area shell while a page's server payload is on its way: a link that wasn't prefetched in
 // full (in-page links, a revisit after the router cache expired) shows this at once instead of leaving the previous

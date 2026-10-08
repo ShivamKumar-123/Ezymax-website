@@ -1,7 +1,7 @@
 // The signed-out welcome page (light / dark / Arabic) and the sign-in sheet open over it. Run:
-//   flutter test test_shots/welcome_shots_test.dart --update-goldens --dart-define=KALKS_PREVIEW=true
+//   flutter test test_shots/welcome_shots_test.dart --update-goldens --dart-define=EZYMEX_PREVIEW=true
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/app.dart';
+import 'package:ezymex/app.dart';
 
 import '../test/helpers/test_app.dart';
 import 'shots.dart';
@@ -19,7 +19,7 @@ Future<void> welcomeShot(
     await before(tester);
     await settle(tester, frames: 6);
   }
-  await expectLater(find.byType(KalksApp), matchesGoldenFile(Uri.file('$shotsDir/$name.png')));
+  await expectLater(find.byType(EzymexApp), matchesGoldenFile(Uri.file('$shotsDir/$name.png')));
   await unmount(tester);
 }
 

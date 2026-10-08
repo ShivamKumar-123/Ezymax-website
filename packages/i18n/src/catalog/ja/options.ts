@@ -1,18 +1,18 @@
 import type { NsMessages } from "../../core";
 
-// Kalks FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Kalks Trader in options mode.
+// Ezymex FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Ezymex Trader in options mode.
 const options: NsMessages<"options"> = {
   // Navigation entry
   "nav.title": "オプション",
 
   // Page header
-  "page.title": "Kalks FX Options",
-  "page.subtitle": "FX、金、銀、原油のオプションを、Kalks Trader内で直接売買できます。",
+  "page.title": "Ezymex FX Options",
+  "page.subtitle": "FX、金、銀、原油のオプションを、Ezymex Trader内で直接売買できます。",
   "page.statusReady": "取引可能",
   "page.learnCourse": "オプションコース",
 
   // Hero card
-  "hero.eyebrow": "Kalks Traderの新機能",
+  "hero.eyebrow": "Ezymex Traderの新機能",
   "hero.title": "13市場のオプションを、シンプルに",
   "hero.text": "FXのメジャー通貨ペアとクロス通貨ペア、金、銀、原油を対象としたヨーロピアンオプションです。満期は日次・週次・月次から選べます。すべてのオプションは米ドルで現金決済されるため、現物の受け渡しは一切ありません。",
   "hero.feature.underlyings.title": "13の原資産",
@@ -56,16 +56,16 @@ const options: NsMessages<"options"> = {
   "terms.inShort": "要点",
   "terms.point.buy": "オプションを買う場合：最大損失は支払った金額までです。",
   "terms.point.sell": "オプションを売る場合は、受け取った金額を超える損失が出ることがあり、証拠金も使用します。",
-  "terms.point.prices": "価格は、Kalksのオーダーブックと、Kalksによる提示で決まります。",
+  "terms.point.prices": "価格は、Ezymexのオーダーブックと、Ezymexによる提示で決まります。",
   "terms.point.settle": "オプションは満期時に現金で決済されます。",
   "terms.englishNote": "以下の全文は英語版で、これが法的拘束力を持つ正式な版です。",
   "terms.acceptedOn": "{date}にバージョン{version}に同意しました。",
   "terms.close": "閉じる",
   "terms.unavailable": "現在、オプション取引規約を表示できません。しばらくしてから再度お試しください。",
 
-  // Kalks Trader button
-  "trade.ready": "準備が整いました。オプションはKalks Traderで、CFDと同じ口座で取引できます。",
-  "trade.cta": "Kalks Traderでオプションを取引",
+  // Ezymex Trader button
+  "trade.ready": "準備が整いました。オプションはEzymex Traderで、CFDと同じ口座で取引できます。",
+  "trade.cta": "Ezymex Traderでオプションを取引",
   "trade.chooseAccount": "口座を選択",
   "trade.noAccount": "オプションを取引するには、有効な取引口座が必要です。",
   "trade.openAccount": "口座を開設",
@@ -74,7 +74,7 @@ const options: NsMessages<"options"> = {
   "trade.demo": "デモ",
 
   // Key facts card
-  "facts.title": "Kalks FX Optionsの仕組み",
+  "facts.title": "Ezymex FX Optionsの仕組み",
   "facts.style": "ヨーロピアンタイプ：満期時に自動的に権利行使され、満期前に行使されることはありません。",
   "facts.premium": "プレミアムは1枚あたり米ドル建てで、買い手は新規注文時に全額を支払います。",
   "facts.contracts": "1枚の取引単位：通貨10,000単位、金1オンス、銀50オンス、または原油10バレル。",

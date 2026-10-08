@@ -6,10 +6,10 @@
 import * as React from "react";
 import { toast } from "@/lib/notify";
 import { AreaChart, BarChart3, Bell, Camera, CandlestickChart, ChevronDown, Crosshair, Expand, FileStack, LayoutPanelLeft, LineChart, Maximize2, Minimize2, Minus, MousePointer2, Plus, Scan, ShoppingCart, Shrink, Spline, Square, Trash2, TrendingUp, X, ZoomIn, ZoomOut } from "lucide-react";
-import { SymbolAvatar, cn } from "@kalks/ui";
+import { SymbolAvatar, cn } from "@ezymex/ui";
 import { useTerminal, type DrawTool } from "@/lib/store";
-import { useT } from "@kalks/i18n/react";
-import type { MessageKey } from "@kalks/i18n";
+import { useT } from "@ezymex/i18n/react";
+import type { MessageKey } from "@ezymex/i18n";
 import { CHART_TYPES, TIMEFRAMES, type ChartType } from "@/lib/trading";
 import { DropMenu } from "@/components/ui/menu";
 import { CountBadge, IconButton, Tip } from "@/components/ui/kit";

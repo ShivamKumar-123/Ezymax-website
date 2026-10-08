@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertTriangle, Building2, Clock, FileCheck2, RefreshCw, Search, Timer, UserCheck } from "lucide-react";
-import { Avatar, Button, Card, Chip, DataTable, EmptyState, Flag, PageHeader, Reveal, Segmented, type Column } from "@kalks/ui";
+import { Avatar, Button, Card, Chip, DataTable, EmptyState, Flag, PageHeader, Reveal, Segmented, type Column } from "@ezymex/ui";
 import { ErrorState, Mono, Pager, TableSkeleton, ago, qs, useApi, useDebounced, useNow, when } from "@/components/live/kit";
 import type { QueueItem, QueuePage } from "./types";
 import { CaseStatusChip, SlaBadge, idTypeLabel } from "./ui";

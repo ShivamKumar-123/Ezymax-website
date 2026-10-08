@@ -100,13 +100,13 @@ const prop: NsMessages<"prop"> = {
 
   // Public certificate verification page (/verify/<code>)
   "verify.shellTitle": "Vérification du certificat",
-  "verify.footer": "Les comptes Kalks Prop sont simulés. Les certificats présentent les résultats d'un trader sur un challenge Kalks Prop ; le nom du trader est abrégé au prénom et à l'initiale du nom.",
+  "verify.footer": "Les comptes Ezymex Prop sont simulés. Les certificats présentent les résultats d'un trader sur un challenge Ezymex Prop ; le nom du trader est abrégé au prénom et à l'initiale du nom.",
   "verify.linkCopied": "Lien copié",
   "verify.copyFailed": "Impossible de copier le lien",
   "verify.copyLink": "Copier le lien",
   "verify.downloadPng": "Télécharger le PNG",
   "verify.notFoundTitle": "Certificat introuvable",
-  "verify.notFoundText": "Aucun certificat Kalks Prop ne porte ce numéro. Vérifiez le lien ou demandez au trader de le partager à nouveau.",
+  "verify.notFoundText": "Aucun certificat Ezymex Prop ne porte ce numéro. Vérifiez le lien ou demandez au trader de le partager à nouveau.",
   "verify.unavailableTitle": "La vérification est indisponible pour le moment",
   "verify.unavailableText": "Nous n'avons pas pu vérifier ce certificat pour le moment. Veuillez réessayer dans quelques minutes.",
   "verify.kind.pass": "Phase réussie",
@@ -120,9 +120,9 @@ const prop: NsMessages<"prop"> = {
   "verify.row.issued": "Délivré le",
   "verify.row.number": "N° de certificat",
   "verify.validTitle": "Certificat valide",
-  "verify.validText": "Délivré par Kalks Prop et vérifié dans nos registres.",
+  "verify.validText": "Délivré par Ezymex Prop et vérifié dans nos registres.",
   "verify.revokedTitle": "Certificat révoqué",
-  "verify.revokedText": "Ce certificat a été révoqué par Kalks et n'est plus valide.",
+  "verify.revokedText": "Ce certificat a été révoqué par Ezymex et n'est plus valide.",
   "verify.valid": "Valide",
   "verify.revoked": "Révoqué",
   // Certificate titles
@@ -245,8 +245,8 @@ const prop: NsMessages<"prop"> = {
   "checkout.goToMine": "Aller à Mes challenges",
   "checkout.readyTitle": "Votre challenge est prêt",
   "checkout.paidText": "{fee} ont été payés depuis votre portefeuille USDT et votre compte de {size} est ouvert. Les règles s'appliquent dès maintenant.",
-  "checkout.savePasswords": "Enregistrez ces mots de passe maintenant : ils ne sont affichés qu'une seule fois et nous ne les conservons pas. Le bouton Trader vous connecte à Kalks Trader sans mot de passe, vous pouvez donc toujours trader d'ici.",
-  "checkout.passwordsShown": "Les mots de passe de trading ont été affichés lors de la première confirmation de cet achat. Utilisez le bouton Trader pour ouvrir Kalks Trader : il vous connecte sans mot de passe.",
+  "checkout.savePasswords": "Enregistrez ces mots de passe maintenant : ils ne sont affichés qu'une seule fois et nous ne les conservons pas. Le bouton Trader vous connecte à Ezymex Trader sans mot de passe, vous pouvez donc toujours trader d'ici.",
+  "checkout.passwordsShown": "Les mots de passe de trading ont été affichés lors de la première confirmation de cet achat. Utilisez le bouton Trader pour ouvrir Ezymex Trader : il vous connecte sans mot de passe.",
 
   // Account credentials
   "cred.login": "Identifiant",
@@ -369,7 +369,7 @@ const prop: NsMessages<"prop"> = {
   "account.passed": "Réussi · lecture seule",
   "account.failed": "Échoué · désactivé",
   "account.opening": "Ouverture",
-  "account.tradableText": "Trader ouvre Kalks Trader connecté à ce compte. Les mots de passe ont été affichés une seule fois lors de l'achat.",
+  "account.tradableText": "Trader ouvre Ezymex Trader connecté à ce compte. Les mots de passe ont été affichés une seule fois lors de l'achat.",
   "account.passedText": "Cette phase est terminée. Le compte est en lecture seule ; tradez sur votre phase suivante.",
   "account.failedText": "Le trading sur ce compte est désactivé.",
   "account.unavailableText": "Le trading n'est pas disponible sur ce compte.",

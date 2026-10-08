@@ -466,10 +466,10 @@ async fn gateway_user(st: &AppState, tenant: &str, key: &str, nickname: &str) ->
     let r = st
         .http
         .post(format!("{}/v1/internal/house-users", st.cfg.gateway_url))
-        .header("x-kalks-internal", &st.cfg.gateway_token)
-        .header("x-kalks-tenant", tenant)
+        .header("x-ezymex-internal", &st.cfg.gateway_token)
+        .header("x-ezymex-tenant", tenant)
         .header("x-forwarded-for", "127.0.0.1")
-        .header("user-agent", "kalks-algo")
+        .header("user-agent", "ezymex-algo")
         .json(&json!({"key": key, "nickname": nickname}))
         .send()
         .await

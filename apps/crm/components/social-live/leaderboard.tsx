@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Check, ChevronDown, Columns3, Crown, Landmark, LineChart, Repeat, ShieldCheck, SlidersHorizontal, Trophy, Users, Wallet, X as XIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, DataTable, EmptyState, Menu, PageHeader, Popover, Segmented, Skeleton, Sparkline, Toggle, Tooltip, cn, type Column } from "@/components/kit";
-import { useFormat, useT } from "@kalks/i18n/react";
+import { useFormat, useT } from "@ezymex/i18n/react";
 import { compactUsd, formatAge, pct, useSocial, type Leaderboard, type MasterView } from "./api";
 import { HouseBadge, MasterIdentity, RiskBadge, SocialError } from "./bits";
 import { COMPARE_MAX, CompareDialog } from "./compare";

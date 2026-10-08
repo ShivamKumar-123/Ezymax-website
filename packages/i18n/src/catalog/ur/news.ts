@@ -45,7 +45,7 @@ const news: NsMessages<"news"> = {
   "markets.trade": "ٹریڈ کریں",
   "markets.searchPlaceholder": "سمبل یا نام تلاش کریں…",
   "markets.clearSearch": "صاف کریں",
-  "markets.liveTooltip": "کوٹس Kalks پرائس فیڈ سے آتے ہیں",
+  "markets.liveTooltip": "کوٹس Ezymex پرائس فیڈ سے آتے ہیں",
   "markets.footnote": "اسٹینڈرڈ گروپ اسپریڈز: FX کے لیے پِپس، دیگر کے لیے قیمت کی اکائیاں · بند مارکیٹس آخری قیمت دکھاتی ہیں · کنٹریکٹ کی تفصیلات کے لیے قطار پر کلک کریں",
   // Short trading-hours summary per asset class (24/5 = 24 hours, 5 days a week)
   "hoursShort.forex": "24/5",
@@ -270,7 +270,7 @@ const news: NsMessages<"news"> = {
   "cal.removeReminder": "یاد دہانی ہٹائیں",
   "cal.remindMe": "15 منٹ پہلے یاد دلائیں",
   "cal.toWatch": "نظر رکھنے والے انسٹرومنٹس",
-  "cal.noLinked": "کوئی Kalks انسٹرومنٹ اس کرنسی سے براہ راست منسلک نہیں۔",
+  "cal.noLinked": "کوئی Ezymex انسٹرومنٹ اس کرنسی سے براہ راست منسلک نہیں۔",
   // High-impact alerts card
   "alerts.title": "زیادہ اثر والے الرٹس",
   "alerts.toggle": "زیادہ اثر والے ایونٹس سے پہلے مجھے الرٹ کریں",

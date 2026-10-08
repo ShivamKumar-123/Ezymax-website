@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Activity, AlertTriangle, ShieldAlert, Trophy } from "lucide-react";
-import { Card, CardHeader, Chip, DataTable, KpiCard, PageHeader, Reveal, cn, type Column } from "@kalks/ui";
+import { Card, CardHeader, Chip, DataTable, KpiCard, PageHeader, Reveal, cn, type Column } from "@ezymex/ui";
 import { FilterSelect, Pager, TableSkeleton, qs, useApi, useDebounced } from "@/components/live/kit";
 import { FilterPills } from "@/components/prop/rules";
 import { ChallengeDrawer } from "./challenge-drawer";

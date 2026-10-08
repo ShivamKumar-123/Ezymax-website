@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { BadgeCheck, Copy as CopyIcon, Landmark, Users } from "lucide-react";
 import { Avatar, Button, Chip, Delta, Flag, Sparkline, Tooltip, cn, formatCompact } from "@/components/kit";
-import { masterSpark, riskLabel, riskTone, type Master, type MasterProgram } from "@kalks/mock/social";
+import { masterSpark, riskLabel, riskTone, type Master, type MasterProgram } from "@ezymex/mock/social";
 
 /** System risk score 1–10 as a compact badge with a 10-tick meter. */
 export function RiskBadge({ risk, showLabel = false, className }: { risk: number; showLabel?: boolean; className?: string }) {

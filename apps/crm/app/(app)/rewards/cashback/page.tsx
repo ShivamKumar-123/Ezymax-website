@@ -29,8 +29,8 @@ import {
   formatMoney,
   type Column,
 } from "@/components/kit";
-import { CASHBACK, CASHBACK_BY_ACCOUNT, CASHBACK_HISTORY, CASHBACK_RATES, CASHBACK_WEEKLY, type CashbackTx } from "@kalks/mock/rewards";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { CASHBACK, CASHBACK_BY_ACCOUNT, CASHBACK_HISTORY, CASHBACK_RATES, CASHBACK_WEEKLY, type CashbackTx } from "@ezymex/mock/rewards";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveCashbackPage } from "@/components/growth/cashback";
 
 function WithdrawDialog({ available, onDone, trigger }: { available: number; onDone: (amt: number) => void; trigger: React.ReactNode }) {
@@ -79,7 +79,7 @@ function WithdrawDialog({ available, onDone, trigger }: { available: number; onD
       <div className="k-row mt-4 flex items-center gap-3 px-4 py-3">
         <CoinIcon coin="usdt" size={30} />
         <div className="flex-1">
-          <div className="text-[13px] font-medium">Kalks Wallet · USDT</div>
+          <div className="text-[13px] font-medium">Ezymex Wallet · USDT</div>
           <div className="font-mono text-[11.5px] text-fg-3">TRC20 · TQ7x…9KfE</div>
         </div>
         <Chip size="sm" tone="up">
@@ -254,7 +254,7 @@ function DemoCashbackPage() {
         <Card>
           <CardHeader title="Cashback history" subtitle="Credited per closed trade" />
           <div className="px-4 pb-6 pt-4 sm:px-6">
-            <DataTable columns={columns} rows={CASHBACK_HISTORY} pageSize={10} rowKey={(r) => r.id} search={(r) => `${r.symbol} ${r.login} ${r.id}`} searchPlaceholder="Symbol, account, ref…" exportName="kalks-cashback" dense />
+            <DataTable columns={columns} rows={CASHBACK_HISTORY} pageSize={10} rowKey={(r) => r.id} search={(r) => `${r.symbol} ${r.login} ${r.id}`} searchPlaceholder="Symbol, account, ref…" exportName="ezymex-cashback" dense />
           </div>
         </Card>
       </Reveal>

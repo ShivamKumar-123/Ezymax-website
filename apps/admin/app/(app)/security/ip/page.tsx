@@ -1,6 +1,6 @@
 "use client";
 
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveIpAllowlist } from "@/components/rbac/ip";
 
 import * as React from "react";
@@ -25,9 +25,9 @@ import {
   Toggle,
   cn,
   type Column,
-} from "@kalks/ui";
-import { PEOPLE } from "@kalks/mock";
-import { ORG_EMPLOYEES, SEC_BLOCKED_ATTEMPTS, SEC_CURRENT_IP, SEC_IP_RULES, type SecIpRule } from "@kalks/mock/admin-platform-security";
+} from "@ezymex/ui";
+import { PEOPLE } from "@ezymex/mock";
+import { ORG_EMPLOYEES, SEC_BLOCKED_ATTEMPTS, SEC_CURRENT_IP, SEC_IP_RULES, type SecIpRule } from "@ezymex/mock/admin-platform-security";
 import { IpRuleDialog, type RuleDraft } from "@/components/security/ip-rule-dialog";
 import { cidrContains, cidrSize, isValidIp } from "@/components/security/cidr";
 import { Mono, ago } from "@/components/security/shared";

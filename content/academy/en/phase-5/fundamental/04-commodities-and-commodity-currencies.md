@@ -68,7 +68,7 @@ The reverse applies when export prices fall. The link runs mainly from commodity
 | New Zealand dollar (NZD) | Dairy, meat, agriculture | Dairy auction results, Chinese demand |
 | Norwegian krone (NOK) | Oil and gas | Brent crude (UKOIL), Norges Bank policy |
 
-On Kalks you can trade the first two directly through AUDUSD and USDCAD. Note the quoting: in USDCAD the Canadian dollar is the quote currency, so a **stronger CAD means USDCAD falls**. A beginner who expects "oil up, USDCAD up" has the relationship backwards.
+On Ezymex you can trade the first two directly through AUDUSD and USDCAD. Note the quoting: in USDCAD the Canadian dollar is the quote currency, so a **stronger CAD means USDCAD falls**. A beginner who expects "oil up, USDCAD up" has the relationship backwards.
 
 ## AUD and China
 

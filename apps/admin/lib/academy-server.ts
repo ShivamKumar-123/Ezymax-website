@@ -7,9 +7,9 @@ const ACADEMY_TOKEN = process.env.ACADEMY_INTERNAL_TOKEN ?? "";
 
 export async function academyAdmin(path: string, init: { method?: "GET" | "POST" | "PUT" | "DELETE"; body?: unknown; staff: GatewayStaff }): Promise<{ status: number; data: unknown }> {
   const headers: Record<string, string> = {
-    "x-kalks-internal": ACADEMY_TOKEN,
-    "x-kalks-tenant": init.staff.tenant?.slug || "kalks",
-    "x-kalks-staff": init.staff.email,
+    "x-ezymex-internal": ACADEMY_TOKEN,
+    "x-ezymex-tenant": init.staff.tenant?.slug || "ezymex",
+    "x-ezymex-staff": init.staff.email,
   };
   if (init.body !== undefined) headers["content-type"] = "application/json";
   try {

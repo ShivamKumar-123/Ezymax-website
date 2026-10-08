@@ -1,4 +1,4 @@
-// The engine behind "Ask Kalks AI" (port of useLiveAi in apps/crm/components/ai/engine.ts).
+// The engine behind "Ask Ezymex AI" (port of useLiveAi in apps/crm/components/ai/engine.ts).
 //
 // The question goes to the client's support conversation (POST support/messages, the same chat as /support), and the
 // bot's answer streams over the support stream (bot.typing / bot.delta / message), with a poll of the conversation
@@ -17,7 +17,7 @@ import 'ask_ai_rules.dart';
 import 'support_data.dart';
 import 'support_models.dart';
 
-/// One line of the Ask Kalks AI thread. role: you | bot | agent | system.
+/// One line of the Ask Ezymex AI thread. role: you | bot | agent | system.
 class AiTurn {
   const AiTurn({required this.id, required this.role, required this.text, this.name, this.cites = const [], this.chip});
   final String id;
@@ -39,7 +39,7 @@ class AskAiEngine extends ChangeNotifier {
     required this.api,
     required this.frames,
     required this.t,
-    this.fallbackName = 'Kalks AI',
+    this.fallbackName = 'Ezymex AI',
     this.foreground = _always,
     this.pollEvery = const Duration(milliseconds: 2500),
     this.slowAfter = const Duration(seconds: 25),

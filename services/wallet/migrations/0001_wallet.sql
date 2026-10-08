@@ -1,4 +1,4 @@
--- Kalks wallet (database kalks_wallet). Central client wallet (D3): double-entry ledger, on-chain USDT
+-- Ezymex wallet (database ezymex_wallet). Central client wallet (D3): double-entry ledger, on-chain USDT
 -- deposits / withdrawals (BEP20, TRC20), wallet <-> trading account transfers. Every table carries tenant_id.
 -- Money is NUMERIC (never float); the service enforces the scale (USDT: 6 decimals).
 
@@ -8,8 +8,8 @@ CREATE TABLE tenants (
     name        TEXT NOT NULL,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
--- ids mirror the gateway's tenants table (kalks_core)
-INSERT INTO tenants (id, slug, name) VALUES (1, 'kalks', 'Kalks');
+-- ids mirror the gateway's tenants table (ezymex_core)
+INSERT INTO tenants (id, slug, name) VALUES (1, 'ezymex', 'Ezymex');
 
 -- D36: per-tenant withdrawal limits, fees, cooldown
 CREATE TABLE tenant_settings (

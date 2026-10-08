@@ -6,9 +6,9 @@ const dashboard: NsMessages<"dashboard"> = {
   "greeting.afternoon": "İyi günler, {name}",
   "greeting.evening": "İyi akşamlar, {name}",
   "greeting.welcome": "Hoş geldiniz, {name}",
-  "subtitle.live": "Kalks'a hoş geldiniz. Hesabınız ve bugünün piyasaları burada.",
+  "subtitle.live": "Ezymex'a hoş geldiniz. Hesabınız ve bugünün piyasaları burada.",
   "subtitle.demo": "Hesaplarınızın bugünkü performansı burada.",
-  launchTrader: "Kalks Trader'ı başlat",
+  launchTrader: "Ezymex Trader'ı başlat",
   openTerminal: "İşlem terminalini aç",
 
   // Getting started checklist
@@ -62,7 +62,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "account.memberSince": "Üyelik tarihi",
   "account.profile": "Profil",
 
-  // Kalks Trader banner
+  // Ezymex Trader banner
   "trader.chip": "Canlı fiyatlar",
   "trader.text": "Forex, metaller, endeksler, enerji, kripto ve hisse senetlerinde {count} enstrüman için gerçek zamanlı kotasyonlar ve grafikler. Tarayıcınızda çalışır, kurulum gerekmez.",
 
@@ -214,7 +214,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "home.marketsTitle": "Piyasalar",
   "home.moreTitle": "Size özel",
 
-  // Ask Kalks AI on the Overview
+  // Ask Ezymex AI on the Overview
   "ai.title": "{name} ile sor",
   "ai.subtitle": "Hesabınız, para yatırma ve işlemler hakkında anında yanıtlar.",
   "ai.placeholder": "Hesabınız veya işlemler hakkında her şeyi sorun…",

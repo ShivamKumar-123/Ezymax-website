@@ -21,7 +21,7 @@ const shell: NsMessages<"shell"> = {
   security: "보안",
   verification: "본인 인증",
   preferences: "환경 설정",
-  kalksTrader: "Kalks Trader",
+  ezymexTrader: "Ezymex Trader",
   deposit: "입금",
   // Client Area 내비게이션
   "nav.dashboard": "대시보드",
@@ -92,7 +92,7 @@ const shell: NsMessages<"shell"> = {
   "gate.title": "아직 계정에서 사용할 수 없는 기능입니다",
   "gate.text": "이 섹션은 아직 계정에서 사용할 수 없습니다. 이용을 원하시면 {email}로 문의해 주세요.",
   "gate.backToDashboard": "대시보드로 돌아가기",
-  "gate.launchTrader": "Kalks Trader 실행",
+  "gate.launchTrader": "Ezymex Trader 실행",
   // market sessions clock
   "sessions.title": "시장 세션",
   "sessions.openLeft": "열림 · {h}시간 {m}분 남음",

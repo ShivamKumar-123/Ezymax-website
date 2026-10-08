@@ -10,7 +10,7 @@ takeaways:
   - "Swaps are charged or paid at 00:00 server time, tripled on Wednesday for FX and metals and on Friday for indices, energies and stocks, and applied every night on crypto."
   - "Spreads usually widen around rollover, major news and market opens, so costs are not constant through the day."
 practice:
-  label: "Open the contract specification for EURUSD and XAUUSD in Kalks Trader and note the current spread and the swap long and swap short values."
+  label: "Open the contract specification for EURUSD and XAUUSD in Ezymex Trader and note the current spread and the swap long and swap short values."
   symbol: "EURUSD"
 quiz:
   - question: "EURUSD is quoted 1.0850 / 1.0851. You buy 0.30 lot. What is the spread cost?"
@@ -47,7 +47,7 @@ quiz:
     explanation: "A short is closed by buying, at the ask. If the spread widens, for example at rollover, the ask can touch the stop while the bid shown on the chart stays below it."
 ---
 
-Every trade has a price of admission. On Kalks it comes in up to three forms: the **spread**, a **commission** on some account types, and a **swap** for positions held overnight. None of them is large on a single trade, but together, repeated over hundreds of trades, they decide whether a strategy that looks profitable on a chart actually makes money.
+Every trade has a price of admission. On Ezymex it comes in up to three forms: the **spread**, a **commission** on some account types, and a **swap** for positions held overnight. None of them is large on a single trade, but together, repeated over hundreds of trades, they decide whether a strategy that looks profitable on a chart actually makes money.
 
 ## Bid, ask and the spread
 
@@ -79,7 +79,7 @@ XAUUSD 2,350.40 / 2,350.60, 0.10 lot:    0.20   x 10 oz      = 2.00 USD
 US30 39,200 / 39,202, 1 lot (1 USD/pt):  2 pts  x 1.00 USD   = 2.00 USD
 ```
 
-Spreads on Kalks vary by account group and by market conditions. They are usually tightest when the main sessions overlap and widest around the daily rollover at 00:00 server time, during high-impact news and at the weekly open. This also matters for stops: a short position's stop is triggered by the ask, so a spike in the spread can trigger it even though the bid line on the chart never reached it.
+Spreads on Ezymex vary by account group and by market conditions. They are usually tightest when the main sessions overlap and widest around the daily rollover at 00:00 server time, during high-impact news and at the weekly open. This also matters for stops: a short position's stop is triggered by the ask, so a spike in the spread can trigger it even though the bid line on the chart never reached it.
 
 ## Commission
 
@@ -109,7 +109,7 @@ US30 long 1 lot at 39,200 (1 USD per point), financing 5.5% a year, 360-day basi
   39,200 x 0.055 / 360 = 5.99 USD per night; Friday night x3 = 17.97 USD
 ```
 
-Current swap values are shown in each symbol's contract specification in Kalks Trader. **Swap-free accounts** exist for clients who cannot pay or receive overnight interest; they may carry other conditions, so check the account terms.
+Current swap values are shown in each symbol's contract specification in Ezymex Trader. **Swap-free accounts** exist for clients who cannot pay or receive overnight interest; they may carry other conditions, so check the account terms.
 
 ## In practice
 

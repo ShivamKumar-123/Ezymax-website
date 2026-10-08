@@ -3,15 +3,15 @@
 import * as React from "react";
 import { Link2, QrCode, Rocket } from "lucide-react";
 import { toast } from "sonner";
-import { Button, CopyButton, Dialog, DialogClose, Field, Input } from "@kalks/ui";
-import { MKT_UTM_MEDIUMS, MKT_UTM_SOURCES } from "@kalks/mock/admin-growth-marketing";
+import { Button, CopyButton, Dialog, DialogClose, Field, Input } from "@ezymex/ui";
+import { MKT_UTM_MEDIUMS, MKT_UTM_SOURCES } from "@ezymex/mock/admin-growth-marketing";
 import { ChipPicker, SectionLabel } from "./kit";
 
 const PAGES = [
-  { value: "https://kalks.com/open-account", label: "Open account" },
-  { value: "https://kalks.com/promo/welcome-30", label: "Welcome 30% landing" },
-  { value: "https://kalks.com/prop", label: "Prop challenges" },
-  { value: "https://kalks.com/copy-trading", label: "Copy trading" },
+  { value: "https://ezymex.com/open-account", label: "Open account" },
+  { value: "https://ezymex.com/promo/welcome-30", label: "Welcome 30% landing" },
+  { value: "https://ezymex.com/prop", label: "Prop challenges" },
+  { value: "https://ezymex.com/copy-trading", label: "Copy trading" },
 ];
 
 export function UtmBuilderDialog({ open, onOpenChange, onCreate }: { open: boolean; onOpenChange: (o: boolean) => void; onCreate: (v: { source: string; medium: string; campaign: string; budget: number }) => void }) {

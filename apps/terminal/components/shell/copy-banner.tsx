@@ -8,7 +8,7 @@
  */
 import * as React from "react";
 import { Copy, ExternalLink } from "lucide-react";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { useTerminal } from "@/lib/store";
 import { CLIENT_AREA } from "@/lib/guest";
 import { COPY_ACCOUNT_EVENT, copyMasterName, type EngineTradingAccount } from "@/lib/engine/map";

@@ -1,4 +1,4 @@
-//! Client reads (Kalks Trader / Client Area BFFs with the internal token) and the public chain.
+//! Client reads (Ezymex Trader / Client Area BFFs with the internal token) and the public chain.
 
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -179,8 +179,8 @@ pub fn split_barrier(code: &str) -> Option<(&str, &str, f64)> {
 
 /// `GET /v1/options/series/{code}?group=` -> `{series, expiry, venue, quote|null, error?}`. A vanilla series trades on
 /// the order book once it is live (`venue: "book"`, the quote carries the book), else at house prices. A barrier code
-/// (`…-C-UO1.1800`) answers its vanilla series with `venue: "rfq"`, `kalksQuoted: true` and the label: barriers are
-/// RFQ only, quoted by Kalks (docs/OPTIONS-EXCHANGE.md §5), never on the book.
+/// (`…-C-UO1.1800`) answers its vanilla series with `venue: "rfq"`, `ezymexQuoted: true` and the label: barriers are
+/// RFQ only, quoted by Ezymex (docs/OPTIONS-EXCHANGE.md §5), never on the book.
 pub async fn series(State(st): State<AppState>, h: HeaderMap, Path(code): Path<String>, Query(q): Query<GroupQ>) -> R {
     let rd = st.refdata().await;
     let t = enabled_tenant(&rd, &h)?;
@@ -207,7 +207,7 @@ pub async fn series(State(st): State<AppState>, h: HeaderMap, Path(code): Path<S
     if let Some((_, kind_code, level)) = barrier {
         out["code"] = json!(code);
         out["barrier"] = json!({"kind": kind_code, "level": level});
-        out["kalksQuoted"] = json!(true);
+        out["ezymexQuoted"] = json!(true);
         out["orderBook"] = json!(false);
         out["label"] = json!(BARRIER_LABEL);
         out["barriersEnabled"] = json!(u.barriers_enabled);
@@ -260,7 +260,7 @@ pub async fn smile(State(st): State<AppState>, h: HeaderMap, Query(q): Query<Smi
 }
 
 /// `GET /v1/public/options/chain/{u}?expiry=`: guest chain (default group, platform tenant), cached 1 s.
-/// 404 unless tenant `kalks` has `public_chain` on.
+/// 404 unless tenant `ezymex` has `public_chain` on.
 #[derive(Deserialize)]
 pub struct ExpiryQ {
     expiry: Option<String>,

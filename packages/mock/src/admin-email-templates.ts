@@ -1,6 +1,6 @@
 /**
  * Back Office · Content · Email templates (editor page).
- * Import via `@kalks/mock/admin-email-templates`. Exports are prefixed EML_.
+ * Import via `@ezymex/mock/admin-email-templates`. Exports are prefixed EML_.
  */
 import { PEOPLE, type Person } from "./people";
 
@@ -36,8 +36,8 @@ export const EML_VARIABLES: { key: string; label: string; sample: string }[] = [
   { key: "date", label: "Date & time", sample: "24 Sep 2026, 14:32 GMT+3" },
   { key: "commission", label: "Commission", sample: "$4,812.40" },
   { key: "period", label: "Period", sample: "August 2026" },
-  { key: "broker_name", label: "Broker name", sample: "Kalks Markets" },
-  { key: "support_email", label: "Support email", sample: "support@kalks.com" },
+  { key: "broker_name", label: "Broker name", sample: "Ezymex Markets" },
+  { key: "support_email", label: "Support email", sample: "support@ezymex.com" },
 ];
 
 export interface EmlContent {

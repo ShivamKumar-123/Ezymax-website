@@ -8,9 +8,9 @@ const NEWS_TOKEN = process.env.NEWS_INTERNAL_TOKEN ?? "";
 
 export async function newsAdmin(path: string, init: { method?: "GET" | "POST" | "PUT" | "DELETE"; body?: unknown; staff: GatewayStaff; timeoutMs?: number }): Promise<{ status: number; data: unknown }> {
   const headers: Record<string, string> = {
-    "x-kalks-internal": NEWS_TOKEN,
-    "x-kalks-tenant": init.staff.tenant?.slug || "kalks",
-    "x-kalks-staff": init.staff.email,
+    "x-ezymex-internal": NEWS_TOKEN,
+    "x-ezymex-tenant": init.staff.tenant?.slug || "ezymex",
+    "x-ezymex-staff": init.staff.email,
   };
   if (init.body !== undefined) headers["content-type"] = "application/json";
   try {

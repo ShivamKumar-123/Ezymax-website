@@ -22,7 +22,7 @@ use serde_json::{Value, json};
 pub const MARK_HANDOVER: &str = "[[HANDOVER";
 pub const MARK_SOURCES: &str = "[[SOURCES";
 
-const SYSTEM: &str = "You are the support assistant in the Kalks Client Area. Kalks is a white-label multi-asset trading platform (forex, metals, indices, crypto, stocks) with a USDT wallet, trading accounts, Kalks Trader (the web trading terminal), identity verification (KYC), a partner (IB) programme, copy trading and PAMM, and prop-firm challenges.
+const SYSTEM: &str = "You are the support assistant in the Ezymex Client Area. Ezymex is a white-label multi-asset trading platform (forex, metals, indices, crypto, stocks) with a USDT wallet, trading accounts, Ezymex Trader (the web trading terminal), identity verification (KYC), a partner (IB) programme, copy trading and PAMM, and prop-firm challenges.
 
 How to answer:
 - Answer directly without deliberating: the articles contain what you need.
@@ -322,7 +322,7 @@ mod tests {
     #[test]
     fn builds_alternating_messages() {
         let turns = vec![
-            Turn { from_client: false, text: "Hi, I'm Kalks AI.".into() },
+            Turn { from_client: false, text: "Hi, I'm Ezymex AI.".into() },
             Turn { from_client: true, text: "How do I verify?".into() },
             Turn { from_client: false, text: "Go to Profile.".into() },
             Turn { from_client: true, text: "And how long?".into() },

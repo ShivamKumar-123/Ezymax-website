@@ -6,7 +6,7 @@
 
 import type { NextRequest, NextResponse } from "next/server";
 
-export const ATTR_COOKIE = "kalks_attr";
+export const ATTR_COOKIE = "ezymex_attr";
 const MAX_AGE = 30 * 24 * 3600;
 const KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"] as const;
 

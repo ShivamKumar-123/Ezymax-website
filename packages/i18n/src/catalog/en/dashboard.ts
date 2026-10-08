@@ -5,9 +5,9 @@ const dashboard = {
   "greeting.afternoon": "Good afternoon, {name}",
   "greeting.evening": "Good evening, {name}",
   "greeting.welcome": "Welcome, {name}",
-  "subtitle.live": "Welcome to Kalks. Here's your account and today's markets.",
+  "subtitle.live": "Welcome to Ezymex. Here's your account and today's markets.",
   "subtitle.demo": "Here's how your accounts are performing today.",
-  launchTrader: "Launch Kalks Trader",
+  launchTrader: "Launch Ezymex Trader",
   openTerminal: "Open trading terminal",
 
   // Getting started checklist
@@ -62,7 +62,7 @@ const dashboard = {
   "account.memberSince": "Member since",
   "account.profile": "Profile",
 
-  // Kalks Trader banner
+  // Ezymex Trader banner
   "trader.chip": "Live prices",
   "trader.text": "Real-time quotes and charts for {count} instruments across forex, metals, indices, energies, crypto and stocks. Runs in your browser, nothing to install.",
 
@@ -225,7 +225,7 @@ const dashboard = {
   "home.marketsTitle": "Markets",
   "home.moreTitle": "More for you",
 
-  // Ask Kalks AI on the Overview (the support bot). {name} = the assistant's name, e.g. "Kalks AI"
+  // Ask Ezymex AI on the Overview (the support bot). {name} = the assistant's name, e.g. "Ezymex AI"
   "ai.title": "Ask {name}",
   "ai.subtitle": "Instant answers about your account, deposits and trading.",
   "ai.placeholder": "Ask anything about your account or trading…",

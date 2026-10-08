@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader left panels: Piyasa Gözlemi (quotes list), segment chips and Gezgin.
+// Ezymex Trader left panels: Piyasa Gözlemi (quotes list), segment chips and Gezgin.
 const market: NsMessages<"market"> = {
   // Market Watch header and tabs
   title: "Piyasa Gözlemi",
@@ -72,7 +72,7 @@ const market: NsMessages<"market"> = {
   "nav.guest": "misafir",
   "nav.noAccount": "Henüz işlem hesabı yok",
   "nav.openAccount": "Hesap aç",
-  "nav.openAccountTitle": "Kalks hesabınızı oluşturun (Müşteri Alanını açar)",
+  "nav.openAccountTitle": "Ezymex hesabınızı oluşturun (Müşteri Alanını açar)",
   "nav.signIn": "Giriş yap",
   "nav.signInTitle": "Müşteri Alanına giriş yapın",
   "nav.accountType.live": "gerçek",

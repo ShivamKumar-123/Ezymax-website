@@ -1,6 +1,6 @@
 /**
  * Back Office · Marketing · UTM campaigns with realistic broker unit economics
- * (CPA $150–600). Derived from MKT_CAMPAIGNS; import via `@kalks/mock/admin-campaigns`. Prefix: UTM_.
+ * (CPA $150–600). Derived from MKT_CAMPAIGNS; import via `@ezymex/mock/admin-campaigns`. Prefix: UTM_.
  */
 import { MKT_CAMPAIGNS, MKT_SPEND_REVENUE, MKT_UTM_MEDIUMS, MKT_UTM_SOURCES, type MktCampaign } from "./admin-growth-marketing";
 import { seeded } from "./rng";

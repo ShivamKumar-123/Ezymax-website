@@ -1,11 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { STAFF_COOKIE, clientIp, gateway, safeNext } from "@/lib/gateway";
 import { hostOf } from "@/lib/tenant-host";
 
 // Route protection for the Back Office: every page needs a staff session except /login.
 // The (app) layout re-validates the session with the gateway on every full render.
-// Demo builds (NEXT_PUBLIC_KALKS_MODE=demo) have no staff sign-in: every page is open, /login offers "Enter demo".
+// Demo builds (NEXT_PUBLIC_EZYMEX_MODE=demo) have no staff sign-in: every page is open, /login offers "Enter demo".
 
 export async function proxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
@@ -30,7 +30,7 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(url);
   }
   const headers = new Headers(req.headers);
-  headers.set("x-kalks-path", pathname + search);
+  headers.set("x-ezymex-path", pathname + search);
   return NextResponse.next({ request: { headers } });
 }
 

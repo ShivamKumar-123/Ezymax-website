@@ -1,4 +1,4 @@
-//! Kalks Trader terminal API: MT5-style login per account (trading or investor password), SSO from the
+//! Ezymex Trader terminal API: MT5-style login per account (trading or investor password), SSO from the
 //! CRM, account state, orders and positions. Investor sessions are view-only: every write is rejected here
 //! on the server (D107), whatever the UI shows.
 

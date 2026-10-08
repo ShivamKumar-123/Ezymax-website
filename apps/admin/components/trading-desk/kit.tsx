@@ -3,11 +3,11 @@
 import * as React from "react";
 import { AlertTriangle, Check, Minus, Search, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Dialog, DialogClose, SymbolAvatar, Tooltip, cn, formatMoney, formatNumber } from "@kalks/ui";
-import { INSTRUMENTS, getInstrument } from "@kalks/mock";
-import { ADMIN_ACCOUNTS } from "@kalks/mock/admin-trading";
-import { getClient } from "@kalks/mock/admin-clients";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { Avatar, Button, Dialog, DialogClose, SymbolAvatar, Tooltip, cn, formatMoney, formatNumber } from "@ezymex/ui";
+import { INSTRUMENTS, getInstrument } from "@ezymex/mock";
+import { ADMIN_ACCOUNTS } from "@ezymex/mock/admin-trading";
+import { getClient } from "@ezymex/mock/admin-clients";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { DESK_REASONS, liveClientEmail, liveClientName, noteRequired, toUsdOf, useLiveDirectory, type Book, type DeskResult, type Reason } from "@/lib/trading-desk";
 
 /* ------------------------------------------------------------------ */

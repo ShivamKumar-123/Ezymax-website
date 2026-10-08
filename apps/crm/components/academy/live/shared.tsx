@@ -6,7 +6,7 @@ import { ArrowUpRight, BarChart3, BookOpen, ChartSpline, Check, ChevronLeft, Lan
 import { Button, Card, EmptyState, Skeleton, cn } from "@/components/kit";
 import { useAccounts, openTerminal } from "@/components/trading/api";
 import { TERMINAL_URL } from "@/lib/live";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { isTrack, type AcademyError, type Track, type TrackKey } from "./api";
 
 const TRACK_ICON: Record<Track, LucideIcon> = { fundamental: Landmark, technical: BarChart3, options: ChartSpline };
@@ -103,7 +103,7 @@ export function StatusDot({ state, n }: { state: "done" | "open" | "locked"; n?:
 }
 
 /**
- * "Practise in Kalks Trader": opens the learner's demo account in the terminal (one-time SSO), or sends them to
+ * "Practise in Ezymex Trader": opens the learner's demo account in the terminal (one-time SSO), or sends them to
  * open a free demo account first.
  */
 export function PracticeButton({ size = "md", label: labelProp }: { size?: "sm" | "md"; label?: string }) {

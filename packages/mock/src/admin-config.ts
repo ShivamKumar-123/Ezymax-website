@@ -49,7 +49,7 @@ export interface AdminGroup {
 
 export const ADMIN_GROUPS: AdminGroup[] = [
   {
-    id: "standard", name: "Standard", tagline: "Zero commission, all-in spreads", mode: "hedging", cent: false, currency: "USD", server: "Kalks-Live01",
+    id: "standard", name: "Standard", tagline: "Zero commission, all-in spreads", mode: "hedging", cent: false, currency: "USD", server: "Ezymex-Live01",
     leverage: [50, 100, 200, 500, 1000], defaultLeverage: 500, marginCall: 100, stopOut: 50, hedgedMargin: 50, minDeposit: 10,
     swapFree: false, islamicFee: { enabled: false, perLot: 0, graceDays: 0, basis: "per-lot-night" }, route: "B",
     autoRule: { aBookAboveLots: 20, toxicityScore: 70, profitableDays: 10 }, commission: { perLot: 0, chargeOn: "round" },
@@ -57,7 +57,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     volume30d: 412_880, status: "active", tone: "neutral", updatedBy: "Priya Nair", updatedAt: "2026-09-21T09:14:00Z",
   },
   {
-    id: "pro", name: "Pro", tagline: "Tight raw-feel spreads for active traders", mode: "hedging", cent: false, currency: "USD", server: "Kalks-Live01",
+    id: "pro", name: "Pro", tagline: "Tight raw-feel spreads for active traders", mode: "hedging", cent: false, currency: "USD", server: "Ezymex-Live01",
     leverage: [50, 100, 200, 500], defaultLeverage: 200, marginCall: 100, stopOut: 50, hedgedMargin: 50, minDeposit: 200,
     swapFree: false, islamicFee: { enabled: false, perLot: 0, graceDays: 0, basis: "per-lot-night" }, route: "auto",
     autoRule: { aBookAboveLots: 10, toxicityScore: 60, profitableDays: 7 }, commission: { perLot: 0, chargeOn: "round" },
@@ -65,7 +65,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     volume30d: 604_210, status: "active", tone: "ember", updatedBy: "James Carter", updatedAt: "2026-09-23T15:40:00Z",
   },
   {
-    id: "ecn", name: "ECN", tagline: "Raw spreads from 0.0 + $3.5/lot/side", mode: "netting", cent: false, currency: "USD", server: "Kalks-Live02",
+    id: "ecn", name: "ECN", tagline: "Raw spreads from 0.0 + $3.5/lot/side", mode: "netting", cent: false, currency: "USD", server: "Ezymex-Live02",
     leverage: [50, 100, 200, 500], defaultLeverage: 100, marginCall: 120, stopOut: 60, hedgedMargin: 0, minDeposit: 500,
     swapFree: false, islamicFee: { enabled: false, perLot: 0, graceDays: 0, basis: "per-lot-night" }, route: "A",
     autoRule: { aBookAboveLots: 0, toxicityScore: 0, profitableDays: 0 }, commission: { perLot: 7, chargeOn: "round" },
@@ -73,7 +73,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     volume30d: 382_450, status: "active", tone: "info", updatedBy: "Priya Nair", updatedAt: "2026-09-12T11:02:00Z",
   },
   {
-    id: "cent", name: "Cent", tagline: "Trade in cents — test strategies live", mode: "hedging", cent: true, currency: "USC", server: "Kalks-Live02",
+    id: "cent", name: "Cent", tagline: "Trade in cents — test strategies live", mode: "hedging", cent: true, currency: "USC", server: "Ezymex-Live02",
     leverage: [100, 500, 1000, 2000], defaultLeverage: 1000, marginCall: 60, stopOut: 20, hedgedMargin: 50, minDeposit: 10,
     swapFree: false, islamicFee: { enabled: false, perLot: 0, graceDays: 0, basis: "per-lot-night" }, route: "B",
     autoRule: { aBookAboveLots: 50, toxicityScore: 80, profitableDays: 14 }, commission: { perLot: 0, chargeOn: "round" },
@@ -81,7 +81,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     volume30d: 96_140, status: "active", tone: "gold", updatedBy: "Omar Haddad", updatedAt: "2026-09-02T08:30:00Z",
   },
   {
-    id: "vip", name: "VIP", tagline: "Invite-only · priority execution & desk", mode: "netting", cent: false, currency: "USD", server: "Kalks-Live01",
+    id: "vip", name: "VIP", tagline: "Invite-only · priority execution & desk", mode: "netting", cent: false, currency: "USD", server: "Ezymex-Live01",
     leverage: [50, 100, 200], defaultLeverage: 100, marginCall: 130, stopOut: 80, hedgedMargin: 25, minDeposit: 50000,
     swapFree: false, islamicFee: { enabled: false, perLot: 0, graceDays: 0, basis: "per-lot-night" }, route: "A",
     autoRule: { aBookAboveLots: 0, toxicityScore: 0, profitableDays: 0 }, commission: { perLot: 4, chargeOn: "round" },
@@ -89,7 +89,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     volume30d: 288_900, status: "active", tone: "gold", updatedBy: "James Carter", updatedAt: "2026-09-19T13:22:00Z",
   },
   {
-    id: "islamic", name: "Islamic", tagline: "Swap-free with transparent admin fee", mode: "hedging", cent: false, currency: "USD", server: "Kalks-Live01",
+    id: "islamic", name: "Islamic", tagline: "Swap-free with transparent admin fee", mode: "hedging", cent: false, currency: "USD", server: "Ezymex-Live01",
     leverage: [50, 100, 200, 500], defaultLeverage: 200, marginCall: 100, stopOut: 50, hedgedMargin: 50, minDeposit: 50,
     swapFree: true, islamicFee: { enabled: true, perLot: 5, graceDays: 3, basis: "per-lot-night" }, route: "auto",
     autoRule: { aBookAboveLots: 15, toxicityScore: 65, profitableDays: 10 }, commission: { perLot: 0, chargeOn: "round" },
@@ -448,7 +448,7 @@ export const DEMO_RULES = {
   leverages: [100, 200, 500, 1000],
   groups: ["standard", "pro", "ecn", "cent"],
   nudgeToLive: true,
-  server: "Kalks-Demo",
+  server: "Ezymex-Demo",
 };
 
 export const DEMO_STATS = {

@@ -233,8 +233,8 @@ const developer: NsMessages<"developer"> = {
   "assetClass.crypto": "Krypto",
   "assetClass.stocks": "Aktien",
 
-  // Code editor (Kalks strategy language)
-  "code.language": "Kalks-Strategiesprache",
+  // Code editor (Ezymex strategy language)
+  "code.language": "Ezymex-Strategiesprache",
   "code.checking": "Wird geprüft…",
   "code.errors": { one: "{count} Fehler", other: "{count} Fehler" },
   "code.compiles": "Kompiliert",
@@ -281,7 +281,7 @@ const developer: NsMessages<"developer"> = {
   // Kill switch
   "kill.title": "Notaus",
   "kill.subtitle": "Stoppt jede Strategie, jeden Webhook und alle API-Orders auf Ihren Konten",
-  "kill.globalPaused": "Der automatisierte Handel ist durch das Risikomanagement von Kalks plattformweit pausiert.",
+  "kill.globalPaused": "Der automatisierte Handel ist durch das Risikomanagement von Ezymex plattformweit pausiert.",
   "kill.onSince": "Aktiv seit {at}",
   "kill.release": "Notaus aufheben",
   "kill.stopAll": "Alle Automatisierung stoppen",
@@ -363,7 +363,7 @@ const developer: NsMessages<"developer"> = {
   "docs.bearer": "Bearer (am einfachsten)",
   "docs.hmac": "HMAC-Signatur (empfohlen für Bots)",
   // <code> wraps header names and paths; keep them untranslated
-  "docs.signature": "Signatur = hex(HMAC-SHA256(secret, timestamp + METHOD + Pfad mit Query + Body)), gesendet mit <code>X-Kalks-Key</code>, <code>X-Kalks-Timestamp</code> (Unix ms, ±30 s) und <code>X-Kalks-Signature</code>. Der Pfad wird als <code>/public/v1/…</code> signiert. Jede Signatur wird nur einmal akzeptiert.",
+  "docs.signature": "Signatur = hex(HMAC-SHA256(secret, timestamp + METHOD + Pfad mit Query + Body)), gesendet mit <code>X-Ezymex-Key</code>, <code>X-Ezymex-Timestamp</code> (Unix ms, ±30 s) und <code>X-Ezymex-Signature</code>. Der Pfad wird als <code>/public/v1/…</code> signiert. Jede Signatur wird nur einmal akzeptiert.",
   // "api", clientOrderId and duplicate are API values; keep them
   "docs.endpointsSub": "JSON rein und raus. Jede Order trägt die Quelle „api“; eine wiederholte clientOrderId liefert den Status duplicate.",
   "docs.errorsSub": "Fehler haben das Format {shape}",
@@ -473,9 +473,9 @@ const developer: NsMessages<"developer"> = {
 
   // Strategy marketplace
   "market.title": "Strategie-Marketplace",
-  "market.subtitle": "Strategien mit verifizierter Historie von Kalks-Konten. Kopieren Sie eine auf Ihr Konto oder veröffentlichen Sie Ihre eigene und verdienen Sie an Abonnements.",
-  "market.houseChip": "Hausstrategie · Betrieben von Kalks",
-  "market.houseNote": "Hausstrategie, betrieben von Kalks: ein brokereigenes Live-Konto, auf dem diese Strategie läuft. Die Historie umfasst nur die eigenen Live-Trades seit dem Start; nichts ist simuliert oder rückwirkend ergänzt.",
+  "market.subtitle": "Strategien mit verifizierter Historie von Ezymex-Konten. Kopieren Sie eine auf Ihr Konto oder veröffentlichen Sie Ihre eigene und verdienen Sie an Abonnements.",
+  "market.houseChip": "Hausstrategie · Betrieben von Ezymex",
+  "market.houseNote": "Hausstrategie, betrieben von Ezymex: ein brokereigenes Live-Konto, auf dem diese Strategie läuft. Die Historie umfasst nur die eigenen Live-Trades seit dem Start; nichts ist simuliert oder rückwirkend ergänzt.",
   // Date range, e.g. "2025-01-01 to 2025-12-31"
   "market.range": "{from} bis {to}",
   "market.backtestSimulated": "Backtest · simuliert",
@@ -502,7 +502,7 @@ const developer: NsMessages<"developer"> = {
   "market.subscriptionStatus": "Abonnement {status}",
   "market.reviewSaved": "Bewertung gespeichert",
   "market.reviewFailed": "Bewertung konnte nicht gespeichert werden",
-  "market.trackNote": "Historie aus dem eigenen Deployment des Autors auf Kalks seit {since}: {days} Tage, netto {net}. Berechnet aus geschlossenen Deals der Handelsengine, nicht vom Autor eingegeben.",
+  "market.trackNote": "Historie aus dem eigenen Deployment des Autors auf Ezymex seit {since}: {days} Tage, netto {net}. Berechnet aus geschlossenen Deals der Handelsengine, nicht vom Autor eingegeben.",
   "market.riskSettings": "Risikoeinstellungen",
   "market.riskLine": "Größe {size} · Stop {stop} · Ziel {target}",
   "market.riskPct": "{pct}% Risiko",
@@ -520,7 +520,7 @@ const developer: NsMessages<"developer"> = {
   "market.cloneRules": "Regeln klonen",
   "market.subscribePaid": "Abonnieren · {price} USDT / Monat",
   "market.subscribeFree": "Kostenlos abonnieren",
-  "market.paidNote": "Bezahlt aus Ihrer Kalks-Wallet (USDT). Verlängert sich alle 30 Tage; jederzeit kündbar.",
+  "market.paidNote": "Bezahlt aus Ihrer Ezymex-Wallet (USDT). Verlängert sich alle 30 Tage; jederzeit kündbar.",
   "market.reviews": "Bewertungen ({n})",
   "market.stars": { one: "{count} Stern", other: "{count} Sterne" },
   "market.reviewPlaceholder": "Wie hat die Strategie für Sie gehandelt?",
@@ -552,7 +552,7 @@ const developer: NsMessages<"developer"> = {
   "market.popular": "Beliebt",
   "market.emptyTitle": "Noch keine Strategien gelistet",
   "market.emptyText": "Seien Sie der Erste: Starten Sie eine Strategie auf einem Demokonto und veröffentlichen Sie sie dann mit ihrer verifizierten Historie.",
-  "market.disclaimer": "Frühere Wertentwicklungen sind keine Garantie für künftige Ergebnisse. Historien stammen von Live- oder Demokonten bei Kalks und sind entsprechend gekennzeichnet. Plattformgebühr auf kostenpflichtige Abonnements: {pct}%.",
+  "market.disclaimer": "Frühere Wertentwicklungen sind keine Garantie für künftige Ergebnisse. Historien stammen von Live- oder Demokonten bei Ezymex und sind entsprechend gekennzeichnet. Plattformgebühr auf kostenpflichtige Abonnements: {pct}%.",
   "market.mode": "Modus",
   "market.renews": "Verlängerung",
   "market.copyOn": "Kopie auf #{login}",

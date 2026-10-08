@@ -3,7 +3,7 @@
 //   2 the featured story (pinned first, else the most important) — skeleton / empty card
 //   3 Today's market brief (AI): mood, headline, points, calendar note, instruments to watch, disclaimer
 //   4 News around the world: dotted map with pins (tap filters by country) + country chips
-//   5 Most mentioned (top 5 -> Kalks Trader) + market sessions
+//   5 Most mentioned (top 5 -> Ezymex Trader) + market sessions
 //   6 filters: categories, sentiment toggles, the country filter, "{n} stories"
 //   7 story cards (cover, sentiment, category, pinned, save), then "Load older stories"
 //   story sheet: source, time, tags, title, summary, instruments, read the full story, Save · Copy link · Trade
@@ -29,7 +29,7 @@ import 'widgets/world_map.dart';
 
 const List<String> _cats = ['all', 'macro', 'forex', 'metals', 'indices', 'energies', 'crypto', 'stocks'];
 
-/// The reading list (story ids), kept on the device (web localStorage `kalks.news.saved`).
+/// The reading list (story ids), kept on the device (web localStorage `ezymex.news.saved`).
 class SavedNews extends Notifier<List<int>> {
   @override
   List<int> build() {

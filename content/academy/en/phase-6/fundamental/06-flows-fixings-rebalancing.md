@@ -6,7 +6,7 @@ order: 6
 version: 1
 takeaways:
   - "Some of the largest orders in markets are driven by schedules and rules rather than views, such as benchmark fixings, month-end portfolio rebalancing and index changes."
-  - "The WM/Reuters 4pm London fix is the main FX benchmark, and on Kalks server time it usually falls at 18:00."
+  - "The WM/Reuters 4pm London fix is the main FX benchmark, and on Ezymex server time it usually falls at 18:00."
   - "Rebalancing makes funds sell what has outperformed and buy what has underperformed, which can create counter-trend moves around month-end and quarter-end."
   - "Flow effects are real but noisy; the practical use is to avoid being surprised by erratic moves and wide spreads at known times."
 quiz:
@@ -48,7 +48,7 @@ Most of this phase is about how traders *feel* and how they are *positioned*. Th
 
 ## Benchmark fixings
 
-A fixing is a reference price calculated at a set time each day and used to settle contracts, value portfolios and execute client orders. The most important ones for Kalks symbols are:
+A fixing is a reference price calculated at a set time each day and used to settle contracts, value portfolios and execute client orders. The most important ones for Ezymex symbols are:
 
 | Fixing | Time | Relevant symbols |
 |---|---|---|
@@ -59,7 +59,7 @@ A fixing is a reference price calculated at a set time each day and used to sett
 
 The WM/Reuters 4pm rate is the dominant FX benchmark. Index providers use it to value global stock and bond indices, so any fund tracking those indices has an incentive to execute currency trades at exactly that rate. The rate is calculated from trades over a short window around 16:00 London time. Large orders concentrate into those minutes, and if they are unbalanced in one direction, price can jump and then drift back once the window closes.
 
-> **In Kalks Trader:** Kalks server time is GMT+2 in winter and GMT+3 during US daylight saving, while London is GMT in winter and GMT+1 in summer. For most of the year, 16:00 London is therefore 18:00 server time. In the few weeks when the US and UK change clocks on different dates, the gap shifts by an hour, so check the conversion then.
+> **In Ezymex Trader:** Ezymex server time is GMT+2 in winter and GMT+3 during US daylight saving, while London is GMT in winter and GMT+1 in summer. For most of the year, 16:00 London is therefore 18:00 server time. In the few weeks when the US and UK change clocks on different dates, the gap shifts by an hour, so check the conversion then.
 
 ```svg
 <svg viewBox="0 0 640 260" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
@@ -127,5 +127,5 @@ The honest assessment is that flow effects are real but noisy and short-lived. T
 ## Common mistakes
 
 - **Reading too much into one fix.** A single spike at 16:00 London says little about the trend.
-- **Forgetting the time zones.** London, New York and Kalks server time do not always move together.
+- **Forgetting the time zones.** London, New York and Ezymex server time do not always move together.
 - **Treating estimates as facts.** Bank flow models disagree with each other regularly.

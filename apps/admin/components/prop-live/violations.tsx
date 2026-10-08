@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { AlertTriangle, CheckCircle2, ShieldAlert, XCircle } from "lucide-react";
-import { Button, Card, CardHeader, Chip, DataTable, Dialog, KeyValue, KpiCard, PageHeader, Reveal, Tabs, Toggle, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, Dialog, KeyValue, KpiCard, PageHeader, Reveal, Tabs, Toggle, type Column } from "@ezymex/ui";
 import { FilterSelect, TableSkeleton, ago, qs, useApi, useNow, when } from "@/components/live/kit";
 import { FilterPills } from "@/components/prop/rules";
 import { ChallengeDrawer } from "./challenge-drawer";

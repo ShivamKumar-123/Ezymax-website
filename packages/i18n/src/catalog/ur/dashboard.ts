@@ -6,9 +6,9 @@ const dashboard: NsMessages<"dashboard"> = {
   "greeting.afternoon": "سلام، {name}",
   "greeting.evening": "شام بخیر، {name}",
   "greeting.welcome": "خوش آمدید، {name}",
-  "subtitle.live": "Kalks میں خوش آمدید۔ یہ رہا آپ کا اکاؤنٹ اور آج کی مارکیٹس۔",
+  "subtitle.live": "Ezymex میں خوش آمدید۔ یہ رہا آپ کا اکاؤنٹ اور آج کی مارکیٹس۔",
   "subtitle.demo": "آج آپ کے اکاؤنٹس کی کارکردگی یہ ہے۔",
-  launchTrader: "Kalks Trader کھولیں",
+  launchTrader: "Ezymex Trader کھولیں",
   openTerminal: "ٹریڈنگ ٹرمینل کھولیں",
 
   // Getting started checklist
@@ -62,7 +62,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "account.memberSince": "رکن بننے کی تاریخ",
   "account.profile": "پروفائل",
 
-  // Kalks Trader banner
+  // Ezymex Trader banner
   "trader.chip": "لائیو قیمتیں",
   "trader.text": "فاریکس، دھاتوں، انڈیکسز، توانائی، کرپٹو اور اسٹاکس کے {count} انسٹرومنٹس کے لیے ریئل ٹائم کوٹس اور چارٹس۔ آپ کے براؤزر میں چلتا ہے، کچھ انسٹال کرنے کی ضرورت نہیں۔",
 
@@ -216,7 +216,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "home.marketsTitle": "مارکیٹس",
   "home.moreTitle": "آپ کے لیے مزید",
 
-  // Ask Kalks AI on the Overview
+  // Ask Ezymex AI on the Overview
   "ai.title": "{name} سے پوچھیں",
   "ai.subtitle": "آپ کے اکاؤنٹ، ڈپازٹ اور ٹریڈنگ کے بارے میں فوری جوابات۔",
   "ai.placeholder": "اپنے اکاؤنٹ یا ٹریڈنگ کے بارے میں کچھ بھی پوچھیں…",

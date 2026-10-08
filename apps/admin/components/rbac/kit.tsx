@@ -5,7 +5,7 @@
  */
 import * as React from "react";
 import { toast } from "sonner";
-import type { ChipTone } from "@kalks/ui";
+import type { ChipTone } from "@ezymex/ui";
 import type { ApiErr } from "@/components/live/kit";
 
 export type Method = "POST" | "PATCH" | "PUT" | "DELETE";

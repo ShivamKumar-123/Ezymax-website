@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Brand and network names stay as they are: Kalks, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
+// Brand and network names stay as they are: Ezymex, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
 // MetaMask, TronLink, Tronscan, USD, USC, KYC.
 const wallet: NsMessages<"wallet"> = {
   // Shared labels
@@ -390,17 +390,17 @@ const wallet: NsMessages<"wallet"> = {
   "demo.linkCopied": "Pautan disalin ke papan klip",
   "demo.sendOnlyWarning": "<b>Hantar hanya USDT melalui TRON (TRC20).</b> Menghantar sebarang token lain, atau menggunakan ERC20 / BEP20, akan menyebabkan kehilangan dana secara kekal.",
   "demo.arrival": "Ketibaan",
-  "demo.kalksFee": "Yuran Kalks",
+  "demo.ezymexFee": "Yuran Ezymex",
   "demo.noKycDeposit": "Tiada KYC diperlukan untuk membuat deposit. Pengesahan hanya diperlukan sebelum pengeluaran pertama anda.",
   // Withdraw
   "demo.addrStartT": "Alamat TRC20 bermula dengan “T”",
   "demo.addrLength": "Mesti 34 aksara ({length}/34)",
   "demo.addrChars": "Mengandungi aksara tidak sah (0, O, I, l tidak dibenarkan)",
-  "demo.addrOwn": "Ini ialah alamat deposit Kalks anda sendiri",
+  "demo.addrOwn": "Ini ialah alamat deposit Ezymex anda sendiri",
   "demo.justNow": "Baru sahaja",
   "demo.codeConfirmed": "Kod disahkan melalui {email}",
   "demo.financeReviews": "Pasukan kewangan menyemak setiap pengeluaran · biasanya kurang daripada 2 jam",
-  "demo.sentFromHot": "Dihantar dari dompet panas Kalks setelah diluluskan",
+  "demo.sentFromHot": "Dihantar dari dompet panas Ezymex setelah diluluskan",
   "demo.arriveAfter": "Dana tiba di alamat anda selepas 20 pengesahan",
   "demo.pendingTitle": "Pengeluaran belum selesai",
   "demo.awaitingCompletion": "{count} menunggu untuk diselesaikan",
@@ -459,7 +459,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.alwaysReviewed": "Sentiasa disemak oleh pasukan kewangan",
   "demo.unrecoverable": "Pengeluaran ke bursa yang tidak menyokong USDT TRC20, atau ke alamat kontrak pintar, tidak dapat dipulihkan.",
   // Transfer
-  "demo.kalksWallet": "Dompet Kalks",
+  "demo.ezymexWallet": "Dompet Ezymex",
   "demo.freeMargin": "Margin bebas",
   "demo.assetAvailable": "{amount} {asset} tersedia · {network}",
   "demo.throughWallet": "Pindahan sentiasa melalui dompet anda.",
@@ -494,7 +494,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.rule4Title": "Margin bebas dilindungi",
   "demo.rule4Text": "Anda hanya boleh memindahkan keluar apa yang dibenarkan oleh margin bebas anda, supaya dagangan terbuka kekal selamat.",
   "demo.into": "ke",
-  "demo.intoKalksWallet": "ke Dompet Kalks anda",
+  "demo.intoEzymexWallet": "ke Dompet Ezymex anda",
   "demo.freeMarginAfter": "Margin bebas selepas",
   "demo.marginLevelAfter": "Tahap margin selepas",
   "demo.convertedNote": "{asset} ditukar kepada USD pada kadar langsung tolak tambahan {markup}%. Kadar dikemas kini setiap tik sehingga anda mengesahkan.",

@@ -3,8 +3,8 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { Ban, Globe2, MapPin, Plus, Radar, Search, ShieldAlert, Trash2 } from "lucide-react";
-import { Button, Card, CardHeader, Chip, Dialog, Field, Flag, Input, PageHeader, Reveal, Segmented, Tabs, Toggle, WorldMap, cn, formatNumber } from "@kalks/ui";
-import { SET_ALL_COUNTRIES, SET_COUNTRY_RULES, type SetCountryRule } from "@kalks/mock/admin-platform-settings";
+import { Button, Card, CardHeader, Chip, Dialog, Field, Flag, Input, PageHeader, Reveal, Segmented, Tabs, Toggle, WorldMap, cn, formatNumber } from "@ezymex/ui";
+import { SET_ALL_COUNTRIES, SET_COUNTRY_RULES, type SetCountryRule } from "@ezymex/mock/admin-platform-settings";
 import { ClientOnly } from "@/components/settings/kit";
 
 const ENFORCE = [

@@ -9,7 +9,7 @@ pub struct Config {
     pub database_url: String,
     /// Server-side key for HMAC-hashing session tokens, OTP codes and device ids (>= 32 chars).
     pub session_secret: String,
-    /// Shared secret the Next.js BFF route handlers send in `X-Kalks-Internal`. Empty = check disabled (dev only).
+    /// Shared secret the Next.js BFF route handlers send in `X-Ezymex-Internal`. Empty = check disabled (dev only).
     pub internal_token: String,
     /// `development` exposes OTP codes in API responses (`dev_code`) and logs them; `production` never does.
     pub dev_mode: bool,
@@ -27,6 +27,10 @@ pub struct Config {
     pub support_email: String,
     /// Staff must enter an emailed code on every sign-in (default), not only on new devices.
     pub staff_otp_every_login: bool,
+    /// Sign-in and registration take the password alone (no emailed code). LOGIN_EMAIL_CODES=auto (default) turns
+    /// this on only while codes can't be delivered (production without SMTP_HOST); `on` / `off` force it.
+    /// Step-up codes (withdrawals, password changes) and password resets still need email.
+    pub password_only: bool,
     pub super_admin_email: String,
     pub super_admin_password: String,
     pub super_admin_name: String,
@@ -59,6 +63,7 @@ impl fmt::Debug for Config {
             .field("internal_token", &redact(&self.internal_token))
             .field("dev_mode", &self.dev_mode)
             .field("staff_otp_every_login", &self.staff_otp_every_login)
+            .field("password_only", &self.password_only)
             .field("smtp_configured", &self.smtp_configured)
             .field("smtp_host", &self.smtp_host)
             .field("smtp_port", &self.smtp_port)
@@ -89,26 +94,33 @@ impl Config {
         if internal_token.is_empty() && !dev_mode {
             anyhow::bail!("GATEWAY_INTERNAL_TOKEN is required in production");
         }
+        let smtp_configured = !var("SMTP_HOST", "").is_empty();
+        let password_only = match var("LOGIN_EMAIL_CODES", "auto").as_str() {
+            "off" => true,
+            "on" => false,
+            _ => !dev_mode && !smtp_configured,
+        };
         Ok(Self {
             bind: var("GATEWAY_BIND", "127.0.0.1:8080"),
-            database_url: var("GATEWAY_DATABASE_URL", "postgres://postgres@127.0.0.1:5433/kalks_core"),
+            database_url: var("GATEWAY_DATABASE_URL", "postgres://postgres@127.0.0.1:5433/ezymex_core"),
             session_secret,
             internal_token,
             dev_mode,
-            smtp_configured: !var("SMTP_HOST", "").is_empty(),
+            smtp_configured,
             smtp_host: var("SMTP_HOST", ""),
             smtp_port: var("SMTP_PORT", "465").parse().unwrap_or(465),
             smtp_user: var("SMTP_USER", ""),
             smtp_password: var("SMTP_PASSWORD", ""),
-            smtp_from: var("SMTP_FROM", "Kalks <no-reply@kalkstrade.com>"),
-            site_url: var("PUBLIC_SITE_URL", "https://kalkstrade.com"),
-            app_url: var("PUBLIC_APP_URL", "https://app.kalkstrade.com"),
-            trade_url: var("PUBLIC_TRADE_URL", "https://trade.kalkstrade.com"),
-            support_email: var("SUPPORT_EMAIL", "support@kalkstrade.com"),
+            smtp_from: var("SMTP_FROM", "Ezymex <no-reply@ezymex.com>"),
+            site_url: var("PUBLIC_SITE_URL", "https://ezymex.com"),
+            app_url: var("PUBLIC_APP_URL", "https://app.ezymex.com"),
+            trade_url: var("PUBLIC_TRADE_URL", "https://trade.ezymex.com"),
+            support_email: var("SUPPORT_EMAIL", "support@ezymex.com"),
             staff_otp_every_login: var("STAFF_OTP_EVERY_LOGIN", "true") != "false",
+            password_only,
             super_admin_email: var("SUPER_ADMIN_EMAIL", "").to_lowercase(),
             super_admin_password: var("SUPER_ADMIN_PASSWORD", ""),
-            super_admin_name: var("SUPER_ADMIN_NAME", "Kalks Admin"),
+            super_admin_name: var("SUPER_ADMIN_NAME", "Ezymex Admin"),
         })
     }
 }
@@ -119,7 +131,7 @@ mod redact_tests {
 
     #[test]
     fn masks_database_password() {
-        assert_eq!(redact_url("postgres://kalks:s3cret@127.0.0.1:5432/kalks_core"), "postgres://kalks:***@127.0.0.1:5432/kalks_core");
-        assert_eq!(redact_url("postgres://postgres@127.0.0.1:5433/kalks"), "postgres://postgres@127.0.0.1:5433/kalks");
+        assert_eq!(redact_url("postgres://ezymex:s3cret@127.0.0.1:5432/ezymex_core"), "postgres://ezymex:***@127.0.0.1:5432/ezymex_core");
+        assert_eq!(redact_url("postgres://postgres@127.0.0.1:5433/ezymex"), "postgres://postgres@127.0.0.1:5433/ezymex");
     }
 }

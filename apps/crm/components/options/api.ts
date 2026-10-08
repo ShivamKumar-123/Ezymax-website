@@ -1,10 +1,10 @@
 "use client";
 
 // Browser client for the suitability BFF (/api/suitability/*, see app/api/suitability/[...path]/route.ts) and the
-// shapes of gateway suitability.rs. Product: Kalks FX Options: accepting the options terms is the only step.
+// shapes of gateway suitability.rs. Product: Ezymex FX Options: accepting the options terms is the only step.
 
 import * as React from "react";
-import { tr } from "@kalks/i18n/react";
+import { tr } from "@ezymex/i18n/react";
 
 export type KycStatus = "unverified" | "pending" | "verified" | "rejected";
 /** What is still needed before the first options trade: only the options terms (gateway suitability.rs). */

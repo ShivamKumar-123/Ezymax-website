@@ -8,7 +8,7 @@ takeaways:
   - "Margin is a deposit set aside to open a position: notional value divided by leverage, adjusted by any symbol margin percentage."
   - "Leverage changes how much margin a trade needs, not how much each pip or point is worth."
   - "Effective leverage, total notional divided by equity, tells you how hard a price move will hit your account."
-  - "Leverage on Kalks can only be changed when you have no open positions, and some symbols carry lower maximum leverage."
+  - "Leverage on Ezymex can only be changed when you have no open positions, and some symbols carry lower maximum leverage."
 quiz:
   - question: "What margin is required for 1.00 lot of EURUSD at 1.0850 with 1:100 leverage on a USD account?"
     options:
@@ -50,14 +50,14 @@ CFDs are traded on margin. You do not pay the full value of the position; you se
 
 Margin is not a fee and not the cost of the trade. It is part of your own money, locked while the position is open so that you can absorb losses on it. When you close the position the margin is released back to free margin, and only the profit or loss changes your balance.
 
-On Kalks the required margin is:
+On Ezymex the required margin is:
 
 ```text
 margin = notional value in account currency / leverage   (x symbol margin %)
 notional = contract size x lots x price
 ```
 
-The symbol margin percentage is normally 100%. Some symbols, for example crypto or single stocks, may carry a lower maximum leverage than your account, which has the same effect as a higher margin percentage. The contract specification in Kalks Trader shows the figure for each symbol.
+The symbol margin percentage is normally 100%. Some symbols, for example crypto or single stocks, may carry a lower maximum leverage than your account, which has the same effect as a higher margin percentage. The contract specification in Ezymex Trader shows the figure for each symbol.
 
 ## Worked margin calculations
 
@@ -105,9 +105,9 @@ effective leverage = total notional of open positions / equity
 
 This is why experienced traders pay attention to effective leverage and keep it modest, even on accounts that allow 1:500 or 1:1000. The size of a position relative to equity, not the leverage setting, decides how quickly an account can be damaged.
 
-> **Risk warning:** CFDs are leveraged products. A small adverse price move can produce a loss that is large relative to your deposit, and losses can exceed what you expected when you opened the trade. Only trade with money you can afford to lose, and practise on a free demo account in Kalks Trader first.
+> **Risk warning:** CFDs are leveraged products. A small adverse price move can produce a loss that is large relative to your deposit, and losses can exceed what you expected when you opened the trade. Only trade with money you can afford to lose, and practise on a free demo account in Ezymex Trader first.
 
-## Leverage settings on Kalks
+## Leverage settings on Ezymex
 
 Leverage options typically range from 1:50 to 1:1000 depending on the account group and symbol. You choose it per trading account in the Client Area, and it can only be changed when that account has no open positions, because changing it would instantly alter the margin of existing trades. Lower leverage does not make you safer if you still open oversized positions, but it does make it harder to over-trade by accident.
 

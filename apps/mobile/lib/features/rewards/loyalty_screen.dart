@@ -1075,7 +1075,7 @@ class _PointsHistoryState extends ConsumerState<_PointsHistory> {
                     ? null
                     : () => shareCsv(
                         context,
-                        'kalks-points-history',
+                        'ezymex-points-history',
                         [t('common.date'), t('rewards.history.colActivity'), t('common.type'), t('common.account'), t('rewards.history.colPoints')],
                         [
                           for (final x in rows) [x.createdAt?.toIso8601String(), x.description, x.kind, x.login ?? '', GrowthFmt.plain(x.points)],

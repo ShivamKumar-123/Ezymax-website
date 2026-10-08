@@ -45,7 +45,7 @@ quiz:
       - "Brokers require it"
       - "Reasons and emotions are recorded before the outcome can reshape memory"
     answer: 3
-    explanation: "Hindsight bias rewrites why we took a trade once we know the result. Kalks keeps trade history in the Portfolio module, so data loss is not the reason."
+    explanation: "Hindsight bias rewrites why we took a trade once we know the result. Ezymex keeps trade history in the Portfolio module, so data loss is not the reason."
 ---
 
 Almost every experienced trader keeps a journal, and almost every struggling trader has tried one and given up. The difference is usually what gets recorded. A list of profits and losses tells you little that your account statement does not. A useful journal records the decision, the context and your state of mind at the moment of the trade, in a format you can later analyse.

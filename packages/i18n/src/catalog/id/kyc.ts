@@ -194,7 +194,7 @@ const kyc: NsMessages<"kyc"> = {
   "review.missing": "Belum ada",
   "review.flagged": "Ditandai untuk ditinjau",
   "review.passed": "Lolos pemeriksaan",
-  "review.consent": "Saya menyatakan bahwa dokumen ini asli dan milik saya (atau milik perusahaan dan pengurusnya), dan saya menyetujui pemeriksaan identitas dan AML oleh Kalks.",
+  "review.consent": "Saya menyatakan bahwa dokumen ini asli dan milik saya (atau milik perusahaan dan pengurusnya), dan saya menyetujui pemeriksaan identitas dan AML oleh Ezymex.",
 
   // More information requested by the review team
   "moreInfo.title": "Kami memerlukan sedikit informasi tambahan",
@@ -359,7 +359,7 @@ const kyc: NsMessages<"kyc"> = {
   // Client-side fallback errors
   "error.sessionEnded": "Sesi Anda telah berakhir.",
   "error.generic": "Terjadi kesalahan. Silakan coba lagi.",
-  "error.network": "Tidak dapat terhubung ke Kalks. Periksa koneksi Anda lalu coba lagi.",
+  "error.network": "Tidak dapat terhubung ke Ezymex. Periksa koneksi Anda lalu coba lagi.",
   "error.uploadFailed": "Unggahan gagal. Silakan coba lagi.",
   "error.uploadInterrupted": "Unggahan terputus. Periksa koneksi Anda lalu coba lagi.",
 

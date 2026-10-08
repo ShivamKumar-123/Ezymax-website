@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 
 function parts(ms: number) {
   const s = Math.max(0, Math.floor(ms / 1000));

@@ -8,7 +8,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { ChevronLeft, ChevronRight, Eye, EyeOff, Plus } from "lucide-react";
 import { Button, CopyButton, LogoMark, Skeleton, cn, formatMoney } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 
 export type CardAccount = {
   login: string;

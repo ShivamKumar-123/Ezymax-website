@@ -1,6 +1,6 @@
 /**
  * POST /api/growth/shares {dealId, showAmounts} — create a share P&L card for a closed trade of the acting account
- * (x-kalks-login), through the growth service (services/growth, POST /v1/growth/me/shares). Kalks Trader uses it for
+ * (x-ezymex-login), through the growth service (services/growth, POST /v1/growth/me/shares). Ezymex Trader uses it for
  * closed option trades (O36 options share card: contract, side, entry → exit premium per contract, return on premium,
  * payoff sketch, referral link; never the balance). The card's public page and PNG live in the Client Area
  * (/s/<code>, /s/<code>/image).
@@ -22,11 +22,11 @@ const GROWTH_TOKEN = process.env.GROWTH_INTERNAL_TOKEN ?? "";
 // so this route doesn't pull client modules into the server bundle)
 const CLIENT_AREA = process.env.NEXT_PUBLIC_CLIENT_AREA_URL ?? "http://localhost:3000";
 
-/** The broker of the visitor's host (gateway tenant_domains, as for the brand); Kalks when unknown. */
+/** The broker of the visitor's host (gateway tenant_domains, as for the brand); Ezymex when unknown. */
 async function tenantOf(req: NextRequest): Promise<string> {
   const b = await tenantBrand(hostOf(req.headers)).catch(() => null);
   const slug = b?.slug?.toLowerCase();
-  return slug && /^[a-z0-9_-]{1,64}$/.test(slug) ? slug : "kalks";
+  return slug && /^[a-z0-9_-]{1,64}$/.test(slug) ? slug : "ezymex";
 }
 
 export async function POST(req: NextRequest) {
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
   try {
     res = await fetch(`${GROWTH_URL}/v1/growth/me/shares`, {
       method: "POST",
-      headers: { "x-kalks-internal": GROWTH_TOKEN, "x-kalks-tenant": await tenantOf(req), "x-kalks-user-id": String(userId), "content-type": "application/json" },
+      headers: { "x-ezymex-internal": GROWTH_TOKEN, "x-ezymex-tenant": await tenantOf(req), "x-ezymex-user-id": String(userId), "content-type": "application/json" },
       body: JSON.stringify({ kind: "trade", login: Number(s.l), dealId, showAmounts: body.showAmounts === true }),
       cache: "no-store",
       signal: AbortSignal.timeout(15_000),

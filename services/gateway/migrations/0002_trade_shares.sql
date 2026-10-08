@@ -1,4 +1,4 @@
--- Public trade-share links created from Kalks Trader.
+-- Public trade-share links created from Ezymex Trader.
 -- A share holds a snapshot of the selected trades; the owner (holder of the manage key) can refresh it or revoke it.
 -- Only HMAC(manage key) is stored. Balance / equity / email are never part of a share.
 

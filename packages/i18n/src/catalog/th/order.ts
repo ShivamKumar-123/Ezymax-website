@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader order ticket, New Order window, DOM ladder, position/pending dialogs and trade toasts.
+// Ezymex Trader order ticket, New Order window, DOM ladder, position/pending dialogs and trade toasts.
 // Thai traders use the MT5 English order terms (Buy Limit, Sell Stop, Stop Loss, Take Profit); kept in Latin.
 const order: NsMessages<"order"> = {
   // Order types (ticket type switcher)
@@ -269,9 +269,9 @@ const order: NsMessages<"order"> = {
 
   // Specification / About dialogs
   "spec.title": "ข้อมูลจำเพาะ · {symbol}",
-  "about.title": "เกี่ยวกับ Kalks Trader",
+  "about.title": "เกี่ยวกับ Ezymex Trader",
   "about.version": "เวอร์ชัน {version} · บิลด์ {build} · Web x64",
-  "about.text": "ห้องเทรดหลายสินทรัพย์สำหรับ Kalks Global Markets ราคาสตรีมจาก Kalks price gateway เวลาเซิร์ฟเวอร์คือ GMT+3",
+  "about.text": "ห้องเทรดหลายสินทรัพย์สำหรับ Ezymex Global Markets ราคาสตรีมจาก Ezymex price gateway เวลาเซิร์ฟเวอร์คือ GMT+3",
 
   // Rejection reasons
   "reject.market_closed": "ตลาดปิด",

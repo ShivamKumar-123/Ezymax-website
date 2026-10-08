@@ -75,7 +75,7 @@ impl HttpEngine {
     }
 
     async fn send(&self, rb: reqwest::RequestBuilder, tenant: &str) -> Result<(u16, Value), EngineError> {
-        let r = rb.header("x-kalks-internal", &self.token).header("x-kalks-tenant", tenant).header("user-agent", "kalks-wallet").send().await.map_err(|e| EngineError::Unavailable(e.without_url().to_string()))?;
+        let r = rb.header("x-ezymex-internal", &self.token).header("x-ezymex-tenant", tenant).header("user-agent", "ezymex-wallet").send().await.map_err(|e| EngineError::Unavailable(e.without_url().to_string()))?;
         let status = r.status().as_u16();
         let v: Value = r.json().await.unwrap_or(Value::Null);
         Ok((status, v))
@@ -101,7 +101,7 @@ fn rejected(status: u16, v: &Value) -> EngineError {
 #[async_trait]
 impl Engine for HttpEngine {
     async fn accounts(&self, tenant: &str, user_id: i64) -> Result<Vec<EngineAccount>, EngineError> {
-        let (status, v) = self.send(self.http.get(format!("{}/v1/accounts?user_id={user_id}", self.base)).header("x-kalks-user-id", user_id.to_string()), tenant).await?;
+        let (status, v) = self.send(self.http.get(format!("{}/v1/accounts?user_id={user_id}", self.base)).header("x-ezymex-user-id", user_id.to_string()), tenant).await?;
         if status != 200 {
             return Err(if status >= 500 { EngineError::Unavailable(format!("http {status}")) } else { rejected(status, &v) });
         }
@@ -135,7 +135,7 @@ impl Engine for HttpEngine {
     }
 
     async fn account_views(&self, tenant: &str, user_id: i64) -> Result<Vec<Value>, EngineError> {
-        let (status, v) = self.send(self.http.get(format!("{}/v1/accounts?user_id={user_id}", self.base)).header("x-kalks-user-id", user_id.to_string()), tenant).await?;
+        let (status, v) = self.send(self.http.get(format!("{}/v1/accounts?user_id={user_id}", self.base)).header("x-ezymex-user-id", user_id.to_string()), tenant).await?;
         if status != 200 {
             return Err(if status >= 500 { EngineError::Unavailable(format!("http {status}")) } else { rejected(status, &v) });
         }
@@ -147,12 +147,12 @@ impl Engine for HttpEngine {
         let mut rb = self
             .http
             .post(format!("{}/v1/admin/accounts/{login}/adjust", self.base))
-            .header("x-kalks-staff-id", &staff.id)
-            .header("x-kalks-staff-name", enc(&staff.name))
-            .header("x-kalks-staff-role", &staff.role)
+            .header("x-ezymex-staff-id", &staff.id)
+            .header("x-ezymex-staff-name", enc(&staff.name))
+            .header("x-ezymex-staff-role", &staff.role)
             .json(&body);
         if let Some(p) = &staff.perms {
-            rb = rb.header("x-kalks-staff-perms", p.join(","));
+            rb = rb.header("x-ezymex-staff-perms", p.join(","));
         }
         let (status, v) = self.send(rb, tenant).await?;
         match status {

@@ -348,8 +348,8 @@ pub async fn sync_facts(st: &AppState, tenant: &str) -> anyhow::Result<usize> {
     let res = st
         .http
         .get(format!("{}/v1/internal/client-facts", st.cfg.reports_url))
-        .header("x-kalks-internal", &st.cfg.reports_token)
-        .header("x-kalks-tenant", tenant)
+        .header("x-ezymex-internal", &st.cfg.reports_token)
+        .header("x-ezymex-tenant", tenant)
         .timeout(std::time::Duration::from_secs(20))
         .send()
         .await?;
@@ -486,8 +486,8 @@ pub async fn send_email(st: &AppState, tenant: &str, user_id: Option<i64>, to: O
     let res = st
         .http
         .post(format!("{}/v1/internal/mail/marketing", st.cfg.gateway_url))
-        .header("x-kalks-internal", &st.cfg.gateway_token)
-        .header("x-kalks-tenant", tenant)
+        .header("x-ezymex-internal", &st.cfg.gateway_token)
+        .header("x-ezymex-tenant", tenant)
         .timeout(std::time::Duration::from_secs(30))
         .json(&payload)
         .send()
@@ -517,9 +517,9 @@ pub async fn send_inapp(st: &AppState, tenant: &str, user_id: Option<i64>, staff
     let res = st
         .http
         .post(format!("{}/v1/notify", st.cfg.notify_url))
-        .header("x-kalks-internal", &st.cfg.notify_token)
-        .header("x-kalks-tenant", tenant)
-        .header("x-kalks-service", "growth")
+        .header("x-ezymex-internal", &st.cfg.notify_token)
+        .header("x-ezymex-tenant", tenant)
+        .header("x-ezymex-service", "growth")
         .timeout(std::time::Duration::from_secs(10))
         .json(&payload)
         .send()

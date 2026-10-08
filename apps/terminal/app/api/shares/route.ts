@@ -3,7 +3,7 @@
  * Live builds: the trades are rebuilt from the trading engine for the logged-in account first.
  */
 import type { NextRequest } from "next/server";
-import { IS_LIVE } from "@kalks/mock";
+import { IS_LIVE } from "@ezymex/mock";
 import { clientIp, gateway, guard, jsonError, relay } from "@/lib/gateway";
 import { verifyShareRows } from "@/lib/engine/share-verify";
 

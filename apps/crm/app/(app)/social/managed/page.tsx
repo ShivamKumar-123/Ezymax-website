@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, EmptyState, PageHeader } from "@/components/kit";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveManagedPage } from "@/components/social-live/mam";
 
 /** MAM runs on the trading engine only; the demo showcase has no mock for it. */

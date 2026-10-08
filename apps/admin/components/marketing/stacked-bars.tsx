@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { motion } from "motion/react";
-import { cn } from "@kalks/ui";
+import { cn } from "@ezymex/ui";
 
 /**
  * Stacked capsule columns over a dotted grid with a hover tooltip pill.

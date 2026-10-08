@@ -64,7 +64,7 @@ class ProfileScreen extends ConsumerWidget {
     final (kycTone, kycLabel) = kycChip(me.kycStatus, t);
     final id = me.clientId;
     final phone = [me.phoneDial, me.phone].where((s) => s.isNotEmpty).join(' ');
-    final email = cfg.supportEmail ?? 'support@kalkstrade.com';
+    final email = cfg.supportEmail ?? 'support@ezymex.com';
     final correction = Uri.parse('mailto:$email?subject=${Uri.encodeComponent('Profile correction · $id')}');
     final dob = fromIsoDate(me.dateOfBirth.length >= 10 ? me.dateOfBirth.substring(0, 10) : me.dateOfBirth);
     final kycCard = kycCardState(me, t);

@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Globe, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Chip, Input, Menu } from "@kalks/ui";
+import { Button, Chip, Input, Menu } from "@ezymex/ui";
 import { ago, useNow } from "@/components/live/kit";
 import { STATUS_TONE, Select, act, call, cap } from "@/components/rbac/kit";
 import type { DomainKind, DomainRecord } from "./types";

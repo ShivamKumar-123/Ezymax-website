@@ -3,9 +3,9 @@
 import * as React from "react";
 import { Archive, Clock, FlaskConical, RefreshCw, RotateCcw, Save, TrendingUp, UserPlus } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, KpiCard, PageHeader, Progress, Reveal, Segmented, Toggle, cn } from "@kalks/ui";
-import { PEOPLE } from "@kalks/mock";
-import { ADMIN_GROUPS, ALL_LEVERAGES, DEMO_DAILY, DEMO_RULES, DEMO_STATS } from "@kalks/mock/admin-config";
+import { Button, Card, CardHeader, Chip, KpiCard, PageHeader, Progress, Reveal, Segmented, Toggle, cn } from "@ezymex/ui";
+import { PEOPLE } from "@ezymex/mock";
+import { ADMIN_GROUPS, ALL_LEVERAGES, DEMO_DAILY, DEMO_RULES, DEMO_STATS } from "@ezymex/mock/admin-config";
 import { PersonCell, ChipList, ColumnChart, MiniField, NumInput, Section, Select, SettingRow, Slider, auditToast, useReason } from "@/components/config/kit";
 
 type Rules = typeof DEMO_RULES;
@@ -28,7 +28,7 @@ export default function DemoRulesPage() {
     <div className="pb-16">
       <PageHeader
         title="Demo rules"
-        subtitle="Starting balances, refills, expiry and archiving for demo accounts on Kalks-Demo."
+        subtitle="Starting balances, refills, expiry and archiving for demo accounts on Ezymex-Demo."
         actions={
           <>
             <Button
@@ -131,7 +131,7 @@ export default function DemoRulesPage() {
                     <NumInput value={r.maxPerClient} onChange={(v) => set("maxPerClient", Math.round(v))} min={1} max={20} stepper />
                   </MiniField>
                   <MiniField label="Demo server">
-                    <Select value={r.server} onChange={(v) => set("server", v)} options={["Kalks-Demo", "Kalks-Demo02"]} />
+                    <Select value={r.server} onChange={(v) => set("server", v)} options={["Ezymex-Demo", "Ezymex-Demo02"]} />
                   </MiniField>
                 </div>
                 <div className="mt-3 space-y-3">
@@ -207,7 +207,7 @@ export default function DemoRulesPage() {
                   ))}
                   <div className="flex items-center justify-between pt-2 text-[11.5px] text-fg-3">
                     <span>Archived last 30d: {DEMO_STATS.archived30d.toLocaleString()}</span>
-                    <button className="inline-flex items-center gap-1 hover:text-fg" onClick={() => toast.success("Stats refreshed", { description: "Kalks-Demo · 38,214 active" })}>
+                    <button className="inline-flex items-center gap-1 hover:text-fg" onClick={() => toast.success("Stats refreshed", { description: "Ezymex-Demo · 38,214 active" })}>
                       <RefreshCw className="size-3" /> Refresh
                     </button>
                   </div>

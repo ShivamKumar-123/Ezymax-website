@@ -101,13 +101,13 @@ const prop: NsMessages<"prop"> = {
 
   // Public certificate verification page (/verify/<code>)
   "verify.shellTitle": "Sertifika doğrulama",
-  "verify.footer": "Kalks Prop hesapları simülasyondur. Sertifikalar, bir işlemcinin Kalks Prop challenge'ındaki sonuçlarını gösterir; işlemcinin adı, ad ve soyadın baş harfi olarak kısaltılır.",
+  "verify.footer": "Ezymex Prop hesapları simülasyondur. Sertifikalar, bir işlemcinin Ezymex Prop challenge'ındaki sonuçlarını gösterir; işlemcinin adı, ad ve soyadın baş harfi olarak kısaltılır.",
   "verify.linkCopied": "Bağlantı kopyalandı",
   "verify.copyFailed": "Bağlantı kopyalanamadı",
   "verify.copyLink": "Bağlantıyı kopyala",
   "verify.downloadPng": "PNG indir",
   "verify.notFoundTitle": "Sertifika bulunamadı",
-  "verify.notFoundText": "Bu numaraya sahip bir Kalks Prop sertifikası yok. Bağlantıyı kontrol edin veya işlemciden tekrar paylaşmasını isteyin.",
+  "verify.notFoundText": "Bu numaraya sahip bir Ezymex Prop sertifikası yok. Bağlantıyı kontrol edin veya işlemciden tekrar paylaşmasını isteyin.",
   "verify.unavailableTitle": "Doğrulama şu anda kullanılamıyor",
   "verify.unavailableText": "Bu sertifikayı şu anda kontrol edemedik. Lütfen birkaç dakika sonra tekrar deneyin.",
   "verify.kind.pass": "Aşama geçildi",
@@ -121,9 +121,9 @@ const prop: NsMessages<"prop"> = {
   "verify.row.issued": "Düzenlenme",
   "verify.row.number": "Sertifika no.",
   "verify.validTitle": "Geçerli sertifika",
-  "verify.validText": "Kalks Prop tarafından düzenlendi ve kayıtlarımızla doğrulandı.",
+  "verify.validText": "Ezymex Prop tarafından düzenlendi ve kayıtlarımızla doğrulandı.",
   "verify.revokedTitle": "İptal edilmiş sertifika",
-  "verify.revokedText": "Bu sertifika Kalks tarafından iptal edildi ve artık geçerli değil.",
+  "verify.revokedText": "Bu sertifika Ezymex tarafından iptal edildi ve artık geçerli değil.",
   "verify.valid": "Geçerli",
   "verify.revoked": "İptal edildi",
   // Certificate titles
@@ -248,8 +248,8 @@ const prop: NsMessages<"prop"> = {
   "checkout.goToMine": "Challenge'larıma git",
   "checkout.readyTitle": "Challenge'ınız hazır",
   "checkout.paidText": "{fee} USDT cüzdanınızdan ödendi ve {size} hesabınız açıldı. Kurallar şu andan itibaren geçerlidir.",
-  "checkout.savePasswords": "Bu şifreleri şimdi kaydedin: yalnızca bir kez gösterilir ve biz saklamayız. İşlem yap düğmesi sizi şifresiz olarak Kalks Trader'a giriş yaptırır; böylece her zaman buradan işlem yapabilirsiniz.",
-  "checkout.passwordsShown": "İşlem şifreleri, bu satın alma ilk onaylandığında gösterildi. Kalks Trader'ı açmak için İşlem yap düğmesini kullanın: sizi şifresiz giriş yaptırır.",
+  "checkout.savePasswords": "Bu şifreleri şimdi kaydedin: yalnızca bir kez gösterilir ve biz saklamayız. İşlem yap düğmesi sizi şifresiz olarak Ezymex Trader'a giriş yaptırır; böylece her zaman buradan işlem yapabilirsiniz.",
+  "checkout.passwordsShown": "İşlem şifreleri, bu satın alma ilk onaylandığında gösterildi. Ezymex Trader'ı açmak için İşlem yap düğmesini kullanın: sizi şifresiz giriş yaptırır.",
 
   // Account credentials
   "cred.login": "Giriş",
@@ -376,7 +376,7 @@ const prop: NsMessages<"prop"> = {
   "account.passed": "Geçildi · salt okunur",
   "account.failed": "Başarısız · devre dışı",
   "account.opening": "Açılıyor",
-  "account.tradableText": "İşlem yap, Kalks Trader'ı bu hesapta oturum açılmış olarak açar. Şifreler satın alma sırasında bir kez gösterildi.",
+  "account.tradableText": "İşlem yap, Ezymex Trader'ı bu hesapta oturum açılmış olarak açar. Şifreler satın alma sırasında bir kez gösterildi.",
   "account.passedText": "Bu aşama tamamlandı. Hesap salt okunur; sonraki aşamanızda işlem yapın.",
   "account.failedText": "Bu hesapta işlem devre dışı.",
   "account.unavailableText": "Bu hesapta işlem yapılamıyor.",

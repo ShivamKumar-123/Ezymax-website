@@ -5,17 +5,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/core/notifications/notifications.dart';
-import 'package:kalks/features/terminal/chart/terminal_chart.dart';
-import 'package:kalks/features/terminal/core/market.dart';
-import 'package:kalks/features/terminal/core/sessions.dart';
-import 'package:kalks/features/terminal/core/terminal_controller.dart';
-import 'package:kalks/features/terminal/options/core/store.dart';
-import 'package:kalks/features/terminal/options/options_preview.dart';
-import 'package:kalks/features/terminal/options/options_terminal.dart';
-import 'package:kalks/features/terminal/widgets/kit.dart';
-import 'package:kalks/i18n/i18n.dart';
-import 'package:kalks/ui/ui.dart';
+import 'package:ezymex/core/notifications/notifications.dart';
+import 'package:ezymex/features/terminal/chart/terminal_chart.dart';
+import 'package:ezymex/features/terminal/core/market.dart';
+import 'package:ezymex/features/terminal/core/sessions.dart';
+import 'package:ezymex/features/terminal/core/terminal_controller.dart';
+import 'package:ezymex/features/terminal/options/core/store.dart';
+import 'package:ezymex/features/terminal/options/options_preview.dart';
+import 'package:ezymex/features/terminal/options/options_terminal.dart';
+import 'package:ezymex/features/terminal/widgets/kit.dart';
+import 'package:ezymex/i18n/i18n.dart';
+import 'package:ezymex/ui/ui.dart';
 
 import 'opt_harness.dart';
 

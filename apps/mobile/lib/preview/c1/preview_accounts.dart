@@ -416,7 +416,7 @@ final List<Map<String, dynamic>> _groups = [
     case ('GET', 'history-zip'):
       return (200, 'PK');
     case ('POST', 'sso'):
-      return (200, {'url': 'https://trade.kalkstrade.com/?sso=preview', 'expiresAt': _ago(const Duration(minutes: -1))});
+      return (200, {'url': 'https://trade.ezymex.com/?sso=preview', 'expiresAt': _ago(const Duration(minutes: -1))});
     case ('POST', 'demo-refill'):
       if (live) return (409, _error('demo_only', 'Only demo accounts can be refilled.'));
       return (200, {'amount': 15000, 'balance': 25000});

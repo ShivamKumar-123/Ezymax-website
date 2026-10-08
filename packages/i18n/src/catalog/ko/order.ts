@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader 주문 티켓, 신규 주문 창, 호가창(DOM), 포지션/대기 주문 대화 상자 및 거래 토스트
+// Ezymex Trader 주문 티켓, 신규 주문 창, 호가창(DOM), 포지션/대기 주문 대화 상자 및 거래 토스트
 const order: NsMessages<"order"> = {
   // 주문 유형
   "type.market": "시장가",
@@ -269,9 +269,9 @@ const order: NsMessages<"order"> = {
 
   // 명세 / 정보 대화 상자
   "spec.title": "상품 명세 · {symbol}",
-  "about.title": "Kalks Trader 정보",
+  "about.title": "Ezymex Trader 정보",
   "about.version": "버전 {version} · 빌드 {build} · Web x64",
-  "about.text": "Kalks Global Markets의 멀티 자산 트레이딩 룸입니다. 시세는 Kalks 가격 게이트웨이에서 스트리밍되며, 서버 시간은 GMT+3입니다.",
+  "about.text": "Ezymex Global Markets의 멀티 자산 트레이딩 룸입니다. 시세는 Ezymex 가격 게이트웨이에서 스트리밍되며, 서버 시간은 GMT+3입니다.",
 
   // 거부 사유 (MT5 저널 표현)
   "reject.market_closed": "시장 마감",

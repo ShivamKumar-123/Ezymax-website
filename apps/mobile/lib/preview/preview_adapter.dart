@@ -23,8 +23,8 @@ class PreviewAdapter implements HttpClientAdapter {
     final (int status, Object data) =
         previewC1(o.method, path, body, o.uri.queryParameters) ??
         previewC2(o.method, path, body, o.uri.queryParameters) ??
-        // Kalks Trader: the preview trade server (agent D, lib/features/terminal/preview)
-        PreviewServer.instance.answer(o.method, path, o.uri.queryParameters, body, o.headers['X-Kalks-Trade'] as String?) ??
+        // Ezymex Trader: the preview trade server (agent D, lib/features/terminal/preview)
+        PreviewServer.instance.answer(o.method, path, o.uri.queryParameters, body, o.headers['X-Ezymex-Trade'] as String?) ??
         _answer(o.method, path, body);
     return ResponseBody.fromString(
       jsonEncode(data),

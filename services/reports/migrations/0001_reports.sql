@@ -1,4 +1,4 @@
--- Kalks reports service (D48, D50, D91, D120, D145). Read models mirrored from the engine, wallet, gateway and IB
+-- Ezymex reports service (D48, D50, D91, D120, D145). Read models mirrored from the engine, wallet, gateway and IB
 -- service, plus the service's own daily equity snapshots, schedules and audit log. Every row carries `tenant`
 -- (gateway tenant slug). Money is NUMERIC in the account currency unless a column says usd.
 

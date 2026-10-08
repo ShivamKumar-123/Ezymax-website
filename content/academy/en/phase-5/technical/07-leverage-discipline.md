@@ -10,7 +10,7 @@ takeaways:
   - "High available leverage is dangerous because it allows oversizing: at 1:500, a $10,000 account fully used on EURUSD reaches a 50% stop-out after a move of only about 11 pips."
   - "A written pre-trade checklist covering risk, size, heat, margin level and events turns leverage discipline into a routine rather than a decision made under pressure."
 practice:
-  label: "On your demo account, open a 0.10 lot EURUSD position and note the used margin, free margin and margin level in Kalks Trader; then calculate your effective leverage by hand."
+  label: "On your demo account, open a 0.10 lot EURUSD position and note the used margin, free margin and margin level in Ezymex Trader; then calculate your effective leverage by hand."
   symbol: "EURUSD"
 quiz:
   - question: "Equity is $10,000 and you hold 0.40 lots EURUSD at 1.0850. What is your effective leverage?"
@@ -37,7 +37,7 @@ quiz:
       - "Because swaps are charged on margin"
     answer: 0
     explanation: "Leverage is permission, not an instruction. The danger is the extra size it makes possible; used to its maximum, even a normal intraday move can wipe out a large share of the account."
-  - question: "When can you change the leverage on a Kalks account?"
+  - question: "When can you change the leverage on a Ezymex account?"
     options:
       - "At any time, even with open trades"
       - "Only at the weekend"
@@ -98,7 +98,7 @@ In the first example the margin level at 1:500 is 10,000 / 86.80 = about 11,500%
 
 Note that some instruments have their own lower maximum leverage than the account setting, and leverage can be changed only when you have no open positions. Plan the setting before trading, not in the middle of a trade.
 
-> **In Kalks Trader:** The account panel shows equity, used margin, free margin and margin level in real time. Watching margin level is the quickest way to see whether your total exposure is creeping up.
+> **In Ezymex Trader:** The account panel shows equity, used margin, free margin and margin level in real time. Watching margin level is the quickest way to see whether your total exposure is creeping up.
 
 ## A pre-trade checklist
 
@@ -121,4 +121,4 @@ Leverage discipline works best as a routine. Before each trade, confirm:
 - Adding to losing positions because free margin allows it.
 - Ignoring crypto's nightly swaps and weekend moves, which affect equity while FX is closed.
 
-> **Risk warning:** CFDs are complex, leveraged instruments and losses can build quickly. Keep effective leverage low, always use a stop loss, and practise these routines on a free demo account in Kalks Trader before applying them with real money.
+> **Risk warning:** CFDs are complex, leveraged instruments and losses can build quickly. Keep effective leverage low, always use a stop loss, and practise these routines on a free demo account in Ezymex Trader before applying them with real money.

@@ -214,7 +214,7 @@ class _FundedCard extends StatelessWidget {
             Row(
               children: [
                 Text(
-                  '#${f.login} · Kalks-Live',
+                  '#${f.login} · Ezymex-Live',
                   textDirection: TextDirection.ltr,
                   style: context.text.mono(12, color: k.fg2),
                 ),

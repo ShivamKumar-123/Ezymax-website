@@ -1,7 +1,7 @@
 // Dashboard › Overview, on real data. Port of the web's phone layout (apps/crm/components/dashboard/live-dashboard.tsx
 // in OverviewLayout's phone order, max-md:order-*):
 //   0 targeted banner (growth, placement "dashboard")
-//   1 header (Overview + greeting + Verified), then Ask Kalks AI (the pill; not for view-only / read-only sessions)
+//   1 header (Overview + greeting + Verified), then Ask Ezymex AI (the pill; not for view-only / read-only sessions)
 //   2 total balance + Deposit / Withdraw / Transfer
 //   3 KPI cards (equity, today's P&L, wallet, rewards)
 //   4 your accounts (carousel, details, Trade / Fund or Refill / ⋯)
@@ -10,7 +10,7 @@
 //   7 notifications (prompts + latest)
 //   8 activity tabs (History / Funding / Linked)
 //   9 getting started checklist
-//   then Markets (movers, heatmap, calendar, news, world) and More for you (Kalks Trader, your account, market clock,
+//   then Markets (movers, heatmap, calendar, news, world) and More for you (Ezymex Trader, your account, market clock,
 //   support).
 import 'dart:async';
 
@@ -311,7 +311,7 @@ class DashboardScreen extends ConsumerWidget {
         key: 'trader',
         icon: LucideIcons.candlestickChart,
         tone: KTone.accent,
-        title: 'Kalks Trader',
+        title: 'Ezymex Trader',
         sub: t('dashboard.trader.chip'),
         action: (label: t('common.open'), href: '/trader', external: false),
       ),
@@ -342,7 +342,7 @@ class DashboardScreen extends ConsumerWidget {
       ),
     ];
 
-    // Ask Kalks AI: suggestions answered by the real support bot; account questions also show the client's own figures
+    // Ask Ezymex AI: suggestions answered by the real support bot; account questions also show the client's own figures
     final liveAccts = totals.live;
     final aiChips = [
       AiChip(
@@ -411,7 +411,7 @@ class DashboardScreen extends ConsumerWidget {
           const DashboardBannerSlot(),
           // 1. header: the greeting as the title, the name in bold
           _Greeting(template: t.dyn('dashboard.greeting.${_greeting(DateTime.now())}'), name: me.firstName, verified: me.kycStatus == KycStatus.verified),
-          // 1b. Ask Kalks AI
+          // 1b. Ask Ezymex AI
           if (!readOnly) ...[const SizedBox(height: 16), AskAi(chips: aiChips)],
           const SizedBox(height: 24),
           // 2. total balance
@@ -525,7 +525,7 @@ class DashboardScreen extends ConsumerWidget {
                 tone: KTone.lavender,
                 onTap: () => context.go('/wallet/transfer'),
               ),
-              (label: 'Kalks Trader', icon: LucideIcons.candlestickChart, tone: KTone.accent, onTap: () => context.push('/trader')),
+              (label: 'Ezymex Trader', icon: LucideIcons.candlestickChart, tone: KTone.accent, onTap: () => context.push('/trader')),
               (label: t('shell.nav.copyTrading'), icon: LucideIcons.copy, tone: KTone.pink, onTap: () => context.go('/social')),
               (label: t('shell.nav.support'), icon: LucideIcons.lifeBuoy, tone: KTone.amber, onTap: () => context.go('/support')),
             ],

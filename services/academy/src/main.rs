@@ -1,4 +1,4 @@
-//! Kalks Academy service (:8098). See src/api.rs for the API contract.
+//! Ezymex Academy service (:8098). See src/api.rs for the API contract.
 
 use std::path::Path;
 use std::sync::Arc;

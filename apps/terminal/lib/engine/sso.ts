@@ -10,7 +10,7 @@ export async function redeemSso(req: NextRequest, token: string): Promise<NextRe
   if (r.status !== 200 || !r.data.token || !r.data.account) {
     const expired = r.status === 401 || r.status === 404 || r.status === 409;
     return reply(r.status === 200 ? 502 : r.status, {
-      error: expired ? { code: "sso_expired", message: "This sign-in link has expired or was already used. Open Kalks Trader again from the Client Area." } : (r.data.error ?? { code: "engine_error", message: "Sign-in failed." }),
+      error: expired ? { code: "sso_expired", message: "This sign-in link has expired or was already used. Open Ezymex Trader again from the Client Area." } : (r.data.error ?? { code: "engine_error", message: "Sign-in failed." }),
     });
   }
   const login = String(r.data.account.login);

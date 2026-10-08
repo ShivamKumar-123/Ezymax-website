@@ -1,4 +1,4 @@
-//! The one way into the book: `submit(hub, login, req)`. Clients (terminal), closes, stops, SL / TP and the Kalks
+//! The one way into the book: `submit(hub, login, req)`. Clients (terminal), closes, stops, SL / TP and the Ezymex
 //! market maker all come through here, under the same gates, reservations and matching rules.
 //!
 //! 1. `hub.exec(login, engine::options_book::enter)`: gates and the reservation in the account shard (the working
@@ -117,7 +117,7 @@ pub async fn call(hub: &Hub, login: i64, key: &BookKey, cmd: Cmd) -> Result<(Out
     Ok((reply.out, applied, settled))
 }
 
-/// Market-maker mass quote for `login` (`POST …/book/mass-quote`; the Kalks MM uses the same path): the quotes
+/// Market-maker mass quote for `login` (`POST …/book/mass-quote`; the Ezymex MM uses the same path): the quotes
 /// are reserved like any order, then each book replaces the account's quotes in the listed series.
 pub async fn mass_quote(hub: &Hub, login: i64, actor: &str, lines: Vec<crate::engine::options_book::QuoteLine>) -> Result<serde_json::Value, SubmitError> {
     let (books, refused) = exec_typed(hub, login, actor, move |tx, env| crate::engine::options_book::enter_mass(tx, env, lines)).await?;

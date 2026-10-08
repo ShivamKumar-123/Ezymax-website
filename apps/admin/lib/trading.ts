@@ -18,14 +18,14 @@ export async function engine<T = unknown>(
   path: string,
   init: { method?: Method; body?: unknown; staff?: GatewayStaff; userId?: string | number; ip?: string | null; userAgent?: string | null; timeoutMs?: number } = {},
 ): Promise<{ status: number; data: T }> {
-  const headers: Record<string, string> = { "x-kalks-internal": INTERNAL_TOKEN, "x-kalks-tenant": init.staff?.tenant.slug || "kalks" };
+  const headers: Record<string, string> = { "x-ezymex-internal": INTERNAL_TOKEN, "x-ezymex-tenant": init.staff?.tenant.slug || "ezymex" };
   if (init.body !== undefined) headers["content-type"] = "application/json";
   if (init.staff) {
-    headers["x-kalks-staff-id"] = String(init.staff.id);
-    headers["x-kalks-staff-name"] = encodeURIComponent(init.staff.name || init.staff.email);
-    headers["x-kalks-staff-role"] = init.staff.role;
+    headers["x-ezymex-staff-id"] = String(init.staff.id);
+    headers["x-ezymex-staff-name"] = encodeURIComponent(init.staff.name || init.staff.email);
+    headers["x-ezymex-staff-role"] = init.staff.role;
   }
-  if (init.userId !== undefined) headers["x-kalks-user-id"] = String(init.userId);
+  if (init.userId !== undefined) headers["x-ezymex-user-id"] = String(init.userId);
   if (init.ip) headers["x-forwarded-for"] = init.ip;
   if (init.userAgent) headers["user-agent"] = init.userAgent;
   try {

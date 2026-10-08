@@ -14,7 +14,7 @@ export type Track = "fundamental" | "technical" | "options";
 /** A section's track as served; the service may add tracks this build doesn't know yet. */
 export type TrackKey = Track | (string & {});
 export type TreeSection = Meta & { title: string; summary: string; track: TrackKey; chapters: TreeChapter[] };
-/** `elective`: a product phase (e.g. phase 9 "Kalks FX Options", one `options` section). Older builds don't send it. */
+/** `elective`: a product phase (e.g. phase 9 "Ezymex FX Options", one `options` section). Older builds don't send it. */
 export type TreePhase = Meta & { title: string; level: string; summary: string; elective?: boolean; exam: (Meta & { pass_mark: number; questions: number }) | null; sections: TreeSection[] };
 export type Tree = { tenant: string; lang: string; languages: string[]; phases: TreePhase[] };
 

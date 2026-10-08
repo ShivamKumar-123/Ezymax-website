@@ -7,8 +7,8 @@ import { Button, Card, CardHeader, Chip, Dialog, EmptyState, PageHeader, Reveal 
 import { useSession } from "@/components/session";
 import { realtime } from "@/lib/realtime";
 import { SUPPORT_EMAIL } from "@/lib/live";
-import type { MessageKey } from "@kalks/i18n";
-import { Trans, tr, useFormat, useT } from "@kalks/i18n/react";
+import type { MessageKey } from "@ezymex/i18n";
+import { Trans, tr, useFormat, useT } from "@ezymex/i18n/react";
 import { LiveChat, MessageRow, errMsg, type Conversation, type Message } from "@/components/support/live-chat";
 
 function copy(text: string, what: string) {
@@ -91,7 +91,7 @@ function HistoryCard() {
       <Dialog open={!!open} onOpenChange={(o) => !o && setOpen(null)} title={open?.c.subject || t("support.conversation")} description={open ? `${day(open.c.createdAt)} · ${t(STATUS[open.c.status].label)}` : undefined} width={620}>
         <div className="max-h-[60vh] space-y-4 overflow-y-auto pe-1">
           {open?.msgs.map((m) => (
-            <MessageRow key={m.id} m={m} botName="Kalks AI" meName={me.name} />
+            <MessageRow key={m.id} m={m} botName="Ezymex AI" meName={me.name} />
           ))}
         </div>
       </Dialog>

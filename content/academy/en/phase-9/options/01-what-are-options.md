@@ -1,15 +1,15 @@
 ---
 slug: "p9-o-what-are-options"
 title: "What options are"
-summary: "An option gives its buyer a right, not an obligation. How Kalks FX Options work, why traders use options and how they differ from the CFDs you already know."
+summary: "An option gives its buyer a right, not an obligation. How Ezymex FX Options work, why traders use options and how they differ from the CFDs you already know."
 order: 1
 version: 1
 takeaways:
   - "An option gives its buyer the right, but not the obligation, to a payoff based on a fixed strike price at expiry. The seller, or writer, takes on the matching obligation in exchange for the premium."
-  - "Kalks FX Options are European style and cash-settled in USD: they are exercised automatically at expiry, an in-the-money option pays the difference and an out-of-the-money option expires worthless."
+  - "Ezymex FX Options are European style and cash-settled in USD: they are exercised automatically at expiry, an in-the-money option pays the difference and an out-of-the-money option expires worthless."
   - "A buyer pays the full premium upfront with no leverage, so the most a buyer can lose is the premium. A seller receives the premium but posts margin and can lose many times that amount."
   - "Traders use options for directional views with a known maximum loss, for hedging existing positions and for income, and each use has a very different risk profile."
-  - "Options sit in the same trading account as your CFDs, and Kalks is the counterparty to every trade, quoting a bid and an ask for every strike."
+  - "Options sit in the same trading account as your CFDs, and Ezymex is the counterparty to every trade, quoting a bid and an ask for every strike."
 practice:
   label: "Open EURUSD and XAUUSD on your demo account, note the current prices, and write down which strike would be at the money for each and what one option contract represents (10,000 euros and 1 ounce)."
   symbol: "EURUSD"
@@ -22,7 +22,7 @@ quiz:
       - "A guarantee that the trade will be profitable"
     answer: 1
     explanation: "The buyer pays the premium for a right. If the option finishes in the money it pays out; if not, the buyer has lost only the premium. The obligation sits with the seller."
-  - question: "Kalks FX Options are European style. What does that mean?"
+  - question: "Ezymex FX Options are European style. What does that mean?"
     options:
       - "They can be exercised at any time before expiry"
       - "They can only be traded during European market hours"
@@ -45,10 +45,10 @@ quiz:
       - "Nothing, unless you exercise it manually before the cut"
       - "It is exercised automatically and the difference is paid to your account in USD"
     answer: 3
-    explanation: "Kalks options are cash-settled. An in-the-money option pays the difference between the settlement price and the strike, multiplied by the contract size, in USD. There is no delivery and no manual exercise."
+    explanation: "Ezymex options are cash-settled. An in-the-money option pays the difference between the settlement price and the strike, multiplied by the contract size, in USD. There is no delivery and no manual exercise."
 ---
 
-Up to now this course has been about CFDs, where profit and loss move in a straight line with the price. Options work differently. With an option you pay a price today, the **premium**, for a payoff that depends on where the market settles on a future date. Kalks FX Options lets you trade options on currencies, metals and oil from the same account you use for CFDs. This chapter explains what you are actually buying or selling.
+Up to now this course has been about CFDs, where profit and loss move in a straight line with the price. Options work differently. With an option you pay a price today, the **premium**, for a payoff that depends on where the market settles on a future date. Ezymex FX Options lets you trade options on currencies, metals and oil from the same account you use for CFDs. This chapter explains what you are actually buying or selling.
 
 ## A right, not an obligation
 
@@ -61,7 +61,7 @@ The agreed price is the **strike**, and the date is the **expiry**. There are tw
 
 ## European style and cash settlement
 
-Kalks FX Options are **European style**. They cannot be exercised early: the only moment that decides the payoff is expiry. You do not have to do anything at expiry, because exercise is automatic.
+Ezymex FX Options are **European style**. They cannot be exercised early: the only moment that decides the payoff is expiry. You do not have to do anything at expiry, because exercise is automatic.
 
 They are also **cash-settled in USD**. Nobody receives euros, gold bars or barrels of oil. At expiry:
 
@@ -97,7 +97,7 @@ A sold option behaves differently again: the seller posts margin and can face lo
 
 ## What you can trade
 
-Kalks FX Options covers 13 underlyings, each with a fixed contract size.
+Ezymex FX Options covers 13 underlyings, each with a fixed contract size.
 
 | Underlying | Symbols | One contract |
 |---|---|---|
@@ -110,7 +110,7 @@ Premiums are always shown in USD per contract. The options are priced with stand
 
 ## Who is on the other side
 
-There is no exchange order book. **Kalks is the counterparty** to every option trade and quotes a bid and an ask for every listed strike. You buy at the ask, and you can close before expiry by selling at the bid, in full or in part. Options positions live in the **same trading account** as your CFDs and share its margin, so a losing options position reduces the margin available to your CFD trades, and the other way round. Whether options are available on a given account depends on your broker's settings.
+There is no exchange order book. **Ezymex is the counterparty** to every option trade and quotes a bid and an ask for every listed strike. You buy at the ask, and you can close before expiry by selling at the bid, in full or in part. Options positions live in the **same trading account** as your CFDs and share its margin, so a losing options position reduces the margin available to your CFD trades, and the other way round. Whether options are available on a given account depends on your broker's settings.
 
 > **Risk warning:** Buying options can lose 100% of the premium, and this happens often: many options expire worthless. Selling options can lose much more than the premium received. Learn the mechanics on a demo account before trading options with real money.
 

@@ -689,7 +689,7 @@ const _qrNightFg = Colors.white;
 const _qrNightBg = Color(0xFF111114);
 const int kQrExportPx = 1024;
 
-/// A QR code for a link on its own tile (web useQrCode view): light or dark, the Kalks mark in the centre.
+/// A QR code for a link on its own tile (web useQrCode view): light or dark, the Ezymex mark in the centre.
 class PartnerQr extends StatelessWidget {
   const PartnerQr({super.key, required this.value, this.size = 180, this.dark = false, this.logo = true, this.boundaryKey});
   final String value;
@@ -763,7 +763,7 @@ Future<String> qrSvg(String value, {bool dark = false, bool logo = true}) async 
   var mark = '';
   if (logo) {
     try {
-      final raw = (await rootBundle.loadString('assets/brand/kalks-mark.svg')).replaceAll('currentColor', fg);
+      final raw = (await rootBundle.loadString('assets/brand/ezymex-mark.svg')).replaceAll('currentColor', fg);
       final h = box * 541 / 653;
       mark =
           '<image href="data:image/svg+xml;base64,${base64Encode(utf8.encode(raw))}" x="${lo.toStringAsFixed(3)}" y="${(lo + (box - h) / 2).toStringAsFixed(3)}" '

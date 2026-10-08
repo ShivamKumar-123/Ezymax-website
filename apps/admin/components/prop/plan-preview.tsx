@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Check, Eye, Minus, X } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, Segmented, Starfield, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Segmented, Starfield, cn } from "@ezymex/ui";
 import type { PropPlan } from "./data";
 import { PlanTypeChip } from "./rules";
 

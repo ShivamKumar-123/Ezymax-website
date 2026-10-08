@@ -1,14 +1,14 @@
-// Design tokens of "Kalks iOS", taken from the web's stylesheets so both look alike:
-// - packages/ui/src/styles.css                 (the Kalks base palette, light and dark)
+// Design tokens of "Ezymex iOS", taken from the web's stylesheets so both look alike:
+// - packages/ui/src/styles.css                 (the Ezymex base palette, light and dark)
 // - apps/crm/app/globals.css                   (Client Area: pastel light by default, washes mixed from the brand)
-// - apps/terminal/app/globals.css              (Kalks Trader: dark by default, frosted panels)
-// Every tint is mixed from the tenant brand colour (`ember`, #FF5A1F for Kalks; config.tenant.primary for brokers)
+// - apps/terminal/app/globals.css              (Ezymex Trader: dark by default, frosted panels)
+// Every tint is mixed from the tenant brand colour (`ember`, #FF5A1F for Ezymex; config.tenant.primary for brokers)
 // with the same color-mix(in oklab) maths as the web, so a blue brand gets blue-tinted pastels automatically.
 import 'package:flutter/material.dart';
 
 import 'color_mix.dart';
 
-/// The Kalks brand defaults (web --k-ember, --k-gold).
+/// The Ezymex brand defaults (web --k-ember, --k-gold).
 const Color kEmber = Color(0xFFFF5A1F);
 const Color kGold = Color(0xFFE9B949);
 
@@ -24,7 +24,7 @@ enum KTone { accent, amber, coral, pink, lavender, mint, sky, neutral }
 /// Chip and status tones (web Chip tones).
 enum KChipTone { neutral, ember, up, down, warn, info, gold, solid }
 
-/// The look of one surface family (Client Area or Kalks Trader) in one brightness.
+/// The look of one surface family (Client Area or Ezymex Trader) in one brightness.
 @immutable
 class KTokens extends ThemeExtension<KTokens> {
   const KTokens({
@@ -74,7 +74,7 @@ class KTokens extends ThemeExtension<KTokens> {
 
   final Brightness brightness;
 
-  /// Kalks Trader tokens (terminal) rather than the Client Area's.
+  /// Ezymex Trader tokens (terminal) rather than the Client Area's.
   final bool trader;
 
   final Color bg, surface, surface2, surface3, line, lineTop, fg, fg2, fg3;
@@ -247,7 +247,7 @@ class KTokens extends ThemeExtension<KTokens> {
     );
   }
 
-  /* ---------------- Kalks Trader (apps/terminal/app/globals.css) ---------------- */
+  /* ---------------- Ezymex Trader (apps/terminal/app/globals.css) ---------------- */
 
   factory KTokens.traderDark({Color ember = kEmber, Color gold = kGold}) {
     const panel = Color(0xFF0E0E12);
@@ -407,6 +407,6 @@ abstract final class KSize {
 }
 
 extension KTokensContext on BuildContext {
-  /// The design tokens of the surrounding theme (Client Area or Kalks Trader).
+  /// The design tokens of the surrounding theme (Client Area or Ezymex Trader).
   KTokens get k => Theme.of(this).extension<KTokens>()!;
 }

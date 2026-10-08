@@ -1,13 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveSymbols } from "@/components/live/symbols";
 import { Pencil, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, Chip, DataTable, IconButton, PageHeader, PriceText, Reveal, Segmented, SymbolCell, Toggle, cn, formatNumber, useQuotes, type Column, type ChipTone } from "@kalks/ui";
-import { INSTRUMENTS, ASSET_CLASS_LABEL, getInstrument, type AssetClass } from "@kalks/mock";
-import { SYMBOL_SPECS, SESSIONS, pipSize, type SymbolSpec } from "@kalks/mock/admin-config";
+import { Button, Card, Chip, DataTable, IconButton, PageHeader, PriceText, Reveal, Segmented, SymbolCell, Toggle, cn, formatNumber, useQuotes, type Column, type ChipTone } from "@ezymex/ui";
+import { INSTRUMENTS, ASSET_CLASS_LABEL, getInstrument, type AssetClass } from "@ezymex/mock";
+import { SYMBOL_SPECS, SESSIONS, pipSize, type SymbolSpec } from "@ezymex/mock/admin-config";
 import { SymbolEditor, TRADE_MODE_LABEL } from "@/components/config/symbol-editor";
 import { auditToast } from "@/components/config/kit";
 

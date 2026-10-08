@@ -45,7 +45,7 @@ const news: NsMessages<"news"> = {
   "markets.trade": "Fai trading",
   "markets.searchPlaceholder": "Cerca simbolo o nome…",
   "markets.clearSearch": "Cancella",
-  "markets.liveTooltip": "Le quotazioni provengono dal feed prezzi di Kalks",
+  "markets.liveTooltip": "Le quotazioni provengono dal feed prezzi di Ezymex",
   "markets.footnote": "Spread del gruppo Standard: pip per il forex, unità di prezzo per gli altri · i mercati chiusi mostrano l'ultimo prezzo · fai clic su una riga per le specifiche del contratto",
   // Riepilogo breve degli orari di trading (24/5 = 24 ore, 5 giorni a settimana)
   "hoursShort.forex": "24/5",
@@ -268,7 +268,7 @@ const news: NsMessages<"news"> = {
   "cal.removeReminder": "Rimuovi promemoria",
   "cal.remindMe": "Avvisami 15 min prima",
   "cal.toWatch": "Strumenti da seguire",
-  "cal.noLinked": "Nessuno strumento Kalks è direttamente collegato a questa valuta.",
+  "cal.noLinked": "Nessuno strumento Ezymex è direttamente collegato a questa valuta.",
   // Avvisi ad alto impatto
   "alerts.title": "Avvisi ad alto impatto",
   "alerts.toggle": "Avvisami prima degli eventi ad alto impatto",

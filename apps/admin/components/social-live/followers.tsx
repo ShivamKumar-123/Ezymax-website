@@ -9,7 +9,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { AlertTriangle, HandCoins, RefreshCw, Square, Timer, Users, Wallet } from "lucide-react";
-import { Button, Card, CardHeader, Chip, DataTable, EmptyState, KpiCard, Money, PageHeader, Reveal, Segmented, Skeleton, Toggle, cn, formatNumber, type ChipTone, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, EmptyState, KpiCard, Money, PageHeader, Reveal, Segmented, Skeleton, Toggle, cn, formatNumber, type ChipTone, type Column } from "@ezymex/ui";
 import { MiniStat } from "@/components/config/kit";
 import { FilterSelect, TableSkeleton, ago, day, useApi, useNow, when } from "@/components/live/kit";
 import { PERIOD_LABEL, Pct, ReadOnlyNote, SocialError, SocialStatus, int, socialWrite, useNoteAction, useSocialCan, usd, usdK, type NoteAction, type Sizing, type SubscriptionView } from "./kit";

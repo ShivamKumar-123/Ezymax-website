@@ -1,0 +1,16 @@
+[Unit]
+Description=Ezymex DEMO Back Office (:4001, mock showcase)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=ezymex
+WorkingDirectory=/home/ezymex/ezymex-demo/apps/admin
+Environment=NODE_ENV=production
+ExecStart=/home/ezymex/ezymex-demo/apps/admin/node_modules/.bin/next start -p 4001 -H 127.0.0.1
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

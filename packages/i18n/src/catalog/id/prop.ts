@@ -101,13 +101,13 @@ const prop: NsMessages<"prop"> = {
 
   // Public certificate verification page (/verify/<code>)
   "verify.shellTitle": "Verifikasi sertifikat",
-  "verify.footer": "Akun Kalks Prop adalah akun simulasi. Sertifikat menunjukkan hasil trader pada challenge Kalks Prop; nama trader disingkat menjadi nama depan dan inisial nama belakang.",
+  "verify.footer": "Akun Ezymex Prop adalah akun simulasi. Sertifikat menunjukkan hasil trader pada challenge Ezymex Prop; nama trader disingkat menjadi nama depan dan inisial nama belakang.",
   "verify.linkCopied": "Tautan tersalin",
   "verify.copyFailed": "Tidak dapat menyalin tautan",
   "verify.copyLink": "Salin tautan",
   "verify.downloadPng": "Unduh PNG",
   "verify.notFoundTitle": "Sertifikat tidak ditemukan",
-  "verify.notFoundText": "Tidak ada sertifikat Kalks Prop dengan nomor ini. Periksa tautannya atau minta trader untuk membagikannya lagi.",
+  "verify.notFoundText": "Tidak ada sertifikat Ezymex Prop dengan nomor ini. Periksa tautannya atau minta trader untuk membagikannya lagi.",
   "verify.unavailableTitle": "Verifikasi sedang tidak tersedia",
   "verify.unavailableText": "Kami tidak dapat memeriksa sertifikat ini saat ini. Silakan coba lagi dalam beberapa menit.",
   "verify.kind.pass": "Fase lulus",
@@ -121,9 +121,9 @@ const prop: NsMessages<"prop"> = {
   "verify.row.issued": "Diterbitkan",
   "verify.row.number": "No. sertifikat",
   "verify.validTitle": "Sertifikat valid",
-  "verify.validText": "Diterbitkan oleh Kalks Prop dan diverifikasi dengan catatan kami.",
+  "verify.validText": "Diterbitkan oleh Ezymex Prop dan diverifikasi dengan catatan kami.",
   "verify.revokedTitle": "Sertifikat dicabut",
-  "verify.revokedText": "Sertifikat ini telah dicabut oleh Kalks dan tidak berlaku lagi.",
+  "verify.revokedText": "Sertifikat ini telah dicabut oleh Ezymex dan tidak berlaku lagi.",
   "verify.valid": "Valid",
   "verify.revoked": "Dicabut",
   // Certificate titles
@@ -248,8 +248,8 @@ const prop: NsMessages<"prop"> = {
   "checkout.goToMine": "Ke Challenge saya",
   "checkout.readyTitle": "Challenge Anda sudah siap",
   "checkout.paidText": "{fee} telah dibayar dari dompet USDT Anda dan akun {size} Anda sudah terbuka. Aturan berlaku mulai sekarang.",
-  "checkout.savePasswords": "Simpan kata sandi ini sekarang: kata sandi hanya ditampilkan sekali dan tidak kami simpan. Tombol Trading memasukkan Anda ke Kalks Trader tanpa kata sandi, sehingga Anda selalu dapat trading dari sini.",
-  "checkout.passwordsShown": "Kata sandi trading ditampilkan saat pembelian ini pertama kali dikonfirmasi. Gunakan tombol Trading untuk membuka Kalks Trader: Anda akan masuk tanpa kata sandi.",
+  "checkout.savePasswords": "Simpan kata sandi ini sekarang: kata sandi hanya ditampilkan sekali dan tidak kami simpan. Tombol Trading memasukkan Anda ke Ezymex Trader tanpa kata sandi, sehingga Anda selalu dapat trading dari sini.",
+  "checkout.passwordsShown": "Kata sandi trading ditampilkan saat pembelian ini pertama kali dikonfirmasi. Gunakan tombol Trading untuk membuka Ezymex Trader: Anda akan masuk tanpa kata sandi.",
 
   // Account credentials
   "cred.login": "Login",
@@ -376,7 +376,7 @@ const prop: NsMessages<"prop"> = {
   "account.passed": "Lulus · hanya baca",
   "account.failed": "Gagal · dinonaktifkan",
   "account.opening": "Sedang dibuka",
-  "account.tradableText": "Trading membuka Kalks Trader dan langsung masuk ke akun ini. Kata sandi ditampilkan sekali saat pembelian.",
+  "account.tradableText": "Trading membuka Ezymex Trader dan langsung masuk ke akun ini. Kata sandi ditampilkan sekali saat pembelian.",
   "account.passedText": "Fase ini selesai. Akun ini hanya baca; lakukan trading di fase berikutnya.",
   "account.failedText": "Trading di akun ini dinonaktifkan.",
   "account.unavailableText": "Trading tidak tersedia di akun ini.",

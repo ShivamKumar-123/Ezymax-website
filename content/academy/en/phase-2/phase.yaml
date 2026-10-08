@@ -2,7 +2,7 @@ slug: "phase-2"
 order: 2
 title: "How trading works"
 level: "Beginner"
-summary: "Understand exactly what a trade costs and what it can make or lose: pips, lots, leverage, margin, spreads, swaps and P&L, and place, manage and close orders confidently in Kalks Trader."
+summary: "Understand exactly what a trade costs and what it can make or lose: pips, lots, leverage, margin, spreads, swaps and P&L, and place, manage and close orders confidently in Ezymex Trader."
 sections:
   - slug: "p2-fundamental"
     track: "fundamental"
@@ -10,5 +10,5 @@ sections:
     summary: "Pips, lots, leverage, margin, trading costs and profit-and-loss arithmetic, worked through with real numbers."
   - slug: "p2-technical"
     track: "technical"
-    title: "Orders and execution in Kalks Trader"
+    title: "Orders and execution in Ezymex Trader"
     summary: "Market and pending orders, stops and targets, position modes, execution risk and a guided first demo trade."

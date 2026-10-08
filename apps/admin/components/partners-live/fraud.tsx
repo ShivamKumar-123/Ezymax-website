@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Check, RefreshCw, X } from "lucide-react";
-import { Button, Card, Chip, DataTable, Dialog, PageHeader, Reveal, Segmented, Skeleton, type Column } from "@kalks/ui";
+import { Button, Card, Chip, DataTable, Dialog, PageHeader, Reveal, Segmented, Skeleton, type Column } from "@ezymex/ui";
 import { MiniStat, Section } from "@/components/config/kit";
 import { Pager, TableSkeleton, ago, useApi, useNow, when } from "@/components/live/kit";
 import { P, ibSend, type Flag, type FlagKind, type FlagsDoc } from "./api";

@@ -3,8 +3,8 @@
 import * as React from "react";
 import { toast } from "@/lib/notify";
 import { Bot, CirclePause, CirclePlay, CircleStop, Lock, OctagonX, Trash2 } from "lucide-react";
-import { priceFeed } from "@kalks/mock";
-import { SymbolAvatar, cn } from "@kalks/ui";
+import { priceFeed } from "@ezymex/mock";
+import { SymbolAvatar, cn } from "@ezymex/ui";
 import { journalTime, useTerminal } from "@/lib/store";
 import { useMarketClock } from "@/lib/market";
 import { accCcy, accMoney, fmtPrice, fmtVol, profitAt } from "@/lib/trading";
@@ -17,8 +17,8 @@ import { describeSide } from "@/lib/ai-trader/describe";
 import { SpecSummary, StrategyCard } from "./ai-trader-card";
 import { guestNotice, openRegister } from "@/lib/guest";
 import { aiDeniedText, aiHeaders } from "@/lib/ai-client";
-import { useT } from "@kalks/i18n/react";
-import type { T as Tr } from "@kalks/i18n";
+import { useT } from "@ezymex/i18n/react";
+import type { T as Tr } from "@ezymex/i18n";
 
 const EMPTY: AiSnapshot = { login: null, records: [], attached: false };
 export function useAi() {

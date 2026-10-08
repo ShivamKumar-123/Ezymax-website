@@ -11,7 +11,7 @@
     <uses-permission android:name="android.permission.VIBRATE"/>
 
     <application
-        android:label="Kalks"
+        android:label="Ezymex"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:enableOnBackInvokedCallback="true"
@@ -38,21 +38,21 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- Deep links: kalks://<web path> (e.g. kalks://app/wallet/deposit) opens the same page as the web. -->
+            <!-- Deep links: ezymex://<web path> (e.g. ezymex://app/wallet/deposit) opens the same page as the web. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="kalks"/>
+                <data android:scheme="ezymex"/>
             </intent-filter>
-            <!-- Web links of the Client Area and Kalks Trader. Verified App Links (autoVerify) need
+            <!-- Web links of the Client Area and Ezymex Trader. Verified App Links (autoVerify) need
                  /.well-known/assetlinks.json on these hosts with the release key's fingerprint: later. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="https" android:host="app.kalkstrade.com"/>
-                <data android:scheme="https" android:host="trade.kalkstrade.com"/>
+                <data android:scheme="https" android:host="app.ezymex.com"/>
+                <data android:scheme="https" android:host="trade.ezymex.com"/>
             </intent-filter>
         </activity>
         <!-- go_router handles the deep links above -->

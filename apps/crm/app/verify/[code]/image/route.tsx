@@ -18,6 +18,6 @@ export async function GET(req: NextRequest, { params }: Ctx) {
 
   const headers = new Headers(img.headers);
   headers.set("cache-control", c.valid ? "public, max-age=300" : "no-store");
-  if (req.nextUrl.searchParams.get("download")) headers.set("content-disposition", `attachment; filename="kalks-certificate-${c.code}.png"`);
+  if (req.nextUrl.searchParams.get("download")) headers.set("content-disposition", `attachment; filename="ezymex-certificate-${c.code}.png"`);
   return new Response(img.body, { status: 200, headers });
 }

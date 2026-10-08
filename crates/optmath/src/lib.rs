@@ -1,4 +1,4 @@
-//! `optmath`: option pricing maths for Kalks FX Options.
+//! `optmath`: option pricing maths for Ezymex FX Options.
 //!
 //! Pure Rust, no dependencies, `f64` throughout. The trading engine and the
 //! options service both use this crate so they always compute the same

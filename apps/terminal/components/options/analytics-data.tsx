@@ -6,10 +6,10 @@
 //                   ask and mark IVs come from the chain on screen (book: the IVs of the best bid / offer and mark)
 //   term structure  the ATM vol of every open expiry: its smile's `atmVol` (guests: the ATM row of its public chain)
 //   open interest   the chain rows' `oi` / `volume` (the order book's figures; absent on house prices)
-// Demo builds compute the same shapes with the demo pricer (@kalks/mock/options), like the rest of the workspace.
+// Demo builds compute the same shapes with the demo pricer (@ezymex/mock/options), like the rest of the workspace.
 import * as React from "react";
-import { IS_LIVE } from "@kalks/mock";
-import { OPTION_SPEC, forwardOf, pricingContext, quotesAt, smileAtDelta, volAtStrike } from "@kalks/mock/options";
+import { IS_LIVE } from "@ezymex/mock";
+import { OPTION_SPEC, forwardOf, pricingContext, quotesAt, smileAtDelta, volAtStrike } from "@ezymex/mock/options";
 import { optionsApi } from "@/lib/options/api";
 import { atmIndex, strikeAtCallDelta, type SmilePillar } from "@/lib/options/math";
 import { expiryOpen, useOpt } from "@/lib/options-store";
@@ -33,8 +33,8 @@ export function useAnalyticsSource(): { source: AnalyticsSource; login: string |
 /* ------------------------------------------------------------------ */
 
 async function getJson(path: string, login: string | null): Promise<Obj | null> {
-  const headers: Record<string, string> = { "x-kalks-errors": "body" };
-  if (login) headers["x-kalks-login"] = login;
+  const headers: Record<string, string> = { "x-ezymex-errors": "body" };
+  if (login) headers["x-ezymex-login"] = login;
   try {
     const res = await fetch(path, { headers, cache: "no-store", credentials: "same-origin", signal: AbortSignal.timeout(10_000) });
     const data = (await res.json().catch(() => null)) as Obj | null;

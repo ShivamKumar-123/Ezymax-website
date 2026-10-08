@@ -1,14 +1,14 @@
 "use client";
 
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveMaintenance } from "@/components/rbac/settings";
 
 import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import { AlertTriangle, CalendarClock, ExternalLink, Info, MoreHorizontal, Plus, Power, Repeat, ShieldCheck, Trash2, Wrench, X } from "lucide-react";
-import { Avatar, Button, Card, CardHeader, Chip, Dialog, Field, IconButton, Input, Menu, PageHeader, Reveal, Segmented, Starfield, Toggle, cn, formatDateTime } from "@kalks/ui";
-import { SET_BYPASS_IPS, SET_MAINTENANCE_WINDOWS, type SetMaintenanceWindow } from "@kalks/mock/admin-platform-settings";
+import { Avatar, Button, Card, CardHeader, Chip, Dialog, Field, IconButton, Input, Menu, PageHeader, Reveal, Segmented, Starfield, Toggle, cn, formatDateTime } from "@ezymex/ui";
+import { SET_BYPASS_IPS, SET_MAINTENANCE_WINDOWS, type SetMaintenanceWindow } from "@ezymex/mock/admin-platform-settings";
 import { BrandImg, SectionLabel } from "@/components/settings/kit";
 
 const SCOPES = ["Client Area", "Trading terminal", "API", "Wallet deposits", "Back Office"] as const;
@@ -42,7 +42,7 @@ function MaintenancePage() {
   const [on, setOn] = React.useState(false);
   const [confirm, setConfirm] = React.useState(false);
   const [scope, setScope] = React.useState<string[]>(["Client Area", "Trading terminal", "API"]);
-  const [title, setTitle] = React.useState("We're upgrading Kalks");
+  const [title, setTitle] = React.useState("We're upgrading Ezymex");
   const [message, setMessage] = React.useState("Scheduled maintenance is in progress. Trading, deposits and withdrawals will be back by 04:00 server time (GMT+3). Open positions are safe; stop-loss and take-profit orders stay active on the server.");
   const [until, setUntil] = React.useState("04:00");
   const [banner, setBanner] = React.useState(true);
@@ -65,7 +65,7 @@ function MaintenancePage() {
         subtitle="Take the platform offline gracefully, warn clients with a banner and schedule recurring windows. Staff on bypass IPs keep full access."
         actions={
           <>
-            <Button variant="surface" onClick={() => toast("Opening status.kalks.com")}>
+            <Button variant="surface" onClick={() => toast("Opening status.ezymex.com")}>
               <ExternalLink /> Status page
             </Button>
             <Button variant="ember" onClick={() => setSched(true)}>
@@ -172,7 +172,7 @@ function MaintenancePage() {
                 <AnimatePresence mode="wait">
                   {preview === "page" ? (
                     <motion.div key="page" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="relative flex h-full min-h-[340px] flex-col items-center justify-center px-6 py-8 text-center">
-                      <BrandImg src="/assets/brand/kalks-logo.svg" className="h-5" />
+                      <BrandImg src="/assets/brand/ezymex-logo.svg" className="h-5" />
                       <span className="mt-6 grid size-14 place-items-center rounded-full border border-ember/40 bg-ember-soft text-ember shadow-[0_0_40px_-6px_rgba(255,90,31,0.7)]">
                         <Wrench className="size-6" />
                       </span>
@@ -186,7 +186,7 @@ function MaintenancePage() {
                           </React.Fragment>
                         ))}
                       </div>
-                      <div className="mt-2 text-[11px] text-fg-3">Back by {until} GMT+3 · status.kalks.com</div>
+                      <div className="mt-2 text-[11px] text-fg-3">Back by {until} GMT+3 · status.ezymex.com</div>
                     </motion.div>
                   ) : (
                     <motion.div key="banner" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="relative p-4">
@@ -374,7 +374,7 @@ function MaintenancePage() {
                           }
                           items={[
                             { label: "Start now", icon: <Power />, onSelect: () => { setScope(w.scope.filter((s) => (SCOPES as readonly string[]).includes(s))); setConfirm(true); } },
-                            { label: "Post to status page", icon: <ExternalLink />, onSelect: () => toast.success("Posted to status.kalks.com", { description: w.title }) },
+                            { label: "Post to status page", icon: <ExternalLink />, onSelect: () => toast.success("Posted to status.ezymex.com", { description: w.title }) },
                             "sep",
                             { label: "Cancel window", icon: <Trash2 />, danger: true, onSelect: () => { setWindows((ws) => ws.filter((x) => x.id !== w.id)); toast.success("Window cancelled", { description: "Clients notified of the cancellation" }); } },
                           ]}

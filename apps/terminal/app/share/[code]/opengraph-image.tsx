@@ -6,16 +6,16 @@ import { shareTotals, signed, usd } from "@/lib/share-stats";
 import type { PublicShare } from "@/lib/share";
 
 export const runtime = "nodejs";
-export const alt = "Shared trades on Kalks Trader";
+export const alt = "Shared trades on Ezymex Trader";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-// Kalks tokens (OG images can't read CSS variables)
+// Ezymex tokens (OG images can't read CSS variables)
 const C = { bg: "#07070a", surface: "#111114", surface2: "#17171c", line: "#26262d", fg: "#f5f5f7", fg2: "#a1a1aa", fg3: "#63636e", ember: "#ff5a1f", gold: "#e9b949", up: "#22c55e", down: "#f04438" };
 
 async function logo() {
   try {
-    const svg = await readFile(path.join(process.cwd(), "public/assets/brand/kalks-logo.svg"), "utf8");
+    const svg = await readFile(path.join(process.cwd(), "public/assets/brand/ezymex-logo.svg"), "utf8");
     return `data:image/svg+xml;base64,${Buffer.from(svg.replace(/currentColor/g, C.fg)).toString("base64")}`;
   } catch {
     return null;
@@ -27,7 +27,7 @@ export default async function OgImage({ params }: { params: Promise<{ code: stri
   const [r, mark] = await Promise.all([fetchPublicShare(code), logo()]);
   const s = r.data as unknown as PublicShare | null;
 
-  const brand = mark ? <img src={mark} height={44} width={Math.round(44 * (1954 / 541))} alt="" /> : <div style={{ fontSize: 40, fontWeight: 700 }}>Kalks</div>;
+  const brand = mark ? <img src={mark} height={44} width={Math.round(44 * (2801 / 559))} alt="" /> : <div style={{ fontSize: 40, fontWeight: 700 }}>Ezymex</div>;
 
   if (!s)
     return new ImageResponse(
@@ -35,7 +35,7 @@ export default async function OgImage({ params }: { params: Promise<{ code: stri
         <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between", background: C.bg, color: C.fg, padding: 72 }}>
           {brand}
           <div style={{ fontSize: 56, fontWeight: 700 }}>This link is no longer available</div>
-          <div style={{ fontSize: 28, color: C.fg3 }}>Kalks Trader</div>
+          <div style={{ fontSize: 28, color: C.fg3 }}>Ezymex Trader</div>
         </div>
       ),
       size,

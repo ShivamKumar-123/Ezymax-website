@@ -1,4 +1,4 @@
-//! Service-to-service reads (no end-user session): `/v1/internal/*`, behind the same `X-Kalks-Internal`
+//! Service-to-service reads (no end-user session): `/v1/internal/*`, behind the same `X-Ezymex-Internal`
 //! check as every other /v1 route.
 //!
 //! `GET /v1/internal/referrals/users?since=<RFC 3339>&after_id=<id>&limit=<1..1000>`
@@ -144,8 +144,8 @@ mod tests {
     #[tokio::test]
     async fn looks_up_a_broker_by_slug() {
         let Some(db) = TestDb::new("internal tenant").await else { return };
-        let v = super::tenant(State(db.st.clone()), Path("Kalks".into())).await.unwrap().0;
-        assert_eq!((v["slug"].as_str(), v["status"].as_str()), (Some("kalks"), Some("active")));
+        let v = super::tenant(State(db.st.clone()), Path("Ezymex".into())).await.unwrap().0;
+        assert_eq!((v["slug"].as_str(), v["status"].as_str()), (Some("ezymex"), Some("active")));
         assert!(v["id"].as_i64().is_some_and(|id| id > 0));
         assert!(matches!(super::tenant(State(db.st.clone()), Path("no-such-broker".into())).await, Err(ApiError::NotFound)));
         assert!(matches!(super::tenant(State(db.st.clone()), Path("../etc".into())).await, Err(ApiError::NotFound)));
@@ -156,7 +156,7 @@ mod tests {
     async fn lists_users_in_keyset_order_with_signals() {
         let Some(db) = TestDb::new("internal referrals").await else { return };
         let pool = &db.st.pool;
-        let tid: i64 = sqlx::query_scalar("SELECT id FROM tenants WHERE slug = 'kalks'").fetch_one(pool).await.unwrap();
+        let tid: i64 = sqlx::query_scalar("SELECT id FROM tenants WHERE slug = 'ezymex'").fetch_one(pool).await.unwrap();
         let mut ids = vec![];
         for (i, code) in ["AAAA1111", "BBBB2222"].iter().enumerate() {
             let id: i64 = sqlx::query_scalar(

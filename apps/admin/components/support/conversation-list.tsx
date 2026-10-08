@@ -4,8 +4,8 @@ import * as React from "react";
 import { motion } from "motion/react";
 import { CheckCheck, Search, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Flag, Menu, Segmented, cn } from "@kalks/ui";
-import type { SupConversation } from "@kalks/mock/admin-growth-support";
+import { Avatar, Flag, Menu, Segmented, cn } from "@ezymex/ui";
+import type { SupConversation } from "@ezymex/mock/admin-growth-support";
 import { AiSpark, ChannelBadge, ConvStatusChip, SlaCountdown } from "./shared";
 
 export type InboxFilter = "all" | "ai" | "needs_agent" | "mine" | "resolved";

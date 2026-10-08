@@ -3,8 +3,8 @@
 import * as React from "react";
 import { Ban, ChevronDown, LogIn, MessageSquare, PlayCircle, Save, Trash2, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Chip, CopyButton, Dialog, Flag, Menu, Money, Progress, Segmented, StatusChip, cn } from "@kalks/ui";
-import { LEVELS, LEVEL_MAP, PLANS, SYMBOL_GROUPS, partnerCommissions, type CustomDeal, type LevelKey, type Partner } from "@kalks/mock/admin-partners";
+import { Avatar, Button, Chip, CopyButton, Dialog, Flag, Menu, Money, Progress, Segmented, StatusChip, cn } from "@ezymex/ui";
+import { LEVELS, LEVEL_MAP, PLANS, SYMBOL_GROUPS, partnerCommissions, type CustomDeal, type LevelKey, type Partner } from "@ezymex/mock/admin-partners";
 import { MiniField, MiniStat, NumInput, Section, Select, TextArea, auditToast, useReason } from "@/components/config/kit";
 import { LEVEL_COLOR, LevelChip, fmtDT, fmtDate, fmtInt, fmtLots, nextLevel } from "./common";
 

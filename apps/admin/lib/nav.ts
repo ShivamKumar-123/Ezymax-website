@@ -18,7 +18,7 @@ import {
   Settings,
   Sigma,
 } from "lucide-react";
-import type { NavModule } from "@kalks/ui";
+import type { NavModule } from "@ezymex/ui";
 
 /** Back Office navigation — the upgraded 16-section menu (plan: "Upgraded admin menu"). */
 export const ADMIN_NAV: NavModule[] = [

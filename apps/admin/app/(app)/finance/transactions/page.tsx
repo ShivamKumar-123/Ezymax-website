@@ -3,8 +3,8 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Coins, FileSpreadsheet, Filter, Gift, HandCoins, Repeat, SlidersHorizontal, Trophy, Users } from "lucide-react";
-import { Button, Card, Chip, DataTable, PageHeader, Reveal, Segmented, cn, type Column } from "@kalks/ui";
-import { FIN_TXS, FIN_TX_TYPE_LABEL, finAgo, finTime, type FinTx, type FinTxType } from "@kalks/mock/admin-finance";
+import { Button, Card, Chip, DataTable, PageHeader, Reveal, Segmented, cn, type Column } from "@ezymex/ui";
+import { FIN_TXS, FIN_TX_TYPE_LABEL, finAgo, finTime, type FinTx, type FinTxType } from "@ezymex/mock/admin-finance";
 import { PersonCell, Select } from "@/components/config/kit";
 import { TxDrawer, txStatusChip } from "@/components/finance/tx-drawer";
 import { CoinAmount, usd } from "@/components/finance/shared";
@@ -86,7 +86,7 @@ export default function TransactionsPage() {
         actions={
           <>
             <Segmented value={range} onChange={setRange} options={Object.keys(RANGES) as Range[]} />
-            <Button variant="surface" onClick={() => toast.success("Scheduled export created", { description: "Daily CSV to finance@kalks.io at 07:00 GMT+3" })}>
+            <Button variant="surface" onClick={() => toast.success("Scheduled export created", { description: "Daily CSV to finance@ezymex.io at 07:00 GMT+3" })}>
               <FileSpreadsheet /> Schedule export
             </Button>
           </>

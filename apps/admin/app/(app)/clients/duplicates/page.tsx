@@ -5,8 +5,8 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { Ban, CheckCircle2, Fingerprint, Gift, GitMerge, Globe, IdCard, Network, Users, Wallet, XCircle } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, Chip, Flag, KpiCard, PageHeader, Reveal, Segmented, Tooltip, cn, formatMoney } from "@kalks/ui";
-import { DUPLICATE_CLUSTERS, REASON_CODES, getClient, serverTime, timeAgo, type DuplicateCluster, type DuplicateKind } from "@kalks/mock/admin-clients";
+import { Avatar, Button, Card, Chip, Flag, KpiCard, PageHeader, Reveal, Segmented, Tooltip, cn, formatMoney } from "@ezymex/ui";
+import { DUPLICATE_CLUSTERS, REASON_CODES, getClient, serverTime, timeAgo, type DuplicateCluster, type DuplicateKind } from "@ezymex/mock/admin-clients";
 import { KycChip, ReasonDialog } from "@/components/command/kit";
 
 const KIND: Record<DuplicateKind, { label: string; icon: React.ReactNode; tone: string }> = {

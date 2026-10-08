@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Brand and network names stay as they are: Kalks, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
+// Brand and network names stay as they are: Ezymex, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
 // MetaMask, TronLink, Tronscan, USD, USC, KYC.
 const wallet: NsMessages<"wallet"> = {
   // Shared labels
@@ -393,17 +393,17 @@ const wallet: NsMessages<"wallet"> = {
   "demo.linkCopied": "Bağlantı panoya kopyalandı",
   "demo.sendOnlyWarning": "<b>Yalnızca TRON (TRC20) üzerinden USDT gönderin.</b> Başka bir token göndermek veya ERC20 / BEP20 kullanmak fonların kalıcı olarak kaybolmasına neden olur.",
   "demo.arrival": "Varış",
-  "demo.kalksFee": "Kalks ücreti",
+  "demo.ezymexFee": "Ezymex ücreti",
   "demo.noKycDeposit": "Para yatırmak için KYC gerekmez. Doğrulama yalnızca ilk çekiminizden önce gereklidir.",
   // Withdraw
   "demo.addrStartT": "TRC20 adresleri “T” ile başlar",
   "demo.addrLength": "34 karakter olmalıdır ({length}/34)",
   "demo.addrChars": "Geçersiz karakterler içeriyor (0, O, I, l kullanılamaz)",
-  "demo.addrOwn": "Bu sizin kendi Kalks yatırma adresiniz",
+  "demo.addrOwn": "Bu sizin kendi Ezymex yatırma adresiniz",
   "demo.justNow": "Az önce",
   "demo.codeConfirmed": "Kod {email} ile onaylandı",
   "demo.financeReviews": "Finans ekibi her çekimi inceler · genellikle 2 saatten kısa",
-  "demo.sentFromHot": "Onaylandıktan sonra Kalks sıcak cüzdanından gönderilir",
+  "demo.sentFromHot": "Onaylandıktan sonra Ezymex sıcak cüzdanından gönderilir",
   "demo.arriveAfter": "Fonlar 20 onaydan sonra adresinize ulaşır",
   "demo.pendingTitle": "Bekleyen çekimler",
   "demo.awaitingCompletion": "{count} tamamlanmayı bekliyor",
@@ -462,7 +462,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.alwaysReviewed": "Her zaman finans tarafından incelenir",
   "demo.unrecoverable": "TRC20 USDT desteklemeyen borsalara veya akıllı kontrat adreslerine yapılan çekimler kurtarılamaz.",
   // Transfer
-  "demo.kalksWallet": "Kalks Cüzdan",
+  "demo.ezymexWallet": "Ezymex Cüzdan",
   "demo.freeMargin": "Serbest teminat",
   "demo.assetAvailable": "{amount} {asset} kullanılabilir · {network}",
   "demo.throughWallet": "Transferler her zaman cüzdanınız üzerinden yapılır.",
@@ -497,7 +497,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.rule4Title": "Serbest teminat korunur",
   "demo.rule4Text": "Yalnızca serbest teminatınızın izin verdiği kadarını çıkarabilirsiniz; böylece açık işlemler güvende kalır.",
   "demo.into": "hedef",
-  "demo.intoKalksWallet": "Kalks Cüzdanınıza",
+  "demo.intoEzymexWallet": "Ezymex Cüzdanınıza",
   "demo.freeMarginAfter": "Sonraki serbest teminat",
   "demo.marginLevelAfter": "Sonraki teminat seviyesi",
   "demo.convertedNote": "{asset}, canlı kurdan %{markup} marj düşülerek USD'ye dönüştürülür. Kur, onaylayana kadar her tikte yenilenir.",

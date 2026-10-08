@@ -20,7 +20,7 @@ const academy: NsMessages<"academy"> = {
   "practice.demo": "ڈیمو پر مشق کریں",
   "practice.openFreeDemo": "مفت ڈیمو اکاؤنٹ کھولیں",
   "practice.openDemo": "ڈیمو کھولیں",
-  "practice.inTrader": "Kalks Trader میں مشق کریں",
+  "practice.inTrader": "Ezymex Trader میں مشق کریں",
 
   // Levels (sent by the Academy service)
   "level.beginner": "ابتدائی",
@@ -31,12 +31,12 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "فنڈامینٹل اینالیسس",
   "track.technical": "ٹیکنیکل اینالیسس",
-  // Product track of the Kalks FX Options elective (phase 9)
+  // Product track of the Ezymex FX Options elective (phase 9)
   "track.options": "آپشنز ٹریڈنگ",
   "trackShort.fundamental": "فنڈامینٹل",
   "trackShort.technical": "ٹیکنیکل",
   "trackShort.options": "آپشنز",
-  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  // Chip on a product course (e.g. Ezymex FX Options) that sits outside the eight core phases and can be taken at any time
   elective: "اختیاری",
 
   // Durations (h = hours, m = minutes)
@@ -52,7 +52,7 @@ const academy: NsMessages<"academy"> = {
   "home.pathText": "ہر بنیادی مرحلے میں ایک فنڈامینٹل اور ایک ٹیکنیکل ٹریک، ایک فائنل امتحان اور ایک سرٹیفکیٹ ہے۔",
   // Section under the learning path listing the electives
   "home.electivesTitle": "اختیاری کورسز",
-  "home.electivesText": "Kalks پروڈکٹس پر کورسز۔ انہیں کسی بھی وقت پڑھیں: ہر کورس کا اپنا فائنل امتحان اور سرٹیفکیٹ ہے۔",
+  "home.electivesText": "Ezymex پروڈکٹس پر کورسز۔ انہیں کسی بھی وقت پڑھیں: ہر کورس کا اپنا فائنل امتحان اور سرٹیفکیٹ ہے۔",
   "hero.allDone": "تمام ابواب مکمل",
   "hero.continue": "سیکھنا جاری رکھیں",
   "hero.upNext": "اگلا",
@@ -220,7 +220,7 @@ const academy: NsMessages<"academy"> = {
   "callout.example": "مثال",
   "callout.tip": "مشورہ",
   "callout.note": "نوٹ",
-  "callout.inKalksTrader": "Kalks Trader میں",
+  "callout.inEzymexTrader": "Ezymex Trader میں",
   diagram: "خاکہ",
 };
 export default academy;

@@ -1,5 +1,5 @@
 // Loading the catalogs and switching the language. The chosen locale is kept on the device (Prefs) and sent as
-// X-Kalks-Locale; the first start follows the phone's language when Kalks has it, else English (like the web's
+// X-Ezymex-Locale; the first start follows the phone's language when Ezymex has it, else English (like the web's
 // cookie -> Accept-Language -> en).
 import 'dart:convert';
 

@@ -413,7 +413,7 @@ pub async fn agent_message(st: &AppState, a: &Agent, conv_id: i64, body: &str, n
         if email.contains('@') {
             n.email_to = Some(email);
         }
-        n.email_subject = Some("New reply from Kalks support".into());
+        n.email_subject = Some("New reply from Ezymex support".into());
         if let Err(e) = notify::deliver(st, &a.tenant, n).await {
             tracing::warn!(error = %e, "reply notification failed");
         }

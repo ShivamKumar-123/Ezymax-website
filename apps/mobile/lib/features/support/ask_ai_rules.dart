@@ -1,4 +1,4 @@
-// Where an "Ask Kalks AI" question can go (port of apps/crm/lib/ask-ai.ts, pure; tested like
+// Where an "Ask Ezymex AI" question can go (port of apps/crm/lib/ask-ai.ts, pure; tested like
 // apps/crm/tests/ask-ai.test.mjs in test/c1_support_test.dart).
 //
 // The support service keeps ONE open conversation per client (status <> 'resolved'), a client message always lands in

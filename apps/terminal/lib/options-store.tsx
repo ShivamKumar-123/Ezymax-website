@@ -1,6 +1,6 @@
 "use client";
 
-// State of the Options workspace in Kalks Trader (kept out of lib/store.tsx, which holds the CFD terminal). One
+// State of the Options workspace in Ezymex Trader (kept out of lib/store.tsx, which holds the CFD terminal). One
 // external store shared by every lazily-loaded options module (workspace panels, toolbox tabs, mobile view): the
 // selected underlying and expiry (Daily / Weekly / Monthly = the nearest expiry of that kind, rolled to the next date
 // after its cut, or a date picked from the list), the live chain (REST snapshot, then the WebSocket's changed rows;
@@ -14,8 +14,8 @@
 // selected series' depth and trade tape stream in (`depth`, `tape`), and the ticket sends book orders. Otherwise
 // (no book, or the engine answers 404) everything stays on today's house-priced flow.
 import * as React from "react";
-import { IS_LIVE } from "@kalks/mock";
-import { mockUnderlyings, parseSeriesCode } from "@kalks/mock/options";
+import { IS_LIVE } from "@ezymex/mock";
+import { mockUnderlyings, parseSeriesCode } from "@ezymex/mock/options";
 import type { Timeframe } from "@/lib/trading";
 import { optionsApi, isLaunchingSoon } from "@/lib/options/api";
 import { optionBook } from "@/lib/options/book";
@@ -54,7 +54,7 @@ export interface TicketLeg {
   strikeLabel: string;
   side: Side;
   contracts: number;
-  /** a barrier leg (Kalks-quoted): the strategy is placed on the house ticket, never as an RFQ */
+  /** a barrier leg (Ezymex-quoted): the strategy is placed on the house ticket, never as an RFQ */
   barrier?: BarrierSpec;
 }
 
@@ -170,7 +170,7 @@ export interface OptState {
 /* Store                                                               */
 /* ------------------------------------------------------------------ */
 
-const PREFS_KEY = "kalks.options.prefs";
+const PREFS_KEY = "ezymex.options.prefs";
 const DEFAULT_PREFS: Prefs = { u: "EURUSD", view: "both", greeks: false, extra: false, colPreset: "simple", cols: COL_PRESETS.simple, range: 10, tf: "M15", chart: true, panel: "simple", expKind: "daily", center: "chain", chartMode: "premium" };
 /** timeframes of the options charts (the premium candles service serves these) */
 export const OPTION_TFS: Timeframe[] = ["M1", "M5", "M15", "M30", "H1", "H4", "D1"];

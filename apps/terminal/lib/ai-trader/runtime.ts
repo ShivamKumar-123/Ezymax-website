@@ -7,7 +7,7 @@
  *
  * It runs inside the browser tab: strategies only execute while the terminal is open.
  */
-import { getInstrument, isMarketOpen, priceFeed, serverOffset, type Candle, type Quote } from "@kalks/mock";
+import { getInstrument, isMarketOpen, priceFeed, serverOffset, type Candle, type Quote } from "@ezymex/mock";
 import type { JournalLine, OrderRequest } from "../store";
 import { fmtPrice, fmtVol, pipSize, pointSize, profitAt, quoteToUsd, roundPrice, type TClosed, type TPosition } from "../trading";
 import { acquireSeries, releaseSeries, type BarSeries } from "./data";
@@ -96,7 +96,7 @@ export interface EngineInfo {
 /* Helpers                                                             */
 /* ------------------------------------------------------------------ */
 
-const STORE_KEY = (login: string) => `kalks.terminal.ai.v1.${login}`;
+const STORE_KEY = (login: string) => `ezymex.terminal.ai.v1.${login}`;
 const LOG_CAP = 400;
 const newId = () => Array.from({ length: 5 }, () => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random() * 31)]).join("");
 

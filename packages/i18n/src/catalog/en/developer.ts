@@ -232,8 +232,8 @@ const developer = {
   "assetClass.crypto": "crypto",
   "assetClass.stocks": "stocks",
 
-  // Code editor (Kalks strategy language)
-  "code.language": "Kalks strategy language",
+  // Code editor (Ezymex strategy language)
+  "code.language": "Ezymex strategy language",
   "code.checking": "Checking…",
   "code.errors": { one: "{count} error", other: "{count} errors" },
   "code.compiles": "Compiles",
@@ -280,7 +280,7 @@ const developer = {
   // Kill switch
   "kill.title": "Kill switch",
   "kill.subtitle": "Stops every strategy, webhook and API order on your accounts",
-  "kill.globalPaused": "Automated trading is paused platform-wide by Kalks risk management.",
+  "kill.globalPaused": "Automated trading is paused platform-wide by Ezymex risk management.",
   "kill.onSince": "On since {at}",
   "kill.release": "Release kill switch",
   "kill.stopAll": "Stop all automation",
@@ -362,7 +362,7 @@ const developer = {
   "docs.bearer": "Bearer (simplest)",
   "docs.hmac": "HMAC signature (recommended for bots)",
   // <code> wraps header names and paths; keep them untranslated
-  "docs.signature": "Signature = hex(HMAC-SHA256(secret, timestamp + METHOD + path with query + body)), sent with <code>X-Kalks-Key</code>, <code>X-Kalks-Timestamp</code> (unix ms, ±30 s) and <code>X-Kalks-Signature</code>. The path is signed as <code>/public/v1/…</code>. Each signature is accepted once.",
+  "docs.signature": "Signature = hex(HMAC-SHA256(secret, timestamp + METHOD + path with query + body)), sent with <code>X-Ezymex-Key</code>, <code>X-Ezymex-Timestamp</code> (unix ms, ±30 s) and <code>X-Ezymex-Signature</code>. The path is signed as <code>/public/v1/…</code>. Each signature is accepted once.",
   // "api", clientOrderId and duplicate are API values; keep them
   "docs.endpointsSub": "JSON in and out. Every order carries source “api”; a repeated clientOrderId returns status duplicate.",
   "docs.errorsSub": "Errors are {shape}",
@@ -472,9 +472,9 @@ const developer = {
 
   // Strategy marketplace
   "market.title": "Strategy marketplace",
-  "market.subtitle": "Strategies with verified track records from Kalks accounts. Copy one onto your account, or publish your own and earn from subscriptions.",
-  "market.houseChip": "House strategy · Operated by Kalks",
-  "market.houseNote": "House strategy operated by Kalks: a broker-owned live account running this strategy. The track record is only its own live trades since it started; nothing is simulated or backfilled.",
+  "market.subtitle": "Strategies with verified track records from Ezymex accounts. Copy one onto your account, or publish your own and earn from subscriptions.",
+  "market.houseChip": "House strategy · Operated by Ezymex",
+  "market.houseNote": "House strategy operated by Ezymex: a broker-owned live account running this strategy. The track record is only its own live trades since it started; nothing is simulated or backfilled.",
   // Date range, e.g. "2025-01-01 to 2025-12-31"
   "market.range": "{from} to {to}",
   "market.backtestSimulated": "Backtest · simulated",
@@ -501,7 +501,7 @@ const developer = {
   "market.subscriptionStatus": "Subscription {status}",
   "market.reviewSaved": "Review saved",
   "market.reviewFailed": "Couldn't save the review",
-  "market.trackNote": "Track record from the author's own deployment on Kalks since {since}: {days} days, net {net}. Computed from closed deals on the trading engine, not entered by the author.",
+  "market.trackNote": "Track record from the author's own deployment on Ezymex since {since}: {days} days, net {net}. Computed from closed deals on the trading engine, not entered by the author.",
   "market.riskSettings": "Risk settings",
   "market.riskLine": "Size {size} · stop {stop} · target {target}",
   "market.riskPct": "{pct}% risk",
@@ -519,7 +519,7 @@ const developer = {
   "market.cloneRules": "Clone the rules",
   "market.subscribePaid": "Subscribe · {price} USDT / month",
   "market.subscribeFree": "Subscribe for free",
-  "market.paidNote": "Paid from your Kalks wallet (USDT). Renews every 30 days; cancel any time.",
+  "market.paidNote": "Paid from your Ezymex wallet (USDT). Renews every 30 days; cancel any time.",
   "market.reviews": "Reviews ({n})",
   "market.stars": { one: "{count} star", other: "{count} stars" },
   "market.reviewPlaceholder": "How did it trade for you?",
@@ -551,7 +551,7 @@ const developer = {
   "market.popular": "Popular",
   "market.emptyTitle": "No strategies listed yet",
   "market.emptyText": "Be the first: deploy a strategy on a demo account, then publish it with its verified track record.",
-  "market.disclaimer": "Past performance does not guarantee future results. Track records come from live or demo accounts on Kalks and are labelled accordingly. Platform fee on paid subscriptions: {pct}%.",
+  "market.disclaimer": "Past performance does not guarantee future results. Track records come from live or demo accounts on Ezymex and are labelled accordingly. Platform fee on paid subscriptions: {pct}%.",
   "market.mode": "Mode",
   "market.renews": "Renews",
   "market.copyOn": "copy on #{login}",

@@ -96,7 +96,7 @@ class UpdateScreen extends ConsumerWidget {
           KButton(
             label: t('app.update.button'),
             size: KButtonSize.lg,
-            onPressed: () => launchUrl(Uri.parse('https://play.google.com/store/apps/details?id=com.kalkstrade.app'), mode: LaunchMode.externalApplication),
+            onPressed: () => launchUrl(Uri.parse('https://play.google.com/store/apps/details?id=com.ezymex.app'), mode: LaunchMode.externalApplication),
           ),
         ],
       ),

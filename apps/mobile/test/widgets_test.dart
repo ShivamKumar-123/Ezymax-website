@@ -2,11 +2,11 @@
 // golden images in light, dark and Arabic (right to left).
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/app.dart';
-import 'package:kalks/core/auth/auth_controller.dart';
-import 'package:kalks/features/dashboard/dashboard_screen.dart';
-import 'package:kalks/shell/more_screen.dart';
-import 'package:kalks/ui/ui.dart';
+import 'package:ezymex/app.dart';
+import 'package:ezymex/core/auth/auth_controller.dart';
+import 'package:ezymex/features/dashboard/dashboard_screen.dart';
+import 'package:ezymex/shell/more_screen.dart';
+import 'package:ezymex/ui/ui.dart';
 
 import 'helpers/test_app.dart';
 
@@ -58,7 +58,7 @@ void main() {
         if (locale == 'ar') {
           expect(Directionality.of(tester.element(find.byKey(const ValueKey('welcome-title')))), TextDirection.rtl);
         }
-        if (locale != 'ar' || hasArabicFont) await expectLater(find.byType(KalksApp), matchesGoldenFile('goldens/login_$name.png'));
+        if (locale != 'ar' || hasArabicFont) await expectLater(find.byType(EzymexApp), matchesGoldenFile('goldens/login_$name.png'));
         await unmount(tester);
       });
     }
@@ -131,7 +131,7 @@ void main() {
     for (final (name, theme, locale) in [('light', 'light', 'en'), ('dark', 'dark', 'en'), ('arabic', 'light', 'ar')]) {
       testWidgets('golden: shell $name', (tester) async {
         await pumpApp(tester, signedIn: true, theme: theme, locale: locale);
-        if (locale != 'ar' || hasArabicFont) await expectLater(find.byType(KalksApp), matchesGoldenFile('goldens/shell_$name.png'));
+        if (locale != 'ar' || hasArabicFont) await expectLater(find.byType(EzymexApp), matchesGoldenFile('goldens/shell_$name.png'));
         await unmount(tester);
       });
     }

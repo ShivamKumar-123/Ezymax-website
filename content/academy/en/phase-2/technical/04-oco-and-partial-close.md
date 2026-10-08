@@ -47,7 +47,7 @@ quiz:
     explanation: "Volume moves in steps of 0.01 lot, so one third of 0.10 is not possible; the nearest valid sizes are 0.03 and 0.04."
 ---
 
-Real trading plans rarely consist of a single entry and a single exit. You may want to trade a breakout without knowing which way it will go, or take some profit at a first target and hold the rest for a bigger move. Kalks Trader supports two tools built for these situations: **OCO** (one-cancels-other) order pairs and **partial close**.
+Real trading plans rarely consist of a single entry and a single exit. You may want to trade a breakout without knowing which way it will go, or take some profit at a first target and hold the rest for a bigger move. Ezymex Trader supports two tools built for these situations: **OCO** (one-cancels-other) order pairs and **partial close**.
 
 ## OCO: one cancels the other
 

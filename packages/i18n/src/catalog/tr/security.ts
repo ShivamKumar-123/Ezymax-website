@@ -8,7 +8,7 @@ const security: NsMessages<"security"> = {
   "signingOut": "Çıkış yapılıyor…",
   "resetSigningOut": "Şifrenizi sıfırlamanız için çıkışınız yapılıyor…",
   "error.generic": "Bir sorun oluştu. Lütfen tekrar deneyin.",
-  "error.network": "Kalks'a ulaşılamıyor. Bağlantınızı kontrol edip tekrar deneyin.",
+  "error.network": "Ezymex'a ulaşılamıyor. Bağlantınızı kontrol edip tekrar deneyin.",
 
   // Device labels from the browser's user agent; browser and OS brand names stay as they are
   "device.unknownBrowser": "Bilinmeyen tarayıcı",
@@ -226,7 +226,7 @@ const security: NsMessages<"security"> = {
   "page.calendar": "Takvim",
   // Investor passwords card
   "investor.title": "Yatırımcı şifreleri",
-  "investor.text": "Her işlem hesabının, Kalks Trader'da MT5 tarzı salt okunur erişim için bir yatırımcı şifresi de vardır: pozisyonlar ve geçmiş görülür, işlem yapılamaz.",
+  "investor.text": "Her işlem hesabının, Ezymex Trader'da MT5 tarzı salt okunur erişim için bir yatırımcı şifresi de vardır: pozisyonlar ve geçmiş görülür, işlem yapılamaz.",
   "investor.hint": "Bunu hesap sayfasından belirleyin veya değiştirin.",
   "investor.goToAccounts": "Hesaplara git",
   // Create / edit dialog

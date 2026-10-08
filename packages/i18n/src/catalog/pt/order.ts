@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Boleta do Kalks Trader, janela Nova Ordem, DOM, diálogos de posição/pendente e notificações de negociação.
+// Boleta do Ezymex Trader, janela Nova Ordem, DOM, diálogos de posição/pendente e notificações de negociação.
 const order: NsMessages<"order"> = {
   // Tipos de ordem
   "type.market": "Mercado",
@@ -269,9 +269,9 @@ const order: NsMessages<"order"> = {
 
   // Diálogos de especificação / sobre
   "spec.title": "Especificação · {symbol}",
-  "about.title": "Sobre o Kalks Trader",
+  "about.title": "Sobre o Ezymex Trader",
   "about.version": "Versão {version} · build {build} · Web x64",
-  "about.text": "Sala de negociação multiativos da Kalks Global Markets. As cotações vêm do gateway de preços da Kalks; o horário do servidor é GMT+3.",
+  "about.text": "Sala de negociação multiativos da Ezymex Global Markets. As cotações vêm do gateway de preços da Ezymex; o horário do servidor é GMT+3.",
 
   // Motivos de rejeição (termos do diário do MT5)
   "reject.market_closed": "Mercado fechado",

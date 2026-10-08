@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader order ticket, New Order window, DOM ladder, position/pending dialogs and trade toasts.
+// Ezymex Trader order ticket, New Order window, DOM ladder, position/pending dialogs and trade toasts.
 const order: NsMessages<"order"> = {
   // Order types (ticket type switcher)
   "type.market": "মার্কেট",
@@ -269,9 +269,9 @@ const order: NsMessages<"order"> = {
 
   // Specification / About dialogs
   "spec.title": "স্পেসিফিকেশন · {symbol}",
-  "about.title": "Kalks Trader সম্পর্কে",
+  "about.title": "Ezymex Trader সম্পর্কে",
   "about.version": "ভার্সন {version} · বিল্ড {build} · Web x64",
-  "about.text": "Kalks Global Markets-এর মাল্টি-অ্যাসেট ট্রেডিং রুম। কোট Kalks প্রাইস গেটওয়ে থেকে আসে; সার্ভার সময় GMT+3।",
+  "about.text": "Ezymex Global Markets-এর মাল্টি-অ্যাসেট ট্রেডিং রুম। কোট Ezymex প্রাইস গেটওয়ে থেকে আসে; সার্ভার সময় GMT+3।",
 
   // Rejection reasons
   "reject.market_closed": "মার্কেট বন্ধ",

@@ -1,18 +1,18 @@
 import type { NsMessages } from "../../core";
 
-// Kalks FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Kalks Trader in options mode.
+// Ezymex FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Ezymex Trader in options mode.
 const options: NsMessages<"options"> = {
   // Navigation entry
   "nav.title": "Opções",
 
   // Page header
-  "page.title": "Kalks FX Options",
-  "page.subtitle": "Compre ou venda opções de forex, ouro, prata e petróleo, direto no Kalks Trader.",
+  "page.title": "Ezymex FX Options",
+  "page.subtitle": "Compre ou venda opções de forex, ouro, prata e petróleo, direto no Ezymex Trader.",
   "page.statusReady": "Pronto para negociar",
   "page.learnCourse": "Curso de opções",
 
   // Hero card
-  "hero.eyebrow": "Novidade no Kalks Trader",
+  "hero.eyebrow": "Novidade no Ezymex Trader",
   "hero.title": "Opções em 13 mercados, sem complicação",
   "hero.text": "Opções europeias sobre os principais pares de moedas e cruzamentos, ouro, prata e petróleo bruto. Escolha vencimentos diários, semanais ou mensais. Todas as opções são liquidadas em dinheiro, em dólares americanos, então você nunca recebe a entrega física de nada.",
   "hero.feature.underlyings.title": "13 ativos subjacentes",
@@ -56,16 +56,16 @@ const options: NsMessages<"options"> = {
   "terms.inShort": "Em resumo",
   "terms.point.buy": "Comprar uma opção: o máximo que você pode perder é o que paga.",
   "terms.point.sell": "Vender uma opção pode fazer você perder mais do que recebe, e exige margem.",
-  "terms.point.prices": "Os preços são formados no livro de ofertas da Kalks e também cotados diretamente pela Kalks.",
+  "terms.point.prices": "Os preços são formados no livro de ofertas da Ezymex e também cotados diretamente pela Ezymex.",
   "terms.point.settle": "As opções são liquidadas em dinheiro no vencimento.",
   "terms.englishNote": "O texto completo abaixo é a versão vinculante, em inglês.",
   "terms.acceptedOn": "Você aceitou a versão {version} em {date}.",
   "terms.close": "Fechar",
   "terms.unavailable": "Os termos de opções não estão disponíveis no momento. Tente novamente mais tarde.",
 
-  // Kalks Trader button
-  "trade.ready": "Tudo pronto. As opções abrem no Kalks Trader, na mesma conta dos seus CFDs.",
-  "trade.cta": "Negociar opções no Kalks Trader",
+  // Ezymex Trader button
+  "trade.ready": "Tudo pronto. As opções abrem no Ezymex Trader, na mesma conta dos seus CFDs.",
+  "trade.cta": "Negociar opções no Ezymex Trader",
   "trade.chooseAccount": "Escolha uma conta",
   "trade.noAccount": "Você precisa de uma conta de negociação ativa para negociar opções.",
   "trade.openAccount": "Abrir uma conta",
@@ -74,7 +74,7 @@ const options: NsMessages<"options"> = {
   "trade.demo": "Demo",
 
   // Key facts card
-  "facts.title": "Como funcionam as Kalks FX Options",
+  "facts.title": "Como funcionam as Ezymex FX Options",
   "facts.style": "Estilo europeu: exercidas automaticamente no vencimento, nunca antes.",
   "facts.premium": "Prêmio em USD por contrato; o comprador o paga integralmente na abertura.",
   "facts.contracts": "Um contrato: 10,000 unidades de uma moeda, 1 oz de ouro, 50 oz de prata ou 10 barris de petróleo.",

@@ -5,8 +5,8 @@
 
 import * as React from "react";
 import { Globe2, Laptop, Monitor, Smartphone, Tablet } from "lucide-react";
-import { intlTag, type T } from "@kalks/i18n";
-import { tr } from "@kalks/i18n/react";
+import { intlTag, type T } from "@ezymex/i18n";
+import { tr } from "@ezymex/i18n/react";
 
 export type SecError = { status: number; code: string; message: string; field?: string };
 export type SecResult<T> = { ok: true; data: T } | { ok: false; error: SecError };

@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { FileText, Minus, Plus, ShieldAlert, UploadCloud, X } from "lucide-react";
-import { Button, Dialog, Segmented, cn } from "@kalks/ui";
-import { FIN_ADJ_REASONS, FIN_ADJ_THRESHOLD, FIN_CLIENTS, type FinAdjustment } from "@kalks/mock/admin-finance";
+import { Button, Dialog, Segmented, cn } from "@ezymex/ui";
+import { FIN_ADJ_REASONS, FIN_ADJ_THRESHOLD, FIN_CLIENTS, type FinAdjustment } from "@ezymex/mock/admin-finance";
 import { MiniField, NumInput, PersonCell, Select, TextArea } from "@/components/config/kit";
 import { usd } from "./shared";
 

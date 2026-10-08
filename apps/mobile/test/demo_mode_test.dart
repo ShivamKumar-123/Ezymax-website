@@ -2,14 +2,14 @@
 // transport (never the browser, never the network); Log out ends it and clears the flag. The app keeps its own
 // transport choice here (sampleTransport: false), so the switch itself is under test.
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/core/api/api_providers.dart';
-import 'package:kalks/core/auth/auth_controller.dart';
-import 'package:kalks/core/auth/secure_store.dart';
-import 'package:kalks/core/prefs.dart';
-import 'package:kalks/features/auth/login_screen.dart';
-import 'package:kalks/features/dashboard/dashboard_screen.dart';
-import 'package:kalks/preview/preview_adapter.dart';
-import 'package:kalks/ui/ui.dart';
+import 'package:ezymex/core/api/api_providers.dart';
+import 'package:ezymex/core/auth/auth_controller.dart';
+import 'package:ezymex/core/auth/secure_store.dart';
+import 'package:ezymex/core/prefs.dart';
+import 'package:ezymex/features/auth/login_screen.dart';
+import 'package:ezymex/features/dashboard/dashboard_screen.dart';
+import 'package:ezymex/preview/preview_adapter.dart';
+import 'package:ezymex/ui/ui.dart';
 
 import 'helpers/test_app.dart';
 
@@ -42,8 +42,8 @@ void main() {
     expect(c.read(apiProvider).dio.httpClientAdapter, isA<PreviewAdapter>());
     // the session store is seeded like a real sign-in (a restart lands in the demo again)
     final store = c.read(secureStoreProvider) as MemorySecureStore;
-    expect(store.values['kalks.session'], contains('preview_'));
-    expect(store.values['kalks.user'], contains('arjun.mehta@example.com'));
+    expect(store.values['ezymex.session'], contains('preview_'));
+    expect(store.values['ezymex.user'], contains('arjun.mehta@example.com'));
     await unmount(tester);
   });
 
@@ -68,8 +68,8 @@ void main() {
     expect(c.read(prefsProvider).demo, isFalse);
     expect(c.read(httpAdapterProvider), isNull);
     final store = c.read(secureStoreProvider) as MemorySecureStore;
-    expect(store.values.containsKey('kalks.session'), isFalse);
-    expect(store.values.containsKey('kalks.user'), isFalse);
+    expect(store.values.containsKey('ezymex.session'), isFalse);
+    expect(store.values.containsKey('ezymex.user'), isFalse);
     await unmount(tester);
   });
 

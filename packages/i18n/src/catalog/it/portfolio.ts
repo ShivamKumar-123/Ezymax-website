@@ -71,7 +71,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "kpi.demo": "{count} demo",
   "alloc.title": "Ripartizione dell'equity",
   "alloc.subtitle": "Conti reali, controvalore in USD",
-  "alloc.noEquity": "I tuoi conti reali non hanno ancora equity. Finanziali dal tuo wallet Kalks.",
+  "alloc.noEquity": "I tuoi conti reali non hanno ancora equity. Finanziali dal tuo wallet Ezymex.",
   "alloc.noLive": "Apri un conto reale per vedere qui la ripartizione della tua equity.",
   "accounts.subtitle": "Equity e margine per conto",
   "accounts.manage": "Gestisci",

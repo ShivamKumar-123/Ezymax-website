@@ -13,9 +13,9 @@
  */
 import * as React from "react";
 import { AlertTriangle, ChartSpline, History, Plus, RefreshCw, RotateCcw, Send, Upload, X } from "lucide-react";
-import { IS_DEMO } from "@kalks/mock/mode";
-import { mockOptionsRequest } from "@kalks/mock/admin-options";
-import { Button, Card, CardHeader, Chip, EmptyState, IconButton, KpiCard, PageHeader, Reveal, Segmented, cn, formatNumber } from "@kalks/ui";
+import { IS_DEMO } from "@ezymex/mock/mode";
+import { mockOptionsRequest } from "@ezymex/mock/admin-options";
+import { Button, Card, CardHeader, Chip, EmptyState, IconButton, KpiCard, PageHeader, Reveal, Segmented, cn, formatNumber } from "@ezymex/ui";
 import { ErrorState, TableSkeleton, useNow, ago, when } from "@/components/live/kit";
 import { LineChart } from "@/components/analytics/line-chart";
 import type { AdminExpiry, Pillar, Smile, SurfaceResp, Underlying } from "./types";

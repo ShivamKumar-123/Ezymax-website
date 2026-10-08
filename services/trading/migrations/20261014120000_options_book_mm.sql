@@ -1,4 +1,4 @@
--- Kalks FX Options order book, second milestone (docs/OPTIONS-EXCHANGE.md §4, §5, §8, §11, §12): the Kalks market
+-- Ezymex FX Options order book, second milestone (docs/OPTIONS-EXCHANGE.md §4, §5, §8, §11, §12): the Ezymex market
 -- maker's accounts and desk pauses, four-eyes approvals (fill busts, book rollout), the liquidation log's account
 -- kind, the market-maker group and bust bookkeeping on the tape.
 
@@ -63,6 +63,6 @@ BEGIN
     FOREACH t IN ARRAY ARRAY['option_mm_accounts', 'option_mm_pauses', 'option_approvals'] LOOP
         EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
         EXECUTE format('DROP POLICY IF EXISTS tenant_isolation ON %I', t);
-        EXECUTE format('CREATE POLICY tenant_isolation ON %I USING (tenant_id = NULLIF(current_setting(''kalks.tenant_id'', true), '''')::bigint)', t);
+        EXECUTE format('CREATE POLICY tenant_isolation ON %I USING (tenant_id = NULLIF(current_setting(''ezymex.tenant_id'', true), '''')::bigint)', t);
     END LOOP;
 END $$;

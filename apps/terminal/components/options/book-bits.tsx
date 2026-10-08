@@ -4,9 +4,9 @@
 // premium tick), the "Book" badge, order status chips, quantities and prices in USD per contract.
 import * as React from "react";
 import { BookOpenText } from "lucide-react";
-import { OPTION_SPEC, parseSeriesCode } from "@kalks/mock/options";
-import { cn } from "@kalks/ui";
-import { useT } from "@kalks/i18n/react";
+import { OPTION_SPEC, parseSeriesCode } from "@ezymex/mock/options";
+import { cn } from "@ezymex/ui";
+import { useT } from "@ezymex/i18n/react";
 import { usdPerUnitOf } from "@/lib/options/math";
 import { premiumTickOf, usdPerUnitOfQuote } from "@/lib/options/normalize";
 import { underlyingOf, useOpt, useSeriesQuote } from "@/lib/options-store";
@@ -40,7 +40,7 @@ export const usdOfUnit = (v: number | null | undefined, k: number) => (v === nul
 
 export const qty = (n: number | null | undefined) => (n === null || n === undefined || !Number.isFinite(n) ? "—" : n.toLocaleString("en-US", { maximumFractionDigits: 2 }));
 
-/** "Book": prices on screen are the order book (clients and the Kalks market maker), not house prices. */
+/** "Book": prices on screen are the order book (clients and the Ezymex market maker), not house prices. */
 export function BookBadge({ className }: { className?: string }) {
   const t = useT();
   return (
@@ -71,15 +71,15 @@ export function useTypeLabel() {
   return React.useCallback((type: string) => t.dyn(`trader.opt.ord.type.${type}`, type.replace(/_/g, " ")), [t]);
 }
 
-/** Barrier legs and positions are priced by Kalks, not traded on the order book (§5). */
-export function KalksQuotedTag({ className }: { className?: string }) {
+/** Barrier legs and positions are priced by Ezymex, not traded on the order book (§5). */
+export function EzymexQuotedTag({ className }: { className?: string }) {
   const t = useT();
   return (
-    <span title={t("trader.opt.rfq.kalksQuotedHint")} className={cn("inline-flex h-[16px] shrink-0 items-center rounded-[3px] border border-gold/35 bg-gold-soft px-1 text-[9px] font-semibold text-gold", className)}>
-      {t("trader.opt.rfq.kalksQuoted")}
+    <span title={t("trader.opt.rfq.ezymexQuotedHint")} className={cn("inline-flex h-[16px] shrink-0 items-center rounded-[3px] border border-gold/35 bg-gold-soft px-1 text-[9px] font-semibold text-gold", className)}>
+      {t("trader.opt.rfq.ezymexQuoted")}
     </span>
   );
 }
 
-/** A series code with a barrier suffix (`…-C-UO1.1800`) or an option with a barrier: Kalks-quoted. */
+/** A series code with a barrier suffix (`…-C-UO1.1800`) or an option with a barrier: Ezymex-quoted. */
 export const isBarrierSeries = (code: string) => /^[A-Z0-9]{3,12}-\d{8}-[0-9.]+-[CP]-[A-Z0-9._]+$/.test(code);

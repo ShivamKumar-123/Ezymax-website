@@ -1,7 +1,7 @@
 import type { NsMessages } from "../../core";
 
 // Client Area prop trading: challenge catalogue, my challenges, payouts, certificates.
-// "Kalks", "Kalks Prop", "Kalks Trader", "USDT", "New York" and "17:00" stay as they are.
+// "Ezymex", "Ezymex Prop", "Ezymex Trader", "USDT", "New York" and "17:00" stay as they are.
 const prop: NsMessages<"prop"> = {
   // Error next-step buttons
   "errorLink.deposit": "Nạp USDT",
@@ -102,13 +102,13 @@ const prop: NsMessages<"prop"> = {
 
   // Public certificate verification page (/verify/<code>)
   "verify.shellTitle": "Xác minh chứng chỉ",
-  "verify.footer": "Tài khoản Kalks Prop là tài khoản mô phỏng. Chứng chỉ thể hiện kết quả của nhà giao dịch trong một thử thách Kalks Prop; tên nhà giao dịch được rút gọn thành tên và chữ cái đầu của họ.",
+  "verify.footer": "Tài khoản Ezymex Prop là tài khoản mô phỏng. Chứng chỉ thể hiện kết quả của nhà giao dịch trong một thử thách Ezymex Prop; tên nhà giao dịch được rút gọn thành tên và chữ cái đầu của họ.",
   "verify.linkCopied": "Đã sao chép liên kết",
   "verify.copyFailed": "Không thể sao chép liên kết",
   "verify.copyLink": "Sao chép liên kết",
   "verify.downloadPng": "Tải PNG",
   "verify.notFoundTitle": "Không tìm thấy chứng chỉ",
-  "verify.notFoundText": "Không có chứng chỉ Kalks Prop nào với số này. Hãy kiểm tra liên kết hoặc đề nghị nhà giao dịch chia sẻ lại.",
+  "verify.notFoundText": "Không có chứng chỉ Ezymex Prop nào với số này. Hãy kiểm tra liên kết hoặc đề nghị nhà giao dịch chia sẻ lại.",
   "verify.unavailableTitle": "Tính năng xác minh hiện không khả dụng",
   "verify.unavailableText": "Chúng tôi không thể kiểm tra chứng chỉ này lúc này. Vui lòng thử lại sau vài phút.",
   "verify.kind.pass": "Đã vượt qua giai đoạn",
@@ -122,9 +122,9 @@ const prop: NsMessages<"prop"> = {
   "verify.row.issued": "Ngày cấp",
   "verify.row.number": "Số chứng chỉ",
   "verify.validTitle": "Chứng chỉ hợp lệ",
-  "verify.validText": "Do Kalks Prop cấp và đã được đối chiếu với hồ sơ của chúng tôi.",
+  "verify.validText": "Do Ezymex Prop cấp và đã được đối chiếu với hồ sơ của chúng tôi.",
   "verify.revokedTitle": "Chứng chỉ đã bị thu hồi",
-  "verify.revokedText": "Chứng chỉ này đã bị Kalks thu hồi và không còn hiệu lực.",
+  "verify.revokedText": "Chứng chỉ này đã bị Ezymex thu hồi và không còn hiệu lực.",
   "verify.valid": "Hợp lệ",
   "verify.revoked": "Đã thu hồi",
   // Certificate titles
@@ -249,8 +249,8 @@ const prop: NsMessages<"prop"> = {
   "checkout.goToMine": "Đến Thử thách của tôi",
   "checkout.readyTitle": "Thử thách của bạn đã sẵn sàng",
   "checkout.paidText": "Đã thanh toán {fee} từ ví USDT và tài khoản {size} của bạn đã được mở. Các quy tắc có hiệu lực từ bây giờ.",
-  "checkout.savePasswords": "Hãy lưu các mật khẩu này ngay: chúng chỉ hiển thị một lần và chúng tôi không lưu trữ. Nút Giao dịch đăng nhập bạn vào Kalks Trader không cần mật khẩu, nên bạn luôn có thể giao dịch từ đây.",
-  "checkout.passwordsShown": "Mật khẩu giao dịch đã được hiển thị khi giao dịch mua này được xác nhận lần đầu. Dùng nút Giao dịch để mở Kalks Trader: bạn sẽ được đăng nhập không cần mật khẩu.",
+  "checkout.savePasswords": "Hãy lưu các mật khẩu này ngay: chúng chỉ hiển thị một lần và chúng tôi không lưu trữ. Nút Giao dịch đăng nhập bạn vào Ezymex Trader không cần mật khẩu, nên bạn luôn có thể giao dịch từ đây.",
+  "checkout.passwordsShown": "Mật khẩu giao dịch đã được hiển thị khi giao dịch mua này được xác nhận lần đầu. Dùng nút Giao dịch để mở Ezymex Trader: bạn sẽ được đăng nhập không cần mật khẩu.",
 
   // Account credentials
   "cred.login": "Đăng nhập",
@@ -377,7 +377,7 @@ const prop: NsMessages<"prop"> = {
   "account.passed": "Đã vượt qua · chỉ xem",
   "account.failed": "Thất bại · đã vô hiệu hóa",
   "account.opening": "Đang mở",
-  "account.tradableText": "Nút Giao dịch mở Kalks Trader đã đăng nhập vào tài khoản này. Mật khẩu chỉ được hiển thị một lần khi mua.",
+  "account.tradableText": "Nút Giao dịch mở Ezymex Trader đã đăng nhập vào tài khoản này. Mật khẩu chỉ được hiển thị một lần khi mua.",
   "account.passedText": "Giai đoạn này đã hoàn tất. Tài khoản chỉ xem; hãy giao dịch ở giai đoạn tiếp theo.",
   "account.failedText": "Giao dịch trên tài khoản này đã bị vô hiệu hóa.",
   "account.unavailableText": "Không thể giao dịch trên tài khoản này.",

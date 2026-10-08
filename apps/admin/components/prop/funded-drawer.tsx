@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { ArrowUpCircle, Ban, Pause, Percent, Play } from "lucide-react";
-import { Button, Chip, CopyButton, Dialog, EquityChart, Menu, Progress, StatusChip, cn } from "@kalks/ui";
+import { Button, Chip, CopyButton, Dialog, EquityChart, Menu, Progress, StatusChip, cn } from "@ezymex/ui";
 import { MiniStat, PersonCell, SegBar, Slider, auditToast, type useReason } from "@/components/config/kit";
 import { PAYOUTS, TODAY, equityPath, fmtDate, planById, type FundedAccount } from "./data";
 

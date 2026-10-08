@@ -1,0 +1,24 @@
+[Unit]
+Description=Ezymex wallet (:8095)
+After=network-online.target postgresql.service ezymex-gateway.service ezymex-trading.service
+Wants=network-online.target
+
+[Service]
+User=ezymex
+WorkingDirectory=/home/ezymex/ezymex/services/wallet
+EnvironmentFile=/home/ezymex/ezymex/.env.local
+Environment=RUST_LOG=info
+Environment=WALLET_ENV=production
+Environment=WALLET_BIND=127.0.0.1:8095
+# watcher / scanner / transfer recovery: this must be the only instance with workers on
+Environment=WALLET_WORKERS=true
+ExecStart=/home/ezymex/ezymex/target/release/wallet
+Restart=always
+RestartSec=3
+KillSignal=SIGINT
+TimeoutStopSec=20
+NoNewPrivileges=true
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

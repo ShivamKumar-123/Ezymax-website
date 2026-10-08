@@ -15,13 +15,13 @@ type Method = "GET" | "POST" | "PUT" | "PATCH";
 
 export async function growth<T = unknown>(path: string, init: { method?: Method; body?: unknown; staff: GatewayStaff; timeoutMs?: number }): Promise<{ status: number; data: T }> {
   const headers: Record<string, string> = {
-    "x-kalks-internal": GROWTH_TOKEN,
-    "x-kalks-tenant": init.staff.tenant?.slug || "kalks",
-    "x-kalks-staff-id": String(init.staff.id),
-    "x-kalks-staff-name": encodeURIComponent(init.staff.name || init.staff.email),
-    "x-kalks-staff-role": init.staff.role,
+    "x-ezymex-internal": GROWTH_TOKEN,
+    "x-ezymex-tenant": init.staff.tenant?.slug || "ezymex",
+    "x-ezymex-staff-id": String(init.staff.id),
+    "x-ezymex-staff-name": encodeURIComponent(init.staff.name || init.staff.email),
+    "x-ezymex-staff-role": init.staff.role,
     // the marketing permissions the BFF resolved (gateway RBAC, custom roles included); the service honours them
-    "x-kalks-staff-perms": MARKETING_PERMS.filter((p) => marketingAllow(init.staff, p)).join(",") || "none",
+    "x-ezymex-staff-perms": MARKETING_PERMS.filter((p) => marketingAllow(init.staff, p)).join(",") || "none",
   };
   if (init.body !== undefined) headers["content-type"] = "application/json";
   try {

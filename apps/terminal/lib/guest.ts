@@ -1,6 +1,6 @@
 import { toast } from "@/lib/notify";
-import { IS_LIVE, type TradingAccount } from "@kalks/mock";
-import { tr } from "@kalks/i18n/react";
+import { IS_LIVE, type TradingAccount } from "@ezymex/mock";
+import { tr } from "@ezymex/i18n/react";
 
 /**
  * Live builds (`GUEST_MODE`): accounts, orders and positions come from the trading engine. Until a
@@ -30,7 +30,7 @@ export const GUEST_ACCOUNT: TradingAccount = {
   group: "Standard",
   mode: "hedging",
   cent: false,
-  server: "Kalks Market Data",
+  server: "Ezymex Market Data",
   leverage: 1,
   currency: "USD",
   balance: 0,
@@ -55,7 +55,7 @@ export function guestNotice(what?: string) {
   if (now - lastNotice < 600) return; // one toast per click burst (e.g. double-clicks)
   lastNotice = now;
   toast(tr("trader.guest.title"), {
-    id: "kalks-guest",
+    id: "ezymex-guest",
     description: `${what ? `${tr("trader.guest.needsAccount", { what })} ` : ""}${tr("trader.guest.noticeText")}`,
     action: { label: tr("trader.guest.logIn"), onClick: () => window.location.assign(LOGIN_URL) },
   });

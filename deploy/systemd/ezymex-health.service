@@ -1,0 +1,6 @@
+[Unit]
+Description=Ezymex production watchdog
+
+[Service]
+Type=oneshot
+ExecStart=/home/ezymex/ezymex/deploy/healthcheck.sh

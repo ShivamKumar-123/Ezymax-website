@@ -4,8 +4,8 @@ import * as React from "react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
 import { Activity, Box, Cpu, Database, FileText, HardDrive, MoreHorizontal, Radio, RotateCw, Server, Trash2, Wallet, Zap, type LucideIcon } from "lucide-react";
-import { Chip, IconButton, Menu, Sparkline, Tooltip, cn, formatDateTime } from "@kalks/ui";
-import type { BrkIncident, BrkService, BrkSvcStatus } from "@kalks/mock/admin-platform-brokers";
+import { Chip, IconButton, Menu, Sparkline, Tooltip, cn, formatDateTime } from "@ezymex/ui";
+import type { BrkIncident, BrkService, BrkSvcStatus } from "@ezymex/mock/admin-platform-brokers";
 import { ConfirmDialog } from "./kit";
 
 export const SVC_ICON: Record<string, LucideIcon> = {

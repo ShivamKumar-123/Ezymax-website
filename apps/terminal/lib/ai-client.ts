@@ -1,11 +1,11 @@
 // Browser side of the AI gate (lib/ai-guard.ts): the headers a paid AI call sends and the plain-language text for a
 // refusal (not signed in, over the per-user budget), in the reader's language.
-import type { T as Translate } from "@kalks/i18n";
+import type { T as Translate } from "@ezymex/i18n";
 
 export type AiDeniedCode = "signin" | "forbidden" | "rate_minute" | "rate_day" | "unavailable";
 
 /** JSON headers plus the acting login, so the server checks that account's session. */
-export const aiHeaders = (login?: string): Record<string, string> => ({ "content-type": "application/json", ...(login && /^\d{8}$/.test(login) ? { "x-kalks-login": login } : {}) });
+export const aiHeaders = (login?: string): Record<string, string> => ({ "content-type": "application/json", ...(login && /^\d{8}$/.test(login) ? { "x-ezymex-login": login } : {}) });
 
 /** The refusal text for a gate code, or null when the response is not a refusal. */
 export function aiDeniedText(t: Translate, code: unknown): string | null {

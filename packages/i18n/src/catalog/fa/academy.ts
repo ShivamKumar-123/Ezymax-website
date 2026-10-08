@@ -20,7 +20,7 @@ const academy: NsMessages<"academy"> = {
   "practice.demo": "تمرین روی دمو",
   "practice.openFreeDemo": "افتتاح حساب دمو رایگان",
   "practice.openDemo": "افتتاح دمو",
-  "practice.inTrader": "تمرین در Kalks Trader",
+  "practice.inTrader": "تمرین در Ezymex Trader",
 
   // Levels (sent by the Academy service)
   "level.beginner": "مبتدی",
@@ -31,12 +31,12 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "تحلیل بنیادی",
   "track.technical": "تحلیل تکنیکال",
-  // Product track of the Kalks FX Options elective (phase 9)
+  // Product track of the Ezymex FX Options elective (phase 9)
   "track.options": "معاملات اختیار معامله",
   "trackShort.fundamental": "بنیادی",
   "trackShort.technical": "تکنیکال",
   "trackShort.options": "اختیار معامله",
-  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  // Chip on a product course (e.g. Ezymex FX Options) that sits outside the eight core phases and can be taken at any time
   elective: "اختیاری",
 
   // Durations (h = hours, m = minutes)
@@ -52,7 +52,7 @@ const academy: NsMessages<"academy"> = {
   "home.pathText": "هر مرحله اصلی یک مسیر بنیادی و یک مسیر تکنیکال، یک آزمون نهایی و یک گواهینامه دارد.",
   // Section under the learning path listing the electives
   "home.electivesTitle": "دوره‌های اختیاری",
-  "home.electivesText": "دوره‌هایی درباره محصولات Kalks. هر زمان که بخواهید می‌توانید آن‌ها را بگذرانید: هر کدام آزمون نهایی و گواهینامه خود را دارد.",
+  "home.electivesText": "دوره‌هایی درباره محصولات Ezymex. هر زمان که بخواهید می‌توانید آن‌ها را بگذرانید: هر کدام آزمون نهایی و گواهینامه خود را دارد.",
   "hero.allDone": "همه فصل‌ها تکمیل شد",
   "hero.continue": "ادامه یادگیری",
   "hero.upNext": "بعدی",
@@ -220,7 +220,7 @@ const academy: NsMessages<"academy"> = {
   "callout.example": "مثال",
   "callout.tip": "نکته",
   "callout.note": "یادداشت",
-  "callout.inKalksTrader": "در Kalks Trader",
+  "callout.inEzymexTrader": "در Ezymex Trader",
   diagram: "نمودار",
 };
 export default academy;

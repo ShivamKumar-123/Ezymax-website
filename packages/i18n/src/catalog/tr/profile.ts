@@ -4,7 +4,7 @@ const profile: NsMessages<"profile"> = {
   // Profile page (shared)
   title: "Profil",
   subtitle: "Kişisel bilgileriniz ve hesap tercihleriniz.",
-  liveSubtitle: "Kalks'a kayıtlı kişisel bilgileriniz.",
+  liveSubtitle: "Ezymex'a kayıtlı kişisel bilgileriniz.",
   memberSince: "Üyelik tarihi: {date}",
   notVerified: "Doğrulanmadı",
   "photo.upload": "Yeni fotoğraf yükleyin",
@@ -59,7 +59,7 @@ const profile: NsMessages<"profile"> = {
   "data.exportRequested": "Veri dışa aktarımı talep edildi",
   "data.exportRequestedHint": "72 saat içinde e-posta ile bir indirme bağlantısı alacaksınız.",
   "data.export": "Verilerimi dışa aktar",
-  "closure.title": "Kalks hesabınızı kapatın",
+  "closure.title": "Ezymex hesabınızı kapatın",
   "closure.description": "Tüm işlem hesaplarının bakiyesi sıfır olmalı ve açık pozisyon bulunmamalıdır.",
   "closure.request": "Hesap kapatma talep et",
   "closure.submitted": "Kapatma talebi gönderildi",

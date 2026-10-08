@@ -259,7 +259,7 @@ pub async fn run_one(app: &App, id: i64, trigger: &str, actor: &Actor) -> ApiRes
         let (tables, summary) = report_tables(app, &tenant, &report, from, to).await.map_err(|e| anyhow::anyhow!("{e:?}"))?;
         let (bytes, ctype, ext) = if format == "csv" { (export::csv(&tables), "text/csv", "csv") } else { (export::xlsx(&tables)?, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx") };
         let size = bytes.len();
-        let file = format!("kalks-{report}-{}-{}.{ext}", day(from), day(to - Duration::seconds(1)));
+        let file = format!("ezymex-{report}-{}-{}.{ext}", day(from), day(to - Duration::seconds(1)));
         let lines = summary_lines(&summary);
         let text = format!("{name}\n{label}, {span} (server time)\n\n{}\n\nThe full report is attached.\n", lines.join("\n"));
         let html = format!(
@@ -272,7 +272,7 @@ pub async fn run_one(app: &App, id: i64, trigger: &str, actor: &Actor) -> ApiRes
         );
         match &app.mailer {
             Some(m) => {
-                m.send(Mail { to: &recipients, subject: &format!("Kalks report: {name} ({span})"), text: &text, html: &html, attachment: Some((&file, ctype, bytes)) }).await?;
+                m.send(Mail { to: &recipients, subject: &format!("Ezymex report: {name} ({span})"), text: &text, html: &html, attachment: Some((&file, ctype, bytes)) }).await?;
                 Ok(("sent".to_string(), size))
             }
             None => {
@@ -348,9 +348,9 @@ mod tests {
 
     #[test]
     fn validates_recipients() {
-        let mut s = ScheduleIn { name: "Daily P&L".into(), report: "pnl".into(), format: None, frequency: "daily".into(), weekday: None, month_day: None, hour: Some(7), recipients: vec!["Ops@Kalks.com ".into()], enabled: None };
+        let mut s = ScheduleIn { name: "Daily P&L".into(), report: "pnl".into(), format: None, frequency: "daily".into(), weekday: None, month_day: None, hour: Some(7), recipients: vec!["Ops@Ezymex.com ".into()], enabled: None };
         s.validate().unwrap();
-        assert_eq!(s.recipients, vec!["ops@kalks.com"]);
+        assert_eq!(s.recipients, vec!["ops@ezymex.com"]);
         s.recipients = vec!["bad".into()];
         assert!(s.validate().is_err());
     }

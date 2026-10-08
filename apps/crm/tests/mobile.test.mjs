@@ -23,12 +23,12 @@ const TOKENS = {
   staffFull: `s.${"f".repeat(43)}`,
   blocked: "b".repeat(43),
 };
-const USER = { id: 42, email: "arjun@example.com", first_name: "Arjun", last_name: "Mehta", name: "Arjun Mehta", kyc_status: "verified", tenant: { slug: "kalks", name: "Kalks" } };
+const USER = { id: 42, email: "arjun@example.com", first_name: "Arjun", last_name: "Mehta", name: "Arjun Mehta", kyc_status: "verified", tenant: { slug: "ezymex", name: "Ezymex" } };
 const VIEWER = { id: 7, label: "Accountant", username: "acc", accounts: ["50000001"], sections: ["accounts", "wallet"], expires_at: null, status: "active", last_login_at: null, created_at: "2026-09-01T00:00:00Z" };
 const SESSION = { token: TOKENS.user, expires_at: "2026-10-15T00:00:00Z" };
 
 const TENANTS = {
-  "app.kalkstrade.com": { tenant: { slug: "kalks", name: "Kalks", status: "active", brand: {} }, maintenance: { active: false, enabled: false, message: "", until: null }, modules: { wallet: true, prop: true }, flags: { demo_accounts: true }, branding: { slug: "kalks", name: "Kalks", default: true, urls: { trade: "https://trade.kalkstrade.com" } } },
+  "app.ezymex.com": { tenant: { slug: "ezymex", name: "Ezymex", status: "active", brand: {} }, maintenance: { active: false, enabled: false, message: "", until: null }, modules: { wallet: true, prop: true }, flags: { demo_accounts: true }, branding: { slug: "ezymex", name: "Ezymex", default: true, urls: { trade: "https://trade.ezymex.com" } } },
   "app.broker.test": { tenant: { slug: "acme", name: "Acme FX", status: "active", brand: {} }, maintenance: { active: false, enabled: false, message: "", until: null }, modules: { prop: false }, flags: {}, branding: { slug: "acme", name: "Acme FX", default: false, logo_url: "https://cdn.acme.test/logo.png", primary: "#12AB34", accent: "red", support_email: "help@acme.test", urls: { trade: "https://trade.broker.test", website: "https://acme.test" } } },
   "down.broker.test": { tenant: { slug: "down", name: "Down", status: "active", brand: {} }, maintenance: { active: true, enabled: true, message: "Back at 10:00", until: "2026-10-08T10:00:00Z" }, modules: {}, flags: {} },
 };
@@ -61,7 +61,7 @@ before(async () => {
   gateway = await stub("gateway", (req, body) => {
     const url = new URL(req.url, "http://x");
     const p = url.pathname;
-    if (p === "/v1/public/tenant-config") return [200, TENANTS[req.headers["x-kalks-host"]] ?? TENANTS["app.kalkstrade.com"]];
+    if (p === "/v1/public/tenant-config") return [200, TENANTS[req.headers["x-ezymex-host"]] ?? TENANTS["app.ezymex.com"]];
     if (p === "/v1/auth/login") {
       if (body?.email === "blocked@example.com") return [403, { error: { code: "account_suspended", message: "This account is suspended." } }];
       if (body?.email === "newdevice@example.com") return [200, { status: "otp_required", challenge: "c-1", purpose: "login", email_masked: "n•••@example.com", expires_in: 600, resend_in: 30 }];
@@ -99,8 +99,8 @@ before(async () => {
   process.env.GATEWAY_URL = `http://127.0.0.1:${gateway.address().port}`;
   process.env.WALLET_URL = `http://127.0.0.1:${walletSvc.address().port}`;
   process.env.SUPPORT_URL = `http://127.0.0.1:${supportSvc.address().port}`;
-  process.env.NEXT_PUBLIC_TERMINAL_URL = "https://trade.kalkstrade.com";
-  process.env.NEXT_PUBLIC_MARKET_DATA_URL = "https://api.kalkstrade.com";
+  process.env.NEXT_PUBLIC_TERMINAL_URL = "https://trade.ezymex.com";
+  process.env.NEXT_PUBLIC_MARKET_DATA_URL = "https://api.ezymex.com";
 });
 
 after(() => {
@@ -122,7 +122,7 @@ const load = async () => ({
   heartbeat: await import("../app/api/auth/heartbeat/route.ts"),
 });
 
-const BASE = "https://app.kalkstrade.com";
+const BASE = "https://app.ezymex.com";
 const headersOf = (res) => Object.fromEntries(res.headers.entries());
 const json = { "content-type": "application/json" };
 const auth = (t) => ({ authorization: `Bearer ${t}` });
@@ -171,43 +171,43 @@ test("bearer tokens are parsed strictly", async () => {
   assert.equal(mobile.bearerOf(h(`Bearer ${TOKENS.user}`)), TOKENS.user);
   assert.equal(mobile.bearerOf(h(`bearer ${TOKENS.viewer}`)), TOKENS.viewer);
   assert.equal(mobile.bearerOf(h(`Bearer ${TOKENS.staffRead}`)), TOKENS.staffRead);
-  for (const bad of [undefined, "Basic abc", "Bearer short", `Bearer ${TOKENS.user};x`, `Bearer ${TOKENS.user} extra`, "Bearer a=b; kalks_session=x"]) assert.equal(mobile.bearerOf(h(bad)), null, String(bad));
+  for (const bad of [undefined, "Basic abc", "Bearer short", `Bearer ${TOKENS.user};x`, `Bearer ${TOKENS.user} extra`, "Bearer a=b; ezymex_session=x"]) assert.equal(mobile.bearerOf(h(bad)), null, String(bad));
 });
 
 test("rewritten requests: the bearer becomes the session cookie, browser cookies are dropped, same-origin only for bearer without cookies", async () => {
   const { mobile } = await load();
   const route = mobile.mobileRoute("/api/mobile/wallet/withdrawals");
-  const common = { host: "app.kalkstrade.com", "x-forwarded-proto": "https", origin: "https://evil.example", "x-kalks-locale": "ar", "x-kalks-device": "D".repeat(32), "x-kalks-mobile": "spoofed", "x-kalks-platform": "android", "x-kalks-app-version": "1.0.0+1" };
+  const common = { host: "app.ezymex.com", "x-forwarded-proto": "https", origin: "https://evil.example", "x-ezymex-locale": "ar", "x-ezymex-device": "D".repeat(32), "x-ezymex-mobile": "spoofed", "x-ezymex-platform": "android", "x-ezymex-app-version": "1.0.0+1" };
   // bearer, no cookies: authenticated and same-origin
   const ok = mobile.mobileRequestHeaders(new Headers({ ...common, authorization: `Bearer ${TOKENS.user}` }), TOKENS.user, route);
-  assert.equal(ok.get("cookie"), `kalks_locale=ar; kalks_did=${"D".repeat(32)}; kalks_session=${TOKENS.user}`);
-  assert.equal(ok.get("origin"), "https://app.kalkstrade.com");
+  assert.equal(ok.get("cookie"), `ezymex_locale=ar; ezymex_did=${"D".repeat(32)}; ezymex_session=${TOKENS.user}`);
+  assert.equal(ok.get("origin"), "https://app.ezymex.com");
   assert.equal(ok.get("sec-fetch-site"), "same-origin");
   assert.equal(ok.get("authorization"), null);
-  assert.equal(ok.get("x-kalks-mobile"), "1");
-  assert.equal(ok.get("x-kalks-platform"), "android");
-  assert.equal(ok.get("x-kalks-app-version"), "1.0.0+1");
+  assert.equal(ok.get("x-ezymex-mobile"), "1");
+  assert.equal(ok.get("x-ezymex-platform"), "android");
+  assert.equal(ok.get("x-ezymex-app-version"), "1.0.0+1");
   // bearer WITH cookies: never authenticated, never same-origin (the proxy refuses it before this anyway)
-  const mixed = mobile.mobileRequestHeaders(new Headers({ ...common, cookie: "kalks_session=victim", authorization: `Bearer ${TOKENS.user}` }), TOKENS.user, route);
-  assert.ok(!(mixed.get("cookie") ?? "").includes("kalks_session"));
+  const mixed = mobile.mobileRequestHeaders(new Headers({ ...common, cookie: "ezymex_session=victim", authorization: `Bearer ${TOKENS.user}` }), TOKENS.user, route);
+  assert.ok(!(mixed.get("cookie") ?? "").includes("ezymex_session"));
   assert.equal(mixed.get("origin"), "https://evil.example");
   assert.equal(mixed.get("sec-fetch-site"), null);
   // no bearer: the browser's cookie is dropped and the (cross-site) origin is left as it came
-  const anon = mobile.mobileRequestHeaders(new Headers({ ...common, cookie: `kalks_session=${TOKENS.user}` }), null, route);
-  assert.equal(anon.get("cookie"), `kalks_locale=ar; kalks_did=${"D".repeat(32)}`);
+  const anon = mobile.mobileRequestHeaders(new Headers({ ...common, cookie: `ezymex_session=${TOKENS.user}` }), null, route);
+  assert.equal(anon.get("cookie"), `ezymex_locale=ar; ezymex_did=${"D".repeat(32)}`);
   assert.equal(anon.get("origin"), "https://evil.example");
   assert.equal(anon.get("sec-fetch-site"), null);
   // native routes keep the Authorization header and get no session cookie
   const native = mobile.mobileRequestHeaders(new Headers({ ...common, authorization: `Bearer ${TOKENS.user}` }), TOKENS.user, mobile.mobileRoute("/api/mobile/trade/state"));
   assert.equal(native.get("authorization"), `Bearer ${TOKENS.user}`);
-  assert.equal(native.get("cookie"), "kalks_locale=ar");
+  assert.equal(native.get("cookie"), "ezymex_locale=ar");
 });
 
 test("a bearer token together with cookies is refused before any handler or upstream", async () => {
   const m = await load();
   const before = calls.length;
   for (const path of ["/api/mobile/wallet/overview", "/api/mobile/auth/me", "/api/mobile/trade/state"]) {
-    const res = await m.proxy(new m.NextRequest(`${BASE}${path}`, { headers: { ...auth(TOKENS.user), cookie: "kalks_locale=en" } }));
+    const res = await m.proxy(new m.NextRequest(`${BASE}${path}`, { headers: { ...auth(TOKENS.user), cookie: "ezymex_locale=en" } }));
     assert.equal(res.status, 400, path);
     assert.equal((await res.json()).error.code, "bearer_with_cookies");
   }
@@ -235,25 +235,25 @@ test("bearer requests are rewritten onto the cookie routes and pass their same-o
 
 test("browser cookies never authenticate a mobile request, and a cookie-borne cross-site write is refused", async () => {
   const m = await load();
-  const { res, forwarded } = await viaProxy(m, "/api/mobile/wallet/overview", { headers: { cookie: `kalks_session=${TOKENS.user}` } }, m.wallet.GET, { path: ["overview"] });
+  const { res, forwarded } = await viaProxy(m, "/api/mobile/wallet/overview", { headers: { cookie: `ezymex_session=${TOKENS.user}` } }, m.wallet.GET, { path: ["overview"] });
   assert.equal(res.status, 401);
-  assert.ok(!(forwarded.get("cookie") ?? "").includes("kalks_session"));
+  assert.ok(!(forwarded.get("cookie") ?? "").includes("ezymex_session"));
   const before = calls.filter((c) => c.path === "/v1/withdrawals").length;
-  const post = await viaProxy(m, "/api/mobile/wallet/withdrawals", { method: "POST", headers: { ...json, cookie: `kalks_session=${TOKENS.user}`, origin: "https://evil.example" }, body: JSON.stringify({ amount: "10", chain: "tron", to_address: "T1", idempotency_key: "k-12345678" }) }, m.wallet.POST, { path: ["withdrawals"] });
+  const post = await viaProxy(m, "/api/mobile/wallet/withdrawals", { method: "POST", headers: { ...json, cookie: `ezymex_session=${TOKENS.user}`, origin: "https://evil.example" }, body: JSON.stringify({ amount: "10", chain: "tron", to_address: "T1", idempotency_key: "k-12345678" }) }, m.wallet.POST, { path: ["withdrawals"] });
   assert.equal(post.res.status, 403, "no bearer: the cookie route's same-origin check still refuses");
   assert.equal(calls.filter((c) => c.path === "/v1/withdrawals").length, before);
 });
 
 test("cookie routes keep their same-origin check (unchanged by the mobile path)", async () => {
   const m = await load();
-  const req = new m.NextRequest(`${BASE}/api/wallet/withdrawals/quote`, { method: "POST", headers: { host: "app.kalkstrade.com", ...json, cookie: `kalks_session=${TOKENS.user}`, origin: "https://evil.example" }, body: JSON.stringify({ amount: "10", chain: "tron", to_address: "T1" }) });
+  const req = new m.NextRequest(`${BASE}/api/wallet/withdrawals/quote`, { method: "POST", headers: { host: "app.ezymex.com", ...json, cookie: `ezymex_session=${TOKENS.user}`, origin: "https://evil.example" }, body: JSON.stringify({ amount: "10", chain: "tron", to_address: "T1" }) });
   const res = await m.wallet.POST(req, { params: Promise.resolve({ path: ["withdrawals", "quote"] }) });
   assert.equal(res.status, 403);
   assert.equal((await res.json()).error.code, "forbidden");
   // and a cookie request to a cookie route is not touched by the mobile branch
-  const p = await m.proxy(new m.NextRequest(`${BASE}/api/wallet/overview`, { headers: { cookie: `kalks_session=${TOKENS.user}` } }));
+  const p = await m.proxy(new m.NextRequest(`${BASE}/api/wallet/overview`, { headers: { cookie: `ezymex_session=${TOKENS.user}` } }));
   assert.equal(p.headers.get("x-middleware-next"), "1");
-  assert.equal(p.headers.get("x-middleware-request-x-kalks-mobile"), null);
+  assert.equal(p.headers.get("x-middleware-request-x-ezymex-mobile"), null);
 });
 
 test("uploads pass the rewrite: KYC multipart documents and support attachments (raw body + X-File-Name)", async () => {
@@ -276,7 +276,7 @@ test("uploads pass the rewrite: KYC multipart documents and support attachments 
   assert.equal((await att.res.json()).attachment.name, "screen shot.png");
   const up = calls.findLast((c) => c.path === "/v1/support/me/attachments");
   assert.deepEqual([...up.raw], [...bytes]);
-  assert.equal(up.headers["x-kalks-user-id"], "42");
+  assert.equal(up.headers["x-ezymex-user-id"], "42");
 });
 
 test("the support / notifications stream ticket works through the rewrite; config names the stream", async () => {
@@ -363,7 +363,7 @@ test("unknown mobile paths answer 404 without reaching a handler", async () => {
 
 test("sign-in returns the session in the JSON body (no cookie) and mints a device id", async () => {
   const m = await load();
-  const { res } = await viaProxy(m, "/api/mobile/auth/login", { method: "POST", headers: { ...json, cookie: "kalks_session=browser", "user-agent": "KalksApp/1.0.0 (Android 15)" }, body: JSON.stringify({ email: "arjun@example.com", password: "x" }) }, m.auth.POST, { action: "login" });
+  const { res } = await viaProxy(m, "/api/mobile/auth/login", { method: "POST", headers: { ...json, cookie: "ezymex_session=browser", "user-agent": "EzymexApp/1.0.0 (Android 15)" }, body: JSON.stringify({ email: "arjun@example.com", password: "x" }) }, m.auth.POST, { action: "login" });
   assert.equal(res.status, 200);
   const data = await res.json();
   assert.deepEqual(data.session, SESSION);
@@ -372,25 +372,25 @@ test("sign-in returns the session in the JSON body (no cookie) and mints a devic
   assert.match(data.device, /^[A-Za-z0-9_-]{32}$/);
   assert.equal(res.headers.get("set-cookie"), null);
   const sent = calls.findLast((c) => c.path === "/v1/auth/login");
-  assert.equal(sent.headers["x-kalks-device"], data.device);
+  assert.equal(sent.headers["x-ezymex-device"], data.device);
   assert.equal(sent.headers.authorization, undefined, "sign-in never forwards a session");
-  assert.equal(sent.headers["user-agent"], "KalksApp/1.0.0 (Android 15)");
+  assert.equal(sent.headers["user-agent"], "EzymexApp/1.0.0 (Android 15)");
 });
 
 test("a new device gets the email-code challenge; the code returns the session; a known device id is kept", async () => {
   const m = await load();
   const device = "D".repeat(32);
-  const { res } = await viaProxy(m, "/api/mobile/auth/login", { method: "POST", headers: { ...json, "x-kalks-device": device }, body: JSON.stringify({ email: "newdevice@example.com", password: "x" }) }, m.auth.POST, { action: "login" });
+  const { res } = await viaProxy(m, "/api/mobile/auth/login", { method: "POST", headers: { ...json, "x-ezymex-device": device }, body: JSON.stringify({ email: "newdevice@example.com", password: "x" }) }, m.auth.POST, { action: "login" });
   const data = await res.json();
   assert.equal(data.status, "otp_required");
   assert.equal(data.challenge, "c-1");
   assert.equal(data.session, undefined);
   assert.equal(data.device, undefined);
-  assert.equal(calls.findLast((c) => c.path === "/v1/auth/login").headers["x-kalks-device"], device);
-  const v = await viaProxy(m, "/api/mobile/auth/verify-email", { method: "POST", headers: { ...json, "x-kalks-device": device }, body: JSON.stringify({ challenge: "c-1", code: "123456" }) }, m.auth.POST, { action: "verify-email" });
+  assert.equal(calls.findLast((c) => c.path === "/v1/auth/login").headers["x-ezymex-device"], device);
+  const v = await viaProxy(m, "/api/mobile/auth/verify-email", { method: "POST", headers: { ...json, "x-ezymex-device": device }, body: JSON.stringify({ challenge: "c-1", code: "123456" }) }, m.auth.POST, { action: "verify-email" });
   assert.equal(v.res.status, 200);
   assert.equal((await v.res.json()).session.token, TOKENS.user);
-  assert.equal(calls.findLast((c) => c.path === "/v1/auth/verify-email").headers["x-kalks-device"], device);
+  assert.equal(calls.findLast((c) => c.path === "/v1/auth/verify-email").headers["x-ezymex-device"], device);
 });
 
 test("blocked users are refused at sign-in and their sessions are dead", async () => {
@@ -425,13 +425,13 @@ test("session actions need the bearer token; me answers for it; step-up returns 
 
 test("register: the referral comes from the body, attribution never does (the app is recorded as the source)", async () => {
   const m = await load();
-  const { res } = await viaProxy(m, "/api/mobile/auth/register", { method: "POST", headers: { ...json, "x-kalks-platform": "android" }, body: JSON.stringify({ first_name: "A", last_name: "B", email: "new@example.com", password: "Secret123", country: "IN", referral_code: "abc123", referral_campaign: "summer", attribution: { utm_source: "forged" } }) }, m.auth.POST, { action: "register" });
+  const { res } = await viaProxy(m, "/api/mobile/auth/register", { method: "POST", headers: { ...json, "x-ezymex-platform": "android" }, body: JSON.stringify({ first_name: "A", last_name: "B", email: "new@example.com", password: "Secret123", country: "IN", referral_code: "abc123", referral_campaign: "summer", attribution: { utm_source: "forged" } }) }, m.auth.POST, { action: "register" });
   assert.equal(res.status, 200);
   assert.equal((await res.json()).challenge, "c-reg");
   const sent = calls.findLast((c) => c.path === "/v1/auth/register").body;
   assert.equal(sent.referral_code, "abc123");
   assert.equal(sent.referral_campaign, "summer");
-  assert.deepEqual(sent.attribution, { utm_source: "kalks_app", utm_medium: "android" });
+  assert.deepEqual(sent.attribution, { utm_source: "ezymex_app", utm_medium: "android" });
   assert.equal(sent.marketing_consent, true);
 });
 
@@ -444,7 +444,7 @@ test("auth input is checked: JSON only, unknown actions 404", async () => {
   const res = await m.auth.POST(new m.NextRequest(`${BASE}/api/mobile/auth/nope`, { method: "POST", headers: json, body: "{}" }), { params: Promise.resolve({ action: "nope" }) });
   assert.equal(res.status, 404);
   // defence in depth: should a request reach the handler with a session cookie and a bearer, it is refused
-  const mixed = await m.auth.GET(new m.NextRequest(`${BASE}/api/mobile/auth/me`, { headers: { ...auth(TOKENS.user), cookie: `kalks_session=${TOKENS.user}` } }), { params: Promise.resolve({ action: "me" }) });
+  const mixed = await m.auth.GET(new m.NextRequest(`${BASE}/api/mobile/auth/me`, { headers: { ...auth(TOKENS.user), cookie: `ezymex_session=${TOKENS.user}` } }), { params: Promise.resolve({ action: "me" }) });
   assert.equal(mixed.status, 400);
 });
 
@@ -454,17 +454,17 @@ test("auth input is checked: JSON only, unknown actions 404", async () => {
 
 test("config: service URLs, streams and the broker's branding", async () => {
   const m = await load();
-  const { res } = await viaProxy(m, "/api/mobile/config", { headers: { host: "app.kalkstrade.com", "x-forwarded-proto": "https" } }, m.config.GET, {});
+  const { res } = await viaProxy(m, "/api/mobile/config", { headers: { host: "app.ezymex.com", "x-forwarded-proto": "https" } }, m.config.GET, {});
   assert.equal(res.status, 200);
   const c = await res.json();
   assert.equal(c.apiVersion, 1);
   assert.deepEqual(c.urls, {
-    app: "https://app.kalkstrade.com",
-    terminal: "https://trade.kalkstrade.com",
-    marketData: { http: "https://api.kalkstrade.com", ws: "wss://api.kalkstrade.com/v1/stream" },
-    streams: { engine: "wss://trade.kalkstrade.com/engine/stream", options: "wss://trade.kalkstrade.com/options/stream", support: "wss://app.kalkstrade.com/support/stream" },
+    app: "https://app.ezymex.com",
+    terminal: "https://trade.ezymex.com",
+    marketData: { http: "https://api.ezymex.com", ws: "wss://api.ezymex.com/v1/stream" },
+    streams: { engine: "wss://trade.ezymex.com/engine/stream", options: "wss://trade.ezymex.com/options/stream", support: "wss://app.ezymex.com/support/stream" },
   });
-  assert.equal(c.tenant.slug, "kalks");
+  assert.equal(c.tenant.slug, "ezymex");
   assert.equal(c.tenant.default, true);
   assert.deepEqual(c.modules, { wallet: true, prop: true });
   assert.deepEqual(c.flags, { demo_accounts: true });

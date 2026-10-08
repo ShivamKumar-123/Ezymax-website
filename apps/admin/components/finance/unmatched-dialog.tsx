@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { ArrowRightLeft, PauseCircle, Search, ShieldCheck, Undo2, UserPlus } from "lucide-react";
-import { Button, Chip, Dialog, Segmented, cn } from "@kalks/ui";
-import { FIN_CLIENTS, finAgo, type FinClient, type FinDeposit } from "@kalks/mock/admin-finance";
+import { Button, Chip, Dialog, Segmented, cn } from "@ezymex/ui";
+import { FIN_CLIENTS, finAgo, type FinClient, type FinDeposit } from "@ezymex/mock/admin-finance";
 import { Addr, MiniField, PersonCell, Select, TextArea, TxHash } from "@/components/config/kit";
 import { CoinAmount, Line, NetworkChip, usd } from "./shared";
 

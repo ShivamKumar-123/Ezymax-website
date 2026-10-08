@@ -1,4 +1,4 @@
-// Contract maths of Kalks Trader, the same formulas as the engine (services/trading/src/engine/mod.rs symbol_margin,
+// Contract maths of Ezymex Trader, the same formulas as the engine (services/trading/src/engine/mod.rs symbol_margin,
 // pnl) and the web terminal (apps/terminal/lib/trading.ts): USD internally, USC shown on cent accounts.
 import '../../../core/format/format.dart';
 import '../../../i18n/t.dart';

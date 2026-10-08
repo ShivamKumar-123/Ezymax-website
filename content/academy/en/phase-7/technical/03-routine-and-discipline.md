@@ -13,7 +13,7 @@ practice:
   label: "Create a pre-session checklist of no more than ten items and use it before every demo session for two weeks, noting any session where you skipped it."
   symbol: "GBPUSD"
 quiz:
-  - question: "A trader in Kalks Trader wants to be ready for the US cash equity open during US daylight saving time. Which server time should they note?"
+  - question: "A trader in Ezymex Trader wants to be ready for the US cash equity open during US daylight saving time. Which server time should they note?"
     options:
       - "09:30"
       - "13:30"
@@ -58,19 +58,19 @@ Every decision uses mental energy. A trader who must decide each morning which m
 Keep it short enough to finish in 15 to 30 minutes. A typical checklist:
 
 1. **Readiness.** Rested, not distracted, no emotional carry-over from the last session. If not, trade smaller or not at all.
-2. **Account state.** Open positions, pending orders, margin level and balance in Kalks Trader. Confirm nothing unexpected is open.
+2. **Account state.** Open positions, pending orders, margin level and balance in Ezymex Trader. Confirm nothing unexpected is open.
 3. **Calendar.** High-impact releases today on the currencies and markets you trade, from the economic calendar in the Client Area. Note their server times.
 4. **Context.** Higher-timeframe trend and key levels on each symbol in your plan, marked on the chart.
 5. **Scenarios.** For each symbol, what you would need to see to act, and what would keep you out.
 6. **Limits.** Today's maximum loss and maximum number of trades, written down.
 
-> **Tip:** Save your chart layouts in Kalks Trader with the levels already drawn, so the checklist starts from a prepared screen rather than a blank one.
+> **Tip:** Save your chart layouts in Ezymex Trader with the levels already drawn, so the checklist starts from a prepared screen rather than a blank one.
 
 ## Trading windows and server time
 
 Setups tend to work best in specific liquidity conditions. A breakout strategy on GBPUSD needs the London session; an index strategy may depend on the US cash open. Define your window in server time so your routine matches the platform clock.
 
-| Event (during US daylight saving time) | Local time | Kalks server time |
+| Event (during US daylight saving time) | Local time | Ezymex server time |
 |---|---|---|
 | London session opens | 08:00 London | 10:00 |
 | Major US data releases | 08:30 New York | 15:30 |

@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader charts: toolbar, drawing tools, legend, trade lines, context menu, one-click panel.
+// Ezymex Trader charts: toolbar, drawing tools, legend, trade lines, context menu, one-click panel.
 const chart: NsMessages<"chart"> = {
   // Chart tabs
   "tab.visibleInGrid": "Izgarada görünür",
@@ -46,7 +46,7 @@ const chart: NsMessages<"chart"> = {
   "tool.text": "Metin",
   "tool.ruler": "Cetvel",
   "tool.coming": "{tool} yakında",
-  "tool.comingText": "Bir sonraki Kalks Trader sürümünde kullanılabilir.",
+  "tool.comingText": "Bir sonraki Ezymex Trader sürümünde kullanılabilir.",
   "tool.deleteAll": "Tüm nesneleri sil",
   "tool.noObjects": "Bu grafikte nesne yok",
   "tool.deleted": { one: "{count} nesne silindi", other: "{count} nesne silindi" },

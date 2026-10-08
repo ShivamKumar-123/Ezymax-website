@@ -1,0 +1,18 @@
+[Unit]
+Description=Ezymex gateway / auth (:8080)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+User=ezymex
+WorkingDirectory=/home/ezymex/ezymex/services/gateway
+EnvironmentFile=/home/ezymex/ezymex/.env.local
+Environment=RUST_LOG=info
+ExecStart=/home/ezymex/ezymex/target/release/gateway
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

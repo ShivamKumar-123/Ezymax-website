@@ -5,8 +5,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import { AlertTriangle, BookOpen, Check, CircleHelp, KeyRound, Loader2, Plus, Plug, Save, Trash2, Zap } from "lucide-react";
 import Link from "next/link";
-import { Button, Chip, CopyButton, Icon3D, Input, Segmented, Toggle, Tooltip, cn, formatDateTime } from "@kalks/ui";
-import type { SetField, SetIntegration, SetIntegrationStatus, SetLaunchNeed } from "@kalks/mock/admin-platform-settings";
+import { Button, Chip, CopyButton, Icon3D, Input, Segmented, Toggle, Tooltip, cn, formatDateTime } from "@ezymex/ui";
+import type { SetField, SetIntegration, SetIntegrationStatus, SetLaunchNeed } from "@ezymex/mock/admin-platform-settings";
 import { LogoTile, SecretInput, SelectInput } from "./kit";
 
 export const STATUS_META: Record<SetIntegrationStatus, { label: string; tone: "up" | "down" | "warn" | "neutral" }> = {
@@ -66,7 +66,7 @@ export function IntegrationCard({ it, onStatus }: { it: SetIntegration; onStatus
 
   const test = () => {
     if (disabled) {
-      toast.info(`${it.name} is disabled`, { description: "Kalks runs B-book at launch. Enable the FIX session when an LP is onboarded." });
+      toast.info(`${it.name} is disabled`, { description: "Ezymex runs B-book at launch. Enable the FIX session when an LP is onboarded." });
       return;
     }
     const missing = fields.filter((f) => f.required && f.type !== "readonly" && !vals[f.key]);

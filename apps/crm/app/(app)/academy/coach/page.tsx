@@ -4,7 +4,7 @@ import * as React from "react";
 import { Download, LineChart, Percent, Scale, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button, KpiCard, Money, PageHeader, Reveal } from "@/components/kit";
-import { COACH } from "@kalks/mock/academy";
+import { COACH } from "@ezymex/mock/academy";
 import { CoachChat, type CoachChatHandle } from "@/components/academy/coach-chat";
 import { OvertradingCard, RiskDistribution, SessionHeat, SymbolInsight } from "@/components/academy/coach-insights";
 import { JournalCard } from "@/components/academy/journal";
@@ -17,9 +17,9 @@ export default function CoachPage() {
     <div className="pb-16">
       <PageHeader
         title="AI Coach"
-        subtitle="Kalks Coach reads your trade history and journal, then explains what's working in plain language."
+        subtitle="Ezymex Coach reads your trade history and journal, then explains what's working in plain language."
         actions={
-          <Button variant="surface" onClick={() => toast.success("Weekly review exported", { description: "kalks-coach-review-2026-W39.pdf" })}>
+          <Button variant="surface" onClick={() => toast.success("Weekly review exported", { description: "ezymex-coach-review-2026-W39.pdf" })}>
             <Download /> Export review
           </Button>
         }

@@ -3,9 +3,9 @@
 // Underlying figures of the options workspace (spot from the CFD feed, daily change, ATM IV, realized vol, contract,
 // cut countdown) and the expiry strip of the public chain page (every listed expiry as a chip).
 import * as React from "react";
-import { INSTRUMENT_MAP } from "@kalks/mock";
-import { PriceText, cn, useQuote } from "@kalks/ui";
-import { useT } from "@kalks/i18n/react";
+import { INSTRUMENT_MAP } from "@ezymex/mock";
+import { PriceText, cn, useQuote } from "@ezymex/ui";
+import { useT } from "@ezymex/i18n/react";
 import { atmIndex } from "@/lib/options/math";
 import { underlyingOf, useOpt } from "@/lib/options-store";
 import { OptAvatar, StateBadge } from "./bits";

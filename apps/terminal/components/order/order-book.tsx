@@ -7,9 +7,9 @@
 // BookView is presentational: CFD depth (CfdOrderBook) and the options book feed it the same way.
 import * as React from "react";
 import { ArrowDown, ArrowUp, ChevronDown, Rows3, PanelTopClose, PanelBottomClose, SlidersHorizontal } from "lucide-react";
-import { IS_DEMO, getInstrument, priceFeed, type DepthBook } from "@kalks/mock";
-import { cn, useQuote } from "@kalks/ui";
-import { useT } from "@kalks/i18n/react";
+import { IS_DEMO, getInstrument, priceFeed, type DepthBook } from "@ezymex/mock";
+import { cn, useQuote } from "@ezymex/ui";
+import { useT } from "@ezymex/i18n/react";
 import { useTerminal } from "@/lib/store";
 import { useMarketOpen } from "@/lib/market-hours";
 import { fmtPrice, fmtVol, pipSize, serverTime } from "@/lib/trading";

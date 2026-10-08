@@ -1,4 +1,4 @@
-// ThemeData built from the Kalks tokens. Material widgets are used only as plumbing (Scaffold, text fields, ink);
+// ThemeData built from the Ezymex tokens. Material widgets are used only as plumbing (Scaffold, text fields, ink);
 // the visible controls come from lib/ui/components and follow iOS: Cupertino page transitions and bouncing scroll
 // on Android too, no Material ripples or glow.
 import 'dart:ui' show PointerDeviceKind;
@@ -10,7 +10,7 @@ import 'package:flutter/services.dart';
 import 'tokens.dart';
 import 'typography.dart';
 
-/// The tenant's brand colours (config.tenant.primary / accent), defaulting to Kalks ember and gold.
+/// The tenant's brand colours (config.tenant.primary / accent), defaulting to Ezymex ember and gold.
 @immutable
 class KBrand {
   const KBrand({this.primary = kEmber, this.accent = kGold});

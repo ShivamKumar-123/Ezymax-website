@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { ArrowRight, Ban, ChevronDown, ChevronRight, GitBranch, Lock, LockOpen, Percent, PlayCircle, Search, TrendingUp } from "lucide-react";
-import { Avatar, Button, Chip, CopyButton, Dialog, Flag, Menu, Progress, Skeleton, cn } from "@kalks/ui";
+import { Avatar, Button, Chip, CopyButton, Dialog, Flag, Menu, Progress, Skeleton, cn } from "@ezymex/ui";
 import { MiniField, MiniStat, NumInput, Section } from "@/components/config/kit";
 import { KycChip, ago, day, useApi, useDebounced, useNow, when } from "@/components/live/kit";
 import { P, ibSend, type Level, type Paged, type PartnerDetail, type PartnerRow, type SettingsDoc, type TreeNode } from "./api";

@@ -8,7 +8,7 @@
 import * as React from "react";
 import { ArrowLeftRight, Ban, Banknote, CandlestickChart, ChevronDown, Handshake, History, Lock, LogIn, ShieldAlert, Snowflake, Users, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, Dialog, Field, Input, Segmented, Skeleton, Toggle, Tooltip, cn, type ChipTone } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Dialog, Field, Input, Segmented, Skeleton, Toggle, Tooltip, cn, type ChipTone } from "@ezymex/ui";
 import { TextArea } from "@/components/config/kit";
 import { ErrorState, ago, sendJson, useNow, when } from "@/components/live/kit";
 import type { Controls, Restriction, useControls } from "./presence";
@@ -16,7 +16,7 @@ import type { Controls, Restriction, useControls } from "./presence";
 type Meta = { label: string; short: string; help: string; tone: ChipTone; icon: React.ReactNode };
 
 export const RESTRICTION_META: Record<string, Meta> = {
-  login: { label: "Block sign-in", short: "Blocked", help: "Suspends the account: every session ends (view-only logins, staff sessions and Kalks Trader too) and sign-in shows “This account is suspended. Contact support.”", tone: "down", icon: <LogIn /> },
+  login: { label: "Block sign-in", short: "Blocked", help: "Suspends the account: every session ends (view-only logins, staff sessions and Ezymex Trader too) and sign-in shows “This account is suspended. Contact support.”", tone: "down", icon: <LogIn /> },
   freeze: { label: "Freeze account", short: "Frozen", help: "Everything below at once: trading, deposits, withdrawals, transfers, IB payouts and copy / PAMM / MAM. The client can still sign in and sees the notice.", tone: "down", icon: <Snowflake /> },
   trading: { label: "Disable trading", short: "No trading", help: "The trading engine refuses every new order, modification and close from the client. Stop-out, SL and TP still run; the dealing desk can still act.", tone: "down", icon: <CandlestickChart /> },
   close_only: { label: "Close-only", short: "Close-only", help: "Positions can be closed or reduced; new exposure is refused with a clear reason.", tone: "warn", icon: <Lock /> },

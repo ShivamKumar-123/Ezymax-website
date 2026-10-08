@@ -27,9 +27,9 @@ import {
 } from "lightweight-charts";
 import { usdPerUnitOfQuote } from "@/lib/options/normalize";
 import { Info, MousePointerClick, Table2 } from "lucide-react";
-import { OPTION_SPEC, cutInstant, parseSeriesCode } from "@kalks/mock/options";
-import { cn } from "@kalks/ui";
-import { useLocale, useT } from "@kalks/i18n/react";
+import { OPTION_SPEC, cutInstant, parseSeriesCode } from "@ezymex/mock/options";
+import { cn } from "@ezymex/ui";
+import { useLocale, useT } from "@ezymex/i18n/react";
 import { readPalette, toChartTime, fromChartTime, type Palette } from "@/components/chart/engine";
 import { BrandWatermark } from "@/components/chart/brand-watermark";
 import { useTerminal } from "@/lib/store";

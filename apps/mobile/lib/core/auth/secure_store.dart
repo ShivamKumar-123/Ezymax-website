@@ -88,10 +88,10 @@ class SessionStore {
   SessionStore(this._s);
   final SecureStore _s;
 
-  static const _kSession = 'kalks.session';
-  static const _kUser = 'kalks.user';
-  static const _kDevice = 'kalks.device';
-  static const _kTrade = 'kalks.trade';
+  static const _kSession = 'ezymex.session';
+  static const _kUser = 'ezymex.user';
+  static const _kDevice = 'ezymex.device';
+  static const _kTrade = 'ezymex.trade';
 
   Future<Session?> readSession() async {
     final raw = await _s.read(_kSession);
@@ -120,7 +120,7 @@ class SessionStore {
 
   String? _device;
 
-  /// X-Kalks-Device: minted on the first launch (a UUID, 36 base64url-safe characters) and kept for the install.
+  /// X-Ezymex-Device: minted on the first launch (a UUID, 36 base64url-safe characters) and kept for the install.
   Future<String> deviceId() async {
     if (_device != null) return _device!;
     var id = await _s.read(_kDevice);
@@ -138,7 +138,7 @@ class SessionStore {
     await _s.write(_kDevice, id);
   }
 
-  /// Kalks Trader tokens per login (X-Kalks-Trade), from trade/sessions or trade/login.
+  /// Ezymex Trader tokens per login (X-Ezymex-Trade), from trade/sessions or trade/login.
   Future<Map<String, String>> tradeTokens() async {
     final raw = await _s.read(_kTrade);
     if (raw == null) return {};

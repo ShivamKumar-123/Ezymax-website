@@ -6,9 +6,9 @@ const dashboard: NsMessages<"dashboard"> = {
   "greeting.afternoon": "Buon pomeriggio, {name}",
   "greeting.evening": "Buonasera, {name}",
   "greeting.welcome": "Benvenuto, {name}",
-  "subtitle.live": "Benvenuto in Kalks. Ecco il tuo account e i mercati di oggi.",
+  "subtitle.live": "Benvenuto in Ezymex. Ecco il tuo account e i mercati di oggi.",
   "subtitle.demo": "Ecco l'andamento dei tuoi conti oggi.",
-  launchTrader: "Avvia Kalks Trader",
+  launchTrader: "Avvia Ezymex Trader",
   openTerminal: "Apri il terminale di trading",
 
   // Checklist per iniziare
@@ -62,7 +62,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "account.memberSince": "Cliente dal",
   "account.profile": "Profilo",
 
-  // Banner Kalks Trader
+  // Banner Ezymex Trader
   "trader.chip": "Prezzi in tempo reale",
   "trader.text": "Quotazioni e grafici in tempo reale per {count} strumenti tra forex, metalli, indici, energie, cripto e azioni. Funziona nel browser, nulla da installare.",
 
@@ -214,7 +214,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "home.marketsTitle": "Mercati",
   "home.moreTitle": "Altro per te",
 
-  // Ask Kalks AI on the Overview
+  // Ask Ezymex AI on the Overview
   "ai.title": "Chiedi a {name}",
   "ai.subtitle": "Risposte immediate su conto, depositi e trading.",
   "ai.placeholder": "Chiedi qualsiasi cosa sul tuo conto o sul trading…",

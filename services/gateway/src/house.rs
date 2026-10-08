@@ -1,4 +1,4 @@
-//! `POST /v1/internal/house-users {key, nickname}` (service-to-service, `X-Kalks-Internal` only, like every
+//! `POST /v1/internal/house-users {key, nickname}` (service-to-service, `X-Ezymex-Internal` only, like every
 //! /v1 route; called by the ALGO service when it provisions a house account). Creates — or returns, for the
 //! same `key` — the platform-owned "house user" that owns one house trading account.
 //!

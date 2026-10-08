@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader order ticket, New Order window, DOM ladder, position/pending dialogs and trade toasts.
+// Ezymex Trader order ticket, New Order window, DOM ladder, position/pending dialogs and trade toasts.
 // Trading terms follow the common Indonesian MT5 usage (Stop Loss, Take Profit, Buy Limit, lot, pip, swap kept).
 const order: NsMessages<"order"> = {
   // Order types (ticket type switcher)
@@ -270,9 +270,9 @@ const order: NsMessages<"order"> = {
 
   // Specification / About dialogs
   "spec.title": "Spesifikasi · {symbol}",
-  "about.title": "Tentang Kalks Trader",
+  "about.title": "Tentang Ezymex Trader",
   "about.version": "Versi {version} · build {build} · Web x64",
-  "about.text": "Ruang trading multi-aset untuk Kalks Global Markets. Kuotasi dialirkan dari gateway harga Kalks; waktu server adalah GMT+3.",
+  "about.text": "Ruang trading multi-aset untuk Ezymex Global Markets. Kuotasi dialirkan dari gateway harga Ezymex; waktu server adalah GMT+3.",
 
   // Rejection reasons
   "reject.market_closed": "Pasar tutup",

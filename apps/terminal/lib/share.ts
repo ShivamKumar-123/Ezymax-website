@@ -76,7 +76,7 @@ export interface ShareLink {
   status?: "active" | "revoked" | "expired";
 }
 
-const LINKS_KEY = "kalks.terminal.shares";
+const LINKS_KEY = "ezymex.terminal.shares";
 let links: ShareLink[] | null = null;
 const listeners = new Set<() => void>();
 
@@ -171,7 +171,7 @@ export const shareApi = {
   create: (body: { login: string; title: string; accountLabel?: string; showAmounts: boolean; expiresInHours: number | null; trades: ShareTrade[] }) =>
     call<{ code: string; key: string; created_at: string; expires_at: string | null }>("/api/shares", { method: "POST", body: JSON.stringify(body) }),
   update: (code: string, key: string, trades: ShareTrade[], login?: string) =>
-    call<{ status: string }>(`/api/shares/${code}/trades`, { method: "PATCH", key, body: JSON.stringify({ trades }), headers: login ? { "x-kalks-login": login } : undefined }),
+    call<{ status: string }>(`/api/shares/${code}/trades`, { method: "PATCH", key, body: JSON.stringify({ trades }), headers: login ? { "x-ezymex-login": login } : undefined }),
   revoke: (code: string, key: string) => call<{ status: string }>(`/api/shares/${code}/revoke`, { method: "POST", key }),
   lookup: (items: { code: string; key: string }[]) =>
     call<{ items: { code: string; title: string; views: number; revoked: boolean; expired: boolean; trades: number; expires_at: string | null }[] }>("/api/shares/lookup", {

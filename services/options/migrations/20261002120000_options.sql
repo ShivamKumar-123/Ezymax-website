@@ -1,4 +1,4 @@
--- Kalks FX Options reference data and market side (database kalks_options).
+-- Ezymex FX Options reference data and market side (database ezymex_options).
 -- Money (positions, premiums, margin, settlement) lives in the trading engine; this database holds what the
 -- engine prices with (published as a versioned snapshot) plus listings, fixings and the dealing controls.
 
@@ -194,7 +194,7 @@ CREATE TABLE twap_samples (
     PRIMARY KEY (expiry_id, t)
 );
 
--- Module switch per broker (tenant slug; tenant #1 = 'kalks'). Demo and live are separate switches and both
+-- Module switch per broker (tenant slug; tenant #1 = 'ezymex'). Demo and live are separate switches and both
 -- default to OFF. public_chain = the guest chain page / public REST.
 CREATE TABLE tenant_settings (
     tenant       TEXT PRIMARY KEY,
@@ -224,7 +224,7 @@ CREATE TABLE group_settings (
     PRIMARY KEY (tenant, group_code, symbol)
 );
 
--- Dealer controls. tenant '*' = every broker (Kalks staff only). scope/target: all/'*', underlying/SYMBOL,
+-- Dealer controls. tenant '*' = every broker (Ezymex staff only). scope/target: all/'*', underlying/SYMBOL,
 -- expiry/'SYMBOL:YYYY-MM-DD', series/CODE. mode: halt (no trading), close_only, freeze (marks use
 -- frozen_spot), manual_vol (ATM vol override).
 CREATE TABLE controls (

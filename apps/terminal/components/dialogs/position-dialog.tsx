@@ -2,13 +2,13 @@
 
 import * as React from "react";
 import { ArrowLeftRight, Edit3, Scissors, X } from "lucide-react";
-import { getInstrument } from "@kalks/mock";
-import { PriceText, SymbolAvatar, cn, useQuote } from "@kalks/ui";
+import { getInstrument } from "@ezymex/mock";
+import { PriceText, SymbolAvatar, cn, useQuote } from "@ezymex/ui";
 import { usePositionProfit, useTerminal } from "@/lib/store";
 import { accCcy, accMoney, fmtPrice, fmtServer, fmtVol, pendingLabelKey, pipSize, profitAt, profitUsd } from "@/lib/trading";
 import { Badge, Pnl, Stepper, TButton, TDialog, TSelect } from "@/components/ui/primitives";
 import { TickSpark } from "@/components/order/right-panel";
-import { Trans, useT } from "@kalks/i18n/react";
+import { Trans, useT } from "@ezymex/i18n/react";
 
 const TRAIL_OPTIONS = ["none", "15", "20", "30", "50", "100", "custom"] as const;
 

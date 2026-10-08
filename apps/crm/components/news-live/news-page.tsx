@@ -5,15 +5,15 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { Bookmark, ExternalLink, Link2, Pin, RefreshCw, Sparkles, X } from "lucide-react";
 import { Button, Card, CardHeader, Chip, Delta, Dialog, MarketSessions, PageHeader, Reveal, Segmented, Skeleton, SymbolAvatar, WorldMap, cn, useQuotes, type MapPin } from "@/components/kit";
-import { INSTRUMENT_MAP } from "@kalks/mock";
+import { INSTRUMENT_MAP } from "@ezymex/mock";
 import { useNewsApi, type Brief, type Feed, type NewsItem, type NewsMap, type Sentiment } from "./api";
 import { COUNTRY_NAME, Flag, SENT, SentimentChip, SymbolPill, ago, categoryLabel, countryName, coverFor, heatOf, useNow } from "./shared";
-import { tr, useFormat, useT } from "@kalks/i18n/react";
+import { tr, useFormat, useT } from "@ezymex/i18n/react";
 import { TERMINAL_URL } from "@/lib/live";
 
 const CATS = ["all", "macro", "forex", "metals", "indices", "energies", "crypto", "stocks"] as const;
 type Cat = (typeof CATS)[number];
-const SAVED_KEY = "kalks.news.saved";
+const SAVED_KEY = "ezymex.news.saved";
 
 function useSaved() {
   const [saved, setSaved] = React.useState<number[]>([]);

@@ -199,7 +199,7 @@ const kyc = {
   "review.flagged": "Flagged for review",
   "review.passed": "Checks passed",
   // AML = Anti-Money Laundering; keep abbreviation
-  "review.consent": "I confirm the documents are genuine and belong to me (or to the company and its officers), and I consent to identity and AML screening by Kalks.",
+  "review.consent": "I confirm the documents are genuine and belong to me (or to the company and its officers), and I consent to identity and AML screening by Ezymex.",
 
   // More information requested by the review team
   "moreInfo.title": "We need a little more from you",
@@ -364,7 +364,7 @@ const kyc = {
   // Client-side fallback errors (the server's own message is shown when it sends one)
   "error.sessionEnded": "Your session has ended.",
   "error.generic": "Something went wrong. Please try again.",
-  "error.network": "Can't reach Kalks. Check your connection and try again.",
+  "error.network": "Can't reach Ezymex. Check your connection and try again.",
   "error.uploadFailed": "Upload failed. Please try again.",
   "error.uploadInterrupted": "Upload interrupted. Check your connection and try again.",
 

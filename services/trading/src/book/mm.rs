@@ -1,4 +1,4 @@
-//! The Kalks market maker (docs/OPTIONS-EXCHANGE.md §4, decision O49): it quotes every listed vanilla series of
+//! The Ezymex market maker (docs/OPTIONS-EXCHANGE.md §4, decision O49): it quotes every listed vanilla series of
 //! every underlying both sides from the model, under the SAME rules as any client.
 //!
 //! * **Same path.** Quotes go through `entry::mass_quote` → `engine::options_book::enter_mass` → `enter`, the gates,
@@ -194,7 +194,7 @@ pub async fn account(st: &AppState, tenant_id: i64, kind: AccountKind) -> anyhow
         return Ok(l);
     }
     let user = st.cfg.options_mm_user;
-    anyhow::ensure!(user > 0, "OPTIONS_MM_USER_ID is not set: the Kalks market maker has no user");
+    anyhow::ensure!(user > 0, "OPTIONS_MM_USER_ID is not set: the Ezymex market maker has no user");
     let t = st.hub.shared.registry.get(tenant_id).ok_or_else(|| anyhow::anyhow!("unknown tenant {tenant_id}"))?;
     let pick = |code: &str| t.groups.get(code).filter(|g| g.allows(kind.as_str()) && !g.cent).map(|g| g.clone());
     let g = pick(super::LP_GROUP).or_else(|| pick("standard")).ok_or_else(|| anyhow::anyhow!("no USD group for the market-maker account"))?;
@@ -215,7 +215,7 @@ pub async fn account(st: &AppState, tenant_id: i64, kind: AccountKind) -> anyhow
         cent: false,
         leverage: g.default_leverage,
         status: Status::Active,
-        name: "Kalks market maker (options order book)".into(),
+        name: "Ezymex market maker (options order book)".into(),
         route_override: None,
         controls: Controls::default(),
         // demo: the capital is the demo funding; the account never expires and is never refilled
@@ -969,7 +969,7 @@ mod tests {
         let u = s.underlying("EURUSD").unwrap();
         let now = chrono::DateTime::parse_from_rfc3339("2026-10-05T12:00:00Z").unwrap().timestamp_millis();
         let cut = chrono::DateTime::parse_from_rfc3339("2026-10-09T14:00:00Z").unwrap().timestamp_millis();
-        let ctx = pricing::context(&s, u, "EURUSD:2026-10-09", cut, Some(1.16), Some(1.0), now, "kalks").unwrap();
+        let ctx = pricing::context(&s, u, "EURUSD:2026-10-09", cut, Some(1.16), Some(1.0), now, "ezymex").unwrap();
         let mm = MmSettings::builtin();
         let qi = |inv: f64, book: Greeks| QuoteIn2 { ctx: &ctx, u, s: &mm, right: OptRight::Call, strike: 1.16, tick: 0.00001, step: 1.0, days: 4.0, same_day: false, inventory: inv, expiry_vega: 0.0, book };
         let q = quote("EURUSD-20261009-1.1600-C", &qi(0.0, Greeks::default()));

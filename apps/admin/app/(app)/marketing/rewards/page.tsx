@@ -26,10 +26,10 @@ import {
   Toggle,
   cn,
   type Column,
-} from "@kalks/ui";
-import { MKT_CATALOGUE, MKT_POINT_RULES, MKT_REDEMPTIONS, MKT_REWARDS_KPIS, MKT_TIERS, type MktRedemption, type MktRewardItem, type MktTier } from "@kalks/mock/admin-growth-marketing";
+} from "@ezymex/ui";
+import { MKT_CATALOGUE, MKT_POINT_RULES, MKT_REDEMPTIONS, MKT_REWARDS_KPIS, MKT_TIERS, type MktRedemption, type MktRewardItem, type MktTier } from "@ezymex/mock/admin-growth-marketing";
 import { NumField, SectionLabel, fmtDateTime, fmtInt, fmtK } from "@/components/marketing/kit";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveRewards } from "@/components/marketing/live/rewards";
 
 const ITEM = Object.fromEntries(MKT_CATALOGUE.map((c) => [c.id, c]));

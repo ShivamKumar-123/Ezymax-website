@@ -4,9 +4,9 @@
 
 import * as React from "react";
 import { toast } from "sonner";
-import { tr } from "@kalks/i18n/react";
-import type { MessageKey } from "@kalks/i18n";
-import { readCached, writeCached } from "@kalks/ui/swr-cache";
+import { tr } from "@ezymex/i18n/react";
+import type { MessageKey } from "@ezymex/i18n";
+import { readCached, writeCached } from "@ezymex/ui/swr-cache";
 
 export type Chain = "bsc" | "tron";
 
@@ -207,7 +207,7 @@ export function walletToast(title: string, e: unknown) {
 }
 
 /** Polls a wallet BFF path every `ms` while the tab is visible (ms = 0: once).
- *  Opened again, a page starts from this tab's last answer while it refetches (@kalks/ui/swr-cache). */
+ *  Opened again, a page starts from this tab's last answer while it refetches (@ezymex/ui/swr-cache). */
 export function useWallet<T>(path: string | null, ms = 0) {
   const [data, setData] = React.useState<T | null>(() => (path ? (readCached<T>(`wallet:${path}`) ?? null) : null));
   const [error, setError] = React.useState<WalletError | null>(null);

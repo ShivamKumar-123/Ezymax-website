@@ -9,7 +9,7 @@
 //! 3. Closing: an option leg is a reduce-only IOC on the book at mark × (1 ∓ `liqBandPct`) (its fills print
 //!    `liquidation`); a strategy goes to the market maker as a reduce-only combo RFQ, auto-accepted (legged on the
 //!    book when that fails).
-//! 4. **Backstop**: whatever is left goes to `Cmd::Backstop` — the Kalks market maker takes it at mark ∓
+//! 4. **Backstop**: whatever is left goes to `Cmd::Backstop` — the Ezymex market maker takes it at mark ∓
 //!    max(`liqFeePct` × mark, 1 tick), outside its quoting limits (tape: `backstop`).
 //! 5. Repeat until the margin level is above stop-out or nothing more closes. Every step is a row of
 //!    `option_liquidations`. Negative balance protection applies afterwards (the account's own stop-out path).
@@ -179,7 +179,7 @@ async fn close_leg(st: &AppState, login: i64, tenant_id: i64, kind: AccountKind,
     if rest <= ZERO || after.is_some_and(|l| l > stop_out_of(st, login)) {
         return (filled, rows);
     }
-    // the backstop: the Kalks market maker takes the rest at mark ∓ the liquidation fee
+    // the backstop: the Ezymex market maker takes the rest at mark ∓ the liquidation fee
     let mm = match crate::book::mm::account(st, tenant_id, kind).await {
         Ok(l) => l,
         Err(e) => {

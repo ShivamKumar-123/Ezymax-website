@@ -108,7 +108,7 @@ pub async fn create(State(st): State<AppState>, u: User, Body(v): Body<Value>) -
         .await?;
     audit(&st.pool, &u.tenant, &format!("user:{}", u.id), "apikey.create", &format!("apikey:{id}"), json!({"login": login, "scopes": scopes, "ips": ips.len()})).await;
     Ok(Json(json!({"id": id, "name": name, "keyId": key_id, "secret": secret_for(&st.cfg.key_secret, &key_id, &salt), "login": login, "scopes": scopes, "expiresAt": expires,
-                   "note": "The secret is shown once. Store it in a secrets manager; Kalks can't show it again."})))
+                   "note": "The secret is shown once. Store it in a secrets manager; Ezymex can't show it again."})))
 }
 
 async fn own(st: &AppState, u: &User, id: i64) -> Result<sqlx::postgres::PgRow, ApiError> {

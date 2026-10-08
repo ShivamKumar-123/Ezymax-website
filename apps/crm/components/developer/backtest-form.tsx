@@ -4,8 +4,8 @@ import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CalendarDays, ChevronDown, Cpu, Play, Check } from "lucide-react";
 import { Button, Card, CardHeader, Chip, Field, Input, Menu, Segmented, SymbolAvatar, cn, formatMoney } from "@/components/kit";
-import { INSTRUMENTS } from "@kalks/mock";
-import { BACKTEST_STRATEGIES, COST_MODELS, TIMEFRAMES, formatDateLabel, type BacktestParams, type BacktestResult, type PastRun } from "@kalks/mock/algo";
+import { INSTRUMENTS } from "@ezymex/mock";
+import { BACKTEST_STRATEGIES, COST_MODELS, TIMEFRAMES, formatDateLabel, type BacktestParams, type BacktestResult, type PastRun } from "@ezymex/mock/algo";
 
 const selectCls = "flex h-11 w-full items-center gap-2.5 rounded-[14px] border border-line bg-surface-2 px-3.5 text-left text-sm transition hover:border-[var(--k-border-top)] outline-none focus-visible:border-ember/50";
 

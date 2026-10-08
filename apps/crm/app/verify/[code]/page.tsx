@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { BadgeCheck, ShieldX } from "lucide-react";
-import { Card, Chip } from "@kalks/ui/primitives";
-import { getFormatter, getT } from "@kalks/i18n/server";
+import { Card, Chip } from "@ezymex/ui/primitives";
+import { getFormatter, getT } from "@ezymex/i18n/server";
 import { certBig, certDate, certHeadline, certMoney, publicCertificate } from "@/lib/prop";
 import { VerifyActions } from "@/components/prop-live/verify-actions";
 import { VerifyShell } from "@/components/prop-live/verify-shell";
@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") || host.startsWith("127.") ? "http" : "https");
   const image = `${proto}://${host}/verify/${c.code}/image`;
   const title = `${c.traderName} · ${certHeadline(c.kind)}`;
-  const description = `${certBig(c)} · ${c.planName} · issued ${certDate(c.issuedAt)}. Verified by Kalks Prop.`;
+  const description = `${certBig(c)} · ${c.planName} · issued ${certDate(c.issuedAt)}. Verified by Ezymex Prop.`;
   return {
     title,
     description,

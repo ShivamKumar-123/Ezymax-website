@@ -10,8 +10,8 @@ import { IconButton, Kbd } from "../components/primitives";
 import { Popover } from "../components/overlays";
 import { Flag } from "../components/avatars";
 import { cn } from "../lib/cn";
-import { LOCALES } from "@kalks/i18n/locales";
-import { useLocale, useT } from "@kalks/i18n/react";
+import { LOCALES } from "@ezymex/i18n/locales";
+import { useLocale, useT } from "@ezymex/i18n/react";
 
 /* ------------------------------------------------------------------ */
 /* Theme                                                               */
@@ -34,7 +34,7 @@ export function ThemeToggle() {
 /* Language (all major languages; RTL switches document direction)    */
 /* ------------------------------------------------------------------ */
 
-/** Supported interface languages (from @kalks/i18n; `rtl` marks right-to-left scripts). */
+/** Supported interface languages (from @ezymex/i18n; `rtl` marks right-to-left scripts). */
 export const LANGUAGES = LOCALES;
 
 export function LanguageMenu() {

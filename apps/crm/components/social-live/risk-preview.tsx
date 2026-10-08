@@ -6,9 +6,9 @@
 import * as React from "react";
 import { ShieldAlert } from "lucide-react";
 import { Chip, Skeleton,  cn } from "@/components/kit";
-// engine symbols include Kalks FX Options series codes, which @kalks/ui SymbolAvatar / SymbolCell (static list) throw on
+// engine symbols include Ezymex FX Options series codes, which @ezymex/ui SymbolAvatar / SymbolCell (static list) throw on
 import { TradeSymbolAvatar as SymbolAvatar, symbolLabel } from "@/components/trading/instrument";
-import { Trans, useT } from "@kalks/i18n/react";
+import { Trans, useT } from "@ezymex/i18n/react";
 import { usd, useSocial, type RiskPreview, type SizingMode } from "./api";
 import { RiskBadge } from "./bits";
 

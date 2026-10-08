@@ -8,8 +8,8 @@
 import * as React from "react";
 import { AlertTriangle, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, Chip, Dialog, DialogClose, cn, formatNumber, type ChipTone } from "@kalks/ui";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { Button, Card, Chip, Dialog, DialogClose, cn, formatNumber, type ChipTone } from "@ezymex/ui";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { ErrorState, type ApiErr } from "@/components/live/kit";
 import { MiniField, Select } from "@/components/config/kit";
 import { useStaff } from "@/components/staff-session";

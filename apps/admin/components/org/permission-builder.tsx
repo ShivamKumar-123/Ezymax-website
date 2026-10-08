@@ -20,7 +20,7 @@ import {
   Trash2,
   Wand2,
 } from "lucide-react";
-import { Button, Card, Chip, IconButton, Input, Menu, Toggle, cn } from "@kalks/ui";
+import { Button, Card, Chip, IconButton, Input, Menu, Toggle, cn } from "@ezymex/ui";
 import {
   ORG_ACTIONS,
   ORG_EMPLOYEES,
@@ -32,8 +32,8 @@ import {
   type OrgModuleKey,
   type OrgPermMatrix,
   type OrgRole,
-} from "@kalks/mock/admin-platform-security";
-import { PEOPLE } from "@kalks/mock";
+} from "@ezymex/mock/admin-platform-security";
+import { PEOPLE } from "@ezymex/mock";
 import { PermCheckbox } from "./perm-checkbox";
 import { AvatarStack } from "./shared";
 

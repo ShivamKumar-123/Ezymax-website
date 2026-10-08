@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { Eye, EyeOff, Settings2, X } from "lucide-react";
-import { cn } from "@kalks/ui";
-import { useT } from "@kalks/i18n/react";
+import { cn } from "@ezymex/ui";
+import { useT } from "@ezymex/i18n/react";
 import type { IndLegendRow } from "./layer";
 
 /**

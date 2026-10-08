@@ -2,22 +2,22 @@ import { preconnect } from "react-dom";
 import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
-import { getI18n } from "@kalks/i18n/server";
-// subpath imports: a server layout importing the "@kalks/ui" barrel ships every client module of it on every page
-import { BrandProvider } from "@kalks/ui/brand";
-import { brandCss, isCustomBrand } from "@kalks/ui/brand-vars";
+import { getI18n } from "@ezymex/i18n/server";
+// subpath imports: a server layout importing the "@ezymex/ui" barrel ships every client module of it on every page
+import { BrandProvider } from "@ezymex/ui/brand";
+import { brandCss, isCustomBrand } from "@ezymex/ui/brand-vars";
 import { tenantBrand } from "@/lib/tenant-brand";
 import { TerminalProviders } from "./providers";
 import "./globals.css";
 
-// The broker brand of the host (gateway tenant_domains); Kalks keeps its stock look.
+// The broker brand of the host (gateway tenant_domains); Ezymex keeps its stock look.
 export async function generateMetadata(): Promise<Metadata> {
   const b = await tenantBrand();
-  const name = isCustomBrand(b) ? b.name : "Kalks";
+  const name = isCustomBrand(b) ? b.name : "Ezymex";
   return {
     title: { default: `${name} Trader`, template: `%s · ${name} Trader` },
     description: `${name} professional trading room`,
-    icons: { icon: isCustomBrand(b) && b.logo_url ? b.logo_url : "/assets/brand/kalks-mark.svg" },
+    icons: { icon: isCustomBrand(b) && b.logo_url ? b.logo_url : "/assets/brand/ezymex-mark.svg" },
   };
 }
 
@@ -36,7 +36,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // quotes, candles and the stream come from the market-data origin: start its DNS + TCP + TLS handshake while the
   // page loads instead of after hydration (the browser fetches it without credentials, hence "anonymous")
   if (MARKET_DATA_ORIGIN) preconnect(MARKET_DATA_ORIGIN, { crossOrigin: "anonymous" });
-  // same language cookie as the Client Area (kalks_locale), else the browser's Accept-Language
+  // same language cookie as the Client Area (ezymex_locale), else the browser's Accept-Language
   const [{ locale, dir, messages }, brand] = await Promise.all([getI18n(), tenantBrand()]);
   const css = brandCss(brand);
   return (

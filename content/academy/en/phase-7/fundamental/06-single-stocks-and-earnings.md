@@ -113,7 +113,7 @@ This is why many traders either close or reduce single-stock positions before ea
 
 ## Sessions and the broader market
 
-US stock CFDs on Kalks trade during the regular session, 09:30 to 16:00 New York time, which is 16:30 to 23:00 server time during US daylight saving time. The first 30 minutes are usually the most volatile, as overnight news and orders are absorbed.
+US stock CFDs on Ezymex trade during the regular session, 09:30 to 16:00 New York time, which is 16:30 to 23:00 server time during US daylight saving time. The first 30 minutes are usually the most volatile, as overnight news and orders are absorbed.
 
 Single stocks also carry market risk. A stock's **beta** measures how much it tends to move relative to the index. High-beta names such as TSLA or NVDA often move more than SPX500 in both directions, so a broad sell-off can hit them hard even without company news. Large constituents also move the indices themselves: a big earnings reaction in a mega-cap can shift NAS100 on the same morning.
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveNewsCms } from "@/components/news-live/cms";
 import NewsCurationPage from "../page";
 

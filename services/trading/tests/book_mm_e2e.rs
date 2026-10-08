@@ -10,7 +10,7 @@
 //! 3. **Combo RFQ**: the MM answers a call spread, the client accepts at the ask: both legs fill in one journal
 //!    entry, one outbox item per account, the MM's hold is released, the tape shows the legs and a combo print.
 //! 4. **Liquidation**: a client past its stop-out level is closed on the book first (within the band, against a
-//!    resting order) and the rest by the Kalks backstop at mark + fee; every step is logged.
+//!    resting order) and the rest by the Ezymex backstop at mark + fee; every step is logged.
 //! 5. **Bust** (four-eyes): a fill is reversed on both sides with `bust:` keys; positions move back.
 //! 6. **Back Office** monitors answer; halt / resume and MM pause / resume work.
 //! 7. Money: every transaction balances, clearing accounts net to 0, reserves 0 when idle, the account replay and
@@ -95,7 +95,7 @@ async fn market_maker_rfq_liquidation_enable_and_bust_end_to_end() {
         let cov = hub.shared.books.mm.run(1, AccountKind::Demo).under.get("EURUSD").map(|u| (u.series_quoted, u.series_total, u.status.clone()));
         let age = rig.options.spot("EURUSD").map(|s| Utc::now().timestamp_millis() - s.1);
         eprintln!("mm pass {i}: {:?} in {:?}; EURUSD spot age {age:?} ms, open {:?}", cov, t0.elapsed(), hub.shared.specs.load().get("EURUSD").map(|s| s.is_open(Utc::now())));
-        if i >= 3 && cov.as_ref().is_some_and(|c| c.1 > 0 && c.0 * 10 >= c.1 * 8) && rig.options.top.get("kalks", AccountKind::Demo, &series).is_some_and(|t| t.bid.is_some() && t.ask.is_some()) {
+        if i >= 3 && cov.as_ref().is_some_and(|c| c.1 > 0 && c.0 * 10 >= c.1 * 8) && rig.options.top.get("ezymex", AccountKind::Demo, &series).is_some_and(|t| t.bid.is_some() && t.ask.is_some()) {
             break;
         }
         tokio::time::sleep(Duration::from_millis(300)).await;
@@ -104,7 +104,7 @@ async fn market_maker_rfq_liquidation_enable_and_bust_end_to_end() {
     eprintln!("mm status: status {} coverage {} quotes {} latency {}", mms["status"], mms["coveragePct"], mms["quotesLive"], mms["latency"]);
     let eur = mms["underlyings"].as_array().unwrap().iter().find(|u| u["symbol"] == "EURUSD").unwrap().clone();
     assert!(eur["coveragePct"].as_f64().unwrap() > 80.0, "the MM quotes the EURUSD chain both sides: {eur}");
-    let top = rig.options.top.get("kalks", AccountKind::Demo, &series).expect("top of book");
+    let top = rig.options.top.get("ezymex", AccountKind::Demo, &series).expect("top of book");
     let (bid, ask) = (top.bid.expect("an MM bid"), top.ask.expect("an MM ask"));
     let s2 = series.clone();
     let model = hub
@@ -141,7 +141,7 @@ async fn market_maker_rfq_liquidation_enable_and_bust_end_to_end() {
     let rid = r["rfq"]["id"].as_str().unwrap().to_string();
     let Json(g) = api::options_book::rfq_get(State(st.clone()), rig.ctx(&tb), Path(rid.clone())).await.unwrap();
     let quote = g["quotes"][0].clone();
-    assert_eq!(quote["responder"], "kalks-mm", "the Kalks MM always answers: {g}");
+    assert_eq!(quote["responder"], "ezymex-mm", "the Ezymex MM always answers: {g}");
     let (qb, qa) = (dec(&quote["bid"]), dec(&quote["ask"]));
     assert!(qb < qa, "{quote}");
     let mm_hold = hub.read(mm, Box::new(|x| json!(x.unwrap().0.book.rfq_holds.len()))).await;
@@ -199,7 +199,7 @@ async fn market_maker_rfq_liquidation_enable_and_bust_end_to_end() {
 
     // ---------------- 4. liquidation: book first, then the backstop ----------------
     // c sells puts to the MM's bid (opening margin), then loses most of its balance: past stop-out
-    let put_bid = rig.options.top.get("kalks", AccountKind::Demo, &put).and_then(|t| t.bid).expect("an MM bid on the put");
+    let put_bid = rig.options.top.get("ezymex", AccountKind::Demo, &put).and_then(|t| t.bid).expect("an MM bid on the put");
     let mut sell = order(&put, "sell", "limit", 4, Some(put_bid.0), "c1");
     sell["tif"] = json!("ioc");
     let Json(sold) = api::options_book::place(State(st.clone()), rig.ctx(&tc), body(sell)).await.unwrap();
@@ -295,7 +295,7 @@ async fn market_maker_rfq_liquidation_enable_and_bust_end_to_end() {
     let Json(_) = api::book_admin::mm_pause(State(st.clone()), rig.staff("s1"), Path("pause".into()), body(json!({"kind": "demo", "scope": "underlying", "target": "EURUSD", "reason": "e2e pause"}))).await.unwrap();
     trading::book::mm::pass(&st, 1, AccountKind::Demo).await.unwrap();
     rig.drained().await;
-    assert!(rig.options.top.get("kalks", AccountKind::Demo, &series2).is_none_or(|t| t.bid.is_none() && t.ask.is_none()), "paused: the MM pulled its EURUSD quotes");
+    assert!(rig.options.top.get("ezymex", AccountKind::Demo, &series2).is_none_or(|t| t.bid.is_none() && t.ask.is_none()), "paused: the MM pulled its EURUSD quotes");
     let Json(_) = api::book_admin::mm_pause(State(st.clone()), rig.staff("s1"), Path("resume".into()), body(json!({"kind": "demo", "scope": "all", "reason": "e2e resume"}))).await.unwrap();
     let Json(rf) = api::book_admin::rfqs(State(st.clone()), rig.staff("s1"), q(json!({"kind": "demo"}))).await.unwrap();
     assert!(rf["recent"].as_array().unwrap().iter().any(|x| x["status"] == "filled"), "{rf}");

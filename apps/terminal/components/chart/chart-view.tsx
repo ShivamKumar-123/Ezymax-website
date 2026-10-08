@@ -5,8 +5,8 @@ import { useTheme } from "next-themes";
 import { LineStyle, type IPriceLine } from "lightweight-charts";
 import { toast } from "@/lib/notify";
 import { ArrowDownRight, ArrowUpRight, Bell, Camera, CandlestickChart, ChevronUp, Crosshair, GripVertical, Layers, Minus, Plus, ShoppingCart, SlidersHorizontal, X, Zap } from "lucide-react";
-import { getInstrument, isMarketOpen, priceFeed } from "@kalks/mock";
-import { PriceText, cn, useQuote } from "@kalks/ui";
+import { getInstrument, isMarketOpen, priceFeed } from "@ezymex/mock";
+import { PriceText, cn, useQuote } from "@ezymex/ui";
 import { usePositionProfit, useTerminal, type Anchor, type ChartTab, type Drawing } from "@/lib/store";
 import { CHART_TYPES, TIMEFRAMES, accMoney, fmtPrice, fmtVol, profitAt, roundPrice, type TPosition } from "@/lib/trading";
 import { useContextMenu, type MenuItem } from "@/components/ui/menu";
@@ -16,8 +16,8 @@ import { IndicatorLegendRow } from "./indicators/legend";
 import { addIndicator, openIndicatorList, openIndicatorSettings, removeIndicator, toggleIndicator } from "./indicators/state";
 import { useMarketOpen } from "@/lib/market-hours";
 import { openRegister } from "@/lib/guest";
-import { useT } from "@kalks/i18n/react";
-import type { MessageKey } from "@kalks/i18n";
+import { useT } from "@ezymex/i18n/react";
+import type { MessageKey } from "@ezymex/i18n";
 
 /* ------------------------------------------------------------------ */
 /* Trade lines                                                         */

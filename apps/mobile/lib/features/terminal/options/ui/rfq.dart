@@ -1,8 +1,8 @@
 // Strategies on the order book trade by request for quote (web: components/options/rfq.tsx): the legs (sides and
-// whole ratios) and a size go out as one RFQ (`POST trade/options/rfq`, open 30 s); the Kalks market maker answers with
+// whole ratios) and a size go out as one RFQ (`POST trade/options/rfq`, open 30 s); the Ezymex market maker answers with
 // a firm net bid / ask per strategy unit (valid a few seconds, refreshed after that); accepting
 // (`POST …/rfq/{id}/accept {quoteId, side, limitNet}`) fills every leg at once, or nothing. "Buy" trades the strategy
-// as built at the ask, "Sell" the reverse at the bid. A barrier leg answers 422 `kalks_quoted`: the house ticket
+// as built at the ask, "Sell" the reverse at the bid. A barrier leg answers 422 `ezymex_quoted`: the house ticket
 // places it. Refusals read in plain words, with "Get a new price" when only the price went stale.
 import 'dart:async';
 import 'dart:math' as math;
@@ -29,10 +29,10 @@ import 'book_ticket.dart';
 typedef RfqLegSpec = ({String series, String side, int contracts});
 
 class RfqPanel extends ConsumerStatefulWidget {
-  const RfqPanel({super.key, required this.legs, this.onDone, this.onKalksQuoted, this.disabled = false});
+  const RfqPanel({super.key, required this.legs, this.onDone, this.onEzymexQuoted, this.disabled = false});
   final List<RfqLegSpec> legs;
   final VoidCallback? onDone;
-  final VoidCallback? onKalksQuoted;
+  final VoidCallback? onEzymexQuoted;
   final bool disabled;
 
   @override
@@ -144,7 +144,7 @@ class _RfqPanelState extends ConsumerState<RfqPanel> {
         ref.read(optionsProvider.notifier).setBookOff();
         return;
       }
-      if (e.code == 'kalks_quoted') widget.onKalksQuoted?.call();
+      if (e.code == 'ezymex_quoted') widget.onEzymexQuoted?.call();
       setState(() => _err = (code: optCode(e), message: e.message));
     }
   }
@@ -407,7 +407,7 @@ class _RfqPanelState extends ConsumerState<RfqPanel> {
               children: [
                 Expanded(
                   child: Text(
-                    '${t('trader.opt.rfq.from', {'who': quote?.responder == 'kalks' || (quote?.responder.startsWith('kalks') ?? false) ? t('trader.opt.rfq.kalksMm') : (quote?.responder ?? '—')})} · ${t('trader.opt.rfq.openFor', {'s': rfqLeft})}',
+                    '${t('trader.opt.rfq.from', {'who': quote?.responder == 'ezymex' || (quote?.responder.startsWith('ezymex') ?? false) ? t('trader.opt.rfq.ezymexMm') : (quote?.responder ?? '—')})} · ${t('trader.opt.rfq.openFor', {'s': rfqLeft})}',
                     style: context.text.caption.copyWith(fontSize: 10.5, color: k.fg3, fontWeight: FontWeight.w400),
                   ),
                 ),
@@ -448,7 +448,7 @@ class _RfqError extends StatelessWidget {
     final t = context.t;
     final k = context.k;
     final requote = rfqRequotable(code);
-    final (Color bg, Color border, Color icon) = code == 'kalks_quoted'
+    final (Color bg, Color border, Color icon) = code == 'ezymex_quoted'
         ? (k.goldSoft, k.gold.withValues(alpha: 0.35), k.gold)
         : (requote ? (k.warnSoft, k.warn.withValues(alpha: 0.35), k.warn) : (k.downSoft.withValues(alpha: 0.6), k.down.withValues(alpha: 0.3), k.down));
     return Container(

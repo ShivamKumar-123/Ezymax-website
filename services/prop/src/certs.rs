@@ -53,7 +53,7 @@ pub fn public_name(full: &str) -> String {
     match (parts.next(), parts.last()) {
         (Some(f), Some(l)) => format!("{f} {}.", l.chars().next().unwrap_or(' ')),
         (Some(f), None) => f.to_string(),
-        _ => "Kalks trader".into(),
+        _ => "Ezymex trader".into(),
     }
 }
 
@@ -165,7 +165,7 @@ pub fn svg(c: &Certificate, verify_base: &str) -> String {
 <rect width="1200" height="675" fill="#0b0b0d"/>
 <rect x="24" y="24" width="1152" height="627" rx="28" fill="#121215" stroke="#2a2a30"/>
 <rect x="24" y="24" width="1152" height="6" rx="3" fill="#ff5a1f"/>
-<text x="80" y="110" font-size="28" font-weight="700" fill="#f5f5f6" letter-spacing="1">KALKS</text>
+<text x="80" y="110" font-size="28" font-weight="700" fill="#f5f5f6" letter-spacing="1">EZYMEX</text>
 <text x="176" y="110" font-size="18" fill="#9a9aa3">PROP</text>
 <text x="1120" y="110" text-anchor="end" font-size="16" fill="#9a9aa3">No. {code}</text>
 <text x="80" y="200" font-size="22" fill="#ff8a3d" letter-spacing="3">{headline_upper}</text>
@@ -199,7 +199,7 @@ mod tests {
     fn names_and_money() {
         assert_eq!(public_name("Shivam Kumar Singh"), "Shivam S.");
         assert_eq!(public_name("Madonna"), "Madonna");
-        assert_eq!(public_name("  "), "Kalks trader");
+        assert_eq!(public_name("  "), "Ezymex trader");
         assert_eq!(money_text(D::from(100000)), "$100,000");
         assert_eq!(money_text(D::from_str("1234.5").unwrap()), "$1,234.50");
         assert_eq!(money_text(D::from_str("999.999").unwrap()), "$1,000");
@@ -209,7 +209,7 @@ mod tests {
     fn svg_escapes_text() {
         let c = Certificate {
             code: "ABCD234567".into(),
-            tenant: "kalks".into(),
+            tenant: "ezymex".into(),
             user_id: 1,
             challenge_id: 1,
             kind: "pass".into(),
@@ -222,9 +222,9 @@ mod tests {
             issued_at: Utc::now(),
             revoked: false,
         };
-        let s = svg(&c, "https://app.kalkstrade.com/verify");
+        let s = svg(&c, "https://app.ezymex.com/verify");
         assert!(s.contains("&lt;script&gt;"));
         assert!(s.contains("A &amp; B"));
-        assert!(s.contains("app.kalkstrade.com/verify/ABCD234567"));
+        assert!(s.contains("app.ezymex.com/verify/ABCD234567"));
     }
 }

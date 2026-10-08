@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Panel inferior de Kalks Trader ("Caja de herramientas", estilo MT5): Operaciones, Historial, Exposición, Noticias, Calendario, Alertas, Diario.
+// Panel inferior de Ezymex Trader ("Caja de herramientas", estilo MT5): Operaciones, Historial, Exposición, Noticias, Calendario, Alertas, Diario.
 const toolbox: NsMessages<"toolbox"> = {
   // Cabecera del panel
   title: "Caja de herramientas",

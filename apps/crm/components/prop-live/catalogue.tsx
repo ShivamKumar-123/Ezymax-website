@@ -4,8 +4,8 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowRight, Ban, CalendarDays, Check, Clock, Gauge as GaugeIcon, Layers, Loader2, Minus, Percent, ShieldCheck, Target, TrendingDown, Trophy, Wallet, Zap } from "lucide-react";
 import { Button, Card, CardHeader, Chip, Dialog, EmptyState, PageHeader, Reveal, Segmented, Skeleton, cn } from "@/components/kit";
-import type { T } from "@kalks/i18n";
-import { useT } from "@kalks/i18n/react";
+import type { T } from "@ezymex/i18n";
+import { useT } from "@ezymex/i18n/react";
 import {
   bannedLabel,
   payoutFreqLabel,
@@ -428,7 +428,7 @@ export function CheckoutDialog({ plan, size, open, onOpenChange, onBought }: { p
             <>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <CredentialField label={t("prop.cred.login")} value={String(creds.login)} />
-                <CredentialField label={t("prop.cred.server")} value="Kalks-Live" mono={false} />
+                <CredentialField label={t("prop.cred.server")} value="Ezymex-Live" mono={false} />
                 <CredentialField label={t("prop.cred.password")} value={creds.password} secret />
                 <CredentialField label={t("prop.cred.investorPassword")} value={creds.investorPassword} secret />
               </div>

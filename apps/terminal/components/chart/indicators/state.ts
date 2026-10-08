@@ -74,7 +74,7 @@ export const closeIndUi = (k: keyof IndUi) => ui.set((s) => ({ ...s, [k]: null }
 
 /* ---- favourites ---- */
 
-const favs = createStore<string[]>(() => ["sma", "ema", "bb", "rsi", "macd"], "kalks.terminal.indicatorFavourites");
+const favs = createStore<string[]>(() => ["sma", "ema", "bb", "rsi", "macd"], "ezymex.terminal.indicatorFavourites");
 export const useIndicatorFavourites = favs.use;
 export function toggleFavourite(t: IndicatorType) {
   favs.set((f) => (f.includes(t) ? f.filter((x) => x !== t) : [...f, t]));
@@ -134,7 +134,7 @@ export const BUILTIN_TEMPLATES: ChartTemplate[] = [
   { id: "b-line", name: "Clean line", type: "line", indicators: [], builtin: true },
 ];
 
-const userTpl = createStore<ChartTemplate[]>(() => [], "kalks.terminal.templates");
+const userTpl = createStore<ChartTemplate[]>(() => [], "ezymex.terminal.templates");
 export const useUserTemplates = userTpl.use;
 
 const strip = (i: IndicatorInstance): TemplateIndicator => ({ type: i.type, params: i.params, visible: i.visible, ...(i.style ? { style: i.style } : {}), ...(i.levels ? { levels: i.levels } : {}) });

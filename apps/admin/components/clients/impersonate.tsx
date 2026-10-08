@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * "Log in as client": opens the Client Area (or Kalks Trader on one of the client's accounts) as the client in a
+ * "Log in as client": opens the Client Area (or Ezymex Trader on one of the client's accounts) as the client in a
  * new tab, for 30 minutes, bound to this staff session. Read-only by default (every change is refused on the
  * server); full access is for the Super Admin only, with an extra confirmation. A reason is required and every
  * start, end and action is audited; the client's sign-in history shows "Staff access by <broker> support".
@@ -9,7 +9,7 @@
 import * as React from "react";
 import { CandlestickChart, Eye, LayoutDashboard, LogIn, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Dialog, Field, Segmented, cn } from "@kalks/ui";
+import { Button, Dialog, Field, Segmented, cn } from "@ezymex/ui";
 import { TextArea } from "@/components/config/kit";
 import { Mono, sendJson, useApi } from "@/components/live/kit";
 import type { Controls } from "./presence";
@@ -80,7 +80,7 @@ function ImpersonateDialog({ id, name, controls, onClose }: { id: number; name: 
             Cancel
           </Button>
           <Button size="sm" variant="ember" onClick={open} disabled={busy} data-testid="impersonate-start">
-            <LogIn /> {busy ? "Opening…" : app === "trader" ? "Open Kalks Trader" : "Open Client Area"}
+            <LogIn /> {busy ? "Opening…" : app === "trader" ? "Open Ezymex Trader" : "Open Client Area"}
           </Button>
         </>
       }
@@ -93,7 +93,7 @@ function ImpersonateDialog({ id, name, controls, onClose }: { id: number; name: 
             onChange={(v) => setApp(v)}
             options={[
               { value: "client_area", label: <span className="inline-flex items-center gap-1.5"><LayoutDashboard className="size-3.5" />Client Area</span> },
-              { value: "trader", label: <span className="inline-flex items-center gap-1.5"><CandlestickChart className="size-3.5" />Kalks Trader</span> },
+              { value: "trader", label: <span className="inline-flex items-center gap-1.5"><CandlestickChart className="size-3.5" />Ezymex Trader</span> },
             ]}
           />
         </Field>

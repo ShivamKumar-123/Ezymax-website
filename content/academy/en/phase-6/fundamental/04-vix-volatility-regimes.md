@@ -118,7 +118,7 @@ VIX futures exist for several months ahead. In normal markets, later months are 
 
 The practical use of volatility is to keep your *risk* constant while the *market* changes.
 
-> **Example:** A trader risks 1% of a 20,000 USD account, 200 USD, on NAS100 trades, placing stops at 1.5 x ATR(14). In a calm regime ATR is 120 points, so the stop is 180 points. On a contract worth 1 USD per point per lot, the size is 200 / 180 = 1.11, rounded down to 1.1 lots. After a volatility spike ATR rises to 240 points, so the stop is 360 points and the size becomes 200 / 360 = 0.55 lots. The money at risk is the same; the exposure halves. Check the contract specification in Kalks Trader, as point values vary by symbol.
+> **Example:** A trader risks 1% of a 20,000 USD account, 200 USD, on NAS100 trades, placing stops at 1.5 x ATR(14). In a calm regime ATR is 120 points, so the stop is 180 points. On a contract worth 1 USD per point per lot, the size is 200 / 180 = 1.11, rounded down to 1.1 lots. After a volatility spike ATR rises to 240 points, so the stop is 360 points and the size becomes 200 / 360 = 0.55 lots. The money at risk is the same; the exposure halves. Check the contract specification in Ezymex Trader, as point values vary by symbol.
 
 Strategy choice can also depend on the regime. Mean-reversion ideas often work better in calm, range-bound conditions, while breakout and trend-following ideas tend to do better when volatility is expanding from a low base. In the stress regime, many experienced traders simply trade smaller or not at all.
 

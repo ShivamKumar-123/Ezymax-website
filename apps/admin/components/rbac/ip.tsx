@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Globe2, Plus, ShieldAlert, ShieldCheck, Trash2, Wifi } from "lucide-react";
-import { Button, Card, CardHeader, Chip, DataTable, EmptyState, Field, IconButton, Input, KpiCard, PageHeader, Toggle, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, EmptyState, Field, IconButton, Input, KpiCard, PageHeader, Toggle, type Column } from "@ezymex/ui";
 import { useCan, useStaff } from "@/components/staff-session";
 import { ErrorState, TableSkeleton, ago, useApi, useNow, when } from "@/components/live/kit";
 import { validateCidr, cidrSize } from "@/components/security/cidr";

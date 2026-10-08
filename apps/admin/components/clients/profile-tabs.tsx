@@ -24,8 +24,8 @@ import {
   formatNumber,
   shortHash,
   type Column,
-} from "@kalks/ui";
-import { equitySeries, hashString } from "@kalks/mock";
+} from "@ezymex/ui";
+import { equitySeries, hashString } from "@ezymex/mock";
 import {
   REASON_CODES,
   clientAccounts,
@@ -43,7 +43,7 @@ import {
   type ClientTx,
   type IbNode,
   type LoginEvent,
-} from "@kalks/mock/admin-clients";
+} from "@ezymex/mock/admin-clients";
 import { PnlText, ReasonDialog } from "@/components/command/kit";
 import { fmtHold } from "@/components/command/overview";
 

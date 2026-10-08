@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Award, BookOpen, CheckCircle2, Clock, Flame, GraduationCap, Library, PlayCircle, Search, Target } from "lucide-react";
 import { Button, Card, CardHeader, Chip, PageHeader, Progress, Reveal, cn } from "@/components/kit";
-import type { T } from "@kalks/i18n";
-import { useFormat, useT } from "@kalks/i18n/react";
+import type { T } from "@ezymex/i18n";
+import { useFormat, useT } from "@ezymex/i18n/react";
 import { LEVEL_TONE, coverOf, fmtDay, fmtMin, isElective, levelLabel, pct, trackCount, trackTallies, useAcademy, type Catalog, type PhaseT } from "./api";
 import { AcademyUnavailable, PageSkeleton, PracticeButton, RISK_NOTE, Segments } from "./shared";
 

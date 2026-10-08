@@ -51,13 +51,13 @@ The market order is the simplest instruction you can give: buy or sell this symb
 
 ## Which price you get
 
-As covered in the fundamental track, every symbol has a bid and an ask. A market **buy** is filled at the **ask**; a market **sell** is filled at the **bid**. The chart in Kalks Trader normally plots the bid, so a buy fill will usually sit slightly above the last candle.
+As covered in the fundamental track, every symbol has a bid and an ask. A market **buy** is filled at the **ask**; a market **sell** is filled at the **bid**. The chart in Ezymex Trader normally plots the bid, so a buy fill will usually sit slightly above the last candle.
 
 A market order is executed at the best price available when it reaches the server. In calm conditions on a liquid symbol such as EURUSD, that is almost always the price you saw. When prices are moving fast, it can be a little better or a little worse. That difference is **slippage**, covered in detail later in this track.
 
 ## The order ticket
 
-Opening a new order in Kalks Trader shows an order ticket. Before confirming a market order, check each field:
+Opening a new order in Ezymex Trader shows an order ticket. Before confirming a market order, check each field:
 
 1. **Symbol.** It is easy to have GBPUSD selected when you meant EURUSD, or US30 instead of NAS100.
 2. **Direction.** Buy if you expect the price to rise, sell if you expect it to fall.
@@ -82,7 +82,7 @@ Result: (1.0874 - 1.0851) x 20,000 = 0.0023 x 20,000 = +46.00 USD
 
 The closing deal uses the bid because closing a long means selling. For a short the roles reverse: you open at the bid and close by buying at the ask.
 
-> **In Kalks Trader:** Open positions appear in the positions panel with their entry price, current price, volume and floating result. Closing a position sends an opposite market order for its full volume; you can also close part of it, as covered in the chapter on OCO and partial close.
+> **In Ezymex Trader:** Open positions appear in the positions panel with their entry price, current price, volume and floating result. Closing a position sends an opposite market order for its full volume; you can also close part of it, as covered in the chapter on OCO and partial close.
 
 ## When a market order is the right tool
 

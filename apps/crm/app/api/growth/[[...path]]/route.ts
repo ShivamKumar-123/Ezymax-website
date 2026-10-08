@@ -4,7 +4,7 @@ import { sameOrigin, sessionUser } from "@/lib/trading";
 
 // Rewards & marketing BFF. Browser -> /api/growth/<route> (same origin) -> growth service /v1/growth/me/…
 // The client is resolved from the HttpOnly gateway session cookie; the service gets that user id in
-// X-Kalks-User-Id plus the segment headers (country, KYC, sign-up date, name, referral code). A user id sent by
+// X-Ezymex-User-Id plus the segment headers (country, KYC, sign-up date, name, referral code). A user id sent by
 // the browser is never used. Mutations must be same-origin JSON. Routes (services/growth/README.md):
 //
 //   GET   rewards                         points, tier, tiers, earn rules, catalogue, recent, series

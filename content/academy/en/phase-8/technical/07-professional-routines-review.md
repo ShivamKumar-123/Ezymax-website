@@ -40,7 +40,7 @@ quiz:
   - question: "Which contingency step best protects open positions against a sudden loss of your internet connection?"
     options:
       - "Relying on memory of where you would exit"
-      - "Having server-side stop losses on every position and a backup way to access Kalks Trader"
+      - "Having server-side stop losses on every position and a backup way to access Ezymex Trader"
       - "Keeping positions without stops so they cannot be triggered by accident"
       - "Only trading when the connection feels reliable"
     answer: 1
@@ -117,7 +117,7 @@ Professional operations assume things will go wrong and prepare in advance.
 | Personal factors | Rule to stop trading when ill, exhausted or emotionally shaken; lower size after long breaks |
 | Large drawdown | Pre-set levels at which risk is halved and trading paused for review |
 
-> **Example:** A trader's home connection drops during a volatile NY session with three positions open. Because every position has a server-side stop and trailing stop in Kalks Trader, risk is already capped. The trader switches to a phone on mobile data, checks positions, and follows the written rule: manage existing trades only, no new entries until the main connection is restored.
+> **Example:** A trader's home connection drops during a volatile NY session with three positions open. Because every position has a server-side stop and trailing stop in Ezymex Trader, risk is already capped. The trader switches to a phone on mobile data, checks positions, and follows the written rule: manage existing trades only, no new entries until the main connection is restored.
 
 ## Common mistakes
 
@@ -126,4 +126,4 @@ Professional operations assume things will go wrong and prepare in advance.
 - **Skipping preparation on busy days,** exactly when mistakes are most likely.
 - **Treating contingency plans as optional** until the first serious failure.
 
-> **Risk warning:** Routines and reviews improve consistency but cannot remove market risk. CFDs are leveraged and losses can exceed what you expect. Keep practising on a free demo account in Kalks Trader whenever you change strategy, size or process.
+> **Risk warning:** Routines and reviews improve consistency but cannot remove market risk. CFDs are leveraged and losses can exceed what you expect. Keep practising on a free demo account in Ezymex Trader whenever you change strategy, size or process.

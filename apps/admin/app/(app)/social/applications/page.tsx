@@ -4,13 +4,13 @@ import * as React from "react";
 import Link from "next/link";
 import { Check, CheckCircle2, Download, MessageSquare, Settings2, X, XCircle } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardHeader, Chip, CopyButton, Delta, EquityChart, Flag, Money, PageHeader, Reveal, Segmented, StatusChip, SymbolAvatar, cn } from "@kalks/ui";
-import { APPLICATIONS, SOCIAL_SETTINGS, type MasterApplication } from "@kalks/mock/admin-partners";
+import { Avatar, Button, Card, CardHeader, Chip, CopyButton, Delta, EquityChart, Flag, Money, PageHeader, Reveal, Segmented, StatusChip, SymbolAvatar, cn } from "@ezymex/ui";
+import { APPLICATIONS, SOCIAL_SETTINGS, type MasterApplication } from "@ezymex/mock/admin-partners";
 import { MiniStat, SegBar, auditToast, useReason } from "@/components/config/kit";
 import { ago, fmtDT } from "@/components/partners/common";
 import { TypeChip } from "@/components/social/common";
 import { equityPoints } from "@/components/social/master-drawer";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveApplicationsPage } from "@/components/social-live/applications";
 
 function checks(a: MasterApplication) {

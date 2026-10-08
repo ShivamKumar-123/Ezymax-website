@@ -2,14 +2,14 @@
 
 import * as React from "react";
 import { Eye, EyeOff, Loader2, Lock, Server, UserRound } from "lucide-react";
-import { cn } from "@kalks/ui";
-import { tr, useT } from "@kalks/i18n/react";
+import { cn } from "@ezymex/ui";
+import { tr, useT } from "@ezymex/i18n/react";
 import { Check } from "@/components/ui/primitives";
 import { SAVED_KEY } from "@/lib/store";
 import { engineApi, type AuthResult } from "@/lib/engine/client";
 import type { EngineErr } from "@/lib/engine/map";
 
-export const LIVE_SERVERS = ["Kalks-Live", "Kalks-Demo"] as const;
+export const LIVE_SERVERS = ["Ezymex-Live", "Ezymex-Demo"] as const;
 export type LiveServer = (typeof LIVE_SERVERS)[number];
 
 /** Logins remembered on this device (never passwords). */
@@ -24,7 +24,7 @@ export function readSavedLogins(): SavedLogin[] {
     const raw = localStorage.getItem(SAVED_KEY);
     const list = raw ? (JSON.parse(raw) as Partial<SavedLogin>[]) : [];
     return list
-      .filter((s): s is SavedLogin => typeof s?.login === "string" && /^\d{8}$/.test(s.login) && (s.server === "Kalks-Live" || s.server === "Kalks-Demo"))
+      .filter((s): s is SavedLogin => typeof s?.login === "string" && /^\d{8}$/.test(s.login) && (s.server === "Ezymex-Live" || s.server === "Ezymex-Demo"))
       .slice(0, 8);
   } catch {
     return [];
@@ -39,7 +39,7 @@ export function writeSavedLogins(list: SavedLogin[]) {
 }
 
 /** Demo logins start at 50 000 001, live at 10 000 001 (engine numbering). */
-export const serverForLogin = (login: string): LiveServer | null => (/^\d{8}$/.test(login) ? (login.startsWith("5") ? "Kalks-Demo" : "Kalks-Live") : null);
+export const serverForLogin = (login: string): LiveServer | null => (/^\d{8}$/.test(login) ? (login.startsWith("5") ? "Ezymex-Demo" : "Ezymex-Live") : null);
 
 function loginError(e: EngineErr): string {
   switch (e.code) {
@@ -67,7 +67,7 @@ export function EngineLoginForm({ initialLogin = "", onSuccess, autoFocus, class
   const t = useT();
   const [login, setLogin] = React.useState(initialLogin);
   const [password, setPassword] = React.useState("");
-  const [server, setServer] = React.useState<LiveServer>(serverForLogin(initialLogin) ?? "Kalks-Live");
+  const [server, setServer] = React.useState<LiveServer>(serverForLogin(initialLogin) ?? "Ezymex-Live");
   const [remember, setRemember] = React.useState(true);
   const [show, setShow] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
@@ -137,7 +137,7 @@ export function EngineLoginForm({ initialLogin = "", onSuccess, autoFocus, class
         <select value={server} onChange={(e) => setServer(e.target.value as LiveServer)} className="t-select h-full w-full bg-transparent text-[13px] outline-none" aria-label={t("trader.login.server")}>
           {LIVE_SERVERS.map((s) => (
             <option key={s} value={s}>
-              {s} · {s === "Kalks-Demo" ? t("trader.login.demoAccounts") : t("trader.login.realAccounts")}
+              {s} · {s === "Ezymex-Demo" ? t("trader.login.demoAccounts") : t("trader.login.realAccounts")}
             </option>
           ))}
         </select>

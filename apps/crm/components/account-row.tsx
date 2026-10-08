@@ -4,11 +4,11 @@ import Link from "next/link";
 import { ArrowDownToLine, ArrowUpFromLine, CandlestickChart, KeyRound, MoreHorizontal, Pencil, RefreshCcw, Archive, Gauge as GaugeIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Chip, CopyButton, IconButton, Menu, Money, cn } from "@/components/kit";
-import { freeMargin, marginLevel, type TradingAccount } from "@kalks/mock";
-import { useT } from "@kalks/i18n/react";
-import type { T } from "@kalks/i18n";
+import { freeMargin, marginLevel, type TradingAccount } from "@ezymex/mock";
+import { useT } from "@ezymex/i18n/react";
+import type { T } from "@ezymex/i18n";
 import { TERMINAL_URL } from "@/lib/live";
-import { intlTag } from "@kalks/i18n/locales";
+import { intlTag } from "@ezymex/i18n/locales";
 
 export function AccountBadge({ a }: { a: TradingAccount }) {
   const t = useT();

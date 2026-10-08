@@ -1,11 +1,11 @@
--- Kalks prop firm (module 15, D147–D150). Database kalks_prop.
--- Every table carries the tenant slug and an RLS policy on current_setting('kalks.tenant'). The service
+-- Ezymex prop firm (module 15, D147–D150). Database ezymex_prop.
+-- Every table carries the tenant slug and an RLS policy on current_setting('ezymex.tenant'). The service
 -- connects as the table owner and filters by tenant itself; the policies protect every other role.
 -- Money is NUMERIC (rust_decimal in the service), never floats.
 
 -- Challenge plans (D147). Rule fields are typed columns; sizes live in plan_sizes.
 CREATE TABLE plans (
-    tenant             TEXT NOT NULL DEFAULT 'kalks',
+    tenant             TEXT NOT NULL DEFAULT 'ezymex',
     id                 TEXT NOT NULL CHECK (id ~ '^[a-z0-9][a-z0-9-]{1,47}$'),
     name               TEXT NOT NULL,
     kind               TEXT NOT NULL CHECK (kind IN ('1-step', '2-step', 'instant')),
@@ -44,7 +44,7 @@ CREATE TABLE plans (
 );
 
 CREATE TABLE plan_sizes (
-    tenant     TEXT NOT NULL DEFAULT 'kalks',
+    tenant     TEXT NOT NULL DEFAULT 'ezymex',
     plan_id    TEXT NOT NULL,
     size       NUMERIC NOT NULL CHECK (size > 0),
     fee        NUMERIC NOT NULL CHECK (fee >= 0),
@@ -57,7 +57,7 @@ CREATE TABLE plan_sizes (
 -- A purchase. It moves through phase accounts: phase1 → phase2 → funded, or failed (D147, D148).
 CREATE TABLE challenges (
     id              BIGSERIAL PRIMARY KEY,
-    tenant          TEXT NOT NULL DEFAULT 'kalks',
+    tenant          TEXT NOT NULL DEFAULT 'ezymex',
     user_id         BIGINT NOT NULL,
     trader_name     TEXT NOT NULL DEFAULT '',
     plan_id         TEXT NOT NULL,
@@ -88,7 +88,7 @@ CREATE INDEX challenges_status ON challenges (tenant, status);
 -- One engine trading account per phase (Phase 1, Phase 2, Funded). Live rule state lives here.
 CREATE TABLE phase_accounts (
     id               BIGSERIAL PRIMARY KEY,
-    tenant           TEXT NOT NULL DEFAULT 'kalks',
+    tenant           TEXT NOT NULL DEFAULT 'ezymex',
     challenge_id     BIGINT NOT NULL REFERENCES challenges (id),
     user_id          BIGINT NOT NULL,
     phase_index      INT NOT NULL,
@@ -129,7 +129,7 @@ CREATE INDEX phase_accounts_active ON phase_accounts (status) WHERE status = 'ac
 -- Equity curve samples for the trader dashboard (at most one per minute per account, plus rule events).
 CREATE TABLE equity_points (
     account_id BIGINT NOT NULL REFERENCES phase_accounts (id),
-    tenant     TEXT NOT NULL DEFAULT 'kalks',
+    tenant     TEXT NOT NULL DEFAULT 'ezymex',
     at         TIMESTAMPTZ NOT NULL,
     balance    NUMERIC NOT NULL,
     equity     NUMERIC NOT NULL,
@@ -139,7 +139,7 @@ CREATE TABLE equity_points (
 -- Rule events: breaches (auto-fail), violations (position closed / flagged), warnings, overrides.
 CREATE TABLE rule_events (
     id           BIGSERIAL PRIMARY KEY,
-    tenant       TEXT NOT NULL DEFAULT 'kalks',
+    tenant       TEXT NOT NULL DEFAULT 'ezymex',
     account_id   BIGINT NOT NULL REFERENCES phase_accounts (id),
     challenge_id BIGINT NOT NULL REFERENCES challenges (id),
     user_id      BIGINT NOT NULL,
@@ -160,7 +160,7 @@ CREATE INDEX rule_events_at ON rule_events (tenant, at DESC);
 -- Banned-strategy heuristics, flagged for review (D148). Never auto-fail on their own.
 CREATE TABLE strategy_flags (
     id            BIGSERIAL PRIMARY KEY,
-    tenant        TEXT NOT NULL DEFAULT 'kalks',
+    tenant        TEXT NOT NULL DEFAULT 'ezymex',
     account_id    BIGINT NOT NULL REFERENCES phase_accounts (id),
     challenge_id  BIGINT NOT NULL REFERENCES challenges (id),
     user_id       BIGINT NOT NULL,
@@ -182,7 +182,7 @@ CREATE TABLE strategy_flags (
 -- Funded payouts (D149): request → admin approval → wallet credit.
 CREATE TABLE payouts (
     id             BIGSERIAL PRIMARY KEY,
-    tenant         TEXT NOT NULL DEFAULT 'kalks',
+    tenant         TEXT NOT NULL DEFAULT 'ezymex',
     challenge_id   BIGINT NOT NULL REFERENCES challenges (id),
     account_id     BIGINT NOT NULL REFERENCES phase_accounts (id),
     user_id        BIGINT NOT NULL,
@@ -206,7 +206,7 @@ CREATE UNIQUE INDEX payouts_one_pending ON payouts (account_id) WHERE status IN 
 
 CREATE TABLE scaling_events (
     id          BIGSERIAL PRIMARY KEY,
-    tenant      TEXT NOT NULL DEFAULT 'kalks',
+    tenant      TEXT NOT NULL DEFAULT 'ezymex',
     account_id  BIGINT NOT NULL REFERENCES phase_accounts (id),
     at          TIMESTAMPTZ NOT NULL DEFAULT now(),
     from_size   NUMERIC NOT NULL,
@@ -219,7 +219,7 @@ CREATE TABLE scaling_events (
 -- Shareable certificates with a public verify link (D149, D136).
 CREATE TABLE certificates (
     code         TEXT PRIMARY KEY,
-    tenant       TEXT NOT NULL DEFAULT 'kalks',
+    tenant       TEXT NOT NULL DEFAULT 'ezymex',
     user_id      BIGINT NOT NULL,
     challenge_id BIGINT NOT NULL REFERENCES challenges (id),
     kind         TEXT NOT NULL CHECK (kind IN ('pass', 'funded', 'payout')),
@@ -239,7 +239,7 @@ CREATE INDEX certificates_user ON certificates (tenant, user_id, issued_at DESC)
 -- Admin-managed economic calendar used by the news-window rule.
 CREATE TABLE news_events (
     id          BIGSERIAL PRIMARY KEY,
-    tenant      TEXT NOT NULL DEFAULT 'kalks',
+    tenant      TEXT NOT NULL DEFAULT 'ezymex',
     at          TIMESTAMPTZ NOT NULL,
     title       TEXT NOT NULL,
     currency    TEXT NOT NULL CHECK (currency ~ '^[A-Z]{3}$'),
@@ -253,7 +253,7 @@ CREATE INDEX news_events_at ON news_events (tenant, at);
 -- In-app notifications for the trader (warnings, breach, pass, payout decisions).
 CREATE TABLE notifications (
     id          BIGSERIAL PRIMARY KEY,
-    tenant      TEXT NOT NULL DEFAULT 'kalks',
+    tenant      TEXT NOT NULL DEFAULT 'ezymex',
     user_id     BIGINT NOT NULL,
     challenge_id BIGINT,
     kind        TEXT NOT NULL,
@@ -267,7 +267,7 @@ CREATE INDEX notifications_user ON notifications (tenant, user_id, id DESC);
 -- Wallet calls with their idempotency keys (retried with the same key when the outcome is unknown).
 CREATE TABLE wallet_ops (
     key         TEXT PRIMARY KEY,
-    tenant      TEXT NOT NULL DEFAULT 'kalks',
+    tenant      TEXT NOT NULL DEFAULT 'ezymex',
     user_id     BIGINT NOT NULL,
     direction   TEXT NOT NULL CHECK (direction IN ('debit', 'credit')),
     kind        TEXT NOT NULL,
@@ -283,7 +283,7 @@ CREATE TABLE wallet_ops (
 -- Append-only audit of every staff and system decision.
 CREATE TABLE audit_log (
     id          BIGSERIAL PRIMARY KEY,
-    tenant      TEXT NOT NULL DEFAULT 'kalks',
+    tenant      TEXT NOT NULL DEFAULT 'ezymex',
     at          TIMESTAMPTZ NOT NULL DEFAULT now(),
     actor       TEXT NOT NULL,
     actor_name  TEXT NOT NULL DEFAULT '',
@@ -310,7 +310,7 @@ BEGIN
     FOREACH t IN ARRAY ARRAY['plans', 'plan_sizes', 'challenges', 'phase_accounts', 'equity_points', 'rule_events', 'strategy_flags',
                              'payouts', 'scaling_events', 'certificates', 'news_events', 'notifications', 'wallet_ops', 'audit_log'] LOOP
         EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
-        EXECUTE format('CREATE POLICY tenant_isolation ON %I USING (tenant = current_setting(''kalks.tenant'', true))', t);
+        EXECUTE format('CREATE POLICY tenant_isolation ON %I USING (tenant = current_setting(''ezymex.tenant'', true))', t);
     END LOOP;
 END $$;
 
@@ -319,15 +319,15 @@ INSERT INTO plans (id, name, kind, status, version, phases, daily_loss_pct, dail
                    news_trading, news_window_min, weekend_holding, banned, split_pct, split_max_pct,
                    scaling_every_months, scaling_increase_pct, scaling_profit_pct, scaling_cap, refund_fee, payout_freq, first_payout_days, min_payout)
 VALUES
- ('classic-2-step', 'Kalks Classic 2-Step', '2-step', 'active', 1,
+ ('classic-2-step', 'Ezymex Classic 2-Step', '2-step', 'active', 1,
   '[{"name":"Phase 1","target":8,"minDays":4,"timeLimit":0},{"name":"Phase 2","target":5,"minDays":4,"timeLimit":0}]',
   5, 'balance', 10, 'static', 0, true, 2, true,
   '{hft,latency_arbitrage,tick_scalping,cross_account_copying,cross_account_hedging}', 80, 90, 4, 25, 10, 2000000, true, 'bi-weekly', 14, 50),
- ('rapid-1-step', 'Kalks Rapid 1-Step', '1-step', 'active', 1,
+ ('rapid-1-step', 'Ezymex Rapid 1-Step', '1-step', 'active', 1,
   '[{"name":"Evaluation","target":10,"minDays":3,"timeLimit":0}]',
   3, 'equity', 6, 'trailing', 40, false, 5, false,
   '{hft,latency_arbitrage,tick_scalping,cross_account_copying,cross_account_hedging}', 80, 90, 4, 25, 10, 1000000, true, 'bi-weekly', 14, 50),
- ('instant-funding', 'Kalks Instant Funding', 'instant', 'active', 1,
+ ('instant-funding', 'Ezymex Instant Funding', 'instant', 'active', 1,
   '[]',
   3, 'equity', 6, 'trailing', 30, false, 5, false,
   '{hft,latency_arbitrage,tick_scalping,cross_account_copying,cross_account_hedging}', 70, 90, 4, 25, 10, 1000000, false, 'monthly', 30, 100);

@@ -5,7 +5,7 @@
 //   3. by when (the expiry)         5. how many contracts, with the total
 // then "What happens" in plain words and one confirm button. Only buying (risk limited to the price paid); selling and
 // strategies are in the order ticket and the strategy builder. While the order book is live the confirm hands the
-// option to the order ticket, which trades it on the book. "Explain it to me" asks Kalks AI for a short explanation in
+// option to the order ticket, which trades it on the book. "Explain it to me" asks Ezymex AI for a short explanation in
 // the reader's language (`trade/options/explain`), with a built-in explanation when the AI isn't configured.
 import 'dart:async';
 import 'dart:math' as math;
@@ -908,7 +908,7 @@ class _DoneCard extends StatelessWidget {
   }
 }
 
-/// "Explain it to me": Kalks AI explains the idea in the reader's language (a built-in explanation without it).
+/// "Explain it to me": Ezymex AI explains the idea in the reader's language (a built-in explanation without it).
 class _ExplainIdea extends ConsumerStatefulWidget {
   const _ExplainIdea({
     required this.chain,

@@ -29,16 +29,16 @@ export const DESKS = ["Sales · EN", "Sales · MENA", "Sales · LATAM", "Sales �
 export type Desk = (typeof DESKS)[number];
 
 export const STAFF_MEMBERS: StaffMember[] = [
-  { id: "ST-101", name: "Sara Whitfield", role: "Senior sales agent", desk: "Sales · EN", photo: "/assets/people/women-12.jpg", email: "sara.w@kalks.com" },
-  { id: "ST-102", name: "Karim Nasser", role: "Sales agent", desk: "Sales · MENA", photo: "/assets/people/men-52.jpg", email: "karim.n@kalks.com" },
-  { id: "ST-103", name: "Gabriela Ruiz", role: "Sales agent", desk: "Sales · LATAM", photo: "/assets/people/women-81.jpg", email: "gabriela.r@kalks.com" },
-  { id: "ST-104", name: "Wei Zhang", role: "Sales agent", desk: "Sales · APAC", photo: "/assets/people/men-29.jpg", email: "wei.z@kalks.com" },
-  { id: "ST-105", name: "Hannah Scott", role: "Retention manager", desk: "Retention · A", photo: "/assets/people/women-32.jpg", email: "hannah.s@kalks.com" },
-  { id: "ST-106", name: "Marcus Dlamini", role: "Retention agent", desk: "Retention · B", photo: "/assets/people/men-68.jpg", email: "marcus.d@kalks.com" },
-  { id: "ST-107", name: "Noura Khalid", role: "Compliance officer", desk: "Compliance", photo: "/assets/people/women-11.jpg", email: "noura.k@kalks.com" },
-  { id: "ST-108", name: "Ravi Menon", role: "AML analyst", desk: "Compliance", photo: "/assets/people/men-65.jpg", email: "ravi.m@kalks.com" },
-  { id: "ST-109", name: "Julia Novak", role: "Dealer", desk: "Dealing", photo: "/assets/people/women-29.jpg", email: "julia.n@kalks.com" },
-  { id: "ST-110", name: "Tom Becker", role: "Finance officer", desk: "Finance", photo: "/assets/people/men-12.jpg", email: "tom.b@kalks.com" },
+  { id: "ST-101", name: "Sara Whitfield", role: "Senior sales agent", desk: "Sales · EN", photo: "/assets/people/women-12.jpg", email: "sara.w@ezymex.com" },
+  { id: "ST-102", name: "Karim Nasser", role: "Sales agent", desk: "Sales · MENA", photo: "/assets/people/men-52.jpg", email: "karim.n@ezymex.com" },
+  { id: "ST-103", name: "Gabriela Ruiz", role: "Sales agent", desk: "Sales · LATAM", photo: "/assets/people/women-81.jpg", email: "gabriela.r@ezymex.com" },
+  { id: "ST-104", name: "Wei Zhang", role: "Sales agent", desk: "Sales · APAC", photo: "/assets/people/men-29.jpg", email: "wei.z@ezymex.com" },
+  { id: "ST-105", name: "Hannah Scott", role: "Retention manager", desk: "Retention · A", photo: "/assets/people/women-32.jpg", email: "hannah.s@ezymex.com" },
+  { id: "ST-106", name: "Marcus Dlamini", role: "Retention agent", desk: "Retention · B", photo: "/assets/people/men-68.jpg", email: "marcus.d@ezymex.com" },
+  { id: "ST-107", name: "Noura Khalid", role: "Compliance officer", desk: "Compliance", photo: "/assets/people/women-11.jpg", email: "noura.k@ezymex.com" },
+  { id: "ST-108", name: "Ravi Menon", role: "AML analyst", desk: "Compliance", photo: "/assets/people/men-65.jpg", email: "ravi.m@ezymex.com" },
+  { id: "ST-109", name: "Julia Novak", role: "Dealer", desk: "Dealing", photo: "/assets/people/women-29.jpg", email: "julia.n@ezymex.com" },
+  { id: "ST-110", name: "Tom Becker", role: "Finance officer", desk: "Finance", photo: "/assets/people/men-12.jpg", email: "tom.b@ezymex.com" },
 ];
 
 export const SALES_AGENTS = STAFF_MEMBERS.slice(0, 6);
@@ -279,7 +279,7 @@ export function clientAccounts(c: AdminClient): ClientAccount[] {
       equity: eq,
       credit: k === 0 ? c.credit : 0,
       margin,
-      server: r.bool(0.7) ? "Kalks-Live01" : "Kalks-Live02",
+      server: r.bool(0.7) ? "Ezymex-Live01" : "Ezymex-Live02",
       route: c.risk >= 8 ? "A" : "B",
       openPositions: eq > 0 ? r.int(0, 7) : 0,
       created: new Date(Date.parse(c.registered) + k * 9 * DAY).toISOString(),
@@ -296,7 +296,7 @@ export function clientAccounts(c: AdminClient): ClientAccount[] {
     equity: +(100000 * r.range(0.9, 1.08)).toFixed(2),
     credit: 0,
     margin: +r.range(200, 3000).toFixed(2),
-    server: "Kalks-Demo",
+    server: "Ezymex-Demo",
     route: "B",
     openPositions: r.int(0, 3),
     created: c.registered,

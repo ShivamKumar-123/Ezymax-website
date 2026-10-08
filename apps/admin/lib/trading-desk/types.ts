@@ -1,4 +1,4 @@
-import type { AdminOrder, AdminPosition, OrderSource, RoutingRule, TradingGroup } from "@kalks/mock/admin-trading";
+import type { AdminOrder, AdminPosition, OrderSource, RoutingRule, TradingGroup } from "@ezymex/mock/admin-trading";
 
 export type Book = "A" | "B";
 export type Side = "buy" | "sell";

@@ -8,7 +8,7 @@ takeaways:
   - "A stop loss closes a losing position at the next available price once its level is touched, so it limits loss but can slip in fast markets."
   - "A take profit closes at your target price or better once it is reached."
   - "Stops and targets on long positions trigger on the bid; on short positions they trigger on the ask."
-  - "A server-side trailing stop moves only in your favour at a fixed distance and keeps working when Kalks Trader is closed."
+  - "A server-side trailing stop moves only in your favour at a fixed distance and keeps working when Ezymex Trader is closed."
 practice:
   label: "Open a 0.01 lot EURUSD demo position with a 20-pip stop and 40-pip target, then add a 15-pip trailing stop and watch how the stop level updates."
   symbol: "EURUSD"
@@ -47,7 +47,7 @@ quiz:
     explanation: "A triggered stop is executed as a market order. In a gap or fast market the next available price can be beyond the stop level."
 ---
 
-Placing a trade is a decision about where you think price is going. Placing a **stop loss** is a decision about where you admit you were wrong. Placing a **take profit** is a decision about where you will be satisfied. Kalks Trader lets you attach both to any market or pending order, and adds a server-side **trailing stop** that follows the price for you. This chapter explains how each behaves in practice.
+Placing a trade is a decision about where you think price is going. Placing a **stop loss** is a decision about where you admit you were wrong. Placing a **take profit** is a decision about where you will be satisfied. Ezymex Trader lets you attach both to any market or pending order, and adds a server-side **trailing stop** that follows the price for you. This chapter explains how each behaves in practice.
 
 ## Stop loss: the exit when you are wrong
 
@@ -85,7 +85,7 @@ Doing this before placing the order tells you whether the potential loss is acce
 
 A trailing stop is a stop loss that moves automatically in your favour. You set a distance, for example 20 pips. For a long, each time the bid makes a new high the stop is moved up so it stays 20 pips below that high. If the price falls, the stop stays where it is. It never moves against you.
 
-On Kalks the trailing stop is **server-side**: it is managed by the server, so it keeps trailing when your browser or Kalks Trader is closed.
+On Ezymex the trailing stop is **server-side**: it is managed by the server, so it keeps trailing when your browser or Ezymex Trader is closed.
 
 ```svg
 <svg viewBox="0 0 640 320" xmlns="http://www.w3.org/2000/svg">

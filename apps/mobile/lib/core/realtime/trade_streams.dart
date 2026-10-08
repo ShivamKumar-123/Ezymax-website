@@ -1,7 +1,7 @@
-// Kalks Trader streams, for the terminal screens (docs/MOBILE-API.md §6–7; web: apps/terminal/lib/engine/stream.ts and
+// Ezymex Trader streams, for the terminal screens (docs/MOBILE-API.md §6–7; web: apps/terminal/lib/engine/stream.ts and
 // lib/options/stream.ts).
 //
-// EngineStream: one per open trading account. `POST trade/stream-ticket` (with X-Kalks-Trade) -> {ticket, url};
+// EngineStream: one per open trading account. `POST trade/stream-ticket` (with X-Ezymex-Trade) -> {ticket, url};
 // open url?ticket= within 30 s. Every (re)connect starts with a `snapshot` frame, so state resyncs by construction.
 // Frames: snapshot / position / order / deal / ledger / account / notification / equity / hb / resync / ended.
 // `resync` and `ended` reconnect with a fresh ticket; a 401 from the ticket call means the trade session is over

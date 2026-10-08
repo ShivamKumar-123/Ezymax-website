@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader AI Trader tab: strategy composer, list, strategy card, log and activation dialog.
+// Ezymex Trader AI Trader tab: strategy composer, list, strategy card, log and activation dialog.
 // "Paper" = trading simulasi, tidak ada order nyata yang dikirim.
 const aiTrader: NsMessages<"aiTrader"> = {
   // Tab header

@@ -259,9 +259,9 @@ const List<_Seed> _seeds = [
   ),
   (
     id: 104,
-    nick: 'Kalks Quant Desk',
+    nick: 'Ezymex Quant Desk',
     strategy: 'Automated multi-asset momentum',
-    desc: 'A systematic momentum model across FX, gold, oil and US indices, rebalanced daily. Operated by Kalks.',
+    desc: 'A systematic momentum model across FX, gold, oil and US indices, rebalanced daily. Operated by Ezymex.',
     program: 'copy',
     fee: 10,
     period: 'monthly',

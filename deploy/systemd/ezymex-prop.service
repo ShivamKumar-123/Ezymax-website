@@ -1,0 +1,24 @@
+[Unit]
+Description=Ezymex prop firm service (:8097)
+After=network-online.target postgresql.service ezymex-trading.service
+Wants=network-online.target
+
+[Service]
+User=ezymex
+WorkingDirectory=/home/ezymex/ezymex/services/prop
+EnvironmentFile=/home/ezymex/ezymex/.env.local
+Environment=RUST_LOG=info
+Environment=PROP_ENV=production
+Environment=PROP_BIND=127.0.0.1:8097
+Environment=PROP_VERIFY_BASE_URL=https://app.ezymex.com/verify
+ExecStart=/home/ezymex/ezymex/target/release/prop
+Restart=always
+RestartSec=3
+# the evaluator is stateless between polls; every transition is claimed in the database first
+KillSignal=SIGINT
+TimeoutStopSec=20
+NoNewPrivileges=true
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

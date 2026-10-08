@@ -1,7 +1,7 @@
 import type { NsMessages } from "../../core";
 
 // Client Area prop trading: challenge catalogue, my challenges, payouts, certificates.
-// "Kalks", "Kalks Prop", "Kalks Trader", "USDT", "New York" and "17:00" stay as they are.
+// "Ezymex", "Ezymex Prop", "Ezymex Trader", "USDT", "New York" and "17:00" stay as they are.
 const prop: NsMessages<"prop"> = {
   // Error next-step buttons
   "errorLink.deposit": "Weka USDT",
@@ -102,13 +102,13 @@ const prop: NsMessages<"prop"> = {
 
   // Public certificate verification page (/verify/<code>)
   "verify.shellTitle": "Uthibitishaji wa cheti",
-  "verify.footer": "Akaunti za Kalks Prop ni za kuigwa. Vyeti vinaonyesha matokeo ya mfanyabiashara kwenye changamoto ya Kalks Prop; jina la mfanyabiashara hufupishwa kuwa jina la kwanza na herufi ya kwanza ya jina la mwisho.",
+  "verify.footer": "Akaunti za Ezymex Prop ni za kuigwa. Vyeti vinaonyesha matokeo ya mfanyabiashara kwenye changamoto ya Ezymex Prop; jina la mfanyabiashara hufupishwa kuwa jina la kwanza na herufi ya kwanza ya jina la mwisho.",
   "verify.linkCopied": "Kiungo kimenakiliwa",
   "verify.copyFailed": "Imeshindwa kunakili kiungo",
   "verify.copyLink": "Nakili kiungo",
   "verify.downloadPng": "Pakua PNG",
   "verify.notFoundTitle": "Cheti hakikupatikana",
-  "verify.notFoundText": "Hakuna cheti cha Kalks Prop chenye nambari hii. Angalia kiungo au muombe mfanyabiashara akishiriki tena.",
+  "verify.notFoundText": "Hakuna cheti cha Ezymex Prop chenye nambari hii. Angalia kiungo au muombe mfanyabiashara akishiriki tena.",
   "verify.unavailableTitle": "Uthibitishaji haupatikani kwa sasa",
   "verify.unavailableText": "Hatukuweza kukagua cheti hiki kwa sasa. Tafadhali jaribu tena baada ya dakika chache.",
   "verify.kind.pass": "Awamu imefaulu",
@@ -122,9 +122,9 @@ const prop: NsMessages<"prop"> = {
   "verify.row.issued": "Kimetolewa",
   "verify.row.number": "Nambari ya cheti",
   "verify.validTitle": "Cheti halali",
-  "verify.validText": "Kimetolewa na Kalks Prop na kuthibitishwa dhidi ya rekodi zetu.",
+  "verify.validText": "Kimetolewa na Ezymex Prop na kuthibitishwa dhidi ya rekodi zetu.",
   "verify.revokedTitle": "Cheti kilichobatilishwa",
-  "verify.revokedText": "Cheti hiki kilibatilishwa na Kalks na si halali tena.",
+  "verify.revokedText": "Cheti hiki kilibatilishwa na Ezymex na si halali tena.",
   "verify.valid": "Halali",
   "verify.revoked": "Kimebatilishwa",
   // Certificate titles
@@ -249,8 +249,8 @@ const prop: NsMessages<"prop"> = {
   "checkout.goToMine": "Nenda kwenye Changamoto zangu",
   "checkout.readyTitle": "Changamoto yako iko tayari",
   "checkout.paidText": "{fee} imelipwa kutoka pochi yako ya USDT na akaunti yako ya {size} imefunguliwa. Kanuni zinatumika kuanzia sasa.",
-  "checkout.savePasswords": "Hifadhi manenosiri haya sasa: yanaonyeshwa mara moja tu na hatuyahifadhi. Kitufe cha Fanya biashara hukuingiza kwenye Kalks Trader bila nenosiri, hivyo unaweza kufanya biashara kutoka hapa wakati wowote.",
-  "checkout.passwordsShown": "Manenosiri ya biashara yalionyeshwa ununuzi huu ulipothibitishwa mara ya kwanza. Tumia kitufe cha Fanya biashara kufungua Kalks Trader: hukuingiza bila nenosiri.",
+  "checkout.savePasswords": "Hifadhi manenosiri haya sasa: yanaonyeshwa mara moja tu na hatuyahifadhi. Kitufe cha Fanya biashara hukuingiza kwenye Ezymex Trader bila nenosiri, hivyo unaweza kufanya biashara kutoka hapa wakati wowote.",
+  "checkout.passwordsShown": "Manenosiri ya biashara yalionyeshwa ununuzi huu ulipothibitishwa mara ya kwanza. Tumia kitufe cha Fanya biashara kufungua Ezymex Trader: hukuingiza bila nenosiri.",
 
   // Account credentials
   "cred.login": "Login",
@@ -377,7 +377,7 @@ const prop: NsMessages<"prop"> = {
   "account.passed": "Imefaulu · kusoma tu",
   "account.failed": "Imeshindwa · imezimwa",
   "account.opening": "Inafunguliwa",
-  "account.tradableText": "Fanya biashara hufungua Kalks Trader ukiwa umeingia kwenye akaunti hii. Manenosiri yalionyeshwa mara moja wakati wa ununuzi.",
+  "account.tradableText": "Fanya biashara hufungua Ezymex Trader ukiwa umeingia kwenye akaunti hii. Manenosiri yalionyeshwa mara moja wakati wa ununuzi.",
   "account.passedText": "Awamu hii imekamilika. Akaunti ni ya kusoma tu; fanya biashara kwenye awamu yako inayofuata.",
   "account.failedText": "Biashara kwenye akaunti hii imezimwa.",
   "account.unavailableText": "Biashara haipatikani kwenye akaunti hii.",

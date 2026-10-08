@@ -25,11 +25,11 @@ import {
   type Column,
   useQuotes,
 } from "@/components/kit";
-import { getInstrument, positionProfit, type ClosedTrade, type Position, type TradingAccount } from "@kalks/mock";
-import { accountLedger, spreadCost, type LedgerEntry } from "@kalks/mock/accounts-extra";
+import { getInstrument, positionProfit, type ClosedTrade, type Position, type TradingAccount } from "@ezymex/mock";
+import { accountLedger, spreadCost, type LedgerEntry } from "@ezymex/mock/accounts-extra";
 import { curOf, multOf } from "./detail-overview";
-import { Trans, useT } from "@kalks/i18n/react";
-import type { MessageKey } from "@kalks/i18n";
+import { Trans, useT } from "@ezymex/i18n/react";
+import type { MessageKey } from "@ezymex/i18n";
 import { TERMINAL_URL } from "@/lib/live";
 
 const signed = (v: number, cur: string) => `${v > 0 ? "+" : v < 0 ? "-" : ""}${cur}${formatNumber(Math.abs(v))}`;
@@ -230,7 +230,7 @@ export function HistoryTab({ a, trades }: { a: TradingAccount; trades: ClosedTra
             pageSize={12}
             search={(t) => `${t.symbol} ${t.ticket}`}
             searchPlaceholder={tt("accountDetail.history.searchPlaceholder")}
-            exportName={`kalks-${a.login}-history`}
+            exportName={`ezymex-${a.login}-history`}
             toolbar={<Segmented size="xs" value={side} onChange={setSide} options={[{ value: "all", label: tt("common.all") }, { value: "buy", label: tt("common.buy") }, { value: "sell", label: tt("common.sell") }]} />}
           />
         </div>
@@ -318,7 +318,7 @@ export function ChargesTab({ a, trades }: { a: TradingAccount; trades: ClosedTra
           <Card className="h-full">
             <CardHeader title={tt("accountDetail.charges.perTrade")} subtitle={tt("accountDetail.charges.perTradeSub")} />
             <div className="px-4 pb-5 pt-4 sm:px-6">
-              <DataTable columns={cols} rows={rows} rowKey={(r) => r.t.ticket} pageSize={7} exportName={`kalks-${a.login}-charges`} search={(r) => r.t.symbol} searchPlaceholder={tt("accountDetail.col.symbol")} />
+              <DataTable columns={cols} rows={rows} rowKey={(r) => r.t.ticket} pageSize={7} exportName={`ezymex-${a.login}-charges`} search={(r) => r.t.symbol} searchPlaceholder={tt("accountDetail.col.symbol")} />
             </div>
           </Card>
         </Reveal>
@@ -396,7 +396,7 @@ export function LedgerTab({ a }: { a: TradingAccount }) {
               rowKey={(e) => e.id}
               pageSize={12}
               dense
-              exportName={`kalks-${a.login}-ledger`}
+              exportName={`ezymex-${a.login}-ledger`}
               search={(e) => `${e.description} ${t(LEDGER_KIND[e.kind].label)}`}
               toolbar={<Segmented size="xs" value={kind} onChange={setKind} options={[{ value: "all", label: t("common.all") }, { value: "funding", label: t("accountDetail.ledger.funding") }, { value: "trading", label: t("accountDetail.ledger.trading") }]} />}
             />

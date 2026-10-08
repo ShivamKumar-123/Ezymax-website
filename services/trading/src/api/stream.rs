@@ -31,7 +31,7 @@ pub async fn terminal(State(st): State<AppState>, Query(q): Query<TicketQ>, head
         return ApiError::Unauthorized.into_response();
     };
     // client presence: the client's own sessions are reported to the gateway while the stream is open
-    let country = ["cf-ipcountry", "x-kalks-country"].iter().find_map(|h| headers.get(*h).and_then(|v| v.to_str().ok())).map(|c| c.trim().to_ascii_lowercase()).filter(|c| c.len() == 2 && c != "xx");
+    let country = ["cf-ipcountry", "x-ezymex-country"].iter().find_map(|h| headers.get(*h).and_then(|v| v.to_str().ok())).map(|c| c.trim().to_ascii_lowercase()).filter(|c| c.len() == 2 && c != "xx");
     let presence = session.as_ref().filter(|s| !s.staff && s.user_id > 0).map(|s| {
         st.presence.register(crate::controls::Conn { user_id: s.user_id, login, ip: Some(s.ip.clone()), country: country.clone(), user_agent: Some(s.user_agent.clone()), since: chrono::Utc::now() })
     });

@@ -193,7 +193,7 @@ const kyc: NsMessages<"kyc"> = {
   "review.missing": "누락",
   "review.flagged": "검토 대상",
   "review.passed": "확인 통과",
-  "review.consent": "서류가 진본이며 본인(또는 법인 및 임원)의 것임을 확인하고, Kalks의 신원 및 AML 심사에 동의합니다.",
+  "review.consent": "서류가 진본이며 본인(또는 법인 및 임원)의 것임을 확인하고, Ezymex의 신원 및 AML 심사에 동의합니다.",
 
   // 검토팀의 추가 정보 요청
   "moreInfo.title": "추가 정보가 필요합니다",
@@ -357,7 +357,7 @@ const kyc: NsMessages<"kyc"> = {
   // 클라이언트 오류 메시지
   "error.sessionEnded": "세션이 종료되었습니다.",
   "error.generic": "문제가 발생했습니다. 다시 시도해 주세요.",
-  "error.network": "Kalks에 연결할 수 없습니다. 연결 상태를 확인한 후 다시 시도해 주세요.",
+  "error.network": "Ezymex에 연결할 수 없습니다. 연결 상태를 확인한 후 다시 시도해 주세요.",
   "error.uploadFailed": "업로드에 실패했습니다. 다시 시도해 주세요.",
   "error.uploadInterrupted": "업로드가 중단되었습니다. 연결 상태를 확인한 후 다시 시도해 주세요.",
 

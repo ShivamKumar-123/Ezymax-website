@@ -4,9 +4,9 @@
 // and toolbox; Options mode swaps the trading area for the options workspace (loaded on demand) and puts the
 // Options / Settlements tabs first in the toolbox.
 import * as React from "react";
-import { cn } from "@kalks/ui";
+import { cn } from "@ezymex/ui";
 import { Tip } from "@/components/ui/kit";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { useTerminal, type ToolboxTab } from "@/lib/store";
 import { setTradeMode, useTradeMode, type TradeMode } from "@/lib/options/mode";
 

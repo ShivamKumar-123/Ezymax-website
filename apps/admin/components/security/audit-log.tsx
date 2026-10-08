@@ -23,9 +23,9 @@ import {
   XCircle,
   Zap,
 } from "lucide-react";
-import { Avatar, Button, Card, Chip, CopyButton, EmptyState, Menu, cn, shortHash } from "@kalks/ui";
-import { PEOPLE } from "@kalks/mock";
-import { SEC_AUDIT, SEC_REASON_LABELS, orgEmployee, type SecActionType, type SecAuditEntry, type SecModule } from "@kalks/mock/admin-platform-security";
+import { Avatar, Button, Card, Chip, CopyButton, EmptyState, Menu, cn, shortHash } from "@ezymex/ui";
+import { PEOPLE } from "@ezymex/mock";
+import { SEC_AUDIT, SEC_REASON_LABELS, orgEmployee, type SecActionType, type SecAuditEntry, type SecModule } from "@ezymex/mock/admin-platform-security";
 import { JsonDiff, changedKeys } from "./json-diff";
 import { Mono, ReasonChip, TenantDot, dayGmt3, timeGmt3 } from "./shared";
 
@@ -87,7 +87,7 @@ function exportCsv(rows: SecAuditEntry[]) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "kalks-admin-audit-2026-09-24.csv";
+  a.download = "ezymex-admin-audit-2026-09-24.csv";
   a.click();
   URL.revokeObjectURL(url);
   toast.success("Audit log exported", { description: `${rows.length} entries · signed with chain head ${shortHash(rows[0]?.hash ?? "", 8, 6)}` });
@@ -350,7 +350,7 @@ function AuditRow({ e, open, onToggle }: { e: SecAuditEntry; open: boolean; onTo
                     }
                   />
                   <Meta k="Prev hash" v={<span className="font-mono text-fg-3">{shortHash(e.prevHash, 10, 6)}</span>} />
-                  <Meta k="Signed by" v={<span>HSM · key kalks-audit-03</span>} />
+                  <Meta k="Signed by" v={<span>HSM · key ezymex-audit-03</span>} />
                 </div>
                 {keys.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">

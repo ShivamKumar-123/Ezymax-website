@@ -1,7 +1,7 @@
 import type { NsMessages } from "../../core";
 
 // Área de clientes, trading social: clasificación de copy trading, proveedores de estrategias, suscripciones, fondos PAMM, MAM, inversiones.
-// Se mantienen: Kalks, Kalks Trader, Kalks-Live, PAMM, MAM, NAV, HWM, AUM, DD, SL/TP, USD.
+// Se mantienen: Ezymex, Ezymex Trader, Ezymex-Live, PAMM, MAM, NAV, HWM, AUM, DD, SL/TP, USD.
 // "Máster" (pl. "másteres") = proveedor de estrategias aprobado cuyas operaciones otros copian o en cuyo fondo invierten.
 const social: NsMessages<"social"> = {
   // Mensajes de error según los códigos del servidor
@@ -69,8 +69,8 @@ const social: NsMessages<"social"> = {
   // Elementos compartidos
   master: "Máster",
   "riskBadge.tooltip": "Puntuación de riesgo del sistema {r}/10 · riesgo {level} (según el drawdown máximo y la volatilidad)",
-  "house.disclosure": "Estrategia de la casa gestionada por Kalks: una cuenta real propiedad del bróker que ejecuta una estrategia automatizada. Sus estadísticas incluyen solo sus propias operaciones reales desde su inicio; nada es simulado ni se ha añadido retroactivamente.",
-  "house.badge": "Estrategia de la casa · Gestionada por Kalks",
+  "house.disclosure": "Estrategia de la casa gestionada por Ezymex: una cuenta real propiedad del bróker que ejecuta una estrategia automatizada. Sus estadísticas incluyen solo sus propias operaciones reales desde su inicio; nada es simulado ni se ha añadido retroactivamente.",
+  "house.badge": "Estrategia de la casa · Gestionada por Ezymex",
   // Chips de programa
   "program.copy": "Copy",
   "errorState.title": "El copy trading no está disponible",
@@ -126,7 +126,7 @@ const social: NsMessages<"social"> = {
   "lb.empty.text": "Los proveedores de estrategias aparecen aquí cuando nuestro equipo los aprueba. Opere con una cuenta real y solicite ser el primero.",
   "lb.searchPlaceholder": "Alias o estrategia…",
   "lb.disclaimer": "La rentabilidad se pondera en el tiempo a partir del patrimonio al cierre del día, sin depósitos ni retiros. La rentabilidad pasada no garantiza resultados futuros. El copy trading y la inversión PAMM conllevan riesgo de pérdida.",
-  "lb.houseNote": "Los másteres etiquetados como “Estrategia de la casa · Gestionada por Kalks” son cuentas reales propiedad del bróker que ejecutan una estrategia automatizada. Sus estadísticas incluyen solo sus propias operaciones reales desde su inicio; nada es simulado ni se ha añadido retroactivamente.",
+  "lb.houseNote": "Los másteres etiquetados como “Estrategia de la casa · Gestionada por Ezymex” son cuentas reales propiedad del bróker que ejecutan una estrategia automatizada. Sus estadísticas incluyen solo sus propias operaciones reales desde su inicio; nada es simulado ni se ha añadido retroactivamente.",
   allocation: "Asignación",
   equityStop: "Stop de patrimonio",
   maxLot: "Lote máximo",
@@ -136,7 +136,7 @@ const social: NsMessages<"social"> = {
   lotsUnit: "lotes",
   lotsValue: "{lots} lotes",
   minAmount: "Mín. {amount}",
-  openInTrader: "Abrir en Kalks Trader",
+  openInTrader: "Abrir en Ezymex Trader",
 
   // Diálogo para seguir (copiar a un máster)
   "follow.step.sizing": "Tamaño",
@@ -158,11 +158,11 @@ const social: NsMessages<"social"> = {
   "follow.toast.createdDesc": "La financiación desde la billetera no se completó. Puede financiarla desde la billetera.",
   "follow.toast.failed": "No se pudo empezar a copiar",
   "follow.done.createdTitle": "Cuenta de copia creada",
-  "follow.done.description": "Cuenta de copia #{login} · Kalks-Live",
+  "follow.done.description": "Cuenta de copia #{login} · Ezymex-Live",
   "follow.done.okText": "Se han transferido {amount} de su billetera a la cuenta de copia <acc>#{login}</acc>. A partir de ahora se copian las nuevas operaciones de {name}.",
   "follow.done.failText": "Se creó la cuenta de copia <acc>#{login}</acc>, pero la transferencia desde la billetera no se completó",
   "follow.done.failHint": "Puede financiarla desde la billetera; la copia empieza cuando tenga balance.",
-  "follow.done.exitNote": "Las operaciones copiadas no se pueden cerrar una a una en Kalks Trader. Para salir, deje de copiar en Copy trading → Mis suscripciones: se cierran todas las posiciones copiadas y el balance puede volver a su billetera.",
+  "follow.done.exitNote": "Las operaciones copiadas no se pueden cerrar una a una en Ezymex Trader. Para salir, deje de copiar en Copy trading → Mis suscripciones: se cierran todas las posiciones copiadas y el balance puede volver a su billetera.",
   "follow.title": "Copiar a {name}",
   "follow.description": "Cada suscripción funciona en su propia cuenta de copia exclusiva, financiada desde su billetera.",
   "follow.confirm": "Confirmar y empezar a copiar",
@@ -193,7 +193,7 @@ const social: NsMessages<"social"> = {
   "follow.amountLabel": "Importe que asignar desde su billetera",
   "follow.amountNote": "Se abre una nueva cuenta de copia para esta suscripción y se transfiere {amount} desde su billetera. Los depósitos y retiros posteriores en la cuenta de copia ajustan su high-water mark, de modo que las comisiones solo se cobran sobre el beneficio de trading.",
   "follow.theAmount": "el importe",
-  "follow.reviewBanner": "Se abrirá una cuenta de copia exclusiva en Kalks-Live, financiada desde su billetera.",
+  "follow.reviewBanner": "Se abrirá una cuenta de copia exclusiva en Ezymex-Live, financiada desde su billetera.",
   "follow.excludedSymbols": "Símbolos excluidos",
   "follow.feeTerms": "{fee}% sobre el high-water mark · liquidación {period}",
   "follow.mirrorNote": "Se replican las aperturas, ampliaciones, cierres parciales, cambios de SL/TP y órdenes pendientes. Las operaciones copiadas no se pueden cerrar ni modificar una a una; para salir, deje de copiar y todo se cierra a mercado. El porcentaje de comisión queda fijado para esta suscripción y se cobra de la cuenta de copia al final del periodo.",
@@ -494,7 +494,7 @@ const social: NsMessages<"social"> = {
   "subs.stop.moveBack": "Transferir el balance a mi billetera",
   "subs.stop.closeAll": "Cerrar todo ahora",
   "subs.stop.keepOpen": "Mantener mis posiciones abiertas",
-  "subs.stop.keepText": "La copia se detiene. Las posiciones y órdenes copiadas abiertas permanecen en la cuenta de copia #{login} y pasan a ser operaciones normales que usted gestiona en Kalks Trader.",
+  "subs.stop.keepText": "La copia se detiene. Las posiciones y órdenes copiadas abiertas permanecen en la cuenta de copia #{login} y pasan a ser operaciones normales que usted gestiona en Ezymex Trader.",
   "subs.stop.keepFunds": "Mientras haya posiciones abiertas, solo el margen libre puede pasar a su billetera, y transferirlo les deja menos margen antes de un margin call.",
   "subs.stop.confirmKeep": "Dejar de copiar",
   "subs.stop.kept": "Las posiciones copiadas siguen abiertas en la cuenta de copia #{login}; ahora las gestiona usted.",
@@ -714,7 +714,7 @@ const social: NsMessages<"social"> = {
   "md.fund.credsCopied": "Credenciales copiadas",
   "md.fund.credsCopiedDesc": "Guárdelas en un gestor de contraseñas.",
   "md.fund.copyFailed": "No se pudo copiar; copie cada campo por separado",
-  "md.fund.credsDesc": "Opere la cuenta del fondo en Kalks Trader con estas credenciales.",
+  "md.fund.credsDesc": "Opere la cuenta del fondo en Ezymex Trader con estas credenciales.",
   "md.fund.trade": "Operar el fondo",
   "md.fund.creds": "Credenciales de la cuenta del fondo",
   "md.fund.copyAll": "Copiar todo",
@@ -761,7 +761,7 @@ const social: NsMessages<"social"> = {
   "md.performanceSub": "Calculado por la plataforma a partir de su cuenta de estrategia",
   "md.pamm.notInProgramme": "No forma parte de su programa",
   "md.pamm.copyOnly": "Su programa es solo de copy trading. Pasar a PAMM requiere una nueva revisión; contacte con soporte.",
-  "md.pamm.openText": "Abra un fondo común en el que los inversores entran en el rollover. Usted lo opera en Kalks Trader.",
+  "md.pamm.openText": "Abra un fondo común en el que los inversores entran en el rollover. Usted lo opera en Ezymex Trader.",
   "md.pamm.create": "Crear fondo PAMM",
   "md.yourFunds": "Sus fondos",
   "md.yourFundsSub": "Inversores, solicitudes pendientes y cuenta del fondo",
@@ -843,7 +843,7 @@ const social: NsMessages<"social"> = {
     many: "Cerrar ahora a mercado las {count} operaciones MAM abiertas",
     other: "Cerrar ahora a mercado las {count} operaciones MAM abiertas",
   },
-  "mam.revoke.keepNote": "Si las mantiene, pasan a ser operaciones normales que usted gestiona en Kalks Trader.",
+  "mam.revoke.keepNote": "Si las mantiene, pasan a ser operaciones normales que usted gestiona en Ezymex Trader.",
   "mam.revoke.noTrades": "No hay operaciones MAM abiertas en esta cuenta.",
   "mam.programme": "Programa MAM",
   "mam.revoked": "Revocado",
@@ -857,7 +857,7 @@ const social: NsMessages<"social"> = {
   "mam.page.title": "Cuentas gestionadas",
   "mam.page.subtitle": "Otorgue a un gestor MAM aprobado autorización de trading sobre una de sus cuentas reales. La cuenta y el dinero siguen siendo suyos; puede revocarla en cualquier momento.",
   "mam.page.run": "Gestionar un programa MAM",
-  "mam.page.info": "El gestor solo puede abrir, modificar y cerrar operaciones en la cuenta vinculada. Nunca puede depositar, retirar ni transferir dinero, y no se puede retirar nada por debajo del margen de las operaciones abiertas. Usted ve cada operación en Kalks Trader, etiquetada como MAM.",
+  "mam.page.info": "El gestor solo puede abrir, modificar y cerrar operaciones en la cuenta vinculada. Nunca puede depositar, retirar ni transferir dinero, y no se puede retirar nada por debajo del margen de las operaciones abiertas. Usted ve cada operación en Ezymex Trader, etiquetada como MAM.",
   "mam.page.yours": "Sus cuentas gestionadas",
   "mam.page.activeLinks": { one: "{count} vínculo activo", many: "{count} vínculos activos", other: "{count} vínculos activos" },
   "mam.page.noneManaged": "Aún no hay ninguna cuenta gestionada",
@@ -952,7 +952,7 @@ const social: NsMessages<"social"> = {
   "mm.noLinks": "Aún no hay cuentas vinculadas. Los clientes encuentran su programa en Social → Cuentas gestionadas.",
   "mm.audit": "Auditoría de asignaciones",
   "mm.auditSub": "Cada bloque de la cuenta maestra y cómo se repartió",
-  "mm.noBlocks": "Aún no hay bloques. Opere la cuenta maestra en Kalks Trader; cada operación de apertura se asigna a las cuentas vinculadas.",
+  "mm.noBlocks": "Aún no hay bloques. Opere la cuenta maestra en Ezymex Trader; cada operación de apertura se asigna a las cuentas vinculadas.",
   "mm.edit.title": "Editar programa",
   "mm.edit.description": "Los cambios de comisión se aplican a las cuentas vinculadas a partir de ahora.",
   "mm.termsTitle": "Condiciones que aceptan los clientes",
@@ -1225,6 +1225,6 @@ const social: NsMessages<"social"> = {
   "md.ann.err": "Introduzca un título de al menos 3 caracteres.",
   "md.ann.past": "Enviados",
   "md.ann.empty": "Aún no hay anuncios.",
-  "md.ann.rules": "Los anuncios llegan a todos los seguidores que le copian ahora, en sus notificaciones y por correo electrónico si así lo eligieron. Nunca prometa rentabilidades ni pida a los seguidores que le contacten fuera de Kalks.",
+  "md.ann.rules": "Los anuncios llegan a todos los seguidores que le copian ahora, en sus notificaciones y por correo electrónico si así lo eligieron. Nunca prometa rentabilidades ni pida a los seguidores que le contacten fuera de Ezymex.",
 };
 export default social;

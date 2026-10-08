@@ -10,7 +10,7 @@ takeaways:
   - "Scaling capital should happen in pre-defined steps tied to sample size and drawdown behaviour, not after a hot streak."
   - "Larger size exposes liquidity limits, bigger slippage and stronger emotions, so each step up should be tested before the next."
 practice:
-  label: "On a demo account, open a 0.10 lot XAUUSD position, add 0.05 lots after a favourable move, then move the combined stop so the worst case is a small profit. Check the average price shown in Kalks Trader."
+  label: "On a demo account, open a 0.10 lot XAUUSD position, add 0.05 lots after a favourable move, then move the combined stop so the worst case is a small profit. Check the average price shown in Ezymex Trader."
   symbol: "XAUUSD"
 quiz:
   - question: "A trader holds 0.50 lot XAUUSD from 2,350.40 and adds 0.25 lot at 2,365.40. What is the average entry price? (1 lot = 100 oz)"
@@ -76,7 +76,7 @@ Averaging down is the opposite: adding to a losing position to improve the avera
 
 ## Scaling out: partial closes
 
-Partial closes reduce risk and lock in part of the gain while leaving exposure to a larger move. A common structure is to close half at 1R or 2R and trail the rest. Kalks Trader supports partial close directly on an open position.
+Partial closes reduce risk and lock in part of the gain while leaving exposure to a larger move. A common structure is to close half at 1R or 2R and trail the rest. Ezymex Trader supports partial close directly on an open position.
 
 The trade-off must be tested. Taking half off at 1R raises the win rate and smooths the equity curve, but it cuts the profit from the rare large winners that make trend systems profitable. Backtest both versions in Developer, Backtests before choosing. Whatever you choose, apply it consistently; deciding on partial closes by feeling turns a system into discretion.
 

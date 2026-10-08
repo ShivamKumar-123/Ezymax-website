@@ -1,6 +1,6 @@
 "use client";
 
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveTenants } from "@/components/owner/tenants";
 
 import * as React from "react";
@@ -26,8 +26,8 @@ import {
   Starfield,
   formatNumber,
   type Column,
-} from "@kalks/ui";
-import { BRK_ACTIVITY, BRK_MRR_HISTORY, BRK_TENANTS, BRK_TOTALS, brkTenant, type BrkTenant } from "@kalks/mock/admin-platform-brokers";
+} from "@ezymex/ui";
+import { BRK_ACTIVITY, BRK_MRR_HISTORY, BRK_TENANTS, BRK_TOTALS, brkTenant, type BrkTenant } from "@ezymex/mock/admin-platform-brokers";
 import { PlanChip, TenantCell, TenantLogo, TenantStatus, compactUsd, timeAgo } from "@/components/brokers/kit";
 import { CreateTenantWizard, type NewTenant } from "@/components/brokers/create-tenant-wizard";
 import { TenantDrawer } from "@/components/brokers/tenant-drawer";
@@ -181,7 +181,7 @@ function TenantsPage() {
     <div className="pb-16">
       <PageHeader
         title="Tenants"
-        subtitle="White-label brokers running on the Kalks platform · platform owner view"
+        subtitle="White-label brokers running on the Ezymex platform · platform owner view"
         actions={
           <>
             <Button variant="surface" onClick={() => toast.success("tenants.csv exported", { description: `${tenants.length} tenants` })}>

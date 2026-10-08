@@ -21,7 +21,7 @@ const shell: NsMessages<"shell"> = {
   security: "سیکیورٹی",
   verification: "تصدیق",
   preferences: "ترجیحات",
-  kalksTrader: "Kalks Trader",
+  ezymexTrader: "Ezymex Trader",
   deposit: "ڈپازٹ",
   // Client Area navigation
   "nav.dashboard": "ڈیش بورڈ",
@@ -92,7 +92,7 @@ const shell: NsMessages<"shell"> = {
   "gate.title": "آپ کے اکاؤنٹ کے لیے ابھی فعال نہیں",
   "gate.text": "یہ سیکشن ابھی آپ کے اکاؤنٹ کے لیے فعال نہیں ہے۔ رسائی درکار ہو تو {email} سے رابطہ کریں۔",
   "gate.backToDashboard": "ڈیش بورڈ پر واپس",
-  "gate.launchTrader": "Kalks Trader کھولیں",
+  "gate.launchTrader": "Ezymex Trader کھولیں",
   // market sessions clock
   "sessions.title": "مارکیٹ سیشنز",
   "sessions.openLeft": "کھلا · {h}گھ {m}منٹ باقی",

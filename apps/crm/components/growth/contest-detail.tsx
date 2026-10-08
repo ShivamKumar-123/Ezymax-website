@@ -6,7 +6,7 @@ import { ArrowLeft, ArrowUpRight, Check, ListChecks, ShieldAlert, Timer, Trophy,
 import { Button, Card, CardHeader, Chip, KeyValue, Money, PageHeader, Reveal, cn } from "@/components/kit";
 import { TERMINAL_URL } from "@/lib/live";
 import { Countdown } from "@/components/rewards/countdown";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { bandLabel, fmtCount, fmtDate, fmtDateTime, fmtPct, fmtUsd, isOptionsContest, projectedPrize, scoringLabel, useGrowth, type ContestDetail } from "./api";
 import { JoinContestButton, Leaderboard, canJoin, isPast, isRunning, isUpcoming, kindChip, scoreText, tradesHint, volumeText } from "./contests";
 import { CardEmpty, GrowthStatus, PageFallback, RankBadge } from "./ui";

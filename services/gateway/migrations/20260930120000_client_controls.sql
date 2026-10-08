@@ -1,14 +1,14 @@
 -- Client controls (Back Office): presence, restrictions and staff sessions ("log in as client").
 --
 -- * users.last_active_at: last activity of the client in person, for Online / Away / Offline. Bumped (at most
---   every 30 s) by the client's own Client Area requests and heartbeat, and by the trading engine's Kalks Trader
+--   every 30 s) by the client's own Client Area requests and heartbeat, and by the trading engine's Ezymex Trader
 --   connection reports. View-only logins and staff sessions never bump it.
--- * client_presence: live Kalks Trader connections, reported by the trading engine every 15 s
+-- * client_presence: live Ezymex Trader connections, reported by the trading engine every 15 s
 --   (POST /v1/internal/presence/trader). A connection counts as live while it was reported in the last 60 s.
 -- * client_restrictions: per-client restrictions with a reason, an optional expiry and a staff author. One open
 --   row per (client, kind); lifting or expiry closes it (lifted_at), so the table is also the history.
 --   `freeze` stands for every restriction except sign-in. The owning services enforce them: the gateway
---   (sign-in), the trading engine (trading, close-only, copy / PAMM / MAM, Kalks Trader sign-in) and the wallet
+--   (sign-in), the trading engine (trading, close-only, copy / PAMM / MAM, Ezymex Trader sign-in) and the wallet
 --   (deposits, withdrawals, wallet <-> trading transfers, IB payouts).
 -- * sessions.impersonator_*: a Client Area session a staff member opened as the client (30 min, bound to the
 --   staff member's own session). read_only sessions are refused every change like view-only logins.
@@ -83,12 +83,12 @@ BEGIN
     FOREACH tbl IN ARRAY ARRAY['client_presence', 'client_restrictions', 'impersonation_tickets'] LOOP
         EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', tbl);
         EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', tbl);
-        EXECUTE format('CREATE POLICY tenant_isolation ON %I USING (kalks_tenant_row(tenant_id)) WITH CHECK (kalks_tenant_row(tenant_id))', tbl);
-        IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'kalks_tenant') THEN
-            EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON %I TO kalks_tenant', tbl);
+        EXECUTE format('CREATE POLICY tenant_isolation ON %I USING (ezymex_tenant_row(tenant_id)) WITH CHECK (ezymex_tenant_row(tenant_id))', tbl);
+        IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'ezymex_tenant') THEN
+            EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON %I TO ezymex_tenant', tbl);
         END IF;
     END LOOP;
-    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'kalks_tenant') THEN
-        EXECUTE 'GRANT USAGE, SELECT ON SEQUENCE client_restrictions_id_seq TO kalks_tenant';
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'ezymex_tenant') THEN
+        EXECUTE 'GRANT USAGE, SELECT ON SEQUENCE client_restrictions_id_seq TO ezymex_tenant';
     END IF;
 END $$;

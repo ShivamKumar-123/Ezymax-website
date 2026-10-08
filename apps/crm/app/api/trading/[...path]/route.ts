@@ -10,7 +10,7 @@ import { dealCommission, dealPremiumsUsd, isOptionTrade, matchesInstrument, opti
 
 // Client Area trading BFF. Browser -> /api/trading/<route> (same origin) -> trading engine /v1/…
 // The client is resolved from the HttpOnly gateway session cookie (gateway /v1/auth/me); the engine gets
-// that user id in X-Kalks-User-Id and returns 404 for accounts the user doesn't own. A user id sent by the
+// that user id in X-Ezymex-User-Id and returns 404 for accounts the user doesn't own. A user id sent by the
 // browser is never used. CSRF: cookies are SameSite=Lax, POSTs must be JSON with a same-origin Origin.
 //
 //   GET  groups                              open-account groups and their specs
@@ -18,7 +18,7 @@ import { dealCommission, dealPremiumsUsd, isOptionTrade, matchesInstrument, opti
 //   POST accounts                            {type, group, leverage?, name?, password?, initialBalance?}
 //   GET  accounts/{login}                    {account, positions[], orders[]}
 //   GET  accounts/{login}/history?from&to&page&limit[&instrument=option|cfd]
-//                                            instrument: only Kalks FX Options deals (or only CFD deals); the BFF pages
+//                                            instrument: only Ezymex FX Options deals (or only CFD deals); the BFF pages
 //                                            through the period itself so the paging and totals match the filter
 //   GET  accounts/{login}/ledger?from&to&page&limit
 //   GET  accounts/{login}/export?kind=history|ledger&from&to[&instrument=option|cfd]   CSV download (times in UTC)
@@ -28,7 +28,7 @@ import { dealCommission, dealPremiumsUsd, isOptionTrade, matchesInstrument, opti
 //
 // Passwords and leverage need an emailed-code confirmation (D20): the browser gets a step-up token from
 // /api/auth/stepup-verify (action trading_password | investor_password | leverage, target = login) and sends it
-// as `stepup_token` (or X-Kalks-Stepup). It is checked against the account first, then redeemed once with the
+// as `stepup_token` (or X-Ezymex-Stepup). It is checked against the account first, then redeemed once with the
 // gateway, and only then does the engine make the change.
 //   POST accounts/{login}/sso                {url, expiresAt}: url = NEXT_PUBLIC_TERMINAL_URL + "/?sso=<token>"
 //   GET  accounts/{login}/archive-check      {canArchive, needsEmpty, positions, orders, balance, credit, bonus, blockers[]}
@@ -167,7 +167,7 @@ export async function GET(req: NextRequest, { params }: Ctx) {
     if (!r.ok) return reply(r.status, await r.json().catch(() => ({ error: { code: "unavailable", message: "The history could not be prepared." } })));
     return new NextResponse(r.body, {
       status: 200,
-      headers: { ...NO_STORE, "content-type": "application/zip", "content-disposition": r.headers.get("content-disposition") ?? `attachment; filename="kalks-${login}-history.zip"`, "x-content-type-options": "nosniff" },
+      headers: { ...NO_STORE, "content-type": "application/zip", "content-disposition": r.headers.get("content-disposition") ?? `attachment; filename="ezymex-${login}-history.zip"`, "x-content-type-options": "nosniff" },
     });
   }
 
@@ -508,7 +508,7 @@ async function exportCsv(req: NextRequest, user: GatewayUser, login: string) {
 
   let csv: string;
   if (kind === "history") {
-    // Kalks FX Options deals: Volume = contracts, Price / Open price = premium per unit of the underlying (quote
+    // Ezymex FX Options deals: Volume = contracts, Price / Open price = premium per unit of the underlying (quote
     // currency); the option columns give the terms and the premiums in USD per contract
     const usdFactor = rows.some((d) => isOptionTrade(d as unknown as DealRow)) ? await accountUsdFactor(req, user, login) : 1;
     const head = ["Time (UTC)", "Deal", "Position", "Order", "Symbol", "Type", "Direction", "Volume", "Price", "Open price", "Open time (UTC)", "Commission", "Swap", "Profit", "Reason", "Comment", "Instrument", "Underlying", "Call/Put", "Strike", "Expiry", "Quote currency", "Premium per contract (USD)", "Open premium per contract (USD)"];
@@ -534,7 +534,7 @@ async function exportCsv(req: NextRequest, user: GatewayUser, login: string) {
   }
 
   const span = [range.get("from"), range.get("to")].filter(Boolean).map((s) => s!.slice(0, 10)).join("_");
-  const name = `kalks-${login}-${kind === "history" ? (inst === "option" ? "options" : inst === "cfd" ? "cfd-trades" : "trades") : "ledger"}${span ? `-${span}` : ""}.csv`;
+  const name = `ezymex-${login}-${kind === "history" ? (inst === "option" ? "options" : inst === "cfd" ? "cfd-trades" : "trades") : "ledger"}${span ? `-${span}` : ""}.csv`;
   return new NextResponse("﻿" + csv + "\r\n", {
     status: 200,
     headers: { ...NO_STORE, "content-type": "text/csv; charset=utf-8", "content-disposition": `attachment; filename="${name}"`, "x-content-type-options": "nosniff" },

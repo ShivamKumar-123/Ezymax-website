@@ -3,13 +3,13 @@
 import * as React from "react";
 import { Bot, Plus, Timer, Users } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, Chip, Dialog, Menu, PageHeader, Reveal, Toggle, cn } from "@kalks/ui";
-import { SUP_AGENTS, SUP_CONVERSATIONS, SUP_ME, type SupConversation, type SupMessage } from "@kalks/mock/admin-growth-support";
+import { Avatar, Button, Card, Chip, Dialog, Menu, PageHeader, Reveal, Toggle, cn } from "@ezymex/ui";
+import { SUP_AGENTS, SUP_CONVERSATIONS, SUP_ME, type SupConversation, type SupMessage } from "@ezymex/mock/admin-growth-support";
 import { ConversationList, type InboxFilter } from "@/components/support/conversation-list";
 import { ChatThread } from "@/components/support/chat-thread";
 import { ContextPanel } from "@/components/support/context-panel";
 import { AiSpark } from "@/components/support/shared";
-import { IS_DEMO as IS_DEMO_MODE } from "@kalks/mock/mode";
+import { IS_DEMO as IS_DEMO_MODE } from "@ezymex/mock/mode";
 import { LiveInbox } from "@/components/support-live/inbox";
 
 function nowHHMM() {

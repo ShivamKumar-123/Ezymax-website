@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { cn } from "@kalks/ui";
+import { cn } from "@ezymex/ui";
 
 type Line = { kind: "same" | "add" | "del"; text: string; a?: number; b?: number };
 

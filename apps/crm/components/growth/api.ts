@@ -1,15 +1,15 @@
 "use client";
 
 // Browser side of the growth BFF (app/api/growth/[[...path]]/route.ts -> services/growth /v1/growth/me/*).
-// Live builds only: demo builds keep the mock rewards data from @kalks/mock/rewards.
+// Live builds only: demo builds keep the mock rewards data from @ezymex/mock/rewards.
 // Shapes mirror services/growth/README.md. Money is USD, sent as JSON numbers; times are RFC 3339.
 
 import * as React from "react";
 import { toast } from "sonner";
-import type { MessageKey } from "@kalks/i18n";
-import { intlTag } from "@kalks/i18n/locales";
-import { tr } from "@kalks/i18n/react";
-import { readCached, writeCached } from "@kalks/ui/swr-cache";
+import type { MessageKey } from "@ezymex/i18n";
+import { intlTag } from "@ezymex/i18n/locales";
+import { tr } from "@ezymex/i18n/react";
+import { readCached, writeCached } from "@ezymex/ui/swr-cache";
 
 /* ------------------------------------------------------------------ */
 /* Shapes                                                              */
@@ -245,7 +245,7 @@ export interface Contest {
   name: string;
   description: string;
   kind: "demo" | "live";
-  /** What is traded: CFDs (lots) or Kalks FX Options (contracts, O36). Older services omit it (= cfd). */
+  /** What is traded: CFDs (lots) or Ezymex FX Options (contracts, O36). Older services omit it (= cfd). */
   instrument?: "cfd" | "options" | string;
   /** Options contests: minimum opening premium per trade (USD) for a trade to add volume and count; null = none. */
   minPremium?: number | null;
@@ -443,7 +443,7 @@ export function errorToast(title: string, e: unknown) {
 }
 
 /** Loads `path` once (and again on `reload()`); refreshes quietly every `ms` while the tab is visible.
- *  Opened again, a page starts from this tab's last answer while it refetches (@kalks/ui/swr-cache). */
+ *  Opened again, a page starts from this tab's last answer while it refetches (@ezymex/ui/swr-cache). */
 export function useGrowth<T>(path: string | null, ms = 0) {
   const [data, setData] = React.useState<T | null>(() => (path !== null ? (readCached<T>(`growth:${path}`) ?? null) : null));
   const [error, setError] = React.useState<GrowthApiError | null>(null);
@@ -544,7 +544,7 @@ export function optionStrikeLabel(o: Pick<ShareOption, "series" | "strike">): st
   return String(+o.strike.toFixed(6));
 }
 
-/** A Kalks FX Options contest (O36): only option trades count, volume in contracts. */
+/** A Ezymex FX Options contest (O36): only option trades count, volume in contracts. */
 export const isOptionsContest = (c: Pick<Contest, "instrument">) => c.instrument === "options";
 
 /** Groups that never trade options (copy-trading followers, PAMM, MAM, prop), same rule as the engine. */

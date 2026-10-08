@@ -15,7 +15,7 @@ import { FlavorChip, RestoreButton, accountFlavor, copyingName } from "./archive
 import { ClosureBanner } from "./closure";
 import { DefaultStar, HealthCard } from "./extras";
 import { AccountAnalyticsPanel } from "@/components/reports/live-analytics";
-import { Trans, useT } from "@kalks/i18n/react";
+import { Trans, useT } from "@ezymex/i18n/react";
 import { OptionPremium, OptionTag, TradeSymbolAvatar, fmtContracts, symbolLabel } from "./instrument";
 import { isOptionTrade, optionTerms, positionPremiumsUsd, usdFactorOf } from "./option-deal";
 

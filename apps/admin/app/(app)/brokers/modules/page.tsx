@@ -1,6 +1,6 @@
 "use client";
 
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveModules } from "@/components/owner/platform";
 
 import * as React from "react";
@@ -23,9 +23,9 @@ import {
   Tooltip,
   cn,
   formatNumber,
-} from "@kalks/ui";
-import { BRK_MODULES, BRK_OVERRIDES, BRK_PLANS, BRK_TENANTS, brkTenant, type BrkModuleKey, type BrkOverride } from "@kalks/mock/admin-platform-brokers";
-import { PEOPLE } from "@kalks/mock/people";
+} from "@ezymex/ui";
+import { BRK_MODULES, BRK_OVERRIDES, BRK_PLANS, BRK_TENANTS, brkTenant, type BrkModuleKey, type BrkOverride } from "@ezymex/mock/admin-platform-brokers";
+import { PEOPLE } from "@ezymex/mock/people";
 import { PlanChip, TenantLogo, timeAgo } from "@/components/brokers/kit";
 import { MODULE_ICON } from "@/components/brokers/module-icons";
 

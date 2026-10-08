@@ -3,7 +3,7 @@
 import * as React from "react";
 import { ArrowUpRight, KeyRound } from "lucide-react";
 import { useTerminal } from "@/lib/store";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { CLIENT_AREA } from "@/lib/guest";
 import { TDialog } from "@/components/ui/primitives";
 import { EngineLoginForm } from "@/components/account/login-form";

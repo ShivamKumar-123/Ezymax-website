@@ -2,13 +2,13 @@
 
 /**
  * Back-office form & data kit shared by the Config / Finance / Partners /
- * Social / Prop modules. Small, dense controls that sit on top of @kalks/ui.
+ * Social / Prop modules. Small, dense controls that sit on top of @ezymex/ui.
  */
 import * as React from "react";
 import { motion } from "motion/react";
 import { Check, ChevronDown, ExternalLink, Minus, Plus, X, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Chip, CopyButton, Dialog, Flag, cn, shortHash, type ChipTone } from "@kalks/ui";
+import { Avatar, Button, Chip, CopyButton, Dialog, Flag, cn, shortHash, type ChipTone } from "@ezymex/ui";
 
 /* ------------------------------------------------------------------ */
 /* Audit toast                                                          */

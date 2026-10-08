@@ -103,7 +103,7 @@ impl Default for Limits {
 /// The symbols to stream, per provider market, plus the demand that did not fit.
 #[derive(Clone, Debug, Default, PartialEq, Serialize)]
 pub struct Plan {
-    /// market → Kalks symbols
+    /// market → Ezymex symbols
     pub markets: BTreeMap<String, BTreeSet<String>>,
     /// wanted (tier above grace) but over the plan limit
     pub dropped: Vec<(String, Tier)>,

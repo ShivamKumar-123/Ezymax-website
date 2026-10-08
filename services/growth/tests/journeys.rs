@@ -56,7 +56,7 @@ async fn env() -> Option<Env> {
         eprintln!("skipping journeys DB tests: no PostgreSQL at {base}");
         return None;
     }
-    let name = format!("kalks_growth_jtest_{}", std::process::id());
+    let name = format!("ezymex_growth_jtest_{}", std::process::id());
     let url = admin.clone().database(&name).to_url_lossy().to_string();
     let pool = db::connect(&url).await.expect("create + migrate");
     let m: M = Arc::new(Mutex::new(Mock::default()));
@@ -79,7 +79,7 @@ impl Env {
     }
 
     async fn profile(&self, user: i64, signed_up_ago_min: i64, deposited: bool) {
-        sqlx::query("INSERT INTO profiles (tenant, user_id, first_name, last_name, email, signed_up_at, first_deposit_at) VALUES ('kalks', $1, 'Ann', 'Lee', $2, $3, $4)")
+        sqlx::query("INSERT INTO profiles (tenant, user_id, first_name, last_name, email, signed_up_at, first_deposit_at) VALUES ('ezymex', $1, 'Ann', 'Lee', $2, $3, $4)")
             .bind(user)
             .bind(format!("u{user}@example.com"))
             .bind(Utc::now() - Duration::minutes(signed_up_ago_min))
@@ -90,7 +90,7 @@ impl Env {
     }
 
     async fn journey(&self, trigger: Value, steps: Value, live_since_ago_min: i64) -> i64 {
-        sqlx::query_scalar("INSERT INTO journeys (tenant, name, trigger, steps, status, live_since, created_by) VALUES ('kalks', 'J', $1, $2, 'live', $3, 'test') RETURNING id")
+        sqlx::query_scalar("INSERT INTO journeys (tenant, name, trigger, steps, status, live_since, created_by) VALUES ('ezymex', 'J', $1, $2, 'live', $3, 'test') RETURNING id")
             .bind(sqlx::types::Json(trigger))
             .bind(sqlx::types::Json(steps))
             .bind(Utc::now() - Duration::minutes(live_since_ago_min))

@@ -4,15 +4,15 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/features/terminal/cfd/order_sheet.dart';
-import 'package:kalks/features/terminal/cfd/position_sheet.dart';
-import 'package:kalks/features/terminal/core/market.dart';
-import 'package:kalks/features/terminal/core/order.dart';
-import 'package:kalks/features/terminal/core/sessions.dart';
-import 'package:kalks/features/terminal/core/terminal_controller.dart';
-import 'package:kalks/features/terminal/core/trade_actions.dart';
-import 'package:kalks/i18n/i18n.dart';
-import 'package:kalks/ui/ui.dart';
+import 'package:ezymex/features/terminal/cfd/order_sheet.dart';
+import 'package:ezymex/features/terminal/cfd/position_sheet.dart';
+import 'package:ezymex/features/terminal/core/market.dart';
+import 'package:ezymex/features/terminal/core/order.dart';
+import 'package:ezymex/features/terminal/core/sessions.dart';
+import 'package:ezymex/features/terminal/core/terminal_controller.dart';
+import 'package:ezymex/features/terminal/core/trade_actions.dart';
+import 'package:ezymex/i18n/i18n.dart';
+import 'package:ezymex/ui/ui.dart';
 
 import 'harness.dart';
 

@@ -1,10 +1,10 @@
-# Kalks Frontend Conventions
+# Ezymex Frontend Conventions
 
-These rules apply to anyone, human or AI, working in the Kalks monorepo:
+These rules apply to anyone, human or AI, working in the Ezymex monorepo:
 
 - `apps/crm`: Client Area, http://localhost:3000
 - `apps/admin`: Back Office, http://localhost:3001
-- `apps/terminal`: Kalks Trader trading terminal, http://localhost:3002
+- `apps/terminal`: Ezymex Trader trading terminal, http://localhost:3002
 - `services/market-data`: Rust market-data service (prices, candles, spreads), http://localhost:8081; see `services/market-data/README.md`
 
 The page and design rules below apply to the three Next.js apps.
@@ -15,13 +15,13 @@ The page and design rules below apply to the three Next.js apps.
 
 ## Stack
 - Next.js 16 App Router, React 19, TypeScript, Tailwind v4, Motion (`motion/react`), lucide-react.
-- Shared UI lives in `packages/ui` (import from `@kalks/ui`).
-- Mock data lives in `packages/mock` (import from `@kalks/mock`, or from a sub-file `@kalks/mock/<file>`).
+- Shared UI lives in `packages/ui` (import from `@ezymex/ui`).
+- Mock data lives in `packages/mock` (import from `@ezymex/mock`, or from a sub-file `@ezymex/mock/<file>`).
 
 ## Where things go
 - **Pages:** `apps/<app>/app/(app)/<module>/.../page.tsx`. Pages are client components (`"use client"`) that use mock data.
 - **Components specific to one module:** `apps/<app>/components/<module>/*.tsx`.
-- **Mock data for a module:** create `packages/mock/src/<module>.ts` and import it via `@kalks/mock/<module>`. Do **not** edit `packages/mock/src/index.ts` or `client.ts`; other people are working in parallel.
+- **Mock data for a module:** create `packages/mock/src/<module>.ts` and import it via `@ezymex/mock/<module>`. Do **not** edit `packages/mock/src/index.ts` or `client.ts`; other people are working in parallel.
 - **Shared UI:** do **not** edit files in `packages/ui` unless told to. If you need a new reusable widget, put it in your app's `components/` folder.
 - Navigation is already defined in `apps/crm/lib/nav.ts` and `apps/admin/lib/nav.ts`. Every `sub` href there must resolve to a real page.
 
@@ -34,7 +34,7 @@ The page and design rules below apply to the three Next.js apps.
   - All numbers get the `k-num` class.
   - IDs, logins, hashes and tickets use `font-mono`.
 - **Symbols:** `<SymbolCell symbol />` or `<SymbolAvatar symbol />`. Real flags, coin and stock logos are wired in.
-- **People:** `<Avatar src={person.photo} name />` with real portraits from `PEOPLE` in `@kalks/mock`. Flags: `<Flag country="in" />`.
+- **People:** `<Avatar src={person.photo} name />` with real portraits from `PEOPLE` in `@ezymex/mock`. Flags: `<Flag country="in" />`.
 - **Status:** `<StatusChip status="pending|approved|rejected|processing|completed|running|verified|…" />` or `<Chip tone="up|down|ember|gold|warn|info|neutral">`.
 - **Tables:** `<DataTable columns rows search exportName pageSize />`. Cells stay concise; right-align numbers.
 - **Lists:** `<ListRow>` for rounded sub-card rows (signals/watchlist style); `k-row` class for custom rows.

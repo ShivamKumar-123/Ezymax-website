@@ -4,13 +4,13 @@ import * as React from "react";
 import { toast } from "sonner";
 import { ArrowUpRight, ChevronRight, Clock3, Eye, Mail, MessageCircle, Phone, Search } from "lucide-react";
 import { Card, CardHeader, Chip, Dialog, Icon3D, Input, PageHeader, Reveal, Button, cn } from "@/components/kit";
-import { HELP_CATEGORIES, POPULAR_ARTICLES, SUPPORT_AGENT } from "@kalks/mock/support-extra";
+import { HELP_CATEGORIES, POPULAR_ARTICLES, SUPPORT_AGENT } from "@ezymex/mock/support-extra";
 import { ChatPanel } from "@/components/support/chat-panel";
 import { LiveSupport } from "@/components/support/live-support";
-import { IS_DEMO } from "@kalks/mock";
+import { IS_DEMO } from "@ezymex/mock";
 
 const CONTACTS = [
-  { key: "email", icon: <Mail />, title: "Email", value: "support@kalks.com", hours: "Reply within 2 hours · 24/7", action: "Copy", copy: "support@kalks.com" },
+  { key: "email", icon: <Mail />, title: "Email", value: "support@ezymex.com", hours: "Reply within 2 hours · 24/7", action: "Copy", copy: "support@ezymex.com" },
   { key: "wa", icon: <MessageCircle />, title: "WhatsApp", value: "+971 4 568 2210", hours: "Mon–Fri 08:00–22:00 GMT+3", action: "Open", copy: "" },
   { key: "phone", icon: <Phone />, title: "Phone", value: "+44 20 3808 4412", hours: "Mon–Fri 09:00–21:00 GMT+3", action: "Call", copy: "" },
 ];
@@ -25,7 +25,7 @@ function DemoSupport() {
     <div className="pb-24">
       <PageHeader
         title="Support centre"
-        subtitle="Chat with Kalks AI for instant answers. A human agent can join any time, 24/7."
+        subtitle="Chat with Ezymex AI for instant answers. A human agent can join any time, 24/7."
         actions={
           <div className="flex items-center gap-3 rounded-full border border-line bg-surface-2 py-1.5 pl-1.5 pr-4">
             <div className="flex -space-x-2">
@@ -86,7 +86,7 @@ function DemoSupport() {
             <Card>
               <CardHeader title={qq ? `Results for “${q}”` : "Popular articles"} action={qq ? <Button size="xs" variant="ghost" onClick={() => setQ("")}>Clear</Button> : undefined} />
               <div className="space-y-1 px-4 pb-5 pt-3 sm:px-6">
-                {articles.length === 0 && <div className="py-6 text-center text-[13px] text-fg-3">No articles found. Ask Kalks AI in the chat instead.</div>}
+                {articles.length === 0 && <div className="py-6 text-center text-[13px] text-fg-3">No articles found. Ask Ezymex AI in the chat instead.</div>}
                 {articles.map((a) => (
                   <button key={a.id} onClick={() => setArticle(a)} className="group flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-surface-2">
                     <div className="min-w-0 flex-1">
@@ -158,7 +158,7 @@ function DemoSupport() {
               Most requests are handled automatically in minutes. USDT (TRC20) transactions need 20 network confirmations, which usually takes around one minute. All times in the Client Area use server time (GMT+3).
             </p>
             <p>
-              You can follow every step from <span className="text-fg">Wallet → History</span>, where each transaction shows its status, network hash and confirmations. If something looks stuck for more than 30 minutes, start a chat and Kalks AI will check it for you instantly.
+              You can follow every step from <span className="text-fg">Wallet → History</span>, where each transaction shows its status, network hash and confirmations. If something looks stuck for more than 30 minutes, start a chat and Ezymex AI will check it for you instantly.
             </p>
             <div className="k-row flex items-center justify-between px-4 py-3 text-[13px]">
               <span>Still need help?</span>

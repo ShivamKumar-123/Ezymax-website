@@ -6,7 +6,7 @@
  * A bar counts as closed when a newer bar arrives, or when its period has elapsed (watchdog),
  * so quiet markets still produce bar-close events.
  */
-import { fetchCandles, priceFeed, serverOffset, type Candle } from "@kalks/mock";
+import { fetchCandles, priceFeed, serverOffset, type Candle } from "@ezymex/mock";
 import { TF_SECONDS, type Timeframe } from "../trading";
 
 type CloseFn = (bar: Candle, bars: Candle[]) => void;

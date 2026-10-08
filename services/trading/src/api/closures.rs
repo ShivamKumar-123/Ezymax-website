@@ -14,7 +14,7 @@
 //!
 //! **Reopen** (C12): a Super Admin requests it with a reason; another Super Admin approves it (always four-eyes).
 //!
-//! Routes (staff identity headers; the Back Office BFF forwards `X-Kalks-Staff-Perms`):
+//! Routes (staff identity headers; the Back Office BFF forwards `X-Ezymex-Staff-Perms`):
 //! * `GET  /v1/admin/closures?status&kind&q&page&limit`   queue (pending first) with templates and survey reasons
 //! * `GET  /v1/admin/closures/{id}`                       one request with its live checks
 //! * `POST /v1/admin/closures/{id}/approve`               `{note?}`                       accounts.close.approve

@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { ArrowRight, GitBranch, History, Undo2 } from "lucide-react";
-import { Button, Chip, Dialog, DialogClose, Field, Input, PriceText, Segmented, SymbolCell, Tabs, Toggle, cn, formatNumber, useQuote } from "@kalks/ui";
-import { getInstrument } from "@kalks/mock";
+import { Button, Chip, Dialog, DialogClose, Field, Input, PriceText, Segmented, SymbolCell, Tabs, Toggle, cn, formatNumber, useQuote } from "@ezymex/ui";
+import { getInstrument } from "@ezymex/mock";
 import {
   REASON_ERROR_CORRECTION,
   ago,

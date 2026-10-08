@@ -472,7 +472,7 @@ impl Social {
     }
 
     pub fn slug(&self, tenant: i64) -> String {
-        self.hub.shared.registry.get(tenant).map(|t| t.slug.clone()).unwrap_or_else(|| "kalks".into())
+        self.hub.shared.registry.get(tenant).map(|t| t.slug.clone()).unwrap_or_else(|| "ezymex".into())
     }
 
     pub fn flag(&self, sub: i64) -> Arc<AtomicBool> {

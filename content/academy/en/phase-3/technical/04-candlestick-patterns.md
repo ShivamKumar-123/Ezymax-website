@@ -31,7 +31,7 @@ quiz:
     explanation: "The second candle opens at or above the prior close and closes below the prior open, so its body engulfs the previous body, showing sellers overwhelmed buyers."
   - question: "Why is it important to wait for the candle to close before acting on a pattern?"
     options:
-      - "Kalks Trader does not show open candles"
+      - "Ezymex Trader does not show open candles"
       - "Patterns only exist on daily charts"
       - "Spreads are always zero at the close"
       - "Until it closes, the candle's body and wicks can change and the pattern may disappear"
@@ -120,5 +120,5 @@ A practical plan for a bullish pin bar at support: enter on a break of the pin b
 
 - **Pattern hunting everywhere.** Most candles in the middle of a range mean nothing.
 - **Acting before the close.** A hammer at 20 minutes into the hour can close as a bearish candle.
-- **Ignoring the timeframe.** A pin bar on M1 carries far less information than one on H4 or daily. Daily candles in Kalks Trader close at 00:00 server time, the New York close, so daily patterns reflect a full trading day.
+- **Ignoring the timeframe.** A pin bar on M1 carries far less information than one on H4 or daily. Daily candles in Ezymex Trader close at 00:00 server time, the New York close, so daily patterns reflect a full trading day.
 - **Memorising dozens of names.** The few patterns here, read in context, cover most useful situations.

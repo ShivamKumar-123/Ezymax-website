@@ -1,4 +1,4 @@
-//! Depth of market for the Kalks Trader ladder (D97).
+//! Depth of market for the Ezymex Trader ladder (D97).
 //!
 //! * **Feed** (`src = "feed"`): when the provider's depth stream carries several priced levels with sizes (and
 //!   they are fresh), the ladder shows them, moved outwards by the account group's spread markup exactly like

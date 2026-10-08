@@ -96,7 +96,7 @@ impl Instrument {
     }
 }
 
-/// Instrument catalogue with lookups in both directions (Kalks symbol ↔ provider market+code).
+/// Instrument catalogue with lookups in both directions (Ezymex symbol ↔ provider market+code).
 #[derive(Clone, Debug)]
 pub struct Catalogue {
     pub list: Vec<Instrument>,

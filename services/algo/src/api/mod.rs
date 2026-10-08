@@ -1,4 +1,4 @@
-//! HTTP API. Internal routes (`/v1/*`) need `X-Kalks-Internal` and are called by the CRM / Back Office
+//! HTTP API. Internal routes (`/v1/*`) need `X-Ezymex-Internal` and are called by the CRM / Back Office
 //! BFFs; public routes (`/hooks/*`, `/public/v1/*`) authenticate with a webhook token or an API key.
 
 pub mod admin;
@@ -77,7 +77,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for Peer {
 async fn internal_only(State(st): State<AppState>, req: Request, next: Next) -> Response {
     let token = &st.cfg.internal_token;
     if !token.is_empty() {
-        let got = req.headers().get("x-kalks-internal").and_then(|v| v.to_str().ok()).unwrap_or("");
+        let got = req.headers().get("x-ezymex-internal").and_then(|v| v.to_str().ok()).unwrap_or("");
         if !ct_eq(got, token) {
             return ApiError::Forbidden("Internal token required.".into()).into_response();
         }

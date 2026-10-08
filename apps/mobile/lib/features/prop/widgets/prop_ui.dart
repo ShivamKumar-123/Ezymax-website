@@ -524,7 +524,7 @@ class _CredentialFieldState extends State<CredentialField> {
   }
 }
 
-/// Opens Kalks Trader on a prop account (web PropTradeButton: one-time SSO; the app's trader opens the session).
+/// Opens Ezymex Trader on a prop account (web PropTradeButton: one-time SSO; the app's trader opens the session).
 class PropTradeButton extends StatelessWidget {
   const PropTradeButton({
     super.key,
@@ -775,7 +775,7 @@ class CertificateArt extends StatelessWidget {
   const CertificateArt({super.key, required this.cert, required this.host});
   final Certificate cert;
 
-  /// "app.kalkstrade.com" (the verify line).
+  /// "app.ezymex.com" (the verify line).
   final String host;
 
   @override
@@ -824,7 +824,7 @@ class CertificateArt extends StatelessWidget {
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              Text('KALKS', style: s(28, w: FontWeight.w700, spacing: 1)),
+                              Text('EZYMEX', style: s(28, w: FontWeight.w700, spacing: 1)),
                               const SizedBox(width: 14),
                               Text('PROP', style: s(18, color: muted)),
                               const Spacer(),

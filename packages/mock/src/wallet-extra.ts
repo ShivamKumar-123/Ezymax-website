@@ -18,12 +18,12 @@ export interface DepositNetwork {
 }
 
 export const DEPOSIT_NETWORKS: DepositNetwork[] = [
-  { id: "usdt-trc20", asset: "USDT", network: "TRON (TRC20)", short: "TRC20", icon: "usdt", active: true, minDeposit: 10, confirmations: 20, eta: "≈ 1–3 min", fee: "No Kalks fee" },
-  { id: "usdt-erc20", asset: "USDT", network: "Ethereum (ERC20)", short: "ERC20", icon: "usdt", active: false, minDeposit: 50, confirmations: 12, eta: "≈ 5 min", fee: "No Kalks fee" },
-  { id: "usdt-bep20", asset: "USDT", network: "BNB Chain (BEP20)", short: "BEP20", icon: "bnb", active: false, minDeposit: 10, confirmations: 15, eta: "≈ 1 min", fee: "No Kalks fee" },
-  { id: "btc", asset: "BTC", network: "Bitcoin", short: "BTC", icon: "btc", active: false, minDeposit: 0.0005, confirmations: 2, eta: "≈ 20 min", fee: "No Kalks fee" },
-  { id: "eth", asset: "ETH", network: "Ethereum", short: "ETH", icon: "eth", active: false, minDeposit: 0.01, confirmations: 12, eta: "≈ 3 min", fee: "No Kalks fee" },
-  { id: "trx", asset: "TRX", network: "TRON", short: "TRX", icon: "trx", active: false, minDeposit: 50, confirmations: 20, eta: "≈ 1 min", fee: "No Kalks fee" },
+  { id: "usdt-trc20", asset: "USDT", network: "TRON (TRC20)", short: "TRC20", icon: "usdt", active: true, minDeposit: 10, confirmations: 20, eta: "≈ 1–3 min", fee: "No Ezymex fee" },
+  { id: "usdt-erc20", asset: "USDT", network: "Ethereum (ERC20)", short: "ERC20", icon: "usdt", active: false, minDeposit: 50, confirmations: 12, eta: "≈ 5 min", fee: "No Ezymex fee" },
+  { id: "usdt-bep20", asset: "USDT", network: "BNB Chain (BEP20)", short: "BEP20", icon: "bnb", active: false, minDeposit: 10, confirmations: 15, eta: "≈ 1 min", fee: "No Ezymex fee" },
+  { id: "btc", asset: "BTC", network: "Bitcoin", short: "BTC", icon: "btc", active: false, minDeposit: 0.0005, confirmations: 2, eta: "≈ 20 min", fee: "No Ezymex fee" },
+  { id: "eth", asset: "ETH", network: "Ethereum", short: "ETH", icon: "eth", active: false, minDeposit: 0.01, confirmations: 12, eta: "≈ 3 min", fee: "No Ezymex fee" },
+  { id: "trx", asset: "TRX", network: "TRON", short: "TRX", icon: "trx", active: false, minDeposit: 50, confirmations: 20, eta: "≈ 1 min", fee: "No Ezymex fee" },
 ];
 
 export const WALLET_LIMITS = {
@@ -74,7 +74,7 @@ export const DEPOSIT_FAQ = [
   { q: "How long does a USDT (TRC20) deposit take?", a: "TRON produces a block roughly every 3 seconds. Your deposit is detected on the first block and credited to your wallet automatically after 20 confirmations — usually within 1–3 minutes." },
   { q: "What happens if I send a different token or use another network?", a: "Only send USDT on the TRON (TRC20) network to this address. Tokens sent on ERC20, BEP20 or any other chain cannot be credited automatically and may be lost. Contact support with your tx hash and we will try to help." },
   { q: "Is there a minimum deposit?", a: "The minimum is 10 USDT. Smaller deposits are still detected but are held until your cumulative pending amount reaches the minimum." },
-  { q: "Does Kalks charge deposit fees?", a: "No. Kalks does not charge any deposit fee. You only pay the TRON network (energy/bandwidth) fee charged by your sending wallet or exchange." },
+  { q: "Does Ezymex charge deposit fees?", a: "No. Ezymex does not charge any deposit fee. You only pay the TRON network (energy/bandwidth) fee charged by your sending wallet or exchange." },
   { q: "Is my deposit address permanent?", a: "Yes. The address is derived from your personal HD wallet and never changes, so you can safely whitelist it on your exchange." },
   { q: "Do I need KYC to deposit?", a: "No. You can deposit and trade immediately. Identity verification is only required before your first withdrawal." },
 ];

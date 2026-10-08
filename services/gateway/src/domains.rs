@@ -1,16 +1,16 @@
 //! Tenant domains and host → tenant resolution (D1, D113).
 //!
 //! Each broker is served on its own hosts, one app per host kind: `website`, `app` (Client Area), `trade`
-//! (Kalks Trader) and `admin` (Back Office), stored in `tenant_domains` (`tenants.domains` is a mirror of the
+//! (Ezymex Trader) and `admin` (Back Office), stored in `tenant_domains` (`tenants.domains` is a mirror of the
 //! active rows for older readers).
 //!
 //! **Resolution precedence** (`Ctx`, see state.rs). The apps' BFFs call the gateway server-side and forward the
-//! browser's host in `X-Kalks-Host` (only the BFFs can reach /v1: loopback + internal token):
-//! 1. `X-Kalks-Host` is an active `tenant_domains` row → that tenant. The host wins over any explicit
-//!    `X-Kalks-Tenant`, so a broker's domain can never be steered to another tenant by a stale header.
-//! 2. otherwise an explicit `X-Kalks-Tenant` slug (the BFF's configured tenant, `kalks` by default);
-//! 3. otherwise the default tenant `kalks`. Unknown hosts (localhost in development, the server IP) therefore
-//!    get Kalks; in production Caddy only routes configured or `domain-check`-approved hosts to the apps.
+//! browser's host in `X-Ezymex-Host` (only the BFFs can reach /v1: loopback + internal token):
+//! 1. `X-Ezymex-Host` is an active `tenant_domains` row → that tenant. The host wins over any explicit
+//!    `X-Ezymex-Tenant`, so a broker's domain can never be steered to another tenant by a stale header.
+//! 2. otherwise an explicit `X-Ezymex-Tenant` slug (the BFF's configured tenant, `ezymex` by default);
+//! 3. otherwise the default tenant `ezymex`. Unknown hosts (localhost in development, the server IP) therefore
+//!    get Ezymex; in production Caddy only routes configured or `domain-check`-approved hosts to the apps.
 //!
 //! Lookups are cached per process for `CACHE_TTL` (negative results too); owner changes clear the cache.
 
@@ -34,7 +34,7 @@ use crate::client_auth::body;
 use crate::error::{ApiError, ApiResult, field};
 use crate::state::{AppState, Ctx};
 
-pub const DEFAULT_TENANT: &str = "kalks";
+pub const DEFAULT_TENANT: &str = "ezymex";
 pub const KINDS: &[&str] = &["website", "app", "trade", "admin"];
 pub const MAX_DOMAINS: i64 = 20;
 const CACHE_TTL: Duration = Duration::from_secs(30);
@@ -127,7 +127,7 @@ impl Source {
     }
 }
 
-/// Only plausible slugs are taken from `X-Kalks-Tenant`.
+/// Only plausible slugs are taken from `X-Ezymex-Tenant`.
 fn explicit_slug(raw: Option<&str>) -> Option<String> {
     raw.map(|s| s.trim().to_lowercase()).filter(|s| (1..=32).contains(&s.len()) && s.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-'))
 }
@@ -149,17 +149,17 @@ fn header<'a>(h: &'a HeaderMap, name: &str) -> Option<&'a str> {
 }
 
 pub async fn resolve_headers(st: &AppState, h: &HeaderMap) -> (String, Source) {
-    resolve(st, header(h, "x-kalks-host"), header(h, "x-kalks-tenant")).await
+    resolve(st, header(h, "x-ezymex-host"), header(h, "x-ezymex-tenant")).await
 }
 
 // ---------- row-level security scope ----------
 
 /// A transaction scoped to one tenant: `app.tenant_id` is set and the connection switches to the
-/// `kalks_tenant` role (RLS enforced, see the tenant_domains_rls migration). Queries through it can only
+/// `ezymex_tenant` role (RLS enforced, see the tenant_domains_rls migration). Queries through it can only
 /// see and write rows of `tenant_id`. Drop to roll back, `commit()` to keep writes.
 pub async fn tenant_tx(pool: &PgPool, tenant_id: i64) -> ApiResult<Transaction<'static, Postgres>> {
     let mut tx = pool.begin().await?;
-    sqlx::query("SELECT kalks_enter_tenant($1)").bind(tenant_id).execute(&mut *tx).await?;
+    sqlx::query("SELECT ezymex_enter_tenant($1)").bind(tenant_id).execute(&mut *tx).await?;
     Ok(tx)
 }
 

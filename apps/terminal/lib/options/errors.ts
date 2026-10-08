@@ -1,6 +1,6 @@
 // Engine / options-service rejections → what the client reads. The codes come from the engine's options API
 // (services/trading) and the options service (services/options); unknown codes fall back to the server's message.
-import { tr } from "@kalks/i18n/react";
+import { tr } from "@ezymex/i18n/react";
 import type { EngineErr } from "@/lib/engine/map";
 import { CLIENT_AREA } from "@/lib/guest";
 import type { Reason } from "./types";
@@ -47,7 +47,7 @@ export const OPTION_ERROR_CODES = [
   "series_cancel_only",
   "series_closed",
   "rfq_underlyings",
-  "kalks_quoted",
+  "ezymex_quoted",
   "mixed_venue",
   "book_venue",
 ] as const;

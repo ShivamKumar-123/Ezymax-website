@@ -4,7 +4,7 @@ import * as React from "react";
 import { motion } from "motion/react";
 import { AlertTriangle, Clock, Gauge as GaugeIcon, Trophy } from "lucide-react";
 import { Card, CardHeader, Chip, SymbolAvatar, Tooltip, cn, formatMoney } from "@/components/kit";
-import { COACH, SESSIONS, WEEKDAYS } from "@kalks/mock/academy";
+import { COACH, SESSIONS, WEEKDAYS } from "@ezymex/mock/academy";
 
 const money = (v: number) => `${v >= 0 ? "+" : "-"}${formatMoney(Math.abs(v), "USD", 0)}`;
 

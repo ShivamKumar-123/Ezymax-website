@@ -19,7 +19,7 @@ export interface Note {
   read: boolean;
 }
 
-const KEY = "kalks.terminal.notifications";
+const KEY = "ezymex.terminal.notifications";
 const CAP = 100;
 
 let notes: Note[] | null = null;

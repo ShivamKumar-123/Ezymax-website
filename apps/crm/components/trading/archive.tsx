@@ -14,7 +14,7 @@ import Link from "next/link";
 import { AlertTriangle, ArrowDownToLine, Check, CircleSlash, Loader2, RotateCcw, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Chip, CopyButton, Dialog, Field, Input, Money, cn } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { useReadOnly } from "@/components/session";
 import { StepUpDialog } from "@/components/stepup";
 import { curOf, errorToast, fmtDate, tradingApi, type EngineAccount } from "./api";

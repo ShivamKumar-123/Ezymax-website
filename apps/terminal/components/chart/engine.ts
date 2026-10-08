@@ -17,7 +17,7 @@ import {
   type SeriesType,
   type UTCTimestamp,
 } from "lightweight-charts";
-import { candles, fetchCandles, getInstrument, priceFeed, serverOffset, type Candle, type LiveBar } from "@kalks/mock";
+import { candles, fetchCandles, getInstrument, priceFeed, serverOffset, type Candle, type LiveBar } from "@ezymex/mock";
 import type { IndicatorInstance } from "@/lib/indicators";
 import { TF_SECONDS, TIMEFRAMES, type ChartType, type Timeframe } from "@/lib/trading";
 import { createIndicatorLayer, type IndLegendRow, type IndicatorLayer } from "./indicators/layer";
@@ -77,7 +77,7 @@ function loadHistory(symbol: string, tf: Timeframe): Promise<History> {
   return p;
 }
 
-/** Starts loading a chart's history before the chart mounts (Kalks Trader start-up: the saved layout's charts are
+/** Starts loading a chart's history before the chart mounts (Ezymex Trader start-up: the saved layout's charts are
  *  requested while the session check is still in flight); the chart then picks up the same request. */
 export function prefetchHistory(symbol: string, tf: Timeframe) {
   void loadHistory(symbol, tf);
@@ -247,7 +247,7 @@ export function useChartEngine(
     const vol = chart.addSeries(HistogramSeries, { priceScaleId: "vol", priceLineVisible: false, lastValueVisible: false, priceFormat: { type: "volume" } });
     chart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.86, bottom: 0 } });
 
-    // Kalks mark + "SYMBOL, TF" + instrument name: one faint broker watermark, drawn on the canvas (in screenshots too)
+    // Ezymex mark + "SYMBOL, TF" + instrument name: one faint broker watermark, drawn on the canvas (in screenshots too)
     const watermark = new BrandWatermark({ symbol, tf, name: inst.name, dark: c.dark, font: readVar(document.body, "--font-geist-sans", "system-ui").replace(/"/g, "'") + ", system-ui, sans-serif" });
     chart.panes()[0]!.attachPrimitive(watermark);
 

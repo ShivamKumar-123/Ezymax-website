@@ -14,7 +14,7 @@ import * as React from "react";
 import { AlertTriangle, Check, CircleSlash, Clock, Loader2, Lock, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Chip, Dialog, cn } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { StepUpDialog } from "@/components/stepup";
 import { curOf, errorToast, fmtDate, tradingApi, type EngineAccount } from "./api";
 

@@ -4,7 +4,7 @@
 //! Revenue model (per closed exit deal / entry deal):
 //! - **B-book P&L** = −(client price P&L) on B-book exits.
 //! - **Swap** = −(client swap) on exits (all books: the engine executes every trade internally).
-//! - **Commission** = entry-deal commission (the booked charge). Kalks FX Options charge commission on every
+//! - **Commission** = entry-deal commission (the booked charge). Ezymex FX Options charge commission on every
 //!   trade (open and close; none on expiry / knock-out): each option deal's own `commissionCharged`.
 //! - **Options** (B-book, the house is the counterparty): broker P&L = −(client realised option P&L) on option
 //!   exits (closes, expiries, knock-outs). Premiums and settlements are trading cash, never money in / out, and
@@ -51,7 +51,7 @@ pub struct D {
     pub swap: f64,
     pub commission: f64,
     pub book: String,
-    /// Kalks FX Options deal: `volume` is contracts (`lots` = 0), `charged` its own commission.
+    /// Ezymex FX Options deal: `volume` is contracts (`lots` = 0), `charged` its own commission.
     pub option: bool,
     /// USD commission this deal charged: the entry deal's commission for CFDs, `commissionCharged` for options.
     pub charged: f64,
@@ -145,7 +145,7 @@ impl Rev {
             }
         }
     }
-    /// A Kalks FX Options deal: commission on every trade, the house's P&L on exits; no lots, no CFD markup.
+    /// A Ezymex FX Options deal: commission on every trade, the house's P&L on exits; no lots, no CFD markup.
     pub fn add_option(&mut self, d: &D) {
         self.commission += d.charged;
         self.contracts += if d.entry == "in" { d.volume } else { 0.0 };

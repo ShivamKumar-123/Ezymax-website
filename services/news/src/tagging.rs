@@ -1,11 +1,11 @@
-//! Rule-based tagging: countries, currencies, Kalks instruments, asset class, headline tone and importance.
+//! Rule-based tagging: countries, currencies, Ezymex instruments, asset class, headline tone and importance.
 //!
 //! Deterministic keyword / entity rules (no model call per headline), so tagging is instant, free, testable
 //! and explainable. Staff can override tags per tenant in the Back Office.
 
 use std::collections::BTreeSet;
 
-/// The Kalks instrument list (packages/mock/src/symbols.ts) with asset classes.
+/// The Ezymex instrument list (packages/mock/src/symbols.ts) with asset classes.
 pub const INSTRUMENTS: &[(&str, &str)] = &[
     ("EURUSD", "forex"), ("GBPUSD", "forex"), ("USDJPY", "forex"), ("AUDUSD", "forex"), ("USDCAD", "forex"),
     ("USDCHF", "forex"), ("GBPJPY", "forex"), ("EURJPY", "forex"), ("USDINR", "forex"),
@@ -263,7 +263,7 @@ pub fn tag(title: &str, summary: &str, hint: SourceHint, provider_symbols: &[Str
     Tags { countries, currencies: currencies.into_iter().collect(), symbols, category, sentiment, importance: importance.clamp(0, 100) }
 }
 
-/// Provider tickers (Infoway / wire services) → Kalks names.
+/// Provider tickers (Infoway / wire services) → Ezymex names.
 pub fn map_provider_symbol(s: &str) -> String {
     let u = s.trim().to_ascii_uppercase();
     let u = u.strip_suffix(".US").unwrap_or(&u).to_string();

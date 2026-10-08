@@ -1,4 +1,4 @@
-//! HTTP API (axum, 127.0.0.1:8095). Every route except `/health` requires `X-Kalks-Internal`.
+//! HTTP API (axum, 127.0.0.1:8095). Every route except `/health` requires `X-Ezymex-Internal`.
 
 pub mod adjust;
 pub mod admin;
@@ -80,7 +80,7 @@ pub fn router(st: AppState) -> Router {
 async fn internal_only(State(st): State<AppState>, req: Request, next: Next) -> Response {
     let expected = st.cfg.internal_token.as_bytes();
     if !expected.is_empty() {
-        let got = req.headers().get("x-kalks-internal").map(|v| v.as_bytes()).unwrap_or_default();
+        let got = req.headers().get("x-ezymex-internal").map(|v| v.as_bytes()).unwrap_or_default();
         if !(got.len() == expected.len() && bool::from(got.ct_eq(expected))) {
             return ApiError::Forbidden("Not allowed.".into()).into_response();
         }

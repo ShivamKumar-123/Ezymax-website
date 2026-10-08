@@ -1,0 +1,24 @@
+[Unit]
+Description=Ezymex reports service: statements, analytics, broker reports (:8102)
+After=network-online.target postgresql.service ezymex-trading.service ezymex-gateway.service
+Wants=network-online.target
+
+[Service]
+User=ezymex
+WorkingDirectory=/home/ezymex/ezymex/services/reports
+EnvironmentFile=/home/ezymex/ezymex/.env.local
+Environment=RUST_LOG=info
+Environment=REPORTS_ENV=production
+Environment=REPORTS_BIND=127.0.0.1:8102
+Environment=REPORTS_COMPANY_SITE=ezymex.com
+ExecStart=/home/ezymex/ezymex/target/release/reports
+Restart=always
+RestartSec=3
+# every mirrored row is an idempotent upsert; a stop mid-pass is picked up by the next pass
+KillSignal=SIGINT
+TimeoutStopSec=20
+NoNewPrivileges=true
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

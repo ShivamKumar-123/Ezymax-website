@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import { BookOpen, CheckCircle2, Loader2, Plus, Radio, Send, Timer, Webhook } from "lucide-react";
 import { Button, Card, CardHeader, Chip, KpiCard, PageHeader, Reveal, SymbolAvatar, cn } from "@/components/kit";
-import { WEBHOOKS, WEBHOOK_DELIVERIES, type SignalWebhook } from "@kalks/mock/developer";
+import { WEBHOOKS, WEBHOOK_DELIVERIES, type SignalWebhook } from "@ezymex/mock/developer";
 import {
   CreateWebhookDialog,
   DeliveryLog,
@@ -18,7 +18,7 @@ import {
   type Delivery,
 } from "@/components/developer/webhooks";
 import { ago } from "@/components/developer/api-keys";
-import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LiveWebhooksPage } from "@/components/algo/webhooks-page";
 
 function SignalActivity({ log }: { log: Delivery[] }) {
@@ -195,7 +195,7 @@ function DemoWebhooksPage() {
               <div className="rounded-[14px] border border-dashed border-line p-4">
                 <div className="text-[12.5px] font-medium">How it works</div>
                 <ol className="mt-2 space-y-1.5 text-[12px] text-fg-3">
-                  {["Paste the URL into a TradingView alert", "Use the JSON message template", "Kalks verifies the secret and routes to each account with its sizing rule"].map((s, i) => (
+                  {["Paste the URL into a TradingView alert", "Use the JSON message template", "Ezymex verifies the secret and routes to each account with its sizing rule"].map((s, i) => (
                     <li key={s} className="flex gap-2">
                       <span className="grid size-4 shrink-0 place-items-center rounded-full bg-surface-3 font-mono text-[10px] text-fg-2">{i + 1}</span>
                       {s}
@@ -270,7 +270,7 @@ function DemoWebhooksPage() {
                       <PayloadCard w={w} />
                       <div className="mt-3 grid grid-cols-3 gap-2 text-[11.5px]">
                         {[
-                          ["Header", "X-Kalks-Signature"],
+                          ["Header", "X-Ezymex-Signature"],
                           ["Dedup window", "10s · by comment"],
                           ["Max rate", "5 / 10s"],
                         ].map(([k, v]) => (

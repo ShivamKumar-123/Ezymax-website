@@ -1,7 +1,7 @@
 // Generates the provider-catalogue rows of config/instruments.json (and the HKEX exchange calendar) from the
 // Infoway snapshot config/provider/infoway-snapshot.json (scripts/infoway-snapshot.py).
 //
-// WHY: Kalks carries far more instruments than its 28 hand-maintained core ones: every FX pair, metal, energy,
+// WHY: Ezymex carries far more instruments than its 28 hand-maintained core ones: every FX pair, metal, energy,
 // index and spot crypto the provider prices, plus the most traded US, Hong Kong and Japanese stocks and ETFs.
 // Generating the rows keeps them consistent (digits, typical spread, session, holiday calendar, spec template,
 // currencies) and reviewable in git; every service reads the same file, so nothing needs the provider at startup.
@@ -14,7 +14,7 @@
 //   metals    every provider metal (gold / platinum / palladium: "metals", silver: "metals-silver", base metals:
 //             "metals-base"), London + New York calendar (XAU / XAG).
 //   energies  every provider energy, NYMEX calendar (OIL).
-//   indices   every index with a price and a convertible currency; the calendar of its home exchange where Kalks
+//   indices   every index with a price and a convertible currency; the calendar of its home exchange where Ezymex
 //             has one (NYSE, HKEX, JPY, EUR, CHF, AUD, CAD).
 //   crypto    spot USDT pairs as XXXUSD; stablecoins, tokenized stocks and coins with no live price are left out.
 //   stocks    main-board listings with a price, ranked by recent daily turnover: US top 800 (NYSE / Nasdaq / NYSE

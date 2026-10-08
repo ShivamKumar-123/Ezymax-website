@@ -1,16 +1,16 @@
-// Server-only helpers for talking to the Kalks gateway (services/gateway).
+// Server-only helpers for talking to the Ezymex gateway (services/gateway).
 // The browser never sees the gateway or the raw session token: route handlers under /api/auth
 // keep the token in an HttpOnly first-party cookie and forward it here as a bearer token.
 
 import type { NextResponse } from "next/server";
 import type { ViewerScope } from "@/lib/viewer";
 import { cookies } from "next/headers";
-import { LOCALE_COOKIE, isLocale } from "@kalks/i18n/locales";
+import { LOCALE_COOKIE, isLocale } from "@ezymex/i18n/locales";
 import { requestHost } from "@/lib/tenant-host";
 import { Memo, secretKey } from "@/lib/memo";
 
-export const SESSION_COOKIE = "kalks_session";
-export const DEVICE_COOKIE = "kalks_did";
+export const SESSION_COOKIE = "ezymex_session";
+export const DEVICE_COOKIE = "ezymex_did";
 
 const PROD = process.env.NODE_ENV === "production";
 const DEVICE_MAX_AGE = 400 * 24 * 3600;
@@ -50,19 +50,19 @@ export type GatewayResult<T = Record<string, unknown>> = { status: number; data:
 type Forward = { ip?: string | null; userAgent?: string | null; device?: string | null; token?: string | null; country?: string | null; host?: string | null };
 
 export async function gateway<T = Record<string, unknown>>(path: string, init: { method?: "GET" | "POST" | "PATCH"; body?: unknown } & Forward = {}): Promise<GatewayResult<T>> {
-  const headers: Record<string, string> = { "x-kalks-internal": INTERNAL_TOKEN, "x-kalks-tenant": "kalks" };
+  const headers: Record<string, string> = { "x-ezymex-internal": INTERNAL_TOKEN, "x-ezymex-tenant": "ezymex" };
   if (init.body !== undefined) headers["content-type"] = "application/json";
   if (init.ip) headers["x-forwarded-for"] = init.ip;
   if (init.userAgent) headers["user-agent"] = init.userAgent;
-  if (init.device) headers["x-kalks-device"] = init.device;
+  if (init.device) headers["x-ezymex-device"] = init.device;
   if (init.token) headers.authorization = `Bearer ${init.token}`;
-  if (init.country) headers["x-kalks-country"] = init.country;
+  if (init.country) headers["x-ezymex-country"] = init.country;
   // the broker (tenant) is resolved by the gateway from the visitor's host (tenant_domains)
   const host = init.host ?? (await requestHost());
-  if (host) headers["x-kalks-host"] = host;
+  if (host) headers["x-ezymex-host"] = host;
   // the reader's language (Client Area switcher cookie): the gateway writes code and welcome emails in it
   const locale = await requestLocale();
-  if (locale) headers["x-kalks-locale"] = locale;
+  if (locale) headers["x-ezymex-locale"] = locale;
   try {
     const res = await fetch(`${GATEWAY_URL}${path}`, {
       method: init.method ?? (init.body !== undefined ? "POST" : "GET"),
@@ -77,7 +77,7 @@ export async function gateway<T = Record<string, unknown>>(path: string, init: {
   }
 }
 
-/** The kalks_locale cookie of the current request, when there is one (route handlers and server components). */
+/** The ezymex_locale cookie of the current request, when there is one (route handlers and server components). */
 async function requestLocale(): Promise<string | undefined> {
   try {
     const v = (await cookies()).get(LOCALE_COOKIE)?.value;
@@ -160,10 +160,10 @@ export function setSessionCookie(res: NextResponse, session: { token: string; ex
 /** Step-up actions (D20): sensitive changes confirmed with an emailed code even inside a session. */
 export type StepupAction = "trading_password" | "investor_password" | "leverage" | "withdrawal" | "account_password" | "profile_email" | "profile_phone" | "viewer_access" | "account_archive" | "account_close" | "internal_transfer";
 
-/** The step-up token the browser got from /api/auth/stepup-verify: body field `stepup_token` or header `X-Kalks-Stepup`. */
+/** The step-up token the browser got from /api/auth/stepup-verify: body field `stepup_token` or header `X-Ezymex-Stepup`. */
 export function stepupTokenOf(h: Headers, body?: Record<string, unknown> | null): string {
   const b = body?.stepup_token;
-  const v = typeof b === "string" && b ? b : (h.get("x-kalks-stepup") ?? "");
+  const v = typeof b === "string" && b ? b : (h.get("x-ezymex-stepup") ?? "");
   return v.trim().slice(0, 128);
 }
 

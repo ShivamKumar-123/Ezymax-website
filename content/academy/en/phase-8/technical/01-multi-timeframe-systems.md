@@ -87,7 +87,7 @@ Keep a ratio of roughly four to six between adjacent timeframes. Common stacks:
 | Intraday | H4 | H1 | M15 |
 | Short-term intraday | H1 | M15 | M5 (or M3) |
 
-Remember that daily candles in Kalks Trader close at 00:00 server time, the New York close, so D1 levels are consistent with how most of the FX market measures the day. The lower the trigger timeframe, the larger the share of spread and slippage in each trade's risk, which is why very short stacks need tighter cost control.
+Remember that daily candles in Ezymex Trader close at 00:00 server time, the New York close, so D1 levels are consistent with how most of the FX market measures the day. The lower the trigger timeframe, the larger the share of spread and slippage in each trade's risk, which is why very short stacks need tighter cost control.
 
 ## Writing objective rules
 
@@ -129,4 +129,4 @@ When timeframes conflict, the rules must say what happens. The common answer is 
 - **Mixing indicator settings:** using different parameters on each chart without testing them.
 - **Ignoring costs on low triggers:** an M5 trigger with a 6-pip stop can lose a quarter of its risk to spread and slippage.
 
-> **Risk warning:** A system that performed well in a backtest may perform differently in live markets. CFDs are leveraged and losses can exceed what you expect; test any system on a free demo account in Kalks Trader before using real funds.
+> **Risk warning:** A system that performed well in a backtest may perform differently in live markets. CFDs are leveraged and losses can exceed what you expect; test any system on a free demo account in Ezymex Trader before using real funds.

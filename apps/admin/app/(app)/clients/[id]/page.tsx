@@ -1,6 +1,6 @@
 "use client";
 
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveClientPage } from "@/components/live/client-page";
 
 import * as React from "react";
@@ -26,8 +26,8 @@ import {
   Tabs,
   cn,
   formatMoney,
-} from "@kalks/ui";
-import { CLIENT_GROUPS, REASON_CODES, getClient, serverTime, staff, timeAgo } from "@kalks/mock/admin-clients";
+} from "@ezymex/ui";
+import { CLIENT_GROUPS, REASON_CODES, getClient, serverTime, staff, timeAgo } from "@ezymex/mock/admin-clients";
 import { KycChip, ReasonDialog, RiskScore } from "@/components/command/kit";
 import { AdjustmentDialog } from "@/components/command/adjustment-dialog";
 import { AccountsTab, AuditTab, IbTab, KycTab, LoginsTab, OverviewTab, TradesTab, TransactionsTab } from "@/components/clients/profile-tabs";
@@ -266,11 +266,11 @@ function DemoClientProfilePage() {
       >
         <div className="space-y-4">
           <Field label="Subject">
-            <Input defaultValue={`Your Kalks account — next steps`} />
+            <Input defaultValue={`Your Ezymex account — next steps`} />
           </Field>
           <label className="block">
             <span className="mb-1.5 block text-[12.5px] font-medium text-fg-2">Message</span>
-            <textarea rows={6} defaultValue={`Hi ${c.name.split(" ")[0]},\n\nThanks for trading with Kalks. I'm ${agent.name}, your account manager — reply here anytime.\n\nBest,\n${agent.name}`} className={cn("w-full resize-none rounded-[14px] border border-line bg-surface-2 px-3.5 py-2.5 text-[13px] outline-none focus:border-ember/50")} />
+            <textarea rows={6} defaultValue={`Hi ${c.name.split(" ")[0]},\n\nThanks for trading with Ezymex. I'm ${agent.name}, your account manager — reply here anytime.\n\nBest,\n${agent.name}`} className={cn("w-full resize-none rounded-[14px] border border-line bg-surface-2 px-3.5 py-2.5 text-[13px] outline-none focus:border-ember/50")} />
           </label>
         </div>
       </Dialog>

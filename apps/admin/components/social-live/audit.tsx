@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { RefreshCw } from "lucide-react";
-import { Button, Card, Chip, DataTable, Dialog, EmptyState, PageHeader, Reveal, type ChipTone, type Column } from "@kalks/ui";
+import { Button, Card, Chip, DataTable, Dialog, EmptyState, PageHeader, Reveal, type ChipTone, type Column } from "@ezymex/ui";
 import { MiniStat } from "@/components/config/kit";
 import { TableSkeleton, ago, useApi, useNow, when, type ApiErr } from "@/components/live/kit";
 import { SocialError, type SocialAudit } from "./kit";

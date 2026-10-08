@@ -50,7 +50,7 @@ Price tells you what the market did. Positioning tells you *who is already in th
 
 Every week the CFTC collects the positions of large traders in US-regulated futures markets and publishes a summary. The data is taken as of **Tuesday's close** and released on **Friday afternoon, US Eastern time**. By the time you read it, it is already three trading days old, and more if a holiday delays publication.
 
-The report covers the futures markets that matter to Kalks traders: CME currency futures (euro, yen, pound, Australian dollar, Canadian dollar, Swiss franc), COMEX gold and silver, NYMEX crude oil, and equity index futures such as the E-mini S&P 500, Nasdaq 100 and Dow. Your CFDs on EURUSD, XAUUSD, USOIL or NAS100 are not in the report themselves, but the futures on the same underlying are, and they reflect the same macro bets.
+The report covers the futures markets that matter to Ezymex traders: CME currency futures (euro, yen, pound, Australian dollar, Canadian dollar, Swiss franc), COMEX gold and silver, NYMEX crude oil, and equity index futures such as the E-mini S&P 500, Nasdaq 100 and Dow. Your CFDs on EURUSD, XAUUSD, USOIL or NAS100 are not in the report themselves, but the futures on the same underlying are, and they reflect the same macro bets.
 
 There are three main versions:
 

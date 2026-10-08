@@ -6,10 +6,10 @@ import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import { BellPlus, CalendarDays, ChevronDown, Clock3, Flame, Info } from "lucide-react";
 import { Button, Card, Chip, Delta, Icon3D, PageHeader, PriceText, Reveal, SymbolAvatar, cn, useQuotes } from "@/components/kit";
-import { POSITIONS } from "@kalks/mock";
-import { CAL_COUNTRIES, TODAY_INDEX, WEEK_DAYS, WEEK_EVENTS, surprise, type WeekEvent } from "@kalks/mock/calendar-extra";
+import { POSITIONS } from "@ezymex/mock";
+import { CAL_COUNTRIES, TODAY_INDEX, WEEK_DAYS, WEEK_EVENTS, surprise, type WeekEvent } from "@ezymex/mock/calendar-extra";
 import { ColumnBars } from "@/components/portfolio/charts";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveCalendarPage } from "@/components/news-live/calendar-page";
 import { TERMINAL_URL } from "@/lib/live";
 

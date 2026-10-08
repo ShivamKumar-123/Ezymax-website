@@ -113,7 +113,7 @@ mod tests {
         // the stored bytes are where the local header says
         assert_eq!(&z[30 + 5..30 + 5 + 5], b"hello");
         // with `unzip` on the machine, the archive tests clean
-        let path = std::env::temp_dir().join(format!("kalks-zip-test-{}.zip", std::process::id()));
+        let path = std::env::temp_dir().join(format!("ezymex-zip-test-{}.zip", std::process::id()));
         std::fs::write(&path, &z).unwrap();
         if let Ok(o) = std::process::Command::new("unzip").arg("-t").arg(&path).output() {
             assert!(o.status.success(), "{}", String::from_utf8_lossy(&o.stdout));

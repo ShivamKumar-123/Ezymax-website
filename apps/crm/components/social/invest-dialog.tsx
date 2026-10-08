@@ -4,8 +4,8 @@ import * as React from "react";
 import { CalendarClock, Info, Lock, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Dialog, Field, Input, KeyValue, Money, Toggle, cn, formatMoney } from "@/components/kit";
-import { WALLET } from "@kalks/mock";
-import { masterById, type PammFund } from "@kalks/mock/social";
+import { WALLET } from "@ezymex/mock";
+import { masterById, type PammFund } from "@ezymex/mock/social";
 import { Checkbox, RangeSlider, ToggleChip } from "./controls";
 import { MasterIdentity, RiskBadge } from "./master-bits";
 

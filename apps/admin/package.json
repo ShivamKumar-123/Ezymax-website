@@ -1,5 +1,5 @@
 {
-  "name": "@kalks/admin",
+  "name": "@ezymex/admin",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,9 +9,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@kalks/i18n": "workspace:*",
-    "@kalks/mock": "workspace:*",
-    "@kalks/ui": "workspace:*",
+    "@ezymex/i18n": "workspace:*",
+    "@ezymex/mock": "workspace:*",
+    "@ezymex/ui": "workspace:*",
     "geist": "1.7.2",
     "lucide-react": "1.48.0",
     "motion": "13.4.2",

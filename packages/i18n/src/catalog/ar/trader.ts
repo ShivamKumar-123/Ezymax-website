@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader (apps/terminal): MT5-style web terminal shell, login and mobile layout.
+// Ezymex Trader (apps/terminal): MT5-style web terminal shell, login and mobile layout.
 const trader: NsMessages<"trader"> = {
   // Shared shell words
   clientArea: "منطقة العملاء",
@@ -140,7 +140,7 @@ const trader: NsMessages<"trader"> = {
   "menu.keyboardShortcuts": "اختصارات لوحة المفاتيح",
   "menu.helpTopics": "مواضيع المساعدة",
   "menu.contactSupport": "التواصل مع الدعم",
-  "menu.about": "حول Kalks Trader",
+  "menu.about": "حول Ezymex Trader",
   // Tools > Options toast
   "options.title": "الخيارات",
   "options.trading": "التداول",
@@ -176,7 +176,7 @@ const trader: NsMessages<"trader"> = {
   "guest.noAccount": "لا يوجد حساب تداول",
   "guest.liveData": "بيانات السوق المباشرة",
   "guest.cardHeader": "زائر · الرسوم البيانية والأسعار",
-  "guest.cardText": "تعمل الرسوم البيانية والمؤشرات والرسومات والتنبيهات ومواصفات الرموز على بيانات السوق المباشرة من Kalks. سجّل الدخول بحساب التداول الخاص بك للتداول، أو افتح حسابًا في منطقة العملاء.",
+  "guest.cardText": "تعمل الرسوم البيانية والمؤشرات والرسومات والتنبيهات ومواصفات الرموز على بيانات السوق المباشرة من Ezymex. سجّل الدخول بحساب التداول الخاص بك للتداول، أو افتح حسابًا في منطقة العملاء.",
 
   // Notifications bell
   "notifications.title": "الإشعارات",
@@ -293,7 +293,7 @@ const trader: NsMessages<"trader"> = {
   "login.serverTime": "توقيت الخادم GMT+3",
   "login.notice.expired": "انتهت جلستك. سجّل الدخول مرة أخرى.",
   "login.notice.expiredFor": "انتهت جلستك للحساب {login}. سجّل الدخول مرة أخرى.",
-  "login.notice.ssoExpired": "انتهت صلاحية رابط تسجيل الدخول هذا أو تم استخدامه بالفعل. افتح Kalks Trader مرة أخرى من منطقة العملاء، أو سجّل الدخول أدناه.",
+  "login.notice.ssoExpired": "انتهت صلاحية رابط تسجيل الدخول هذا أو تم استخدامه بالفعل. افتح Ezymex Trader مرة أخرى من منطقة العملاء، أو سجّل الدخول أدناه.",
   "login.notice.ssoFailed": "فشل تسجيل الدخول من منطقة العملاء. سجّل الدخول أدناه.",
   "login.error.invalid": "رقم الحساب أو كلمة المرور غير صحيحة.",
   "login.error.locked": "محاولات فاشلة كثيرة جدًا. تم قفل هذا الحساب لمدة 15 دقيقة.",
@@ -316,9 +316,9 @@ const trader: NsMessages<"trader"> = {
   "mobile.tab.history": "السجل",
   "mobile.tab.account": "الحساب",
   "mobile.guestSubtitle": "بيانات السوق المباشرة · لا يوجد حساب تداول",
-  "mobile.guestTrade": "تظهر هنا الصفقات والأوامر والرصيد والهامش بمجرد التداول من حساب Kalks. الرسوم البيانية والأسعار تعمل الآن.",
+  "mobile.guestTrade": "تظهر هنا الصفقات والأوامر والرصيد والهامش بمجرد التداول من حساب Ezymex. الرسوم البيانية والأسعار تعمل الآن.",
   "mobile.guestHistory": "تظهر صفقاتك المغلقة هنا بمجرد تسجيل الدخول إلى حساب تداول.",
-  "mobile.guestAccountText": "سجّل الدخول إلى حساب تداول للتداول. تعمل الرسوم البيانية والمؤشرات والرسومات والتنبيهات الآن على بيانات السوق المباشرة من Kalks.",
+  "mobile.guestAccountText": "سجّل الدخول إلى حساب تداول للتداول. تعمل الرسوم البيانية والمؤشرات والرسومات والتنبيهات الآن على بيانات السوق المباشرة من Ezymex.",
   "mobile.watchSegment": "قسم قائمة المراقبة",
   "mobile.noFavourites": "لا توجد مفضّلات بعد.",
   "mobile.noSymbols": "لا توجد رموز مطابقة.",
@@ -347,14 +347,14 @@ const trader: NsMessages<"trader"> = {
   "copyBanner.textNoName": "حساب نسخ — تُدار الصفقات بواسطة مزوّد الاستراتيجية الذي تنسخه؛ يمكنك متابعة P&L هنا.",
   "copyBanner.manage": "إدارة النسخ في منطقة العملاء",
 
-  // ---- Kalks FX Options workspace (CFD | Options switch in Kalks Trader; components/options/*) ----
-  // Keep "Kalks FX Options", "Claude", tickers (EURUSD), "IV", "ATM", "OTM", "ITM", "P&L", "USD", "UTC", "GTC" and the
+  // ---- Ezymex FX Options workspace (CFD | Options switch in Ezymex Trader; components/options/*) ----
+  // Keep "Ezymex FX Options", "Claude", tickers (EURUSD), "IV", "ATM", "OTM", "ITM", "P&L", "USD", "UTC", "GTC" and the
   // Greek letters (Δ Γ Θ) as they are. Premiums are in USD per contract; "pips" are price points of the underlying.
   "opt.mode.label": "وضع التداول",
   "opt.mode.cfd": "CFD",
   "opt.mode.options": "الخيارات",
   "opt.mode.cfdHint": "تداول عقود الفروقات: الرسوم البيانية ومراقبة السوق ولوحة الأوامر",
-  "opt.mode.optionsHint": "Kalks FX Options: سلسلة الخيارات والاستراتيجيات ومخطط العائد",
+  "opt.mode.optionsHint": "Ezymex FX Options: سلسلة الخيارات والاستراتيجيات ومخطط العائد",
   "opt.call": "خيار شراء",
   "opt.put": "خيار بيع",
   "opt.calls": "خيارات الشراء",
@@ -544,7 +544,7 @@ const trader: NsMessages<"trader"> = {
 
   // Module not open yet / price server down
   "opt.soon.title": "الخيارات قادمة قريبًا",
-  "opt.soon.text": "Kalks FX Options غير مفعّلة على هذا الحساب بعد. بمجرد تفعيلها، تظهر سلسلة الخيارات هنا، على الحساب نفسه الذي تتداول عليه عقود الفروقات.",
+  "opt.soon.text": "Ezymex FX Options غير مفعّلة على هذا الحساب بعد. بمجرد تفعيلها، تظهر سلسلة الخيارات هنا، على الحساب نفسه الذي تتداول عليه عقود الفروقات.",
   "opt.soon.point1": "خيارات شراء وبيع على الفوركس والذهب والفضة والنفط",
   "opt.soon.point2": "تواريخ انتهاء يومية وأسبوعية وشهرية، بتسوية نقدية بـ USD",
   "opt.soon.point3": "كمشترٍ، لا يمكن أن تخسر أبدًا أكثر من العلاوة التي تدفعها",
@@ -724,14 +724,14 @@ const trader: NsMessages<"trader"> = {
 
   // Public option chain page (/options/chain/EURUSD)
   "opt.public.brand": "سلسلة الخيارات",
-  "opt.public.kicker": "Kalks FX Options",
+  "opt.public.kicker": "Ezymex FX Options",
   "opt.public.title": "سلسلة خيارات {name}",
   "opt.public.subtitle": "خيارات شراء وبيع مباشرة لتواريخ انتهاء يومية وأسبوعية وشهرية: Bid وAsk بـ USD لكل عقد، والتقلّب الضمني، ودلتا، واحتمال الانتهاء داخل النقود، ونقطة التعادل. خيارات أوروبية بتسوية نقدية بـ USD.",
   "opt.public.trade": "تداول خيارات {u}",
   "opt.public.atmStraddle": "سترادل ATM",
-  "opt.public.soonText": "تُفتح سلسلة الخيارات العامة مع إطلاق Kalks FX Options. افتح حسابًا لتكون جاهزًا من اليوم الأول.",
+  "opt.public.soonText": "تُفتح سلسلة الخيارات العامة مع إطلاق Ezymex FX Options. افتح حسابًا لتكون جاهزًا من اليوم الأول.",
   "opt.public.ctaTitle": "تداول هذه السلسلة.",
-  "opt.public.ctaText": "سجّل الدخول إلى Kalks Trader لشراء أو بيع أي خيار هنا، وبناء الاستراتيجيات ورؤية العائد.",
+  "opt.public.ctaText": "سجّل الدخول إلى Ezymex Trader لشراء أو بيع أي خيار هنا، وبناء الاستراتيجيات ورؤية العائد.",
   "opt.public.howTitle": "كيف تقرأ السلسلة",
   "opt.public.how1": "يحقق خيار الشراء عائدًا عندما ينتهي السعر فوق سعر التنفيذ، وخيار البيع عندما ينتهي تحته.",
   "opt.public.how2": "Bid هو ما تحصل عليه عند البيع، وAsk هو ما تدفعه عند الشراء، وكلاهما بـ USD لكل عقد.",
@@ -763,11 +763,11 @@ const trader: NsMessages<"trader"> = {
   "opt.m.chain": "السلسلة",
   "opt.m.positions": "الصفقات",
 
-  // Options ORDER BOOK: clients trade with each other and with the Kalks market maker (MM) on a price-time book.
-  // "Book" = دفتر الأوامر. Keep GTC, IOC, FOK, GTD, RFQ and MM as they are; "Kalks" is a brand name.
+  // Options ORDER BOOK: clients trade with each other and with the Ezymex market maker (MM) on a price-time book.
+  // "Book" = دفتر الأوامر. Keep GTC, IOC, FOK, GTD, RFQ and MM as they are; "Ezymex" is a brand name.
   "opt.book.tab": "الدفتر",
   "opt.book.badge": "الدفتر",
-  "opt.book.badgeHint": "تأتي الأسعار من دفتر الأوامر: أوامر العملاء الآخرين وأوامر صانع السوق في Kalks، وفق القواعد نفسها للجميع.",
+  "opt.book.badgeHint": "تأتي الأسعار من دفتر الأوامر: أوامر العملاء الآخرين وأوامر صانع السوق في Ezymex، وفق القواعد نفسها للجميع.",
   "opt.book.size": {
     zero: "{count} عقد",
     one: "عقد واحد",
@@ -857,7 +857,7 @@ const trader: NsMessages<"trader"> = {
   "opt.bt.needPrice": "أدخل سعر الحد.",
   "opt.bt.needGtd": "اختر حتى متى يبقى الأمر في الدفتر.",
   "opt.bt.needTrigger": "أدخل سعر التفعيل.",
-  "opt.bt.bookOff": "دفتر الأوامر غير متاح حاليًا: عادت الأسعار والأوامر إلى أسعار Kalks.",
+  "opt.bt.bookOff": "دفتر الأوامر غير متاح حاليًا: عادت الأسعار والأوامر إلى أسعار Ezymex.",
   "opt.bt.pv.fillsNow": "يُنفَّذ الآن",
   "opt.bt.pv.fillsAt": "{n} من {total} بمتوسط {price}",
   "opt.bt.pv.none": "لا شيء عند هذا السعر",
@@ -960,7 +960,7 @@ const trader: NsMessages<"trader"> = {
   "opt.rfq.title": "طلب تسعير",
   "opt.rfq.request": "اطلب تسعيرًا",
   "opt.rfq.again": "اطلب تسعيرًا جديدًا",
-  "opt.rfq.note": "تُتداول الاستراتيجية كلها كوحدة واحدة: يقدّم صانع السوق في Kalks سعرًا صافيًا، وتُنفَّذ كل السيقان معًا أو لا يُنفَّذ أي منها.",
+  "opt.rfq.note": "تُتداول الاستراتيجية كلها كوحدة واحدة: يقدّم صانع السوق في Ezymex سعرًا صافيًا، وتُنفَّذ كل السيقان معًا أو لا يُنفَّذ أي منها.",
   "opt.rfq.builderNote": "تُتداول الاستراتيجيات عبر طلب تسعير: سعر صافٍ واحد، وكل السيقان معًا.",
   "opt.rfq.size": "الحجم: {n} × الاستراتيجية",
   "opt.rfq.waiting": "بانتظار عرض السعر…",
@@ -971,7 +971,7 @@ const trader: NsMessages<"trader"> = {
   "opt.rfq.validFor": "صالح {s} ث",
   "opt.rfq.refreshing": "عرض سعر جديد…",
   "opt.rfq.from": "عرض سعر من {who}",
-  "opt.rfq.kalksMm": "صانع السوق في Kalks",
+  "opt.rfq.ezymexMm": "صانع السوق في Ezymex",
   "opt.rfq.openFor": "الطلب مفتوح {s} ث",
   "opt.rfq.expired": "انتهت صلاحية الطلب.",
   "opt.rfq.toast.filled": "تم تنفيذ الاستراتيجية",
@@ -983,12 +983,12 @@ const trader: NsMessages<"trader"> = {
     many: "نُفِّذت {count} ساقًا معًا · صافي {price} USD",
     other: "نُفِّذت {count} ساق معًا · صافي {price} USD",
   },
-  "opt.rfq.kalksQuoted": "بتسعير Kalks (خارج دفتر الأوامر)",
-  "opt.rfq.kalksQuotedHint": "خيارات الحاجز غير مدرجة في دفتر الأوامر: تسعّرها Kalks بسعر النموذج مضافًا إليه سبريد.",
+  "opt.rfq.ezymexQuoted": "بتسعير Ezymex (خارج دفتر الأوامر)",
+  "opt.rfq.ezymexQuotedHint": "خيارات الحاجز غير مدرجة في دفتر الأوامر: تسعّرها Ezymex بسعر النموذج مضافًا إليه سبريد.",
   // Market-maker rules (public disclosure)
   "opt.mm.link": "قواعد صانع السوق",
   "opt.mm.title": "قواعد صانع السوق",
-  "opt.mm.intro": "تشغّل Kalks صانع سوق يقدّم سعر شراء وسعر بيع لكل خيار، فيكون هناك دائمًا طرف تتداول معه. وهو يتداول في دفتر الأوامر نفسه الذي تتداول فيه، وبالقواعد نفسها.",
+  "opt.mm.intro": "تشغّل Ezymex صانع سوق يقدّم سعر شراء وسعر بيع لكل خيار، فيكون هناك دائمًا طرف تتداول معه. وهو يتداول في دفتر الأوامر نفسه الذي تتداول فيه، وبالقواعد نفسها.",
   "opt.mm.sameTitle": "القواعد نفسها المطبّقة على كل عميل",
   "opt.mm.rule1": "يرسل أسعاره عبر قناة إدخال الأوامر نفسها التي يستخدمها العملاء، ومع الفحوص نفسها.",
   "opt.mm.rule2": "لا أولوية: تُنفَّذ الأوامر حسب السعر ثم حسب الوقت. لا أحد يتقدّم عليك عند السعر نفسه بسبب هويته.",
@@ -1088,7 +1088,7 @@ const trader: NsMessages<"trader"> = {
   "opt.an.oi.emptyOi": "لا يوجد اهتمام مفتوح في تاريخ الانتهاء هذا بعد.",
   "opt.an.oi.emptyVolume": "لم يُتداول شيء في تاريخ الانتهاء هذا اليوم بعد.",
   "opt.an.oi.none": "سيظهر هنا الاهتمام المفتوح ونسبة خيارات البيع إلى الشراء بمجرد تداول خيارات {u} في دفتر الأوامر.",
-  "opt.an.oi.noneSub": "تقدّم Kalks أسعار هذه الخيارات حاليًا، لذا لا يوجد اهتمام مفتوح أو حجم لعرضه بعد. أما الابتسامة والهيكل الزمني أعلاه فمباشران.",
+  "opt.an.oi.noneSub": "تقدّم Ezymex أسعار هذه الخيارات حاليًا، لذا لا يوجد اهتمام مفتوح أو حجم لعرضه بعد. أما الابتسامة والهيكل الزمني أعلاه فمباشران.",
   "opt.an.oi.aria": "الاهتمام المفتوح حسب سعر التنفيذ: خيارات الشراء في الأعلى، وخيارات البيع في الأسفل",
   "opt.an.pcr.title": "نسبة خيارات البيع إلى الشراء",
   "opt.an.pcr.hint": "خيارات البيع مقسومة على خيارات الشراء في تاريخ الانتهاء هذا. أكثر من 1: خيارات البيع أكثر من خيارات الشراء.",
@@ -1153,7 +1153,7 @@ const trader: NsMessages<"trader"> = {
   "opt.share.copy": "نسخ الرابط",
   "opt.share.copied": "تم نسخ الرابط",
   "opt.share.shareTo": "مشاركة عبر",
-  "opt.share.text": "صفقتي على خيار {contract} في Kalks",
+  "opt.share.text": "صفقتي على خيار {contract} في Ezymex",
   "opt.share.error": "تعذّر إنشاء بطاقة المشاركة",
   "opt.share.readOnly": "لا يمكن إنشاء بطاقات المشاركة عند الدخول بكلمة مرور المستثمر (قراءة فقط).",
   "opt.share.preview": "معاينة بطاقة المشاركة",
@@ -1321,7 +1321,7 @@ const trader: NsMessages<"trader"> = {
   "opt.pos.d.nowEach": "القيمة الآن، لكل عقد",
   "opt.pos.d.where": "مكان التداول",
   "opt.pos.d.book": "دفتر الأوامر",
-  "opt.pos.d.house": "أسعار Kalks",
+  "opt.pos.d.house": "أسعار Ezymex",
   "opt.pos.comboPaid": "دفعت {amount} مقابل هذه الاستراتيجية.",
   "opt.pos.comboReceived": "استلمت {amount} مقابل هذه الاستراتيجية.",
   "opt.pos.emptyTitle": "لا توجد خيارات مفتوحة بعد",
@@ -1354,8 +1354,8 @@ const trader: NsMessages<"trader"> = {
   "opt.err.series_cancel_only": "التداول على أحد هذه الخيارات متوقف مؤقتًا الآن (الإلغاء فقط). حاول مرة أخرى لاحقًا.",
   "opt.err.series_closed": "توقف التداول على أحد هذه الخيارات: فهو قريب جدًا من تاريخ انتهائه.",
   "opt.err.rfq_underlyings": "يجب أن تكون كل سيقان الاستراتيجية على السوق نفسه، مثلًا كلها على EURUSD.",
-  "opt.err.kalks_quoted": "تحتوي هذه الاستراتيجية على ساق بحاجز. خيارات الحاجز تسعّرها Kalks وليست في دفتر الأوامر، لذلك تُوضع الاستراتيجية كأمر واحد بأسعار Kalks.",
-  "opt.err.mixed_venue": "تحتوي هذه الاستراتيجية على سيقان في دفتر الأوامر وسيقان بتسعير Kalks، لذا لا يمكن إغلاقها دفعة واحدة. أغلق السيقان واحدة تلو الأخرى.",
+  "opt.err.ezymex_quoted": "تحتوي هذه الاستراتيجية على ساق بحاجز. خيارات الحاجز تسعّرها Ezymex وليست في دفتر الأوامر، لذلك تُوضع الاستراتيجية كأمر واحد بأسعار Ezymex.",
+  "opt.err.mixed_venue": "تحتوي هذه الاستراتيجية على سيقان في دفتر الأوامر وسيقان بتسعير Ezymex، لذا لا يمكن إغلاقها دفعة واحدة. أغلق السيقان واحدة تلو الأخرى.",
   "opt.err.book_venue": "تُتداول هذه الخيارات في دفتر الأوامر. لا يمكن للاستراتيجية أن تجمع بين سيقان من دفتر الأوامر وسيقان بحاجز: ضعها بشكل منفصل.",
   "opt.rfq.err.quote_expired": "لم يعد هذا السعر صالحًا (عروض الأسعار تبقى بضع ثوانٍ فقط). احصل على سعر جديد واقبله.",
   "opt.rfq.err.price_moved": "تحرّك السعر قبل وصول أمرك، لذلك لم يُنفَّذ أي تداول. احصل على سعر جديد وحاول مرة أخرى.",
@@ -1366,7 +1366,7 @@ const trader: NsMessages<"trader"> = {
   "opt.rfq.err.no_liquidity": "لا يستطيع صانع السوق تسعير هذه الاستراتيجية حاليًا. حاول مرة أخرى بعد لحظة، أو أغلق السيقان واحدة تلو الأخرى.",
   "opt.rfq.err.rejected": "لم تُنفَّذ الاستراتيجية، ولم يتم أي تداول. حاول مرة أخرى.",
   "opt.rfq.newPrice": "احصل على سعر جديد",
-  "opt.rfq.houseNote": "خيارات الحاجز تسعّرها Kalks وليست في دفتر الأوامر: تُوضع هذه الاستراتيجية كأمر واحد بأسعار Kalks، كل السيقان معًا أو لا شيء.",
+  "opt.rfq.houseNote": "خيارات الحاجز تسعّرها Ezymex وليست في دفتر الأوامر: تُوضع هذه الاستراتيجية كأمر واحد بأسعار Ezymex، كل السيقان معًا أو لا شيء.",
   "opt.toast.settling": "الأرقام النهائية بعد لحظات",
   "opt.toast.tryAgain": "حاول مرة أخرى",
   "opt.toast.strategyClosedBook": "تم إغلاق الاستراتيجية عبر دفتر الأوامر",
@@ -1374,10 +1374,10 @@ const trader: NsMessages<"trader"> = {
   "opt.pos.closedNetGot": "أُغلقت كل السيقان معًا: استلمت {amount} · P&L {pnl}",
   "opt.hist.reason.bust": "ملغاة",
   "opt.hist.why.risk": "أغلقتها إدارة المخاطر (الهامش منخفض جدًا)",
-  "opt.hist.why.backstop": "أغلقتها إدارة المخاطر (الهامش منخفض جدًا): انتقلت الصفقة إلى صانع السوق في Kalks",
+  "opt.hist.why.backstop": "أغلقتها إدارة المخاطر (الهامش منخفض جدًا): انتقلت الصفقة إلى صانع السوق في Ezymex",
   "opt.hist.why.bust": "ألغى مكتب التداول الصفقة وعكسها",
   "opt.hist.closedRisk": "أغلقتها إدارة المخاطر (الهامش منخفض جدًا) عند {close}، لكل عقد",
-  "opt.hist.closedBackstop": "أغلقتها إدارة المخاطر (الهامش منخفض جدًا): انتقلت إلى صانع السوق في Kalks عند {close}، لكل عقد",
+  "opt.hist.closedBackstop": "أغلقتها إدارة المخاطر (الهامش منخفض جدًا): انتقلت إلى صانع السوق في Ezymex عند {close}، لكل عقد",
   "opt.hist.closedBust": "ألغى مكتب التداول الصفقة وعكسها عند {close}، لكل عقد",
   "opt.bust.title": "ألغى مكتب التداول الصفقة",
   "opt.bust.text": "{what} × {n}: عُكست الصفقة واستُردّت أي رسوم.",

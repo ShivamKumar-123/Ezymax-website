@@ -1,7 +1,7 @@
 // One inbox for the app, like the web's NotificationsProvider (apps/crm/components/notifications.tsx):
 // - the client's notifications from the notification service (`GET notifications?limit=40`, live over the support
 //   stream: deposits, withdrawals, verification, margin calls, support replies, announcements);
-// - Kalks Trader's engine notifications (fill, close, sl, tp, triggered, rejected, margin call, stop out, balance,
+// - Ezymex Trader's engine notifications (fill, close, sl, tp, triggered, rejected, margin call, stop out, balance,
 //   correction), pushed by the terminal screens with `push()`;
 // - the app's own feedback messages (`toast()`), kept on the device as history (the web's event log).
 // Every new notification also drops in as an iOS-style banner (tap opens its link). The bell and the dashboard's
@@ -304,7 +304,7 @@ class NotificationsController extends Notifier<NotificationsState> {
     _saveLocal();
   }
 
-  /// Kalks Trader: an engine notification (also shown as a banner). `category` trading_fills / trading_alerts.
+  /// Ezymex Trader: an engine notification (also shown as a banner). `category` trading_fills / trading_alerts.
   void push({required String title, String body = '', String severity = 'info', String category = 'trading_fills', String? link, bool banner = true}) {
     final it = NotificationItem(
       id: 'eng-${DateTime.now().microsecondsSinceEpoch}',

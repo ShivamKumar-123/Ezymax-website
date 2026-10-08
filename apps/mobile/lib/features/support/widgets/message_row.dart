@@ -1,7 +1,7 @@
 // The chat's pieces (port of apps/crm/components/support/live-chat.tsx rendering helpers): the bot's avatar, the
 // typing dots, the bot's safe markdown (Rich), attachments (image preview / file tile, opened in the share sheet) and
 // one message row (client, bot, agent, system and "agent joined" lines). Shared by the live chat, the conversation
-// history and Ask Kalks AI.
+// history and Ask Ezymex AI.
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -39,7 +39,7 @@ class BotAvatar extends StatelessWidget {
   }
 }
 
-/// The brand disc with the sparkles (web .k-brand-disc Spark of Ask Kalks AI).
+/// The brand disc with the sparkles (web .k-brand-disc Spark of Ask Ezymex AI).
 class AiSpark extends StatelessWidget {
   const AiSpark({super.key, this.size = 40});
   final double size;
@@ -65,7 +65,7 @@ class AiSpark extends StatelessWidget {
 class TypingDots extends StatefulWidget {
   const TypingDots({super.key, this.label});
 
-  /// Screen-reader text (e.g. "Kalks AI is writing an answer").
+  /// Screen-reader text (e.g. "Ezymex AI is writing an answer").
   final String? label;
 
   @override

@@ -3,12 +3,12 @@
 import * as React from "react";
 import { ArrowDown, ArrowRight, ArrowUp, Check, Pencil, Play, X } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardHeader, Chip, Icon3D, PageHeader, Reveal, Segmented, SpotlightCard, Toggle, cn } from "@kalks/ui";
-import { LEVELS, PARTNERS, type LevelKey, type PartnerLevel } from "@kalks/mock/admin-partners";
+import { Avatar, Button, Card, CardHeader, Chip, Icon3D, PageHeader, Reveal, Segmented, SpotlightCard, Toggle, cn } from "@ezymex/ui";
+import { LEVELS, PARTNERS, type LevelKey, type PartnerLevel } from "@ezymex/mock/admin-partners";
 import { NumInput, Select, SettingRow, auditToast, useReason } from "@/components/config/kit";
 import { LEVEL_COLOR, LevelChip, fmtInt } from "@/components/partners/common";
 import { LevelEditDialog } from "@/components/partners/level-dialog";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveLevels } from "@/components/partners-live/levels";
 
 function LevelCard({ l, idx, total, onEdit }: { l: PartnerLevel; idx: number; total: number; onEdit: () => void }) {

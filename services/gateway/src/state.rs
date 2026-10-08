@@ -20,7 +20,7 @@ pub struct AppState {
 
 /// Request context forwarded by the Next.js BFF route handlers.
 /// The gateway only listens on loopback and (with `GATEWAY_INTERNAL_TOKEN`) only trusts the BFF,
-/// so `X-Forwarded-For` / `X-Kalks-Device` come from our own code, not the browser.
+/// so `X-Forwarded-For` / `X-Ezymex-Device` come from our own code, not the browser.
 pub struct Ctx {
     pub ip: String,
     pub user_agent: String,
@@ -34,8 +34,8 @@ fn header(parts: &Parts, name: &str) -> Option<String> {
     parts.headers.get(name).and_then(|v| v.to_str().ok()).map(str::trim).filter(|v| !v.is_empty()).map(str::to_string)
 }
 
-/// Tenant: the browser host the BFF forwards in `X-Kalks-Host` (an active `tenant_domains` row) wins, then an
-/// explicit `X-Kalks-Tenant`, then the default tenant `kalks` (precedence documented in domains.rs).
+/// Tenant: the browser host the BFF forwards in `X-Ezymex-Host` (an active `tenant_domains` row) wins, then an
+/// explicit `X-Ezymex-Tenant`, then the default tenant `ezymex` (precedence documented in domains.rs).
 impl FromRequestParts<AppState> for Ctx {
     type Rejection = ApiError;
 
@@ -45,7 +45,7 @@ impl FromRequestParts<AppState> for Ctx {
             .filter(|v| v.len() <= 64)
             .unwrap_or_else(|| "unknown".into());
         let user_agent: String = header(parts, "user-agent").unwrap_or_default().chars().take(400).collect();
-        let device = header(parts, "x-kalks-device").filter(|v| (16..=128).contains(&v.len()));
+        let device = header(parts, "x-ezymex-device").filter(|v| (16..=128).contains(&v.len()));
         let (tenant_slug, _) = crate::domains::resolve_headers(st, &parts.headers).await;
         let bearer = header(parts, "authorization").and_then(|v| v.strip_prefix("Bearer ").map(|t| t.trim().to_string())).filter(|t| !t.is_empty() && t.len() <= 128);
         Ok(Ctx { ip, user_agent, device, tenant_slug, bearer })

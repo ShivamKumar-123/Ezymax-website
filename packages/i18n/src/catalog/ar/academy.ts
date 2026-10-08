@@ -20,7 +20,7 @@ const academy: NsMessages<"academy"> = {
   "practice.demo": "تدرّب على الحساب التجريبي",
   "practice.openFreeDemo": "افتح حسابًا تجريبيًا مجانيًا",
   "practice.openDemo": "فتح حساب تجريبي",
-  "practice.inTrader": "تدرّب في Kalks Trader",
+  "practice.inTrader": "تدرّب في Ezymex Trader",
 
   // Levels (sent by the Academy service)
   "level.beginner": "مبتدئ",
@@ -31,12 +31,12 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "التحليل الأساسي",
   "track.technical": "التحليل الفني",
-  // Product track of the Kalks FX Options elective (phase 9)
+  // Product track of the Ezymex FX Options elective (phase 9)
   "track.options": "تداول الخيارات",
   "trackShort.fundamental": "أساسي",
   "trackShort.technical": "فني",
   "trackShort.options": "الخيارات",
-  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  // Chip on a product course (e.g. Ezymex FX Options) that sits outside the eight core phases and can be taken at any time
   elective: "اختياري",
 
   // Durations (h = hours, m = minutes)
@@ -52,7 +52,7 @@ const academy: NsMessages<"academy"> = {
   "home.pathText": "تحتوي كل مرحلة أساسية على مسار أساسي ومسار فني وامتحان نهائي وشهادة.",
   // Section under the learning path listing the electives
   "home.electivesTitle": "المقررات الاختيارية",
-  "home.electivesText": "دورات عن منتجات Kalks. يمكنك دراستها في أي وقت، ولكل منها امتحان نهائي وشهادة خاصة بها.",
+  "home.electivesText": "دورات عن منتجات Ezymex. يمكنك دراستها في أي وقت، ولكل منها امتحان نهائي وشهادة خاصة بها.",
   "hero.allDone": "اكتملت جميع الفصول",
   "hero.continue": "تابع التعلم",
   "hero.upNext": "التالي",
@@ -252,7 +252,7 @@ const academy: NsMessages<"academy"> = {
   "callout.example": "مثال",
   "callout.tip": "نصيحة",
   "callout.note": "ملاحظة",
-  "callout.inKalksTrader": "في Kalks Trader",
+  "callout.inEzymexTrader": "في Ezymex Trader",
   diagram: "رسم توضيحي",
 };
 export default academy;

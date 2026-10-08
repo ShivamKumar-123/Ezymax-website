@@ -5,9 +5,9 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { Bookmark, Clock3, ExternalLink, Share2, Sparkles, TrendingDown, TrendingUp, Minus, X } from "lucide-react";
 import { Button, Card, CardHeader, Chip, Delta, Dialog, MarketSessions, PageHeader, Reveal, Segmented, Starfield, SymbolAvatar, WorldMap, cn, useQuotes, type MapPin } from "@/components/kit";
-import { ASSET_CLASS_LABEL, INSTRUMENT_MAP, type AssetClass } from "@kalks/mock";
-import { AI_BRIEF, NEWS_STORIES, type NewsStory } from "@kalks/mock/news-extra";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { ASSET_CLASS_LABEL, INSTRUMENT_MAP, type AssetClass } from "@ezymex/mock";
+import { AI_BRIEF, NEWS_STORIES, type NewsStory } from "@ezymex/mock/news-extra";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveNewsPage } from "@/components/news-live/news-page";
 import { TERMINAL_URL } from "@/lib/live";
 
@@ -306,7 +306,7 @@ function DemoNewsPage() {
               <Button
                 variant="surface"
                 onClick={() => {
-                  navigator.clipboard?.writeText(`https://kalks.com/news/${open.id}`).catch(() => {});
+                  navigator.clipboard?.writeText(`https://ezymex.com/news/${open.id}`).catch(() => {});
                   toast.success("Link copied");
                 }}
               >

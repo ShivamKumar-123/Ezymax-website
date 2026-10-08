@@ -3,8 +3,8 @@
 // "Fund your wallet" step of the dashboard's Getting started list, from the real wallet.
 
 import { Wallet } from "lucide-react";
-import { tr } from "@kalks/i18n/react";
-import type { T } from "@kalks/i18n";
+import { tr } from "@ezymex/i18n/react";
+import type { T } from "@ezymex/i18n";
 import { fmt, useWallet, type Overview } from "./api";
 
 export function useWalletFunded() {

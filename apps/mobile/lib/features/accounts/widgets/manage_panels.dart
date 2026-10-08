@@ -195,7 +195,7 @@ class CredentialsPanel extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Kalks Trader',
+                              'Ezymex Trader',
                               style: context.text.label.copyWith(color: k.fg, fontWeight: FontWeight.w600),
                             ),
                             Text(

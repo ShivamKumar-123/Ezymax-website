@@ -22,11 +22,11 @@ import {
   formatNumber,
   shortHash,
   type Column,
-} from "@kalks/ui";
-import { PEOPLE } from "@kalks/mock";
-import { ANL_REG_HISTORY, ANL_REG_REPORTS, anlHash, type AnlRegHistory } from "@kalks/mock/admin-growth-analytics";
+} from "@ezymex/ui";
+import { PEOPLE } from "@ezymex/mock";
+import { ANL_REG_HISTORY, ANL_REG_REPORTS, anlHash, type AnlRegHistory } from "@ezymex/mock/admin-growth-analytics";
 import { RegReportCard, type GeneratedExport } from "@/components/analytics/reg-report-card";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveRegulatory } from "@/components/reports/live-ops";
 
 const FMT_TONE = { CSV: "neutral", XML: "info", XLSX: "up" } as const;

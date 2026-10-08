@@ -101,7 +101,7 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
     );
     return KPageScroll(
       children: [
-        const KPageHeader(title: 'Design system', subtitle: Text('Kalks iOS · lib/ui')),
+        const KPageHeader(title: 'Design system', subtitle: Text('Ezymex iOS · lib/ui')),
         label('Buttons (one primary per screen)'),
         Wrap(
           spacing: 8,
@@ -219,7 +219,7 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
             children: [
               const KIconTile(icon: LucideIcons.candlestickChart, size: 44),
               const SizedBox(width: 12),
-              Expanded(child: Text('Kalks Trader', style: context.text.title2)),
+              Expanded(child: Text('Ezymex Trader', style: context.text.title2)),
               const KChangeChip('+1.25%'),
             ],
           ),

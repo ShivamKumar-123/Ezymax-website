@@ -101,13 +101,13 @@ const prop: NsMessages<"prop"> = {
 
   // Public certificate verification page (/verify/<code>)
   "verify.shellTitle": "تأیید گواهینامه",
-  "verify.footer": "حساب‌های Kalks Prop شبیه‌سازی‌شده هستند. گواهینامه‌ها نتایج معامله‌گر در یک چالش Kalks Prop را نشان می‌دهند؛ نام معامله‌گر به نام کوچک و حرف اول نام خانوادگی کوتاه می‌شود.",
+  "verify.footer": "حساب‌های Ezymex Prop شبیه‌سازی‌شده هستند. گواهینامه‌ها نتایج معامله‌گر در یک چالش Ezymex Prop را نشان می‌دهند؛ نام معامله‌گر به نام کوچک و حرف اول نام خانوادگی کوتاه می‌شود.",
   "verify.linkCopied": "لینک کپی شد",
   "verify.copyFailed": "کپی لینک انجام نشد",
   "verify.copyLink": "کپی لینک",
   "verify.downloadPng": "دانلود PNG",
   "verify.notFoundTitle": "گواهینامه یافت نشد",
-  "verify.notFoundText": "گواهینامه Kalks Prop با این شماره وجود ندارد. لینک را بررسی کنید یا از معامله‌گر بخواهید دوباره آن را به اشتراک بگذارد.",
+  "verify.notFoundText": "گواهینامه Ezymex Prop با این شماره وجود ندارد. لینک را بررسی کنید یا از معامله‌گر بخواهید دوباره آن را به اشتراک بگذارد.",
   "verify.unavailableTitle": "تأیید در حال حاضر در دسترس نیست",
   "verify.unavailableText": "در حال حاضر امکان بررسی این گواهینامه وجود ندارد. لطفاً چند دقیقه بعد دوباره تلاش کنید.",
   "verify.kind.pass": "قبولی در مرحله",
@@ -121,9 +121,9 @@ const prop: NsMessages<"prop"> = {
   "verify.row.issued": "تاریخ صدور",
   "verify.row.number": "شماره گواهینامه",
   "verify.validTitle": "گواهینامه معتبر",
-  "verify.validText": "صادرشده توسط Kalks Prop و تأییدشده با سوابق ما.",
+  "verify.validText": "صادرشده توسط Ezymex Prop و تأییدشده با سوابق ما.",
   "verify.revokedTitle": "گواهینامه باطل‌شده",
-  "verify.revokedText": "این گواهینامه توسط Kalks باطل شده و دیگر معتبر نیست.",
+  "verify.revokedText": "این گواهینامه توسط Ezymex باطل شده و دیگر معتبر نیست.",
   "verify.valid": "معتبر",
   "verify.revoked": "باطل‌شده",
   // Certificate titles
@@ -248,8 +248,8 @@ const prop: NsMessages<"prop"> = {
   "checkout.goToMine": "رفتن به چالش‌های من",
   "checkout.readyTitle": "چالش شما آماده است",
   "checkout.paidText": "{fee} از کیف پول USDT شما پرداخت شد و حساب {size} شما باز است. قوانین از هم‌اکنون فعال هستند.",
-  "checkout.savePasswords": "این رمزها را همین حالا ذخیره کنید: فقط یک بار نمایش داده می‌شوند و ما آن‌ها را نگهداری نمی‌کنیم. دکمه معامله شما را بدون رمز عبور وارد Kalks Trader می‌کند، بنابراین همیشه می‌توانید از اینجا معامله کنید.",
-  "checkout.passwordsShown": "رمزهای معاملاتی هنگام اولین تأیید این خرید نمایش داده شدند. برای باز کردن Kalks Trader از دکمه معامله استفاده کنید: بدون رمز عبور وارد می‌شوید.",
+  "checkout.savePasswords": "این رمزها را همین حالا ذخیره کنید: فقط یک بار نمایش داده می‌شوند و ما آن‌ها را نگهداری نمی‌کنیم. دکمه معامله شما را بدون رمز عبور وارد Ezymex Trader می‌کند، بنابراین همیشه می‌توانید از اینجا معامله کنید.",
+  "checkout.passwordsShown": "رمزهای معاملاتی هنگام اولین تأیید این خرید نمایش داده شدند. برای باز کردن Ezymex Trader از دکمه معامله استفاده کنید: بدون رمز عبور وارد می‌شوید.",
 
   // Account credentials
   "cred.login": "لاگین",
@@ -376,7 +376,7 @@ const prop: NsMessages<"prop"> = {
   "account.passed": "قبول · فقط‌خواندنی",
   "account.failed": "ناموفق · غیرفعال",
   "account.opening": "در حال افتتاح",
-  "account.tradableText": "دکمه معامله، Kalks Trader را با ورود به این حساب باز می‌کند. رمزها یک بار هنگام خرید نمایش داده شدند.",
+  "account.tradableText": "دکمه معامله، Ezymex Trader را با ورود به این حساب باز می‌کند. رمزها یک بار هنگام خرید نمایش داده شدند.",
   "account.passedText": "این مرحله تکمیل شده است. حساب فقط‌خواندنی است؛ در مرحله بعد معامله کنید.",
   "account.failedText": "معامله در این حساب غیرفعال است.",
   "account.unavailableText": "معامله در این حساب در دسترس نیست.",

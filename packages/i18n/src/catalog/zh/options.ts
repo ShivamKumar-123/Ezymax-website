@@ -1,18 +1,18 @@
 import type { NsMessages } from "../../core";
 
-// Kalks FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Kalks Trader in options mode.
+// Ezymex FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Ezymex Trader in options mode.
 const options: NsMessages<"options"> = {
   // Navigation entry
   "nav.title": "期权",
 
   // Page header
-  "page.title": "Kalks FX Options",
-  "page.subtitle": "直接在 Kalks Trader 中买入或卖出外汇、黄金、白银和原油期权。",
+  "page.title": "Ezymex FX Options",
+  "page.subtitle": "直接在 Ezymex Trader 中买入或卖出外汇、黄金、白银和原油期权。",
   "page.statusReady": "可以交易",
   "page.learnCourse": "期权课程",
 
   // Hero card
-  "hero.eyebrow": "Kalks Trader 新功能",
+  "hero.eyebrow": "Ezymex Trader 新功能",
   "hero.title": "13 个市场的期权，简单易上手",
   "hero.text": "提供外汇主要货币对和交叉货币对、黄金、白银及原油的欧式期权。可选择每日、每周或每月到期。所有期权均以美元现金结算，您无需进行任何实物交割。",
   "hero.feature.underlyings.title": "13 种标的",
@@ -56,16 +56,16 @@ const options: NsMessages<"options"> = {
   "terms.inShort": "简而言之",
   "terms.point.buy": "买入期权：您的最大亏损就是您支付的金额。",
   "terms.point.sell": "卖出期权的亏损可能超过您收取的金额，并且需要占用保证金。",
-  "terms.point.prices": "价格来自 Kalks 订单簿，也来自 Kalks 的报价。",
+  "terms.point.prices": "价格来自 Ezymex 订单簿，也来自 Ezymex 的报价。",
   "terms.point.settle": "期权在到期时以现金结算。",
   "terms.englishNote": "下方完整文本为具有约束力的英文版本。",
   "terms.acceptedOn": "您已于 {date} 接受第 {version} 版。",
   "terms.close": "关闭",
   "terms.unavailable": "期权条款暂时无法显示。请稍后再试。",
 
-  // Kalks Trader button
-  "trade.ready": "一切就绪。期权在 Kalks Trader 中交易，与您的差价合约（CFD）使用同一个账户。",
-  "trade.cta": "在 Kalks Trader 中交易期权",
+  // Ezymex Trader button
+  "trade.ready": "一切就绪。期权在 Ezymex Trader 中交易，与您的差价合约（CFD）使用同一个账户。",
+  "trade.cta": "在 Ezymex Trader 中交易期权",
   "trade.chooseAccount": "选择账户",
   "trade.noAccount": "您需要一个有效的交易账户才能交易期权。",
   "trade.openAccount": "开立账户",
@@ -74,7 +74,7 @@ const options: NsMessages<"options"> = {
   "trade.demo": "模拟",
 
   // Key facts card
-  "facts.title": "Kalks FX Options 如何运作",
+  "facts.title": "Ezymex FX Options 如何运作",
   "facts.style": "欧式期权：到期时自动行权，不会提前行权。",
   "facts.premium": "权利金按每份合约以美元计价；买方在开仓时全额支付。",
   "facts.contracts": "一份合约：10,000 单位货币、1 盎司黄金、50 盎司白银或 10 桶原油。",

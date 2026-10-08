@@ -7,8 +7,8 @@
 import * as React from "react";
 import { ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Chip, EmptyState, IconButton, Skeleton, cn, formatDateTime, type ChipTone } from "@kalks/ui";
-import { readCached, writeCached } from "@kalks/ui/swr-cache";
+import { Button, Chip, EmptyState, IconButton, Skeleton, cn, formatDateTime, type ChipTone } from "@ezymex/ui";
+import { readCached, writeCached } from "@ezymex/ui/swr-cache";
 
 export type ApiErr = { code: string; message: string; field?: string };
 
@@ -19,7 +19,7 @@ function expired() {
 
 /** GET a BFF endpoint. `url = null` skips the request. Re-fetches when `url` changes; `reload()` forces it.
  *  A page opened again starts from the last answer of this tab (dimmed as `loading`, like a poll) while it refetches
- *  (@kalks/ui/swr-cache: per signed-in staff member, cleared by any write). */
+ *  (@ezymex/ui/swr-cache: per signed-in staff member, cleared by any write). */
 export function useApi<T>(url: string | null, opts: { refreshMs?: number } = {}) {
   const [data, setData] = React.useState<T | null>(() => (url ? (readCached<T>(url) ?? null) : null));
   const [error, setError] = React.useState<ApiErr | null>(null);

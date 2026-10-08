@@ -1,7 +1,7 @@
 // Keys for this namespace. English is the source; translations live in ../<lang>/desk.ts.
-// Kalks Trader desktop shell (apps/terminal, docs/TERMINAL-DESIGN.md): top bar, settings and help menus, command
+// Ezymex Trader desktop shell (apps/terminal, docs/TERMINAL-DESIGN.md): top bar, settings and help menus, command
 // palette, account health strip, activity panel, order panel, first-run tour and the plain-language glossary.
-// Keep brand names (Kalks, Kalks Trader), keyboard keys (F1, F9, F10, F11, Ctrl, Alt, Esc), "GMT+3", symbols
+// Keep brand names (Ezymex, Ezymex Trader), keyboard keys (F1, F9, F10, F11, Ctrl, Alt, Esc), "GMT+3", symbols
 // (EURUSD) and abbreviations used as units (SL, TP, P&L). Write for a first-time trader: short, plain, friendly.
 const desk = {
   // Top bar
@@ -57,7 +57,7 @@ const desk = {
   "help.tour": "Take the tour",
   "help.topics": "Help center",
   "help.support": "Contact support",
-  "help.about": "About Kalks Trader",
+  "help.about": "About Ezymex Trader",
   "help.glossary": "Trading terms explained",
   "help.whatIs": "What is {term}?",
   "help.explain": "Explain",

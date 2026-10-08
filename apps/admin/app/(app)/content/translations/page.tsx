@@ -3,8 +3,8 @@
 import * as React from "react";
 import { Download, Languages, Search, Upload, Wand2 } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, Flag, PageHeader, Progress, Reveal, Segmented, Toggle, Tooltip, cn } from "@kalks/ui";
-import { I18N_COVERAGE, I18N_LANGS, I18N_NAMESPACES, I18N_NAMESPACE_KEYS, I18N_OVERRIDES, I18N_ROWS, I18N_TENANTS, I18N_TOTAL_KEYS, type I18nNamespace } from "@kalks/mock/admin-translations";
+import { Button, Card, CardHeader, Chip, Flag, PageHeader, Progress, Reveal, Segmented, Toggle, Tooltip, cn } from "@ezymex/ui";
+import { I18N_COVERAGE, I18N_LANGS, I18N_NAMESPACES, I18N_NAMESPACE_KEYS, I18N_OVERRIDES, I18N_ROWS, I18N_TENANTS, I18N_TOTAL_KEYS, type I18nNamespace } from "@ezymex/mock/admin-translations";
 import { SaveBar } from "@/components/settings/kit";
 
 type Cell = { value: string | null; mt?: boolean; edited?: boolean };
@@ -71,7 +71,7 @@ export default function TranslationsPage() {
             <Button variant="surface" onClick={() => toast.success("Import queued", { description: "Upload XLIFF, JSON or CSV · keys are matched by id" })}>
               <Upload /> Import
             </Button>
-            <Button variant="surface" onClick={() => toast.success("Export ready", { description: `kalks-i18n-${langs.join("-")}.json · ${I18N_TOTAL_KEYS} keys` })}>
+            <Button variant="surface" onClick={() => toast.success("Export ready", { description: `ezymex-i18n-${langs.join("-")}.json · ${I18N_TOTAL_KEYS} keys` })}>
               <Download /> Export
             </Button>
             <Button variant="ember" shimmer onClick={machineTranslate}>

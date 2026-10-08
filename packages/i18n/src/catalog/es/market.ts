@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Paneles izquierdos de Kalks Trader: Observación del mercado, chips de segmento y Navegador.
+// Paneles izquierdos de Ezymex Trader: Observación del mercado, chips de segmento y Navegador.
 const market: NsMessages<"market"> = {
   // Cabecera y pestañas de Observación del mercado
   title: "Observación del mercado",
@@ -72,7 +72,7 @@ const market: NsMessages<"market"> = {
   "nav.guest": "invitado",
   "nav.noAccount": "Aún no tiene cuenta de trading",
   "nav.openAccount": "Abrir cuenta",
-  "nav.openAccountTitle": "Cree su cuenta de Kalks (abre el Área de clientes)",
+  "nav.openAccountTitle": "Cree su cuenta de Ezymex (abre el Área de clientes)",
   "nav.signIn": "Iniciar sesión",
   "nav.signInTitle": "Inicie sesión en el Área de clientes",
   "nav.accountType.live": "real",

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BadgeCheck, ShieldX } from "lucide-react";
-import { Logo } from "@kalks/ui/logo";
+import { Logo } from "@ezymex/ui/logo";
 import { academy } from "@/lib/academy";
 
 // Public certificate verification (linked from the certificate image). No sign-in: anyone with the code can

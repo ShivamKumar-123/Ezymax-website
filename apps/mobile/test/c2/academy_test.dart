@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/router/router.dart';
+import 'package:ezymex/router/router.dart';
 
 import '../helpers/test_app.dart';
 
@@ -78,7 +78,7 @@ void main() {
     final c2 = await pumpApp(tester, signedIn: true);
     unawaited(c2.read(routerProvider).push('/academy/phase/phase-9/exam'));
     await settle(tester);
-    expect(find.text('Phase 9 exam: Kalks FX Options'), findsOneWidget);
+    expect(find.text('Phase 9 exam: Ezymex FX Options'), findsOneWidget);
     expect(find.text('0 of 16 answered'), findsOneWidget);
     for (var qi = 0; qi < 16; qi++) {
       final q = find.byKey(ValueKey('exam-q-$qi'));

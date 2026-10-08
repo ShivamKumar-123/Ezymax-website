@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Building2, Copy as CopyIcon, Info, Landmark, RotateCw } from "lucide-react";
 import { Avatar, Button, Card, Chip, EmptyState, Skeleton, Tooltip, cn } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { pct, riskLabel, riskTone, toneOf, type Program } from "./api";
 
 /** System risk score 1–10 (D72) as a compact badge with a 10-tick meter. */

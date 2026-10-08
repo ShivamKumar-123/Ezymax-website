@@ -4,10 +4,10 @@ import * as React from "react";
 import Link from "next/link";
 import { Minus, TrendingDown, TrendingUp } from "lucide-react";
 import { Chip, SymbolAvatar, cn } from "@/components/kit";
-import { INSTRUMENT_MAP } from "@kalks/mock";
+import { INSTRUMENT_MAP } from "@ezymex/mock";
 import type { CalEvent, NewsItem, Sentiment } from "./api";
-import type { T } from "@kalks/i18n";
-import { tr, useT } from "@kalks/i18n/react";
+import type { T } from "@ezymex/i18n";
+import { tr, useT } from "@ezymex/i18n/react";
 import { TERMINAL_URL } from "@/lib/live";
 
 export const SENT: Record<Sentiment, { tone: "up" | "down" | "neutral"; icon: React.ReactNode; labelKey: "news.sentiment.bullish" | "news.sentiment.bearish" | "news.sentiment.neutral" }> = {

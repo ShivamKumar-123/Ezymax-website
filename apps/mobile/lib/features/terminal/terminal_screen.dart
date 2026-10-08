@@ -1,4 +1,4 @@
-// Kalks Trader, full screen (its own route above the Client Area; back returns to it). The web's PHONE layout
+// Ezymex Trader, full screen (its own route above the Client Area; back returns to it). The web's PHONE layout
 // (apps/terminal/components/mobile/mobile-terminal.tsx) in the app's iOS look:
 //   header      back · CFD | Options · account pill (login, Live / Demo / read-only, equity, floating P&L) · bell
 //   CFD         Watchlist · Chart · Trade · History · Account (bottom bar; the chart opens first)
@@ -296,7 +296,7 @@ class _AccountPill extends ConsumerWidget {
                     children: [
                       Flexible(
                         child: Text(
-                          login ?? t('shell.kalksTrader'),
+                          login ?? t('shell.ezymexTrader'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: login == null ? context.text.label.copyWith(fontWeight: FontWeight.w600) : context.text.mono(12.5, weight: FontWeight.w600),
@@ -393,7 +393,7 @@ class _Gate extends ConsumerWidget {
         ),
       );
     }
-    // Opening the account: the web's Splash (brand mark, "Kalks Trader", the connecting line), with the real logo
+    // Opening the account: the web's Splash (brand mark, "Ezymex Trader", the connecting line), with the real logo
     final k = context.k;
     final cfg = ref.watch(configProvider);
     return Center(
@@ -420,7 +420,7 @@ class _Gate extends ConsumerWidget {
               CupertinoActivityIndicator(radius: 7, color: k.ember),
               const SizedBox(width: 8),
               Text(
-                t('trader.splash.connecting', {'server': s.busyLogin != null ? '#${s.busyLogin}' : 'Kalks'}),
+                t('trader.splash.connecting', {'server': s.busyLogin != null ? '#${s.busyLogin}' : 'Ezymex'}),
                 style: context.text.footnote.copyWith(color: k.fg3, fontFamily: KFonts.mono),
               ),
             ],

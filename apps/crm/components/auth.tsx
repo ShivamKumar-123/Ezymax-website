@@ -3,7 +3,7 @@
 import * as React from "react";
 import { ArrowRight } from "lucide-react";
 import { Button, cn, useBrand } from "@/components/kit";
-import { useT, Trans } from "@kalks/i18n/react";
+import { useT, Trans } from "@ezymex/i18n/react";
 
 /** "Sign in with Google" is shown only once Google OAuth is configured (NEXT_PUBLIC_GOOGLE_LOGIN=1). */
 export const GOOGLE_LOGIN = process.env.NEXT_PUBLIC_GOOGLE_LOGIN === "1";
@@ -199,8 +199,8 @@ export function ResendLink({ seconds, onResend }: { seconds: number; onResend: (
 }
 
 /** Demo builds only: skip sign-in and browse the Client Area as the sample client. */
-/** Public demo of the Client Area (sample data, no sign-up). Kalks' own showcase, so white-label brokers don't get it. */
-const DEMO_URL = process.env.NEXT_PUBLIC_DEMO_URL || "https://demo.kalkstrade.com";
+/** Public demo of the Client Area (sample data, no sign-up). Ezymex' own showcase, so white-label brokers don't get it. */
+const DEMO_URL = process.env.NEXT_PUBLIC_DEMO_URL || "https://demo.ezymex.com";
 
 /** On the live sign-in and sign-up pages: try the full platform in the demo first, without an account. */
 export function TryDemo() {

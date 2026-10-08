@@ -6,7 +6,7 @@
  * Everything is generated with a seeded PRNG so server and client renders
  * are identical. "Today" is 2026-09-24, server time GMT+3.
  */
-import { PEOPLE, seeded, hashString, type Person } from "@kalks/mock";
+import { PEOPLE, seeded, hashString, type Person } from "@ezymex/mock";
 
 /* ------------------------------------------------------------------ */
 /* Time helpers                                                         */
@@ -109,7 +109,7 @@ const sizesFor = (fees: number[], lev: number, disabled: number[] = []): PlanSiz
 export const PLANS: PropPlan[] = [
   {
     id: "classic-2",
-    name: "Kalks Classic 2-Step",
+    name: "Ezymex Classic 2-Step",
     type: "2-step",
     status: "active",
     version: 7,
@@ -147,7 +147,7 @@ export const PLANS: PropPlan[] = [
   },
   {
     id: "rapid-1",
-    name: "Kalks Rapid 1-Step",
+    name: "Ezymex Rapid 1-Step",
     type: "1-step",
     status: "active",
     version: 4,
@@ -182,7 +182,7 @@ export const PLANS: PropPlan[] = [
   },
   {
     id: "instant",
-    name: "Kalks Instant Funding",
+    name: "Ezymex Instant Funding",
     type: "instant",
     status: "active",
     version: 3,
@@ -217,7 +217,7 @@ export const PLANS: PropPlan[] = [
   },
   {
     id: "swing-2",
-    name: "Kalks Swing 2-Step",
+    name: "Ezymex Swing 2-Step",
     type: "2-step",
     status: "draft",
     version: 1,
@@ -327,7 +327,7 @@ export function challengeRules(c: Challenge): RuleCheck[] {
   return out;
 }
 
-const SERVERS = ["Kalks-Prop01", "Kalks-Prop02", "Kalks-Prop01"];
+const SERVERS = ["Ezymex-Prop01", "Ezymex-Prop02", "Ezymex-Prop01"];
 
 export const CHALLENGES: Challenge[] = (() => {
   const r = seeded(4411);
@@ -631,7 +631,7 @@ export const VIOLATIONS: Violation[] = (() => {
       trader,
       login: funded ? String(90500000 + r.int(10000, 99999)) : String(70412000 + r.int(1000, 98999)),
       accountKind: funded ? "Funded" : "Challenge",
-      planName: r.pick(["Kalks Classic 2-Step", "Kalks Rapid 1-Step", "Kalks Instant Funding"]),
+      planName: r.pick(["Ezymex Classic 2-Step", "Ezymex Rapid 1-Step", "Ezymex Instant Funding"]),
       size: r.pick([25000, 50000, 100000, 100000, 200000]),
       detected: TODAY - (i < 10 ? i * 2400 + r.int(300, 2000) : r.int(DAY / 2, 14 * DAY)),
       detail: t.detail,

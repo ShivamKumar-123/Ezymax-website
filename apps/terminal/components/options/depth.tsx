@@ -8,9 +8,9 @@
 // Times are server time, like the rest of the terminal.
 import * as React from "react";
 import { BookOpenText, MousePointerClick, Table2 } from "lucide-react";
-import { parseSeriesCode } from "@kalks/mock/options";
-import { cn } from "@kalks/ui";
-import { useLocale, useT } from "@kalks/i18n/react";
+import { parseSeriesCode } from "@ezymex/mock/options";
+import { cn } from "@ezymex/ui";
+import { useLocale, useT } from "@ezymex/i18n/react";
 import { useTerminal } from "@/lib/store";
 import { serverTime } from "@/lib/trading";
 import { useBookOrders } from "@/lib/options/book-orders";

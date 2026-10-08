@@ -5,13 +5,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/features/rewards/cashback_screen.dart';
-import 'package:kalks/features/rewards/contest_detail_screen.dart';
-import 'package:kalks/features/rewards/contests_screen.dart';
-import 'package:kalks/features/rewards/loyalty_screen.dart';
-import 'package:kalks/features/rewards/promotions_screen.dart';
-import 'package:kalks/preview/c2/rewards.dart';
-import 'package:kalks/router/router.dart';
+import 'package:ezymex/features/rewards/cashback_screen.dart';
+import 'package:ezymex/features/rewards/contest_detail_screen.dart';
+import 'package:ezymex/features/rewards/contests_screen.dart';
+import 'package:ezymex/features/rewards/loyalty_screen.dart';
+import 'package:ezymex/features/rewards/promotions_screen.dart';
+import 'package:ezymex/preview/c2/rewards.dart';
+import 'package:ezymex/router/router.dart';
 
 import '../helpers/test_app.dart';
 
@@ -89,7 +89,7 @@ void main() {
     expect(find.text('Your contest account'), findsOneWidget);
     expect(find.text('20031188'), findsOneWidget);
     expect(find.text('Kx7!pR2m'), findsOneWidget);
-    expect(find.text('Open in Kalks Trader'), findsOneWidget);
+    expect(find.text('Open in Ezymex Trader'), findsOneWidget);
     await tester.tap(find.text('Done'));
     await settle(tester);
     expect(find.text('Your contest account'), findsNothing);

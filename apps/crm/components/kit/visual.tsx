@@ -1,11 +1,11 @@
 "use client";
 
 // Avatar (pastel initials tile from the name) and the margin gauge, with colours from the design tokens so a broker's
-// brand colour drives them (the @kalks/ui gauge carries fixed Kalks ember stops).
+// brand colour drives them (the @ezymex/ui gauge carries fixed Ezymex ember stops).
 
 import * as React from "react";
 import { motion } from "motion/react";
-import { Money as UiMoney, cn } from "@kalks/ui";
+import { Money as UiMoney, cn } from "@ezymex/ui";
 
 const AVATAR_TONES = ["accent", "lavender", "pink", "amber", "mint", "sky", "coral"] as const;
 
@@ -91,7 +91,7 @@ export function Gauge({ value, max = 100, label, sublabel, display, size = 240, 
   );
 }
 
-/** Big number with softly dimmed decimals (less dim than the Kalks default, as in the pastel dashboard). */
+/** Big number with softly dimmed decimals (less dim than the Ezymex default, as in the pastel dashboard). */
 export function Money(props: React.ComponentProps<typeof UiMoney>) {
   return <UiMoney {...props} decClassName={cn("opacity-60", props.decClassName)} />;
 }

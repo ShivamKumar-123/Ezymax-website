@@ -37,12 +37,12 @@ async function idToken(claims = {}, opts = {}) {
 }
 
 test("start builds the Google URL with state, nonce and PKCE S256", () => {
-  const f = startFlow({ mode: "register", next: "/wallet", ref: "PRIYA1234", origin: "https://app.kalkstrade.com" }, cfg);
+  const f = startFlow({ mode: "register", next: "/wallet", ref: "PRIYA1234", origin: "https://app.ezymex.com" }, cfg);
   const u = new URL(f.url);
   assert.equal(u.origin + u.pathname, "https://accounts.google.com/o/oauth2/v2/auth");
   const p = u.searchParams;
   assert.equal(p.get("client_id"), cfg.clientId);
-  assert.equal(p.get("redirect_uri"), "https://app.kalkstrade.com" + CALLBACK_PATH);
+  assert.equal(p.get("redirect_uri"), "https://app.ezymex.com" + CALLBACK_PATH);
   assert.equal(p.get("response_type"), "code");
   assert.equal(p.get("scope"), "openid email profile");
   assert.equal(p.get("prompt"), "select_account");
@@ -78,8 +78,8 @@ test("state cookie rejects tampering, other secrets and age", () => {
 });
 
 test("public origin follows Caddy's forwarded headers, else the request", () => {
-  const h = new Headers({ "x-forwarded-host": "app.kalkstrade.com", "x-forwarded-proto": "https", host: "127.0.0.1:3000" });
-  assert.equal(publicOrigin(h, "http://127.0.0.1:3000/api/auth/google/start"), "https://app.kalkstrade.com");
+  const h = new Headers({ "x-forwarded-host": "app.ezymex.com", "x-forwarded-proto": "https", host: "127.0.0.1:3000" });
+  assert.equal(publicOrigin(h, "http://127.0.0.1:3000/api/auth/google/start"), "https://app.ezymex.com");
   assert.equal(publicOrigin(new Headers({ host: "localhost:3000" }), "http://localhost:3000/api/auth/google/start"), "http://localhost:3000");
   assert.equal(publicOrigin(new Headers({ "x-forwarded-host": "evil.com/x?" }), "http://localhost:3000/a"), "http://localhost:3000");
 });
@@ -119,7 +119,7 @@ function deps(reply, calls = []) {
 }
 
 async function flow(mode = "login", next = "/", ref = "") {
-  const f = startFlow({ mode, next, ref, origin: "https://app.kalkstrade.com" }, cfg);
+  const f = startFlow({ mode, next, ref, origin: "https://app.ezymex.com" }, cfg);
   return { f, query: new URLSearchParams({ code: "4/abc", state: f.state.state }) };
 }
 
@@ -130,7 +130,7 @@ test("callback: signed in -> session and ?next", async () => {
   const out = await handleCallback(query, f.cookie, cfg, deps({ status: 200, data: { status: "ok", session: { token: "t", expires_at: "2030-01-01T00:00:00Z" } } }, calls));
   assert.equal(out.redirect, "/wallet");
   assert.equal(out.session.token, "t");
-  assert.deepEqual(calls[0], { code: "4/abc", verifier: f.state.verifier, redirectUri: "https://app.kalkstrade.com/api/auth/google/callback" });
+  assert.deepEqual(calls[0], { code: "4/abc", verifier: f.state.verifier, redirectUri: "https://app.ezymex.com/api/auth/google/callback" });
   assert.equal(calls[1].sub, "109876543210");
   assert.equal(calls[1].email_verified, true);
 });

@@ -123,7 +123,7 @@ Loss: (2,374.40 - 2,350.40) x 10 oz = 240 USD, double the plan
 
 ## In practice
 
-- Compare spreads in the Market Watch panel of Kalks Trader before and after a few releases on demo so you know what to expect.
+- Compare spreads in the Market Watch panel of Ezymex Trader before and after a few releases on demo so you know what to expect.
 - Add an allowance for spread and slippage to your risk calculation, for example one and a half times the normal stop distance for news trades.
 - Avoid placing tight stops that sit where a spread spike alone could trigger them.
 - Consider closing or reducing positions before the weekend if a major event is scheduled.

@@ -1,4 +1,4 @@
-// Markets of Kalks Trader: the contract specs (`GET trade/symbols`, refreshed every 5 minutes like the web's live
+// Markets of Ezymex Trader: the contract specs (`GET trade/symbols`, refreshed every 5 minutes like the web's live
 // flags), the live quotes (market-data stream with the web's passive / active demand, lib/core/realtime/market_stream
 // .dart), today's open for the change % (market-data `GET /v1/quotes?group=`), candle history (`GET /v1/candles`),
 // forming bars and depth. Previews answer everything from lib/features/terminal/preview.

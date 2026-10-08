@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Client Area 보안: 세션, 로그인 내역, 보기 전용 로그인(뷰어), 세션 보호. "Kalks", "Google", "JSON"은 그대로 유지합니다.
+// Client Area 보안: 세션, 로그인 내역, 보기 전용 로그인(뷰어), 세션 보호. "Ezymex", "Google", "JSON"은 그대로 유지합니다.
 const security: NsMessages<"security"> = {
   // 공통
   "retry": "다시 시도",
@@ -8,7 +8,7 @@ const security: NsMessages<"security"> = {
   "signingOut": "로그아웃 중…",
   "resetSigningOut": "비밀번호 재설정을 위해 로그아웃하는 중…",
   "error.generic": "문제가 발생했습니다. 다시 시도해 주세요.",
-  "error.network": "Kalks에 연결할 수 없습니다. 인터넷 연결을 확인한 후 다시 시도하세요.",
+  "error.network": "Ezymex에 연결할 수 없습니다. 인터넷 연결을 확인한 후 다시 시도하세요.",
 
   // 브라우저 사용자 에이전트 기반 기기 라벨
   "device.unknownBrowser": "알 수 없는 브라우저",
@@ -226,7 +226,7 @@ const security: NsMessages<"security"> = {
   "page.calendar": "캘린더",
   // 투자자 비밀번호 카드
   "investor.title": "투자자 비밀번호",
-  "investor.text": "각 거래 계좌에는 MT5 방식처럼 Kalks Trader에서 읽기 전용으로 접속할 수 있는 투자자 비밀번호도 있습니다: 포지션과 내역은 볼 수 있지만 거래는 할 수 없습니다.",
+  "investor.text": "각 거래 계좌에는 MT5 방식처럼 Ezymex Trader에서 읽기 전용으로 접속할 수 있는 투자자 비밀번호도 있습니다: 포지션과 내역은 볼 수 있지만 거래는 할 수 없습니다.",
   "investor.hint": "계좌 페이지에서 설정하거나 변경하세요.",
   "investor.goToAccounts": "계좌로 이동",
   // 생성 / 편집 대화 상자

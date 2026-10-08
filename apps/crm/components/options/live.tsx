@@ -1,12 +1,12 @@
 "use client";
 
 // Live Options page: suitability from the gateway (/api/suitability/options) and the client's trading accounts from
-// the engine; "Start trading options" records the acceptance of the options terms and opens Kalks Trader through
+// the engine; "Start trading options" records the acceptance of the options terms and opens Ezymex Trader through
 // the usual one-time SSO link, in options mode.
 
 import * as React from "react";
 import { toast } from "sonner";
-import { tr, useT } from "@kalks/i18n/react";
+import { tr, useT } from "@ezymex/i18n/react";
 import { useReadOnly, useSession } from "@/components/session";
 import { errorToast, tradingApi, useAccounts } from "@/components/trading/api";
 import { accountFlavor } from "@/components/trading/archive";
@@ -26,7 +26,7 @@ export function withOptionsMode(url: string): string {
   }
 }
 
-/** Opens Kalks Trader signed in to `login`, in options mode. The tab opens inside the click (popup blockers), then
+/** Opens Ezymex Trader signed in to `login`, in options mode. The tab opens inside the click (popup blockers), then
  *  `before` runs (e.g. recording the acceptance): false closes the tab again. */
 async function openOptionsTerminal(login: number, before?: () => Promise<boolean>) {
   const w = window.open("about:blank", "_blank");

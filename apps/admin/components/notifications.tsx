@@ -9,14 +9,14 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast, useSonner, type ToastT } from "sonner";
 import { Bell, CheckCircle2, Info, LifeBuoy, TriangleAlert, XCircle } from "lucide-react";
-import { IconButton, Popover, cn, formatDateTime } from "@kalks/ui";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IconButton, Popover, cn, formatDateTime } from "@ezymex/ui";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { realtime, type Frame } from "@/lib/realtime";
 
 export type NoticeType = "success" | "error" | "warning" | "info" | "default";
 export type Notice = { id: string; type: NoticeType; title: string; description?: string; at: number; read: boolean };
 
-const KEY = "kalks_admin_notifications";
+const KEY = "ezymex_admin_notifications";
 const CAP = 100;
 const BOOT = Math.random().toString(36).slice(2, 8);
 

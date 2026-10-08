@@ -211,7 +211,7 @@ async fn restart(pool: &sqlx::PgPool) -> (Hub, trading::book::Recovery) {
 #[tokio::test]
 async fn order_book_through_the_actor_outbox_shards_and_postgres() {
     let base = std::env::var("TRADING_TEST_DATABASE_URL").unwrap_or_else(|_| "postgres://postgres@127.0.0.1:5433/postgres".into());
-    let db = format!("kalks_trading_book_{}", std::process::id());
+    let db = format!("ezymex_trading_book_{}", std::process::id());
     let Ok(server) = PgConnectOptions::from_str(&base) else { return };
     if server.clone().database("postgres").connect().await.is_err() {
         eprintln!("SKIP: PostgreSQL not reachable at {base}");
@@ -412,7 +412,7 @@ async fn hold_leg(hub: &Hub, login: i64, user: i64, series: &str, side: Side, qt
 #[tokio::test]
 async fn combo_rfq_and_bust_book_exactly_once_across_crashes() {
     let base = std::env::var("TRADING_TEST_DATABASE_URL").unwrap_or_else(|_| "postgres://postgres@127.0.0.1:5433/postgres".into());
-    let db = format!("kalks_trading_book_rfq_{}", std::process::id());
+    let db = format!("ezymex_trading_book_rfq_{}", std::process::id());
     let Ok(server) = PgConnectOptions::from_str(&base) else { return };
     if server.clone().database("postgres").connect().await.is_err() {
         eprintln!("SKIP: PostgreSQL not reachable at {base}");

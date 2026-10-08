@@ -14,13 +14,13 @@ const UNAVAILABLE = { error: { code: "unavailable", message: "The rewards servic
 
 /** Segment headers the growth service reads (and uses to refresh the client's profile row). */
 function userHeaders(user: GatewayUser): Record<string, string> {
-  const h: Record<string, string> = { "x-kalks-user-id": String(user.id) };
-  if (user.country) h["x-kalks-country"] = user.country;
-  if (user.kyc_status) h["x-kalks-kyc"] = user.kyc_status;
-  if (user.created_at) h["x-kalks-created-at"] = user.created_at;
+  const h: Record<string, string> = { "x-ezymex-user-id": String(user.id) };
+  if (user.country) h["x-ezymex-country"] = user.country;
+  if (user.kyc_status) h["x-ezymex-kyc"] = user.kyc_status;
+  if (user.created_at) h["x-ezymex-created-at"] = user.created_at;
   const name = `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim();
-  if (name) h["x-kalks-name"] = encodeURIComponent(name);
-  if (user.referral_code) h["x-kalks-referral-code"] = user.referral_code;
+  if (name) h["x-ezymex-name"] = encodeURIComponent(name);
+  if (user.referral_code) h["x-ezymex-referral-code"] = user.referral_code;
   return h;
 }
 
@@ -28,7 +28,7 @@ export async function growth<T = Record<string, unknown>>(
   path: string,
   init: { method?: "GET" | "POST" | "PUT" | "PATCH"; body?: unknown; user?: GatewayUser; tenant?: string; timeoutMs?: number } = {},
 ): Promise<GrowthResult<T>> {
-  const headers: Record<string, string> = { "x-kalks-internal": GROWTH_TOKEN, "x-kalks-tenant": init.tenant || init.user?.tenant?.slug || "kalks" };
+  const headers: Record<string, string> = { "x-ezymex-internal": GROWTH_TOKEN, "x-ezymex-tenant": init.tenant || init.user?.tenant?.slug || "ezymex" };
   if (init.user) Object.assign(headers, userHeaders(init.user));
   if (init.body !== undefined) headers["content-type"] = "application/json";
   try {

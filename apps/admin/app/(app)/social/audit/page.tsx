@@ -1,7 +1,7 @@
 "use client";
 
-import { Card, EmptyState, PageHeader } from "@kalks/ui";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { Card, EmptyState, PageHeader } from "@ezymex/ui";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveSocialAuditPage } from "@/components/social-live/audit";
 
 /** The social audit log is read from the trading engine only; the demo showcase has no mock for it. */

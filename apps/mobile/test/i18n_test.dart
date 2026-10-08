@@ -4,8 +4,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/i18n/locales.dart';
-import 'package:kalks/i18n/t.dart';
+import 'package:ezymex/i18n/locales.dart';
+import 'package:ezymex/i18n/t.dart';
 
 Messages _catalog(String code) => (jsonDecode(File('assets/i18n/$code.json').readAsStringSync()) as Map).cast<String, Object?>();
 
@@ -15,7 +15,7 @@ void main() {
     'shell.greeting': 'Good morning, {name}',
     'x.accounts': {'one': '{count} account', 'other': '{count} accounts'},
     'x.withZero': {'zero': 'No accounts', 'one': '{count} account', 'other': '{count} accounts'},
-    'x.tag': 'New to Kalks? <link>Create an account</link>',
+    'x.tag': 'New to Ezymex? <link>Create an account</link>',
     'x.onlyEn': 'Only in English',
   };
 
@@ -100,7 +100,7 @@ void main() {
 
   group('markup', () {
     test('splits <tag>…</tag> into tappable segments', () {
-      expect(parseRich(en['x.tag']! as String), const [RichSegment('New to Kalks? '), RichSegment('Create an account', 'link')]);
+      expect(parseRich(en['x.tag']! as String), const [RichSegment('New to Ezymex? '), RichSegment('Create an account', 'link')]);
       expect(parseRich('<b>a@b.c</b> got it'), const [RichSegment('a@b.c', 'b'), RichSegment(' got it')]);
       expect(parseRich('plain'), const [RichSegment('plain')]);
       expect(parseRich('<signin>Sign in</signin> or <reset>reset</reset>.'), const [

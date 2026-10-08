@@ -1,7 +1,7 @@
-//! Back Office routes (internal token + `X-Kalks-Staff`; the admin BFF checks `options.read` /
+//! Back Office routes (internal token + `X-Ezymex-Staff`; the admin BFF checks `options.read` /
 //! `options.config` / `options.dealing` / `options.settle`). Every write is audited and bumps the snapshot
 //! version. Platform data (underlyings, rates, holidays, surfaces, module switches, fixings, listing) can
-//! only be changed from tenant `kalks`; brokers tune their own spreads / fees / limits / controls (O42).
+//! only be changed from tenant `ezymex`; brokers tune their own spreads / fees / limits / controls (O42).
 
 use axum::Json;
 use axum::extract::{Path, Query, State};
@@ -26,7 +26,7 @@ impl Staff {
         self.tenant == PLATFORM_TENANT
     }
     fn require_platform(&self) -> R<()> {
-        if self.platform() { Ok(()) } else { Err(ApiError::forbidden("Only Kalks staff can change platform-wide options data.")) }
+        if self.platform() { Ok(()) } else { Err(ApiError::forbidden("Only Ezymex staff can change platform-wide options data.")) }
     }
 }
 
@@ -566,7 +566,7 @@ pub async fn surface_publish(State(st): State<AppState>, h: HeaderMap, Path(symb
 /* Tenants (module switches)                                           */
 /* ------------------------------------------------------------------ */
 
-/// `GET /v1/admin/options/tenants`: every broker for Kalks staff, the own row for a broker.
+/// `GET /v1/admin/options/tenants`: every broker for Ezymex staff, the own row for a broker.
 pub async fn tenants(State(st): State<AppState>, h: HeaderMap) -> R {
     let s = who(&h)?;
     let rd = st.refdata().await;
@@ -592,7 +592,7 @@ pub struct TenantPut {
 }
 
 /// `PUT /v1/admin/options/tenants/{tenant} {enabledDemo?, enabledLive?, publicChain?, underlyings?, reason}`
-/// (Kalks staff only: the Owner enables Options per broker).
+/// (Ezymex staff only: the Owner enables Options per broker).
 pub async fn tenant_put(State(st): State<AppState>, h: HeaderMap, Path(t): Path<String>, Json(p): Json<TenantPut>) -> R {
     let s = who(&h)?;
     s.require_platform()?;
@@ -832,7 +832,7 @@ pub struct ControlPost {
     reason: Option<String>,
 }
 
-/// `POST /v1/admin/options/controls {tenant? ('*' Kalks only), scope, target, mode, manualVol?, frozenSpot?, expiresAt?, reason}`.
+/// `POST /v1/admin/options/controls {tenant? ('*' Ezymex only), scope, target, mode, manualVol?, frozenSpot?, expiresAt?, reason}`.
 /// A freeze without `frozenSpot` freezes at the current mid.
 pub async fn control_add(State(st): State<AppState>, h: HeaderMap, Json(p): Json<ControlPost>) -> R {
     let s = who(&h)?;
@@ -925,7 +925,7 @@ pub async fn control_clear(State(st): State<AppState>, h: HeaderMap, Path(id): P
     let row = sqlx::query("SELECT tenant FROM controls WHERE id = $1 AND active").bind(id).fetch_optional(&mut *tx).await?.ok_or_else(|| ApiError::not_found("Active control"))?;
     let t: String = row.get("tenant");
     if t != s.tenant && !s.platform() {
-        return Err(ApiError::forbidden("This control belongs to Kalks or another broker."));
+        return Err(ApiError::forbidden("This control belongs to Ezymex or another broker."));
     }
     sqlx::query("UPDATE controls SET active = false, cleared_by = $2, cleared_at = now(), clear_reason = $3 WHERE id = $1").bind(id).bind(&s.actor).bind(&reason).execute(&mut *tx).await?;
     store::audit(&mut tx, &s.tenant, &s.actor, "control.clear", &id.to_string(), None, None, &reason).await?;
@@ -1000,10 +1000,10 @@ pub async fn limit_delete(State(st): State<AppState>, h: HeaderMap, Path(user): 
 }
 
 /* ------------------------------------------------------------------ */
-/* Kalks market maker settings (docs/OPTIONS-EXCHANGE.md §4)           */
+/* Ezymex market maker settings (docs/OPTIONS-EXCHANGE.md §4)           */
 /* ------------------------------------------------------------------ */
 
-/// `GET /v1/admin/options/mm-settings` -> `{settings[], defaults}`: every row for Kalks staff; the platform (`*`) rows
+/// `GET /v1/admin/options/mm-settings` -> `{settings[], defaults}`: every row for Ezymex staff; the platform (`*`) rows
 /// and the broker's own rows for a broker.
 pub async fn mm_settings(State(st): State<AppState>, h: HeaderMap) -> R {
     let s = who(&h)?;
@@ -1049,7 +1049,7 @@ fn mm_key(s: &Staff, rd: &crate::model::RefData, tenant: &str, kind: &str, under
         return Err(ApiError::bad("Unknown underlying."));
     }
     if !s.platform() && t != s.tenant {
-        return Err(ApiError::forbidden("The market maker is Kalks's: a broker only tunes its own rows."));
+        return Err(ApiError::forbidden("The market maker is Ezymex's: a broker only tunes its own rows."));
     }
     Ok((t, k, u))
 }
@@ -1082,7 +1082,7 @@ pub fn validate_mm(m: &MmSettings) -> Result<(), String> {
 }
 
 /// `PUT /v1/admin/options/mm-settings/{tenant}/{kind}/{underlying} {…fields, enabled?, reason}`: upsert one row; a new
-/// row starts from the settings that apply to that key today. Kalks staff any row, a broker only its own.
+/// row starts from the settings that apply to that key today. Ezymex staff any row, a broker only its own.
 pub async fn mm_put(State(st): State<AppState>, h: HeaderMap, Path((tenant, kind, underlying)): Path<(String, String, String)>, Json(p): Json<MmPut>) -> R {
     let s = who(&h)?;
     let reason = need_reason(&p.reason)?;
@@ -1225,7 +1225,7 @@ pub struct RefixPost {
 /// Re-fixing is allowed this long after the first fixing (O39).
 pub const REFIX_WINDOW_MINUTES: i64 = 60;
 
-/// `POST /v1/admin/options/expiries/{id}/refix {price?, reason}` (Kalks, within 1 h of the first fixing).
+/// `POST /v1/admin/options/expiries/{id}/refix {price?, reason}` (Ezymex, within 1 h of the first fixing).
 pub async fn refix(State(st): State<AppState>, h: HeaderMap, Path(id): Path<i64>, Json(p): Json<RefixPost>) -> R {
     let s = who(&h)?;
     s.require_platform()?;
@@ -1343,7 +1343,7 @@ pub async fn test_expiry(State(st): State<AppState>, h: HeaderMap, Json(p): Json
     Ok(Json(json!({"expiry": {"id": id, "symbol": symbol, "date": date, "key": format!("{symbol}:{date}"), "cutAt": cut, "twapStart": cut - chrono::Duration::minutes(twap), "series": n}, "listing": rep})))
 }
 
-/// `POST /v1/admin/options/listing/run` (Kalks): runs the listing job now.
+/// `POST /v1/admin/options/listing/run` (Ezymex): runs the listing job now.
 pub async fn listing_run(State(st): State<AppState>, h: HeaderMap) -> R {
     let s = who(&h)?;
     s.require_platform()?;
@@ -1358,7 +1358,7 @@ pub struct AuditQ {
     all: Option<bool>,
 }
 
-/// `GET /v1/admin/options/audit?limit=&before=&all=` (`all` = every tenant, Kalks only).
+/// `GET /v1/admin/options/audit?limit=&before=&all=` (`all` = every tenant, Ezymex only).
 pub async fn audit(State(st): State<AppState>, h: HeaderMap, Query(q): Query<AuditQ>) -> R {
     let s = who(&h)?;
     let all = q.all.unwrap_or(false) && s.platform();

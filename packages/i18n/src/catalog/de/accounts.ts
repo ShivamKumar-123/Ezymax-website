@@ -1,7 +1,7 @@
 import type { NsMessages } from "../../core";
 
 // Account type names (Standard, Pro, ECN, Cent, ...) are product names and are not translated.
-// Kalks, Kalks Trader, Kalks-Live, Kalks-Demo, MT5, MetaTrader 5, USDT, USD, USC stay in English.
+// Ezymex, Ezymex Trader, Ezymex-Live, Ezymex-Demo, MT5, MetaTrader 5, USDT, USD, USC stay in English.
 const accounts: NsMessages<"accounts"> = {
   // Badges on account rows (uppercase chips)
   "badge.live": "LIVE",
@@ -91,7 +91,7 @@ const accounts: NsMessages<"accounts"> = {
   "empty.openFirst": "Eröffnen Sie Ihr erstes Konto, um mit dem Handel zu beginnen.",
   "empty.noLive": "Noch keine Live-Konten",
   "empty.noDemo": "Noch keine Demokonten",
-  "empty.liveText": "Eröffnen Sie jetzt ein Live-Konto und erhalten Sie Login und Passwörter sofort. Laden Sie es über Ihre Kalks Wallet auf.",
+  "empty.liveText": "Eröffnen Sie jetzt ein Live-Konto und erhalten Sie Login und Passwörter sofort. Laden Sie es über Ihre Ezymex Wallet auf.",
   "empty.demoText": "Ein Demokonto enthält virtuelles Guthaben zu Echtzeitkursen, damit Sie ohne Risiko üben können.",
   "error.unavailableTitle": "Handelskonten sind nicht verfügbar",
   "error.unavailableText": "Der Handelsdienst ist nicht erreichbar. Ihre Konten und Guthaben sind sicher; bitte versuchen Sie es gleich erneut.",
@@ -113,13 +113,13 @@ const accounts: NsMessages<"accounts"> = {
   // Platforms card (demo build). WebTerminal is a product name.
   "platform.mt5Compatible": "MT5-kompatibel",
   "platform.title": "Überall handeln",
-  "platform.text": "Kalks WebTerminal, MetaTrader 5 Desktop und Mobile – ein Login, dieselben Zugangsdaten.",
+  "platform.text": "Ezymex WebTerminal, MetaTrader 5 Desktop und Mobile – ein Login, dieselben Zugangsdaten.",
   "platform.downloading": "MetaTrader 5 wird heruntergeladen",
   "platform.mt5Desktop": "MT5 Desktop",
 
   // Account types section on the accounts list
   "types.title": "Kontotypen",
-  "types.subtitle": "Gleiche Instrumente und Kalks Trader bei jedem Typ. Wählen Sie das passende Preismodell und den Positionsmodus.",
+  "types.subtitle": "Gleiche Instrumente und Ezymex Trader bei jedem Typ. Wählen Sie das passende Preismodell und den Positionsmodus.",
   "types.footer": "Schutz vor negativem Kontostand bei jedem Konto · Hebel nur ohne offene Positionen änderbar · Demoguthaben mehrmals täglich aufladbar.",
   "compare.title": "Kontotypen vergleichen",
   "compare.subtitle": "Gleiche Instrumente, Plattformen und Schutzmechanismen – wählen Sie das Preismodell, das zu Ihrem Stil passt.",
@@ -164,7 +164,7 @@ const accounts: NsMessages<"accounts"> = {
   // Account row and its actions menu
   "row.trade": "Handeln",
   "row.refill": "Aufladen",
-  "row.cantOpenTrader": "Dieses Konto kann nicht in Kalks Trader geöffnet werden",
+  "row.cantOpenTrader": "Dieses Konto kann nicht in Ezymex Trader geöffnet werden",
   "row.openPositions": { one: "{count} offene Position", other: "{count} offene Positionen" },
   "row.pendingOrders": { one: "{count} Pending Order", other: "{count} Pending Orders" },
   // Followed by the floating profit/loss amount
@@ -199,7 +199,7 @@ const accounts: NsMessages<"accounts"> = {
   "fund.centAccount": "Cent-Konto (USC)",
   "fund.depositUsdt": "USDT einzahlen",
   "fund.transferFromWallet": "Von Wallet übertragen",
-  "fund.fromWallet": "Aus Ihrer Kalks Wallet aufgeladen",
+  "fund.fromWallet": "Aus Ihrer Ezymex Wallet aufgeladen",
   "fund.text": "Zahlen Sie USDT über BNB Chain oder TRON in Ihre Wallet ein und übertragen Sie es sofort auf dieses Konto. USDT wird 1:1 in USD gutgeschrieben.",
   "fund.textCent": "Zahlen Sie USDT über BNB Chain oder TRON in Ihre Wallet ein und übertragen Sie es sofort auf dieses Konto. USDT wird 1:1 in USD gutgeschrieben und auf einem Cent-Konto ×100 in USC angezeigt.",
 
@@ -255,7 +255,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.swapFreeTitle": "Swapfreies (islamisches) Konto",
   "wizard.swapFreeText": "Keine Übernacht-Swaps. Bei einigen Instrumenten kann nach 5 Nächten eine feste Verwaltungsgebühr anfallen.",
   "wizard.setPasswordTitle": "Handelspasswort festlegen",
-  "wizard.setPasswordSubtitle": "Ihr Master-Passwort für MT5 und das Kalks-Terminal. Ein Investorpasswort (nur lesen) wird für Sie erzeugt.",
+  "wizard.setPasswordSubtitle": "Ihr Master-Passwort für MT5 und das Ezymex-Terminal. Ein Investorpasswort (nur lesen) wird für Sie erzeugt.",
   // <client> and <risk> wrap links; keep the tags
   "wizard.agreeMock": "Ich stimme der <client>Kundenvereinbarung</client> und der <risk>Risikoaufklärung</risk> zu und verstehe, dass CFDs ein hohes Verlustrisiko bergen.",
   "wizard.clientAgreementOpened": "Kundenvereinbarung geöffnet",
@@ -288,10 +288,10 @@ const accounts: NsMessages<"accounts"> = {
   "kind.demoText": "Üben Sie risikofrei zu Echtzeitkursen.",
   "kind.liveTextMock": "Handeln Sie echte Märkte mit echtem Geld. Sofort aus Ihrer USDT-Wallet aufladen.",
   "kind.demoTextMock": "Üben Sie risikofrei mit virtuellem Guthaben zu Echtzeitkursen.",
-  "kind.live.point1": "Echte Ausführung auf Kalks-Live",
+  "kind.live.point1": "Echte Ausführung auf Ezymex-Live",
   "kind.live.point2": "Startet mit Kontostand null; Aufladung aus Ihrer Wallet",
   "kind.live.point3": "Login und Passwörter sofort verfügbar",
-  "kind.live.mock1": "Echte Ausführung auf Kalks-Live-Servern",
+  "kind.live.mock1": "Echte Ausführung auf Ezymex-Live-Servern",
   "kind.live.mock2": "Sofortige USDT-Einzahlung, 1:1 zu USD",
   "kind.live.mock3": "Gewinne jederzeit auszahlen (nach KYC)",
   "kind.demo.virtualFunds": "Virtuelles Guthaben (Standard {amount})",
@@ -307,12 +307,12 @@ const accounts: NsMessages<"accounts"> = {
 
   // Open account wizard: account created
   "created.title": "Ihr Konto ist bereit",
-  "created.liveText": "Es startet mit einem Kontostand von null. Laden Sie es über Ihre Kalks Wallet auf und melden Sie sich dann mit diesen Zugangsdaten bei Kalks Trader an.",
+  "created.liveText": "Es startet mit einem Kontostand von null. Laden Sie es über Ihre Ezymex Wallet auf und melden Sie sich dann mit diesen Zugangsdaten bei Ezymex Trader an.",
   "created.demoText": "Mit {amount} virtuellem Guthaben aufgeladen.",
   "created.demoExpires": "Läuft nach {days} Tagen ohne Terminal-Login ab.",
   "created.liveTextMock": "Laden Sie es aus Ihrer USDT-Wallet auf und beginnen Sie in Sekunden zu handeln.",
   "created.demoTextMock": "Mit {amount} virtuellem Guthaben aufgeladen. Läuft in {days} Tagen ab.",
-  "created.openInTrader": "In Kalks Trader öffnen",
+  "created.openInTrader": "In Ezymex Trader öffnen",
   "created.openTerminal": "Terminal öffnen",
   "created.viewAccount": "Konto anzeigen",
   "created.credentials": "Zugangsdaten",
@@ -334,7 +334,7 @@ const accounts: NsMessages<"accounts"> = {
   "error.account_limit": "Sie haben die maximale Anzahl an Konten dieses Typs erreicht.",
   "error.invalid_leverage": "Dieser Hebel ist für die Gruppe des Kontos nicht verfügbar.",
   "error.unavailable": "Der Handelsdienst ist nicht verfügbar. Bitte versuchen Sie es in Kürze erneut.",
-  "toast.openTraderFailed": "Kalks Trader konnte nicht geöffnet werden",
+  "toast.openTraderFailed": "Ezymex Trader konnte nicht geöffnet werden",
   "toast.exportStarted": "Export des Auszugs gestartet",
   // {kind} is "Trades" or "Buchungen" (export.trades / export.ledger)
   "toast.exportDesc": "#{login} · {kind} · CSV, Zeiten in UTC",
@@ -411,7 +411,7 @@ const accounts: NsMessages<"accounts"> = {
   "close.subtitle": "Ein geschlossenes Konto können Sie nicht selbst wiederherstellen. Falls Sie es noch einmal brauchen könnten, löschen (archivieren) Sie es stattdessen.",
   "close.blocked": "Dieses Konto kann derzeit nicht geschlossen werden",
   "close.finalTitle": "Das Schließen ist endgültig",
-  "close.final1": "Handel, Überweisungen und die Anmeldung bei Kalks Trader enden dauerhaft, und die Login-Nummer wird nie wieder vergeben.",
+  "close.final1": "Handel, Überweisungen und die Anmeldung bei Ezymex Trader enden dauerhaft, und die Login-Nummer wird nie wieder vergeben.",
   "close.final2": "Kontoauszüge und Verlauf bleiben unter Konten › Archiviert verfügbar.",
   "close.final3": "Unser Compliance-Team prüft den Antrag und informiert Sie per E-Mail und in Ihren Benachrichtigungen.",
   "close.whyTitle": "Warum schließen Sie dieses Konto?",
@@ -519,7 +519,7 @@ const accounts: NsMessages<"accounts"> = {
   "dormant.chip": "Inaktiv",
   "history.zip": "Gesamte Historie herunterladen (ZIP)",
 
-  // Kalks FX Options in trade history, positions, orders and exports
+  // Ezymex FX Options in trade history, positions, orders and exports
   "opt.tag": "Option",
   "opt.call": "Call",
   "opt.put": "Put",
@@ -535,7 +535,7 @@ const accounts: NsMessages<"accounts"> = {
   "opt.filter.cfd": "CFD",
   "opt.filter.options": "Optionen",
   "opt.emptyOptions": "Keine Optionsgeschäfte in diesem Zeitraum",
-  "opt.emptyOptionsText": "Optionen, die Sie in Kalks Trader kaufen oder verkaufen, erscheinen hier – jeweils mit ihrem Ausgang: geschlossen, verfallen oder ausgeknockt.",
+  "opt.emptyOptionsText": "Optionen, die Sie in Ezymex Trader kaufen oder verkaufen, erscheinen hier – jeweils mit ihrem Ausgang: geschlossen, verfallen oder ausgeknockt.",
   "opt.emptyCfd": "Keine CFD-Trades in diesem Zeitraum",
   "opt.truncated": "Es werden die neuesten {count} passenden Deals angezeigt. Wählen Sie einen kürzeren Zeitraum, um ältere zu sehen.",
   // How a deal was closed

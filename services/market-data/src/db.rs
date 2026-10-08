@@ -34,7 +34,7 @@ pub enum Source {
 /// Connects, creating the database on first run, and applies migrations.
 pub async fn connect(url: &str) -> anyhow::Result<PgPool> {
     let opts = PgConnectOptions::from_str(url)?;
-    let db = opts.get_database().unwrap_or("kalks").to_string();
+    let db = opts.get_database().unwrap_or("ezymex").to_string();
     // create the database if it doesn't exist (connect to the maintenance DB first)
     let admin = opts.clone().database("postgres");
     let mut conn = admin.connect().await?;

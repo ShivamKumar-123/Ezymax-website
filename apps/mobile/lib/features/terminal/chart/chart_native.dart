@@ -2,7 +2,7 @@
 // preview (webview_flutter has no web implementation) and widget tests. Candles / bars / line / area + volume, the
 // OHLC legend with a row per indicator (tap: the indicator menu; only moving averages are drawn here), the bid / ask
 // lines, trade lines with their chips at the price scale (tap, ×,
-// vertical drag, the P&L on them), the Kalks K in the corner, horizontal pan, long press. The product chart on Android
+// vertical drag, the P&L on them), the Ezymex K in the corner, horizontal pan, long press. The product chart on Android
 // is the lightweight-charts page (chart_webview.dart).
 import 'dart:convert';
 import 'dart:math' as math;

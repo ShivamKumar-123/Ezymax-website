@@ -90,7 +90,7 @@ const accounts: NsMessages<"accounts"> = {
   "empty.openFirst": "ট্রেডিং শুরু করতে আপনার প্রথম অ্যাকাউন্ট খুলুন।",
   "empty.noLive": "এখনো কোনো লাইভ অ্যাকাউন্ট নেই",
   "empty.noDemo": "এখনো কোনো ডেমো অ্যাকাউন্ট নেই",
-  "empty.liveText": "এখনই একটি লাইভ অ্যাকাউন্ট খুলুন এবং সঙ্গে সঙ্গে লগইন ও পাসওয়ার্ড পান। আপনার Kalks ওয়ালেট থেকে এতে ফান্ড করুন।",
+  "empty.liveText": "এখনই একটি লাইভ অ্যাকাউন্ট খুলুন এবং সঙ্গে সঙ্গে লগইন ও পাসওয়ার্ড পান। আপনার Ezymex ওয়ালেট থেকে এতে ফান্ড করুন।",
   "empty.demoText": "ডেমো অ্যাকাউন্টে রিয়েল-টাইম প্রাইসে ভার্চুয়াল ফান্ড থাকে, তাই ঝুঁকি ছাড়াই অনুশীলন করতে পারেন।",
   "error.unavailableTitle": "ট্রেডিং অ্যাকাউন্ট উপলব্ধ নয়",
   "error.unavailableText": "ট্রেডিং সেবার সাথে সংযোগ করা যায়নি। আপনার অ্যাকাউন্ট ও ব্যালেন্স নিরাপদ আছে; অনুগ্রহ করে একটু পরে আবার চেষ্টা করুন।",
@@ -112,13 +112,13 @@ const accounts: NsMessages<"accounts"> = {
   // Platforms card (demo build). WebTerminal is a product name.
   "platform.mt5Compatible": "MT5 সামঞ্জস্যপূর্ণ",
   "platform.title": "যেকোনো জায়গা থেকে ট্রেড করুন",
-  "platform.text": "Kalks WebTerminal, MetaTrader 5 ডেস্কটপ ও মোবাইল — একটি লগইন, একই ক্রেডেনশিয়াল।",
+  "platform.text": "Ezymex WebTerminal, MetaTrader 5 ডেস্কটপ ও মোবাইল — একটি লগইন, একই ক্রেডেনশিয়াল।",
   "platform.downloading": "MetaTrader 5 ডাউনলোড হচ্ছে",
   "platform.mt5Desktop": "MT5 ডেস্কটপ",
 
   // Account types section on the accounts list
   "types.title": "অ্যাকাউন্টের ধরন",
-  "types.subtitle": "প্রতিটি ধরনে একই ইনস্ট্রুমেন্ট ও Kalks Trader। আপনার উপযোগী প্রাইসিং ও পজিশন মোড বেছে নিন।",
+  "types.subtitle": "প্রতিটি ধরনে একই ইনস্ট্রুমেন্ট ও Ezymex Trader। আপনার উপযোগী প্রাইসিং ও পজিশন মোড বেছে নিন।",
   "types.footer": "প্রতিটি অ্যাকাউন্টে নেগেটিভ ব্যালেন্স সুরক্ষা · কোনো খোলা পজিশন না থাকলেই শুধু লিভারেজ পরিবর্তন করা যায় · ডেমো ব্যালেন্স দিনে কয়েকবার রিফিল করা যায়।",
   "compare.title": "অ্যাকাউন্টের ধরন তুলনা করুন",
   "compare.subtitle": "একই ইনস্ট্রুমেন্ট, প্ল্যাটফর্ম ও সুরক্ষা — আপনার স্টাইলের সাথে মানানসই প্রাইসিং বেছে নিন।",
@@ -163,7 +163,7 @@ const accounts: NsMessages<"accounts"> = {
   // Account row and its actions menu
   "row.trade": "ট্রেড",
   "row.refill": "রিফিল",
-  "row.cantOpenTrader": "এই অ্যাকাউন্টটি Kalks Trader-এ খোলা যাবে না",
+  "row.cantOpenTrader": "এই অ্যাকাউন্টটি Ezymex Trader-এ খোলা যাবে না",
   "row.openPositions": { one: "{count}টি খোলা পজিশন", other: "{count}টি খোলা পজিশন" },
   "row.pendingOrders": { one: "{count}টি পেন্ডিং অর্ডার", other: "{count}টি পেন্ডিং অর্ডার" },
   // Followed by the floating profit/loss amount
@@ -198,7 +198,7 @@ const accounts: NsMessages<"accounts"> = {
   "fund.centAccount": "সেন্ট অ্যাকাউন্ট (USC)",
   "fund.depositUsdt": "USDT জমা করুন",
   "fund.transferFromWallet": "ওয়ালেট থেকে ট্রান্সফার",
-  "fund.fromWallet": "আপনার Kalks ওয়ালেট থেকে ফান্ড যোগ হয়",
+  "fund.fromWallet": "আপনার Ezymex ওয়ালেট থেকে ফান্ড যোগ হয়",
   "fund.text": "BNB Chain বা TRON-এ আপনার ওয়ালেটে USDT জমা করুন, তারপর তাৎক্ষণিকভাবে এই অ্যাকাউন্টে ট্রান্সফার করুন। USDT 1:1 হারে USD-তে ক্রেডিট হয়।",
   "fund.textCent": "BNB Chain বা TRON-এ আপনার ওয়ালেটে USDT জমা করুন, তারপর তাৎক্ষণিকভাবে এই অ্যাকাউন্টে ট্রান্সফার করুন। USDT 1:1 হারে USD-তে ক্রেডিট হয়, সেন্ট অ্যাকাউন্টে USC-তে ×100 দেখানো হয়।",
 
@@ -254,7 +254,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.swapFreeTitle": "সোয়াপ-ফ্রি (ইসলামিক) অ্যাকাউন্ট",
   "wizard.swapFreeText": "রাতারাতি কোনো সোয়াপ নেই। কিছু ইনস্ট্রুমেন্টে 5 রাতের পর নির্দিষ্ট অ্যাডমিন ফি প্রযোজ্য হতে পারে।",
   "wizard.setPasswordTitle": "একটি ট্রেডিং পাসওয়ার্ড সেট করুন",
-  "wizard.setPasswordSubtitle": "MT5 ও Kalks টার্মিনালের জন্য আপনার মাস্টার পাসওয়ার্ড। একটি ইনভেস্টর (শুধু দেখা) পাসওয়ার্ড আপনার জন্য তৈরি করা হবে।",
+  "wizard.setPasswordSubtitle": "MT5 ও Ezymex টার্মিনালের জন্য আপনার মাস্টার পাসওয়ার্ড। একটি ইনভেস্টর (শুধু দেখা) পাসওয়ার্ড আপনার জন্য তৈরি করা হবে।",
   // <client> and <risk> wrap links; keep the tags
   "wizard.agreeMock": "আমি <client>ক্লায়েন্ট চুক্তি</client> ও <risk>ঝুঁকি প্রকাশ</risk>-এ সম্মত এবং বুঝি যে CFD-তে অর্থ হারানোর উচ্চ ঝুঁকি আছে।",
   "wizard.clientAgreementOpened": "ক্লায়েন্ট চুক্তি খোলা হয়েছে",
@@ -287,10 +287,10 @@ const accounts: NsMessages<"accounts"> = {
   "kind.demoText": "রিয়েল-টাইম প্রাইসে ঝুঁকিমুক্ত অনুশীলন করুন।",
   "kind.liveTextMock": "আসল অর্থ দিয়ে আসল মার্কেটে ট্রেড করুন। আপনার USDT ওয়ালেট থেকে তাৎক্ষণিক ফান্ড যোগ করুন।",
   "kind.demoTextMock": "রিয়েল-টাইম প্রাইসে ভার্চুয়াল ফান্ড দিয়ে ঝুঁকিমুক্ত অনুশীলন করুন।",
-  "kind.live.point1": "Kalks-Live-এ আসল এক্সিকিউশন",
+  "kind.live.point1": "Ezymex-Live-এ আসল এক্সিকিউশন",
   "kind.live.point2": "শূন্য ব্যালেন্সে শুরু হয়; আপনার ওয়ালেট থেকে ফান্ড যোগ হয়",
   "kind.live.point3": "লগইন ও পাসওয়ার্ড সঙ্গে সঙ্গে দেওয়া হয়",
-  "kind.live.mock1": "Kalks-Live সার্ভারে আসল এক্সিকিউশন",
+  "kind.live.mock1": "Ezymex-Live সার্ভারে আসল এক্সিকিউশন",
   "kind.live.mock2": "তাৎক্ষণিক USDT ফান্ডিং, USD-তে 1:1",
   "kind.live.mock3": "যেকোনো সময় মুনাফা উত্তোলন (KYC-এর পর)",
   "kind.demo.virtualFunds": "ভার্চুয়াল ফান্ড (ডিফল্ট {amount})",
@@ -306,12 +306,12 @@ const accounts: NsMessages<"accounts"> = {
 
   // Open account wizard: account created
   "created.title": "আপনার অ্যাকাউন্ট প্রস্তুত",
-  "created.liveText": "এটি শূন্য ব্যালেন্সে শুরু হয়। আপনার Kalks ওয়ালেট থেকে এতে ফান্ড করুন, তারপর এই ক্রেডেনশিয়াল দিয়ে Kalks Trader-এ লগইন করুন।",
+  "created.liveText": "এটি শূন্য ব্যালেন্সে শুরু হয়। আপনার Ezymex ওয়ালেট থেকে এতে ফান্ড করুন, তারপর এই ক্রেডেনশিয়াল দিয়ে Ezymex Trader-এ লগইন করুন।",
   "created.demoText": "{amount} ভার্চুয়াল ফান্ড যোগ করা হয়েছে।",
   "created.demoExpires": "টার্মিনালে লগইন ছাড়া {days} দিন পর মেয়াদ শেষ হবে।",
   "created.liveTextMock": "আপনার USDT ওয়ালেট থেকে ফান্ড যোগ করুন এবং কয়েক সেকেন্ডে ট্রেডিং শুরু করুন।",
   "created.demoTextMock": "{amount} ভার্চুয়াল ফান্ড যোগ করা হয়েছে। {days} দিন পর মেয়াদ শেষ হবে।",
-  "created.openInTrader": "Kalks Trader-এ খুলুন",
+  "created.openInTrader": "Ezymex Trader-এ খুলুন",
   "created.openTerminal": "টার্মিনাল খুলুন",
   "created.viewAccount": "অ্যাকাউন্ট দেখুন",
   "created.credentials": "লগইন ক্রেডেনশিয়াল",
@@ -333,7 +333,7 @@ const accounts: NsMessages<"accounts"> = {
   "error.account_limit": "এই ধরনের সর্বোচ্চ সংখ্যক অ্যাকাউন্ট আপনার আছে।",
   "error.invalid_leverage": "এই লিভারেজ অ্যাকাউন্টের গ্রুপে উপলব্ধ নয়।",
   "error.unavailable": "ট্রেডিং সেবা উপলব্ধ নয়। অনুগ্রহ করে কিছুক্ষণ পরে আবার চেষ্টা করুন।",
-  "toast.openTraderFailed": "Kalks Trader খোলা যায়নি",
+  "toast.openTraderFailed": "Ezymex Trader খোলা যায়নি",
   "toast.exportStarted": "স্টেটমেন্ট এক্সপোর্ট শুরু হয়েছে",
   // {kind} is "trades" or "ledger" (export.trades / export.ledger)
   "toast.exportDesc": "#{login} · {kind} · CSV, সময় UTC-তে",
@@ -410,7 +410,7 @@ const accounts: NsMessages<"accounts"> = {
   "close.subtitle": "বন্ধ করা অ্যাকাউন্ট আপনি পুনরুদ্ধার করতে পারবেন না। আবার প্রয়োজন হতে পারে মনে করলে বন্ধ করার বদলে এটি মুছুন (আর্কাইভ করুন)।",
   "close.blocked": "এই অ্যাকাউন্টটি এখন বন্ধ করা যাচ্ছে না",
   "close.finalTitle": "বন্ধ করা চূড়ান্ত",
-  "close.final1": "ট্রেডিং, ট্রান্সফার এবং Kalks Trader সাইন-ইন চিরতরে বন্ধ হয়ে যায়, এবং লগইন নম্বর আর কখনও ব্যবহার করা হয় না।",
+  "close.final1": "ট্রেডিং, ট্রান্সফার এবং Ezymex Trader সাইন-ইন চিরতরে বন্ধ হয়ে যায়, এবং লগইন নম্বর আর কখনও ব্যবহার করা হয় না।",
   "close.final2": "স্টেটমেন্ট ও ইতিহাস অ্যাকাউন্ট › আর্কাইভড-এ পাওয়া যাবে।",
   "close.final3": "আমাদের কমপ্লায়েন্স টিম অনুরোধটি পর্যালোচনা করে ইমেইল ও আপনার নোটিফিকেশনে জানিয়ে দেবে।",
   "close.whyTitle": "আপনি কেন এই অ্যাকাউন্টটি বন্ধ করছেন?",
@@ -518,7 +518,7 @@ const accounts: NsMessages<"accounts"> = {
   "dormant.chip": "নিষ্ক্রিয়",
   "history.zip": "সম্পূর্ণ ইতিহাস ডাউনলোড করুন (ZIP)",
 
-  // Kalks FX Options in trade history, positions, orders and exports
+  // Ezymex FX Options in trade history, positions, orders and exports
   "opt.tag": "অপশন",
   "opt.call": "কল",
   "opt.put": "পুট",
@@ -534,7 +534,7 @@ const accounts: NsMessages<"accounts"> = {
   "opt.filter.cfd": "CFD",
   "opt.filter.options": "অপশন",
   "opt.emptyOptions": "এই সময়ে কোনো অপশন ট্রেড নেই",
-  "opt.emptyOptionsText": "Kalks Trader-এ আপনি যে অপশন কেনেন বা বিক্রি করেন তা এখানে দেখা যায়, প্রতিটি কীভাবে শেষ হয়েছে তা সহ: বন্ধ, মেয়াদোত্তীর্ণ বা নক-আউট।",
+  "opt.emptyOptionsText": "Ezymex Trader-এ আপনি যে অপশন কেনেন বা বিক্রি করেন তা এখানে দেখা যায়, প্রতিটি কীভাবে শেষ হয়েছে তা সহ: বন্ধ, মেয়াদোত্তীর্ণ বা নক-আউট।",
   "opt.emptyCfd": "এই সময়ে কোনো CFD ট্রেড নেই",
   "opt.truncated": "সর্বশেষ {count}টি মিলে যাওয়া ডিল দেখানো হচ্ছে। পুরোনোগুলো দেখতে ছোট সময়কাল বেছে নিন।",
   // How a deal was closed

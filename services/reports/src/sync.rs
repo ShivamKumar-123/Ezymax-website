@@ -1,4 +1,4 @@
-//! Mirrors the source services into kalks_reports.
+//! Mirrors the source services into ezymex_reports.
 //!
 //! | Loop | Source | Period |
 //! |---|---|---|
@@ -23,7 +23,7 @@ use crate::state::App;
 use crate::time;
 use crate::upstream::{As, Target, dec, time as jtime};
 
-/// Ledger kinds that move money in or out of an account (not trading results or charges). Kalks FX Options
+/// Ledger kinds that move money in or out of an account (not trading results or charges). Ezymex FX Options
 /// premiums (`option_premium`) and settlements (`option_settlement`) are trading flows, never deposits or
 /// withdrawals.
 pub const FLOW_KINDS: &[&str] = &["transfer_in", "transfer_out", "deposit", "withdrawal", "demo_initial", "demo_refill"];
@@ -102,13 +102,13 @@ pub async fn sync_clients(app: &App) -> anyhow::Result<usize> {
     let mut n = 0;
     for _ in 0..200 {
         let q = if since.is_empty() { format!("/v1/internal/referrals/users?limit=1000&after_id={after}") } else { format!("/v1/internal/referrals/users?limit=1000&since={}&after_id={after}", enc(&since)) };
-        let v = app.up.get(Target::Gateway, "kalks", As::None, &q).await?;
+        let v = app.up.get(Target::Gateway, "ezymex", As::None, &q).await?;
         let items = v["items"].as_array().cloned().unwrap_or_default();
         if items.is_empty() {
             break;
         }
         for u in &items {
-            let tenant = u["tenant"].as_str().unwrap_or("kalks");
+            let tenant = u["tenant"].as_str().unwrap_or("ezymex");
             sqlx::query(
                 "INSERT INTO clients (tenant, user_id, email, first_name, last_name, country, referral_code, referred_by, campaign, kyc_status, status, email_verified, created_at, changed_at, utm_source, utm_medium)
                  VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)

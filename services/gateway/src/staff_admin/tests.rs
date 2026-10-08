@@ -10,7 +10,7 @@ use axum::extract::Path;
 use serde_json::Map;
 
 fn ctx(tok: Option<&str>, ip: &str) -> Ctx {
-    Ctx { ip: ip.into(), user_agent: "test-agent".into(), device: Some("device-0123456789abcdef".into()), tenant_slug: "kalks".into(), bearer: tok.map(str::to_string) }
+    Ctx { ip: ip.into(), user_agent: "test-agent".into(), device: Some("device-0123456789abcdef".into()), tenant_slug: "ezymex".into(), bearer: tok.map(str::to_string) }
 }
 
 fn code(e: &ApiError) -> &'static str {
@@ -25,8 +25,8 @@ fn code(e: &ApiError) -> &'static str {
     }
 }
 
-async fn kalks(st: &AppState) -> i64 {
-    sqlx::query_scalar("SELECT id FROM tenants WHERE slug = 'kalks'").fetch_one(&st.pool).await.unwrap()
+async fn ezymex(st: &AppState) -> i64 {
+    sqlx::query_scalar("SELECT id FROM tenants WHERE slug = 'ezymex'").fetch_one(&st.pool).await.unwrap()
 }
 
 async fn role_id(st: &AppState, tenant: i64, key: &str) -> i64 {
@@ -63,7 +63,7 @@ async fn audit_count(st: &AppState, action: &str) -> i64 {
 async fn roles_invites_and_staff_management() {
     let Some(db) = TestDb::new("rbac").await else { return };
     let st = db.st.clone();
-    let t = kalks(&st).await;
+    let t = ezymex(&st).await;
     let ip = "203.0.113.9";
 
     // presets exist; the owner's /me is authoritative and complete
@@ -195,7 +195,7 @@ async fn roles_invites_and_staff_management() {
 async fn ip_allowlist_blocks_and_bypasses() {
     let Some(db) = TestDb::new("ip allow-list").await else { return };
     let st = db.st.clone();
-    let t = kalks(&st).await;
+    let t = ezymex(&st).await;
     let (office, home) = ("198.51.100.20", "192.0.2.77");
     let (_, owner) = staff(&st, t, "owner@example.com", "platform_owner").await;
     let (_, admin) = staff(&st, t, "admin@example.com", "admin").await;
@@ -256,7 +256,7 @@ async fn ip_allowlist_blocks_and_bypasses() {
 async fn maintenance_and_features() {
     let Some(db) = TestDb::new("maintenance").await else { return };
     let st = db.st.clone();
-    let t = kalks(&st).await;
+    let t = ezymex(&st).await;
     let ip = "203.0.113.9";
     let (_, owner) = staff(&st, t, "owner@example.com", "platform_owner").await;
     let (_, admin) = staff(&st, t, "admin@example.com", "admin").await;
@@ -304,7 +304,7 @@ async fn maintenance_and_features() {
 async fn owner_tenants_billing_and_dashboard() {
     let Some(db) = TestDb::new("owner").await else { return };
     let st = db.st.clone();
-    let t = kalks(&st).await;
+    let t = ezymex(&st).await;
     let ip = "203.0.113.9";
     let (_, owner) = staff(&st, t, "owner@example.com", "platform_owner").await;
     let (_, admin) = staff(&st, t, "admin@example.com", "admin").await;

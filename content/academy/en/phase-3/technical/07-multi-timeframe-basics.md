@@ -37,7 +37,7 @@ quiz:
       - "Replacing the higher timeframes when they disagree"
     answer: 0
     explanation: "The lower timeframe helps you enter with a tighter, logical stop at a location already chosen on the higher timeframes."
-  - question: "Why does the Kalks server time of GMT+2/GMT+3 matter for daily candles?"
+  - question: "Why does the Ezymex server time of GMT+2/GMT+3 matter for daily candles?"
     options:
       - "It makes daily candles last 12 hours"
       - "It creates a sixth daily candle on Sundays"
@@ -103,7 +103,7 @@ Disagreement is normal. The higher timeframe may be in an uptrend while the midd
 
 ## Server time and candle closes
 
-Timeframes only work if the candles are built consistently. Kalks Trader uses server time of GMT+2 in winter and GMT+3 during US daylight saving, so 00:00 server time is 17:00 New York. Daily candles close at the New York close, which gives five daily candles per week for FX without a short Sunday candle, and H4 candles line up neatly inside each day. When you compare levels with other traders, remember that charts on a different time zone can show different daily highs and lows.
+Timeframes only work if the candles are built consistently. Ezymex Trader uses server time of GMT+2 in winter and GMT+3 during US daylight saving, so 00:00 server time is 17:00 New York. Daily candles close at the New York close, which gives five daily candles per week for FX without a short Sunday candle, and H4 candles line up neatly inside each day. When you compare levels with other traders, remember that charts on a different time zone can show different daily highs and lows.
 
 ## Common mistakes
 
@@ -112,4 +112,4 @@ Timeframes only work if the candles are built consistently. Kalks Trader uses se
 - **Changing the bias intraday.** A lower-timeframe move against you does not change the daily trend unless daily structure changes.
 - **Taking lower-timeframe targets for higher-timeframe trades.** If the direction comes from the daily chart, targets should come from daily levels too.
 
-> **In Kalks Trader:** Switch timeframe on the same chart, from daily to H4 to H1, to follow the top-down routine, keeping your key levels drawn on the higher timeframe.
+> **In Ezymex Trader:** Switch timeframe on the same chart, from daily to H4 to H1, to follow the top-down routine, keeping your key levels drawn on the higher timeframe.

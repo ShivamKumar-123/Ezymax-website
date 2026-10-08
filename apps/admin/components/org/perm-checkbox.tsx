@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { motion } from "motion/react";
-import { cn } from "@kalks/ui";
+import { cn } from "@ezymex/ui";
 
 /** Custom checkbox: ember gradient when on, dash when partially on. */
 export function PermCheckbox({

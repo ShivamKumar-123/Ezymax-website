@@ -236,8 +236,8 @@ const developer: NsMessages<"developer"> = {
   "assetClass.crypto": "криптовалюты",
   "assetClass.stocks": "акции",
 
-  // Code editor (Kalks strategy language)
-  "code.language": "Язык стратегий Kalks",
+  // Code editor (Ezymex strategy language)
+  "code.language": "Язык стратегий Ezymex",
   "code.checking": "Проверка…",
   "code.errors": {
     one: "{count} ошибка",
@@ -291,7 +291,7 @@ const developer: NsMessages<"developer"> = {
   // Kill switch
   "kill.title": "Аварийная остановка",
   "kill.subtitle": "Останавливает все стратегии, вебхуки и API-ордера на Ваших счетах",
-  "kill.globalPaused": "Автоматическая торговля приостановлена на всей платформе отделом управления рисками Kalks.",
+  "kill.globalPaused": "Автоматическая торговля приостановлена на всей платформе отделом управления рисками Ezymex.",
   "kill.onSince": "Включена с {at}",
   "kill.release": "Отключить аварийную остановку",
   "kill.stopAll": "Остановить всю автоматизацию",
@@ -376,7 +376,7 @@ const developer: NsMessages<"developer"> = {
   "docs.authIntro": "Создайте ключ в разделе <link>API-ключи</link>. Каждый ключ привязан к одному торговому счёту и имеет право <read>read</read> и, при необходимости, <trade>trade</trade>. Секрет показывается один раз.",
   "docs.bearer": "Bearer (самый простой)",
   "docs.hmac": "Подпись HMAC (рекомендуется для ботов)",
-  "docs.signature": "Подпись = hex(HMAC-SHA256(secret, timestamp + METHOD + путь с query + тело)), передаётся вместе с <code>X-Kalks-Key</code>, <code>X-Kalks-Timestamp</code> (unix ms, ±30 с) и <code>X-Kalks-Signature</code>. Путь подписывается в виде <code>/public/v1/…</code>. Каждая подпись принимается только один раз.",
+  "docs.signature": "Подпись = hex(HMAC-SHA256(secret, timestamp + METHOD + путь с query + тело)), передаётся вместе с <code>X-Ezymex-Key</code>, <code>X-Ezymex-Timestamp</code> (unix ms, ±30 с) и <code>X-Ezymex-Signature</code>. Путь подписывается в виде <code>/public/v1/…</code>. Каждая подпись принимается только один раз.",
   "docs.endpointsSub": "JSON на входе и выходе. Каждый ордер имеет source «api»; повторный clientOrderId возвращает status duplicate.",
   "docs.errorsSub": "Формат ошибок: {shape}",
   "docs.ep.account": "Баланс, средства, маржа, свободная маржа, уровень маржи",
@@ -480,9 +480,9 @@ const developer: NsMessages<"developer"> = {
 
   // Strategy marketplace
   "market.title": "Маркетплейс стратегий",
-  "market.subtitle": "Стратегии с подтверждённой историей торговли на счетах Kalks. Копируйте их на свой счёт или публикуйте свои и зарабатывайте на подписках.",
-  "market.houseChip": "Собственная стратегия · Под управлением Kalks",
-  "market.houseNote": "Собственная стратегия Kalks: реальный счёт брокера, торгующий по этой стратегии. История торговли включает только её реальные сделки с момента запуска; ничего не смоделировано и не добавлено задним числом.",
+  "market.subtitle": "Стратегии с подтверждённой историей торговли на счетах Ezymex. Копируйте их на свой счёт или публикуйте свои и зарабатывайте на подписках.",
+  "market.houseChip": "Собственная стратегия · Под управлением Ezymex",
+  "market.houseNote": "Собственная стратегия Ezymex: реальный счёт брокера, торгующий по этой стратегии. История торговли включает только её реальные сделки с момента запуска; ничего не смоделировано и не добавлено задним числом.",
   // Date range, e.g. "2025-01-01 to 2025-12-31"
   "market.range": "{from} — {to}",
   "market.backtestSimulated": "Бэктест · моделирование",
@@ -509,7 +509,7 @@ const developer: NsMessages<"developer"> = {
   "market.subscriptionStatus": "Подписка: {status}",
   "market.reviewSaved": "Отзыв сохранён",
   "market.reviewFailed": "Не удалось сохранить отзыв",
-  "market.trackNote": "История торговли по собственному запуску автора в Kalks с {since}: {days} дн., итог {net}. Рассчитывается по закрытым сделкам торгового движка, а не вводится автором.",
+  "market.trackNote": "История торговли по собственному запуску автора в Ezymex с {since}: {days} дн., итог {net}. Рассчитывается по закрытым сделкам торгового движка, а не вводится автором.",
   "market.riskSettings": "Параметры риска",
   "market.riskLine": "Объём {size} · стоп {stop} · цель {target}",
   "market.riskPct": "риск {pct}%",
@@ -527,7 +527,7 @@ const developer: NsMessages<"developer"> = {
   "market.cloneRules": "Скопировать правила",
   "market.subscribePaid": "Подписаться · {price} USDT / месяц",
   "market.subscribeFree": "Подписаться бесплатно",
-  "market.paidNote": "Оплата с Вашего кошелька Kalks (USDT). Продлевается каждые 30 дней; отменить можно в любой момент.",
+  "market.paidNote": "Оплата с Вашего кошелька Ezymex (USDT). Продлевается каждые 30 дней; отменить можно в любой момент.",
   "market.reviews": "Отзывы ({n})",
   "market.stars": {
     one: "{count} звезда",
@@ -569,7 +569,7 @@ const developer: NsMessages<"developer"> = {
   "market.popular": "Популярные",
   "market.emptyTitle": "Опубликованных стратегий пока нет",
   "market.emptyText": "Будьте первым: запустите стратегию на демо-счёте, затем опубликуйте её с подтверждённой историей торговли.",
-  "market.disclaimer": "Прошлые результаты не гарантируют будущих. История торговли берётся с реальных или демо-счетов Kalks и имеет соответствующую пометку. Комиссия платформы с платных подписок: {pct}%.",
+  "market.disclaimer": "Прошлые результаты не гарантируют будущих. История торговли берётся с реальных или демо-счетов Ezymex и имеет соответствующую пометку. Комиссия платформы с платных подписок: {pct}%.",
   "market.mode": "Режим",
   "market.renews": "Продление",
   "market.copyOn": "копирование на #{login}",

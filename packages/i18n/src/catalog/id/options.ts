@@ -1,18 +1,18 @@
 import type { NsMessages } from "../../core";
 
-// Kalks FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Kalks Trader in options mode.
+// Ezymex FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Ezymex Trader in options mode.
 const options: NsMessages<"options"> = {
   // Navigation entry
   "nav.title": "Opsi",
 
   // Page header
-  "page.title": "Kalks FX Options",
-  "page.subtitle": "Beli atau jual opsi forex, emas, perak, dan minyak langsung di Kalks Trader.",
+  "page.title": "Ezymex FX Options",
+  "page.subtitle": "Beli atau jual opsi forex, emas, perak, dan minyak langsung di Ezymex Trader.",
   "page.statusReady": "Siap trading",
   "page.learnCourse": "Kursus opsi",
 
   // Hero card
-  "hero.eyebrow": "Baru di Kalks Trader",
+  "hero.eyebrow": "Baru di Ezymex Trader",
   "hero.title": "Opsi di 13 pasar, dibuat mudah",
   "hero.text": "Opsi gaya Eropa untuk pasangan mata uang forex mayor dan silang, emas, perak, dan minyak mentah. Pilih jatuh tempo harian, mingguan, atau bulanan. Setiap opsi diselesaikan secara tunai dalam dolar AS, sehingga Anda tidak pernah menerima penyerahan fisik apa pun.",
   "hero.feature.underlyings.title": "13 aset dasar",
@@ -56,16 +56,16 @@ const options: NsMessages<"options"> = {
   "terms.inShort": "Singkatnya",
   "terms.point.buy": "Membeli opsi: kerugian maksimal Anda sebesar yang Anda bayar.",
   "terms.point.sell": "Menjual opsi bisa rugi lebih besar daripada yang Anda terima, dan menggunakan margin.",
-  "terms.point.prices": "Harga ditentukan di order book Kalks dan oleh Kalks.",
+  "terms.point.prices": "Harga ditentukan di order book Ezymex dan oleh Ezymex.",
   "terms.point.settle": "Opsi diselesaikan secara tunai saat jatuh tempo.",
   "terms.englishNote": "Teks lengkap di bawah ini adalah versi yang mengikat, dalam bahasa Inggris.",
   "terms.acceptedOn": "Anda menyetujui versi {version} pada {date}.",
   "terms.close": "Tutup",
   "terms.unavailable": "Ketentuan opsi sedang tidak tersedia. Silakan coba lagi nanti.",
 
-  // Kalks Trader button
-  "trade.ready": "Semua sudah siap. Opsi dibuka di Kalks Trader, pada akun yang sama dengan CFD Anda.",
-  "trade.cta": "Trading opsi di Kalks Trader",
+  // Ezymex Trader button
+  "trade.ready": "Semua sudah siap. Opsi dibuka di Ezymex Trader, pada akun yang sama dengan CFD Anda.",
+  "trade.cta": "Trading opsi di Ezymex Trader",
   "trade.chooseAccount": "Pilih akun",
   "trade.noAccount": "Anda memerlukan akun trading aktif untuk trading opsi.",
   "trade.openAccount": "Buka akun",
@@ -74,7 +74,7 @@ const options: NsMessages<"options"> = {
   "trade.demo": "Demo",
 
   // Key facts card
-  "facts.title": "Cara kerja Kalks FX Options",
+  "facts.title": "Cara kerja Ezymex FX Options",
   "facts.style": "Gaya Eropa: dieksekusi otomatis saat jatuh tempo, tidak pernah sebelumnya.",
   "facts.premium": "Premi dalam USD per kontrak; pembeli membayarnya penuh saat membuka posisi.",
   "facts.contracts": "Satu kontrak: 10,000 unit mata uang, 1 ounce emas, 50 ounce perak, atau 10 barel minyak.",

@@ -1,4 +1,4 @@
--- Kalks FX Options order book exchange (docs/OPTIONS-EXCHANGE.md, decision O49).
+-- Ezymex FX Options order book exchange (docs/OPTIONS-EXCHANGE.md, decision O49).
 --
 -- One book actor per (tenant, account kind, underlying). The actor group-commits every batch in ONE transaction:
 -- the journal (every non-ephemeral command with its outputs), the resting orders, the book positions, the series
@@ -250,6 +250,6 @@ BEGIN
                              'book_fills', 'book_outbox', 'book_rfqs', 'book_halts', 'option_liquidations', 'book_snapshots'] LOOP
         EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
         EXECUTE format('DROP POLICY IF EXISTS tenant_isolation ON %I', t);
-        EXECUTE format('CREATE POLICY tenant_isolation ON %I USING (tenant_id = NULLIF(current_setting(''kalks.tenant_id'', true), '''')::bigint)', t);
+        EXECUTE format('CREATE POLICY tenant_isolation ON %I USING (tenant_id = NULLIF(current_setting(''ezymex.tenant_id'', true), '''')::bigint)', t);
     END LOOP;
 END $$;

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { CandlestickSeries, ColorType, CrosshairMode, LineStyle, createChart, createSeriesMarkers, type SeriesMarker, type Time, type UTCTimestamp } from "lightweight-charts";
-import { fetchCandles, getInstrument, priceFeed, serverOffset } from "@kalks/mock";
+import { fetchCandles, getInstrument, priceFeed, serverOffset } from "@ezymex/mock";
 import type { ShareTrade } from "@/lib/share";
 
 const TFS = [

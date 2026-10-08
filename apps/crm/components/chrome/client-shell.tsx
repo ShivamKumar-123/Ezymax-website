@@ -9,8 +9,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowDownToLine, ArrowUpRight, Eye, IdCard, LogOut, Settings, ShieldCheck, UserRound } from "lucide-react";
 import { Avatar, Button, Chip, CommandPalette, LanguageMenu, MarketBoundary, ThemeToggle, TooltipProvider, cn } from "@/components/kit";
-import { IS_DEMO } from "@kalks/mock";
-import { useT } from "@kalks/i18n/react";
+import { IS_DEMO } from "@ezymex/mock";
+import { useT } from "@ezymex/i18n/react";
 import { CRM_COMMANDS, NAV, localizeCommands, localizeNav } from "@/lib/nav";
 import { navForFeatures, pageModule, useFeatures } from "@/components/tenant-config";
 import { TERMINAL_URL } from "@/lib/live";
@@ -110,7 +110,7 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
   ) : (
     <a href={TERMINAL_URL} target="_blank" rel="noopener" className="hidden md:block">
       <Button variant="ink">
-        {t("shell.kalksTrader")} <ArrowUpRight className="rtl:-scale-x-100" />
+        {t("shell.ezymexTrader")} <ArrowUpRight className="rtl:-scale-x-100" />
       </Button>
     </a>
   );

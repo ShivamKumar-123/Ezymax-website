@@ -3,8 +3,8 @@
 import * as React from "react";
 import { BookOpen, Download, EyeOff, OctagonAlert } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, Chip, DataTable, Money, PageHeader, Reveal, StatusChip, Tabs, type Column } from "@kalks/ui";
-import { LISTINGS, type Listing } from "@kalks/mock/admin-partners";
+import { Button, Card, Chip, DataTable, Money, PageHeader, Reveal, StatusChip, Tabs, type Column } from "@ezymex/ui";
+import { LISTINGS, type Listing } from "@ezymex/mock/admin-partners";
 import { MiniStat, PersonCell, auditToast, useReason } from "@/components/config/kit";
 import { fmtInt, fmtUsdK } from "@/components/partners/common";
 import { EmergencyStopDialog, type StopTarget } from "@/components/social/common";

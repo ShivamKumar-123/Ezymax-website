@@ -4,8 +4,8 @@
 // positions or orders locally; the account stream (or a state reload when the stream is down) brings the
 // result in. Each action writes MT5-style journal lines and a toast; rejections carry the engine's reason.
 import { toast } from "@/lib/notify";
-import { tr, tr as trT } from "@kalks/i18n/react"; // trT: placeOrder has a local `tr` (OCO twin result)
-import { priceFeed } from "@kalks/mock";
+import { tr, tr as trT } from "@ezymex/i18n/react"; // trT: placeOrder has a local `tr` (OCO twin result)
+import { priceFeed } from "@ezymex/mock";
 import { PENDING_LABEL, accCcy, accMoney, fmtPrice, fmtVol, pendingLabelKey, pointSize, roundPrice, type PendingOrder, type TPosition } from "../trading";
 import type { JournalLine, OrderRequest } from "../store";
 import { engineApi, type OrderBody, type Result } from "./client";

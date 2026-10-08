@@ -19,7 +19,7 @@ const academy: NsMessages<"academy"> = {
   "practice.demo": "Практика на демо",
   "practice.openFreeDemo": "Открыть бесплатный демо-счёт",
   "practice.openDemo": "Открыть демо",
-  "practice.inTrader": "Практика в Kalks Trader",
+  "practice.inTrader": "Практика в Ezymex Trader",
 
   // Levels (sent by the Academy service)
   "level.beginner": "Начальный",
@@ -30,12 +30,12 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "Фундаментальный анализ",
   "track.technical": "Технический анализ",
-  // Product track of the Kalks FX Options elective (phase 9)
+  // Product track of the Ezymex FX Options elective (phase 9)
   "track.options": "Торговля опционами",
   "trackShort.fundamental": "Фундаментальный",
   "trackShort.technical": "Технический",
   "trackShort.options": "Опционы",
-  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  // Chip on a product course (e.g. Ezymex FX Options) that sits outside the eight core phases and can be taken at any time
   elective: "Факультатив",
 
   // Durations (h = hours, m = minutes)
@@ -51,7 +51,7 @@ const academy: NsMessages<"academy"> = {
   "home.pathText": "На каждом основном этапе есть фундаментальный и технический курс, итоговый экзамен и сертификат.",
   // Section under the learning path listing the electives
   "home.electivesTitle": "Факультативы",
-  "home.electivesText": "Курсы о продуктах Kalks. Проходите их в любое время: у каждого свой итоговый экзамен и сертификат.",
+  "home.electivesText": "Курсы о продуктах Ezymex. Проходите их в любое время: у каждого свой итоговый экзамен и сертификат.",
   "hero.allDone": "Все главы пройдены",
   "hero.continue": "Продолжить обучение",
   "hero.upNext": "Далее",
@@ -245,7 +245,7 @@ const academy: NsMessages<"academy"> = {
   "callout.example": "Пример",
   "callout.tip": "Совет",
   "callout.note": "Примечание",
-  "callout.inKalksTrader": "В Kalks Trader",
+  "callout.inEzymexTrader": "В Ezymex Trader",
   diagram: "Схема",
 };
 export default academy;

@@ -1,6 +1,6 @@
 # market-data
 
-Rust service that owns Kalks price data: live Infoway feed → broker-standard candles in our own Postgres → charts and quotes for every app.
+Rust service that owns Ezymex price data: live Infoway feed → broker-standard candles in our own Postgres → charts and quotes for every app.
 
 ## How candles are kept identical to the market
 
@@ -35,7 +35,7 @@ Config env vars (with defaults) are listed in `src/config.rs`. The instrument li
 1,361 **catalogue** rows (`"tier": "catalogue"`) generated from the provider:
 
 ```bash
-ssh kalks-vps 'cd ~/kalks && python3 scripts/infoway-snapshot.py fetch' > config/provider/infoway-snapshot.json
+ssh ezymex-vps 'cd ~/ezymex && python3 scripts/infoway-snapshot.py fetch' > config/provider/infoway-snapshot.json
 node scripts/gen-catalogue.mjs          # rewrites the catalogue rows (core rows byte-identical) + HKEX calendar
 node scripts/gen-catalogue.mjs --check  # CI: files match the snapshot
 ```
@@ -144,7 +144,7 @@ Taiwan 2,343).
 
 ## Depth of market (D97)
 
-Kalks Trader's ladder is served here (`src/depth.rs`), with the account group's spread markup applied like quotes:
+Ezymex Trader's ladder is served here (`src/depth.rs`), with the account group's spread markup applied like quotes:
 
 - **Feed** (`src: "feed"`): when the provider's depth stream carries several priced levels (and they are under 5 s old), those levels are shown, moved outwards by the group markup.
 - **Indicative** (`src: "indicative"`): otherwise (Infoway sends only the top of book for FX and metals) levels step out from the live bid/ask by half the instrument's typical spread; sizes follow a fixed per-asset-class liquidity profile, scaled down when the raw spread is wider than typical. Deterministic: the same quote gives the same ladder. The terminal labels it Indicative.

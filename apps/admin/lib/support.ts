@@ -17,12 +17,12 @@ type Init = { method?: "GET" | "POST" | "PUT" | "DELETE"; body?: unknown; raw?: 
 
 export async function support<T = unknown>(path: string, init: Init): Promise<{ status: number; data: T; headers?: Headers; bytes?: ArrayBuffer }> {
   const headers: Record<string, string> = {
-    "x-kalks-internal": SUPPORT_TOKEN,
-    "x-kalks-tenant": init.staff.tenant?.slug || "kalks",
-    "x-kalks-staff-id": String(init.staff.id),
-    "x-kalks-staff-name": encodeURIComponent(init.staff.name || init.staff.email),
-    "x-kalks-staff-role": init.staff.role,
-    "x-kalks-staff-perms": supportPerms(init.staff).join(","),
+    "x-ezymex-internal": SUPPORT_TOKEN,
+    "x-ezymex-tenant": init.staff.tenant?.slug || "ezymex",
+    "x-ezymex-staff-id": String(init.staff.id),
+    "x-ezymex-staff-name": encodeURIComponent(init.staff.name || init.staff.email),
+    "x-ezymex-staff-role": init.staff.role,
+    "x-ezymex-staff-perms": supportPerms(init.staff).join(","),
   };
   let body: BodyInit | undefined;
   if (init.raw) {

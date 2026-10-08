@@ -342,9 +342,9 @@ async fn notify(st: &AppState, tenant: &str, users: &[i64], title: &str, body: &
     let res = st
         .http
         .post(format!("{}/v1/notify", st.cfg.support_url))
-        .header("x-kalks-internal", &st.cfg.support_token)
-        .header("x-kalks-tenant", tenant)
-        .header("x-kalks-service", "news")
+        .header("x-ezymex-internal", &st.cfg.support_token)
+        .header("x-ezymex-tenant", tenant)
+        .header("x-ezymex-service", "news")
         .json(&json!({"type": "calendar.reminder", "title": title, "body": body, "link": reminder_link(event_id), "severity": severity,
                        "userIds": users, "dedupeKey": dedupe, "email": false, "data": {"eventId": event_id}}))
         .send()

@@ -41,7 +41,7 @@ String? tradesHint(T t, Contest c, Standing s) {
   return n > 0 ? t('rewards.contest.needsTrades', {'count': n}) : t('rewards.contest.qualifiesNext');
 }
 
-/// Opens Kalks Trader on `login` (or the default account).
+/// Opens Ezymex Trader on `login` (or the default account).
 void openTrader(BuildContext context, [int? login]) => context.push(login == null ? '/trader' : '/trader?login=$login');
 
 /* ------------------------------------------------------------------ join flow */
@@ -166,7 +166,7 @@ class _JoinContestSheetState extends ConsumerState<JoinContestSheet> {
         ('login', t('rewards.join.login'), '${creds.login}'),
         ('password', t('rewards.join.password'), creds.password),
         ('investor', t('rewards.join.investorPassword'), creds.investorPassword),
-        ('server', t('rewards.join.server'), 'Kalks-Demo'),
+        ('server', t('rewards.join.server'), 'Ezymex-Demo'),
       ];
       return KSheetContent(
         footer: Row(

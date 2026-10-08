@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { AlertTriangle, BadgeCheck, CheckCircle2, CircleDashed, TrendingUp, XCircle } from "lucide-react";
-import { Button, Chip, CopyButton, Dialog, EquityChart, KeyValue, Skeleton, Tabs, cn, type SeriesPoint } from "@kalks/ui";
+import { Button, Chip, CopyButton, Dialog, EquityChart, KeyValue, Skeleton, Tabs, cn, type SeriesPoint } from "@ezymex/ui";
 import { MiniStat, NumInput } from "@/components/config/kit";
 import { ago, useApi, useNow, when } from "@/components/live/kit";
 import {

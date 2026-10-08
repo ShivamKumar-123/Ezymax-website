@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { Ban, CandlestickChart, Gauge, Plus, ScrollText, ShieldAlert, Timer, UserCog } from "lucide-react";
-import { Button, Card, KpiCard, PageHeader, Reveal, Tabs, useQuotes } from "@kalks/ui";
-import { priceFeed } from "@kalks/mock";
+import { Button, Card, KpiCard, PageHeader, Reveal, Tabs, useQuotes } from "@ezymex/ui";
+import { priceFeed } from "@ezymex/mock";
 import { accountMetrics, useDesk } from "@/lib/trading-desk";
 import { CreateTradeDrawer } from "@/components/trading-desk/create-trade";
 import { AccountControls, SymbolControls, TenantDelayCard } from "@/components/trading-desk/controls";

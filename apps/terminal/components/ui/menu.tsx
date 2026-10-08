@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronLeft, ChevronRight } from "lucide-react";
-import { cn } from "@kalks/ui";
+import { cn } from "@ezymex/ui";
 
 /*
  * Dense MT5-style menus: dropdowns, context menus and nested submenus.

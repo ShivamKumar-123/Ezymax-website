@@ -12,7 +12,7 @@
 // prices are per unit of the underlying in its quote currency; rows carry the USD-per-contract rate to show premiums
 // like the positions tab does.
 import * as React from "react";
-import { priceFeed } from "@kalks/mock";
+import { priceFeed } from "@ezymex/mock";
 import type { EngDeal, EngOrder, EngPosition, EngState, StreamFrame } from "@/lib/engine/types";
 import type { OptGreeks, OptionInfo, OptOrder, OptPosition, Side } from "./types";
 
@@ -96,7 +96,7 @@ export function mapOptionOrder(o: EngOrder | Obj): OptOrder {
 /** Why an option position (or part of it) closed. */
 /**
  * Why an option position (or part of it) closed. `liquidation`: risk control closed it on the order book (a
- * reduce-only order, or the Kalks market maker's backstop: `fillKind`), `bust`: the dealing desk cancelled the fill
+ * reduce-only order, or the Ezymex market maker's backstop: `fillKind`), `bust`: the dealing desk cancelled the fill
  * and reversed it (a correction).
  */
 export type OptCloseReason = "closed" | "expired" | "knocked_out" | "stop_out" | "liquidation" | "bust" | "sl" | "tp" | "dealer" | "other";

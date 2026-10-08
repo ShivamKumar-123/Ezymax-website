@@ -119,7 +119,7 @@ Tilt can also follow wins. Euphoria after a large gain leads to the same oversiz
 
 Tilt is hard to reason your way out of while it is happening, so the defence must be decided in advance.
 
-1. **Daily loss limit.** For example, 2% or 2R. When hit, close the platform. Kalks Trader will not stop you, so this rule is yours to enforce.
+1. **Daily loss limit.** For example, 2% or 2R. When hit, close the platform. Ezymex Trader will not stop you, so this rule is yours to enforce.
 2. **Consecutive-loss pause.** After three losses in a row, take a break of at least 30 minutes before the next trade.
 3. **Fixed size.** Position size comes from the formula in your plan, never from how you feel about the last trade.
 4. **Drawdown tiers.** For example, halve risk per trade when the account is 10% below its peak, and return to normal only after recovering half of the drawdown.

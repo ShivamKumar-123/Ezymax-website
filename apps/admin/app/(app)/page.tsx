@@ -1,13 +1,13 @@
 "use client";
 
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveCommandCenter } from "@/components/live/command-center";
 
 import * as React from "react";
 import { ArrowDownLeft, ArrowUpRight, Download, FileSpreadsheet, FileText, Plus, Scale, TrendingUp, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Chip, KpiCard, Menu, Money, PageHeader, Reveal, cn } from "@kalks/ui";
-import { OPS_KPIS } from "@kalks/mock/admin-ops";
+import { Button, Chip, KpiCard, Menu, Money, PageHeader, Reveal, cn } from "@ezymex/ui";
+import { OPS_KPIS } from "@ezymex/mock/admin-ops";
 import { useServerClock } from "@/components/command/kit";
 import { AdjustmentDialog } from "@/components/command/adjustment-dialog";
 import {

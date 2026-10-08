@@ -7,8 +7,8 @@ import { FileText, Loader2, MoreHorizontal, Paperclip, RotateCcw, SendHorizontal
 import { Avatar, Button, Chip, IconButton, Menu, cn } from "@/components/kit";
 import { useSession } from "@/components/session";
 import { realtime, type Frame } from "@/lib/realtime";
-import { intlTag } from "@kalks/i18n/locales";
-import { tr, useT } from "@kalks/i18n/react";
+import { intlTag } from "@ezymex/i18n/locales";
+import { tr, useT } from "@ezymex/i18n/react";
 
 /* ------------------------------------------------------------------ */
 /* Types (services/support client API)                                  */
@@ -313,7 +313,7 @@ export function LiveChat({ variant = "page", onClose, onUnread }: { variant?: "p
   }, [msgs.length, stream?.text, agentTyping, conv?.status]);
 
   const settings = home?.settings;
-  const botName = settings?.botName ?? "Kalks AI";
+  const botName = settings?.botName ?? "Ezymex AI";
   const status = conv?.status;
   const resolved = status === "resolved";
   const human = status === "waiting" || status === "assigned";

@@ -1,6 +1,6 @@
-# Kalks production edge (Caddy). HTTPS certificates are issued and renewed automatically.
+# Ezymex production edge (Caddy). HTTPS certificates are issued and renewed automatically.
 {
-	email admin@kalkstrade.com
+	email admin@ezymex.com
 }
 
 (common) {
@@ -14,7 +14,7 @@
 }
 
 # Client Area (CRM). /support/stream = support chat + notifications stream (one-time ticket from the CRM BFF).
-app.kalkstrade.com {
+app.ezymex.com {
 	import common
 	handle /support/stream {
 		rewrite * /v1/stream?{query}
@@ -33,9 +33,9 @@ app.kalkstrade.com {
 	reverse_proxy 127.0.0.1:3000
 }
 
-# Kalks Trader. /engine/stream = trading-engine account stream (one-time ticket from the terminal BFF);
+# Ezymex Trader. /engine/stream = trading-engine account stream (one-time ticket from the terminal BFF);
 # /options/stream = options chain stream (one-time ticket from the terminal BFF, or the guest public chain).
-trade.kalkstrade.com {
+trade.ezymex.com {
 	import common
 	handle /engine/stream {
 		rewrite * /v1/terminal/stream?{query}
@@ -52,7 +52,7 @@ trade.kalkstrade.com {
 
 # Back Office. /engine/stream = trading-engine dealing stream (one-time ticket from the admin BFF);
 # /support/stream = support inbox + staff notifications stream (one-time ticket from the admin BFF).
-admin.kalkstrade.com {
+admin.ezymex.com {
 	import common
 	handle /support/stream {
 		rewrite * /v1/stream?{query}
@@ -68,7 +68,7 @@ admin.kalkstrade.com {
 }
 
 # Public market data (quotes, candles, WebSocket stream). Admin endpoints are never exposed.
-api.kalkstrade.com {
+api.ezymex.com {
 	import common
 	# ALGO public surface only: webhook alerts and the API-key REST API (everything else needs the internal token)
 	handle_path /algo/* {
@@ -81,7 +81,7 @@ api.kalkstrade.com {
 		}
 		respond 404
 	}
-	# Kalks FX Options public chain (read-only; the service answers 404 until the public chain is switched on)
+	# Ezymex FX Options public chain (read-only; the service answers 404 until the public chain is switched on)
 	handle /v1/public/options/* {
 		reverse_proxy 127.0.0.1:8104
 	}
@@ -92,11 +92,11 @@ api.kalkstrade.com {
 }
 
 # Website (deployed separately from the website repo on :3010)
-kalkstrade.com {
+ezymex.com {
 	import common
 	# The Android app (APK) and other downloads: static files uploaded to the server, outside git
 	handle_path /download/* {
-		root * /srv/kalks/downloads
+		root * /srv/ezymex/downloads
 		header Content-Type application/vnd.android.package-archive
 		header Content-Disposition "attachment"
 		file_server
@@ -104,8 +104,8 @@ kalkstrade.com {
 	reverse_proxy 127.0.0.1:3010
 }
 
-www.kalkstrade.com {
-	redir https://kalkstrade.com{uri} permanent
+www.ezymex.com {
+	redir https://ezymex.com{uri} permanent
 }
 
 # ---- Demo showcase (mock data, no sign-in). Not indexed by search engines. ----
@@ -114,17 +114,17 @@ www.kalkstrade.com {
 	header X-Robots-Tag "noindex, nofollow"
 }
 
-demo.kalkstrade.com {
+demo.ezymex.com {
 	import demo
 	reverse_proxy 127.0.0.1:4000
 }
 
-demo-admin.kalkstrade.com {
+demo-admin.ezymex.com {
 	import demo
 	reverse_proxy 127.0.0.1:4001
 }
 
-demo-trade.kalkstrade.com {
+demo-trade.ezymex.com {
 	import demo
 	reverse_proxy 127.0.0.1:4002
 }
@@ -133,12 +133,12 @@ demo-trade.kalkstrade.com {
 # Brokers' own hosts (tenant_domains, managed in Owner → Brokers → Domains) get certificates on their first
 # visit. Caddy asks the gateway before issuing: /v1/public/domain-check answers 200 only for an active domain
 # of an active broker, and only to loopback callers, so random hostnames pointed at the server get nothing.
-# The explicit kalkstrade.com blocks above keep precedence (Caddy prefers the most specific host match).
+# The explicit ezymex.com blocks above keep precedence (Caddy prefers the most specific host match).
 # To enable: move the `on_demand_tls` option into the global block at the top, uncomment the site block,
 # `caddy validate`, reload. Routing is by the first label (the Owner panel suggests the same kinds):
 # app./my./client./portal. → Client Area, trade./trader./webtrader. → Trader, admin./backoffice./bo. → Back
 # Office; anything else (the broker's apex / www) redirects to its Client Area. The gateway maps each host to
-# its broker (X-Kalks-Host from the app BFFs), so one app process serves every broker.
+# its broker (X-Ezymex-Host from the app BFFs), so one app process serves every broker.
 #
 # {
 # 	on_demand_tls {

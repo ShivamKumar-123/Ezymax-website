@@ -5,8 +5,8 @@ import Link from "next/link";
 import { BadgeCheck, CalendarDays, Camera, Globe2, Lock, Mail, MapPin, Phone, UserRound, Building2, Download, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Button, Card, CardHeader, Chip, Dialog, Field, Flag, Icon3D, Input, KeyValue, PageHeader, Reveal, Starfield } from "@/components/kit";
-import { ACCOUNTS, IS_DEMO, ME } from "@kalks/mock";
-import { useFormat, useLocale, useT } from "@kalks/i18n/react";
+import { ACCOUNTS, IS_DEMO, ME } from "@ezymex/mock";
+import { useFormat, useLocale, useT } from "@ezymex/i18n/react";
 import { LiveProfile } from "@/components/profile/live-profile";
 import { KYC_CHIP, useSession } from "@/components/session";
 

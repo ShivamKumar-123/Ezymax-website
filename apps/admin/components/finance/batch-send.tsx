@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { AlertTriangle, Flame, KeyRound, Loader2, Send, ShieldCheck } from "lucide-react";
-import { Avatar, Button, Dialog, Progress, cn } from "@kalks/ui";
-import { FIN_HOT_WALLET, type FinWithdrawal } from "@kalks/mock/admin-finance";
+import { Avatar, Button, Dialog, Progress, cn } from "@ezymex/ui";
+import { FIN_HOT_WALLET, type FinWithdrawal } from "@ezymex/mock/admin-finance";
 import { Addr } from "@/components/config/kit";
 import { Line, num, usd } from "./shared";
 

@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader charts: toolbar, drawing tools, legend, trade lines, context menu, one-click panel.
+// Ezymex Trader charts: toolbar, drawing tools, legend, trade lines, context menu, one-click panel.
 const chart: NsMessages<"chart"> = {
   // Vichupo vya chati
   "tab.visibleInGrid": "Inaonekana kwenye gridi",
@@ -46,7 +46,7 @@ const chart: NsMessages<"chart"> = {
   "tool.text": "Maandishi",
   "tool.ruler": "Rula",
   "tool.coming": "{tool} inakuja",
-  "tool.comingText": "Itapatikana katika toleo lijalo la Kalks Trader.",
+  "tool.comingText": "Itapatikana katika toleo lijalo la Ezymex Trader.",
   "tool.deleteAll": "Futa vitu vyote",
   "tool.noObjects": "Hakuna vitu kwenye chati hii",
   "tool.deleted": { one: "Kitu {count} kimefutwa", other: "Vitu {count} vimefutwa" },

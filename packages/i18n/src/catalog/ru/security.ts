@@ -8,7 +8,7 @@ const security: NsMessages<"security"> = {
   "signingOut": "Выход…",
   "resetSigningOut": "Выполняем выход для сброса пароля…",
   "error.generic": "Что-то пошло не так. Пожалуйста, повторите попытку.",
-  "error.network": "Нет связи с Kalks. Проверьте подключение и повторите попытку.",
+  "error.network": "Нет связи с Ezymex. Проверьте подключение и повторите попытку.",
 
   // Device labels from the browser's user agent; browser and OS brand names stay as they are
   "device.unknownBrowser": "Неизвестный браузер",
@@ -247,7 +247,7 @@ const security: NsMessages<"security"> = {
   "page.calendar": "Календарь",
   // Investor passwords card
   "investor.title": "Инвесторские пароли",
-  "investor.text": "У каждого торгового счёта также есть инвесторский пароль для доступа только для чтения в Kalks Trader, как в MT5: позиции и история, без возможности торговать.",
+  "investor.text": "У каждого торгового счёта также есть инвесторский пароль для доступа только для чтения в Ezymex Trader, как в MT5: позиции и история, без возможности торговать.",
   "investor.hint": "Установить или изменить его можно на странице счёта.",
   "investor.goToAccounts": "Перейти к счетам",
   // Create / edit dialog

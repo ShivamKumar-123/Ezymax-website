@@ -5,10 +5,10 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { AlertOctagon, ArrowUpRight, Cable, Download, Gauge, KeyRound, Landmark, ListOrdered, Radio, ShieldCheck, Webhook, Layers } from "lucide-react";
 import { Button, Card, Chip, CopyButton, PageHeader, Reveal, cn } from "@/components/kit";
-import { API_BASE, API_ENDPOINTS, API_ERRORS, FIX_SESSION, RATE_LIMITS } from "@kalks/mock/developer";
+import { API_BASE, API_ENDPOINTS, API_ERRORS, FIX_SESSION, RATE_LIMITS } from "@ezymex/mock/developer";
 import { CodeBlock, toJson } from "@/components/developer/code-block";
 import { DocSection, DocTable, DocsLangContext, DocsNav, EndpointCard, MethodBadge, SampleBlock, useScrollSpy, type SampleLang } from "@/components/developer/docs";
-import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LiveDocsPage } from "@/components/algo/docs-page";
 
 const NAV = [
@@ -28,33 +28,33 @@ const AUTH_SAMPLE: Record<SampleLang, string> = {
   curl: `# Signature = HMAC_SHA256(secret, timestamp + method + path + body)
 TS=$(date +%s%3N)
 SIG=$(printf "%s" "$TS""GET""/v1/accounts" \\
-  | openssl dgst -sha256 -hmac "$KALKS_SECRET" | cut -d' ' -f2)
+  | openssl dgst -sha256 -hmac "$EZYMEX_SECRET" | cut -d' ' -f2)
 
 curl "${API_BASE}/accounts" \\
-  -H "X-KALKS-KEY: kk_live_EXAMPLE1" \\
-  -H "X-KALKS-TIMESTAMP: $TS" \\
-  -H "X-KALKS-SIGNATURE: $SIG"`,
+  -H "X-EZYMEX-KEY: kk_live_EXAMPLE1" \\
+  -H "X-EZYMEX-TIMESTAMP: $TS" \\
+  -H "X-EZYMEX-SIGNATURE: $SIG"`,
   python: `import hmac, hashlib, time, requests
 
-KEY, SECRET = "kk_live_EXAMPLE1", os.environ["KALKS_SECRET"]
+KEY, SECRET = "kk_live_EXAMPLE1", os.environ["EZYMEX_SECRET"]
 
 def sign(method, path, body=""):
     ts = str(int(time.time() * 1000))
     msg = ts + method + path + body
     sig = hmac.new(SECRET.encode(), msg.encode(), hashlib.sha256).hexdigest()
-    return {"X-KALKS-KEY": KEY, "X-KALKS-TIMESTAMP": ts, "X-KALKS-SIGNATURE": sig}
+    return {"X-EZYMEX-KEY": KEY, "X-EZYMEX-TIMESTAMP": ts, "X-EZYMEX-SIGNATURE": sig}
 
 r = requests.get("${API_BASE}/accounts", headers=sign("GET", "/v1/accounts"))
 print(r.json())  # the SDK does all of this for you`,
   js: `import { createHmac } from "node:crypto";
 
 const KEY = "kk_live_EXAMPLE1";
-const SECRET = process.env.KALKS_SECRET;
+const SECRET = process.env.EZYMEX_SECRET;
 
 function sign(method, path, body = "") {
   const ts = Date.now().toString();
   const sig = createHmac("sha256", SECRET).update(ts + method + path + body).digest("hex");
-  return { "X-KALKS-KEY": KEY, "X-KALKS-TIMESTAMP": ts, "X-KALKS-SIGNATURE": sig };
+  return { "X-EZYMEX-KEY": KEY, "X-EZYMEX-TIMESTAMP": ts, "X-EZYMEX-SIGNATURE": sig };
 }
 
 const res = await fetch("${API_BASE}/accounts", { headers: sign("GET", "/v1/accounts") });
@@ -62,13 +62,13 @@ console.log(await res.json()); // the SDK does all of this for you`,
 };
 
 const WS_SAMPLE: Record<SampleLang, string> = {
-  curl: `wscat -c "wss://stream.kalks.com/v1?key=kk_live_EXAMPLE1&ts=1790261892184&sig=$SIG"
+  curl: `wscat -c "wss://stream.ezymex.com/v1?key=kk_live_EXAMPLE1&ts=1790261892184&sig=$SIG"
 
 > {"op": "subscribe", "channels": ["quotes"], "symbols": ["XAUUSD", "EURUSD"]}
 > {"op": "subscribe", "channels": ["positions", "orders"], "login": "80412337"}`,
-  python: `from kalks import Client
+  python: `from ezymex import Client
 
-client = Client(key="kk_live_EXAMPLE1", secret=os.environ["KALKS_SECRET"])
+client = Client(key="kk_live_EXAMPLE1", secret=os.environ["EZYMEX_SECRET"])
 
 async for msg in client.ws.subscribe(
     channels=["quotes", "positions"],
@@ -76,10 +76,10 @@ async for msg in client.ws.subscribe(
     login="80412337",
 ):
     print(msg.channel, msg.data)`,
-  js: `import { Kalks } from "@kalks/sdk";
+  js: `import { Ezymex } from "@ezymex/sdk";
 
-const kalks = new Kalks({ key: "kk_live_EXAMPLE1", secret: process.env.KALKS_SECRET });
-const ws = kalks.ws();
+const ezymex = new Ezymex({ key: "kk_live_EXAMPLE1", secret: process.env.EZYMEX_SECRET });
+const ws = ezymex.ws();
 
 ws.subscribe({ channels: ["quotes"], symbols: ["XAUUSD", "EURUSD"] });
 ws.subscribe({ channels: ["positions", "orders"], login: "80412337" });
@@ -96,18 +96,18 @@ const WS_STREAM = `{"channel":"subscribed","symbols":["XAUUSD","EURUSD"],"id":1}
 {"channel":"heartbeat","ts":1790261897000}`;
 
 const WEBHOOK_VERIFY: Record<SampleLang, string> = {
-  curl: `curl -X POST "https://hooks.kalks.com/v1/signal/wh_9f3a1c7e2b" \\
+  curl: `curl -X POST "https://hooks.ezymex.com/v1/signal/wh_9f3a1c7e2b" \\
   -H "Content-Type: application/json" \\
   -d '{"secret":"whsec_EXAMPLE0…","action":"buy","symbol":"XAUUSD","volume":1.0,"sl":2638.0,"tp":2690.0,"comment":"gold-bo"}'`,
   python: `import requests
 
 requests.post(
-    "https://hooks.kalks.com/v1/signal/wh_9f3a1c7e2b",
+    "https://hooks.ezymex.com/v1/signal/wh_9f3a1c7e2b",
     json={"secret": "whsec_EXAMPLE0…", "action": "buy", "symbol": "XAUUSD",
           "volume": 1.0, "sl": 2638.0, "tp": 2690.0, "comment": "gold-bo"},
     timeout=5,
 )`,
-  js: `await fetch("https://hooks.kalks.com/v1/signal/wh_9f3a1c7e2b", {
+  js: `await fetch("https://hooks.ezymex.com/v1/signal/wh_9f3a1c7e2b", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ secret: "whsec_EXAMPLE0…", action: "buy", symbol: "XAUUSD",
@@ -140,7 +140,7 @@ function DemoDocsPage() {
           }
           actions={
             <>
-              <Button variant="surface" size="lg" onClick={() => toast.success("openapi.yaml downloaded", { description: "Kalks API v1 · OpenAPI 3.1" })}>
+              <Button variant="surface" size="lg" onClick={() => toast.success("openapi.yaml downloaded", { description: "Ezymex API v1 · OpenAPI 3.1" })}>
                 <Download /> OpenAPI spec
               </Button>
               <Link href="/developer">
@@ -156,9 +156,9 @@ function DemoDocsPage() {
           <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
             {[
               { k: "REST", v: API_BASE.replace("https://", ""), sub: "JSON · HMAC-SHA256" },
-              { k: "WebSocket", v: "stream.kalks.com/v1", sub: "Quotes, orders, positions" },
+              { k: "WebSocket", v: "stream.ezymex.com/v1", sub: "Quotes, orders, positions" },
               { k: "FIX 4.4", v: `${FIX_SESSION.host}:${FIX_SESSION.port}`, sub: "TLS 1.3 · LD4" },
-              { k: "Webhooks", v: "hooks.kalks.com/v1", sub: "TradingView-ready" },
+              { k: "Webhooks", v: "hooks.ezymex.com/v1", sub: "TradingView-ready" },
             ].map((x) => (
               <div key={x.k} className="k-card flex min-w-0 items-center gap-3 px-4 py-3.5">
                 <div className="min-w-0 flex-1">
@@ -195,9 +195,9 @@ function DemoDocsPage() {
                   head={["Header", "Value", "Notes"]}
                   mono={[0, 1]}
                   rows={[
-                    ["X-KALKS-KEY", "kk_live_EXAMPLE1", "Public key id from API keys page"],
-                    ["X-KALKS-TIMESTAMP", "1790261892184", "Unix ms; rejected if more than 5s from server time"],
-                    ["X-KALKS-SIGNATURE", "hex(HMAC_SHA256(secret, ts+method+path+body))", "Path includes /v1 and the query string"],
+                    ["X-EZYMEX-KEY", "kk_live_EXAMPLE1", "Public key id from API keys page"],
+                    ["X-EZYMEX-TIMESTAMP", "1790261892184", "Unix ms; rejected if more than 5s from server time"],
+                    ["X-EZYMEX-SIGNATURE", "hex(HMAC_SHA256(secret, ts+method+path+body))", "Path includes /v1 and the query string"],
                   ]}
                 />
                 <div className="mt-4">
@@ -242,8 +242,8 @@ function DemoDocsPage() {
               <Card className="overflow-hidden">
                 <div className="flex flex-wrap items-center gap-3 border-b border-line bg-surface-2/40 px-5 py-3.5">
                   <MethodBadge method="WS" />
-                  <span className="font-mono text-[13.5px]">wss://stream.kalks.com/v1</span>
-                  <CopyButton value="wss://stream.kalks.com/v1" label="WebSocket URL" />
+                  <span className="font-mono text-[13.5px]">wss://stream.ezymex.com/v1</span>
+                  <CopyButton value="wss://stream.ezymex.com/v1" label="WebSocket URL" />
                   <div className="ml-auto flex gap-1.5">
                     {["quotes", "orders", "positions", "account"].map((c) => (
                       <Chip key={c} size="sm">
@@ -274,7 +274,7 @@ function DemoDocsPage() {
               title="Signal webhooks"
               intro={
                 <>
-                  POST a JSON signal to your webhook URL (from TradingView or any system). Kalks validates the secret, then fans the order out to every target account using its sizing rule — fixed lot,
+                  POST a JSON signal to your webhook URL (from TradingView or any system). Ezymex validates the secret, then fans the order out to every target account using its sizing rule — fixed lot,
                   multiplier or risk %. Orders are tagged <span className="font-mono text-fg">source=webhook</span>.
                 </>
               }
@@ -283,7 +283,7 @@ function DemoDocsPage() {
                 <div className="flex flex-wrap items-center gap-3">
                   <MethodBadge method="POST" />
                   <span className="font-mono text-[13.5px]">
-                    https://hooks.kalks.com/v1/signal/<span className="text-gold">{"{webhook_id}"}</span>
+                    https://hooks.ezymex.com/v1/signal/<span className="text-gold">{"{webhook_id}"}</span>
                   </span>
                 </div>
                 <div className="mt-4">
@@ -291,7 +291,7 @@ function DemoDocsPage() {
                     head={["Field", "Type", "Description"]}
                     mono={[0, 1]}
                     rows={[
-                      [<>secret <span className="text-[10px] uppercase text-ember">required</span></>, "string", "Webhook secret (or send X-Kalks-Signature header instead)"],
+                      [<>secret <span className="text-[10px] uppercase text-ember">required</span></>, "string", "Webhook secret (or send X-Ezymex-Signature header instead)"],
                       [<>action <span className="text-[10px] uppercase text-ember">required</span></>, "enum", "buy | sell | close | close_all"],
                       [<>symbol <span className="text-[10px] uppercase text-ember">required</span></>, "string", "Must be in the webhook's allowed symbols"],
                       ["volume", "number", "Signal volume; scaled per account by its sizing rule"],
@@ -355,7 +355,7 @@ function DemoDocsPage() {
                   <Button variant="surface" size="sm" onClick={() => toast.success("FIX session requested", { description: "Credentials for 80412337 will arrive in ~5 minutes." })}>
                     Request FIX session
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => toast.success("KALKS-FIX44.xml downloaded", { description: "QuickFIX data dictionary" })}>
+                  <Button variant="ghost" size="sm" onClick={() => toast.success("EZYMEX-FIX44.xml downloaded", { description: "QuickFIX data dictionary" })}>
                     <Download /> Data dictionary
                   </Button>
                 </div>

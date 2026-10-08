@@ -1,7 +1,7 @@
 ---
 slug: "p2-t-first-demo-trade"
 title: "A guided first demo trade"
-summary: "Plan, size, place, manage and review a complete EURUSD trade on a Kalks demo account, using everything from this phase."
+summary: "Plan, size, place, manage and review a complete EURUSD trade on a Ezymex demo account, using everything from this phase."
 order: 7
 version: 1
 takeaways:
@@ -47,13 +47,13 @@ quiz:
     explanation: "Management rules such as partial close or moving the stop should be set in advance. Decisions made in the moment are driven by fear or greed."
 ---
 
-This chapter brings the whole phase together. You will place one complete trade on a Kalks demo account, from plan to review, doing every calculation yourself. The aim is not to make money; demo money is virtual. The aim is to build a routine you can repeat, where nothing about the mechanics surprises you.
+This chapter brings the whole phase together. You will place one complete trade on a Ezymex demo account, from plan to review, doing every calculation yourself. The aim is not to make money; demo money is virtual. The aim is to build a routine you can repeat, where nothing about the mechanics surprises you.
 
 ## Step 1: set up
 
 1. Open a free demo account from the Accounts module in the Client Area and choose a balance you could realistically fund in future. We use 10,000 USD and 1:100 leverage.
 2. Confirm the position mode, netting or hedging, so you know how a second order would behave.
-3. Launch Kalks Trader and open a EURUSD chart. Choose a timeframe you can follow calmly, for example H1.
+3. Launch Ezymex Trader and open a EURUSD chart. Choose a timeframe you can follow calmly, for example H1.
 4. Open the EURUSD contract specification and note contract size (100,000), digits (typically 5), minimum volume (0.01) and the swap long and short values.
 5. Check the economic calendar for high-impact USD or EUR events in the next few hours. If one is due within 30 minutes, wait until it has passed.
 

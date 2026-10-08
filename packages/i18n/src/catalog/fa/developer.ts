@@ -233,8 +233,8 @@ const developer: NsMessages<"developer"> = {
   "assetClass.crypto": "کریپتو",
   "assetClass.stocks": "سهام",
 
-  // Code editor (Kalks strategy language)
-  "code.language": "زبان استراتژی Kalks",
+  // Code editor (Ezymex strategy language)
+  "code.language": "زبان استراتژی Ezymex",
   "code.checking": "در حال بررسی…",
   "code.errors": { one: "{count} خطا", other: "{count} خطا" },
   "code.compiles": "بدون خطا",
@@ -281,7 +281,7 @@ const developer: NsMessages<"developer"> = {
   // Kill switch
   "kill.title": "کلید توقف اضطراری",
   "kill.subtitle": "همه استراتژی‌ها، وب‌هوک‌ها و سفارش‌های API را در حساب‌های شما متوقف می‌کند",
-  "kill.globalPaused": "معاملات خودکار توسط مدیریت ریسک Kalks در کل پلتفرم متوقف شده است.",
+  "kill.globalPaused": "معاملات خودکار توسط مدیریت ریسک Ezymex در کل پلتفرم متوقف شده است.",
   "kill.onSince": "فعال از {at}",
   "kill.release": "غیرفعال کردن توقف اضطراری",
   "kill.stopAll": "توقف همه اتوماسیون‌ها",
@@ -363,7 +363,7 @@ const developer: NsMessages<"developer"> = {
   "docs.bearer": "Bearer (ساده‌ترین)",
   "docs.hmac": "امضای HMAC (توصیه‌شده برای ربات‌ها)",
   // <code> wraps header names and paths; keep them untranslated
-  "docs.signature": "امضا = hex(HMAC-SHA256(secret, timestamp + METHOD + path with query + body))، ارسال‌شده همراه با <code>X-Kalks-Key</code>، <code>X-Kalks-Timestamp</code> (unix ms، ±30 ثانیه) و <code>X-Kalks-Signature</code>. مسیر به‌صورت <code>/public/v1/…</code> امضا می‌شود. هر امضا فقط یک بار پذیرفته می‌شود.",
+  "docs.signature": "امضا = hex(HMAC-SHA256(secret, timestamp + METHOD + path with query + body))، ارسال‌شده همراه با <code>X-Ezymex-Key</code>، <code>X-Ezymex-Timestamp</code> (unix ms، ±30 ثانیه) و <code>X-Ezymex-Signature</code>. مسیر به‌صورت <code>/public/v1/…</code> امضا می‌شود. هر امضا فقط یک بار پذیرفته می‌شود.",
   // "api", clientOrderId and duplicate are API values; keep them
   "docs.endpointsSub": "ورودی و خروجی JSON. هر سفارش دارای source برابر «api» است؛ clientOrderId تکراری، status برابر duplicate برمی‌گرداند.",
   "docs.errorsSub": "خطاها به این شکل هستند: {shape}",
@@ -473,9 +473,9 @@ const developer: NsMessages<"developer"> = {
 
   // Strategy marketplace
   "market.title": "بازارچه استراتژی",
-  "market.subtitle": "استراتژی‌هایی با سابقه عملکرد تأییدشده از حساب‌های Kalks. یکی را روی حساب خود کپی کنید، یا استراتژی خود را منتشر کنید و از اشتراک‌ها درآمد کسب کنید.",
-  "market.houseChip": "استراتژی داخلی · اجراشده توسط Kalks",
-  "market.houseNote": "استراتژی داخلی اجراشده توسط Kalks: یک حساب واقعی متعلق به بروکر که این استراتژی را اجرا می‌کند. سابقه عملکرد فقط شامل معاملات واقعی خود آن از زمان شروع است؛ هیچ چیز شبیه‌سازی یا به‌صورت عطف به ماسبق اضافه نشده است.",
+  "market.subtitle": "استراتژی‌هایی با سابقه عملکرد تأییدشده از حساب‌های Ezymex. یکی را روی حساب خود کپی کنید، یا استراتژی خود را منتشر کنید و از اشتراک‌ها درآمد کسب کنید.",
+  "market.houseChip": "استراتژی داخلی · اجراشده توسط Ezymex",
+  "market.houseNote": "استراتژی داخلی اجراشده توسط Ezymex: یک حساب واقعی متعلق به بروکر که این استراتژی را اجرا می‌کند. سابقه عملکرد فقط شامل معاملات واقعی خود آن از زمان شروع است؛ هیچ چیز شبیه‌سازی یا به‌صورت عطف به ماسبق اضافه نشده است.",
   // Date range, e.g. "2025-01-01 to 2025-12-31"
   "market.range": "{from} تا {to}",
   "market.backtestSimulated": "بک‌تست · شبیه‌سازی‌شده",
@@ -502,7 +502,7 @@ const developer: NsMessages<"developer"> = {
   "market.subscriptionStatus": "اشتراک {status}",
   "market.reviewSaved": "نظر ذخیره شد",
   "market.reviewFailed": "ذخیره نظر ممکن نشد",
-  "market.trackNote": "سابقه عملکرد از اجرای خود نویسنده در Kalks از {since}: {days} روز، خالص {net}. از معاملات بسته‌شده در موتور معاملاتی محاسبه شده و توسط نویسنده وارد نشده است.",
+  "market.trackNote": "سابقه عملکرد از اجرای خود نویسنده در Ezymex از {since}: {days} روز، خالص {net}. از معاملات بسته‌شده در موتور معاملاتی محاسبه شده و توسط نویسنده وارد نشده است.",
   "market.riskSettings": "تنظیمات ریسک",
   "market.riskLine": "حجم {size} · حد ضرر {stop} · هدف {target}",
   "market.riskPct": "ریسک {pct}%",
@@ -520,7 +520,7 @@ const developer: NsMessages<"developer"> = {
   "market.cloneRules": "کپی قوانین",
   "market.subscribePaid": "اشتراک · {price} USDT / ماه",
   "market.subscribeFree": "اشتراک رایگان",
-  "market.paidNote": "پرداخت از کیف پول Kalks شما (USDT). هر 30 روز تمدید می‌شود؛ هر زمان قابل لغو است.",
+  "market.paidNote": "پرداخت از کیف پول Ezymex شما (USDT). هر 30 روز تمدید می‌شود؛ هر زمان قابل لغو است.",
   "market.reviews": "نظرات ({n})",
   "market.stars": { one: "{count} ستاره", other: "{count} ستاره" },
   "market.reviewPlaceholder": "عملکرد آن برای شما چطور بود؟",
@@ -552,7 +552,7 @@ const developer: NsMessages<"developer"> = {
   "market.popular": "محبوب",
   "market.emptyTitle": "هنوز استراتژی‌ای منتشر نشده",
   "market.emptyText": "اولین نفر باشید: یک استراتژی را روی حساب دمو اجرا کنید، سپس آن را همراه با سابقه عملکرد تأییدشده‌اش منتشر کنید.",
-  "market.disclaimer": "عملکرد گذشته تضمینی برای نتایج آینده نیست. سوابق عملکرد از حساب‌های واقعی یا دمو در Kalks هستند و بر همین اساس برچسب‌گذاری شده‌اند. کارمزد پلتفرم برای اشتراک‌های پولی: {pct}%.",
+  "market.disclaimer": "عملکرد گذشته تضمینی برای نتایج آینده نیست. سوابق عملکرد از حساب‌های واقعی یا دمو در Ezymex هستند و بر همین اساس برچسب‌گذاری شده‌اند. کارمزد پلتفرم برای اشتراک‌های پولی: {pct}%.",
   "market.mode": "حالت",
   "market.renews": "تمدید",
   "market.copyOn": "کپی روی #{login}",

@@ -1,9 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import type { GatewayStaff } from "@/lib/gateway";
-import { setReadCacheOwner } from "@kalks/ui/swr-cache";
+import { setReadCacheOwner } from "@ezymex/ui/swr-cache";
 import { isTradingPerm, tradingAllows } from "@/lib/trading-perms";
 import { isWalletPerm, walletAllows } from "@/lib/wallet-perms";
 

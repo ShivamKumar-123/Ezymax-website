@@ -6,10 +6,10 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/app.dart';
-import 'package:kalks/preview/c1/preview_accounts.dart';
-import 'package:kalks/router/router.dart';
-import 'package:kalks/ui/ui.dart';
+import 'package:ezymex/app.dart';
+import 'package:ezymex/preview/c1/preview_accounts.dart';
+import 'package:ezymex/router/router.dart';
+import 'package:ezymex/ui/ui.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../test/helpers/test_app.dart';
@@ -150,7 +150,7 @@ void main() {
       before: (t) async {
         // a fresh demo account (no positions, so the leverage can change)
         previewAccounts('POST', 'trading/accounts', {'type': 'demo', 'group': 'standard', 'leverage': 500, 'initialBalance': 10000}, const {});
-        ProviderScope.containerOf(t.element(find.byType(KalksApp))).read(routerProvider).go('/accounts/20020001?tab=settings');
+        ProviderScope.containerOf(t.element(find.byType(EzymexApp))).read(routerProvider).go('/accounts/20020001?tab=settings');
         await settle(t);
         await t.drag(find.byType(Scrollable).hitTestable().first, const Offset(0, -500));
         await settle(t, frames: 4);

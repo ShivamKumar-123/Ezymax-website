@@ -4,7 +4,7 @@
 //! (Σ postings = 0 per transaction, append-only tables, idempotency keys).
 //!
 //! Needs the local Postgres (127.0.0.1:5433, see README). Uses a throw-away database
-//! `kalks_trading_test_<pid>`; skipped with a message when Postgres is not reachable.
+//! `ezymex_trading_test_<pid>`; skipped with a message when Postgres is not reachable.
 //! Override with TRADING_TEST_DATABASE_URL (a server URL; the database name is replaced).
 
 use chrono::Utc;
@@ -68,7 +68,7 @@ fn set_quotes(q: &QuoteBook, eur: (&str, &str), btc: (&str, &str)) {
 #[tokio::test]
 async fn replay_rebuilds_identical_state_and_ledger_holds() {
     let base = std::env::var("TRADING_TEST_DATABASE_URL").unwrap_or_else(|_| "postgres://postgres@127.0.0.1:5433/postgres".into());
-    let db = format!("kalks_trading_test_{}", std::process::id());
+    let db = format!("ezymex_trading_test_{}", std::process::id());
     let server = match PgConnectOptions::from_str(&base) {
         Ok(o) => o,
         Err(e) => {

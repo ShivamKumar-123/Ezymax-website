@@ -3,7 +3,7 @@
 // (tenant_domains, resolved by the gateway). Cached for a few seconds per host per server process so the
 // proxy can check it on every request; the Platform Owner's switches take effect within that window.
 
-import type { TenantBrand } from "@kalks/ui";
+import type { TenantBrand } from "@ezymex/ui";
 import { gateway } from "@/lib/gateway";
 import { requestHost } from "@/lib/tenant-host";
 
@@ -41,7 +41,7 @@ export async function tenantConfig(host?: string): Promise<TenantConfig | null> 
   return load;
 }
 
-/** The broker brand of the current request (null: gateway unreachable → the stock Kalks look). */
+/** The broker brand of the current request (null: gateway unreachable → the stock Ezymex look). */
 export async function tenantBrand(host?: string): Promise<TenantBrand | null> {
   return (await tenantConfig(host))?.branding ?? null;
 }

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { ArrowDownRight, ArrowUpRight, Gauge as GaugeIcon, Layers, Scale } from "lucide-react";
-import { Card, CardHeader, Chip, DataTable, EmptyState, KpiCard, PageHeader, Reveal, Segmented, SymbolCell, cn, formatNumber, type Column } from "@kalks/ui";
+import { Card, CardHeader, Chip, DataTable, EmptyState, KpiCard, PageHeader, Reveal, Segmented, SymbolCell, cn, formatNumber, type Column } from "@ezymex/ui";
 import { PnlText, usdCompact } from "@/components/command/kit";
 import { DeskStatusChip } from "@/components/trading-desk/status";
 import { currentPriceOf, groupLabel, notionalUsd, positionPnl, useDesk, useLiveDirectory } from "@/lib/trading-desk";

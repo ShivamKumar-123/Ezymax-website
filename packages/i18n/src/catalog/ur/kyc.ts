@@ -195,7 +195,7 @@ const kyc: NsMessages<"kyc"> = {
   "review.missing": "موجود نہیں",
   "review.flagged": "جائزے کے لیے نشان زد",
   "review.passed": "جانچ کامیاب",
-  "review.consent": "میں تصدیق کرتا/کرتی ہوں کہ دستاویزات اصلی ہیں اور میری (یا کمپنی اور اس کے عہدیداروں کی) ہیں، اور میں Kalks کی جانب سے شناخت اور AML اسکریننگ پر رضامند ہوں۔",
+  "review.consent": "میں تصدیق کرتا/کرتی ہوں کہ دستاویزات اصلی ہیں اور میری (یا کمپنی اور اس کے عہدیداروں کی) ہیں، اور میں Ezymex کی جانب سے شناخت اور AML اسکریننگ پر رضامند ہوں۔",
 
   // More information requested by the review team
   "moreInfo.title": "ہمیں آپ سے تھوڑی مزید معلومات درکار ہیں",
@@ -360,7 +360,7 @@ const kyc: NsMessages<"kyc"> = {
   // Client-side fallback errors
   "error.sessionEnded": "آپ کا سیشن ختم ہو گیا ہے۔",
   "error.generic": "کچھ غلط ہو گیا۔ براہ کرم دوبارہ کوشش کریں۔",
-  "error.network": "Kalks سے رابطہ نہیں ہو پا رہا۔ اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔",
+  "error.network": "Ezymex سے رابطہ نہیں ہو پا رہا۔ اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔",
   "error.uploadFailed": "اپ لوڈ ناکام ہو گیا۔ براہ کرم دوبارہ کوشش کریں۔",
   "error.uploadInterrupted": "اپ لوڈ میں رکاوٹ آئی۔ اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔",
 

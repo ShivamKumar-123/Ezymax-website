@@ -8,7 +8,7 @@ const security: NsMessages<"security"> = {
   "signingOut": "Saindo…",
   "resetSigningOut": "Desconectando você para redefinir sua senha…",
   "error.generic": "Algo deu errado. Tente novamente.",
-  "error.network": "Não foi possível conectar à Kalks. Verifique sua conexão e tente novamente.",
+  "error.network": "Não foi possível conectar à Ezymex. Verifique sua conexão e tente novamente.",
 
   // Rótulos de dispositivo a partir do user agent; nomes de navegadores e sistemas ficam como estão
   "device.unknownBrowser": "Navegador desconhecido",
@@ -226,7 +226,7 @@ const security: NsMessages<"security"> = {
   "page.calendar": "Calendário",
   // Card de senhas de investidor
   "investor.title": "Senhas de investidor",
-  "investor.text": "Cada conta de negociação também tem uma senha de investidor para acesso somente leitura no Kalks Trader, no estilo MT5: posições e histórico, sem negociação.",
+  "investor.text": "Cada conta de negociação também tem uma senha de investidor para acesso somente leitura no Ezymex Trader, no estilo MT5: posições e histórico, sem negociação.",
   "investor.hint": "Defina ou altere na página da conta.",
   "investor.goToAccounts": "Ir para contas",
   // Janela de criação / edição

@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { FlutedGlass } from "@paper-design/shaders-react";
 import { motion } from "motion/react";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { Delta, LanguageMenu, Logo, PriceText, SymbolAvatar, ThemeToggle, useBrand, useQuote } from "@/components/kit";
 
 /**
@@ -110,7 +110,7 @@ function BrandPanel() {
           </motion.div>
         </div>
 
-        {/* Tilted live product preview (Kalks' own product shots: not shown for a white-label broker) */}
+        {/* Tilted live product preview (Ezymex' own product shots: not shown for a white-label broker) */}
         {!brand && (
           <div className="mt-10 w-full overflow-hidden rounded-2xl border border-white/15 bg-black/70 p-2 shadow-[0_30px_90px_rgba(0,0,0,0.5)] backdrop-blur-xl lg:absolute lg:-bottom-28 lg:left-[12%] lg:mt-0 lg:w-[105%] lg:max-w-none lg:origin-bottom-left lg:-rotate-3 xl:-bottom-[150px] xl:left-[14%] xl:w-[108%] 2xl:-bottom-[170px] 2xl:w-[112%]">
             <motion.div
@@ -123,7 +123,7 @@ function BrandPanel() {
                 <div className="size-2 rounded-full bg-white/35" />
                 <div className="size-2 rounded-full bg-white/25" />
                 <div className="size-2 rounded-full bg-white/15" />
-                <span className="ml-4 font-mono text-[9px] tracking-wider text-white/40">app.kalks.com/dashboard</span>
+                <span className="ml-4 font-mono text-[9px] tracking-wider text-white/40">app.ezymex.com/dashboard</span>
               </div>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/assets/app/dashboard-dark.jpg" alt={t("auth.brand.previewAlt")} className="h-auto w-full object-cover object-top opacity-95 light:hidden" />

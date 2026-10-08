@@ -1,14 +1,14 @@
 "use client";
 
-// The options instruments list: where Market Watch sits in CFD mode. Every underlying of Kalks FX Options with its
+// The options instruments list: where Market Watch sits in CFD mode. Every underlying of Ezymex FX Options with its
 // spot, daily change and ATM implied vol, grouped by asset class; the ones not open here yet (NZDUSD…) are listed
 // as "soon". Picking one sets the underlying of the chain, the chart and the ticket.
 import * as React from "react";
 import { Search } from "lucide-react";
-import { INSTRUMENT_MAP } from "@kalks/mock";
-import { OPTION_UNDERLYINGS } from "@kalks/mock/options";
-import { cn } from "@kalks/ui";
-import { useT } from "@kalks/i18n/react";
+import { INSTRUMENT_MAP } from "@ezymex/mock";
+import { OPTION_UNDERLYINGS } from "@ezymex/mock/options";
+import { cn } from "@ezymex/ui";
+import { useT } from "@ezymex/i18n/react";
 import { atmIndex } from "@/lib/options/math";
 import { opt, useOpt } from "@/lib/options-store";
 import type { OptionUnderlying } from "@/lib/options/types";
@@ -84,7 +84,7 @@ export function InstrumentList({ mobile, onPick }: { mobile?: boolean; onPick?: 
   const listed = new Map<string, OptionUnderlying>(list.map((x) => [x.symbol, x]));
   const items: Item[] = [
     ...list.map((x) => ({ symbol: x.symbol, name: x.name, assetClass: x.assetClass, atmVol: x.atmVol, listed: true })),
-    // every underlying of Kalks FX Options; the ones not open here yet show as "soon"
+    // every underlying of Ezymex FX Options; the ones not open here yet show as "soon"
     ...OPTION_UNDERLYINGS.filter((x) => !listed.has(x.symbol)).map((x) => ({ symbol: x.symbol, name: x.name, assetClass: x.assetClass, atmVol: null, listed: false })),
   ];
   // live accounts and guests: only underlyings that trade live (lib/scope.ts; today every underlying is a core market)

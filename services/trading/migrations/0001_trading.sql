@@ -1,4 +1,4 @@
--- Kalks trading engine (database kalks_trading).
+-- Ezymex trading engine (database ezymex_trading).
 --
 -- Source of truth: `events` (append-only, one stream per trading account, replayed on start).
 -- Everything else about accounts is a projection written in the same transaction as the events:
@@ -11,8 +11,8 @@ CREATE TABLE tenants (
     name        TEXT NOT NULL,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
--- ids mirror the gateway's tenants table (kalks_core)
-INSERT INTO tenants (id, slug, name) VALUES (1, 'kalks', 'Kalks');
+-- ids mirror the gateway's tenants table (ezymex_core)
+INSERT INTO tenants (id, slug, name) VALUES (1, 'ezymex', 'Ezymex');
 
 -- D115: dealing policy per tenant
 CREATE TABLE tenant_policies (
@@ -346,6 +346,6 @@ BEGIN
                              'ledger_accounts','ledger_txns','ledger_postings','audit_log','symbol_controls','routing_rules',
                              'rollovers','terminal_sessions','sso_tokens'] LOOP
         EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
-        EXECUTE format('CREATE POLICY tenant_isolation ON %I USING (tenant_id = NULLIF(current_setting(''kalks.tenant_id'', true), '''')::bigint)', t);
+        EXECUTE format('CREATE POLICY tenant_isolation ON %I USING (tenant_id = NULLIF(current_setting(''ezymex.tenant_id'', true), '''')::bigint)', t);
     END LOOP;
 END $$;

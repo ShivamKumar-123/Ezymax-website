@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader (apps/terminal): MT5-style web terminal shell, login and mobile layout.
+// Ezymex Trader (apps/terminal): MT5-style web terminal shell, login and mobile layout.
 const trader: NsMessages<"trader"> = {
   // Shared shell words
   clientArea: "ক্লায়েন্ট এরিয়া",
@@ -136,7 +136,7 @@ const trader: NsMessages<"trader"> = {
   "menu.keyboardShortcuts": "কিবোর্ড শর্টকাট",
   "menu.helpTopics": "সাহায্যের বিষয়",
   "menu.contactSupport": "সাপোর্টে যোগাযোগ",
-  "menu.about": "Kalks Trader সম্পর্কে",
+  "menu.about": "Ezymex Trader সম্পর্কে",
   // Tools > Options toast
   "options.title": "অপশন",
   "options.trading": "ট্রেডিং",
@@ -172,7 +172,7 @@ const trader: NsMessages<"trader"> = {
   "guest.noAccount": "কোনো ট্রেডিং অ্যাকাউন্ট নেই",
   "guest.liveData": "লাইভ মার্কেট ডেটা",
   "guest.cardHeader": "অতিথি · চার্ট ও কোট",
-  "guest.cardText": "চার্ট, ইন্ডিকেটর, ড্রয়িং, অ্যালার্ট ও সিম্বল স্পেসিফিকেশন Kalks-এর লাইভ মার্কেট ডেটায় চলে। ট্রেড করতে আপনার ট্রেডিং অ্যাকাউন্ট দিয়ে লগইন করুন, অথবা ক্লায়েন্ট এরিয়ায় একটি খুলুন।",
+  "guest.cardText": "চার্ট, ইন্ডিকেটর, ড্রয়িং, অ্যালার্ট ও সিম্বল স্পেসিফিকেশন Ezymex-এর লাইভ মার্কেট ডেটায় চলে। ট্রেড করতে আপনার ট্রেডিং অ্যাকাউন্ট দিয়ে লগইন করুন, অথবা ক্লায়েন্ট এরিয়ায় একটি খুলুন।",
 
   // Notifications bell
   "notifications.title": "নোটিফিকেশন",
@@ -284,7 +284,7 @@ const trader: NsMessages<"trader"> = {
   "login.serverTime": "সার্ভার সময় GMT+3",
   "login.notice.expired": "আপনার সেশনের মেয়াদ শেষ হয়েছে। আবার লগইন করুন।",
   "login.notice.expiredFor": "{login}-এর সেশনের মেয়াদ শেষ হয়েছে। আবার লগইন করুন।",
-  "login.notice.ssoExpired": "সাইন-ইন লিংকটির মেয়াদ শেষ হয়েছে বা আগেই ব্যবহার করা হয়েছে। ক্লায়েন্ট এরিয়া থেকে আবার Kalks Trader খুলুন, অথবা নিচে লগইন করুন।",
+  "login.notice.ssoExpired": "সাইন-ইন লিংকটির মেয়াদ শেষ হয়েছে বা আগেই ব্যবহার করা হয়েছে। ক্লায়েন্ট এরিয়া থেকে আবার Ezymex Trader খুলুন, অথবা নিচে লগইন করুন।",
   "login.notice.ssoFailed": "ক্লায়েন্ট এরিয়া থেকে সাইন ইন ব্যর্থ হয়েছে। নিচে লগইন করুন।",
   "login.error.invalid": "অ্যাকাউন্ট বা পাসওয়ার্ড ভুল।",
   "login.error.locked": "অনেকবার ব্যর্থ চেষ্টা হয়েছে। এই লগইন 15 মিনিটের জন্য লক করা হয়েছে।",
@@ -307,9 +307,9 @@ const trader: NsMessages<"trader"> = {
   "mobile.tab.history": "ইতিহাস",
   "mobile.tab.account": "অ্যাকাউন্ট",
   "mobile.guestSubtitle": "লাইভ মার্কেট ডেটা · কোনো ট্রেডিং অ্যাকাউন্ট নেই",
-  "mobile.guestTrade": "Kalks অ্যাকাউন্ট থেকে ট্রেড করলে পজিশন, অর্ডার, ব্যালেন্স ও মার্জিন এখানে দেখা যাবে। চার্ট ও কোট এখনই কাজ করে।",
+  "mobile.guestTrade": "Ezymex অ্যাকাউন্ট থেকে ট্রেড করলে পজিশন, অর্ডার, ব্যালেন্স ও মার্জিন এখানে দেখা যাবে। চার্ট ও কোট এখনই কাজ করে।",
   "mobile.guestHistory": "ট্রেডিং অ্যাকাউন্টে লগইন করলে আপনার ক্লোজড ট্রেড এখানে তালিকাভুক্ত হবে।",
-  "mobile.guestAccountText": "ট্রেড করতে একটি ট্রেডিং অ্যাকাউন্টে লগইন করুন। চার্ট, ইন্ডিকেটর, ড্রয়িং ও অ্যালার্ট এখনই Kalks-এর লাইভ মার্কেট ডেটায় চলছে।",
+  "mobile.guestAccountText": "ট্রেড করতে একটি ট্রেডিং অ্যাকাউন্টে লগইন করুন। চার্ট, ইন্ডিকেটর, ড্রয়িং ও অ্যালার্ট এখনই Ezymex-এর লাইভ মার্কেট ডেটায় চলছে।",
   "mobile.watchSegment": "ওয়াচলিস্ট সেগমেন্ট",
   "mobile.noFavourites": "এখনো কোনো পছন্দের সিম্বল নেই।",
   "mobile.noSymbols": "কোনো সিম্বল মেলেনি।",
@@ -340,14 +340,14 @@ const trader: NsMessages<"trader"> = {
   "copyBanner.textNoName": "কপি অ্যাকাউন্ট — আপনি যে মাস্টারকে কপি করছেন তিনিই ট্রেড পরিচালনা করেন; এখানে P&L দেখতে পারবেন।",
   "copyBanner.manage": "ক্লায়েন্ট এরিয়ায় কপি পরিচালনা করুন",
 
-  // ---- Kalks FX Options workspace (CFD | Options switch in Kalks Trader; components/options/*) ----
-  // Keep "Kalks FX Options", "Claude", tickers (EURUSD), "IV", "ATM", "OTM", "ITM", "P&L", "USD", "UTC", "GTC" and the
+  // ---- Ezymex FX Options workspace (CFD | Options switch in Ezymex Trader; components/options/*) ----
+  // Keep "Ezymex FX Options", "Claude", tickers (EURUSD), "IV", "ATM", "OTM", "ITM", "P&L", "USD", "UTC", "GTC" and the
   // Greek letters (Δ Γ Θ) as they are. Premiums are in USD per contract; "pips" are price points of the underlying.
   "opt.mode.label": "ট্রেডিং মোড",
   "opt.mode.cfd": "CFD",
   "opt.mode.options": "অপশন",
   "opt.mode.cfdHint": "CFD ট্রেডিং: চার্ট, মার্কেট ওয়াচ ও অর্ডার প্যানেল",
-  "opt.mode.optionsHint": "Kalks FX Options: অপশন চেইন, স্ট্র্যাটেজি ও পেঅফ",
+  "opt.mode.optionsHint": "Ezymex FX Options: অপশন চেইন, স্ট্র্যাটেজি ও পেঅফ",
   "opt.call": "কল",
   "opt.put": "পুট",
   "opt.calls": "কল",
@@ -516,7 +516,7 @@ const trader: NsMessages<"trader"> = {
 
   // Module not open yet / price server down
   "opt.soon.title": "অপশন শিগগিরই আসছে",
-  "opt.soon.text": "Kalks FX Options এই অ্যাকাউন্টে এখনো চালু হয়নি। চালু হলেই অপশন চেইন এখানে দেখা যাবে, আপনার CFD যে অ্যাকাউন্টে আছে সেই একই অ্যাকাউন্টে।",
+  "opt.soon.text": "Ezymex FX Options এই অ্যাকাউন্টে এখনো চালু হয়নি। চালু হলেই অপশন চেইন এখানে দেখা যাবে, আপনার CFD যে অ্যাকাউন্টে আছে সেই একই অ্যাকাউন্টে।",
   "opt.soon.point1": "ফরেক্স, গোল্ড, সিলভার ও অয়েলে কল ও পুট",
   "opt.soon.point2": "দৈনিক, সাপ্তাহিক ও মাসিক এক্সপায়ারি, USD-তে নগদ সেটেলমেন্ট",
   "opt.soon.point3": "ক্রেতা হিসেবে আপনি কখনো পরিশোধ করা প্রিমিয়ামের বেশি হারাবেন না",
@@ -661,14 +661,14 @@ const trader: NsMessages<"trader"> = {
 
   // Public option chain page (/options/chain/EURUSD)
   "opt.public.brand": "অপশন চেইন",
-  "opt.public.kicker": "Kalks FX Options",
+  "opt.public.kicker": "Ezymex FX Options",
   "opt.public.title": "{name} অপশন চেইন",
   "opt.public.subtitle": "দৈনিক, সাপ্তাহিক ও মাসিক এক্সপায়ারির লাইভ কল ও পুট: প্রতি কন্ট্রাক্টে USD-তে বিড ও আস্ক, ইমপ্লায়েড ভোলাটিলিটি, ডেল্টা, ইন দ্য মানি হওয়ার সম্ভাবনা ও ব্রেকইভেন। ইউরোপিয়ান অপশন, USD-তে নগদ সেটেলমেন্ট।",
   "opt.public.trade": "{u} অপশন ট্রেড করুন",
   "opt.public.atmStraddle": "ATM স্ট্র্যাডল",
-  "opt.public.soonText": "পাবলিক অপশন চেইন Kalks FX Options-এর সঙ্গে চালু হবে। প্রথম দিন থেকেই প্রস্তুত থাকতে একটি অ্যাকাউন্ট খুলুন।",
+  "opt.public.soonText": "পাবলিক অপশন চেইন Ezymex FX Options-এর সঙ্গে চালু হবে। প্রথম দিন থেকেই প্রস্তুত থাকতে একটি অ্যাকাউন্ট খুলুন।",
   "opt.public.ctaTitle": "এই চেইন ট্রেড করুন।",
-  "opt.public.ctaText": "এখানে যেকোনো অপশন কিনতে বা বিক্রি করতে, স্ট্র্যাটেজি তৈরি করতে এবং আপনার পেঅফ দেখতে Kalks Trader-এ লগইন করুন।",
+  "opt.public.ctaText": "এখানে যেকোনো অপশন কিনতে বা বিক্রি করতে, স্ট্র্যাটেজি তৈরি করতে এবং আপনার পেঅফ দেখতে Ezymex Trader-এ লগইন করুন।",
   "opt.public.howTitle": "চেইন কীভাবে পড়বেন",
   "opt.public.how1": "প্রাইস স্ট্রাইকের ওপরে শেষ হলে কল পেআউট দেয়, নিচে শেষ হলে পুট।",
   "opt.public.how2": "বিড হলো বিক্রি করলে আপনি যা পান, আস্ক হলো কিনলে আপনি যা দেন, দুটোই প্রতি কন্ট্রাক্টে USD-তে।",
@@ -700,11 +700,11 @@ const trader: NsMessages<"trader"> = {
   "opt.m.chain": "চেইন",
   "opt.m.positions": "পজিশন",
 
-  // ---- Options ORDER BOOK (docs/OPTIONS-EXCHANGE.md): clients trade with each other and with the Kalks market maker (MM)
-  // on a price-time order book. Keep GTC, IOC, FOK, GTD, RFQ and MM as they are; "Kalks" is a brand name.
+  // ---- Options ORDER BOOK (docs/OPTIONS-EXCHANGE.md): clients trade with each other and with the Ezymex market maker (MM)
+  // on a price-time order book. Keep GTC, IOC, FOK, GTD, RFQ and MM as they are; "Ezymex" is a brand name.
   "opt.book.tab": "বুক",
   "opt.book.badge": "বুক",
-  "opt.book.badgeHint": "প্রাইস আসে অর্ডার বুক থেকে: অন্য ক্লায়েন্টদের ও Kalks মার্কেট মেকারের অর্ডার, সবার জন্য একই নিয়মে।",
+  "opt.book.badgeHint": "প্রাইস আসে অর্ডার বুক থেকে: অন্য ক্লায়েন্টদের ও Ezymex মার্কেট মেকারের অর্ডার, সবার জন্য একই নিয়মে।",
   "opt.book.size": { one: "{count}টি কন্ট্রাক্ট", other: "{count}টি কন্ট্রাক্ট" },
   "opt.book.noOffers": "কোনো অফার নেই",
   "opt.book.noBids": "কোনো বিড নেই",
@@ -773,7 +773,7 @@ const trader: NsMessages<"trader"> = {
   "opt.bt.needPrice": "একটি লিমিট প্রাইস দিন।",
   "opt.bt.needGtd": "অর্ডারটি কখন পর্যন্ত বুকে থাকবে তা বেছে নিন।",
   "opt.bt.needTrigger": "একটি ট্রিগার প্রাইস দিন।",
-  "opt.bt.bookOff": "অর্ডার বুক এখন উপলব্ধ নয়: প্রাইস ও অর্ডার আবার Kalks প্রাইসে ফিরে গেছে।",
+  "opt.bt.bookOff": "অর্ডার বুক এখন উপলব্ধ নয়: প্রাইস ও অর্ডার আবার Ezymex প্রাইসে ফিরে গেছে।",
   "opt.bt.pv.fillsNow": "এখনই ফিল হবে",
   "opt.bt.pv.fillsAt": "{total}টির মধ্যে {n}টি, গড় {price}",
   "opt.bt.pv.none": "এই প্রাইসে কিছু নেই",
@@ -862,7 +862,7 @@ const trader: NsMessages<"trader"> = {
   "opt.rfq.title": "কোটের অনুরোধ",
   "opt.rfq.request": "কোট চান",
   "opt.rfq.again": "নতুন কোট চান",
-  "opt.rfq.note": "পুরো স্ট্র্যাটেজি একসঙ্গে ট্রেড হয়: Kalks মার্কেট মেকার একটি নেট প্রাইস কোট করে, এবং সব লেগ একসঙ্গে ফিল হয়, নয়তো একটিও না।",
+  "opt.rfq.note": "পুরো স্ট্র্যাটেজি একসঙ্গে ট্রেড হয়: Ezymex মার্কেট মেকার একটি নেট প্রাইস কোট করে, এবং সব লেগ একসঙ্গে ফিল হয়, নয়তো একটিও না।",
   "opt.rfq.builderNote": "স্ট্র্যাটেজি কোটের অনুরোধে (RFQ) ট্রেড হয়: একটি নেট প্রাইস, সব লেগ একসঙ্গে।",
   "opt.rfq.size": "সাইজ: {n} × স্ট্র্যাটেজি",
   "opt.rfq.waiting": "কোটের অপেক্ষা…",
@@ -873,17 +873,17 @@ const trader: NsMessages<"trader"> = {
   "opt.rfq.validFor": "{s} সেকেন্ড বৈধ",
   "opt.rfq.refreshing": "নতুন কোট…",
   "opt.rfq.from": "{who}-এর কোট",
-  "opt.rfq.kalksMm": "Kalks মার্কেট মেকার",
+  "opt.rfq.ezymexMm": "Ezymex মার্কেট মেকার",
   "opt.rfq.openFor": "অনুরোধ {s} সেকেন্ড খোলা",
   "opt.rfq.expired": "অনুরোধের মেয়াদ শেষ হয়েছে।",
   "opt.rfq.toast.filled": "স্ট্র্যাটেজি ফিল হয়েছে",
   "opt.rfq.toast.desc": { one: "{count}টি লেগ ফিল হয়েছে · নেট {price} USD", other: "{count}টি লেগ একসঙ্গে ফিল হয়েছে · নেট {price} USD" },
-  "opt.rfq.kalksQuoted": "Kalks-এর কোট (অর্ডার বুক নয়)",
-  "opt.rfq.kalksQuotedHint": "ব্যারিয়ার অপশন অর্ডার বুকে তালিকাভুক্ত নয়: Kalks সেগুলো মডেল প্রাইসের সঙ্গে একটি স্প্রেড যোগ করে কোট করে।",
+  "opt.rfq.ezymexQuoted": "Ezymex-এর কোট (অর্ডার বুক নয়)",
+  "opt.rfq.ezymexQuotedHint": "ব্যারিয়ার অপশন অর্ডার বুকে তালিকাভুক্ত নয়: Ezymex সেগুলো মডেল প্রাইসের সঙ্গে একটি স্প্রেড যোগ করে কোট করে।",
   // Market-maker rules (public disclosure)
   "opt.mm.link": "মার্কেট মেকারের নিয়ম",
   "opt.mm.title": "মার্কেট মেকারের নিয়ম",
-  "opt.mm.intro": "Kalks একটি মার্কেট মেকার চালায়, যা প্রতিটি অপশনে কেনা ও বেচার প্রাইস কোট করে, যাতে ট্রেড করার জন্য সবসময় কেউ থাকে। এটি আপনার মতোই একই অর্ডার বুকে, একই নিয়মে ট্রেড করে।",
+  "opt.mm.intro": "Ezymex একটি মার্কেট মেকার চালায়, যা প্রতিটি অপশনে কেনা ও বেচার প্রাইস কোট করে, যাতে ট্রেড করার জন্য সবসময় কেউ থাকে। এটি আপনার মতোই একই অর্ডার বুকে, একই নিয়মে ট্রেড করে।",
   "opt.mm.sameTitle": "প্রতিটি ক্লায়েন্টের মতো একই নিয়ম",
   "opt.mm.rule1": "এটি ক্লায়েন্টদের মতো একই অর্ডার এন্ট্রির মাধ্যমে, একই যাচাইসহ কোট পাঠায়।",
   "opt.mm.rule2": "কোনো অগ্রাধিকার নেই: অর্ডার প্রথমে প্রাইস, তারপর সময় অনুযায়ী ফিল হয়। একই প্রাইসে কেউ তার পরিচয়ের কারণে আপনার আগে থাকে না।",
@@ -983,7 +983,7 @@ const trader: NsMessages<"trader"> = {
   "opt.an.oi.emptyOi": "এই এক্সপায়ারিতে এখনো কোনো ওপেন ইন্টারেস্ট নেই।",
   "opt.an.oi.emptyVolume": "আজ এই এক্সপায়ারিতে এখনো কিছু ট্রেড হয়নি।",
   "opt.an.oi.none": "অর্ডার বুকে {u} অপশন ট্রেড শুরু হলে ওপেন ইন্টারেস্ট ও পুট/কল অনুপাত এখানে দেখা যাবে।",
-  "opt.an.oi.noneSub": "আপাতত Kalks নিজেই এই অপশনগুলোর কোট দেয়, তাই দেখানোর মতো ওপেন ইন্টারেস্ট বা ভলিউম এখনো নেই। ওপরের স্মাইল ও টার্ম স্ট্রাকচার লাইভ।",
+  "opt.an.oi.noneSub": "আপাতত Ezymex নিজেই এই অপশনগুলোর কোট দেয়, তাই দেখানোর মতো ওপেন ইন্টারেস্ট বা ভলিউম এখনো নেই। ওপরের স্মাইল ও টার্ম স্ট্রাকচার লাইভ।",
   "opt.an.oi.aria": "স্ট্রাইক অনুযায়ী ওপেন ইন্টারেস্ট: ওপরে কল, নিচে পুট",
   "opt.an.pcr.title": "পুট/কল অনুপাত",
   "opt.an.pcr.hint": "এই এক্সপায়ারিতে পুটকে কল দিয়ে ভাগ। 1-এর বেশি হলে কলের চেয়ে পুট বেশি।",
@@ -1041,7 +1041,7 @@ const trader: NsMessages<"trader"> = {
   "opt.share.copy": "লিংক কপি করুন",
   "opt.share.copied": "লিংক কপি হয়েছে",
   "opt.share.shareTo": "শেয়ার করুন",
-  "opt.share.text": "Kalks-এ আমার {contract} অপশন ট্রেড",
+  "opt.share.text": "Ezymex-এ আমার {contract} অপশন ট্রেড",
   "opt.share.error": "শেয়ার কার্ড তৈরি করা যায়নি",
   "opt.share.readOnly": "ইনভেস্টর (শুধু দেখা) লগইনে শেয়ার কার্ড তৈরি করা যায় না।",
   "opt.share.preview": "শেয়ার কার্ডের প্রিভিউ",
@@ -1202,7 +1202,7 @@ const trader: NsMessages<"trader"> = {
   "opt.pos.d.nowEach": "এখনকার মূল্য, প্রতি কন্ট্রাক্টে",
   "opt.pos.d.where": "কোথায় ট্রেড হয়েছে",
   "opt.pos.d.book": "অর্ডার বুক",
-  "opt.pos.d.house": "Kalks প্রাইস",
+  "opt.pos.d.house": "Ezymex প্রাইস",
   "opt.pos.comboPaid": "এই স্ট্র্যাটেজির জন্য আপনি {amount} দিয়েছেন।",
   "opt.pos.comboReceived": "এই স্ট্র্যাটেজির জন্য আপনি {amount} পেয়েছেন।",
   "opt.pos.emptyTitle": "এখনো কোনো খোলা অপশন নেই",
@@ -1228,8 +1228,8 @@ const trader: NsMessages<"trader"> = {
   "opt.err.series_cancel_only": "এই অপশনগুলোর একটিতে এই মুহূর্তে ট্রেডিং বিরতিতে আছে (শুধু বাতিল করা যাবে)। পরে আবার চেষ্টা করুন।",
   "opt.err.series_closed": "এই অপশনগুলোর একটিতে ট্রেডিং বন্ধ হয়ে গেছে: এর এক্সপায়ারি খুব কাছে।",
   "opt.err.rfq_underlyings": "একটি স্ট্র্যাটেজির সব লেগ একই মার্কেটে হতে হবে, যেমন সবগুলো EURUSD।",
-  "opt.err.kalks_quoted": "এই স্ট্র্যাটেজিতে একটি ব্যারিয়ার লেগ আছে। ব্যারিয়ার অপশনের প্রাইস দেয় Kalks, অর্ডার বুক নয়, তাই এটি Kalks-এর প্রাইসে একটি অর্ডার হিসেবে প্লেস করা হয়।",
-  "opt.err.mixed_venue": "এই স্ট্র্যাটেজির কিছু লেগ অর্ডার বুকে আর কিছু লেগের প্রাইস দেয় Kalks, তাই এটি একবারে ক্লোজ করা যাবে না। লেগগুলো একটি একটি করে ক্লোজ করুন।",
+  "opt.err.ezymex_quoted": "এই স্ট্র্যাটেজিতে একটি ব্যারিয়ার লেগ আছে। ব্যারিয়ার অপশনের প্রাইস দেয় Ezymex, অর্ডার বুক নয়, তাই এটি Ezymex-এর প্রাইসে একটি অর্ডার হিসেবে প্লেস করা হয়।",
+  "opt.err.mixed_venue": "এই স্ট্র্যাটেজির কিছু লেগ অর্ডার বুকে আর কিছু লেগের প্রাইস দেয় Ezymex, তাই এটি একবারে ক্লোজ করা যাবে না। লেগগুলো একটি একটি করে ক্লোজ করুন।",
   "opt.err.book_venue": "এই অপশনগুলো অর্ডার বুকে ট্রেড হয়। একটি স্ট্র্যাটেজিতে অর্ডার বুকের লেগ আর ব্যারিয়ার লেগ একসঙ্গে রাখা যায় না: সেগুলো আলাদাভাবে প্লেস করুন।",
   "opt.rfq.err.quote_expired": "ওই প্রাইস আর বৈধ নয় (কোট মাত্র কয়েক সেকেন্ড বৈধ থাকে)। নতুন প্রাইস নিন এবং সেটি গ্রহণ করুন।",
   "opt.rfq.err.price_moved": "আপনার অর্ডার পৌঁছানোর আগেই প্রাইস বদলে গেছে, তাই কিছুই ট্রেড হয়নি। নতুন প্রাইস নিন এবং আবার চেষ্টা করুন।",
@@ -1240,7 +1240,7 @@ const trader: NsMessages<"trader"> = {
   "opt.rfq.err.no_liquidity": "এই মুহূর্তে মার্কেট মেকার এই স্ট্র্যাটেজির প্রাইস দিতে পারছে না। একটু পরে আবার চেষ্টা করুন, অথবা লেগগুলো একটি একটি করে ক্লোজ করুন।",
   "opt.rfq.err.rejected": "স্ট্র্যাটেজিটি ফিল হয়নি, এবং কিছুই ট্রেড হয়নি। আবার চেষ্টা করুন।",
   "opt.rfq.newPrice": "নতুন প্রাইস নিন",
-  "opt.rfq.houseNote": "ব্যারিয়ার অপশনের প্রাইস দেয় Kalks, অর্ডার বুক নয়: এই স্ট্র্যাটেজি Kalks-এর প্রাইসে একটি অর্ডার হিসেবে প্লেস করা হয়, সব লেগ একসঙ্গে, নয়তো একটিও না।",
+  "opt.rfq.houseNote": "ব্যারিয়ার অপশনের প্রাইস দেয় Ezymex, অর্ডার বুক নয়: এই স্ট্র্যাটেজি Ezymex-এর প্রাইসে একটি অর্ডার হিসেবে প্লেস করা হয়, সব লেগ একসঙ্গে, নয়তো একটিও না।",
   "opt.toast.settling": "চূড়ান্ত হিসাব একটু পরেই",
   "opt.toast.tryAgain": "আবার চেষ্টা করুন",
   "opt.toast.strategyClosedBook": "অর্ডার বুকের মাধ্যমে স্ট্র্যাটেজি ক্লোজ হয়েছে",
@@ -1248,10 +1248,10 @@ const trader: NsMessages<"trader"> = {
   "opt.pos.closedNetGot": "সব লেগ একসঙ্গে ক্লোজ হয়েছে: আপনি {amount} পেয়েছেন · P&L {pnl}",
   "opt.hist.reason.bust": "বাতিল",
   "opt.hist.why.risk": "রিস্ক কন্ট্রোলের মাধ্যমে ক্লোজ করা হয়েছে (মার্জিন খুব কম)",
-  "opt.hist.why.backstop": "রিস্ক কন্ট্রোলের মাধ্যমে ক্লোজ করা হয়েছে (মার্জিন খুব কম): পজিশনটি Kalks মার্কেট মেকার নিয়ে নিয়েছে",
+  "opt.hist.why.backstop": "রিস্ক কন্ট্রোলের মাধ্যমে ক্লোজ করা হয়েছে (মার্জিন খুব কম): পজিশনটি Ezymex মার্কেট মেকার নিয়ে নিয়েছে",
   "opt.hist.why.bust": "ডিলিং ডেস্ক ট্রেডটি বাতিল করেছে; রিভার্স করা হয়েছে",
   "opt.hist.closedRisk": "রিস্ক কন্ট্রোলের মাধ্যমে {close}-এ ক্লোজ করা হয়েছে (মার্জিন খুব কম), প্রতি কন্ট্রাক্টে",
-  "opt.hist.closedBackstop": "রিস্ক কন্ট্রোলের মাধ্যমে ক্লোজ করা হয়েছে (মার্জিন খুব কম): Kalks মার্কেট মেকার এটি {close}-এ নিয়ে নিয়েছে, প্রতি কন্ট্রাক্টে",
+  "opt.hist.closedBackstop": "রিস্ক কন্ট্রোলের মাধ্যমে ক্লোজ করা হয়েছে (মার্জিন খুব কম): Ezymex মার্কেট মেকার এটি {close}-এ নিয়ে নিয়েছে, প্রতি কন্ট্রাক্টে",
   "opt.hist.closedBust": "ডিলিং ডেস্ক ট্রেডটি বাতিল করেছে এবং {close}-এ রিভার্স করা হয়েছে, প্রতি কন্ট্রাক্টে",
   "opt.bust.title": "ডিলিং ডেস্ক ট্রেডটি বাতিল করেছে",
   "opt.bust.text": "{what} × {n}: ট্রেডটি রিভার্স করা হয়েছে এবং কোনো ফি নেওয়া হয়ে থাকলে তা ফেরত দেওয়া হয়েছে।",

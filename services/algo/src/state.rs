@@ -62,7 +62,7 @@ fn pct_decode(s: &str) -> String {
 }
 
 pub fn tenant_of(h: &HeaderMap) -> Result<String, ApiError> {
-    let t = header(h, "x-kalks-tenant").unwrap_or_else(|| "kalks".into());
+    let t = header(h, "x-ezymex-tenant").unwrap_or_else(|| "ezymex".into());
     if t.len() > 40 || !t.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_') {
         return Err(ApiError::BadRequest("Invalid tenant.".into()));
     }
@@ -81,8 +81,8 @@ impl<S: Send + Sync> FromRequestParts<S> for User {
     type Rejection = ApiError;
     async fn from_request_parts(parts: &mut Parts, _: &S) -> Result<Self, Self::Rejection> {
         let h = &parts.headers;
-        let id = header(h, "x-kalks-user-id").and_then(|v| v.parse::<i64>().ok()).filter(|v| *v > 0).ok_or_else(|| ApiError::Unauthorized("User identity required.".into()))?;
-        let name = header(h, "x-kalks-user-name").map(|n| pct_decode(&n)).map(|n| n.chars().take(60).collect()).unwrap_or_else(|| format!("Trader {id}"));
+        let id = header(h, "x-ezymex-user-id").and_then(|v| v.parse::<i64>().ok()).filter(|v| *v > 0).ok_or_else(|| ApiError::Unauthorized("User identity required.".into()))?;
+        let name = header(h, "x-ezymex-user-name").map(|n| pct_decode(&n)).map(|n| n.chars().take(60).collect()).unwrap_or_else(|| format!("Trader {id}"));
         Ok(User { tenant: tenant_of(h)?, id, name })
     }
 }
@@ -109,9 +109,9 @@ impl<S: Send + Sync> FromRequestParts<S> for Staff {
     type Rejection = ApiError;
     async fn from_request_parts(parts: &mut Parts, _: &S) -> Result<Self, Self::Rejection> {
         let h = &parts.headers;
-        let id = header(h, "x-kalks-staff-id").and_then(|v| v.parse::<i64>().ok()).ok_or_else(|| ApiError::Unauthorized("Staff identity required.".into()))?;
-        let role = header(h, "x-kalks-staff-role").ok_or_else(|| ApiError::Unauthorized("Staff role required.".into()))?;
-        let name = header(h, "x-kalks-staff-name").map(|n| pct_decode(&n)).unwrap_or_else(|| format!("Staff {id}"));
+        let id = header(h, "x-ezymex-staff-id").and_then(|v| v.parse::<i64>().ok()).ok_or_else(|| ApiError::Unauthorized("Staff identity required.".into()))?;
+        let role = header(h, "x-ezymex-staff-role").ok_or_else(|| ApiError::Unauthorized("Staff role required.".into()))?;
+        let name = header(h, "x-ezymex-staff-name").map(|n| pct_decode(&n)).unwrap_or_else(|| format!("Staff {id}"));
         Ok(Staff { tenant: tenant_of(h)?, id, name, role })
     }
 }

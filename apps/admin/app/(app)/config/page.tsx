@@ -4,11 +4,11 @@ import * as React from "react";
 import Link from "next/link";
 import { Archive, Copy, History, Layers, MoreHorizontal, Pencil, Plus, Route as RouteIcon, Users, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, IconButton, KpiCard, Menu, Money, PageHeader, Reveal, Segmented, cn, formatCompact, formatDateTime, type ChipTone } from "@kalks/ui";
-import { ADMIN_GROUPS, type AdminGroup } from "@kalks/mock/admin-config";
+import { Button, Card, CardHeader, Chip, IconButton, KpiCard, Menu, Money, PageHeader, Reveal, Segmented, cn, formatCompact, formatDateTime, type ChipTone } from "@ezymex/ui";
+import { ADMIN_GROUPS, type AdminGroup } from "@ezymex/mock/admin-config";
 import { GroupEditor, ROUTE_LABEL, CHARGE_LABEL, blankGroup } from "@/components/config/group-editor";
 import { auditToast, useReason } from "@/components/config/kit";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveGroupsPage } from "@/components/trading-live/groups";
 
 const ROUTE_TONE: Record<AdminGroup["route"], ChipTone> = { A: "info", B: "neutral", auto: "ember" };

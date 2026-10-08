@@ -2,7 +2,7 @@
 // the client, even inside a session.
 //   1. POST auth/stepup {action, target}            -> code emailed, challenge returned
 //   2. POST auth/stepup-verify {challenge, code, …}  -> single-use step-up token (5 min, bound to action + target)
-//   3. the change request carries `stepup_token` (body) or X-Kalks-Stepup; the server redeems it before acting.
+//   3. the change request carries `stepup_token` (body) or X-Ezymex-Stepup; the server redeems it before acting.
 // Actions: trading_password, investor_password, leverage, account_archive, account_close (target: the login);
 // withdrawal, internal_transfer (target: the from-login); account_password, profile_email, profile_phone,
 // viewer_access.

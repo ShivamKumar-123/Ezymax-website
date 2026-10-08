@@ -55,11 +55,11 @@ fn code(e: &ApiError) -> String {
 }
 
 fn ctx(bearer: Option<&str>) -> Ctx {
-    Ctx { ip: "203.0.113.20".into(), user_agent: "Mozilla/5.0 (Macintosh) Chrome/131".into(), device: Some("device-security-aaaa".into()), tenant_slug: "kalks".into(), bearer: bearer.map(str::to_string) }
+    Ctx { ip: "203.0.113.20".into(), user_agent: "Mozilla/5.0 (Macintosh) Chrome/131".into(), device: Some("device-security-aaaa".into()), tenant_slug: "ezymex".into(), bearer: bearer.map(str::to_string) }
 }
 
 async fn user(db: &TestDb, email: &str) -> i64 {
-    let hash = crypto::hash_password("Kalks@2026").unwrap();
+    let hash = crypto::hash_password("Ezymex@2026").unwrap();
     sqlx::query_scalar(
         "INSERT INTO users (tenant_id, email, password_hash, first_name, last_name, phone_dial, phone, country, date_of_birth,
                             referral_code, terms_accepted_at, email_verified_at)
@@ -209,7 +209,7 @@ async fn viewer_logins_are_read_only() {
     ro(revoke_viewer(st(), viewer(), Path(vid)).await.map(|_| ()));
     ro(create_request(st(), viewer(), Ok(Json(CreateRequestReq { kind: "closure".into(), reason: None }))).await.map(|_| ()));
     ro(stepup::request(st(), viewer(), Ok(Json(StepupReq { action: "withdrawal".into(), target: None }))).await.map(|_| ()));
-    ro(stepup::change_password(st(), viewer(), Ok(Json(stepup::PasswordReq { current: "Kalks@2026".into(), new_password: "Other#Pass99".into(), stepup_token: "x".into(), sign_out_others: true }))).await.map(|_| ()));
+    ro(stepup::change_password(st(), viewer(), Ok(Json(stepup::PasswordReq { current: "Ezymex@2026".into(), new_password: "Other#Pass99".into(), stepup_token: "x".into(), sign_out_others: true }))).await.map(|_| ()));
     ro(crate::kyc::start(st(), viewer(), Ok(Json(crate::kyc::StartReq { kind: "individual".into() }))).await.map(|_| ()));
     // the owner's password is unchanged and nothing was created
     assert_eq!(db.count("SELECT count(*) FROM client_requests WHERE user_id = $1", uid).await, 0);

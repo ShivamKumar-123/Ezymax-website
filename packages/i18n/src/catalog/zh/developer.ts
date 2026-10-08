@@ -233,8 +233,8 @@ const developer: NsMessages<"developer"> = {
   "assetClass.crypto": "加密货币",
   "assetClass.stocks": "股票",
 
-  // Code editor (Kalks strategy language)
-  "code.language": "Kalks 策略语言",
+  // Code editor (Ezymex strategy language)
+  "code.language": "Ezymex 策略语言",
   "code.checking": "正在检查…",
   "code.errors": { other: "{count} 个错误" },
   "code.compiles": "编译通过",
@@ -281,7 +281,7 @@ const developer: NsMessages<"developer"> = {
   // Kill switch
   "kill.title": "紧急停止开关",
   "kill.subtitle": "停止您账户上的所有策略、Webhook 和 API 订单",
-  "kill.globalPaused": "Kalks 风险管理部门已在全平台暂停自动交易。",
+  "kill.globalPaused": "Ezymex 风险管理部门已在全平台暂停自动交易。",
   "kill.onSince": "自 {at} 起开启",
   "kill.release": "解除紧急停止",
   "kill.stopAll": "停止所有自动化",
@@ -363,7 +363,7 @@ const developer: NsMessages<"developer"> = {
   "docs.bearer": "Bearer（最简单）",
   "docs.hmac": "HMAC 签名（推荐用于机器人）",
   // <code> wraps header names and paths; keep them untranslated
-  "docs.signature": "签名 = hex(HMAC-SHA256(secret, timestamp + METHOD + 含查询参数的路径 + body))，与 <code>X-Kalks-Key</code>、<code>X-Kalks-Timestamp</code>（unix 毫秒，±30 秒）和 <code>X-Kalks-Signature</code> 一起发送。签名路径格式为 <code>/public/v1/…</code>。每个签名仅接受一次。",
+  "docs.signature": "签名 = hex(HMAC-SHA256(secret, timestamp + METHOD + 含查询参数的路径 + body))，与 <code>X-Ezymex-Key</code>、<code>X-Ezymex-Timestamp</code>（unix 毫秒，±30 秒）和 <code>X-Ezymex-Signature</code> 一起发送。签名路径格式为 <code>/public/v1/…</code>。每个签名仅接受一次。",
   // "api", clientOrderId and duplicate are API values; keep them
   "docs.endpointsSub": "输入和输出均为 JSON。每笔订单的来源均为“api”；重复的 clientOrderId 将返回状态 duplicate。",
   "docs.errorsSub": "错误格式为 {shape}",
@@ -473,9 +473,9 @@ const developer: NsMessages<"developer"> = {
 
   // Strategy marketplace
   "market.title": "策略市场",
-  "market.subtitle": "来自 Kalks 账户、具有经过验证业绩记录的策略。将其复制到您的账户，或发布您自己的策略并通过订阅获得收益。",
-  "market.houseChip": "自营策略 · 由 Kalks 运营",
-  "market.houseNote": "由 Kalks 运营的自营策略：一个运行此策略的经纪商自有真实账户。业绩记录仅为其开始运行以来自身的真实交易，没有任何模拟或回填数据。",
+  "market.subtitle": "来自 Ezymex 账户、具有经过验证业绩记录的策略。将其复制到您的账户，或发布您自己的策略并通过订阅获得收益。",
+  "market.houseChip": "自营策略 · 由 Ezymex 运营",
+  "market.houseNote": "由 Ezymex 运营的自营策略：一个运行此策略的经纪商自有真实账户。业绩记录仅为其开始运行以来自身的真实交易，没有任何模拟或回填数据。",
   // Date range, e.g. "2025-01-01 to 2025-12-31"
   "market.range": "{from} 至 {to}",
   "market.backtestSimulated": "回测 · 模拟",
@@ -502,7 +502,7 @@ const developer: NsMessages<"developer"> = {
   "market.subscriptionStatus": "订阅{status}",
   "market.reviewSaved": "评价已保存",
   "market.reviewFailed": "无法保存评价",
-  "market.trackNote": "业绩记录来自作者自 {since} 起在 Kalks 上的自有部署：{days} 天，净收益 {net}。根据交易引擎上的已平仓成交计算，并非作者手动输入。",
+  "market.trackNote": "业绩记录来自作者自 {since} 起在 Ezymex 上的自有部署：{days} 天，净收益 {net}。根据交易引擎上的已平仓成交计算，并非作者手动输入。",
   "market.riskSettings": "风险设置",
   "market.riskLine": "仓位 {size} · 止损 {stop} · 目标 {target}",
   "market.riskPct": "{pct}% 风险",
@@ -520,7 +520,7 @@ const developer: NsMessages<"developer"> = {
   "market.cloneRules": "克隆规则",
   "market.subscribePaid": "订阅 · {price} USDT / 月",
   "market.subscribeFree": "免费订阅",
-  "market.paidNote": "从您的 Kalks 钱包（USDT）支付。每 30 天续订一次；可随时取消。",
+  "market.paidNote": "从您的 Ezymex 钱包（USDT）支付。每 30 天续订一次；可随时取消。",
   "market.reviews": "评价（{n}）",
   "market.stars": { other: "{count} 星" },
   "market.reviewPlaceholder": "它在您账户上的交易表现如何？",
@@ -552,7 +552,7 @@ const developer: NsMessages<"developer"> = {
   "market.popular": "热门",
   "market.emptyTitle": "暂无上架策略",
   "market.emptyText": "成为第一个：在模拟账户上部署策略，然后连同其经过验证的业绩记录一起发布。",
-  "market.disclaimer": "过往业绩不代表未来结果。业绩记录来自 Kalks 上的真实或模拟账户，并相应标注。付费订阅的平台费用：{pct}%。",
+  "market.disclaimer": "过往业绩不代表未来结果。业绩记录来自 Ezymex 上的真实或模拟账户，并相应标注。付费订阅的平台费用：{pct}%。",
   "market.mode": "模式",
   "market.renews": "续订",
   "market.copyOn": "在 #{login} 上复制",

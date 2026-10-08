@@ -104,7 +104,7 @@ fn pdf(seed: u8) -> Vec<u8> {
 }
 
 fn ctx(bearer: &str) -> Ctx {
-    Ctx { ip: "203.0.113.7".into(), user_agent: "kyc-test".into(), device: None, tenant_slug: "kalks".into(), bearer: Some(bearer.to_string()) }
+    Ctx { ip: "203.0.113.7".into(), user_agent: "kyc-test".into(), device: None, tenant_slug: "ezymex".into(), bearer: Some(bearer.to_string()) }
 }
 
 fn code(e: &ApiError) -> String {
@@ -156,8 +156,8 @@ fn q(kind: &str, side: &str, issue: Option<&str>) -> Result<Query<UploadQuery>, 
 fn hdrs(mime: &str) -> HeaderMap {
     let mut h = HeaderMap::new();
     h.insert("content-type", HeaderValue::from_str(mime).unwrap());
-    h.insert("x-kalks-filename", HeaderValue::from_static("id%20front.jpg"));
-    h.insert("x-kalks-kyc-checks", HeaderValue::from_static(r#"{"blur":{"score":212.5,"ok":true},"glare":{"pct":0.4,"ok":true}}"#));
+    h.insert("x-ezymex-filename", HeaderValue::from_static("id%20front.jpg"));
+    h.insert("x-ezymex-kyc-checks", HeaderValue::from_static(r#"{"blur":{"score":212.5,"ok":true},"glare":{"pct":0.4,"ok":true}}"#));
     h
 }
 

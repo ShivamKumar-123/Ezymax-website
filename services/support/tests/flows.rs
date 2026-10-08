@@ -1,4 +1,4 @@
-//! End-to-end tests against a throw-away database `kalks_support_test_<pid>_<n>` on the local PostgreSQL
+//! End-to-end tests against a throw-away database `ezymex_support_test_<pid>_<n>` on the local PostgreSQL
 //! (SUPPORT_TEST_DATABASE_URL, default :5433) and a real HTTP server on an ephemeral port.
 //! Skipped when PostgreSQL is unreachable. No AI key: the bot answers through its retrieval fallback.
 
@@ -32,13 +32,13 @@ async fn env() -> Option<Env> {
         eprintln!("skipping support tests: no PostgreSQL at {url}");
         return None;
     }
-    let name = format!("kalks_support_test_{}_{}", std::process::id(), N.fetch_add(1, Ordering::SeqCst));
+    let name = format!("ezymex_support_test_{}_{}", std::process::id(), N.fetch_add(1, Ordering::SeqCst));
     let db_url = admin.clone().database(&name).to_url_lossy().to_string();
     let pool = db::connect(&db_url).await.expect("create + migrate");
     let dir = std::env::temp_dir().join(&name).to_string_lossy().to_string();
     let mut cfg = Config::for_tests(&db_url, &dir);
     cfg.internal_token = TOKEN.into();
-    kb::seed(&pool, "kalks", &cfg.academy_glossary).await.expect("seed");
+    kb::seed(&pool, "ezymex", &cfg.academy_glossary).await.expect("seed");
     let st = AppState::new(pool, cfg);
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let base = format!("http://{}", listener.local_addr().unwrap());
@@ -57,11 +57,11 @@ impl Env {
     }
 
     fn user(&self, method: reqwest::Method, path: &str, uid: i64) -> reqwest::RequestBuilder {
-        self.http.request(method, format!("{}{path}", self.base)).header("x-kalks-internal", TOKEN).header("x-kalks-user-id", uid.to_string()).header("x-kalks-user-name", "Ana%20Silva").header("x-kalks-user-email", "ana@example.com")
+        self.http.request(method, format!("{}{path}", self.base)).header("x-ezymex-internal", TOKEN).header("x-ezymex-user-id", uid.to_string()).header("x-ezymex-user-name", "Ana%20Silva").header("x-ezymex-user-email", "ana@example.com")
     }
 
     fn staff(&self, method: reqwest::Method, path: &str, id: &str, role: &str) -> reqwest::RequestBuilder {
-        self.http.request(method, format!("{}{path}", self.base)).header("x-kalks-internal", TOKEN).header("x-kalks-staff-id", id).header("x-kalks-staff-name", "Mei%20Lin").header("x-kalks-staff-role", role)
+        self.http.request(method, format!("{}{path}", self.base)).header("x-ezymex-internal", TOKEN).header("x-ezymex-staff-id", id).header("x-ezymex-staff-name", "Mei%20Lin").header("x-ezymex-staff-role", role)
     }
 
     async fn json(rb: reqwest::RequestBuilder) -> (u16, Value) {
@@ -197,7 +197,7 @@ async fn notify_ingestion_prefs_dedupe_and_live_push() {
     let mut ws = e.ws(e.user(M::POST, "/v1/stream/ticket", 42)).await;
     next_of(&mut ws, "hello").await;
     let body = json!({"type": "wallet.deposit_credited", "userId": 42, "title": "Deposit credited", "body": "100.00 USDT was credited to your wallet.", "link": "/wallet/history", "severity": "success", "dedupeKey": "dep:1", "emailTo": "ana@example.com"});
-    let (s, v) = Env::json(e.http.post(format!("{}/v1/notify", e.base)).header("x-kalks-internal", TOKEN).header("x-kalks-service", "wallet").json(&body)).await;
+    let (s, v) = Env::json(e.http.post(format!("{}/v1/notify", e.base)).header("x-ezymex-internal", TOKEN).header("x-ezymex-service", "wallet").json(&body)).await;
     assert_eq!(s, 200, "{v}");
     assert_eq!(v["results"][0]["duplicate"], false);
     assert_eq!(v["results"][0]["emailed"], true, "wallet emails are on by default");
@@ -206,7 +206,7 @@ async fn notify_ingestion_prefs_dedupe_and_live_push() {
     assert_eq!(n["item"]["category"], "wallet");
     assert_eq!(n["unread"], 1);
     // same dedupe key = no second notification
-    let (_, v) = Env::json(e.http.post(format!("{}/v1/notify", e.base)).header("x-kalks-internal", TOKEN).json(&body)).await;
+    let (_, v) = Env::json(e.http.post(format!("{}/v1/notify", e.base)).header("x-ezymex-internal", TOKEN).json(&body)).await;
     assert_eq!(v["results"][0]["duplicate"], true);
     // outbox holds exactly one email
     let queued: i64 = sqlx::query_scalar("SELECT count(*) FROM email_outbox WHERE to_addr = 'ana@example.com'").fetch_one(&e.st.pool).await.unwrap();
@@ -220,9 +220,9 @@ async fn notify_ingestion_prefs_dedupe_and_live_push() {
     assert_eq!(s, 200);
     assert_eq!(p["prefs"]["wallet"]["email"], false);
     assert_eq!(p["prefs"]["security"]["email"], true);
-    let (_, v) = Env::json(e.http.post(format!("{}/v1/notify", e.base)).header("x-kalks-internal", TOKEN).json(&json!({"type": "wallet.withdrawal_approved", "userId": 42, "title": "Withdrawal approved", "emailTo": "ana@example.com"}))).await;
+    let (_, v) = Env::json(e.http.post(format!("{}/v1/notify", e.base)).header("x-ezymex-internal", TOKEN).json(&json!({"type": "wallet.withdrawal_approved", "userId": 42, "title": "Withdrawal approved", "emailTo": "ana@example.com"}))).await;
     assert_eq!(v["results"][0]["emailed"], false);
-    let (_, v) = Env::json(e.http.post(format!("{}/v1/notify", e.base)).header("x-kalks-internal", TOKEN).json(&json!({"type": "trading.tp", "userId": 42, "title": "Take profit hit: EURUSD"}))).await;
+    let (_, v) = Env::json(e.http.post(format!("{}/v1/notify", e.base)).header("x-ezymex-internal", TOKEN).json(&json!({"type": "trading.tp", "userId": 42, "title": "Take profit hit: EURUSD"}))).await;
     assert_eq!(v["results"][0]["inApp"], false);
     let (_, list) = Env::json(e.user(M::GET, "/v1/notifications/me", 42)).await;
     let titles: Vec<&str> = list["items"].as_array().unwrap().iter().map(|i| i["title"].as_str().unwrap()).collect();
@@ -235,9 +235,9 @@ async fn notify_ingestion_prefs_dedupe_and_live_push() {
     let (_, other) = Env::json(e.user(M::GET, "/v1/notifications/me", 43)).await;
     assert_eq!(other["items"].as_array().unwrap().len(), 0);
     // validation
-    let (s, _) = Env::json(e.http.post(format!("{}/v1/notify", e.base)).header("x-kalks-internal", TOKEN).json(&json!({"type": "Bad Type", "userId": 1, "title": "x"}))).await;
+    let (s, _) = Env::json(e.http.post(format!("{}/v1/notify", e.base)).header("x-ezymex-internal", TOKEN).json(&json!({"type": "Bad Type", "userId": 1, "title": "x"}))).await;
     assert_eq!(s, 422);
-    let (s, _) = Env::json(e.http.post(format!("{}/v1/notify", e.base)).header("x-kalks-internal", TOKEN).json(&json!({"type": "system.x", "userId": 1, "title": "x", "link": "javascript:alert(1)"}))).await;
+    let (s, _) = Env::json(e.http.post(format!("{}/v1/notify", e.base)).header("x-ezymex-internal", TOKEN).json(&json!({"type": "system.x", "userId": 1, "title": "x", "link": "javascript:alert(1)"}))).await;
     assert_eq!(s, 422);
     e.drop().await;
 }
@@ -299,7 +299,7 @@ async fn knowledge_base_canned_and_settings() {
     let (s, _) = Env::json(e.staff(M::GET, "/v1/notifications/admin/broadcasts", "8", "marketing")).await;
     assert_eq!(s, 200);
     // BFF-resolved permissions win over the role list
-    let (s, _) = Env::json(e.staff(M::GET, "/v1/notifications/admin/broadcasts", "7", "support").header("x-kalks-staff-perms", "support.read,notifications.write")).await;
+    let (s, _) = Env::json(e.staff(M::GET, "/v1/notifications/admin/broadcasts", "7", "support").header("x-ezymex-staff-perms", "support.read,notifications.write")).await;
     assert_eq!(s, 200);
     e.drop().await;
 }

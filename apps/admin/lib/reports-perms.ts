@@ -11,7 +11,7 @@
  * |                | AML list), any client's statement, creating / editing / running scheduled reports |                                                |
  *
  * The BFF (app/api/reports) checks the permission, then forwards the caller's `reports.*` permissions to the
- * reports service in `X-Kalks-Staff-Perms`; the service checks them again.
+ * reports service in `X-Ezymex-Staff-Perms`; the service checks them again.
  */
 
 export const REPORTS_PERMS = ["reports.read", "reports.export"] as const;

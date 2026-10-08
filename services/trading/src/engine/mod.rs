@@ -94,7 +94,7 @@ pub struct Env<'a> {
     pub max_quote_age_ms: i64,
     /// Client restrictions (trading disabled, close-only) set in the Back Office; None = not checked.
     pub restrictions: Option<&'a crate::controls::Restrictions>,
-    /// Kalks FX Options: snapshot, raw spots, prices, scenario margin (src/options).
+    /// Ezymex FX Options: snapshot, raw spots, prices, scenario margin (src/options).
     pub options: &'a dyn crate::options::OptionPricing,
     /// Corporate actions due but not yet applied everywhere (engine/corporate.rs); None = none.
     pub corp: Option<&'a corporate::CorpDue>,

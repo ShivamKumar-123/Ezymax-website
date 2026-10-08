@@ -47,7 +47,7 @@ quiz:
     explanation: "The difference is 0.00044. Dividing by the pip size of 0.0001 gives 4.4 pips; the fifth decimal is a tenth of a pip."
 ---
 
-Every price you see in Kalks Trader changes in small steps. Before you can talk sensibly about profit, loss, stops or costs, you need a shared unit for measuring those steps. In currency trading that unit is the **pip**; on metals, indices and crypto traders usually talk in **points**. This chapter explains both and shows how to convert a move in pips into an amount of money.
+Every price you see in Ezymex Trader changes in small steps. Before you can talk sensibly about profit, loss, stops or costs, you need a shared unit for measuring those steps. In currency trading that unit is the **pip**; on metals, indices and crypto traders usually talk in **points**. This chapter explains both and shows how to convert a move in pips into an amount of money.
 
 ## What a pip is
 
@@ -79,7 +79,7 @@ The direction tells you whether that move helped or hurt you. If you bought EURU
 
 Outside FX there is no universal pip. Gold (XAUUSD) is quoted to two decimals, for example 2,350.40, and traders normally describe moves in dollars: "gold is up 12 dollars" means the price rose by 12.00. Indices such as US30 or GER40 are quoted in index points, so US30 moving from 39,200 to 39,285 is an 85-point move. Crypto such as BTCUSD at 64,000 is usually described in dollars too.
 
-Because conventions vary, the reliable approach is to open the contract specification for the symbol in Kalks Trader and check three things: the number of digits, the contract size and the tick (minimum price step). Everything else follows from those.
+Because conventions vary, the reliable approach is to open the contract specification for the symbol in Ezymex Trader and check three things: the number of digits, the contract size and the tick (minimum price step). Everything else follows from those.
 
 ## Pip value: turning pips into money
 
@@ -109,7 +109,7 @@ When USD is not the quote currency, the result comes out in another currency and
 
 This is why pip value on USDJPY or USDCAD changes slightly as the exchange rate moves, while EURUSD, GBPUSD and AUDUSD stay fixed at 10 USD per lot for a USD account.
 
-> **Example:** Gold is quoted per troy ounce and one XAUUSD lot is 100 oz. A 1.00 move in price (2,350.40 to 2,351.40) is worth 100 x 1.00 = 100 USD per lot, and the smallest step of 0.01 is worth 1 USD per lot. On an index, on a 1-unit-per-point contract, one lot of US30 earns or loses 1 USD per index point; check the contract specification in Kalks Trader for the real size of each symbol.
+> **Example:** Gold is quoted per troy ounce and one XAUUSD lot is 100 oz. A 1.00 move in price (2,350.40 to 2,351.40) is worth 100 x 1.00 = 100 USD per lot, and the smallest step of 0.01 is worth 1 USD per lot. On an index, on a 1-unit-per-point contract, one lot of US30 earns or loses 1 USD per index point; check the contract specification in Ezymex Trader for the real size of each symbol.
 
 ## Why this matters
 

@@ -3,9 +3,9 @@
 import * as React from "react";
 import { toast } from "@/lib/notify";
 import { Eye, EyeOff, FileStack, Plus, Search, Settings2, SlidersHorizontal, Spline, Star, Trash2, X } from "lucide-react";
-import { cn } from "@kalks/ui";
-import { useT } from "@kalks/i18n/react";
-import type { T as Tr } from "@kalks/i18n";
+import { cn } from "@ezymex/ui";
+import { useT } from "@ezymex/i18n/react";
+import type { T as Tr } from "@ezymex/i18n";
 import { useTerminal } from "@/lib/store";
 import {
   COLOR_TOKENS,

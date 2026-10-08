@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Link2, RefreshCw, Target, TrendingUp, UserPlus, Wallet } from "lucide-react";
-import { Button, Card, CardHeader, CopyButton, DataTable, KpiCard, PageHeader, Reveal, Segmented, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, CopyButton, DataTable, KpiCard, PageHeader, Reveal, Segmented, type Column } from "@ezymex/ui";
 import { TableSkeleton, qs, useApi } from "@/components/live/kit";
 import { M } from "./api";
 import { EmptyNote, MkError, SelectF, TextF, int, pct, usd, usdK } from "./kit";
@@ -141,8 +141,8 @@ export function LiveCampaigns() {
   );
 }
 
-const SITE = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://kalkstrade.com").replace(/\/$/, "");
-const APP = (process.env.NEXT_PUBLIC_CRM_URL ?? "https://app.kalkstrade.com").replace(/\/$/, "");
+const SITE = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://ezymex.com").replace(/\/$/, "");
+const APP = (process.env.NEXT_PUBLIC_CRM_URL ?? "https://app.ezymex.com").replace(/\/$/, "");
 
 function LinkBuilder() {
   const [target, setTarget] = React.useState<"site" | "register">("site");

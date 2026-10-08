@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Client Area Academy: learning phases, chapters, quizzes, exams, glossary, progress. "Kalks Trader" stays as is.
+// Client Area Academy: learning phases, chapters, quizzes, exams, glossary, progress. "Ezymex Trader" stays as is.
 const academy: NsMessages<"academy"> = {
   // Shared
   title: "Academy",
@@ -20,7 +20,7 @@ const academy: NsMessages<"academy"> = {
   "practice.demo": "Fanya mazoezi kwenye demo",
   "practice.openFreeDemo": "Fungua akaunti ya demo bila malipo",
   "practice.openDemo": "Fungua demo",
-  "practice.inTrader": "Fanya mazoezi kwenye Kalks Trader",
+  "practice.inTrader": "Fanya mazoezi kwenye Ezymex Trader",
 
   // Levels (sent by the Academy service)
   "level.beginner": "Mwanzo",
@@ -31,12 +31,12 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "Uchambuzi wa kimsingi",
   "track.technical": "Uchambuzi wa kiufundi",
-  // Product track of the Kalks FX Options elective (phase 9)
+  // Product track of the Ezymex FX Options elective (phase 9)
   "track.options": "Biashara ya options",
   "trackShort.fundamental": "Kimsingi",
   "trackShort.technical": "Kiufundi",
   "trackShort.options": "Options",
-  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  // Chip on a product course (e.g. Ezymex FX Options) that sits outside the eight core phases and can be taken at any time
   elective: "Hiari",
 
   // Durations (h = hours, m = minutes)
@@ -52,7 +52,7 @@ const academy: NsMessages<"academy"> = {
   "home.pathText": "Kila awamu kuu ina mkondo wa kimsingi na wa kiufundi, mtihani wa mwisho na cheti.",
   // Section under the learning path listing the electives
   "home.electivesTitle": "Kozi za hiari",
-  "home.electivesText": "Kozi kuhusu bidhaa za Kalks. Zisome wakati wowote: kila moja ina mtihani wake wa mwisho na cheti.",
+  "home.electivesText": "Kozi kuhusu bidhaa za Ezymex. Zisome wakati wowote: kila moja ina mtihani wake wa mwisho na cheti.",
   "hero.allDone": "Sura zote zimekamilika",
   "hero.continue": "Endelea kujifunza",
   "hero.upNext": "Inayofuata",
@@ -220,7 +220,7 @@ const academy: NsMessages<"academy"> = {
   "callout.example": "Mfano",
   "callout.tip": "Kidokezo",
   "callout.note": "Kumbuka",
-  "callout.inKalksTrader": "Kwenye Kalks Trader",
+  "callout.inEzymexTrader": "Kwenye Ezymex Trader",
   diagram: "Mchoro",
 };
 export default academy;

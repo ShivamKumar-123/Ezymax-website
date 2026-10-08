@@ -59,7 +59,7 @@ const accountDetail: NsMessages<"accountDetail"> = {
   "overview.openPositions": "Offene Positionen",
   "overview.positionsSubtitle": "{open} offen · {pending} pending",
   "overview.allPositions": "Alle Positionen",
-  "overview.noPositions": "Keine offenen Positionen. Handeln Sie in Kalks Trader, dann erscheinen sie hier.",
+  "overview.noPositions": "Keine offenen Positionen. Handeln Sie in Ezymex Trader, dann erscheinen sie hier.",
   "overview.recentDeals": "Letzte Deals",
   "overview.dealsCount": { one: "{count} Deal auf diesem Konto", other: "{count} Deals auf diesem Konto" },
   "overview.recentDealsSubtitle": "Neueste Ein- und Ausstiege",
@@ -111,10 +111,10 @@ const accountDetail: NsMessages<"accountDetail"> = {
 
   // Positions tab (live)
   "positions.emptyTitle": "Keine offenen Positionen oder Pending Orders",
-  "positions.emptyText": "Handeln Sie in Kalks Trader; offene Positionen und deren G/V erscheinen hier und werden alle paar Sekunden aktualisiert.",
-  "positions.openTrader": "Kalks Trader öffnen",
+  "positions.emptyText": "Handeln Sie in Ezymex Trader; offene Positionen und deren G/V erscheinen hier und werden alle paar Sekunden aktualisiert.",
+  "positions.openTrader": "Ezymex Trader öffnen",
   // <pnl>…</pnl> wraps the coloured floating P&L amount
-  "positions.subtitleTrader": "{count} offen · schwebend <pnl>{amount}</pnl> · Verwaltung und Schließen in Kalks Trader",
+  "positions.subtitleTrader": "{count} offen · schwebend <pnl>{amount}</pnl> · Verwaltung und Schließen in Ezymex Trader",
   "positions.manageInTrader": "Im Trader verwalten",
   "positions.none": "Keine offenen Positionen.",
   "orders.title": "Pending Orders",
@@ -163,7 +163,7 @@ const accountDetail: NsMessages<"accountDetail"> = {
   "history.subtitle": "Alle Ein- und Ausstiegs-Deals in Serverzeit",
   "history.loadError": "Historie konnte nicht geladen werden",
   "history.emptyTitle": "Keine Deals in diesem Zeitraum",
-  "history.emptyText": "Trades, die Sie in Kalks Trader platzieren, erscheinen hier mit ihren Ein- und Ausstiegs-Deals.",
+  "history.emptyText": "Trades, die Sie in Ezymex Trader platzieren, erscheinen hier mit ihren Ein- und Ausstiegs-Deals.",
   "history.closedSummary": "{count} geschlossene Trades · netto <net>{amount}</net>",
   "history.searchPlaceholder": "Symbol oder Ticket",
 
@@ -273,9 +273,9 @@ const accountDetail: NsMessages<"accountDetail"> = {
 
   // Credentials tab
   "creds.title": "Zugangsdaten",
-  "creds.subtitle": "Damit melden Sie sich bei Kalks Trader an.",
+  "creds.subtitle": "Damit melden Sie sich bei Ezymex Trader an.",
   "creds.mt5Title": "MT5-Zugangsdaten",
-  "creds.mt5Subtitle": "Damit melden Sie sich im Kalks-Terminal oder in jeder MetaTrader 5 App an.",
+  "creds.mt5Subtitle": "Damit melden Sie sich im Ezymex-Terminal oder in jeder MetaTrader 5 App an.",
   "creds.fullAccess": "Vollzugriff",
   "creds.master": "Master",
   "creds.readOnly": "Nur lesen",
@@ -284,13 +284,13 @@ const accountDetail: NsMessages<"accountDetail"> = {
   "creds.tradingDescDemo": "Vollzugriff – Trades eröffnen, ändern und schließen. Zuletzt geändert am 12. Feb. 2026.",
   "creds.investorDesc": "Positionen und Historie ansehen, ohne handeln zu können.",
   "creds.investorDescDemo": "Nur-Lese-Zugriff für Coaches, Prüfer und Investoren. Kann keine Trades platzieren.",
-  "creds.securityNote": "Zu Ihrer Sicherheit zeigt Kalks bestehende Passwörter nie an und versendet sie nie per E-Mail. Wenn Sie eines verlieren, legen Sie hier ein neues fest.",
-  "creds.securityNoteDemo": "Zu Ihrer Sicherheit zeigt Kalks bestehende Passwörter nie an und versendet sie nie per E-Mail. Für die Änderung eines Passworts ist ein Einmalcode per E-Mail erforderlich.",
+  "creds.securityNote": "Zu Ihrer Sicherheit zeigt Ezymex bestehende Passwörter nie an und versendet sie nie per E-Mail. Wenn Sie eines verlieren, legen Sie hier ein neues fest.",
+  "creds.securityNoteDemo": "Zu Ihrer Sicherheit zeigt Ezymex bestehende Passwörter nie an und versendet sie nie per E-Mail. Für die Änderung eines Passworts ist ein Einmalcode per E-Mail erforderlich.",
   "investor.title": "Investorzugang",
   "investor.subtitle": "Lassen Sie einen Coach, Prüfer oder Investor dieses Konto beobachten",
   "investor.step1": "Legen Sie ein Investorpasswort fest, das Sie teilen möchten.",
   "investor.step2": "Teilen Sie den Login {login}, den Server {server} und dieses Passwort.",
-  "investor.step3": "Damit melden sie sich bei Kalks Trader an und sehen Live-Positionen und Historie, nur lesend.",
+  "investor.step3": "Damit melden sie sich bei Ezymex Trader an und sehen Live-Positionen und Historie, nur lesend.",
   "investor.step4": "Ändern Sie das Investorpasswort jederzeit, um den Zugriff zu entziehen; die Sitzung endet sofort.",
   "investor.webTerminal": "Web-Terminal · kein Download",
   "platforms.title": "Plattform verbinden",
@@ -303,7 +303,7 @@ const accountDetail: NsMessages<"accountDetail"> = {
   "platforms.sendLink": "Link senden",
   "platforms.storeLinksSent": "Store-Links an Ihre E-Mail gesendet",
   // 2FA = two-factor authentication
-  "platforms.twoFaHint": "Aktivieren Sie 2FA in Ihrem Kalks-Profil, um Auszahlungen und Änderungen der Zugangsdaten zu schützen.",
+  "platforms.twoFaHint": "Aktivieren Sie 2FA in Ihrem Ezymex-Profil, um Auszahlungen und Änderungen der Zugangsdaten zu schützen.",
 
   // Change password dialog
   "pw.trading": "Handelspasswort",
@@ -323,7 +323,7 @@ const accountDetail: NsMessages<"accountDetail"> = {
   "pw.stepUpWhat.investor": "das neue Investorpasswort für #{login} festzulegen",
   "pw.sessionsSignedOut": { one: "{count} offene Sitzung abgemeldet", other: "{count} offene Sitzungen abgemeldet" },
   "pw.confirmWithCode": "Bestätigen Sie mit dem Code, den wir Ihnen per E-Mail gesendet haben.",
-  "pw.descTrading": "Passwort mit Vollzugriff für #{login}. Mit dem alten Passwort angemeldete Kalks-Trader-Sitzungen werden abgemeldet.",
+  "pw.descTrading": "Passwort mit Vollzugriff für #{login}. Mit dem alten Passwort angemeldete Ezymex-Trader-Sitzungen werden abgemeldet.",
   "pw.descInvestor": "Nur-Lese-Passwort für #{login}. Teilen Sie es, damit jemand das Konto ansehen kann, ohne zu handeln. Sitzungen mit dem alten Passwort werden abgemeldet.",
   "pw.descTradingDemo": "Master-Passwort für #{login}. Offene Terminal-Sitzungen werden abgemeldet.",
   "pw.descInvestorDemo": "Nur-Lese-Zugriff für #{login} – teilen Sie es mit einem Coach oder Investor zum Ansehen, nicht zum Handeln.",
@@ -333,7 +333,7 @@ const accountDetail: NsMessages<"accountDetail"> = {
   "pw.sendingCode": "Code wird gesendet…",
   "pw.updating": "Wird aktualisiert…",
   "pw.update": "Passwort ändern",
-  "pw.shownOnce": "Wird nur einmal angezeigt. Kopieren Sie es jetzt; Kalks zeigt bestehende Passwörter nie an und versendet sie nie per E-Mail.",
+  "pw.shownOnce": "Wird nur einmal angezeigt. Kopieren Sie es jetzt; Ezymex zeigt bestehende Passwörter nie an und versendet sie nie per E-Mail.",
   "pw.new": "Neues Passwort",
   "pw.confirmNew": "Neues Passwort bestätigen",
   "pw.mismatch": "Passwörter stimmen nicht überein",
@@ -353,8 +353,8 @@ const accountDetail: NsMessages<"accountDetail"> = {
   "leverage.changeError": "Hebel konnte nicht geändert werden",
   "leverage.lockedTitle": "Hebel ist bei offenen Positionen gesperrt",
   "leverage.lockedTextTrader": {
-    one: "Schließen Sie Ihre {count} offene Position in Kalks Trader, um den Hebel zu ändern. So werden plötzliche Margin-Änderungen bei laufenden Trades verhindert.",
-    other: "Schließen Sie Ihre {count} offenen Positionen in Kalks Trader, um den Hebel zu ändern. So werden plötzliche Margin-Änderungen bei laufenden Trades verhindert.",
+    one: "Schließen Sie Ihre {count} offene Position in Ezymex Trader, um den Hebel zu ändern. So werden plötzliche Margin-Änderungen bei laufenden Trades verhindert.",
+    other: "Schließen Sie Ihre {count} offenen Positionen in Ezymex Trader, um den Hebel zu ändern. So werden plötzliche Margin-Änderungen bei laufenden Trades verhindert.",
   },
   "leverage.lockedText": {
     one: "Schließen Sie Ihre {count} offene Position, um den Hebel zu ändern. So werden plötzliche Margin-Änderungen bei laufenden Trades verhindert.",
@@ -374,7 +374,7 @@ const accountDetail: NsMessages<"accountDetail"> = {
   // <n>…</n> wraps the number of refills left
   "demoFunds.refillsLeft": "Heute noch <n>{left}</n> von {total} Aufladungen",
   "demoFunds.full": "Der Kontostand entspricht dem Startbetrag, daher gibt es nichts aufzuladen.",
-  "demoFunds.resetNote": "Aufladungen werden um 00:00 Serverzeit zurückgesetzt. Das Konto läuft nach {days} Tagen ohne Kalks-Trader-Login ab.",
+  "demoFunds.resetNote": "Aufladungen werden um 00:00 Serverzeit zurückgesetzt. Das Konto läuft nach {days} Tagen ohne Ezymex-Trader-Login ab.",
   "demoFunds.expiresIn": "Läuft ab in",
   "demoFunds.refilled": "Demoguthaben aufgeladen",
   "demoFunds.refilledDesc": "#{login} auf {amount} zurückgesetzt · heute noch {left}",

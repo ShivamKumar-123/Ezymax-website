@@ -1,7 +1,7 @@
-//! `GET /v1/internal/users/{id}` (service-to-service, `X-Kalks-Internal` only, like every /v1 route):
+//! `GET /v1/internal/users/{id}` (service-to-service, `X-Ezymex-Internal` only, like every /v1 route):
 //! a client's account and KYC status for the wallet service's withdrawal gate (D6) and risk checklist, and the
 //! client's effective restrictions (client_controls.rs) the wallet enforces.
-//! Scoped to the tenant in `X-Kalks-Tenant`; 404 for a client of another tenant.
+//! Scoped to the tenant in `X-Ezymex-Tenant`; 404 for a client of another tenant.
 
 use axum::Json;
 use axum::extract::{Path, State};

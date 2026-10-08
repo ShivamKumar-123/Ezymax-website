@@ -172,8 +172,8 @@ pub fn opt_snapshot() -> serde_json::Value {
             {"id": 3, "symbol": "USDJPY", "expiryDate": "2026-10-02", "cutAt": "2026-10-02T14:00:00Z", "status": "listed", "fixingRun": 0}
         ],
         "series": series,
-        "tenants": [{"tenant": "kalks", "enabledDemo": true, "enabledLive": true}],
-        "groups": [{"tenant": "kalks", "groupCode": "*", "symbol": "*", "volSpread": 0.004, "minSpreadUsd": 0.5, "commissionPerContract": 0.25,
+        "tenants": [{"tenant": "ezymex", "enabledDemo": true, "enabledLive": true}],
+        "groups": [{"tenant": "ezymex", "groupCode": "*", "symbol": "*", "volSpread": 0.004, "minSpreadUsd": 0.5, "commissionPerContract": 0.25,
                     "commissionCapPct": 10, "maxContractsPerClient": 200, "weekendMarginPct": 25, "enabled": true}],
         "controls": [],
         "clientLimits": []
@@ -182,7 +182,7 @@ pub fn opt_snapshot() -> serde_json::Value {
 
 impl Kit {
     pub fn new() -> Self {
-        let mut tenant = TenantConfig { tenant_id: 1, slug: "kalks".into(), policy: TenantPolicy::default(), ..Default::default() };
+        let mut tenant = TenantConfig { tenant_id: 1, slug: "ezymex".into(), policy: TenantPolicy::default(), ..Default::default() };
         for g in [group("hedge", Mode::Hedging, false), group("net", Mode::Netting, false), group("cent", Mode::Hedging, true)] {
             tenant.groups.insert(g.code.clone(), g);
         }

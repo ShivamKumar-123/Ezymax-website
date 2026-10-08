@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { motion } from "motion/react";
-import { cn } from "@kalks/ui";
+import { cn } from "@ezymex/ui";
 
 /**
  * Bars (series A) with either paired bars or a smooth line (series B) over a

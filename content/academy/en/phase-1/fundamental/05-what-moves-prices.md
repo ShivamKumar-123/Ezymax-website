@@ -57,7 +57,7 @@ That means much of what is expected is already **priced in**. By the time a wide
 
 ## The main drivers
 
-Across the instruments on Kalks, a handful of forces explain most large moves.
+Across the instruments on Ezymex, a handful of forces explain most large moves.
 
 **Interest rates and central banks.** Money tends to flow toward currencies where the expected return is higher. When a central bank is expected to raise rates, its currency usually strengthens; when cuts are expected, it usually weakens. Rates also affect gold, which pays no interest, and equities, whose future earnings are worth less when rates rise.
 
@@ -99,7 +99,7 @@ Watching how a price reacts to news is therefore informative. A market that cann
 
 ## In practice
 
-You do not need to predict every data point. What helps immediately is to know **when** important news is due, so you are not surprised by a sudden move. The economic calendar in the Kalks Client Area lists scheduled releases with their expected impact and consensus forecasts, and the News section follows unscheduled events. A simple habit is to check the calendar before every trading session and to note which of your open positions could be affected.
+You do not need to predict every data point. What helps immediately is to know **when** important news is due, so you are not surprised by a sudden move. The economic calendar in the Ezymex Client Area lists scheduled releases with their expected impact and consensus forecasts, and the News section follows unscheduled events. A simple habit is to check the calendar before every trading session and to note which of your open positions could be affected.
 
 ## Common mistakes
 
@@ -107,4 +107,4 @@ You do not need to predict every data point. What helps immediately is to know *
 - **Assuming one cause for every move.** Markets weigh many factors at once; the explanation offered afterwards is often simpler than reality.
 - **Ignoring shared drivers.** Being long gold and long NAS100 can look diversified, but both may fall on the same hawkish rates surprise.
 
-Pick one scheduled release this week, note the consensus, then watch the reaction on your demo account in Kalks Trader.
+Pick one scheduled release this week, note the consensus, then watch the reaction on your demo account in Ezymex Trader.

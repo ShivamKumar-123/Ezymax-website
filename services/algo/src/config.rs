@@ -7,7 +7,7 @@ use std::fmt;
 pub struct Config {
     pub bind: String,
     pub database_url: String,
-    /// Shared secret the BFFs send in `X-Kalks-Internal`. Empty = check disabled (development only).
+    /// Shared secret the BFFs send in `X-Ezymex-Internal`. Empty = check disabled (development only).
     pub internal_token: String,
     /// HMAC master key for API key secrets and webhook tokens.
     pub key_secret: String,
@@ -29,7 +29,7 @@ pub struct Config {
     pub ai_model: String,
     pub instruments_file: String,
     pub specs_file: String,
-    /// Public base URL shown for webhook endpoints and the REST API (e.g. https://api.kalkstrade.com/algo).
+    /// Public base URL shown for webhook endpoints and the REST API (e.g. https://api.ezymex.com/algo).
     pub public_url: String,
 }
 
@@ -93,9 +93,9 @@ impl Config {
         let root = concat!(env!("CARGO_MANIFEST_DIR"), "/../..");
         Ok(Self {
             bind: var("ALGO_BIND", "127.0.0.1:8099"),
-            database_url: var("ALGO_DATABASE_URL", "postgres://postgres@127.0.0.1:5433/kalks_algo"),
+            database_url: var("ALGO_DATABASE_URL", "postgres://postgres@127.0.0.1:5433/ezymex_algo"),
             internal_token,
-            key_secret: if key_secret.is_empty() { "kalks-algo-development-key-secret-not-for-production".into() } else { key_secret },
+            key_secret: if key_secret.is_empty() { "ezymex-algo-development-key-secret-not-for-production".into() } else { key_secret },
             dev_mode,
             json_logs: var("ALGO_LOG_FORMAT", "json") == "json",
             workers: var("ALGO_WORKERS", "true") != "false",

@@ -11,7 +11,7 @@
 // an empty list stops them) and `{"op":"tape","series":[codes]}` the series whose trades it receives (batched every
 // 250 ms). Frames: `{"type":"depth", series, bids:[{price, qty, orders}], asks, seq}` (levels may also come as
 // [price, qty, orders] tuples) and `{"type":"tape", trades:[{id, series, price, qty, side, t, kind}]}`.
-import { IS_LIVE } from "@kalks/mock";
+import { IS_LIVE } from "@ezymex/mock";
 import { optionsApi, isLaunchingSoon } from "./api";
 import { demoBookTick, demoChain, demoDepth, demoQuote, demoTrades } from "./mock-engine";
 import { normDepth, normTrade } from "./normalize";

@@ -6,8 +6,8 @@ import { motion } from "motion/react";
 import { ArrowRight, CalendarClock, Check, Loader2, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Chip, CoinIcon, Dialog, Field, Icon3D, Input, Money, cn, formatMoney } from "@/components/kit";
-import { WALLET } from "@kalks/mock";
-import { FUNDED, PROP_PAYOUTS } from "@kalks/mock/prop";
+import { WALLET } from "@ezymex/mock";
+import { FUNDED, PROP_PAYOUTS } from "@ezymex/mock/prop";
 import { CheckBox } from "./prop-ui";
 
 export function RequestPayoutDialog({ available, onRequested, trigger }: { available: number; onRequested: (amount: number) => void; trigger: React.ReactNode }) {
@@ -36,7 +36,7 @@ export function RequestPayoutDialog({ available, onRequested, trigger }: { avail
     setTimeout(() => {
       setStep("done");
       onRequested(n);
-      toast.success("Payout requested", { description: `${formatMoney(n)} → Kalks wallet · pending risk review` });
+      toast.success("Payout requested", { description: `${formatMoney(n)} → Ezymex wallet · pending risk review` });
     }, 1300);
   };
 
@@ -83,7 +83,7 @@ export function RequestPayoutDialog({ available, onRequested, trigger }: { avail
           <div className="flex flex-col items-center text-center">
             <Icon3D name="money_with_wings" size={84} />
             <Money value={n} className="mt-2 text-[34px] font-semibold tracking-tight text-up" />
-            <div className="text-[12.5px] text-fg-3">Request PO-24512 · to Kalks wallet (USDT)</div>
+            <div className="text-[12.5px] text-fg-3">Request PO-24512 · to Ezymex wallet (USDT)</div>
           </div>
           <ol className="mt-6 space-y-0">
             {[
@@ -148,7 +148,7 @@ export function RequestPayoutDialog({ available, onRequested, trigger }: { avail
             <div className="flex items-center gap-3 rounded-[14px] border border-ember/40 bg-ember-soft px-3.5 py-3">
               <CoinIcon coin="usdt" size={30} />
               <div className="min-w-0 flex-1">
-                <div className="text-[13.5px] font-medium">Kalks wallet · USDT</div>
+                <div className="text-[13.5px] font-medium">Ezymex wallet · USDT</div>
                 <div className="truncate font-mono text-[11px] text-fg-3">{WALLET.address.slice(0, 6)}…{WALLET.address.slice(-4)} · TRC20</div>
               </div>
               <Chip size="sm" tone="ember">

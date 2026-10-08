@@ -1,14 +1,14 @@
 "use client";
 
-// "Market-maker rules": the public disclosure of how the Kalks market maker quotes on the options order book
+// "Market-maker rules": the public disclosure of how the Ezymex market maker quotes on the options order book
 // (docs/OPTIONS-EXCHANGE.md §4): the same rules as every client (no priority, no early view, no last look, firm
 // quotes, never takes liquidity), what it does near the cut (the disclosed liquidity-provider exemption: it may keep
 // quoting until one minute before the cut, while clients can only close in the last 15 minutes), when it withdraws,
 // and the fee schedule. Linked from the Book tab, the chain's Book badge and the ticket.
 import * as React from "react";
 import { Scale, ShieldCheck } from "lucide-react";
-import { cn } from "@kalks/ui";
-import { useT } from "@kalks/i18n/react";
+import { cn } from "@ezymex/ui";
+import { useT } from "@ezymex/i18n/react";
 import { TDialog } from "@/components/ui/primitives";
 
 const SAME_RULES = ["trader.opt.mm.rule1", "trader.opt.mm.rule2", "trader.opt.mm.rule3", "trader.opt.mm.rule4", "trader.opt.mm.rule5"] as const;

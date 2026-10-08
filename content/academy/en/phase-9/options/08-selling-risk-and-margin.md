@@ -1,14 +1,14 @@
 ---
 slug: "p9-o-selling-risk-and-margin"
 title: "Selling options: risk and margin"
-summary: "Why option sellers can lose many times the premium, how Kalks calculates scenario-based margin, what happens at margin call and stop-out, and practical sizing rules for options."
+summary: "Why option sellers can lose many times the premium, how Ezymex calculates scenario-based margin, what happens at margin call and stop-out, and practical sizing rules for options."
 order: 8
 version: 1
 takeaways:
   - "Selling an option earns a limited premium in exchange for a large or unlimited potential loss: unlimited for short calls, up to the strike minus the premium for short puts."
-  - "Margin for sold options is scenario-based: Kalks revalues your options on each underlying under 16 price and volatility scenarios and charges the worst loss. It is higher over the weekend."
+  - "Margin for sold options is scenario-based: Ezymex revalues your options on each underlying under 16 price and volatility scenarios and charges the worst loss. It is higher over the weekend."
   - "Options share one account and one margin pool with your CFDs. At stop-out, the position using the most margin is closed first, which is often a short option."
-  - "There is no assignment because options are European and cash-settled, but Kalks is the counterparty and sets prices, spreads widen in fast markets, and bonus or credit funds cannot pay premiums or margin."
+  - "There is no assignment because options are European and cash-settled, but Ezymex is the counterparty and sets prices, spreads widen in fast markets, and bonus or credit funds cannot pay premiums or margin."
   - "Size options by their worst case: the premium at risk for buyers, the scenario loss for sellers, and prefer spreads with a capped loss to naked short options."
 practice:
   label: "Write down the equity of your demo account. Calculate the most premium you would pay for options on one idea at 1% risk, and how many short calls needing about 330 USD of margin each you could hold while keeping your margin level above 500%."
@@ -22,7 +22,7 @@ quiz:
       - "-200 USD"
     answer: 0
     explanation: "Each call pays (1.1950 - 1.1750) x 10,000 = 200 USD, so you pay 1,000 USD in total. With the 50 USD premium received, the result is -950 USD, 19 times the premium."
-  - question: "How does Kalks calculate margin for sold options?"
+  - question: "How does Ezymex calculate margin for sold options?"
     options:
       - "A fixed percentage of the contract value"
       - "It equals the premium received"
@@ -48,7 +48,7 @@ quiz:
     explanation: "Premiums and options margin must be covered by your own cash balance. Bonus or credit funds do not count towards either."
 ---
 
-Selling options feels comfortable: most of the time the option expires worthless and the seller keeps the premium. The problem is the rest of the time. This chapter covers what can go wrong for sellers, how Kalks calculates the margin that guards against it, and how to size option trades on both sides.
+Selling options feels comfortable: most of the time the option expires worthless and the seller keeps the premium. The problem is the rest of the time. This chapter covers what can go wrong for sellers, how Ezymex calculates the margin that guards against it, and how to size option trades on both sides.
 
 ## Small premium, large risk
 
@@ -67,7 +67,7 @@ A stop loss cannot protect a short option over a weekend or through a news gap: 
 
 ## How margin for sellers works
 
-Buyers pay the full premium and post no margin. Sellers receive the premium but must post margin, which Kalks calculates with a **scenario-based** method similar to the SPAN system used by futures exchanges. For each underlying, all your options positions are revalued one business day ahead under 16 scenarios:
+Buyers pay the full premium and post no margin. Sellers receive the premium but must post margin, which Ezymex calculates with a **scenario-based** method similar to the SPAN system used by futures exchanges. For each underlying, all your options positions are revalued one business day ahead under 16 scenarios:
 
 | Scenarios | Price move | Volatility |
 |---|---|---|
@@ -89,14 +89,14 @@ Options and CFDs share **one trading account and one margin pool**. Option value
 
 ## No assignment, but other risks
 
-Kalks options are European and cash-settled, so there is **no early exercise and no assignment**. Nobody can exercise against you before expiry, and you never receive or deliver the underlying. At expiry, an in-the-money short option is simply debited the difference.
+Ezymex options are European and cash-settled, so there is **no early exercise and no assignment**. Nobody can exercise against you before expiry, and you never receive or deliver the underlying. At expiry, an in-the-money short option is simply debited the difference.
 
 Other risks remain:
 
-- **Counterparty and pricing.** Kalks is the counterparty to every trade and sets the prices; there is no exchange order book. Spreads can widen in fast markets and around major news, and in abnormal conditions trading may be limited to closing only, or paused.
+- **Counterparty and pricing.** Ezymex is the counterparty to every trade and sets the prices; there is no exchange order book. Spreads can widen in fast markets and around major news, and in abnormal conditions trading may be limited to closing only, or paused.
 - **Expiry day.** New positions are not accepted in the last 15 minutes before the cut.
 - **Bonus and credit.** Bonus or credit funds cannot pay premiums or cover options margin. Only your own cash balance counts.
-- **Position limits.** There are maximum numbers of contracts per order and per client, and Kalks may set lower individual limits.
+- **Position limits.** There are maximum numbers of contracts per order and per client, and Ezymex may set lower individual limits.
 
 ## Sizing rules
 

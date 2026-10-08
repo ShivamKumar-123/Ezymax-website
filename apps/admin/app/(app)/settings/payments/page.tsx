@@ -23,8 +23,8 @@ import {
   formatCompact,
   formatNumber,
   type Column,
-} from "@kalks/ui";
-import { SET_GROUP_LIMITS, SET_PAYMENT_METHODS, type SetPaymentMethod } from "@kalks/mock/admin-platform-settings";
+} from "@ezymex/ui";
+import { SET_GROUP_LIMITS, SET_PAYMENT_METHODS, type SetPaymentMethod } from "@ezymex/mock/admin-platform-settings";
 import { SaveBar } from "@/components/settings/kit";
 
 function MethodIcon({ icon, size = 36 }: { icon: string; size?: number }) {

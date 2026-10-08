@@ -248,7 +248,7 @@ pub async fn settle(st: &AppState, id: i64, outcome: Result<EngineTransfer, Engi
 /// Settles one pending transfer: asks the engine for the key, re-sends the idempotent request if unknown.
 pub async fn settle_pending(st: &AppState, id: i64) {
     let Ok(Some(r)) = sqlx::query("SELECT * FROM trading_transfers WHERE id = $1 AND status = 'pending'").bind(id).fetch_optional(&st.pool).await else { return };
-    let tenant = st.tenants.slug_of(r.get("tenant_id")).unwrap_or_else(|| "kalks".into());
+    let tenant = st.tenants.slug_of(r.get("tenant_id")).unwrap_or_else(|| "ezymex".into());
     let key: String = r.get("engine_key");
     let outcome = match st.engine.transfer_status(&tenant, &key).await {
         Ok(Some(done)) => Ok(done),

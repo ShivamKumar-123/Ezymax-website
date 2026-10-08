@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Copy, Layers, Pencil, Plus, RefreshCw, Users } from "lucide-react";
-import { Button, Card, Chip, Dialog, DialogClose, EmptyState, Field, Input, KpiCard, PageHeader, Reveal, Segmented, Toggle, cn, formatNumber } from "@kalks/ui";
+import { Button, Card, Chip, Dialog, DialogClose, EmptyState, Field, Input, KpiCard, PageHeader, Reveal, Segmented, Toggle, cn, formatNumber } from "@ezymex/ui";
 import { ErrorState, useApi } from "@/components/live/kit";
 import { useCan } from "@/components/staff-session";
 import { AuditNotice, BookChip, ErrorBanner, ReasonFields, reportResult, useReason } from "@/components/trading-desk/kit";

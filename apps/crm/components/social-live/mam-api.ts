@@ -1,7 +1,7 @@
 // Contract shapes of the MAM routes (services/trading README "MAM (multi-account manager)"), fetched through
 // the social BFF (`/api/social/mam/…`, lib/mam-bff.ts) with socialApi / useSocial.
 
-import { tr } from "@kalks/i18n/react";
+import { tr } from "@ezymex/i18n/react";
 import type { EngineOrder, EnginePosition } from "@/components/trading/api";
 import type { FeePeriod, FeeView } from "./api";
 

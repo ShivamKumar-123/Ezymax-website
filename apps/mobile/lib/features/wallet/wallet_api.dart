@@ -621,7 +621,7 @@ String shortHash(String h, [int head = 6, int tail = 4]) => h.length <= head + t
 /// The Client Area's host for the wallet apps' in-app browsers (web window.location.host).
 String appHost(String appUrl) {
   final u = Uri.tryParse(appUrl);
-  if (u == null || u.host.isEmpty) return 'app.kalkstrade.com';
+  if (u == null || u.host.isEmpty) return 'app.ezymex.com';
   return u.hasPort ? '${u.host}:${u.port}' : u.host;
 }
 

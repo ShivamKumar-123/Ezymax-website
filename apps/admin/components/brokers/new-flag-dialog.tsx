@@ -3,9 +3,9 @@
 import * as React from "react";
 import { Flag as FlagIcon } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Dialog, DialogClose, Field, Input, Segmented, cn } from "@kalks/ui";
-import { FLG_ENVS, FLG_TENANTS, type FlgEnv, type FlgFlag } from "@kalks/mock/admin-flags";
-import { PEOPLE } from "@kalks/mock";
+import { Button, Dialog, DialogClose, Field, Input, Segmented, cn } from "@ezymex/ui";
+import { FLG_ENVS, FLG_TENANTS, type FlgEnv, type FlgFlag } from "@ezymex/mock/admin-flags";
+import { PEOPLE } from "@ezymex/mock";
 import { RangeSlider, Textarea } from "./kit";
 
 export function NewFlagDialog({ open, onOpenChange, onCreate }: { open: boolean; onOpenChange: (o: boolean) => void; onCreate: (f: FlgFlag) => void }) {

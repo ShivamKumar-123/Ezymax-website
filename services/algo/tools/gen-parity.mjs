@@ -10,7 +10,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "../../..");
-const dir = mkdtempSync(join(tmpdir(), "kalks-parity-"));
+const dir = mkdtempSync(join(tmpdir(), "ezymex-parity-"));
 const ind = readFileSync(join(root, "apps/terminal/lib/indicators.ts"), "utf8");
 const ser = readFileSync(join(root, "apps/terminal/lib/ai-trader/series.ts"), "utf8")
   .replace(/^import type .*$/gm, "")

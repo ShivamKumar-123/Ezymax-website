@@ -30,7 +30,7 @@ quiz:
       - "A narrower spread on the CFD"
     answer: 1
     explanation: "More expected movement makes every option more valuable, so higher implied volatility raises calls and puts alike. A move in spot helps one type and hurts the other, and less time lowers both."
-  - question: "How is the settlement price of a Kalks option determined?"
+  - question: "How is the settlement price of a Ezymex option determined?"
     options:
       - "The last bid before the cut"
       - "The close of the daily candle"
@@ -91,13 +91,13 @@ Time value shrinks as expiry approaches and is zero at the cut, when only intrin
 
 ## Expiries and the cut
 
-Kalks lists three expiry cycles on every underlying:
+Ezymex lists three expiry cycles on every underlying:
 
 - **Daily** options expire every business day. On their last day they are called 0DTE (zero days to expiry) options.
 - **Weekly** options expire on Fridays.
 - **Monthly** options expire on the last Friday of the month.
 
-If an expiry falls on a holiday, it moves to the **previous** business day. Options expire at the **cut**, 10:00 New York time by default, which is 17:00 server time in Kalks Trader.
+If an expiry falls on a holiday, it moves to the **previous** business day. Options expire at the **cut**, 10:00 New York time by default, which is 17:00 server time in Ezymex Trader.
 
 The settlement price is the **time-weighted average (TWAP) of the mid price** from 09:30 to 10:00 New York time. The mid is halfway between bid and ask, so a wider spread does not by itself move the settlement. Every passing minute fixes more of the average, so a sharp move at 09:58 has only a small effect.
 
@@ -117,7 +117,7 @@ The other pairs follow the same rule of 10,000 units of the base currency. The q
 
 ## Bid and ask
 
-Kalks quotes every strike with a **bid**, where you can sell, and an **ask**, where you can buy. The spread comes from pricing the bid at a slightly lower volatility and the ask at a slightly higher one, with a minimum spread in USD. As a result the spread in dollars is wider for options that are more sensitive to volatility, typically longer-dated and at-the-money ones.
+Ezymex quotes every strike with a **bid**, where you can sell, and an **ask**, where you can buy. The spread comes from pricing the bid at a slightly lower volatility and the ask at a slightly higher one, with a minimum spread in USD. As a result the spread in dollars is wider for options that are more sensitive to volatility, typically longer-dated and at-the-money ones.
 
 > **Example:** The one-week EURUSD 1.1700 call is quoted 0.0022 / 0.0024. You buy at 24 USD. If you sold immediately, you would receive 22 USD and lose 2 USD per contract. That spread is a real cost on every round trip.
 

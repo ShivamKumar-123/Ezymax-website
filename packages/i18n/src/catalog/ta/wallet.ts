@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Brand and network names stay as they are: Kalks, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
+// Brand and network names stay as they are: Ezymex, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
 // MetaMask, TronLink, Tronscan, USD, USC, KYC.
 const wallet: NsMessages<"wallet"> = {
   // Shared labels
@@ -386,17 +386,17 @@ const wallet: NsMessages<"wallet"> = {
   "demo.linkCopied": "இணைப்பு கிளிப்போர்டுக்கு நகலெடுக்கப்பட்டது",
   "demo.sendOnlyWarning": "<b>TRON (TRC20) வழியாக USDT ஐ மட்டும் அனுப்புங்கள்.</b> வேறு எந்த டோக்கனையும் அனுப்பினாலோ, ERC20 / BEP20 ஐப் பயன்படுத்தினாலோ நிதி நிரந்தரமாக இழக்கப்படும்.",
   "demo.arrival": "வருகை",
-  "demo.kalksFee": "Kalks கட்டணம்",
+  "demo.ezymexFee": "Ezymex கட்டணம்",
   "demo.noKycDeposit": "டெபாசிட் செய்ய KYC தேவையில்லை. உங்கள் முதல் பணம் எடுத்தலுக்கு முன் மட்டுமே சரிபார்ப்பு தேவை.",
   // Withdraw
   "demo.addrStartT": "TRC20 முகவரிகள் “T” இல் தொடங்கும்",
   "demo.addrLength": "34 எழுத்துகள் இருக்க வேண்டும் ({length}/34)",
   "demo.addrChars": "தவறான எழுத்துகள் உள்ளன (0, O, I, l அனுமதிக்கப்படாது)",
-  "demo.addrOwn": "இது உங்கள் சொந்த Kalks டெபாசிட் முகவரி",
+  "demo.addrOwn": "இது உங்கள் சொந்த Ezymex டெபாசிட் முகவரி",
   "demo.justNow": "இப்போது",
   "demo.codeConfirmed": "{email} வழியாகக் குறியீடு உறுதிப்படுத்தப்பட்டது",
   "demo.financeReviews": "ஒவ்வொரு பணம் எடுத்தலையும் நிதிக் குழு பரிசீலிக்கும் · வழக்கமாக 2 மணி நேரத்திற்குள்",
-  "demo.sentFromHot": "அங்கீகரிக்கப்பட்டதும் Kalks ஹாட் வாலட்டிலிருந்து அனுப்பப்படும்",
+  "demo.sentFromHot": "அங்கீகரிக்கப்பட்டதும் Ezymex ஹாட் வாலட்டிலிருந்து அனுப்பப்படும்",
   "demo.arriveAfter": "20 உறுதிப்படுத்தல்களுக்குப் பிறகு நிதி உங்கள் முகவரிக்கு வந்துசேரும்",
   "demo.pendingTitle": "நிலுவையில் உள்ள பணம் எடுத்தல்கள்",
   "demo.awaitingCompletion": "{count} முடிவுக்காகக் காத்திருக்கின்றன",
@@ -454,7 +454,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.alwaysReviewed": "எப்போதும் நிதிக் குழுவால் பரிசீலிக்கப்படும்",
   "demo.unrecoverable": "TRC20 USDT ஐ ஆதரிக்காத எக்ஸ்சேஞ்சுகளுக்கோ, ஸ்மார்ட்-கான்ட்ராக்ட் முகவரிகளுக்கோ செய்யப்படும் பணம் எடுத்தல்களை மீட்க முடியாது.",
   // Transfer
-  "demo.kalksWallet": "Kalks வாலட்",
+  "demo.ezymexWallet": "Ezymex வாலட்",
   "demo.freeMargin": "ஃப்ரீ மார்ஜின்",
   "demo.assetAvailable": "{amount} {asset} கிடைக்கிறது · {network}",
   "demo.throughWallet": "பரிமாற்றங்கள் எப்போதும் உங்கள் வாலட் வழியாகவே நடக்கும்.",
@@ -489,7 +489,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.rule4Title": "ஃப்ரீ மார்ஜின் பாதுகாக்கப்படுகிறது",
   "demo.rule4Text": "உங்கள் ஃப்ரீ மார்ஜின் அனுமதிப்பதை மட்டுமே வெளியே மாற்ற முடியும், எனவே திறந்த டிரேடுகள் பாதுகாப்பாக இருக்கும்.",
   "demo.into": "க்குள்",
-  "demo.intoKalksWallet": "உங்கள் Kalks வாலட்டுக்குள்",
+  "demo.intoEzymexWallet": "உங்கள் Ezymex வாலட்டுக்குள்",
   "demo.freeMarginAfter": "பிறகு ஃப்ரீ மார்ஜின்",
   "demo.marginLevelAfter": "பிறகு மார்ஜின் லெவல்",
   "demo.convertedNote": "{asset} லைவ் விகிதத்தில் {markup}% கூடுதல் கட்டணம் கழித்து USD ஆக மாற்றப்படும். நீங்கள் உறுதிப்படுத்தும் வரை ஒவ்வொரு டிக்கிலும் விகிதம் புதுப்பிக்கப்படும்.",

@@ -4,7 +4,7 @@ import type { NsMessages } from "../../core";
 const support: NsMessages<"support"> = {
   // Support page
   "page.title": "Dukungan",
-  "page.subtitle": "Chat dengan Kalks AI untuk jawaban instan. Minta berbicara dengan staf kapan saja dan tim kami akan melanjutkan dengan seluruh percakapan.",
+  "page.subtitle": "Chat dengan Ezymex AI untuk jawaban instan. Minta berbicara dengan staf kapan saja dan tim kami akan melanjutkan dengan seluruh percakapan.",
   "email.prefer": "Lebih suka email?",
   // <email> and <id> wrap the client's email address and client ID
   "email.writeFrom": "Kirim dari <email>{email}</email> dan sertakan ID klien Anda <id>{id}</id>.",
@@ -46,7 +46,7 @@ const support: NsMessages<"support"> = {
   "quick.withdrawal": "Kapan penarikan saya akan diterima?",
   "quick.stopOut": "Apa itu stop-out?",
   "header.supportTeam": "Tim dukungan",
-  "header.agentSub": "Dukungan Klien · Kalks",
+  "header.agentSub": "Dukungan Klien · Ezymex",
   "header.connecting": "Menghubungkan Anda dengan agen…",
   "header.replySoon": "Tim kami akan segera membalas di sini",
   "header.helpCentre": "Jawaban pusat bantuan · staf dapat bergabung kapan saja",

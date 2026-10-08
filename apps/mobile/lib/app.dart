@@ -12,15 +12,15 @@ import 'i18n/i18n.dart';
 import 'router/router.dart';
 import 'ui/ui.dart';
 
-/// The app: one MaterialApp for the Client Area (pastel light by default) with Kalks Trader on its own themed route.
-class KalksApp extends ConsumerStatefulWidget {
-  const KalksApp({super.key});
+/// The app: one MaterialApp for the Client Area (pastel light by default) with Ezymex Trader on its own themed route.
+class EzymexApp extends ConsumerStatefulWidget {
+  const EzymexApp({super.key});
 
   @override
-  ConsumerState<KalksApp> createState() => _KalksAppState();
+  ConsumerState<EzymexApp> createState() => _EzymexAppState();
 }
 
-class _KalksAppState extends ConsumerState<KalksApp> with WidgetsBindingObserver {
+class _EzymexAppState extends ConsumerState<EzymexApp> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
@@ -54,7 +54,7 @@ class _KalksAppState extends ConsumerState<KalksApp> with WidgetsBindingObserver
     final router = ref.watch(routerProvider);
     final banners = ref.watch(bannerProvider);
     return MaterialApp.router(
-      title: 'Kalks',
+      title: 'Ezymex',
       debugShowCheckedModeBanner: false,
       routerConfig: router,
       theme: KTheme.client(Brightness.light, brand: brand),

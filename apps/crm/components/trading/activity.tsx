@@ -18,7 +18,7 @@ import {
   type LedgerPage,
 } from "./api";
 import { SharePeriodButton, ShareTradeButton } from "@/components/growth/share-dialog";
-import { Trans, useT } from "@kalks/i18n/react";
+import { Trans, useT } from "@ezymex/i18n/react";
 import { OptionPremium as Premium, OptionTag, TradeSymbolAvatar, fmtContracts, optionLabel, reasonLabel } from "./instrument";
 import { dealPremiumsUsd, isOptionTrade, optionTerms, usdFactorOf, type InstrumentFilter } from "./option-deal";
 

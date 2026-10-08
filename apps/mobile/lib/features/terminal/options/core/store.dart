@@ -171,7 +171,7 @@ class TicketLeg {
   final String side;
   final int contracts;
 
-  /// a barrier leg (Kalks-quoted): `{kind, level, rebate?}`
+  /// a barrier leg (Ezymex-quoted): `{kind, level, rebate?}`
   final Map<String, Object?>? barrier;
 
   TicketLeg copyWith({String? id, String? series, String? expiry, OptionRight? right, double? strike, String? strikeLabel, String? side, int? contracts}) =>

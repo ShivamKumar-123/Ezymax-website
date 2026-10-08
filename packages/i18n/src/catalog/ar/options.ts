@@ -1,19 +1,19 @@
 import type { NsMessages } from "../../core";
 
-// Kalks FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Kalks Trader in options mode.
-// Kalks, Kalks Trader and Kalks FX Options stay in English.
+// Ezymex FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Ezymex Trader in options mode.
+// Ezymex, Ezymex Trader and Ezymex FX Options stay in English.
 const options: NsMessages<"options"> = {
   // Navigation entry
   "nav.title": "الخيارات",
 
   // Page header
-  "page.title": "Kalks FX Options",
-  "page.subtitle": "اشترِ أو بِع الخيارات على الفوركس والذهب والفضة والنفط، مباشرةً داخل Kalks Trader.",
+  "page.title": "Ezymex FX Options",
+  "page.subtitle": "اشترِ أو بِع الخيارات على الفوركس والذهب والفضة والنفط، مباشرةً داخل Ezymex Trader.",
   "page.statusReady": "جاهز للتداول",
   "page.learnCourse": "دورة الخيارات",
 
   // Hero card
-  "hero.eyebrow": "جديد في Kalks Trader",
+  "hero.eyebrow": "جديد في Ezymex Trader",
   "hero.title": "خيارات على 13 سوقًا، بكل بساطة",
   "hero.text": "خيارات أوروبية على أزواج الفوركس الرئيسية والتقاطعية والذهب والفضة والنفط الخام. اختر تواريخ انتهاء يومية أو أسبوعية أو شهرية. تُسوّى جميع الخيارات نقدًا بالدولار الأمريكي، فلا تستلم أي أصل فعليًا على الإطلاق.",
   "hero.feature.underlyings.title": "13 أصلًا أساسيًا",
@@ -57,16 +57,16 @@ const options: NsMessages<"options"> = {
   "terms.inShort": "باختصار",
   "terms.point.buy": "عند شراء خيار: أقصى ما يمكن أن تخسره هو ما تدفعه.",
   "terms.point.sell": "عند بيع خيار، قد تخسر أكثر مما تحصل عليه، ويتطلب ذلك هامشًا.",
-  "terms.point.prices": "تُحدَّد الأسعار في دفتر أوامر Kalks ومن قِبل Kalks.",
+  "terms.point.prices": "تُحدَّد الأسعار في دفتر أوامر Ezymex ومن قِبل Ezymex.",
   "terms.point.settle": "تُسوّى الخيارات نقدًا عند الانتهاء.",
   "terms.englishNote": "النص الكامل أدناه هو النسخة الملزمة، وهو باللغة الإنجليزية.",
   "terms.acceptedOn": "وافقت على الإصدار {version} في {date}.",
   "terms.close": "إغلاق",
   "terms.unavailable": "شروط الخيارات غير متاحة حاليًا. يُرجى المحاولة لاحقًا.",
 
-  // Kalks Trader button
-  "trade.ready": "كل شيء جاهز. تُفتح الخيارات في Kalks Trader، على الحساب نفسه الذي تتداول عليه عقود الفروقات.",
-  "trade.cta": "تداول الخيارات في Kalks Trader",
+  // Ezymex Trader button
+  "trade.ready": "كل شيء جاهز. تُفتح الخيارات في Ezymex Trader، على الحساب نفسه الذي تتداول عليه عقود الفروقات.",
+  "trade.cta": "تداول الخيارات في Ezymex Trader",
   "trade.chooseAccount": "اختر حسابًا",
   "trade.noAccount": "تحتاج إلى حساب تداول نشط لتداول الخيارات.",
   "trade.openAccount": "فتح حساب",
@@ -75,7 +75,7 @@ const options: NsMessages<"options"> = {
   "trade.demo": "تجريبي",
 
   // Key facts card
-  "facts.title": "كيف تعمل Kalks FX Options",
+  "facts.title": "كيف تعمل Ezymex FX Options",
   "facts.style": "النمط الأوروبي: تُنفَّذ تلقائيًا عند الانتهاء، ولا تُنفَّذ قبله أبدًا.",
   "facts.premium": "العلاوة بـ USD لكل عقد؛ يدفعها المشترون كاملةً عند الفتح.",
   "facts.contracts": "العقد الواحد: 10,000 وحدة من العملة، أو 1 أونصة ذهب، أو 50 أونصة فضة، أو 10 براميل نفط.",

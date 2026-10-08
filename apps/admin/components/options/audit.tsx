@@ -2,18 +2,18 @@
 
 /**
  * Options › Audit: every Back Office change to options (who, when, the reason, before / after), newest first.
- * Kalks staff can include every broker's entries.
+ * Ezymex staff can include every broker's entries.
  *
  *   GET /api/options/audit?limit=&before=&all=
  */
 import * as React from "react";
 import { ChevronDown, Download, RefreshCw, ScrollText, Search } from "lucide-react";
-import { Button, Card, Chip, EmptyState, PageHeader, Reveal, Segmented, cn, type ChipTone } from "@kalks/ui";
+import { Button, Card, Chip, EmptyState, PageHeader, Reveal, Segmented, cn, type ChipTone } from "@ezymex/ui";
 import { ErrorState, TableSkeleton, ago, downloadCsv, useNow, when } from "@/components/live/kit";
 import type { AuditEntry } from "./types";
 import { useOpt, useOptPerms } from "./kit";
-import { IS_DEMO } from "@kalks/mock/mode";
-import { mockOptionsRequest } from "@kalks/mock/admin-options";
+import { IS_DEMO } from "@ezymex/mock/mode";
+import { mockOptionsRequest } from "@ezymex/mock/admin-options";
 
 const ACTION: Record<string, { label: string; tone: ChipTone }> = {
   "underlying.update": { label: "Underlying changed", tone: "info" },
@@ -107,7 +107,7 @@ export function AuditPage() {
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Staff, target or reason" className="min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-fg-3" aria-label="Search the audit log" />
             </div>
             <Segmented size="xs" value={area} onChange={setArea} options={AREAS.map((a) => ({ value: a.value, label: a.label }))} />
-            {perms.platform && <Segmented size="xs" value={everyone ? "all" : "own"} onChange={(v) => setEveryone(v === "all")} options={[{ value: "own", label: "Kalks" }, { value: "all", label: "All brokers" }]} />}
+            {perms.platform && <Segmented size="xs" value={everyone ? "all" : "own"} onChange={(v) => setEveryone(v === "all")} options={[{ value: "own", label: "Ezymex" }, { value: "all", label: "All brokers" }]} />}
           </div>
           {first.error ? (
             <ErrorState error={first.error} onRetry={first.reload} />
@@ -132,7 +132,7 @@ export function AuditPage() {
                         <Chip size="sm" tone={a.tone}>
                           {a.label}
                         </Chip>
-                        {e.tenant !== "kalks" && <Chip size="sm">{e.tenant}</Chip>}
+                        {e.tenant !== "ezymex" && <Chip size="sm">{e.tenant}</Chip>}
                       </span>
                       <span className="min-w-0">
                         <span className="block truncate font-mono text-[12.5px]">{e.target}</span>

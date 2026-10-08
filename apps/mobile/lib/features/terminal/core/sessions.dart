@@ -1,5 +1,5 @@
-// Kalks Trader sessions (docs/MOBILE-API.md §6 "Trade tokens"): one engine session per trading account, held as a
-// trade token (X-Kalks-Trade) in the Keystore next to the gateway session.
+// Ezymex Trader sessions (docs/MOBILE-API.md §6 "Trade tokens"): one engine session per trading account, held as a
+// trade token (X-Ezymex-Trade) in the Keystore next to the gateway session.
 // - An own account opens with `POST trade/sessions {login}` (the Client Area Trade button's SSO);
 // - any account can be added MT5-style with `POST trade/login {login, password, server}` (investor password =
 //   read-only);
@@ -287,7 +287,7 @@ final tradeSessionsProvider = NotifierProvider<TradeSessionsController, TradeSes
 /// The session on screen (null while opening or when none).
 final activeTradeSessionProvider = Provider<TradeSession?>((ref) => ref.watch(tradeSessionsProvider.select((s) => s.current)));
 
-/// Calls of the active trading account: the API client with its trade token (X-Kalks-Trade) filled in.
+/// Calls of the active trading account: the API client with its trade token (X-Ezymex-Trade) filled in.
 class TradeApi {
   TradeApi(this.api, this.session);
   final ApiClient api;

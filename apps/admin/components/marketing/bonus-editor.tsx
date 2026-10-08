@@ -3,8 +3,8 @@
 import * as React from "react";
 import { Info, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Dialog, DialogClose, Field, Icon3D, Input, Segmented, Toggle, cn } from "@kalks/ui";
-import { MKT_COUNTRIES, MKT_GROUPS, type MktBonusCampaign, type MktBonusKind, type MktGroup } from "@kalks/mock/admin-growth-marketing";
+import { Button, Dialog, DialogClose, Field, Icon3D, Input, Segmented, Toggle, cn } from "@ezymex/ui";
+import { MKT_COUNTRIES, MKT_GROUPS, type MktBonusCampaign, type MktBonusKind, type MktGroup } from "@ezymex/mock/admin-growth-marketing";
 import { ChipPicker, CountryPicker, NumField, SectionLabel, fmtInt } from "./kit";
 
 interface Draft {

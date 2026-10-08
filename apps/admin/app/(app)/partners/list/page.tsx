@@ -3,12 +3,12 @@
 import * as React from "react";
 import { Download, Flag as FlagIcon, Sparkles, UserPlus } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, Chip, DataTable, Dialog, Money, PageHeader, Reveal, Segmented, Sparkline, StatusChip, type Column } from "@kalks/ui";
-import { LEVELS, PARTNERS, PLANS, SUB_BROKER_NAMES, type LevelKey, type Partner } from "@kalks/mock/admin-partners";
+import { Button, Card, Chip, DataTable, Dialog, Money, PageHeader, Reveal, Segmented, Sparkline, StatusChip, type Column } from "@ezymex/ui";
+import { LEVELS, PARTNERS, PLANS, SUB_BROKER_NAMES, type LevelKey, type Partner } from "@ezymex/mock/admin-partners";
 import { MiniField, MiniStat, PersonCell, Select, TextInput } from "@/components/config/kit";
 import { LevelChip, fmtInt, fmtLots } from "@/components/partners/common";
 import { PartnerDrawer } from "@/components/partners/partner-drawer";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LivePartnersList } from "@/components/partners-live/partners";
 
 function InviteDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {

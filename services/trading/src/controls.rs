@@ -6,12 +6,12 @@
 //! check, so a timed restriction ends on time even between reloads. The engine enforces:
 //! * `trading`: no client order, modification or close (dealers still can; SL / TP / stop-out still run);
 //! * `close_only`: closes and reductions only, no new exposure;
-//! * `login`: Kalks Trader sign-in and SSO are refused, every terminal session of the client ends and open
+//! * `login`: Ezymex Trader sign-in and SSO are refused, every terminal session of the client ends and open
 //!   streams close;
 //! * `social`: no new copy subscription, PAMM investment or fund, master application, MAM link or programme.
 //!   (`freeze` arrives expanded by the gateway.)
 //!
-//! **Presence.** Every Kalks Trader stream of a client's own session is registered in `Presence`; the engine
+//! **Presence.** Every Ezymex Trader stream of a client's own session is registered in `Presence`; the engine
 //! reports the live connections (and the ones that closed) to the gateway every 15 s and right after a change
 //! (`POST /v1/internal/presence/trader`), which is where the Back Office reads Online / Away / Offline. Staff
 //! sessions opened as the client are never reported.
@@ -115,7 +115,7 @@ pub const SUSPENDED_MESSAGE: &str = "This account is suspended. Contact support.
 
 // ---------- presence ----------
 
-/// One Kalks Trader stream of a client's own session.
+/// One Ezymex Trader stream of a client's own session.
 #[derive(Clone, Debug)]
 pub struct Conn {
     pub user_id: i64,
@@ -197,7 +197,7 @@ impl Presence {
 
 // ---------- gateway client ----------
 
-/// Plain HTTP/1.1 calls to the gateway's internal API (`GATEWAY_URL`, `X-Kalks-Internal: GATEWAY_INTERNAL_TOKEN`),
+/// Plain HTTP/1.1 calls to the gateway's internal API (`GATEWAY_URL`, `X-Ezymex-Internal: GATEWAY_INTERNAL_TOKEN`),
 /// like the wallet client: the gateway is an internal service on the loopback / private network.
 #[derive(Clone, Debug)]
 pub struct Gateway {
@@ -218,7 +218,7 @@ impl Gateway {
         anyhow::ensure!(self.configured(), "GATEWAY_URL is not set");
         let payload = body.map(Value::to_string).unwrap_or_default();
         let req = format!(
-            "{method} {path} HTTP/1.1\r\nHost: {}\r\nContent-Type: application/json\r\nX-Kalks-Internal: {}\r\nX-Kalks-Service: trading\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{payload}",
+            "{method} {path} HTTP/1.1\r\nHost: {}\r\nContent-Type: application/json\r\nX-Ezymex-Internal: {}\r\nX-Ezymex-Service: trading\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{payload}",
             self.host,
             self.token,
             payload.len()
@@ -238,7 +238,7 @@ impl Gateway {
 
 // ---------- enforcement side effects ----------
 
-/// Ends every Kalks Trader session of a client (sign-in blocked). Streams close on their next heartbeat.
+/// Ends every Ezymex Trader session of a client (sign-in blocked). Streams close on their next heartbeat.
 pub async fn revoke_sessions(pool: &PgPool, hub: &Hub, user_id: i64) -> anyhow::Result<u64> {
     let logins: Vec<i64> = hub.shared.index.read().unwrap().accounts.iter().filter(|(_, m)| m.user_id == user_id).map(|(l, _)| *l).collect();
     if logins.is_empty() {
@@ -279,7 +279,7 @@ async fn reload(gw: &Gateway, pool: &PgPool, hub: &Hub) -> anyhow::Result<usize>
 /// connection opens or closes).
 pub fn spawn(hub: Hub, pool: PgPool, gw: Arc<Gateway>, presence: Arc<Presence>) {
     if !gw.configured() {
-        tracing::warn!("GATEWAY_URL not set: client restrictions and Kalks Trader presence are off");
+        tracing::warn!("GATEWAY_URL not set: client restrictions and Ezymex Trader presence are off");
         return;
     }
     {

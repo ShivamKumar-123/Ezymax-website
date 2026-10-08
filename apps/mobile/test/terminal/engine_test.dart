@@ -2,10 +2,10 @@
 // orders (a triggered stop-limit is a limit), closed trades from deals (commission share of the entry), equity frames,
 // option entries kept apart; and the rejection texts (symbol_demo_only, stale_price, market_closed…).
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/core/api/api_error.dart';
-import 'package:kalks/features/terminal/core/models.dart';
-import 'package:kalks/features/terminal/core/trade_errors.dart';
-import 'package:kalks/i18n/t.dart';
+import 'package:ezymex/core/api/api_error.dart';
+import 'package:ezymex/features/terminal/core/models.dart';
+import 'package:ezymex/features/terminal/core/trade_errors.dart';
+import 'package:ezymex/i18n/t.dart';
 
 import 'fixtures.dart';
 
@@ -17,7 +17,7 @@ void main() {
     expect(a.equity, closeTo(5123.45, 1e-9));
     expect(a.margin, 100);
     expect(a.freeMargin, closeTo(5023.45, 1e-9));
-    expect(a.server, 'Kalks-Demo');
+    expect(a.server, 'Ezymex-Demo');
     expect(a.refillsLeft, 2);
     expect(a.spreadGroup, 'standard');
     expect(a.group, 'Cent');

@@ -22,11 +22,11 @@ import {
   Tabs,
   cn,
   type Column,
-} from "@kalks/ui";
-import { CORPORATE_KYC, KYC_QUEUE, REASON_CODES, getClient, timeAgo, type KycApplication, type KycCheck } from "@kalks/mock/admin-clients";
+} from "@ezymex/ui";
+import { CORPORATE_KYC, KYC_QUEUE, REASON_CODES, getClient, timeAgo, type KycApplication, type KycCheck } from "@ezymex/mock/admin-clients";
 import { ClientCell, KycChip, ReasonDialog, SlaTimer } from "@/components/command/kit";
 import { IdCard } from "@/components/clients/profile-tabs";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { KycQueue } from "@/components/kyc/queue";
 
 const STATUS_TONE = { pending: "warn", review: "info", resubmit: "neutral", approved: "up", rejected: "down" } as const;

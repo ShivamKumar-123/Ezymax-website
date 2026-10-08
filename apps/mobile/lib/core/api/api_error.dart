@@ -46,10 +46,10 @@ class ApiException implements Exception {
 
   bool get isRateLimited => status == 429;
 
-  /// Kalks Trader: open the account again (`trade/sessions`) or ask for the password.
+  /// Ezymex Trader: open the account again (`trade/sessions`) or ask for the password.
   bool get isTradeSessionEnded => code == 'session_expired' || code == 'trade_session_required';
 
-  /// Kalks Trader: the stored trade token belongs to someone else; drop it.
+  /// Ezymex Trader: the stored trade token belongs to someone else; drop it.
   bool get isTradeSessionForeign => code == 'trade_session_foreign';
 
   @override
@@ -84,7 +84,7 @@ class ApiException implements Exception {
     _ => 'Something went wrong. Please try again.',
   };
 
-  static const ApiException network = ApiException(status: 0, code: 'network', message: "Can't reach Kalks. Check your connection and try again.");
+  static const ApiException network = ApiException(status: 0, code: 'network', message: "Can't reach Ezymex. Check your connection and try again.");
 }
 
 /// Gateway validation texts -> message keys (apps/crm/lib/auth-client.ts MESSAGE_KEYS).

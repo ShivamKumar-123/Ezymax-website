@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { motion } from "motion/react";
-import { cn } from "@kalks/ui";
+import { cn } from "@ezymex/ui";
 
 const GRAD: Record<string, string> = {
   ember: "linear-gradient(90deg, rgba(255,90,31,.35), var(--k-ember))",

@@ -1,7 +1,7 @@
 // Server-only: the broker brand of the visitor's host (gateway /v1/public/tenant-config → `branding`; the
 // gateway resolves the tenant from tenant_domains). Cached briefly per host per server process.
 
-import type { TenantBrand } from "@kalks/ui";
+import type { TenantBrand } from "@ezymex/ui";
 import { gateway } from "@/lib/gateway";
 import { requestHost } from "@/lib/tenant-host";
 
@@ -11,7 +11,7 @@ const cache = new Map<string, { at: number; brand: TenantBrand | null }>();
 /** Refreshes in flight per host: metadata and the layout of one render share one gateway call. */
 const inflight = new Map<string, Promise<TenantBrand | null>>();
 
-/** Null when the gateway is unreachable: the app then shows the stock Kalks look. */
+/** Null when the gateway is unreachable: the app then shows the stock Ezymex look. */
 export async function tenantBrand(host?: string): Promise<TenantBrand | null> {
   const key = host ?? (await requestHost()) ?? "";
   const hit = cache.get(key);

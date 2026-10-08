@@ -1,5 +1,5 @@
 // Keys for this namespace. English is the source; translations live in ../<lang>/aiTrader.ts.
-// Kalks Trader > Toolbox > AI Trader: describe a strategy in words, review the strategy card, run it in
+// Ezymex Trader > Toolbox > AI Trader: describe a strategy in words, review the strategy card, run it in
 // paper (simulated) or live mode. Keep "Claude", "AI", indicator names (RSI, EMA, ATR, MACD), SL / TP,
 // timeframes (M15, H1) and "Journal (Experts)" as they are. "Paper" = simulated trading, no real orders.
 const aiTrader = {

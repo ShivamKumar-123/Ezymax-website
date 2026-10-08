@@ -6,7 +6,7 @@ use std::fmt;
 pub struct Config {
     pub bind: String,
     pub database_url: String,
-    /// Shared secret the BFFs send in `X-Kalks-Internal`. Empty = check disabled (dev only).
+    /// Shared secret the BFFs send in `X-Ezymex-Internal`. Empty = check disabled (dev only).
     pub internal_token: String,
     /// Root of the versioned course content (`content/academy`).
     pub content_dir: String,
@@ -53,18 +53,18 @@ impl Config {
         if internal_token.is_empty() && !dev_mode {
             anyhow::bail!("ACADEMY_INTERNAL_TOKEN is required in production");
         }
-        // default: same server/credentials as the gateway, database kalks_academy
+        // default: same server/credentials as the gateway, database ezymex_academy
         let database_url = match env::var("ACADEMY_DATABASE_URL").ok().filter(|v| !v.trim().is_empty()) {
             Some(u) => u,
             None => {
-                let g = var("GATEWAY_DATABASE_URL", "postgres://postgres@127.0.0.1:5433/kalks_core");
+                let g = var("GATEWAY_DATABASE_URL", "postgres://postgres@127.0.0.1:5433/ezymex_core");
                 match g.rfind('/') {
                     Some(i) if i > g.find("://").map(|x| x + 2).unwrap_or(0) => {
                         let (base, tail) = g.split_at(i);
                         let q = tail.find('?').map(|j| &tail[j..]).unwrap_or("");
-                        format!("{base}/kalks_academy{q}")
+                        format!("{base}/ezymex_academy{q}")
                     }
-                    _ => "postgres://postgres@127.0.0.1:5433/kalks_academy".into(),
+                    _ => "postgres://postgres@127.0.0.1:5433/ezymex_academy".into(),
                 }
             }
         };

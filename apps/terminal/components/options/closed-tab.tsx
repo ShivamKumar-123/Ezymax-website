@@ -8,9 +8,9 @@
 // latest deals; live sessions also load the engine's history of the period.
 import * as React from "react";
 import { History, RefreshCw } from "lucide-react";
-import { OPTION_SPEC } from "@kalks/mock/options";
-import { cn } from "@kalks/ui";
-import { useLocale, useT } from "@kalks/i18n/react";
+import { OPTION_SPEC } from "@ezymex/mock/options";
+import { cn } from "@ezymex/ui";
+import { useLocale, useT } from "@ezymex/i18n/react";
 import { useTerminal } from "@/lib/store";
 import { fmtServer } from "@/lib/trading";
 import { Pnl } from "@/components/ui/primitives";

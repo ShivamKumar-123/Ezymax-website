@@ -52,7 +52,7 @@ An equity index is a single number that summarises the value of a basket of shar
 
 ## How the main indices are built
 
-| Kalks symbol | Underlying index | Constituents | Weighting |
+| Ezymex symbol | Underlying index | Constituents | Weighting |
 |---|---|---|---|
 | US30 | Dow Jones Industrial Average | 30 large US companies | Price-weighted |
 | SPX500 | S&P 500 | About 500 large US companies | Free-float market cap |
@@ -77,7 +77,7 @@ This is why a hot US CPI print can hit NAS100 harder than US30: the inflation su
 
 ## Contract sizes and a worked example
 
-Index contract sizes vary by broker, so always check the contract specification in Kalks Trader. The examples below use a contract of 1 USD per point per lot.
+Index contract sizes vary by broker, so always check the contract specification in Ezymex Trader. The examples below use a contract of 1 USD per point per lot.
 
 ```text
 Buy 1.5 lots US30 at 39,200, stop 38,980, target 39,640

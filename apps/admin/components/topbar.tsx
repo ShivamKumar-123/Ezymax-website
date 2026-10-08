@@ -3,14 +3,14 @@
 import * as React from "react";
 import Link from "next/link";
 import { Check, ChevronDown, LogOut, ShieldCheck, UserRound, KeyRound } from "lucide-react";
-import { Avatar, Chip, CommandPalette, Menu, ThemeToggle, cn } from "@kalks/ui";
+import { Avatar, Chip, CommandPalette, Menu, ThemeToggle, cn } from "@ezymex/ui";
 import { NotificationBell } from "@/components/notifications";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { NAV_COMMANDS } from "@/lib/live";
 import { signOut, useStaff } from "@/components/staff-session";
 
 const TENANTS = [
-  { id: "kalks", name: "Kalks Markets", plan: "Owner", color: "#ff5a1f" },
+  { id: "ezymex", name: "Ezymex Markets", plan: "Owner", color: "#ff5a1f" },
   { id: "aurum", name: "Aurum FX", plan: "Enterprise", color: "#e9b949" },
   { id: "nova", name: "NovaTrade Asia", plan: "Growth", color: "#38bdf8" },
   { id: "dunes", name: "Dunes Capital", plan: "Growth", color: "#22c55e" },

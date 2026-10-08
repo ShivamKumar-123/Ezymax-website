@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { Memo } from "@/lib/memo";
 
-// Kalks Trader news + economic calendar BFF (read-only). Browser -> /api/news/<route> (same origin) ->
+// Ezymex Trader news + economic calendar BFF (read-only). Browser -> /api/news/<route> (same origin) ->
 // services/news /v1/… with the internal token (never sent to the browser). Headlines and the calendar are
 // public reads: guests see them too.
 //
@@ -32,7 +32,7 @@ async function forward(path: string) {
     path,
     async () => {
       try {
-        const res = await fetch(`${NEWS_URL}${path}`, { headers: { "x-kalks-internal": NEWS_TOKEN, "x-kalks-tenant": "kalks" }, cache: "no-store", signal: AbortSignal.timeout(10_000) });
+        const res = await fetch(`${NEWS_URL}${path}`, { headers: { "x-ezymex-internal": NEWS_TOKEN, "x-ezymex-tenant": "ezymex" }, cache: "no-store", signal: AbortSignal.timeout(10_000) });
         return { status: res.status, data: await res.json().catch(() => ({})) };
       } catch {
         return { status: 503, data: { error: { code: "unavailable", message: "News is unavailable right now." } } };

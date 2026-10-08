@@ -1,5 +1,5 @@
 // Keys for this namespace. English is the source; translations live in ../<lang>/wallet.ts.
-// Keep brand and network names as they are: Kalks, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
+// Keep brand and network names as they are: Ezymex, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
 // MetaMask, TronLink, Tronscan, USD, USC, KYC. {placeholders} are filled in by the app.
 const wallet = {
   // Shared labels
@@ -407,17 +407,17 @@ const wallet = {
   // <b> is bold
   "demo.sendOnlyWarning": "<b>Send only USDT via TRON (TRC20).</b> Sending any other token, or using ERC20 / BEP20, will result in permanent loss of funds.",
   "demo.arrival": "Arrival",
-  "demo.kalksFee": "Kalks fee",
+  "demo.ezymexFee": "Ezymex fee",
   "demo.noKycDeposit": "No KYC needed to deposit. Verification is only required before your first withdrawal.",
   // Withdraw
   "demo.addrStartT": "TRC20 addresses start with “T”",
   "demo.addrLength": "Must be 34 characters ({length}/34)",
   "demo.addrChars": "Contains invalid characters (0, O, I, l are not allowed)",
-  "demo.addrOwn": "This is your own Kalks deposit address",
+  "demo.addrOwn": "This is your own Ezymex deposit address",
   "demo.justNow": "Just now",
   "demo.codeConfirmed": "Code confirmed via {email}",
   "demo.financeReviews": "Finance team reviews every withdrawal · usually under 2 hours",
-  "demo.sentFromHot": "Sent from Kalks hot wallet once approved",
+  "demo.sentFromHot": "Sent from Ezymex hot wallet once approved",
   "demo.arriveAfter": "Funds arrive at your address after 20 confirmations",
   "demo.pendingTitle": "Pending withdrawals",
   "demo.awaitingCompletion": "{count} awaiting completion",
@@ -479,7 +479,7 @@ const wallet = {
   "demo.alwaysReviewed": "Always reviewed by finance",
   "demo.unrecoverable": "Withdrawals to exchanges that don't support TRC20 USDT, or to smart-contract addresses, can't be recovered.",
   // Transfer
-  "demo.kalksWallet": "Kalks Wallet",
+  "demo.ezymexWallet": "Ezymex Wallet",
   "demo.freeMargin": "Free margin",
   "demo.assetAvailable": "{amount} {asset} available · {network}",
   "demo.throughWallet": "Transfers always go through your wallet.",
@@ -514,7 +514,7 @@ const wallet = {
   "demo.rule4Title": "Free margin protected",
   "demo.rule4Text": "You can only move out what your free margin allows, so open trades stay safe.",
   "demo.into": "into",
-  "demo.intoKalksWallet": "into your Kalks Wallet",
+  "demo.intoEzymexWallet": "into your Ezymex Wallet",
   "demo.freeMarginAfter": "Free margin after",
   "demo.marginLevelAfter": "Margin level after",
   "demo.convertedNote": "{asset} is converted to USD at the live rate minus {markup}% markup. Rate refreshes every tick until you confirm.",

@@ -1,7 +1,7 @@
 // Keys for this namespace. English is the source; translations live in ../<lang>/academy.ts.
 // Client Area Academy: learning phases, chapters, quizzes, exams, glossary, progress.
 // Only the page chrome is here: chapter, quiz and glossary content comes from the Academy service as served.
-// Keep "Kalks Trader" as is. {placeholders} are filled in by the app.
+// Keep "Ezymex Trader" as is. {placeholders} are filled in by the app.
 const academy = {
   // Shared
   title: "Academy",
@@ -21,7 +21,7 @@ const academy = {
   "practice.demo": "Practise on demo",
   "practice.openFreeDemo": "Open a free demo account",
   "practice.openDemo": "Open demo",
-  "practice.inTrader": "Practise in Kalks Trader",
+  "practice.inTrader": "Practise in Ezymex Trader",
 
   // Levels (sent by the Academy service)
   "level.beginner": "Beginner",
@@ -32,12 +32,12 @@ const academy = {
   // Tracks
   "track.fundamental": "Fundamental analysis",
   "track.technical": "Technical analysis",
-  // Product track of the Kalks FX Options elective (phase 9)
+  // Product track of the Ezymex FX Options elective (phase 9)
   "track.options": "Options trading",
   "trackShort.fundamental": "Fundamental",
   "trackShort.technical": "Technical",
   "trackShort.options": "Options",
-  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  // Chip on a product course (e.g. Ezymex FX Options) that sits outside the eight core phases and can be taken at any time
   elective: "Elective",
 
   // Durations (h = hours, m = minutes)
@@ -53,7 +53,7 @@ const academy = {
   "home.pathText": "Each core phase has a fundamental and a technical track, a final exam and a certificate.",
   // Section under the learning path listing the electives
   "home.electivesTitle": "Electives",
-  "home.electivesText": "Courses on Kalks products. Take them at any time: each has its own final exam and certificate.",
+  "home.electivesText": "Courses on Ezymex products. Take them at any time: each has its own final exam and certificate.",
   "hero.allDone": "All chapters complete",
   "hero.continue": "Continue learning",
   "hero.upNext": "Up next",
@@ -221,7 +221,7 @@ const academy = {
   "callout.example": "Example",
   "callout.tip": "Tip",
   "callout.note": "Note",
-  "callout.inKalksTrader": "In Kalks Trader",
+  "callout.inEzymexTrader": "In Ezymex Trader",
   diagram: "Diagram",
 };
 export default academy;

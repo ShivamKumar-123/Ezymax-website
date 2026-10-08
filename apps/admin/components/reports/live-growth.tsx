@@ -6,7 +6,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Activity, ArrowDownLeft, ArrowUpRight, BarChart3, Clock, Coins, Filter, Globe2, Handshake, Landmark, Layers, Megaphone, PiggyBank, Scale, ShieldCheck, TrendingUp, Trophy, UserPlus, Users, Wallet } from "lucide-react";
-import { Button, Card, CardHeader, Chip, DataTable, Delta, Flag, KpiCard, Money, PageHeader, Reveal, Segmented, cn, formatNumber, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, Delta, Flag, KpiCard, Money, PageHeader, Reveal, Segmented, cn, formatNumber, type Column } from "@ezymex/ui";
 import { StackedBars, compactMoney } from "@/components/analytics/stacked-bars";
 import { LineChart } from "@/components/analytics/line-chart";
 import { CohortHeatmap } from "@/components/analytics/cohort-heatmap";

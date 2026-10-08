@@ -20,7 +20,7 @@ const academy: NsMessages<"academy"> = {
   "practice.demo": "在模拟账户中练习",
   "practice.openFreeDemo": "开立免费模拟账户",
   "practice.openDemo": "开立模拟账户",
-  "practice.inTrader": "在 Kalks Trader 中练习",
+  "practice.inTrader": "在 Ezymex Trader 中练习",
 
   // Levels (sent by the Academy service)
   "level.beginner": "初级",
@@ -31,12 +31,12 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "基本面分析",
   "track.technical": "技术分析",
-  // Product track of the Kalks FX Options elective (phase 9)
+  // Product track of the Ezymex FX Options elective (phase 9)
   "track.options": "期权交易",
   "trackShort.fundamental": "基本面",
   "trackShort.technical": "技术面",
   "trackShort.options": "期权",
-  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  // Chip on a product course (e.g. Ezymex FX Options) that sits outside the eight core phases and can be taken at any time
   elective: "选修",
 
   // Durations (h = hours, m = minutes)
@@ -52,7 +52,7 @@ const academy: NsMessages<"academy"> = {
   "home.pathText": "每个核心阶段包含基本面和技术面两条学习线、一次结业考试和一份证书。",
   // Section under the learning path listing the electives
   "home.electivesTitle": "选修课程",
-  "home.electivesText": "关于 Kalks 产品的课程。随时可以学习，每门课程都有各自的结业考试和证书。",
+  "home.electivesText": "关于 Ezymex 产品的课程。随时可以学习，每门课程都有各自的结业考试和证书。",
   "hero.allDone": "所有章节已完成",
   "hero.continue": "继续学习",
   "hero.upNext": "下一章",
@@ -219,7 +219,7 @@ const academy: NsMessages<"academy"> = {
   "callout.example": "示例",
   "callout.tip": "提示",
   "callout.note": "注意",
-  "callout.inKalksTrader": "在 Kalks Trader 中",
+  "callout.inEzymexTrader": "在 Ezymex Trader 中",
   diagram: "图示",
 };
 export default academy;

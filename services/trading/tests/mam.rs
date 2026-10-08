@@ -104,7 +104,7 @@ fn buy(volume: &str) -> Op {
 #[tokio::test]
 async fn mam_link_allocate_close_fee_revoke_with_replay() {
     let base = std::env::var("TRADING_TEST_DATABASE_URL").unwrap_or_else(|_| "postgres://postgres@127.0.0.1:5433/postgres".into());
-    let db = format!("kalks_trading_mam_{}", std::process::id());
+    let db = format!("ezymex_trading_mam_{}", std::process::id());
     let Ok(server) = PgConnectOptions::from_str(&base) else { return };
     if server.clone().database("postgres").connect().await.is_err() {
         eprintln!("SKIP: PostgreSQL not reachable at {base}");

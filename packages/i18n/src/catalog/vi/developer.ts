@@ -233,8 +233,8 @@ const developer: NsMessages<"developer"> = {
   "assetClass.crypto": "tiền mã hóa",
   "assetClass.stocks": "cổ phiếu",
 
-  // Code editor (Kalks strategy language)
-  "code.language": "Ngôn ngữ chiến lược Kalks",
+  // Code editor (Ezymex strategy language)
+  "code.language": "Ngôn ngữ chiến lược Ezymex",
   "code.checking": "Đang kiểm tra…",
   "code.errors": { other: "{count} lỗi" },
   "code.compiles": "Biên dịch thành công",
@@ -281,7 +281,7 @@ const developer: NsMessages<"developer"> = {
   // Kill switch
   "kill.title": "Công tắc dừng khẩn cấp",
   "kill.subtitle": "Dừng mọi chiến lược, webhook và lệnh API trên các tài khoản của bạn",
-  "kill.globalPaused": "Giao dịch tự động đang bị tạm dừng trên toàn nền tảng bởi bộ phận quản lý rủi ro Kalks.",
+  "kill.globalPaused": "Giao dịch tự động đang bị tạm dừng trên toàn nền tảng bởi bộ phận quản lý rủi ro Ezymex.",
   "kill.onSince": "Bật từ {at}",
   "kill.release": "Tắt công tắc dừng khẩn cấp",
   "kill.stopAll": "Dừng mọi tự động hóa",
@@ -363,7 +363,7 @@ const developer: NsMessages<"developer"> = {
   "docs.bearer": "Bearer (đơn giản nhất)",
   "docs.hmac": "Chữ ký HMAC (khuyên dùng cho bot)",
   // <code> wraps header names and paths; keep them untranslated
-  "docs.signature": "Chữ ký = hex(HMAC-SHA256(secret, timestamp + METHOD + path kèm query + body)), gửi cùng <code>X-Kalks-Key</code>, <code>X-Kalks-Timestamp</code> (unix ms, ±30 giây) và <code>X-Kalks-Signature</code>. Path được ký dưới dạng <code>/public/v1/…</code>. Mỗi chữ ký chỉ được chấp nhận một lần.",
+  "docs.signature": "Chữ ký = hex(HMAC-SHA256(secret, timestamp + METHOD + path kèm query + body)), gửi cùng <code>X-Ezymex-Key</code>, <code>X-Ezymex-Timestamp</code> (unix ms, ±30 giây) và <code>X-Ezymex-Signature</code>. Path được ký dưới dạng <code>/public/v1/…</code>. Mỗi chữ ký chỉ được chấp nhận một lần.",
   // "api", clientOrderId and duplicate are API values; keep them
   "docs.endpointsSub": "Dữ liệu vào và ra dạng JSON. Mọi lệnh mang nguồn “api”; clientOrderId lặp lại sẽ trả về trạng thái duplicate.",
   "docs.errorsSub": "Lỗi có dạng {shape}",
@@ -473,9 +473,9 @@ const developer: NsMessages<"developer"> = {
 
   // Strategy marketplace
   "market.title": "Chợ chiến lược",
-  "market.subtitle": "Chiến lược có thành tích đã xác minh từ tài khoản Kalks. Sao chép một chiến lược vào tài khoản của bạn, hoặc đăng chiến lược của riêng bạn và kiếm tiền từ lượt đăng ký.",
-  "market.houseChip": "Chiến lược nội bộ · Vận hành bởi Kalks",
-  "market.houseNote": "Chiến lược nội bộ do Kalks vận hành: một tài khoản thực thuộc sở hữu của sàn chạy chiến lược này. Thành tích chỉ gồm các giao dịch thực của chính nó kể từ khi bắt đầu; không có gì được mô phỏng hay bổ sung ngược.",
+  "market.subtitle": "Chiến lược có thành tích đã xác minh từ tài khoản Ezymex. Sao chép một chiến lược vào tài khoản của bạn, hoặc đăng chiến lược của riêng bạn và kiếm tiền từ lượt đăng ký.",
+  "market.houseChip": "Chiến lược nội bộ · Vận hành bởi Ezymex",
+  "market.houseNote": "Chiến lược nội bộ do Ezymex vận hành: một tài khoản thực thuộc sở hữu của sàn chạy chiến lược này. Thành tích chỉ gồm các giao dịch thực của chính nó kể từ khi bắt đầu; không có gì được mô phỏng hay bổ sung ngược.",
   // Date range, e.g. "2025-01-01 to 2025-12-31"
   "market.range": "{from} đến {to}",
   "market.backtestSimulated": "Backtest · mô phỏng",
@@ -502,7 +502,7 @@ const developer: NsMessages<"developer"> = {
   "market.subscriptionStatus": "Đăng ký {status}",
   "market.reviewSaved": "Đã lưu đánh giá",
   "market.reviewFailed": "Không thể lưu đánh giá",
-  "market.trackNote": "Thành tích từ triển khai của chính tác giả trên Kalks từ {since}: {days} ngày, ròng {net}. Được tính từ các giao dịch đã đóng trên máy chủ giao dịch, không do tác giả nhập.",
+  "market.trackNote": "Thành tích từ triển khai của chính tác giả trên Ezymex từ {since}: {days} ngày, ròng {net}. Được tính từ các giao dịch đã đóng trên máy chủ giao dịch, không do tác giả nhập.",
   "market.riskSettings": "Cài đặt rủi ro",
   "market.riskLine": "Khối lượng {size} · dừng lỗ {stop} · mục tiêu {target}",
   "market.riskPct": "Rủi ro {pct}%",
@@ -520,7 +520,7 @@ const developer: NsMessages<"developer"> = {
   "market.cloneRules": "Nhân bản quy tắc",
   "market.subscribePaid": "Đăng ký · {price} USDT / tháng",
   "market.subscribeFree": "Đăng ký miễn phí",
-  "market.paidNote": "Thanh toán từ ví Kalks (USDT). Tự gia hạn mỗi 30 ngày; hủy bất cứ lúc nào.",
+  "market.paidNote": "Thanh toán từ ví Ezymex (USDT). Tự gia hạn mỗi 30 ngày; hủy bất cứ lúc nào.",
   "market.reviews": "Đánh giá ({n})",
   "market.stars": { other: "{count} sao" },
   "market.reviewPlaceholder": "Chiến lược giao dịch thế nào với bạn?",
@@ -552,7 +552,7 @@ const developer: NsMessages<"developer"> = {
   "market.popular": "Phổ biến",
   "market.emptyTitle": "Chưa có chiến lược nào được đăng",
   "market.emptyText": "Hãy là người đầu tiên: triển khai chiến lược trên tài khoản demo, sau đó đăng cùng thành tích đã xác minh.",
-  "market.disclaimer": "Hiệu suất trong quá khứ không đảm bảo kết quả tương lai. Thành tích đến từ tài khoản thực hoặc demo trên Kalks và được ghi nhãn tương ứng. Phí nền tảng cho đăng ký trả phí: {pct}%.",
+  "market.disclaimer": "Hiệu suất trong quá khứ không đảm bảo kết quả tương lai. Thành tích đến từ tài khoản thực hoặc demo trên Ezymex và được ghi nhãn tương ứng. Phí nền tảng cho đăng ký trả phí: {pct}%.",
   "market.mode": "Chế độ",
   "market.renews": "Gia hạn",
   "market.copyOn": "sao chép trên #{login}",

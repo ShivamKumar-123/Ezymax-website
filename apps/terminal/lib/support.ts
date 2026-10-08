@@ -10,7 +10,7 @@ const SUPPORT_TOKEN = process.env.SUPPORT_INTERNAL_TOKEN ?? "";
 export type SupportResult<T = Record<string, unknown>> = { status: number; data: T };
 
 export async function support<T = Record<string, unknown>>(path: string, init: { method?: "GET" | "POST"; body?: unknown; userId: number }): Promise<SupportResult<T>> {
-  const headers: Record<string, string> = { "x-kalks-internal": SUPPORT_TOKEN, "x-kalks-tenant": "kalks", "x-kalks-user-id": String(init.userId) };
+  const headers: Record<string, string> = { "x-ezymex-internal": SUPPORT_TOKEN, "x-ezymex-tenant": "ezymex", "x-ezymex-user-id": String(init.userId) };
   if (init.body !== undefined) headers["content-type"] = "application/json";
   try {
     const res = await fetch(`${SUPPORT_URL}${path}`, {
@@ -38,13 +38,13 @@ const OWNER_TTL_MS = 10 * 60_000;
 export type Owner = { ok: true; userId: number } | { ok: false; status: number; code: string; message: string };
 
 /**
- * The gateway user id behind the acting login (`x-kalks-login`, else the newest full-access session).
+ * The gateway user id behind the acting login (`x-ezymex-login`, else the newest full-access session).
  * Investor (read-only) sessions get nothing: an investor password can be shared with third parties, and the
  * inbox holds the owner's personal wallet and account events.
  */
 export async function ownerOf(req: NextRequest): Promise<Owner> {
   const list = readSessions(req);
-  const acting: EngineSession | null = sessionFor(req, list) ?? (req.headers.get("x-kalks-login") ? null : (list.find((s) => !s.r) ?? null));
+  const acting: EngineSession | null = sessionFor(req, list) ?? (req.headers.get("x-ezymex-login") ? null : (list.find((s) => !s.r) ?? null));
   if (!acting) return { ok: false, status: 401, code: "no_session", message: "Log in to a trading account to see account notifications." };
   if (acting.r) return { ok: false, status: 403, code: "investor", message: "Account notifications are not available with the investor password." };
   const hit = owners.get(acting.t);

@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { BellRing, CalendarDays, ChevronLeft, ChevronRight, Flame, Newspaper, Pencil, RefreshCw } from "lucide-react";
-import { Button, Card, CardHeader, Chip, Dialog, DialogClose, EmptyState, KpiCard, PageHeader, Reveal, Segmented, Skeleton, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Dialog, DialogClose, EmptyState, KpiCard, PageHeader, Reveal, Segmented, Skeleton, cn } from "@ezymex/ui";
 import { useStaff } from "@/components/staff-session";
 import { contentAllows } from "@/lib/academy";
 import { NewsError, ago, newsApi, useNews, type AdminCalendar, type CalEvent } from "./api";
@@ -82,7 +82,7 @@ function EditEvent({ e, onClose, onSaved }: { e: CalEvent | null; onClose: () =>
 export function LiveCalendarAdmin() {
   const staff = useStaff();
   const canRead = contentAllows(staff, "content.read");
-  const canWrite = contentAllows(staff, "content.write") && (staff.tenant?.slug ?? "kalks") === "kalks";
+  const canWrite = contentAllows(staff, "content.write") && (staff.tenant?.slug ?? "ezymex") === "ezymex";
   const [from, setFrom] = React.useState<string | null>(null);
   const [impact, setImpact] = React.useState<"all" | "2" | "3">("2");
   const [editing, setEditing] = React.useState<CalEvent | null>(null);
@@ -112,7 +112,7 @@ export function LiveCalendarAdmin() {
     <div className="pb-16">
       <PageHeader
         title="Economic calendar"
-        subtitle={`Releases shown in the Client Area, Kalks Trader and the daily brief. Times in server time (GMT+${d?.serverOffset ?? 3}, New York close).`}
+        subtitle={`Releases shown in the Client Area, Ezymex Trader and the daily brief. Times in server time (GMT+${d?.serverOffset ?? 3}, New York close).`}
         actions={
           <>
             <Link href="/content/news">

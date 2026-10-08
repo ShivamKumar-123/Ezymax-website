@@ -9,7 +9,7 @@ import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { ChevronRight, LayoutGrid, LogOut, Moon, Settings, Sun } from "lucide-react";
 import { Dialog, LanguageMenu, cn, type NavModule } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { activeSub, isActive } from "./nav-utils";
 
 export function MobileBar({ modules, onSignOut }: { modules: NavModule[]; onSignOut: () => void }) {

@@ -1,0 +1,20 @@
+[Unit]
+Description=Ezymex market-data service (:8081)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+User=ezymex
+WorkingDirectory=/home/ezymex/ezymex/services/market-data
+EnvironmentFile=/home/ezymex/ezymex/.env.local
+Environment=RUST_LOG=info
+ExecStart=/home/ezymex/ezymex/target/release/market-data
+Restart=always
+RestartSec=3
+# on stop / restart it unsubscribes and closes every provider connection (at most 3 s each) before exiting
+TimeoutStopSec=20
+NoNewPrivileges=true
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

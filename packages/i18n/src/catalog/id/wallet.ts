@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Keep brand and network names as they are: Kalks, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
+// Keep brand and network names as they are: Ezymex, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
 // MetaMask, TronLink, Tronscan, USD, USC, KYC.
 const wallet: NsMessages<"wallet"> = {
   // Shared labels
@@ -390,17 +390,17 @@ const wallet: NsMessages<"wallet"> = {
   "demo.linkCopied": "Tautan tersalin ke papan klip",
   "demo.sendOnlyWarning": "<b>Kirim hanya USDT melalui TRON (TRC20).</b> Mengirim token lain, atau menggunakan ERC20 / BEP20, akan mengakibatkan dana hilang secara permanen.",
   "demo.arrival": "Tiba",
-  "demo.kalksFee": "Biaya Kalks",
+  "demo.ezymexFee": "Biaya Ezymex",
   "demo.noKycDeposit": "Tidak perlu KYC untuk deposit. Verifikasi hanya diperlukan sebelum penarikan pertama Anda.",
   // Withdraw
   "demo.addrStartT": "Alamat TRC20 diawali “T”",
   "demo.addrLength": "Harus 34 karakter ({length}/34)",
   "demo.addrChars": "Berisi karakter tidak valid (0, O, I, l tidak diizinkan)",
-  "demo.addrOwn": "Ini adalah alamat deposit Kalks Anda sendiri",
+  "demo.addrOwn": "Ini adalah alamat deposit Ezymex Anda sendiri",
   "demo.justNow": "Baru saja",
   "demo.codeConfirmed": "Kode dikonfirmasi melalui {email}",
   "demo.financeReviews": "Tim keuangan meninjau setiap penarikan · biasanya kurang dari 2 jam",
-  "demo.sentFromHot": "Dikirim dari hot wallet Kalks setelah disetujui",
+  "demo.sentFromHot": "Dikirim dari hot wallet Ezymex setelah disetujui",
   "demo.arriveAfter": "Dana tiba di alamat Anda setelah 20 konfirmasi",
   "demo.pendingTitle": "Penarikan tertunda",
   "demo.awaitingCompletion": "{count} menunggu penyelesaian",
@@ -459,7 +459,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.alwaysReviewed": "Selalu ditinjau oleh tim keuangan",
   "demo.unrecoverable": "Penarikan ke exchange yang tidak mendukung USDT TRC20, atau ke alamat smart contract, tidak dapat dipulihkan.",
   // Transfer
-  "demo.kalksWallet": "Dompet Kalks",
+  "demo.ezymexWallet": "Dompet Ezymex",
   "demo.freeMargin": "Margin bebas",
   "demo.assetAvailable": "{amount} {asset} tersedia · {network}",
   "demo.throughWallet": "Transfer selalu melalui dompet Anda.",
@@ -494,7 +494,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.rule4Title": "Margin bebas terlindungi",
   "demo.rule4Text": "Anda hanya dapat memindahkan dana sebesar yang diizinkan margin bebas, sehingga transaksi terbuka tetap aman.",
   "demo.into": "ke",
-  "demo.intoKalksWallet": "ke Dompet Kalks Anda",
+  "demo.intoEzymexWallet": "ke Dompet Ezymex Anda",
   "demo.freeMarginAfter": "Margin bebas setelahnya",
   "demo.marginLevelAfter": "Level margin setelahnya",
   "demo.convertedNote": "{asset} dikonversi ke USD pada kurs live dikurangi markup {markup}%. Kurs diperbarui setiap tick sampai Anda mengonfirmasi.",

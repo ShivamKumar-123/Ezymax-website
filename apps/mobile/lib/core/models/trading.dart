@@ -118,7 +118,7 @@ class EnginePosition {
   final double? sl, tp, currentPrice;
   final String source, platform, comment;
 
-  /// Kalks FX Options position terms (`symbol` is then the series code, `volume` the contracts).
+  /// Ezymex FX Options position terms (`symbol` is then the series code, `volume` the contracts).
   final Map<String, dynamic>? option;
   final double? markValue, premium, mark;
 
@@ -507,7 +507,7 @@ const Map<String, String> kReasonLabel = {
 };
 
 /* ------------------------------------------------------------------ */
-/* Kalks FX Options in trade lists (option-deal.ts)                    */
+/* Ezymex FX Options in trade lists (option-deal.ts)                    */
 /* ------------------------------------------------------------------ */
 
 final RegExp _seriesRe = RegExp(r'^([A-Za-z0-9]{2,16})-(\d{4})(\d{2})(\d{2})-(\d+(?:\.\d+)?)-([CPcp])$');

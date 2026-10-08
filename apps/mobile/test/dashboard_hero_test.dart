@@ -3,12 +3,12 @@
 // header once the sheet is up, and the plain header for a white-label broker.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/core/config/app_config.dart';
-import 'package:kalks/features/dashboard/dashboard_hero.dart';
-import 'package:kalks/features/dashboard/dashboard_screen.dart';
-import 'package:kalks/router/router.dart';
-import 'package:kalks/shell/app_shell.dart';
-import 'package:kalks/ui/ui.dart';
+import 'package:ezymex/core/config/app_config.dart';
+import 'package:ezymex/features/dashboard/dashboard_hero.dart';
+import 'package:ezymex/features/dashboard/dashboard_screen.dart';
+import 'package:ezymex/router/router.dart';
+import 'package:ezymex/shell/app_shell.dart';
+import 'package:ezymex/ui/ui.dart';
 
 import 'helpers/test_app.dart';
 
@@ -20,7 +20,7 @@ void main() {
     expect(find.byType(DashboardHeroPicture), findsOneWidget);
     expect(find.byType(DashboardHeroCopy), findsOneWidget);
     expect(find.text('Trade like a sovereign.'), findsOneWidget);
-    expect(find.text('KALKS FX OPTIONS'), findsOneWidget);
+    expect(find.text('EZYMEX FX OPTIONS'), findsOneWidget);
     expect(find.text('Start trading options'), findsOneWidget);
     // the floating controls, not the frosted header
     expect(find.byKey(kShellHeroControls), findsOneWidget);
@@ -74,7 +74,7 @@ void main() {
     await unmount(tester);
   });
 
-  testWidgets('a white-label broker keeps the plain header and no Kalks picture', (tester) async {
+  testWidgets('a white-label broker keeps the plain header and no Ezymex picture', (tester) async {
     final cfg = AppConfig.fromJson(const {
       'apiVersion': 1,
       'urls': {'app': 'https://app.acme.example', 'terminal': 'https://trade.acme.example'},

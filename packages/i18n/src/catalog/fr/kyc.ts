@@ -194,7 +194,7 @@ const kyc: NsMessages<"kyc"> = {
   "review.missing": "Manquant",
   "review.flagged": "Signalé pour examen",
   "review.passed": "Contrôles réussis",
-  "review.consent": "Je confirme que les documents sont authentiques et m'appartiennent (ou appartiennent à la société et à ses dirigeants), et j'accepte le contrôle d'identité et AML effectué par Kalks.",
+  "review.consent": "Je confirme que les documents sont authentiques et m'appartiennent (ou appartiennent à la société et à ses dirigeants), et j'accepte le contrôle d'identité et AML effectué par Ezymex.",
 
   // More information requested by the review team
   "moreInfo.title": "Il nous faut encore quelques éléments",
@@ -358,7 +358,7 @@ const kyc: NsMessages<"kyc"> = {
   // Client-side fallback errors
   "error.sessionEnded": "Votre session a expiré.",
   "error.generic": "Une erreur s'est produite. Veuillez réessayer.",
-  "error.network": "Impossible de joindre Kalks. Vérifiez votre connexion et réessayez.",
+  "error.network": "Impossible de joindre Ezymex. Vérifiez votre connexion et réessayez.",
   "error.uploadFailed": "Échec de l'envoi. Veuillez réessayer.",
   "error.uploadInterrupted": "Envoi interrompu. Vérifiez votre connexion et réessayez.",
 

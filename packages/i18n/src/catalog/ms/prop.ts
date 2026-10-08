@@ -101,13 +101,13 @@ const prop: NsMessages<"prop"> = {
 
   // Public certificate verification page (/verify/<code>)
   "verify.shellTitle": "Pengesahan sijil",
-  "verify.footer": "Akaun Kalks Prop adalah simulasi. Sijil menunjukkan keputusan pedagang dalam cabaran Kalks Prop; nama pedagang dipendekkan kepada nama pertama dan huruf awal nama akhir.",
+  "verify.footer": "Akaun Ezymex Prop adalah simulasi. Sijil menunjukkan keputusan pedagang dalam cabaran Ezymex Prop; nama pedagang dipendekkan kepada nama pertama dan huruf awal nama akhir.",
   "verify.linkCopied": "Pautan disalin",
   "verify.copyFailed": "Tidak dapat menyalin pautan",
   "verify.copyLink": "Salin pautan",
   "verify.downloadPng": "Muat turun PNG",
   "verify.notFoundTitle": "Sijil tidak ditemui",
-  "verify.notFoundText": "Tiada sijil Kalks Prop dengan nombor ini. Semak pautan atau minta pedagang berkongsinya semula.",
+  "verify.notFoundText": "Tiada sijil Ezymex Prop dengan nombor ini. Semak pautan atau minta pedagang berkongsinya semula.",
   "verify.unavailableTitle": "Pengesahan tidak tersedia buat masa ini",
   "verify.unavailableText": "Kami tidak dapat menyemak sijil ini buat masa ini. Sila cuba lagi dalam beberapa minit.",
   "verify.kind.pass": "Fasa lulus",
@@ -121,9 +121,9 @@ const prop: NsMessages<"prop"> = {
   "verify.row.issued": "Dikeluarkan",
   "verify.row.number": "No. sijil",
   "verify.validTitle": "Sijil sah",
-  "verify.validText": "Dikeluarkan oleh Kalks Prop dan disahkan berdasarkan rekod kami.",
+  "verify.validText": "Dikeluarkan oleh Ezymex Prop dan disahkan berdasarkan rekod kami.",
   "verify.revokedTitle": "Sijil dibatalkan",
-  "verify.revokedText": "Sijil ini telah dibatalkan oleh Kalks dan tidak lagi sah.",
+  "verify.revokedText": "Sijil ini telah dibatalkan oleh Ezymex dan tidak lagi sah.",
   "verify.valid": "Sah",
   "verify.revoked": "Dibatalkan",
   // Certificate titles
@@ -248,8 +248,8 @@ const prop: NsMessages<"prop"> = {
   "checkout.goToMine": "Pergi ke Cabaran saya",
   "checkout.readyTitle": "Cabaran anda sudah sedia",
   "checkout.paidText": "{fee} telah dibayar dari dompet USDT anda dan akaun {size} anda telah dibuka. Peraturan berkuat kuasa mulai sekarang.",
-  "checkout.savePasswords": "Simpan kata laluan ini sekarang: ia dipaparkan sekali sahaja dan kami tidak menyimpannya. Butang Dagang melog masuk anda ke Kalks Trader tanpa kata laluan, jadi anda sentiasa boleh berdagang dari sini.",
-  "checkout.passwordsShown": "Kata laluan dagangan telah dipaparkan semasa pembelian ini mula-mula disahkan. Gunakan butang Dagang untuk membuka Kalks Trader: ia melog masuk anda tanpa kata laluan.",
+  "checkout.savePasswords": "Simpan kata laluan ini sekarang: ia dipaparkan sekali sahaja dan kami tidak menyimpannya. Butang Dagang melog masuk anda ke Ezymex Trader tanpa kata laluan, jadi anda sentiasa boleh berdagang dari sini.",
+  "checkout.passwordsShown": "Kata laluan dagangan telah dipaparkan semasa pembelian ini mula-mula disahkan. Gunakan butang Dagang untuk membuka Ezymex Trader: ia melog masuk anda tanpa kata laluan.",
 
   // Account credentials
   "cred.login": "Log masuk",
@@ -376,7 +376,7 @@ const prop: NsMessages<"prop"> = {
   "account.passed": "Lulus · baca sahaja",
   "account.failed": "Gagal · dilumpuhkan",
   "account.opening": "Sedang dibuka",
-  "account.tradableText": "Dagang membuka Kalks Trader dengan log masuk ke akaun ini. Kata laluan telah dipaparkan sekali semasa pembelian.",
+  "account.tradableText": "Dagang membuka Ezymex Trader dengan log masuk ke akaun ini. Kata laluan telah dipaparkan sekali semasa pembelian.",
   "account.passedText": "Fasa ini telah selesai. Akaun adalah baca sahaja; berdagang pada fasa seterusnya.",
   "account.failedText": "Dagangan pada akaun ini dilumpuhkan.",
   "account.unavailableText": "Dagangan tidak tersedia pada akaun ini.",

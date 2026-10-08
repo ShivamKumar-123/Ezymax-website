@@ -194,7 +194,7 @@ const kyc: NsMessages<"kyc"> = {
   "review.missing": "Mancante",
   "review.flagged": "Segnalato per revisione",
   "review.passed": "Controlli superati",
-  "review.consent": "Confermo che i documenti sono autentici e mi appartengono (o appartengono all'azienda e ai suoi rappresentanti) e acconsento ai controlli di identità e AML da parte di Kalks.",
+  "review.consent": "Confermo che i documenti sono autentici e mi appartengono (o appartengono all'azienda e ai suoi rappresentanti) e acconsento ai controlli di identità e AML da parte di Ezymex.",
 
   // Ulteriori informazioni richieste dal team di verifica
   "moreInfo.title": "Ci serve ancora qualcosa",
@@ -358,7 +358,7 @@ const kyc: NsMessages<"kyc"> = {
   // Errori lato client
   "error.sessionEnded": "La tua sessione è scaduta.",
   "error.generic": "Si è verificato un errore. Riprova.",
-  "error.network": "Impossibile raggiungere Kalks. Controlla la connessione e riprova.",
+  "error.network": "Impossibile raggiungere Ezymex. Controlla la connessione e riprova.",
   "error.uploadFailed": "Caricamento non riuscito. Riprova.",
   "error.uploadInterrupted": "Caricamento interrotto. Controlla la connessione e riprova.",
 

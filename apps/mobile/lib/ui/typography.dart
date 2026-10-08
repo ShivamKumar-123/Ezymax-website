@@ -1,4 +1,4 @@
-// Type scale. The Client Area sets everything in Plus Jakarta Sans (the web's --font-display on body), Kalks Trader
+// Type scale. The Client Area sets everything in Plus Jakarta Sans (the web's --font-display on body), Ezymex Trader
 // in Geist; prices, logins and codes in Geist Mono. Scripts the Latin fonts lack (Arabic, Devanagari, Thai, CJK, …)
 // fall back to Geist and then the phone's system fonts (Noto on Android). Figures are tabular (web .k-num).
 import 'package:flutter/material.dart';

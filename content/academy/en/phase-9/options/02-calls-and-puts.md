@@ -47,7 +47,7 @@ quiz:
     explanation: "As the seller you must pay (1.1760 - 1.1700) x 10,000 = 60 USD. You kept the 24 USD premium, so the result is 24 - 60 = -36 USD."
 ---
 
-The previous chapter introduced options as rights that are bought and sold for a premium. Every option on Kalks is either a **call** or a **put**, and you can either buy it or sell it. That gives four basic positions, and every strategy later in this course is built from them.
+The previous chapter introduced options as rights that are bought and sold for a premium. Every option on Ezymex is either a **call** or a **put**, and you can either buy it or sell it. That gives four basic positions, and every strategy later in this course is built from them.
 
 ## Calls: a right to the upside
 

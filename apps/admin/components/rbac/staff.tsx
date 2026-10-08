@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Ban, KeyRound, LogOut, Mail, MoreHorizontal, RefreshCw, RotateCcw, ShieldCheck, UserCheck, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, Field, IconButton, Input, KpiCard, Menu, PageHeader, Reveal, Segmented, type Column } from "@kalks/ui";
+import { Avatar, Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, Field, IconButton, Input, KpiCard, Menu, PageHeader, Reveal, Segmented, type Column } from "@ezymex/ui";
 import { useCan, useStaff } from "@/components/staff-session";
 import { ErrorState, TableSkeleton, ago, day, device, useApi, useNow, when } from "@/components/live/kit";
 import { InviteLink, STATUS_TONE, Select, act, call, cap, permLabel, useBusy, type RolesResp } from "./kit";

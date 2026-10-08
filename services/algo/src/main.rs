@@ -1,4 +1,4 @@
-//! Kalks ALGO service (:8099). See services/algo/README.md.
+//! Ezymex ALGO service (:8099). See services/algo/README.md.
 
 use std::collections::HashMap;
 use std::net::SocketAddr;

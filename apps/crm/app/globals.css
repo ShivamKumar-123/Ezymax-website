@@ -1,11 +1,11 @@
 @import "tailwindcss";
-@import "@kalks/ui/styles.css";
+@import "@ezymex/ui/styles.css";
 @source "../../../packages/ui/src";
 
 /* ==========================================================================================================
    Client Area theme — a soft pastel dashboard: blurred washes behind frosted white cards, a slim rail, a geometric
    display face and large bold money figures. Every tint below is mixed from the tenant brand colour (--k-ember;
-   brokers replace it, see brandCss in @kalks/ui), so a blue brand gets a blue-tinted pastel look automatically.
+   brokers replace it, see brandCss in @ezymex/ui), so a blue brand gets a blue-tinted pastel look automatically.
    Light is the default theme; dark keeps the same language on a deep tinted gradient.
    ========================================================================================================== */
 
@@ -243,7 +243,7 @@
   .dark .k-tile-mint { --tile-bg: rgba(40, 200, 120, 0.15); --tile-fg: #5fdc9c; }
   .dark .k-tile-sky { --tile-bg: rgba(80, 160, 255, 0.15); --tile-fg: #8cc2ff; }
 
-  /* icon tiles of @kalks/ui (AnimIcon / Icon3D) in the same pastel style */
+  /* icon tiles of @ezymex/ui (AnimIcon / Icon3D) in the same pastel style */
   .anim-icon {
     background: color-mix(in oklab, var(--ai-c) 13%, var(--k-surface));
     border-color: transparent;
@@ -310,7 +310,7 @@
     background: color-mix(in oklab, var(--k-surface) 60%, transparent);
   }
 
-  /* the dashboard's Ask Kalks AI card / pill: a soft brand-tinted wash over the frosted card */
+  /* the dashboard's Ask Ezymex AI card / pill: a soft brand-tinted wash over the frosted card */
   .k-ai-card {
     background:
       radial-gradient(120% 150% at 0% 0%, color-mix(in oklab, var(--k-ember) 11%, transparent), transparent 58%),
@@ -322,7 +322,7 @@
   .k-panel-divider { border-inline-start: 1px solid var(--k-border); }
 }
 
-/* ---------------- shared @kalks/ui pieces, retuned for the pastel look ---------------- */
+/* ---------------- shared @ezymex/ui pieces, retuned for the pastel look ---------------- */
 
 /* the primary button: flat brand fill (beats the broker gradient brandCss writes for .k-ember-btn) */
 html .k-ember-btn {

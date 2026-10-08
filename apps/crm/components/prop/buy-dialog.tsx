@@ -6,8 +6,8 @@ import { motion } from "motion/react";
 import { ArrowRight, Loader2, ShieldCheck, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Chip, CoinIcon, Dialog, Icon3D, Money, cn, formatMoney } from "@/components/kit";
-import { WALLET } from "@kalks/mock";
-import type { PropModel, PropSize } from "@kalks/mock/prop";
+import { WALLET } from "@ezymex/mock";
+import type { PropModel, PropSize } from "@ezymex/mock/prop";
 import { CheckBox, CredentialField } from "./prop-ui";
 
 export function BuyChallengeDialog({ model, size, trigger }: { model: PropModel; size: PropSize; trigger: React.ReactNode }) {
@@ -48,7 +48,7 @@ export function BuyChallengeDialog({ model, size, trigger }: { model: PropModel;
       trigger={trigger}
       width={540}
       title={step === "done" ? "You're in. Good luck!" : `Buy ${sizeLabel} ${model.name}`}
-      description={step === "done" ? "Your challenge account is live on Kalks-Prop01. Credentials were also emailed to you." : "Paid instantly from your Kalks wallet. No card required."}
+      description={step === "done" ? "Your challenge account is live on Ezymex-Prop01. Credentials were also emailed to you." : "Paid instantly from your Ezymex wallet. No card required."}
       footer={
         step === "done" ? (
           <>
@@ -93,7 +93,7 @@ export function BuyChallengeDialog({ model, size, trigger }: { model: PropModel;
           </div>
           <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <CredentialField label="Login" value="80520391" />
-            <CredentialField label="Server" value="Kalks-Prop01" mono={false} />
+            <CredentialField label="Server" value="Ezymex-Prop01" mono={false} />
             <CredentialField label="Master password" value="Rv8!kQ2mTz" secret />
             <CredentialField label="Investor password" value="Hn4$wP7cX" secret />
           </div>
@@ -120,7 +120,7 @@ export function BuyChallengeDialog({ model, size, trigger }: { model: PropModel;
             <div className="flex items-center gap-3 border-b border-line px-4 py-3">
               <CoinIcon coin="usdt" size={28} />
               <div className="flex-1">
-                <div className="text-[13.5px] font-medium">Kalks wallet</div>
+                <div className="text-[13.5px] font-medium">Ezymex wallet</div>
                 <div className="text-[11.5px] text-fg-3">USDT · TRC20</div>
               </div>
               <Chip tone="up" size="sm" dot>

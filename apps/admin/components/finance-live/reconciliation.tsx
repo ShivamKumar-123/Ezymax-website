@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { CheckCircle2, RefreshCw, Scale, TriangleAlert, Wallet } from "lucide-react";
-import { Button, Card, CardHeader, KpiCard, PageHeader, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, KpiCard, PageHeader, cn } from "@ezymex/ui";
 import { ErrorState, TableSkeleton, useApi, when } from "@/components/live/kit";
 import { Addr, CHAIN_NAME, CHAIN_SHORT, Row, usd, usd2, type Chain } from "./kit";
 

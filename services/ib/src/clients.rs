@@ -59,7 +59,7 @@ pub async fn gateway_users(st: &AppState, since: Option<&str>, after_id: i64, li
     let res = st
         .http
         .get(format!("{}/v1/internal/referrals/users?{}", st.cfg.gateway_url, qs(&q)))
-        .header("x-kalks-internal", &st.cfg.gateway_token)
+        .header("x-ezymex-internal", &st.cfg.gateway_token)
         .send()
         .await?;
     if !res.status().is_success() {
@@ -75,11 +75,11 @@ pub async fn gateway_users(st: &AppState, since: Option<&str>, after_id: i64, li
 // ---------------------------------------------------------------- trading engine
 
 fn engine(st: &AppState, tenant: &str, rb: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
-    rb.header("x-kalks-internal", &st.cfg.trading_token)
-        .header("x-kalks-tenant", tenant)
-        .header("x-kalks-staff-id", "ib-service")
-        .header("x-kalks-staff-name", "IB%20service")
-        .header("x-kalks-staff-role", "viewer")
+    rb.header("x-ezymex-internal", &st.cfg.trading_token)
+        .header("x-ezymex-tenant", tenant)
+        .header("x-ezymex-staff-id", "ib-service")
+        .header("x-ezymex-staff-name", "IB%20service")
+        .header("x-ezymex-staff-role", "viewer")
 }
 
 /// A closing deal from `GET /v1/dealing/deals` (DeskDeal).
@@ -95,11 +95,11 @@ pub struct EngineDeal {
     pub close_time: DateTime<Utc>,
     pub kind: String,
     pub reversed: bool,
-    /// Kalks FX Options deal (`option` / `instrument` in the feed, or an option series symbol): volume = contracts.
+    /// Ezymex FX Options deal (`option` / `instrument` in the feed, or an option series symbol): volume = contracts.
     pub option: bool,
 }
 
-/// Whether an engine deal JSON is a Kalks FX Options deal: the `option` object or `instrument: "option"`, with
+/// Whether an engine deal JSON is a Ezymex FX Options deal: the `option` object or `instrument: "option"`, with
 /// the series code as a fallback for feeds that do not carry either.
 pub fn is_option_deal(v: &Value) -> bool {
     v["option"].is_object() || v["instrument"].as_str() == Some("option") || v["symbol"].as_str().is_some_and(crate::model::is_option_series)
@@ -194,9 +194,9 @@ pub async fn first_deposit(st: &AppState, tenant: &str, login: i64, user_id: i64
     let res = st
         .http
         .get(format!("{}/v1/accounts/{login}/ledger?limit=1000", st.cfg.trading_url))
-        .header("x-kalks-internal", &st.cfg.trading_token)
-        .header("x-kalks-tenant", tenant)
-        .header("x-kalks-user-id", user_id.to_string())
+        .header("x-ezymex-internal", &st.cfg.trading_token)
+        .header("x-ezymex-tenant", tenant)
+        .header("x-ezymex-user-id", user_id.to_string())
         .send()
         .await?;
     if !res.status().is_success() {
@@ -247,8 +247,8 @@ pub async fn wallet_credit(st: &AppState, tenant: &str, key: &str, user_id: i64,
     let res = st
         .http
         .post(format!("{}/v1/wallets/transfers", st.cfg.wallet_url))
-        .header("x-kalks-internal", &st.cfg.wallet_token)
-        .header("x-kalks-tenant", tenant)
+        .header("x-ezymex-internal", &st.cfg.wallet_token)
+        .header("x-ezymex-tenant", tenant)
         .json(&body)
         .send()
         .await;

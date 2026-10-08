@@ -11,7 +11,7 @@ takeaways:
   - "Every quote has a bid (where you can sell) and an ask (where you can buy); the gap between them, the spread, is a cost you pay on every trade."
   - "Liquidity determines how easily you can trade without moving the price, and it changes by instrument and by time of day."
 practice:
-  label: "Open the Market Watch in Kalks Trader on your demo account and compare the bid-ask spread of EURUSD, XAUUSD and BTCUSD."
+  label: "Open the Market Watch in Ezymex Trader on your demo account and compare the bid-ask spread of EURUSD, XAUUSD and BTCUSD."
   symbol: "EURUSD"
 quiz:
   - question: "You want to buy EURUSD and the quote shows 1.0850 / 1.0851. At which price will a market buy order normally be filled?"
@@ -69,7 +69,7 @@ Markets work because participants have *different* reasons for trading. If every
 | Corporations | Pay suppliers, repatriate profits, hedge costs | Steady commercial demand |
 | Retail traders | Speculate, usually via brokers and CFDs | Small individually, visible in sentiment |
 
-A retail trader on Kalks is at the small end of this table. That matters: you cannot move the market, so your edge has to come from understanding what the bigger participants are likely to do, not from forcing prices.
+A retail trader on Ezymex is at the small end of this table. That matters: you cannot move the market, so your edge has to come from understanding what the bigger participants are likely to do, not from forcing prices.
 
 ## Exchanges versus over-the-counter markets
 
@@ -79,7 +79,7 @@ On an **exchange**, such as a stock or futures exchange, all orders go to a cent
 
 In an **over-the-counter (OTC)** market there is no single order book. Dealers, mostly large banks, quote prices to each other and to their clients. The spot foreign exchange market is the largest OTC market in the world. Because there is no central venue, two dealers can show very slightly different prices for EURUSD at the same moment, and there is no official total volume.
 
-Contracts for difference (CFDs), which is what you trade on Kalks, are also OTC products: your contract is with your broker, and the broker's prices are derived from the underlying market. You will learn exactly how that works in the CFD chapter.
+Contracts for difference (CFDs), which is what you trade on Ezymex, are also OTC products: your contract is with your broker, and the broker's prices are derived from the underlying market. You will learn exactly how that works in the CFD chapter.
 
 ## Two prices: the bid and the ask
 
@@ -106,7 +106,7 @@ Liquidity describes how much buying and selling interest sits close to the curre
 
 Liquidity is not fixed. EURUSD is extremely liquid during the London and New York trading day and noticeably thinner around the daily rollover, when many dealers step back. Spreads on almost every instrument widen around major news releases and at the weekly open. Crypto trades around the clock but liquidity on Sunday is typically thinner than midweek.
 
-> **Tip:** When you compare instruments on Kalks, look at the spread relative to the instrument's normal daily movement, not the spread in isolation. A 1-pip spread on a pair that moves 70 pips a day is a smaller hurdle than a 3-pip spread on a pair that moves 30.
+> **Tip:** When you compare instruments on Ezymex, look at the spread relative to the instrument's normal daily movement, not the spread in isolation. A 1-pip spread on a pair that moves 70 pips a day is a smaller hurdle than a 3-pip spread on a pair that moves 30.
 
 ## Common mistakes
 
@@ -114,4 +114,4 @@ Liquidity is not fixed. EURUSD is extremely liquid during the London and New Yor
 - **Ignoring spread changes.** A strategy that works with a 1-pip spread can fail if you trade at times when the spread is three or four times wider.
 - **Assuming someone is "controlling" the price.** In deep markets like major FX pairs and gold, prices reflect the combined actions of thousands of participants. Moves that look deliberate are usually large flows or news.
 
-Practise on a free demo account in Kalks Trader: watch how the bid and ask of a few symbols move through the day, and note when spreads are tightest.
+Practise on a free demo account in Ezymex Trader: watch how the bid and ask of a few symbols move through the day, and note when spreads are tightest.

@@ -1,7 +1,7 @@
 ---
 slug: "p6-t-forward-testing-on-demo"
 title: "Forward testing on a demo account"
-summary: "How to forward-test a backtested strategy on a Kalks demo account, what to record, how to compare the results fairly with the backtest, and when to stop, adjust or move to small live size."
+summary: "How to forward-test a backtested strategy on a Ezymex demo account, what to record, how to compare the results fairly with the backtest, and when to stop, adjust or move to small live size."
 order: 7
 version: 1
 takeaways:
@@ -10,7 +10,7 @@ takeaways:
   - "Compare demo and backtest results with the uncertainty of small samples in mind; a short weak patch is not proof of failure, and a short strong patch is not proof of success."
   - "Moving to live should be gradual, with small size, because live execution and emotions add costs that a demo does not fully capture."
 practice:
-  label: "Open a demo account in Kalks Trader with the same account type and leverage you plan to use live, and log every signal of one strategy for the next four weeks."
+  label: "Open a demo account in Ezymex Trader with the same account type and leverage you plan to use live, and log every signal of one strategy for the next four weeks."
   symbol: "EURUSD"
 quiz:
   - question: "What is the main thing a forward test on demo checks that a backtest cannot?"
@@ -60,7 +60,7 @@ A backtest has to *assume* many things. A forward test *observes* them.
 
 ## Setting up the test
 
-Practise on a free demo account in Kalks Trader, set up as closely as possible to the live account you intend to use:
+Practise on a free demo account in Ezymex Trader, set up as closely as possible to the live account you intend to use:
 
 1. **Same account type and group,** so spreads, commissions and swaps match.
 2. **Same leverage and a realistic balance.** Testing a 1% risk rule on a 100,000 USD demo when you plan to trade 5,000 USD live changes the rounding of lot sizes and hides the effect of the 0.01 minimum lot.

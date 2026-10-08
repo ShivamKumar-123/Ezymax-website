@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Logo } from "@kalks/ui/logo";
-import { Illustration } from "@kalks/ui/illustration";
-import { getT } from "@kalks/i18n/server";
+import { Logo } from "@ezymex/ui/logo";
+import { Illustration } from "@ezymex/ui/illustration";
+import { getT } from "@ezymex/i18n/server";
 
 export const metadata: Metadata = { title: "Not found" };
 

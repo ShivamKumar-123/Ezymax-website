@@ -3,9 +3,9 @@
 import * as React from "react";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
-import { TooltipProvider } from "@kalks/ui";
-import type { PartialCatalog } from "@kalks/i18n";
-import { I18nProvider, useLocale } from "@kalks/i18n/react";
+import { TooltipProvider } from "@ezymex/ui";
+import type { PartialCatalog } from "@ezymex/i18n";
+import { I18nProvider, useLocale } from "@ezymex/i18n/react";
 
 /** Phones get top-center toasts (full width), everything else top-right. */
 function useNarrow() {

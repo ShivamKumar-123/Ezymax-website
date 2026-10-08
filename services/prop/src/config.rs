@@ -7,7 +7,7 @@ use std::fmt;
 pub struct Config {
     pub bind: String,
     pub database_url: String,
-    /// Shared secret the BFFs send in `X-Kalks-Internal`. Empty = check disabled (dev only).
+    /// Shared secret the BFFs send in `X-Ezymex-Internal`. Empty = check disabled (dev only).
     pub internal_token: String,
     pub dev_mode: bool,
     pub json_logs: bool,
@@ -23,7 +23,7 @@ pub struct Config {
     pub poll_concurrency: usize,
     /// Run the evaluator (only one prop instance may do this).
     pub evaluator_enabled: bool,
-    /// Public base URL of the certificate verify page, e.g. https://app.kalkstrade.com/verify
+    /// Public base URL of the certificate verify page, e.g. https://app.ezymex.com/verify
     pub verify_base_url: String,
     /// Support / notifications service (`POST /v1/notify`). Empty = the prop inbox only.
     pub support_url: String,
@@ -82,7 +82,7 @@ impl Config {
         }
         Ok(Self {
             bind: var("PROP_BIND", "127.0.0.1:8097"),
-            database_url: var("PROP_DATABASE_URL", "postgres://postgres@127.0.0.1:5433/kalks_prop"),
+            database_url: var("PROP_DATABASE_URL", "postgres://postgres@127.0.0.1:5433/ezymex_prop"),
             internal_token,
             dev_mode,
             json_logs: var("PROP_LOG_FORMAT", "json") == "json",
@@ -105,6 +105,6 @@ impl Config {
 mod tests {
     #[test]
     fn masks_database_password() {
-        assert_eq!(super::redact_url("postgres://kalks:s3cret@127.0.0.1:5432/kalks_prop"), "postgres://kalks:***@127.0.0.1:5432/kalks_prop");
+        assert_eq!(super::redact_url("postgres://ezymex:s3cret@127.0.0.1:5432/ezymex_prop"), "postgres://ezymex:***@127.0.0.1:5432/ezymex_prop");
     }
 }

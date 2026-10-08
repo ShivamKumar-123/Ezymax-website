@@ -9,7 +9,7 @@
  */
 import * as React from "react";
 import { History, Landmark, Pencil, Plus, RefreshCw } from "lucide-react";
-import { Button, Card, Chip, DataTable, Dialog, EmptyState, Field, Input, KpiCard, PageHeader, Reveal, Segmented, cn, formatNumber, type Column } from "@kalks/ui";
+import { Button, Card, Chip, DataTable, Dialog, EmptyState, Field, Input, KpiCard, PageHeader, Reveal, Segmented, cn, formatNumber, type Column } from "@ezymex/ui";
 import { ErrorState, TableSkeleton, ago, day, useNow, when } from "@/components/live/kit";
 import type { Rate, RateHistory, Underlying } from "./types";
 import { NumInput, ReadOnlyHint, REASONS, ReasonDialog, optSend, parseNum, pct, platformBlock, useOpt, useOptPerms } from "./kit";

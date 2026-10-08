@@ -36,10 +36,10 @@ import {
   formatMoney,
   type Column,
 } from "@/components/kit";
-// engine symbols include Kalks FX Options series codes, which @kalks/ui SymbolAvatar / SymbolCell (static list) throw on
+// engine symbols include Ezymex FX Options series codes, which @ezymex/ui SymbolAvatar / SymbolCell (static list) throw on
 import { TradeSymbolAvatar as SymbolAvatar, symbolLabel } from "@/components/trading/instrument";
-import { Trans, tr, useT } from "@kalks/i18n/react";
-import type { MessageKey } from "@kalks/i18n";
+import { Trans, tr, useT } from "@ezymex/i18n/react";
+import type { MessageKey } from "@ezymex/i18n";
 import { RangeSlider } from "@/components/social/controls";
 import {
   errorToast,

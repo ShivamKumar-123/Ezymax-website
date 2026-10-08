@@ -35,7 +35,7 @@ import 'book_ticket.dart';
 import 'outcome.dart';
 import 'rfq.dart';
 
-/// A barrier series carries a suffix after C / P (`…-C-UO1.1800`): Kalks-quoted, never on the order book.
+/// A barrier series carries a suffix after C / P (`…-C-UO1.1800`): Ezymex-quoted, never on the order book.
 bool isBarrierSeries(String code) => RegExp(r'^[A-Z0-9]{3,12}-\d{8}-[0-9.]+-[CP]-[A-Z0-9._]+$').hasMatch(code);
 
 bool hasBarrierLeg(List<TicketLeg> legs) => legs.any((l) => l.barrier != null || isBarrierSeries(l.series));
@@ -353,7 +353,7 @@ class _OptionTicketViewState extends ConsumerState<OptionTicketView> {
             RfqPanel(
               legs: [for (final l in legs) (series: l.series, side: l.side, contracts: l.contracts)],
               onDone: ctl.afterFill,
-              onKalksQuoted: () => setState(() => _houseRoute = true),
+              onEzymexQuoted: () => setState(() => _houseRoute = true),
             ),
         ] else ...[
           if (bookLiveRaw && (barrierLegs || _houseRoute)) ...[const HouseRouteNote(), const SizedBox(height: 10)],

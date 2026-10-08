@@ -178,13 +178,13 @@ importers:
 
   apps/admin:
     dependencies:
-      '@kalks/i18n':
+      '@ezymex/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
-      '@kalks/mock':
+      '@ezymex/mock':
         specifier: workspace:*
         version: link:../../packages/mock
-      '@kalks/ui':
+      '@ezymex/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       geist:
@@ -233,13 +233,13 @@ importers:
       '@anthropic-ai/sdk':
         specifier: 0.128.0
         version: 0.128.0
-      '@kalks/i18n':
+      '@ezymex/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
-      '@kalks/mock':
+      '@ezymex/mock':
         specifier: workspace:*
         version: link:../../packages/mock
-      '@kalks/ui':
+      '@ezymex/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       '@paper-design/shaders-react':
@@ -300,13 +300,13 @@ importers:
       '@anthropic-ai/sdk':
         specifier: 0.128.0
         version: 0.128.0
-      '@kalks/i18n':
+      '@ezymex/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
-      '@kalks/mock':
+      '@ezymex/mock':
         specifier: workspace:*
         version: link:../../packages/mock
-      '@kalks/ui':
+      '@ezymex/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       geist:
@@ -380,10 +380,10 @@ importers:
 
   packages/ui:
     dependencies:
-      '@kalks/i18n':
+      '@ezymex/i18n':
         specifier: workspace:*
         version: link:../i18n
-      '@kalks/mock':
+      '@ezymex/mock':
         specifier: workspace:*
         version: link:../mock
       '@radix-ui/react-dialog':

@@ -3,10 +3,10 @@
 // Browser client for the Academy BFF (/api/academy/*, see app/api/academy/[...path]/route.ts).
 
 import * as React from "react";
-import { createFormatter, type T } from "@kalks/i18n";
-import { tr } from "@kalks/i18n/react";
+import { createFormatter, type T } from "@ezymex/i18n";
+import { tr } from "@ezymex/i18n/react";
 import type { ChipTone } from "@/components/kit";
-import { readCached, writeCached } from "@kalks/ui/swr-cache";
+import { readCached, writeCached } from "@ezymex/ui/swr-cache";
 
 export type Level = "Beginner" | "Intermediate" | "Advanced" | "Professional";
 /** Tracks this build knows (services/academy/src/content.rs TRACKS): two core tracks, then product tracks. */
@@ -26,7 +26,7 @@ export type PhaseT = {
   title: string;
   level: Level;
   summary: string;
-  /** Product (elective) phase, e.g. phase 9 "Kalks FX Options": a single section on a product track, studied at
+  /** Product (elective) phase, e.g. phase 9 "Ezymex FX Options": a single section on a product track, studied at
    *  any time. Optional: older Academy builds don't send it. */
   elective?: boolean;
   minutes: number;
@@ -121,7 +121,7 @@ export async function academyApi<T>(path: string, init?: { body?: unknown; signa
 }
 
 /** Loads `path` once (and again on `reload()`); `path = null` waits.
- *  Opened again, a page starts from this tab's last answer while it refetches (@kalks/ui/swr-cache). */
+ *  Opened again, a page starts from this tab's last answer while it refetches (@ezymex/ui/swr-cache). */
 export function useAcademy<T>(path: string | null) {
   const [data, setData] = React.useState<T | null>(() => (path ? (readCached<T>(`academy:${path}`) ?? null) : null));
   const [error, setError] = React.useState<AcademyError | null>(null);
@@ -191,7 +191,7 @@ export const isElective = (p: { elective?: boolean }) => p.elective === true;
 /** Translated level label (levels are English enums from the service). */
 export const levelLabel = (l: Level) => (typeof l === "string" && l ? tr.dyn(`academy.level.${l.toLowerCase()}`, l) : "");
 
-/** Cover photo per phase (by order); phase 9 (Kalks FX Options) gets a live price screen. */
+/** Cover photo per phase (by order); phase 9 (Ezymex FX Options) gets a live price screen. */
 export const PHASE_COVER = [
   "/assets/photos/finance.jpg",
   "/assets/photos/trading-screen.jpg",

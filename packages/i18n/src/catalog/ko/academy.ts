@@ -20,7 +20,7 @@ const academy: NsMessages<"academy"> = {
   "practice.demo": "데모로 연습하기",
   "practice.openFreeDemo": "무료 데모 계좌 개설",
   "practice.openDemo": "데모 열기",
-  "practice.inTrader": "Kalks Trader에서 연습하기",
+  "practice.inTrader": "Ezymex Trader에서 연습하기",
 
   // 난이도 (아카데미 서비스에서 전송)
   "level.beginner": "초급",
@@ -31,12 +31,12 @@ const academy: NsMessages<"academy"> = {
   // 트랙
   "track.fundamental": "기본적 분석",
   "track.technical": "기술적 분석",
-  // Product track of the Kalks FX Options elective (phase 9)
+  // Product track of the Ezymex FX Options elective (phase 9)
   "track.options": "옵션 거래",
   "trackShort.fundamental": "기본적",
   "trackShort.technical": "기술적",
   "trackShort.options": "옵션",
-  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  // Chip on a product course (e.g. Ezymex FX Options) that sits outside the eight core phases and can be taken at any time
   elective: "선택 과정",
 
   // 소요 시간
@@ -52,7 +52,7 @@ const academy: NsMessages<"academy"> = {
   "home.pathText": "각 핵심 단계에는 기본적 분석 트랙과 기술적 분석 트랙, 최종 시험 및 수료증이 있습니다.",
   // Section under the learning path listing the electives
   "home.electivesTitle": "선택 과정",
-  "home.electivesText": "Kalks 상품에 관한 과정입니다. 언제든지 수강할 수 있으며, 과정마다 최종 시험과 수료증이 있습니다.",
+  "home.electivesText": "Ezymex 상품에 관한 과정입니다. 언제든지 수강할 수 있으며, 과정마다 최종 시험과 수료증이 있습니다.",
   "hero.allDone": "모든 챕터 완료",
   "hero.continue": "학습 계속하기",
   "hero.upNext": "다음 학습",
@@ -219,7 +219,7 @@ const academy: NsMessages<"academy"> = {
   "callout.example": "예시",
   "callout.tip": "팁",
   "callout.note": "참고",
-  "callout.inKalksTrader": "Kalks Trader에서",
+  "callout.inEzymexTrader": "Ezymex Trader에서",
   diagram: "도식",
 };
 export default academy;

@@ -1,7 +1,7 @@
 // Server-only helpers for the support + notifications service (services/support, 127.0.0.1:8100).
 // The browser never sees the service or SUPPORT_INTERNAL_TOKEN: /api/support/* and /api/notifications/*
 // resolve the signed-in client from the gateway session cookie and forward the gateway user id, name and
-// email as X-Kalks-User-* headers. The realtime stream uses a one-time ticket (POST /api/support/stream-ticket).
+// email as X-Ezymex-User-* headers. The realtime stream uses a one-time ticket (POST /api/support/stream-ticket).
 
 import type { GatewayUser } from "@/lib/gateway";
 
@@ -19,11 +19,11 @@ export type SupportResult<T = Record<string, unknown>> = { status: number; data:
 type Init = { method?: "GET" | "POST" | "PUT"; body?: unknown; raw?: { bytes: ArrayBuffer; name: string; type: string }; user?: GatewayUser; binary?: boolean; timeoutMs?: number };
 
 export async function support<T = Record<string, unknown>>(path: string, init: Init = {}): Promise<SupportResult<T>> {
-  const headers: Record<string, string> = { "x-kalks-internal": SUPPORT_TOKEN, "x-kalks-tenant": init.user?.tenant?.slug || "kalks" };
+  const headers: Record<string, string> = { "x-ezymex-internal": SUPPORT_TOKEN, "x-ezymex-tenant": init.user?.tenant?.slug || "ezymex" };
   if (init.user) {
-    headers["x-kalks-user-id"] = String(init.user.id);
-    headers["x-kalks-user-name"] = encodeURIComponent(init.user.name || `${init.user.first_name} ${init.user.last_name}`.trim());
-    headers["x-kalks-user-email"] = encodeURIComponent(init.user.email);
+    headers["x-ezymex-user-id"] = String(init.user.id);
+    headers["x-ezymex-user-name"] = encodeURIComponent(init.user.name || `${init.user.first_name} ${init.user.last_name}`.trim());
+    headers["x-ezymex-user-email"] = encodeURIComponent(init.user.email);
   }
   let body: BodyInit | undefined;
   if (init.raw) {

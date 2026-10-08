@@ -4,7 +4,7 @@ import * as React from "react";
 import { CheckCircle2, RotateCcw, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, Chip, cn } from "@/components/kit";
-import { tr, useT } from "@kalks/i18n/react";
+import { tr, useT } from "@ezymex/i18n/react";
 import { academyApi, type Question, type QuizReply, type QuizResult } from "./api";
 
 export function OptionButton({

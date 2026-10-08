@@ -6,8 +6,8 @@
 
 import * as React from "react";
 import { cn } from "@/components/kit";
-import type { MessageKey } from "@kalks/i18n";
-import { useT } from "@kalks/i18n/react";
+import type { MessageKey } from "@ezymex/i18n";
+import { useT } from "@ezymex/i18n/react";
 
 export type Heading = { id: string; text: string; level: 2 | 3 };
 
@@ -159,7 +159,7 @@ const CALLOUT: Record<string, { cls: string; label: MessageKey }> = {
   example: { cls: "border-info/25 bg-info-soft [&_.lbl]:text-info", label: "academy.callout.example" },
   tip: { cls: "border-up/25 bg-up-soft [&_.lbl]:text-up", label: "academy.callout.tip" },
   note: { cls: "border-line bg-surface-2 [&_.lbl]:text-fg-2", label: "academy.callout.note" },
-  "in kalks trader": { cls: "border-ember/30 bg-ember-soft [&_.lbl]:text-ember", label: "academy.callout.inKalksTrader" },
+  "in ezymex trader": { cls: "border-ember/30 bg-ember-soft [&_.lbl]:text-ember", label: "academy.callout.inEzymexTrader" },
 };
 
 function Callout({ text }: { text: string }) {

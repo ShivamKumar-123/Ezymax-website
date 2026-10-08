@@ -106,7 +106,7 @@ class SentimentChip extends StatelessWidget {
   Widget build(BuildContext context) => KChip(label: sentimentLabel(s, context.t), tone: sentimentTone(s), icon: sentimentIcon(s), small: true);
 }
 
-/// A symbol tag; known instruments open Kalks Trader on that symbol.
+/// A symbol tag; known instruments open Ezymex Trader on that symbol.
 class SymbolPill extends StatelessWidget {
   const SymbolPill(this.symbol, {super.key});
   final String symbol;

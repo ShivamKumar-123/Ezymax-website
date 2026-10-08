@@ -3,8 +3,8 @@
 import * as React from "react";
 import Link from "next/link";
 import { ChevronDown, History, RotateCcw } from "lucide-react";
-import { Button, Chip, DataTable, EmptyState, Input, Menu, cn, type Column } from "@kalks/ui";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { Button, Chip, DataTable, EmptyState, Input, Menu, cn, type Column } from "@ezymex/ui";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { serverStamp, useDesk, useRestDesk, type AuditAction, type AuditEntry } from "@/lib/trading-desk";
 import { ChangeLine } from "./position-drawer";
 import { DeskDialog } from "./kit";

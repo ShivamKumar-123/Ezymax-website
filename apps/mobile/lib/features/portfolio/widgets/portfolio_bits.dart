@@ -212,7 +212,7 @@ List<Color> chartColors(KTokens k) => [k.ember, k.gold, k.up, k.info, k.down, k.
 /// Colour of an up / down / zero figure.
 Color signColor(KTokens k, num v, {Color? zero}) => v > 0 ? k.up : (v < 0 ? k.down : (zero ?? k.fg3));
 
-/// Opens Kalks Trader on the account (web TradeButton with its own label).
+/// Opens Ezymex Trader on the account (web TradeButton with its own label).
 class TraderButton extends StatelessWidget {
   const TraderButton({super.key, required this.account, this.label = 'Trader'});
   final EngineAccount account;

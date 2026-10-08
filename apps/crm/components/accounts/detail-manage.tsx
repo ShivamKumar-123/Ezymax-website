@@ -5,11 +5,11 @@ import Link from "next/link";
 import { Archive, Download, Eye, Globe, KeyRound, Lock, Monitor, Moon, Pencil, RefreshCcw, Smartphone, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, Dialog, Field, Icon3D, Input, KeyValue, Money, Reveal, Toggle, cn } from "@/components/kit";
-import { ACCOUNT_GROUPS, type TradingAccount } from "@kalks/mock";
-import { DEMO_RULES } from "@kalks/mock/accounts-extra";
+import { ACCOUNT_GROUPS, type TradingAccount } from "@ezymex/mock";
+import { DEMO_RULES } from "@ezymex/mock/accounts-extra";
 import { CredentialField, EmailOtp, PasswordInput, PasswordStrength, isPasswordValid } from "./security";
 import { curOf } from "./detail-overview";
-import { Trans, useFormat, useT } from "@kalks/i18n/react";
+import { Trans, useFormat, useT } from "@ezymex/i18n/react";
 import { TERMINAL_URL } from "@/lib/live";
 
 /* ------------------------------------------------------------------ */
@@ -135,8 +135,8 @@ export function CredentialsTab({ a }: { a: TradingAccount }) {
           <CardHeader title={t("accountDetail.platforms.title")} subtitle={t("accountDetail.platforms.subtitle")} />
           <div className="space-y-2 px-4 pb-6 pt-4 sm:px-6">
             {[
-              { icon: <Globe />, name: "Kalks WebTerminal", sub: t("accountDetail.platforms.webSub"), action: <Link target="_blank" rel="noopener" href={`${TERMINAL_URL}/?account=${a.login}`}><Button size="sm" variant="ember">{t("accountDetail.platforms.launch")}</Button></Link> },
-              { icon: <Monitor />, name: "MetaTrader 5 · Windows / macOS", sub: "kalks5setup · 24.1 MB", action: <Button size="sm" variant="surface" onClick={() => toast.success(t("accountDetail.platforms.downloadStarted"), { description: "kalks5setup.exe" })}><Download /> {t("accountDetail.platforms.get")}</Button> },
+              { icon: <Globe />, name: "Ezymex WebTerminal", sub: t("accountDetail.platforms.webSub"), action: <Link target="_blank" rel="noopener" href={`${TERMINAL_URL}/?account=${a.login}`}><Button size="sm" variant="ember">{t("accountDetail.platforms.launch")}</Button></Link> },
+              { icon: <Monitor />, name: "MetaTrader 5 · Windows / macOS", sub: "ezymex5setup · 24.1 MB", action: <Button size="sm" variant="surface" onClick={() => toast.success(t("accountDetail.platforms.downloadStarted"), { description: "ezymex5setup.exe" })}><Download /> {t("accountDetail.platforms.get")}</Button> },
               { icon: <Smartphone />, name: "MetaTrader 5 · iOS / Android", sub: t("accountDetail.platforms.mobileSub", { server: a.server }), action: <Button size="sm" variant="surface" onClick={() => toast(t("accountDetail.platforms.storeLinksSent"))}>{t("accountDetail.platforms.sendLink")}</Button> },
             ].map((p) => (
               <div key={p.name} className="k-row flex items-center gap-3 px-4 py-3">

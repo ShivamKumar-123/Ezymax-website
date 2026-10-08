@@ -6,8 +6,8 @@
 // preview when there is one (commission included like the engine), else from the legs' fill prices.
 import * as React from "react";
 import { CalendarClock, CircleCheck, ShieldAlert, TrendingDown, TrendingUp, TriangleAlert } from "lucide-react";
-import { cn } from "@kalks/ui";
-import { useLocale, useT } from "@kalks/i18n/react";
+import { cn } from "@ezymex/ui";
+import { useLocale, useT } from "@ezymex/i18n/react";
 import { useTerminal } from "@/lib/store";
 import { accMoney } from "@/lib/trading";
 import { payoffAt, type PayLeg } from "@/lib/options/math";

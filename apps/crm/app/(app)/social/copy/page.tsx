@@ -4,10 +4,10 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowUpRight, Ban, Layers, Repeat, Search, ShieldCheck, Sliders } from "lucide-react";
 import { Avatar, Button, Card, CardHeader, Chip, Icon3D, Money, PageHeader, Reveal, Segmented, Sparkline, StatusChip, cn, formatCompact } from "@/components/kit";
-import { MASTERS, MY_COPY_SUBS, masterById, masterSpark, type Master } from "@kalks/mock/social";
+import { MASTERS, MY_COPY_SUBS, masterById, masterSpark, type Master } from "@ezymex/mock/social";
 import { MasterIdentity, RiskBadge, formatAge } from "@/components/social/master-bits";
 import { CopyDialog } from "@/components/social/copy-dialog";
-import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LiveCopyPage } from "@/components/social-live/subscriptions";
 
 type RiskF = "all" | "low" | "med" | "high";

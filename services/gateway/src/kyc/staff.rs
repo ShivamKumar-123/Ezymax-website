@@ -698,7 +698,7 @@ pub async fn file(State(st): State<AppState>, ctx: Ctx, Path(id): Path<i64>) -> 
     h.insert(header::CONTENT_TYPE, HeaderValue::from_str(&mime).unwrap_or(HeaderValue::from_static("application/octet-stream")));
     h.insert(header::CACHE_CONTROL, HeaderValue::from_static("private, no-store, max-age=0"));
     h.insert(header::X_CONTENT_TYPE_OPTIONS, HeaderValue::from_static("nosniff"));
-    h.insert("x-kalks-sha256", HeaderValue::from_str(&sha).unwrap_or(HeaderValue::from_static("")));
+    h.insert("x-ezymex-sha256", HeaderValue::from_str(&sha).unwrap_or(HeaderValue::from_static("")));
     if let Ok(v) = HeaderValue::from_str(&format!("inline; filename=\"kyc-{id}.{}\"", sniff::extension(&mime))) {
         h.insert(header::CONTENT_DISPOSITION, v);
     }

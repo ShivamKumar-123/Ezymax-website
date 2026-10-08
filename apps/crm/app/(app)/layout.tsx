@@ -1,6 +1,6 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { SESSION_COOKIE, fetchMe, safeNext } from "@/lib/gateway";
 import { SessionProvider } from "@/components/session";
 import { ClientShell } from "@/components/shell";
@@ -21,7 +21,7 @@ export default async function ClientAreaLayout({ children }: { children: React.R
   }
 
   const h = await headers();
-  const next = safeNext(h.get("x-kalks-path"), "");
+  const next = safeNext(h.get("x-ezymex-path"), "");
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) redirect(next ? `/login?next=${encodeURIComponent(next)}` : "/login");
 

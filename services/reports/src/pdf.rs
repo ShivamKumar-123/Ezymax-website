@@ -185,7 +185,7 @@ impl Doc {
         let now = chrono::Utc::now().format("D:%Y%m%d%H%M%SZ").to_string();
         let mut info = b"<< /Title (".to_vec();
         info.extend(escape(&self.title));
-        info.extend(format!(") /Producer (Kalks reports) /Creator (Kalks) /CreationDate ({now}) >>").into_bytes());
+        info.extend(format!(") /Producer (Ezymex reports) /Creator (Ezymex) /CreationDate ({now}) >>").into_bytes());
         objs.push(info);
         let mut pages = self.pages;
         if pages.is_empty() {

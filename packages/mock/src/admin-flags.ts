@@ -1,6 +1,6 @@
 /**
  * Back Office · Brokers (Owner) · Feature flags.
- * Import via `@kalks/mock/admin-flags`. Exports are prefixed FLG_.
+ * Import via `@ezymex/mock/admin-flags`. Exports are prefixed FLG_.
  * Extends BRK_FLAGS with environments and per-tenant rollout percentages.
  */
 import { BRK_FLAGS, BRK_FLAG_EVENTS, BRK_TENANTS, type BrkFlagType } from "./admin-platform-brokers";

@@ -1,12 +1,12 @@
 ---
 slug: "p1-t-timeframes-server-time"
 title: "Timeframes, server time and the New York close"
-summary: "How timeframes group price data, why Kalks server time is aligned with the New York close, and how to convert it to your own clock."
+summary: "How timeframes group price data, why Ezymex server time is aligned with the New York close, and how to convert it to your own clock."
 order: 3
 version: 1
 takeaways:
   - "A timeframe sets how much time each candle covers, from one minute (M1) to one month (MN), and every higher timeframe is built from the lower ones."
-  - "Kalks server time is GMT+2 in winter and GMT+3 during US daylight saving, so 00:00 server time is always 17:00 in New York."
+  - "Ezymex server time is GMT+2 in winter and GMT+3 during US daylight saving, so 00:00 server time is always 17:00 in New York."
   - "Because each trading day closes at the New York close, forex charts show five clean daily candles per week with no small Sunday candle."
   - "Higher timeframes show the bigger picture and filter noise; lower timeframes show detail and are used for timing."
   - "Always convert economic-calendar times and your trading hours to server time so your chart and your plans line up."
@@ -22,7 +22,7 @@ quiz:
       - "O 1.0866, H 1.0877, L 1.0846, C 1.0850"
     answer: 0
     explanation: "The H4 open is the first H1 open, the close is the last H1 close, the high is the highest high and the low is the lowest low."
-  - question: "What time is it in New York when a new daily candle begins on Kalks Trader?"
+  - question: "What time is it in New York when a new daily candle begins on Ezymex Trader?"
     options:
       - "00:00 midnight"
       - "09:30 at the stock market open"
@@ -30,15 +30,15 @@ quiz:
       - "17:00, the New York close"
     answer: 3
     explanation: "Server time is set so that 00:00 server time equals 17:00 New York time all year round. That is the conventional end of the FX trading day."
-  - question: "Why does an FX chart on Kalks show five daily candles per week rather than six?"
+  - question: "Why does an FX chart on Ezymex show five daily candles per week rather than six?"
     options:
       - "Because Friday is skipped"
       - "Because the market opens on Monday 00:00 server time, so the Sunday evening hours belong to Monday's candle"
-      - "Because Kalks merges Monday and Tuesday"
+      - "Because Ezymex merges Monday and Tuesday"
       - "Because daily candles are only drawn on weekdays by coincidence"
     answer: 1
     explanation: "FX reopens on Sunday at 17:00 New York time, which is Monday 00:00 server time. Those hours are part of Monday's daily candle, so no separate short Sunday candle appears."
-  - question: "A US data release is at 08:30 New York time. When is it in Kalks server time?"
+  - question: "A US data release is at 08:30 New York time. When is it in Ezymex server time?"
     options:
       - "08:30"
       - "13:30"
@@ -48,11 +48,11 @@ quiz:
     explanation: "Server time runs 7 hours ahead of New York all year, so 08:30 in New York is 15:30 server time."
 ---
 
-When you open a chart, one of the first choices you make is the timeframe. The same market can look like a strong uptrend on one timeframe and a messy sideways drift on another. And every candle on every timeframe starts and ends according to the chart's clock, which on Kalks is server time. This chapter explains both.
+When you open a chart, one of the first choices you make is the timeframe. The same market can look like a strong uptrend on one timeframe and a messy sideways drift on another. And every candle on every timeframe starts and ends according to the chart's clock, which on Ezymex is server time. This chapter explains both.
 
 ## What a timeframe is
 
-A timeframe is the amount of time each candle or bar represents. Kalks Trader offers:
+A timeframe is the amount of time each candle or bar represents. Ezymex Trader offers:
 
 | Code | One candle equals | Typical use |
 |---|---|---|
@@ -89,7 +89,7 @@ Notice what the H4 candle hides: that the rally happened mostly in the 10:00 hou
 
 ## Server time and the New York close
 
-Kalks Trader displays all chart times in **server time**: GMT+2 in winter and GMT+3 while the US is on daylight saving time. This is not arbitrary. With that offset, **00:00 server time always equals 17:00 in New York**, the traditional end of the global FX trading day, known as the New York close.
+Ezymex Trader displays all chart times in **server time**: GMT+2 in winter and GMT+3 while the US is on daylight saving time. This is not arbitrary. With that offset, **00:00 server time always equals 17:00 in New York**, the traditional end of the global FX trading day, known as the New York close.
 
 Three practical consequences follow:
 
@@ -123,4 +123,4 @@ A common starting combination is D1 for direction, H4 for structure and H1 for t
 - **Mixing time zones.** Marking an event at the wrong hour because the calendar showed local time and the chart shows server time.
 - **Trading very low timeframes first.** M1 charts are noisy and costs are proportionally high, which makes them a hard place to learn.
 
-Open the same symbol on several timeframes in Kalks Trader on a free demo account and trace one day's move from D1 down to H1.
+Open the same symbol on several timeframes in Ezymex Trader on a free demo account and trace one day's move from D1 down to H1.

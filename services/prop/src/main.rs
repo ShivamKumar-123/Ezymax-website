@@ -1,4 +1,4 @@
-//! Kalks prop firm service (:8097). See services/prop/README.md.
+//! Ezymex prop firm service (:8097). See services/prop/README.md.
 
 use std::sync::Arc;
 

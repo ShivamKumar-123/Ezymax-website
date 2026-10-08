@@ -1,0 +1,24 @@
+[Unit]
+Description=Ezymex Academy (:8098)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+User=ezymex
+WorkingDirectory=/home/ezymex/ezymex/services/academy
+EnvironmentFile=/home/ezymex/ezymex/.env.local
+Environment=RUST_LOG=info
+Environment=ACADEMY_ENV=production
+Environment=ACADEMY_BIND=127.0.0.1:8098
+# course content is versioned in the repo and re-seeded (idempotent upsert) on every start
+Environment=ACADEMY_CONTENT_DIR=/home/ezymex/ezymex/content/academy
+ExecStart=/home/ezymex/ezymex/target/release/academy
+Restart=always
+RestartSec=3
+KillSignal=SIGINT
+TimeoutStopSec=10
+NoNewPrivileges=true
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

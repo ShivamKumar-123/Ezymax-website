@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { AlertTriangle, ArrowRight, CandlestickChart, Eye, EyeOff, Loader2, RotateCw } from "lucide-react";
 import { Button, Card, Chip, CopyButton, EmptyState, Progress, cn, type ButtonProps } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { openTerminal } from "@/components/trading/api";
 import { ERROR_LINK, PropError, usd } from "./api";
 
@@ -200,7 +200,7 @@ export function CredentialField({ label, value, secret, mono = true }: { label: 
 }
 
 /* ------------------------------------------------------------------ */
-/* Trade button (one-time SSO into Kalks Trader)                       */
+/* Trade button (one-time SSO into Ezymex Trader)                       */
 /* ------------------------------------------------------------------ */
 
 export function PropTradeButton({ login, disabled, reason, size = "sm", label, ...rest }: { login: number | null; disabled?: boolean; reason?: string; label?: string } & Omit<ButtonProps, "onClick" | "disabled">) {

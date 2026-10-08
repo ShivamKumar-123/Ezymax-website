@@ -4,9 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowUpRight, LayoutGrid } from "lucide-react";
 import { Button, ComingSoon, ModeGate } from "@/components/kit";
-import { IS_LIVE, pathAllowed } from "@kalks/mock";
+import { IS_LIVE, pathAllowed } from "@ezymex/mock";
 import { LIVE_GATED, LIVE_PAGES, SUPPORT_EMAIL, TERMINAL_URL, soonFor } from "@/lib/live";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 
 /** "Coming soon" page for a path that isn't backed by real data yet (live builds only). */
 export function SoonPage({ pathname }: { pathname: string }) {

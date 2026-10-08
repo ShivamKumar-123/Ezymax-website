@@ -1,19 +1,19 @@
 import type { NsMessages } from "../../core";
 
-// Kalks FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Kalks Trader in options mode.
-// Kalks, Kalks Trader and Kalks FX Options stay in English.
+// Ezymex FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Ezymex Trader in options mode.
+// Ezymex, Ezymex Trader and Ezymex FX Options stay in English.
 const options: NsMessages<"options"> = {
   // Navigation entry
   "nav.title": "ஆப்ஷன்கள்",
 
   // Page header
-  "page.title": "Kalks FX Options",
-  "page.subtitle": "ஃபாரெக்ஸ், தங்கம், வெள்ளி மற்றும் எண்ணெய் மீதான ஆப்ஷன்களை நேரடியாக Kalks Trader இல் வாங்கலாம் அல்லது விற்கலாம்.",
+  "page.title": "Ezymex FX Options",
+  "page.subtitle": "ஃபாரெக்ஸ், தங்கம், வெள்ளி மற்றும் எண்ணெய் மீதான ஆப்ஷன்களை நேரடியாக Ezymex Trader இல் வாங்கலாம் அல்லது விற்கலாம்.",
   "page.statusReady": "டிரேட் செய்யத் தயார்",
   "page.learnCourse": "ஆப்ஷன்கள் பாடநெறி",
 
   // Hero card
-  "hero.eyebrow": "Kalks Trader இல் புதியது",
+  "hero.eyebrow": "Ezymex Trader இல் புதியது",
   "hero.title": "13 சந்தைகளில் ஆப்ஷன்கள், எளிமையாக",
   "hero.text": "ஃபாரெக்ஸ் மேஜர்கள் மற்றும் கிராஸ்கள், தங்கம், வெள்ளி மற்றும் கச்சா எண்ணெய் மீதான ஐரோப்பிய ஆப்ஷன்கள். தினசரி, வாராந்திர அல்லது மாதாந்திரக் காலாவதிகளைத் தேர்வுசெய்யுங்கள். ஒவ்வொரு ஆப்ஷனும் அமெரிக்க டாலரில் ரொக்கமாக செட்டில் செய்யப்படுகிறது, எனவே நீங்கள் ஒருபோதும் எதையும் டெலிவரி எடுக்க வேண்டியதில்லை.",
   "hero.feature.underlyings.title": "13 அடிப்படைச் சொத்துகள்",
@@ -57,16 +57,16 @@ const options: NsMessages<"options"> = {
   "terms.inShort": "சுருக்கமாக",
   "terms.point.buy": "ஆப்ஷனை வாங்கும்போது: நீங்கள் செலுத்துவதே நீங்கள் இழக்கக்கூடிய அதிகபட்சம்.",
   "terms.point.sell": "ஆப்ஷனை விற்கும்போது, நீங்கள் பெறுவதை விட அதிகமாக இழக்கலாம், மேலும் அதற்கு மார்ஜின் தேவை.",
-  "terms.point.prices": "விலைகள் Kalks ஆர்டர் புக்கிலும், Kalks மூலமாகவும் நிர்ணயிக்கப்படுகின்றன.",
+  "terms.point.prices": "விலைகள் Ezymex ஆர்டர் புக்கிலும், Ezymex மூலமாகவும் நிர்ணயிக்கப்படுகின்றன.",
   "terms.point.settle": "ஆப்ஷன்கள் காலாவதியின்போது ரொக்கமாக செட்டில் செய்யப்படுகின்றன.",
   "terms.englishNote": "கீழே உள்ள முழு உரை ஆங்கிலத்தில் உள்ளது; அதுவே சட்டப்படி கட்டுப்படுத்தும் பதிப்பு.",
   "terms.acceptedOn": "பதிப்பு {version} ஐ {date} அன்று ஏற்றுக்கொண்டீர்கள்.",
   "terms.close": "மூடு",
   "terms.unavailable": "ஆப்ஷன்கள் விதிமுறைகள் இப்போது கிடைக்கவில்லை. பின்னர் மீண்டும் முயற்சிக்கவும்.",
 
-  // Kalks Trader button
-  "trade.ready": "நீங்கள் தயார். ஆப்ஷன்கள் Kalks Trader இல், உங்கள் CFD கள் உள்ள அதே கணக்கில் திறக்கப்படும்.",
-  "trade.cta": "Kalks Trader இல் ஆப்ஷன்களை டிரேட் செய்",
+  // Ezymex Trader button
+  "trade.ready": "நீங்கள் தயார். ஆப்ஷன்கள் Ezymex Trader இல், உங்கள் CFD கள் உள்ள அதே கணக்கில் திறக்கப்படும்.",
+  "trade.cta": "Ezymex Trader இல் ஆப்ஷன்களை டிரேட் செய்",
   "trade.chooseAccount": "ஒரு கணக்கைத் தேர்வுசெய்",
   "trade.noAccount": "ஆப்ஷன்களை டிரேட் செய்ய உங்களுக்கு ஒரு செயலில் உள்ள டிரேடிங் கணக்கு தேவை.",
   "trade.openAccount": "கணக்கைத் திற",
@@ -75,7 +75,7 @@ const options: NsMessages<"options"> = {
   "trade.demo": "டெமோ",
 
   // Key facts card
-  "facts.title": "Kalks FX Options எப்படிச் செயல்படுகின்றன",
+  "facts.title": "Ezymex FX Options எப்படிச் செயல்படுகின்றன",
   "facts.style": "ஐரோப்பிய பாணி: காலாவதியின்போது தானாக எக்சர்சைஸ் செய்யப்படும், அதற்கு முன் ஒருபோதும் இல்லை.",
   "facts.premium": "ஒரு ஒப்பந்தத்துக்கு USD இல் பிரீமியம்; வாங்குபவர்கள் திறக்கும்போதே அதை முழுமையாகச் செலுத்துவார்கள்.",
   "facts.contracts": "ஒரு ஒப்பந்தம்: ஒரு நாணயத்தின் 10,000 யூனிட்கள், 1 அவுன்ஸ் தங்கம், 50 அவுன்ஸ் வெள்ளி அல்லது 10 பேரல் எண்ணெய்.",

@@ -1,6 +1,6 @@
 //! Client Area account lifecycle (B1–B8): archive check, archive (with the optional "empty first" steps:
 //! close trades and cancel orders, move the withdrawable balance to the wallet), restore and rename. Called by
-//! the CRM BFF with the signed-in gateway user id in `X-Kalks-User-Id` (or `?user_id=`), like the other
+//! the CRM BFF with the signed-in gateway user id in `X-Ezymex-User-Id` (or `?user_id=`), like the other
 //! `/v1/accounts` routes; an account the user does not own is a 404.
 
 use axum::Json;
@@ -470,7 +470,7 @@ pub struct JobReport {
 
 /// One pass of the account jobs for every broker:
 /// - B8: expired demo accounts are archived `demo_archive_days` after they expired (client-restorable);
-/// - B11: live accounts with no activity (Kalks Trader sign-in, a client trade, a wallet transfer) for `dormant_days`
+/// - B11: live accounts with no activity (Ezymex Trader sign-in, a client trade, a wallet transfer) for `dormant_days`
 ///   are flagged dormant and the client is reminded once (no fee); activity clears the flag; empty dormant
 ///   accounts are archived when `dormant_auto_archive` is on;
 /// - C9: closed accounts are anonymised `retention_years` after closing (the name and the exit-survey text are
@@ -504,7 +504,7 @@ pub async fn run_account_jobs(st: &AppState) -> anyhow::Result<JobReport> {
             }
         }
         if pol.dormant_days > 0 {
-            // activity = latest of Kalks Trader sign-in / restore (last_activity_at), a client trade, a wallet transfer
+            // activity = latest of Ezymex Trader sign-in / restore (last_activity_at), a client trade, a wallet transfer
             let activity = "GREATEST(a.last_activity_at,
                     (SELECT max(d.time) FROM deals d WHERE d.login = a.login AND d.source NOT IN ('system', 'dealer')),
                     (SELECT max(t.created_at) FROM ledger_txns t WHERE t.login = a.login AND t.kind IN ('transfer_in', 'transfer_out')))";
@@ -529,7 +529,7 @@ pub async fn run_account_jobs(st: &AppState) -> anyhow::Result<JobReport> {
                     tenant,
                     user,
                     "account.dormant",
-                    json!({"title": format!("Account #{login} is inactive"), "body": format!("Trading account #{login} has had no activity for {} days. There is no fee. Sign in to Kalks Trader or make a transfer to keep it active{}.", pol.dormant_days, if pol.dormant_auto_archive { "; empty inactive accounts are archived automatically and you can restore them any time" } else { "" }), "link": "/accounts", "severity": "info", "data": {"login": login}}),
+                    json!({"title": format!("Account #{login} is inactive"), "body": format!("Trading account #{login} has had no activity for {} days. There is no fee. Sign in to Ezymex Trader or make a transfer to keep it active{}.", pol.dormant_days, if pol.dormant_auto_archive { "; empty inactive accounts are archived automatically and you can restore them any time" } else { "" }), "link": "/accounts", "severity": "info", "data": {"login": login}}),
                     &format!("dormant:{login}:{}", chrono::Utc::now().date_naive()),
                 )
                 .await;

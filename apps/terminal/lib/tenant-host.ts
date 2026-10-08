@@ -1,5 +1,5 @@
 // Server-only: the browser host of the current request. The gateway resolves the broker (tenant) from it
-// (tenant_domains; X-Kalks-Host wins over X-Kalks-Tenant, unknown hosts such as localhost fall back to Kalks).
+// (tenant_domains; X-Ezymex-Host wins over X-Ezymex-Tenant, unknown hosts such as localhost fall back to Ezymex).
 // Behind Caddy the Host header is the domain the visitor opened; Caddy only routes configured domains here.
 
 import { headers } from "next/headers";

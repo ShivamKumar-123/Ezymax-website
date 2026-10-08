@@ -94,7 +94,7 @@ Phase 5 covers position sizing in depth; the point here is that news requires it
 6. Size any news-related trade for the worst realistic fill.
 7. After the event, record what happened, the spread you saw and the slippage you received.
 
-Step 7 matters most over time. Your own records of spreads and slippage on Kalks Trader are more reliable than any rule of thumb.
+Step 7 matters most over time. Your own records of spreads and slippage on Ezymex Trader are more reliable than any rule of thumb.
 
 ## Unscheduled news
 

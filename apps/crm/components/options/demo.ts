@@ -1,21 +1,21 @@
-// Demo build (NEXT_PUBLIC_KALKS_MODE=demo): the options onboarding without the gateway. The disclosure is v2 as
+// Demo build (NEXT_PUBLIC_EZYMEX_MODE=demo): the options onboarding without the gateway. The disclosure is v2 as
 // published by services/gateway/migrations/20261002190000_options_onboarding_light.sql (a gateway test keeps the two
 // copies identical). Like the gateway (services/gateway/src/suitability.rs), accepting it is all a client needs.
 
 import type { Suitability } from "./api";
 
-const DISCLOSURE_V2 = `Options let you trade on where a price is heading. Here are the key points. When you buy an option, the most you can lose is what you pay for it. When you sell an option, you can lose more than you receive, and selling uses margin from your account. Prices are set on the Kalks order book and by Kalks. Options settle in cash at expiry, so you never deliver or receive anything. As with any trading, only use money you can afford to lose.
+const DISCLOSURE_V2 = `Options let you trade on where a price is heading. Here are the key points. When you buy an option, the most you can lose is what you pay for it. When you sell an option, you can lose more than you receive, and selling uses margin from your account. Prices are set on the Ezymex order book and by Ezymex. Options settle in cash at expiry, so you never deliver or receive anything. As with any trading, only use money you can afford to lose.
 
 ## Full terms
 
 ### 1. What you are trading
 
-Kalks FX Options are European-style options on 13 underlyings: forex major and cross pairs, gold, silver and crude oil (WTI and Brent). They are contracts on the Kalks platform. They are not traded on a regulated exchange and cannot be transferred to another broker. Options use the same trading account and the same funds as your CFD positions.
+Ezymex FX Options are European-style options on 13 underlyings: forex major and cross pairs, gold, silver and crude oil (WTI and Brent). They are contracts on the Ezymex platform. They are not traded on a regulated exchange and cannot be transferred to another broker. Options use the same trading account and the same funds as your CFD positions.
 
 ### 2. How prices are set, and who is on the other side
 
-- Option prices come from the Kalks order book or are quoted by Kalks directly. On the order book, your order is matched with orders of other Kalks clients or of the Kalks market maker, which quotes every listed series from its own pricing models. Some options, such as barrier options, are only quoted by Kalks directly.
-- When Kalks quotes the price, or the Kalks market maker takes the other side of your trade, Kalks is your counterparty: when you make money on that trade, Kalks loses the same amount, and when you lose, Kalks gains. This is a conflict of interest.
+- Option prices come from the Ezymex order book or are quoted by Ezymex directly. On the order book, your order is matched with orders of other Ezymex clients or of the Ezymex market maker, which quotes every listed series from its own pricing models. Some options, such as barrier options, are only quoted by Ezymex directly.
+- When Ezymex quotes the price, or the Ezymex market maker takes the other side of your trade, Ezymex is your counterparty: when you make money on that trade, Ezymex loses the same amount, and when you lose, Ezymex gains. This is a conflict of interest.
 - The price you can sell at (bid) is lower than the price you can buy at (ask). You can close an option before expiry only at the prices available at that moment. In fast markets, close to the expiry cut, or when trading is halted, prices can be wide or missing and orders can be refused.
 - Commission or fees may apply. They are shown before you trade.
 
@@ -29,7 +29,7 @@ Kalks FX Options are European-style options on 13 underlyings: forex major and c
 
 - When you sell (write) an option you receive the premium, but you must pay the buyer if the option ends in the money. Losses on a sold call grow without limit as the price rises. Losses on a sold put can be many times the premium you received. Losses on sold options can use up your entire account balance.
 - Selling options requires margin. Margin is calculated from stress scenarios of price and volatility, can increase at any time (for example before weekends or in volatile markets), and must be covered by your own cash. Bonus and credit cannot be used for premiums or margin.
-- If your equity falls below the required margin you will get a margin call, and your positions can be closed automatically (stop-out) at the prices available at that time, possibly at a large loss and without further notice. A position that cannot be closed on the order book can be taken over by the Kalks market maker at a price that includes a liquidation fee.
+- If your equity falls below the required margin you will get a margin call, and your positions can be closed automatically (stop-out) at the prices available at that time, possibly at a large loss and without further notice. A position that cannot be closed on the order book can be taken over by the Ezymex market maker at a price that includes a liquidation fee.
 - Prices can gap, for example over a weekend or after news. A gap can cause a loss much larger than you expected before a stop-out takes effect.
 
 ### 5. Barrier options
@@ -43,8 +43,8 @@ Kalks FX Options are European-style options on 13 underlyings: forex major and c
 - All options are settled in cash, in US dollars. You never receive or deliver currency, metal or oil.
 - Options are exercised automatically at the expiry cut (by default 10:00 New York time). The settlement price is the time-weighted average of the mid price over the 30 minutes before the cut. It can differ from the price at the moment of the cut and from prices at other providers.
 - An option that is in the money at settlement pays the difference between the settlement price and the strike, multiplied by the contract size. An option that is out of the money expires worthless.
-- New positions cannot be opened in the last minutes before the cut, and closing can be restricted shortly before it. The Kalks market maker may keep quoting until one minute before the cut.
-- If a settlement price turns out to be wrong, Kalks may correct it within one hour of the cut. Settlement proceeds can be held for that hour before you can withdraw them.
+- New positions cannot be opened in the last minutes before the cut, and closing can be restricted shortly before it. The Ezymex market maker may keep quoting until one minute before the cut.
+- If a settlement price turns out to be wrong, Ezymex may correct it within one hour of the cut. Settlement proceeds can be held for that hour before you can withdraw them.
 
 ### 7. Other risks
 
@@ -56,13 +56,13 @@ Kalks FX Options are European-style options on 13 underlyings: forex major and c
 
 ### 8. Your confirmation
 
-By accepting these terms you confirm that you have read the key points above and understand how options work; that you can lose all the money you pay for options and, when you sell options, more than the premium you receive; and that trading options is appropriate for you given your knowledge, experience and financial situation. Past performance is not a guide to future results. Nothing Kalks provides is investment advice.`;
+By accepting these terms you confirm that you have read the key points above and understand how options work; that you can lose all the money you pay for options and, when you sell options, more than the premium you receive; and that trading options is appropriate for you given your knowledge, experience and financial situation. Past performance is not a guide to future results. Nothing Ezymex provides is investment advice.`;
 
 /** A demo client who hasn't started options yet. */
 export function demoSuitability(): Suitability {
   return {
     product: "options",
-    disclosure: { version: 2, title: "Kalks FX Options: key points and terms", bodyMd: DISCLOSURE_V2, publishedAt: "2026-10-02T09:00:00Z" },
+    disclosure: { version: 2, title: "Ezymex FX Options: key points and terms", bodyMd: DISCLOSURE_V2, publishedAt: "2026-10-02T09:00:00Z" },
     disclosureAccepted: false,
     acceptedVersion: null,
     acceptedAt: null,

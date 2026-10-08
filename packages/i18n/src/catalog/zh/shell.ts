@@ -21,7 +21,7 @@ const shell: NsMessages<"shell"> = {
   security: "安全",
   verification: "身份验证",
   preferences: "偏好设置",
-  kalksTrader: "Kalks Trader",
+  ezymexTrader: "Ezymex Trader",
   deposit: "入金",
   // Client Area navigation
   "nav.dashboard": "仪表板",
@@ -92,7 +92,7 @@ const shell: NsMessages<"shell"> = {
   "gate.title": "您的账户尚未开通此功能",
   "gate.text": "您的账户尚未开通此板块。如需访问，请联系 {email}。",
   "gate.backToDashboard": "返回仪表板",
-  "gate.launchTrader": "启动 Kalks Trader",
+  "gate.launchTrader": "启动 Ezymex Trader",
   // market sessions clock
   "sessions.title": "市场交易时段",
   "sessions.openLeft": "开市中 · 剩余 {h}小时{m}分",

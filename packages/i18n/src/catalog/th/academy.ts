@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Client Area Academy: learning phases, chapters, quizzes, exams, glossary, progress. "Kalks Trader" stays as is.
+// Client Area Academy: learning phases, chapters, quizzes, exams, glossary, progress. "Ezymex Trader" stays as is.
 const academy: NsMessages<"academy"> = {
   // Shared
   title: "Academy",
@@ -20,7 +20,7 @@ const academy: NsMessages<"academy"> = {
   "practice.demo": "ฝึกในบัญชีทดลอง",
   "practice.openFreeDemo": "เปิดบัญชีทดลองฟรี",
   "practice.openDemo": "เปิดบัญชีทดลอง",
-  "practice.inTrader": "ฝึกใน Kalks Trader",
+  "practice.inTrader": "ฝึกใน Ezymex Trader",
 
   // Levels (sent by the Academy service)
   "level.beginner": "เริ่มต้น",
@@ -31,12 +31,12 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "การวิเคราะห์ปัจจัยพื้นฐาน",
   "track.technical": "การวิเคราะห์ทางเทคนิค",
-  // Product track of the Kalks FX Options elective (phase 9)
+  // Product track of the Ezymex FX Options elective (phase 9)
   "track.options": "การเทรดออปชัน",
   "trackShort.fundamental": "ปัจจัยพื้นฐาน",
   "trackShort.technical": "เทคนิค",
   "trackShort.options": "ออปชัน",
-  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  // Chip on a product course (e.g. Ezymex FX Options) that sits outside the eight core phases and can be taken at any time
   elective: "วิชาเลือก",
 
   // Durations (h = hours, m = minutes)
@@ -52,7 +52,7 @@ const academy: NsMessages<"academy"> = {
   "home.pathText": "แต่ละระยะหลักมีสายปัจจัยพื้นฐานและสายเทคนิค การสอบปลายระยะ และใบรับรอง",
   // Section under the learning path listing the electives
   "home.electivesTitle": "วิชาเลือก",
-  "home.electivesText": "หลักสูตรเกี่ยวกับผลิตภัณฑ์ของ Kalks เรียนได้ทุกเมื่อ แต่ละหลักสูตรมีการสอบปลายภาคและใบรับรองของตัวเอง",
+  "home.electivesText": "หลักสูตรเกี่ยวกับผลิตภัณฑ์ของ Ezymex เรียนได้ทุกเมื่อ แต่ละหลักสูตรมีการสอบปลายภาคและใบรับรองของตัวเอง",
   "hero.allDone": "เรียนครบทุกบทแล้ว",
   "hero.continue": "เรียนต่อ",
   "hero.upNext": "ถัดไป",
@@ -219,7 +219,7 @@ const academy: NsMessages<"academy"> = {
   "callout.example": "ตัวอย่าง",
   "callout.tip": "เคล็ดลับ",
   "callout.note": "หมายเหตุ",
-  "callout.inKalksTrader": "ใน Kalks Trader",
+  "callout.inEzymexTrader": "ใน Ezymex Trader",
   diagram: "แผนภาพ",
 };
 export default academy;

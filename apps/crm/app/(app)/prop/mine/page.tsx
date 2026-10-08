@@ -52,11 +52,11 @@ import {
   formatNumber,
   type Column,
 } from "@/components/kit";
-import { ME, getInstrument } from "@kalks/mock";
-import { MY_CHALLENGES, OPEN_PROP_POSITION, PROP_MODELS, propEquityPath, propTrades, type MyChallenge, type PropTrade, type RuleState } from "@kalks/mock/prop";
+import { ME, getInstrument } from "@ezymex/mock";
+import { MY_CHALLENGES, OPEN_PROP_POSITION, PROP_MODELS, propEquityPath, propTrades, type MyChallenge, type PropTrade, type RuleState } from "@ezymex/mock/prop";
 import { CountUp, CredentialField, ResetCountdown, RuleCard, RuleRow } from "@/components/prop/prop-ui";
 import { PropEquityChart, type PropLine } from "@/components/prop/prop-equity-chart";
-import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LivePropMine } from "@/components/prop-live/mine";
 import { TERMINAL_URL } from "@/lib/live";
 

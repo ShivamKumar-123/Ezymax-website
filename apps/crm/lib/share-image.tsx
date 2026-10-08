@@ -1,8 +1,8 @@
 import { ImageResponse } from "next/og";
 import { optionStrikeLabel, type PublicShare, type ShareOption } from "@/lib/growth";
 
-// Share P&L card PNG (1200 × 630, OpenGraph size) in the Kalks certificate style (lib/prop-cert-image.tsx):
-// dark page, card with an ember top bar and the KALKS wordmark. Money is drawn only when data.profit is set
+// Share P&L card PNG (1200 × 630, OpenGraph size) in the Ezymex certificate style (lib/prop-cert-image.tsx):
+// dark page, card with an ember top bar and the EZYMEX wordmark. Money is drawn only when data.profit is set
 // (the client opted in to showing amounts). An option trade gets its own layout: the contract, side, entry → exit
 // premium per contract, the return on premium and a payoff sketch; never the account balance.
 
@@ -131,7 +131,7 @@ function optionImage(s: PublicShare, o: ShareOption, link: string): ImageRespons
 
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginTop: 42 }}>
             <div style={{ display: "flex", alignItems: "baseline" }}>
-              <span style={{ fontSize: 28, fontWeight: 700, color: FG, letterSpacing: 1 }}>KALKS</span>
+              <span style={{ fontSize: 28, fontWeight: 700, color: FG, letterSpacing: 1 }}>EZYMEX</span>
               <span style={{ fontSize: 18, color: INFO, marginLeft: 14, letterSpacing: 1 }}>OPTION TRADE</span>
             </div>
             <span style={{ fontSize: 18, color: FG3 }}>{d.name}</span>
@@ -190,7 +190,7 @@ function optionImage(s: PublicShare, o: ShareOption, link: string): ImageRespons
           </div>
 
           <div style={{ display: "flex", marginTop: 18, borderTop: `1px solid ${LINE}`, paddingTop: 22, paddingBottom: 28, justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: 22, color: FG2 }}>{`Join me on Kalks · ${link}`}</span>
+            <span style={{ fontSize: 22, color: FG2 }}>{`Join me on Ezymex · ${link}`}</span>
             <span style={{ fontSize: 14, color: FG3 }}>Options carry high risk · past performance is not indicative of future results</span>
           </div>
         </div>
@@ -218,7 +218,7 @@ export function shareImage(s: PublicShare, link: string): ImageResponse {
 
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginTop: 46 }}>
             <div style={{ display: "flex", alignItems: "baseline" }}>
-              <span style={{ fontSize: 28, fontWeight: 700, color: FG, letterSpacing: 1 }}>KALKS</span>
+              <span style={{ fontSize: 28, fontWeight: 700, color: FG, letterSpacing: 1 }}>EZYMEX</span>
               <span style={{ fontSize: 18, color: FG3, marginLeft: 14 }}>{trade ? "TRADE" : "RESULTS"}</span>
             </div>
             <span style={{ fontSize: 18, color: FG3 }}>{d.name}</span>
@@ -270,7 +270,7 @@ export function shareImage(s: PublicShare, link: string): ImageResponse {
           </div>
 
           <div style={{ display: "flex", marginTop: "auto", borderTop: `1px solid ${LINE}`, paddingTop: 24, paddingBottom: 30, justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: 22, color: FG2 }}>{`Join me on Kalks · ${link}`}</span>
+            <span style={{ fontSize: 22, color: FG2 }}>{`Join me on Ezymex · ${link}`}</span>
             <span style={{ fontSize: 15, color: FG3 }}>Past performance is not indicative of future results</span>
           </div>
         </div>

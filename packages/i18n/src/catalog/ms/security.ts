@@ -8,7 +8,7 @@ const security: NsMessages<"security"> = {
   "signingOut": "Melog keluar…",
   "resetSigningOut": "Melog keluar anda untuk menetapkan semula kata laluan…",
   "error.generic": "Berlaku ralat. Sila cuba lagi.",
-  "error.network": "Tidak dapat menghubungi Kalks. Semak sambungan anda dan cuba lagi.",
+  "error.network": "Tidak dapat menghubungi Ezymex. Semak sambungan anda dan cuba lagi.",
 
   // Device labels from the browser's user agent; browser and OS brand names stay as they are
   "device.unknownBrowser": "Pelayar tidak diketahui",
@@ -226,7 +226,7 @@ const security: NsMessages<"security"> = {
   "page.calendar": "Kalendar",
   // Investor passwords card
   "investor.title": "Kata laluan pelabur",
-  "investor.text": "Setiap akaun dagangan juga mempunyai kata laluan pelabur untuk akses baca sahaja dalam Kalks Trader, gaya MT5: posisi dan sejarah, tanpa dagangan.",
+  "investor.text": "Setiap akaun dagangan juga mempunyai kata laluan pelabur untuk akses baca sahaja dalam Ezymex Trader, gaya MT5: posisi dan sejarah, tanpa dagangan.",
   "investor.hint": "Tetapkan atau ubahnya di halaman akaun.",
   "investor.goToAccounts": "Pergi ke akaun",
   // Create / edit dialog

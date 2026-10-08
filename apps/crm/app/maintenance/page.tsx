@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Logo } from "@kalks/ui/logo";
-import { Illustration } from "@kalks/ui/illustration";
-import { getFormatter, getT } from "@kalks/i18n/server";
+import { Logo } from "@ezymex/ui/logo";
+import { Illustration } from "@ezymex/ui/illustration";
+import { getFormatter, getT } from "@ezymex/i18n/server";
 import { tenantConfig } from "@/lib/tenant-config";
 
 export const dynamic = "force-dynamic";

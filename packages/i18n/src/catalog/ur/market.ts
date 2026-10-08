@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader left panels: Market Watch (quotes list), segment chips and Navigator.
+// Ezymex Trader left panels: Market Watch (quotes list), segment chips and Navigator.
 const market: NsMessages<"market"> = {
   // Market Watch header and tabs
   title: "مارکیٹ واچ",
@@ -72,7 +72,7 @@ const market: NsMessages<"market"> = {
   "nav.guest": "مہمان",
   "nav.noAccount": "ابھی کوئی ٹریڈنگ اکاؤنٹ نہیں",
   "nav.openAccount": "اکاؤنٹ کھولیں",
-  "nav.openAccountTitle": "اپنا Kalks اکاؤنٹ بنائیں (کلائنٹ ایریا کھلے گا)",
+  "nav.openAccountTitle": "اپنا Ezymex اکاؤنٹ بنائیں (کلائنٹ ایریا کھلے گا)",
   "nav.signIn": "سائن اِن",
   "nav.signInTitle": "کلائنٹ ایریا میں سائن اِن کریں",
   "nav.accountType.live": "لائیو",

@@ -1,7 +1,7 @@
 import type { NsMessages } from "../../core";
 
 // Client Area security: sessions, sign-in history, view-only logins (viewers), session guard.
-// "Kalks", "Google" and "JSON" stay as they are.
+// "Ezymex", "Google" and "JSON" stay as they are.
 const security: NsMessages<"security"> = {
   // Shared
   "retry": "Thử lại",
@@ -9,7 +9,7 @@ const security: NsMessages<"security"> = {
   "signingOut": "Đang đăng xuất…",
   "resetSigningOut": "Đang đăng xuất để đặt lại mật khẩu…",
   "error.generic": "Đã xảy ra lỗi. Vui lòng thử lại.",
-  "error.network": "Không thể kết nối Kalks. Hãy kiểm tra kết nối mạng và thử lại.",
+  "error.network": "Không thể kết nối Ezymex. Hãy kiểm tra kết nối mạng và thử lại.",
 
   // Device labels from the browser's user agent; browser and OS brand names stay as they are
   "device.unknownBrowser": "Trình duyệt không xác định",
@@ -227,7 +227,7 @@ const security: NsMessages<"security"> = {
   "page.calendar": "Lịch kinh tế",
   // Investor passwords card
   "investor.title": "Mật khẩu nhà đầu tư",
-  "investor.text": "Mỗi tài khoản giao dịch còn có mật khẩu nhà đầu tư để truy cập chỉ đọc trên Kalks Trader theo kiểu MT5: xem lệnh và lịch sử, không giao dịch.",
+  "investor.text": "Mỗi tài khoản giao dịch còn có mật khẩu nhà đầu tư để truy cập chỉ đọc trên Ezymex Trader theo kiểu MT5: xem lệnh và lịch sử, không giao dịch.",
   "investor.hint": "Đặt hoặc thay đổi tại trang tài khoản.",
   "investor.goToAccounts": "Đến trang tài khoản",
   // Create / edit dialog

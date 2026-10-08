@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { Lock, Timer } from "lucide-react";
-import { Button, Chip, CoinIcon, Dialog, Toggle, formatNumber } from "@kalks/ui";
-import type { FinRate } from "@kalks/mock/admin-finance";
+import { Button, Chip, CoinIcon, Dialog, Toggle, formatNumber } from "@ezymex/ui";
+import type { FinRate } from "@ezymex/mock/admin-finance";
 import { MiniField, NumInput, Section, Select, SettingRow, Slider, auditToast, useReason } from "@/components/config/kit";
 import { Line, usd } from "./shared";
 

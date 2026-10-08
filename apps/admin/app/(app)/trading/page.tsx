@@ -3,8 +3,8 @@
 import * as React from "react";
 import Link from "next/link";
 import { Activity, ArrowLeftRight, ChevronDown, Coins, Crosshair, GitBranch, Layers, MoreHorizontal, Plus, Scale, ScrollText, Scissors, TrendingUp, XCircle } from "lucide-react";
-import { Button, Card, Chip, DataTable, Input, KpiCard, Menu, PageHeader, PriceText, Reveal, Segmented, SymbolCell, cn, formatNumber, useQuotes, type Column } from "@kalks/ui";
-import { priceFeed } from "@kalks/mock";
+import { Button, Card, Chip, DataTable, Input, KpiCard, Menu, PageHeader, PriceText, Reveal, Segmented, SymbolCell, cn, formatNumber, useQuotes, type Column } from "@ezymex/ui";
+import { priceFeed } from "@ezymex/mock";
 import { PnlText, usdCompact } from "@/components/command/kit";
 import { MiniClient, SOURCE_LABEL, SideChip, SourceTag, fmtPrice } from "@/components/trading/shared";
 import { ago, bookAttribution, clientName, currentPriceOf, groupLabel, groupOptions, notionalUsd, positionPnl, serverStamp, useDesk, useLiveDirectory, type DeskPosition, type OrderSource } from "@/lib/trading-desk";

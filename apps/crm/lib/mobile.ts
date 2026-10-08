@@ -1,4 +1,4 @@
-// The Kalks mobile app (Flutter, apps/mobile) talks to this Client Area BFF under /api/mobile/*. Contract for the
+// The Ezymex mobile app (Flutter, apps/mobile) talks to this Client Area BFF under /api/mobile/*. Contract for the
 // app: docs/MOBILE-API.md.
 //
 // The app has no cookies: it keeps the gateway session token in the phone's secure store (Android Keystore) and
@@ -16,7 +16,7 @@
 // browser attaches to /api/mobile/* is dropped. So only the holder of the token can act with it, and the cookie
 // routes keep their same-origin checks unchanged for browsers.
 
-import { isLocale, LOCALE_COOKIE } from "@kalks/i18n/locales";
+import { isLocale, LOCALE_COOKIE } from "@ezymex/i18n/locales";
 import { tenantConfig, type TenantConfig } from "@/lib/tenant-config";
 import { hostOf } from "@/lib/tenant-host";
 
@@ -64,7 +64,7 @@ export function mobileRoute(pathname: string): MobileRoute | null {
   }
   if (family === "trade") {
     if (parts.length < 2) return null;
-    // contract specs and the live-trading switches are public product information (Kalks Trader serves them to guests)
+    // contract specs and the live-trading switches are public product information (Ezymex Trader serves them to guests)
     if (rest === "trade/symbols") return { kind: "native", target: pathname, policyPath: OPEN_POLICY };
     return { kind: "native", target: pathname, policyPath: `/api/mobile/${rest}` };
   }
@@ -80,26 +80,26 @@ export function bearerOf(h: Headers): string | null {
   return m && TOKEN_RE.test(m[1]!) ? m[1]! : null;
 }
 
-/** The app's device id (`X-Kalks-Device`), when well-formed. */
+/** The app's device id (`X-Ezymex-Device`), when well-formed. */
 export function deviceOf(h: Headers): string | null {
-  const v = h.get("x-kalks-device")?.trim();
+  const v = h.get("x-ezymex-device")?.trim();
   return v && DEVICE_RE.test(v) ? v : null;
 }
 
-/** The reader's language sent by the app (`X-Kalks-Locale`), when supported. */
+/** The reader's language sent by the app (`X-Ezymex-Locale`), when supported. */
 export function localeOf(h: Headers): string | null {
-  const v = h.get("x-kalks-locale")?.trim().toLowerCase();
+  const v = h.get("x-ezymex-locale")?.trim().toLowerCase();
   return v && isLocale(v) ? v : null;
 }
 
-/** The platform recorded on orders (`X-Kalks-Platform: android | ios`). The app is Android-first: missing = Android. */
+/** The platform recorded on orders (`X-Ezymex-Platform: android | ios`). The app is Android-first: missing = Android. */
 export function platformOf(h: Headers): "Android" | "iOS" {
-  return h.get("x-kalks-platform")?.trim().toLowerCase() === "ios" ? "iOS" : "Android";
+  return h.get("x-ezymex-platform")?.trim().toLowerCase() === "ios" ? "iOS" : "Android";
 }
 
-/** The app's version (`X-Kalks-App-Version`), when well-formed. */
+/** The app's version (`X-Ezymex-App-Version`), when well-formed. */
 export function appVersionOf(h: Headers): string | null {
-  const v = h.get("x-kalks-app-version")?.trim();
+  const v = h.get("x-ezymex-app-version")?.trim();
   return v && VERSION_RE.test(v) ? v : null;
 }
 
@@ -119,16 +119,16 @@ export function mobileRequestHeaders(incoming: Headers, token: string | null, ro
   const h = new Headers(incoming);
   const cookieFree = !hasCookies(incoming);
   h.delete("cookie");
-  h.delete("x-kalks-mobile");
+  h.delete("x-ezymex-mobile");
   const cookies: string[] = [];
   const locale = localeOf(incoming);
   if (locale) cookies.push(`${LOCALE_COOKIE}=${locale}`);
   if (route.kind === "rewrite") {
     const device = deviceOf(incoming);
-    if (device) cookies.push(`kalks_did=${device}`);
+    if (device) cookies.push(`ezymex_did=${device}`);
     h.delete("authorization");
     if (token && cookieFree) {
-      cookies.push(`kalks_session=${token}`);
+      cookies.push(`ezymex_session=${token}`);
       const host = (h.get("x-forwarded-host") ?? h.get("host") ?? "").split(",")[0]!.trim();
       const proto = h.get("x-forwarded-proto") === "https" ? "https" : "http";
       if (host) h.set("origin", `${proto}://${host}`);
@@ -136,7 +136,7 @@ export function mobileRequestHeaders(incoming: Headers, token: string | null, ro
     }
   }
   if (cookies.length) h.set("cookie", cookies.join("; "));
-  h.set("x-kalks-mobile", "1");
+  h.set("x-ezymex-mobile", "1");
   return h;
 }
 
@@ -163,7 +163,7 @@ export function requestOrigin(h: Headers, fallback: URL): URL {
 export type ServiceUrls = {
   /** This Client Area (the app's API base, minus /api/mobile). */
   app: string;
-  /** Kalks Trader on the web (the broker's trade domain). */
+  /** Ezymex Trader on the web (the broker's trade domain). */
   terminal: string;
   /** market-data REST (candles, quotes, symbols) and its quote stream (no auth; `?group=<spreadGroup>`). */
   marketData: { http: string; ws: string };

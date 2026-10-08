@@ -1,4 +1,4 @@
-//! Kalks support + notifications service (127.0.0.1:8100): live chat with a Claude-powered help bot that
+//! Ezymex support + notifications service (127.0.0.1:8100): live chat with a Claude-powered help bot that
 //! hands over to human agents (D95, D124), and the notification centre with email + real-time bell (D37, D41).
 //! See README.md.
 

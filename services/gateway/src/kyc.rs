@@ -6,7 +6,7 @@
 //!   POST /v1/kyc/details    {...}         identity correction (before lock), address, ID type; corporate company + parties
 //!   POST /v1/kyc/documents?kind&side&party&doc_type&issue_date
 //!        body = raw file bytes (the BFF turns the browser's multipart upload into this), headers
-//!        `x-kalks-filename` (percent-encoded) and `x-kalks-kyc-checks` (JSON of the browser's pre-checks)
+//!        `x-ezymex-filename` (percent-encoded) and `x-ezymex-kyc-checks` (JSON of the browser's pre-checks)
 //!   POST /v1/kyc/submit     {confirm}     draft | more_info -> submitted
 //!
 //! Staff (Back Office BFF `/api/admin/kyc/*`, permissions `kyc.read` / `kyc.review`): see `kyc::staff`.
@@ -54,7 +54,7 @@ pub const POA_MAX_AGE_DAYS: i64 = 92;
 // ---------- settings ----------
 
 /// KYC settings from the environment (read once).
-///   KYC_STORAGE_DIR       encrypted document store, outside any web root (default ~/.kalks-data/kyc)
+///   KYC_STORAGE_DIR       encrypted document store, outside any web root (default ~/.ezymex-data/kyc)
 ///   KYC_ENCRYPTION_KEY    AES-256-GCM data key: 64 hex chars or base64 of 32 bytes (openssl rand -hex 32).
 ///                         Development without it derives a key from SESSION_SECRET; production refuses uploads.
 ///   KYC_SLA_HOURS         review target shown to staff (queue SLA) and, as an upper bound, to clients (default 24)
@@ -81,7 +81,7 @@ impl Settings {
     fn from_env() -> Self {
         let dir = match env("KYC_STORAGE_DIR") {
             d if !d.is_empty() => PathBuf::from(d),
-            _ => PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| ".".into())).join(".kalks-data").join("kyc"),
+            _ => PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| ".".into())).join(".ezymex-data").join("kyc"),
         };
         let dev = env("GATEWAY_ENV") != "production";
         let raw = env("KYC_ENCRYPTION_KEY");
@@ -103,7 +103,7 @@ impl Settings {
 
     #[cfg(test)]
     fn for_tests() -> Self {
-        let dir = std::env::temp_dir().join(format!("kalks-kyc-test-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("ezymex-kyc-test-{}", std::process::id()));
         Self { dir, key: Some(DataKey::from_bytes([42u8; 32])), key_source: "test", sla_hours: 24 }
     }
 }
@@ -966,7 +966,7 @@ fn clean_filename(raw: Option<&str>) -> Option<String> {
 
 /// The browser's pre-checks (blur, glare, framing, face, MRZ...): a small JSON object, stored as reported.
 fn client_checks(h: &HeaderMap) -> Value {
-    let Some(raw) = h.get("x-kalks-kyc-checks").and_then(|v| v.to_str().ok()) else { return Value::Null };
+    let Some(raw) = h.get("x-ezymex-kyc-checks").and_then(|v| v.to_str().ok()) else { return Value::Null };
     if raw.len() > 4096 {
         return Value::Null;
     }
@@ -1080,7 +1080,7 @@ pub async fn upload(State(st): State<AppState>, ctx: Ctx, q: Result<Query<Upload
         "encrypted": "AES-256-GCM",
     });
     let checks = json!({ "server": server, "client": client_checks(&headers) });
-    let filename = clean_filename(headers.get("x-kalks-filename").and_then(|v| v.to_str().ok()));
+    let filename = clean_filename(headers.get("x-ezymex-filename").and_then(|v| v.to_str().ok()));
 
     let mut tx = st.pool.begin().await?;
     sqlx::query("UPDATE kyc_documents SET status = 'superseded' WHERE case_id = $1 AND kind = $2 AND side = $3 AND party IS NOT DISTINCT FROM $4 AND status IN ('uploaded','rejected')")

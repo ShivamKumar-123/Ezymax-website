@@ -5,8 +5,8 @@ import { motion } from "motion/react";
 import { Check, Eye, EyeOff, Mail, RefreshCw, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button, CopyButton, Input, cn } from "@/components/kit";
-import { ME } from "@kalks/mock";
-import { Trans, useT } from "@kalks/i18n/react";
+import { ME } from "@ezymex/mock";
+import { Trans, useT } from "@ezymex/i18n/react";
 
 /* ------------------------------------------------------------------ */
 /* Password strength                                                   */

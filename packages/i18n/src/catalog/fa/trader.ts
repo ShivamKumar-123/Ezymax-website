@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader (apps/terminal): MT5-style web terminal shell, login and mobile layout.
+// Ezymex Trader (apps/terminal): MT5-style web terminal shell, login and mobile layout.
 const trader: NsMessages<"trader"> = {
   // Shared shell words
   clientArea: "پنل کاربری",
@@ -136,7 +136,7 @@ const trader: NsMessages<"trader"> = {
   "menu.keyboardShortcuts": "میان‌برهای صفحه‌کلید",
   "menu.helpTopics": "موضوعات راهنما",
   "menu.contactSupport": "تماس با پشتیبانی",
-  "menu.about": "درباره Kalks Trader",
+  "menu.about": "درباره Ezymex Trader",
   // Tools > Options toast
   "options.title": "تنظیمات",
   "options.trading": "معاملات",
@@ -172,7 +172,7 @@ const trader: NsMessages<"trader"> = {
   "guest.noAccount": "بدون حساب معاملاتی",
   "guest.liveData": "داده‌های زنده بازار",
   "guest.cardHeader": "مهمان · نمودارها و قیمت‌ها",
-  "guest.cardText": "نمودارها، اندیکاتورها، ترسیمات، هشدارها و مشخصات نمادها با داده‌های زنده بازار Kalks کار می‌کنند. برای معامله با حساب معاملاتی خود وارد شوید یا در پنل کاربری یک حساب باز کنید.",
+  "guest.cardText": "نمودارها، اندیکاتورها، ترسیمات، هشدارها و مشخصات نمادها با داده‌های زنده بازار Ezymex کار می‌کنند. برای معامله با حساب معاملاتی خود وارد شوید یا در پنل کاربری یک حساب باز کنید.",
 
   // Notifications bell
   "notifications.title": "اعلان‌ها",
@@ -286,7 +286,7 @@ const trader: NsMessages<"trader"> = {
   "login.serverTime": "زمان سرور GMT+3",
   "login.notice.expired": "نشست شما منقضی شده است. دوباره وارد شوید.",
   "login.notice.expiredFor": "نشست شما برای {login} منقضی شده است. دوباره وارد شوید.",
-  "login.notice.ssoExpired": "این لینک ورود منقضی شده یا قبلاً استفاده شده است. Kalks Trader را دوباره از پنل کاربری باز کنید یا در پایین وارد شوید.",
+  "login.notice.ssoExpired": "این لینک ورود منقضی شده یا قبلاً استفاده شده است. Ezymex Trader را دوباره از پنل کاربری باز کنید یا در پایین وارد شوید.",
   "login.notice.ssoFailed": "ورود از طریق پنل کاربری ناموفق بود. در پایین وارد شوید.",
   "login.error.invalid": "حساب یا رمز عبور نامعتبر است.",
   "login.error.locked": "تلاش‌های ناموفق بیش از حد. این لاگین به مدت 15 دقیقه قفل شد.",
@@ -309,9 +309,9 @@ const trader: NsMessages<"trader"> = {
   "mobile.tab.history": "تاریخچه",
   "mobile.tab.account": "حساب",
   "mobile.guestSubtitle": "داده‌های زنده بازار · بدون حساب معاملاتی",
-  "mobile.guestTrade": "پس از معامله با یک حساب Kalks، پوزیشن‌ها، سفارش‌ها، موجودی و مارجین اینجا نمایش داده می‌شوند. نمودارها و قیمت‌ها از هم‌اکنون کار می‌کنند.",
+  "mobile.guestTrade": "پس از معامله با یک حساب Ezymex، پوزیشن‌ها، سفارش‌ها، موجودی و مارجین اینجا نمایش داده می‌شوند. نمودارها و قیمت‌ها از هم‌اکنون کار می‌کنند.",
   "mobile.guestHistory": "پس از ورود به یک حساب معاملاتی، معاملات بسته‌شده شما اینجا نمایش داده می‌شوند.",
-  "mobile.guestAccountText": "برای معامله وارد یک حساب معاملاتی شوید. نمودارها، اندیکاتورها، ترسیمات و هشدارها از هم‌اکنون با داده‌های زنده بازار Kalks کار می‌کنند.",
+  "mobile.guestAccountText": "برای معامله وارد یک حساب معاملاتی شوید. نمودارها، اندیکاتورها، ترسیمات و هشدارها از هم‌اکنون با داده‌های زنده بازار Ezymex کار می‌کنند.",
   "mobile.watchSegment": "بخش دیده‌بان",
   "mobile.noFavourites": "هنوز علاقه‌مندی ندارید.",
   "mobile.noSymbols": "نمادی یافت نشد.",
@@ -342,14 +342,14 @@ const trader: NsMessages<"trader"> = {
   "copyBanner.textNoName": "حساب کپی — معاملات را مستری که کپی می‌کنید مدیریت می‌کند؛ می‌توانید P&L را اینجا ببینید.",
   "copyBanner.manage": "مدیریت کپی در پنل کاربری",
 
-  // ---- Kalks FX Options workspace (CFD | Options switch in Kalks Trader; components/options/*) ----
-  // Keep "Kalks FX Options", "Claude", tickers (EURUSD), "IV", "ATM", "OTM", "ITM", "P&L", "USD", "UTC", "GTC" and the
+  // ---- Ezymex FX Options workspace (CFD | Options switch in Ezymex Trader; components/options/*) ----
+  // Keep "Ezymex FX Options", "Claude", tickers (EURUSD), "IV", "ATM", "OTM", "ITM", "P&L", "USD", "UTC", "GTC" and the
   // Greek letters (Δ Γ Θ) as they are. Premiums are in USD per contract; "pips" are price points of the underlying.
   "opt.mode.label": "حالت معامله",
   "opt.mode.cfd": "CFD",
   "opt.mode.options": "اختیار معامله",
   "opt.mode.cfdHint": "معاملات CFD: نمودارها، دیده‌بان بازار و پنل سفارش",
-  "opt.mode.optionsHint": "Kalks FX Options: زنجیره اختیار، استراتژی‌ها و نمودار سود و زیان",
+  "opt.mode.optionsHint": "Ezymex FX Options: زنجیره اختیار، استراتژی‌ها و نمودار سود و زیان",
   "opt.call": "اختیار خرید",
   "opt.put": "اختیار فروش",
   "opt.calls": "اختیارهای خرید",
@@ -518,7 +518,7 @@ const trader: NsMessages<"trader"> = {
 
   // Module not open yet / price server down
   "opt.soon.title": "اختیار معامله به‌زودی راه‌اندازی می‌شود",
-  "opt.soon.text": "Kalks FX Options هنوز روی این حساب فعال نیست. به محض فعال شدن، زنجیره اختیار همین‌جا و روی همان حساب CFDهای شما نمایش داده می‌شود.",
+  "opt.soon.text": "Ezymex FX Options هنوز روی این حساب فعال نیست. به محض فعال شدن، زنجیره اختیار همین‌جا و روی همان حساب CFDهای شما نمایش داده می‌شود.",
   "opt.soon.point1": "اختیار خرید و فروش روی فارکس، طلا، نقره و نفت",
   "opt.soon.point2": "سررسیدهای روزانه، هفتگی و ماهانه با تسویه نقدی به USD",
   "opt.soon.point3": "به‌عنوان خریدار، هرگز بیش از پرمیومی که می‌پردازید زیان نمی‌کنید",
@@ -663,14 +663,14 @@ const trader: NsMessages<"trader"> = {
 
   // Public option chain page (/options/chain/EURUSD)
   "opt.public.brand": "زنجیره اختیار",
-  "opt.public.kicker": "Kalks FX Options",
+  "opt.public.kicker": "Ezymex FX Options",
   "opt.public.title": "زنجیره اختیار {name}",
   "opt.public.subtitle": "اختیارهای خرید و فروش زنده برای سررسیدهای روزانه، هفتگی و ماهانه: Bid و Ask به USD برای هر قرارداد، نوسان ضمنی، دلتا، احتمال در سود بودن و نقطه سربه‌سر. اختیارهای اروپایی با تسویه نقدی به USD.",
   "opt.public.trade": "معامله اختیار {u}",
   "opt.public.atmStraddle": "استرادل ATM",
-  "opt.public.soonText": "زنجیره اختیار عمومی همراه با Kalks FX Options راه‌اندازی می‌شود. یک حساب باز کنید تا از روز اول آماده باشید.",
+  "opt.public.soonText": "زنجیره اختیار عمومی همراه با Ezymex FX Options راه‌اندازی می‌شود. یک حساب باز کنید تا از روز اول آماده باشید.",
   "opt.public.ctaTitle": "روی این زنجیره معامله کنید.",
-  "opt.public.ctaText": "وارد Kalks Trader شوید تا هر اختیاری را اینجا بخرید یا بفروشید، استراتژی بسازید و نمودار سود و زیان خود را ببینید.",
+  "opt.public.ctaText": "وارد Ezymex Trader شوید تا هر اختیاری را اینجا بخرید یا بفروشید، استراتژی بسازید و نمودار سود و زیان خود را ببینید.",
   "opt.public.howTitle": "نحوه خواندن زنجیره",
   "opt.public.how1": "اختیار خرید زمانی پرداخت دارد که قیمت بالاتر از قیمت اعمال تمام شود، و اختیار فروش زمانی که پایین‌تر تمام شود.",
   "opt.public.how2": "Bid مبلغی است که هنگام فروش دریافت می‌کنید و Ask مبلغی است که هنگام خرید می‌پردازید، هر دو به USD برای هر قرارداد.",
@@ -702,11 +702,11 @@ const trader: NsMessages<"trader"> = {
   "opt.m.chain": "زنجیره",
   "opt.m.positions": "پوزیشن‌ها",
 
-  // Options ORDER BOOK: clients trade with each other and with the Kalks market maker (MM) on a price-time book.
-  // "Book" = دفتر سفارش. Keep GTC, IOC, FOK, GTD, RFQ and MM as they are; "Kalks" is a brand name.
+  // Options ORDER BOOK: clients trade with each other and with the Ezymex market maker (MM) on a price-time book.
+  // "Book" = دفتر سفارش. Keep GTC, IOC, FOK, GTD, RFQ and MM as they are; "Ezymex" is a brand name.
   "opt.book.tab": "دفتر",
   "opt.book.badge": "دفتر",
-  "opt.book.badgeHint": "قیمت‌ها از دفتر سفارش می‌آیند: سفارش‌های دیگر مشتریان و بازارساز Kalks، با قوانین یکسان برای همه.",
+  "opt.book.badgeHint": "قیمت‌ها از دفتر سفارش می‌آیند: سفارش‌های دیگر مشتریان و بازارساز Ezymex، با قوانین یکسان برای همه.",
   "opt.book.size": { one: "{count} قرارداد", other: "{count} قرارداد" },
   "opt.book.noOffers": "سفارش فروشی نیست",
   "opt.book.noBids": "سفارش خریدی نیست",
@@ -775,7 +775,7 @@ const trader: NsMessages<"trader"> = {
   "opt.bt.needPrice": "قیمت لیمیت را وارد کنید.",
   "opt.bt.needGtd": "انتخاب کنید سفارش تا چه زمانی در دفتر بماند.",
   "opt.bt.needTrigger": "قیمت فعال‌سازی را وارد کنید.",
-  "opt.bt.bookOff": "دفتر سفارش اکنون در دسترس نیست: قیمت‌ها و سفارش‌ها به قیمت‌های Kalks برگشته‌اند.",
+  "opt.bt.bookOff": "دفتر سفارش اکنون در دسترس نیست: قیمت‌ها و سفارش‌ها به قیمت‌های Ezymex برگشته‌اند.",
   "opt.bt.pv.fillsNow": "اجرای فوری",
   "opt.bt.pv.fillsAt": "{n} از {total} با میانگین {price}",
   "opt.bt.pv.none": "در این قیمت هیچ",
@@ -864,7 +864,7 @@ const trader: NsMessages<"trader"> = {
   "opt.rfq.title": "درخواست قیمت",
   "opt.rfq.request": "درخواست قیمت",
   "opt.rfq.again": "درخواست قیمت جدید",
-  "opt.rfq.note": "کل استراتژی یکجا معامله می‌شود: بازارساز Kalks یک قیمت خالص اعلام می‌کند و همه لگ‌ها با هم اجرا می‌شوند یا هیچ‌کدام.",
+  "opt.rfq.note": "کل استراتژی یکجا معامله می‌شود: بازارساز Ezymex یک قیمت خالص اعلام می‌کند و همه لگ‌ها با هم اجرا می‌شوند یا هیچ‌کدام.",
   "opt.rfq.builderNote": "استراتژی‌ها با درخواست قیمت معامله می‌شوند: یک قیمت خالص، همه لگ‌ها با هم.",
   "opt.rfq.size": "اندازه: {n} × استراتژی",
   "opt.rfq.waiting": "در انتظار قیمت…",
@@ -875,17 +875,17 @@ const trader: NsMessages<"trader"> = {
   "opt.rfq.validFor": "معتبر {s} ثانیه",
   "opt.rfq.refreshing": "قیمت جدید…",
   "opt.rfq.from": "قیمت از {who}",
-  "opt.rfq.kalksMm": "بازارساز Kalks",
+  "opt.rfq.ezymexMm": "بازارساز Ezymex",
   "opt.rfq.openFor": "درخواست {s} ثانیه باز است",
   "opt.rfq.expired": "درخواست منقضی شد.",
   "opt.rfq.toast.filled": "استراتژی اجرا شد",
   "opt.rfq.toast.desc": { one: "{count} لگ اجرا شد · خالص {price} USD", other: "{count} لگ با هم اجرا شد · خالص {price} USD" },
-  "opt.rfq.kalksQuoted": "قیمت‌گذاری Kalks (خارج از دفتر سفارش)",
-  "opt.rfq.kalksQuotedHint": "اختیارهای مانع‌دار در دفتر سفارش فهرست نمی‌شوند: Kalks آن‌ها را با قیمت مدل به‌علاوه اسپرد قیمت‌گذاری می‌کند.",
+  "opt.rfq.ezymexQuoted": "قیمت‌گذاری Ezymex (خارج از دفتر سفارش)",
+  "opt.rfq.ezymexQuotedHint": "اختیارهای مانع‌دار در دفتر سفارش فهرست نمی‌شوند: Ezymex آن‌ها را با قیمت مدل به‌علاوه اسپرد قیمت‌گذاری می‌کند.",
   // Market-maker rules (public disclosure)
   "opt.mm.link": "قوانین بازارساز",
   "opt.mm.title": "قوانین بازارساز",
-  "opt.mm.intro": "Kalks یک بازارساز دارد که برای هر اختیار قیمت خرید و فروش اعلام می‌کند، تا همیشه طرف معامله‌ای برای شما وجود داشته باشد. بازارساز در همان دفتر سفارش شما و با همان قوانین معامله می‌کند.",
+  "opt.mm.intro": "Ezymex یک بازارساز دارد که برای هر اختیار قیمت خرید و فروش اعلام می‌کند، تا همیشه طرف معامله‌ای برای شما وجود داشته باشد. بازارساز در همان دفتر سفارش شما و با همان قوانین معامله می‌کند.",
   "opt.mm.sameTitle": "همان قوانین هر مشتری",
   "opt.mm.rule1": "قیمت‌هایش را از همان مسیر ثبت سفارش مشتریان و با همان بررسی‌ها ارسال می‌کند.",
   "opt.mm.rule2": "بدون اولویت: سفارش‌ها اول بر اساس قیمت و سپس زمان اجرا می‌شوند. هیچ‌کس به خاطر هویتش در همان قیمت جلوتر از شما نیست.",
@@ -985,7 +985,7 @@ const trader: NsMessages<"trader"> = {
   "opt.an.oi.emptyOi": "هنوز موقعیت بازی در این سررسید وجود ندارد.",
   "opt.an.oi.emptyVolume": "امروز هنوز معامله‌ای در این سررسید انجام نشده است.",
   "opt.an.oi.none": "موقعیت‌های باز و نسبت اختیار فروش به خرید، پس از معامله اختیارهای {u} در دفتر سفارش، اینجا نمایش داده می‌شوند.",
-  "opt.an.oi.noneSub": "فعلاً Kalks خودش برای این اختیارها قیمت می‌دهد، بنابراین هنوز موقعیت باز یا حجمی برای نمایش وجود ندارد. منحنی لبخند و ساختار زمانی بالا زنده هستند.",
+  "opt.an.oi.noneSub": "فعلاً Ezymex خودش برای این اختیارها قیمت می‌دهد، بنابراین هنوز موقعیت باز یا حجمی برای نمایش وجود ندارد. منحنی لبخند و ساختار زمانی بالا زنده هستند.",
   "opt.an.oi.aria": "موقعیت‌های باز بر حسب قیمت اعمال: اختیارهای خرید بالا، اختیارهای فروش پایین",
   "opt.an.pcr.title": "نسبت اختیار فروش به خرید",
   "opt.an.pcr.hint": "اختیارهای فروش تقسیم بر اختیارهای خرید در این سررسید. بالای 1: اختیار فروش بیشتر از اختیار خرید.",
@@ -1043,7 +1043,7 @@ const trader: NsMessages<"trader"> = {
   "opt.share.copy": "کپی لینک",
   "opt.share.copied": "لینک کپی شد",
   "opt.share.shareTo": "اشتراک در",
-  "opt.share.text": "معامله اختیار {contract} من در Kalks",
+  "opt.share.text": "معامله اختیار {contract} من در Ezymex",
   "opt.share.error": "ایجاد کارت اشتراک انجام نشد",
   "opt.share.readOnly": "با ورود سرمایه‌گذار (فقط‌خواندنی) نمی‌توان کارت اشتراک ایجاد کرد.",
   "opt.share.preview": "پیش‌نمایش کارت اشتراک",
@@ -1204,7 +1204,7 @@ const trader: NsMessages<"trader"> = {
   "opt.pos.d.nowEach": "ارزش فعلی، هر قرارداد",
   "opt.pos.d.where": "محل معامله",
   "opt.pos.d.book": "دفتر سفارش",
-  "opt.pos.d.house": "قیمت‌های Kalks",
+  "opt.pos.d.house": "قیمت‌های Ezymex",
   "opt.pos.comboPaid": "برای این استراتژی {amount} پرداخت کردید.",
   "opt.pos.comboReceived": "برای این استراتژی {amount} دریافت کردید.",
   "opt.pos.emptyTitle": "هنوز اختیار بازی ندارید",
@@ -1230,8 +1230,8 @@ const trader: NsMessages<"trader"> = {
   "opt.err.series_cancel_only": "معاملات یکی از این اختیارها فعلاً متوقف است (فقط لغو). بعداً دوباره تلاش کنید.",
   "opt.err.series_closed": "معاملات یکی از این اختیارها متوقف شده است: خیلی به سررسیدش نزدیک است.",
   "opt.err.rfq_underlyings": "همه لگ‌های یک استراتژی باید روی یک بازار باشند، مثلاً همه روی EURUSD.",
-  "opt.err.kalks_quoted": "این استراتژی یک لگ مانع‌دار دارد. قیمت اختیارهای مانع‌دار را Kalks تعیین می‌کند، نه دفتر سفارش؛ بنابراین این استراتژی به‌صورت یک سفارش واحد با قیمت‌های Kalks ثبت می‌شود.",
-  "opt.err.mixed_venue": "این استراتژی هم لگ‌هایی در دفتر سفارش دارد و هم لگ‌هایی با قیمت Kalks، بنابراین نمی‌شود آن را یکجا بست. لگ‌ها را یکی‌یکی ببندید.",
+  "opt.err.ezymex_quoted": "این استراتژی یک لگ مانع‌دار دارد. قیمت اختیارهای مانع‌دار را Ezymex تعیین می‌کند، نه دفتر سفارش؛ بنابراین این استراتژی به‌صورت یک سفارش واحد با قیمت‌های Ezymex ثبت می‌شود.",
+  "opt.err.mixed_venue": "این استراتژی هم لگ‌هایی در دفتر سفارش دارد و هم لگ‌هایی با قیمت Ezymex، بنابراین نمی‌شود آن را یکجا بست. لگ‌ها را یکی‌یکی ببندید.",
   "opt.err.book_venue": "این اختیارها در دفتر سفارش معامله می‌شوند. یک استراتژی نمی‌تواند لگ‌های دفتر سفارش و لگ‌های مانع‌دار را با هم داشته باشد: آن‌ها را جداگانه ثبت کنید.",
   "opt.rfq.err.quote_expired": "این قیمت دیگر معتبر نیست (قیمت‌ها فقط چند ثانیه معتبرند). قیمت جدید بگیرید و آن را بپذیرید.",
   "opt.rfq.err.price_moved": "قیمت پیش از رسیدن سفارش شما تغییر کرد، بنابراین معامله‌ای انجام نشد. قیمت جدید بگیرید و دوباره تلاش کنید.",
@@ -1242,7 +1242,7 @@ const trader: NsMessages<"trader"> = {
   "opt.rfq.err.no_liquidity": "بازارساز فعلاً نمی‌تواند برای این استراتژی قیمت بدهد. لحظاتی دیگر دوباره تلاش کنید، یا لگ‌ها را یکی‌یکی ببندید.",
   "opt.rfq.err.rejected": "استراتژی اجرا نشد و معامله‌ای انجام نشد. دوباره تلاش کنید.",
   "opt.rfq.newPrice": "گرفتن قیمت جدید",
-  "opt.rfq.houseNote": "قیمت اختیارهای مانع‌دار را Kalks تعیین می‌کند، نه دفتر سفارش: این استراتژی به‌صورت یک سفارش واحد با قیمت‌های Kalks ثبت می‌شود، همه لگ‌ها با هم یا هیچ‌کدام.",
+  "opt.rfq.houseNote": "قیمت اختیارهای مانع‌دار را Ezymex تعیین می‌کند، نه دفتر سفارش: این استراتژی به‌صورت یک سفارش واحد با قیمت‌های Ezymex ثبت می‌شود، همه لگ‌ها با هم یا هیچ‌کدام.",
   "opt.toast.settling": "اعداد نهایی تا لحظاتی دیگر",
   "opt.toast.tryAgain": "تلاش مجدد",
   "opt.toast.strategyClosedBook": "استراتژی از طریق دفتر سفارش بسته شد",
@@ -1250,10 +1250,10 @@ const trader: NsMessages<"trader"> = {
   "opt.pos.closedNetGot": "همه لگ‌ها با هم بسته شدند: {amount} دریافت کردید · P&L {pnl}",
   "opt.hist.reason.bust": "لغو شده",
   "opt.hist.why.risk": "بسته شده توسط کنترل ریسک (مارجین بسیار پایین)",
-  "opt.hist.why.backstop": "بسته شده توسط کنترل ریسک (مارجین بسیار پایین): بازارساز Kalks پوزیشن را بر عهده گرفت",
+  "opt.hist.why.backstop": "بسته شده توسط کنترل ریسک (مارجین بسیار پایین): بازارساز Ezymex پوزیشن را بر عهده گرفت",
   "opt.hist.why.bust": "معامله توسط میز دیلینگ لغو شد و برگشت خورد",
   "opt.hist.closedRisk": "بسته شده توسط کنترل ریسک (مارجین بسیار پایین) در {close}، برای هر قرارداد",
-  "opt.hist.closedBackstop": "بسته شده توسط کنترل ریسک (مارجین بسیار پایین): بازارساز Kalks آن را در {close} بر عهده گرفت، برای هر قرارداد",
+  "opt.hist.closedBackstop": "بسته شده توسط کنترل ریسک (مارجین بسیار پایین): بازارساز Ezymex آن را در {close} بر عهده گرفت، برای هر قرارداد",
   "opt.hist.closedBust": "معامله توسط میز دیلینگ لغو شد و در {close} برگشت خورد، برای هر قرارداد",
   "opt.bust.title": "معامله توسط میز دیلینگ لغو شد",
   "opt.bust.text": "{what} × {n}: معامله برگشت خورد و کارمزد آن (در صورت وجود) بازگردانده شد.",

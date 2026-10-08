@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Pannello inferiore di Kalks Trader (Strumenti, stile MT5): Trade, Storico, Esposizione, Notizie, Calendario, Avvisi, Giornale.
+// Pannello inferiore di Ezymex Trader (Strumenti, stile MT5): Trade, Storico, Esposizione, Notizie, Calendario, Avvisi, Giornale.
 const toolbox: NsMessages<"toolbox"> = {
   // Intestazione del pannello
   title: "Strumenti",

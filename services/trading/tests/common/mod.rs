@@ -63,7 +63,7 @@ impl Rig {
         let opt_url = env("OPTIONS_URL", "http://127.0.0.1:8104");
         let md_ws = env("MARKET_DATA_WS_URL", "ws://127.0.0.1:8081/v1/stream");
         let base = env("TRADING_TEST_DATABASE_URL", "postgres://postgres@127.0.0.1:5433/postgres");
-        let db = format!("kalks_trading_{name}_{}", std::process::id());
+        let db = format!("ezymex_trading_{name}_{}", std::process::id());
         let server = PgConnectOptions::from_str(&base).unwrap();
         let url = server.clone().database(&db).to_url_lossy().to_string();
         let pool = trading::persist::connect(&url).await.expect("PostgreSQL :5433 (connect + migrate)");
@@ -125,7 +125,7 @@ impl Rig {
             presence: Arc::new(trading::controls::Presence::default()),
             gateway: Arc::new(trading::controls::Gateway::new(&cfg.gateway_url, &cfg.gateway_token)),
         };
-        let tenant = registry.by_slug("kalks").unwrap();
+        let tenant = registry.by_slug("ezymex").unwrap();
         Rig { st, hub, pool, options, tenant, db, server }
     }
 
@@ -193,7 +193,7 @@ impl Rig {
         self.account(login, user, balance).await;
         let ctx = || Ctx { tenant: self.tenant.clone(), ip: "198.51.100.9".into(), user_agent: "e2e".into(), bearer: None };
         let mut h = HeaderMap::new();
-        h.insert("x-kalks-user-id", user.to_string().parse().unwrap());
+        h.insert("x-ezymex-user-id", user.to_string().parse().unwrap());
         let Json(sso) = api::accounts::sso(State(self.st.clone()), ctx(), h, Path(login), Query(serde_json::from_value(json!({})).unwrap())).await.unwrap();
         let Json(s) = api::terminal::sso(State(self.st.clone()), ctx(), body(json!({"token": sso["token"]}))).await.unwrap();
         s["token"].as_str().unwrap().to_string()

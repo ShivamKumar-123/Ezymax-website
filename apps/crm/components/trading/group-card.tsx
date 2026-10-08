@@ -2,8 +2,8 @@
 
 import { Check } from "lucide-react";
 import { Chip, cn } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
-import type { T } from "@kalks/i18n";
+import { useT } from "@ezymex/i18n/react";
+import type { T } from "@ezymex/i18n";
 import { modeLabel, type EngineGroup } from "./api";
 
 const PHOTO: Record<string, string> = {

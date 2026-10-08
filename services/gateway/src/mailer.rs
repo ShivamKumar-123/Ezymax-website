@@ -3,7 +3,7 @@
 //! (IP-authenticated relay such as smtp-relay.gmail.com). Sending runs in the background so request
 //! latency (and therefore timing) does not depend on the mail server.
 //!
-//! Every email has a plain-text and an HTML part. The Kalks logo is embedded inline (cid:), so it shows
+//! Every email has a plain-text and an HTML part. The Ezymex logo is embedded inline (cid:), so it shows
 //! without remote images and without the web apps being publicly reachable.
 
 use lettre::message::{header::ContentType, Attachment, Mailbox, MultiPart, SinglePart};
@@ -15,7 +15,7 @@ use crate::identity::Purpose;
 use crate::mail_i18n;
 
 const LOGO_PNG: &[u8] = include_bytes!("../assets/email-logo.png");
-const LOGO_CID: &str = "kalks-logo";
+const LOGO_CID: &str = "ezymex-logo";
 
 // Brand palette (matches the apps' dark theme).
 const BG: &str = "#0b0b0e";
@@ -92,7 +92,7 @@ impl Mailer {
             Purpose::Confirm => {
                 let lead = if lang == "en" {
                     confirm_lead = format!(
-                        "You asked to {} in the Kalks Client Area. Enter this code to confirm it.",
+                        "You asked to {} in the Ezymex Client Area. Enter this code to confirm it.",
                         detail.unwrap_or("make a change to your account")
                     );
                     confirm_lead.as_str()
@@ -256,7 +256,7 @@ impl Mailer {
     async fn send_in(&self, lang: &str, to: &str, subject: &str, preheader: &str, text: &str, body_html: &str) -> anyhow::Result<()> {
         let html = self.layout(lang, preheader, body_html);
         let logo = Attachment::new_inline(LOGO_CID.to_string()).body(LOGO_PNG.to_vec(), "image/png".parse()?);
-        let reply_to: Mailbox = format!("Kalks Support <{}>", self.links.support_email).parse()?;
+        let reply_to: Mailbox = format!("Ezymex Support <{}>", self.links.support_email).parse()?;
         let msg = Message::builder()
             .from(self.from.clone())
             .reply_to(reply_to)
@@ -284,12 +284,12 @@ impl Mailer {
         let (footer_reason, risk_warning) = (t.footer_reason, t.risk_warning);
         let dir = if mail_i18n::is_rtl(lang) { r#" dir="rtl""# } else { "" };
         format!(
-            r#"<!doctype html><html lang="{lang}"{dir}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark light"><title>Kalks</title></head>
+            r#"<!doctype html><html lang="{lang}"{dir}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark light"><title>Ezymex</title></head>
 <body style="margin:0;padding:0;background:{BG};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:{FG}">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:{BG}">{preheader}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{BG}"><tr><td align="center" style="padding:32px 14px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px">
-<tr><td style="padding:0 4px 18px"><img src="cid:{LOGO_CID}" width="120" height="40" alt="Kalks" style="display:block;border:0;outline:none;width:120px;height:40px"></td></tr>
+<tr><td style="padding:0 4px 18px"><img src="cid:{LOGO_CID}" width="120" height="40" alt="Ezymex" style="display:block;border:0;outline:none;width:120px;height:40px"></td></tr>
 <tr><td style="background:{CARD};border:1px solid {LINE};border-radius:16px;overflow:hidden">
 <div style="height:3px;background:{EMBER};background-image:linear-gradient(90deg,{EMBER},{GOLD})"></div>
 <div{dir} style="padding:30px 28px 28px">{body}</div>
@@ -308,21 +308,21 @@ impl Mailer {
     }
 
     fn text_footer_in(&self, lang: &str) -> String {
-        format!("Kalks · {} · {}\n{}", self.links.site, self.links.support_email, mail_i18n::texts(lang).risk_warning_text)
+        format!("Ezymex · {} · {}\n{}", self.links.site, self.links.support_email, mail_i18n::texts(lang).risk_warning_text)
     }
 }
 
 // ---------- marketing emails (journeys, D144) ----------
 
-/// Tenant brand used by marketing emails. Kalks uses the inline logo; other tenants their https logo or name.
+/// Tenant brand used by marketing emails. Ezymex uses the inline logo; other tenants their https logo or name.
 #[derive(Clone, Debug)]
 pub struct MailBrand {
     pub name: String,
     pub primary: String,
     pub accent: String,
-    /// https:// logo URL (other tenants); None = inline Kalks logo when `kalks_logo`, else the name as text.
+    /// https:// logo URL (other tenants); None = inline Ezymex logo when `ezymex_logo`, else the name as text.
     pub logo_url: Option<String>,
-    pub kalks_logo: bool,
+    pub ezymex_logo: bool,
     pub site_url: String,
     pub support_email: String,
 }
@@ -372,7 +372,7 @@ pub fn render_marketing(b: &MailBrand, m: &MarketingMail) -> (String, String) {
         })
         .unwrap_or_default();
     let name = html_escape(&b.name);
-    let logo = match (&b.logo_url, b.kalks_logo) {
+    let logo = match (&b.logo_url, b.ezymex_logo) {
         (Some(u), _) => format!(r#"<img src="{}" height="36" alt="{name}" style="display:block;border:0;outline:none;height:36px;max-width:180px">"#, html_escape(u)),
         (None, true) => format!(r#"<img src="cid:{LOGO_CID}" width="120" height="40" alt="{name}" style="display:block;border:0;outline:none;width:120px;height:40px">"#),
         (None, false) => format!(r#"<div style="font-size:20px;font-weight:700;letter-spacing:0.3px;color:{FG}">{name}</div>"#),
@@ -405,14 +405,14 @@ You get this email because you allowed news and offers from {name}. <a href="{un
 }
 
 impl Mailer {
-    /// Sends a rendered marketing email (inline Kalks logo attached when the template uses it).
+    /// Sends a rendered marketing email (inline Ezymex logo attached when the template uses it).
     pub async fn send_marketing(&self, to: &str, b: &MailBrand, m: &MarketingMail) -> anyhow::Result<()> {
         let (text, html) = render_marketing(b, m);
         let from = Mailbox::new(Some(b.name.clone()), self.from.email.clone());
         let reply_to: Mailbox = format!("{} Support <{}>", b.name.replace(['<', '>', '"', ','], ""), b.support_email).parse().unwrap_or_else(|_| self.from.clone());
         let html_part = SinglePart::builder().header(ContentType::TEXT_HTML).body(html);
         let alt = MultiPart::alternative().singlepart(SinglePart::builder().header(ContentType::TEXT_PLAIN).body(text));
-        let alt = if b.logo_url.is_none() && b.kalks_logo {
+        let alt = if b.logo_url.is_none() && b.ezymex_logo {
             let logo = Attachment::new_inline(LOGO_CID.to_string()).body(LOGO_PNG.to_vec(), "image/png".parse()?);
             alt.multipart(MultiPart::related().singlepart(html_part).singlepart(logo))
         } else {
@@ -474,7 +474,7 @@ pub fn kyc_content(mail: &KycMail, _first_name: &str, app: &str) -> KycContent {
         },
         KycMail::Approved { reference } => KycContent {
             subject: "Your identity is verified".into(),
-            preheader: "Withdrawals are now unlocked on your Kalks account.".into(),
+            preheader: "Withdrawals are now unlocked on your Ezymex account.".into(),
             title: "You're verified".into(),
             paragraphs: vec![
                 "Good news: we've verified your identity. Withdrawals, partner payouts and higher limits are now unlocked on your account.".into(),

@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { ChevronDown, Clock3, Plus, Repeat2, Trash2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Menu, SymbolAvatar, cn } from "@/components/kit";
-import { INSTRUMENTS } from "@kalks/mock";
+import { INSTRUMENTS } from "@ezymex/mock";
 import {
   COMPARATORS,
   INDICATORS,
@@ -16,7 +16,7 @@ import {
   type Condition,
   type Operand,
   type StrategyRules,
-} from "@kalks/mock/algo";
+} from "@ezymex/mock/algo";
 
 /* ------------------------------------------------------------------ */
 /* Tokens                                                              */

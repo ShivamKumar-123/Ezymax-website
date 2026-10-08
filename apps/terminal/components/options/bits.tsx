@@ -4,10 +4,10 @@
 // expiry-kind badges, a call/put tag, the flashing number cell, the "launching soon" and error panels.
 import * as React from "react";
 import { ArrowUpRight, BookOpen, Clock3, Hourglass, RefreshCw, TriangleAlert } from "lucide-react";
-import { INSTRUMENT_MAP } from "@kalks/mock";
-import { OPTION_SPEC } from "@kalks/mock/options";
-import { SymbolAvatar, cn, useTickGlow } from "@kalks/ui";
-import { useT } from "@kalks/i18n/react";
+import { INSTRUMENT_MAP } from "@ezymex/mock";
+import { OPTION_SPEC } from "@ezymex/mock/options";
+import { SymbolAvatar, cn, useTickGlow } from "@ezymex/ui";
+import { useT } from "@ezymex/i18n/react";
 import { ONBOARDING_URL, needsOnboarding, optionErrorText } from "@/lib/options/errors";
 import type { ExpiryKind, OptionRight, OptionTradeState, Side } from "@/lib/options/types";
 

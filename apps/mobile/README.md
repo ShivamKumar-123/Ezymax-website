@@ -1,8 +1,8 @@
-# Kalks app (Flutter, Android first)
+# Ezymex app (Flutter, Android first)
 
-One app, **Kalks** (`com.kalkstrade.app`, Android 7.0+ / API 24): the Client Area and Kalks Trader with the **same
+One app, **Ezymex** (`com.ezymex.app`, Android 7.0+ / API 24): the Client Area and Ezymex Trader with the **same
 pages, order, buttons, texts and API calls as the phone web** (`apps/crm`, `apps/terminal`), in a native iOS-style
-look. It talks to one server, the Client Area's mobile API (`https://app.kalkstrade.com/api/mobile/*`, contract in
+look. It talks to one server, the Client Area's mobile API (`https://app.ezymex.com/api/mobile/*`, contract in
 [`docs/MOBILE-API.md`](../../docs/MOBILE-API.md)), plus the WebSocket streams whose URLs come from `GET /config`.
 
 This folder has no `package.json`: pnpm and turbo ignore it. Flutter's own `.gitignore` is inside.
@@ -11,7 +11,7 @@ This folder has no `package.json`: pnpm and turbo ignore it. Flutter's own `.git
 step-up), i18n (all 22 languages, the web's keys), assets, routes for every Client Area page, the shell (header, bottom
 bar, More, bell, profile menu, search), sign-in / sign-up / reset / unlock, and the **Dashboard** as the reference
 screen on real data. Every other page is a **route stub** (same path and label as the web) waiting for its screen;
-Kalks Trader is a full-screen **placeholder** with its final frame.
+Ezymex Trader is a full-screen **placeholder** with its final frame.
 
 ## Run
 
@@ -20,9 +20,9 @@ Toolchain: `export PATH=$HOME/dev/flutter/bin:$PATH` (Flutter 3.47, JDK 17 in `~
 | What | Command (in `apps/mobile`) |
 |---|---|
 | Phone over USB (production API) | `flutter run` (or `flutter run --release`) |
-| Phone against a local stack | `adb reverse tcp:3000 tcp:3000` (+ 8081, 8090, 8104, 8100), then `flutter run --dart-define=KALKS_API_BASE=http://127.0.0.1:3000/api/mobile` |
-| Design preview in Chrome, sample data, no network | `flutter run -d chrome --dart-define=KALKS_PREVIEW=true` |
-| The same as a static build | `flutter build web --dart-define=KALKS_PREVIEW=true --no-web-resources-cdn`, serve `build/web` |
+| Phone against a local stack | `adb reverse tcp:3000 tcp:3000` (+ 8081, 8090, 8104, 8100), then `flutter run --dart-define=EZYMEX_API_BASE=http://127.0.0.1:3000/api/mobile` |
+| Design preview in Chrome, sample data, no network | `flutter run -d chrome --dart-define=EZYMEX_PREVIEW=true` |
+| The same as a static build | `flutter build web --dart-define=EZYMEX_PREVIEW=true --no-web-resources-cdn`, serve `build/web` |
 | Release APK (debug-signed for USB testing) | `flutter build apk --release` |
 | Checks | `flutter analyze` (must stay clean) · `flutter test` |
 
@@ -35,8 +35,8 @@ and code (`wrong@example.com` shows the error; code `000000` is wrong).
 The web target exists **only** for these previews; Android is the product. Plugins without web support (biometrics,
 secure storage) fall back quietly there.
 
-The same sample data is the app's **demo**: "Try the demo" on the sign-in / sign-up pages (Kalks only, never white-label
-brokers) switches `demoModeProvider` on (kept in prefs as `kalks.demo`, so a restart stays in the demo), seeds the
+The same sample data is the app's **demo**: "Try the demo" on the sign-in / sign-up pages (Ezymex only, never white-label
+brokers) switches `demoModeProvider` on (kept in prefs as `ezymex.demo`, so a restart stays in the demo), seeds the
 sample client's session and opens the Dashboard in place, with a "Demo · Sample data · Exit demo" strip over the header.
 Log out (strip, profile menu, More, the terminal's Account tab) ends it and returns to the live transport.
 
@@ -68,9 +68,9 @@ lib/
     auth/                    login (the signed-out welcome page: picture, headline, Log in / Open account pills),
                              sign_in_sheet (the sign-in form as a sheet), register, forgot, unlock (+ auth_widgets)
     dashboard/               the reference screen and its section widgets
-    terminal/                Kalks Trader (see "Kalks Trader" below): core/ (sessions, the account stream, orders,
+    terminal/                Ezymex Trader (see "Ezymex Trader" below): core/ (sessions, the account stream, orders,
                              contract maths, market feed), cfd/ (the five tabs and the sheets), chart/ (the chart page
-                             bridge), options/ (Kalks FX Options mode), preview/ (the preview trade server)
+                             bridge), options/ (Ezymex FX Options mode), preview/ (the preview trade server)
     common/                  stub_screen (route stubs), system screens (maintenance, update), pickers (language)
   data/client_data.dart      shared Client Area data providers (accounts, wallet, rewards, equity curve)
   core/
@@ -85,16 +85,16 @@ lib/
     format/format.dart       money / numbers / dates (Latin digits, server time GMT+3)
     prefs.dart, lifecycle.dart, theme_controller.dart, app_info.dart
   i18n/                      t.dart (createT port), i18n.dart (catalog loading, providers, context.t), locales
-  ui/                        "Kalks iOS" design system (import lib/ui/ui.dart)
+  ui/                        "Ezymex iOS" design system (import lib/ui/ui.dart)
   preview/                   sample data, the preview HTTP adapter, the design-system gallery (previews only)
 tool/                        export_i18n.mjs, sync_assets.mjs, i18n_app.json (app-only texts)
 test/                        unit tests, widget tests, goldens (test/goldens, generated on macOS)
 ```
 
-## Design system rules ("Kalks iOS", `lib/ui`)
+## Design system rules ("Ezymex iOS", `lib/ui`)
 
 - **Tokens, never raw colours.** `context.k` (KTokens) carries the web's palette: Client Area pastel light by default
-  (`apps/crm/app/globals.css`), dark as an option; Kalks Trader dark by default (`apps/terminal/app/globals.css`), via
+  (`apps/crm/app/globals.css`), dark as an option; Ezymex Trader dark by default (`apps/terminal/app/globals.css`), via
   `KTheme.client()` / `KTheme.trader()`. Every tint is mixed from the tenant brand colour with the web's
   `color-mix(in oklab)` maths (`ui/color_mix.dart`), so white-label brokers re-tint automatically (`config.tenant`).
 - **Type** from `context.text` (Plus Jakarta Sans in the Client Area, Geist in the terminal, Geist Mono for prices,
@@ -141,7 +141,7 @@ The web is the source of truth: **same sections, same order, same buttons, same 
    `showStepUpSheet(...)` (actions and targets as in `lib/ui/components/stepup_sheet.dart`); hide account actions when
    `me.readOnly` (view-only / read-only staff), and modules the broker switched off (`config.moduleOn`). Never retry a
    money write automatically.
-6. Kalks Trader: trade tokens per login (`SessionStore.setTradeToken`, `X-Kalks-Trade` via `tradeToken:` on the API
+6. Ezymex Trader: trade tokens per login (`SessionStore.setTradeToken`, `X-Ezymex-Trade` via `tradeToken:` on the API
    calls), `trade/sessions` to open an own account, `EngineStream` / `OptionsStream` / `MarketStream` from
    `lib/core/realtime` (only visible rows subscribe actively: `MarketStream.subscribe` / `want`). Theme: the trader
    route wraps itself in `KTheme.trader`.
@@ -152,16 +152,16 @@ The web is the source of truth: **same sections, same order, same buttons, same 
 ## Notes for the next agents
 
 - **Agent C1** (Dashboard rest, Accounts, Wallet, Portfolio, Profile & Security, Support): the Dashboard still lacks
-  Ask Kalks AI, Statistics, the activity tabs, Getting started, the Markets cards and More for you (marked in
+  Ask Ezymex AI, Statistics, the activity tabs, Getting started, the Markets cards and More for you (marked in
   `dashboard_screen.dart`); the account ⋯ menu, Fund dialog and demo refill go through the Accounts work.
 - **Agent C2** (Markets / News / Calendar, Copy & PAMM, Partner, Prop, Rewards, Academy, Developer, Options intro).
-- **Agent D** (Kalks Trader CFD + Options): built in `features/terminal/` (see "Kalks Trader").
+- **Agent D** (Ezymex Trader CFD + Options): built in `features/terminal/` (see "Ezymex Trader").
 - Push notifications, Google sign-in and refresh tokens are not part of this app version (docs/MOBILE-API.md).
 - Not verified on a device yet: the Android SDK wasn't installed when the foundation was built, so no APK was built.
   The first `flutter build apk` will tell whether Gradle needs anything (AGP 9.1, Kotlin 2.4, appcompat for
   local_auth's BiometricPrompt theme).
 
-## Kalks Trader (`lib/features/terminal`)
+## Ezymex Trader (`lib/features/terminal`)
 
 The web terminal's PHONE layout (`apps/terminal/components/mobile/mobile-terminal.tsx`, `components/options/mobile.tsx`)
 on the trade API (`trade/*`, docs/MOBILE-API.md §6) and the streams in `lib/core/realtime`:
@@ -179,7 +179,7 @@ on the trade API (`trade/*`, docs/MOBILE-API.md §6) and the streams in `lib/cor
   `apps/terminal/lib/indicators.ts` + `components/chart/indicators/{layer,band-fill}.ts` into
   `assets/chart/indicators.bundle.js` and writes the registry `assets/chart/indicators.json` for the menus
   (`cfd/chart_menu.dart`: chart type, indicators list, settings, templates; saved per symbol in the workspace).
-- Previews (`KALKS_PREVIEW=true`): `preview/preview_server.dart` answers `trade/*` and plays the market-data and engine
+- Previews (`EZYMEX_PREVIEW=true`): `preview/preview_server.dart` answers `trade/*` and plays the market-data and engine
   sockets (moving quotes, fills, pending triggers, SL / TP), so `?signedIn=1#/trader` works offline.
 - Tests: `test/terminal` (maths incl. cent / JPY, order rules, engine shapes, the stream, the chart codec, the order and
   position sheets).

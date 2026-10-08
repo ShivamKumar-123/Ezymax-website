@@ -4,7 +4,7 @@ const profile: NsMessages<"profile"> = {
   // Profile page (shared)
   title: "プロフィール",
   subtitle: "お客様の個人情報とアカウント設定です。",
-  liveSubtitle: "Kalksに登録されているお客様の個人情報です。",
+  liveSubtitle: "Ezymexに登録されているお客様の個人情報です。",
   memberSince: "{date}から登録",
   notVerified: "未認証",
   "photo.upload": "新しい写真をアップロード",
@@ -59,7 +59,7 @@ const profile: NsMessages<"profile"> = {
   "data.exportRequested": "データのエクスポートを依頼しました",
   "data.exportRequestedHint": "72時間以内にダウンロードリンクをメールでお送りします。",
   "data.export": "データをエクスポート",
-  "closure.title": "Kalksアカウントを解約",
+  "closure.title": "Ezymexアカウントを解約",
   "closure.description": "すべての取引口座の残高がゼロで、保有ポジションがない必要があります。",
   "closure.request": "アカウントの解約を申請",
   "closure.submitted": "解約申請を送信しました",

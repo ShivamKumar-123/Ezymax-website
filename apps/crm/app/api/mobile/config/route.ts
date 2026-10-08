@@ -24,8 +24,8 @@ export async function GET(req: NextRequest) {
       minAppVersion: process.env.MOBILE_MIN_APP_VERSION || null,
       urls,
       tenant: {
-        slug: brand?.slug ?? cfg?.tenant.slug ?? "kalks",
-        name: brand?.name ?? cfg?.tenant.name ?? "Kalks",
+        slug: brand?.slug ?? cfg?.tenant.slug ?? "ezymex",
+        name: brand?.name ?? cfg?.tenant.name ?? "Ezymex",
         default: brand ? !!brand.default : true,
         logoUrl: brand?.logo_url ?? null,
         // hex colours only (#rrggbb), like the web's brandCss

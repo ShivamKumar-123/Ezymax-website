@@ -9,7 +9,7 @@
 // - TronLink (TRON, window.tronLink / window.tronWeb): tron_requestAccounts → triggerSmartContract
 //   transfer(address,uint256) on the USDT contract → sign → sendRawTransaction (TRC20 USDT has 6 decimals).
 
-import { tr } from "@kalks/i18n/react";
+import { tr } from "@ezymex/i18n/react";
 
 type Eip1193 = { request: (a: { method: string; params?: unknown[] }) => Promise<unknown>; isMetaMask?: boolean };
 

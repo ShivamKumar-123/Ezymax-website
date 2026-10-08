@@ -6,9 +6,9 @@ const dashboard: NsMessages<"dashboard"> = {
   "greeting.afternoon": "สวัสดีตอนบ่าย คุณ{name}",
   "greeting.evening": "สวัสดีตอนเย็น คุณ{name}",
   "greeting.welcome": "ยินดีต้อนรับ คุณ{name}",
-  "subtitle.live": "ยินดีต้อนรับสู่ Kalks นี่คือบัญชีของคุณและตลาดในวันนี้",
+  "subtitle.live": "ยินดีต้อนรับสู่ Ezymex นี่คือบัญชีของคุณและตลาดในวันนี้",
   "subtitle.demo": "นี่คือผลการดำเนินงานของบัญชีของคุณในวันนี้",
-  launchTrader: "เปิด Kalks Trader",
+  launchTrader: "เปิด Ezymex Trader",
   openTerminal: "เปิดเทอร์มินัลเทรด",
 
   // Getting started checklist
@@ -62,7 +62,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "account.memberSince": "เป็นสมาชิกตั้งแต่",
   "account.profile": "โปรไฟล์",
 
-  // Kalks Trader banner
+  // Ezymex Trader banner
   "trader.chip": "ราคาเรียลไทม์",
   "trader.text": "ราคาและกราฟเรียลไทม์สำหรับ {count} ตราสาร ครอบคลุมฟอเร็กซ์ โลหะ ดัชนี พลังงาน คริปโต และหุ้น ใช้งานผ่านเบราว์เซอร์ ไม่ต้องติดตั้ง",
 
@@ -214,7 +214,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "home.marketsTitle": "ตลาด",
   "home.moreTitle": "เพิ่มเติมสำหรับคุณ",
 
-  // Ask Kalks AI on the Overview
+  // Ask Ezymex AI on the Overview
   "ai.title": "ถาม {name}",
   "ai.subtitle": "คำตอบทันทีเกี่ยวกับบัญชี การฝากเงิน และการเทรดของคุณ",
   "ai.placeholder": "ถามอะไรก็ได้เกี่ยวกับบัญชีหรือการเทรด…",

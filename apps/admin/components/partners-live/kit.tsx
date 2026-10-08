@@ -6,7 +6,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Button, Card, Chip, Dialog, DialogClose, IconGlyph, cn, formatNumber, type ChipTone } from "@kalks/ui";
+import { Button, Card, Chip, Dialog, DialogClose, IconGlyph, cn, formatNumber, type ChipTone } from "@ezymex/ui";
 import { ErrorState, useApi, type ApiErr } from "@/components/live/kit";
 import { ShieldCheck } from "lucide-react";
 import { ErrorBanner } from "@/components/trading-desk/kit";
@@ -42,7 +42,7 @@ export const usdK = (v: number) => {
 export const int = (v: number | null | undefined) => (v === null || v === undefined ? "—" : v.toLocaleString("en-US", { maximumFractionDigits: 0 }));
 export const lots = (v: number | null | undefined, d = 2) => (v === null || v === undefined ? "—" : v.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: Math.max(d, 4) }));
 /* ------------------------------------------------------------------ */
-/* Options (Kalks FX Options): paid per contract, never per lot        */
+/* Options (Ezymex FX Options): paid per contract, never per lot        */
 /* ------------------------------------------------------------------ */
 
 /** Engine option series code, e.g. EURUSD-20261009-1.1650-C (same rule as services/ib `is_option_series`). */

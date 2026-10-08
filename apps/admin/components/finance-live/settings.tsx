@@ -3,7 +3,7 @@
 import * as React from "react";
 import { History, Save, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, Field, Input, PageHeader, Toggle } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Field, Input, PageHeader, Toggle } from "@ezymex/ui";
 import { ErrorState, TableSkeleton, useApi, when } from "@/components/live/kit";
 import { useCan } from "@/components/staff-session";
 import { Addr, CHAIN_NAME, CHAIN_SHORT, walletWrite, type AuditItem, type Chain } from "./kit";

@@ -2,9 +2,9 @@ import type { NextRequest } from "next/server";
 import { csrf, error, reply, soft } from "@/lib/engine/server";
 import { actingAccount, options, optionsStreamUrl, publicBook, publicChain, tenantOf } from "@/lib/options/server";
 
-// Kalks FX Options BFF (read side). Browser -> /api/options/<route> (same origin; `X-Kalks-Login` names the acting
+// Ezymex FX Options BFF (read side). Browser -> /api/options/<route> (same origin; `X-Ezymex-Login` names the acting
 // account, whose engine session is in the HttpOnly cookie) -> services/options /v1/options/… with the internal
-// token, the broker (X-Kalks-Tenant) and the account's kind (X-Kalks-Account-Kind) + group (pricing). Trading
+// token, the broker (X-Ezymex-Tenant) and the account's kind (X-Ezymex-Account-Kind) + group (pricing). Trading
 // (preview, orders, closes, settlements) goes through the engine BFF: /api/engine/options/*.
 //
 //   GET  underlyings                      {underlyings[], version}

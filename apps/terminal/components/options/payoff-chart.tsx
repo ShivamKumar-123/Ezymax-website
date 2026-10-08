@@ -4,8 +4,8 @@
 // vol, the same GBSM as the pricer), across a range of underlying prices around spot. Profit / loss areas, spot,
 // strikes and breakevens marked; hover shows the P&L at that price.
 import * as React from "react";
-import { cn } from "@kalks/ui";
-import { useT } from "@kalks/i18n/react";
+import { cn } from "@ezymex/ui";
+import { useT } from "@ezymex/i18n/react";
 import { payoffAt, payoffNow, type PayLeg } from "@/lib/options/math";
 import { px, usdSigned } from "./format";
 

@@ -48,7 +48,7 @@ export async function GET(req: NextRequest, { params }: Ctx) {
     if (r.status !== 200) return NextResponse.json(r.data, { status: r.status, headers: NO_STORE });
     return new NextResponse(JSON.stringify(r.data, null, 2), {
       status: 200,
-      headers: { ...NO_STORE, "content-type": "application/json; charset=utf-8", "content-disposition": `attachment; filename="kalks-personal-data-${p[1]}.json"`, "x-content-type-options": "nosniff" },
+      headers: { ...NO_STORE, "content-type": "application/json; charset=utf-8", "content-disposition": `attachment; filename="ezymex-personal-data-${p[1]}.json"`, "x-content-type-options": "nosniff" },
     });
   }
   return error(404, "not_found", "Not found.");

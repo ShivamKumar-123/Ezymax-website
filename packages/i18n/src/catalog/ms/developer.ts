@@ -233,8 +233,8 @@ const developer: NsMessages<"developer"> = {
   "assetClass.crypto": "kripto",
   "assetClass.stocks": "saham",
 
-  // Code editor (Kalks strategy language)
-  "code.language": "Bahasa strategi Kalks",
+  // Code editor (Ezymex strategy language)
+  "code.language": "Bahasa strategi Ezymex",
   "code.checking": "Menyemak…",
   "code.errors": { other: "{count} ralat" },
   "code.compiles": "Berjaya dikompil",
@@ -281,7 +281,7 @@ const developer: NsMessages<"developer"> = {
   // Kill switch
   "kill.title": "Suis henti",
   "kill.subtitle": "Menghentikan setiap strategi, webhook dan pesanan API pada akaun anda",
-  "kill.globalPaused": "Dagangan automatik dijeda di seluruh platform oleh pengurusan risiko Kalks.",
+  "kill.globalPaused": "Dagangan automatik dijeda di seluruh platform oleh pengurusan risiko Ezymex.",
   "kill.onSince": "Hidup sejak {at}",
   "kill.release": "Lepaskan suis henti",
   "kill.stopAll": "Hentikan semua automasi",
@@ -363,7 +363,7 @@ const developer: NsMessages<"developer"> = {
   "docs.bearer": "Bearer (paling mudah)",
   "docs.hmac": "Tandatangan HMAC (disyorkan untuk bot)",
   // <code> wraps header names and paths; keep them untranslated
-  "docs.signature": "Tandatangan = hex(HMAC-SHA256(secret, timestamp + METHOD + laluan dengan query + body)), dihantar bersama <code>X-Kalks-Key</code>, <code>X-Kalks-Timestamp</code> (unix ms, ±30 s) dan <code>X-Kalks-Signature</code>. Laluan ditandatangani sebagai <code>/public/v1/…</code>. Setiap tandatangan diterima sekali sahaja.",
+  "docs.signature": "Tandatangan = hex(HMAC-SHA256(secret, timestamp + METHOD + laluan dengan query + body)), dihantar bersama <code>X-Ezymex-Key</code>, <code>X-Ezymex-Timestamp</code> (unix ms, ±30 s) dan <code>X-Ezymex-Signature</code>. Laluan ditandatangani sebagai <code>/public/v1/…</code>. Setiap tandatangan diterima sekali sahaja.",
   // "api", clientOrderId and duplicate are API values; keep them
   "docs.endpointsSub": "JSON masuk dan keluar. Setiap pesanan membawa sumber “api”; clientOrderId yang berulang mengembalikan status duplicate.",
   "docs.errorsSub": "Ralat berbentuk {shape}",
@@ -473,9 +473,9 @@ const developer: NsMessages<"developer"> = {
 
   // Strategy marketplace
   "market.title": "Pasaran strategi",
-  "market.subtitle": "Strategi dengan rekod prestasi yang disahkan daripada akaun Kalks. Salin satu ke akaun anda, atau terbitkan strategi anda sendiri dan jana pendapatan daripada langganan.",
-  "market.houseChip": "Strategi dalaman · Dikendalikan oleh Kalks",
-  "market.houseNote": "Strategi dalaman yang dikendalikan oleh Kalks: akaun sebenar milik broker yang menjalankan strategi ini. Rekod prestasi hanyalah dagangan sebenarnya sendiri sejak ia bermula; tiada apa-apa yang disimulasikan atau diisi ke belakang.",
+  "market.subtitle": "Strategi dengan rekod prestasi yang disahkan daripada akaun Ezymex. Salin satu ke akaun anda, atau terbitkan strategi anda sendiri dan jana pendapatan daripada langganan.",
+  "market.houseChip": "Strategi dalaman · Dikendalikan oleh Ezymex",
+  "market.houseNote": "Strategi dalaman yang dikendalikan oleh Ezymex: akaun sebenar milik broker yang menjalankan strategi ini. Rekod prestasi hanyalah dagangan sebenarnya sendiri sejak ia bermula; tiada apa-apa yang disimulasikan atau diisi ke belakang.",
   // Date range, e.g. "2025-01-01 to 2025-12-31"
   "market.range": "{from} hingga {to}",
   "market.backtestSimulated": "Ujian balik · disimulasikan",
@@ -502,7 +502,7 @@ const developer: NsMessages<"developer"> = {
   "market.subscriptionStatus": "Langganan {status}",
   "market.reviewSaved": "Ulasan disimpan",
   "market.reviewFailed": "Tidak dapat menyimpan ulasan",
-  "market.trackNote": "Rekod prestasi daripada pelancaran pengarang sendiri di Kalks sejak {since}: {days} hari, bersih {net}. Dikira daripada urus niaga ditutup pada enjin dagangan, bukan dimasukkan oleh pengarang.",
+  "market.trackNote": "Rekod prestasi daripada pelancaran pengarang sendiri di Ezymex sejak {since}: {days} hari, bersih {net}. Dikira daripada urus niaga ditutup pada enjin dagangan, bukan dimasukkan oleh pengarang.",
   "market.riskSettings": "Tetapan risiko",
   "market.riskLine": "Saiz {size} · stop {stop} · sasaran {target}",
   "market.riskPct": "Risiko {pct}%",
@@ -520,7 +520,7 @@ const developer: NsMessages<"developer"> = {
   "market.cloneRules": "Klon peraturan",
   "market.subscribePaid": "Langgan · {price} USDT / bulan",
   "market.subscribeFree": "Langgan secara percuma",
-  "market.paidNote": "Dibayar daripada dompet Kalks anda (USDT). Diperbaharui setiap 30 hari; batalkan pada bila-bila masa.",
+  "market.paidNote": "Dibayar daripada dompet Ezymex anda (USDT). Diperbaharui setiap 30 hari; batalkan pada bila-bila masa.",
   "market.reviews": "Ulasan ({n})",
   "market.stars": { other: "{count} bintang" },
   "market.reviewPlaceholder": "Bagaimanakah prestasi dagangannya untuk anda?",
@@ -552,7 +552,7 @@ const developer: NsMessages<"developer"> = {
   "market.popular": "Popular",
   "market.emptyTitle": "Belum ada strategi disenaraikan",
   "market.emptyText": "Jadilah yang pertama: lancarkan strategi pada akaun demo, kemudian terbitkannya bersama rekod prestasi yang disahkan.",
-  "market.disclaimer": "Prestasi lalu tidak menjamin keputusan masa hadapan. Rekod prestasi datang daripada akaun sebenar atau demo di Kalks dan dilabelkan sewajarnya. Yuran platform untuk langganan berbayar: {pct}%.",
+  "market.disclaimer": "Prestasi lalu tidak menjamin keputusan masa hadapan. Rekod prestasi datang daripada akaun sebenar atau demo di Ezymex dan dilabelkan sewajarnya. Yuran platform untuk langganan berbayar: {pct}%.",
   "market.mode": "Mod",
   "market.renews": "Diperbaharui",
   "market.copyOn": "salin pada #{login}",

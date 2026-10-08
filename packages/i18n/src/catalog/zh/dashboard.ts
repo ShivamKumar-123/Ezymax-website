@@ -6,9 +6,9 @@ const dashboard: NsMessages<"dashboard"> = {
   "greeting.afternoon": "下午好，{name}",
   "greeting.evening": "晚上好，{name}",
   "greeting.welcome": "欢迎，{name}",
-  "subtitle.live": "欢迎来到 Kalks。以下是您的账户和今日市场概况。",
+  "subtitle.live": "欢迎来到 Ezymex。以下是您的账户和今日市场概况。",
   "subtitle.demo": "以下是您的账户今日表现。",
-  launchTrader: "启动 Kalks Trader",
+  launchTrader: "启动 Ezymex Trader",
   openTerminal: "打开交易终端",
 
   // Getting started checklist
@@ -62,7 +62,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "account.memberSince": "注册时间",
   "account.profile": "个人资料",
 
-  // Kalks Trader banner
+  // Ezymex Trader banner
   "trader.chip": "实时价格",
   "trader.text": "涵盖外汇、贵金属、指数、能源、加密货币和股票的 {count} 个交易品种的实时报价和图表。在浏览器中运行，无需安装。",
 
@@ -214,7 +214,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "home.marketsTitle": "市场",
   "home.moreTitle": "为您推荐",
 
-  // Ask Kalks AI on the Overview
+  // Ask Ezymex AI on the Overview
   "ai.title": "问问 {name}",
   "ai.subtitle": "即时解答您的账户、入金和交易问题。",
   "ai.placeholder": "关于账户或交易，尽管问…",

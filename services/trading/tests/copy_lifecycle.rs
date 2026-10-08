@@ -128,7 +128,7 @@ fn set_btc(q: &QuoteBook, bid: &str, ask: &str) {
 #[tokio::test]
 async fn following_lifecycle_end_to_end() {
     let base = std::env::var("TRADING_TEST_DATABASE_URL").unwrap_or_else(|_| "postgres://postgres@127.0.0.1:5433/postgres".into());
-    let db = format!("kalks_trading_copylife_{}", std::process::id());
+    let db = format!("ezymex_trading_copylife_{}", std::process::id());
     let Ok(server) = PgConnectOptions::from_str(&base) else { return };
     if server.clone().database("postgres").connect().await.is_err() {
         eprintln!("SKIP: PostgreSQL not reachable at {base}");
@@ -199,7 +199,7 @@ async fn following_lifecycle_end_to_end() {
     let mut sub = social.create_sub(1, user, mid, Sizing { mode: SizingMode::Equity, value: D::ONE }, d("2500"), None, None, None, vec![]).await.unwrap();
     sub.auto_sl_pips = Some(d("100"));
     social.save_sub(&sub).await.unwrap();
-    social.wallet.to_trading("kalks", &format!("copy:alloc:{}", sub.id), user, sub.login, d("2500")).await.unwrap();
+    social.wallet.to_trading("ezymex", &format!("copy:alloc:{}", sub.id), user, sub.login, d("2500")).await.unwrap();
     for _ in 0..50 {
         if social.reg.read().unwrap().subs[&sub.id].net_deposits == d("2500") {
             break;

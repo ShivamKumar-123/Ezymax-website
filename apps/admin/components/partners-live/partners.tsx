@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Flag as FlagIcon, Lock, RefreshCw, Search } from "lucide-react";
-import { Button, Card, DataTable, Flag, Money, PageHeader, Reveal, Segmented, Chip, type Column } from "@kalks/ui";
+import { Button, Card, DataTable, Flag, Money, PageHeader, Reveal, Segmented, Chip, type Column } from "@ezymex/ui";
 import { MiniStat, Select } from "@/components/config/kit";
 import { Pager, TableSkeleton, day, useApi, useDebounced } from "@/components/live/kit";
 import { P, type Overview, type Paged, type PartnerRow } from "./api";

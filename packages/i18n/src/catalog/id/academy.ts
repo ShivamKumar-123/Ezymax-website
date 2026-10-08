@@ -20,7 +20,7 @@ const academy: NsMessages<"academy"> = {
   "practice.demo": "Berlatih di demo",
   "practice.openFreeDemo": "Buka akun demo gratis",
   "practice.openDemo": "Buka demo",
-  "practice.inTrader": "Berlatih di Kalks Trader",
+  "practice.inTrader": "Berlatih di Ezymex Trader",
 
   // Levels (sent by the Academy service)
   "level.beginner": "Pemula",
@@ -31,12 +31,12 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "Analisis fundamental",
   "track.technical": "Analisis teknikal",
-  // Product track of the Kalks FX Options elective (phase 9)
+  // Product track of the Ezymex FX Options elective (phase 9)
   "track.options": "Trading opsi",
   "trackShort.fundamental": "Fundamental",
   "trackShort.technical": "Teknikal",
   "trackShort.options": "Opsi",
-  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  // Chip on a product course (e.g. Ezymex FX Options) that sits outside the eight core phases and can be taken at any time
   elective: "Pilihan",
 
   // Durations (h = hours, m = minutes)
@@ -52,7 +52,7 @@ const academy: NsMessages<"academy"> = {
   "home.pathText": "Setiap fase inti memiliki jalur fundamental dan teknikal, ujian akhir, dan sertifikat.",
   // Section under the learning path listing the electives
   "home.electivesTitle": "Kursus pilihan",
-  "home.electivesText": "Kursus tentang produk Kalks. Ikuti kapan saja: masing-masing punya ujian akhir dan sertifikat sendiri.",
+  "home.electivesText": "Kursus tentang produk Ezymex. Ikuti kapan saja: masing-masing punya ujian akhir dan sertifikat sendiri.",
   "hero.allDone": "Semua bab selesai",
   "hero.continue": "Lanjutkan belajar",
   "hero.upNext": "Berikutnya",
@@ -219,7 +219,7 @@ const academy: NsMessages<"academy"> = {
   "callout.example": "Contoh",
   "callout.tip": "Tips",
   "callout.note": "Catatan",
-  "callout.inKalksTrader": "Di Kalks Trader",
+  "callout.inEzymexTrader": "Di Ezymex Trader",
   diagram: "Diagram",
 };
 export default academy;

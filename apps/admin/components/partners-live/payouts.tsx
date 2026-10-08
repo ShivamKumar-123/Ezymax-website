@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Check, HandCoins, RefreshCw, RotateCw, Wallet, X } from "lucide-react";
-import { Button, Card, Chip, DataTable, Dialog, Money, PageHeader, Reveal, Segmented, Skeleton, cn, type Column } from "@kalks/ui";
+import { Button, Card, Chip, DataTable, Dialog, Money, PageHeader, Reveal, Segmented, Skeleton, cn, type Column } from "@ezymex/ui";
 import { MiniStat, Section } from "@/components/config/kit";
 import { Pager, TableSkeleton, ago, day, useApi, useNow, when } from "@/components/live/kit";
 import { P, ibSend, type Batch, type BatchDetail, type BatchStatus, type BatchesDoc, type Payout } from "./api";

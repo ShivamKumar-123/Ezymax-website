@@ -395,7 +395,7 @@ class _LoginHistoryCardState extends ConsumerState<LoginHistoryCard> {
   Widget build(BuildContext context) {
     final t = context.t;
     final k = context.k;
-    final broker = ref.watch(meProvider)?.tenantName ?? 'Kalks';
+    final broker = ref.watch(meProvider)?.tenantName ?? 'Ezymex';
     final async = ref.watch(securityLoginsProvider);
     final data = async.value;
     final pages = data == null ? 1 : (data.length / _pageSize).ceil().clamp(1, 1 << 20);
@@ -503,7 +503,7 @@ class _DataRequestsCardState extends ConsumerState<DataRequestsCard> {
     final t = context.t;
     try {
       final f = await ref.read(apiProvider).download('security/requests/$id/export');
-      await shareFile(f, fallbackName: 'kalks-personal-data-$id.json');
+      await shareFile(f, fallbackName: 'ezymex-personal-data-$id.json');
     } on ApiException catch (e) {
       if (mounted) _toast(ref, NotificationKind.error, t('common.error'), description: localizeError(e, t));
     }

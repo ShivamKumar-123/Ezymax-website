@@ -6,8 +6,8 @@
  * book's maker / taker fees (docs/OPTIONS-EXCHANGE.md §7: negative maker = rebate; fee = sign × min(|rate| × qty,
  * cap % × premium), the cap being commissionCapPct; min(taker) over the broker's rows must cover max(|maker rebate|)),
  * max contracts per client and the Friday weekend margin add-on. The most specific row wins: (group, underlying) >
- * (group, all) > (all, underlying) > (all, all) > the Kalks default. Below: the order-book parameters per underlying
- * (platform-wide, Kalks staff): price tick, market / limit bands, liquidation band and fee, RFQ quote TTL, mark rules.
+ * (group, all) > (all, underlying) > (all, all) > the Ezymex default. Below: the order-book parameters per underlying
+ * (platform-wide, Ezymex staff): price tick, market / limit bands, liquidation band and fee, RFQ quote TTL, mark rules.
  *
  *   GET /api/options/groups        PUT|DELETE /api/options/groups/{group}/{symbol} {…, makerFeePerContract?,
  *                                  takerFeePerContract?, reason}
@@ -17,8 +17,8 @@
  */
 import * as React from "react";
 import { BadgePercent, BookOpen, Calculator, Coins, Pencil, Plus, RefreshCw, Scale, Trash2 } from "lucide-react";
-import { Button, Card, CardHeader, Chip, DataTable, Field, KpiCard, PageHeader, Reveal, Toggle, cn, formatNumber, type Column } from "@kalks/ui";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { Button, Card, CardHeader, Chip, DataTable, Field, KpiCard, PageHeader, Reveal, Toggle, cn, formatNumber, type Column } from "@ezymex/ui";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { ErrorState, TableSkeleton, ago, useApi, useNow, when } from "@/components/live/kit";
 import type { GroupSettings, Underlying } from "./types";
 import { NumInput, ReadOnlyHint, REASONS, ReasonDialog, Select, UnderlyingCell, optSend, parseNum, platformBlock, useOpt, useOptPerms, usd, volPts } from "./kit";
@@ -189,7 +189,7 @@ export function PricingPage() {
         <Reveal delay={0.05} className="2xl:col-span-8">
           <Card className="px-4 py-5 sm:px-6">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-[12.5px] text-fg-3">
-              <span>Shared from Kalks: the vol surface and settlement prices. Yours: everything on this page. Maker / taker apply to order-book fills (negative maker = rebate).</span>
+              <span>Shared from Ezymex: the vol surface and settlement prices. Yours: everything on this page. Maker / taker apply to order-book fills (negative maker = rebate).</span>
               <ReadOnlyHint text={block} />
             </div>
             {feeRule && <div className="mb-3 rounded-[12px] border border-down/30 bg-down-soft px-3 py-2 text-[12.5px]">{feeRule}</div>}
@@ -257,7 +257,7 @@ function EffectiveCard({ rows, groups, symbols }: { rows: GroupSettings[]; group
           </Field>
         </div>
         {!hit ? (
-          <div className="text-[12.5px] text-fg-3">No row matches: the Kalks default applies.</div>
+          <div className="text-[12.5px] text-fg-3">No row matches: the Ezymex default applies.</div>
         ) : (
           <div className="space-y-1.5 rounded-[14px] border border-line bg-surface-2/60 px-3.5 py-3 text-[12.5px]">
             <div className="flex justify-between">
@@ -386,7 +386,7 @@ function GroupEditor({ edit, base, groups, symbols, existing, onClose, onSaved }
             <NumInput value={vals[s.key] ?? ""} onChange={(v) => setVals((x) => ({ ...x, [s.key]: v }))} label={s.label} suffix={s.suffix} />
           </Field>
         ))}
-        <div className="col-span-2 mt-1 text-[12px] text-fg-3">Order book (§7): fee = sign × min(|rate| × contracts, commission cap × premium). The Kalks market maker pays 0 / 0.</div>
+        <div className="col-span-2 mt-1 text-[12px] text-fg-3">Order book (§7): fee = sign × min(|rate| × contracts, commission cap × premium). The Ezymex market maker pays 0 / 0.</div>
         <Field label="Maker fee" hint="per contract; negative = rebate">
           <NumInput value={fees.makerFeePerContract} onChange={(v) => setFees((x) => ({ ...x, makerFeePerContract: v }))} label="Maker fee" suffix="USD" placeholder="not set" invalid={Number.isNaN(parseNum(fees.makerFeePerContract) ?? 0)} />
         </Field>

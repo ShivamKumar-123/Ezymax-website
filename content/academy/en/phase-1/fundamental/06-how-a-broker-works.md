@@ -11,7 +11,7 @@ takeaways:
   - "Execution models range from passing trades to liquidity providers to internalising them; every model has costs and conflicts that regulation is meant to control."
   - "Regulation, segregation of client money and transparent execution policies are what you should check before depositing with any broker."
 practice:
-  label: "In the Client Area, open the Accounts page and compare the spread and commission details of the account types available to you, then check the contract specification of EURUSD in Kalks Trader."
+  label: "In the Client Area, open the Accounts page and compare the spread and commission details of the account types available to you, then check the contract specification of EURUSD in Ezymex Trader."
   symbol: "EURUSD"
 quiz:
   - question: "An account offers EURUSD with a 0.2-pip spread plus a 7 USD commission per lot round turn. What is the total cost of trading 1 lot, opening and closing once?"
@@ -48,7 +48,7 @@ quiz:
     explanation: "Your CFD contract is with the broker. How the broker manages the resulting risk varies. Regulators require brokers to manage the conflicts of interest this creates and to execute fairly."
 ---
 
-When you press Buy in Kalks Trader, a chain of events happens in a fraction of a second: a price is quoted, your order is checked against your margin, it is filled, and the resulting risk is managed somewhere. Understanding that chain helps you judge costs, read execution quality and ask the right questions of any broker.
+When you press Buy in Ezymex Trader, a chain of events happens in a fraction of a second: a price is quoted, your order is checked against your margin, it is filled, and the resulting risk is managed somewhere. Understanding that chain helps you judge costs, read execution quality and ask the right questions of any broker.
 
 ## What a broker actually does
 
@@ -60,7 +60,7 @@ A CFD broker performs five jobs at once:
 4. **Manages margin.** It calculates your used margin, margin level and, if necessary, triggers margin calls and stop-outs.
 5. **Holds your funds.** It processes deposits and withdrawals, verifies your identity, and keeps your money according to its regulatory obligations.
 
-On Kalks, the first four happen in Kalks Trader. Account management, funding, statements and trade history live in the Client Area.
+On Ezymex, the first four happen in Ezymex Trader. Account management, funding, statements and trade history live in the Client Area.
 
 ## Where the prices come from
 
@@ -80,7 +80,7 @@ A broker does not invent prices. It receives streaming quotes from **liquidity p
     <text x="270" y="95">Broker pricing and</text>
     <text x="270" y="112">risk engine</text>
     <rect x="394" y="70" width="100" height="60" fill="none" stroke="#3a3a44"/>
-    <text x="444" y="95">Kalks Trader</text>
+    <text x="444" y="95">Ezymex Trader</text>
     <text x="444" y="112">bid / ask</text>
     <rect x="548" y="70" width="76" height="60" fill="none" stroke="#3a3a44"/>
     <text x="586" y="104">Client</text>
@@ -131,7 +131,7 @@ Before funding any account, check three things:
 
 - **Regulation.** Which authority supervises the broker, and what rules apply to leverage, reporting and client protection in that jurisdiction.
 - **Client-money handling.** Whether client funds are held in segregated accounts, separate from the firm's own money. Segregation protects you against the broker's business problems, not against trading losses.
-- **Transparency.** Published contract specifications, execution policy, risk disclosures and complete statements. In the Kalks Client Area, the Portfolio section keeps your trade history and statements.
+- **Transparency.** Published contract specifications, execution policy, risk disclosures and complete statements. In the Ezymex Client Area, the Portfolio section keeps your trade history and statements.
 
 Identity verification (KYC) is part of this protection. It is required by anti-money-laundering rules and is why withdrawals normally go back to the original funding method.
 
@@ -143,4 +143,4 @@ Identity verification (KYC) is part of this protection. It is required by anti-m
 - **Blaming every loss on the broker.** Check the fill price, spread and time in your trade history before drawing conclusions.
 - **Not reading the contract specification.** Contract size, trading hours, swap rates and maximum leverage differ per symbol.
 
-Open a free demo account in Kalks Trader and review a few fills in your history to see exactly how your orders were priced.
+Open a free demo account in Ezymex Trader and review a few fills in your history to see exactly how your orders were priced.

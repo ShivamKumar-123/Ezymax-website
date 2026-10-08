@@ -4,7 +4,7 @@ const profile: NsMessages<"profile"> = {
   // Profile page (shared)
   title: "个人资料",
   subtitle: "您的个人信息和账户偏好。",
-  liveSubtitle: "您在 Kalks 登记的个人信息。",
+  liveSubtitle: "您在 Ezymex 登记的个人信息。",
   memberSince: "注册于 {date}",
   notVerified: "未验证",
   "photo.upload": "上传新照片",
@@ -59,7 +59,7 @@ const profile: NsMessages<"profile"> = {
   "data.exportRequested": "已申请导出数据",
   "data.exportRequestedHint": "您将在 72 小时内通过邮件收到下载链接。",
   "data.export": "导出我的数据",
-  "closure.title": "注销您的 Kalks 账户",
+  "closure.title": "注销您的 Ezymex 账户",
   "closure.description": "所有交易账户必须余额为零且没有持仓。",
   "closure.request": "申请注销账户",
   "closure.submitted": "注销申请已提交",

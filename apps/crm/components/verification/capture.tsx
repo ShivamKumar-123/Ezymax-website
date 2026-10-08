@@ -4,7 +4,7 @@ import * as React from "react";
 import { AlertTriangle, Camera, Check, CheckCircle2, FileText, Info, RefreshCw, Upload, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { Button, Chip, Field, Input, Progress, cn } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { uploadDocument, slotKey, type ClientChecks, type KycDocument, type KycState, type Slot } from "./api";
 import { MIN_SIDE, ageDays, analyze, checkRows, decode, faceDetectorAvailable, liveSample, type CheckRow, type Purpose } from "./checks";
 

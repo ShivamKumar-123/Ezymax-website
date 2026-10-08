@@ -10,10 +10,10 @@
 // left out (their value isn't a vanilla's).
 import * as React from "react";
 import { Calculator, RotateCcw, Table2 } from "lucide-react";
-import { INSTRUMENT_MAP, getInstrument, priceFeed } from "@kalks/mock";
-import { OPTION_SPEC, carryOf, cutInstant, pricingContext, volAtStrike } from "@kalks/mock/options";
-import { cn } from "@kalks/ui";
-import { useT } from "@kalks/i18n/react";
+import { INSTRUMENT_MAP, getInstrument, priceFeed } from "@ezymex/mock";
+import { OPTION_SPEC, carryOf, cutInstant, pricingContext, volAtStrike } from "@ezymex/mock/options";
+import { cn } from "@ezymex/ui";
+import { useT } from "@ezymex/i18n/react";
 import { useTerminal } from "@/lib/store";
 import { fmtServer, quoteToUsd } from "@/lib/trading";
 import { Check } from "@/components/ui/primitives";

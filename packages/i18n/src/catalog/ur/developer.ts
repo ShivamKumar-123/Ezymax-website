@@ -233,8 +233,8 @@ const developer: NsMessages<"developer"> = {
   "assetClass.crypto": "کرپٹو",
   "assetClass.stocks": "اسٹاکس",
 
-  // Code editor (Kalks strategy language)
-  "code.language": "Kalks اسٹریٹیجی لینگویج",
+  // Code editor (Ezymex strategy language)
+  "code.language": "Ezymex اسٹریٹیجی لینگویج",
   "code.checking": "جانچ ہو رہی ہے…",
   "code.errors": { one: "{count} خرابی", other: "{count} خرابیاں" },
   "code.compiles": "کمپائل ہوتا ہے",
@@ -281,7 +281,7 @@ const developer: NsMessages<"developer"> = {
   // Kill switch
   "kill.title": "کِل سوئچ",
   "kill.subtitle": "آپ کے اکاؤنٹس پر ہر اسٹریٹیجی، ویب ہک اور API آرڈر روک دیتا ہے",
-  "kill.globalPaused": "Kalks رسک مینجمنٹ نے پورے پلیٹ فارم پر خودکار ٹریڈنگ موقوف کر دی ہے۔",
+  "kill.globalPaused": "Ezymex رسک مینجمنٹ نے پورے پلیٹ فارم پر خودکار ٹریڈنگ موقوف کر دی ہے۔",
   "kill.onSince": "{at} سے آن",
   "kill.release": "کِل سوئچ ہٹائیں",
   "kill.stopAll": "تمام آٹومیشن بند کریں",
@@ -363,7 +363,7 @@ const developer: NsMessages<"developer"> = {
   "docs.bearer": "Bearer (سب سے آسان)",
   "docs.hmac": "HMAC دستخط (بوٹس کے لیے تجویز کردہ)",
   // <code> wraps header names and paths; keep them untranslated
-  "docs.signature": "دستخط = hex(HMAC-SHA256(secret, timestamp + METHOD + path with query + body))، جو <code>X-Kalks-Key</code>، <code>X-Kalks-Timestamp</code> (unix ms، ±30 سیکنڈ) اور <code>X-Kalks-Signature</code> کے ساتھ بھیجا جاتا ہے۔ پاتھ <code>/public/v1/…</code> کے طور پر سائن ہوتا ہے۔ ہر دستخط صرف ایک بار قبول ہوتا ہے۔",
+  "docs.signature": "دستخط = hex(HMAC-SHA256(secret, timestamp + METHOD + path with query + body))، جو <code>X-Ezymex-Key</code>، <code>X-Ezymex-Timestamp</code> (unix ms، ±30 سیکنڈ) اور <code>X-Ezymex-Signature</code> کے ساتھ بھیجا جاتا ہے۔ پاتھ <code>/public/v1/…</code> کے طور پر سائن ہوتا ہے۔ ہر دستخط صرف ایک بار قبول ہوتا ہے۔",
   // "api", clientOrderId and duplicate are API values; keep them
   "docs.endpointsSub": "JSON اِن اور آؤٹ۔ ہر آرڈر کا source “api” ہوتا ہے؛ دہرایا گیا clientOrderId اسٹیٹس duplicate لوٹاتا ہے۔",
   "docs.errorsSub": "خرابیاں اس شکل میں ہیں: {shape}",
@@ -473,9 +473,9 @@ const developer: NsMessages<"developer"> = {
 
   // Strategy marketplace
   "market.title": "اسٹریٹیجی مارکیٹ پلیس",
-  "market.subtitle": "Kalks اکاؤنٹس سے تصدیق شدہ ٹریک ریکارڈ والی اسٹریٹیجیز۔ کسی کو اپنے اکاؤنٹ پر کاپی کریں، یا اپنی شائع کریں اور سبسکرپشنز سے کمائیں۔",
-  "market.houseChip": "ہاؤس اسٹریٹیجی · Kalks کے زیر انتظام",
-  "market.houseNote": "Kalks کی چلائی جانے والی ہاؤس اسٹریٹیجی: بروکر کی ملکیت کا لائیو اکاؤنٹ جو یہ اسٹریٹیجی چلاتا ہے۔ ٹریک ریکارڈ صرف آغاز سے اس کی اپنی لائیو ٹریڈز ہیں؛ کچھ بھی سمیولیٹ یا پچھلی تاریخوں سے شامل نہیں کیا گیا۔",
+  "market.subtitle": "Ezymex اکاؤنٹس سے تصدیق شدہ ٹریک ریکارڈ والی اسٹریٹیجیز۔ کسی کو اپنے اکاؤنٹ پر کاپی کریں، یا اپنی شائع کریں اور سبسکرپشنز سے کمائیں۔",
+  "market.houseChip": "ہاؤس اسٹریٹیجی · Ezymex کے زیر انتظام",
+  "market.houseNote": "Ezymex کی چلائی جانے والی ہاؤس اسٹریٹیجی: بروکر کی ملکیت کا لائیو اکاؤنٹ جو یہ اسٹریٹیجی چلاتا ہے۔ ٹریک ریکارڈ صرف آغاز سے اس کی اپنی لائیو ٹریڈز ہیں؛ کچھ بھی سمیولیٹ یا پچھلی تاریخوں سے شامل نہیں کیا گیا۔",
   // Date range, e.g. "2025-01-01 to 2025-12-31"
   "market.range": "{from} سے {to} تک",
   "market.backtestSimulated": "بیک ٹیسٹ · سمیولیٹڈ",
@@ -502,7 +502,7 @@ const developer: NsMessages<"developer"> = {
   "market.subscriptionStatus": "سبسکرپشن {status}",
   "market.reviewSaved": "ریویو محفوظ ہو گیا",
   "market.reviewFailed": "ریویو محفوظ نہیں ہو سکا",
-  "market.trackNote": "{since} سے Kalks پر مصنف کی اپنی ڈیپلائمنٹ کا ٹریک ریکارڈ: {days} دن، نیٹ {net}۔ ٹریڈنگ انجن پر بند ڈیلز سے حساب شدہ، مصنف کا درج کردہ نہیں۔",
+  "market.trackNote": "{since} سے Ezymex پر مصنف کی اپنی ڈیپلائمنٹ کا ٹریک ریکارڈ: {days} دن، نیٹ {net}۔ ٹریڈنگ انجن پر بند ڈیلز سے حساب شدہ، مصنف کا درج کردہ نہیں۔",
   "market.riskSettings": "رسک سیٹنگز",
   "market.riskLine": "سائز {size} · اسٹاپ {stop} · ہدف {target}",
   "market.riskPct": "{pct}% رسک",
@@ -520,7 +520,7 @@ const developer: NsMessages<"developer"> = {
   "market.cloneRules": "قواعد کلون کریں",
   "market.subscribePaid": "سبسکرائب کریں · {price} USDT / ماہ",
   "market.subscribeFree": "مفت سبسکرائب کریں",
-  "market.paidNote": "آپ کے Kalks والیٹ (USDT) سے ادائیگی۔ ہر 30 دن بعد تجدید؛ کسی بھی وقت منسوخ کریں۔",
+  "market.paidNote": "آپ کے Ezymex والیٹ (USDT) سے ادائیگی۔ ہر 30 دن بعد تجدید؛ کسی بھی وقت منسوخ کریں۔",
   "market.reviews": "ریویوز ({n})",
   "market.stars": { one: "{count} اسٹار", other: "{count} اسٹارز" },
   "market.reviewPlaceholder": "آپ کے لیے اس نے کیسی ٹریڈنگ کی؟",
@@ -552,7 +552,7 @@ const developer: NsMessages<"developer"> = {
   "market.popular": "مقبول",
   "market.emptyTitle": "ابھی کوئی اسٹریٹیجی درج نہیں",
   "market.emptyText": "سب سے پہلے بنیں: ڈیمو اکاؤنٹ پر اسٹریٹیجی ڈیپلائے کریں، پھر اسے اس کے تصدیق شدہ ٹریک ریکارڈ کے ساتھ شائع کریں۔",
-  "market.disclaimer": "ماضی کی کارکردگی مستقبل کے نتائج کی ضمانت نہیں۔ ٹریک ریکارڈز Kalks پر لائیو یا ڈیمو اکاؤنٹس سے آتے ہیں اور اسی کے مطابق لیبل کیے جاتے ہیں۔ ادا شدہ سبسکرپشنز پر پلیٹ فارم فیس: {pct}%۔",
+  "market.disclaimer": "ماضی کی کارکردگی مستقبل کے نتائج کی ضمانت نہیں۔ ٹریک ریکارڈز Ezymex پر لائیو یا ڈیمو اکاؤنٹس سے آتے ہیں اور اسی کے مطابق لیبل کیے جاتے ہیں۔ ادا شدہ سبسکرپشنز پر پلیٹ فارم فیس: {pct}%۔",
   "market.mode": "موڈ",
   "market.renews": "تجدید",
   "market.copyOn": "#{login} پر کاپی",

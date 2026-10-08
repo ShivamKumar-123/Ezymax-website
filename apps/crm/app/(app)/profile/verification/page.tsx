@@ -5,8 +5,8 @@ import { Camera, CheckCircle2, Clock, FileText, IdCard, Lock, ScanFace, Upload, 
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, Icon3D, PageHeader, Progress, Reveal, Segmented, Stepper, cn } from "@/components/kit";
-import { IS_DEMO } from "@kalks/mock";
-import { useT } from "@kalks/i18n/react";
+import { IS_DEMO } from "@ezymex/mock";
+import { useT } from "@ezymex/i18n/react";
 import { LiveVerification } from "@/components/verification/live-verification";
 
 // name / unlocks are message keys, translated at render

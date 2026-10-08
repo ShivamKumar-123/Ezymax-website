@@ -1,16 +1,16 @@
 //! HTTP + WebSocket API. Full contract in services/options/README.md.
 //!
 //! * `/health`: no auth.
-//! * `/v1/public/options/chain/{u}`: no auth, exposed on api.* by Caddy; only when tenant `kalks` has
+//! * `/v1/public/options/chain/{u}`: no auth, exposed on api.* by Caddy; only when tenant `ezymex` has
 //!   `public_chain` on; cached 1 s.
 //! * `/v1/public/options/book/{series}`, `/trades/{series}`, `/stats/{u}` (`?kind=live|demo`, default live): the
 //!   order book's public market data (docs/OPTIONS-EXCHANGE.md §10), no auth, cached 1 s, 10 requests / s per IP.
 //! * `WS /v1/options/stream`: browsers via trade.* `/options/stream`; `?ticket=` from
 //!   `POST /v1/options/stream/ticket` (BFF) for a tenant + group, else the guest view (needs `public_chain`).
-//! * Everything else needs `X-Kalks-Internal`. `X-Kalks-Tenant` picks the broker (default `kalks`).
-//!   Client routes answer 404 `options_disabled` when the tenant has the module off (`X-Kalks-Account-Kind:
-//!   demo|live` checks that specific switch). Admin routes also need `X-Kalks-Staff`; platform-wide data
-//!   (underlyings, rates, holidays, surfaces, fixings, module switches) only from tenant `kalks`.
+//! * Everything else needs `X-Ezymex-Internal`. `X-Ezymex-Tenant` picks the broker (default `ezymex`).
+//!   Client routes answer 404 `options_disabled` when the tenant has the module off (`X-Ezymex-Account-Kind:
+//!   demo|live` checks that specific switch). Admin routes also need `X-Ezymex-Staff`; platform-wide data
+//!   (underlyings, rates, holidays, surfaces, fixings, module switches) only from tenant `ezymex`.
 
 pub mod admin;
 pub mod internal;
@@ -77,27 +77,27 @@ pub fn is_slug(s: &str) -> bool {
 }
 
 pub fn tenant(h: &HeaderMap) -> String {
-    let t = h.get("x-kalks-tenant").and_then(|v| v.to_str().ok()).unwrap_or(PLATFORM_TENANT).trim().to_ascii_lowercase();
+    let t = h.get("x-ezymex-tenant").and_then(|v| v.to_str().ok()).unwrap_or(PLATFORM_TENANT).trim().to_ascii_lowercase();
     if is_slug(&t) { t } else { PLATFORM_TENANT.into() }
 }
 
 pub fn staff(h: &HeaderMap) -> R<String> {
-    h.get("x-kalks-staff")
+    h.get("x-ezymex-staff")
         .and_then(|v| v.to_str().ok())
         .map(|s| s.trim().chars().take(120).collect::<String>())
         .filter(|s| !s.is_empty())
         .ok_or_else(|| ApiError::new(StatusCode::UNAUTHORIZED, "unauthorized", "Missing staff member."))
 }
 
-/// The account kind of the order book a client read concerns (`X-Kalks-Account-Kind`, default live).
+/// The account kind of the order book a client read concerns (`X-Ezymex-Account-Kind`, default live).
 pub fn account_kind(h: &HeaderMap) -> Kind {
-    h.get("x-kalks-account-kind").and_then(|v| v.to_str().ok()).and_then(Kind::parse).unwrap_or(Kind::Live)
+    h.get("x-ezymex-account-kind").and_then(|v| v.to_str().ok()).and_then(Kind::parse).unwrap_or(Kind::Live)
 }
 
 /// The tenant's settings, or 404 when the module is off (for the given account kind, if any).
 pub fn enabled_tenant(rd: &RefData, h: &HeaderMap) -> R<TenantSettings> {
     let t = rd.tenant(&tenant(h));
-    let kind = h.get("x-kalks-account-kind").and_then(|v| v.to_str().ok()).map(|s| s.trim().to_ascii_lowercase());
+    let kind = h.get("x-ezymex-account-kind").and_then(|v| v.to_str().ok()).map(|s| s.trim().to_ascii_lowercase());
     let on = match kind.as_deref() {
         Some("demo") => t.enabled_demo,
         Some("live") => t.enabled_live,
@@ -108,7 +108,7 @@ pub fn enabled_tenant(rd: &RefData, h: &HeaderMap) -> R<TenantSettings> {
 
 async fn require_internal(State(st): State<AppState>, req: Request, next: Next) -> Response {
     if !st.cfg.internal_token.is_empty() {
-        let got = req.headers().get("x-kalks-internal").map(|v| v.as_bytes()).unwrap_or(b"");
+        let got = req.headers().get("x-ezymex-internal").map(|v| v.as_bytes()).unwrap_or(b"");
         if !bool::from(got.ct_eq(st.cfg.internal_token.as_bytes())) {
             return ApiError::new(StatusCode::UNAUTHORIZED, "unauthorized", "Internal token required.").into_response();
         }

@@ -1,4 +1,4 @@
-//! Kalks reports service (:8102). See services/reports/README.md.
+//! Ezymex reports service (:8102). See services/reports/README.md.
 
 use std::sync::Arc;
 

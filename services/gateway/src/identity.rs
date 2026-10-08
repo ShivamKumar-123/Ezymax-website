@@ -165,7 +165,7 @@ pub const VIEWER_TOKEN_PREFIX: &str = "v.";
 pub const VIEWER_SESSION_TTL_HOURS: i64 = 12;
 
 tokio::task_local! {
-    /// ISO country of the caller from the edge (`X-Kalks-Country`, set by the apps from CF-IPCountry), for the
+    /// ISO country of the caller from the edge (`X-Ezymex-Country`, set by the apps from CF-IPCountry), for the
     /// approximate location of new sessions. Set per request by the router middleware.
     pub static COUNTRY: Option<String>;
 }

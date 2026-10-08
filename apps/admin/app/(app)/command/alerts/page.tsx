@@ -5,9 +5,9 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { Activity, ArrowUpRight, BellRing, Check, CheckCheck, Database, Landmark, Plus, Radio, ShieldAlert, UserPlus, Wallet, Volume2 } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardHeader, Chip, Dialog, DialogClose, Field, Input, Menu, PageHeader, Reveal, Segmented, Toggle, cn } from "@kalks/ui";
-import { STAFF_MEMBERS, serverTime, staff, timeAgo } from "@kalks/mock/admin-clients";
-import { ALERTS, ALERT_RULES, type AlertSeverity, type AlertType, type OpsAlert } from "@kalks/mock/admin-ops";
+import { Avatar, Button, Card, CardHeader, Chip, Dialog, DialogClose, Field, Input, Menu, PageHeader, Reveal, Segmented, Toggle, cn } from "@ezymex/ui";
+import { STAFF_MEMBERS, serverTime, staff, timeAgo } from "@ezymex/mock/admin-clients";
+import { ALERTS, ALERT_RULES, type AlertSeverity, type AlertType, type OpsAlert } from "@ezymex/mock/admin-ops";
 import { SEVERITY_BAR, SeverityChip } from "@/components/command/kit";
 
 const TYPE_META: Record<AlertType, { label: string; icon: React.ReactNode }> = {

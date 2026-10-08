@@ -12,12 +12,12 @@ import { usePathname } from "next/navigation";
 import { Eye, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import type { NavModule } from "@/components/kit";
 import { logout, useSession } from "@/components/session";
 import { viewerPageAllowed, type ViewerScope } from "@/lib/viewer";
 
-const ACTIVITY_KEY = "kalks.lastActivity";
+const ACTIVITY_KEY = "ezymex.lastActivity";
 const CHECK_MS = 30_000;
 const WARN_MS = 60_000;
 

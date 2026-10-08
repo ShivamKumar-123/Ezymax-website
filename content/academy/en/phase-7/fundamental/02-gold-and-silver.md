@@ -64,7 +64,7 @@ For a trader this means the calendar events that matter most for gold are the sa
 
 ## Contract size and position sizing
 
-On Kalks, one lot of XAUUSD is 100 troy ounces. A 1.00 USD move in the gold price therefore equals 100 USD per lot, or 1 USD per 0.01 lot.
+On Ezymex, one lot of XAUUSD is 100 troy ounces. A 1.00 USD move in the gold price therefore equals 100 USD per lot, or 1 USD per 0.01 lot.
 
 ```text
 Balance: 10,000 USD, risk 1% = 100 USD
@@ -84,7 +84,7 @@ Gold's daily range is frequently 20 to 40 USD and can exceed that on major news,
 
 Silver (XAGUSD) follows gold much of the time but typically moves further in percentage terms. There are two reasons. The silver market is far smaller than gold, so the same flow of money moves the price more. And roughly half of silver demand is industrial, from electronics, solar panels and other uses, so silver also responds to the manufacturing cycle and growth expectations.
 
-The practical result is that silver tends to outperform gold in strong precious-metals rallies and underperform in sell-offs or when growth fears dominate. Silver contract sizes differ between brokers (5,000 oz per lot is common), so check the contract specification in Kalks Trader before trading it; the same lot size can carry very different risk from gold.
+The practical result is that silver tends to outperform gold in strong precious-metals rallies and underperform in sell-offs or when growth fears dominate. Silver contract sizes differ between brokers (5,000 oz per lot is common), so check the contract specification in Ezymex Trader before trading it; the same lot size can carry very different risk from gold.
 
 ## The gold/silver ratio
 

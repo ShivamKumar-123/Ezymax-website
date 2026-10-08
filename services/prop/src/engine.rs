@@ -64,7 +64,7 @@ pub struct Pos {
     pub volume: D,
     pub open_time: DateTime<Utc>,
     pub profit: D,
-    /// Kalks FX Options position (volume = contracts). The engine refuses options on prop groups; this is a
+    /// Ezymex FX Options position (volume = contracts). The engine refuses options on prop groups; this is a
     /// defensive flag so contracts can never be counted as lots.
     pub option: bool,
 }
@@ -83,7 +83,7 @@ pub struct Deal {
     pub close_price: D,
     /// Net: price P&L + swap − commission.
     pub profit: D,
-    /// Kalks FX Options deal (volume = contracts, never lots). Prop groups cannot trade options (engine gate).
+    /// Ezymex FX Options deal (volume = contracts, never lots). Prop groups cannot trade options (engine gate).
     pub option: bool,
 }
 
@@ -99,7 +99,7 @@ pub fn is_option_series(symbol: &str) -> bool {
         && matches!(p[3], "C" | "P" | "c" | "p")
 }
 
-/// Whether an engine position / deal JSON is a Kalks FX Options one (`option` object, `instrument`, or the
+/// Whether an engine position / deal JSON is a Ezymex FX Options one (`option` object, `instrument`, or the
 /// series code).
 pub fn is_option(v: &Value) -> bool {
     v["option"].is_object() || v["instrument"].as_str() == Some("option") || v["symbol"].as_str().is_some_and(is_option_series)
@@ -172,14 +172,14 @@ impl Engine {
         let mut rq = self
             .http
             .request(method, format!("{}{}", self.base, path))
-            .header("x-kalks-internal", &self.token)
-            .header("x-kalks-tenant", tenant)
-            .header("x-kalks-staff-id", STAFF_ID)
-            .header("x-kalks-staff-name", STAFF_NAME)
-            .header("x-kalks-staff-role", STAFF_ROLE)
-            .header("user-agent", "kalks-prop/1");
+            .header("x-ezymex-internal", &self.token)
+            .header("x-ezymex-tenant", tenant)
+            .header("x-ezymex-staff-id", STAFF_ID)
+            .header("x-ezymex-staff-name", STAFF_NAME)
+            .header("x-ezymex-staff-role", STAFF_ROLE)
+            .header("user-agent", "ezymex-prop/1");
         if let Some(u) = user {
-            rq = rq.header("x-kalks-user-id", u.to_string());
+            rq = rq.header("x-ezymex-user-id", u.to_string());
         }
         if let Some(b) = body {
             rq = rq.json(&b);

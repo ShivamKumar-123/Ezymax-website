@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Scheda AI Trader di Kalks Trader: composer della strategia, elenco, scheda strategia, log e finestra di attivazione.
+// Scheda AI Trader di Ezymex Trader: composer della strategia, elenco, scheda strategia, log e finestra di attivazione.
 const aiTrader: NsMessages<"aiTrader"> = {
   // Intestazione della scheda
   strategies: "Strategie",

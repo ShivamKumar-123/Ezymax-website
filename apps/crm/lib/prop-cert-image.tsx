@@ -10,7 +10,7 @@ export function certImage(c: PublicCertificate, verify: string): ImageResponse {
           <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 6, background: "#ff5a1f" }} />
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginTop: 58 }}>
             <div style={{ display: "flex", alignItems: "baseline" }}>
-              <span style={{ fontSize: 28, fontWeight: 700, color: "#f5f5f6", letterSpacing: 1 }}>KALKS</span>
+              <span style={{ fontSize: 28, fontWeight: 700, color: "#f5f5f6", letterSpacing: 1 }}>EZYMEX</span>
               <span style={{ fontSize: 18, color: "#9a9aa3", marginLeft: 14 }}>PROP</span>
             </div>
             <span style={{ fontSize: 16, color: "#9a9aa3" }}>{`No. ${c.code}`}</span>

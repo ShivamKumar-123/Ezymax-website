@@ -1,4 +1,4 @@
-//! Kalks FX Options in the engine core (pure: reads `Env`, emits events through `Tx`).
+//! Ezymex FX Options in the engine core (pure: reads `Env`, emits events through `Tx`).
 //!
 //! **Money model.** European, cash-settled in USD, B-book (the house takes the other side).
 //! * Premium is paid in full in cash when a position opens: a buy debits the balance, a sell credits it
@@ -98,7 +98,7 @@ fn price_err(e: PriceError) -> Reject {
 }
 
 pub fn snapshot(env: &Env) -> Result<Arc<OptSnapshot>, Reject> {
-    env.options.snapshot().ok_or_else(|| rej("options_disabled", "Kalks FX Options are not available right now"))
+    env.options.snapshot().ok_or_else(|| rej("options_disabled", "Ezymex FX Options are not available right now"))
 }
 
 /* ------------------------------------------------------------------ */
@@ -377,12 +377,12 @@ pub fn system_group(code: &str) -> bool {
 /// Module switch (system groups, tenant, live / demo, underlying allow-list, group setting, underlying enabled).
 pub fn module_gate(env: &Env, st: &AccountState, snap: &OptSnapshot, underlying: &str) -> Result<(), Reject> {
     if system_group(&st.account.group) || system_group(&env.group.code) {
-        return Err(rej("options_disabled", "Kalks FX Options are not available on copy-trading, PAMM, MAM or prop accounts"));
+        return Err(rej("options_disabled", "Ezymex FX Options are not available on copy-trading, PAMM, MAM or prop accounts"));
     }
     let live = st.account.kind == AccountKind::Live;
     let tenant = env.tenant.slug.as_str();
     if !snap.enabled(tenant, live) {
-        return Err(rej("options_disabled", format!("Kalks FX Options are not enabled for {} accounts", if live { "live" } else { "demo" })));
+        return Err(rej("options_disabled", format!("Ezymex FX Options are not enabled for {} accounts", if live { "live" } else { "demo" })));
     }
     if !snap.tenant_allows(tenant, underlying) || !snap.underlying(underlying).is_some_and(|u| u.enabled) {
         return Err(rej("options_disabled", format!("{underlying} options are not available")));
@@ -1650,7 +1650,7 @@ pub fn stop_out(tx: &mut Tx, env: &Env) {
             }
         }
         let Some((_, _, unit)) = best else { break };
-        // order-book positions close on the book (book first within a band, then the Kalks backstop): the
+        // order-book positions close on the book (book first within a band, then the Ezymex backstop): the
         // liquidator does that once this transaction is committed (docs §8)
         if unit.tickets(&tx.st).iter().any(|t| tx.st.positions.get(t).is_some_and(|p| p.on_book())) {
             tx.liquidate = true;

@@ -8,7 +8,7 @@ const security: NsMessages<"security"> = {
   "signingOut": "سائن آؤٹ ہو رہا ہے…",
   "resetSigningOut": "پاس ورڈ ری سیٹ کرنے کے لیے آپ کو سائن آؤٹ کیا جا رہا ہے…",
   "error.generic": "کچھ غلط ہو گیا۔ براہ کرم دوبارہ کوشش کریں۔",
-  "error.network": "Kalks سے رابطہ نہیں ہو سکا۔ اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔",
+  "error.network": "Ezymex سے رابطہ نہیں ہو سکا۔ اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔",
 
   // Device labels from the browser's user agent; browser and OS brand names stay as they are
   "device.unknownBrowser": "نامعلوم براؤزر",
@@ -226,7 +226,7 @@ const security: NsMessages<"security"> = {
   "page.calendar": "کیلنڈر",
   // Investor passwords card
   "investor.title": "انویسٹر پاس ورڈز",
-  "investor.text": "ہر ٹریڈنگ اکاؤنٹ کا ایک انویسٹر پاس ورڈ بھی ہوتا ہے جو MT5 کی طرح Kalks Trader میں صرف پڑھنے کی رسائی دیتا ہے: پوزیشنز اور ہسٹری، ٹریڈنگ نہیں۔",
+  "investor.text": "ہر ٹریڈنگ اکاؤنٹ کا ایک انویسٹر پاس ورڈ بھی ہوتا ہے جو MT5 کی طرح Ezymex Trader میں صرف پڑھنے کی رسائی دیتا ہے: پوزیشنز اور ہسٹری، ٹریڈنگ نہیں۔",
   "investor.hint": "اسے اکاؤنٹ کے صفحے پر سیٹ یا تبدیل کریں۔",
   "investor.goToAccounts": "اکاؤنٹس پر جائیں",
   // Create / edit dialog

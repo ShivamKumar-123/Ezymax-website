@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Keep brand and network names as they are: Kalks, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
+// Keep brand and network names as they are: Ezymex, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
 // MetaMask, TronLink, Tronscan, USD, USC, KYC.
 const wallet: NsMessages<"wallet"> = {
   // Shared labels
@@ -388,17 +388,17 @@ const wallet: NsMessages<"wallet"> = {
   "demo.linkCopied": "链接已复制到剪贴板",
   "demo.sendOnlyWarning": "<b>请仅通过 TRON（TRC20）发送 USDT。</b>发送任何其他代币，或使用 ERC20 / BEP20，将导致资金永久丢失。",
   "demo.arrival": "到账时间",
-  "demo.kalksFee": "Kalks 手续费",
+  "demo.ezymexFee": "Ezymex 手续费",
   "demo.noKycDeposit": "入金无需 KYC。仅在首次出金前需要完成验证。",
   // Withdraw
   "demo.addrStartT": "TRC20 地址以“T”开头",
   "demo.addrLength": "必须为 34 个字符（{length}/34）",
   "demo.addrChars": "包含无效字符（不允许使用 0、O、I、l）",
-  "demo.addrOwn": "这是您自己的 Kalks 入金地址",
+  "demo.addrOwn": "这是您自己的 Ezymex 入金地址",
   "demo.justNow": "刚刚",
   "demo.codeConfirmed": "已通过 {email} 确认验证码",
   "demo.financeReviews": "财务团队审核每一笔出金 · 通常不超过 2 小时",
-  "demo.sentFromHot": "批准后从 Kalks 热钱包发出",
+  "demo.sentFromHot": "批准后从 Ezymex 热钱包发出",
   "demo.arriveAfter": "20 个确认后资金到达您的地址",
   "demo.pendingTitle": "待处理出金",
   "demo.awaitingCompletion": "{count} 笔等待完成",
@@ -456,7 +456,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.alwaysReviewed": "始终由财务部门审核",
   "demo.unrecoverable": "出金至不支持 TRC20 USDT 的交易所或智能合约地址，资金将无法找回。",
   // Transfer
-  "demo.kalksWallet": "Kalks 钱包",
+  "demo.ezymexWallet": "Ezymex 钱包",
   "demo.freeMargin": "可用预付款",
   "demo.assetAvailable": "可用 {amount} {asset} · {network}",
   "demo.throughWallet": "转账始终通过您的钱包进行。",
@@ -491,7 +491,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.rule4Title": "保护可用预付款",
   "demo.rule4Text": "您只能转出可用预付款允许的金额，确保持仓交易安全。",
   "demo.into": "转入",
-  "demo.intoKalksWallet": "转入您的 Kalks 钱包",
+  "demo.intoEzymexWallet": "转入您的 Ezymex 钱包",
   "demo.freeMarginAfter": "转账后可用预付款",
   "demo.marginLevelAfter": "转账后预付款比例",
   "demo.convertedNote": "{asset} 按实时汇率扣除 {markup}% 加价后兑换为 USD。在您确认前，汇率随每笔报价刷新。",

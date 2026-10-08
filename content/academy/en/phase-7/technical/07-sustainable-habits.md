@@ -75,7 +75,7 @@ Scores like these tell you whether you are building the habits that produce resu
 
 Sizing up too fast is one of the most common ways that a sound strategy fails. A sensible path has stages, each with written criteria to move forward:
 
-1. **Demo.** Trade the plan on a free demo account in Kalks Trader until you have a meaningful sample, for example 50 to 100 trades, with good rule adherence.
+1. **Demo.** Trade the plan on a free demo account in Ezymex Trader until you have a meaningful sample, for example 50 to 100 trades, with good rule adherence.
 2. **Small live.** Trade the same plan live at a fraction of normal risk, for example 0.25% per trade, or on a cent account where balances are shown in USC. The aim is to experience real emotions and real execution, not to make money.
 3. **Normal live.** Move to full planned risk only after a further sample in which statistics and discipline hold up.
 
@@ -104,7 +104,7 @@ Decision quality depends on the state of the person making the decisions. Poor s
 - Trade within a defined window rather than all day. A two- or three-hour session with full attention usually beats eight hours of partial attention.
 - Take short breaks away from the screen, especially after a loss or a large win.
 - Avoid trading when ill, exhausted or emotionally upset. Not trading is a valid decision and costs nothing.
-- Keep regular exercise and time away from markets. Stop loss, take profit and pending orders in Kalks Trader are held on the server, so there is no need to watch every tick.
+- Keep regular exercise and time away from markets. Stop loss, take profit and pending orders in Ezymex Trader are held on the server, so there is no need to watch every tick.
 - Take occasional full breaks from trading, such as a week off each quarter, to reset.
 
 ## In practice

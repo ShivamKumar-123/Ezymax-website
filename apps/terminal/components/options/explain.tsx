@@ -5,8 +5,8 @@
 // trader needs before a first option trade. Every explanation avoids Greeks unless the topic is the Greeks.
 import * as React from "react";
 import { CircleHelp, GraduationCap, X } from "lucide-react";
-import { cn } from "@kalks/ui";
-import { useT } from "@kalks/i18n/react";
+import { cn } from "@ezymex/ui";
+import { useT } from "@ezymex/i18n/react";
 import { DropMenu } from "@/components/ui/menu";
 
 export type HelpTopic = "call" | "put" | "strike" | "premium" | "expiry" | "breakeven" | "contracts" | "itm" | "atm" | "selling" | "margin" | "greeks" | "chance" | "mark";
@@ -91,7 +91,7 @@ export function Explain({ topic, label, className, size = 13 }: { topic: HelpTop
   );
 }
 
-const INTRO_KEY = "kalks.options.intro.hidden";
+const INTRO_KEY = "ezymex.options.intro.hidden";
 
 function readHidden() {
   try {

@@ -3,8 +3,8 @@
 import * as React from "react";
 import { motion } from "motion/react";
 import { cn, formatCompact, formatMoney } from "@/components/kit";
-import { tr } from "@kalks/i18n/react";
-import { intlTag } from "@kalks/i18n/locales";
+import { tr } from "@ezymex/i18n/react";
+import { intlTag } from "@ezymex/i18n/locales";
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                             */

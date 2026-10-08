@@ -9,9 +9,9 @@
 import * as React from "react";
 import { Calculator, ChevronDown, Lock, Zap } from "lucide-react";
 import { toast } from "@/lib/notify";
-import { getInstrument, priceFeed, type Quote } from "@kalks/mock";
+import { getInstrument, priceFeed, type Quote } from "@ezymex/mock";
 import { visibleInstruments } from "@/lib/scope";
-import { PriceText, SymbolAvatar, cn, useQuote } from "@kalks/ui";
+import { PriceText, SymbolAvatar, cn, useQuote } from "@ezymex/ui";
 import { useMetrics, useTerminal } from "@/lib/store";
 import { useMarketOpen } from "@/lib/market-hours";
 import { useSlowQuote } from "@/lib/market";
@@ -20,7 +20,7 @@ import { TInput, TSelect } from "@/components/ui/primitives";
 import { Button, FieldRow, HelpTip, InlineNumber, QuickStrip, Segmented, SummaryRow, Switch, Tip } from "@/components/ui/kit";
 import { DropMenu } from "@/components/ui/menu";
 import { GuestActions } from "@/components/shell/guest";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 
 export interface TicketPrefill {
   side?: "buy" | "sell";
@@ -42,7 +42,7 @@ const TYPES: OrderType[] = ["market", "limit", "stop", "stop-limit"];
 type Intent = { symbol?: string; side?: "buy" | "sell"; pending?: boolean; price?: number };
 let intent: Intent | null = null;
 if (typeof window !== "undefined")
-  window.addEventListener("kalks:ticket", (e) => {
+  window.addEventListener("ezymex:ticket", (e) => {
     intent = (e as CustomEvent).detail ?? null;
   });
 
@@ -120,8 +120,8 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
       apply(d);
       intent = null;
     };
-    window.addEventListener("kalks:ticket", on);
-    return () => window.removeEventListener("kalks:ticket", on);
+    window.addEventListener("ezymex:ticket", on);
+    return () => window.removeEventListener("ezymex:ticket", on);
   }, [symbol, apply]);
 
   const vol = Math.max(0.01, parseFloat(volume) || 0);

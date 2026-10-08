@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader order ticket, New Order window, DOM ladder, position/pending dialogs and trade toasts.
+// Ezymex Trader order ticket, New Order window, DOM ladder, position/pending dialogs and trade toasts.
 // Trading terms use the Tamil-script loanwords Indian MT5 traders use (ஸ்டாப் லாஸ், டேக் ப்ராஃபிட், லாட்கள், பிப்ஸ்).
 const order: NsMessages<"order"> = {
   // Order types (ticket type switcher)
@@ -270,9 +270,9 @@ const order: NsMessages<"order"> = {
 
   // Specification / About dialogs
   "spec.title": "விவரக்குறிப்பு · {symbol}",
-  "about.title": "Kalks Trader பற்றி",
+  "about.title": "Ezymex Trader பற்றி",
   "about.version": "பதிப்பு {version} · பில்ட் {build} · Web x64",
-  "about.text": "Kalks Global Markets க்கான பல-சொத்து டிரேடிங் அறை. விலைகள் Kalks விலை கேட்வேயிலிருந்து வருகின்றன; சர்வர் நேரம் GMT+3.",
+  "about.text": "Ezymex Global Markets க்கான பல-சொத்து டிரேடிங் அறை. விலைகள் Ezymex விலை கேட்வேயிலிருந்து வருகின்றன; சர்வர் நேரம் GMT+3.",
 
   // Rejection reasons
   "reject.market_closed": "சந்தை மூடியுள்ளது",

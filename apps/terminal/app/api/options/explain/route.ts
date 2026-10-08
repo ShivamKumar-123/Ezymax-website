@@ -1,7 +1,7 @@
 /**
  * POST /api/options/explain  { locale, strategy }
  *
- * Kalks FX Options simple mode: Claude explains an option idea (legs, cost, max loss / profit, breakeven) in plain
+ * Ezymex FX Options simple mode: Claude explains an option idea (legs, cost, max loss / profit, breakeven) in plain
  * language, in the reader's language. Follows app/api/ai-trader/route.ts: the key is read from the server
  * environment only; without ANTHROPIC_API_KEY it answers { configured: false } and the terminal shows its built-in
  * explanation. Same-origin only, small bodies, a signed-in terminal session and a per-user budget (lib/ai-guard.ts:
@@ -9,7 +9,7 @@
  */
 import Anthropic from "@anthropic-ai/sdk";
 import type { NextRequest } from "next/server";
-import { LOCALES } from "@kalks/i18n/locales";
+import { LOCALES } from "@ezymex/i18n/locales";
 import { sameOrigin } from "@/lib/engine/server";
 import { aiGate } from "@/lib/ai-guard";
 
@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 
 const MODEL = "claude-opus-5-5";
 
-const SYSTEM = `You explain one options trading idea to a retail trader of Kalks FX Options, in plain everyday language.
+const SYSTEM = `You explain one options trading idea to a retail trader of Ezymex FX Options, in plain everyday language.
 Product facts (apply them, never contradict them):
 - European options on forex, gold, silver and oil, cash-settled in USD. At the cut (normally 10:00 New York) an option that is in the money pays automatically; one that is out of the money expires worthless. The settlement price is the average of the mid price over the last 30 minutes before the cut.
 - A buyer pays the premium upfront and can never lose more than that. A seller receives the premium, needs margin, and can lose more than the premium.

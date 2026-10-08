@@ -74,7 +74,7 @@ Projected line at bar 15: 38,600 + 15 × 30 = 39,050
 Projected line at bar 20: 38,600 + 20 × 30 = 39,200
 ```
 
-If price pulls back to about 39,200 around bar 20 and shows a rejection, that is the third touch, and the line becomes more meaningful. A trader who buys there with a stop 60 points below the line would, on an example contract worth 1 USD per point, risk 60 USD per contract. Check the contract specification in Kalks Trader for the actual contract size of each index.
+If price pulls back to about 39,200 around bar 20 and shows a rejection, that is the third touch, and the line becomes more meaningful. A trader who buys there with a stop 60 points below the line would, on an example contract worth 1 USD per point, risk 60 USD per contract. Check the contract specification in Ezymex Trader for the actual contract size of each index.
 
 ## Channels
 
@@ -108,4 +108,4 @@ The line gives an early warning; swing highs and lows give confirmation. When a 
 - **Treating a break as an automatic reversal trade.** Wait for structure to confirm.
 - **Ignoring log versus linear scale.** On long-term charts of fast-rising assets such as BTCUSD or NVDA, trendlines can look different on a logarithmic scale; for intraday work this rarely matters.
 
-> **In Kalks Trader:** Use the trendline tool and extend it to the right so you can see where it projects. A parallel channel can be built by copying the line through the opposite swing point.
+> **In Ezymex Trader:** Use the trendline tool and extend it to the right so you can see where it projects. A parallel channel can be built by copying the line through the opposite swing point.

@@ -1,6 +1,6 @@
 "use client";
 
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveBilling } from "@/components/owner/billing";
 
 import * as React from "react";
@@ -25,8 +25,8 @@ import {
   formatDateTime,
   formatNumber,
   type Column,
-} from "@kalks/ui";
-import { BRK_INVOICES, BRK_MRR_HISTORY, BRK_TENANTS, BRK_TOTALS, brkTenant, type BrkInvoice } from "@kalks/mock/admin-platform-brokers";
+} from "@ezymex/ui";
+import { BRK_INVOICES, BRK_MRR_HISTORY, BRK_TENANTS, BRK_TOTALS, brkTenant, type BrkInvoice } from "@ezymex/mock/admin-platform-brokers";
 import { ConfirmDialog, SectionLabel, Select, TenantCell, TenantLogo, TenantMini, compactUsd } from "@/components/brokers/kit";
 import { MrrChart } from "@/components/brokers/mrr-chart";
 
@@ -315,7 +315,7 @@ function RevShareCalculator() {
           </Field>
         </div>
         <div className="relative overflow-hidden rounded-[16px] border border-gold/25 bg-[radial-gradient(120%_120%_at_100%_0%,rgba(233,185,73,.16),transparent_60%)] p-5">
-          <div className="k-label">Rev-share payout to Kalks</div>
+          <div className="k-label">Rev-share payout to Ezymex</div>
           <div className="mt-2 text-[32px] font-semibold leading-none tracking-tight text-gold">
             <Money value={payout} decimals={2} countUp={false} />
           </div>
@@ -416,7 +416,7 @@ function InvoiceDrawer({ inv, onClose, onPaid }: { inv: BrkInvoice | null; onClo
             </div>
           ) : (
             <div className="k-row space-y-2 p-4 text-[13px]">
-              <div className="flex justify-between"><span className="text-fg-3">Pay to (USDT TRC20)</span><span className="inline-flex items-center gap-1 font-mono">TQ7xKalks…9KfE<CopyButton value="TQ7xR4mKalksBilling2m8vJp9KfE" label="Address" /></span></div>
+              <div className="flex justify-between"><span className="text-fg-3">Pay to (USDT TRC20)</span><span className="inline-flex items-center gap-1 font-mono">TQ7xEzymex…9KfE<CopyButton value="TQ7xR4mEzymexBilling2m8vJp9KfE" label="Address" /></span></div>
               <div className="flex justify-between"><span className="text-fg-3">Wire reference</span><span className="font-mono">{inv.number}</span></div>
               <div className="flex justify-between"><span className="text-fg-3">Terms</span><span>Net 15</span></div>
             </div>

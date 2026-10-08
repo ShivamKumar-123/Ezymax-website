@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Coins, HandCoins, Pencil, Plus, RefreshCw, Users, Wallet } from "lucide-react";
-import { Button, Card, CardHeader, Chip, DataTable, KpiCard, PageHeader, Reveal, Toggle, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, KpiCard, PageHeader, Reveal, Toggle, type Column } from "@ezymex/ui";
 import { FilterSelect, Pager, TableSkeleton, day, qs, useApi, when } from "@/components/live/kit";
 import { M, mkSend, type Accrual, type CashbackPayout, type Overview, type Paged, type Programme, type ProgrammeInput } from "./api";
 import {

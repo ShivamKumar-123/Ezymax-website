@@ -4,7 +4,7 @@ import type { NsMessages } from "../../core";
 const support: NsMessages<"support"> = {
   // Página de suporte
   "page.title": "Suporte",
-  "page.subtitle": "Converse com a Kalks AI para obter respostas imediatas. Peça para falar com uma pessoa a qualquer momento e nossa equipe assume com a conversa completa.",
+  "page.subtitle": "Converse com a Ezymex AI para obter respostas imediatas. Peça para falar com uma pessoa a qualquer momento e nossa equipe assume com a conversa completa.",
   "email.prefer": "Prefere e-mail?",
   // <email> e <id> envolvem o e-mail e o ID do cliente
   "email.writeFrom": "Escreva a partir de <email>{email}</email> e inclua seu ID de cliente <id>{id}</id>.",
@@ -46,7 +46,7 @@ const support: NsMessages<"support"> = {
   "quick.withdrawal": "Quando meu saque vai chegar?",
   "quick.stopOut": "O que é stop-out?",
   "header.supportTeam": "Equipe de suporte",
-  "header.agentSub": "Suporte ao Cliente · Kalks",
+  "header.agentSub": "Suporte ao Cliente · Ezymex",
   "header.connecting": "Conectando você a um atendente…",
   "header.replySoon": "Nossa equipe responderá aqui em breve",
   "header.helpCentre": "Respostas da central de ajuda · uma pessoa pode entrar a qualquer momento",

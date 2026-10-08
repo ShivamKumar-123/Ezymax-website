@@ -755,7 +755,7 @@ class _FundFormSheetState extends ConsumerState<_FundFormSheet> {
       context,
       [
         '${t('social.md.fund.login')}: $login',
-        '${t('social.md.fund.server')}: Kalks-Live',
+        '${t('social.md.fund.server')}: Ezymex-Live',
         if (password != null) '${t('social.md.fund.tradingPassword')}: $password',
         if (investor != null) '${t('social.md.fund.investorPassword')}: $investor',
       ].join('\n'),
@@ -801,7 +801,7 @@ class _FundFormSheetState extends ConsumerState<_FundFormSheet> {
         ),
         const SizedBox(height: 10),
         SecretRow(label: t('social.md.fund.login'), value: login),
-        SecretRow(label: t('social.md.fund.server'), value: 'Kalks-Live'),
+        SecretRow(label: t('social.md.fund.server'), value: 'Ezymex-Live'),
         if (password != null) SecretRow(label: t('social.md.fund.tradingPassword'), value: password, secret: true, hint: t('social.md.fund.fullAccess')),
         if (investor != null) SecretRow(label: t('social.md.fund.investorPassword'), value: investor, secret: true, hint: t('social.md.fund.readOnly')),
         const SizedBox(height: 6),

@@ -6,8 +6,8 @@
 // expiry of a kind keeps following that kind: after its cut the store rolls it to the next date of the same kind.
 import * as React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { cn } from "@kalks/ui";
-import { useLocale, useT } from "@kalks/i18n/react";
+import { cn } from "@ezymex/ui";
+import { useLocale, useT } from "@ezymex/i18n/react";
 import { expiryOpen, opt, useOpt } from "@/lib/options-store";
 import type { OptionExpiry } from "@/lib/options/types";
 import { StateBadge, useNow } from "./bits";

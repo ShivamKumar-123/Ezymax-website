@@ -4,12 +4,12 @@
 // The PNGs land in the session scratchpad (c1/shots/<name>.png); view them to compare with the phone web.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/app.dart';
-import 'package:kalks/router/router.dart';
+import 'package:ezymex/app.dart';
+import 'package:ezymex/router/router.dart';
 
 import '../test/helpers/test_app.dart';
 
-const String shotsDir = '/private/tmp/claude-501/-Users-shivamsingh-Desktop-kalks/8887654c-7bec-49a8-bfdd-05d6e4ed1bce/scratchpad/mobile/c1/shots';
+const String shotsDir = '/private/tmp/claude-501/-Users-shivamsingh-Desktop-ezymex/8887654c-7bec-49a8-bfdd-05d6e4ed1bce/scratchpad/mobile/c1/shots';
 
 /// Opens `location` as the signed-in sample client in `theme` / `locale`, runs `before` (taps, sheets), scrolls the
 /// page by `scroll` pixels, and saves `<shotsDir>/<name>.png`.
@@ -34,6 +34,6 @@ Future<void> shotAt(
     await tester.drag(page, Offset(0, -scroll));
     await settle(tester, frames: 6);
   }
-  await expectLater(find.byType(KalksApp), matchesGoldenFile(Uri.file('$shotsDir/$name.png')));
+  await expectLater(find.byType(EzymexApp), matchesGoldenFile(Uri.file('$shotsDir/$name.png')));
   await unmount(tester);
 }

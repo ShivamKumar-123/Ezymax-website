@@ -6,9 +6,9 @@ const dashboard: NsMessages<"dashboard"> = {
   "greeting.afternoon": "Selamat petang, {name}",
   "greeting.evening": "Selamat malam, {name}",
   "greeting.welcome": "Selamat datang, {name}",
-  "subtitle.live": "Selamat datang ke Kalks. Berikut ialah akaun anda dan pasaran hari ini.",
+  "subtitle.live": "Selamat datang ke Ezymex. Berikut ialah akaun anda dan pasaran hari ini.",
   "subtitle.demo": "Berikut ialah prestasi akaun anda hari ini.",
-  launchTrader: "Lancarkan Kalks Trader",
+  launchTrader: "Lancarkan Ezymex Trader",
   openTerminal: "Buka terminal dagangan",
 
   // Getting started checklist
@@ -62,7 +62,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "account.memberSince": "Ahli sejak",
   "account.profile": "Profil",
 
-  // Kalks Trader banner
+  // Ezymex Trader banner
   "trader.chip": "Harga langsung",
   "trader.text": "Sebut harga dan carta masa nyata untuk {count} instrumen merentasi forex, logam, indeks, tenaga, kripto dan saham. Berjalan dalam pelayar anda, tiada apa-apa untuk dipasang.",
 
@@ -214,7 +214,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "home.marketsTitle": "Pasaran",
   "home.moreTitle": "Lagi untuk anda",
 
-  // Ask Kalks AI on the Overview
+  // Ask Ezymex AI on the Overview
   "ai.title": "Tanya {name}",
   "ai.subtitle": "Jawapan segera tentang akaun, deposit dan dagangan anda.",
   "ai.placeholder": "Tanya apa sahaja tentang akaun atau dagangan anda…",

@@ -1,4 +1,4 @@
-//! Kalks FX Options service (:8104): reference data and the market side of the options segment.
+//! Ezymex FX Options service (:8104): reference data and the market side of the options segment.
 //!
 //! - Reference data: underlyings (contract, strikes, expiry cycles, cut, SPAN scan), per-currency holiday
 //!   calendars, rates, versioned vol surfaces, realized vol from market-data candles.
@@ -6,17 +6,17 @@
 //!   currencies + New York), strike ladders from the live mid with automatic extension.
 //! - Fixings: 1-second raw mids in the 30 minutes before each cut, TWAP at the cut with gap accounting and
 //!   an M1-candle fallback.
-//! - Chain REST + WebSocket for Kalks Trader and the public chain page.
-//! - Premium candles: an option series' model mid premium per underlying bar, for the Kalks Trader chart.
+//! - Chain REST + WebSocket for Ezymex Trader and the public chain page.
+//! - Premium candles: an option series' model mid premium per underlying bar, for the Ezymex Trader chart.
 //! - The versioned **snapshot** the trading engine prices with (`GET /v1/internal/options/snapshot`).
 //! - Back Office CRUD with audit: underlyings, rates, holidays, surfaces, tenant / group settings, dealer
-//!   controls, client limits, the Kalks market maker's quoting parameters.
+//!   controls, client limits, the Ezymex market maker's quoting parameters.
 //! - Order book (docs/OPTIONS-EXCHANGE.md): per-underlying tick / bands / mark rules and group maker / taker fees in
 //!   the snapshot, the engine's book feed merged into chains (best bid / offer, sizes, last, OI, volume, the clamped
 //!   mark, theo and implied vols), depth / tape on the stream and public depth / trades / stats routes.
 //!
 //! SAFETY: the module is OFF per tenant unless `tenant_settings` turns it on; demo and live are separate
-//! switches (tenant `kalks` is seeded demo ON, live OFF). The engine enforces the switch on every order.
+//! switches (tenant `ezymex` is seeded demo ON, live OFF). The engine enforces the switch on every order.
 
 pub mod api;
 pub mod book_feed;
@@ -79,7 +79,7 @@ pub struct AppState {
 impl AppState {
     pub async fn new(pool: sqlx::PgPool, cfg: config::Config) -> anyhow::Result<Self> {
         let http = reqwest::Client::builder()
-            .user_agent("kalks-options/1.0")
+            .user_agent("ezymex-options/1.0")
             .timeout(std::time::Duration::from_secs(20))
             .connect_timeout(std::time::Duration::from_secs(5))
             .build()?;

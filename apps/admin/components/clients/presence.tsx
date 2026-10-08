@@ -2,13 +2,13 @@
 
 /**
  * Client presence (gateway client_controls.rs): Online (active in the last 2 minutes in the Client Area or
- * Kalks Trader), Away (idle 2–15 minutes), Offline with "last seen". Lists poll every 15 s.
+ * Ezymex Trader), Away (idle 2–15 minutes), Offline with "last seen". Lists poll every 15 s.
  */
 import * as React from "react";
 import Link from "next/link";
 import { CandlestickChart, LayoutDashboard, LogOut, Monitor, Radio, UserRound } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardHeader, Chip, Dialog, EmptyState, Flag, Skeleton, Tooltip, cn } from "@kalks/ui";
+import { Avatar, Button, Card, CardHeader, Chip, Dialog, EmptyState, Flag, Skeleton, Tooltip, cn } from "@ezymex/ui";
 import { ErrorState, Mono, ago, countryName, device, sendJson, useApi, useNow, when } from "@/components/live/kit";
 import { RestrictionChips } from "./restrictions-card";
 
@@ -17,7 +17,7 @@ export type AppKey = "client_area" | "trader";
 
 export const PRESENCE_POLL_MS = 15_000;
 
-export const APP_LABEL: Record<AppKey, string> = { client_area: "Client Area", trader: "Kalks Trader" };
+export const APP_LABEL: Record<AppKey, string> = { client_area: "Client Area", trader: "Ezymex Trader" };
 
 export function PresenceDot({ state, className }: { state: PresenceState; className?: string }) {
   return (
@@ -62,7 +62,7 @@ export function PresenceCell({ state, last, apps, now }: { state: PresenceState;
       <span className="inline-flex items-center gap-2 whitespace-nowrap" data-presence={state}>
         <PresenceDot state={state} />
         <span className={cn("text-[12.5px]", state === "online" ? "text-up" : state === "away" ? "text-warn" : "text-fg-3")}>{label}</span>
-        {state !== "offline" && apps?.includes("trader") && <CandlestickChart className="size-3 text-fg-3" aria-label="In Kalks Trader" />}
+        {state !== "offline" && apps?.includes("trader") && <CandlestickChart className="size-3 text-fg-3" aria-label="In Ezymex Trader" />}
       </span>
     </Tooltip>
   );
@@ -105,7 +105,7 @@ export function OnlineNow() {
         open={open}
         onOpenChange={setOpen}
         title="Clients online"
-        description="Active in the Client Area or Kalks Trader. Online = last 2 minutes, Away = 2–15 minutes. Updates every 15 seconds."
+        description="Active in the Client Area or Ezymex Trader. Online = last 2 minutes, Away = 2–15 minutes. Updates every 15 seconds."
       >
         <div className="mb-3 flex items-center gap-2">
           {(["online", "away"] as const).map((k) => (
@@ -128,7 +128,7 @@ export function OnlineNow() {
             <Skeleton className="h-14 w-full" />
           </div>
         ) : rows.length === 0 ? (
-          <EmptyState title={tab === "online" ? "Nobody online right now" : "Nobody away"} text="Clients appear here while the Client Area or Kalks Trader is open." illustration="busts_in_silhouette" className="py-8" />
+          <EmptyState title={tab === "online" ? "Nobody online right now" : "Nobody away"} text="Clients appear here while the Client Area or Ezymex Trader is open." illustration="busts_in_silhouette" className="py-8" />
         ) : (
           <ul className="divide-y divide-line rounded-[14px] border border-line" data-testid="online-list">
             {rows.map((c) => (
@@ -227,7 +227,7 @@ export function PresenceCard({ controls, onChanged }: { controls: ReturnType<typ
     <Card data-testid="presence-card">
       <CardHeader
         title="Presence and devices"
-        subtitle="Client Area sessions and Kalks Trader connections. Updates every 15 seconds."
+        subtitle="Client Area sessions and Ezymex Trader connections. Updates every 15 seconds."
         icon={<Radio />}
         action={
           p && (
@@ -252,7 +252,7 @@ export function PresenceCard({ controls, onChanged }: { controls: ReturnType<typ
           <div className="k-row flex items-center gap-3 px-4 py-3 text-[12.5px] text-fg-3">
             <Monitor className="size-4 shrink-0" />
             Not signed in anywhere right now.
-            {c.presence.last_trader_at && <span>Last in Kalks Trader {ago(c.presence.last_trader_at, now)}.</span>}
+            {c.presence.last_trader_at && <span>Last in Ezymex Trader {ago(c.presence.last_trader_at, now)}.</span>}
           </div>
         ) : (
           <ul className="divide-y divide-line rounded-[14px] border border-line" data-testid="device-list">

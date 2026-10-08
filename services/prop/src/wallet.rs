@@ -1,6 +1,6 @@
 //! Wallet service client (services/wallet): `POST /v1/wallets/transfers` with
 //! `{idempotency_key, user_id, currency:"USDT", amount, direction, kind, ref, note}` and
-//! `X-Kalks-Internal: $WALLET_INTERNAL_TOKEN`. Every call is recorded in `wallet_ops` first and retried with
+//! `X-Ezymex-Internal: $WALLET_INTERNAL_TOKEN`. Every call is recorded in `wallet_ops` first and retried with
 //! the same key when the outcome is unknown, so nothing is charged or paid twice.
 
 use serde_json::{Value, json};
@@ -62,8 +62,8 @@ impl Wallet {
         let res = self
             .http
             .post(format!("{}/v1/wallets/transfers", self.base))
-            .header("x-kalks-internal", &self.token)
-            .header("x-kalks-tenant", tenant)
+            .header("x-ezymex-internal", &self.token)
+            .header("x-ezymex-tenant", tenant)
             .json(&body)
             .send()
             .await;

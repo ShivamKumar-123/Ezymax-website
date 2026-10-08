@@ -4,8 +4,8 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Award, CircleAlert, ExternalLink, IdCard, RotateCw, ShieldCheck } from "lucide-react";
 import { Button, Card, Chip, CoinIcon, EmptyState, Progress, cn, formatDateTime, shortHash, type ChipTone } from "@/components/kit";
-import { Trans, useT } from "@kalks/i18n/react";
-import type { MessageKey, T } from "@kalks/i18n";
+import { Trans, useT } from "@ezymex/i18n/react";
+import type { MessageKey, T } from "@ezymex/i18n";
 import { CHAIN_LABEL, fmt, type ActivityItem, type Chain, type Deposit, type DepositStatus, type WithdrawalStatus } from "./api";
 
 /** Status chips: `label` is a message key, translated when rendered. */

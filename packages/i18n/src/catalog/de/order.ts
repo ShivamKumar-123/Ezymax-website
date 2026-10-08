@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader order ticket, New Order window, DOM ladder, position/pending dialogs and trade toasts.
+// Ezymex Trader order ticket, New Order window, DOM ladder, position/pending dialogs and trade toasts.
 const order: NsMessages<"order"> = {
   // Order types (ticket type switcher). "Stop-Lmt" = stop-limit, shortened to fit a small button.
   "type.market": "Market",
@@ -269,9 +269,9 @@ const order: NsMessages<"order"> = {
 
   // Specification / About dialogs
   "spec.title": "Spezifikation · {symbol}",
-  "about.title": "Über Kalks Trader",
+  "about.title": "Über Ezymex Trader",
   "about.version": "Version {version} · Build {build} · Web x64",
-  "about.text": "Multi-Asset-Handelsraum für Kalks Global Markets. Kurse kommen vom Kalks-Preisgateway; die Serverzeit ist GMT+3.",
+  "about.text": "Multi-Asset-Handelsraum für Ezymex Global Markets. Kurse kommen vom Ezymex-Preisgateway; die Serverzeit ist GMT+3.",
 
   // Rejection reasons (MT5 journal wording; engine codes mapped on the client)
   "reject.market_closed": "Markt geschlossen",

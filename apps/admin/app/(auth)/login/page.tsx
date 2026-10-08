@@ -4,8 +4,8 @@ import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowRight, Check, Eye, EyeOff, Lock, Mail, MailCheck, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Field, Input, cn } from "@kalks/ui";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { Button, Field, Input, cn } from "@ezymex/ui";
+import { IS_DEMO } from "@ezymex/mock/mode";
 
 function OtpInput({ length = 6, onComplete }: { length?: number; onComplete?: (code: string) => void }) {
   const [vals, setVals] = React.useState<string[]>(Array(length).fill(""));
@@ -100,7 +100,7 @@ function DemoEntry() {
         <ShieldCheck className="size-3.5" /> DEMO
       </span>
       <h1 className="mt-5 text-[30px] font-medium tracking-[-0.02em]">Back Office demo</h1>
-      <p className="mt-2 text-[14.5px] text-fg-2">Explore the full Kalks Back Office on sample data: dealing, risk, compliance, finance, partners and more.</p>
+      <p className="mt-2 text-[14.5px] text-fg-2">Explore the full Ezymex Back Office on sample data: dealing, risk, compliance, finance, partners and more.</p>
       <div className="mt-7 flex items-center gap-3 rounded-[14px] border border-line bg-surface-2 px-4 py-3 text-[13px] text-fg-2">
         <Lock className="size-4 shrink-0 text-fg-3" />
         No sign-in needed. Clients, balances and trades are sample data; changes you make stay in your browser.
@@ -180,14 +180,14 @@ function StaffLogin() {
             <ShieldCheck className="size-3.5" /> STAFF SIGN-IN
           </span>
           <h1 className="mt-5 text-[30px] font-medium tracking-[-0.02em]">Back Office</h1>
-          <p className="mt-2 text-[14.5px] text-fg-2">Sign in with your Kalks staff account.</p>
+          <p className="mt-2 text-[14.5px] text-fg-2">Sign in with your Ezymex staff account.</p>
           <div className="mt-7">
             <AuditNotice />
           </div>
           <form method="post" className="mt-6 space-y-4" onSubmit={signIn} noValidate>
             <FormError>{err && !err.field ? err.message : null}</FormError>
             <Field label="Work email" error={fieldErr("email")}>
-              <Input leading={<Mail />} type="email" name="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@kalks.com" required />
+              <Input leading={<Mail />} type="email" name="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@ezymex.com" required />
             </Field>
             <Field label="Password" error={fieldErr("password")} hint={<button type="button" onClick={() => toast("Ask your Super Admin to reset it", { description: "Staff password resets are done from Organisation › Staff." })} className="text-ember hover:underline">Forgot?</button>}>
               <Input

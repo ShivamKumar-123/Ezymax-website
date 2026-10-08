@@ -7,7 +7,7 @@ use std::fmt;
 pub struct Config {
     pub bind: String,
     pub database_url: String,
-    /// Shared secret the BFFs send in `X-Kalks-Internal`. Empty = check disabled (dev only).
+    /// Shared secret the BFFs send in `X-Ezymex-Internal`. Empty = check disabled (dev only).
     pub internal_token: String,
     pub dev_mode: bool,
     pub json_logs: bool,
@@ -108,11 +108,11 @@ impl Config {
         let root = concat!(env!("CARGO_MANIFEST_DIR"), "/../..");
         Ok(Self {
             bind: var("REPORTS_BIND", "127.0.0.1:8102"),
-            database_url: var("REPORTS_DATABASE_URL", "postgres://postgres@127.0.0.1:5433/kalks_reports"),
+            database_url: var("REPORTS_DATABASE_URL", "postgres://postgres@127.0.0.1:5433/ezymex_reports"),
             internal_token,
             dev_mode,
             json_logs: var("REPORTS_LOG_FORMAT", "json") == "json",
-            tenants: var("REPORTS_TENANTS", "kalks").split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect(),
+            tenants: var("REPORTS_TENANTS", "ezymex").split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect(),
             trading_url: url("TRADING_URL", "http://127.0.0.1:8090"),
             trading_token: var("TRADING_INTERNAL_TOKEN", ""),
             wallet_url: url("WALLET_URL", "http://127.0.0.1:8095"),
@@ -133,10 +133,10 @@ impl Config {
             smtp_port: var("SMTP_PORT", "587").parse().unwrap_or(587),
             smtp_user: var("SMTP_USER", ""),
             smtp_password: var("SMTP_PASSWORD", ""),
-            smtp_from: var("REPORTS_SMTP_FROM", &var("SMTP_FROM", "Kalks Reports <no-reply@kalkstrade.com>")),
-            company_name: var("REPORTS_COMPANY_NAME", "Kalks"),
-            company_site: var("REPORTS_COMPANY_SITE", "kalkstrade.com"),
-            support_email: var("REPORTS_SUPPORT_EMAIL", "support@kalkstrade.com"),
+            smtp_from: var("REPORTS_SMTP_FROM", &var("SMTP_FROM", "Ezymex Reports <no-reply@ezymex.com>")),
+            company_name: var("REPORTS_COMPANY_NAME", "Ezymex"),
+            company_site: var("REPORTS_COMPANY_SITE", "ezymex.com"),
+            support_email: var("REPORTS_SUPPORT_EMAIL", "support@ezymex.com"),
         })
     }
 }
@@ -145,6 +145,6 @@ impl Config {
 mod tests {
     #[test]
     fn masks_database_password() {
-        assert_eq!(super::redact_url("postgres://kalks:s3cret@127.0.0.1:5432/kalks_reports"), "postgres://kalks:***@127.0.0.1:5432/kalks_reports");
+        assert_eq!(super::redact_url("postgres://ezymex:s3cret@127.0.0.1:5432/ezymex_reports"), "postgres://ezymex:***@127.0.0.1:5432/ezymex_reports");
     }
 }

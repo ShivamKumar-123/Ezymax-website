@@ -2,12 +2,12 @@
 
 // The public option chain page (guests, search engines): the server-rendered chain, then live prices in the browser
 // through the options store (public stream, else polling). Read-only, with a sign-in CTA to trade the chain inside
-// Kalks Trader (/?mode=options&u=…).
+// Ezymex Trader (/?mode=options&u=…).
 import * as React from "react";
 import Link from "next/link";
 import { ArrowRight, BookOpen, Hourglass, LogIn, ShieldAlert, UserPlus } from "lucide-react";
-import { Logo, cn } from "@kalks/ui";
-import { useLocale, useT } from "@kalks/i18n/react";
+import { Logo, cn } from "@ezymex/ui";
+import { useLocale, useT } from "@ezymex/i18n/react";
 import { atmIndex } from "@/lib/options/math";
 import { opt, useOpt } from "@/lib/options-store";
 import type { OptionChain } from "@/lib/options/types";
@@ -58,7 +58,7 @@ export function PublicChainView({ u, name, initial, status, cta, underlyings }: 
     <div className="h-dvh overflow-y-auto bg-page text-fg">
       <header className="sticky top-0 z-20 border-b border-line bg-panel/95 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-[1240px] items-center gap-3 px-4 sm:px-6">
-          <Link href="/" className="flex items-center gap-2.5" aria-label="Kalks Trader">
+          <Link href="/" className="flex items-center gap-2.5" aria-label="Ezymex Trader">
             <Logo height={18} />
             <span className="hidden border-s border-line ps-2.5 text-[12px] font-medium text-fg-3 sm:inline">{t("trader.opt.public.brand")}</span>
           </Link>

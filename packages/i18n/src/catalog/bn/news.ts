@@ -45,7 +45,7 @@ const news: NsMessages<"news"> = {
   "markets.trade": "ট্রেড",
   "markets.searchPlaceholder": "সিম্বল বা নাম খুঁজুন…",
   "markets.clearSearch": "মুছুন",
-  "markets.liveTooltip": "কোটগুলো Kalks প্রাইস ফিড থেকে আসে",
+  "markets.liveTooltip": "কোটগুলো Ezymex প্রাইস ফিড থেকে আসে",
   "markets.footnote": "Standard গ্রুপের স্প্রেড: FX-এর জন্য পিপ, অন্যগুলোর জন্য প্রাইস ইউনিট · বন্ধ মার্কেটে শেষ দাম দেখানো হয় · কন্ট্রাক্ট স্পেসিফিকেশনের জন্য একটি সারিতে ক্লিক করুন",
   // Short trading-hours summary per asset class (24/5 = 24 hours, 5 days a week)
   "hoursShort.forex": "24/5",
@@ -270,7 +270,7 @@ const news: NsMessages<"news"> = {
   "cal.removeReminder": "রিমাইন্ডার সরান",
   "cal.remindMe": "15 মিনিট আগে মনে করিয়ে দিন",
   "cal.toWatch": "যে ইনস্ট্রুমেন্টগুলোর দিকে নজর রাখবেন",
-  "cal.noLinked": "কোনো Kalks ইনস্ট্রুমেন্ট সরাসরি এই কারেন্সির সাথে যুক্ত নয়।",
+  "cal.noLinked": "কোনো Ezymex ইনস্ট্রুমেন্ট সরাসরি এই কারেন্সির সাথে যুক্ত নয়।",
   // High-impact alerts card
   "alerts.title": "উচ্চ প্রভাবের অ্যালার্ট",
   "alerts.toggle": "উচ্চ প্রভাবের ইভেন্টের আগে আমাকে সতর্ক করুন",

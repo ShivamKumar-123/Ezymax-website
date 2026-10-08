@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { Clock, Crosshair, ListOrdered, MoreHorizontal, Pencil, Plus, Trash2, XCircle, Zap } from "lucide-react";
-import { Button, Card, Chip, DataTable, Field, Input, KpiCard, Menu, PageHeader, PriceText, Reveal, Segmented, SymbolCell, cn, formatNumber, useQuotes, type Column } from "@kalks/ui";
-import { getInstrument, priceFeed } from "@kalks/mock";
+import { Button, Card, Chip, DataTable, Field, Input, KpiCard, Menu, PageHeader, PriceText, Reveal, Segmented, SymbolCell, cn, formatNumber, useQuotes, type Column } from "@ezymex/ui";
+import { getInstrument, priceFeed } from "@ezymex/mock";
 import { MiniClient, SourceTag, fmtPrice } from "@/components/trading/shared";
 import { ago, clientName, digitsOf, groupLabel, groupOptions, serverStamp, useDesk, useLiveDirectory, type DeskOrder } from "@/lib/trading-desk";
 import { BookChip, Checkbox, DeskDialog, MetaTile, parseNum } from "@/components/trading-desk/kit";

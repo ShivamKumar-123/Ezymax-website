@@ -1,16 +1,16 @@
 "use client";
 
-// Symbol display for anything the trading engine sends: CFD symbols, Kalks FX Options series codes
-// (`EURUSD-20261002-1.1000-C`) and symbols the static instrument list (@kalks/mock INSTRUMENTS) doesn't carry.
-// `SymbolAvatar` / `SymbolCell` from @kalks/ui look the symbol up in that list and throw for anything else, so
+// Symbol display for anything the trading engine sends: CFD symbols, Ezymex FX Options series codes
+// (`EURUSD-20261002-1.1000-C`) and symbols the static instrument list (@ezymex/mock INSTRUMENTS) doesn't carry.
+// `SymbolAvatar` / `SymbolCell` from @ezymex/ui look the symbol up in that list and throw for anything else, so
 // engine data goes through `TradeSymbolAvatar` / `TradeSymbolCell` here instead.
 
 import * as React from "react";
 import { SymbolAvatar, cn } from "@/components/kit";
-import { INSTRUMENT_MAP } from "@kalks/mock";
-import { intlTag } from "@kalks/i18n/locales";
-import type { T } from "@kalks/i18n";
-import { useT } from "@kalks/i18n/react";
+import { INSTRUMENT_MAP } from "@ezymex/mock";
+import { intlTag } from "@ezymex/i18n/locales";
+import type { T } from "@ezymex/i18n";
+import { useT } from "@ezymex/i18n/react";
 import { fmtAmount, fmtPrice } from "./api";
 import { optionTerms, parseSeries, type DealOption, type OptionTerms, type PositionOption } from "./option-deal";
 
@@ -76,7 +76,7 @@ export function symbolLabel(t: T, symbol: string, option?: DealOption | Position
   return o ? optionLabel(t, o) : symbol;
 }
 
-/** Drop-in for @kalks/ui `SymbolCell` that takes any engine symbol (series codes read as "EURUSD 1.1000 Call · 2 Oct"). */
+/** Drop-in for @ezymex/ui `SymbolCell` that takes any engine symbol (series codes read as "EURUSD 1.1000 Call · 2 Oct"). */
 export function TradeSymbolCell({ symbol, size = 28, sub, className, option }: { symbol: string; size?: number; sub?: React.ReactNode; className?: string; option?: DealOption | PositionOption | null }) {
   const t = useT();
   const o = option || parseSeries(symbol) ? optionTerms(symbol, option) : null;

@@ -1,5 +1,5 @@
 //! Back Office "Balance & credit" routes (manual adjustments of wallets and trading accounts, four-eyes).
-//! Permissions come from `X-Kalks-Staff-Perms` (forwarded by the admin BFF); without it the role is checked.
+//! Permissions come from `X-Ezymex-Staff-Perms` (forwarded by the admin BFF); without it the role is checked.
 //! See `ops::adjustments` for the rules.
 
 use axum::Json;

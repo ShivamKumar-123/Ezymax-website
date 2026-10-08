@@ -3,8 +3,8 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { Minus, Plus, X } from "lucide-react";
-import { cn, useRolling, useTick, useTickGlow } from "@kalks/ui";
-import { useT } from "@kalks/i18n/react";
+import { cn, useRolling, useTick, useTickGlow } from "@ezymex/ui";
+import { useT } from "@ezymex/i18n/react";
 
 /* ------------------------------------------------------------------ */
 /* Dense modal dialog (Esc closes)                                     */

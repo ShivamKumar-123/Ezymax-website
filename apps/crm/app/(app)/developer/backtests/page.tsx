@@ -6,11 +6,11 @@ import { AnimatePresence, motion } from "motion/react";
 import { FileDown, Rocket, Share2, Workflow } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, Chip, EquityChart, Menu, Money, PageHeader, Reveal, Segmented, SymbolAvatar, cn, type SeriesPoint } from "@/components/kit";
-import { hashString } from "@kalks/mock";
-import { BACKTEST_STRATEGIES, COST_MODELS, DEFAULT_BACKTEST, PAST_RUNS, formatDateLabel, runBacktest, serverTime, type BacktestParams, type BacktestResult, type PastRun } from "@kalks/mock/algo";
+import { hashString } from "@ezymex/mock";
+import { BACKTEST_STRATEGIES, COST_MODELS, DEFAULT_BACKTEST, PAST_RUNS, formatDateLabel, runBacktest, serverTime, type BacktestParams, type BacktestResult, type PastRun } from "@ezymex/mock/algo";
 import { BacktestForm, PastRuns } from "@/components/developer/backtest-form";
 import { BacktestKpis, DrawdownChart, MonteCarloCard, MonthlyReturns, ReturnDistribution, TradeStats, TradesTable } from "@/components/developer/backtest-report";
-import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LiveBacktestsPage } from "@/components/algo/backtests-page";
 
 const STAGES: [number, string][] = [
@@ -139,7 +139,7 @@ function DemoBacktestsPage() {
               items={[
                 { label: "PDF report", icon: <FileDown />, onSelect: () => toast.success("Report exported", { description: `${run.id}.pdf · 6 pages` }) },
                 { label: "Trades CSV", icon: <FileDown />, onSelect: () => toast.success("Trades exported", { description: `${result.trades.length} rows` }) },
-                { label: "Share link", icon: <Share2 />, onSelect: () => toast.success("Share link copied", { description: `kalks.com/bt/${run.id}` }) },
+                { label: "Share link", icon: <Share2 />, onSelect: () => toast.success("Share link copied", { description: `ezymex.com/bt/${run.id}` }) },
               ]}
             />
             <Button variant="ember" shimmer onClick={() => toast.success(`Deploying “${strat.name.replace(" (template)", "")}”`, { description: "Pick an account in Strategy builder › Deploy" })}>

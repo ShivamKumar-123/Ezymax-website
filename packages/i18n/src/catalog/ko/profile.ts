@@ -4,7 +4,7 @@ const profile: NsMessages<"profile"> = {
   // 프로필 페이지
   title: "프로필",
   subtitle: "개인 정보 및 계정 환경 설정입니다.",
-  liveSubtitle: "Kalks에 등록된 개인 정보입니다.",
+  liveSubtitle: "Ezymex에 등록된 개인 정보입니다.",
   memberSince: "가입일 {date}",
   notVerified: "미인증",
   "photo.upload": "새 사진 업로드",
@@ -59,7 +59,7 @@ const profile: NsMessages<"profile"> = {
   "data.exportRequested": "데이터 내보내기를 요청했습니다",
   "data.exportRequestedHint": "72시간 이내에 다운로드 링크를 이메일로 보내 드립니다.",
   "data.export": "내 데이터 내보내기",
-  "closure.title": "Kalks 계정 해지",
+  "closure.title": "Ezymex 계정 해지",
   "closure.description": "모든 거래 계좌의 잔고가 0이고 보유 포지션이 없어야 합니다.",
   "closure.request": "계정 해지 요청",
   "closure.submitted": "해지 요청이 접수되었습니다",

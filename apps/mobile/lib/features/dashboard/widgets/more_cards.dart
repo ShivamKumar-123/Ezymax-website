@@ -1,4 +1,4 @@
-// "More for you" (web live-dashboard.tsx TraderBanner, AccountCard, SessionsCard, SupportCard): Kalks Trader, the
+// "More for you" (web live-dashboard.tsx TraderBanner, AccountCard, SessionsCard, SupportCard): Ezymex Trader, the
 // client's record, the market clock (packages/ui MarketSessions) and how to reach support.
 import 'dart:async';
 
@@ -17,10 +17,10 @@ import '../../../i18n/i18n.dart';
 import '../../../ui/ui.dart';
 import '../../markets/instruments.dart';
 
-/// The support address: the broker's (config) or Kalks' own (web SUPPORT_EMAIL).
-String supportEmailOf(AppConfig cfg) => (cfg.supportEmail == null || cfg.supportEmail!.isEmpty) ? 'support@kalkstrade.com' : cfg.supportEmail!;
+/// The support address: the broker's (config) or Ezymex' own (web SUPPORT_EMAIL).
+String supportEmailOf(AppConfig cfg) => (cfg.supportEmail == null || cfg.supportEmail!.isEmpty) ? 'support@ezymex.com' : cfg.supportEmail!;
 
-/// Kalks Trader: live prices, the instrument count, Launch.
+/// Ezymex Trader: live prices, the instrument count, Launch.
 class TraderBanner extends StatelessWidget {
   const TraderBanner({super.key});
 
@@ -36,7 +36,7 @@ class TraderBanner extends StatelessWidget {
         children: [
           KChip(label: t('dashboard.trader.chip'), tone: KChipTone.ember, icon: LucideIcons.candlestickChart),
           const SizedBox(height: 12),
-          Text('Kalks Trader', style: context.text.title1.copyWith(fontSize: 22, fontWeight: FontWeight.w700)),
+          Text('Ezymex Trader', style: context.text.title1.copyWith(fontSize: 22, fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           Text(t('app.dashboard.traderText', {'count': kInstruments.length}), style: context.text.callout.copyWith(color: context.k.fg2)),
           const SizedBox(height: 20),

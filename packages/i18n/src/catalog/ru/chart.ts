@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Графики Kalks Trader: панель инструментов, графические объекты, легенда, торговые линии, контекстное меню, панель торговли в один клик.
+// Графики Ezymex Trader: панель инструментов, графические объекты, легенда, торговые линии, контекстное меню, панель торговли в один клик.
 const chart: NsMessages<"chart"> = {
   // Вкладки графиков
   "tab.visibleInGrid": "Отображается в сетке",
@@ -46,7 +46,7 @@ const chart: NsMessages<"chart"> = {
   "tool.text": "Текст",
   "tool.ruler": "Линейка",
   "tool.coming": "{tool}: скоро",
-  "tool.comingText": "Будет доступно в следующей сборке Kalks Trader.",
+  "tool.comingText": "Будет доступно в следующей сборке Ezymex Trader.",
   "tool.deleteAll": "Удалить все объекты",
   "tool.noObjects": "На этом графике нет объектов",
   "tool.deleted": {

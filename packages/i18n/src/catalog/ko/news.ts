@@ -45,7 +45,7 @@ const news: NsMessages<"news"> = {
   "markets.trade": "거래",
   "markets.searchPlaceholder": "종목 코드 또는 이름 검색…",
   "markets.clearSearch": "지우기",
-  "markets.liveTooltip": "시세는 Kalks 가격 피드에서 실시간으로 제공됩니다",
+  "markets.liveTooltip": "시세는 Ezymex 가격 피드에서 실시간으로 제공됩니다",
   "markets.footnote": "Standard 그룹 스프레드: 외환은 핍, 기타는 가격 단위 · 마감된 시장은 마지막 가격 표시 · 행을 클릭하면 계약 명세 확인",
   // 자산군별 거래 시간 요약 (24/5 = 주 5일 24시간)
   "hoursShort.forex": "24/5",
@@ -270,7 +270,7 @@ const news: NsMessages<"news"> = {
   "cal.removeReminder": "알림 삭제",
   "cal.remindMe": "15분 전에 알림",
   "cal.toWatch": "주목할 종목",
-  "cal.noLinked": "이 통화와 직접 연결된 Kalks 종목이 없습니다.",
+  "cal.noLinked": "이 통화와 직접 연결된 Ezymex 종목이 없습니다.",
   // 고영향 알림 카드
   "alerts.title": "고영향 이벤트 알림",
   "alerts.toggle": "고영향 이벤트 전에 알림 받기",

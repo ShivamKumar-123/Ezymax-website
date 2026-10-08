@@ -1,13 +1,13 @@
 "use client";
 
-// Top bar of Kalks Trader on desktop (docs/TERMINAL-DESIGN.md §2.2): ☰ · brand · CFD | Options · search (⌘K) ·
+// Top bar of Ezymex Trader on desktop (docs/TERMINAL-DESIGN.md §2.2): ☰ · brand · CFD | Options · search (⌘K) ·
 // account switcher with equity · Deposit / Top up demo · notifications · profile. The ☰ menu (MT5 web style) holds the
 // accounts, chart settings, one-click trading, theme, language, shortcuts and help; every command is also in ⌘K.
 import * as React from "react";
 import { ArrowUpRight, ChevronDown, LogIn, LogOut, Menu, RefreshCw, Search, UserPlus, UserRound, Wallet } from "lucide-react";
-import { ME } from "@kalks/mock";
-import { Avatar, LogoMark, cn } from "@kalks/ui";
-import { useT } from "@kalks/i18n/react";
+import { ME } from "@ezymex/mock";
+import { Avatar, LogoMark, cn } from "@ezymex/ui";
+import { useT } from "@ezymex/i18n/react";
 import { useMetrics, useTerminal } from "@/lib/store";
 import { accCcy, accMoney } from "@/lib/trading";
 import { DropMenu } from "@/components/ui/menu";
@@ -246,7 +246,7 @@ export function TitleBar() {
           <LogoMark size={15} className="text-fg" />
         </span>
         <span className="hidden text-[14px] font-semibold tracking-tight min-[1400px]:inline">
-          Kalks <span className="font-normal text-fg-2">Trader</span>
+          Ezymex <span className="font-normal text-fg-2">Trader</span>
         </span>
       </div>
       <ModeSwitch />

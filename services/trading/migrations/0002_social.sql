@@ -285,6 +285,6 @@ BEGIN
     FOREACH t IN ARRAY ARRAY['social_settings','social_masters','copy_subscriptions','copy_cursors','copy_log','pamm_funds','pamm_investors',
                              'pamm_requests','pamm_rollovers','pamm_unit_ledger','social_fees','social_snapshots','wallet_outbox'] LOOP
         EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
-        EXECUTE format('CREATE POLICY tenant_isolation ON %I USING (tenant_id = NULLIF(current_setting(''kalks.tenant_id'', true), '''')::bigint)', t);
+        EXECUTE format('CREATE POLICY tenant_isolation ON %I USING (tenant_id = NULLIF(current_setting(''ezymex.tenant_id'', true), '''')::bigint)', t);
     END LOOP;
 END $$;

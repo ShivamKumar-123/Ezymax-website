@@ -104,7 +104,7 @@ The practical question is always: "Compared with what was priced, is this more h
 
 The Fed (FOMC), ECB and BoE each hold eight scheduled policy meetings a year. Around each one you will typically see a statement, a press conference, and at some meetings updated economic projections. Minutes released a few weeks later can also move markets. Between meetings, speeches by policymakers shift expectations, particularly when a voter changes tone.
 
-> **In Kalks Trader:** Decision times are listed in the Economic calendar in the Client Area. Spreads can widen and prices can jump around these releases, so check the calendar before holding positions through them.
+> **In Ezymex Trader:** Decision times are listed in the Economic calendar in the Client Area. Spreads can widen and prices can jump around these releases, so check the calendar before holding positions through them.
 
 > **Risk warning:** CFDs are leveraged products. Central-bank announcements can cause sharp moves, wider spreads and slippage, and losses can exceed what you expected when you placed the trade. Trading news is covered in detail in Phase 4.
 

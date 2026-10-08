@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader left panels: Pemerhatian Pasaran (Market Watch), segment chips and Navigator.
+// Ezymex Trader left panels: Pemerhatian Pasaran (Market Watch), segment chips and Navigator.
 const market: NsMessages<"market"> = {
   // Market Watch header and tabs
   title: "Pemerhatian Pasaran",
@@ -72,7 +72,7 @@ const market: NsMessages<"market"> = {
   "nav.guest": "tetamu",
   "nav.noAccount": "Belum ada akaun dagangan",
   "nav.openAccount": "Buka akaun",
-  "nav.openAccountTitle": "Cipta akaun Kalks anda (membuka Kawasan Pelanggan)",
+  "nav.openAccountTitle": "Cipta akaun Ezymex anda (membuka Kawasan Pelanggan)",
   "nav.signIn": "Log masuk",
   "nav.signInTitle": "Log masuk ke Kawasan Pelanggan",
   "nav.accountType.live": "sebenar",

@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { Bell, CheckCheck, CircleAlert, CircleCheck, Info, Trash2, TriangleAlert } from "lucide-react";
-import { cn } from "@kalks/ui";
-import { useT } from "@kalks/i18n/react";
+import { cn } from "@ezymex/ui";
+import { useT } from "@ezymex/i18n/react";
 import { DropMenu } from "@/components/ui/menu";
 import { notifications, toast, useNotifications, type Note } from "@/lib/notify";
 import { serverTime } from "@/lib/trading";

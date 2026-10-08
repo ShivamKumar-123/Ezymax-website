@@ -73,7 +73,7 @@ The dollar index measures the dollar against a fixed basket of six currencies. I
 
 Two consequences follow. First, the DXY is largely an inverted EURUSD: when EURUSD rises the index almost always falls. Second, it ignores major trading partners such as China and Mexico, so broader trade-weighted indices published by the Federal Reserve give a more complete picture of the dollar's value.
 
-> **In Kalks Trader:** A dollar index symbol may not be offered on your account. You can build the same picture by watching a group of USD pairs side by side, which is often more informative because it shows you which currencies are driving the move.
+> **In Ezymex Trader:** A dollar index symbol may not be offered on your account. You can build the same picture by watching a group of USD pairs side by side, which is often more informative because it shows you which currencies are driving the move.
 
 ## Broad move or single-currency story?
 

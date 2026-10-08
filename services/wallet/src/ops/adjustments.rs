@@ -538,7 +538,7 @@ pub async fn apply(st: &AppState, tenant_id: i64, id: i64, actor: Option<&StaffC
         // the engine records the requester (maker) as the staff member, with the approver in the audit detail
         let perms: Option<Vec<String>> = r.get("requested_perms");
         let staff = staff_headers(&r.get::<String, _>("requested_by_id"), &r.get::<String, _>("requested_by_name"), &r.get::<String, _>("requested_by_role"), perms);
-        let tenant_slug = st.tenants.slug_of(tenant_id).unwrap_or_else(|| "kalks".into());
+        let tenant_slug = st.tenants.slug_of(tenant_id).unwrap_or_else(|| "ezymex".into());
         match st.engine.adjust(&tenant_slug, login, body, &staff).await {
             Ok(d) => {
                 let txn = d["txn"].as_i64().unwrap_or_default();

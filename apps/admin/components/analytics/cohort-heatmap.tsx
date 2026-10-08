@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { motion } from "motion/react";
-import { cn, formatNumber } from "@kalks/ui";
-import type { AnlCohort } from "@kalks/mock/admin-growth-analytics";
+import { cn, formatNumber } from "@ezymex/ui";
+import type { AnlCohort } from "@ezymex/mock/admin-growth-analytics";
 import { heat } from "./meter";
 
 /** Triangular monthly cohort grid coloured on the ember→gold ramp. */

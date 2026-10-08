@@ -1,4 +1,4 @@
-//! Kalks FX Options inside the trading engine: the link to the options service (:8104) and the pricer the engine
+//! Ezymex FX Options inside the trading engine: the link to the options service (:8104) and the pricer the engine
 //! core reads through `Env::options`.
 //!
 //! * **Snapshot.** `OptionsCtx` polls `GET /v1/internal/options/snapshot` every 2 s with `If-None-Match` (ETag
@@ -232,7 +232,7 @@ pub fn compute_scenario(snap: &OptSnapshot, spot: &dyn Fn(&str) -> Option<(f64, 
 /* OptionsCtx                                                          */
 /* ------------------------------------------------------------------ */
 
-/// Eligibility for Kalks FX Options from the gateway (KYC, risk disclosure, knowledge quiz).
+/// Eligibility for Ezymex FX Options from the gateway (KYC, risk disclosure, knowledge quiz).
 #[derive(Clone, Debug, PartialEq)]
 pub struct Suitability {
     pub eligible: bool,
@@ -337,7 +337,7 @@ impl OptionsCtx {
         self.suit.lock().unwrap().insert(user_id, (Utc::now().timestamp_millis() + ttl_ms, s));
     }
 
-    /// Kalks FX Options eligibility of a client (cached 60 s). A gateway without the endpoint (404) means the
+    /// Ezymex FX Options eligibility of a client (cached 60 s). A gateway without the endpoint (404) means the
     /// suitability flow is not deployed yet: not eligible (live accounts need it; demo accounts never do).
     pub async fn suitability(&self, gw: &crate::controls::Gateway, user_id: i64) -> Suitability {
         let now = Utc::now().timestamp_millis();
@@ -375,7 +375,7 @@ impl OptionsCtx {
 
     async fn get(&self, path: &str, extra: &[(&str, String)]) -> anyhow::Result<(u16, HashMap<String, String>, Vec<u8>)> {
         anyhow::ensure!(self.configured(), "OPTIONS_URL is not set");
-        let mut head = format!("GET {path} HTTP/1.1\r\nHost: {}\r\nX-Kalks-Internal: {}\r\nX-Kalks-Service: trading\r\nAccept: application/json\r\nConnection: close\r\n", self.host, self.token);
+        let mut head = format!("GET {path} HTTP/1.1\r\nHost: {}\r\nX-Ezymex-Internal: {}\r\nX-Ezymex-Service: trading\r\nAccept: application/json\r\nConnection: close\r\n", self.host, self.token);
         for (k, v) in extra {
             head.push_str(&format!("{k}: {v}\r\n"));
         }
@@ -450,7 +450,7 @@ impl OptionsCtx {
     /// Polls every 2 s forever (keeps the last snapshot on errors).
     pub fn spawn_poller(self: &Arc<Self>, pool: PgPool) {
         if !self.configured() {
-            tracing::warn!("OPTIONS_URL not set: Kalks FX Options are off in the engine");
+            tracing::warn!("OPTIONS_URL not set: Ezymex FX Options are off in the engine");
             return;
         }
         let me = self.clone();

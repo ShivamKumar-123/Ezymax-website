@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader (apps/terminal): MT5-style web terminal shell, login and mobile layout.
+// Ezymex Trader (apps/terminal): MT5-style web terminal shell, login and mobile layout.
 const trader: NsMessages<"trader"> = {
   // Shared shell words
   clientArea: "Личный кабинет",
@@ -138,7 +138,7 @@ const trader: NsMessages<"trader"> = {
   "menu.keyboardShortcuts": "Горячие клавиши",
   "menu.helpTopics": "Разделы справки",
   "menu.contactSupport": "Связаться с поддержкой",
-  "menu.about": "О Kalks Trader",
+  "menu.about": "О Ezymex Trader",
   // Tools > Options toast
   "options.title": "Настройки",
   "options.trading": "Торговля",
@@ -173,7 +173,7 @@ const trader: NsMessages<"trader"> = {
   "guest.noAccount": "Нет торгового счёта",
   "guest.liveData": "Рыночные данные онлайн",
   "guest.cardHeader": "Гость · графики и котировки",
-  "guest.cardText": "Графики, индикаторы, графические объекты, оповещения и спецификации символов работают на реальных рыночных данных Kalks. Войдите в торговый счёт, чтобы торговать, или откройте его в личном кабинете.",
+  "guest.cardText": "Графики, индикаторы, графические объекты, оповещения и спецификации символов работают на реальных рыночных данных Ezymex. Войдите в торговый счёт, чтобы торговать, или откройте его в личном кабинете.",
 
   // Notifications bell
   "notifications.title": "Уведомления",
@@ -288,7 +288,7 @@ const trader: NsMessages<"trader"> = {
   "login.serverTime": "Время сервера GMT+3",
   "login.notice.expired": "Ваш сеанс истёк. Войдите снова.",
   "login.notice.expiredFor": "Ваш сеанс для {login} истёк. Войдите снова.",
-  "login.notice.ssoExpired": "Срок действия ссылки для входа истёк или она уже использована. Снова откройте Kalks Trader из личного кабинета или войдите ниже.",
+  "login.notice.ssoExpired": "Срок действия ссылки для входа истёк или она уже использована. Снова откройте Ezymex Trader из личного кабинета или войдите ниже.",
   "login.notice.ssoFailed": "Не удалось войти из личного кабинета. Войдите ниже.",
   "login.error.invalid": "Неверный счёт или пароль.",
   "login.error.locked": "Слишком много неудачных попыток. Этот логин заблокирован на 15 минут.",
@@ -311,9 +311,9 @@ const trader: NsMessages<"trader"> = {
   "mobile.tab.history": "История",
   "mobile.tab.account": "Счёт",
   "mobile.guestSubtitle": "Рыночные данные онлайн · нет торгового счёта",
-  "mobile.guestTrade": "Позиции, ордера, баланс и маржа появятся здесь, когда Вы начнёте торговать со счёта Kalks. Графики и котировки уже работают.",
+  "mobile.guestTrade": "Позиции, ордера, баланс и маржа появятся здесь, когда Вы начнёте торговать со счёта Ezymex. Графики и котировки уже работают.",
   "mobile.guestHistory": "Ваши закрытые сделки появятся здесь после входа в торговый счёт.",
-  "mobile.guestAccountText": "Войдите в торговый счёт, чтобы торговать. Графики, индикаторы, графические объекты и оповещения уже работают на реальных рыночных данных Kalks.",
+  "mobile.guestAccountText": "Войдите в торговый счёт, чтобы торговать. Графики, индикаторы, графические объекты и оповещения уже работают на реальных рыночных данных Ezymex.",
   "mobile.watchSegment": "Раздел котировок",
   "mobile.noFavourites": "В избранном пока пусто.",
   "mobile.noSymbols": "Символы не найдены.",
@@ -342,14 +342,14 @@ const trader: NsMessages<"trader"> = {
   "copyBanner.textNoName": "Счёт копирования — сделками управляет мастер, которого вы копируете; здесь вы можете следить за P&L.",
   "copyBanner.manage": "Управление копированием в личном кабинете",
 
-  // ---- Kalks FX Options workspace (CFD | Options switch in Kalks Trader; components/options/*) ----
-  // Keep "Kalks FX Options", "Claude", tickers (EURUSD), "IV", "ATM", "OTM", "ITM", "P&L", "USD", "UTC", "GTC" and the
+  // ---- Ezymex FX Options workspace (CFD | Options switch in Ezymex Trader; components/options/*) ----
+  // Keep "Ezymex FX Options", "Claude", tickers (EURUSD), "IV", "ATM", "OTM", "ITM", "P&L", "USD", "UTC", "GTC" and the
   // Greek letters (Δ Γ Θ) as they are. Premiums are in USD per contract; "pips" are price points of the underlying.
   "opt.mode.label": "Режим торговли",
   "opt.mode.cfd": "CFD",
   "opt.mode.options": "Опционы",
   "opt.mode.cfdHint": "Торговля CFD: графики, Обзор рынка и панель ордеров",
-  "opt.mode.optionsHint": "Kalks FX Options: опционная доска, стратегии и профиль выплат",
+  "opt.mode.optionsHint": "Ezymex FX Options: опционная доска, стратегии и профиль выплат",
   "opt.call": "Колл",
   "opt.put": "Пут",
   "opt.calls": "Коллы",
@@ -518,7 +518,7 @@ const trader: NsMessages<"trader"> = {
 
   // Module not open yet / price server down
   "opt.soon.title": "Скоро запуск опционов",
-  "opt.soon.text": "Kalks FX Options на этом счёте пока не открыт. Как только он откроется, здесь появится опционная доска — на том же счёте, что и Ваши CFD.",
+  "opt.soon.text": "Ezymex FX Options на этом счёте пока не открыт. Как только он откроется, здесь появится опционная доска — на том же счёте, что и Ваши CFD.",
   "opt.soon.point1": "Коллы и путы на валюты, золото, серебро и нефть",
   "opt.soon.point2": "Дневные, недельные и месячные экспирации, денежные расчёты в USD",
   "opt.soon.point3": "Как покупатель Вы никогда не потеряете больше уплаченной премии",
@@ -663,14 +663,14 @@ const trader: NsMessages<"trader"> = {
 
   // Public option chain page (/options/chain/EURUSD)
   "opt.public.brand": "Опционная доска",
-  "opt.public.kicker": "Kalks FX Options",
+  "opt.public.kicker": "Ezymex FX Options",
   "opt.public.title": "Опционная доска {name}",
   "opt.public.subtitle": "Коллы и путы онлайн с дневными, недельными и месячными экспирациями: bid и ask в USD за контракт, подразумеваемая волатильность, дельта, вероятность истечь в деньгах и точка безубыточности. Европейские опционы с денежными расчётами в USD.",
   "opt.public.trade": "Торговать опционами на {u}",
   "opt.public.atmStraddle": "ATM-стрэддл",
-  "opt.public.soonText": "Публичная опционная доска откроется вместе с Kalks FX Options. Откройте счёт, чтобы быть готовым с первого дня.",
+  "opt.public.soonText": "Публичная опционная доска откроется вместе с Ezymex FX Options. Откройте счёт, чтобы быть готовым с первого дня.",
   "opt.public.ctaTitle": "Торгуйте с этой доски.",
-  "opt.public.ctaText": "Войдите в Kalks Trader, чтобы покупать и продавать любые опционы с этой доски, собирать стратегии и видеть профиль выплат.",
+  "opt.public.ctaText": "Войдите в Ezymex Trader, чтобы покупать и продавать любые опционы с этой доски, собирать стратегии и видеть профиль выплат.",
   "opt.public.howTitle": "Как читать опционную доску",
   "opt.public.how1": "Коллы приносят выплату, если цена завершается выше страйка, путы — если ниже.",
   "opt.public.how2": "Bid — то, что Вы получаете при продаже, ask — то, что Вы платите при покупке; обе цены в USD за контракт.",
@@ -702,11 +702,11 @@ const trader: NsMessages<"trader"> = {
   "opt.m.chain": "Доска",
   "opt.m.positions": "Позиции",
 
-  // Options ORDER BOOK: clients trade with each other and with the Kalks market maker (MM) on a price-time book.
-  // "Book" = стакан (order book). Keep GTC, IOC, FOK, GTD, RFQ and MM as they are; "Kalks" is a brand name.
+  // Options ORDER BOOK: clients trade with each other and with the Ezymex market maker (MM) on a price-time book.
+  // "Book" = стакан (order book). Keep GTC, IOC, FOK, GTD, RFQ and MM as they are; "Ezymex" is a brand name.
   "opt.book.tab": "Стакан",
   "opt.book.badge": "Стакан",
-  "opt.book.badgeHint": "Цены берутся из стакана: ордера других клиентов и маркет-мейкера Kalks, по одинаковым для всех правилам.",
+  "opt.book.badgeHint": "Цены берутся из стакана: ордера других клиентов и маркет-мейкера Ezymex, по одинаковым для всех правилам.",
   "opt.book.size": { one: "{count} контракт", few: "{count} контракта", many: "{count} контрактов", other: "{count} контракта" },
   "opt.book.noOffers": "Нет ордеров на продажу",
   "opt.book.noBids": "Нет ордеров на покупку",
@@ -775,7 +775,7 @@ const trader: NsMessages<"trader"> = {
   "opt.bt.needPrice": "Введите лимитную цену.",
   "opt.bt.needGtd": "Выберите, до какого времени ордер остаётся в стакане.",
   "opt.bt.needTrigger": "Введите цену срабатывания.",
-  "opt.bt.bookOff": "Стакан сейчас недоступен: цены и ордера снова идут по ценам Kalks.",
+  "opt.bt.bookOff": "Стакан сейчас недоступен: цены и ордера снова идут по ценам Ezymex.",
   "opt.bt.pv.fillsNow": "Исполнится сразу",
   "opt.bt.pv.fillsAt": "{n} из {total}, ср. {price}",
   "opt.bt.pv.none": "Ничего по этой цене",
@@ -864,7 +864,7 @@ const trader: NsMessages<"trader"> = {
   "opt.rfq.title": "Запрос котировки",
   "opt.rfq.request": "Запросить котировку",
   "opt.rfq.again": "Запросить новую котировку",
-  "opt.rfq.note": "Вся стратегия торгуется как единое целое: маркет-мейкер Kalks даёт нетто-цену, и все ноги исполняются вместе или ни одна.",
+  "opt.rfq.note": "Вся стратегия торгуется как единое целое: маркет-мейкер Ezymex даёт нетто-цену, и все ноги исполняются вместе или ни одна.",
   "opt.rfq.builderNote": "Стратегии торгуются по запросу котировки: одна нетто-цена, все ноги вместе.",
   "opt.rfq.size": "Размер: {n} × стратегия",
   "opt.rfq.waiting": "Ожидание котировки…",
@@ -875,17 +875,17 @@ const trader: NsMessages<"trader"> = {
   "opt.rfq.validFor": "действует {s} с",
   "opt.rfq.refreshing": "новая котировка…",
   "opt.rfq.from": "Котировка от {who}",
-  "opt.rfq.kalksMm": "маркет-мейкера Kalks",
+  "opt.rfq.ezymexMm": "маркет-мейкера Ezymex",
   "opt.rfq.openFor": "запрос открыт {s} с",
   "opt.rfq.expired": "Срок запроса истёк.",
   "opt.rfq.toast.filled": "Стратегия исполнена",
   "opt.rfq.toast.desc": { one: "{count} нога исполнена · нетто {price} USD", few: "{count} ноги исполнены вместе · нетто {price} USD", many: "{count} ног исполнено вместе · нетто {price} USD", other: "{count} ноги исполнены вместе · нетто {price} USD" },
-  "opt.rfq.kalksQuoted": "Котировка Kalks (не стакан)",
-  "opt.rfq.kalksQuotedHint": "Барьерные опционы не торгуются в стакане: Kalks котирует их по модельной цене плюс спред.",
+  "opt.rfq.ezymexQuoted": "Котировка Ezymex (не стакан)",
+  "opt.rfq.ezymexQuotedHint": "Барьерные опционы не торгуются в стакане: Ezymex котирует их по модельной цене плюс спред.",
   // Market-maker rules (public disclosure)
   "opt.mm.link": "Правила маркет-мейкера",
   "opt.mm.title": "Правила маркет-мейкера",
-  "opt.mm.intro": "У Kalks есть маркет-мейкер, который выставляет цены покупки и продажи по каждому опциону, поэтому Вам всегда есть с кем торговать. Он торгует в том же стакане, что и Вы, по тем же правилам.",
+  "opt.mm.intro": "У Ezymex есть маркет-мейкер, который выставляет цены покупки и продажи по каждому опциону, поэтому Вам всегда есть с кем торговать. Он торгует в том же стакане, что и Вы, по тем же правилам.",
   "opt.mm.sameTitle": "Те же правила, что и для любого клиента",
   "opt.mm.rule1": "Он отправляет котировки через тот же ввод ордеров, что и клиенты, с теми же проверками.",
   "opt.mm.rule2": "Никакого приоритета: ордера исполняются по цене, затем по времени. Никто не опережает Вас по той же цене из-за того, кто он.",
@@ -985,7 +985,7 @@ const trader: NsMessages<"trader"> = {
   "opt.an.oi.emptyOi": "По этой экспирации пока нет открытого интереса.",
   "opt.an.oi.emptyVolume": "Сегодня по этой экспирации ещё не было сделок.",
   "opt.an.oi.none": "Открытый интерес и соотношение пут / колл появятся здесь, как только опционы на {u} начнут торговаться в стакане.",
-  "opt.an.oi.noneSub": "Пока эти опционы котирует Kalks, поэтому открытого интереса и объёма ещё нет. Улыбка и временная структура выше обновляются в реальном времени.",
+  "opt.an.oi.noneSub": "Пока эти опционы котирует Ezymex, поэтому открытого интереса и объёма ещё нет. Улыбка и временная структура выше обновляются в реальном времени.",
   "opt.an.oi.aria": "Открытый интерес по страйкам: коллы сверху, путы снизу",
   "opt.an.pcr.title": "Соотношение пут / колл",
   "opt.an.pcr.hint": "Путы, делённые на коллы, в этой экспирации. Больше 1: путов больше, чем коллов.",
@@ -1043,7 +1043,7 @@ const trader: NsMessages<"trader"> = {
   "opt.share.copy": "Скопировать ссылку",
   "opt.share.copied": "Ссылка скопирована",
   "opt.share.shareTo": "Поделиться в",
-  "opt.share.text": "Моя сделка с опционом {contract} в Kalks",
+  "opt.share.text": "Моя сделка с опционом {contract} в Ezymex",
   "opt.share.error": "Не удалось создать карточку",
   "opt.share.readOnly": "При входе с инвесторским паролем (только чтение) нельзя создавать карточки.",
   "opt.share.preview": "Предпросмотр карточки",
@@ -1204,7 +1204,7 @@ const trader: NsMessages<"trader"> = {
   "opt.pos.d.nowEach": "Стоимость сейчас за контракт",
   "opt.pos.d.where": "Площадка",
   "opt.pos.d.book": "Стакан",
-  "opt.pos.d.house": "Цены Kalks",
+  "opt.pos.d.house": "Цены Ezymex",
   "opt.pos.comboPaid": "Вы заплатили {amount} за эту стратегию.",
   "opt.pos.comboReceived": "Вы получили {amount} за эту стратегию.",
   "opt.pos.emptyTitle": "Открытых опционов пока нет",
@@ -1230,8 +1230,8 @@ const trader: NsMessages<"trader"> = {
   "opt.err.series_cancel_only": "Торговля по одному из этих опционов сейчас приостановлена (только отмена ордеров). Повторите попытку позже.",
   "opt.err.series_closed": "Торговля по одному из этих опционов завершена: до экспирации осталось слишком мало времени.",
   "opt.err.rfq_underlyings": "Все ноги стратегии должны быть на одном рынке, например все на EURUSD.",
-  "opt.err.kalks_quoted": "В этой стратегии есть барьерная нога. Барьерные опционы котирует Kalks, а не стакан, поэтому стратегия выставляется одним ордером по ценам Kalks.",
-  "opt.err.mixed_venue": "В этой стратегии есть ноги из стакана и ноги по ценам Kalks, поэтому её нельзя закрыть за один раз. Закройте ноги по очереди.",
+  "opt.err.ezymex_quoted": "В этой стратегии есть барьерная нога. Барьерные опционы котирует Ezymex, а не стакан, поэтому стратегия выставляется одним ордером по ценам Ezymex.",
+  "opt.err.mixed_venue": "В этой стратегии есть ноги из стакана и ноги по ценам Ezymex, поэтому её нельзя закрыть за один раз. Закройте ноги по очереди.",
   "opt.err.book_venue": "Эти опционы торгуются в стакане. В одной стратегии нельзя сочетать ноги из стакана и барьерные ноги: выставьте их по отдельности.",
   "opt.rfq.err.quote_expired": "Эта цена больше не действует (котировки действуют несколько секунд). Получите новую цену и примите её.",
   "opt.rfq.err.price_moved": "Цена изменилась до того, как пришёл Ваш ордер, поэтому сделки не было. Получите новую цену и повторите попытку.",
@@ -1242,7 +1242,7 @@ const trader: NsMessages<"trader"> = {
   "opt.rfq.err.no_liquidity": "Маркет-мейкер сейчас не может дать цену на эту стратегию. Повторите попытку через мгновение или закройте ноги по очереди.",
   "opt.rfq.err.rejected": "Стратегия не исполнена, сделки не было. Повторите попытку.",
   "opt.rfq.newPrice": "Получить новую цену",
-  "opt.rfq.houseNote": "Барьерные опционы котирует Kalks, а не стакан: эта стратегия выставляется одним ордером по ценам Kalks, все ноги вместе или ни одна.",
+  "opt.rfq.houseNote": "Барьерные опционы котирует Ezymex, а не стакан: эта стратегия выставляется одним ордером по ценам Ezymex, все ноги вместе или ни одна.",
   "opt.toast.settling": "итоговые суммы через мгновение",
   "opt.toast.tryAgain": "Повторить",
   "opt.toast.strategyClosedBook": "Стратегия закрыта через стакан",
@@ -1250,10 +1250,10 @@ const trader: NsMessages<"trader"> = {
   "opt.pos.closedNetGot": "Все ноги закрыты вместе: Вы получили {amount} · P&L {pnl}",
   "opt.hist.reason.bust": "Отменена",
   "opt.hist.why.risk": "Закрыта системой контроля рисков (недостаточно маржи)",
-  "opt.hist.why.backstop": "Закрыта системой контроля рисков (недостаточно маржи): позицию принял маркет-мейкер Kalks",
+  "opt.hist.why.backstop": "Закрыта системой контроля рисков (недостаточно маржи): позицию принял маркет-мейкер Ezymex",
   "opt.hist.why.bust": "Сделка отменена дилинговым отделом и сторнирована",
   "opt.hist.closedRisk": "Закрыта системой контроля рисков (недостаточно маржи) по {close}, за контракт",
-  "opt.hist.closedBackstop": "Закрыта системой контроля рисков (недостаточно маржи): маркет-мейкер Kalks принял её по {close}, за контракт",
+  "opt.hist.closedBackstop": "Закрыта системой контроля рисков (недостаточно маржи): маркет-мейкер Ezymex принял её по {close}, за контракт",
   "opt.hist.closedBust": "Сделка отменена дилинговым отделом и сторнирована по {close}, за контракт",
   "opt.bust.title": "Сделка отменена дилинговым отделом",
   "opt.bust.text": "{what} × {n}: сделка сторнирована, комиссия (если была) возвращена.",

@@ -1,6 +1,6 @@
 //! Trade share links: /v1/shares (owner, via the terminal BFF) and /v1/public/shares (read-only projection).
 //!
-//! A share is created from Kalks Trader with a snapshot of the selected trades. Creation returns a short public
+//! A share is created from Ezymex Trader with a snapshot of the selected trades. Creation returns a short public
 //! `code` (12 chars base62, ~71 bits) and a secret manage `key` (only its HMAC is stored). The key is required to
 //! refresh the snapshot, revoke the link or read owner stats. The public read returns whitelisted fields only.
 

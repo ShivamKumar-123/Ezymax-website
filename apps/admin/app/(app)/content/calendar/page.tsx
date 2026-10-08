@@ -1,7 +1,7 @@
 "use client";
 
-import { EmptyState } from "@kalks/ui";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { EmptyState } from "@ezymex/ui";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveCalendarAdmin } from "@/components/news-live/calendar";
 
 export default function CalendarAdminPage() {

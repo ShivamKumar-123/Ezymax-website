@@ -11,7 +11,7 @@ import * as React from "react";
 import { Mail } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Dialog } from "@/components/kit";
-import { useT, Trans } from "@kalks/i18n/react";
+import { useT, Trans } from "@ezymex/i18n/react";
 import { DevCodeHint, FormError, OtpInput, ResendLink } from "@/components/auth";
 import { authPost, type ApiError, type OtpChallenge } from "@/lib/auth-client";
 

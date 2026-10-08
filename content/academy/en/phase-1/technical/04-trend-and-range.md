@@ -143,4 +143,4 @@ Why does this matter so early? Because different states suit different behaviour
 - **Forgetting the timeframe.** A "downtrend" on M5 may be a small pullback in a D1 uptrend.
 - **Calling a change too early.** Wait for the structure to break, not just for a strong candle.
 
-Use the horizontal line and trend line tools in Kalks Trader on a free demo account to mark swing points on several symbols and classify each one.
+Use the horizontal line and trend line tools in Ezymex Trader on a free demo account to mark swing points on several symbols and classify each one.

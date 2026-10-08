@@ -44,7 +44,7 @@ quiz:
     explanation: "Stop-out happens when equity / margin = 50%, so equity = 0.5 x 542.50 = 271.25 USD. 542.50 USD is the equity at a 100% margin call."
 ---
 
-The previous chapter showed how much margin a trade needs. This one follows what happens after you open it. As prices move, the numbers at the bottom of your Kalks Trader terminal change every second: equity, free margin and margin level. Knowing what each means, and where the danger lines are, is basic account survival.
+The previous chapter showed how much margin a trade needs. This one follows what happens after you open it. As prices move, the numbers at the bottom of your Ezymex Trader terminal change every second: equity, free margin and margin level. Knowing what each means, and where the danger lines are, is basic account survival.
 
 ## Five numbers on your account
 
@@ -64,7 +64,7 @@ With no open positions there is no used margin and no margin level. The moment y
 
 ## Margin call and stop-out
 
-Kalks uses two thresholds, set per account group. The typical values are:
+Ezymex uses two thresholds, set per account group. The typical values are:
 
 - **Margin call at 100%.** Equity has fallen to the size of your used margin. You are warned, and you will usually not be able to open new positions. Nothing is closed yet.
 - **Stop-out at 50%.** Equity has fallen to half your used margin. The system begins closing positions automatically, starting with the **largest losing position**. After each closure margin level is recalculated, and closing continues one position at a time until margin level is back above the stop-out threshold.

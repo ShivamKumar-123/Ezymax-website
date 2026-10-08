@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader desktop shell (see ../en/desk.ts).
+// Ezymex Trader desktop shell (see ../en/desk.ts).
 const desk: NsMessages<"desk"> = {
   // Top bar
   "top.search": "Tafuta masoko na vitendo",
@@ -55,7 +55,7 @@ const desk: NsMessages<"desk"> = {
   "help.tour": "Anza ziara",
   "help.topics": "Kituo cha msaada",
   "help.support": "Wasiliana na msaada",
-  "help.about": "Kuhusu Kalks Trader",
+  "help.about": "Kuhusu Ezymex Trader",
   "help.glossary": "Maana ya maneno ya biashara",
   "help.whatIs": "{term} ni nini?",
   "help.explain": "Eleza",

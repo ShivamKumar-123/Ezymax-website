@@ -121,4 +121,4 @@ The best setups often combine both: a fresh demand zone that also sits on a dail
 - **Fighting the trend.** A supply zone in a strong uptrend is often simply run through.
 - **Stops on the distal line.** Place the stop a little beyond it to allow for spread and wicks.
 
-> **In Kalks Trader:** Use a rectangle drawing to mark zones and a pending limit order with an attached stop loss and take profit, so the plan executes even if you are away from the screen. Set an expiry so the order does not fill after the setup has changed.
+> **In Ezymex Trader:** Use a rectangle drawing to mark zones and a pending limit order with an attached stop loss and take profit, so the plan executes even if you are away from the screen. Set an expiry so the order does not fill after the setup has changed.

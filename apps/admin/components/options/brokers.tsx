@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * Options › Brokers access (O42, O48): the module switches per broker. Options are off for a broker until Kalks
- * switches them on; demo and live accounts are separate switches, the public option chain is Kalks' own, and a broker
- * can be limited to some underlyings. Only Kalks staff change these (switching another broker is the Platform
+ * Options › Brokers access (O42, O48): the module switches per broker. Options are off for a broker until Ezymex
+ * switches them on; demo and live accounts are separate switches, the public option chain is Ezymex' own, and a broker
+ * can be limited to some underlyings. Only Ezymex staff change these (switching another broker is the Platform
  * Owner's call); every change needs a reason.
  *
  *   GET /api/options/tenants          PUT /api/options/tenants/{tenant} {enabledDemo?, enabledLive?, publicChain?, underlyings?, reason}
@@ -12,7 +12,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Building2, Eye, FlaskConical, Globe2, RefreshCw, ShieldAlert, SlidersHorizontal, TriangleAlert } from "lucide-react";
-import { Button, Card, Chip, EmptyState, KpiCard, PageHeader, Reveal, Toggle, cn } from "@kalks/ui";
+import { Button, Card, Chip, EmptyState, KpiCard, PageHeader, Reveal, Toggle, cn } from "@ezymex/ui";
 import { ErrorState, TableSkeleton, ago, useNow, when } from "@/components/live/kit";
 import type { TenantSettings, Underlying } from "./types";
 import { REASONS, ReasonDialog, ReadOnlyHint, optSend, useOpt, useOptPerms } from "./kit";
@@ -23,7 +23,7 @@ type Change = { broker: Broker; patch: Partial<Pick<TenantSettings, "enabledDemo
 const SWITCH: Record<"enabledDemo" | "enabledLive" | "publicChain", { label: string; text: string }> = {
   enabledDemo: { label: "Demo accounts", text: "Clients can trade options on demo accounts." },
   enabledLive: { label: "Live accounts", text: "Real money: clients can buy and sell options on live accounts." },
-  publicChain: { label: "Public chain", text: "The guest option chain (trade.kalkstrade.com/options/chain) and the public API." },
+  publicChain: { label: "Public chain", text: "The guest option chain (trade.ezymex.com/options/chain) and the public API." },
 };
 
 export function BrokersPage() {
@@ -39,17 +39,17 @@ export function BrokersPage() {
     const settings = new Map((t.data?.tenants ?? []).map((x) => [x.tenant, x]));
     const list: Broker[] = (owner.data?.items ?? []).map((b) => ({ slug: b.slug, name: b.name, status: b.status, settings: settings.get(b.slug) ?? null }));
     for (const s of t.data?.tenants ?? []) if (!list.some((b) => b.slug === s.tenant)) list.push({ slug: s.tenant, name: s.tenant, status: "active", settings: s });
-    return list.sort((a, b) => (a.slug === "kalks" ? -1 : b.slug === "kalks" ? 1 : a.name.localeCompare(b.name)));
+    return list.sort((a, b) => (a.slug === "ezymex" ? -1 : b.slug === "ezymex" ? 1 : a.name.localeCompare(b.name)));
   }, [t.data, owner.data]);
   const editable = (b: Broker) => perms.config && perms.platform && (b.slug === perms.tenant || perms.owner);
-  const block = !perms.config ? "Read-only for your role" : !perms.platform ? "Only Kalks switches Options on or off" : null;
+  const block = !perms.config ? "Read-only for your role" : !perms.platform ? "Only Ezymex switches Options on or off" : null;
   const on = (b: Broker) => !!b.settings && (b.settings.enabledDemo || b.settings.enabledLive);
 
   return (
     <div className="pb-10">
       <PageHeader
         title="Brokers access"
-        subtitle="Which brokers offer Kalks FX Options, on demo and on live accounts. A broker without a row is off. Vol surfaces and settlement prices are always shared from Kalks."
+        subtitle="Which brokers offer Ezymex FX Options, on demo and on live accounts. A broker without a row is off. Vol surfaces and settlement prices are always shared from Ezymex."
         actions={
           <Button variant="surface" size="lg" onClick={() => (t.reload(), owner.reload())}>
             <RefreshCw /> Refresh
@@ -60,7 +60,7 @@ export function BrokersPage() {
         <KpiCard label="Brokers with options" icon={<Building2 />} value={<span className="k-num">{brokers.filter(on).length}</span>} chip={`of ${brokers.length}`} />
         <KpiCard label="Demo on" icon={<FlaskConical />} value={<span className="k-num">{brokers.filter((b) => b.settings?.enabledDemo).length}</span>} chip="practice accounts" chipTone="up" delay={0.04} />
         <KpiCard label="Live on" icon={<ShieldAlert />} value={<span className="k-num">{brokers.filter((b) => b.settings?.enabledLive).length}</span>} chip="real money" chipTone={brokers.some((b) => b.settings?.enabledLive) ? "down" : "neutral"} delay={0.08} />
-        <KpiCard label="Public chain" icon={<Globe2 />} value={<span className="k-num">{brokers.find((b) => b.slug === "kalks")?.settings?.publicChain ? "On" : "Off"}</span>} chip="guest view (Kalks)" delay={0.12} />
+        <KpiCard label="Public chain" icon={<Globe2 />} value={<span className="k-num">{brokers.find((b) => b.slug === "ezymex")?.settings?.publicChain ? "On" : "Off"}</span>} chip="guest view (Ezymex)" delay={0.12} />
       </div>
 
       <div className="mt-4 flex items-start gap-3 rounded-[18px] border border-down/30 bg-down-soft px-4 py-3.5 text-[13px]">
@@ -102,7 +102,7 @@ export function BrokersPage() {
                         <div className="flex flex-wrap items-center gap-1.5">
                           <span className="truncate font-medium">{b.name}</span>
                           <span className="font-mono text-[11px] text-fg-3">{b.slug}</span>
-                          {b.slug === "kalks" && <Chip size="sm" tone="ember">platform</Chip>}
+                          {b.slug === "ezymex" && <Chip size="sm" tone="ember">platform</Chip>}
                           {b.status !== "active" && <Chip size="sm" tone="down">{b.status}</Chip>}
                         </div>
                         <div className="text-[11px] text-fg-3" title={s ? when(s.updatedAt) : undefined}>
@@ -112,9 +112,9 @@ export function BrokersPage() {
                     </div>
                     {(["enabledDemo", "enabledLive", "publicChain"] as const).map((k) => {
                       const val = !!s?.[k];
-                      const na = k === "publicChain" && b.slug !== "kalks";
+                      const na = k === "publicChain" && b.slug !== "ezymex";
                       return (
-                        <label key={k} className={cn("flex items-center gap-2 text-[12.5px]", na && "opacity-40")} title={na ? "The public chain is Kalks' own guest page" : SWITCH[k].text}>
+                        <label key={k} className={cn("flex items-center gap-2 text-[12.5px]", na && "opacity-40")} title={na ? "The public chain is Ezymex' own guest page" : SWITCH[k].text}>
                           {can && !na ? (
                             <Toggle checked={val} onChange={(v) => setChange({ broker: b, patch: { [k]: v } })} label={`${SWITCH[k].label} for ${b.name}`} />
                           ) : (

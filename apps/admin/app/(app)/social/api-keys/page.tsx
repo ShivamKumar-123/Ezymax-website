@@ -3,8 +3,8 @@
 import * as React from "react";
 import { Activity, Download, Gauge, KeyRound, MoreHorizontal, Power, ShieldOff, Timer } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, DataTable, Flag, Icon3D, IconButton, KpiCard, Menu, PageHeader, Reveal, Segmented, Sparkline, Starfield, StatusChip, Toggle, cn, type Column } from "@kalks/ui";
-import { API_KEYS, type ApiKey } from "@kalks/mock/admin-partners";
+import { Button, Card, CardHeader, Chip, DataTable, Flag, Icon3D, IconButton, KpiCard, Menu, PageHeader, Reveal, Segmented, Sparkline, Starfield, StatusChip, Toggle, cn, type Column } from "@ezymex/ui";
+import { API_KEYS, type ApiKey } from "@ezymex/mock/admin-partners";
 import { ColumnChart, PersonCell, auditToast, useReason } from "@/components/config/kit";
 import { ago, fmtInt } from "@/components/partners/common";
 import { STATUS_LABEL } from "@/components/social/common";

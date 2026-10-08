@@ -253,7 +253,7 @@ class ChallengeOverview extends StatelessWidget {
                 const SizedBox(height: 14),
                 PropPair(
                   CredentialField(label: t('prop.cred.login'), value: a.login != null ? '${a.login}' : '—', copy: a.login != null),
-                  CredentialField(label: t('prop.cred.server'), value: 'Kalks-Live', mono: false, copy: false),
+                  CredentialField(label: t('prop.cred.server'), value: 'Ezymex-Live', mono: false, copy: false),
                   gap: 10,
                 ),
                 const SizedBox(height: 12),

@@ -17,7 +17,7 @@ export const ME = {
   ibLevel: 2,
   ibLevelName: "Silver Partner",
   referralCode: "ARJUN24",
-  referralLink: "https://kalks.com/r/ARJUN24",
+  referralLink: "https://ezymex.com/r/ARJUN24",
   serverTimezone: "GMT+3",
 };
 
@@ -54,11 +54,11 @@ export interface TradingAccount {
 }
 
 export const ACCOUNTS: TradingAccount[] = [
-  { login: "80412337", type: "live", group: "Pro", mode: "hedging", cent: false, server: "Kalks-Live01", leverage: 500, currency: "USD", balance: 25000, equity: 26204.18, credit: 0, margin: 2041.1, nickname: "Main swing", createdAt: "2024-02-12", swapFree: false },
-  { login: "80412512", type: "live", group: "Standard", mode: "netting", cent: false, server: "Kalks-Live01", leverage: 200, currency: "USD", balance: 18450.2, equity: 18200.45, credit: 250, margin: 612.4, nickname: "Gold scalps", createdAt: "2024-05-03", swapFree: true },
-  { login: "80413001", type: "live", group: "Cent", mode: "hedging", cent: true, server: "Kalks-Live02", leverage: 1000, currency: "USC", balance: 1240500, equity: 1251097, credit: 0, margin: 18420, createdAt: "2024-08-19", swapFree: false },
-  { login: "90022871", type: "demo", group: "Pro", mode: "hedging", cent: false, server: "Kalks-Demo", leverage: 500, currency: "USD", balance: 100000, equity: 102418.62, credit: 0, margin: 3120, createdAt: "2026-09-18", expiresAt: "2026-09-28", refillsLeft: 2, swapFree: false },
-  { login: "90022904", type: "demo", group: "ECN", mode: "netting", cent: false, server: "Kalks-Demo", leverage: 100, currency: "USD", balance: 10000, equity: 9612.4, credit: 0, margin: 402.5, createdAt: "2026-09-21", expiresAt: "2026-10-01", refillsLeft: 3, swapFree: false },
+  { login: "80412337", type: "live", group: "Pro", mode: "hedging", cent: false, server: "Ezymex-Live01", leverage: 500, currency: "USD", balance: 25000, equity: 26204.18, credit: 0, margin: 2041.1, nickname: "Main swing", createdAt: "2024-02-12", swapFree: false },
+  { login: "80412512", type: "live", group: "Standard", mode: "netting", cent: false, server: "Ezymex-Live01", leverage: 200, currency: "USD", balance: 18450.2, equity: 18200.45, credit: 250, margin: 612.4, nickname: "Gold scalps", createdAt: "2024-05-03", swapFree: true },
+  { login: "80413001", type: "live", group: "Cent", mode: "hedging", cent: true, server: "Ezymex-Live02", leverage: 1000, currency: "USC", balance: 1240500, equity: 1251097, credit: 0, margin: 18420, createdAt: "2024-08-19", swapFree: false },
+  { login: "90022871", type: "demo", group: "Pro", mode: "hedging", cent: false, server: "Ezymex-Demo", leverage: 500, currency: "USD", balance: 100000, equity: 102418.62, credit: 0, margin: 3120, createdAt: "2026-09-18", expiresAt: "2026-09-28", refillsLeft: 2, swapFree: false },
+  { login: "90022904", type: "demo", group: "ECN", mode: "netting", cent: false, server: "Ezymex-Demo", leverage: 100, currency: "USD", balance: 10000, equity: 9612.4, credit: 0, margin: 402.5, createdAt: "2026-09-21", expiresAt: "2026-10-01", refillsLeft: 3, swapFree: false },
 ];
 
 export function accountUsd(a: TradingAccount, field: "balance" | "equity" | "margin" | "credit") {

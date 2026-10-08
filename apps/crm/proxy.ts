@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { SESSION_COOKIE, clientIp, gateway, safeNext } from "@/lib/gateway";
 import { REF_COOKIE, cleanRef, trackClick } from "@/lib/ib";
 import { captureAttribution } from "@/lib/attribution";
@@ -12,7 +12,7 @@ import { MOBILE_PREFIX, bearerOf, hasCookies, mobileRequestHeaders, mobileRoute 
 // - Signed-out visitors on any app page -> /login?next=<page>
 // - Signed-in users on /login, /register, /forgot -> ?next or the dashboard
 // The (app) layout re-validates the session with the gateway on every full render.
-// Demo builds (NEXT_PUBLIC_KALKS_MODE=demo) have no sign-in gate: everything is open, and the
+// Demo builds (NEXT_PUBLIC_EZYMEX_MODE=demo) have no sign-in gate: everything is open, and the
 // login / register pages offer "Enter demo".
 
 const AUTH_PAGES = ["/login", "/register", "/forgot"];
@@ -20,9 +20,9 @@ const AUTH_PAGES = ["/login", "/register", "/forgot"];
 const PUBLIC_PAGES = ["/certificate", "/verify", "/s", "/staff-session"];
 
 // Partner links (IB programme, services/ib): /r/CODE[/campaign] or any page with ?ref=CODE[&c=campaign].
-// The click is recorded with the IB service and the referral kept in a first-party cookie (kalks_ref), so
+// The click is recorded with the IB service and the referral kept in a first-party cookie (ezymex_ref), so
 // sign-up (email or Google) attributes the partner and campaign. Signed-out visitors land on /register.
-const REF_SEEN = "kalks_ref_seen";
+const REF_SEEN = "ezymex_ref_seen";
 
 /** Pages and APIs that stay reachable in maintenance mode and without a session. */
 const ALWAYS_OPEN = ["/status", "/maintenance", "/unavailable", "/api/status", "/unsubscribe", "/api/unsubscribe"];
@@ -220,13 +220,13 @@ async function gate(req: NextRequest): Promise<NextResponse> {
   }
   // let the layout know which page was requested (for ?next= if the session turns out to be dead)
   const headers = new Headers(req.headers);
-  headers.set("x-kalks-path", pathname + search);
+  headers.set("x-ezymex-path", pathname + search);
   return NextResponse.next({ request: { headers } });
 }
 
 export const config = {
   // everything except API routes, Next internals and static files
-  // (/trade is redirected to Kalks Trader by next.config before the proxy runs)
+  // (/trade is redirected to Ezymex Trader by next.config before the proxy runs)
   // (API routes only pass the maintenance / module gate above)
   matcher: ["/((?!_next/|assets/|favicon\\.ico|.*\\.[a-zA-Z0-9]+$).*)"],
 };

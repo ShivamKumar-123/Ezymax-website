@@ -5,7 +5,7 @@ import { AlertTriangle, ArrowLeft, ArrowRight, Building2, Check, FileText, IdCar
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, Field, Input, PageHeader, Reveal, Skeleton, Stepper, cn } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { COUNTRIES, maxDob } from "@/lib/countries";
 import { useSession } from "@/components/session";
 import { ID_TYPES, kycPost, sameSlot, useKyc, type Address, type Company, type IdType, type KycDocument, type KycState, type Party, type Slot } from "./api";

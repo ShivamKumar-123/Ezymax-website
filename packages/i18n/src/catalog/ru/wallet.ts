@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Keep brand and network names as they are: Kalks, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
+// Keep brand and network names as they are: Ezymex, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
 // MetaMask, TronLink, Tronscan, USD, USC, KYC.
 const wallet: NsMessages<"wallet"> = {
   // Shared labels
@@ -398,17 +398,17 @@ const wallet: NsMessages<"wallet"> = {
   "demo.linkCopied": "Ссылка скопирована в буфер обмена",
   "demo.sendOnlyWarning": "<b>Отправляйте только USDT через TRON (TRC20).</b> Отправка любого другого токена или использование ERC20 / BEP20 приведёт к безвозвратной потере средств.",
   "demo.arrival": "Зачисление",
-  "demo.kalksFee": "Комиссия Kalks",
+  "demo.ezymexFee": "Комиссия Ezymex",
   "demo.noKycDeposit": "Для пополнения KYC не требуется. Верификация нужна только перед первым выводом.",
   // Withdraw
   "demo.addrStartT": "Адреса TRC20 начинаются с «T»",
   "demo.addrLength": "Должно быть 34 символа ({length}/34)",
   "demo.addrChars": "Содержит недопустимые символы (0, O, I, l не допускаются)",
-  "demo.addrOwn": "Это Ваш собственный адрес для пополнения в Kalks",
+  "demo.addrOwn": "Это Ваш собственный адрес для пополнения в Ezymex",
   "demo.justNow": "Только что",
   "demo.codeConfirmed": "Код подтверждён через {email}",
   "demo.financeReviews": "Финансовый отдел проверяет каждый вывод · обычно менее 2 часов",
-  "demo.sentFromHot": "После одобрения отправляется с горячего кошелька Kalks",
+  "demo.sentFromHot": "После одобрения отправляется с горячего кошелька Ezymex",
   "demo.arriveAfter": "Средства поступят на Ваш адрес после 20 подтверждений",
   "demo.pendingTitle": "Выводы в обработке",
   "demo.awaitingCompletion": "Ожидают завершения: {count}",
@@ -466,7 +466,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.alwaysReviewed": "Всегда проверяется финансовым отделом",
   "demo.unrecoverable": "Средства, выведенные на биржи без поддержки USDT TRC20 или на адреса смарт-контрактов, восстановить невозможно.",
   // Transfer
-  "demo.kalksWallet": "Kalks Wallet",
+  "demo.ezymexWallet": "Ezymex Wallet",
   "demo.freeMargin": "Свободная маржа",
   "demo.assetAvailable": "Доступно {amount} {asset} · {network}",
   "demo.throughWallet": "Переводы всегда проходят через Ваш кошелёк.",
@@ -501,7 +501,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.rule4Title": "Свободная маржа под защитой",
   "demo.rule4Text": "Вывести можно только то, что позволяет свободная маржа, поэтому открытые сделки остаются в безопасности.",
   "demo.into": "на",
-  "demo.intoKalksWallet": "на Ваш Kalks Wallet",
+  "demo.intoEzymexWallet": "на Ваш Ezymex Wallet",
   "demo.freeMarginAfter": "Свободная маржа после",
   "demo.marginLevelAfter": "Уровень маржи после",
   "demo.convertedNote": "{asset} конвертируется в USD по текущему курсу за вычетом наценки {markup}%. Курс обновляется на каждом тике до подтверждения.",

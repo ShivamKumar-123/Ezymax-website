@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader charts: toolbar, drawing tools, legend, trade lines, context menu, one-click panel.
+// Ezymex Trader charts: toolbar, drawing tools, legend, trade lines, context menu, one-click panel.
 const chart: NsMessages<"chart"> = {
   // Chart tabs
   "tab.visibleInGrid": "在网格中显示",
@@ -46,7 +46,7 @@ const chart: NsMessages<"chart"> = {
   "tool.text": "文本",
   "tool.ruler": "标尺",
   "tool.coming": "{tool}即将推出",
-  "tool.comingText": "将在下一版 Kalks Trader 中提供。",
+  "tool.comingText": "将在下一版 Ezymex Trader 中提供。",
   "tool.deleteAll": "删除所有对象",
   "tool.noObjects": "此图表上没有对象",
   "tool.deleted": { other: "已删除 {count} 个对象" },

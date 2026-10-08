@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { CalendarClock, Gift, HandCoins, Pause, Pencil, Play, Plus, RefreshCw, TrendingUp, Wallet } from "lucide-react";
-import { Button, Card, CardHeader, Chip, DataTable, KpiCard, PageHeader, Progress, Reveal, Segmented, cn, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, KpiCard, PageHeader, Progress, Reveal, Segmented, cn, type Column } from "@ezymex/ui";
 import { FilterSelect, Pager, TableSkeleton, day, qs, useApi, when } from "@/components/live/kit";
 import { M, mkSend, type Campaign, type CampaignInput, type Grant, type Overview, type Paged } from "./api";
 import {

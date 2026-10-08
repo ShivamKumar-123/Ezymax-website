@@ -1,4 +1,4 @@
-// Where an "Ask Kalks AI" question can go (pure, tested in tests/ask-ai.test.mjs).
+// Where an "Ask Ezymex AI" question can go (pure, tested in tests/ask-ai.test.mjs).
 //
 // The support service keeps ONE open conversation per client (index conversations_one_open: status <> 'resolved'),
 // a client message always lands in that open conversation, and the bot only answers conversations in status "bot"

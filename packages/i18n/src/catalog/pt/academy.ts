@@ -20,7 +20,7 @@ const academy: NsMessages<"academy"> = {
   "practice.demo": "Praticar em demo",
   "practice.openFreeDemo": "Abrir uma conta demo gratuita",
   "practice.openDemo": "Abrir demo",
-  "practice.inTrader": "Praticar no Kalks Trader",
+  "practice.inTrader": "Praticar no Ezymex Trader",
 
   // Níveis (enviados pelo serviço da Academia)
   "level.beginner": "Iniciante",
@@ -31,12 +31,12 @@ const academy: NsMessages<"academy"> = {
   // Trilhas
   "track.fundamental": "Análise fundamentalista",
   "track.technical": "Análise técnica",
-  // Product track of the Kalks FX Options elective (phase 9)
+  // Product track of the Ezymex FX Options elective (phase 9)
   "track.options": "Negociação de opções",
   "trackShort.fundamental": "Fundamentalista",
   "trackShort.technical": "Técnica",
   "trackShort.options": "Opções",
-  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  // Chip on a product course (e.g. Ezymex FX Options) that sits outside the eight core phases and can be taken at any time
   elective: "Eletiva",
 
   // Durações (h = horas, m = minutos)
@@ -52,7 +52,7 @@ const academy: NsMessages<"academy"> = {
   "home.pathText": "Cada fase principal tem uma trilha fundamentalista e uma técnica, uma prova final e um certificado.",
   // Section under the learning path listing the electives
   "home.electivesTitle": "Cursos eletivos",
-  "home.electivesText": "Cursos sobre os produtos da Kalks. Faça quando quiser: cada um tem sua própria prova final e certificado.",
+  "home.electivesText": "Cursos sobre os produtos da Ezymex. Faça quando quiser: cada um tem sua própria prova final e certificado.",
   "hero.allDone": "Todos os capítulos concluídos",
   "hero.continue": "Continuar aprendendo",
   "hero.upNext": "A seguir",
@@ -220,7 +220,7 @@ const academy: NsMessages<"academy"> = {
   "callout.example": "Exemplo",
   "callout.tip": "Dica",
   "callout.note": "Nota",
-  "callout.inKalksTrader": "No Kalks Trader",
+  "callout.inEzymexTrader": "No Ezymex Trader",
   diagram: "Diagrama",
 };
 export default academy;

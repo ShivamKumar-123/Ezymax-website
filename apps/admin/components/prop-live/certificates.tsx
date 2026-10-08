@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Award, Ban, ExternalLink } from "lucide-react";
-import { Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, KeyValue, KpiCard, PageHeader, Reveal, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, KeyValue, KpiCard, PageHeader, Reveal, type Column } from "@ezymex/ui";
 import { TableSkeleton, ago, useApi, useNow, when } from "@/components/live/kit";
 import { FilterPills } from "@/components/prop/rules";
 import { PropError, ReadOnlyNote, TraderCell, propWrite, reasonText, usd, useAction, useClientNames, usePropCan, type Certificate } from "./kit";

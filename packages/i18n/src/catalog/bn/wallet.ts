@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Brand and network names stay as they are: Kalks, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
+// Brand and network names stay as they are: Ezymex, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
 // MetaMask, TronLink, Tronscan, USD, USC, KYC.
 const wallet: NsMessages<"wallet"> = {
   // Shared labels
@@ -389,17 +389,17 @@ const wallet: NsMessages<"wallet"> = {
   "demo.linkCopied": "লিংক ক্লিপবোর্ডে কপি হয়েছে",
   "demo.sendOnlyWarning": "<b>শুধু TRON (TRC20)-এর মাধ্যমে USDT পাঠান।</b> অন্য কোনো টোকেন পাঠালে বা ERC20 / BEP20 ব্যবহার করলে ফান্ড স্থায়ীভাবে হারিয়ে যাবে।",
   "demo.arrival": "পৌঁছানোর সময়",
-  "demo.kalksFee": "Kalks ফি",
+  "demo.ezymexFee": "Ezymex ফি",
   "demo.noKycDeposit": "জমার জন্য KYC লাগে না। শুধু প্রথম উত্তোলনের আগে ভেরিফিকেশন প্রয়োজন।",
   // Withdraw
   "demo.addrStartT": "TRC20 ঠিকানা “T” দিয়ে শুরু হয়",
   "demo.addrLength": "অবশ্যই 34 অক্ষর হতে হবে ({length}/34)",
   "demo.addrChars": "অবৈধ অক্ষর আছে (0, O, I, l ব্যবহার করা যাবে না)",
-  "demo.addrOwn": "এটি আপনার নিজের Kalks জমার ঠিকানা",
+  "demo.addrOwn": "এটি আপনার নিজের Ezymex জমার ঠিকানা",
   "demo.justNow": "এইমাত্র",
   "demo.codeConfirmed": "{email}-এর মাধ্যমে কোড নিশ্চিত হয়েছে",
   "demo.financeReviews": "ফাইন্যান্স টিম প্রতিটি উত্তোলন পর্যালোচনা করে · সাধারণত 2 ঘণ্টার কম",
-  "demo.sentFromHot": "অনুমোদনের পর Kalks হট ওয়ালেট থেকে পাঠানো হয়",
+  "demo.sentFromHot": "অনুমোদনের পর Ezymex হট ওয়ালেট থেকে পাঠানো হয়",
   "demo.arriveAfter": "20টি কনফার্মেশনের পর ফান্ড আপনার ঠিকানায় পৌঁছায়",
   "demo.pendingTitle": "অপেক্ষমাণ উত্তোলন",
   "demo.awaitingCompletion": "{count}টি সম্পন্নের অপেক্ষায়",
@@ -458,7 +458,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.alwaysReviewed": "সবসময় ফাইন্যান্স টিম পর্যালোচনা করে",
   "demo.unrecoverable": "TRC20 USDT সমর্থন করে না এমন এক্সচেঞ্জে বা স্মার্ট-কন্ট্র্যাক্ট ঠিকানায় উত্তোলন করলে তা ফেরত পাওয়া যাবে না।",
   // Transfer
-  "demo.kalksWallet": "Kalks ওয়ালেট",
+  "demo.ezymexWallet": "Ezymex ওয়ালেট",
   "demo.freeMargin": "ফ্রি মার্জিন",
   "demo.assetAvailable": "{amount} {asset} উপলব্ধ · {network}",
   "demo.throughWallet": "ট্রান্সফার সবসময় আপনার ওয়ালেটের মাধ্যমে হয়।",
@@ -493,7 +493,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.rule4Title": "ফ্রি মার্জিন সুরক্ষিত",
   "demo.rule4Text": "আপনার ফ্রি মার্জিন যতটুকু অনুমতি দেয় শুধু ততটুকুই সরাতে পারবেন, তাই খোলা ট্রেড নিরাপদ থাকে।",
   "demo.into": "প্রাপক",
-  "demo.intoKalksWallet": "আপনার Kalks ওয়ালেটে",
+  "demo.intoEzymexWallet": "আপনার Ezymex ওয়ালেটে",
   "demo.freeMarginAfter": "পরবর্তী ফ্রি মার্জিন",
   "demo.marginLevelAfter": "পরবর্তী মার্জিন লেভেল",
   "demo.convertedNote": "{asset} লাইভ রেট থেকে {markup}% মার্কআপ বাদে USD-তে রূপান্তরিত হয়। নিশ্চিত না করা পর্যন্ত প্রতি টিকে রেট রিফ্রেশ হয়।",

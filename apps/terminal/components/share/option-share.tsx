@@ -1,13 +1,13 @@
 "use client";
 
-// Share a closed option trade (O36): Kalks Trader's Closed tab and the History tab's option rows. Creates the
+// Share a closed option trade (O36): Ezymex Trader's Closed tab and the History tab's option rows. Creates the
 // options share card in the Client Area through /api/growth/shares (services/growth): the contract, side, entry → exit
 // premium per contract, the return on premium, a payoff sketch and the client's referral link. The balance is never
 // on a card; the P&L in USD only when the client switches it on.
 import * as React from "react";
 import { Copy, Download, ExternalLink, Loader2, Share2 } from "lucide-react";
-import { cn } from "@kalks/ui";
-import { useT } from "@kalks/i18n/react";
+import { cn } from "@ezymex/ui";
+import { useT } from "@ezymex/i18n/react";
 import { toast } from "@/lib/notify";
 import { useTerminal } from "@/lib/store";
 import type { OptClosed } from "@/lib/options/book";
@@ -70,7 +70,7 @@ function OptionShareDialog({ o, login, onClose }: { o: OptClosed; login: string;
     try {
       const res = await fetch("/api/growth/shares", {
         method: "POST",
-        headers: { "content-type": "application/json", "x-kalks-login": login },
+        headers: { "content-type": "application/json", "x-ezymex-login": login },
         body: JSON.stringify({ dealId: Number(o.deal), showAmounts }),
         cache: "no-store",
         credentials: "same-origin",

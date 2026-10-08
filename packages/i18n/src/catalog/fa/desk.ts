@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader desktop shell (see ../en/desk.ts).
+// Ezymex Trader desktop shell (see ../en/desk.ts).
 const desk: NsMessages<"desk"> = {
   // Top bar
   "top.search": "جستجوی بازارها و فرمان‌ها",
@@ -55,7 +55,7 @@ const desk: NsMessages<"desk"> = {
   "help.tour": "شروع تور",
   "help.topics": "مرکز راهنما",
   "help.support": "تماس با پشتیبانی",
-  "help.about": "درباره Kalks Trader",
+  "help.about": "درباره Ezymex Trader",
   "help.glossary": "توضیح اصطلاحات معاملاتی",
   "help.whatIs": "{term} چیست؟",
   "help.explain": "توضیح",

@@ -3,13 +3,13 @@
 import * as React from "react";
 import { ArrowDownRight, ArrowUpRight, BellRing, Gauge as GaugeIcon, RotateCcw, Save, Scale } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, DivergingBar, Donut, KpiCard, PageHeader, Progress, Reveal, Segmented, SymbolAvatar, SymbolCell, Toggle, cn, formatNumber } from "@kalks/ui";
-import { ASSET_CLASS_LABEL } from "@kalks/mock";
-import { EXPOSURE_GRID, RISK_GROUPS } from "@kalks/mock/admin-ops";
-import { ASSET_CLASS_EXPOSURE, EXPOSURE_LIMITS, type ExposureLimit } from "@kalks/mock/admin-trading";
+import { Button, Card, CardHeader, Chip, DivergingBar, Donut, KpiCard, PageHeader, Progress, Reveal, Segmented, SymbolAvatar, SymbolCell, Toggle, cn, formatNumber } from "@ezymex/ui";
+import { ASSET_CLASS_LABEL } from "@ezymex/mock";
+import { EXPOSURE_GRID, RISK_GROUPS } from "@ezymex/mock/admin-ops";
+import { ASSET_CLASS_EXPOSURE, EXPOSURE_LIMITS, type ExposureLimit } from "@ezymex/mock/admin-trading";
 import { PnlText, usdCompact } from "@/components/command/kit";
 import { useLiveExposure, usageTone } from "@/components/command/overview";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveExposurePage } from "@/components/trading-live/exposure";
 
 const CLS_COLORS = ["#e9b949", "#ff5a1f", "#22c55e", "#38bdf8", "#a1a1aa", "#ff8a3d"];

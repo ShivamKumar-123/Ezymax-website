@@ -8,7 +8,7 @@
 
 import * as React from "react";
 import { Briefcase } from "lucide-react";
-import { cn } from "@kalks/ui";
+import { cn } from "@ezymex/ui";
 import { useTerminal } from "@/lib/store";
 import { engineApi, type MamInfo } from "@/lib/engine/client";
 import { fmtServer } from "@/lib/trading";

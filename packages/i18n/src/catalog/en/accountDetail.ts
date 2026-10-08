@@ -1,7 +1,7 @@
 // Keys for this namespace. English is the source; translations live in ../<lang>/accountDetail.ts.
 // Trading account detail page (Client Area): header, tabs, overview, positions, history, ledger,
 // credentials and settings. Instrument symbols (EURUSD), currency codes (USD, USC) and brand names
-// (Kalks, Kalks Trader, MetaTrader 5, MT5) stay as they are.
+// (Ezymex, Ezymex Trader, MetaTrader 5, MT5) stay as they are.
 const accountDetail = {
   // Breadcrumb, not-found and error states
   "breadcrumb.accounts": "Accounts",
@@ -60,7 +60,7 @@ const accountDetail = {
   "overview.openPositions": "Open positions",
   "overview.positionsSubtitle": "{open} open · {pending} pending",
   "overview.allPositions": "All positions",
-  "overview.noPositions": "No open positions. Trade in Kalks Trader and they appear here.",
+  "overview.noPositions": "No open positions. Trade in Ezymex Trader and they appear here.",
   "overview.recentDeals": "Recent deals",
   "overview.dealsCount": { one: "{count} deal on this account", other: "{count} deals on this account" },
   "overview.recentDealsSubtitle": "Latest entries and exits",
@@ -112,10 +112,10 @@ const accountDetail = {
 
   // Positions tab (live)
   "positions.emptyTitle": "No open positions or pending orders",
-  "positions.emptyText": "Trade in Kalks Trader; open positions and their P&L show here and update every few seconds.",
-  "positions.openTrader": "Open Kalks Trader",
+  "positions.emptyText": "Trade in Ezymex Trader; open positions and their P&L show here and update every few seconds.",
+  "positions.openTrader": "Open Ezymex Trader",
   // <pnl>…</pnl> wraps the coloured floating P&L amount
-  "positions.subtitleTrader": "{count} open · floating <pnl>{amount}</pnl> · manage and close them in Kalks Trader",
+  "positions.subtitleTrader": "{count} open · floating <pnl>{amount}</pnl> · manage and close them in Ezymex Trader",
   "positions.manageInTrader": "Manage in Trader",
   "positions.none": "No open positions.",
   "orders.title": "Pending orders",
@@ -164,7 +164,7 @@ const accountDetail = {
   "history.subtitle": "Every entry and exit deal, in server time",
   "history.loadError": "Couldn't load the history",
   "history.emptyTitle": "No deals in this period",
-  "history.emptyText": "Trades you place in Kalks Trader appear here with their entry and exit deals.",
+  "history.emptyText": "Trades you place in Ezymex Trader appear here with their entry and exit deals.",
   "history.closedSummary": "{count} closed trades · net <net>{amount}</net>",
   "history.searchPlaceholder": "Symbol or ticket",
 
@@ -274,9 +274,9 @@ const accountDetail = {
 
   // Credentials tab
   "creds.title": "Login credentials",
-  "creds.subtitle": "Use these to sign in to Kalks Trader.",
+  "creds.subtitle": "Use these to sign in to Ezymex Trader.",
   "creds.mt5Title": "MT5 credentials",
-  "creds.mt5Subtitle": "Use these to log in to the Kalks terminal or any MetaTrader 5 app.",
+  "creds.mt5Subtitle": "Use these to log in to the Ezymex terminal or any MetaTrader 5 app.",
   "creds.fullAccess": "Full access",
   "creds.master": "Master",
   "creds.readOnly": "Read-only",
@@ -285,13 +285,13 @@ const accountDetail = {
   "creds.tradingDescDemo": "Full access — open, modify and close trades. Last changed 12 Feb 2026.",
   "creds.investorDesc": "View positions and history without being able to trade.",
   "creds.investorDescDemo": "View-only access for coaches, auditors and investors. Cannot place trades.",
-  "creds.securityNote": "For your security, Kalks never displays or emails existing passwords. If you lose one, set a new one here.",
-  "creds.securityNoteDemo": "For your security, Kalks never displays or emails existing passwords. Changing either password requires a one-time code sent to your email.",
+  "creds.securityNote": "For your security, Ezymex never displays or emails existing passwords. If you lose one, set a new one here.",
+  "creds.securityNoteDemo": "For your security, Ezymex never displays or emails existing passwords. Changing either password requires a one-time code sent to your email.",
   "investor.title": "Investor access",
   "investor.subtitle": "Let a coach, auditor or investor watch this account",
   "investor.step1": "Set an investor password you are happy to share.",
   "investor.step2": "Share the login {login}, the server {server} and that password.",
-  "investor.step3": "They sign in to Kalks Trader with it and see live positions and history, read-only.",
+  "investor.step3": "They sign in to Ezymex Trader with it and see live positions and history, read-only.",
   "investor.step4": "Change the investor password anytime to revoke access; their session ends at once.",
   "investor.webTerminal": "Web terminal · no download",
   "platforms.title": "Connect a platform",
@@ -304,7 +304,7 @@ const accountDetail = {
   "platforms.sendLink": "Send link",
   "platforms.storeLinksSent": "Store links sent to your email",
   // 2FA = two-factor authentication
-  "platforms.twoFaHint": "Enable 2FA on your Kalks profile to protect withdrawals and credential changes.",
+  "platforms.twoFaHint": "Enable 2FA on your Ezymex profile to protect withdrawals and credential changes.",
 
   // Change password dialog
   "pw.trading": "Trading password",
@@ -324,7 +324,7 @@ const accountDetail = {
   "pw.stepUpWhat.investor": "set the new investor password for #{login}",
   "pw.sessionsSignedOut": { one: "{count} open session signed out", other: "{count} open sessions signed out" },
   "pw.confirmWithCode": "Confirm with the code we emailed you.",
-  "pw.descTrading": "Full-access password for #{login}. Kalks Trader sessions signed in with the old password are signed out.",
+  "pw.descTrading": "Full-access password for #{login}. Ezymex Trader sessions signed in with the old password are signed out.",
   "pw.descInvestor": "Read-only password for #{login}. Share it to let someone view the account without trading. Sessions using the old one are signed out.",
   "pw.descTradingDemo": "Master password for #{login}. Open terminal sessions will be logged out.",
   "pw.descInvestorDemo": "Read-only access for #{login} — share it with a coach or investor to let them view, not trade.",
@@ -334,7 +334,7 @@ const accountDetail = {
   "pw.sendingCode": "Sending code…",
   "pw.updating": "Updating…",
   "pw.update": "Update password",
-  "pw.shownOnce": "Shown once. Copy it now; Kalks never displays or emails existing passwords.",
+  "pw.shownOnce": "Shown once. Copy it now; Ezymex never displays or emails existing passwords.",
   "pw.new": "New password",
   "pw.confirmNew": "Confirm new password",
   "pw.mismatch": "Passwords don't match",
@@ -354,8 +354,8 @@ const accountDetail = {
   "leverage.changeError": "Couldn't change the leverage",
   "leverage.lockedTitle": "Leverage is locked while positions are open",
   "leverage.lockedTextTrader": {
-    one: "Close your {count} open position in Kalks Trader to change leverage. This prevents sudden margin changes on running trades.",
-    other: "Close your {count} open positions in Kalks Trader to change leverage. This prevents sudden margin changes on running trades.",
+    one: "Close your {count} open position in Ezymex Trader to change leverage. This prevents sudden margin changes on running trades.",
+    other: "Close your {count} open positions in Ezymex Trader to change leverage. This prevents sudden margin changes on running trades.",
   },
   "leverage.lockedText": {
     one: "Close your {count} open position to change leverage. This prevents sudden margin changes on running trades.",
@@ -375,7 +375,7 @@ const accountDetail = {
   // <n>…</n> wraps the number of refills left
   "demoFunds.refillsLeft": "<n>{left}</n> of {total} refills left today",
   "demoFunds.full": "The balance is at its starting amount, so there is nothing to refill.",
-  "demoFunds.resetNote": "Refills reset at 00:00 server time. The account expires after {days} days without a Kalks Trader login.",
+  "demoFunds.resetNote": "Refills reset at 00:00 server time. The account expires after {days} days without a Ezymex Trader login.",
   "demoFunds.expiresIn": "Expires in",
   "demoFunds.refilled": "Demo balance refilled",
   "demoFunds.refilledDesc": "#{login} reset to {amount} · {left} left today",

@@ -6,7 +6,7 @@ use std::fmt;
 pub struct Config {
     pub bind: String,
     pub database_url: String,
-    /// Shared secret the BFFs and the trading engine send in `X-Kalks-Internal`. Empty = check disabled
+    /// Shared secret the BFFs and the trading engine send in `X-Ezymex-Internal`. Empty = check disabled
     /// (development only; required in production).
     pub internal_token: String,
     pub dev_mode: bool,
@@ -25,7 +25,7 @@ pub struct Config {
     pub snapshot_stale_secs: u64,
     /// Trading engine REST base (order book feed: `/v1/internal/options/book/*`, docs/OPTIONS-EXCHANGE.md §10).
     pub trading_url: String,
-    /// The engine's `TRADING_INTERNAL_TOKEN`, sent as `X-Kalks-Internal` to the book feed.
+    /// The engine's `TRADING_INTERNAL_TOKEN`, sent as `X-Ezymex-Internal` to the book feed.
     pub trading_token: String,
     /// Consume the engine's order book feed (with `workers`). Off = house model quotes only.
     pub book_feed: bool,
@@ -77,7 +77,7 @@ fn flag(key: &str, default: bool) -> bool {
     matches!(var(key, if default { "true" } else { "false" }).to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "on")
 }
 
-/// `postgres://.../kalks_core?x` -> `postgres://.../<db>?x`.
+/// `postgres://.../ezymex_core?x` -> `postgres://.../<db>?x`.
 pub fn sibling_database(url: &str, db: &str) -> Option<String> {
     let i = url.rfind('/')?;
     if i <= url.find("://").map(|x| x + 2).unwrap_or(0) {
@@ -95,11 +95,11 @@ impl Config {
         if internal_token.is_empty() && !dev_mode {
             anyhow::bail!("OPTIONS_INTERNAL_TOKEN is required in production");
         }
-        // default: same server/credentials as the gateway, database kalks_options
+        // default: same server/credentials as the gateway, database ezymex_options
         let database_url = match env::var("OPTIONS_DATABASE_URL").ok().filter(|v| !v.trim().is_empty()) {
             Some(u) => u,
-            None => sibling_database(&var("GATEWAY_DATABASE_URL", "postgres://postgres@127.0.0.1:5433/kalks_core"), "kalks_options")
-                .unwrap_or_else(|| "postgres://postgres@127.0.0.1:5433/kalks_options".into()),
+            None => sibling_database(&var("GATEWAY_DATABASE_URL", "postgres://postgres@127.0.0.1:5433/ezymex_core"), "ezymex_options")
+                .unwrap_or_else(|| "postgres://postgres@127.0.0.1:5433/ezymex_options".into()),
         };
         let default_holidays = concat!(env!("CARGO_MANIFEST_DIR"), "/../../config/holidays");
         let test_expiries = flag("OPTIONS_TEST_EXPIRIES", false);

@@ -6,7 +6,7 @@
 "use client";
 
 import * as React from "react";
-import { ALL_INSTRUMENTS, IS_DEMO, liveFlags, liveTradable, type Instrument } from "@kalks/mock";
+import { ALL_INSTRUMENTS, IS_DEMO, liveFlags, liveTradable, type Instrument } from "@ezymex/mock";
 
 let restricted = false;
 let rev = 0;

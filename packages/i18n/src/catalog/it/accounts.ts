@@ -88,7 +88,7 @@ const accounts: NsMessages<"accounts"> = {
   "empty.openFirst": "Apri il tuo primo conto per iniziare a fare trading.",
   "empty.noLive": "Ancora nessun conto reale",
   "empty.noDemo": "Ancora nessun conto demo",
-  "empty.liveText": "Apri subito un conto reale e ricevi login e password all'istante. Finanzialo dal tuo wallet Kalks.",
+  "empty.liveText": "Apri subito un conto reale e ricevi login e password all'istante. Finanzialo dal tuo wallet Ezymex.",
   "empty.demoText": "Un conto demo include fondi virtuali su prezzi in tempo reale, per esercitarti senza rischi.",
   "error.unavailableTitle": "I conti di trading non sono disponibili",
   "error.unavailableText": "Non è stato possibile raggiungere il servizio di trading. I tuoi conti e saldi sono al sicuro; riprova tra un momento.",
@@ -110,13 +110,13 @@ const accounts: NsMessages<"accounts"> = {
   // Piattaforme (build demo). WebTerminal è un nome di prodotto.
   "platform.mt5Compatible": "Compatibile MT5",
   "platform.title": "Fai trading ovunque",
-  "platform.text": "Kalks WebTerminal, MetaTrader 5 desktop e mobile: un solo login, stesse credenziali.",
+  "platform.text": "Ezymex WebTerminal, MetaTrader 5 desktop e mobile: un solo login, stesse credenziali.",
   "platform.downloading": "Download di MetaTrader 5",
   "platform.mt5Desktop": "MT5 desktop",
 
   // Tipi di conto
   "types.title": "Tipi di conto",
-  "types.subtitle": "Stessi strumenti e Kalks Trader su ogni tipo. Scegli i prezzi e la modalità posizioni più adatti a te.",
+  "types.subtitle": "Stessi strumenti e Ezymex Trader su ogni tipo. Scegli i prezzi e la modalità posizioni più adatti a te.",
   "types.footer": "Protezione dal saldo negativo su ogni conto · La leva si può modificare solo senza posizioni aperte · I saldi demo si possono ricaricare alcune volte al giorno.",
   "compare.title": "Confronta i tipi di conto",
   "compare.subtitle": "Stessi strumenti, piattaforme e tutele: scegli i prezzi più adatti al tuo stile.",
@@ -160,7 +160,7 @@ const accounts: NsMessages<"accounts"> = {
   // Riga del conto e menu azioni
   "row.trade": "Fai trading",
   "row.refill": "Ricarica",
-  "row.cantOpenTrader": "Questo conto non può essere aperto in Kalks Trader",
+  "row.cantOpenTrader": "Questo conto non può essere aperto in Ezymex Trader",
   "row.openPositions": { one: "{count} posizione aperta", other: "{count} posizioni aperte" },
   "row.pendingOrders": { one: "{count} ordine pendente", other: "{count} ordini pendenti" },
   "row.floating": "fluttuante",
@@ -194,7 +194,7 @@ const accounts: NsMessages<"accounts"> = {
   "fund.centAccount": "conto cent (USC)",
   "fund.depositUsdt": "Deposita USDT",
   "fund.transferFromWallet": "Trasferisci dal wallet",
-  "fund.fromWallet": "Finanziato dal tuo wallet Kalks",
+  "fund.fromWallet": "Finanziato dal tuo wallet Ezymex",
   "fund.text": "Deposita USDT su BNB Chain o TRON nel tuo wallet, poi trasferiscili subito su questo conto. Gli USDT vengono accreditati 1:1 in USD.",
   "fund.textCent": "Deposita USDT su BNB Chain o TRON nel tuo wallet, poi trasferiscili subito su questo conto. Gli USDT vengono accreditati 1:1 in USD e mostrati ×100 in USC su un conto cent.",
 
@@ -250,7 +250,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.swapFreeTitle": "Conto senza swap (islamico)",
   "wizard.swapFreeText": "Nessuno swap overnight. Su alcuni strumenti può essere applicata una commissione amministrativa fissa dopo 5 notti.",
   "wizard.setPasswordTitle": "Imposta una password di trading",
-  "wizard.setPasswordSubtitle": "La tua password master per MT5 e il terminale Kalks. Viene generata per te una password investitore (sola lettura).",
+  "wizard.setPasswordSubtitle": "La tua password master per MT5 e il terminale Ezymex. Viene generata per te una password investitore (sola lettura).",
   "wizard.agreeMock": "Accetto il <client>Contratto Cliente</client> e l'<risk>Informativa sui rischi</risk> e comprendo che i CFD comportano un elevato rischio di perdere denaro.",
   "wizard.clientAgreementOpened": "Contratto Cliente aperto",
   "wizard.riskDisclosureOpened": "Informativa sui rischi aperta",
@@ -282,10 +282,10 @@ const accounts: NsMessages<"accounts"> = {
   "kind.demoText": "Esercitati senza rischi su prezzi in tempo reale.",
   "kind.liveTextMock": "Opera sui mercati reali con denaro reale. Finanzia all'istante dal tuo wallet USDT.",
   "kind.demoTextMock": "Esercitati senza rischi con fondi virtuali su prezzi in tempo reale.",
-  "kind.live.point1": "Esecuzione reale su Kalks-Live",
+  "kind.live.point1": "Esecuzione reale su Ezymex-Live",
   "kind.live.point2": "Parte con saldo zero; si finanzia dal tuo wallet",
   "kind.live.point3": "Login e password emessi all'istante",
-  "kind.live.mock1": "Esecuzione reale sui server Kalks-Live",
+  "kind.live.mock1": "Esecuzione reale sui server Ezymex-Live",
   "kind.live.mock2": "Depositi USDT istantanei, 1:1 in USD",
   "kind.live.mock3": "Preleva i profitti quando vuoi (dopo il KYC)",
   "kind.demo.virtualFunds": "Fondi virtuali (predefinito {amount})",
@@ -301,12 +301,12 @@ const accounts: NsMessages<"accounts"> = {
 
   // Conto creato
   "created.title": "Il tuo conto è pronto",
-  "created.liveText": "Parte con saldo zero. Finanzialo dal tuo wallet Kalks, poi accedi a Kalks Trader con queste credenziali.",
+  "created.liveText": "Parte con saldo zero. Finanzialo dal tuo wallet Ezymex, poi accedi a Ezymex Trader con queste credenziali.",
   "created.demoText": "Caricato con {amount} in fondi virtuali.",
   "created.demoExpires": "Scade dopo {days} giorni senza accesso al terminale.",
   "created.liveTextMock": "Finanzialo dal tuo wallet USDT e inizia a fare trading in pochi secondi.",
   "created.demoTextMock": "Caricato con {amount} in fondi virtuali. Scade tra {days} giorni.",
-  "created.openInTrader": "Apri in Kalks Trader",
+  "created.openInTrader": "Apri in Ezymex Trader",
   "created.openTerminal": "Apri il terminale",
   "created.viewAccount": "Vedi conto",
   "created.credentials": "Credenziali di accesso",
@@ -327,7 +327,7 @@ const accounts: NsMessages<"accounts"> = {
   "error.account_limit": "Hai raggiunto il numero massimo di conti di questo tipo.",
   "error.invalid_leverage": "Questa leva non è disponibile per il gruppo del conto.",
   "error.unavailable": "Il servizio di trading non è disponibile. Riprova tra poco.",
-  "toast.openTraderFailed": "Impossibile aprire Kalks Trader",
+  "toast.openTraderFailed": "Impossibile aprire Ezymex Trader",
   "toast.exportStarted": "Esportazione dell'estratto conto avviata",
   // {kind} è "operazioni" o "registro"
   "toast.exportDesc": "#{login} · {kind} · CSV, orari in UTC",
@@ -404,7 +404,7 @@ const accounts: NsMessages<"accounts"> = {
   "close.subtitle": "Un conto chiuso non può essere ripristinato da te. Se pensi di averne ancora bisogno, eliminalo (archivialo).",
   "close.blocked": "Questo conto non può essere chiuso al momento",
   "close.finalTitle": "La chiusura è definitiva",
-  "close.final1": "Trading, trasferimenti e accesso a Kalks Trader si interrompono per sempre e il numero di login non viene mai riutilizzato.",
+  "close.final1": "Trading, trasferimenti e accesso a Ezymex Trader si interrompono per sempre e il numero di login non viene mai riutilizzato.",
   "close.final2": "Estratti conto e cronologia restano disponibili in Conti › Archiviati.",
   "close.final3": "Il nostro team di compliance esamina la richiesta e ti avvisa via email e nelle notifiche.",
   "close.whyTitle": "Perché stai chiudendo questo conto?",
@@ -512,7 +512,7 @@ const accounts: NsMessages<"accounts"> = {
   "dormant.chip": "Inattivo",
   "history.zip": "Scarica lo storico completo (ZIP)",
 
-  // Kalks FX Options in trade history, positions, orders and exports
+  // Ezymex FX Options in trade history, positions, orders and exports
   "opt.tag": "Opzione",
   "opt.call": "Call",
   "opt.put": "Put",
@@ -528,7 +528,7 @@ const accounts: NsMessages<"accounts"> = {
   "opt.filter.cfd": "CFD",
   "opt.filter.options": "Opzioni",
   "opt.emptyOptions": "Nessuna operazione su opzioni in questo periodo",
-  "opt.emptyOptionsText": "Le opzioni che acquista o vende in Kalks Trader compaiono qui, con il loro esito: chiusa, scaduta o estinta (knock-out).",
+  "opt.emptyOptionsText": "Le opzioni che acquista o vende in Ezymex Trader compaiono qui, con il loro esito: chiusa, scaduta o estinta (knock-out).",
   "opt.emptyCfd": "Nessuna operazione su CFD in questo periodo",
   "opt.truncated": "Sono mostrati i {count} deal corrispondenti più recenti. Scelga un periodo più breve per vedere quelli precedenti.",
   // How a deal was closed

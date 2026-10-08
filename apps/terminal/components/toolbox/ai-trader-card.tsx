@@ -2,10 +2,10 @@
 
 import * as React from "react";
 import { Plus, Trash2 } from "lucide-react";
-import { INSTRUMENTS } from "@kalks/mock";
-import { cn } from "@kalks/ui";
-import { useT } from "@kalks/i18n/react";
-import type { T as Tr } from "@kalks/i18n";
+import { INSTRUMENTS } from "@ezymex/mock";
+import { cn } from "@ezymex/ui";
+import { useT } from "@ezymex/i18n/react";
+import type { T as Tr } from "@ezymex/i18n";
 import { TIMEFRAMES, type Timeframe } from "@/lib/trading";
 import { Check, TInput, TSelect } from "@/components/ui/primitives";
 import {

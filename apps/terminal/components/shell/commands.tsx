@@ -37,10 +37,10 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { Flag } from "@kalks/ui";
-import { tr, useLocale, useT } from "@kalks/i18n/react";
-import { LOCALES } from "@kalks/i18n/locales";
-import type { MessageKey } from "@kalks/i18n";
+import { Flag } from "@ezymex/ui";
+import { tr, useLocale, useT } from "@ezymex/i18n/react";
+import { LOCALES } from "@ezymex/i18n/locales";
+import type { MessageKey } from "@ezymex/i18n";
 import { toast } from "@/lib/notify";
 import { useTerminal, type Layout, type SideTab, type ToolboxTab, type Workspace } from "@/lib/store";
 import { CHART_TYPES, TIMEFRAMES } from "@/lib/trading";

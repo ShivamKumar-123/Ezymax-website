@@ -233,8 +233,8 @@ const developer: NsMessages<"developer"> = {
   "assetClass.crypto": "ক্রিপ্টো",
   "assetClass.stocks": "স্টক",
 
-  // Code editor (Kalks strategy language)
-  "code.language": "Kalks স্ট্র্যাটেজি ল্যাঙ্গুয়েজ",
+  // Code editor (Ezymex strategy language)
+  "code.language": "Ezymex স্ট্র্যাটেজি ল্যাঙ্গুয়েজ",
   "code.checking": "যাচাই করা হচ্ছে…",
   "code.errors": { one: "{count}টি ত্রুটি", other: "{count}টি ত্রুটি" },
   "code.compiles": "কম্পাইল হয়",
@@ -281,7 +281,7 @@ const developer: NsMessages<"developer"> = {
   // Kill switch
   "kill.title": "কিল সুইচ",
   "kill.subtitle": "আপনার অ্যাকাউন্টের প্রতিটি স্ট্র্যাটেজি, ওয়েবহুক ও API অর্ডার বন্ধ করে",
-  "kill.globalPaused": "Kalks রিস্ক ম্যানেজমেন্ট পুরো প্ল্যাটফর্মে অটোমেটেড ট্রেডিং বিরতিতে রেখেছে।",
+  "kill.globalPaused": "Ezymex রিস্ক ম্যানেজমেন্ট পুরো প্ল্যাটফর্মে অটোমেটেড ট্রেডিং বিরতিতে রেখেছে।",
   "kill.onSince": "{at} থেকে চালু",
   "kill.release": "কিল সুইচ রিলিজ করুন",
   "kill.stopAll": "সব অটোমেশন বন্ধ করুন",
@@ -363,7 +363,7 @@ const developer: NsMessages<"developer"> = {
   "docs.bearer": "Bearer (সবচেয়ে সহজ)",
   "docs.hmac": "HMAC সিগনেচার (বটের জন্য প্রস্তাবিত)",
   // <code> wraps header names and paths; keep them untranslated
-  "docs.signature": "সিগনেচার = hex(HMAC-SHA256(secret, timestamp + METHOD + path with query + body)), পাঠানো হয় <code>X-Kalks-Key</code>, <code>X-Kalks-Timestamp</code> (unix ms, ±30 s) ও <code>X-Kalks-Signature</code> সহ। পাথ সাইন করা হয় <code>/public/v1/…</code> হিসেবে। প্রতিটি সিগনেচার একবারই গৃহীত হয়।",
+  "docs.signature": "সিগনেচার = hex(HMAC-SHA256(secret, timestamp + METHOD + path with query + body)), পাঠানো হয় <code>X-Ezymex-Key</code>, <code>X-Ezymex-Timestamp</code> (unix ms, ±30 s) ও <code>X-Ezymex-Signature</code> সহ। পাথ সাইন করা হয় <code>/public/v1/…</code> হিসেবে। প্রতিটি সিগনেচার একবারই গৃহীত হয়।",
   // "api", clientOrderId and duplicate are API values; keep them
   "docs.endpointsSub": "ইনপুট ও আউটপুট JSON। প্রতিটি অর্ডারে source “api” থাকে; একই clientOrderId পুনরায় দিলে status duplicate ফেরত আসে।",
   "docs.errorsSub": "ত্রুটির ফরম্যাট {shape}",
@@ -473,9 +473,9 @@ const developer: NsMessages<"developer"> = {
 
   // Strategy marketplace
   "market.title": "স্ট্র্যাটেজি মার্কেটপ্লেস",
-  "market.subtitle": "Kalks অ্যাকাউন্ট থেকে যাচাইকৃত ট্র্যাক রেকর্ড সহ স্ট্র্যাটেজি। একটি আপনার অ্যাকাউন্টে কপি করুন, অথবা নিজেরটি প্রকাশ করে সাবস্ক্রিপশন থেকে আয় করুন।",
-  "market.houseChip": "হাউস স্ট্র্যাটেজি · Kalks পরিচালিত",
-  "market.houseNote": "Kalks পরিচালিত হাউস স্ট্র্যাটেজি: ব্রোকারের মালিকানাধীন একটি লাইভ অ্যাকাউন্ট যেখানে এই স্ট্র্যাটেজি চলছে। ট্র্যাক রেকর্ড শুধু শুরু থেকে এর নিজস্ব লাইভ ট্রেড; কিছুই সিমুলেটেড বা পরে যোগ করা নয়।",
+  "market.subtitle": "Ezymex অ্যাকাউন্ট থেকে যাচাইকৃত ট্র্যাক রেকর্ড সহ স্ট্র্যাটেজি। একটি আপনার অ্যাকাউন্টে কপি করুন, অথবা নিজেরটি প্রকাশ করে সাবস্ক্রিপশন থেকে আয় করুন।",
+  "market.houseChip": "হাউস স্ট্র্যাটেজি · Ezymex পরিচালিত",
+  "market.houseNote": "Ezymex পরিচালিত হাউস স্ট্র্যাটেজি: ব্রোকারের মালিকানাধীন একটি লাইভ অ্যাকাউন্ট যেখানে এই স্ট্র্যাটেজি চলছে। ট্র্যাক রেকর্ড শুধু শুরু থেকে এর নিজস্ব লাইভ ট্রেড; কিছুই সিমুলেটেড বা পরে যোগ করা নয়।",
   // Date range, e.g. "2025-01-01 to 2025-12-31"
   "market.range": "{from} থেকে {to}",
   "market.backtestSimulated": "ব্যাকটেস্ট · সিমুলেটেড",
@@ -502,7 +502,7 @@ const developer: NsMessages<"developer"> = {
   "market.subscriptionStatus": "সাবস্ক্রিপশন {status}",
   "market.reviewSaved": "রিভিউ সেভ হয়েছে",
   "market.reviewFailed": "রিভিউ সেভ করা যায়নি",
-  "market.trackNote": "{since} থেকে Kalks-এ লেখকের নিজস্ব ডিপ্লয়মেন্টের ট্র্যাক রেকর্ড: {days} দিন, নেট {net}। ট্রেডিং ইঞ্জিনের ক্লোজড ডিল থেকে গণনা করা, লেখকের প্রবিষ্ট নয়।",
+  "market.trackNote": "{since} থেকে Ezymex-এ লেখকের নিজস্ব ডিপ্লয়মেন্টের ট্র্যাক রেকর্ড: {days} দিন, নেট {net}। ট্রেডিং ইঞ্জিনের ক্লোজড ডিল থেকে গণনা করা, লেখকের প্রবিষ্ট নয়।",
   "market.riskSettings": "রিস্ক সেটিংস",
   "market.riskLine": "সাইজ {size} · স্টপ {stop} · টার্গেট {target}",
   "market.riskPct": "{pct}% ঝুঁকি",
@@ -520,7 +520,7 @@ const developer: NsMessages<"developer"> = {
   "market.cloneRules": "রুল ক্লোন করুন",
   "market.subscribePaid": "সাবস্ক্রাইব · {price} USDT / মাস",
   "market.subscribeFree": "ফ্রিতে সাবস্ক্রাইব করুন",
-  "market.paidNote": "আপনার Kalks ওয়ালেট (USDT) থেকে পরিশোধ। প্রতি 30 দিনে নবায়ন হয়; যেকোনো সময় বাতিল করুন।",
+  "market.paidNote": "আপনার Ezymex ওয়ালেট (USDT) থেকে পরিশোধ। প্রতি 30 দিনে নবায়ন হয়; যেকোনো সময় বাতিল করুন।",
   "market.reviews": "রিভিউ ({n})",
   "market.stars": { one: "{count} স্টার", other: "{count} স্টার" },
   "market.reviewPlaceholder": "আপনার জন্য এটি কেমন ট্রেড করেছে?",
@@ -552,7 +552,7 @@ const developer: NsMessages<"developer"> = {
   "market.popular": "জনপ্রিয়",
   "market.emptyTitle": "এখনো কোনো স্ট্র্যাটেজি তালিকাভুক্ত নেই",
   "market.emptyText": "প্রথম হোন: ডেমো অ্যাকাউন্টে একটি স্ট্র্যাটেজি ডিপ্লয় করুন, তারপর যাচাইকৃত ট্র্যাক রেকর্ড সহ প্রকাশ করুন।",
-  "market.disclaimer": "অতীতের পারফরম্যান্স ভবিষ্যতের ফলাফলের নিশ্চয়তা দেয় না। ট্র্যাক রেকর্ড Kalks-এর লাইভ বা ডেমো অ্যাকাউন্ট থেকে আসে এবং সেই অনুযায়ী চিহ্নিত থাকে। পেইড সাবস্ক্রিপশনে প্ল্যাটফর্ম ফি: {pct}%।",
+  "market.disclaimer": "অতীতের পারফরম্যান্স ভবিষ্যতের ফলাফলের নিশ্চয়তা দেয় না। ট্র্যাক রেকর্ড Ezymex-এর লাইভ বা ডেমো অ্যাকাউন্ট থেকে আসে এবং সেই অনুযায়ী চিহ্নিত থাকে। পেইড সাবস্ক্রিপশনে প্ল্যাটফর্ম ফি: {pct}%।",
   "market.mode": "মোড",
   "market.renews": "নবায়ন",
   "market.copyOn": "#{login}-এ কপি",

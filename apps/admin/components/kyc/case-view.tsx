@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { AlertTriangle, ArrowLeft, ArrowUpRight, Building2, Check, CheckCircle2, ClipboardCheck, Clock, FileQuestion, History, Info, MessageSquare, ShieldAlert, UserRound, X, XCircle } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardHeader, Chip, Dialog, DialogClose, EmptyState, Flag, KeyValue, PageHeader, Reveal, Skeleton, Toggle, buttonVariants, cn } from "@kalks/ui";
+import { Avatar, Button, Card, CardHeader, Chip, Dialog, DialogClose, EmptyState, Flag, KeyValue, PageHeader, Reveal, Skeleton, Toggle, buttonVariants, cn } from "@ezymex/ui";
 import { ErrorState, Mono, ago, countryName, day, sendJson, useApi, useNow, when } from "@/components/live/kit";
 import type { CaseDetail, CaseDoc, ClientChecks, ServerChecks, Slot } from "./types";
 import { CaseStatusChip, SlaBadge, idTypeLabel } from "./ui";

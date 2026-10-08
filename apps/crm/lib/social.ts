@@ -1,5 +1,5 @@
 // Server-only helper for the engine's social API (copy trading and PAMM, services/trading README "Copy trading and PAMM").
-// Same transport as lib/trading.ts `engine()`, plus PATCH and the X-Kalks-Kyc header the engine needs for the master
+// Same transport as lib/trading.ts `engine()`, plus PATCH and the X-Ezymex-Kyc header the engine needs for the master
 // requirements (D68). The KYC status comes from the gateway profile resolved from the session cookie, never from the browser.
 
 import type { NextRequest } from "next/server";
@@ -14,10 +14,10 @@ export async function socialEngine<T = Record<string, unknown>>(
   init: { method?: "GET" | "POST" | "PATCH"; body?: unknown; user: GatewayUser; req: NextRequest },
 ): Promise<EngineResult<T>> {
   const headers: Record<string, string> = {
-    "x-kalks-internal": TRADING_TOKEN,
-    "x-kalks-tenant": init.user.tenant?.slug || "kalks",
-    "x-kalks-user-id": String(init.user.id),
-    "x-kalks-kyc": init.user.kyc_status || "unverified",
+    "x-ezymex-internal": TRADING_TOKEN,
+    "x-ezymex-tenant": init.user.tenant?.slug || "ezymex",
+    "x-ezymex-user-id": String(init.user.id),
+    "x-ezymex-kyc": init.user.kyc_status || "unverified",
     "x-forwarded-for": clientIp(init.req.headers),
   };
   const ua = init.req.headers.get("user-agent");

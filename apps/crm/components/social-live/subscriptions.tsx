@@ -26,9 +26,9 @@ import {
   cn,
   type Column,
 } from "@/components/kit";
-// engine symbols include Kalks FX Options series codes, which @kalks/ui SymbolAvatar / SymbolCell (static list) throw on
+// engine symbols include Ezymex FX Options series codes, which @ezymex/ui SymbolAvatar / SymbolCell (static list) throw on
 import { TradeSymbolAvatar as SymbolAvatar, TradeSymbolCell as SymbolCell } from "@/components/trading/instrument";
-import { Trans, useT } from "@kalks/i18n/react";
+import { Trans, useT } from "@ezymex/i18n/react";
 import { Checkbox, RadioCard, RangeSlider, ToggleChip } from "@/components/social/controls";
 import { STEPUP_CODES, StepUpDialog } from "@/components/stepup";
 import { ApiError as TradingApiError, tradingApi } from "@/components/trading/api";
@@ -720,7 +720,7 @@ function SubCard({ s, onChanged, onEdit, onStop, onDetail, onFunds }: { s: Subsc
         <Button size="sm" variant="surface" onClick={() => onDetail()} className={cn(stopped && "col-span-1")}>
           <ListChecks /> {t("common.details")}
         </Button>
-        <TradeButton a={{ login: s.login, status: "active" }} size="sm" label="Kalks Trader" className={stopped ? (canWithdraw ? "col-span-2 sm:col-span-1" : "sm:col-span-2") : "col-span-2 sm:col-span-3"} />
+        <TradeButton a={{ login: s.login, status: "active" }} size="sm" label="Ezymex Trader" className={stopped ? (canWithdraw ? "col-span-2 sm:col-span-1" : "sm:col-span-2") : "col-span-2 sm:col-span-3"} />
       </div>
     </div>
   );

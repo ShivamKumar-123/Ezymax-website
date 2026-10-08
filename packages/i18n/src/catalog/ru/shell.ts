@@ -21,7 +21,7 @@ const shell: NsMessages<"shell"> = {
   security: "Безопасность",
   verification: "Верификация",
   preferences: "Настройки",
-  kalksTrader: "Kalks Trader",
+  ezymexTrader: "Ezymex Trader",
   deposit: "Пополнить",
   // Client Area navigation
   "nav.dashboard": "Главная",
@@ -92,7 +92,7 @@ const shell: NsMessages<"shell"> = {
   "gate.title": "Пока недоступно для Вашего аккаунта",
   "gate.text": "Этот раздел пока не включён для Вашего аккаунта. Если Вам нужен доступ, напишите на {email}.",
   "gate.backToDashboard": "Вернуться на главную",
-  "gate.launchTrader": "Запустить Kalks Trader",
+  "gate.launchTrader": "Запустить Ezymex Trader",
   // market sessions clock
   "sessions.title": "Торговые сессии",
   "sessions.openLeft": "Открыта · осталось {h} ч {m} мин",

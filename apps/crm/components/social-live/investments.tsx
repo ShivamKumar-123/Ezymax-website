@@ -24,7 +24,7 @@ import {
   cn,
   type Column,
 } from "@/components/kit";
-import { Trans, useT } from "@kalks/i18n/react";
+import { Trans, useT } from "@ezymex/i18n/react";
 import { RangeSlider } from "@/components/social/controls";
 import { fmtDate, serverTime } from "@/components/trading/api";
 import { PERIOD_LABEL, nav4, pct, socialApi, units4, usd, useSocial, type FundView, type InvestmentView, type RequestView, type Statement } from "./api";
@@ -244,7 +244,7 @@ function StatementDialog({ fund, onClose }: { fund: FundView | null; onClose: ()
         <div className="space-y-5">
           <div>
             <div className="mb-2 text-[12.5px] font-medium text-fg-2">{t("social.inv.unitLedger")}</div>
-            {data.items.length ? <DataTable columns={cols} rows={data.items} dense pageSize={15} rowKey={(i, k) => `${i.at}-${k}`} exportName={`kalks-pamm-${fund?.id}-statement`} /> : <div className="k-row px-4 py-6 text-center text-[13px] text-fg-3">{t("social.inv.noMovements")}</div>}
+            {data.items.length ? <DataTable columns={cols} rows={data.items} dense pageSize={15} rowKey={(i, k) => `${i.at}-${k}`} exportName={`ezymex-pamm-${fund?.id}-statement`} /> : <div className="k-row px-4 py-6 text-center text-[13px] text-fg-3">{t("social.inv.noMovements")}</div>}
           </div>
           <div>
             <div className="mb-2 text-[12.5px] font-medium text-fg-2">{t("social.inv.requests")}</div>

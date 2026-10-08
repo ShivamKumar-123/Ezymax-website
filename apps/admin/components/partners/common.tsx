@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Chip, Icon3D, cn, formatDateTime } from "@kalks/ui";
-import { LEVEL_MAP, LEVELS, type LevelKey } from "@kalks/mock/admin-partners";
+import { Chip, Icon3D, cn, formatDateTime } from "@ezymex/ui";
+import { LEVEL_MAP, LEVELS, type LevelKey } from "@ezymex/mock/admin-partners";
 
 export const LEVEL_COLOR: Record<LevelKey, string> = {
   bronze: "color-mix(in oklab, var(--k-ember) 55%, var(--k-fg-3))",

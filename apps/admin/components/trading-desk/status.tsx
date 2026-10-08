@@ -1,6 +1,6 @@
 "use client";
 
-import { Chip } from "@kalks/ui";
+import { Chip } from "@ezymex/ui";
 import { useDeskStatus } from "@/lib/trading-desk";
 
 /** Live desk connection state (trading engine + dealing stream). Renders nothing in demo builds. */

@@ -5,9 +5,9 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/core/api/api_client.dart';
-import 'package:kalks/core/api/api_error.dart';
-import 'package:kalks/i18n/t.dart';
+import 'package:ezymex/core/api/api_client.dart';
+import 'package:ezymex/core/api/api_error.dart';
+import 'package:ezymex/i18n/t.dart';
 
 /// Records the request and answers with a fixed status and body.
 class FakeAdapter implements HttpClientAdapter {
@@ -47,14 +47,14 @@ void main() {
   final minted = <String>[];
 
   ApiClient client() => ApiClient(
-    baseUrl: 'https://app.kalkstrade.com/api/mobile',
+    baseUrl: 'https://app.ezymex.com/api/mobile',
     adapter: adapter,
     context: ApiContext(
       token: () => token,
       deviceId: () async => 'device-1234567890abcdef',
       locale: () => 'ar',
       appVersion: '1.0.0+1',
-      userAgent: 'KalksApp/1.0.0 (Android 15; Pixel 8)',
+      userAgent: 'EzymexApp/1.0.0 (Android 15; Pixel 8)',
     ),
     onSessionDead: dead.add,
     onMaintenance: maintenance.add,
@@ -73,13 +73,13 @@ void main() {
     final j = await client().get<Map<String, dynamic>>('trading/accounts', query: {'limit': 5, 'skip': null});
     expect(j['accounts'], isEmpty);
     final o = adapter.requests.single;
-    expect(o.uri.toString(), 'https://app.kalkstrade.com/api/mobile/trading/accounts?limit=5');
+    expect(o.uri.toString(), 'https://app.ezymex.com/api/mobile/trading/accounts?limit=5');
     expect(o.headers['Authorization'], 'Bearer ${'a' * 43}');
-    expect(o.headers['X-Kalks-Device'], 'device-1234567890abcdef');
-    expect(o.headers['X-Kalks-Platform'], 'android');
-    expect(o.headers['X-Kalks-App-Version'], '1.0.0+1');
-    expect(o.headers['X-Kalks-Locale'], 'ar');
-    expect(o.headers['User-Agent'], 'KalksApp/1.0.0 (Android 15; Pixel 8)');
+    expect(o.headers['X-Ezymex-Device'], 'device-1234567890abcdef');
+    expect(o.headers['X-Ezymex-Platform'], 'android');
+    expect(o.headers['X-Ezymex-App-Version'], '1.0.0+1');
+    expect(o.headers['X-Ezymex-Locale'], 'ar');
+    expect(o.headers['User-Agent'], 'EzymexApp/1.0.0 (Android 15; Pixel 8)');
     expect(o.headers.keys.map((k) => k.toLowerCase()), isNot(contains('cookie')));
   });
 
@@ -90,8 +90,8 @@ void main() {
     expect(adapter.requests.last.headers['content-type'], contains('application/json'));
     expect(minted, ['minted-device-abcdef12']);
     await client().post<Map<String, dynamic>>('trade/orders', body: {'symbol': 'EURUSD'}, tradeToken: 'kt1.s.x', stepupToken: 'su1');
-    expect(adapter.requests.last.headers['X-Kalks-Trade'], 'kt1.s.x');
-    expect(adapter.requests.last.headers['X-Kalks-Stepup'], 'su1');
+    expect(adapter.requests.last.headers['X-Ezymex-Trade'], 'kt1.s.x');
+    expect(adapter.requests.last.headers['X-Ezymex-Stepup'], 'su1');
   });
 
   test('errors map to ApiException with code, field, retry_after and attempts_left', () async {
@@ -165,7 +165,7 @@ void main() {
       'auth.apiError.rateLimited': 'Too many requests. Try again in {seconds} s.',
       'auth.apiError.locked': {'one': 'Locked for {count} minute.', 'other': 'Locked for {count} minutes.'},
       'auth.apiError.emailInvalid': 'Enter a valid email address (translated).',
-      'auth.apiError.network': "Can't reach Kalks.",
+      'auth.apiError.network': "Can't reach Ezymex.",
       'accounts.error.positions_open': 'Close the positions first.',
       'common.unavailable': 'Temporarily unavailable.',
     });
@@ -181,8 +181,8 @@ void main() {
       expect(localizeError(e('validation', 'Enter a valid email address.'), t), 'Enter a valid email address (translated).');
       expect(localizeError(e('positions_open', 'x'), t), 'Close the positions first.');
       expect(localizeError(e('unavailable', 'x'), t), 'Temporarily unavailable.');
-      expect(localizeError(ApiException.network, t), "Can't reach Kalks.");
-      expect(localizeError(e('wrong_server', 'This login is on Kalks-Demo.'), t), 'This login is on Kalks-Demo.');
+      expect(localizeError(ApiException.network, t), "Can't reach Ezymex.");
+      expect(localizeError(e('wrong_server', 'This login is on Ezymex-Demo.'), t), 'This login is on Ezymex-Demo.');
     });
   });
 }

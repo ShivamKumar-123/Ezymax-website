@@ -3,12 +3,12 @@
 import * as React from "react";
 import { Download, Settings2, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, Chip, DataTable, Icon3D, KpiCard, Money, PageHeader, Reveal, Segmented, SpotlightCard, cn, type Column } from "@kalks/ui";
-import { FRAUD_FLAGS, FRAUD_LABEL, type FraudFlag, type FraudType } from "@kalks/mock/admin-partners";
+import { Avatar, Button, Card, Chip, DataTable, Icon3D, KpiCard, Money, PageHeader, Reveal, Segmented, SpotlightCard, cn, type Column } from "@ezymex/ui";
+import { FRAUD_FLAGS, FRAUD_LABEL, type FraudFlag, type FraudType } from "@ezymex/mock/admin-partners";
 import { RiskScore } from "@/components/config/kit";
 import { ago, fmtUsdK } from "@/components/partners/common";
 import { FRAUD_STATUS, FraudDrawer, SEV_TONE } from "@/components/partners/fraud-drawer";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveFraudFlags } from "@/components/partners-live/fraud";
 
 const TYPES: { type: FraudType; icon: string; desc: string }[] = [

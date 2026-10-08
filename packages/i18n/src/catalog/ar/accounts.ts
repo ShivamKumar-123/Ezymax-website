@@ -102,7 +102,7 @@ const accounts: NsMessages<"accounts"> = {
   "empty.openFirst": "افتح حسابك الأول لبدء التداول.",
   "empty.noLive": "لا توجد حسابات حقيقية بعد",
   "empty.noDemo": "لا توجد حسابات تجريبية بعد",
-  "empty.liveText": "افتح حسابًا حقيقيًا الآن واحصل على رقم الحساب وكلمات المرور فورًا. موّله من محفظة Kalks الخاصة بك.",
+  "empty.liveText": "افتح حسابًا حقيقيًا الآن واحصل على رقم الحساب وكلمات المرور فورًا. موّله من محفظة Ezymex الخاصة بك.",
   "empty.demoText": "يأتي الحساب التجريبي بأموال افتراضية على الأسعار اللحظية، لتتدرّب دون مخاطرة.",
   "error.unavailableTitle": "حسابات التداول غير متاحة",
   "error.unavailableText": "تعذّر الوصول إلى خدمة التداول. حساباتك وأرصدتك في أمان؛ يرجى المحاولة مرة أخرى بعد قليل.",
@@ -124,13 +124,13 @@ const accounts: NsMessages<"accounts"> = {
   // Platforms card (demo build). WebTerminal is a product name.
   "platform.mt5Compatible": "متوافق مع MT5",
   "platform.title": "تداول من أي مكان",
-  "platform.text": "Kalks WebTerminal وMetaTrader 5 للكمبيوتر والجوال — رقم حساب واحد وبيانات الدخول نفسها.",
+  "platform.text": "Ezymex WebTerminal وMetaTrader 5 للكمبيوتر والجوال — رقم حساب واحد وبيانات الدخول نفسها.",
   "platform.downloading": "جارٍ تنزيل MetaTrader 5",
   "platform.mt5Desktop": "MT5 للكمبيوتر",
 
   // Account types section on the accounts list
   "types.title": "أنواع الحسابات",
-  "types.subtitle": "الأدوات نفسها وKalks Trader في كل الأنواع. اختر التسعير ونمط الصفقات الذي يناسبك.",
+  "types.subtitle": "الأدوات نفسها وEzymex Trader في كل الأنواع. اختر التسعير ونمط الصفقات الذي يناسبك.",
   "types.footer": "حماية من الرصيد السالب في كل حساب · يمكن تغيير الرافعة المالية فقط عند عدم وجود صفقات مفتوحة · يمكن إعادة تعبئة الأرصدة التجريبية بضع مرات يوميًا.",
   "compare.title": "مقارنة أنواع الحسابات",
   "compare.subtitle": "الأدوات والمنصات والحماية نفسها — اختر التسعير الذي يناسب أسلوبك.",
@@ -174,7 +174,7 @@ const accounts: NsMessages<"accounts"> = {
   // Account row and its actions menu
   "row.trade": "تداول",
   "row.refill": "إعادة تعبئة",
-  "row.cantOpenTrader": "لا يمكن فتح هذا الحساب في Kalks Trader",
+  "row.cantOpenTrader": "لا يمكن فتح هذا الحساب في Ezymex Trader",
   "row.openPositions": {
     zero: "لا توجد صفقات مفتوحة",
     one: "صفقة مفتوحة واحدة",
@@ -230,7 +230,7 @@ const accounts: NsMessages<"accounts"> = {
   "fund.centAccount": "حساب سنت (USC)",
   "fund.depositUsdt": "إيداع USDT",
   "fund.transferFromWallet": "تحويل من المحفظة",
-  "fund.fromWallet": "يُموَّل من محفظة Kalks الخاصة بك",
+  "fund.fromWallet": "يُموَّل من محفظة Ezymex الخاصة بك",
   "fund.text": "أودِع USDT عبر شبكة BNB Chain أو TRON في محفظتك، ثم حوّلها إلى هذا الحساب فورًا. تُضاف USDT بنسبة 1:1 بالدولار الأمريكي.",
   "fund.textCent": "أودِع USDT عبر شبكة BNB Chain أو TRON في محفظتك، ثم حوّلها إلى هذا الحساب فورًا. تُضاف USDT بنسبة 1:1 بالدولار الأمريكي، وتظهر ×100 بعملة USC في حساب السنت.",
 
@@ -300,7 +300,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.swapFreeTitle": "حساب بدون سواب (إسلامي)",
   "wizard.swapFreeText": "بدون رسوم تبييت. قد تُطبّق رسوم إدارية ثابتة بعد 5 ليالٍ على بعض الأدوات.",
   "wizard.setPasswordTitle": "تعيين كلمة مرور التداول",
-  "wizard.setPasswordSubtitle": "كلمة المرور الرئيسية لمنصة MT5 ومنصة Kalks. يتم إنشاء كلمة مرور المستثمر (للقراءة فقط) لك.",
+  "wizard.setPasswordSubtitle": "كلمة المرور الرئيسية لمنصة MT5 ومنصة Ezymex. يتم إنشاء كلمة مرور المستثمر (للقراءة فقط) لك.",
   "wizard.agreeMock": "أوافق على <client>اتفاقية العميل</client> و<risk>الإفصاح عن المخاطر</risk>، وأدرك أن عقود الفروقات تنطوي على مخاطر عالية لخسارة الأموال.",
   "wizard.clientAgreementOpened": "تم فتح اتفاقية العميل",
   "wizard.riskDisclosureOpened": "تم فتح الإفصاح عن المخاطر",
@@ -332,10 +332,10 @@ const accounts: NsMessages<"accounts"> = {
   "kind.demoText": "تدرّب دون مخاطرة على الأسعار اللحظية.",
   "kind.liveTextMock": "تداول في الأسواق الحقيقية بأموال حقيقية. موّل حسابك فورًا من محفظة USDT.",
   "kind.demoTextMock": "تدرّب دون مخاطرة بأموال افتراضية على الأسعار اللحظية.",
-  "kind.live.point1": "تنفيذ حقيقي على Kalks-Live",
+  "kind.live.point1": "تنفيذ حقيقي على Ezymex-Live",
   "kind.live.point2": "يبدأ برصيد صفري؛ ويُموَّل من محفظتك",
   "kind.live.point3": "إصدار رقم الحساب وكلمات المرور فورًا",
-  "kind.live.mock1": "تنفيذ حقيقي على خوادم Kalks-Live",
+  "kind.live.mock1": "تنفيذ حقيقي على خوادم Ezymex-Live",
   "kind.live.mock2": "تمويل فوري عبر USDT، بنسبة 1:1 مقابل USD",
   "kind.live.mock3": "اسحب أرباحك في أي وقت (بعد التحقق KYC)",
   "kind.demo.virtualFunds": "أموال افتراضية (افتراضيًا {amount})",
@@ -351,12 +351,12 @@ const accounts: NsMessages<"accounts"> = {
 
   // Open account wizard: account created
   "created.title": "حسابك جاهز",
-  "created.liveText": "يبدأ برصيد صفري. موّله من محفظة Kalks الخاصة بك، ثم سجّل الدخول إلى Kalks Trader باستخدام بيانات الدخول هذه.",
+  "created.liveText": "يبدأ برصيد صفري. موّله من محفظة Ezymex الخاصة بك، ثم سجّل الدخول إلى Ezymex Trader باستخدام بيانات الدخول هذه.",
   "created.demoText": "مزوّد بمبلغ {amount} من الأموال الافتراضية.",
   "created.demoExpires": "ينتهي بعد {days} يومًا دون تسجيل دخول إلى المنصة.",
   "created.liveTextMock": "موّله من محفظة USDT وابدأ التداول خلال ثوانٍ.",
   "created.demoTextMock": "مزوّد بمبلغ {amount} من الأموال الافتراضية. ينتهي خلال {days} يومًا.",
-  "created.openInTrader": "فتح في Kalks Trader",
+  "created.openInTrader": "فتح في Ezymex Trader",
   "created.openTerminal": "فتح المنصة",
   "created.viewAccount": "عرض الحساب",
   "created.credentials": "بيانات الدخول",
@@ -377,7 +377,7 @@ const accounts: NsMessages<"accounts"> = {
   "error.account_limit": "لقد بلغت الحد الأقصى لعدد الحسابات من هذا النوع.",
   "error.invalid_leverage": "هذه الرافعة المالية غير متاحة لمجموعة الحساب.",
   "error.unavailable": "خدمة التداول غير متاحة. يرجى المحاولة مرة أخرى بعد قليل.",
-  "toast.openTraderFailed": "تعذّر فتح Kalks Trader",
+  "toast.openTraderFailed": "تعذّر فتح Ezymex Trader",
   "toast.exportStarted": "بدأ تصدير الكشف",
   "toast.exportDesc": "#{login} · {kind} · CSV، الأوقات بتوقيت UTC",
   "export.trades": "الصفقات",
@@ -460,7 +460,7 @@ const accounts: NsMessages<"accounts"> = {
   "close.subtitle": "لا يمكنك استعادة الحساب المغلق. إذا كنت قد تحتاج إليه مجددًا، فاحذفه (أرشفه) بدلًا من ذلك.",
   "close.blocked": "لا يمكن إغلاق هذا الحساب الآن",
   "close.finalTitle": "الإغلاق نهائي",
-  "close.final1": "يتوقف التداول والتحويلات وتسجيل الدخول إلى Kalks Trader بشكل دائم، ولا يُعاد استخدام رقم الحساب أبدًا.",
+  "close.final1": "يتوقف التداول والتحويلات وتسجيل الدخول إلى Ezymex Trader بشكل دائم، ولا يُعاد استخدام رقم الحساب أبدًا.",
   "close.final2": "تبقى كشوف الحساب والسجل متاحة ضمن الحسابات › المؤرشفة.",
   "close.final3": "يراجع فريق الامتثال لدينا الطلب ويُعلمك عبر البريد الإلكتروني وفي إشعاراتك.",
   "close.whyTitle": "لماذا تغلق هذا الحساب؟",
@@ -568,7 +568,7 @@ const accounts: NsMessages<"accounts"> = {
   "dormant.chip": "غير نشط",
   "history.zip": "تنزيل السجل الكامل (ZIP)",
 
-  // Kalks FX Options in trade history, positions, orders and exports
+  // Ezymex FX Options in trade history, positions, orders and exports
   "opt.tag": "خيار",
   "opt.call": "خيار شراء",
   "opt.put": "خيار بيع",
@@ -584,7 +584,7 @@ const accounts: NsMessages<"accounts"> = {
   "opt.filter.cfd": "CFD",
   "opt.filter.options": "الخيارات",
   "opt.emptyOptions": "لا توجد صفقات خيارات في هذه الفترة",
-  "opt.emptyOptionsText": "تظهر هنا الخيارات التي تشتريها أو تبيعها في Kalks Trader، مع طريقة انتهاء كل منها: أُغلق أو انتهت صلاحيته أو أُلغي عند الحاجز.",
+  "opt.emptyOptionsText": "تظهر هنا الخيارات التي تشتريها أو تبيعها في Ezymex Trader، مع طريقة انتهاء كل منها: أُغلق أو انتهت صلاحيته أو أُلغي عند الحاجز.",
   "opt.emptyCfd": "لا توجد صفقات CFD في هذه الفترة",
   "opt.truncated": "يُعرض أحدث {count} عملية مطابقة. اختر فترة أقصر لرؤية العمليات الأقدم.",
   // How a deal was closed

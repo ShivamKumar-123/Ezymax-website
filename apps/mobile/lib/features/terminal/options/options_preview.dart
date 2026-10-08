@@ -1,4 +1,4 @@
-// Kalks FX Options in previews (`--dart-define=KALKS_PREVIEW=true`) and widget tests: sample answers for every
+// Ezymex FX Options in previews (`--dart-define=EZYMEX_PREVIEW=true`) and widget tests: sample answers for every
 // `trade/options/*` route the options mode calls (the preview trade server hands them over), a small option book per
 // account (positions, working orders, closed deals, settlements), and the options stream as a fake WebSocket. Chains
 // are priced with the same GK / BS / Black-76 maths as the demo pricer (core/pricer.dart) from the preview trade
@@ -1029,7 +1029,7 @@ class PreviewOptions {
             'quotes': [
               {
                 'quoteId': 'q$id-$slot',
-                'responder': 'kalks-mm',
+                'responder': 'ezymex-mm',
                 'bid': net - spread,
                 'ask': net + spread,
                 'qty': rfq['qty'],

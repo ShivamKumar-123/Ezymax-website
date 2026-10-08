@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Columns2, Download, FileText, Maximize2, RotateCcw, RotateCw, ZoomIn, ZoomOut } from "lucide-react";
-import { Chip, IconButton, Skeleton, cn } from "@kalks/ui";
+import { Chip, IconButton, Skeleton, cn } from "@ezymex/ui";
 import type { CaseDoc } from "./types";
 
 export const fileUrl = (id: number) => `/api/admin/kyc/documents/${id}/file`;

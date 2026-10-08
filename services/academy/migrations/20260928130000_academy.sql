@@ -1,4 +1,4 @@
--- Kalks Academy (services/academy, database kalks_academy).
+-- Ezymex Academy (services/academy, database ezymex_academy).
 --
 -- Content: one table for every node of the course tree (phase > section > chapter, the phase exam and glossary
 -- terms). tenant '*' holds the platform default seeded from content/academy/<lang>/ on every start (idempotent

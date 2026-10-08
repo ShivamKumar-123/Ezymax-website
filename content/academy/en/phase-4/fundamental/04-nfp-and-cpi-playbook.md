@@ -5,7 +5,7 @@ summary: "A structured approach to the two US releases that move the most market
 order: 4
 version: 1
 takeaways:
-  - "NFP and US CPI are released at 08:30 New York time, which is 15:30 on the Kalks server clock."
+  - "NFP and US CPI are released at 08:30 New York time, which is 15:30 on the Ezymex server clock."
   - "For NFP, read payrolls, revisions, unemployment and average hourly earnings together; for CPI, focus on core month on month."
   - "Both releases move the dollar, gold, US indices and often crypto at the same moment, so correlated positions add up."
   - "A written plan with three scenarios, set before the release, prevents impulsive decisions in the first seconds."

@@ -25,7 +25,7 @@ questions:
     answer: 3
     explanation: "FX and metals carry a triple swap on Wednesday night to cover the weekend, so the charge is 3 x -20 = -60 USD. A short in a positive-carry pair pays swap rather than receiving it."
     chapter: "p6-f-carry-trade"
-  - question: "For most of the year, at what Kalks server time does the 4pm London FX fix fall?"
+  - question: "For most of the year, at what Ezymex server time does the 4pm London FX fix fall?"
     options: ["16:00", "18:00", "00:00", "10:00"]
     answer: 1
     explanation: "Server time is GMT+2 in winter and GMT+3 in US summer time, while London is GMT or GMT+1, so 16:00 London is usually 18:00 server time. The exception is the short period when US and UK clock changes do not coincide."

@@ -4,7 +4,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
-import { Chip, cn, shortHash, type ChipTone } from "@kalks/ui";
+import { Chip, cn, shortHash, type ChipTone } from "@ezymex/ui";
 import { sendJson, type ApiErr } from "@/components/live/kit";
 
 export type Chain = "bsc" | "tron";

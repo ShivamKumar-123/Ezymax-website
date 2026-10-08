@@ -13,11 +13,11 @@ type Method = "GET" | "POST" | "PUT" | "PATCH";
 
 export async function ib<T = unknown>(path: string, init: { method?: Method; body?: unknown; staff: GatewayStaff; timeoutMs?: number }): Promise<{ status: number; data: T }> {
   const headers: Record<string, string> = {
-    "x-kalks-internal": IB_TOKEN,
-    "x-kalks-tenant": init.staff.tenant?.slug || "kalks",
-    "x-kalks-staff-id": String(init.staff.id),
-    "x-kalks-staff-name": encodeURIComponent(init.staff.name || init.staff.email),
-    "x-kalks-staff-role": init.staff.role,
+    "x-ezymex-internal": IB_TOKEN,
+    "x-ezymex-tenant": init.staff.tenant?.slug || "ezymex",
+    "x-ezymex-staff-id": String(init.staff.id),
+    "x-ezymex-staff-name": encodeURIComponent(init.staff.name || init.staff.email),
+    "x-ezymex-staff-role": init.staff.role,
   };
   if (init.body !== undefined) headers["content-type"] = "application/json";
   try {

@@ -45,7 +45,7 @@ const news: NsMessages<"news"> = {
   "markets.trade": "İşlem yap",
   "markets.searchPlaceholder": "Sembol veya ad ara…",
   "markets.clearSearch": "Temizle",
-  "markets.liveTooltip": "Fiyatlar Kalks fiyat akışından gelir",
+  "markets.liveTooltip": "Fiyatlar Ezymex fiyat akışından gelir",
   "markets.footnote": "Standard grubu spreadleri: FX için pip, diğerleri için fiyat birimi · kapalı piyasalarda son fiyat gösterilir · sözleşme özellikleri için bir satıra tıklayın",
   // Short trading-hours summary per asset class (24/5 = 24 hours, 5 days a week)
   "hoursShort.forex": "24/5",
@@ -270,7 +270,7 @@ const news: NsMessages<"news"> = {
   "cal.removeReminder": "Hatırlatıcıyı kaldır",
   "cal.remindMe": "15 dk önce hatırlat",
   "cal.toWatch": "İzlenecek enstrümanlar",
-  "cal.noLinked": "Bu para birimine doğrudan bağlı bir Kalks enstrümanı yok.",
+  "cal.noLinked": "Bu para birimine doğrudan bağlı bir Ezymex enstrümanı yok.",
   // High-impact alerts card
   "alerts.title": "Yüksek etkili olay uyarıları",
   "alerts.toggle": "Yüksek etkili olaylardan önce beni uyar",

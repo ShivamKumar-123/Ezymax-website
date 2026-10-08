@@ -21,10 +21,10 @@ import {
   cn,
   formatNumber,
 } from "@/components/kit";
-import { MARKETPLACE_TERMS, MARKET_STRATEGIES, MY_PUBLISHING, type MarketStrategy } from "@kalks/mock/developer";
-import type { AssetClass } from "@kalks/mock";
+import { MARKETPLACE_TERMS, MARKET_STRATEGIES, MY_PUBLISHING, type MarketStrategy } from "@ezymex/mock/developer";
+import type { AssetClass } from "@ezymex/mock";
 import { Stars, StrategyCard, SubscribeDialog, SymbolStack } from "@/components/developer/marketplace";
-import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LiveMarketplacePage } from "@/components/algo/marketplace-page";
 
 const CLASSES: { value: AssetClass | "all"; label: string }[] = [
@@ -99,7 +99,7 @@ function FeaturedHero({ s, onSubscribe, subscribed }: { s: MarketStrategy; onSub
                 Subscribe · ${s.price}/mo <ArrowUpRight />
               </Button>
             )}
-            <Button variant="surface" size="lg" onClick={() => toast.info(`${s.name} · full report`, { description: "Monthly returns, trade list and risk metrics — verified by Kalks." })}>
+            <Button variant="surface" size="lg" onClick={() => toast.info(`${s.name} · full report`, { description: "Monthly returns, trade list and risk metrics — verified by Ezymex." })}>
               View track record
             </Button>
           </div>
@@ -172,7 +172,7 @@ function PublishCta() {
               <span className="k-num">{MARKETPLACE_TERMS.authorShare}%</span>
             </motion.div>
             <div className="flex flex-1 items-center justify-between bg-surface-3 px-4 text-[12.5px] text-fg-2">
-              <span>Kalks</span>
+              <span>Ezymex</span>
               <span className="k-num">{MARKETPLACE_TERMS.platformShare}%</span>
             </div>
           </div>
@@ -232,7 +232,7 @@ function DemoMarketplacePage() {
     <div className="pb-24">
       <PageHeader
         title="Strategy marketplace"
-        subtitle={`${MARKET_STRATEGIES.length} verified algorithms · ${formatNumber(totalSubs, 0)} active subscribers · runs on your own Kalks account`}
+        subtitle={`${MARKET_STRATEGIES.length} verified algorithms · ${formatNumber(totalSubs, 0)} active subscribers · runs on your own Ezymex account`}
         actions={
           <>
             <Button variant="surface" size="lg" onClick={() => toast.info(subscribed.length ? `${subscribed.length} active subscription${subscribed.length > 1 ? "s" : ""}` : "No subscriptions yet", { description: "Subscriptions also appear under Copy & PAMM." })}>

@@ -90,7 +90,7 @@ pub fn spawn(hub: Hub, base_url: String, symbols: Vec<String>) {
     });
 }
 
-/// Kalks FX Options: one more socket on market-data's raw book (`group=raw`, mids without any client spread).
+/// Ezymex FX Options: one more socket on market-data's raw book (`group=raw`, mids without any client spread).
 /// Its quotes land in the `QuoteBook` under the group `raw` and its ticks wake the accounts holding options on
 /// the underlying (barrier knocks, premium SL / TP, option orders and triggers, margin).
 pub fn spawn_raw(hub: Hub, base_url: String, symbols: Vec<String>) {

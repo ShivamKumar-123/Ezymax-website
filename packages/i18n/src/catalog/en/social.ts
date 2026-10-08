@@ -1,6 +1,6 @@
 // Keys for this namespace. English is the source; translations live in ../<lang>/social.ts.
 // Client Area social trading: copy trading leaderboard, strategy providers, subscriptions, PAMM funds, MAM, investments.
-// Keep as-is: Kalks, Kalks Trader, Kalks-Live, PAMM, MAM, NAV, HWM, AUM, DD, SL/TP, USD. {placeholders} are filled in by the app.
+// Keep as-is: Ezymex, Ezymex Trader, Ezymex-Live, PAMM, MAM, NAV, HWM, AUM, DD, SL/TP, USD. {placeholders} are filled in by the app.
 // "Master" = an approved strategy provider whose trades others copy or whose fund they invest in.
 const social = {
   // Error messages keyed by server error codes (keys mirror the codes; keep them as they are)
@@ -69,8 +69,8 @@ const social = {
   master: "Master",
   // {r} = score 1-10, {level} = Low / Medium / High
   "riskBadge.tooltip": "System risk score {r}/10 · {level} risk (from max drawdown and volatility)",
-  "house.disclosure": "House strategy operated by Kalks: a broker-owned live account running an automated strategy. Its statistics are only its own live trades since it started; nothing is simulated or backfilled.",
-  "house.badge": "House strategy · Operated by Kalks",
+  "house.disclosure": "House strategy operated by Ezymex: a broker-owned live account running an automated strategy. Its statistics are only its own live trades since it started; nothing is simulated or backfilled.",
+  "house.badge": "House strategy · Operated by Ezymex",
   // Program tag chips (PAMM stays as is)
   "program.copy": "Copy",
   "errorState.title": "Copy trading is unavailable",
@@ -128,7 +128,7 @@ const social = {
   "lb.empty.text": "Strategy providers appear here once our team approves them. Trade a live account and apply to be the first.",
   "lb.searchPlaceholder": "Nickname or strategy…",
   "lb.disclaimer": "Returns are time-weighted from end-of-day equity with deposits and withdrawals removed. Past performance doesn't guarantee future results. Copy trading and PAMM investing carry risk of loss.",
-  "lb.houseNote": "Masters labelled “House strategy · Operated by Kalks” are broker-owned live accounts running an automated strategy. Their statistics are only their own live trades since they started; nothing is simulated or backfilled.",
+  "lb.houseNote": "Masters labelled “House strategy · Operated by Ezymex” are broker-owned live accounts running an automated strategy. Their statistics are only their own live trades since they started; nothing is simulated or backfilled.",
   allocation: "Allocation",
   equityStop: "Equity stop",
   maxLot: "Max lot",
@@ -138,7 +138,7 @@ const social = {
   lotsUnit: "lots",
   lotsValue: "{lots} lots",
   minAmount: "Min {amount}",
-  openInTrader: "Open in Kalks Trader",
+  openInTrader: "Open in Ezymex Trader",
 
   // Follow (copy a master) dialog
   "follow.step.sizing": "Sizing",
@@ -160,13 +160,13 @@ const social = {
   "follow.toast.createdDesc": "Funding from the wallet didn't go through. You can fund it from the wallet.",
   "follow.toast.failed": "Couldn't start copying",
   "follow.done.createdTitle": "Copy account created",
-  "follow.done.description": "Copy account #{login} · Kalks-Live",
+  "follow.done.description": "Copy account #{login} · Ezymex-Live",
   // <acc>…</acc> wraps the account number
   "follow.done.okText": "{amount} moved from your wallet to copy account <acc>#{login}</acc>. New trades from {name} are copied from now on.",
   // Followed by the server's reason (": …") or a full stop
   "follow.done.failText": "The copy account <acc>#{login}</acc> was created, but the wallet transfer didn't go through",
   "follow.done.failHint": "You can fund it from the wallet; copying starts once it has a balance.",
-  "follow.done.exitNote": "Copied trades can't be closed one by one in Kalks Trader. To exit, stop copying under Copy trading → My subscriptions: every copied position closes and the balance can go back to your wallet.",
+  "follow.done.exitNote": "Copied trades can't be closed one by one in Ezymex Trader. To exit, stop copying under Copy trading → My subscriptions: every copied position closes and the balance can go back to your wallet.",
   "follow.title": "Copy {name}",
   "follow.description": "Every subscription runs in its own dedicated copy account, funded from your wallet.",
   "follow.confirm": "Confirm & start copying",
@@ -200,7 +200,7 @@ const social = {
   // {amount} = a sum like "$500" or the words "the amount"
   "follow.amountNote": "A new copy account is opened for this subscription and {amount} moves into it from your wallet. Later deposits and withdrawals on the copy account adjust your high-water mark, so fees are only charged on trading profit.",
   "follow.theAmount": "the amount",
-  "follow.reviewBanner": "A dedicated copy account will be opened on Kalks-Live and funded from your wallet.",
+  "follow.reviewBanner": "A dedicated copy account will be opened on Ezymex-Live and funded from your wallet.",
   "follow.excludedSymbols": "Excluded symbols",
   // {period} = daily / weekly / monthly (lower case)
   "follow.feeTerms": "{fee}% above high-water mark · settled {period}",
@@ -484,7 +484,7 @@ const social = {
   // stopping a copy: close everything at market, or keep the copied positions and orders open
   "subs.stop.closeAll": "Close everything now",
   "subs.stop.keepOpen": "Keep my positions open",
-  "subs.stop.keepText": "Copying stops. Open copied positions and orders stay on copy account #{login} and become ordinary trades that you manage yourself in Kalks Trader.",
+  "subs.stop.keepText": "Copying stops. Open copied positions and orders stay on copy account #{login} and become ordinary trades that you manage yourself in Ezymex Trader.",
   "subs.stop.keepFunds": "While positions stay open, only the free margin can move to your wallet, and moving it leaves them less room before a margin call.",
   "subs.stop.confirmKeep": "Stop copying",
   "subs.stop.kept": "The copied positions stay open on copy account #{login}; you manage them yourself now.",
@@ -705,7 +705,7 @@ const social = {
   "md.fund.credsCopied": "Credentials copied",
   "md.fund.credsCopiedDesc": "Store them in a password manager.",
   "md.fund.copyFailed": "Couldn't copy, please copy each field instead",
-  "md.fund.credsDesc": "Trade the fund account in Kalks Trader with these credentials.",
+  "md.fund.credsDesc": "Trade the fund account in Ezymex Trader with these credentials.",
   "md.fund.trade": "Trade the fund",
   "md.fund.creds": "Fund account credentials",
   "md.fund.copyAll": "Copy all",
@@ -754,7 +754,7 @@ const social = {
   "md.performanceSub": "Calculated by the platform from your strategy account",
   "md.pamm.notInProgramme": "Not part of your programme",
   "md.pamm.copyOnly": "Your programme is copy trading only. Switching to PAMM needs a new review; contact support.",
-  "md.pamm.openText": "Open a pooled fund that investors buy into at rollover. You trade it in Kalks Trader.",
+  "md.pamm.openText": "Open a pooled fund that investors buy into at rollover. You trade it in Ezymex Trader.",
   "md.pamm.create": "Create PAMM fund",
   "md.yourFunds": "Your funds",
   "md.yourFundsSub": "Investors, pending requests and the fund account",
@@ -826,7 +826,7 @@ const social = {
   "mam.revoke.now": "Revoke now",
   "mam.revoke.text": "From this moment no new trades are allocated to your account. Fees due up to now are settled at once.",
   "mam.revoke.closeTrades": { one: "Close the {count} open MAM trade now at market", other: "Close the {count} open MAM trades now at market" },
-  "mam.revoke.keepNote": "If you keep them, they become ordinary trades that you manage yourself in Kalks Trader.",
+  "mam.revoke.keepNote": "If you keep them, they become ordinary trades that you manage yourself in Ezymex Trader.",
   "mam.revoke.noTrades": "There are no open MAM trades on this account.",
   "mam.programme": "MAM programme",
   "mam.revoked": "Revoked",
@@ -841,7 +841,7 @@ const social = {
   "mam.page.title": "Managed accounts",
   "mam.page.subtitle": "Give an approved MAM manager trading authority over one of your live accounts. The account and the money stay yours; revoke at any time.",
   "mam.page.run": "Run a MAM programme",
-  "mam.page.info": "The manager can open, change and close trades on the linked account only. They can never deposit, withdraw or transfer money, and nothing can be withdrawn below the margin of open trades. You see every trade in Kalks Trader, tagged MAM.",
+  "mam.page.info": "The manager can open, change and close trades on the linked account only. They can never deposit, withdraw or transfer money, and nothing can be withdrawn below the margin of open trades. You see every trade in Ezymex Trader, tagged MAM.",
   "mam.page.yours": "Your managed accounts",
   "mam.page.activeLinks": { one: "{count} active link", other: "{count} active links" },
   "mam.page.noneManaged": "No account is managed yet",
@@ -937,7 +937,7 @@ const social = {
   "mm.noLinks": "No accounts linked yet. Clients find your programme under Social → Managed accounts.",
   "mm.audit": "Allocation audit",
   "mm.auditSub": "Every block on the master account and how it was split",
-  "mm.noBlocks": "No blocks yet. Trade the master account in Kalks Trader; each opening trade is allocated to the linked accounts.",
+  "mm.noBlocks": "No blocks yet. Trade the master account in Ezymex Trader; each opening trade is allocated to the linked accounts.",
   "mm.edit.title": "Edit programme",
   "mm.edit.description": "Fee changes apply to accounts linked from now on.",
   "mm.termsTitle": "Terms clients accept",
@@ -1199,6 +1199,6 @@ const social = {
   "md.ann.err": "Enter a title of at least 3 characters.",
   "md.ann.past": "Sent",
   "md.ann.empty": "No announcements yet.",
-  "md.ann.rules": "Announcements reach every follower who is copying you now, in their notifications and by email if they chose to. Never promise returns or ask followers to contact you outside Kalks.",
+  "md.ann.rules": "Announcements reach every follower who is copying you now, in their notifications and by email if they chose to. Never promise returns or ask followers to contact you outside Ezymex.",
 };
 export default social;

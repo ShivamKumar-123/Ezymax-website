@@ -3,9 +3,9 @@
 import * as React from "react";
 import { Activity, AlertTriangle, CheckCircle2, Cpu, Database, ExternalLink, PauseCircle, PlayCircle, RefreshCw, Server, Siren } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, PageHeader, Progress, Reveal, Segmented, Sparkline, SymbolAvatar, Tooltip, cn, formatNumber, useQuotes } from "@kalks/ui";
-import { serverTime, timeAgo } from "@kalks/mock/admin-clients";
-import { ERROR_RATE, FEED_STATUS, INCIDENTS, QUEUE_DEPTHS, SERVICES, type ServiceHealth } from "@kalks/mock/admin-ops";
+import { Button, Card, CardHeader, Chip, PageHeader, Progress, Reveal, Segmented, Sparkline, SymbolAvatar, Tooltip, cn, formatNumber, useQuotes } from "@ezymex/ui";
+import { serverTime, timeAgo } from "@ezymex/mock/admin-clients";
+import { ERROR_RATE, FEED_STATUS, INCIDENTS, QUEUE_DEPTHS, SERVICES, type ServiceHealth } from "@ezymex/mock/admin-ops";
 import { IntradayChart, ReasonDialog, SeverityChip, useTick } from "@/components/command/kit";
 
 const STATUS = {
@@ -161,7 +161,7 @@ export default function SystemPage() {
         subtitle="Service health, market-data feeds, message queues and error rates across the platform."
         actions={
           <>
-            <Button variant="surface" size="lg" onClick={() => toast("Opening Grafana…", { description: "grafana.kalks.internal/d/platform" })}>
+            <Button variant="surface" size="lg" onClick={() => toast("Opening Grafana…", { description: "grafana.ezymex.internal/d/platform" })}>
               <ExternalLink /> Grafana
             </Button>
             <Button variant="ember" size="lg" onClick={() => toast.success("Diagnostics started", { description: "Health probes on 14 services · ~20s" })}>

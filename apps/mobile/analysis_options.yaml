@@ -1,4 +1,4 @@
-# Lints for the Kalks app: the Flutter recommended set plus a few that keep a large, multi-agent codebase consistent.
+# Lints for the Ezymex app: the Flutter recommended set plus a few that keep a large, multi-agent codebase consistent.
 include: package:flutter_lints/flutter.yaml
 
 analyzer:

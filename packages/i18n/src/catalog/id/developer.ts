@@ -233,8 +233,8 @@ const developer: NsMessages<"developer"> = {
   "assetClass.crypto": "kripto",
   "assetClass.stocks": "saham",
 
-  // Code editor (Kalks strategy language)
-  "code.language": "Bahasa strategi Kalks",
+  // Code editor (Ezymex strategy language)
+  "code.language": "Bahasa strategi Ezymex",
   "code.checking": "Memeriksa…",
   "code.errors": { other: "{count} kesalahan" },
   "code.compiles": "Berhasil dikompilasi",
@@ -281,7 +281,7 @@ const developer: NsMessages<"developer"> = {
   // Kill switch
   "kill.title": "Kill switch",
   "kill.subtitle": "Menghentikan setiap strategi, webhook, dan order API di akun Anda",
-  "kill.globalPaused": "Trading otomatis dijeda di seluruh platform oleh manajemen risiko Kalks.",
+  "kill.globalPaused": "Trading otomatis dijeda di seluruh platform oleh manajemen risiko Ezymex.",
   "kill.onSince": "Aktif sejak {at}",
   "kill.release": "Lepaskan kill switch",
   "kill.stopAll": "Hentikan semua otomatisasi",
@@ -363,7 +363,7 @@ const developer: NsMessages<"developer"> = {
   "docs.bearer": "Bearer (paling sederhana)",
   "docs.hmac": "Tanda tangan HMAC (direkomendasikan untuk bot)",
   // <code> wraps header names and paths; keep them untranslated
-  "docs.signature": "Signature = hex(HMAC-SHA256(secret, timestamp + METHOD + path with query + body)), dikirim bersama <code>X-Kalks-Key</code>, <code>X-Kalks-Timestamp</code> (unix ms, ±30 dtk), dan <code>X-Kalks-Signature</code>. Path ditandatangani sebagai <code>/public/v1/…</code>. Setiap tanda tangan hanya diterima sekali.",
+  "docs.signature": "Signature = hex(HMAC-SHA256(secret, timestamp + METHOD + path with query + body)), dikirim bersama <code>X-Ezymex-Key</code>, <code>X-Ezymex-Timestamp</code> (unix ms, ±30 dtk), dan <code>X-Ezymex-Signature</code>. Path ditandatangani sebagai <code>/public/v1/…</code>. Setiap tanda tangan hanya diterima sekali.",
   // "api", clientOrderId and duplicate are API values; keep them
   "docs.endpointsSub": "Input dan output berformat JSON. Setiap order membawa source “api”; clientOrderId yang berulang mengembalikan status duplicate.",
   "docs.errorsSub": "Format kesalahan: {shape}",
@@ -473,9 +473,9 @@ const developer: NsMessages<"developer"> = {
 
   // Strategy marketplace
   "market.title": "Marketplace strategi",
-  "market.subtitle": "Strategi dengan rekam jejak terverifikasi dari akun Kalks. Salin ke akun Anda, atau publikasikan strategi Anda sendiri dan dapatkan penghasilan dari langganan.",
-  "market.houseChip": "Strategi internal · Dioperasikan oleh Kalks",
-  "market.houseNote": "Strategi internal yang dioperasikan oleh Kalks: akun live milik broker yang menjalankan strategi ini. Rekam jejaknya hanya berisi transaksi live miliknya sejak dimulai; tidak ada yang disimulasikan atau diisi mundur.",
+  "market.subtitle": "Strategi dengan rekam jejak terverifikasi dari akun Ezymex. Salin ke akun Anda, atau publikasikan strategi Anda sendiri dan dapatkan penghasilan dari langganan.",
+  "market.houseChip": "Strategi internal · Dioperasikan oleh Ezymex",
+  "market.houseNote": "Strategi internal yang dioperasikan oleh Ezymex: akun live milik broker yang menjalankan strategi ini. Rekam jejaknya hanya berisi transaksi live miliknya sejak dimulai; tidak ada yang disimulasikan atau diisi mundur.",
   // Date range, e.g. "2025-01-01 to 2025-12-31"
   "market.range": "{from} hingga {to}",
   "market.backtestSimulated": "Backtest · simulasi",
@@ -502,7 +502,7 @@ const developer: NsMessages<"developer"> = {
   "market.subscriptionStatus": "Langganan {status}",
   "market.reviewSaved": "Ulasan disimpan",
   "market.reviewFailed": "Tidak dapat menyimpan ulasan",
-  "market.trackNote": "Rekam jejak dari deployment milik pembuat di Kalks sejak {since}: {days} hari, bersih {net}. Dihitung dari deal tertutup di mesin trading, bukan dimasukkan oleh pembuat.",
+  "market.trackNote": "Rekam jejak dari deployment milik pembuat di Ezymex sejak {since}: {days} hari, bersih {net}. Dihitung dari deal tertutup di mesin trading, bukan dimasukkan oleh pembuat.",
   "market.riskSettings": "Pengaturan risiko",
   "market.riskLine": "Ukuran {size} · stop {stop} · target {target}",
   "market.riskPct": "Risiko {pct}%",
@@ -520,7 +520,7 @@ const developer: NsMessages<"developer"> = {
   "market.cloneRules": "Kloning aturan",
   "market.subscribePaid": "Berlangganan · {price} USDT / bulan",
   "market.subscribeFree": "Berlangganan gratis",
-  "market.paidNote": "Dibayar dari dompet Kalks Anda (USDT). Diperpanjang setiap 30 hari; batalkan kapan saja.",
+  "market.paidNote": "Dibayar dari dompet Ezymex Anda (USDT). Diperpanjang setiap 30 hari; batalkan kapan saja.",
   "market.reviews": "Ulasan ({n})",
   "market.stars": { other: "{count} bintang" },
   "market.reviewPlaceholder": "Bagaimana hasil tradingnya bagi Anda?",
@@ -552,7 +552,7 @@ const developer: NsMessages<"developer"> = {
   "market.popular": "Populer",
   "market.emptyTitle": "Belum ada strategi yang terdaftar",
   "market.emptyText": "Jadilah yang pertama: deploy strategi di akun demo, lalu publikasikan dengan rekam jejak terverifikasinya.",
-  "market.disclaimer": "Kinerja masa lalu tidak menjamin hasil di masa depan. Rekam jejak berasal dari akun live atau demo di Kalks dan diberi label sesuai jenisnya. Biaya platform untuk langganan berbayar: {pct}%.",
+  "market.disclaimer": "Kinerja masa lalu tidak menjamin hasil di masa depan. Rekam jejak berasal dari akun live atau demo di Ezymex dan diberi label sesuai jenisnya. Biaya platform untuk langganan berbayar: {pct}%.",
   "market.mode": "Mode",
   "market.renews": "Diperpanjang",
   "market.copyOn": "salinan di #{login}",

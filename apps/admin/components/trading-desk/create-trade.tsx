@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { AlertTriangle, Route as RouteIcon } from "lucide-react";
-import { Button, Chip, Dialog, DialogClose, Field, Input, PriceText, Segmented, Toggle, cn, formatNumber, useQuote } from "@kalks/ui";
-import { getInstrument, priceFeed } from "@kalks/mock";
+import { Button, Chip, Dialog, DialogClose, Field, Input, PriceText, Segmented, Toggle, cn, formatNumber, useQuote } from "@ezymex/ui";
+import { getInstrument, priceFeed } from "@ezymex/mock";
 import {
   accountMetrics,
   clientName,

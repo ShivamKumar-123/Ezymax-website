@@ -1,7 +1,7 @@
-//! Kalks news + economic calendar service (:8103).
+//! Ezymex news + economic calendar service (:8103).
 //!
 //! - News (D44): RSS / Atom aggregator over official and (licence permitting) commercial feeds plus the
-//!   optional Infoway news stream; every item is de-duplicated, tagged with countries, currencies and Kalks
+//!   optional Infoway news stream; every item is de-duplicated, tagged with countries, currencies and Ezymex
 //!   instruments, scored for importance and given a headline tone. Staff pin / hide / retag per tenant.
 //! - World map (D45): per-country counts and tone ("sentiment heat") over the same feed.
 //! - Economic calendar (D102): the weekly Forex Factory export (ETag-polled), server-time (NY close)
@@ -9,7 +9,7 @@
 //!   minutes" reminders through the notifications service.
 //! - Daily AI market brief (D138): Claude summarises the day's headlines and calendar once per server day.
 //!
-//! Internal only: the Client Area, Back Office and Kalks Trader BFFs call it with `X-Kalks-Internal`.
+//! Internal only: the Client Area, Back Office and Ezymex Trader BFFs call it with `X-Ezymex-Internal`.
 //! API contract in `api.rs`.
 
 pub mod api;

@@ -431,7 +431,7 @@ pub async fn fix_expiry(st: &AppState, id: i64, symbol: &str, start: DateTime<Ut
     .await?;
     store::bump(&mut tx).await?;
     let after = json!({"price": price, "source": source, "run": run, "samples": res.samples, "expected": res.expected, "coverage": res.coverage, "maxGapMs": res.max_gap_ms});
-    store::audit(&mut tx, "kalks", actor, "fixing", &format!("{symbol}:{}", cut_at.date_naive()), None, Some(after), reason).await?;
+    store::audit(&mut tx, "ezymex", actor, "fixing", &format!("{symbol}:{}", cut_at.date_naive()), None, Some(after), reason).await?;
     tx.commit().await?;
     tracing::info!(%symbol, expiry_id = id, price, source, samples = res.samples, coverage = res.coverage, run, "expiry fixed");
     Ok(true)

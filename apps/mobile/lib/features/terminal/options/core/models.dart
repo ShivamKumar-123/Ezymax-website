@@ -1,4 +1,4 @@
-// Kalks FX Options shapes (web: apps/terminal/lib/options/types.ts, normalize.ts and book.ts; wire shapes in
+// Ezymex FX Options shapes (web: apps/terminal/lib/options/types.ts, normalize.ts and book.ts; wire shapes in
 // packages/mock/src/options.ts). The options service sends chains, expiries and underlyings; the engine positions,
 // orders, deals, previews and book orders. Everything is parsed defensively (fields may be added or arrive as strings).
 // The order book (docs/OPTIONS-EXCHANGE.md §10): the service merges the engine's top of book into each chain row:
@@ -1256,7 +1256,7 @@ class RfqQuote {
     if (id == null) return null;
     return RfqQuote(
       quoteId: id,
-      responder: strOf(raw['responder']) ?? 'kalks',
+      responder: strOf(raw['responder']) ?? 'ezymex',
       bid: numOf(raw['bid']),
       ask: numOf(raw['ask']),
       qty: numOr(raw['qty']),

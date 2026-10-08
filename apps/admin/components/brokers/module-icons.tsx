@@ -15,7 +15,7 @@ import {
   Target,
   type LucideIcon,
 } from "lucide-react";
-import type { BrkModuleKey } from "@kalks/mock/admin-platform-brokers";
+import type { BrkModuleKey } from "@ezymex/mock/admin-platform-brokers";
 
 export const MODULE_ICON: Record<BrkModuleKey, LucideIcon> = {
   trading: CandlestickChart,

@@ -1,0 +1,16 @@
+[Unit]
+Description=Ezymex DEMO Client Area (:4000, mock showcase)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=ezymex
+WorkingDirectory=/home/ezymex/ezymex-demo/apps/crm
+Environment=NODE_ENV=production
+ExecStart=/home/ezymex/ezymex-demo/apps/crm/node_modules/.bin/next start -p 4000 -H 127.0.0.1
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

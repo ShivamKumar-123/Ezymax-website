@@ -1,5 +1,5 @@
 //! Calls to the wallet service (services/wallet, `WALLET_URL`, default http://127.0.0.1:8095) with
-//! `X-Kalks-Internal: WALLET_INTERNAL_TOKEN`:
+//! `X-Ezymex-Internal: WALLET_INTERNAL_TOKEN`:
 //!
 //! - `POST /v1/wallets/transfers` `{idempotency_key, user_id, currency:"USDT", amount, direction, kind, ref, note}`
 //!   for PAMM invest (`pamm_invest`, debit), redemptions and refunds (`pamm_redeem`, credit) and fee payouts
@@ -67,7 +67,7 @@ impl WalletClient {
         }
         let payload = body.to_string();
         let req = format!(
-            "POST {path} HTTP/1.1\r\nHost: {}\r\nContent-Type: application/json\r\nX-Kalks-Internal: {}\r\nX-Kalks-Tenant: {tenant}\r\nX-Kalks-Service: trading\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{payload}",
+            "POST {path} HTTP/1.1\r\nHost: {}\r\nContent-Type: application/json\r\nX-Ezymex-Internal: {}\r\nX-Ezymex-Tenant: {tenant}\r\nX-Ezymex-Service: trading\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{payload}",
             self.host,
             self.token,
             payload.len()

@@ -2,7 +2,7 @@ import type { NsMessages } from "../../core";
 
 // Client Area Academy: learning phases, chapters, quizzes, exams, glossary, progress.
 // Only the page chrome is here: chapter, quiz and glossary content comes from the Academy service as served.
-// Keep "Kalks Trader" as is. {placeholders} are filled in by the app.
+// Keep "Ezymex Trader" as is. {placeholders} are filled in by the app.
 const academy: NsMessages<"academy"> = {
   // Shared
   title: "Học viện",
@@ -22,7 +22,7 @@ const academy: NsMessages<"academy"> = {
   "practice.demo": "Luyện tập trên demo",
   "practice.openFreeDemo": "Mở tài khoản demo miễn phí",
   "practice.openDemo": "Mở demo",
-  "practice.inTrader": "Luyện tập trên Kalks Trader",
+  "practice.inTrader": "Luyện tập trên Ezymex Trader",
 
   // Levels (sent by the Academy service)
   "level.beginner": "Cơ bản",
@@ -33,12 +33,12 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "Phân tích cơ bản",
   "track.technical": "Phân tích kỹ thuật",
-  // Product track of the Kalks FX Options elective (phase 9)
+  // Product track of the Ezymex FX Options elective (phase 9)
   "track.options": "Giao dịch quyền chọn",
   "trackShort.fundamental": "Cơ bản",
   "trackShort.technical": "Kỹ thuật",
   "trackShort.options": "Quyền chọn",
-  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  // Chip on a product course (e.g. Ezymex FX Options) that sits outside the eight core phases and can be taken at any time
   elective: "Tự chọn",
 
   // Durations (h = hours, m = minutes)
@@ -54,7 +54,7 @@ const academy: NsMessages<"academy"> = {
   "home.pathText": "Mỗi giai đoạn chính có một nhánh phân tích cơ bản và một nhánh phân tích kỹ thuật, một bài thi cuối và một chứng chỉ.",
   // Section under the learning path listing the electives
   "home.electivesTitle": "Khóa tự chọn",
-  "home.electivesText": "Các khóa học về sản phẩm của Kalks. Học bất cứ lúc nào: mỗi khóa có bài thi cuối và chứng chỉ riêng.",
+  "home.electivesText": "Các khóa học về sản phẩm của Ezymex. Học bất cứ lúc nào: mỗi khóa có bài thi cuối và chứng chỉ riêng.",
   "hero.allDone": "Đã hoàn thành tất cả các chương",
   "hero.continue": "Tiếp tục học",
   "hero.upNext": "Tiếp theo",
@@ -221,7 +221,7 @@ const academy: NsMessages<"academy"> = {
   "callout.example": "Ví dụ",
   "callout.tip": "Mẹo",
   "callout.note": "Lưu ý",
-  "callout.inKalksTrader": "Trên Kalks Trader",
+  "callout.inEzymexTrader": "Trên Ezymex Trader",
   diagram: "Sơ đồ",
 };
 export default academy;

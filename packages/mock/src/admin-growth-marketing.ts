@@ -336,7 +336,7 @@ export const MKT_BANNERS: MktBanner[] = [
   { id: "bnr_04", eyebrow: "Trade the world", headline: "Welcome back. Markets never sleep.", sub: "Sign in to 250+ instruments with spreads from 0.0 pips.", cta: "Open terminal", photo: "/assets/photos/skyline.jpg", placement: "login", segments: ["All clients"], locales: ["EN"], start: "2026-07-01T00:00:00+03:00", end: "2026-12-31T23:59:00+03:00", impressions: 1204330, clicks: 21460, status: "active", priority: 1, link: "/trade" },
   { id: "bnr_05", eyebrow: "We miss you", headline: "Your $25 comeback credit is waiting", sub: "Place one trade within 7 days to activate.", cta: "Reactivate", photo: "/assets/photos/london.jpg", placement: "dashboard", segments: ["Dormant 30d"], locales: ["EN", "ES"], start: "2026-09-10T00:00:00+03:00", end: "2026-10-10T23:59:00+03:00", impressions: 38120, clicks: 2980, status: "active", priority: 3, link: "/promo/COMEBACK25" },
   { id: "bnr_06", eyebrow: "Fast withdrawals", headline: "Withdraw to USDT in under 10 minutes", sub: "Zero fees on TRC20 withdrawals this month.", cta: "Learn more", photo: "/assets/photos/bitcoin.jpg", placement: "wallet", segments: ["All clients"], locales: ["EN", "AR"], start: "2026-09-01T00:00:00+03:00", end: "2026-09-30T23:59:00+03:00", impressions: 241800, clicks: 5210, status: "active", priority: 2, link: "/wallet" },
-  { id: "bnr_07", eyebrow: "Dubai", headline: "Meet Kalks at Forex Expo Dubai", sub: "Booth 42 · 6–7 October · VIP lounge access.", cta: "Book a meeting", photo: "/assets/photos/dubai.jpg", placement: "login", segments: ["GCC", "VIP"], locales: ["EN", "AR"], start: "2026-10-01T00:00:00+03:00", end: "2026-10-07T23:59:00+03:00", impressions: 0, clicks: 0, status: "scheduled", priority: 2, link: "/events/dubai" },
+  { id: "bnr_07", eyebrow: "Dubai", headline: "Meet Ezymex at Forex Expo Dubai", sub: "Booth 42 · 6–7 October · VIP lounge access.", cta: "Book a meeting", photo: "/assets/photos/dubai.jpg", placement: "login", segments: ["GCC", "VIP"], locales: ["EN", "AR"], start: "2026-10-01T00:00:00+03:00", end: "2026-10-07T23:59:00+03:00", impressions: 0, clicks: 0, status: "scheduled", priority: 2, link: "/events/dubai" },
   { id: "bnr_08", eyebrow: "Go live", headline: "Ready for real markets? Get $30 free", sub: "Verify your identity and switch from demo to live.", cta: "Go live now", photo: "/assets/photos/charts.jpg", placement: "dashboard", segments: ["Demo only"], locales: ["EN", "HI", "ID"], start: "2026-08-01T00:00:00+03:00", end: "2026-12-31T23:59:00+03:00", impressions: 154990, clicks: 11870, status: "active", priority: 1, link: "/accounts/new?type=live" },
   { id: "bnr_09", eyebrow: "Summer", headline: "Summer reload: 20% every Friday", sub: "Paused while finance reviews credit exposure.", cta: "Deposit", photo: "/assets/photos/singapore.jpg", placement: "wallet", segments: ["Funded, no trade", "LATAM"], locales: ["EN", "ES", "PT"], start: "2026-06-01T00:00:00+03:00", end: "2026-09-30T23:59:00+03:00", impressions: 86400, clicks: 3120, status: "paused", priority: 3, link: "/wallet/deposit" },
 ];
@@ -472,7 +472,7 @@ export const MKT_CATALOGUE: MktRewardItem[] = [
   { id: "rw_books", name: "Trader's library bundle", category: "Education", icon: "books", cost: 1800, stock: 420, redemptions: 380, tier: "Bronze", active: true },
   { id: "rw_laptop", name: "MacBook Pro 14\"", category: "Gadgets", icon: "laptop", cost: 240000, stock: 6, redemptions: 4, tier: "Platinum", active: true },
   { id: "rw_phone", name: "iPhone 17 Pro", category: "Gadgets", icon: "mobile_phone", cost: 150000, stock: 12, redemptions: 9, tier: "Gold", active: true },
-  { id: "rw_gift", name: "Kalks merch box", category: "Experiences", icon: "wrapped_gift", cost: 4000, stock: 800, redemptions: 512, tier: "Bronze", active: true },
+  { id: "rw_gift", name: "Ezymex merch box", category: "Experiences", icon: "wrapped_gift", cost: 4000, stock: 800, redemptions: 512, tier: "Bronze", active: true },
   { id: "rw_gem", name: "Platinum tier fast-track", category: "Experiences", icon: "gem_stone", cost: 60000, stock: null, redemptions: 38, tier: "Gold", active: true },
   { id: "rw_crown", name: "Dubai VIP trading retreat", category: "Experiences", icon: "crown", cost: 400000, stock: 2, redemptions: 1, tier: "Platinum", active: true },
   { id: "rw_contest", name: "Contest entry ticket", category: "Trading", icon: "trophy", cost: 1500, stock: null, redemptions: 866, tier: "Bronze", active: false },
@@ -612,7 +612,7 @@ export const MKT_JOURNEYS: MktJourney[] = [
       yes: [
         ["email", "Email · First trade in 3 steps", "Template: onboarding-first-trade-v4", [["Template", "onboarding-first-trade-v4"], ["Subject", "Your $500 is ready. Here's your first trade."], ["Open rate", "48.2%"], ["Click rate", "11.6%"]]],
         ["inapp", "In-app · Trade idea card", "Dashboard modal with XAUUSD idea", [["Placement", "Dashboard modal"], ["Content", "Guided XAUUSD 0.01 lot trade"], ["Dismiss rate", "22%"]]],
-        ["sms", "SMS · Account manager call", "Only for deposits ≥ $1,000", [["Sender", "KALKS"], ["Message", "Hi {first_name}, your manager can place a guided first trade with you. Reply CALL."], ["Filter", "deposit ≥ $1,000"]]],
+        ["sms", "SMS · Account manager call", "Only for deposits ≥ $1,000", [["Sender", "EZYMEX"], ["Message", "Hi {first_name}, your manager can place a guided first trade with you. Reply CALL."], ["Filter", "deposit ≥ $1,000"]]],
       ],
       no: ["exit", "Exit · Already trading", "Tag client as activated"],
       goal: ["Goal · First trade", "position.opened within 7 days"],
@@ -626,8 +626,8 @@ export const MKT_JOURNEYS: MktJourney[] = [
       cond: ["Still incomplete?", "kyc.status ≠ approved"],
       yes: [
         ["email", "Email · Finish in 2 minutes", "Template: kyc-reminder-v2", [["Template", "kyc-reminder-v2"], ["Subject", "One step left to unlock withdrawals"], ["Open rate", "52.9%"]]],
-        ["push", "Push · Upload proof of address", "Mobile app deep link", [["Deep link", "kalks://profile/verification"], ["CTR", "14.1%"]]],
-        ["sms", "SMS · Help from support", "Link to live chat", [["Sender", "KALKS"], ["Message", "Need help verifying? Chat with us: kalks.com/help"]]],
+        ["push", "Push · Upload proof of address", "Mobile app deep link", [["Deep link", "ezymex://profile/verification"], ["CTR", "14.1%"]]],
+        ["sms", "SMS · Help from support", "Link to live chat", [["Sender", "EZYMEX"], ["Message", "Need help verifying? Chat with us: ezymex.com/help"]]],
       ],
       no: ["exit", "Exit · KYC approved", "Remove from journey"],
       goal: ["Goal · KYC approved", "kyc.approved within 14 days"],
@@ -672,7 +672,7 @@ export const MKT_JOURNEYS: MktJourney[] = [
       yes: [
         ["email", "Email · You're ready for live", "Template: demo-graduate-v5", [["Template", "demo-graduate-v5"], ["Open rate", "39.8%"]]],
         ["bonus", "Bonus · $30 no-deposit credit", "Campaign bn_nodep30", [["Campaign", "No-deposit $30 demo-to-live"], ["KYC required", "Yes"]]],
-        ["push", "Push · Open live in 60 seconds", "Mobile deep link", [["Deep link", "kalks://accounts/new?type=live"]]],
+        ["push", "Push · Open live in 60 seconds", "Mobile deep link", [["Deep link", "ezymex://accounts/new?type=live"]]],
       ],
       no: ["exit", "Exit · Already live", "Suppress for 60 days"],
       goal: ["Goal · Live funded", "deposit.completed on live"],

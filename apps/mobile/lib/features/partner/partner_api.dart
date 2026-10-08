@@ -62,7 +62,7 @@ class PLevel {
   /// USD per standard lot, per symbol group key.
   final Map<String, double> rates;
 
-  /// Kalks FX Options: USD per option contract.
+  /// Ezymex FX Options: USD per option contract.
   final double? optionsRate;
 
   static PLevel fromJson(Map<String, dynamic> j) => PLevel(

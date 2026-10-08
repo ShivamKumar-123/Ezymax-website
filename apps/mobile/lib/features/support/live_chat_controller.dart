@@ -63,7 +63,7 @@ class LiveChatController extends ChangeNotifier {
   bool _disposed = false;
 
   SupportSettings get settings => home?.settings ?? const SupportSettings();
-  String get botName => home?.settings.botName ?? 'Kalks AI';
+  String get botName => home?.settings.botName ?? 'Ezymex AI';
   ConvStatus? get status => conv?.status;
   bool get resolved => status == 'resolved';
   bool get human => status == 'waiting' || status == 'assigned';

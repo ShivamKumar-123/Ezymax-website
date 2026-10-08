@@ -513,7 +513,7 @@ export interface Campaign {
 
 export const CAMPAIGNS: Campaign[] = [
   { id: "cp1", name: "YouTube · Gold webinar", slug: "gold-webinar", landing: "Gold trading", utmSource: "youtube", utmMedium: "video", utmCampaign: "gold_sep", clicks: 4812, signups: 386, ftds: 71, deposits: 64210, lots: 1840.2, createdAt: "2026-06-14", active: true, trend: [] },
-  { id: "cp2", name: "Telegram channel", slug: "tg", landing: "Kalks homepage", utmSource: "telegram", utmMedium: "social", utmCampaign: "channel", clicks: 3120, signups: 298, ftds: 58, deposits: 41880, lots: 1322.6, createdAt: "2025-11-02", active: true, trend: [] },
+  { id: "cp2", name: "Telegram channel", slug: "tg", landing: "Ezymex homepage", utmSource: "telegram", utmMedium: "social", utmCampaign: "channel", clicks: 3120, signups: 298, ftds: 58, deposits: 41880, lots: 1322.6, createdAt: "2025-11-02", active: true, trend: [] },
   { id: "cp3", name: "Instagram bio", slug: "ig", landing: "Open an account", utmSource: "instagram", utmMedium: "social", utmCampaign: "bio", clicks: 2204, signups: 141, ftds: 19, deposits: 12040, lots: 318.4, createdAt: "2025-09-20", active: true, trend: [] },
   { id: "cp4", name: "Blog · XAUUSD guide", slug: "xau-guide", landing: "Gold trading", utmSource: "blog", utmMedium: "organic", utmCampaign: "xau_guide", clicks: 1688, signups: 122, ftds: 27, deposits: 22630, lots: 604.9, createdAt: "2026-02-08", active: true, trend: [] },
   { id: "cp5", name: "WhatsApp group", slug: "wa", landing: "Copy trading", utmSource: "whatsapp", utmMedium: "chat", utmCampaign: "group", clicks: 940, signups: 104, ftds: 22, deposits: 15200, lots: 288.1, createdAt: "2026-04-17", active: true, trend: [] },
@@ -525,7 +525,7 @@ export const CAMPAIGNS: Campaign[] = [
 });
 
 export const LANDING_PAGES = [
-  { id: "lp1", name: "Kalks homepage", path: "/", photo: "/assets/photos/trading-screen.jpg", conv: 8.2, visits: 9420, lang: ["EN", "AR", "HI", "PT"] },
+  { id: "lp1", name: "Ezymex homepage", path: "/", photo: "/assets/photos/trading-screen.jpg", conv: 8.2, visits: 9420, lang: ["EN", "AR", "HI", "PT"] },
   { id: "lp2", name: "Gold trading", path: "/markets/gold", photo: "/assets/photos/gold.jpg", conv: 11.4, visits: 6810, lang: ["EN", "AR", "HI"] },
   { id: "lp3", name: "Open an account", path: "/open-account", photo: "/assets/photos/dashboard.jpg", conv: 14.9, visits: 3120, lang: ["EN", "AR", "VI", "PT", "ES"] },
   { id: "lp4", name: "Copy trading", path: "/copy-trading", photo: "/assets/photos/trader.jpg", conv: 9.7, visits: 2280, lang: ["EN", "PT", "ES"] },
@@ -573,7 +573,7 @@ export const PAYOUT_SCHEDULE = {
   approval: "Monday 10:00–14:00 GMT+3",
   nextBatch: "2026-09-28T09:00:00Z", // Mon 12:00 GMT+3
   minPayout: 50,
-  destination: "Kalks wallet · USDT",
+  destination: "Ezymex wallet · USDT",
 };
 
 export const PAYOUT_BATCHES: PayoutBatch[] = (() => {

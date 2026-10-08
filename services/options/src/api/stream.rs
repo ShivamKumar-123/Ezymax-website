@@ -1,7 +1,7 @@
 //! `WS /v1/options/stream` (browsers reach it at trade.* `/options/stream`).
 //!
 //! Auth: `?ticket=` from `POST /v1/options/stream/ticket {group}` (BFF, internal token + tenant header) gives
-//! that tenant's group pricing; without a ticket the connection is a guest (tenant `kalks`, default group),
+//! that tenant's group pricing; without a ticket the connection is a guest (tenant `ezymex`, default group),
 //! allowed only when `public_chain` is on.
 //!
 //! Client -> server:

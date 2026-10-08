@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Painel inferior do Kalks Trader ("Caixa de Ferramentas", estilo MT5).
+// Painel inferior do Ezymex Trader ("Caixa de Ferramentas", estilo MT5).
 const toolbox: NsMessages<"toolbox"> = {
   // Cabeçalho do painel
   title: "Caixa de Ferramentas",

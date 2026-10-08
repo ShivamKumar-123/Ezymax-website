@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { ArrowRight, Clock, Eye, Link2Off, Radio, UserRound } from "lucide-react";
-import { getInstrument, priceFeed } from "@kalks/mock";
-import { Logo, SymbolAvatar, cn, useQuotes } from "@kalks/ui";
+import { getInstrument, priceFeed } from "@ezymex/mock";
+import { Logo, SymbolAvatar, cn, useQuotes } from "@ezymex/ui";
 import { PENDING_LABEL, SOURCE_LABEL, fmtServer, fmtVol, profitAt } from "@/lib/trading";
 import { dateLabel, duration, shareTotals, signed, tradePct, tradePips, usd } from "@/lib/share-stats";
 import type { PublicShare, ShareTrade } from "@/lib/share";
@@ -42,12 +42,12 @@ function Page({ children, cta }: { children: React.ReactNode; cta: string }) {
     <div className="dark h-dvh overflow-y-auto bg-bg text-fg">
       <header className="sticky top-0 z-10 border-b border-line bg-bg/95">
         <div className="mx-auto flex h-14 max-w-[1120px] items-center gap-3 px-4 sm:px-6">
-          <a href={cta} className="flex items-center gap-2.5" aria-label="Kalks">
+          <a href={cta} className="flex items-center gap-2.5" aria-label="Ezymex">
             <Logo height={18} />
             <span className="hidden border-l border-line pl-2.5 text-[12px] font-medium text-fg-3 sm:inline">Trader</span>
           </a>
           <a href={`${cta.replace(/\/$/, "")}/register`} className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-[8px] bg-ember px-3 text-[12.5px] font-semibold text-white hover:brightness-110">
-            Trade with Kalks <ArrowRight className="size-3.5" />
+            Trade with Ezymex <ArrowRight className="size-3.5" />
           </a>
         </div>
       </header>
@@ -68,7 +68,7 @@ export function Unavailable({ cta, busy }: { cta: string; busy?: boolean }) {
           {busy ? "Please try again in a moment." : "The trader may have revoked it, or it has expired. Ask them for a new link."}
         </p>
         <a href={`${cta.replace(/\/$/, "")}/register`} className="mt-6 inline-flex h-9 items-center gap-1.5 rounded-[8px] bg-ember px-4 text-[13px] font-semibold text-white hover:brightness-110">
-          Trade with Kalks <ArrowRight className="size-3.5" />
+          Trade with Ezymex <ArrowRight className="size-3.5" />
         </a>
       </div>
     </Page>
@@ -186,8 +186,8 @@ export function ShareView({ initial, cta }: { initial: PublicShare; cta: string 
 
       <section className="mt-8 flex flex-col items-start gap-4 rounded-[14px] border border-line bg-surface p-5 sm:flex-row sm:items-center sm:p-6">
         <div className="min-w-0 flex-1">
-          <div className="text-[15px] font-semibold">Trade forex, gold, indices and crypto with Kalks</div>
-          <div className="mt-1 text-[12.5px] text-fg-2">Raw spreads, fast execution and the same Kalks Trader terminal these trades were placed on.</div>
+          <div className="text-[15px] font-semibold">Trade forex, gold, indices and crypto with Ezymex</div>
+          <div className="mt-1 text-[12.5px] text-fg-2">Raw spreads, fast execution and the same Ezymex Trader terminal these trades were placed on.</div>
         </div>
         <a href={`${cta.replace(/\/$/, "")}/register`} className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-[9px] bg-ember px-4 text-[13px] font-semibold text-white hover:brightness-110">
           Open an account <ArrowRight className="size-4" />
@@ -196,7 +196,7 @@ export function ShareView({ initial, cta }: { initial: PublicShare; cta: string 
 
       <footer className="mt-6 space-y-1.5 text-[11px] leading-relaxed text-fg-3">
         <p>
-          Shared from Kalks Trader by {s.alias}. Live P&L is estimated from Kalks market prices, before swap and commission. Times are server time (GMT+3). Last updated {fmtServer(s.updated_at, false)}.
+          Shared from Ezymex Trader by {s.alias}. Live P&L is estimated from Ezymex market prices, before swap and commission. Times are server time (GMT+3). Last updated {fmtServer(s.updated_at, false)}.
         </p>
         <p>CFDs are complex instruments and come with a high risk of losing money rapidly due to leverage. Past performance is not a reliable indicator of future results. Nothing here is investment advice.</p>
       </footer>

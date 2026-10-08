@@ -8,7 +8,7 @@ import { Avatar, Button, Card, CardHeader, Chip, Flag, PageHeader, Reveal } from
 import { ChangePasswordCard } from "@/components/profile/change-password";
 import { KYC_CHIP, useSession } from "@/components/session";
 import { SUPPORT_EMAIL } from "@/lib/live";
-import { useLocale, useT } from "@kalks/i18n/react";
+import { useLocale, useT } from "@ezymex/i18n/react";
 
 function countryName(code: string, lang = "en") {
   if (!code) return "—";

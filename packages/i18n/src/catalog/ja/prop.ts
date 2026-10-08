@@ -101,13 +101,13 @@ const prop: NsMessages<"prop"> = {
 
   // Public certificate verification page (/verify/<code>)
   "verify.shellTitle": "証明書の検証",
-  "verify.footer": "Kalks Propの口座はシミュレーション口座です。証明書はKalks Propチャレンジにおけるトレーダーの成績を示すもので、トレーダー名は名とラストネームの頭文字に省略されています。",
+  "verify.footer": "Ezymex Propの口座はシミュレーション口座です。証明書はEzymex Propチャレンジにおけるトレーダーの成績を示すもので、トレーダー名は名とラストネームの頭文字に省略されています。",
   "verify.linkCopied": "リンクをコピーしました",
   "verify.copyFailed": "リンクをコピーできませんでした",
   "verify.copyLink": "リンクをコピー",
   "verify.downloadPng": "PNGをダウンロード",
   "verify.notFoundTitle": "証明書が見つかりません",
-  "verify.notFoundText": "この番号のKalks Prop証明書は存在しません。リンクを確認するか、トレーダーに再度共有を依頼してください。",
+  "verify.notFoundText": "この番号のEzymex Prop証明書は存在しません。リンクを確認するか、トレーダーに再度共有を依頼してください。",
   "verify.unavailableTitle": "現在、検証をご利用いただけません",
   "verify.unavailableText": "現在、この証明書を確認できませんでした。数分後にもう一度お試しください。",
   "verify.kind.pass": "フェーズ合格",
@@ -121,9 +121,9 @@ const prop: NsMessages<"prop"> = {
   "verify.row.issued": "発行日",
   "verify.row.number": "証明書番号",
   "verify.validTitle": "有効な証明書",
-  "verify.validText": "Kalks Propが発行し、当社の記録と照合済みです。",
+  "verify.validText": "Ezymex Propが発行し、当社の記録と照合済みです。",
   "verify.revokedTitle": "取り消された証明書",
-  "verify.revokedText": "この証明書はKalksにより取り消され、現在は無効です。",
+  "verify.revokedText": "この証明書はEzymexにより取り消され、現在は無効です。",
   "verify.valid": "有効",
   "verify.revoked": "取り消し済み",
   // Certificate titles
@@ -248,8 +248,8 @@ const prop: NsMessages<"prop"> = {
   "checkout.goToMine": "マイチャレンジへ",
   "checkout.readyTitle": "チャレンジの準備ができました",
   "checkout.paidText": "USDTウォレットから{fee}が支払われ、{size}の口座が開設されました。ルールは今から適用されます。",
-  "checkout.savePasswords": "これらのパスワードを今すぐ保存してください。表示されるのは一度だけで、当社では保存していません。「取引」ボタンを使えばパスワードなしでKalks Traderにログインできるため、いつでもここから取引できます。",
-  "checkout.passwordsShown": "取引パスワードは、この購入が最初に確定した際に表示されました。「取引」ボタンからKalks Traderを開くと、パスワードなしでログインできます。",
+  "checkout.savePasswords": "これらのパスワードを今すぐ保存してください。表示されるのは一度だけで、当社では保存していません。「取引」ボタンを使えばパスワードなしでEzymex Traderにログインできるため、いつでもここから取引できます。",
+  "checkout.passwordsShown": "取引パスワードは、この購入が最初に確定した際に表示されました。「取引」ボタンからEzymex Traderを開くと、パスワードなしでログインできます。",
 
   // Account credentials
   "cred.login": "ログインID",
@@ -376,7 +376,7 @@ const prop: NsMessages<"prop"> = {
   "account.passed": "合格 · 閲覧専用",
   "account.failed": "不合格 · 無効",
   "account.opening": "開設中",
-  "account.tradableText": "「取引」を押すと、この口座にログインした状態でKalks Traderが開きます。パスワードは購入時に一度だけ表示されました。",
+  "account.tradableText": "「取引」を押すと、この口座にログインした状態でEzymex Traderが開きます。パスワードは購入時に一度だけ表示されました。",
   "account.passedText": "このフェーズは完了しました。口座は閲覧専用です。次のフェーズで取引してください。",
   "account.failedText": "この口座での取引は無効になっています。",
   "account.unavailableText": "この口座では取引できません。",

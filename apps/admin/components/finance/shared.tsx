@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { AlertTriangle, Check, X } from "lucide-react";
-import { Chip, CoinIcon, Tooltip, cn, formatNumber, type ChipTone } from "@kalks/ui";
-import type { FinCheck, FinNetwork } from "@kalks/mock/admin-finance";
+import { Chip, CoinIcon, Tooltip, cn, formatNumber, type ChipTone } from "@ezymex/ui";
+import type { FinCheck, FinNetwork } from "@ezymex/mock/admin-finance";
 
 export const usd = (v: number, dec = 2) => `${v < 0 ? "-" : ""}$${formatNumber(Math.abs(v), dec)}`;
 export const num = (v: number, dec = 2) => formatNumber(v, dec);

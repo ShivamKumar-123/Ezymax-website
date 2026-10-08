@@ -13,7 +13,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Ban, OctagonPause, Pencil, Plus, RefreshCw, ShieldOff, Snowflake, Trash2, Undo2, UserCog } from "lucide-react";
-import { Button, Card, CardHeader, Chip, DataTable, EmptyState, Field, IconButton, Input, KpiCard, PageHeader, Reveal, Segmented, Toggle, cn, formatNumber, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, EmptyState, Field, IconButton, Input, KpiCard, PageHeader, Reveal, Segmented, Toggle, cn, formatNumber, type Column } from "@ezymex/ui";
 import { ErrorState, TableSkeleton, ago, useNow, when } from "@/components/live/kit";
 import type { AdminExpiry, Chain, ClientLimit, Control, ControlMode, ControlScope, Smile, Underlying } from "./types";
 import { CONTROL_MODE, NumInput, REASONS, ReasonDialog, Select, countdown, optSend, parseNum, pct, tenantLabel, useOpt, useOptPerms } from "./kit";

@@ -15,8 +15,8 @@ import { usePathname } from "next/navigation";
 import { LogOut, ShieldAlert, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button, cn } from "@/components/kit";
-import { IS_DEMO } from "@kalks/mock";
-import { useT } from "@kalks/i18n/react";
+import { IS_DEMO } from "@ezymex/mock";
+import { useT } from "@ezymex/i18n/react";
 import { useSession } from "@/components/session";
 
 export type ClientRestriction = { kind: string; label?: string; expires_at: string | null };

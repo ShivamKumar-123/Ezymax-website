@@ -3,13 +3,13 @@
 // Strategy builder (drawer): templates filled around ATM for the selected expiry (long call / put, straddle, strangle,
 // bull call / bear put spread, iron condor, butterfly) or custom legs, the payoff at expiry and today, max profit /
 // loss, breakevens, probability of profit, Greeks and margin from the live preview, and one all-or-nothing order.
-// While the order book is live the strategy trades by request for quote (docs/OPTIONS-EXCHANGE.md §5): the Kalks
+// While the order book is live the strategy trades by request for quote (docs/OPTIONS-EXCHANGE.md §5): the Ezymex
 // market maker quotes a net price for the whole strategy and every leg fills together on Accept (./rfq).
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { ArrowRightLeft, Lock, Plus, Send, Wand2, X } from "lucide-react";
-import { cn } from "@kalks/ui";
-import { useLocale, useT } from "@kalks/i18n/react";
+import { cn } from "@ezymex/ui";
+import { useLocale, useT } from "@ezymex/i18n/react";
 import { toast } from "@/lib/notify";
 import { useTerminal } from "@/lib/store";
 import { GuestActions } from "@/components/shell/guest";
@@ -24,7 +24,7 @@ import { expiryLabel, pct, usd } from "./format";
 import { PayoffChart } from "./payoff-chart";
 import { PreviewSummary, usePreview } from "./preview";
 import { RfqPanel } from "./rfq";
-import { KalksQuotedTag } from "./book-bits";
+import { EzymexQuotedTag } from "./book-bits";
 
 interface BLeg {
   id: string;
@@ -111,7 +111,7 @@ function BuilderBody() {
   const publicView = useOpt((s) => s.publicView);
   const tradingSoon = useOpt((s) => s.tradingSoon);
   const bookLiveRaw = useBookLive();
-  // a strategy the engine refuses as an RFQ with `kalks_quoted` (a barrier leg) is placed at Kalks prices instead
+  // a strategy the engine refuses as an RFQ with `ezymex_quoted` (a barrier leg) is placed at Ezymex prices instead
   const [houseRoute, setHouseRoute] = React.useState(false);
   const bookLive = bookLiveRaw && !houseRoute;
   const [tpl, setTpl] = React.useState<TemplateId | "custom">("straddle");
@@ -334,7 +334,7 @@ function BuilderBody() {
           <PreviewSummary state={preview} digits={chain.digits} />
           {bookLiveRaw && houseRoute && (
             <div className="flex items-start gap-2 rounded-[10px] border border-gold/35 bg-gold-soft px-3 py-2 text-[11.5px] leading-snug text-fg-2" dir="auto">
-              <KalksQuotedTag className="mt-px shrink-0" />
+              <EzymexQuotedTag className="mt-px shrink-0" />
               <span>{t("trader.opt.rfq.houseNote")}</span>
             </div>
           )}
@@ -342,7 +342,7 @@ function BuilderBody() {
             <RfqPanel
               legs={resolved.map((l) => ({ series: l.q.code, side: l.side, contracts: l.contracts }))}
               disabled={dup || !resolved.length}
-              onKalksQuoted={() => setHouseRoute(true)}
+              onEzymexQuoted={() => setHouseRoute(true)}
               onDone={() => {
                 const name = tpl === "custom" ? t("trader.opt.tpl.custom.name") : t.dyn(`trader.opt.tpl.${tpl}.name`, tpl);
                 T.log("Trade", `'${T.account.login}': option strategy ${name} ${u} ${chain.expiry} filled by RFQ`);

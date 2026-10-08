@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader (apps/terminal): MT5-style web terminal shell, login and mobile layout.
+// Ezymex Trader (apps/terminal): MT5-style web terminal shell, login and mobile layout.
 const trader: NsMessages<"trader"> = {
   // Shared shell words
   clientArea: "Müşteri Alanı",
@@ -134,7 +134,7 @@ const trader: NsMessages<"trader"> = {
   "menu.keyboardShortcuts": "Klavye Kısayolları",
   "menu.helpTopics": "Yardım Konuları",
   "menu.contactSupport": "Destekle İletişim",
-  "menu.about": "Kalks Trader Hakkında",
+  "menu.about": "Ezymex Trader Hakkında",
   // Tools > Options toast
   "options.title": "Seçenekler",
   "options.trading": "İşlem",
@@ -170,7 +170,7 @@ const trader: NsMessages<"trader"> = {
   "guest.noAccount": "İşlem hesabı yok",
   "guest.liveData": "Canlı piyasa verileri",
   "guest.cardHeader": "Misafir · grafikler ve kotasyonlar",
-  "guest.cardText": "Grafikler, göstergeler, çizimler, uyarılar ve sembol özellikleri canlı Kalks piyasa verileriyle çalışır. İşlem yapmak için işlem hesabınızla giriş yapın veya Müşteri Alanında bir hesap açın.",
+  "guest.cardText": "Grafikler, göstergeler, çizimler, uyarılar ve sembol özellikleri canlı Ezymex piyasa verileriyle çalışır. İşlem yapmak için işlem hesabınızla giriş yapın veya Müşteri Alanında bir hesap açın.",
 
   // Notifications bell
   "notifications.title": "Bildirimler",
@@ -281,7 +281,7 @@ const trader: NsMessages<"trader"> = {
   "login.serverTime": "Sunucu saati GMT+3",
   "login.notice.expired": "Oturumunuzun süresi doldu. Tekrar giriş yapın.",
   "login.notice.expiredFor": "{login} oturumunuzun süresi doldu. Tekrar giriş yapın.",
-  "login.notice.ssoExpired": "Bu giriş bağlantısının süresi dolmuş veya zaten kullanılmış. Kalks Trader'ı Müşteri Alanından tekrar açın veya aşağıdan giriş yapın.",
+  "login.notice.ssoExpired": "Bu giriş bağlantısının süresi dolmuş veya zaten kullanılmış. Ezymex Trader'ı Müşteri Alanından tekrar açın veya aşağıdan giriş yapın.",
   "login.notice.ssoFailed": "Müşteri Alanından giriş başarısız oldu. Aşağıdan giriş yapın.",
   "login.error.invalid": "Geçersiz hesap veya şifre.",
   "login.error.locked": "Çok fazla başarısız deneme. Bu giriş 15 dakika süreyle kilitlendi.",
@@ -304,9 +304,9 @@ const trader: NsMessages<"trader"> = {
   "mobile.tab.history": "Geçmiş",
   "mobile.tab.account": "Hesap",
   "mobile.guestSubtitle": "Canlı piyasa verileri · işlem hesabı yok",
-  "mobile.guestTrade": "Bir Kalks hesabından işlem yaptığınızda pozisyonlar, emirler, bakiye ve teminat burada görünür. Grafikler ve kotasyonlar şimdi de çalışır.",
+  "mobile.guestTrade": "Bir Ezymex hesabından işlem yaptığınızda pozisyonlar, emirler, bakiye ve teminat burada görünür. Grafikler ve kotasyonlar şimdi de çalışır.",
   "mobile.guestHistory": "Bir işlem hesabına giriş yaptığınızda kapanan işlemleriniz burada listelenir.",
-  "mobile.guestAccountText": "İşlem yapmak için bir işlem hesabına giriş yapın. Grafikler, göstergeler, çizimler ve uyarılar şimdi canlı Kalks piyasa verileriyle çalışır.",
+  "mobile.guestAccountText": "İşlem yapmak için bir işlem hesabına giriş yapın. Grafikler, göstergeler, çizimler ve uyarılar şimdi canlı Ezymex piyasa verileriyle çalışır.",
   "mobile.watchSegment": "İzleme listesi segmenti",
   "mobile.noFavourites": "Henüz favori yok.",
   "mobile.noSymbols": "Eşleşen sembol yok.",
@@ -335,14 +335,14 @@ const trader: NsMessages<"trader"> = {
   "copyBanner.textNoName": "Kopya hesap — işlemleri kopyaladığınız master yönetir; P&L'yi buradan izleyebilirsiniz.",
   "copyBanner.manage": "Kopyayı Client Area'da yönetin",
 
-  // ---- Kalks FX Options workspace (CFD | Options switch in Kalks Trader; components/options/*) ----
-  // Keep "Kalks FX Options", "Claude", tickers (EURUSD), "IV", "ATM", "OTM", "ITM", "P&L", "USD", "UTC", "GTC" and the
+  // ---- Ezymex FX Options workspace (CFD | Options switch in Ezymex Trader; components/options/*) ----
+  // Keep "Ezymex FX Options", "Claude", tickers (EURUSD), "IV", "ATM", "OTM", "ITM", "P&L", "USD", "UTC", "GTC" and the
   // Greek letters (Δ Γ Θ) as they are. Premiums are in USD per contract; "pips" are price points of the underlying.
   "opt.mode.label": "İşlem modu",
   "opt.mode.cfd": "CFD",
   "opt.mode.options": "Opsiyonlar",
   "opt.mode.cfdHint": "CFD işlemleri: grafikler, Piyasa Gözlemi ve emir paneli",
-  "opt.mode.optionsHint": "Kalks FX Options: opsiyon zinciri, stratejiler ve getiri profili",
+  "opt.mode.optionsHint": "Ezymex FX Options: opsiyon zinciri, stratejiler ve getiri profili",
   "opt.call": "Call",
   "opt.put": "Put",
   "opt.calls": "Call'lar",
@@ -511,7 +511,7 @@ const trader: NsMessages<"trader"> = {
 
   // Module not open yet / price server down
   "opt.soon.title": "Opsiyonlar yakında",
-  "opt.soon.text": "Kalks FX Options bu hesapta henüz açık değil. Açılır açılmaz opsiyon zinciri burada, CFD'lerinizle aynı hesapta görünecek.",
+  "opt.soon.text": "Ezymex FX Options bu hesapta henüz açık değil. Açılır açılmaz opsiyon zinciri burada, CFD'lerinizle aynı hesapta görünecek.",
   "opt.soon.point1": "Forex, altın, gümüş ve petrol üzerine call ve put'lar",
   "opt.soon.point2": "Günlük, haftalık ve aylık vadeler, USD ile nakdi uzlaşı",
   "opt.soon.point3": "Alıcı olarak ödediğiniz primden fazlasını asla kaybedemezsiniz",
@@ -656,14 +656,14 @@ const trader: NsMessages<"trader"> = {
 
   // Public option chain page (/options/chain/EURUSD)
   "opt.public.brand": "Opsiyon zinciri",
-  "opt.public.kicker": "Kalks FX Options",
+  "opt.public.kicker": "Ezymex FX Options",
   "opt.public.title": "{name} opsiyon zinciri",
   "opt.public.subtitle": "Günlük, haftalık ve aylık vadeler için canlı call ve put'lar: kontrat başına USD cinsinden bid ve ask, zımni volatilite, delta, kârda sona erme olasılığı ve başabaş. Avrupa tipi opsiyonlar, USD ile nakdi uzlaşı.",
   "opt.public.trade": "{u} opsiyonlarında işlem yap",
   "opt.public.atmStraddle": "ATM straddle",
-  "opt.public.soonText": "Herkese açık opsiyon zinciri Kalks FX Options ile birlikte açılıyor. İlk günden hazır olmak için bir hesap açın.",
+  "opt.public.soonText": "Herkese açık opsiyon zinciri Ezymex FX Options ile birlikte açılıyor. İlk günden hazır olmak için bir hesap açın.",
   "opt.public.ctaTitle": "Bu zincirde işlem yapın.",
-  "opt.public.ctaText": "Buradaki herhangi bir opsiyonu almak veya satmak, strateji oluşturmak ve getiri profilinizi görmek için Kalks Trader'a giriş yapın.",
+  "opt.public.ctaText": "Buradaki herhangi bir opsiyonu almak veya satmak, strateji oluşturmak ve getiri profilinizi görmek için Ezymex Trader'a giriş yapın.",
   "opt.public.howTitle": "Zincir nasıl okunur",
   "opt.public.how1": "Call'lar fiyat strike'ın üzerinde kapandığında, put'lar ise altında kapandığında ödeme yapar.",
   "opt.public.how2": "Bid, satarken aldığınız; ask, alırken ödediğiniz fiyattır; ikisi de kontrat başına USD cinsindendir.",
@@ -695,11 +695,11 @@ const trader: NsMessages<"trader"> = {
   "opt.m.chain": "Zincir",
   "opt.m.positions": "Pozisyonlar",
 
-  // Options ORDER BOOK: clients trade with each other and with the Kalks market maker (MM) on a price-time book.
-  // "Book" = emir defteri. Keep GTC, IOC, FOK, GTD, RFQ and MM as they are; "Kalks" is a brand name.
+  // Options ORDER BOOK: clients trade with each other and with the Ezymex market maker (MM) on a price-time book.
+  // "Book" = emir defteri. Keep GTC, IOC, FOK, GTD, RFQ and MM as they are; "Ezymex" is a brand name.
   "opt.book.tab": "Defter",
   "opt.book.badge": "Defter",
-  "opt.book.badgeHint": "Fiyatlar emir defterinden gelir: diğer müşterilerin ve Kalks piyasa yapıcısının emirleri, herkes için aynı kurallarla.",
+  "opt.book.badgeHint": "Fiyatlar emir defterinden gelir: diğer müşterilerin ve Ezymex piyasa yapıcısının emirleri, herkes için aynı kurallarla.",
   "opt.book.size": { one: "{count} kontrat", other: "{count} kontrat" },
   "opt.book.noOffers": "Satış emri yok",
   "opt.book.noBids": "Alış emri yok",
@@ -768,7 +768,7 @@ const trader: NsMessages<"trader"> = {
   "opt.bt.needPrice": "Bir limit fiyat girin.",
   "opt.bt.needGtd": "Emrin defterde ne zamana kadar kalacağını seçin.",
   "opt.bt.needTrigger": "Bir tetikleme fiyatı girin.",
-  "opt.bt.bookOff": "Emir defteri şu anda kullanılamıyor: fiyatlar ve emirler yeniden Kalks fiyatlarıyla çalışıyor.",
+  "opt.bt.bookOff": "Emir defteri şu anda kullanılamıyor: fiyatlar ve emirler yeniden Ezymex fiyatlarıyla çalışıyor.",
   "opt.bt.pv.fillsNow": "Hemen gerçekleşir",
   "opt.bt.pv.fillsAt": "{n} / {total}, ort. {price}",
   "opt.bt.pv.none": "Bu fiyattan yok",
@@ -857,7 +857,7 @@ const trader: NsMessages<"trader"> = {
   "opt.rfq.title": "Fiyat talebi",
   "opt.rfq.request": "Fiyat iste",
   "opt.rfq.again": "Yeni fiyat iste",
-  "opt.rfq.note": "Stratejinin tamamı tek işlem olarak gerçekleşir: Kalks piyasa yapıcısı net bir fiyat verir ve tüm bacaklar birlikte gerçekleşir ya da hiçbiri gerçekleşmez.",
+  "opt.rfq.note": "Stratejinin tamamı tek işlem olarak gerçekleşir: Ezymex piyasa yapıcısı net bir fiyat verir ve tüm bacaklar birlikte gerçekleşir ya da hiçbiri gerçekleşmez.",
   "opt.rfq.builderNote": "Stratejiler fiyat talebiyle işlem görür: tek net fiyat, tüm bacaklar birlikte.",
   "opt.rfq.size": "Miktar: {n} × strateji",
   "opt.rfq.waiting": "Fiyat bekleniyor…",
@@ -868,17 +868,17 @@ const trader: NsMessages<"trader"> = {
   "opt.rfq.validFor": "{s} sn geçerli",
   "opt.rfq.refreshing": "yeni fiyat…",
   "opt.rfq.from": "Fiyatı veren: {who}",
-  "opt.rfq.kalksMm": "Kalks piyasa yapıcısı",
+  "opt.rfq.ezymexMm": "Ezymex piyasa yapıcısı",
   "opt.rfq.openFor": "talep {s} sn açık",
   "opt.rfq.expired": "Talebin süresi doldu.",
   "opt.rfq.toast.filled": "Strateji gerçekleşti",
   "opt.rfq.toast.desc": { one: "{count} bacak gerçekleşti · net {price} USD", other: "{count} bacak birlikte gerçekleşti · net {price} USD" },
-  "opt.rfq.kalksQuoted": "Kalks fiyatı (emir defteri değil)",
-  "opt.rfq.kalksQuotedHint": "Bariyerli opsiyonlar emir defterinde listelenmez: Kalks bunları model fiyatına bir spread ekleyerek fiyatlar.",
+  "opt.rfq.ezymexQuoted": "Ezymex fiyatı (emir defteri değil)",
+  "opt.rfq.ezymexQuotedHint": "Bariyerli opsiyonlar emir defterinde listelenmez: Ezymex bunları model fiyatına bir spread ekleyerek fiyatlar.",
   // Market-maker rules (public disclosure)
   "opt.mm.link": "Piyasa yapıcı kuralları",
   "opt.mm.title": "Piyasa yapıcı kuralları",
-  "opt.mm.intro": "Kalks, her opsiyonda alış ve satış fiyatı veren bir piyasa yapıcı çalıştırır; böylece işlem yapabileceğiniz biri her zaman vardır. Sizinle aynı emir defterinde, aynı kurallarla işlem yapar.",
+  "opt.mm.intro": "Ezymex, her opsiyonda alış ve satış fiyatı veren bir piyasa yapıcı çalıştırır; böylece işlem yapabileceğiniz biri her zaman vardır. Sizinle aynı emir defterinde, aynı kurallarla işlem yapar.",
   "opt.mm.sameTitle": "Her müşteriyle aynı kurallar",
   "opt.mm.rule1": "Fiyatlarını müşterilerle aynı emir girişinden, aynı kontrollerle gönderir.",
   "opt.mm.rule2": "Öncelik yok: emirler önce fiyata, sonra zamana göre gerçekleşir. Aynı fiyatta kimse, kim olduğu nedeniyle sizden önce gelmez.",
@@ -978,7 +978,7 @@ const trader: NsMessages<"trader"> = {
   "opt.an.oi.emptyOi": "Bu vadede henüz açık pozisyon yok.",
   "opt.an.oi.emptyVolume": "Bu vadede bugün henüz işlem olmadı.",
   "opt.an.oi.none": "{u} opsiyonları emir defterinde işlem görmeye başladığında açık pozisyon ve put / call oranı burada görünür.",
-  "opt.an.oi.noneSub": "Bu opsiyonları şimdilik Kalks fiyatlıyor, bu yüzden henüz gösterilecek açık pozisyon veya hacim yok. Yukarıdaki smile ve vade yapısı canlıdır.",
+  "opt.an.oi.noneSub": "Bu opsiyonları şimdilik Ezymex fiyatlıyor, bu yüzden henüz gösterilecek açık pozisyon veya hacim yok. Yukarıdaki smile ve vade yapısı canlıdır.",
   "opt.an.oi.aria": "Strike'a göre açık pozisyon: call'lar üstte, put'lar altta",
   "opt.an.pcr.title": "Put / call oranı",
   "opt.an.pcr.hint": "Bu vadedeki put'ların call'lara bölümü. 1'in üzerinde: call'lardan daha fazla put var.",
@@ -1036,7 +1036,7 @@ const trader: NsMessages<"trader"> = {
   "opt.share.copy": "Bağlantıyı kopyala",
   "opt.share.copied": "Bağlantı kopyalandı",
   "opt.share.shareTo": "Paylaş",
-  "opt.share.text": "Kalks'taki {contract} opsiyon işlemim",
+  "opt.share.text": "Ezymex'taki {contract} opsiyon işlemim",
   "opt.share.error": "Paylaşım kartı oluşturulamadı",
   "opt.share.readOnly": "Yatırımcı (salt okunur) girişleriyle paylaşım kartı oluşturulamaz.",
   "opt.share.preview": "Paylaşım kartı önizlemesi",
@@ -1197,7 +1197,7 @@ const trader: NsMessages<"trader"> = {
   "opt.pos.d.nowEach": "Şu anki değer, kontrat başına",
   "opt.pos.d.where": "İşlem yeri",
   "opt.pos.d.book": "Emir defteri",
-  "opt.pos.d.house": "Kalks fiyatları",
+  "opt.pos.d.house": "Ezymex fiyatları",
   "opt.pos.comboPaid": "Bu strateji için {amount} ödediniz.",
   "opt.pos.comboReceived": "Bu strateji için {amount} aldınız.",
   "opt.pos.emptyTitle": "Henüz açık opsiyon yok",
@@ -1223,8 +1223,8 @@ const trader: NsMessages<"trader"> = {
   "opt.err.series_cancel_only": "Bu opsiyonlardan birinde işlemler şu anda duraklatıldı (yalnızca iptal). Daha sonra tekrar deneyin.",
   "opt.err.series_closed": "Bu opsiyonlardan birinde işlemler sona erdi: vadesine çok az kaldı.",
   "opt.err.rfq_underlyings": "Bir stratejinin tüm bacakları aynı piyasada olmalıdır, örneğin hepsi EURUSD.",
-  "opt.err.kalks_quoted": "Bu stratejide bariyerli bir bacak var. Bariyerli opsiyonların fiyatını emir defteri değil Kalks belirler, bu yüzden strateji Kalks fiyatlarıyla tek bir emir olarak verilir.",
-  "opt.err.mixed_venue": "Bu stratejinin bazı bacakları emir defterinde, bazılarının fiyatını ise Kalks belirliyor; bu yüzden tek seferde kapatılamaz. Bacakları tek tek kapatın.",
+  "opt.err.ezymex_quoted": "Bu stratejide bariyerli bir bacak var. Bariyerli opsiyonların fiyatını emir defteri değil Ezymex belirler, bu yüzden strateji Ezymex fiyatlarıyla tek bir emir olarak verilir.",
+  "opt.err.mixed_venue": "Bu stratejinin bazı bacakları emir defterinde, bazılarının fiyatını ise Ezymex belirliyor; bu yüzden tek seferde kapatılamaz. Bacakları tek tek kapatın.",
   "opt.err.book_venue": "Bu opsiyonlar emir defterinde işlem görür. Bir strateji emir defteri bacaklarıyla bariyerli bacakları bir arada içeremez: bunları ayrı ayrı verin.",
   "opt.rfq.err.quote_expired": "Bu fiyat artık geçerli değil (fiyatlar yalnızca birkaç saniye geçerlidir). Fiyatı yenileyip kabul edin.",
   "opt.rfq.err.price_moved": "Emriniz ulaşmadan fiyat değişti, bu yüzden işlem yapılmadı. Fiyatı yenileyip tekrar deneyin.",
@@ -1235,7 +1235,7 @@ const trader: NsMessages<"trader"> = {
   "opt.rfq.err.no_liquidity": "Piyasa yapıcı şu anda bu strateji için fiyat veremiyor. Birazdan tekrar deneyin veya bacakları tek tek kapatın.",
   "opt.rfq.err.rejected": "Strateji gerçekleşmedi ve işlem yapılmadı. Tekrar deneyin.",
   "opt.rfq.newPrice": "Fiyatı yenile",
-  "opt.rfq.houseNote": "Bariyerli opsiyonların fiyatını emir defteri değil Kalks belirler: bu strateji Kalks fiyatlarıyla tek bir emir olarak verilir, tüm bacaklar birlikte ya da hiçbiri.",
+  "opt.rfq.houseNote": "Bariyerli opsiyonların fiyatını emir defteri değil Ezymex belirler: bu strateji Ezymex fiyatlarıyla tek bir emir olarak verilir, tüm bacaklar birlikte ya da hiçbiri.",
   "opt.toast.settling": "nihai rakamlar birazdan",
   "opt.toast.tryAgain": "Tekrar dene",
   "opt.toast.strategyClosedBook": "Strateji emir defteri üzerinden kapatıldı",
@@ -1243,10 +1243,10 @@ const trader: NsMessages<"trader"> = {
   "opt.pos.closedNetGot": "Tüm bacaklar birlikte kapatıldı: {amount} aldınız · P&L {pnl}",
   "opt.hist.reason.bust": "İptal edildi",
   "opt.hist.why.risk": "Risk kontrolü tarafından kapatıldı (teminat çok düşük)",
-  "opt.hist.why.backstop": "Risk kontrolü tarafından kapatıldı (teminat çok düşük): pozisyonu Kalks piyasa yapıcısı devraldı",
+  "opt.hist.why.backstop": "Risk kontrolü tarafından kapatıldı (teminat çok düşük): pozisyonu Ezymex piyasa yapıcısı devraldı",
   "opt.hist.why.bust": "İşlem, dealing masası tarafından iptal edildi ve geri alındı",
   "opt.hist.closedRisk": "Risk kontrolü tarafından {close} fiyatından kapatıldı (teminat çok düşük), kontrat başına",
-  "opt.hist.closedBackstop": "Risk kontrolü tarafından kapatıldı (teminat çok düşük): Kalks piyasa yapıcısı {close} fiyatından devraldı, kontrat başına",
+  "opt.hist.closedBackstop": "Risk kontrolü tarafından kapatıldı (teminat çok düşük): Ezymex piyasa yapıcısı {close} fiyatından devraldı, kontrat başına",
   "opt.hist.closedBust": "İşlem, dealing masası tarafından iptal edildi ve {close} fiyatından geri alındı, kontrat başına",
   "opt.bust.title": "İşlem, dealing masası tarafından iptal edildi",
   "opt.bust.text": "{what} × {n}: işlem geri alındı ve varsa ücret iade edildi.",

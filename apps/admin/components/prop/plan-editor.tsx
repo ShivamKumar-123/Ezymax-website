@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { CalendarClock, Layers, Plus, Scale, ShieldAlert, Trash2, TrendingUp, Wallet } from "lucide-react";
-import { Button, Card, CardHeader, Chip, Icon3D, IconButton, Segmented, Toggle, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Icon3D, IconButton, Segmented, Toggle, cn } from "@ezymex/ui";
 import { ChipList, MiniField, NumInput, Select, SettingRow, Slider, TextInput } from "@/components/config/kit";
 import { BANNED_STRATEGIES, type PlanPhase, type PlanType, type PropPlan } from "./data";
 

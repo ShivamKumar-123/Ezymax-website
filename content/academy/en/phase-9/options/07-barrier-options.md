@@ -1,15 +1,15 @@
 ---
 slug: "p9-o-barrier-options"
 title: "Barrier options"
-summary: "Knock-in and knock-out options, why they cost less than standard options, how Kalks monitors the barrier, and what happens when the market gaps through it."
+summary: "Knock-in and knock-out options, why they cost less than standard options, how Ezymex monitors the barrier, and what happens when the market gaps through it."
 order: 7
 version: 1
 takeaways:
   - "A barrier option is a call or put with an extra price level, the barrier. A knock-out stops existing if the barrier is touched; a knock-in only starts existing if it is touched."
   - "Barrier options are cheaper because they pay in fewer scenarios. A knock-in and a knock-out with the same strike, barrier and expiry together cost the same as the standard option."
-  - "Kalks watches the barrier continuously on the underlying's mid price until the cut. A knocked-out option is worthless immediately, even if the price comes back."
+  - "Ezymex watches the barrier continuously on the underlying's mid price until the cut. A knocked-out option is worthless immediately, even if the price comes back."
   - "If the market opens beyond the barrier after a weekend or jumps through it on news, the barrier counts as touched; there is no chance to close at the barrier level."
-  - "Kalks does not offer binary or digital options. Every option, including barriers, pays the difference between the settlement price and the strike."
+  - "Ezymex does not offer binary or digital options. Every option, including barriers, pays the difference between the settlement price and the strike."
 practice:
   label: "On a XAUUSD H1 chart on your demo account, find the last four Monday opens and measure each gap from Friday's close. Would a barrier 30 USD away from Friday's close have survived each one?"
   symbol: "XAUUSD"
@@ -24,7 +24,7 @@ quiz:
     explanation: "A single touch of the barrier at any time before the cut cancels a knock-out option, and it stays worthless even though EURUSD later settled below the barrier and above the strike."
   - question: "Why is a knock-out call cheaper than a standard call with the same strike and expiry?"
     options:
-      - "Kalks charges no spread on it"
+      - "Ezymex charges no spread on it"
       - "It is cash-settled"
       - "It pays nothing in the scenarios where the barrier is touched, so it covers fewer outcomes"
       - "It has no time value"
@@ -87,10 +87,10 @@ The up-and-out call is cheap because it is cancelled exactly when a call would b
 
 A **down-and-out call** works the other way round. With a barrier at 1.1600, the same 1.1700 call costs about 37 USD, roughly half the price, because it is cancelled if EURUSD dips 50 pips before rising. It suits a trader who expects the rise to start without a meaningful dip first.
 
-## How Kalks watches the barrier
+## How Ezymex watches the barrier
 
 - The barrier is monitored **continuously**, not only at the close or at the cut. One touch at any moment is enough.
-- It is checked against the underlying's **mid price**, halfway between bid and ask. Kalks Trader charts normally plot the bid, so the mid can touch an up-barrier while the bid line on your chart is still half a spread below it.
+- It is checked against the underlying's **mid price**, halfway between bid and ask. Ezymex Trader charts normally plot the bid, so the mid can touch an up-barrier while the bid line on your chart is still half a spread below it.
 - Monitoring runs from the moment you open the trade until the cut.
 - A knock-out is final. The position is closed at zero value immediately and cannot be revived.
 
@@ -104,7 +104,7 @@ Weekend gaps are most common in gold, silver and oil, and in FX around major new
 
 ## No binary or digital options
 
-Kalks does not offer binary or digital options, which pay a fixed amount if a condition is met. Every Kalks option, including barrier options, pays the difference between the settlement price and the strike, multiplied by the contract size.
+Ezymex does not offer binary or digital options, which pay a fixed amount if a condition is met. Every Ezymex option, including barrier options, pays the difference between the settlement price and the strike, multiplied by the contract size.
 
 ## Selling barrier options
 

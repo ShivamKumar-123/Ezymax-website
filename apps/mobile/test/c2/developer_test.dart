@@ -5,13 +5,13 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/features/developer/backtests_screen.dart';
-import 'package:kalks/features/developer/deployments_screen.dart';
-import 'package:kalks/features/developer/keys_screen.dart';
-import 'package:kalks/features/developer/webhooks_screen.dart';
-import 'package:kalks/preview/c2/developer.dart';
-import 'package:kalks/router/router.dart';
-import 'package:kalks/ui/ui.dart';
+import 'package:ezymex/features/developer/backtests_screen.dart';
+import 'package:ezymex/features/developer/deployments_screen.dart';
+import 'package:ezymex/features/developer/keys_screen.dart';
+import 'package:ezymex/features/developer/webhooks_screen.dart';
+import 'package:ezymex/preview/c2/developer.dart';
+import 'package:ezymex/router/router.dart';
+import 'package:ezymex/ui/ui.dart';
 
 import '../helpers/test_app.dart';
 
@@ -85,7 +85,7 @@ void main() {
     await tester.tap(find.text('Create webhook'));
     await settle(tester);
     expect(find.text('Your webhook URL, shown once'), findsOneWidget);
-    expect(find.text('https://api.kalkstrade.com/algo/hooks/wh_5f2c9a71d0e44b8ab3c6e2f19d7a0b6c'), findsOneWidget);
+    expect(find.text('https://api.ezymex.com/algo/hooks/wh_5f2c9a71d0e44b8ab3c6e2f19d7a0b6c'), findsOneWidget);
 
     final page = _page<DeveloperWebhooksScreen>();
     await _scrollTo(tester, find.text('Send test'), page);

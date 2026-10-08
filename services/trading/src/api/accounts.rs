@@ -1,4 +1,4 @@
-//! Client Area API (called by the CRM BFF with the signed-in gateway user id in `X-Kalks-User-Id` or
+//! Client Area API (called by the CRM BFF with the signed-in gateway user id in `X-Ezymex-User-Id` or
 //! `?user_id=`): open live/demo accounts, list/summary, demo refill, passwords, leverage, history,
 //! ledger, and SSO into the terminal.
 
@@ -26,7 +26,7 @@ pub struct UserQ {
 }
 
 pub fn user_of(h: &HeaderMap, q: Option<i64>) -> ApiResult<i64> {
-    super::user_id(h.get("x-kalks-user-id").and_then(|v| v.to_str().ok()).map(str::to_string), q)
+    super::user_id(h.get("x-ezymex-user-id").and_then(|v| v.to_str().ok()).map(str::to_string), q)
 }
 
 /// The account must belong to the tenant and to the calling user.

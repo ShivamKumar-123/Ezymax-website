@@ -1,4 +1,4 @@
-// "Kalks iOS": the app's design system. Import this one file in screens.
+// "Ezymex iOS": the app's design system. Import this one file in screens.
 export 'color_mix.dart';
 export 'components/backdrop.dart';
 export 'components/banner.dart';

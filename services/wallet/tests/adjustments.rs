@@ -42,7 +42,7 @@ impl T {
         }
         let mut b = [0u8; 5];
         getrandom::fill(&mut b).unwrap();
-        let name = format!("kalks_wallet_test_{}", b.iter().map(|x| format!("{x:02x}")).collect::<String>());
+        let name = format!("ezymex_wallet_test_{}", b.iter().map(|x| format!("{x:02x}")).collect::<String>());
         let url = admin.clone().database(&name).to_url_lossy().to_string();
         let pool = db::connect(&url).await.expect("create + migrate test db");
         let cfg = Config::for_tests(&url);
@@ -76,11 +76,11 @@ impl T {
             _ => self.http.post(format!("{}{path}", self.base)),
         };
         rb = rb
-            .header("x-kalks-internal", "test-internal-token")
-            .header("x-kalks-staff-id", id)
-            .header("x-kalks-staff-name", format!("Staff%20{id}"))
-            .header("x-kalks-staff-role", role)
-            .header("x-kalks-staff-perms", perms);
+            .header("x-ezymex-internal", "test-internal-token")
+            .header("x-ezymex-staff-id", id)
+            .header("x-ezymex-staff-name", format!("Staff%20{id}"))
+            .header("x-ezymex-staff-role", role)
+            .header("x-ezymex-staff-perms", perms);
         if let Some(b) = body {
             rb = rb.json(&b);
         }
@@ -97,7 +97,7 @@ impl T {
         let (_, v) = self
             .http
             .get(format!("{}/v1/wallets/{user}", self.base))
-            .header("x-kalks-internal", "test-internal-token")
+            .header("x-ezymex-internal", "test-internal-token")
             .send()
             .await
             .unwrap()
@@ -277,9 +277,9 @@ async fn permissions_are_enforced_by_the_service() {
     let r = t
         .http
         .post(format!("{}/v1/admin/adjustments", t.base))
-        .header("x-kalks-internal", "test-internal-token")
-        .header("x-kalks-staff-id", "8")
-        .header("x-kalks-staff-role", "dealer")
+        .header("x-ezymex-internal", "test-internal-token")
+        .header("x-ezymex-staff-id", "8")
+        .header("x-ezymex-staff-role", "dealer")
         .json(&wallet_req("p-4", "add", "other", "5"))
         .send()
         .await

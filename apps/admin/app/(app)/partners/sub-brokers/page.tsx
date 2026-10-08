@@ -3,8 +3,8 @@
 import * as React from "react";
 import { Download, Globe2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, DataTable, Money, PageHeader, Progress, Reveal, Segmented, StatusChip, type Column } from "@kalks/ui";
-import { SUB_BROKERS, type SubBroker } from "@kalks/mock/admin-partners";
+import { Button, Card, CardHeader, DataTable, Money, PageHeader, Progress, Reveal, Segmented, StatusChip, type Column } from "@ezymex/ui";
+import { SUB_BROKERS, type SubBroker } from "@ezymex/mock/admin-partners";
 import { ColumnChart, MiniStat, PersonCell } from "@/components/config/kit";
 import { fmtInt, fmtUsdK } from "@/components/partners/common";
 import { AddSubBrokerDialog, Flags, SubBrokerCard, SubBrokerDrawer } from "@/components/partners/sub-broker-parts";

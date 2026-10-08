@@ -1,4 +1,4 @@
-// Kalks FX Options in the Client Area's trade lists: series codes, readable terms and premiums per contract.
+// Ezymex FX Options in the Client Area's trade lists: series codes, readable terms and premiums per contract.
 // Plain functions (no React, no "use client"): the trading BFF's CSV export uses them on the server too.
 //
 // The engine records option trades like CFD deals (services/trading views.rs deal_json): `symbol` is the series code

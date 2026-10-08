@@ -39,7 +39,7 @@ pub struct DealIn {
     pub kind: String,
     pub reversed: bool,
     pub account: AccountFacts,
-    /// Kalks FX Options deal (volume = contracts): recorded once, earns no loyalty points, cashback or bonus
+    /// Ezymex FX Options deal (volume = contracts): recorded once, earns no loyalty points, cashback or bonus
     /// lot-release (O34); counts only in options contests (O36), never in CFD contests.
     pub option: bool,
     /// Options: opening premium of the closed contracts (account currency, unsigned), for the contest minimum.

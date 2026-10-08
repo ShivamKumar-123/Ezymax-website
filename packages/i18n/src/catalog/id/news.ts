@@ -45,7 +45,7 @@ const news: NsMessages<"news"> = {
   "markets.trade": "Trading",
   "markets.searchPlaceholder": "Cari simbol atau nama…",
   "markets.clearSearch": "Hapus",
-  "markets.liveTooltip": "Kuotasi dialirkan dari feed harga Kalks",
+  "markets.liveTooltip": "Kuotasi dialirkan dari feed harga Ezymex",
   "markets.footnote": "Spread grup Standard: pip untuk FX, satuan harga untuk lainnya · pasar tutup menampilkan harga terakhir · klik baris untuk spesifikasi kontrak",
   // Short trading-hours summary per asset class (24/5 = 24 hours, 5 days a week)
   "hoursShort.forex": "24/5",
@@ -270,7 +270,7 @@ const news: NsMessages<"news"> = {
   "cal.removeReminder": "Hapus pengingat",
   "cal.remindMe": "Ingatkan 15 mnt sebelumnya",
   "cal.toWatch": "Instrumen untuk dipantau",
-  "cal.noLinked": "Tidak ada instrumen Kalks yang terkait langsung dengan mata uang ini.",
+  "cal.noLinked": "Tidak ada instrumen Ezymex yang terkait langsung dengan mata uang ini.",
   // High-impact alerts card
   "alerts.title": "Peringatan dampak tinggi",
   "alerts.toggle": "Beri tahu saya sebelum peristiwa berdampak tinggi",

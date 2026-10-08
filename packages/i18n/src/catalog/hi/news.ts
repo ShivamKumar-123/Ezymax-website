@@ -45,7 +45,7 @@ const news: NsMessages<"news"> = {
   "markets.trade": "ट्रेड करें",
   "markets.searchPlaceholder": "सिंबल या नाम खोजें…",
   "markets.clearSearch": "साफ़ करें",
-  "markets.liveTooltip": "कोट्स Kalks प्राइस फ़ीड से स्ट्रीम होते हैं",
+  "markets.liveTooltip": "कोट्स Ezymex प्राइस फ़ीड से स्ट्रीम होते हैं",
   "markets.footnote": "Standard ग्रुप स्प्रेड: FX के लिए पिप्स, अन्य के लिए प्राइस यूनिट · बंद मार्केट अपनी अंतिम कीमत दिखाते हैं · कॉन्ट्रैक्ट स्पेसिफ़िकेशन के लिए किसी पंक्ति पर क्लिक करें",
   // Short trading-hours summary per asset class (24/5 = 24 hours, 5 days a week)
   "hoursShort.forex": "24/5",
@@ -270,7 +270,7 @@ const news: NsMessages<"news"> = {
   "cal.removeReminder": "रिमाइंडर हटाएँ",
   "cal.remindMe": "15 मिनट पहले याद दिलाएँ",
   "cal.toWatch": "नज़र रखने लायक इंस्ट्रूमेंट",
-  "cal.noLinked": "कोई Kalks इंस्ट्रूमेंट इस करेंसी से सीधे जुड़ा नहीं है।",
+  "cal.noLinked": "कोई Ezymex इंस्ट्रूमेंट इस करेंसी से सीधे जुड़ा नहीं है।",
   // High-impact alerts card
   "alerts.title": "उच्च प्रभाव अलर्ट",
   "alerts.toggle": "उच्च प्रभाव वाले इवेंट से पहले मुझे अलर्ट करें",

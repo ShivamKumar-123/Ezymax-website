@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { CalendarDays, ExternalLink, Eye, EyeOff, MoreHorizontal, Newspaper, Pin, PinOff, RefreshCw, RotateCcw, Rss, Search, ShieldAlert, Sparkles, Tag } from "lucide-react";
-import { Button, Card, CardHeader, Chip, Dialog, DialogClose, EmptyState, IconButton, KpiCard, Menu, PageHeader, Reveal, Segmented, Skeleton, SymbolAvatar, Toggle, Tooltip, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Dialog, DialogClose, EmptyState, IconButton, KpiCard, Menu, PageHeader, Reveal, Segmented, Skeleton, SymbolAvatar, Toggle, Tooltip, cn } from "@ezymex/ui";
 import { useStaff } from "@/components/staff-session";
 import { contentAllows } from "@/lib/academy";
 import { COUNTRIES, INSTRUMENTS, KIND_LABEL, NewsError, ago, newsApi, useNews, type AdminItem, type AuditEntry, type Brief, type Source, type Stats } from "./api";
@@ -150,7 +150,7 @@ function SourcesDialog({ open, onOpenChange, canWrite, onChanged }: { open: bool
       onOpenChange={onOpenChange}
       width={760}
       title="News sources"
-      description="Feeds aggregated into the Client Area, world map and Kalks Trader. Only headline, a short teaser and the link are stored; every story links to the publisher."
+      description="Feeds aggregated into the Client Area, world map and Ezymex Trader. Only headline, a short teaser and the link are stored; every story links to the publisher."
     >
       <div className="space-y-2" data-testid="sources-list">
         {!src.data && <Skeleton className="h-64 w-full" />}
@@ -285,7 +285,7 @@ export function LiveNewsCms() {
     <div className="pb-16">
       <PageHeader
         title="News"
-        subtitle="Pin, hide and retag the headlines your clients see on the dashboard, the news page, the world map and Kalks Trader."
+        subtitle="Pin, hide and retag the headlines your clients see on the dashboard, the news page, the world map and Ezymex Trader."
         actions={
           <>
             <Link href="/content/calendar">

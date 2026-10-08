@@ -100,7 +100,7 @@ No single clue is decisive. The more of them agree, the higher the odds.
 
 **Entry B, on the retest.** You wait for price to return to the broken level and hold. The stop is tighter, just below the retested zone, and reward to risk improves. The cost: strong breakouts often leave without a retest, and you miss them.
 
-> **Example:** NAS100 has ranged between 18,200 and 18,400 for two sessions. At the New York open a 15-minute candle closes at 18,460. Entry A buys at 18,460 with a stop at 18,370, below the range high: 90 points of risk. Entry B waits; price pulls back to 18,410, holds, and B buys at 18,415 with a stop at 18,375: 40 points of risk. Both target 18,600, the height of the range (200 points) added to the breakout level. On an example contract worth 1 USD per point, A risks 90 USD to make 140 USD; B risks 40 USD to make 185 USD. Check the contract specification in Kalks Trader for the actual value per point.
+> **Example:** NAS100 has ranged between 18,200 and 18,400 for two sessions. At the New York open a 15-minute candle closes at 18,460. Entry A buys at 18,460 with a stop at 18,370, below the range high: 90 points of risk. Entry B waits; price pulls back to 18,410, holds, and B buys at 18,415 with a stop at 18,375: 40 points of risk. Both target 18,600, the height of the range (200 points) added to the breakout level. On an example contract worth 1 USD per point, A risks 90 USD to make 140 USD; B risks 40 USD to make 185 USD. Check the contract specification in Ezymex Trader for the actual value per point.
 
 ```text
 Range height:  18,400 - 18,200 = 200 points → target 18,400 + 200 = 18,600
@@ -112,7 +112,7 @@ Entry B: risk 18,415 - 18,375 = 40   reward 18,600 - 18,415 = 185   ratio ≈ 4.
 
 A failed breakout can be a setup in itself. If price spikes below support, then closes back inside the range, sellers who shorted the break are trapped and must buy to exit. A trader can buy after the close back inside, with a stop just below the false-break low and a first target at the middle or top of the range.
 
-> **In Kalks Trader:** A buy stop order a few points above resistance enters as soon as price trades through the level, a faster but less filtered version of Entry A because it does not wait for the close. Once price has broken out, a buy limit order at the broken level automates Entry B. Give each order an expiry so a stale idea does not fill days later.
+> **In Ezymex Trader:** A buy stop order a few points above resistance enters as soon as price trades through the level, a faster but less filtered version of Entry A because it does not wait for the close. Once price has broken out, a buy limit order at the broken level automates Entry B. Give each order an expiry so a stale idea does not fill days later.
 
 > **Risk warning:** Breakouts often occur around news and session opens, when spreads widen and stop orders can slip. CFDs are leveraged, and losses can exceed what you planned. Size each position from the stop distance.
 

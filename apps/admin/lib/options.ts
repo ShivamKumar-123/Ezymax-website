@@ -1,5 +1,5 @@
-// Server-only client for the Kalks FX Options service (services/options, 127.0.0.1:8104).
-// OPTIONS_INTERNAL_TOKEN never leaves the server. The staff identity (`X-Kalks-Staff`, recorded as the actor in the
+// Server-only client for the Ezymex FX Options service (services/options, 127.0.0.1:8104).
+// OPTIONS_INTERNAL_TOKEN never leaves the server. The staff identity (`X-Ezymex-Staff`, recorded as the actor in the
 // options audit log) is built here from the staff session the gateway verified (lib/bff.ts requireStaff), never from
 // anything the browser sends.
 
@@ -11,7 +11,7 @@ const INTERNAL_TOKEN = process.env.OPTIONS_INTERNAL_TOKEN ?? "";
 /** The service requires the token in production (OPTIONS_ENV=production); development runs without one. */
 export const optionsConfigured = () => INTERNAL_TOKEN.length > 0 || process.env.NODE_ENV !== "production";
 
-/** `X-Kalks-Staff`: a printable-ASCII actor label (header values must be ASCII; the service keeps 120 chars). */
+/** `X-Ezymex-Staff`: a printable-ASCII actor label (header values must be ASCII; the service keeps 120 chars). */
 export function staffActor(staff: GatewayStaff): string {
   const who = (staff.email || staff.name || "staff").replace(/[^\x20-\x7e]/g, "?");
   return `${who} #${staff.id}`.slice(0, 120);
@@ -24,13 +24,13 @@ export async function optionsService<T = unknown>(
   init: { method?: Method; body?: unknown; staff: GatewayStaff; ip?: string | null; userAgent?: string | null; timeoutMs?: number },
 ): Promise<{ status: number; data: T }> {
   const headers: Record<string, string> = {
-    "x-kalks-tenant": init.staff.tenant?.slug || "kalks",
-    "x-kalks-staff": staffActor(init.staff),
-    "x-kalks-staff-id": String(init.staff.id),
-    "x-kalks-staff-name": encodeURIComponent(init.staff.name || init.staff.email),
-    "x-kalks-staff-role": init.staff.role,
+    "x-ezymex-tenant": init.staff.tenant?.slug || "ezymex",
+    "x-ezymex-staff": staffActor(init.staff),
+    "x-ezymex-staff-id": String(init.staff.id),
+    "x-ezymex-staff-name": encodeURIComponent(init.staff.name || init.staff.email),
+    "x-ezymex-staff-role": init.staff.role,
   };
-  if (INTERNAL_TOKEN) headers["x-kalks-internal"] = INTERNAL_TOKEN;
+  if (INTERNAL_TOKEN) headers["x-ezymex-internal"] = INTERNAL_TOKEN;
   if (init.body !== undefined) headers["content-type"] = "application/json";
   if (init.ip) headers["x-forwarded-for"] = init.ip;
   if (init.userAgent) headers["user-agent"] = init.userAgent;

@@ -25,9 +25,9 @@ import {
   formatNumber,
   useQuotes,
   type Column,
-} from "@kalks/ui";
-import { getClient, REASON_CODES, serverTime } from "@kalks/mock/admin-clients";
-import { EXPOSURE_GRID, MARGIN_CALLS, RISK_GROUPS, STOPOUT_LOG, TOP_CLIENTS, type MarginCallRow } from "@kalks/mock/admin-ops";
+} from "@ezymex/ui";
+import { getClient, REASON_CODES, serverTime } from "@ezymex/mock/admin-clients";
+import { EXPOSURE_GRID, MARGIN_CALLS, RISK_GROUPS, STOPOUT_LOG, TOP_CLIENTS, type MarginCallRow } from "@ezymex/mock/admin-ops";
 import { PnlText, ReasonDialog, usdCompact } from "@/components/command/kit";
 import { useLiveExposure } from "@/components/command/overview";
 

@@ -19,7 +19,7 @@ const academy: NsMessages<"academy"> = {
   "practice.demo": "S'entraîner en démo",
   "practice.openFreeDemo": "Ouvrir un compte démo gratuit",
   "practice.openDemo": "Ouvrir une démo",
-  "practice.inTrader": "S'entraîner dans Kalks Trader",
+  "practice.inTrader": "S'entraîner dans Ezymex Trader",
 
   // Levels (sent by the Academy service)
   "level.beginner": "Débutant",
@@ -30,12 +30,12 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "Analyse fondamentale",
   "track.technical": "Analyse technique",
-  // Product track of the Kalks FX Options elective (phase 9)
+  // Product track of the Ezymex FX Options elective (phase 9)
   "track.options": "Trading d'options",
   "trackShort.fundamental": "Fondamentale",
   "trackShort.technical": "Technique",
   "trackShort.options": "Options",
-  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  // Chip on a product course (e.g. Ezymex FX Options) that sits outside the eight core phases and can be taken at any time
   elective: "Facultative",
 
   // Durations (h = heures, min = minutes)
@@ -51,7 +51,7 @@ const academy: NsMessages<"academy"> = {
   "home.pathText": "Chaque phase principale comprend un parcours fondamental et un parcours technique, un examen final et un certificat.",
   // Section under the learning path listing the electives
   "home.electivesTitle": "Modules facultatifs",
-  "home.electivesText": "Des cours sur les produits Kalks, à suivre quand vous le souhaitez : chacun a son propre examen final et son certificat.",
+  "home.electivesText": "Des cours sur les produits Ezymex, à suivre quand vous le souhaitez : chacun a son propre examen final et son certificat.",
   "hero.allDone": "Tous les chapitres terminés",
   "hero.continue": "Poursuivre l'apprentissage",
   "hero.upNext": "À suivre",
@@ -218,7 +218,7 @@ const academy: NsMessages<"academy"> = {
   "callout.example": "Exemple",
   "callout.tip": "Astuce",
   "callout.note": "Remarque",
-  "callout.inKalksTrader": "Dans Kalks Trader",
+  "callout.inEzymexTrader": "Dans Ezymex Trader",
   diagram: "Schéma",
 };
 export default academy;

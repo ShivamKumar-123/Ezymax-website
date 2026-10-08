@@ -1,8 +1,8 @@
 //! Client controls through the real API handlers and shards (PostgreSQL, like tests/replay.rs): restrictions
 //! the Back Office sets in the gateway (served here by a mock gateway) are enforced by the engine — close-only,
-//! trading disabled, sign-in blocked (Kalks Trader sessions end, sign-in and SSO refused), copy / PAMM / MAM
+//! trading disabled, sign-in blocked (Ezymex Trader sessions end, sign-in and SSO refused), copy / PAMM / MAM
 //! participation — and a staff session opened as the client from the Back Office is read-only and ends after
-//! its time. Kalks Trader connections are reported to the gateway for presence.
+//! its time. Ezymex Trader connections are reported to the gateway for presence.
 //!
 //! Skipped with a message when PostgreSQL is not reachable (TRADING_TEST_DATABASE_URL, default :5433).
 
@@ -71,9 +71,9 @@ fn body<T: serde::de::DeserializeOwned>(v: Value) -> Body<T> {
 async fn staff_ctx(st: &AppState) -> StaffCtx {
     use axum::extract::FromRequestParts;
     let req = axum::http::Request::builder()
-        .header("x-kalks-staff-id", "12")
-        .header("x-kalks-staff-name", "Maya%20Support")
-        .header("x-kalks-staff-role", "compliance")
+        .header("x-ezymex-staff-id", "12")
+        .header("x-ezymex-staff-name", "Maya%20Support")
+        .header("x-ezymex-staff-role", "compliance")
         .body(())
         .unwrap();
     let (mut parts, _) = req.into_parts();
@@ -83,7 +83,7 @@ async fn staff_ctx(st: &AppState) -> StaffCtx {
 #[tokio::test]
 async fn restrictions_and_staff_sessions_through_the_api() {
     let base = std::env::var("TRADING_TEST_DATABASE_URL").unwrap_or_else(|_| "postgres://postgres@127.0.0.1:5433/postgres".into());
-    let db = format!("kalks_trading_controls_{}", std::process::id());
+    let db = format!("ezymex_trading_controls_{}", std::process::id());
     let Ok(server) = PgConnectOptions::from_str(&base) else { return };
     if server.clone().database("postgres").connect().await.is_err() {
         eprintln!("SKIP: PostgreSQL not reachable at {base}");
@@ -157,12 +157,12 @@ async fn restrictions_and_staff_sessions_through_the_api() {
         presence: Arc::new(trading::controls::Presence::default()),
         gateway: Arc::new(trading::controls::Gateway::new(&cfg.gateway_url, &cfg.gateway_token)),
     };
-    let tenant = registry.by_slug("kalks").unwrap();
+    let tenant = registry.by_slug("ezymex").unwrap();
     let ctx = |bearer: Option<&str>| Ctx { tenant: tenant.clone(), ip: "198.51.100.9".into(), user_agent: "it".into(), bearer: bearer.map(str::to_string) };
     let restrict = |kinds: Value| *gw.restrictions.lock().unwrap() = json!({"items": [{"user_id": USER, "tenant_id": 1, "kinds": kinds}]});
     let refresh = || api::controls::refresh(State(st.clone()), body(json!({"userId": USER})));
 
-    // a normal Kalks Trader session
+    // a normal Ezymex Trader session
     let Json(s) = api::terminal::login(State(st.clone()), ctx(None), body(json!({"login": LOGIN, "password": "Trade2026x"}))).await.unwrap();
     let tok = s["token"].as_str().unwrap().to_string();
     let order = |v: &str| json!({"symbol": "BTCUSD", "side": "buy", "type": "market", "volume": v});
@@ -192,7 +192,7 @@ async fn restrictions_and_staff_sessions_through_the_api() {
     restrict(json!([{"kind": "social", "expires_at": null}]));
     let _ = refresh().await.unwrap();
     let mut h = HeaderMap::new();
-    h.insert("x-kalks-user-id", USER.to_string().parse().unwrap());
+    h.insert("x-ezymex-user-id", USER.to_string().parse().unwrap());
     let e = api::social::subscribe(State(st.clone()), ctx(None), h.clone(), body(json!({"masterId": 1, "allocation": 100}))).await.unwrap_err();
     assert_eq!(code(&e), "restricted");
     assert_eq!(code(&api::social::invest(State(st.clone()), ctx(None), h.clone(), Path(1), body(json!({"amount": 100}))).await.unwrap_err()), "restricted");
@@ -241,7 +241,7 @@ async fn restrictions_and_staff_sessions_through_the_api() {
     let actor: String = sqlx::query_scalar("SELECT actor FROM events WHERE login = $1 ORDER BY version DESC LIMIT 1").bind(LOGIN).fetch_one(&pool).await.unwrap();
     assert_eq!(actor, "staff:12");
 
-    // presence: Kalks Trader connections are reported to the gateway (staff sessions never are)
+    // presence: Ezymex Trader connections are reported to the gateway (staff sessions never are)
     trading::controls::spawn(hub.clone(), pool.clone(), st.gateway.clone(), st.presence.clone());
     let guard = st.presence.register(trading::controls::Conn { user_id: USER, login: LOGIN, ip: Some("198.51.100.9".into()), country: Some("in".into()), user_agent: None, since: Utc::now() });
     let seen = |pred: &dyn Fn(&Value) -> bool| gw.reports.lock().unwrap().iter().any(pred);

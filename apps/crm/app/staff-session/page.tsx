@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { Logo } from "@kalks/ui/logo";
-import { getT } from "@kalks/i18n/server";
+import { Logo } from "@ezymex/ui/logo";
+import { getT } from "@ezymex/i18n/server";
 
 export const metadata: Metadata = { title: "Staff session" };
 

@@ -72,7 +72,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "kpi.demo": "{count} demo",
   "alloc.title": "Phân bổ vốn",
   "alloc.subtitle": "Tài khoản thực, quy đổi USD",
-  "alloc.noEquity": "Tài khoản thực của bạn chưa có vốn. Hãy nạp tiền từ ví Kalks của bạn.",
+  "alloc.noEquity": "Tài khoản thực của bạn chưa có vốn. Hãy nạp tiền từ ví Ezymex của bạn.",
   "alloc.noLive": "Mở tài khoản thực để xem phân bổ vốn tại đây.",
   "accounts.subtitle": "Vốn và ký quỹ theo từng tài khoản",
   "accounts.manage": "Quản lý",

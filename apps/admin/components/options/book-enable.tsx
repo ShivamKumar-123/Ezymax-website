@@ -20,8 +20,8 @@
 import * as React from "react";
 import Link from "next/link";
 import { ArrowRight, CircleCheck, Gavel, Hourglass, OctagonAlert, RefreshCw, Rocket, TriangleAlert } from "lucide-react";
-import { Button, Card, CardHeader, Chip, EmptyState, Field, Input, PageHeader, Progress, Reveal, Segmented, Tooltip, cn, formatNumber } from "@kalks/ui";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { Button, Card, CardHeader, Chip, EmptyState, Field, Input, PageHeader, Progress, Reveal, Segmented, Tooltip, cn, formatNumber } from "@ezymex/ui";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { ErrorState, TableSkeleton, ago, useNow, when } from "@/components/live/kit";
 import { useStaff } from "@/components/staff-session";
 import type { Approval, EnableDone, EnablePlan, FourEyesPending } from "./types";
@@ -228,7 +228,7 @@ function ForwardOnly({ kind }: { kind: string }) {
         <div className="space-y-1.5">
           <div className="text-[17px] font-semibold text-down">{live ? "Real money · forward-only" : "Forward-only"}</div>
           <div className="text-[13px] leading-relaxed text-fg">
-            Enabling moves every {kindLabel(kind)} option account onto the order book{live ? ", where clients trade real money with each other and with the Kalks market maker" : ""}. <span className="font-medium">There is no switch-off.</span>
+            Enabling moves every {kindLabel(kind)} option account onto the order book{live ? ", where clients trade real money with each other and with the Ezymex market maker" : ""}. <span className="font-medium">There is no switch-off.</span>
           </div>
           <div className="text-[12.5px] leading-relaxed text-fg-2">
             Kill switches afterwards: halt or cancel-only per series, expiry, underlying or everything (Order books), pause the market maker, and widen its spreads (Market maker). Matching clients against each other may need an MTF / OTF-type licence in some jurisdictions: check per broker.
@@ -269,7 +269,7 @@ function StepRow({ n, step, plan, done }: { n: number; step: Step; plan: EnableP
         {step.key === "novate" && plan.novation && (
           <div className="mt-1 text-[12px] text-fg-2">
             {formatNumber(plan.novation.positions, 0)} positions of {formatNumber(plan.novation.clients, 0)} clients · {formatNumber(plan.novation.contracts, 0)} contracts · premium {usd(plan.novation.premiumUsd)}
-            {plan.barriersStayHouse ? <span className="text-fg-3"> · {formatNumber(plan.barriersStayHouse, 0)} barrier positions stay with the house (RFQ-only, Kalks-quoted)</span> : null}
+            {plan.barriersStayHouse ? <span className="text-fg-3"> · {formatNumber(plan.barriersStayHouse, 0)} barrier positions stay with the house (RFQ-only, Ezymex-quoted)</span> : null}
           </div>
         )}
       </div>

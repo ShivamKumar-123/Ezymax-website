@@ -1,4 +1,4 @@
-//! End-to-end growth tests against a throw-away database `kalks_growth_test_<pid>_<n>` on the local PostgreSQL
+//! End-to-end growth tests against a throw-away database `ezymex_growth_test_<pid>_<n>` on the local PostgreSQL
 //! (GROWTH_TEST_DATABASE_URL, default :5433). Skipped when PostgreSQL is unreachable. The trading engine and the
 //! wallet are one mock HTTP server, so engine legs, idempotency keys and wallet retries are exercised for real.
 
@@ -154,10 +154,10 @@ async fn env() -> Option<Env> {
         eprintln!("skipping growth DB tests: no PostgreSQL at {base}");
         return None;
     }
-    let name = format!("kalks_growth_test_{}_{}", std::process::id(), N.fetch_add(1, Ordering::SeqCst));
+    let name = format!("ezymex_growth_test_{}_{}", std::process::id(), N.fetch_add(1, Ordering::SeqCst));
     let url = admin.clone().database(&name).to_url_lossy().to_string();
     let pool = db::connect(&url).await.expect("create + migrate");
-    db::seed(&pool, "kalks").await.unwrap();
+    db::seed(&pool, "ezymex").await.unwrap();
     let (mock_url, m) = mock().await;
     let mut cfg = Config::for_tests(&url);
     cfg.trading_url = mock_url.clone();
@@ -179,11 +179,11 @@ impl Env {
     }
 
     async fn deal(&self, login: i64, user: i64, kind: &str, symbol: &str, lots: &str, profit: &str, opened_ago_min: i64) -> Option<deals::Produced> {
-        let p = Programme::load(&self.st, "kalks").await.unwrap();
+        let p = Programme::load(&self.st, "ezymex").await.unwrap();
         let now = Utc::now();
         let d = DealIn {
             deal_id: DEAL.fetch_add(1, Ordering::SeqCst),
-            tenant: "kalks".into(),
+            tenant: "ezymex".into(),
             login,
             user_id: user,
             symbol: symbol.into(),
@@ -202,14 +202,14 @@ impl Env {
         deals::ingest(&self.st, &p, &d).await.unwrap()
     }
 
-    /// A Kalks FX Options closing deal (volume = contracts).
+    /// A Ezymex FX Options closing deal (volume = contracts).
     async fn option_deal(&self, login: i64, user: i64, contracts: &str, profit: &str, opened_ago_min: i64) -> (i64, Option<deals::Produced>) {
-        let p = Programme::load(&self.st, "kalks").await.unwrap();
+        let p = Programme::load(&self.st, "ezymex").await.unwrap();
         let now = Utc::now();
         let id = DEAL.fetch_add(1, Ordering::SeqCst);
         let d = DealIn {
             deal_id: id,
-            tenant: "kalks".into(),
+            tenant: "ezymex".into(),
             login,
             user_id: user,
             symbol: "EURUSD-20261009-1.1650-C".into(),
@@ -232,12 +232,12 @@ impl Env {
     /// `premium` = its opening premium (USD), `fill` = the order-book fill (None = house-priced).
     #[allow(clippy::too_many_arguments)]
     async fn opt(&self, login: i64, user: i64, kind: &str, symbol: &str, side: &str, contracts: &str, profit: &str, premium: &str, open_ago: i64, close_ago: i64, fill: Option<&str>) -> (i64, deals::Produced) {
-        let p = Programme::load(&self.st, "kalks").await.unwrap();
+        let p = Programme::load(&self.st, "ezymex").await.unwrap();
         let now = Utc::now();
         let id = DEAL.fetch_add(1, Ordering::SeqCst);
         let d = DealIn {
             deal_id: id,
-            tenant: "kalks".into(),
+            tenant: "ezymex".into(),
             login,
             user_id: user,
             symbol: symbol.into(),
@@ -266,7 +266,7 @@ impl Env {
 #[tokio::test]
 async fn deals_earn_points_and_cashback_once() {
     let Some(e) = env().await else { return };
-    sqlx::query("INSERT INTO cashback_programmes (tenant, name, asset_classes, usd_per_lot, max_per_month) VALUES ('kalks', 'FX cashback', '{forex}', 2.5, 6)").execute(&e.st.pool).await.unwrap();
+    sqlx::query("INSERT INTO cashback_programmes (tenant, name, asset_classes, usd_per_lot, max_per_month) VALUES ('ezymex', 'FX cashback', '{forex}', 2.5, 6)").execute(&e.st.pool).await.unwrap();
 
     // 2 lots EURUSD on live, held 5 min: forex 10 pts/lot × Bronze 1.0 = 20 pts; cashback 2 × 2.5 = 5
     let p = e.deal(10000001, 42, "live", "EURUSD", "2", "35", 5).await.unwrap();
@@ -274,10 +274,10 @@ async fn deals_earn_points_and_cashback_once() {
     assert_eq!(p.cashback, dec("5"));
     // a deal id seen before is ignored
     let dup = 9_000_001;
-    let prog = Programme::load(&e.st, "kalks").await.unwrap();
+    let prog = Programme::load(&e.st, "ezymex").await.unwrap();
     let again = DealIn {
         deal_id: dup,
-        tenant: "kalks".into(),
+        tenant: "ezymex".into(),
         login: 10000001,
         user_id: 42,
         symbol: "EURUSD".into(),
@@ -306,10 +306,10 @@ async fn deals_earn_points_and_cashback_once() {
     // metals rule (15/lot) on 1.5 lots
     let p = e.deal(10000001, 42, "live", "XAUUSD", "1.5", "0", 10).await.unwrap();
     assert_eq!(p.points, 22);
-    assert_eq!(loyalty::balance(&e.st.pool, "kalks", 42).await.unwrap(), 20 + 20 + 20 + 22);
+    assert_eq!(loyalty::balance(&e.st.pool, "ezymex", 42).await.unwrap(), 20 + 20 + 20 + 22);
 
     // cashback payout: one wallet transfer (refund) for the client, idempotent
-    let (n, total) = payouts::cashback_batch(&e.st, "kalks", true).await.unwrap();
+    let (n, total) = payouts::cashback_batch(&e.st, "ezymex", true).await.unwrap();
     assert_eq!((n, total), (1, dec("6")), "cap 6 reached: 5 + 1 + 0");
     e.m.lock().unwrap().wallet_fail_next = 1;
     assert_eq!(payouts::cashback_tick(&e.st).await.unwrap(), 0, "wallet down: retried later");
@@ -322,7 +322,7 @@ async fn deals_earn_points_and_cashback_once() {
 
     // reversal: points reversed, nothing else double counted
     deals::reverse_deal(&e.st, dup).await.unwrap();
-    assert_eq!(loyalty::balance(&e.st.pool, "kalks", 42).await.unwrap(), 62);
+    assert_eq!(loyalty::balance(&e.st.pool, "ezymex", 42).await.unwrap(), 62);
     e.drop().await;
 }
 
@@ -331,18 +331,18 @@ async fn bonus_grant_releases_per_lot_and_is_removed_on_withdrawal() {
     let Some(e) = env().await else { return };
     let login = 10000011;
     e.add_account(login, 7, "live");
-    let cid: i64 = sqlx::query_scalar("INSERT INTO bonus_campaigns (tenant, name, kind, fixed_amount, release_per_lot, expiry_days, status) VALUES ('kalks','Welcome $100','fixed',100,10,30,'active') RETURNING id")
+    let cid: i64 = sqlx::query_scalar("INSERT INTO bonus_campaigns (tenant, name, kind, fixed_amount, release_per_lot, expiry_days, status) VALUES ('ezymex','Welcome $100','fixed',100,10,30,'active') RETURNING id")
         .fetch_one(&e.st.pool)
         .await
         .unwrap();
-    let acc = clients::account(&e.st, "kalks", login).await.unwrap().unwrap();
+    let acc = clients::account(&e.st, "ezymex", login).await.unwrap().unwrap();
     let mut tx = e.st.pool.begin().await.unwrap();
     let opts = ClaimOpts { source: "claim", require_public: true, amount_override: None, note: None, skip_limits: false };
-    let gid = bonus::claim_in(&mut tx, "kalks", 7, cid, Some(&acc), &Segment::default(), &opts).await.unwrap();
+    let gid = bonus::claim_in(&mut tx, "ezymex", 7, cid, Some(&acc), &Segment::default(), &opts).await.unwrap();
     tx.commit().await.unwrap();
     // a second claim is refused (per-user limit 1)
     let mut tx = e.st.pool.begin().await.unwrap();
-    assert!(bonus::claim_in(&mut tx, "kalks", 7, cid, Some(&acc), &Segment::default(), &opts).await.is_err());
+    assert!(bonus::claim_in(&mut tx, "ezymex", 7, cid, Some(&acc), &Segment::default(), &opts).await.is_err());
     drop(tx);
 
     assert_eq!(bonus::post_tick(&e.st).await.unwrap(), 1);
@@ -382,14 +382,14 @@ async fn deposit_bonus_completes_after_enough_lots() {
     let login = 10000021;
     e.add_account(login, 8, "live");
     let cid: i64 = sqlx::query_scalar(
-        "INSERT INTO bonus_campaigns (tenant, name, kind, pct, cap, min_deposit, release_per_lot, expiry_days, status) VALUES ('kalks','50% deposit','deposit',50,120,100,20,30,'active') RETURNING id",
+        "INSERT INTO bonus_campaigns (tenant, name, kind, pct, cap, min_deposit, release_per_lot, expiry_days, status) VALUES ('ezymex','50% deposit','deposit',50,120,100,20,30,'active') RETURNING id",
     )
     .fetch_one(&e.st.pool)
     .await
     .unwrap();
     let mut tx = e.st.pool.begin().await.unwrap();
     let opts = ClaimOpts { source: "claim", require_public: true, amount_override: None, note: None, skip_limits: false };
-    let gid = bonus::claim_in(&mut tx, "kalks", 8, cid, None, &Segment::default(), &opts).await.unwrap();
+    let gid = bonus::claim_in(&mut tx, "ezymex", 8, cid, None, &Segment::default(), &opts).await.unwrap();
     tx.commit().await.unwrap();
     assert_eq!(bonus::deposit_tick(&e.st).await.unwrap(), 0, "no deposit yet");
     // a $300 deposit → 50% = 150, capped at 120
@@ -414,11 +414,11 @@ async fn deposit_bonus_completes_after_enough_lots() {
 #[tokio::test]
 async fn promo_limits_hold_under_concurrency() {
     let Some(e) = env().await else { return };
-    sqlx::query("INSERT INTO promo_codes (tenant, code, kind, points, max_uses, per_user_limit) VALUES ('kalks','FIVE','points',500,5,1)").execute(&e.st.pool).await.unwrap();
+    sqlx::query("INSERT INTO promo_codes (tenant, code, kind, points, max_uses, per_user_limit) VALUES ('ezymex','FIVE','points',500,5,1)").execute(&e.st.pool).await.unwrap();
     let mut tasks = vec![];
     for u in 0..20 {
         let st = e.st.clone();
-        tasks.push(tokio::spawn(async move { promos::redeem(&st, "kalks", 1000 + u, "five", None, &Segment::default()).await.is_ok() }));
+        tasks.push(tokio::spawn(async move { promos::redeem(&st, "ezymex", 1000 + u, "five", None, &Segment::default()).await.is_ok() }));
     }
     let mut ok = 0;
     for t in tasks {
@@ -432,13 +432,13 @@ async fn promo_limits_hold_under_concurrency() {
     assert_eq!(e.one::<i64>("SELECT sum(points)::bigint FROM points_ledger WHERE kind = 'promo'").await, 2500);
 
     // per-client limit, window and segment rules
-    sqlx::query("INSERT INTO promo_codes (tenant, code, kind, points, per_user_limit, countries, kyc_required) VALUES ('kalks','INONLY','points',100,1,'{IN}',true)").execute(&e.st.pool).await.unwrap();
+    sqlx::query("INSERT INTO promo_codes (tenant, code, kind, points, per_user_limit, countries, kyc_required) VALUES ('ezymex','INONLY','points',100,1,'{IN}',true)").execute(&e.st.pool).await.unwrap();
     let verified_in = Segment { country: "IN".into(), kyc: "verified".into(), signed_up_at: None };
-    assert!(promos::redeem(&e.st, "kalks", 1, "INONLY", None, &Segment { country: "AE".into(), ..verified_in.clone() }).await.is_err());
-    assert!(promos::redeem(&e.st, "kalks", 1, "INONLY", None, &Segment { kyc: "pending".into(), ..verified_in.clone() }).await.is_err());
-    assert!(promos::redeem(&e.st, "kalks", 1, "INONLY", None, &verified_in).await.is_ok());
-    assert!(promos::redeem(&e.st, "kalks", 1, "inonly", None, &verified_in).await.is_err(), "once per client");
-    assert!(promos::redeem(&e.st, "kalks", 1, "NOPE", None, &verified_in).await.is_err());
+    assert!(promos::redeem(&e.st, "ezymex", 1, "INONLY", None, &Segment { country: "AE".into(), ..verified_in.clone() }).await.is_err());
+    assert!(promos::redeem(&e.st, "ezymex", 1, "INONLY", None, &Segment { kyc: "pending".into(), ..verified_in.clone() }).await.is_err());
+    assert!(promos::redeem(&e.st, "ezymex", 1, "INONLY", None, &verified_in).await.is_ok());
+    assert!(promos::redeem(&e.st, "ezymex", 1, "inonly", None, &verified_in).await.is_err(), "once per client");
+    assert!(promos::redeem(&e.st, "ezymex", 1, "NOPE", None, &verified_in).await.is_err());
     e.drop().await;
 }
 
@@ -447,7 +447,7 @@ async fn contest_scores_ranks_and_pays() {
     let Some(e) = env().await else { return };
     let cid: i64 = sqlx::query_scalar(
         "INSERT INTO contests (tenant, slug, name, kind, starts_at, ends_at, scoring, min_trades, starting_balance, prizes)
-         VALUES ('kalks','sprint','Sprint','demo', now() - interval '2 hours', now() + interval '1 hour','return_pct',2,10000,
+         VALUES ('ezymex','sprint','Sprint','demo', now() - interval '2 hours', now() + interval '1 hour','return_pct',2,10000,
                  '[{\"rankFrom\":1,\"rankTo\":1,\"amount\":300,\"payout\":\"wallet\"},{\"rankFrom\":2,\"rankTo\":3,\"amount\":50,\"payout\":\"wallet\"}]') RETURNING id",
     )
     .fetch_one(&e.st.pool)
@@ -456,7 +456,7 @@ async fn contest_scores_ranks_and_pays() {
     for (i, (login, user)) in [(50000101, 101), (50000102, 102), (50000103, 103)].iter().enumerate() {
         e.add_account(*login, *user, "demo");
         e.m.lock().unwrap().accounts.get_mut(login).unwrap()["equity"] = json!(1000.0 + i as f64 * 10.0);
-        sqlx::query("INSERT INTO contest_entries (contest_id, tenant, user_id, login, display_name, start_equity, joined_at) VALUES ($1,'kalks',$2,$3,$4,10000, now() - make_interval(mins => $5))")
+        sqlx::query("INSERT INTO contest_entries (contest_id, tenant, user_id, login, display_name, start_equity, joined_at) VALUES ($1,'ezymex',$2,$3,$4,10000, now() - make_interval(mins => $5))")
             .bind(cid)
             .bind(user)
             .bind(login)
@@ -500,12 +500,12 @@ async fn contest_scores_ranks_and_pays() {
 #[tokio::test]
 async fn redemption_pays_wallet_with_retry() {
     let Some(e) = env().await else { return };
-    sqlx::query("INSERT INTO points_ledger (tenant, user_id, kind, points, ref, description) VALUES ('kalks', 9, 'promo', 1500, 't', 'test')").execute(&e.st.pool).await.unwrap();
+    sqlx::query("INSERT INTO points_ledger (tenant, user_id, kind, points, ref, description) VALUES ('ezymex', 9, 'promo', 1500, 't', 'test')").execute(&e.st.pool).await.unwrap();
     let item: i64 = e.one("SELECT id FROM catalogue WHERE kind = 'cashback' ORDER BY cost_points LIMIT 1").await;
     e.m.lock().unwrap().wallet_fail_next = 1;
-    let r = loyalty::redeem(&e.st, "kalks", 9, item, None).await.unwrap();
+    let r = loyalty::redeem(&e.st, "ezymex", 9, item, None).await.unwrap();
     assert_eq!(r["balance"], 500);
-    assert!(loyalty::redeem(&e.st, "kalks", 9, item, None).await.is_err(), "not enough points");
+    assert!(loyalty::redeem(&e.st, "ezymex", 9, item, None).await.is_err(), "not enough points");
     payouts::wallet_tick(&e.st).await.unwrap();
     assert_eq!(e.one::<String>("SELECT status FROM redemptions").await, "pending");
     sqlx::query("UPDATE wallet_credits SET next_try_at = now()").execute(&e.st.pool).await.unwrap();
@@ -515,9 +515,9 @@ async fn redemption_pays_wallet_with_retry() {
     assert_eq!(w.len(), 1);
     assert_eq!((w[0].2, w[0].3.as_str()), (dec("10"), "adjustment"));
     // voucher redemption + internal voucher use is idempotent on ref
-    sqlx::query("INSERT INTO points_ledger (tenant, user_id, kind, points, ref, description) VALUES ('kalks', 9, 'promo', 3000, 't2', 'test')").execute(&e.st.pool).await.unwrap();
+    sqlx::query("INSERT INTO points_ledger (tenant, user_id, kind, points, ref, description) VALUES ('ezymex', 9, 'promo', 3000, 't2', 'test')").execute(&e.st.pool).await.unwrap();
     let disc: i64 = e.one("SELECT id FROM catalogue WHERE kind = 'fee_discount'").await;
-    let r = loyalty::redeem(&e.st, "kalks", 9, disc, None).await.unwrap();
+    let r = loyalty::redeem(&e.st, "ezymex", 9, disc, None).await.unwrap();
     assert!(r["redemption"]["voucherCode"].as_str().unwrap().starts_with("KV-"));
     e.drop().await;
 }
@@ -528,25 +528,25 @@ async fn option_deals_and_premiums_earn_no_rewards_and_never_move_contests() {
     let login = 10000031;
     e.add_account(login, 51, "live");
     // every reward is switched on for this client: FX cashback, a bonus releasing per lot, a running live contest
-    sqlx::query("INSERT INTO cashback_programmes (tenant, name, usd_per_lot) VALUES ('kalks', 'All cashback', 3)").execute(&e.st.pool).await.unwrap();
-    let cid: i64 = sqlx::query_scalar("INSERT INTO bonus_campaigns (tenant, name, kind, fixed_amount, release_per_lot, expiry_days, status) VALUES ('kalks','Welcome $100','fixed',100,10,30,'active') RETURNING id")
+    sqlx::query("INSERT INTO cashback_programmes (tenant, name, usd_per_lot) VALUES ('ezymex', 'All cashback', 3)").execute(&e.st.pool).await.unwrap();
+    let cid: i64 = sqlx::query_scalar("INSERT INTO bonus_campaigns (tenant, name, kind, fixed_amount, release_per_lot, expiry_days, status) VALUES ('ezymex','Welcome $100','fixed',100,10,30,'active') RETURNING id")
         .fetch_one(&e.st.pool)
         .await
         .unwrap();
-    let acc = clients::account(&e.st, "kalks", login).await.unwrap().unwrap();
+    let acc = clients::account(&e.st, "ezymex", login).await.unwrap().unwrap();
     let mut tx = e.st.pool.begin().await.unwrap();
     let opts = ClaimOpts { source: "claim", require_public: true, amount_override: None, note: None, skip_limits: false };
-    let gid = bonus::claim_in(&mut tx, "kalks", 51, cid, Some(&acc), &Segment::default(), &opts).await.unwrap();
+    let gid = bonus::claim_in(&mut tx, "ezymex", 51, cid, Some(&acc), &Segment::default(), &opts).await.unwrap();
     tx.commit().await.unwrap();
     bonus::post_tick(&e.st).await.unwrap();
     sqlx::query("UPDATE bonus_grants SET granted_at = now() - interval '1 hour'").execute(&e.st.pool).await.unwrap();
     let contest: i64 = sqlx::query_scalar(
-        "INSERT INTO contests (tenant, slug, name, kind, starts_at, ends_at, scoring, min_trades) VALUES ('kalks','opt','Live sprint','live', now() - interval '2 hours', now() + interval '1 hour','profit',0) RETURNING id",
+        "INSERT INTO contests (tenant, slug, name, kind, starts_at, ends_at, scoring, min_trades) VALUES ('ezymex','opt','Live sprint','live', now() - interval '2 hours', now() + interval '1 hour','profit',0) RETURNING id",
     )
     .fetch_one(&e.st.pool)
     .await
     .unwrap();
-    let entry: i64 = sqlx::query_scalar("INSERT INTO contest_entries (contest_id, tenant, user_id, login, display_name, start_equity, joined_at) VALUES ($1,'kalks',51,$2,'T51',1000, now() - interval '90 minutes') RETURNING id")
+    let entry: i64 = sqlx::query_scalar("INSERT INTO contest_entries (contest_id, tenant, user_id, login, display_name, start_equity, joined_at) VALUES ($1,'ezymex',51,$2,'T51',1000, now() - interval '90 minutes') RETURNING id")
         .bind(contest)
         .bind(login)
         .fetch_one(&e.st.pool)
@@ -563,10 +563,10 @@ async fn option_deals_and_premiums_earn_no_rewards_and_never_move_contests() {
     assert_eq!(e.one::<D>(&format!("SELECT lots_traded FROM bonus_grants WHERE id = {gid}")).await, D::ZERO);
     assert_eq!(e.one::<D>(&format!("SELECT released FROM bonus_grants WHERE id = {gid}")).await, D::ZERO);
     // seen once (the poller overlap re-reads it), and its reversal (an options void) is harmless
-    let prog = Programme::load(&e.st, "kalks").await.unwrap();
+    let prog = Programme::load(&e.st, "ezymex").await.unwrap();
     let again = DealIn {
         deal_id: oid,
-        tenant: "kalks".into(),
+        tenant: "ezymex".into(),
         login,
         user_id: 51,
         symbol: "EURUSD-20261009-1.1650-C".into(),
@@ -586,7 +586,7 @@ async fn option_deals_and_premiums_earn_no_rewards_and_never_move_contests() {
     deals::reverse_deal(&e.st, oid).await.unwrap();
     assert_eq!(e.one::<i64>("SELECT count(*) FROM points_ledger WHERE user_id = 51").await, 0);
     // an unflagged deal with an option series code is still treated as an option
-    let p = Programme::load(&e.st, "kalks").await.unwrap();
+    let p = Programme::load(&e.st, "ezymex").await.unwrap();
     let sneaky = DealIn { deal_id: DEAL.fetch_add(1, Ordering::SeqCst), ..again.clone() };
     assert_eq!(deals::ingest(&e.st, &p, &sneaky).await.unwrap().unwrap(), deals::Produced::default());
 
@@ -613,7 +613,7 @@ async fn option_deals_and_premiums_earn_no_rewards_and_never_move_contests() {
             ],
         );
     }
-    let acc = clients::account(&e.st, "kalks", login).await.unwrap().unwrap();
+    let acc = clients::account(&e.st, "ezymex", login).await.unwrap().unwrap();
     assert_eq!((acc.floating_usd(), acc.equity_ex_options_usd()), (dec("10"), dec("810")));
     contests::refresh(&e.st, contest).await.unwrap();
     let (realised, floating, score, status): (D, D, D, String) = sqlx::query_as("SELECT realised, floating, score, status FROM contest_entries WHERE id = $1").bind(entry).fetch_one(&e.st.pool).await.unwrap();
@@ -630,7 +630,7 @@ async fn option_deals_and_premiums_earn_no_rewards_and_never_move_contests() {
 // ---------------------------------------------------------------- options contests and share cards (O36)
 
 fn profile(first: &str) -> Profile {
-    Profile { first_name: first.into(), last_name: "Tester".into(), country: "IN".into(), kyc: "verified".into(), referral_code: "KALKS42".into(), ..Default::default() }
+    Profile { first_name: first.into(), last_name: "Tester".into(), country: "IN".into(), kyc: "verified".into(), referral_code: "EZYMEX42".into(), ..Default::default() }
 }
 
 #[tokio::test]
@@ -644,32 +644,32 @@ async fn options_contest_scores_realised_option_pnl_in_contracts_without_self_tr
     e.m.lock().unwrap().options_ok.extend([61, 64]);
     let cid: i64 = sqlx::query_scalar(
         "INSERT INTO contests (tenant, slug, name, kind, instrument, starts_at, ends_at, scoring, min_trades, min_premium, prizes)
-         VALUES ('kalks','opt-live','Options sprint','live','options', now() - interval '2 hours', now() + interval '1 hour','profit',2,20,
+         VALUES ('ezymex','opt-live','Options sprint','live','options', now() - interval '2 hours', now() + interval '1 hour','profit',2,20,
                  '[{\"rankFrom\":1,\"rankTo\":1,\"amount\":200,\"payout\":\"wallet\"}]') RETURNING id",
     )
     .fetch_one(&e.st.pool)
     .await
     .unwrap();
-    let cfd: i64 = sqlx::query_scalar("INSERT INTO contests (tenant, slug, name, kind, starts_at, ends_at, scoring) VALUES ('kalks','cfd-live','CFD sprint','live', now() - interval '2 hours', now() + interval '1 hour','profit') RETURNING id")
+    let cfd: i64 = sqlx::query_scalar("INSERT INTO contests (tenant, slug, name, kind, starts_at, ends_at, scoring) VALUES ('ezymex','cfd-live','CFD sprint','live', now() - interval '2 hours', now() + interval '1 hour','profit') RETURNING id")
         .fetch_one(&e.st.pool)
         .await
         .unwrap();
 
     // eligibility: the options intro (gateway suitability) and an account that may trade options
-    match contests::join(&e.st, "kalks", 63, cid, Some(l3), &profile("Nia")).await {
+    match contests::join(&e.st, "ezymex", 63, cid, Some(l3), &profile("Nia")).await {
         Err(growth::error::ApiError::Conflict { code, .. }) => assert_eq!(code, "options_intro_required"),
         other => panic!("not eligible for options: {other:?}"),
     }
-    match contests::join(&e.st, "kalks", 64, cid, Some(prop), &profile("Omar")).await {
+    match contests::join(&e.st, "ezymex", 64, cid, Some(prop), &profile("Omar")).await {
         Err(growth::error::ApiError::Validation { field, .. }) => assert_eq!(field, "login", "prop accounts never trade options"),
         other => panic!("prop account: {other:?}"),
     }
-    let j = contests::join(&e.st, "kalks", 64, cid, Some(l5), &profile("Omar")).await.unwrap();
+    let j = contests::join(&e.st, "ezymex", 64, cid, Some(l5), &profile("Omar")).await.unwrap();
     assert_eq!(j["entry"]["contracts"], json!(0.0));
-    contests::join(&e.st, "kalks", 61, cid, Some(l1), &profile("Ravi")).await.unwrap();
-    contests::join(&e.st, "kalks", 61, cfd, Some(l1), &profile("Ravi")).await.unwrap();
+    contests::join(&e.st, "ezymex", 61, cid, Some(l1), &profile("Ravi")).await.unwrap();
+    contests::join(&e.st, "ezymex", 61, cfd, Some(l1), &profile("Ravi")).await.unwrap();
     // CFD contests stay open to everyone, options intro or not
-    contests::join(&e.st, "kalks", 63, cfd, Some(l3), &profile("Nia")).await.unwrap();
+    contests::join(&e.st, "ezymex", 63, cfd, Some(l3), &profile("Nia")).await.unwrap();
 
     const S1: &str = "EURUSD-20261009-1.1650-C";
     const S3: &str = "USDJPY-20261009-150.00-C";
@@ -778,7 +778,7 @@ async fn options_share_card_shows_terms_premiums_and_no_balance() {
         let st = e.st.clone();
         async move {
             let req = shares::ShareReq { kind: "trade".into(), login, deal_id: Some(deal_id), from: None, to: None, show_amounts: show };
-            shares::create(&st, "kalks", 71, &req, &profile("Lina")).await.unwrap()["share"].clone()
+            shares::create(&st, "ezymex", 71, &req, &profile("Lina")).await.unwrap()["share"].clone()
         }
     };
     let s = share(901, false).await;
@@ -791,7 +791,7 @@ async fn options_share_card_shows_terms_premiums_and_no_balance() {
     assert_eq!((o["pnlPct"].as_f64(), d["movePct"].as_f64()), (Some(158.33), Some(158.33)));
     assert_eq!((o["breakeven"].as_f64(), o["settle"].as_f64(), o["reason"].as_str()), (Some(1.1674), Some(1.1712), Some("closed")));
     assert!(d["profit"].is_null(), "no money without showAmounts");
-    assert_eq!(d["referralCode"], "KALKS42");
+    assert_eq!(d["referralCode"], "EZYMEX42");
     let text = d.to_string();
     for k in ["balance", "equity", "\"login\""] {
         assert!(!text.contains(k), "the card never carries {k}");

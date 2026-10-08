@@ -1,14 +1,14 @@
 "use client";
 
-// CFD | Options switch at the top of Kalks Trader. A tiny external store (kept outside lib/store.tsx), persisted per
+// CFD | Options switch at the top of Ezymex Trader. A tiny external store (kept outside lib/store.tsx), persisted per
 // browser. `?mode=options` (and `?u=EURUSD` for the underlying) from the public option chain page selects Options.
 import * as React from "react";
 
 export type TradeMode = "cfd" | "options";
 
-const KEY = "kalks.terminal.mode";
+const KEY = "ezymex.terminal.mode";
 /** Underlying asked for by a link (`?u=`), read once by the options workspace. */
-export const LINK_UNDERLYING_KEY = "kalks.options.link-u";
+export const LINK_UNDERLYING_KEY = "ezymex.options.link-u";
 
 function initial(): TradeMode {
   if (typeof window === "undefined") return "cfd";

@@ -3,9 +3,9 @@
 import * as React from "react";
 import { motion } from "motion/react";
 import { Ban, CalendarClock, Lock, Newspaper, Pencil, Plus, ShieldAlert, Sun, Trash2 } from "lucide-react";
-import { Button, Card, CardHeader, Chip, Dialog, Flag, IconButton, PageHeader, Reveal, Segmented, SymbolCell, Toggle, cn, formatDateTime, type ChipTone } from "@kalks/ui";
-import { INSTRUMENTS } from "@kalks/mock";
-import { BLACKOUTS, MARGIN_SCHEDULES, RESTRICTIONS, type BlackoutWindow, type MarginSchedule, type SymbolRestriction } from "@kalks/mock/admin-config";
+import { Button, Card, CardHeader, Chip, Dialog, Flag, IconButton, PageHeader, Reveal, Segmented, SymbolCell, Toggle, cn, formatDateTime, type ChipTone } from "@ezymex/ui";
+import { INSTRUMENTS } from "@ezymex/mock";
+import { BLACKOUTS, MARGIN_SCHEDULES, RESTRICTIONS, type BlackoutWindow, type MarginSchedule, type SymbolRestriction } from "@ezymex/mock/admin-config";
 import { MiniField, MiniStat, NumInput, Select, TextInput, auditToast, useReason } from "@/components/config/kit";
 
 const KIND: Record<MarginSchedule["kind"], { label: string; tone: ChipTone; icon: React.ReactNode }> = {

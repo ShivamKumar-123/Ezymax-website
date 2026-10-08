@@ -1,5 +1,5 @@
-// Contract specs and accounts for the Kalks Trader tests (the engine's /v1/symbols and account shapes).
-import 'package:kalks/features/terminal/core/models.dart';
+// Contract specs and accounts for the Ezymex Trader tests (the engine's /v1/symbols and account shapes).
+import 'package:ezymex/features/terminal/core/models.dart';
 
 SymbolSpec spec(
   String symbol, {

@@ -4,7 +4,7 @@ const profile: NsMessages<"profile"> = {
   // Profile page (shared)
   title: "โปรไฟล์",
   subtitle: "ข้อมูลส่วนตัวและการตั้งค่าบัญชีของคุณ",
-  liveSubtitle: "ข้อมูลส่วนตัวของคุณตามที่ลงทะเบียนไว้กับ Kalks",
+  liveSubtitle: "ข้อมูลส่วนตัวของคุณตามที่ลงทะเบียนไว้กับ Ezymex",
   memberSince: "เป็นสมาชิกตั้งแต่ {date}",
   notVerified: "ยังไม่ยืนยัน",
   "photo.upload": "อัปโหลดรูปภาพใหม่",
@@ -59,7 +59,7 @@ const profile: NsMessages<"profile"> = {
   "data.exportRequested": "ส่งคำขอส่งออกข้อมูลแล้ว",
   "data.exportRequestedHint": "คุณจะได้รับลิงก์ดาวน์โหลดทางอีเมลภายใน 72 ชั่วโมง",
   "data.export": "ส่งออกข้อมูลของฉัน",
-  "closure.title": "ปิดบัญชี Kalks ของคุณ",
+  "closure.title": "ปิดบัญชี Ezymex ของคุณ",
   "closure.description": "บัญชีเทรดทั้งหมดต้องมียอดคงเหลือเป็นศูนย์และไม่มีสถานะที่เปิดอยู่",
   "closure.request": "ขอปิดบัญชี",
   "closure.submitted": "ส่งคำขอปิดบัญชีแล้ว",

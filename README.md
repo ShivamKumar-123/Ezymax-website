@@ -1,7 +1,7 @@
-# Kalks
+# Ezymex
 
-White-label multi-asset trading platform: three Next.js apps (Client Area CRM, Back Office admin, Kalks Trader terminal) plus a Rust market-data service for live prices, candles and spreads.
-Live builds (default) show only real data; `NEXT_PUBLIC_KALKS_MODE=demo` builds show the full mock showcase (see `packages/mock/src/mode.ts`).
+White-label multi-asset trading platform: three Next.js apps (Client Area CRM, Back Office admin, Ezymex Trader terminal) plus a Rust market-data service for live prices, candles and spreads.
+Live builds (default) show only real data; `NEXT_PUBLIC_EZYMEX_MODE=demo` builds show the full mock showcase (see `packages/mock/src/mode.ts`).
 
 ## Run locally
 
@@ -16,9 +16,9 @@ pnpm dev            # starts all apps
 |---|---|
 | Client Area | http://localhost:3000 (sign-in at `/login`) |
 | Back Office | http://localhost:3001 (staff sign-in at `/login`) |
-| Kalks Trader (trading room) | http://localhost:3002 (opened from any **Trade** button, or MT5-style login at `/login`) |
+| Ezymex Trader (trading room) | http://localhost:3002 (opened from any **Trade** button, or MT5-style login at `/login`) |
 
-Run a single app with `pnpm dev:crm`, `pnpm dev:admin` or `pnpm dev:terminal` (or `pnpm --filter @kalks/<crm|admin|terminal> dev`). Build with `pnpm build`.
+Run a single app with `pnpm dev:crm`, `pnpm dev:admin` or `pnpm dev:terminal` (or `pnpm --filter @ezymex/<crm|admin|terminal> dev`). Build with `pnpm build`.
 
 ## Market data
 
@@ -32,7 +32,7 @@ It creates its database and runs migrations on first start. Provider keys (`INFO
 
 ## Sign-in (gateway)
 
-The Rust gateway handles client and staff sign-in, sessions and the audit log. It uses PostgreSQL on port 5433 (database `kalks_core`, created and migrated on first start).
+The Rust gateway handles client and staff sign-in, sessions and the audit log. It uses PostgreSQL on port 5433 (database `ezymex_core`, created and migrated on first start).
 
 ```bash
 cargo run -p gateway                # http://127.0.0.1:8080 (only the apps call it, never the browser)
@@ -44,11 +44,11 @@ Its settings (`GATEWAY_*`, `SESSION_SECRET`, `SUPER_ADMIN_*`) live in `.env.loca
 
 ## Identity verification (KYC)
 
-Manual review by compliance staff with automatic pre-checks, in the gateway (`services/gateway/src/kyc.rs`, `kyc/staff.rs`). Clients verify at `/profile/verification` (Client Area BFF `apps/crm/app/api/kyc`): details, ID (camera with a frame guide or file), proof of address (< 3 months), selfie; corporate adds company details, directors / UBOs and their IDs. The browser checks sharpness, glare, lighting, framing, the passport MRZ and the face before upload; the gateway sniffs the file type, checks size, resolution and dates, flags files already used by another client, and stores each file AES-256-GCM encrypted under `KYC_STORAGE_DIR` (default `~/.kalks-data/kyc`) with `KYC_ENCRYPTION_KEY` (64 hex chars; development falls back to a key derived from `SESSION_SECRET`). Staff review at `/clients/kyc` (permissions `kyc.read` / `kyc.review`: admins and Compliance); documents stream only through the authenticated Back Office endpoint. Decisions set `users.kyc_status` (`verified` unlocks withdrawals, and locks name and date of birth), are audited, and email the client (logged as `DEV email` when SMTP isn't configured). `gateway kyc-erase-user <id>` removes a client's KYC files and rows.
+Manual review by compliance staff with automatic pre-checks, in the gateway (`services/gateway/src/kyc.rs`, `kyc/staff.rs`). Clients verify at `/profile/verification` (Client Area BFF `apps/crm/app/api/kyc`): details, ID (camera with a frame guide or file), proof of address (< 3 months), selfie; corporate adds company details, directors / UBOs and their IDs. The browser checks sharpness, glare, lighting, framing, the passport MRZ and the face before upload; the gateway sniffs the file type, checks size, resolution and dates, flags files already used by another client, and stores each file AES-256-GCM encrypted under `KYC_STORAGE_DIR` (default `~/.ezymex-data/kyc`) with `KYC_ENCRYPTION_KEY` (64 hex chars; development falls back to a key derived from `SESSION_SECRET`). Staff review at `/clients/kyc` (permissions `kyc.read` / `kyc.review`: admins and Compliance); documents stream only through the authenticated Back Office endpoint. Decisions set `users.kyc_status` (`verified` unlocks withdrawals, and locks name and date of birth), are audited, and email the client (logged as `DEV email` when SMTP isn't configured). `gateway kyc-erase-user <id>` removes a client's KYC files and rows.
 
 ## Trading engine
 
-The Rust trading engine runs accounts, orders, positions, margin, swaps, the double-entry ledger and the dealing desk. It uses PostgreSQL on port 5433 (database `kalks_trading`, created and migrated on first start) and takes prices from market-data.
+The Rust trading engine runs accounts, orders, positions, margin, swaps, the double-entry ledger and the dealing desk. It uses PostgreSQL on port 5433 (database `ezymex_trading`, created and migrated on first start) and takes prices from market-data.
 
 ```bash
 cargo run -p trading                # http://127.0.0.1:8090 (BFFs and internal services only)
@@ -59,7 +59,7 @@ Its settings (`TRADING_*`) live in `.env.local` at the repo root. API, architect
 
 ## IB / referral programme
 
-Every client is also an IB (partner). The Rust IB service mirrors the referral tree from the gateway, reads closed live deals from the trading engine, and computes multi-tier per-lot commissions, CPA bonuses, level upgrades, campaign funnels and payout batches that the Back Office approves into client wallets. It uses PostgreSQL on port 5433 (database `kalks_ib`, created and migrated on first start).
+Every client is also an IB (partner). The Rust IB service mirrors the referral tree from the gateway, reads closed live deals from the trading engine, and computes multi-tier per-lot commissions, CPA bonuses, level upgrades, campaign funnels and payout batches that the Back Office approves into client wallets. It uses PostgreSQL on port 5433 (database `ezymex_ib`, created and migrated on first start).
 
 ```bash
 cargo run -p ib                    # http://127.0.0.1:8096 (BFFs and internal services only)
@@ -70,7 +70,7 @@ Its settings (`IB_*`) live in `.env.local` at the repo root; the Client Area and
 
 ## Support and notifications
 
-Live chat in the Client Area (Support page and a floating button on every page) with a Claude-powered help bot that answers from the knowledge base and hands over to agents in the Back Office inbox (Support), plus the notification centre: the bell in both apps, preferences under Profile -> Notifications, emails, Back Office broadcasts (Content -> Notifications) and `POST /v1/notify` for other services. PostgreSQL on port 5433 (database `kalks_support`, created and migrated on first start).
+Live chat in the Client Area (Support page and a floating button on every page) with a Claude-powered help bot that answers from the knowledge base and hands over to agents in the Back Office inbox (Support), plus the notification centre: the bell in both apps, preferences under Profile -> Notifications, emails, Back Office broadcasts (Content -> Notifications) and `POST /v1/notify` for other services. PostgreSQL on port 5433 (database `ezymex_support`, created and migrated on first start).
 
 ```bash
 cargo run -p support               # http://127.0.0.1:8100 (BFFs and internal services only)
@@ -81,7 +81,7 @@ Its settings (`SUPPORT_*`) live in `.env.local` at the repo root and the Claude 
 
 ## Rewards and marketing (growth)
 
-The Rust growth service runs loyalty points per lot with tiers and a redemption catalogue, cashback programmes, demo / live trading contests with live leaderboards and prizes, deposit / credit bonus campaigns that release per lot (posted to the engine's bonus sub-ledger), promo codes, targeted banners and share P&L cards. It reads closed deals from the trading engine and pays cash rewards through the wallet. It uses PostgreSQL on port 5433 (database `kalks_growth`, created and migrated on first start).
+The Rust growth service runs loyalty points per lot with tiers and a redemption catalogue, cashback programmes, demo / live trading contests with live leaderboards and prizes, deposit / credit bonus campaigns that release per lot (posted to the engine's bonus sub-ledger), promo codes, targeted banners and share P&L cards. It reads closed deals from the trading engine and pays cash rewards through the wallet. It uses PostgreSQL on port 5433 (database `ezymex_growth`, created and migrated on first start).
 
 ```bash
 cargo run -p growth                # http://127.0.0.1:8101 (BFFs and internal services only)
@@ -95,7 +95,7 @@ Its settings (`GROWTH_*`) live in `.env.local` at the repo root; the Client Area
 ```
 apps/crm        Client Area — Next.js 16 (port 3000)
 apps/admin      Back Office — Next.js 16 (port 3001)
-apps/terminal   Kalks Trader — standalone MT5/cTrader-style trading room (port 3002)
+apps/terminal   Ezymex Trader — standalone MT5/cTrader-style trading room (port 3002)
 packages/ui     Design system: tokens, shell, charts, tables, effects
 packages/mock   Mock data + price feed client (live from market-data, simulator fallback)
 services/market-data  Rust market-data service (prices, candles, spreads) — :8081
@@ -116,4 +116,3 @@ docs/           Conventions, integrations list, website content PDF
 
 - `docs/CONVENTIONS.md`: how pages and components are built
 - `docs/INTEGRATIONS.md`: every key and credential the Super Admin needs to go live
-- `docs/Kalks-Website-Content.pdf`: full website copy and build spec for kalks.com

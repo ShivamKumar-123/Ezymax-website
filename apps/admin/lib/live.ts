@@ -1,9 +1,9 @@
-import type { NavModule } from "@kalks/ui";
-import { IS_DEMO, pathAllowed } from "@kalks/mock/mode";
+import type { NavModule } from "@ezymex/ui";
+import { IS_DEMO, pathAllowed } from "@ezymex/mock/mode";
 import { ADMIN_NAV } from "@/lib/nav";
 
 /**
- * Live builds (NEXT_PUBLIC_KALKS_MODE unset / "live") show only pages backed by real services.
+ * Live builds (NEXT_PUBLIC_EZYMEX_MODE unset / "live") show only pages backed by real services.
  * Demo builds show the full mock showcase. See packages/mock/src/mode.ts.
  */
 

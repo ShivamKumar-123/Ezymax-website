@@ -5,7 +5,7 @@ import { QRCodeCanvas, QRCodeSVG } from "qrcode.react";
 import { Download } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Dialog, cn } from "@/components/kit";
-import { tr, useT } from "@kalks/i18n/react";
+import { tr, useT } from "@ezymex/i18n/react";
 import { shortUrl } from "./api";
 
 export type QrTheme = "light" | "dark";
@@ -14,13 +14,13 @@ export const QR_COLORS: Record<QrTheme, { fg: string; bg: string }> = {
   dark: { fg: "#ffffff", bg: "#111114" },
 };
 
-/** The Kalks mark as a data URL in `color`, so it survives SVG export and canvas rendering. */
+/** The Ezymex mark as a data URL in `color`, so it survives SVG export and canvas rendering. */
 function useMark(color: string, enabled: boolean) {
   const [url, setUrl] = React.useState<string | null>(null);
   React.useEffect(() => {
     if (!enabled) return;
     let stop = false;
-    fetch("/assets/brand/kalks-mark.svg")
+    fetch("/assets/brand/ezymex-mark.svg")
       .then((r) => (r.ok ? r.text() : Promise.reject(new Error("mark"))))
       .then((svg) => {
         if (stop) return;

@@ -604,7 +604,7 @@ class _ReferralCard extends StatelessWidget {
                   icon: LucideIcons.qrCode,
                   variant: KButtonVariant.surface,
                   size: KButtonSize.sm,
-                  onPressed: () => showPartnerQrSheet(context, value: link, title: t('partner.dash.referralQr'), fileBase: 'kalks-${d.code}-qr'),
+                  onPressed: () => showPartnerQrSheet(context, value: link, title: t('partner.dash.referralQr'), fileBase: 'ezymex-${d.code}-qr'),
                 ),
               ],
             ),

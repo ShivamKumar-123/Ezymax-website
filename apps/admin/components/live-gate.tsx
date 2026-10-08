@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { ComingSoon, ModeGate, buttonVariants } from "@kalks/ui";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { ComingSoon, ModeGate, buttonVariants } from "@ezymex/ui";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LIVE_PAGES, isLivePath, soonFor } from "@/lib/live";
 import { canOpen } from "@/lib/access";
 import { useStaff } from "@/components/staff-session";

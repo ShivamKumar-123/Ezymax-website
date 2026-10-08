@@ -1,4 +1,4 @@
-// Server-only gate for the mobile app's paid AI routes (app/api/mobile/trade/ai-trader, …/trade/options/explain): Kalks
+// Server-only gate for the mobile app's paid AI routes (app/api/mobile/trade/ai-trader, …/trade/options/explain): Ezymex
 // Trader's lib/ai-guard.ts rules with the app's auth. Every model call costs money, so it needs a live gateway session
 // (Authorization: Bearer; view-only logins never) and each client has a budget of 10 calls a minute and 200 a day.
 // The budget lives in this server process's memory (one Node process per deployment); a restart resets it.
@@ -12,7 +12,7 @@ export const AI_PER_DAY = 200;
 const MINUTE = 60_000;
 const DAY = 24 * 60 * MINUTE;
 
-/** Machine-readable reason, so the app can show it in the reader's language (the same codes as Kalks Trader). */
+/** Machine-readable reason, so the app can show it in the reader's language (the same codes as Ezymex Trader). */
 export type AiDenied = "signin" | "forbidden" | "rate_minute" | "rate_day" | "unavailable";
 
 const MESSAGES: Record<AiDenied, string> = {

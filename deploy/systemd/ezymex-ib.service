@@ -1,0 +1,21 @@
+[Unit]
+Description=Ezymex IB / referral programme (:8096)
+After=network-online.target postgresql.service ezymex-gateway.service ezymex-trading.service
+Wants=network-online.target
+
+[Service]
+User=ezymex
+WorkingDirectory=/home/ezymex/ezymex/services/ib
+EnvironmentFile=/home/ezymex/ezymex/.env.local
+Environment=RUST_LOG=info
+Environment=IB_ENV=production
+Environment=IB_BIND=127.0.0.1:8096
+ExecStart=/home/ezymex/ezymex/target/release/ib
+Restart=always
+RestartSec=3
+KillSignal=SIGINT
+TimeoutStopSec=20
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

@@ -11,7 +11,7 @@
  */
 import * as React from "react";
 import { CalendarDays, CalendarX2, ChevronLeft, ChevronRight, Pencil, Plus, RefreshCw, RotateCcw, Undo2 } from "lucide-react";
-import { Button, Card, CardHeader, Chip, EmptyState, Field, IconButton, Input, KpiCard, PageHeader, Reveal, Toggle, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, EmptyState, Field, IconButton, Input, KpiCard, PageHeader, Reveal, Toggle, cn } from "@ezymex/ui";
 import { ErrorState, TableSkeleton, ago, useNow, when } from "@/components/live/kit";
 import type { Holiday, Underlying } from "./types";
 import { ReadOnlyHint, REASONS, ReasonDialog, optSend, platformBlock, useOpt, useOptPerms } from "./kit";

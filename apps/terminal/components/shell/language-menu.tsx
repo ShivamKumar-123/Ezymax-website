@@ -1,8 +1,8 @@
 "use client";
 
-import { Flag, cn } from "@kalks/ui";
-import { useLocale, useT } from "@kalks/i18n/react";
-import { LOCALES } from "@kalks/i18n/locales";
+import { Flag, cn } from "@ezymex/ui";
+import { useLocale, useT } from "@ezymex/i18n/react";
+import { LOCALES } from "@ezymex/i18n/locales";
 import { DropMenu } from "@/components/ui/menu";
 
 /** Interface language (same cookie as the Client Area). Native names; the current one is checked. */

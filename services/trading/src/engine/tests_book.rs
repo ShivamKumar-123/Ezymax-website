@@ -355,17 +355,17 @@ fn the_mark_clamps_inside_the_published_book_and_values_positions() {
     assert_eq!(model(&w), d("0.0051"), "no book published: the model mid");
     // A's remaining offer at 0.0051 is published; then A improves it to 0.0049 (below the model mid)
     let top = w.kit.options.top.clone();
-    top.publish("kalks", &w.book, None);
+    top.publish("ezymex", &w.book, None);
     assert_eq!(model(&w), d("0.0051"), "min(model, ask) with the ask at the model");
     w.order(a, limit(Side::Sell, "1", "0.0049")).unwrap();
-    top.publish("kalks", &w.book, None);
+    top.publish("ezymex", &w.book, None);
     assert_eq!(model(&w), d("0.0049"), "one qualifying side below the model: the mark is the ask");
     // the long is valued at the clamped mark (49 instead of 51)
     let m = metrics(&w.kit.env(w.st(b)), w.st(b));
     assert_eq!(crate::money::r2(m.option_value), d("49.00"));
     // a bid above the model mid on the other side: two-sided, spread 0 ≤ 3 × model spread → clamp(model, bid, ask)
     w.order(b, limit(Side::Buy, "1", "0.0048")).unwrap();
-    top.publish("kalks", &w.book, None);
+    top.publish("ezymex", &w.book, None);
     assert_eq!(model(&w), d("0.0049"), "clamp(0.0051, 0.0048, 0.0049) = 0.0049");
     // a demo account of the same tenant does not see the live book
     let st = w.st(b).clone();

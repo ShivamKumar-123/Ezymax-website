@@ -1,19 +1,19 @@
 import type { NsMessages } from "../../core";
 
-// Kalks FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Kalks Trader in options mode.
-// Kalks, Kalks Trader and Kalks FX Options stay in English; option terms (call, put, strike, premium, delta…) stay as traders use them.
+// Ezymex FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Ezymex Trader in options mode.
+// Ezymex, Ezymex Trader and Ezymex FX Options stay in English; option terms (call, put, strike, premium, delta…) stay as traders use them.
 const options: NsMessages<"options"> = {
   // Navigation entry
   "nav.title": "Options",
 
   // Page header
-  "page.title": "Kalks FX Options",
-  "page.subtitle": "Nunua au uza options za forex, dhahabu, fedha na mafuta, moja kwa moja ndani ya Kalks Trader.",
+  "page.title": "Ezymex FX Options",
+  "page.subtitle": "Nunua au uza options za forex, dhahabu, fedha na mafuta, moja kwa moja ndani ya Ezymex Trader.",
   "page.statusReady": "Uko tayari kufanya biashara",
   "page.learnCourse": "Kozi ya options",
 
   // Hero card
-  "hero.eyebrow": "Mpya kwenye Kalks Trader",
+  "hero.eyebrow": "Mpya kwenye Ezymex Trader",
   "hero.title": "Options kwenye masoko 13, kwa urahisi",
   "hero.text": "Options za mtindo wa Ulaya kwenye jozi kuu na jozi mseto za forex, dhahabu, fedha na mafuta ghafi. Chagua tarehe za kuisha za kila siku, kila wiki au kila mwezi. Kila option hulipwa kwa pesa taslimu, kwa dola za Marekani, kwa hivyo kamwe hupokei bidhaa yoyote halisi.",
   "hero.feature.underlyings.title": "Mali 13 za msingi",
@@ -57,16 +57,16 @@ const options: NsMessages<"options"> = {
   "terms.inShort": "Kwa ufupi",
   "terms.point.buy": "Ukinunua option: kiwango cha juu unachoweza kupoteza ni kile unacholipa.",
   "terms.point.sell": "Kuuza option kunaweza kukupotezea zaidi ya unachopokea, na kunatumia margin.",
-  "terms.point.prices": "Bei hupangwa kwenye order book ya Kalks na pia hutolewa na Kalks.",
+  "terms.point.prices": "Bei hupangwa kwenye order book ya Ezymex na pia hutolewa na Ezymex.",
   "terms.point.settle": "Options hulipwa kwa pesa taslimu wakati wa kuisha.",
   "terms.englishNote": "Maandishi kamili hapa chini, kwa Kiingereza, ndiyo toleo linalofunga kisheria.",
   "terms.acceptedOn": "Ulikubali toleo {version} tarehe {date}.",
   "terms.close": "Funga",
   "terms.unavailable": "Masharti ya options hayapatikani kwa sasa. Tafadhali jaribu tena baadaye.",
 
-  // Kalks Trader button
-  "trade.ready": "Uko tayari. Options hufunguka kwenye Kalks Trader, kwenye akaunti ile ile ya CFD zako.",
-  "trade.cta": "Fanya biashara ya options kwenye Kalks Trader",
+  // Ezymex Trader button
+  "trade.ready": "Uko tayari. Options hufunguka kwenye Ezymex Trader, kwenye akaunti ile ile ya CFD zako.",
+  "trade.cta": "Fanya biashara ya options kwenye Ezymex Trader",
   "trade.chooseAccount": "Chagua akaunti",
   "trade.noAccount": "Unahitaji akaunti ya biashara inayotumika ili kufanya biashara ya options.",
   "trade.openAccount": "Fungua akaunti",
@@ -75,7 +75,7 @@ const options: NsMessages<"options"> = {
   "trade.demo": "Demo",
 
   // Key facts card
-  "facts.title": "Jinsi Kalks FX Options zinavyofanya kazi",
+  "facts.title": "Jinsi Ezymex FX Options zinavyofanya kazi",
   "facts.style": "Mtindo wa Ulaya: hutekelezwa kiotomatiki wakati wa kuisha, kamwe si kabla.",
   "facts.premium": "Premium kwa USD kwa kila mkataba; wanunuzi huilipa yote wanapofungua.",
   "facts.contracts": "Mkataba mmoja: vitengo 10,000 vya sarafu, wakia 1 ya dhahabu, wakia 50 za fedha au mapipa 10 ya mafuta.",

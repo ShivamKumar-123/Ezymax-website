@@ -3,7 +3,7 @@
 class LocaleInfo {
   const LocaleInfo(this.code, this.name, this.english, this.flag, this.intl, {this.rtl = false});
 
-  /// `en`, `hi`, `ar`, …: the catalog file and the `X-Kalks-Locale` header.
+  /// `en`, `hi`, `ar`, …: the catalog file and the `X-Ezymex-Locale` header.
   final String code;
 
   /// The language's own name ("हिन्दी").

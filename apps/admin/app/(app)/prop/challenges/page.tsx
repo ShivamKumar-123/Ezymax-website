@@ -3,12 +3,12 @@
 import * as React from "react";
 import { Activity, AlertTriangle, BadgeCheck, RefreshCw, SlidersHorizontal, XCircle } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, DataTable, KpiCard, PageHeader, Reveal, StatusChip, cn, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, KpiCard, PageHeader, Reveal, StatusChip, cn, type Column } from "@ezymex/ui";
 import { PersonCell, auditToast, useReason } from "@/components/config/kit";
 import { CHALLENGES, challengeRules, type Challenge, type ChallengeStatus } from "@/components/prop/data";
 import { ChallengeDrawer, CH_STATUS } from "@/components/prop/challenge-drawer";
 import { FilterPills, PlanTypeChip, RuleStatusBar, TargetProgress } from "@/components/prop/rules";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveChallengesPage } from "@/components/prop-live/challenges";
 
 export default function ChallengesPage() {
@@ -38,7 +38,7 @@ function DemoChallengesPage() {
       header: "Plan",
       cell: (c) => (
         <div className="flex flex-col gap-1">
-          <span className="text-[13px]">{c.planName.replace("Kalks ", "")}</span>
+          <span className="text-[13px]">{c.planName.replace("Ezymex ", "")}</span>
           <span className="flex items-center gap-1.5">
             <PlanTypeChip type={c.planType} />
             <span className="text-[11.5px] text-fg-3">{c.phase}</span>
@@ -73,7 +73,7 @@ function DemoChallengesPage() {
     <div className="pb-24">
       <PageHeader
         title="Challenges"
-        subtitle="Every evaluation account with live rule status from the rule engine (tick-level, Kalks-Prop01/02)."
+        subtitle="Every evaluation account with live rule status from the rule engine (tick-level, Ezymex-Prop01/02)."
         actions={
           <>
             <Button size="sm" variant="surface" onClick={() => toast.success("Rule engine re-synced", { description: "2,132 accounts evaluated in 842 ms" })}>

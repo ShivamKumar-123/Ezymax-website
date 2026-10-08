@@ -3,8 +3,8 @@
 import * as React from "react";
 import { Check, Link2, Monitor, Smartphone } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Dialog, DialogClose, Field, Input, Segmented, cn } from "@kalks/ui";
-import { MKT_BANNER_PHOTOS, MKT_SEGMENTS, type MktBanner, type MktPlacement, type MktSegment } from "@kalks/mock/admin-growth-marketing";
+import { Button, Dialog, DialogClose, Field, Input, Segmented, cn } from "@ezymex/ui";
+import { MKT_BANNER_PHOTOS, MKT_SEGMENTS, type MktBanner, type MktPlacement, type MktSegment } from "@ezymex/mock/admin-growth-marketing";
 import { BannerPreview, ChipPicker, SectionLabel } from "./kit";
 
 interface Draft {
@@ -79,7 +79,7 @@ export function BannerEditor({ open, onOpenChange, banner }: { open: boolean; on
               Cancel
             </Button>
           </DialogClose>
-          <Button size="sm" variant="surface" onClick={() => toast.success("Test banner sent", { description: "Shown to priya.nair@kalks.com on next login" })}>
+          <Button size="sm" variant="surface" onClick={() => toast.success("Test banner sent", { description: "Shown to priya.nair@ezymex.com on next login" })}>
             Send test
           </Button>
           <Button

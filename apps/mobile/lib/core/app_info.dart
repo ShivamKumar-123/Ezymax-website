@@ -19,11 +19,11 @@ class AppInfo {
   /// "Pixel 8"
   final String model;
 
-  /// X-Kalks-App-Version: "1.0.0+1".
+  /// X-Ezymex-App-Version: "1.0.0+1".
   String get fullVersion => build.isEmpty ? version : '$version+$build';
 
-  /// The User-Agent the Security page lists: "KalksApp/1.0.0 (Android 15; Pixel 8)".
-  String get userAgent => 'KalksApp/$version ($osVersion; $model)';
+  /// The User-Agent the Security page lists: "EzymexApp/1.0.0 (Android 15; Pixel 8)".
+  String get userAgent => 'EzymexApp/$version ($osVersion; $model)';
 
   static const AppInfo fallback = AppInfo(version: '1.0.0', build: '1', osVersion: 'Android', model: 'Phone');
 

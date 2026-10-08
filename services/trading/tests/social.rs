@@ -112,7 +112,7 @@ fn set_btc(q: &QuoteBook, bid: &str, ask: &str) {
 #[tokio::test]
 async fn copy_and_pamm_end_to_end_with_replay() {
     let base = std::env::var("TRADING_TEST_DATABASE_URL").unwrap_or_else(|_| "postgres://postgres@127.0.0.1:5433/postgres".into());
-    let db = format!("kalks_trading_social_{}", std::process::id());
+    let db = format!("ezymex_trading_social_{}", std::process::id());
     let Ok(server) = PgConnectOptions::from_str(&base) else { return };
     if server.clone().database("postgres").connect().await.is_err() {
         eprintln!("SKIP: PostgreSQL not reachable at {base}");
@@ -178,7 +178,7 @@ async fn copy_and_pamm_end_to_end_with_replay() {
 
     // follower subscribes with 2 500 (equity-proportional) → copy account funded through the wallet
     let sub = social.create_sub(1, 777, mid, Sizing { mode: SizingMode::Equity, value: D::ONE }, d("2500"), None, None, None, vec![]).await.unwrap();
-    social.wallet.to_trading("kalks", &format!("copy:alloc:{}", sub.id), 777, sub.login, d("2500")).await.unwrap();
+    social.wallet.to_trading("ezymex", &format!("copy:alloc:{}", sub.id), 777, sub.login, d("2500")).await.unwrap();
     for _ in 0..50 {
         if social.reg.read().unwrap().subs[&sub.id].net_deposits == d("2500") {
             break;
@@ -231,7 +231,7 @@ async fn copy_and_pamm_end_to_end_with_replay() {
     // the copy account as an ordinary trade the client manages (no terminal guard), and the master's later close
     // no longer reaches it
     let sub2 = social.create_sub(1, 778, mid, Sizing { mode: SizingMode::Equity, value: D::ONE }, d("2000"), None, None, None, vec![]).await.unwrap();
-    social.wallet.to_trading("kalks", &format!("copy:alloc:{}", sub2.id), 778, sub2.login, d("2000")).await.unwrap();
+    social.wallet.to_trading("ezymex", &format!("copy:alloc:{}", sub2.id), 778, sub2.login, d("2000")).await.unwrap();
     for _ in 0..50 {
         if social.reg.read().unwrap().subs[&sub2.id].net_deposits == d("2000") {
             break;
@@ -297,7 +297,7 @@ async fn copy_and_pamm_end_to_end_with_replay() {
     let bad: i64 = sqlx::query_scalar("SELECT count(*) FROM pamm_investors i WHERE i.units <> COALESCE((SELECT sum(units) FROM pamm_unit_ledger l WHERE l.investor_id = i.id), 0)").fetch_one(&pool).await.unwrap();
     assert_eq!(bad, 0);
     // wallet calls: seed + invest debits; redemption credit through the outbox
-    trading::social::wallet::flush(&pool, &social.wallet, |_| "kalks".into()).await;
+    trading::social::wallet::flush(&pool, &social.wallet, |_| "ezymex".into()).await;
     let c = calls.lock().unwrap().clone();
     assert!(c.iter().any(|x| x["kind"] == "pamm_invest" && x["direction"] == "debit" && x["amount"] == "4000"));
     assert!(c.iter().any(|x| x["kind"] == "pamm_redeem" && x["direction"] == "credit" && x["amount"] == "4320"));

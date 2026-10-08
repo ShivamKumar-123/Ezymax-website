@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Pencil, Plus, RefreshCw, RotateCcw, Save, Trash2 } from "lucide-react";
-import { ANIM_ICONS, Button, Card, CardHeader, Chip, Dialog, DialogClose, Icon3D, IconGlyph, PageHeader, Reveal, Skeleton, cn } from "@kalks/ui";
+import { ANIM_ICONS, Button, Card, CardHeader, Chip, Dialog, DialogClose, Icon3D, IconGlyph, PageHeader, Reveal, Skeleton, cn } from "@ezymex/ui";
 import { ChipList, MiniField, NumInput, SettingRow, TextInput } from "@/components/config/kit";
 import { useApi, when } from "@/components/live/kit";
 import { OPTIONS_RATE_MAX, P, ibSend, levelBody, type Level, type LevelsDoc, type SettingsDoc } from "./api";

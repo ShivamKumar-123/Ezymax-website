@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { RotateCw } from "lucide-react";
 import { Button, Card, EmptyState } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 
 /** A page of the Client Area failed to render: say so plainly, keep the shell, offer a retry and the dashboard. */
 export default function AppError({ error, retry }: { error: Error & { digest?: string }; retry: () => void }) {

@@ -233,8 +233,8 @@ const developer: NsMessages<"developer"> = {
   "assetClass.crypto": "crypto",
   "assetClass.stocks": "hisa",
 
-  // Code editor (Kalks strategy language)
-  "code.language": "Lugha ya mikakati ya Kalks",
+  // Code editor (Ezymex strategy language)
+  "code.language": "Lugha ya mikakati ya Ezymex",
   "code.checking": "Inakagua…",
   "code.errors": { one: "Hitilafu {count}", other: "Hitilafu {count}" },
   "code.compiles": "Inakusanywa bila hitilafu",
@@ -281,7 +281,7 @@ const developer: NsMessages<"developer"> = {
   // Kill switch
   "kill.title": "Kill switch",
   "kill.subtitle": "Husimamisha kila mkakati, webhook na oda ya API kwenye akaunti zako",
-  "kill.globalPaused": "Biashara ya kiotomatiki imesitishwa kwenye jukwaa lote na usimamizi wa hatari wa Kalks.",
+  "kill.globalPaused": "Biashara ya kiotomatiki imesitishwa kwenye jukwaa lote na usimamizi wa hatari wa Ezymex.",
   "kill.onSince": "Imewashwa tangu {at}",
   "kill.release": "Zima kill switch",
   "kill.stopAll": "Simamisha otomatiki yote",
@@ -363,7 +363,7 @@ const developer: NsMessages<"developer"> = {
   "docs.bearer": "Bearer (rahisi zaidi)",
   "docs.hmac": "Sahihi ya HMAC (inapendekezwa kwa bots)",
   // <code> wraps header names and paths; keep them untranslated
-  "docs.signature": "Sahihi = hex(HMAC-SHA256(secret, timestamp + METHOD + path pamoja na query + body)), hutumwa pamoja na <code>X-Kalks-Key</code>, <code>X-Kalks-Timestamp</code> (unix ms, ±30 s) na <code>X-Kalks-Signature</code>. Njia husainiwa kama <code>/public/v1/…</code>. Kila sahihi hukubaliwa mara moja tu.",
+  "docs.signature": "Sahihi = hex(HMAC-SHA256(secret, timestamp + METHOD + path pamoja na query + body)), hutumwa pamoja na <code>X-Ezymex-Key</code>, <code>X-Ezymex-Timestamp</code> (unix ms, ±30 s) na <code>X-Ezymex-Signature</code>. Njia husainiwa kama <code>/public/v1/…</code>. Kila sahihi hukubaliwa mara moja tu.",
   // "api", clientOrderId and duplicate are API values; keep them
   "docs.endpointsSub": "JSON kuingia na kutoka. Kila oda hubeba chanzo “api”; clientOrderId iliyorudiwa hurejesha hali duplicate.",
   "docs.errorsSub": "Hitilafu huwa {shape}",
@@ -473,9 +473,9 @@ const developer: NsMessages<"developer"> = {
 
   // Strategy marketplace
   "market.title": "Soko la mikakati",
-  "market.subtitle": "Mikakati yenye rekodi za utendaji zilizothibitishwa kutoka akaunti za Kalks. Nakili mmoja kwenye akaunti yako, au chapisha wako na upate mapato kutokana na usajili.",
-  "market.houseChip": "Mkakati wa nyumbani · Unaendeshwa na Kalks",
-  "market.houseNote": "Mkakati wa nyumbani unaoendeshwa na Kalks: akaunti halisi inayomilikiwa na broker inayoendesha mkakati huu. Rekodi ya utendaji ni biashara zake halisi pekee tangu ulipoanza; hakuna kilichoigwa wala kujazwa nyuma.",
+  "market.subtitle": "Mikakati yenye rekodi za utendaji zilizothibitishwa kutoka akaunti za Ezymex. Nakili mmoja kwenye akaunti yako, au chapisha wako na upate mapato kutokana na usajili.",
+  "market.houseChip": "Mkakati wa nyumbani · Unaendeshwa na Ezymex",
+  "market.houseNote": "Mkakati wa nyumbani unaoendeshwa na Ezymex: akaunti halisi inayomilikiwa na broker inayoendesha mkakati huu. Rekodi ya utendaji ni biashara zake halisi pekee tangu ulipoanza; hakuna kilichoigwa wala kujazwa nyuma.",
   // Date range, e.g. "2025-01-01 to 2025-12-31"
   "market.range": "{from} hadi {to}",
   "market.backtestSimulated": "Backtest · iliyoigwa",
@@ -502,7 +502,7 @@ const developer: NsMessages<"developer"> = {
   "market.subscriptionStatus": "Usajili {status}",
   "market.reviewSaved": "Maoni yamehifadhiwa",
   "market.reviewFailed": "Imeshindwa kuhifadhi maoni",
-  "market.trackNote": "Rekodi ya utendaji kutoka uzinduzi wa mwandishi mwenyewe kwenye Kalks tangu {since}: siku {days}, halisi {net}. Imekokotolewa kutoka mikataba iliyofungwa kwenye injini ya biashara, haijaingizwa na mwandishi.",
+  "market.trackNote": "Rekodi ya utendaji kutoka uzinduzi wa mwandishi mwenyewe kwenye Ezymex tangu {since}: siku {days}, halisi {net}. Imekokotolewa kutoka mikataba iliyofungwa kwenye injini ya biashara, haijaingizwa na mwandishi.",
   "market.riskSettings": "Mipangilio ya hatari",
   "market.riskLine": "Ukubwa {size} · stop {stop} · lengo {target}",
   "market.riskPct": "Hatari {pct}%",
@@ -520,7 +520,7 @@ const developer: NsMessages<"developer"> = {
   "market.cloneRules": "Nakili kanuni",
   "market.subscribePaid": "Jisajili · {price} USDT / mwezi",
   "market.subscribeFree": "Jisajili bure",
-  "market.paidNote": "Hulipwa kutoka kwenye pochi yako ya Kalks (USDT). Husasishwa kila siku 30; ghairi wakati wowote.",
+  "market.paidNote": "Hulipwa kutoka kwenye pochi yako ya Ezymex (USDT). Husasishwa kila siku 30; ghairi wakati wowote.",
   "market.reviews": "Maoni ({n})",
   "market.stars": { one: "Nyota {count}", other: "Nyota {count}" },
   "market.reviewPlaceholder": "Ulifanyiwaje biashara nao?",
@@ -552,7 +552,7 @@ const developer: NsMessages<"developer"> = {
   "market.popular": "Maarufu",
   "market.emptyTitle": "Bado hakuna mikakati iliyoorodheshwa",
   "market.emptyText": "Kuwa wa kwanza: zindua mkakati kwenye akaunti ya demo, kisha uuchapishe pamoja na rekodi yake ya utendaji iliyothibitishwa.",
-  "market.disclaimer": "Utendaji wa zamani hauhakikishi matokeo ya baadaye. Rekodi za utendaji hutoka kwenye akaunti halisi au za demo kwenye Kalks na zimewekwa lebo ipasavyo. Ada ya jukwaa kwa usajili wa kulipia: {pct}%.",
+  "market.disclaimer": "Utendaji wa zamani hauhakikishi matokeo ya baadaye. Rekodi za utendaji hutoka kwenye akaunti halisi au za demo kwenye Ezymex na zimewekwa lebo ipasavyo. Ada ya jukwaa kwa usajili wa kulipia: {pct}%.",
   "market.mode": "Hali",
   "market.renews": "Unasasishwa",
   "market.copyOn": "nakili kwenye #{login}",

@@ -5,8 +5,8 @@ import { socialEngine } from "@/lib/social";
 import { mamGet, mamPatch, mamPost } from "@/lib/mam-bff";
 
 // Client Area social BFF (copy trading and PAMM). Browser -> /api/social/<route> (same origin) -> engine /v1/social/…
-// The client is resolved from the HttpOnly gateway session cookie; the engine gets that user id in X-Kalks-User-Id and
-// the gateway KYC status in X-Kalks-Kyc (D68). A user id sent by the browser is never used. CSRF: cookies are
+// The client is resolved from the HttpOnly gateway session cookie; the engine gets that user id in X-Ezymex-User-Id and
+// the gateway KYC status in X-Ezymex-Kyc (D68). A user id sent by the browser is never used. CSRF: cookies are
 // SameSite=Lax, writes must be JSON with a same-origin Origin. Every body is rebuilt from known, type-checked fields.
 //
 //   GET   leaderboard?period&program&sort&risk&minDays&maxDd&maxFee&minFollowers&openOnly

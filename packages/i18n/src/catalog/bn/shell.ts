@@ -21,7 +21,7 @@ const shell: NsMessages<"shell"> = {
   security: "নিরাপত্তা",
   verification: "ভেরিফিকেশন",
   preferences: "পছন্দসমূহ",
-  kalksTrader: "Kalks Trader",
+  ezymexTrader: "Ezymex Trader",
   deposit: "জমা",
   // Client Area navigation
   "nav.dashboard": "ড্যাশবোর্ড",
@@ -92,7 +92,7 @@ const shell: NsMessages<"shell"> = {
   "gate.title": "আপনার অ্যাকাউন্টে এটি এখনো চালু হয়নি",
   "gate.text": "এই বিভাগটি আপনার অ্যাকাউন্টে এখনো চালু করা হয়নি। অ্যাক্সেস প্রয়োজন হলে {email}-এ যোগাযোগ করুন।",
   "gate.backToDashboard": "ড্যাশবোর্ডে ফিরে যান",
-  "gate.launchTrader": "Kalks Trader চালু করুন",
+  "gate.launchTrader": "Ezymex Trader চালু করুন",
   // market sessions clock
   "sessions.title": "মার্কেট সেশন",
   "sessions.openLeft": "খোলা · {h}ঘ {m}মি বাকি",

@@ -1,5 +1,5 @@
 // Dashboard screenshots (light / dark / Arabic, top to bottom). Run:
-//   flutter test test_shots/c1_dashboard_shots_test.dart --update-goldens --dart-define=KALKS_PREVIEW=true
+//   flutter test test_shots/c1_dashboard_shots_test.dart --update-goldens --dart-define=EZYMEX_PREVIEW=true
 import 'package:flutter_test/flutter_test.dart';
 
 import 'shots.dart';

@@ -3,9 +3,9 @@
 import * as React from "react";
 import { CloudDownload, Moon, RotateCcw, Save, Timer } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, PageHeader, Reveal, Segmented, Starfield, SymbolCell, Toggle, cn, formatDateTime, formatMoney } from "@kalks/ui";
-import { ASSET_CLASS_LABEL, getInstrument, type AssetClass } from "@kalks/mock";
-import { ADMIN_GROUPS, SWAP_SETTINGS, SYMBOL_SPECS, WEEKDAYS, type SymbolSpec, type Weekday } from "@kalks/mock/admin-config";
+import { Button, Card, CardHeader, Chip, PageHeader, Reveal, Segmented, Starfield, SymbolCell, Toggle, cn, formatDateTime, formatMoney } from "@ezymex/ui";
+import { ASSET_CLASS_LABEL, getInstrument, type AssetClass } from "@ezymex/mock";
+import { ADMIN_GROUPS, SWAP_SETTINGS, SYMBOL_SPECS, WEEKDAYS, type SymbolSpec, type Weekday } from "@ezymex/mock/admin-config";
 import { ChipList, MiniField, MiniStat, NumInput, Select, SettingRow, auditToast } from "@/components/config/kit";
 
 type SwapRow = Pick<SymbolSpec, "symbol" | "swapLong" | "swapShort" | "swapType">;

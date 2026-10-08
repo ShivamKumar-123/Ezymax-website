@@ -22,7 +22,7 @@ import 'support_models.dart';
 import 'widgets/message_row.dart';
 
 /// The web's SUPPORT_EMAIL (apps/crm/lib/live.ts), used when the broker's config has none.
-const String kDefaultSupportEmail = 'support@kalkstrade.com';
+const String kDefaultSupportEmail = 'support@ezymex.com';
 
 class SupportScreen extends ConsumerStatefulWidget {
   const SupportScreen({super.key, this.query = const {}});
@@ -173,7 +173,7 @@ class _HistoryCardState extends ConsumerState<_HistoryCard> {
             style: ctx.text.footnote.copyWith(color: ctx.k.fg3),
           ),
           const SizedBox(height: 16),
-          for (final m in msgs) ...[MessageRow(m: m, botName: 'Kalks AI', meName: me?.name ?? ''), const SizedBox(height: 16)],
+          for (final m in msgs) ...[MessageRow(m: m, botName: 'Ezymex AI', meName: me?.name ?? ''), const SizedBox(height: 16)],
         ],
       ),
     );

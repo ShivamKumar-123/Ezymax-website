@@ -1,4 +1,4 @@
-//! Kalks trading engine (see README.md): accounts, orders, positions, margin, swaps, double-entry ledger,
+//! Ezymex trading engine (see README.md): accounts, orders, positions, margin, swaps, double-entry ledger,
 //! dealing desk. Single writer per account shard, event-sourced to PostgreSQL.
 
 pub mod api;

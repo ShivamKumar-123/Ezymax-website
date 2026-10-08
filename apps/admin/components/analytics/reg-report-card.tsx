@@ -4,8 +4,8 @@ import * as React from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { CalendarDays, Check, ChevronDown, Download, Loader2, Play } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Chip, Icon3D, Menu, Segmented, cn, formatDateTime, formatNumber } from "@kalks/ui";
-import type { AnlFormat, AnlRegReport } from "@kalks/mock/admin-growth-analytics";
+import { Button, Chip, Icon3D, Menu, Segmented, cn, formatDateTime, formatNumber } from "@ezymex/ui";
+import type { AnlFormat, AnlRegReport } from "@ezymex/mock/admin-growth-analytics";
 
 const PERIODS: Record<AnlRegReport["period"], string[]> = {
   daily: ["23 Sep 2026", "22 Sep 2026", "21 Sep 2026", "Last 7 days", "September 2026 (MTD)"],

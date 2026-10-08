@@ -6,8 +6,8 @@ import { ArrowRight, CalendarDays, Gift, Lock, Mail, UserRound, Eye, EyeOff } fr
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import { Button, Field, Input, Stepper, Flag, Icon3D, Illustration } from "@/components/kit";
-import { IS_DEMO } from "@kalks/mock/mode";
-import { useT, Trans } from "@kalks/i18n/react";
+import { IS_DEMO } from "@ezymex/mock/mode";
+import { useT, Trans } from "@ezymex/i18n/react";
 import { DemoEntry, DevCodeHint, FormError, GOOGLE_LOGIN, GoogleButton, useGoogleError, OrDivider, OtpInput, PasswordStrength, ResendLink, TryDemo } from "@/components/auth";
 import { authPost, type ApiError, type OtpChallenge } from "@/lib/auth-client";
 import { COUNTRIES, maxDob } from "@/lib/countries";
@@ -34,7 +34,7 @@ export default function RegisterPage() {
   React.useEffect(() => {
     setDobMax(maxDob());
     // partner link: ?ref= on the page, else the referral cookie set when the visitor arrived (IB programme)
-    const cookieRef = document.cookie.split("; ").find((c) => c.startsWith("kalks_ref="))?.slice(10);
+    const cookieRef = document.cookie.split("; ").find((c) => c.startsWith("ezymex_ref="))?.slice(10);
     const ref = new URLSearchParams(window.location.search).get("ref") ?? (cookieRef ? decodeURIComponent(cookieRef).split(":")[0] : null);
     if (ref) setForm((f) => ({ ...f, referral_code: ref.slice(0, 24) }));
   }, []);
@@ -46,9 +46,11 @@ export default function RegisterPage() {
     e.preventDefault();
     setErr(null);
     setLoading(true);
-    const r = await authPost<OtpChallenge>("register", { ...form, phone_dial: dial, referral_code: form.referral_code || null, accept_terms: agree, marketing_consent: marketing });
+    const r = await authPost<{ status: "ok" } | OtpChallenge>("register", { ...form, phone_dial: dial, referral_code: form.referral_code || null, accept_terms: agree, marketing_consent: marketing });
     setLoading(false);
     if (!r.ok) return setErr(r.error);
+    // password-only sign-in (no email delivery yet): the account is already signed in
+    if (r.data.status === "ok") return setStep(2);
     setOtp(r.data);
     setOtpKey((k) => k + 1);
     setStep(1);

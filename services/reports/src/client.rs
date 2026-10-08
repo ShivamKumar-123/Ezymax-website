@@ -278,7 +278,7 @@ pub async fn analytics(app: &App, tenant: &str, user_id: i64, login: Option<i64>
     }))
 }
 
-/// Money-flow bucket of a balance ledger kind. Kalks FX Options premiums and settlements are trading flows with
+/// Money-flow bucket of a balance ledger kind. Ezymex FX Options premiums and settlements are trading flows with
 /// their own buckets: never deposits, withdrawals or adjustments.
 pub fn flow_key(kind: &str) -> &'static str {
     match kind {

@@ -3,7 +3,7 @@
 import * as React from "react";
 import { ArrowUpRight, CircleDollarSign, Clock, RefreshCw, Search, Send } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, DataTable, Dialog, EmptyState, Field, Input, KpiCard, PageHeader, Tabs, type Column } from "@kalks/ui";
+import { Button, Card, DataTable, Dialog, EmptyState, Field, Input, KpiCard, PageHeader, Tabs, type Column } from "@ezymex/ui";
 import { ErrorState, FilterSelect, Pager, TableSkeleton, ago, qs, useApi, useDebounced, useNow, when } from "@/components/live/kit";
 import { useCan } from "@/components/staff-session";
 import { Addr, ChainTag, Check, ClientCell, Row, Status, TxLink, WD_STATUS, usd, usd2, walletWrite, type AuditItem, type Paged, type Summary, type Withdrawal } from "./kit";

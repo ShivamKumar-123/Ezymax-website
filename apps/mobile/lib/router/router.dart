@@ -1,10 +1,10 @@
 // Routes. The Client Area pages use the web's own paths, so links in notifications, e-mails and deep links
-// (kalks://app/<path>, https://app.kalkstrade.com/<path>) open the same page as on the web:
+// (ezymex://app/<path>, https://app.ezymex.com/<path>) open the same page as on the web:
 //   /login /register /forgot                     sign-in (signed out only)
 //   /unlock                                       biometric unlock of a stored session
 //   / … (StatefulShellRoute)                      the Client Area: five tabs (Dashboard · Accounts · Wallet · Portfolio
 //                                                 · More), each with its own stack; module pages under More
-//   /trader?login=                                Kalks Trader, full screen above the shell (any Trade button)
+//   /trader?login=                                Ezymex Trader, full screen above the shell (any Trade button)
 //   /maintenance /update                          system states
 // Sub-pages of a module are siblings that share one page, the module pager (a finger slides between them, the URL
 // follows); detail pages are children (iOS push).
@@ -147,7 +147,7 @@ String _loc(Uri uri) => '${uri.path.isEmpty ? '/' : uri.path}${uri.hasQuery ? '?
 
 /// Decides where a location may go, from the sign-in state, maintenance and the minimum app version.
 String? redirectFor({required AuthState auth, required bool maintenance, required bool updateRequired, required Uri uri}) {
-  // https://trade.kalkstrade.com/… (Kalks Trader links) -> the terminal
+  // https://trade.ezymex.com/… (Ezymex Trader links) -> the terminal
   if (uri.host.startsWith('trade.')) return '/trader';
   final path = uri.path.isEmpty ? '/' : uri.path;
   if (updateRequired) return path == '/update' ? null : '/update';

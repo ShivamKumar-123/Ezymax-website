@@ -5,7 +5,7 @@
 
 import * as React from "react";
 import { Card, ChangeChip, Segmented, Skeleton, Tabs, formatMoney } from "@/components/kit";
-import { useFormat, useT } from "@kalks/i18n/react";
+import { useFormat, useT } from "@ezymex/i18n/react";
 import { TrendChart, type TrendPoint } from "./trend-chart";
 
 export type StatMode = "equity" | "pnl";

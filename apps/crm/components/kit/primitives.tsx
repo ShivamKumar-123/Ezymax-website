@@ -1,12 +1,12 @@
 "use client";
 
-// Client Area versions of the shared primitives (@kalks/ui), in the pastel "frosted card" language: rounded-rect
+// Client Area versions of the shared primitives (@ezymex/ui), in the pastel "frosted card" language: rounded-rect
 // buttons (accent fill, outline, near-black "ink" for money actions, soft accent tint), borderless soft chips and
-// cards with an 18px display-font title. Same props as @kalks/ui, plus the extra variants; every colour comes from
+// cards with an 18px display-font title. Same props as @ezymex/ui, plus the extra variants; every colour comes from
 // the design tokens, so a broker's brand colour (--k-ember) drives them.
 
 import * as React from "react";
-import { cn } from "@kalks/ui";
+import { cn } from "@ezymex/ui";
 
 /* ------------------------------------------------------------------ */
 /* Button                                                              */

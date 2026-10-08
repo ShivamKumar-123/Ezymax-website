@@ -20,7 +20,7 @@ const academy: NsMessages<"academy"> = {
   "practice.demo": "டெமோவில் பயிற்சி செய்",
   "practice.openFreeDemo": "இலவச டெமோ கணக்கைத் திற",
   "practice.openDemo": "டெமோவைத் திற",
-  "practice.inTrader": "Kalks Trader இல் பயிற்சி செய்",
+  "practice.inTrader": "Ezymex Trader இல் பயிற்சி செய்",
 
   // Levels (sent by the Academy service)
   "level.beginner": "தொடக்கநிலை",
@@ -31,12 +31,12 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "அடிப்படைப் பகுப்பாய்வு",
   "track.technical": "தொழில்நுட்பப் பகுப்பாய்வு",
-  // Product track of the Kalks FX Options elective (phase 9)
+  // Product track of the Ezymex FX Options elective (phase 9)
   "track.options": "ஆப்ஷன் டிரேடிங்",
   "trackShort.fundamental": "அடிப்படை",
   "trackShort.technical": "தொழில்நுட்பம்",
   "trackShort.options": "ஆப்ஷன்கள்",
-  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  // Chip on a product course (e.g. Ezymex FX Options) that sits outside the eight core phases and can be taken at any time
   elective: "விருப்பப் பாடம்",
 
   // Durations (h = hours, m = minutes)
@@ -52,7 +52,7 @@ const academy: NsMessages<"academy"> = {
   "home.pathText": "ஒவ்வொரு முக்கியக் கட்டத்திலும் ஒரு அடிப்படை மற்றும் ஒரு தொழில்நுட்பப் பிரிவு, இறுதித் தேர்வு மற்றும் சான்றிதழ் உள்ளன.",
   // Section under the learning path listing the electives
   "home.electivesTitle": "விருப்பப் பாடநெறிகள்",
-  "home.electivesText": "Kalks தயாரிப்புகள் பற்றிய பாடநெறிகள். எப்போது வேண்டுமானாலும் படிக்கலாம்: ஒவ்வொன்றுக்கும் தனி இறுதித் தேர்வும் சான்றிதழும் உண்டு.",
+  "home.electivesText": "Ezymex தயாரிப்புகள் பற்றிய பாடநெறிகள். எப்போது வேண்டுமானாலும் படிக்கலாம்: ஒவ்வொன்றுக்கும் தனி இறுதித் தேர்வும் சான்றிதழும் உண்டு.",
   "hero.allDone": "அனைத்து அத்தியாயங்களும் முடிந்தன",
   "hero.continue": "கற்றலைத் தொடர்க",
   "hero.upNext": "அடுத்தது",
@@ -220,7 +220,7 @@ const academy: NsMessages<"academy"> = {
   "callout.example": "உதாரணம்",
   "callout.tip": "குறிப்பு",
   "callout.note": "கவனிக்க",
-  "callout.inKalksTrader": "Kalks Trader இல்",
+  "callout.inEzymexTrader": "Ezymex Trader இல்",
   diagram: "வரைபடம்",
 };
 export default academy;

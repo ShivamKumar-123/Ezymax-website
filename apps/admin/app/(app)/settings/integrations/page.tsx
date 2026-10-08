@@ -5,14 +5,14 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import { toast } from "sonner";
 import { ArrowUpRight, Check, CircleDashed, FileDown, Lock, Rocket, Search, ShieldCheck, Zap } from "lucide-react";
-import { Button, Card, CardHeader, Chip, PageHeader, Progress, Reveal, Segmented, Starfield, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, PageHeader, Progress, Reveal, Segmented, Starfield, cn } from "@ezymex/ui";
 import {
   SET_CATEGORIES,
   SET_GO_LIVE,
   SET_INTEGRATIONS,
   type SetCategoryKey,
   type SetIntegrationStatus,
-} from "@kalks/mock/admin-platform-settings";
+} from "@ezymex/mock/admin-platform-settings";
 import { IntegrationCard, NEED_META, STATUS_META, StatusDot } from "@/components/settings/integration-card";
 import { LogoTile, SectionLabel } from "@/components/settings/kit";
 
@@ -95,10 +95,10 @@ export default function IntegrationsPage() {
     <div className="pb-16">
       <PageHeader
         title="Integrations"
-        subtitle="Every credential and input the Super Admin must fill before Kalks goes live. Secrets are encrypted at rest and every change is audited."
+        subtitle="Every credential and input the Super Admin must fill before Ezymex goes live. Secrets are encrypted at rest and every change is audited."
         actions={
           <>
-            <Button variant="surface" onClick={() => toast.success("Go-live checklist exported", { description: "kalks-go-live-checklist-2026-09-24.pdf" })}>
+            <Button variant="surface" onClick={() => toast.success("Go-live checklist exported", { description: "ezymex-go-live-checklist-2026-09-24.pdf" })}>
               <FileDown /> Export checklist
             </Button>
             <Button variant="ember" shimmer onClick={testAll} disabled={testingAll}>

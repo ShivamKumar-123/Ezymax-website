@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Nomi di brand e reti invariati: Kalks, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain, MetaMask, TronLink, Tronscan, USD, USC, KYC.
+// Nomi di brand e reti invariati: Ezymex, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain, MetaMask, TronLink, Tronscan, USD, USC, KYC.
 const wallet: NsMessages<"wallet"> = {
   // Etichette condivise
   wallet: "Wallet",
@@ -388,17 +388,17 @@ const wallet: NsMessages<"wallet"> = {
   "demo.linkCopied": "Link copiato negli appunti",
   "demo.sendOnlyWarning": "<b>Invia solo USDT tramite TRON (TRC20).</b> L'invio di qualsiasi altro token o l'uso di ERC20 / BEP20 comporta la perdita definitiva dei fondi.",
   "demo.arrival": "Arrivo",
-  "demo.kalksFee": "Commissione Kalks",
+  "demo.ezymexFee": "Commissione Ezymex",
   "demo.noKycDeposit": "Per depositare non serve il KYC. La verifica è richiesta solo prima del primo prelievo.",
   // Prelievo
   "demo.addrStartT": "Gli indirizzi TRC20 iniziano con “T”",
   "demo.addrLength": "Deve avere 34 caratteri ({length}/34)",
   "demo.addrChars": "Contiene caratteri non validi (0, O, I, l non sono ammessi)",
-  "demo.addrOwn": "Questo è il tuo indirizzo di deposito Kalks",
+  "demo.addrOwn": "Questo è il tuo indirizzo di deposito Ezymex",
   "demo.justNow": "Adesso",
   "demo.codeConfirmed": "Codice confermato tramite {email}",
   "demo.financeReviews": "Il team finanziario verifica ogni prelievo · di solito in meno di 2 ore",
-  "demo.sentFromHot": "Inviato dall'hot wallet Kalks dopo l'approvazione",
+  "demo.sentFromHot": "Inviato dall'hot wallet Ezymex dopo l'approvazione",
   "demo.arriveAfter": "I fondi arrivano al tuo indirizzo dopo 20 conferme",
   "demo.pendingTitle": "Prelievi in sospeso",
   "demo.awaitingCompletion": "{count} in attesa di completamento",
@@ -457,7 +457,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.alwaysReviewed": "Sempre verificato dal team finanziario",
   "demo.unrecoverable": "I prelievi verso exchange che non supportano USDT TRC20 o verso indirizzi di smart contract non possono essere recuperati.",
   // Trasferimento
-  "demo.kalksWallet": "Kalks Wallet",
+  "demo.ezymexWallet": "Ezymex Wallet",
   "demo.freeMargin": "Margine libero",
   "demo.assetAvailable": "{amount} {asset} disponibili · {network}",
   "demo.throughWallet": "I trasferimenti passano sempre dal tuo wallet.",
@@ -492,7 +492,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.rule4Title": "Margine libero protetto",
   "demo.rule4Text": "Puoi trasferire solo quanto consentito dal margine libero, così le operazioni aperte restano al sicuro.",
   "demo.into": "su",
-  "demo.intoKalksWallet": "nel tuo Kalks Wallet",
+  "demo.intoEzymexWallet": "nel tuo Ezymex Wallet",
   "demo.freeMarginAfter": "Margine libero dopo",
   "demo.marginLevelAfter": "Livello di margine dopo",
   "demo.convertedNote": "{asset} viene convertito in USD al tasso in tempo reale meno una maggiorazione del {markup}%. Il tasso si aggiorna a ogni tick fino alla conferma.",

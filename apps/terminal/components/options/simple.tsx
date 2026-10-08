@@ -10,8 +10,8 @@
 // which trades it on the book. "Explain it to me" asks Claude for a short explanation in the reader's language.
 import * as React from "react";
 import { ArrowRight, CheckCircle2, ChevronDown, Loader2, MessageSquareText, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
-import { cn } from "@kalks/ui";
-import { useLocale, useT } from "@kalks/i18n/react";
+import { cn } from "@ezymex/ui";
+import { useLocale, useT } from "@ezymex/i18n/react";
 import { toast } from "@/lib/notify";
 import { useTerminal } from "@/lib/store";
 import { GuestActions } from "@/components/shell/guest";

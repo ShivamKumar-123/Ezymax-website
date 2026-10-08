@@ -27,12 +27,12 @@ import {
   cn,
   formatNumber,
   type Column,
-} from "@kalks/ui";
-import { ANL_DEP_CAMPAIGNS, ANL_DEP_COUNTRIES, ANL_DEP_DAILY, ANL_DEP_IBS, ANL_DEP_METHODS, type AnlCampaign } from "@kalks/mock/admin-growth-analytics";
+} from "@ezymex/ui";
+import { ANL_DEP_CAMPAIGNS, ANL_DEP_COUNTRIES, ANL_DEP_DAILY, ANL_DEP_IBS, ANL_DEP_METHODS, type AnlCampaign } from "@ezymex/mock/admin-growth-analytics";
 import { StackedBars, compactMoney } from "@/components/analytics/stacked-bars";
 import { ExportActions, dayLabel, weekday } from "@/components/analytics/common";
 import { Meter } from "@/components/analytics/meter";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveDeposits } from "@/components/reports/live-growth";
 
 const RANGES = ["7D", "30D", "90D"] as const;

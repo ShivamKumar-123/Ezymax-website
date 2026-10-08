@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, ArrowRight, Check, Copy, Info, KeyRound, Lock, RotateCw, TriangleAlert, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, EmptyState, Field, Icon3D, Input, KeyValue, PageHeader, Reveal, Skeleton, Stepper, Toggle, cn } from "@/components/kit";
-import { Trans, useT } from "@kalks/i18n/react";
+import { Trans, useT } from "@ezymex/i18n/react";
 import { PasswordInput } from "@/components/accounts/security";
 import { ApiError, modeLabel, serverOf, tradingApi, useAccounts, useGroups, type AccountKind, type EngineAccount, type EngineGroup, type OpenResult } from "./api";
 import { EngineGroupCard, commissionText, groupPhoto, spreadType } from "./group-card";

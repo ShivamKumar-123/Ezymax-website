@@ -8,15 +8,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:kalks/core/prefs.dart';
-import 'package:kalks/features/terminal/cfd/chart_menu.dart';
-import 'package:kalks/features/terminal/chart/indicators.dart';
-import 'package:kalks/features/terminal/chart/terminal_chart.dart';
-import 'package:kalks/features/terminal/core/market.dart';
-import 'package:kalks/features/terminal/core/workspace.dart';
-import 'package:kalks/features/terminal/terminal_screen.dart';
-import 'package:kalks/i18n/i18n.dart';
-import 'package:kalks/ui/ui.dart';
+import 'package:ezymex/core/prefs.dart';
+import 'package:ezymex/features/terminal/cfd/chart_menu.dart';
+import 'package:ezymex/features/terminal/chart/indicators.dart';
+import 'package:ezymex/features/terminal/chart/terminal_chart.dart';
+import 'package:ezymex/features/terminal/core/market.dart';
+import 'package:ezymex/features/terminal/core/workspace.dart';
+import 'package:ezymex/features/terminal/terminal_screen.dart';
+import 'package:ezymex/i18n/i18n.dart';
+import 'package:ezymex/ui/ui.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -37,7 +37,7 @@ void main() {
       expect(reg['macd']!.outputs.map((o) => o.kind), ['hist', 'line', 'line']);
       // the page bundle is generated from the same web code
       final bundle = File('assets/chart/indicators.bundle.js').readAsStringSync();
-      expect(bundle, contains('window.KalksInd'));
+      expect(bundle, contains('window.EzymexInd'));
       expect(bundle, contains('createIndicatorLayer'));
     });
 

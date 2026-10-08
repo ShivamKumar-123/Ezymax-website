@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader order ticket, New Order window, DOM ladder, position/pending dialogs and trade toasts.
+// Ezymex Trader order ticket, New Order window, DOM ladder, position/pending dialogs and trade toasts.
 // Stop Loss = Henti Rugi, Take Profit = Ambil Untung (MT5 Malay); order types (buy limit, sell stop…) stay as in MT5.
 const order: NsMessages<"order"> = {
   // Order types (ticket type switcher)
@@ -270,9 +270,9 @@ const order: NsMessages<"order"> = {
 
   // Specification / About dialogs
   "spec.title": "Spesifikasi · {symbol}",
-  "about.title": "Perihal Kalks Trader",
+  "about.title": "Perihal Ezymex Trader",
   "about.version": "Versi {version} · binaan {build} · Web x64",
-  "about.text": "Bilik dagangan pelbagai aset untuk Kalks Global Markets. Sebut harga distrim daripada gateway harga Kalks; waktu pelayan ialah GMT+3.",
+  "about.text": "Bilik dagangan pelbagai aset untuk Ezymex Global Markets. Sebut harga distrim daripada gateway harga Ezymex; waktu pelayan ialah GMT+3.",
 
   // Rejection reasons (MT5 journal wording)
   "reject.market_closed": "Pasaran ditutup",

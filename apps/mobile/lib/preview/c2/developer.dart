@@ -6,7 +6,7 @@ String _ago(Duration d) => DateTime.now().toUtc().subtract(d).toIso8601String();
 int _unix(DateTime d) => d.millisecondsSinceEpoch ~/ 1000;
 final DateTime _now = DateTime.now().toUtc();
 
-const _base = 'https://api.kalkstrade.com/algo/public/v1';
+const _base = 'https://api.ezymex.com/algo/public/v1';
 
 (int, Object)? previewDeveloper(String method, String path, Map<String, dynamic> body, Map<String, String> query) {
   if (!path.startsWith('algo/')) return null;
@@ -103,7 +103,7 @@ const _base = 'https://api.kalkstrade.com/algo/public/v1';
       final r = _createKey(body);
       return (r.containsKey('error') ? 422 : 200, r);
     case 'webhooks':
-      return (200, {'id': 3, 'url': 'https://api.kalkstrade.com/algo/hooks/wh_5f2c9a71d0e44b8ab3c6e2f19d7a0b6c'});
+      return (200, {'id': 3, 'url': 'https://api.ezymex.com/algo/hooks/wh_5f2c9a71d0e44b8ab3c6e2f19d7a0b6c'});
     case 'validate':
       return (200, _validate(body));
     case 'ai/strategy':
@@ -124,7 +124,7 @@ const _base = 'https://api.kalkstrade.com/algo/public/v1';
     return (200, ok);
   }
   if (seg.first == 'webhooks' && seg.length == 3 && seg[2] == 'rotate') {
-    return (200, {'url': 'https://api.kalkstrade.com/algo/hooks/wh_0b7e3d5a9c1f48e2a6d4b8c0e2f4a6b8'});
+    return (200, {'url': 'https://api.ezymex.com/algo/hooks/wh_0b7e3d5a9c1f48e2a6d4b8c0e2f4a6b8'});
   }
   if (seg.first == 'webhooks' && seg.length == 3 && seg[2] == 'test') {
     return (
@@ -277,7 +277,7 @@ final Map<String, Object?> _meta = {
     'example': _example,
   },
   'ai': {'configured': true, 'model': 'claude-sonnet'},
-  'publicUrl': 'https://api.kalkstrade.com/algo',
+  'publicUrl': 'https://api.ezymex.com/algo',
 };
 
 /* ------------------------------------------------------------------ keys */
@@ -442,7 +442,7 @@ Map<String, Object?> _hookRow(int id) => id == 1
 Map<String, Object?> _hooks() => {
   'items': [_hookRow(1), _hookRow(2)],
   'events': <Object?>[],
-  'baseUrl': 'https://api.kalkstrade.com/algo/hooks',
+  'baseUrl': 'https://api.ezymex.com/algo/hooks',
 };
 
 Map<String, Object?> _hookDetail(int id) => {
@@ -1308,7 +1308,7 @@ List<Map<String, Object?>> _listings() {
     'house': house,
   };
   return [
-    l(1, 'EURUSD trend rider', 'Kalks', 'EURUSD', 'H1', 0, 9.84, 51.2, 86, 4.3, 4.6, 23, 214, house: true),
+    l(1, 'EURUSD trend rider', 'Ezymex', 'EURUSD', 'H1', 0, 9.84, 51.2, 86, 4.3, 4.6, 23, 214, house: true),
     l(2, 'EMA trend H1', 'Amir M.', 'EURUSD', 'H1', 0, 6.12, 46.9, 64, 6.1, 4.2, 11, 58, clone: true),
     l(3, 'London breakout · gold', 'Ravi K.', 'XAUUSD', 'M15', 19, 14.36, 41.8, 152, 8.7, 4.8, 37, 312),
     l(4, 'Bitcoin swing', 'Sara L.', 'BTCUSD', 'H4', 29, -3.42, 37.5, 24, 12.9, 3.4, 5, 19),

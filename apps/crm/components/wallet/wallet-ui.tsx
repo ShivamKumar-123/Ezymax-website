@@ -6,10 +6,10 @@ import { QRCodeSVG } from "qrcode.react";
 import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Award, Copy, ExternalLink, Gift, IdCard, Repeat, Share2, ShieldAlert, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, CopyButton, Dialog, KeyValue, Progress, StatusChip, cn, formatDateTime, formatNumber, shortHash } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
-import type { T } from "@kalks/i18n";
-import { WALLET, type WalletTx } from "@kalks/mock";
-import { TX_TYPE_LABEL, WALLET_LIMITS, fullHash, txDirection } from "@kalks/mock/wallet-extra";
+import { useT } from "@ezymex/i18n/react";
+import type { T } from "@ezymex/i18n";
+import { WALLET, type WalletTx } from "@ezymex/mock";
+import { TX_TYPE_LABEL, WALLET_LIMITS, fullHash, txDirection } from "@ezymex/mock/wallet-extra";
 
 export const tronscan = (hash: string) => `https://tronscan.org/#/transaction/${hash}`;
 

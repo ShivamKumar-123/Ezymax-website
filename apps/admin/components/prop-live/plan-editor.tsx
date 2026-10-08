@@ -6,7 +6,7 @@
  */
 import * as React from "react";
 import { AlertTriangle, CalendarClock, Check, Eye, Layers, Minus, Plus, Scale, ShieldAlert, Trash2, TrendingUp, Wallet, X } from "lucide-react";
-import { Button, Card, CardHeader, Chip, IconButton, Segmented, Toggle, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, IconButton, Segmented, Toggle, cn } from "@ezymex/ui";
 import { MiniField, NumInput, Select, SettingRow, Slider, TextInput } from "@/components/config/kit";
 import { BANNED_LABEL, DETECTED, PlanTypeChip, bannedLabel, usd, usdK, type EngineGroup, type Plan, type PlanPhase, type PlanType } from "./kit";
 

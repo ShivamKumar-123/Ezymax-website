@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
-import { Button, cn } from "@kalks/ui";
+import { Button, cn } from "@ezymex/ui";
 import type { QuizQ } from "./api";
 
 const L = ["A", "B", "C", "D"];

@@ -4,7 +4,7 @@ import { createFormatter, type Formatter } from "./format";
 import { loadMessages } from "./catalog";
 import { LOCALE_COOKIE, dirOf, resolveLocale, type Locale } from "./locales";
 
-/** The request's language: the kalks_locale cookie, else Accept-Language, else English. */
+/** The request's language: the ezymex_locale cookie, else Accept-Language, else English. */
 export async function getLocale(): Promise<Locale> {
   const [c, h] = await Promise.all([cookies(), headers()]);
   return resolveLocale(c.get(LOCALE_COOKIE)?.value, h.get("accept-language"));

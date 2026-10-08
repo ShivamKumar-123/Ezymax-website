@@ -1,6 +1,6 @@
 import { toast } from "sonner";
-import { tr } from "@kalks/i18n/react";
-import { intlTag } from "@kalks/i18n/locales";
+import { tr } from "@ezymex/i18n/react";
+import { intlTag } from "@ezymex/i18n/locales";
 
 /** Builds a CSV from plain rows and triggers a browser download. */
 export function downloadCsv(name: string, rows: Record<string, string | number>[]) {

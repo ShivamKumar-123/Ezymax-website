@@ -6,7 +6,7 @@ use std::fmt;
 pub struct Config {
     pub bind: String,
     pub database_url: String,
-    /// Shared secret the BFFs send in `X-Kalks-Internal`. Empty = check disabled (dev only).
+    /// Shared secret the BFFs send in `X-Ezymex-Internal`. Empty = check disabled (dev only).
     pub internal_token: String,
     pub dev_mode: bool,
     pub json_logs: bool,
@@ -88,18 +88,18 @@ impl Config {
         if internal_token.is_empty() && !dev_mode {
             anyhow::bail!("NEWS_INTERNAL_TOKEN is required in production");
         }
-        // default: same server/credentials as the gateway, database kalks_news
+        // default: same server/credentials as the gateway, database ezymex_news
         let database_url = match env::var("NEWS_DATABASE_URL").ok().filter(|v| !v.trim().is_empty()) {
             Some(u) => u,
             None => {
-                let g = var("GATEWAY_DATABASE_URL", "postgres://postgres@127.0.0.1:5433/kalks_core");
+                let g = var("GATEWAY_DATABASE_URL", "postgres://postgres@127.0.0.1:5433/ezymex_core");
                 match g.rfind('/') {
                     Some(i) if i > g.find("://").map(|x| x + 2).unwrap_or(0) => {
                         let (base, tail) = g.split_at(i);
                         let q = tail.find('?').map(|j| &tail[j..]).unwrap_or("");
-                        format!("{base}/kalks_news{q}")
+                        format!("{base}/ezymex_news{q}")
                     }
-                    _ => "postgres://postgres@127.0.0.1:5433/kalks_news".into(),
+                    _ => "postgres://postgres@127.0.0.1:5433/ezymex_news".into(),
                 }
             }
         };
@@ -110,7 +110,7 @@ impl Config {
             dev_mode,
             json_logs: var("NEWS_LOG_FORMAT", if dev_mode { "text" } else { "json" }) == "json",
             workers: flag("NEWS_WORKERS", true),
-            user_agent: var("NEWS_USER_AGENT", "KalksNewsBot/1.0 (+https://kalkstrade.com; headlines and links only)"),
+            user_agent: var("NEWS_USER_AGENT", "EzymexNewsBot/1.0 (+https://ezymex.com; headlines and links only)"),
             calendar_url: var("NEWS_CALENDAR_URL", "https://nfs.faireconomy.media/ff_calendar_thisweek.json"),
             calendar_secs: var("NEWS_CALENDAR_SECS", "1800").parse().unwrap_or(1800).max(600),
             support_url: var("NEWS_SUPPORT_URL", "http://127.0.0.1:8100").trim_end_matches('/').to_string(),
@@ -133,7 +133,7 @@ impl Config {
             dev_mode: true,
             json_logs: false,
             workers: false,
-            user_agent: "KalksNewsBot/test".into(),
+            user_agent: "EzymexNewsBot/test".into(),
             calendar_url: String::new(),
             calendar_secs: 1800,
             support_url: String::new(),

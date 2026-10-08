@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, EmptyState, PageHeader } from "@/components/kit";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LivePromotionsPage } from "@/components/growth/promotions";
 
 function DemoPromotionsPage() {

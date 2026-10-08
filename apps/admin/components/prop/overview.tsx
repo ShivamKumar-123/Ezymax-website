@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { ArrowUpRight, BadgeCheck, CircleDollarSign, ShieldAlert, Trophy, XCircle } from "lucide-react";
-import { Avatar, Button, Card, CardHeader, Chip, Donut, Money, Segmented, Sparkline, cn } from "@kalks/ui";
+import { Avatar, Button, Card, CardHeader, Chip, Donut, Money, Segmented, Sparkline, cn } from "@ezymex/ui";
 import { ColumnChart, FunnelBars } from "@/components/config/kit";
 import { EVENTS, MONTHLY, OVERVIEW, PLANS, fmtAgo, type PropEvent } from "./data";
 import { PlanTypeChip } from "./rules";
@@ -130,7 +130,7 @@ export function PlanMixCard() {
             <Link key={p.id} href="/prop/plans" className="k-row flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-surface-3/60">
               <span className="size-2.5 shrink-0 rounded-full" style={{ background: MIX_COLORS[i] }} />
               <div className="min-w-0 flex-1">
-                <div className="truncate text-[13px] font-medium">{p.name.replace("Kalks ", "")}</div>
+                <div className="truncate text-[13px] font-medium">{p.name.replace("Ezymex ", "")}</div>
                 <div className="k-num text-[11.5px] text-fg-3">
                   {p.sold30d} sold · 30d
                 </div>

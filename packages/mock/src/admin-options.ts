@@ -1,5 +1,5 @@
 /**
- * Back Office › Options — demo build (NEXT_PUBLIC_KALKS_MODE=demo).
+ * Back Office › Options — demo build (NEXT_PUBLIC_EZYMEX_MODE=demo).
  *
  * An in-memory stand-in for the two APIs the Options pages call, so every page renders and every action works in
  * the demo build without services:
@@ -215,7 +215,7 @@ type State = {
   mm: MmRow[];
 };
 
-const ME = "demo@kalkstrade.com #0";
+const ME = "demo@ezymex.com #0";
 let state: State | null = null;
 
 function spotOf(sym: string, now = Date.now()) {
@@ -286,9 +286,9 @@ function seed(now: number): State {
     rateHistory[ccy] = [{ rate, prevRate: null, asOf: dayStr(now - 12 * DAY), reason: "Initial seed from central-bank policy rates", changedBy: "seed", changedAt: at(12 * DAY) }];
   }
   // a couple of real-looking changes
-  rates.USD = { ...rates.USD!, rate: 0.03625, asOf: dayStr(now - 15 * DAY), updatedAt: at(15 * DAY - 2 * HOUR), updatedBy: "s.okafor@kalkstrade.com #7" };
-  rateHistory.USD!.unshift({ rate: 0.03625, prevRate: 0.03875, asOf: dayStr(now - 15 * DAY), reason: "RTE-01 · FOMC cut 25 bp", changedBy: "s.okafor@kalkstrade.com #7", changedAt: at(15 * DAY - 2 * HOUR) });
-  rateHistory.GBP!.unshift({ rate: 0.0375, prevRate: 0.04, asOf: dayStr(now - 40 * DAY), reason: "RTE-01 · MPC cut 25 bp", changedBy: "s.okafor@kalkstrade.com #7", changedAt: at(40 * DAY) });
+  rates.USD = { ...rates.USD!, rate: 0.03625, asOf: dayStr(now - 15 * DAY), updatedAt: at(15 * DAY - 2 * HOUR), updatedBy: "s.okafor@ezymex.com #7" };
+  rateHistory.USD!.unshift({ rate: 0.03625, prevRate: 0.03875, asOf: dayStr(now - 15 * DAY), reason: "RTE-01 · FOMC cut 25 bp", changedBy: "s.okafor@ezymex.com #7", changedAt: at(15 * DAY - 2 * HOUR) });
+  rateHistory.GBP!.unshift({ rate: 0.0375, prevRate: 0.04, asOf: dayStr(now - 40 * DAY), reason: "RTE-01 · MPC cut 25 bp", changedBy: "s.okafor@ezymex.com #7", changedAt: at(40 * DAY) });
 
   const holidays: State["holidays"] = [];
   for (const [cal, list] of Object.entries(HOLIDAYS)) for (const [day, name] of list) holidays.push({ calendar: cal, day, name, source: "seed", active: true, updatedAt: at(20 * DAY), updatedBy: "seed" });
@@ -296,7 +296,7 @@ function seed(now: number): State {
   const merged = (cals: string[]) => [...new Map(cals.flatMap((c) => HOLIDAYS[c]!).map(([d, n]) => [d, n] as [string, string])).entries()].sort();
   for (const [cal, from] of [["XAU", ["GBP", "USD"]], ["XAG", ["GBP", "USD"]], ["OIL", ["USD"]]] as [string, string[]][])
     for (const [day, name] of merged(from)) holidays.push({ calendar: cal, day, name, source: "seed", active: true, updatedAt: at(20 * DAY), updatedBy: "seed" });
-  holidays.push({ calendar: "USD", day: "2026-12-24", name: "Christmas Eve (early close)", source: "admin", active: false, updatedAt: at(6 * DAY), updatedBy: "m.ivanova@kalkstrade.com #3" });
+  holidays.push({ calendar: "USD", day: "2026-12-24", name: "Christmas Eve (early close)", source: "admin", active: false, updatedAt: at(6 * DAY), updatedBy: "m.ivanova@ezymex.com #3" });
 
   const surfaces: State["surfaces"] = {};
   for (const u of UNDERLYINGS) {
@@ -307,19 +307,19 @@ function seed(now: number): State {
         return { tenor, days, atm, rr25: r4(skew * (0.8 + days / 300), 5), bf25: r4(atm * 0.035, 5), rr10: r4(skew * 1.9 * (0.8 + days / 300), 5), bf10: r4(atm * 0.11, 5) };
       });
     surfaces[u.symbol] = [
-      { symbol: u.symbol, version: 3, blendWeight: 0.7, pillars: mk(0), reason: "VOL-02 · Weekly re-mark to broker quotes", publishedBy: "m.ivanova@kalkstrade.com #3", publishedAt: at(2 * DAY + r.int(1, 8) * HOUR) },
-      { symbol: u.symbol, version: 2, blendWeight: 0.7, pillars: mk(0.04), reason: "VOL-03 · Event premium (central-bank week)", publishedBy: "m.ivanova@kalkstrade.com #3", publishedAt: at(9 * DAY) },
+      { symbol: u.symbol, version: 3, blendWeight: 0.7, pillars: mk(0), reason: "VOL-02 · Weekly re-mark to broker quotes", publishedBy: "m.ivanova@ezymex.com #3", publishedAt: at(2 * DAY + r.int(1, 8) * HOUR) },
+      { symbol: u.symbol, version: 2, blendWeight: 0.7, pillars: mk(0.04), reason: "VOL-03 · Event premium (central-bank week)", publishedBy: "m.ivanova@ezymex.com #3", publishedAt: at(9 * DAY) },
       { symbol: u.symbol, version: 1, blendWeight: 0.7, pillars: mk(-0.02), reason: "Initial seed", publishedBy: "seed", publishedAt: at(21 * DAY) },
     ];
   }
 
   const tenants: State["tenants"] = {
-    kalks: { tenant: "kalks", enabledDemo: true, enabledLive: false, publicChain: false, underlyings: null, updatedAt: at(21 * DAY), updatedBy: "seed" },
-    "apex-fx": { tenant: "apex-fx", enabledDemo: true, enabledLive: false, publicChain: false, underlyings: ["EURUSD", "GBPUSD", "USDJPY", "XAUUSD"], updatedAt: at(4 * DAY), updatedBy: "owner@kalkstrade.com #1" },
+    ezymex: { tenant: "ezymex", enabledDemo: true, enabledLive: false, publicChain: false, underlyings: null, updatedAt: at(21 * DAY), updatedBy: "seed" },
+    "apex-fx": { tenant: "apex-fx", enabledDemo: true, enabledLive: false, publicChain: false, underlyings: ["EURUSD", "GBPUSD", "USDJPY", "XAUUSD"], updatedAt: at(4 * DAY), updatedBy: "owner@ezymex.com #1" },
   };
 
   const g = (groupCode: string, symbol: string, p: Partial<Record<string, number | boolean>>, ago: number, by: string) => ({
-    tenant: "kalks",
+    tenant: "ezymex",
     groupCode,
     symbol,
     volSpread: 0.004,
@@ -337,10 +337,10 @@ function seed(now: number): State {
   });
   const groups = [
     g("*", "*", {}, 21 * DAY, "seed"),
-    g("pro", "*", { volSpread: 0.0025, minSpreadUsd: 0.3, commissionPerContract: 0.15, takerFeePerContract: 0.15 }, 6 * DAY, "m.ivanova@kalkstrade.com #3"),
-    g("standard", "XAUUSD", { volSpread: 0.006, minSpreadUsd: 1, weekendMarginPct: 40 }, 3 * DAY, "m.ivanova@kalkstrade.com #3"),
-    g("vip", "*", { volSpread: 0.002, commissionPerContract: 0.1, commissionCapPct: 6, maxContractsPerClient: 500, makerFeePerContract: -0.08, takerFeePerContract: 0.1 }, 8 * DAY, "owner@kalkstrade.com #1"),
-    g("cent", "*", { enabled: false, maxContractsPerClient: 20 }, 10 * DAY, "m.ivanova@kalkstrade.com #3"),
+    g("pro", "*", { volSpread: 0.0025, minSpreadUsd: 0.3, commissionPerContract: 0.15, takerFeePerContract: 0.15 }, 6 * DAY, "m.ivanova@ezymex.com #3"),
+    g("standard", "XAUUSD", { volSpread: 0.006, minSpreadUsd: 1, weekendMarginPct: 40 }, 3 * DAY, "m.ivanova@ezymex.com #3"),
+    g("vip", "*", { volSpread: 0.002, commissionPerContract: 0.1, commissionCapPct: 6, maxContractsPerClient: 500, makerFeePerContract: -0.08, takerFeePerContract: 0.1 }, 8 * DAY, "owner@ezymex.com #1"),
+    g("cent", "*", { enabled: false, maxContractsPerClient: 20 }, 10 * DAY, "m.ivanova@ezymex.com #3"),
   ];
 
   // expiries: the last few days (fixed), today's cut (TWAP running), and the listed cycle
@@ -413,7 +413,7 @@ function seed(now: number): State {
 
   const ctl = (id: number, scope: string, target: string, mode: string, reason: string, ago: number, extra: Record<string, unknown> = {}) => ({
     id,
-    tenant: "kalks",
+    tenant: "ezymex",
     scope,
     target,
     mode,
@@ -422,7 +422,7 @@ function seed(now: number): State {
     reason,
     active: true,
     expiresAt: null,
-    createdBy: "j.mensah@kalkstrade.com #5",
+    createdBy: "j.mensah@ezymex.com #5",
     createdAt: at(ago),
     clearedBy: null,
     clearedAt: null,
@@ -435,32 +435,32 @@ function seed(now: number): State {
     ctl(41, "expiry", `USDJPY:${nextJpy?.date ?? dayStr(now + DAY)}`, "manual_vol", "DLR-03 · BoJ decision overnight: event vol until the announcement", 3 * HOUR, { manualVol: 0.142, expiresAt: iso(now + 18 * HOUR) }),
     ctl(40, "series", oilSeries, "close_only", "DLR-02 · Concentrated short interest in one strike", 26 * HOUR),
     ctl(39, "underlying", "XAGUSD", "halt", "DLR-01 · Silver feed gap under review", 40 * MIN, { expiresAt: iso(now + 50 * MIN) }),
-    { ...ctl(37, "underlying", "USOIL", "freeze", "DLR-04 · Feed spike on EIA print", 2 * DAY, { frozenSpot: 71.12 }), active: false, clearedBy: "j.mensah@kalkstrade.com #5", clearedAt: at(2 * DAY - 6 * MIN), clearReason: "Feed back to normal" },
-    { ...ctl(35, "all", "*", "halt", "DLR-05 · Platform maintenance window", 6 * DAY, { tenant: "*", createdBy: "owner@kalkstrade.com #1" }), active: false, clearedBy: "owner@kalkstrade.com #1", clearedAt: at(6 * DAY - 25 * MIN), clearReason: "Maintenance finished" },
+    { ...ctl(37, "underlying", "USOIL", "freeze", "DLR-04 · Feed spike on EIA print", 2 * DAY, { frozenSpot: 71.12 }), active: false, clearedBy: "j.mensah@ezymex.com #5", clearedAt: at(2 * DAY - 6 * MIN), clearReason: "Feed back to normal" },
+    { ...ctl(35, "all", "*", "halt", "DLR-05 · Platform maintenance window", 6 * DAY, { tenant: "*", createdBy: "owner@ezymex.com #1" }), active: false, clearedBy: "owner@ezymex.com #1", clearedAt: at(6 * DAY - 25 * MIN), clearReason: "Maintenance finished" },
   ];
 
   const limits = [
-    { tenant: "kalks", userId: 10482, maxContracts: 5, maxShortContracts: 0, closeOnly: false, blocked: false, reason: "LIM-01 · Live tester allow-list (O48)", updatedAt: at(5 * DAY), updatedBy: "owner@kalkstrade.com #1" },
-    { tenant: "kalks", userId: 10517, maxContracts: 10, maxShortContracts: 2, closeOnly: false, blocked: false, reason: "LIM-01 · Live tester allow-list (O48)", updatedAt: at(5 * DAY), updatedBy: "owner@kalkstrade.com #1" },
-    { tenant: "kalks", userId: 20931, maxContracts: 40, maxShortContracts: 10, closeOnly: true, blocked: false, reason: "LIM-03 · Toxic flow: sells 0DTE wings minutes before the cut", updatedAt: at(20 * HOUR), updatedBy: "j.mensah@kalkstrade.com #5" },
-    { tenant: "kalks", userId: 31877, maxContracts: null, maxShortContracts: null, closeOnly: false, blocked: true, reason: "LIM-04 · Suitability quiz failed twice", updatedAt: at(2 * DAY), updatedBy: "c.duarte@kalkstrade.com #9" },
+    { tenant: "ezymex", userId: 10482, maxContracts: 5, maxShortContracts: 0, closeOnly: false, blocked: false, reason: "LIM-01 · Live tester allow-list (O48)", updatedAt: at(5 * DAY), updatedBy: "owner@ezymex.com #1" },
+    { tenant: "ezymex", userId: 10517, maxContracts: 10, maxShortContracts: 2, closeOnly: false, blocked: false, reason: "LIM-01 · Live tester allow-list (O48)", updatedAt: at(5 * DAY), updatedBy: "owner@ezymex.com #1" },
+    { tenant: "ezymex", userId: 20931, maxContracts: 40, maxShortContracts: 10, closeOnly: true, blocked: false, reason: "LIM-03 · Toxic flow: sells 0DTE wings minutes before the cut", updatedAt: at(20 * HOUR), updatedBy: "j.mensah@ezymex.com #5" },
+    { tenant: "ezymex", userId: 31877, maxContracts: null, maxShortContracts: null, closeOnly: false, blocked: true, reason: "LIM-04 · Suitability quiz failed twice", updatedAt: at(2 * DAY), updatedBy: "c.duarte@ezymex.com #9" },
   ];
 
   const audit: Audit[] = [];
   const add = (tenant: string, actor: string, action: string, target: string, reason: string, ago: number, before: unknown = null, after: unknown = null) => audit.push({ id: 0, tenant, actor, action, target, before, after, reason, at: at(ago) });
-  add("kalks", "j.mensah@kalkstrade.com #5", "control.add", "expiry:USDJPY", "DLR-03 · BoJ decision overnight: event vol until the announcement", 3 * HOUR, null, { mode: "manual_vol", manualVol: 0.142 });
-  add("kalks", "j.mensah@kalkstrade.com #5", "control.add", "underlying:XAGUSD", "DLR-01 · Silver feed gap under review", 40 * MIN, null, { mode: "halt" });
-  add("kalks", "m.ivanova@kalkstrade.com #3", "surface.publish", "EURUSD", "VOL-02 · Weekly re-mark to broker quotes", 2 * DAY + 3 * HOUR, { version: 2, blendWeight: 0.7 }, { version: 3, blendWeight: 0.7 });
-  add("kalks", "m.ivanova@kalkstrade.com #3", "surface.publish", "XAUUSD", "VOL-02 · Weekly re-mark to broker quotes", 2 * DAY + 2 * HOUR, { version: 2 }, { version: 3 });
-  add("kalks", "s.okafor@kalkstrade.com #7", "rate.update", "USD", "RTE-01 · FOMC cut 25 bp", 15 * DAY - 2 * HOUR, { rate: 0.03875 }, { rate: 0.03625 });
-  add("kalks", "m.ivanova@kalkstrade.com #3", "group.upsert", "standard/XAUUSD", "FEE-02 · Gold weekend gap risk", 3 * DAY, null, { volSpread: 0.006, weekendMarginPct: 40 });
-  add("kalks", "j.mensah@kalkstrade.com #5", "limit.upsert", "20931", "LIM-03 · Toxic flow: sells 0DTE wings minutes before the cut", 20 * HOUR, null, { closeOnly: true, maxContracts: 40 });
-  add("kalks", "owner@kalkstrade.com #1", "tenant.update", "apex-fx", "BRK-01 · Broker onboarding: demo first", 4 * DAY, { enabledDemo: false }, { enabledDemo: true, enabledLive: false, underlyings: ["EURUSD", "GBPUSD", "USDJPY", "XAUUSD"] });
-  add("kalks", "m.ivanova@kalkstrade.com #3", "holiday.disable", "USD:2026-12-24", "HOL-02 · Early close only, not a bank holiday", 6 * DAY);
-  add("kalks", "s.okafor@kalkstrade.com #7", "fixing.manual", "XAGUSD", "SET-02 · Feed gap: re-fixed from the LBMA reference", 2 * DAY + HOUR, { price: 31.02, run: 1 }, { price: 31.07, run: 2 });
-  add("kalks", "j.mensah@kalkstrade.com #5", "control.clear", "37", "Feed back to normal", 2 * DAY - 6 * MIN);
-  add("kalks", "owner@kalkstrade.com #1", "control.clear", "35", "Maintenance finished", 6 * DAY - 25 * MIN);
-  add("kalks", "m.ivanova@kalkstrade.com #3", "underlying.update", "XAUUSD", "CFG-02 · Wider strike ladder for the gold rally", 8 * DAY, { strikesEachSide: 10 }, { strikesEachSide: 12 });
+  add("ezymex", "j.mensah@ezymex.com #5", "control.add", "expiry:USDJPY", "DLR-03 · BoJ decision overnight: event vol until the announcement", 3 * HOUR, null, { mode: "manual_vol", manualVol: 0.142 });
+  add("ezymex", "j.mensah@ezymex.com #5", "control.add", "underlying:XAGUSD", "DLR-01 · Silver feed gap under review", 40 * MIN, null, { mode: "halt" });
+  add("ezymex", "m.ivanova@ezymex.com #3", "surface.publish", "EURUSD", "VOL-02 · Weekly re-mark to broker quotes", 2 * DAY + 3 * HOUR, { version: 2, blendWeight: 0.7 }, { version: 3, blendWeight: 0.7 });
+  add("ezymex", "m.ivanova@ezymex.com #3", "surface.publish", "XAUUSD", "VOL-02 · Weekly re-mark to broker quotes", 2 * DAY + 2 * HOUR, { version: 2 }, { version: 3 });
+  add("ezymex", "s.okafor@ezymex.com #7", "rate.update", "USD", "RTE-01 · FOMC cut 25 bp", 15 * DAY - 2 * HOUR, { rate: 0.03875 }, { rate: 0.03625 });
+  add("ezymex", "m.ivanova@ezymex.com #3", "group.upsert", "standard/XAUUSD", "FEE-02 · Gold weekend gap risk", 3 * DAY, null, { volSpread: 0.006, weekendMarginPct: 40 });
+  add("ezymex", "j.mensah@ezymex.com #5", "limit.upsert", "20931", "LIM-03 · Toxic flow: sells 0DTE wings minutes before the cut", 20 * HOUR, null, { closeOnly: true, maxContracts: 40 });
+  add("ezymex", "owner@ezymex.com #1", "tenant.update", "apex-fx", "BRK-01 · Broker onboarding: demo first", 4 * DAY, { enabledDemo: false }, { enabledDemo: true, enabledLive: false, underlyings: ["EURUSD", "GBPUSD", "USDJPY", "XAUUSD"] });
+  add("ezymex", "m.ivanova@ezymex.com #3", "holiday.disable", "USD:2026-12-24", "HOL-02 · Early close only, not a bank holiday", 6 * DAY);
+  add("ezymex", "s.okafor@ezymex.com #7", "fixing.manual", "XAGUSD", "SET-02 · Feed gap: re-fixed from the LBMA reference", 2 * DAY + HOUR, { price: 31.02, run: 1 }, { price: 31.07, run: 2 });
+  add("ezymex", "j.mensah@ezymex.com #5", "control.clear", "37", "Feed back to normal", 2 * DAY - 6 * MIN);
+  add("ezymex", "owner@ezymex.com #1", "control.clear", "35", "Maintenance finished", 6 * DAY - 25 * MIN);
+  add("ezymex", "m.ivanova@ezymex.com #3", "underlying.update", "XAUUSD", "CFG-02 · Wider strike ladder for the gold rally", 8 * DAY, { strikesEachSide: 10 }, { strikesEachSide: 12 });
   add("apex-fx", "risk@apexfx.com #31", "group.upsert", "*/*", "FEE-01 · Launch pricing", 3 * DAY + 5 * HOUR, null, { volSpread: 0.005 });
   audit.sort((a, b) => Date.parse(b.at) - Date.parse(a.at)).forEach((a, i, arr) => (a.id = 5000 + arr.length - i));
 
@@ -483,7 +483,7 @@ const bad = (message: string) => err(422, "validation", message);
 function audit(action: string, target: string, reason: string, before: unknown, after: unknown) {
   const s = db();
   const id = (s.audit[0]?.id ?? 5000) + 1;
-  s.audit.unshift({ id, tenant: "kalks", actor: ME, action, target, before, after, reason, at: new Date().toISOString() });
+  s.audit.unshift({ id, tenant: "ezymex", actor: ME, action, target, before, after, reason, at: new Date().toISOString() });
 }
 function bump() {
   return ++db().version;
@@ -762,15 +762,15 @@ function mmSeed(now: number): MmRow[] {
   return [
     { ...base, tenant: "*", kind: "*", underlying: "*", updatedAt: at(3 * DAY), updatedBy: "seed" },
     { ...base, tenant: "*", kind: "demo", underlying: "*", baseSize: 25, maxNetDelta: 2_000, maxGamma: 600, maxVega: 100_000, maxContractsPerSeries: 5_000, updatedAt: at(3 * DAY), updatedBy: "seed" },
-    { ...base, tenant: "*", kind: "*", underlying: "UKOIL", minSpreadTicks: 5, baseSize: 5, maxContractsPerSeries: 800, updatedAt: at(2 * DAY), updatedBy: "m.ivanova@kalkstrade.com #3" },
-    { ...base, tenant: "kalks", kind: "live", underlying: "XAUUSD", spreadVol0dte: 0.012, spreadVol7d: 0.008, spreadVol30d: 0.006, spreadVolLong: 0.005, baseSize: 5, maxVega: 15_000, updatedAt: at(20 * HOUR), updatedBy: "m.ivanova@kalkstrade.com #3" },
+    { ...base, tenant: "*", kind: "*", underlying: "UKOIL", minSpreadTicks: 5, baseSize: 5, maxContractsPerSeries: 800, updatedAt: at(2 * DAY), updatedBy: "m.ivanova@ezymex.com #3" },
+    { ...base, tenant: "ezymex", kind: "live", underlying: "XAUUSD", spreadVol0dte: 0.012, spreadVol7d: 0.008, spreadVol30d: 0.006, spreadVolLong: 0.005, baseSize: 5, maxVega: 15_000, updatedAt: at(20 * HOUR), updatedBy: "m.ivanova@ezymex.com #3" },
   ];
 }
 
 /** The row that applies to (this broker, kind, underlying): tenant + kind + underlying > … > `*,*,*`. */
 function mmEffective(kind: string, sym: string): MmRow {
   const rows = db().mm;
-  const score = (r: MmRow) => (r.tenant === "kalks" ? 4 : r.tenant === "*" ? 0 : -99) + (r.kind === kind ? 2 : r.kind === "*" ? 0 : -99) + (r.underlying === sym ? 1 : r.underlying === "*" ? 0 : -99);
+  const score = (r: MmRow) => (r.tenant === "ezymex" ? 4 : r.tenant === "*" ? 0 : -99) + (r.kind === kind ? 2 : r.kind === "*" ? 0 : -99) + (r.underlying === sym ? 1 : r.underlying === "*" ? 0 : -99);
   return rows.filter((r) => score(r) >= 0).sort((a, b) => score(b) - score(a))[0] ?? rows[0]!;
 }
 
@@ -830,10 +830,10 @@ function seedExchange(now: number): Exch {
   const listed = (sym: string) => s.expiries.filter((e) => e.symbol === sym && e.status === "listed").sort((a, b) => a.cutAt.localeCompare(b.cutAt));
   const jpy = listed("USDJPY").find((e) => Date.parse(e.cutAt) > now + 20 * HOUR) ?? listed("USDJPY")[0];
   const halts: Halt[] = [
-    { id: 12, kind: "live", scope: "underlying", target: "XAGUSD", mode: "halt", reason: "BOK-01 · Feed problem — silver feed gap under review", by: "j.mensah@kalkstrade.com #5", at: iso(now - 38 * MIN) },
+    { id: 12, kind: "live", scope: "underlying", target: "XAGUSD", mode: "halt", reason: "BOK-01 · Feed problem — silver feed gap under review", by: "j.mensah@ezymex.com #5", at: iso(now - 38 * MIN) },
   ];
-  if (jpy) halts.push({ id: 13, kind: "live", scope: "expiry", target: `USDJPY:${jpy.date}`, mode: "cancel_only", reason: "BOK-02 · Disorderly market — BoJ decision overnight", by: "j.mensah@kalkstrade.com #5", at: iso(now - 2 * HOUR) });
-  const pauses: Pause[] = jpy ? [{ id: 21, kind: "live", scope: "expiry", target: `USDJPY:${jpy.date}`, reason: "MMK-04 · Market event — no quotes into the BoJ decision", by: "j.mensah@kalkstrade.com #5", at: iso(now - 2 * HOUR + 4 * MIN) }] : [];
+  if (jpy) halts.push({ id: 13, kind: "live", scope: "expiry", target: `USDJPY:${jpy.date}`, mode: "cancel_only", reason: "BOK-02 · Disorderly market — BoJ decision overnight", by: "j.mensah@ezymex.com #5", at: iso(now - 2 * HOUR) });
+  const pauses: Pause[] = jpy ? [{ id: 21, kind: "live", scope: "expiry", target: `USDJPY:${jpy.date}`, reason: "MMK-04 · Market event — no quotes into the BoJ decision", by: "j.mensah@ezymex.com #5", at: iso(now - 2 * HOUR + 4 * MIN) }] : [];
 
   // liquidation log: runs of 1–4 steps over the last 6 days (live)
   const liquidations: Liq[] = [];
@@ -1055,7 +1055,7 @@ function seriesDepth(kind: Kind, code: string): Res {
       const orders = [];
       if (lv === 0 && mmQuotes && !mmOff) {
         const q = Math.max(1, Math.round(lim.baseSize * rnd.range(0.6, 1.2)));
-        orders.push({ id: oid++, login: MM_LOGIN[kind], userId: MM_USER_ID, name: "Kalks MM", qty: q, left: q, at: iso(now - rnd.int(200, 4800)), flags: ["post_only"], mm: true });
+        orders.push({ id: oid++, login: MM_LOGIN[kind], userId: MM_USER_ID, name: "Ezymex MM", qty: q, left: q, at: iso(now - rnd.int(200, 4800)), flags: ["post_only"], mm: true });
       }
       const n = lv === 0 ? rnd.int(0, 2) : rnd.int(lv < 4 ? 1 : 0, 3);
       for (let i = 0; i < n; i++) {
@@ -1371,7 +1371,7 @@ export async function mockOptionsRequest(method: string, url: string, body?: unk
   if (path === "/api/owner/tenants")
     return ok({
       items: [
-        { id: 1, slug: "kalks", name: "Kalks Markets", status: "active" },
+        { id: 1, slug: "ezymex", name: "Ezymex Markets", status: "active" },
         { id: 2, slug: "apex-fx", name: "Apex FX", status: "active" },
         { id: 3, slug: "northstar", name: "Northstar Capital", status: "active" },
         { id: 4, slug: "meridian", name: "Meridian Trade", status: "suspended" },
@@ -1418,7 +1418,7 @@ export async function mockOptionsRequest(method: string, url: string, body?: unk
     if (p === "overview")
       return ok({
         version: s.version,
-        tenant: s.tenants.kalks,
+        tenant: s.tenants.ezymex,
         underlyings: s.underlyings.filter((x) => x.enabled).length,
         expiries: s.expiries.filter((e) => e.status === "listed").length,
         series: s.expiries.filter((e) => e.status === "listed").reduce((n, e) => n + e.series, 0),
@@ -1480,7 +1480,7 @@ export async function mockOptionsRequest(method: string, url: string, body?: unk
       const before = q.get("before") ? Number(q.get("before")) : null;
       const limit = Math.min(500, Number(q.get("limit") ?? 100));
       const all = q.get("all") === "true";
-      const list = s.audit.filter((a) => (all || a.tenant === "kalks") && (before === null || a.id < before)).slice(0, limit);
+      const list = s.audit.filter((a) => (all || a.tenant === "ezymex") && (before === null || a.id < before)).slice(0, limit);
       return ok({ audit: list, next: list.length === limit ? list[list.length - 1]!.id : null });
     }
     if (p === "smile") return smileFor((q.get("u") ?? "").toUpperCase(), q.get("expiry"));
@@ -1585,7 +1585,7 @@ export async function mockOptionsRequest(method: string, url: string, body?: unk
     }
     const base = i >= 0 ? s.groups[i]! : s.groups.find((g) => g.groupCode === "*" && g.symbol === "*")!;
     const { reason: _r, ...patch } = b;
-    const next: Record<string, unknown> = { ...base, ...patch, tenant: "kalks", groupCode: group, symbol, updatedAt: new Date().toISOString(), updatedBy: ME };
+    const next: Record<string, unknown> = { ...base, ...patch, tenant: "ezymex", groupCode: group, symbol, updatedAt: new Date().toISOString(), updatedBy: ME };
     if ((next.volSpread as number) < 0 || (next.volSpread as number) > 0.2) return bad("Value out of range (group_settings_vol_spread_check).");
     if ((next.commissionCapPct as number) < 0 || (next.commissionCapPct as number) > 100) return bad("Value out of range (group_settings_commission_cap_pct_check).");
     const mk = next.makerFeePerContract;
@@ -1614,7 +1614,7 @@ export async function mockOptionsRequest(method: string, url: string, body?: unk
     const sym = scope === "underlying" ? target : scope === "expiry" ? target.split(":")[0]! : target.split("-")[0]!;
     const frozen = mode === "freeze" ? (typeof b.frozenSpot === "number" ? b.frozenSpot : spotOf(sym).mid) : null;
     const id = Math.max(...s.controls.map((c) => c.id as number)) + 1;
-    const c = { id, tenant: (b.tenant as string) || "kalks", scope, target, mode, manualVol: mode === "manual_vol" ? Number(b.manualVol) : null, frozenSpot: frozen, reason, active: true, expiresAt: (b.expiresAt as string) || null, createdBy: ME, createdAt: new Date().toISOString(), clearedBy: null, clearedAt: null, clearReason: null };
+    const c = { id, tenant: (b.tenant as string) || "ezymex", scope, target, mode, manualVol: mode === "manual_vol" ? Number(b.manualVol) : null, frozenSpot: frozen, reason, active: true, expiresAt: (b.expiresAt as string) || null, createdBy: ME, createdAt: new Date().toISOString(), clearedBy: null, clearedAt: null, clearReason: null };
     s.controls.unshift(c);
     audit("control.add", `${scope}:${target}`, reason, null, c);
     return ok({ control: c, version: bump() });
@@ -1637,7 +1637,7 @@ export async function mockOptionsRequest(method: string, url: string, body?: unk
     }
     const cur = i >= 0 ? s.limits[i]! : null;
     const pick = (k: string) => (k in b ? b[k] : (cur?.[k] ?? null));
-    const next = { tenant: "kalks", userId, maxContracts: pick("maxContracts"), maxShortContracts: pick("maxShortContracts"), closeOnly: !!pick("closeOnly"), blocked: !!pick("blocked"), reason, updatedAt: new Date().toISOString(), updatedBy: ME };
+    const next = { tenant: "ezymex", userId, maxContracts: pick("maxContracts"), maxShortContracts: pick("maxShortContracts"), closeOnly: !!pick("closeOnly"), blocked: !!pick("blocked"), reason, updatedAt: new Date().toISOString(), updatedBy: ME };
     if (i >= 0) s.limits[i] = next;
     else s.limits.unshift(next);
     audit("limit.upsert", String(userId), reason, cur, next);

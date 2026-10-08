@@ -59,7 +59,7 @@ const accountDetail: NsMessages<"accountDetail"> = {
   "overview.openPositions": "खुली पोज़िशन",
   "overview.positionsSubtitle": "{open} खुली · {pending} पेंडिंग",
   "overview.allPositions": "सभी पोज़िशन",
-  "overview.noPositions": "कोई खुली पोज़िशन नहीं। Kalks Trader में ट्रेड करें, वे यहाँ दिखेंगी।",
+  "overview.noPositions": "कोई खुली पोज़िशन नहीं। Ezymex Trader में ट्रेड करें, वे यहाँ दिखेंगी।",
   "overview.recentDeals": "हाल की डील",
   "overview.dealsCount": { one: "इस अकाउंट पर {count} डील", other: "इस अकाउंट पर {count} डील" },
   "overview.recentDealsSubtitle": "नवीनतम एंट्री और एग्ज़िट",
@@ -111,10 +111,10 @@ const accountDetail: NsMessages<"accountDetail"> = {
 
   // Positions tab (live)
   "positions.emptyTitle": "कोई खुली पोज़िशन या पेंडिंग ऑर्डर नहीं",
-  "positions.emptyText": "Kalks Trader में ट्रेड करें; खुली पोज़िशन और उनका P&L यहाँ दिखता है और हर कुछ सेकंड में अपडेट होता है।",
-  "positions.openTrader": "Kalks Trader खोलें",
+  "positions.emptyText": "Ezymex Trader में ट्रेड करें; खुली पोज़िशन और उनका P&L यहाँ दिखता है और हर कुछ सेकंड में अपडेट होता है।",
+  "positions.openTrader": "Ezymex Trader खोलें",
   // <pnl>…</pnl> wraps the coloured floating P&L amount
-  "positions.subtitleTrader": "{count} खुली · फ़्लोटिंग <pnl>{amount}</pnl> · इन्हें Kalks Trader में मैनेज और बंद करें",
+  "positions.subtitleTrader": "{count} खुली · फ़्लोटिंग <pnl>{amount}</pnl> · इन्हें Ezymex Trader में मैनेज और बंद करें",
   "positions.manageInTrader": "Trader में मैनेज करें",
   "positions.none": "कोई खुली पोज़िशन नहीं।",
   "orders.title": "पेंडिंग ऑर्डर",
@@ -163,7 +163,7 @@ const accountDetail: NsMessages<"accountDetail"> = {
   "history.subtitle": "हर एंट्री और एग्ज़िट डील, सर्वर समय में",
   "history.loadError": "हिस्ट्री लोड नहीं हो सकी",
   "history.emptyTitle": "इस अवधि में कोई डील नहीं",
-  "history.emptyText": "Kalks Trader में आपके ट्रेड अपनी एंट्री और एग्ज़िट डील के साथ यहाँ दिखते हैं।",
+  "history.emptyText": "Ezymex Trader में आपके ट्रेड अपनी एंट्री और एग्ज़िट डील के साथ यहाँ दिखते हैं।",
   "history.closedSummary": "{count} बंद ट्रेड · नेट <net>{amount}</net>",
   "history.searchPlaceholder": "सिंबल या टिकट",
 
@@ -273,9 +273,9 @@ const accountDetail: NsMessages<"accountDetail"> = {
 
   // Credentials tab
   "creds.title": "लॉगिन क्रेडेंशियल",
-  "creds.subtitle": "Kalks Trader में साइन इन करने के लिए इनका उपयोग करें।",
+  "creds.subtitle": "Ezymex Trader में साइन इन करने के लिए इनका उपयोग करें।",
   "creds.mt5Title": "MT5 क्रेडेंशियल",
-  "creds.mt5Subtitle": "Kalks टर्मिनल या किसी भी MetaTrader 5 ऐप में लॉग इन करने के लिए इनका उपयोग करें।",
+  "creds.mt5Subtitle": "Ezymex टर्मिनल या किसी भी MetaTrader 5 ऐप में लॉग इन करने के लिए इनका उपयोग करें।",
   "creds.fullAccess": "पूरी एक्सेस",
   "creds.master": "मास्टर",
   "creds.readOnly": "केवल देखें",
@@ -284,13 +284,13 @@ const accountDetail: NsMessages<"accountDetail"> = {
   "creds.tradingDescDemo": "पूरी एक्सेस — ट्रेड खोलें, बदलें और बंद करें। पिछली बार 12 फ़रवरी 2026 को बदला गया।",
   "creds.investorDesc": "ट्रेड किए बिना पोज़िशन और हिस्ट्री देखें।",
   "creds.investorDescDemo": "कोच, ऑडिटर और निवेशकों के लिए केवल देखने की एक्सेस। ट्रेड नहीं कर सकते।",
-  "creds.securityNote": "आपकी सुरक्षा के लिए, Kalks मौजूदा पासवर्ड कभी नहीं दिखाता या ईमेल करता। अगर कोई पासवर्ड खो जाए, तो यहाँ नया सेट करें।",
-  "creds.securityNoteDemo": "आपकी सुरक्षा के लिए, Kalks मौजूदा पासवर्ड कभी नहीं दिखाता या ईमेल करता। किसी भी पासवर्ड को बदलने के लिए आपके ईमेल पर भेजा गया वन-टाइम कोड ज़रूरी है।",
+  "creds.securityNote": "आपकी सुरक्षा के लिए, Ezymex मौजूदा पासवर्ड कभी नहीं दिखाता या ईमेल करता। अगर कोई पासवर्ड खो जाए, तो यहाँ नया सेट करें।",
+  "creds.securityNoteDemo": "आपकी सुरक्षा के लिए, Ezymex मौजूदा पासवर्ड कभी नहीं दिखाता या ईमेल करता। किसी भी पासवर्ड को बदलने के लिए आपके ईमेल पर भेजा गया वन-टाइम कोड ज़रूरी है।",
   "investor.title": "इन्वेस्टर एक्सेस",
   "investor.subtitle": "किसी कोच, ऑडिटर या निवेशक को यह अकाउंट देखने दें",
   "investor.step1": "ऐसा इन्वेस्टर पासवर्ड सेट करें जिसे आप शेयर कर सकें।",
   "investor.step2": "लॉगिन {login}, सर्वर {server} और वह पासवर्ड शेयर करें।",
-  "investor.step3": "वे इससे Kalks Trader में साइन इन करके लाइव पोज़िशन और हिस्ट्री केवल देख सकते हैं।",
+  "investor.step3": "वे इससे Ezymex Trader में साइन इन करके लाइव पोज़िशन और हिस्ट्री केवल देख सकते हैं।",
   "investor.step4": "एक्सेस हटाने के लिए कभी भी इन्वेस्टर पासवर्ड बदलें; उनका सेशन तुरंत खत्म हो जाएगा।",
   "investor.webTerminal": "वेब टर्मिनल · कोई डाउनलोड नहीं",
   "platforms.title": "प्लेटफ़ॉर्म कनेक्ट करें",
@@ -303,7 +303,7 @@ const accountDetail: NsMessages<"accountDetail"> = {
   "platforms.sendLink": "लिंक भेजें",
   "platforms.storeLinksSent": "स्टोर लिंक आपके ईमेल पर भेज दिए गए",
   // 2FA = two-factor authentication
-  "platforms.twoFaHint": "निकासी और क्रेडेंशियल बदलावों को सुरक्षित रखने के लिए अपनी Kalks प्रोफ़ाइल पर 2FA चालू करें।",
+  "platforms.twoFaHint": "निकासी और क्रेडेंशियल बदलावों को सुरक्षित रखने के लिए अपनी Ezymex प्रोफ़ाइल पर 2FA चालू करें।",
 
   // Change password dialog
   "pw.trading": "ट्रेडिंग पासवर्ड",
@@ -323,7 +323,7 @@ const accountDetail: NsMessages<"accountDetail"> = {
   "pw.stepUpWhat.investor": "#{login} का नया इन्वेस्टर पासवर्ड सेट करने",
   "pw.sessionsSignedOut": { one: "{count} खुला सेशन साइन आउट किया गया", other: "{count} खुले सेशन साइन आउट किए गए" },
   "pw.confirmWithCode": "हमारे ईमेल किए गए कोड से पुष्टि करें।",
-  "pw.descTrading": "#{login} के लिए पूरी एक्सेस वाला पासवर्ड। पुराने पासवर्ड से साइन इन Kalks Trader सेशन साइन आउट हो जाएँगे।",
+  "pw.descTrading": "#{login} के लिए पूरी एक्सेस वाला पासवर्ड। पुराने पासवर्ड से साइन इन Ezymex Trader सेशन साइन आउट हो जाएँगे।",
   "pw.descInvestor": "#{login} के लिए केवल देखने वाला पासवर्ड। इसे शेयर करके किसी को बिना ट्रेडिंग के अकाउंट देखने दें। पुराने पासवर्ड वाले सेशन साइन आउट हो जाएँगे।",
   "pw.descTradingDemo": "#{login} के लिए मास्टर पासवर्ड। खुले टर्मिनल सेशन लॉग आउट हो जाएँगे।",
   "pw.descInvestorDemo": "#{login} के लिए केवल देखने की एक्सेस — इसे किसी कोच या निवेशक के साथ शेयर करें ताकि वे देख सकें, ट्रेड नहीं।",
@@ -333,7 +333,7 @@ const accountDetail: NsMessages<"accountDetail"> = {
   "pw.sendingCode": "कोड भेजा जा रहा है…",
   "pw.updating": "अपडेट हो रहा है…",
   "pw.update": "पासवर्ड अपडेट करें",
-  "pw.shownOnce": "केवल एक बार दिखाया जाता है। इसे अभी कॉपी करें; Kalks मौजूदा पासवर्ड कभी नहीं दिखाता या ईमेल करता।",
+  "pw.shownOnce": "केवल एक बार दिखाया जाता है। इसे अभी कॉपी करें; Ezymex मौजूदा पासवर्ड कभी नहीं दिखाता या ईमेल करता।",
   "pw.new": "नया पासवर्ड",
   "pw.confirmNew": "नए पासवर्ड की पुष्टि करें",
   "pw.mismatch": "पासवर्ड मेल नहीं खाते",
@@ -353,8 +353,8 @@ const accountDetail: NsMessages<"accountDetail"> = {
   "leverage.changeError": "लीवरेज नहीं बदल सका",
   "leverage.lockedTitle": "पोज़िशन खुली होने पर लीवरेज लॉक रहता है",
   "leverage.lockedTextTrader": {
-    one: "लीवरेज बदलने के लिए Kalks Trader में अपनी {count} खुली पोज़िशन बंद करें। इससे चल रहे ट्रेड पर मार्जिन में अचानक बदलाव नहीं होता।",
-    other: "लीवरेज बदलने के लिए Kalks Trader में अपनी {count} खुली पोज़िशन बंद करें। इससे चल रहे ट्रेड पर मार्जिन में अचानक बदलाव नहीं होता।",
+    one: "लीवरेज बदलने के लिए Ezymex Trader में अपनी {count} खुली पोज़िशन बंद करें। इससे चल रहे ट्रेड पर मार्जिन में अचानक बदलाव नहीं होता।",
+    other: "लीवरेज बदलने के लिए Ezymex Trader में अपनी {count} खुली पोज़िशन बंद करें। इससे चल रहे ट्रेड पर मार्जिन में अचानक बदलाव नहीं होता।",
   },
   "leverage.lockedText": {
     one: "लीवरेज बदलने के लिए अपनी {count} खुली पोज़िशन बंद करें। इससे चल रहे ट्रेड पर मार्जिन में अचानक बदलाव नहीं होता।",
@@ -374,7 +374,7 @@ const accountDetail: NsMessages<"accountDetail"> = {
   // <n>…</n> wraps the number of refills left
   "demoFunds.refillsLeft": "आज {total} में से <n>{left}</n> रीफ़िल बाकी",
   "demoFunds.full": "बैलेंस शुरुआती राशि पर है, इसलिए रीफ़िल की ज़रूरत नहीं है।",
-  "demoFunds.resetNote": "रीफ़िल सर्वर समय 00:00 पर रीसेट होते हैं। Kalks Trader लॉगिन के बिना {days} दिन बाद अकाउंट एक्सपायर हो जाता है।",
+  "demoFunds.resetNote": "रीफ़िल सर्वर समय 00:00 पर रीसेट होते हैं। Ezymex Trader लॉगिन के बिना {days} दिन बाद अकाउंट एक्सपायर हो जाता है।",
   "demoFunds.expiresIn": "एक्सपायर होने में",
   "demoFunds.refilled": "डेमो बैलेंस रीफ़िल हो गया",
   "demoFunds.refilledDesc": "#{login} को {amount} पर रीसेट किया गया · आज {left} बाकी",

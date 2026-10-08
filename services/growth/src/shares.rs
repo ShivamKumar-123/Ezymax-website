@@ -1,7 +1,7 @@
 //! Share P&L cards (D136): a snapshot of one closed trade or a period on one account, with the client's
 //! referral code. Money amounts are stored only when the client opts in; otherwise the card shows % figures.
 //!
-//! Options share card (O36): a closed Kalks FX Options trade (a close, an expiry settlement or a knock-out) also
+//! Options share card (O36): a closed Ezymex FX Options trade (a close, an expiry settlement or a knock-out) also
 //! carries `option` = the underlying, strike, call / put, expiry, the entry → exit premium in USD per contract, the
 //! P&L % on the premium, why it closed, and the breakeven / settlement the card's payoff sketch is drawn from. The
 //! account balance is never part of a card.
@@ -125,7 +125,7 @@ pub async fn create(st: &AppState, tenant: &str, user_id: i64, req: &ShareReq, p
     let usd = |v: D| if acc.cent { v / HUNDRED } else { v };
     let name = display_name(&profile.first_name, &profile.last_name);
     let referral = (!profile.referral_code.is_empty()).then(|| profile.referral_code.clone());
-    let base = json!({"name": name, "referralCode": referral, "brand": "Kalks", "currency": "USD", "accountType": acc.kind});
+    let base = json!({"name": name, "referralCode": referral, "brand": "Ezymex", "currency": "USD", "accountType": acc.kind});
     let (data, deal_id) = match req.kind.as_str() {
         "trade" => {
             let deal_id = req.deal_id.ok_or_else(|| crate::error::invalid("dealId", "Choose a closed trade."))?;

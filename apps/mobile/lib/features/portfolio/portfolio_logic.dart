@@ -233,7 +233,7 @@ List<String> statementYears(DateTime createdAt, {DateTime? now}) {
   return [for (var i = y; i >= first; i--) '$i'];
 }
 
-/* ------------------------------------------------------------------ Kalks FX Options in trade lists */
+/* ------------------------------------------------------------------ Ezymex FX Options in trade lists */
 
 /// An option's readable terms (web OptionTerms).
 class OptionTerms {

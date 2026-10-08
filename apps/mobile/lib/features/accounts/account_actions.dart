@@ -4,7 +4,7 @@
 // other screens — keep these names and parameters:
 //   showAccountMenu(context, ref, account, onChanged:)    the full ⋯ menu (action sheet + every dialog)
 //   AccountMenuButton(account:, onChanged:)               the round ⋯ button that opens it
-//   TradeButton(account:, size:, expand:)                 opens Kalks Trader (/trader?login=)
+//   TradeButton(account:, size:, expand:)                 opens Ezymex Trader (/trader?login=)
 //   FundButton(account:, size:)                           Fund: wallet -> this live account
 //   RefillButton(account:, onDone:, size:)                demo refill
 //   showTransferBetweenSheet(context, from:)              move money between two trading accounts (step-up)
@@ -145,14 +145,14 @@ class AccountMenuButton extends ConsumerWidget {
   }
 }
 
-/// Trade: opens Kalks Trader on this account (off for disabled / expired / archived / closed accounts).
+/// Trade: opens Ezymex Trader on this account (off for disabled / expired / archived / closed accounts).
 class TradeButton extends StatelessWidget {
   const TradeButton({super.key, required this.account, this.size = KButtonSize.md, this.expand = false, this.label, this.variant = KButtonVariant.ember});
   final EngineAccount account;
   final KButtonSize size;
   final bool expand;
 
-  /// "Open in Kalks Trader", "Watch P&L", "Open", … (default: Trade).
+  /// "Open in Ezymex Trader", "Watch P&L", "Open", … (default: Trade).
   final String? label;
   final KButtonVariant variant;
 

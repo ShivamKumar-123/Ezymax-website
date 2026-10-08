@@ -1,11 +1,11 @@
 // Tenant (broker) branding shared by the apps. Server-safe: no React here, so layouts can call it.
 // The gateway serves the brand of the request's host (GET /v1/public/tenant-config → `branding`);
-// Kalks itself (`default: true`) keeps the built-in look.
+// Ezymex itself (`default: true`) keeps the built-in look.
 
 export type TenantBrand = {
   slug: string;
   name: string;
-  /** True for the platform's own tenant (Kalks): the stock logo and colours are used. */
+  /** True for the platform's own tenant (Ezymex): the stock logo and colours are used. */
   default?: boolean;
   logo_url?: string | null;
   primary?: string | null;
@@ -22,14 +22,14 @@ export function brandColor(v: string | null | undefined): string | null {
   return v && HEX.test(v) ? v.toLowerCase() : null;
 }
 
-/** A branded tenant (anything but Kalks' own look). */
+/** A branded tenant (anything but Ezymex' own look). */
 export function isCustomBrand(b: TenantBrand | null | undefined): b is TenantBrand {
   return !!b && !b.default;
 }
 
 /**
  * CSS overriding the design tokens with the broker's colours: primary → the `ember` action colour (buttons,
- * links, active states, page glow), accent → `gold`. Empty for Kalks. Rendered as a <style> tag by the root layouts (values are validated hex colours).
+ * links, active states, page glow), accent → `gold`. Empty for Ezymex. Rendered as a <style> tag by the root layouts (values are validated hex colours).
  */
 export function brandCss(b: TenantBrand | null | undefined): string {
   if (!isCustomBrand(b)) return "";
@@ -47,7 +47,7 @@ export function brandCss(b: TenantBrand | null | undefined): string {
   if (a) vars.push(`--k-gold:${a}`, `--k-gold-soft:color-mix(in oklab,${a} 12%,transparent)`, `--k-brand-accent:${a}`);
   if (!vars.length) return "";
   let css = `html:root,html.dark,html.light{${vars.join(";")}}`;
-  // the primary button and the page glow carry fixed Kalks ember values in the stylesheet (unlayered rules win)
+  // the primary button and the page glow carry fixed Ezymex ember values in the stylesheet (unlayered rules win)
   if (p) {
     css +=
       `.k-ember-btn{background:linear-gradient(135deg,color-mix(in oklab,${p} 82%,#ffffff),${p});` +

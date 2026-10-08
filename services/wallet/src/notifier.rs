@@ -1,5 +1,5 @@
 //! Pushes wallet notifications to the support service (`POST $SUPPORT_URL/v1/notify`): the client's bell in
-//! the Client Area and Kalks Trader, the realtime stream and email per the client's `wallet` preference.
+//! the Client Area and Ezymex Trader, the realtime stream and email per the client's `wallet` preference.
 //!
 //! `ops::notify` writes the row inside the money transaction (the outbox); this worker delivers it after the
 //! commit, so a support outage never blocks or rolls back a deposit, withdrawal or transfer. Each row is
@@ -80,9 +80,9 @@ async fn send(st: &AppState, http: &reqwest::Client, tenant: &str, r: &sqlx::pos
     });
     let res = http
         .post(format!("{}/v1/notify", st.cfg.support_url))
-        .header("x-kalks-internal", &st.cfg.support_token)
-        .header("x-kalks-tenant", tenant)
-        .header("x-kalks-service", "wallet")
+        .header("x-ezymex-internal", &st.cfg.support_token)
+        .header("x-ezymex-tenant", tenant)
+        .header("x-ezymex-service", "wallet")
         .json(&body)
         .send()
         .await;
@@ -116,7 +116,7 @@ pub async fn push_pending(st: &AppState, http: &reqwest::Client) -> anyhow::Resu
             Some(s) => s,
             None => {
                 let _ = st.tenants.reload(&st.pool).await;
-                st.tenants.slug_of(tenant_id).unwrap_or_else(|| "kalks".into())
+                st.tenants.slug_of(tenant_id).unwrap_or_else(|| "ezymex".into())
             }
         };
         match send(st, http, &tenant, r).await {

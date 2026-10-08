@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { CircleDollarSign, Gauge, TrendingUp, Trophy } from "lucide-react";
-import { Button, Card, CardHeader, Chip, DataTable, KpiCard, PageHeader, Reveal, cn, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, KpiCard, PageHeader, Reveal, cn, type Column } from "@ezymex/ui";
 import { NumInput } from "@/components/config/kit";
 import { Pager, TableSkeleton, ago, qs, useApi, useDebounced, useNow } from "@/components/live/kit";
 import { ChallengeDrawer } from "./challenge-drawer";

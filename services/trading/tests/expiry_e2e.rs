@@ -9,13 +9,13 @@
 //! EURUSD expiry whose cut is 16 min to 6 h ahead, and the XAUUSD expiry with the same cut (override with
 //! `EXPIRY_E2E_EURUSD` / `EXPIRY_E2E_XAUUSD` = `SYMBOL:YYYY-MM-DD`).
 //!
-//! Four accounts of tenant `kalks`: a live USD and a live cent (USC) account trade the house-priced B-book
+//! Four accounts of tenant `ezymex`: a live USD and a live cent (USC) account trade the house-priced B-book
 //! (vanilla calls / puts, a knock-out barrier, a cent short), a demo USD and a demo cent account trade each other
 //! on the order book (the cross-currency case: premium and settlement through the expiry's clearing account,
 //! the cent side via `house:fx`). The engine is the real one (the same boot as main.rs: event replay, ledger
 //! verification, book recovery, the settlement scheduler), crashed with `abort()` (or `kill -9`) on purpose.
 //!
-//! Phases (`EXPIRY_E2E_PHASE`), one process each (the database `EXPIRY_E2E_DB`, default `kalks_expiry_e2e`):
+//! Phases (`EXPIRY_E2E_PHASE`), one process each (the database `EXPIRY_E2E_DB`, default `ezymex_expiry_e2e`):
 //! 1. `open` (before cut − 15 min): fresh database, accounts, trades; then the engine stays up past the cut
 //!    (book `Expire` at cut − closeOnlyMinutes cancels the resting order) and CRASHES (`abort`) at cut + 20 s, or
 //!    earlier with `kill -9`.
@@ -110,7 +110,7 @@ async fn http(method: &str, url: &str, body: Option<Value>) -> Value {
     let b = body.map(|v| v.to_string()).unwrap_or_default();
     let tok = env("OPTIONS_INTERNAL_TOKEN", "");
     let req = format!(
-        "{method} {path} HTTP/1.1\r\nhost: {host}\r\nconnection: close\r\ncontent-type: application/json\r\nx-kalks-internal: {tok}\r\nx-kalks-staff: expiry-e2e\r\ncontent-length: {}\r\n\r\n{b}",
+        "{method} {path} HTTP/1.1\r\nhost: {host}\r\nconnection: close\r\ncontent-type: application/json\r\nx-ezymex-internal: {tok}\r\nx-ezymex-staff: expiry-e2e\r\ncontent-length: {}\r\n\r\n{b}",
         b.len()
     );
     s.write_all(req.as_bytes()).await.unwrap();
@@ -195,21 +195,21 @@ async fn boot(url: &str, fresh: bool) -> Eng {
     for (_, u) in USERS {
         options.set_suitability(u, Suitability { eligible: true, kyc_verified: true, disclosure_accepted: true, quiz_passed: true, source: "gateway" }, 86_400_000);
     }
-    let tenant = registry.by_slug("kalks").unwrap();
+    let tenant = registry.by_slug("ezymex").unwrap();
     Eng { st, hub, pool, options, tenant }
 }
 
 async fn token(e: &Eng, login: i64, user: i64) -> String {
     let ctx = || Ctx { tenant: e.tenant.clone(), ip: "198.51.100.11".into(), user_agent: "expiry-e2e".into(), bearer: None };
     let mut h = HeaderMap::new();
-    h.insert("x-kalks-user-id", user.to_string().parse().unwrap());
+    h.insert("x-ezymex-user-id", user.to_string().parse().unwrap());
     let Json(sso) = api::accounts::sso(State(e.st.clone()), ctx(), h, Path(login), Query(serde_json::from_value(json!({})).unwrap())).await.unwrap();
     let Json(s) = api::terminal::sso(State(e.st.clone()), ctx(), body(json!({"token": sso["token"]}))).await.unwrap();
     s["token"].as_str().unwrap().to_string()
 }
 
 async fn staff(st: &AppState) -> StaffCtx {
-    let req = axum::http::Request::builder().header("x-kalks-staff-id", "45").header("x-kalks-staff-name", "Expiry%20E2E").header("x-kalks-staff-role", "admin").body(()).unwrap();
+    let req = axum::http::Request::builder().header("x-ezymex-staff-id", "45").header("x-ezymex-staff-name", "Expiry%20E2E").header("x-ezymex-staff-role", "admin").body(()).unwrap();
     let (mut parts, _) = req.into_parts();
     StaffCtx::from_request_parts(&mut parts, st).await.unwrap()
 }
@@ -342,7 +342,7 @@ async fn expiry_and_settlement_on_live_prices() {
     let _ = dotenvy::from_path(concat!(env!("CARGO_MANIFEST_DIR"), "/../../.env.local"));
     let phase = env("EXPIRY_E2E_PHASE", "open");
     let base = env("TRADING_TEST_DATABASE_URL", "postgres://postgres@127.0.0.1:5433/postgres");
-    let db = env("EXPIRY_E2E_DB", "kalks_expiry_e2e");
+    let db = env("EXPIRY_E2E_DB", "ezymex_expiry_e2e");
     let server = PgConnectOptions::from_str(&base).unwrap();
     server.clone().database("postgres").connect().await.expect("PostgreSQL :5433 (this test never skips)");
     let url = server.clone().database(&db).to_url_lossy().to_string();
@@ -434,7 +434,7 @@ async fn open(server: &PgConnectOptions, db: &str, url: &str) {
     let tick = D::new(1, 5);
     let mark = |s: &str| {
         let (t, _) = trading::engine::options_book::terms_of(&snap, s).unwrap();
-        ((e.options.price("kalks", "*", &t, now()).unwrap().mark / tick).floor() * tick).max(tick)
+        ((e.options.price("ezymex", "*", &t, now()).unwrap().mark / tick).floor() * tick).max(tick)
     };
     let (pc, pp) = (mark(&c_eu), mark(&p_eu));
     // USD rests a sell of 4 calls; cent buys 3 (1 stays working until the expiry cut-off cancels it)

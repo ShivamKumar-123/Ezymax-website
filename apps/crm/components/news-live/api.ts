@@ -3,8 +3,8 @@
 // Browser client for the news + calendar BFF (/api/news/*, see app/api/news/[...path]/route.ts).
 
 import * as React from "react";
-import { tr } from "@kalks/i18n/react";
-import { readCached, writeCached } from "@kalks/ui/swr-cache";
+import { tr } from "@ezymex/i18n/react";
+import { readCached, writeCached } from "@ezymex/ui/swr-cache";
 
 export type Sentiment = "bullish" | "bearish" | "neutral";
 export type NewsItem = {
@@ -95,7 +95,7 @@ export async function newsApi<T>(path: string, init?: { method?: "GET" | "POST" 
 }
 
 /** Loads `path` (again on `reload()` and every `refreshMs` while the tab is visible); `path = null` waits.
- *  Opened again, a page starts from this tab's last answer while it refetches (@kalks/ui/swr-cache). */
+ *  Opened again, a page starts from this tab's last answer while it refetches (@ezymex/ui/swr-cache). */
 export function useNewsApi<T>(path: string | null, refreshMs = 0) {
   const [data, setData] = React.useState<T | null>(() => (path ? (readCached<T>(`news:${path}`) ?? null) : null));
   const [error, setError] = React.useState<NewsError | null>(null);

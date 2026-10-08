@@ -30,7 +30,7 @@ pub struct Trade {
     pub reason: String,
     /// Account balance (USD) just before this trade was closed; 0 = unknown.
     pub balance_before: f64,
-    /// Kalks FX Options trade: `volume` is contracts (never added to lots), prices are premiums per unit.
+    /// Ezymex FX Options trade: `volume` is contracts (never added to lots), prices are premiums per unit.
     pub option: bool,
 }
 

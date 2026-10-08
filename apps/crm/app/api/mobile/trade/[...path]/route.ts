@@ -30,7 +30,7 @@ import {
 } from "@/lib/trade-bodies";
 
 // Mobile trading BFF (docs/MOBILE-API.md, lib/mobile-trade.ts). App -> /api/mobile/trade/<route> -> trading engine
-// (/v1/terminal/…) and the options service (/v1/options/…). The same routes and validation as Kalks Trader's BFF
+// (/v1/terminal/…) and the options service (/v1/options/…). The same routes and validation as Ezymex Trader's BFF
 // (apps/terminal app/api/engine/*, app/api/options/*), with the gateway session as the caller's identity.
 //
 // Public:
@@ -42,13 +42,13 @@ import {
 //   GET    notifications?before&limit&unread  the client's inbox (the bell; same as /api/mobile/notifications)
 //   POST   notifications/read {ids?|all}
 //   GET    options/public/book/{series} | trades/{series}?limit | stats/{u}   order book market data
-// Bearer + X-Kalks-Trade (the trade token):
+// Bearer + X-Ezymex-Trade (the trade token):
 //   POST   logout                            ends the terminal session
 //   GET    state?historyLimit=               account, positions, orders, recent deals (+ readOnly, restrictions, staff)
 //   GET    history?from&to&page&limit        closed deals + done pending orders
 //   GET    controls                          the broker's restrictions on the account
 //   GET    mam?symbol&volume                 MAM role + allocation summary
-//   POST   orders                            market / pending order (platform from X-Kalks-Platform)
+//   POST   orders                            market / pending order (platform from X-Ezymex-Platform)
 //   PATCH  orders/{ticket}                   {price?, stopLimit?, volume?, sl?, tp?, trailingPoints?, expiry?, expiryAt?}
 //   DELETE orders/{ticket}
 //   POST   positions/{ticket}/close          {volume?, deviationPoints?, requestedPrice?}
@@ -57,12 +57,12 @@ import {
 //   POST   bulk-close                        {filter: all|profitable|losing|pending|buys|sells, symbol?}
 //   POST   demo-refill                       demo accounts: top the balance back up
 //   POST   stream-ticket                     {ticket, expiresIn, url}: one-time engine stream ticket (30 s)
-//   Kalks FX Options, engine (same account and session; investor sessions are read-only):
+//   Ezymex FX Options, engine (same account and session; investor sessions are read-only):
 //   POST   options/preview | options/orders | options/combos/{id}/close;  GET options/settlements?limit
 //   POST   options/book/preview | options/book/orders;  GET options/book/orders?status&series;
 //   DELETE options/book/orders?series|underlying;  PATCH|DELETE options/book/orders/{id};  GET options/book/fills?from&to
 //   POST   options/rfq;  GET|DELETE options/rfq/{id};  POST options/rfq/{id}/accept
-//   Kalks FX Options, options service (the acting account picks the module switch and the group's pricing):
+//   Ezymex FX Options, options service (the acting account picks the module switch and the group's pricing):
 //   GET    options/underlyings | expiries?u= | chain?u=&expiry= | series/{code} | candles?series&tf&limit&to | smile?u=&expiry=
 //   POST   options/stream-ticket             {ticket, expiresIn, url}: chain stream ticket
 // AI (own files): POST trade/options/explain, POST trade/ai-trader (lib/mobile-ai.ts budget).
@@ -76,7 +76,7 @@ type Method = "GET" | "POST" | "PATCH" | "DELETE";
 const NO_STORE = { "cache-control": "no-store" };
 const MAX_CHECK = 8;
 /** MT5 servers: an account only exists on its own server. */
-const SERVERS: Record<string, "live" | "demo"> = { "Kalks-Live": "live", "Kalks-Demo": "demo" };
+const SERVERS: Record<string, "live" | "demo"> = { "Ezymex-Live": "live", "Ezymex-Demo": "demo" };
 
 function reply(status: number, data: unknown, headers?: Record<string, string>) {
   return NextResponse.json(data, { status, headers: { ...NO_STORE, ...headers } });
@@ -106,9 +106,9 @@ async function client(req: NextRequest, write: boolean): Promise<GatewayUser | N
 
 type Acting = { engine: string; kind: TradeKind; info: SessionInfo };
 
-/** The trade session sent by the app (`X-Kalks-Trade`), checked against the signed-in client. */
+/** The trade session sent by the app (`X-Ezymex-Trade`), checked against the signed-in client. */
 async function tradeSession(req: NextRequest, user: GatewayUser): Promise<Acting | NextResponse> {
-  const raw = req.headers.get("x-kalks-trade")?.trim() ?? "";
+  const raw = req.headers.get("x-ezymex-trade")?.trim() ?? "";
   if (!raw) return error(401, "trade_session_required", "Open a trading account first.");
   const t = unwrapTradeToken(user.id, raw);
   if (t === "malformed") return expired();
@@ -178,7 +178,7 @@ async function handle(req: NextRequest, { params }: Ctx, method: Method): Promis
   const write = method !== "GET";
   const user = await client(req, write && !(a === "sessions" && b === "check"));
   if (user instanceof NextResponse) return user;
-  const tenant = user.tenant?.slug || "kalks";
+  const tenant = user.tenant?.slug || "ezymex";
   const platform = platformOf(req.headers);
 
   // ---- engine access for one of the client's own accounts (the Client Area Trade button's SSO)
@@ -225,12 +225,12 @@ async function handle(req: NextRequest, { params }: Ctx, method: Method): Promis
     const type = r.data.account.type;
     if (server && type && SERVERS[server] !== type) {
       await engineCall("/v1/terminal/logout", { method: "POST", bearer: r.data.token, req });
-      return error(409, "wrong_server", `Account ${login} is on ${type === "demo" ? "Kalks-Demo" : "Kalks-Live"}, not ${server}.`);
+      return error(409, "wrong_server", `Account ${login} is on ${type === "demo" ? "Ezymex-Demo" : "Ezymex-Live"}, not ${server}.`);
     }
     return opened(req, user, "p", { token: r.data.token, expiresAt: r.data.expiresAt, readOnly: r.data.readOnly, account: r.data.account });
   }
 
-  // ---- the client's notifications (the same inbox as the Client Area bell and Kalks Trader's bell)
+  // ---- the client's notifications (the same inbox as the Client Area bell and Ezymex Trader's bell)
   if (a === "notifications") {
     if (method === "GET" && path.length === 1) {
       const q = new URLSearchParams();
@@ -250,7 +250,7 @@ async function handle(req: NextRequest, { params }: Ctx, method: Method): Promis
     return error(404, "not_found", "Not found.");
   }
 
-  // ---- options order book market data (public in Kalks Trader too)
+  // ---- options order book market data (public in Ezymex Trader too)
   if (a === "options" && b === "public" && method === "GET") {
     if ((c === "book" || c === "trades") && path.length === 4 && SERIES_RE.test(d ?? "")) {
       let q = "";
@@ -354,7 +354,7 @@ async function handle(req: NextRequest, { params }: Ctx, method: Method): Promis
   }
   if (a === "demo-refill" && path.length === 1 && method === "POST") {
     if (s.info.readOnly) return error(403, "read_only", "Investor (read-only) sessions can't refill the balance.");
-    // the owner comes from the engine's own view of this session, never from the app (as in Kalks Trader)
+    // the owner comes from the engine's own view of this session, never from the app (as in Ezymex Trader)
     if (!s.info.ownerId) return error(404, "not_found", "Account not found.");
     return relay(await engineCall<Obj>(`/v1/accounts/${s.info.login}/demo-refill`, { method: "POST", userId: s.info.ownerId, tenant, req }));
   }
@@ -362,7 +362,7 @@ async function handle(req: NextRequest, { params }: Ctx, method: Method): Promis
     return done("/v1/terminal/stream-ticket", { method: "POST" }, async (d) => ({ ticket: d.ticket, expiresIn: d.expiresIn, url: (await urls(req)).streams.engine }));
   }
 
-  // ---- Kalks FX Options
+  // ---- Ezymex FX Options
   if (a === "options") return options(req, s, path, method, body, sp, tenant, platform, done);
   return error(404, "not_found", "Not found.");
 }

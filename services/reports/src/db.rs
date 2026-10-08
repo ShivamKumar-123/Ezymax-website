@@ -7,7 +7,7 @@ use std::str::FromStr;
 
 pub async fn connect(url: &str) -> anyhow::Result<PgPool> {
     let opts = PgConnectOptions::from_str(url)?;
-    let db = opts.get_database().unwrap_or("kalks_reports").to_string();
+    let db = opts.get_database().unwrap_or("ezymex_reports").to_string();
     let admin = opts.clone().database("postgres");
     let mut conn = admin.connect().await?;
     let exists: Option<i32> = sqlx::query_scalar("SELECT 1 FROM pg_database WHERE datname = $1").bind(&db).fetch_optional(&mut conn).await?;

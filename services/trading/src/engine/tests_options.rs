@@ -1,4 +1,4 @@
-//! Kalks FX Options in the engine core: premium cash flows, commission, cash-only, scenario margin and CFD
+//! Ezymex FX Options in the engine core: premium cash flows, commission, cash-only, scenario margin and CFD
 //! offsets, combos (all or nothing), closes and cut-offs, gates, pending limit / trigger orders, premium SL / TP,
 //! barrier knocks (once), settlement (idempotent, re-run nets, hold), void, stop-out by units, metrics, replay.
 
@@ -204,7 +204,7 @@ fn gates_switches_suitability_limits_controls_staleness_and_sessions() {
     let mut h = Harness::live(&kit, "hedge", "10000");
     // live switched off for the tenant
     let mut s = opt_snapshot();
-    s["tenants"] = serde_json::json!([{"tenant": "kalks", "enabledDemo": true, "enabledLive": false}]);
+    s["tenants"] = serde_json::json!([{"tenant": "ezymex", "enabledDemo": true, "enabledLive": false}]);
     kit.options.set_snapshot(s);
     assert_eq!(place(&mut h, &kit, req(vec![leg(C116, Side::Buy, "1")], "g1")).unwrap_err().code, "options_disabled");
     kit.options.set_snapshot(opt_snapshot());
@@ -219,11 +219,11 @@ fn gates_switches_suitability_limits_controls_staleness_and_sessions() {
     assert!(place(&mut demo, &kit, OptOrderReq { eligible: true, ..r }).is_ok());
     // client limits from the Back Office
     let mut s = opt_snapshot();
-    s["clientLimits"] = serde_json::json!([{"tenant": "kalks", "userId": 7, "blocked": true, "reason": "review"}]);
+    s["clientLimits"] = serde_json::json!([{"tenant": "ezymex", "userId": 7, "blocked": true, "reason": "review"}]);
     kit.options.set_snapshot(s);
     assert_eq!(place(&mut h, &kit, req(vec![leg(C116, Side::Buy, "1")], "g3")).unwrap_err().code, "not_eligible");
     let mut s = opt_snapshot();
-    s["clientLimits"] = serde_json::json!([{"tenant": "kalks", "userId": 7, "maxContracts": 3, "maxShortContracts": 1}]);
+    s["clientLimits"] = serde_json::json!([{"tenant": "ezymex", "userId": 7, "maxContracts": 3, "maxShortContracts": 1}]);
     kit.options.set_snapshot(s);
     filled(place(&mut h, &kit, req(vec![leg(C116, Side::Buy, "2")], "g4")).unwrap());
     assert_eq!(place(&mut h, &kit, req(vec![leg(C116, Side::Buy, "2")], "g5")).unwrap_err().code, "limit_contracts");
@@ -239,7 +239,7 @@ fn gates_switches_suitability_limits_controls_staleness_and_sessions() {
     assert_eq!(h.run(&kit, |tx, env| options::close(tx, env, open, OptClose::client())).unwrap_err().code, "series_halted");
     // close-only control: closes allowed, opens refused
     let mut s = opt_snapshot();
-    s["controls"] = serde_json::json!([{"id": 2, "tenant": "kalks", "scope": "expiry", "target": KEY, "mode": "close_only"}]);
+    s["controls"] = serde_json::json!([{"id": 2, "tenant": "ezymex", "scope": "expiry", "target": KEY, "mode": "close_only"}]);
     kit.options.set_snapshot(s);
     assert_eq!(place(&mut h, &kit, req(vec![leg(C116, Side::Buy, "1")], "g9")).unwrap_err().code, "close_only");
     h.run(&kit, |tx, env| options::close(tx, env, open, OptClose { volume: Some(d("1")), ..OptClose::client() })).unwrap();

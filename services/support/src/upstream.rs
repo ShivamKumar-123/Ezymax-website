@@ -5,20 +5,20 @@ use crate::state::AppState;
 use serde_json::{Value, json};
 
 fn gw(st: &AppState, tenant: &str, rb: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
-    rb.header("x-kalks-internal", &st.cfg.gateway_token).header("x-kalks-tenant", tenant)
+    rb.header("x-ezymex-internal", &st.cfg.gateway_token).header("x-ezymex-tenant", tenant)
 }
 
 /// The engine's read-only staff identity for this service (like the IB service).
 fn engine(st: &AppState, tenant: &str, rb: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
-    rb.header("x-kalks-internal", &st.cfg.trading_token)
-        .header("x-kalks-tenant", tenant)
-        .header("x-kalks-staff-id", "support-service")
-        .header("x-kalks-staff-name", "Support%20service")
-        .header("x-kalks-staff-role", "viewer")
+    rb.header("x-ezymex-internal", &st.cfg.trading_token)
+        .header("x-ezymex-tenant", tenant)
+        .header("x-ezymex-staff-id", "support-service")
+        .header("x-ezymex-staff-name", "Support%20service")
+        .header("x-ezymex-staff-role", "viewer")
 }
 
 fn wallet(st: &AppState, tenant: &str, rb: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
-    rb.header("x-kalks-internal", &st.cfg.wallet_token).header("x-kalks-tenant", tenant).header("x-kalks-service", "support")
+    rb.header("x-ezymex-internal", &st.cfg.wallet_token).header("x-ezymex-tenant", tenant).header("x-ezymex-service", "support")
 }
 
 async fn json_of(rb: reqwest::RequestBuilder) -> Option<Value> {
@@ -42,7 +42,7 @@ pub async fn user_email(st: &AppState, tenant: &str, id: i64) -> Option<String> 
 /// A page of gateway users changed after `(since, after_id)` (the IB mirror endpoint).
 pub async fn users_page(st: &AppState, since: &str, after_id: i64, limit: i64) -> anyhow::Result<Vec<Value>> {
     let url = format!("{}/v1/internal/referrals/users?since={}&after_id={after_id}&limit={limit}", st.cfg.gateway_url, urlenc(since));
-    let r = gw(st, "kalks", st.http.get(url)).send().await?;
+    let r = gw(st, "ezymex", st.http.get(url)).send().await?;
     if !r.status().is_success() {
         anyhow::bail!("gateway users returned {}", r.status());
     }

@@ -21,7 +21,7 @@ const shell: NsMessages<"shell"> = {
   security: "Sicherheit",
   verification: "Verifizierung",
   preferences: "Einstellungen",
-  kalksTrader: "Kalks Trader",
+  ezymexTrader: "Ezymex Trader",
   deposit: "Einzahlen",
   // Client Area navigation
   "nav.dashboard": "Dashboard",
@@ -92,7 +92,7 @@ const shell: NsMessages<"shell"> = {
   "gate.title": "Für Ihr Konto noch nicht freigeschaltet",
   "gate.text": "Dieser Bereich ist für Ihr Konto noch nicht freigeschaltet. Wenden Sie sich an {email}, wenn Sie Zugang benötigen.",
   "gate.backToDashboard": "Zurück zum Dashboard",
-  "gate.launchTrader": "Kalks Trader starten",
+  "gate.launchTrader": "Ezymex Trader starten",
   // market sessions clock
   "sessions.title": "Handelssitzungen",
   "sessions.openLeft": "Offen · noch {h} Std. {m} Min.",

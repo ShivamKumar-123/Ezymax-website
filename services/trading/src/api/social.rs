@@ -1,5 +1,5 @@
 //! Social trading API for the Client Area BFF (copy trading and PAMM, D65–D76). The BFF sends the signed-in
-//! gateway user in `X-Kalks-User-Id` and the user's KYC status in `X-Kalks-Kyc`. Public reads (leaderboard,
+//! gateway user in `X-Ezymex-User-Id` and the user's KYC status in `X-Ezymex-Kyc`. Public reads (leaderboard,
 //! master profile, funds) work without a user. See README "Social API".
 
 use axum::Json;
@@ -25,11 +25,11 @@ fn bad(code: &'static str, message: impl Into<String>) -> ApiError {
 }
 
 pub fn user(h: &HeaderMap) -> ApiResult<i64> {
-    h.get("x-kalks-user-id").and_then(|v| v.to_str().ok()).and_then(|v| v.trim().parse::<i64>().ok()).filter(|v| *v > 0).ok_or(ApiError::Validation { field: "user_id", message: "X-Kalks-User-Id is required".into() })
+    h.get("x-ezymex-user-id").and_then(|v| v.to_str().ok()).and_then(|v| v.trim().parse::<i64>().ok()).filter(|v| *v > 0).ok_or(ApiError::Validation { field: "user_id", message: "X-Ezymex-User-Id is required".into() })
 }
 
 fn kyc(h: &HeaderMap) -> String {
-    h.get("x-kalks-kyc").and_then(|v| v.to_str().ok()).unwrap_or("unverified").trim().to_lowercase()
+    h.get("x-ezymex-kyc").and_then(|v| v.to_str().ok()).unwrap_or("unverified").trim().to_lowercase()
 }
 
 fn social(st: &AppState) -> &Social {

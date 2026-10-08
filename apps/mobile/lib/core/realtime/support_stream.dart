@@ -1,4 +1,4 @@
-// The support stream: the bell's live notifications and the support chat (Ask Kalks AI replies too), one
+// The support stream: the bell's live notifications and the support chat (Ask Ezymex AI replies too), one
 // connection per app (port of apps/crm/lib/realtime.ts). Ticket from `POST support/stream-ticket`; in production its
 // `url` is null, so the socket opens config.urls.streams.support + ?ticket=. Frames: ping (ignored), resync (->
 // "reconnected": reload what may have been missed), hello {unread}, notification {item, unread},

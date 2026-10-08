@@ -5,11 +5,11 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, ArrowUpRight, ChevronRight, History, ShieldCheck } from "lucide-react";
 import { Button, Card, CardHeader, Chip, CoinIcon, Delta, Icon3D, Money, PageHeader, Reveal, Starfield, cn, formatNumber } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
-import { ME, WALLET, WALLET_TXS, accountUsd, type WalletTx } from "@kalks/mock";
-import { PENDING_WITHDRAWALS, liveAccounts, walletAvailableUsdt, walletTotalUsd } from "@kalks/mock/wallet-extra";
+import { useT } from "@ezymex/i18n/react";
+import { ME, WALLET, WALLET_TXS, accountUsd, type WalletTx } from "@ezymex/mock";
+import { PENDING_WITHDRAWALS, liveAccounts, walletAvailableUsdt, walletTotalUsd } from "@ezymex/mock/wallet-extra";
 import { DepositAddressCard, KycBanner, LimitsCard, TxDetailDrawer, TxRow } from "@/components/wallet/wallet-ui";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveWalletPage } from "@/components/wallet-live/wallet-page";
 
 const COIN_COLOR: Record<string, string> = { usdt: "#26a17b", trx: "#ff5a1f", btc: "#e9b949" };

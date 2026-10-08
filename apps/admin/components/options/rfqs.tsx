@@ -2,7 +2,7 @@
 
 /**
  * Options › Combo RFQs (docs/OPTIONS-EXCHANGE.md §5, decision O49): strategies traded by request for quote. A client
- * sends the legs and a size (open 30 s); the Kalks market maker always answers with a firm net bid / ask per strategy
+ * sends the legs and a size (open 30 s); the Ezymex market maker always answers with a firm net bid / ask per strategy
  * unit (valid a few seconds, refreshed after that) and reserves for its worst side; accepting fills every leg at once
  * in one journal entry, or nothing. Live every 5 seconds: the open requests with the MM's current quote, and the
  * recent ones with their outcome.
@@ -17,7 +17,7 @@
  */
 import * as React from "react";
 import { Clock, Layers, MessagesSquare, RefreshCw, Sigma, Timer } from "lucide-react";
-import { Button, Card, CardHeader, Chip, DataTable, EmptyState, KpiCard, PageHeader, Reveal, Segmented, cn, formatNumber, type ChipTone, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, EmptyState, KpiCard, PageHeader, Reveal, Segmented, cn, formatNumber, type ChipTone, type Column } from "@ezymex/ui";
 import { ErrorState, TableSkeleton, ago, useNow, when } from "@/components/live/kit";
 import { EnginePending, KIND_OPTIONS, LoginLink, UnderlyingCell, enginePending, useKind, useOpt } from "./kit";
 
@@ -91,7 +91,7 @@ export function RfqsPage() {
     <div className="pb-10">
       <PageHeader
         title="Combo RFQs"
-        subtitle="Strategies on the order book trade by request for quote: the Kalks market maker answers every request with a firm net price, and an accept fills every leg at once or nothing."
+        subtitle="Strategies on the order book trade by request for quote: the Ezymex market maker answers every request with a firm net price, and an accept fills every leg at once or nothing."
         actions={
           <>
             <Segmented size="sm" value={kind} onChange={setKind} options={KIND_OPTIONS} />

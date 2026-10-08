@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { useStaff } from "@/components/staff-session";
 import { LocalTradingDesk } from "./store";
 import { RestTradingDesk } from "./rest";

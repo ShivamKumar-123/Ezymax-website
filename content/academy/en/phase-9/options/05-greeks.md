@@ -43,7 +43,7 @@ quiz:
       - "Its gamma is very high, so small price moves swing its delta and value sharply"
       - "Its vega is at its highest on expiry day"
       - "Interest rates change during the day"
-      - "Kalks reprices it only once a day"
+      - "Ezymex reprices it only once a day"
     answer: 0
     explanation: "Close to expiry, at-the-money gamma is very large: a few pips decide whether the option ends in or out of the money. Vega, by contrast, is tiny at that stage."
 ---
@@ -79,7 +79,7 @@ Gamma is highest for at-the-money options close to expiry. For buyers, gamma hel
 | One month to expiry | about 96 USD | about -1.75 USD | about 2% |
 | One week to expiry | about 44 USD | about -3.40 USD | about 8% |
 
-Decay speeds up as expiry approaches and is fastest for at-the-money options. Kalks measures time for volatility in business time, so a quiet weekend removes less value than a trading day does. Theta is a cost for buyers and the main source of income for sellers.
+Decay speeds up as expiry approaches and is fastest for at-the-money options. Ezymex measures time for volatility in business time, so a quiet weekend removes less value than a trading day does. Theta is a cost for buyers and the main source of income for sellers.
 
 ## Vega: sensitivity to volatility
 
@@ -89,11 +89,11 @@ Vega explains why option prices can change when spot does not. Ahead of a centra
 
 ## Rho: sensitivity to interest rates
 
-**Rho** measures the effect of interest rates. For the short expiries listed on Kalks, from one day to a few months, it is small and you can usually ignore it.
+**Rho** measures the effect of interest rates. For the short expiries listed on Ezymex, from one day to a few months, it is small and you can usually ignore it.
 
 ## Implied versus realised volatility
 
-**Implied volatility** is the volatility figure that, put into the pricing model, gives the option's price. It is the market's expected movement, quoted as an annual percentage. **Realised volatility** is how much the price actually moved, measured from past prices. Kalks sets its implied volatility from a volatility surface for each underlying, blended with recent realised volatility.
+**Implied volatility** is the volatility figure that, put into the pricing model, gives the option's price. It is the market's expected movement, quoted as an annual percentage. **Realised volatility** is how much the price actually moved, measured from past prices. Ezymex sets its implied volatility from a volatility surface for each underlying, blended with recent realised volatility.
 
 The comparison matters. A buyer pays for the implied movement. If the market then moves less than implied, time decay wins and the buyer usually loses. If it moves more, the buyer usually wins. A seller takes the opposite bet.
 

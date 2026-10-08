@@ -1,7 +1,7 @@
 "use client";
 
-// Demo builds (NEXT_PUBLIC_KALKS_MODE=demo): the options service and the engine's options API answered in the
-// browser. Chains come from the GK / BS / Black-76 pricer in @kalks/mock/options on the live (or simulated) quotes;
+// Demo builds (NEXT_PUBLIC_EZYMEX_MODE=demo): the options service and the engine's options API answered in the
+// browser. Chains come from the GK / BS / Black-76 pricer in @ezymex/mock/options on the live (or simulated) quotes;
 // fills, closes, working orders and expiry settlements are kept per demo login in localStorage and shown through the
 // same option book as engine positions.
 //
@@ -9,9 +9,9 @@
 // with a market-maker ladder quoted from the same model under the same rules, a few resting orders of other clients
 // and a trickle of outside trades, so the chain shows book prices with sizes, the depth / tape move, resting orders
 // fill, and stop, reduce-only, IOC / FOK, post-only, amend, RFQ and partial closes behave like the engine. Live builds
-// never load it. `localStorage["kalks.options.demo.book"] = "off"` shows the house-priced flow instead.
-import { INSTRUMENT_MAP, fetchCandles, hashString, isMarketOpen, priceFeed, seeded } from "@kalks/mock";
-import { BOOK_DEFAULTS, BookSim, OPTION_SPEC, clampMark, defaultPremiumTick, mockChain, mockExpiries, mockPremiumCandles, mockUnderlyings, parseSeriesCode, pricingContext, quoteSeries, scenarioMargin, tradeState, usdPerQuoteCcy, cutInstant, seriesCode, type OptionExpiry, type SimTrade } from "@kalks/mock/options";
+// never load it. `localStorage["ezymex.options.demo.book"] = "off"` shows the house-priced flow instead.
+import { INSTRUMENT_MAP, fetchCandles, hashString, isMarketOpen, priceFeed, seeded } from "@ezymex/mock";
+import { BOOK_DEFAULTS, BookSim, OPTION_SPEC, clampMark, defaultPremiumTick, mockChain, mockExpiries, mockPremiumCandles, mockUnderlyings, parseSeriesCode, pricingContext, quoteSeries, scenarioMargin, tradeState, usdPerQuoteCcy, cutInstant, seriesCode, type OptionExpiry, type SimTrade } from "@ezymex/mock/options";
 import { buildHistory, fromChartTime } from "@/components/chart/engine";
 import type { Timeframe } from "@/lib/trading";
 import type { Result } from "@/lib/engine/client";
@@ -137,7 +137,7 @@ interface DemoBook {
   deals: Record<string, unknown>[];
 }
 
-const KEY = (login: string) => `kalks.options.demo.v1.${login}`;
+const KEY = (login: string) => `ezymex.options.demo.v1.${login}`;
 const books = new Map<string, DemoBook>();
 let seq = 71_200_000;
 const ticket = () => String((seq += 1 + Math.floor(Math.random() * 5)));
@@ -406,9 +406,9 @@ export const mockApi: OptionsApi = {
     const legs = b.positions.filter((p) => p.comboId === comboId);
     if (!legs.length) return fail("not_found", "Strategy not found.", 404);
     // like the engine (docs/OPTIONS-EXCHANGE.md §5): a strategy held on the order book closes through a reduce-only
-    // combo RFQ to the market maker, all legs at once; one with book and Kalks-quoted legs can't close in one go
+    // combo RFQ to the market maker, all legs at once; one with book and Ezymex-quoted legs can't close in one go
     const onBook = legs.filter((p) => p.venue === "book");
-    if (onBook.length && onBook.length < legs.length) return fail("mixed_venue", "This strategy has legs on the order book and Kalks-quoted legs: close them one by one");
+    if (onBook.length && onBook.length < legs.length) return fail("mixed_venue", "This strategy has legs on the order book and Ezymex-quoted legs: close them one by one");
     if (onBook.length) {
       const gcd = (a: number, c: number): number => (c ? gcd(c, a % c) : Math.abs(a));
       const size = legs.reduce((g, p) => gcd(g, Math.round(p.contracts)), 0) || 1;
@@ -476,9 +476,9 @@ export function demoBoot(login: string) {
 /* Order book (demo showcase): simulator, account side, stops, RFQ     */
 /* ------------------------------------------------------------------ */
 
-const BOOK_KEY = "kalks.options.demo.book";
+const BOOK_KEY = "ezymex.options.demo.book";
 
-/** The demo build shows the order book unless `localStorage["kalks.options.demo.book"] = "off"` (house prices). */
+/** The demo build shows the order book unless `localStorage["ezymex.options.demo.book"] = "off"` (house prices). */
 export function demoBookOn(): boolean {
   if (typeof window === "undefined") return true;
   try {
@@ -944,7 +944,7 @@ function mmRfqQuote(r: DemoRfq, now: number): (RfqQuote & { legPx: number[] }) |
   const half = Math.max(tick, 0.6 * r.legs.reduce((s, l, i) => s + l.ratio * Math.max(tick, ((qs[i]!.ask || qs[i]!.mark) - (qs[i]!.bid || qs[i]!.mark)) / 2), 0));
   const bid = Math.floor((net - half) / tick + 1e-9) * tick;
   const ask = Math.ceil((net + half) / tick - 1e-9) * tick;
-  r.quote = { quoteId: `q${++rfqSeq}${now.toString(36)}`, responder: "kalks-mm", bid: roundPx(r.legs[0]!.series, bid), ask: roundPx(r.legs[0]!.series, ask), qty: r.qty, validUntil: new Date(now + BOOK_DEFAULTS.rfqQuoteTtlSecs * 1000).toISOString(), legPx: theo };
+  r.quote = { quoteId: `q${++rfqSeq}${now.toString(36)}`, responder: "ezymex-mm", bid: roundPx(r.legs[0]!.series, bid), ask: roundPx(r.legs[0]!.series, ask), qty: r.qty, validUntil: new Date(now + BOOK_DEFAULTS.rfqQuoteTtlSecs * 1000).toISOString(), legPx: theo };
   return r.quote;
 }
 
@@ -1112,8 +1112,8 @@ export const mockBookApi: BookApi = {
   },
   rfq: async (login, req) => {
     if (login === "guest") return fail("unauthorized", "Log in to a trading account.", 401);
-    // like the engine: barrier legs are Kalks-quoted (house ticket), and every leg is on one underlying
-    if (req.legs.some((l) => l.series.split("-").length > 4)) return fail("kalks_quoted", "Barrier strategies are Kalks-quoted (not order book): use the strategy ticket");
+    // like the engine: barrier legs are Ezymex-quoted (house ticket), and every leg is on one underlying
+    if (req.legs.some((l) => l.series.split("-").length > 4)) return fail("ezymex_quoted", "Barrier strategies are Ezymex-quoted (not order book): use the strategy ticket");
     if (new Set(req.legs.map((l) => parseSeriesCode(l.series)?.underlying ?? l.series)).size > 1) return fail("rfq_underlyings", "Every leg of a combo must be on the same underlying");
     if (!req.legs.length || req.legs.length > 8 || req.legs.some((l) => !specOfCode(l.series))) return fail("bad_request", "Give 1 to 8 legs.", 422);
     const id = `rfq${Date.now().toString(36)}${++rfqSeq}`;

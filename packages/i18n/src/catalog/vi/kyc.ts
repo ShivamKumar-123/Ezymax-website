@@ -192,7 +192,7 @@ const kyc: NsMessages<"kyc"> = {
   "review.missing": "Còn thiếu",
   "review.flagged": "Được đánh dấu để xem xét",
   "review.passed": "Đã qua kiểm tra",
-  "review.consent": "Tôi xác nhận các tài liệu là thật và thuộc về tôi (hoặc doanh nghiệp và người quản lý của doanh nghiệp), và tôi đồng ý để Kalks sàng lọc danh tính và AML.",
+  "review.consent": "Tôi xác nhận các tài liệu là thật và thuộc về tôi (hoặc doanh nghiệp và người quản lý của doanh nghiệp), và tôi đồng ý để Ezymex sàng lọc danh tính và AML.",
 
   // More information requested by the review team
   "moreInfo.title": "Chúng tôi cần thêm một chút thông tin từ bạn",
@@ -356,7 +356,7 @@ const kyc: NsMessages<"kyc"> = {
   // Client-side fallback errors
   "error.sessionEnded": "Phiên của bạn đã kết thúc.",
   "error.generic": "Đã xảy ra lỗi. Vui lòng thử lại.",
-  "error.network": "Không thể kết nối đến Kalks. Vui lòng kiểm tra kết nối và thử lại.",
+  "error.network": "Không thể kết nối đến Ezymex. Vui lòng kiểm tra kết nối và thử lại.",
   "error.uploadFailed": "Tải lên thất bại. Vui lòng thử lại.",
   "error.uploadInterrupted": "Tải lên bị gián đoạn. Vui lòng kiểm tra kết nối và thử lại.",
 

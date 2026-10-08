@@ -1,7 +1,7 @@
 import type { NsMessages } from "../../core";
 
 // Client Area security: sessions, sign-in history, view-only logins (viewers), session guard.
-// "Kalks", "Google" and "JSON" stay as they are.
+// "Ezymex", "Google" and "JSON" stay as they are.
 const security: NsMessages<"security"> = {
   // Shared
   "retry": "ลองอีกครั้ง",
@@ -9,7 +9,7 @@ const security: NsMessages<"security"> = {
   "signingOut": "กำลังออกจากระบบ…",
   "resetSigningOut": "กำลังออกจากระบบเพื่อรีเซ็ตรหัสผ่านของคุณ…",
   "error.generic": "เกิดข้อผิดพลาด โปรดลองอีกครั้ง",
-  "error.network": "ไม่สามารถเชื่อมต่อ Kalks ได้ ตรวจสอบการเชื่อมต่อของคุณแล้วลองอีกครั้ง",
+  "error.network": "ไม่สามารถเชื่อมต่อ Ezymex ได้ ตรวจสอบการเชื่อมต่อของคุณแล้วลองอีกครั้ง",
 
   // Device labels from the browser's user agent; browser and OS brand names stay as they are
   "device.unknownBrowser": "เบราว์เซอร์ที่ไม่รู้จัก",
@@ -227,7 +227,7 @@ const security: NsMessages<"security"> = {
   "page.calendar": "ปฏิทิน",
   // Investor passwords card
   "investor.title": "รหัสผ่านนักลงทุน",
-  "investor.text": "บัญชีเทรดแต่ละบัญชียังมีรหัสผ่านนักลงทุนสำหรับการเข้าถึงแบบอ่านอย่างเดียวใน Kalks Trader แบบ MT5: ดูสถานะและประวัติได้ แต่เทรดไม่ได้",
+  "investor.text": "บัญชีเทรดแต่ละบัญชียังมีรหัสผ่านนักลงทุนสำหรับการเข้าถึงแบบอ่านอย่างเดียวใน Ezymex Trader แบบ MT5: ดูสถานะและประวัติได้ แต่เทรดไม่ได้",
   "investor.hint": "ตั้งค่าหรือเปลี่ยนได้ที่หน้าบัญชี",
   "investor.goToAccounts": "ไปที่บัญชี",
   // Create / edit dialog

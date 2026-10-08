@@ -4,7 +4,7 @@ import { cn } from "../lib/cn";
 import { useBrand } from "./brand";
 
 /**
- * The wordmark. Kalks: the founder's wordmark (traced from brand/kalks_logo_*.png), tinted via currentColor.
+ * The wordmark. Ezymex: the blade E mark + wordmark (assets/brand/ezymex-logo.svg), tinted via currentColor.
  * A white-label broker (BrandProvider): its logo image, or its name set in type when it has no logo.
  */
 export function Logo({ className, height = 22 }: { className?: string; height?: number }) {
@@ -28,19 +28,19 @@ export function Logo({ className, height = 22 }: { className?: string; height?: 
   return (
     <span
       role="img"
-      aria-label="Kalks"
+      aria-label="Ezymex"
       className={cn("inline-block shrink-0 bg-current text-fg", className)}
       style={{
         height,
-        width: height * (1954 / 541),
-        WebkitMask: "url(/assets/brand/kalks-logo.svg) center / contain no-repeat",
-        mask: "url(/assets/brand/kalks-logo.svg) center / contain no-repeat",
+        width: height * (2801 / 559),
+        WebkitMask: "url(/assets/brand/ezymex-logo.svg) center / contain no-repeat",
+        mask: "url(/assets/brand/ezymex-logo.svg) center / contain no-repeat",
       }}
     />
   );
 }
 
-/** The mark alone (icon rail, compact headers): Kalks' K glyph, a broker's logo, or its initial on its colour. */
+/** The mark alone (icon rail, compact headers): Ezymex' K glyph, a broker's logo, or its initial on its colour. */
 export function LogoMark({ className, size = 22 }: { className?: string; size?: number }) {
   const brand = useBrand();
   if (brand) {
@@ -64,13 +64,13 @@ export function LogoMark({ className, size = 22 }: { className?: string; size?: 
   return (
     <span
       role="img"
-      aria-label="Kalks"
+      aria-label="Ezymex"
       className={cn("inline-block shrink-0 bg-current", className)}
       style={{
         height: size,
-        width: size * (653 / 541),
-        WebkitMask: "url(/assets/brand/kalks-mark.svg) center / contain no-repeat",
-        mask: "url(/assets/brand/kalks-mark.svg) center / contain no-repeat",
+        width: size * (652 / 460),
+        WebkitMask: "url(/assets/brand/ezymex-mark.svg) center / contain no-repeat",
+        mask: "url(/assets/brand/ezymex-mark.svg) center / contain no-repeat",
       }}
     />
   );

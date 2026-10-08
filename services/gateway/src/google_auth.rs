@@ -2,7 +2,7 @@
 //!
 //! The Client Area BFF runs the OAuth 2.0 / OIDC flow (state, PKCE, nonce), exchanges the code with Google
 //! and verifies the ID token (JWKS signature, iss, aud, exp, nonce, email_verified). Only then does it call
-//! these endpoints with the verified identity, behind `X-Kalks-Internal`. The gateway never sees Google tokens.
+//! these endpoints with the verified identity, behind `X-Ezymex-Internal`. The gateway never sees Google tokens.
 //!
 //! - Known Google account (`google_sub`)            → signed in.
 //! - Same email, no Google link yet                  → linked (`user.google_linked`) and signed in.

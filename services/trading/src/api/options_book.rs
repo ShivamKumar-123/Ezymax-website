@@ -1,4 +1,4 @@
-//! Options order book, terminal API (docs/OPTIONS-EXCHANGE.md §12; Kalks Trader session, `Authorization: Bearer`).
+//! Options order book, terminal API (docs/OPTIONS-EXCHANGE.md §12; Ezymex Trader session, `Authorization: Bearer`).
 //!
 //! * `POST   /v1/terminal/options/book/orders` — limit / market / stop_market / stop_limit.
 //! * `PATCH  /v1/terminal/options/book/orders/{id}` `{price?, qty?}` — amend.
@@ -798,7 +798,7 @@ fn rfq_id(id: &str) -> ApiResult<i64> {
 }
 
 /// `POST /v1/terminal/options/rfq {legs[{series, side, ratio}], qty, reduceOnly?}` → `{rfq: {id, expiresAt, legs, qty,
-/// status}, quotes: [...]}`. The Kalks market maker answers at once.
+/// status}, quotes: [...]}`. The Ezymex market maker answers at once.
 pub async fn rfq_open(State(st): State<AppState>, ctx: Ctx, Body(b): Body<RfqBody>) -> ApiResult<Json<Value>> {
     let s = terminal::session(&st, &ctx).await?;
     s.writable()?;
@@ -922,7 +922,7 @@ pub async fn book_close_combo(st: &AppState, s: &terminal::Session, combo: i64) 
         return Ok(None);
     }
     if legs.iter().any(|l| l["book"] != true) {
-        return Err(status("mixed_venue", "This strategy has legs on the order book and Kalks-quoted legs: close them one by one"));
+        return Err(status("mixed_venue", "This strategy has legs on the order book and Ezymex-quoted legs: close them one by one"));
     }
     let kind = venue(st, s)?;
     settling_gate(st, s.login)?;

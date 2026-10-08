@@ -1,5 +1,5 @@
 //! Pushes prop notifications to the support service (`POST $SUPPORT_URL/v1/notify`): the trader's bell in
-//! the Client Area and Kalks Trader, the realtime stream and email per the `prop` preference.
+//! the Client Area and Ezymex Trader, the realtime stream and email per the `prop` preference.
 //!
 //! `store::notify` writes the prop inbox row (the outbox); this worker delivers it afterwards, so a support
 //! outage never delays the rule evaluator or a payout. `dedupeKey = prop:n:<id>` makes retries safe.
@@ -82,9 +82,9 @@ pub async fn push_pending(app: &App, http: &reqwest::Client) -> anyhow::Result<(
         });
         let res = http
             .post(format!("{}/v1/notify", app.cfg.support_url))
-            .header("x-kalks-internal", &app.cfg.support_token)
-            .header("x-kalks-tenant", &tenant)
-            .header("x-kalks-service", "prop")
+            .header("x-ezymex-internal", &app.cfg.support_token)
+            .header("x-ezymex-tenant", &tenant)
+            .header("x-ezymex-service", "prop")
             .json(&body)
             .send()
             .await;

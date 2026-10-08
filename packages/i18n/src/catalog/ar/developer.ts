@@ -247,8 +247,8 @@ const developer: NsMessages<"developer"> = {
   "assetClass.crypto": "العملات المشفرة",
   "assetClass.stocks": "الأسهم",
 
-  // Code editor (Kalks strategy language)
-  "code.language": "لغة استراتيجيات Kalks",
+  // Code editor (Ezymex strategy language)
+  "code.language": "لغة استراتيجيات Ezymex",
   "code.checking": "جارٍ الفحص…",
   "code.errors": {
     zero: "لا أخطاء",
@@ -309,7 +309,7 @@ const developer: NsMessages<"developer"> = {
   // Kill switch
   "kill.title": "مفتاح الإيقاف الطارئ",
   "kill.subtitle": "يوقف كل استراتيجية وwebhook وأمر API على حساباتك",
-  "kill.globalPaused": "أوقفت إدارة المخاطر في Kalks التداول الآلي مؤقتًا على مستوى المنصة.",
+  "kill.globalPaused": "أوقفت إدارة المخاطر في Ezymex التداول الآلي مؤقتًا على مستوى المنصة.",
   "kill.onSince": "مفعّل منذ {at}",
   "kill.release": "تحرير مفتاح الإيقاف الطارئ",
   "kill.stopAll": "إيقاف كل الأتمتة",
@@ -398,7 +398,7 @@ const developer: NsMessages<"developer"> = {
   "docs.bearer": "Bearer (الأبسط)",
   "docs.hmac": "توقيع HMAC (موصى به للروبوتات)",
   // <code> wraps header names and paths; keep them untranslated
-  "docs.signature": "التوقيع = hex(HMAC-SHA256(secret, timestamp + METHOD + المسار مع الاستعلام + body))، ويُرسل مع <code>X-Kalks-Key</code> و<code>X-Kalks-Timestamp</code> (unix ms، ±30 ث) و<code>X-Kalks-Signature</code>. يُوقَّع المسار بصيغة <code>/public/v1/…</code>. يُقبل كل توقيع مرة واحدة.",
+  "docs.signature": "التوقيع = hex(HMAC-SHA256(secret, timestamp + METHOD + المسار مع الاستعلام + body))، ويُرسل مع <code>X-Ezymex-Key</code> و<code>X-Ezymex-Timestamp</code> (unix ms، ±30 ث) و<code>X-Ezymex-Signature</code>. يُوقَّع المسار بصيغة <code>/public/v1/…</code>. يُقبل كل توقيع مرة واحدة.",
   // "api", clientOrderId and duplicate are API values; keep them
   "docs.endpointsSub": "JSON في الإدخال والإخراج. يحمل كل أمر المصدر «api»؛ ويُرجع تكرار clientOrderId الحالة duplicate.",
   "docs.errorsSub": "الأخطاء بالصيغة {shape}",
@@ -508,9 +508,9 @@ const developer: NsMessages<"developer"> = {
 
   // Strategy marketplace
   "market.title": "سوق الاستراتيجيات",
-  "market.subtitle": "استراتيجيات بسجلات أداء موثّقة من حسابات Kalks. انسخ إحداها إلى حسابك، أو انشر استراتيجيتك واربح من الاشتراكات.",
-  "market.houseChip": "استراتيجية الشركة · تديرها Kalks",
-  "market.houseNote": "استراتيجية تديرها Kalks: حساب حقيقي مملوك للوسيط يشغّل هذه الاستراتيجية. سجل الأداء يقتصر على صفقاته الحقيقية منذ بدء التشغيل؛ لا شيء محاكى أو مضاف بأثر رجعي.",
+  "market.subtitle": "استراتيجيات بسجلات أداء موثّقة من حسابات Ezymex. انسخ إحداها إلى حسابك، أو انشر استراتيجيتك واربح من الاشتراكات.",
+  "market.houseChip": "استراتيجية الشركة · تديرها Ezymex",
+  "market.houseNote": "استراتيجية تديرها Ezymex: حساب حقيقي مملوك للوسيط يشغّل هذه الاستراتيجية. سجل الأداء يقتصر على صفقاته الحقيقية منذ بدء التشغيل؛ لا شيء محاكى أو مضاف بأثر رجعي.",
   // Date range, e.g. "2025-01-01 to 2025-12-31"
   "market.range": "من {from} إلى {to}",
   "market.backtestSimulated": "اختبار تاريخي · محاكاة",
@@ -537,7 +537,7 @@ const developer: NsMessages<"developer"> = {
   "market.subscriptionStatus": "الاشتراك {status}",
   "market.reviewSaved": "تم حفظ التقييم",
   "market.reviewFailed": "تعذّر حفظ التقييم",
-  "market.trackNote": "سجل الأداء من تشغيل المؤلف الخاص على Kalks منذ {since}: {days} يوم، بصافي {net}. محسوب من الصفقات المغلقة على محرك التداول، ولا يُدخله المؤلف.",
+  "market.trackNote": "سجل الأداء من تشغيل المؤلف الخاص على Ezymex منذ {since}: {days} يوم، بصافي {net}. محسوب من الصفقات المغلقة على محرك التداول، ولا يُدخله المؤلف.",
   "market.riskSettings": "إعدادات المخاطرة",
   "market.riskLine": "الحجم {size} · الإيقاف {stop} · الهدف {target}",
   "market.riskPct": "مخاطرة {pct}%",
@@ -555,7 +555,7 @@ const developer: NsMessages<"developer"> = {
   "market.cloneRules": "استنساخ القواعد",
   "market.subscribePaid": "اشترك · {price} USDT / شهريًا",
   "market.subscribeFree": "اشترك مجانًا",
-  "market.paidNote": "يُدفع من محفظة Kalks الخاصة بك (USDT). يتجدد كل 30 يومًا؛ يمكنك الإلغاء في أي وقت.",
+  "market.paidNote": "يُدفع من محفظة Ezymex الخاصة بك (USDT). يتجدد كل 30 يومًا؛ يمكنك الإلغاء في أي وقت.",
   "market.reviews": "التقييمات ({n})",
   "market.stars": {
     zero: "{count} نجمة",
@@ -601,7 +601,7 @@ const developer: NsMessages<"developer"> = {
   "market.popular": "الأكثر شيوعًا",
   "market.emptyTitle": "لا توجد استراتيجيات مدرجة بعد",
   "market.emptyText": "كن الأول: شغّل استراتيجية على حساب تجريبي، ثم انشرها مع سجل أدائها الموثّق.",
-  "market.disclaimer": "الأداء السابق لا يضمن النتائج المستقبلية. تأتي سجلات الأداء من حسابات حقيقية أو تجريبية على Kalks وتُصنَّف وفقًا لذلك. رسوم المنصة على الاشتراكات المدفوعة: {pct}%.",
+  "market.disclaimer": "الأداء السابق لا يضمن النتائج المستقبلية. تأتي سجلات الأداء من حسابات حقيقية أو تجريبية على Ezymex وتُصنَّف وفقًا لذلك. رسوم المنصة على الاشتراكات المدفوعة: {pct}%.",
   "market.mode": "الوضع",
   "market.renews": "التجديد",
   "market.copyOn": "نسخ على #{login}",

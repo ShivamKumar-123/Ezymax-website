@@ -233,8 +233,8 @@ const developer: NsMessages<"developer"> = {
   "assetClass.crypto": "暗号資産",
   "assetClass.stocks": "株式",
 
-  // Code editor (Kalks strategy language)
-  "code.language": "Kalks ストラテジー言語",
+  // Code editor (Ezymex strategy language)
+  "code.language": "Ezymex ストラテジー言語",
   "code.checking": "確認中…",
   "code.errors": { other: "エラー {count}件" },
   "code.compiles": "コンパイル成功",
@@ -281,7 +281,7 @@ const developer: NsMessages<"developer"> = {
   // Kill switch
   "kill.title": "キルスイッチ",
   "kill.subtitle": "お客様の口座のすべてのストラテジー、Webhook、API注文を停止します",
-  "kill.globalPaused": "Kalksのリスク管理により、自動売買はプラットフォーム全体で一時停止されています。",
+  "kill.globalPaused": "Ezymexのリスク管理により、自動売買はプラットフォーム全体で一時停止されています。",
   "kill.onSince": "{at}から有効",
   "kill.release": "キルスイッチを解除",
   "kill.stopAll": "すべての自動売買を停止",
@@ -363,7 +363,7 @@ const developer: NsMessages<"developer"> = {
   "docs.bearer": "Bearer（最も簡単）",
   "docs.hmac": "HMAC署名（ボットに推奨）",
   // <code> wraps header names and paths; keep them untranslated
-  "docs.signature": "署名 = hex(HMAC-SHA256(secret, timestamp + METHOD + クエリ付きパス + body))。<code>X-Kalks-Key</code>、<code>X-Kalks-Timestamp</code>（unix ms、±30秒）、<code>X-Kalks-Signature</code>とともに送信します。パスは<code>/public/v1/…</code>として署名されます。各署名は一度だけ受け付けられます。",
+  "docs.signature": "署名 = hex(HMAC-SHA256(secret, timestamp + METHOD + クエリ付きパス + body))。<code>X-Ezymex-Key</code>、<code>X-Ezymex-Timestamp</code>（unix ms、±30秒）、<code>X-Ezymex-Signature</code>とともに送信します。パスは<code>/public/v1/…</code>として署名されます。各署名は一度だけ受け付けられます。",
   // "api", clientOrderId and duplicate are API values; keep them
   "docs.endpointsSub": "入出力はJSONです。すべての注文のsourceは「api」となり、clientOrderIdが重複するとstatus duplicateが返されます。",
   "docs.errorsSub": "エラーの形式：{shape}",
@@ -473,9 +473,9 @@ const developer: NsMessages<"developer"> = {
 
   // Strategy marketplace
   "market.title": "ストラテジーマーケットプレイス",
-  "market.subtitle": "Kalks口座で検証済みの実績を持つストラテジー。お客様の口座にコピーするか、ご自身のストラテジーを公開してサブスクリプション収入を得られます。",
-  "market.houseChip": "ハウスストラテジー · Kalks運用",
-  "market.houseNote": "Kalksが運用するハウスストラテジー：このストラテジーを稼働しているブローカー所有のリアル口座です。実績は開始以降の実際のリアルトレードのみで、シミュレーションや過去データの補填は一切ありません。",
+  "market.subtitle": "Ezymex口座で検証済みの実績を持つストラテジー。お客様の口座にコピーするか、ご自身のストラテジーを公開してサブスクリプション収入を得られます。",
+  "market.houseChip": "ハウスストラテジー · Ezymex運用",
+  "market.houseNote": "Ezymexが運用するハウスストラテジー：このストラテジーを稼働しているブローカー所有のリアル口座です。実績は開始以降の実際のリアルトレードのみで、シミュレーションや過去データの補填は一切ありません。",
   // Date range, e.g. "2025-01-01 to 2025-12-31"
   "market.range": "{from} ～ {to}",
   "market.backtestSimulated": "バックテスト · シミュレーション",
@@ -502,7 +502,7 @@ const developer: NsMessages<"developer"> = {
   "market.subscriptionStatus": "サブスクリプション：{status}",
   "market.reviewSaved": "レビューを保存しました",
   "market.reviewFailed": "レビューを保存できませんでした",
-  "market.trackNote": "{since}以降のKalks上での作成者自身の稼働による実績：{days}日、純損益{net}。作成者の入力ではなく、取引エンジン上の決済済み約定から算出されています。",
+  "market.trackNote": "{since}以降のEzymex上での作成者自身の稼働による実績：{days}日、純損益{net}。作成者の入力ではなく、取引エンジン上の決済済み約定から算出されています。",
   "market.riskSettings": "リスク設定",
   "market.riskLine": "サイズ {size} · ストップ {stop} · ターゲット {target}",
   "market.riskPct": "リスク {pct}%",
@@ -520,7 +520,7 @@ const developer: NsMessages<"developer"> = {
   "market.cloneRules": "ルールを複製",
   "market.subscribePaid": "購読する · {price} USDT / 月",
   "market.subscribeFree": "無料で購読",
-  "market.paidNote": "Kalksウォレット（USDT）から支払われます。30日ごとに更新され、いつでもキャンセルできます。",
+  "market.paidNote": "Ezymexウォレット（USDT）から支払われます。30日ごとに更新され、いつでもキャンセルできます。",
   "market.reviews": "レビュー（{n}）",
   "market.stars": { other: "星{count}つ" },
   "market.reviewPlaceholder": "取引結果はいかがでしたか？",
@@ -552,7 +552,7 @@ const developer: NsMessages<"developer"> = {
   "market.popular": "人気順",
   "market.emptyTitle": "掲載中のストラテジーはまだありません",
   "market.emptyText": "最初の掲載者になりましょう：デモ口座でストラテジーを稼働させ、検証済みの実績とともに公開してください。",
-  "market.disclaimer": "過去の実績は将来の結果を保証するものではありません。実績はKalksのリアル口座またはデモ口座によるもので、その旨が表示されます。有料サブスクリプションのプラットフォーム手数料：{pct}%。",
+  "market.disclaimer": "過去の実績は将来の結果を保証するものではありません。実績はEzymexのリアル口座またはデモ口座によるもので、その旨が表示されます。有料サブスクリプションのプラットフォーム手数料：{pct}%。",
   "market.mode": "モード",
   "market.renews": "更新日",
   "market.copyOn": "#{login}でコピー",

@@ -2,7 +2,7 @@
 name = "options"
 version = "0.1.0"
 edition = "2024"
-description = "Kalks FX Options reference data and market side: underlyings, holidays, rates, vol surfaces, series, TWAP fixings, chain REST + WS, engine snapshot."
+description = "Ezymex FX Options reference data and market side: underlyings, holidays, rates, vol surfaces, series, TWAP fixings, chain REST + WS, engine snapshot."
 
 [lib]
 path = "src/lib.rs"

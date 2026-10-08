@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { Globe, Mail, MessageCircle, Smartphone, Sparkles, Timer, UserRound, AlertTriangle, CheckCheck } from "lucide-react";
-import { Chip, cn } from "@kalks/ui";
-import type { SupChannel, SupConvStatus } from "@kalks/mock/admin-growth-support";
+import { Chip, cn } from "@ezymex/ui";
+import type { SupChannel, SupConvStatus } from "@ezymex/mock/admin-growth-support";
 
 export const CHANNEL_META: Record<SupChannel, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
   web: { label: "Web chat", icon: Globe },

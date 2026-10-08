@@ -3,8 +3,8 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { Activity, BookOpen, CheckCircle2, MoreHorizontal, Pause, Play, Plus, RefreshCw, RotateCw, Send, Trash2, Webhook, XCircle } from "lucide-react";
-import { Button, Card, CardHeader, Chip, Dialog, Field, IconButton, Input, KpiCard, Menu, PageHeader, Progress, Reveal, Segmented, Sparkline, cn, formatDateTime, formatNumber } from "@kalks/ui";
-import { SET_DELIVERIES, SET_WEBHOOK_EVENTS, SET_WEBHOOKS, type SetDelivery, type SetWebhook } from "@kalks/mock/admin-platform-settings";
+import { Button, Card, CardHeader, Chip, Dialog, Field, IconButton, Input, KpiCard, Menu, PageHeader, Progress, Reveal, Segmented, Sparkline, cn, formatDateTime, formatNumber } from "@ezymex/ui";
+import { SET_DELIVERIES, SET_WEBHOOK_EVENTS, SET_WEBHOOKS, type SetDelivery, type SetWebhook } from "@ezymex/mock/admin-platform-settings";
 import { SecretInput } from "@/components/settings/kit";
 
 const STATUS_TONE = { active: "up", paused: "neutral", failing: "down" } as const;
@@ -14,7 +14,7 @@ function codeTone(c: number) {
 }
 
 function payloadFor(d: SetDelivery) {
-  const base: Record<string, unknown> = { id: `evt_${d.id.slice(4)}`, type: d.event, created_at: d.at, tenant: "kalks" };
+  const base: Record<string, unknown> = { id: `evt_${d.id.slice(4)}`, type: d.event, created_at: d.at, tenant: "ezymex" };
   const data: Record<string, unknown> = d.event.startsWith("deposit")
     ? { client_id: "u_1004", login: "80412337", amount: "2500.00", currency: "USDT", network: "TRC20", tx_hash: "9f2c41e7…b18d" }
     : d.event.startsWith("withdrawal")
@@ -55,10 +55,10 @@ export default function WebhooksPage() {
     <div className="pb-16">
       <PageHeader
         title="Webhooks"
-        subtitle="Signed HTTP callbacks to your CRM, data warehouse and partners. Payloads are signed with HMAC-SHA256 in the X-Kalks-Signature header."
+        subtitle="Signed HTTP callbacks to your CRM, data warehouse and partners. Payloads are signed with HMAC-SHA256 in the X-Ezymex-Signature header."
         actions={
           <>
-            <Button variant="surface" onClick={() => toast("Opening webhook reference · api.kalks.com/docs/webhooks")}>
+            <Button variant="surface" onClick={() => toast("Opening webhook reference · api.ezymex.com/docs/webhooks")}>
               <BookOpen /> Event reference
             </Button>
             <Button variant="ember" onClick={() => setOpen(true)}>
@@ -211,9 +211,9 @@ export default function WebhooksPage() {
               <div className="mb-2 text-[11px] uppercase tracking-wider text-fg-3">Headers</div>
               <pre className="font-mono text-[12px] leading-relaxed text-fg-2">{`POST ${current.url}
 Content-Type: application/json
-X-Kalks-Event: ${payload.event}
-X-Kalks-Signature: t=1790264640,v1=5f1c9e0a7b…d42e
-X-Kalks-Delivery: ${payload.id}`}</pre>
+X-Ezymex-Event: ${payload.event}
+X-Ezymex-Signature: t=1790264640,v1=5f1c9e0a7b…d42e
+X-Ezymex-Delivery: ${payload.id}`}</pre>
             </div>
             <div className="k-row overflow-x-auto p-4">
               <div className="mb-2 text-[11px] uppercase tracking-wider text-fg-3">Body</div>

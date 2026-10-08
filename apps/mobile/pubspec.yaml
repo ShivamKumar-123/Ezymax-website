@@ -1,8 +1,8 @@
-name: kalks
-description: "Kalks: the Client Area and Kalks Trader as one native app (Android first)."
+name: ezymex
+description: "Ezymex: the Client Area and Ezymex Trader as one native app (Android first)."
 publish_to: 'none'
 
-# versionName+versionCode (sent as X-Kalks-App-Version, compared with config.minAppVersion)
+# versionName+versionCode (sent as X-Ezymex-App-Version, compared with config.minAppVersion)
 version: 1.0.0+2
 
 environment:
@@ -46,7 +46,7 @@ dependencies:
   # Partner (IB) referral QR codes (web: qrcode.react)
   qr_flutter: ^4.1.0
 
-  # the User-Agent the Security page lists ("KalksApp/1.0.0 (Android 15; Pixel 8)")
+  # the User-Agent the Security page lists ("EzymexApp/1.0.0 (Android 15; Pixel 8)")
   device_info_plus: ^13.3.0
 
 dev_dependencies:
@@ -68,7 +68,7 @@ flutter:
     - assets/stocks/
     - assets/people/
     - assets/flags/
-    # Kalks Trader's chart page: lightweight-charts 5.2.1 (offline, Apache 2.0) + its bridge (agent D)
+    # Ezymex Trader's chart page: lightweight-charts 5.2.1 (offline, Apache 2.0) + its bridge (agent D)
     - assets/chart/
     # news story covers (the web's own photo library, apps/crm/public/assets/photos, 720 px)
     - assets/photos/
@@ -87,7 +87,7 @@ flutter:
           weight: 700
         - asset: assets/fonts/PlusJakartaSans-ExtraBold.ttf
           weight: 800
-    # Kalks Trader text and the fallback for scripts Plus Jakarta Sans lacks, OFL: assets/fonts/Geist-OFL.txt
+    # Ezymex Trader text and the fallback for scripts Plus Jakarta Sans lacks, OFL: assets/fonts/Geist-OFL.txt
     - family: Geist
       fonts:
         - asset: assets/fonts/Geist-Regular.ttf

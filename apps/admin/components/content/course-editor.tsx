@@ -3,8 +3,8 @@
 import * as React from "react";
 import { ArrowDown, ArrowUp, FileText, GripVertical, HelpCircle, ImagePlus, PlayCircle, Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Chip, Dialog, DialogClose, Field, Flag, Input, Segmented, Toggle, cn } from "@kalks/ui";
-import { CNT_LANGS, type CntCourse, type CntLesson } from "@kalks/mock/admin-growth-content";
+import { Button, Chip, Dialog, DialogClose, Field, Flag, Input, Segmented, Toggle, cn } from "@ezymex/ui";
+import { CNT_LANGS, type CntCourse, type CntLesson } from "@ezymex/mock/admin-growth-content";
 
 export type CourseState = CntCourse & { langs: string[] };
 

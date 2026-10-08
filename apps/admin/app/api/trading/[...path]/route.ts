@@ -21,7 +21,7 @@ const ROUTES: Route[] = [
   { method: "GET", re: /^dealing\/routing\/rules$/, perm: "dealing.read" },
   { method: "GET", re: /^symbols$/, perm: "dealing.read", to: () => "/v1/symbols" },
   // instrument catalogue (Config › Symbols): live-trading switch and spec templates. Changes need dealing.policy here;
-  // the engine then allows them only to the platform owner / super admin of the Kalks platform tenant.
+  // the engine then allows them only to the platform owner / super admin of the Ezymex platform tenant.
   { method: "GET", re: /^admin\/symbols\/catalogue(\/audit)?$/, perm: "dealing.read" },
   { method: "PUT", re: /^admin\/symbols\/live$/, perm: "dealing.policy" },
   { method: "PUT", re: /^admin\/symbols\/templates\/[a-z0-9-]{1,40}$/, perm: "dealing.policy" },

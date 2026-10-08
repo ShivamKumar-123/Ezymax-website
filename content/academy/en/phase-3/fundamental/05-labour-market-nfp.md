@@ -97,7 +97,7 @@ The NFP release is notorious for violent, two-directional price action. The firs
 
 > **Risk warning:** CFDs are leveraged, and jobs-report volatility can cause slippage and losses larger than your planned stop. Many experienced traders reduce size or stay flat through the release. Holding positions through major news is a decision, not a default.
 
-> **In Kalks Trader:** Check the release time in the Economic calendar. If you hold a position into the report, consider whether your stop loss and position size still make sense given that the stop may be filled at a worse price.
+> **In Ezymex Trader:** Check the release time in the Economic calendar. If you hold a position into the report, consider whether your stop loss and position size still make sense given that the stop may be filled at a worse price.
 
 ## Common mistakes
 

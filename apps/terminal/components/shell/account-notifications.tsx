@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { Bell, CheckCheck, CircleAlert, CircleCheck, ExternalLink, Info, Settings2, TriangleAlert } from "lucide-react";
-import { cn } from "@kalks/ui";
-import { useT } from "@kalks/i18n/react";
+import { cn } from "@ezymex/ui";
+import { useT } from "@ezymex/i18n/react";
 import { accountInbox, useAccountInbox, useAccountInboxSync, type AccountNote, type Inbox, type Severity } from "@/lib/account-notify";
 import { CLIENT_AREA } from "@/lib/guest";
 import { useTerminal } from "@/lib/store";
@@ -83,7 +83,7 @@ function Row({ n }: { n: AccountNote }) {
         <span className={cn("block text-[12px] leading-[16px]", n.read ? "text-fg-2" : "font-medium text-fg")}>{n.title}</span>
         {n.body && <span className="mt-0.5 line-clamp-2 block text-[11px] leading-[15px] text-fg-3">{n.body}</span>}
         <span className="mt-0.5 flex items-center gap-1 text-[10px] text-fg-3">
-          <span>{t.dyn(`trader.inbox.cat.${n.category}`, "Kalks")}</span>
+          <span>{t.dyn(`trader.inbox.cat.${n.category}`, "Ezymex")}</span>
           {url && <ExternalLink className="size-2.5 opacity-70" aria-label={t("trader.inbox.opensClientArea")} />}
         </span>
       </span>

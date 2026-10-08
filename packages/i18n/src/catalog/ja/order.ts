@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader order ticket, New Order window, DOM ladder, position/pending dialogs and trade toasts.
+// Ezymex Trader order ticket, New Order window, DOM ladder, position/pending dialogs and trade toasts.
 // Trading terms follow the MetaTrader 5 Japanese localisation.
 const order: NsMessages<"order"> = {
   // Order types (ticket type switcher)
@@ -270,9 +270,9 @@ const order: NsMessages<"order"> = {
 
   // Specification / About dialogs
   "spec.title": "仕様 · {symbol}",
-  "about.title": "Kalks Traderについて",
+  "about.title": "Ezymex Traderについて",
   "about.version": "バージョン {version} · ビルド {build} · Web x64",
-  "about.text": "Kalks Global Marketsのマルチアセット取引ルーム。レートはKalks価格ゲートウェイから配信され、サーバー時間はGMT+3です。",
+  "about.text": "Ezymex Global Marketsのマルチアセット取引ルーム。レートはEzymex価格ゲートウェイから配信され、サーバー時間はGMT+3です。",
 
   // Rejection reasons (MT5 journal wording)
   "reject.market_closed": "市場クローズ",

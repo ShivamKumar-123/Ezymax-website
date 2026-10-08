@@ -7,7 +7,7 @@ import { PLATFORM_TENANT, optionsAllows, type OptionsPerm } from "@/lib/options-
 // FX Options BFF: browser -> /api/options/<path> (same origin, staff cookie) -> options service (:8104).
 // Back Office routes go to /v1/admin/options/<path>; `smile` and `chain` are the client reads (/v1/options/*) used for
 // previews. The staff session is verified with the gateway on every call and the permission for the route is checked
-// here (lib/options-perms.ts); the service gets OPTIONS_INTERNAL_TOKEN plus `X-Kalks-Staff` / `X-Kalks-Tenant` built
+// here (lib/options-perms.ts); the service gets OPTIONS_INTERNAL_TOKEN plus `X-Ezymex-Staff` / `X-Ezymex-Tenant` built
 // from that session, re-checks platform-only data and writes the audit log.
 //
 // Every write needs a reason (3+ characters) for the audit log, except the listing run (an operation, not a change).
@@ -47,7 +47,7 @@ const ROUTES: Route[] = [
   { method: "PUT", re: re(`groups/${KEY}/${KEY}`), perm: "options.config" },
   { method: "DELETE", re: re(`groups/${KEY}/${KEY}`), perm: "options.config" },
   { method: "POST", re: /^listing\/run$/, perm: "options.config", noReason: true },
-  // Kalks market maker quoting parameters (order book, docs/OPTIONS-EXCHANGE.md §4); most specific row wins
+  // Ezymex market maker quoting parameters (order book, docs/OPTIONS-EXCHANGE.md §4); most specific row wins
   { method: "PUT", re: re(`mm-settings/${MM_TENANT}/${MM_KIND}/${MM_SYM}`), perm: "options.config" },
   { method: "DELETE", re: re(`mm-settings/${MM_TENANT}/${MM_KIND}/${MM_SYM}`), perm: "options.config" },
   // dealing
@@ -93,11 +93,11 @@ async function handle(req: NextRequest, parts: string[], method: Method) {
     if (target !== who.staff.tenant?.slug && !who.staff.permissions?.includes("owner.tenants"))
       return apiError(403, "forbidden", "Only the Platform Owner can switch Options for another broker.");
   }
-  // the market maker is Kalks's house account: a broker's staff tune only their own rows; `*` rows and other
-  // brokers' rows are Kalks staff's (the service checks again)
+  // the market maker is Ezymex's house account: a broker's staff tune only their own rows; `*` rows and other
+  // brokers' rows are Ezymex staff's (the service checks again)
   const mm = method !== "GET" ? path.match(/^mm-settings\/([^/]+)\//) : null;
   if (mm && (who.staff.tenant?.slug || PLATFORM_TENANT) !== PLATFORM_TENANT && mm[1] !== who.staff.tenant?.slug)
-    return apiError(403, "forbidden", "Only Kalks staff change market-maker settings for every broker or for another broker.");
+    return apiError(403, "forbidden", "Only Ezymex staff change market-maker settings for every broker or for another broker.");
 
   const q = new URLSearchParams();
   if (method === "GET") {

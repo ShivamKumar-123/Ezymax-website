@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { AlertTriangle, Check, Fingerprint, MapPin, MonitorSmartphone, ShieldAlert, X } from "lucide-react";
-import { Avatar, Button, Chip, Dialog, Flag, Money, StatusChip, cn } from "@kalks/ui";
-import { FIN_WITHDRAW_REASONS, finAgo, finTime, type FinCheck, type FinWithdrawal } from "@kalks/mock/admin-finance";
+import { Avatar, Button, Chip, Dialog, Flag, Money, StatusChip, cn } from "@ezymex/ui";
+import { FIN_WITHDRAW_REASONS, finAgo, finTime, type FinCheck, type FinWithdrawal } from "@ezymex/mock/admin-finance";
 import { Addr, MiniStat, RiskScore, Section, TxHash, auditToast, useReason } from "@/components/config/kit";
 import { CHECK_META, NetworkChip, usd } from "./shared";
 

@@ -1,4 +1,4 @@
-// Server-only client for the Kalks wallet service (services/wallet, 127.0.0.1:8095).
+// Server-only client for the Ezymex wallet service (services/wallet, 127.0.0.1:8095).
 // The browser never sees the service or WALLET_INTERNAL_TOKEN: route handlers under /api/wallet resolve the
 // signed-in client from the gateway session cookie and pass that user id. Contract: services/wallet/README.md.
 
@@ -15,9 +15,9 @@ export async function wallet<T = Record<string, unknown>>(
   init: { method?: "GET" | "POST"; body?: unknown; user: GatewayUser; req: NextRequest },
 ): Promise<WalletResult<T>> {
   const headers: Record<string, string> = {
-    "x-kalks-internal": WALLET_TOKEN,
-    "x-kalks-tenant": init.user.tenant?.slug || "kalks",
-    "x-kalks-service": "crm",
+    "x-ezymex-internal": WALLET_TOKEN,
+    "x-ezymex-tenant": init.user.tenant?.slug || "ezymex",
+    "x-ezymex-service": "crm",
     "x-forwarded-for": clientIp(init.req.headers),
   };
   const ua = init.req.headers.get("user-agent");

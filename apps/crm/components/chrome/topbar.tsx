@@ -9,7 +9,7 @@ import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
 import { ChevronDown } from "lucide-react";
 import { Avatar, Menu, cn, type NavModule, type SubNavItem } from "@/components/kit";
-import { useLocale, useT } from "@kalks/i18n/react";
+import { useLocale, useT } from "@ezymex/i18n/react";
 import { activeSub } from "./nav-utils";
 
 /** The module's pages as text tabs with an accent underline. `fit` (desktop): as many tabs as the space allows, the

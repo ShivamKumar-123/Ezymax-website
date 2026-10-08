@@ -344,7 +344,7 @@ pub struct Position {
     pub client_order_id: Option<String>,
     /// Set when this position was opened by a netting reversal of `ticket`.
     pub reversed_from: Option<i64>,
-    /// Kalks FX Options: the contract this position holds (None = a CFD position). `symbol` is then the series
+    /// Ezymex FX Options: the contract this position holds (None = a CFD position). `symbol` is then the series
     /// code, `volume` the contracts and `open_price` the premium per unit of the underlying (quote currency).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub option: Option<OptionTerms>,
@@ -355,7 +355,7 @@ pub struct Position {
     /// received +). Realised P&L = cash at close / expiry + this basis.
     #[serde(default, skip_serializing_if = "D::is_zero")]
     pub premium: D,
-    /// Options: where the contract trades. None / `house` = Kalks-priced (B-book, the house is the counterparty);
+    /// Options: where the contract trades. None / `house` = Ezymex-priced (B-book, the house is the counterparty);
     /// `book` = the options order book (another account is the counterparty, cash through the expiry's clearing
     /// account). Absent on every event written before the order book existed.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -681,7 +681,7 @@ pub struct Order {
     /// Stop-limit whose stop has triggered: now a limit order at `stop_limit`.
     pub triggered: bool,
     pub client_order_id: Option<String>,
-    /// Kalks FX Options pending order (legs, premium limit). `symbol` is then the first leg's series code.
+    /// Ezymex FX Options pending order (legs, premium limit). `symbol` is then the first leg's series code.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub option: Option<OptionOrder>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -824,7 +824,7 @@ pub struct Deal {
     /// Exit deal that left part of the position open.
     #[serde(default)]
     pub partial: bool,
-    /// Kalks FX Options deal: terms, the cash booked, fixing / run of a settlement.
+    /// Ezymex FX Options deal: terms, the cash booked, fixing / run of a settlement.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub option: Option<DealOption>,
 }
@@ -858,9 +858,9 @@ pub enum TxnKind {
     /// Platform capital booked on (or withdrawn from) a house account (services/algo "House accounts"):
     /// `house:house_capital` ↔ balance. Not a client deposit: deposit / FTD reports never count it.
     HouseCapital,
-    /// Kalks FX Options premium paid / received (opens and closes): balance ↔ `house:options_premium`.
+    /// Ezymex FX Options premium paid / received (opens and closes): balance ↔ `house:options_premium`.
     OptionPremium,
-    /// Kalks FX Options expiry payout or knock-out rebate: balance ↔ `house:options_settlement`.
+    /// Ezymex FX Options expiry payout or knock-out rebate: balance ↔ `house:options_settlement`.
     OptionSettlement,
     /// Options order book maker rebate: `house:options_rebates` → balance.
     OptionRebate,

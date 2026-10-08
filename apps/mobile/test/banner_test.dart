@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/ui/ui.dart';
+import 'package:ezymex/ui/ui.dart';
 
 const _body = 'BUY 0.50 XAUUSD at 2,654.80';
 
@@ -38,15 +38,15 @@ void main() {
     final c = await _pumpHost(tester);
     c.show(const KBannerData(title: 'Order filled', body: _body, time: 'Just now'));
     await _animate(tester);
-    expect(find.text('KALKS'), findsOneWidget);
+    expect(find.text('EZYMEX'), findsOneWidget);
     expect(find.text('Order filled'), findsOneWidget);
     expect(find.text(_body), findsOneWidget);
     expect(find.text('Just now'), findsOneWidget);
-    // the Kalks launcher icon, no coloured icon tile
+    // the Ezymex launcher icon, no coloured icon tile
     expect(find.byType(KLogoMark), findsOneWidget);
     expect(find.byType(KIconTile), findsNothing);
     // the live region reads the whole notification
-    final s = tester.getSemantics(find.bySemanticsLabel(RegExp('Kalks. Order filled')));
+    final s = tester.getSemantics(find.bySemanticsLabel(RegExp('Ezymex. Order filled')));
     expect(s.flagsCollection.isLiveRegion, isTrue);
     await _done(tester, c);
   });

@@ -47,7 +47,7 @@ quiz:
     explanation: "Investors need to understand risk, not only returns. Promising fixed returns is misleading because no trading strategy can guarantee them."
 ---
 
-Copy trading and PAMM (percentage allocation management module) let investors connect their funds to a strategy run by someone else. In Kalks, these appear in the Copy trading / PAMM (Social) section of the Client Area. For a provider, running such a strategy is a step up in responsibility: other people's savings now depend on your discipline. For investors, it can offer access to a trader's approach, but it never removes risk. This chapter covers both sides.
+Copy trading and PAMM (percentage allocation management module) let investors connect their funds to a strategy run by someone else. In Ezymex, these appear in the Copy trading / PAMM (Social) section of the Client Area. For a provider, running such a strategy is a step up in responsibility: other people's savings now depend on your discipline. For investors, it can offer access to a trader's approach, but it never removes risk. This chapter covers both sides.
 
 ## How the two models differ
 

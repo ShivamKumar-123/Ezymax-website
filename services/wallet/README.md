@@ -1,6 +1,6 @@
 # wallet
 
-The Kalks central client wallet (D3): per-user multi-currency balances on a double-entry ledger, USDT deposits on BNB Chain (BEP20) and TRON (TRC20) verified on-chain, withdrawals with admin approval, and transfers between the wallet and the client's own trading accounts. It is a Rust service (axum 0.8, sqlx 0.9, PostgreSQL) on `127.0.0.1:8095`.
+The Ezymex central client wallet (D3): per-user multi-currency balances on a double-entry ledger, USDT deposits on BNB Chain (BEP20) and TRON (TRC20) verified on-chain, withdrawals with admin approval, and transfers between the wallet and the client's own trading accounts. It is a Rust service (axum 0.8, sqlx 0.9, PostgreSQL) on `127.0.0.1:8095`.
 
 Other services (IB, copy/PAMM, prop) move money in and out of client wallets **only** through [`POST /v1/wallets/transfers`](#wallet-api-contract-for-other-services).
 
@@ -20,7 +20,7 @@ Other services (IB, copy/PAMM, prop) move money in and out of client wallets **o
 
 ## Run locally
 
-You need PostgreSQL on `127.0.0.1:5433` (user `postgres`, trust auth), the gateway on `:8080` (KYC status) and the trading engine on `:8090` (wallet ↔ trading transfers). The database `kalks_wallet` is created and migrated on first start.
+You need PostgreSQL on `127.0.0.1:5433` (user `postgres`, trust auth), the gateway on `:8080` (KYC status) and the trading engine on `:8090` (wallet ↔ trading transfers). The database `ezymex_wallet` is created and migrated on first start.
 
 ```bash
 cargo run -p wallet          # reads the repo-root .env.local (WALLET_*) and .env.tron (TRONGRID_API_KEY)
@@ -30,7 +30,7 @@ curl -s localhost:8095/health
 
 ## Wallet API contract (for other services)
 
-Every call sends `X-Kalks-Internal: $WALLET_INTERNAL_TOKEN`, optionally `X-Kalks-Tenant: <slug>` (default `kalks`) and `X-Kalks-Service: <ib|prop|pamm|copy|...>` (recorded as the actor). `user_id` is the gateway user id.
+Every call sends `X-Ezymex-Internal: $WALLET_INTERNAL_TOKEN`, optionally `X-Ezymex-Tenant: <slug>` (default `ezymex`) and `X-Ezymex-Service: <ib|prop|pamm|copy|...>` (recorded as the actor). `user_id` is the gateway user id.
 
 ### `GET /v1/wallets/{user_id}`
 
@@ -79,9 +79,9 @@ Newest first. `amount` is the signed change to the client's total (available + l
 
 ## Conventions
 
-- **Base URL** `http://127.0.0.1:8095`. JSON in and out, snake_case keys. Every route except `GET /health` needs `X-Kalks-Internal`.
+- **Base URL** `http://127.0.0.1:8095`. JSON in and out, snake_case keys. Every route except `GET /health` needs `X-Ezymex-Internal`.
 - **Money.** Amounts are decimal **strings** in responses. Requests accept a string or a JSON number. The service never uses floats. USDT is USD 1:1 (D35).
-- **Staff.** Back Office routes need the staff identity that the admin BFF verified with the gateway: `X-Kalks-Staff-Id`, `X-Kalks-Staff-Name` (percent-encoded), `X-Kalks-Staff-Role`. The service checks the role again (see [Back Office API](#back-office-api)).
+- **Staff.** Back Office routes need the staff identity that the admin BFF verified with the gateway: `X-Ezymex-Staff-Id`, `X-Ezymex-Staff-Name` (percent-encoded), `X-Ezymex-Staff-Role`. The service checks the role again (see [Back Office API](#back-office-api)).
 - **Client context.** Forward the client IP as `X-Forwarded-For` and the user agent as `User-Agent`. Withdrawals record both.
 - **Errors.** `{"error": {"code", "message", "field"?}}`
 
@@ -256,7 +256,7 @@ Back Office "Balance & credit" (client 360, Trading → Accounts, Finance → Wa
 | `finance.adjust_force` | force a trading-account deduction or credit take-back past the free margin (Super Admin) |
 | `finance.settings` | the four-eyes threshold |
 
-The admin BFF forwards the staff member's `finance.*` keys as `X-Kalks-Staff-Perms`; the service enforces the exact key (without the header it falls back to the role: finance roles for adjust / credit / approve, `super_admin` / `platform_owner` for force).
+The admin BFF forwards the staff member's `finance.*` keys as `X-Ezymex-Staff-Perms`; the service enforces the exact key (without the header it falls back to the role: finance roles for adjust / credit / approve, `super_admin` / `platform_owner` for force).
 
 **Request** (`POST /v1/admin/adjustments`, and `POST /v1/admin/adjustments/preview` without `idempotency_key`):
 
@@ -287,7 +287,7 @@ The admin BFF forwards the staff member's `finance.*` keys as `X-Kalks-Staff-Per
 | Variable | Default | |
 |---|---|---|
 | `WALLET_BIND` | `127.0.0.1:8095` | |
-| `WALLET_DATABASE_URL` | `postgres://postgres@127.0.0.1:5433/kalks_wallet` | created on first start |
+| `WALLET_DATABASE_URL` | `postgres://postgres@127.0.0.1:5433/ezymex_wallet` | created on first start |
 | `WALLET_INTERNAL_TOKEN` | – | required in production |
 | `WALLET_ENV` | `development` | `production` enforces the token |
 | `WALLET_LOG_FORMAT` | `json` | `text` for local |
@@ -328,6 +328,6 @@ The apps need `WALLET_URL` (default `http://127.0.0.1:8095`) and `WALLET_INTERNA
 - Paid RPC:
   - Use a paid BSC RPC (or a self-hosted node) with an `eth_getLogs` allowance; public endpoints rate-limit.
   - Use a TronGrid key per environment.
-- Notifications: every row of `notifications` (deposit credited / rejected, withdrawal requested / approved / rejected / completed, transfers, credits) is written in the same transaction as the money change and then pushed by `src/notifier.rs` to the support service (`POST $SUPPORT_URL/v1/notify`, type `wallet.<kind>`, link `/wallet/history`, `dedupeKey wallet:n:<id>`). Support shows it in the Client Area and Kalks Trader bells, on the realtime stream, and emails it per the client's `wallet` preference. The push runs after the commit (woken at once, else every 5 s), retries with backoff (15 s doubling to 1 h, 12 attempts, `push_attempts` / `push_error`), never blocks or rolls back the money transaction, and support's wallet polling adapter uses the same dedupe key, so nothing is shown or emailed twice.
+- Notifications: every row of `notifications` (deposit credited / rejected, withdrawal requested / approved / rejected / completed, transfers, credits) is written in the same transaction as the money change and then pushed by `src/notifier.rs` to the support service (`POST $SUPPORT_URL/v1/notify`, type `wallet.<kind>`, link `/wallet/history`, `dedupeKey wallet:n:<id>`). Support shows it in the Client Area and Ezymex Trader bells, on the realtime stream, and emails it per the client's `wallet` preference. The push runs after the commit (woken at once, else every 5 s), retries with backoff (15 s doubling to 1 h, 12 attempts, `push_attempts` / `push_error`), never blocks or rolls back the money transaction, and support's wallet polling adapter uses the same dedupe key, so nothing is shown or emailed twice.
 - RLS: every table carries `tenant_id` and queries are tenant-scoped, but Row-Level Security policies are not enabled yet (same as the trading engine).
 - Workers: run `WALLET_WORKERS=true` on exactly one instance.

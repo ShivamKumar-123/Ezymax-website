@@ -9,7 +9,7 @@ import { FormError } from "@/components/auth";
 import { STEPUP_CODES, StepUpCode, StepUpDialog, useStepUp } from "@/components/stepup";
 import { ApiError, STATUS_LABEL, curOf, errorToast, fmtDate, modeLabel, serverOf, tradingApi, type EngineAccount } from "./api";
 import { PasswordRules, SecretField, TradeButton, demoTarget, livePasswordOk, refillsLeft, useRefill } from "./ui";
-import { Trans, useT } from "@kalks/i18n/react";
+import { Trans, useT } from "@ezymex/i18n/react";
 
 /* ------------------------------------------------------------------ */
 /* Change password (D4, D90)                                           */
@@ -211,7 +211,7 @@ export function CredentialsPanel({ a }: { a: EngineAccount }) {
                 <Globe className="size-4" />
               </span>
               <div className="min-w-0 flex-1">
-                <div className="text-[13.5px] font-medium">Kalks Trader</div>
+                <div className="text-[13.5px] font-medium">Ezymex Trader</div>
                 <div className="text-[11.5px] text-fg-3">{t("accountDetail.investor.webTerminal")}</div>
               </div>
               <TradeButton a={a} label={t("common.open")} />

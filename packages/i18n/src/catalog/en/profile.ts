@@ -3,7 +3,7 @@ const profile = {
   // Profile page (shared)
   title: "Profile",
   subtitle: "Your personal details and account preferences.",
-  liveSubtitle: "Your personal details as registered with Kalks.",
+  liveSubtitle: "Your personal details as registered with Ezymex.",
   memberSince: "Member since {date}",
   notVerified: "Not verified",
   "photo.upload": "Upload a new photo",
@@ -58,7 +58,7 @@ const profile = {
   "data.exportRequested": "Data export requested",
   "data.exportRequestedHint": "You'll receive a download link by email within 72 hours.",
   "data.export": "Export my data",
-  "closure.title": "Close your Kalks account",
+  "closure.title": "Close your Ezymex account",
   "closure.description": "All trading accounts must have zero balance and no open positions.",
   "closure.request": "Request account closure",
   "closure.submitted": "Closure request submitted",

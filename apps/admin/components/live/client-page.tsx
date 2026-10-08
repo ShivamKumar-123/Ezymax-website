@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { Card, EmptyState, PageHeader, Reveal, buttonVariants } from "@kalks/ui";
+import { Card, EmptyState, PageHeader, Reveal, buttonVariants } from "@ezymex/ui";
 import { ClientDetailView, ClientHeader } from "./client-detail";
 import { ClientControlsProvider, ClientControlsSection, ClientStaffActions } from "@/components/clients/client-controls";
 import { useApi } from "./kit";

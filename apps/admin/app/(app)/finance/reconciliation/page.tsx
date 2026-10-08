@@ -3,11 +3,11 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { AlertTriangle, Blocks, BookOpen, CalendarClock, CandlestickChart, Check, CheckCircle2, Download, Hourglass, Loader2, Play, Scale } from "lucide-react";
-import { Button, Card, CardHeader, Chip, DataTable, Dialog, Money, PageHeader, Reveal, StatusChip, Tooltip, cn, type Column } from "@kalks/ui";
-import { FIN_MISMATCHES, FIN_RECON_REASONS, FIN_RECON_RUNS, type FinMismatch, type FinReconRun } from "@kalks/mock/admin-finance";
+import { Button, Card, CardHeader, Chip, DataTable, Dialog, Money, PageHeader, Reveal, StatusChip, Tooltip, cn, type Column } from "@ezymex/ui";
+import { FIN_MISMATCHES, FIN_RECON_REASONS, FIN_RECON_RUNS, type FinMismatch, type FinReconRun } from "@ezymex/mock/admin-finance";
 import { ColumnChart, PersonCell, TxHash, auditToast, useReason } from "@/components/config/kit";
 import { Line, fmtDuration, usd } from "@/components/finance/shared";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveReconciliationPage } from "@/components/finance-live/reconciliation";
 
 const STEPS = ["Fetch TRON / BTC / EVM balances", "Replay wallet ledger", "Pull MT5 balances & credit", "Match transactions", "Build report"];
@@ -128,7 +128,7 @@ function DemoReconciliationPage() {
         subtitle="Daily 06:00 GMT+3 · blockchain balances vs wallet ledger vs trading accounts"
         actions={
           <>
-            <Button variant="surface" onClick={() => toast.success("Schedule: daily at 06:00 GMT+3", { description: "Alerts to #finance-ops and finance@kalks.io when Δ > $50" })}>
+            <Button variant="surface" onClick={() => toast.success("Schedule: daily at 06:00 GMT+3", { description: "Alerts to #finance-ops and finance@ezymex.io when Δ > $50" })}>
               <CalendarClock /> Schedule
             </Button>
             <Button variant="surface" onClick={() => toast.success(`recon-${run.id}.pdf exported`, { description: "Signed report with per-address breakdown" })}>

@@ -3,13 +3,13 @@
 import * as React from "react";
 import { Coins, Grid3x3, Hourglass, LineChart as LineIcon, Scale, Users, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, KpiCard, Money, PageHeader, Reveal, Segmented, cn, formatNumber } from "@kalks/ui";
-import { ANL_COHORTS } from "@kalks/mock/admin-growth-analytics";
+import { Button, Card, CardHeader, Chip, KpiCard, Money, PageHeader, Reveal, Segmented, cn, formatNumber } from "@ezymex/ui";
+import { ANL_COHORTS } from "@ezymex/mock/admin-growth-analytics";
 import { CohortHeatmap } from "@/components/analytics/cohort-heatmap";
 import { LineChart } from "@/components/analytics/line-chart";
 import { ExportActions } from "@/components/analytics/common";
 import { Meter } from "@/components/analytics/meter";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveCohorts } from "@/components/reports/live-growth";
 
 const MONTHS = 12;

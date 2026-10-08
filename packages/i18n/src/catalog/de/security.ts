@@ -8,7 +8,7 @@ const security: NsMessages<"security"> = {
   "signingOut": "Abmeldung…",
   "resetSigningOut": "Sie werden abgemeldet, um Ihr Passwort zurückzusetzen…",
   "error.generic": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
-  "error.network": "Kalks ist nicht erreichbar. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+  "error.network": "Ezymex ist nicht erreichbar. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
 
   // Device labels from the browser's user agent; browser and OS brand names stay as they are
   "device.unknownBrowser": "Unbekannter Browser",
@@ -226,7 +226,7 @@ const security: NsMessages<"security"> = {
   "page.calendar": "Kalender",
   // Investor passwords card
   "investor.title": "Investorpasswörter",
-  "investor.text": "Jedes Handelskonto hat außerdem ein Investorpasswort für den Nur-Lese-Zugriff in Kalks Trader, wie bei MT5: Positionen und Historie, kein Handel.",
+  "investor.text": "Jedes Handelskonto hat außerdem ein Investorpasswort für den Nur-Lese-Zugriff in Ezymex Trader, wie bei MT5: Positionen und Historie, kein Handel.",
   "investor.hint": "Festlegen oder ändern können Sie es auf der Kontoseite.",
   "investor.goToAccounts": "Zu den Konten",
   // Create / edit dialog

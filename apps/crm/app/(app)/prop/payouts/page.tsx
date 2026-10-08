@@ -26,12 +26,12 @@ import {
   formatMoney,
   type Column,
 } from "@/components/kit";
-import { ME } from "@kalks/mock";
-import { FUNDED, FUNDED_SHARE, PROP_CERTIFICATES, PROP_PAYOUTS, SCALING, type PropPayout } from "@kalks/mock/prop";
+import { ME } from "@ezymex/mock";
+import { FUNDED, FUNDED_SHARE, PROP_CERTIFICATES, PROP_PAYOUTS, SCALING, type PropPayout } from "@ezymex/mock/prop";
 import { RequestPayoutDialog } from "@/components/prop/payout-dialog";
 import { CertificateCard } from "@/components/prop/certificate-card";
 import { CountUp } from "@/components/prop/prop-ui";
-import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LivePropPayouts } from "@/components/prop-live/payouts";
 import { TERMINAL_URL } from "@/lib/live";
 
@@ -89,7 +89,7 @@ function FundedCard() {
 }
 
 function SplitCard({ available, pending, onRequested }: { available: number; pending: number; onRequested: (n: number) => void }) {
-  const kalks = FUNDED.profit - FUNDED_SHARE;
+  const ezymex = FUNDED.profit - FUNDED_SHARE;
   return (
     <Card className="h-full">
       <CardHeader title="Profit split" subtitle="Current cycle · 10 Sep – 24 Sep 2026" icon={<Percent />} action={<Chip tone="up" dot>Eligible now</Chip>} />
@@ -100,7 +100,7 @@ function SplitCard({ available, pending, onRequested }: { available: number; pen
             thickness={20}
             data={[
               { label: "You", value: FUNDED.splitPct, color: "var(--k-ember)" },
-              { label: "Kalks", value: 100 - FUNDED.splitPct, color: "var(--k-gold)" },
+              { label: "Ezymex", value: 100 - FUNDED.splitPct, color: "var(--k-gold)" },
             ]}
             center={
               <div>
@@ -131,7 +131,7 @@ function SplitCard({ available, pending, onRequested }: { available: number; pen
               >
                 You · {formatMoney(FUNDED_SHARE)}
               </motion.div>
-              <div className="flex flex-1 items-center justify-end whitespace-nowrap px-2 text-[11.5px] font-medium text-gold">20% · {formatMoney(kalks, "USD", 0)}</div>
+              <div className="flex flex-1 items-center justify-end whitespace-nowrap px-2 text-[11.5px] font-medium text-gold">20% · {formatMoney(ezymex, "USD", 0)}</div>
             </div>
           </div>
           <div className="mt-3 grid grid-cols-3 gap-2 text-[12px]">
@@ -158,7 +158,7 @@ function SplitCard({ available, pending, onRequested }: { available: number; pen
                 </Button>
               }
             />
-            <span className="text-[12px] text-fg-3">Paid to your Kalks wallet · avg. 7.4h approval</span>
+            <span className="text-[12px] text-fg-3">Paid to your Ezymex wallet · avg. 7.4h approval</span>
           </div>
         </div>
       </div>
@@ -264,7 +264,7 @@ function History({ rows }: { rows: PropPayout[] }) {
   ];
   return (
     <Card>
-      <CardHeader title="Payout history" subtitle="All prop payouts credited to your Kalks wallet" icon={<Receipt />} />
+      <CardHeader title="Payout history" subtitle="All prop payouts credited to your Ezymex wallet" icon={<Receipt />} />
       <div className="px-4 pb-6 pt-4 sm:px-6">
         <DataTable columns={cols} rows={rows} pageSize={8} search={(r) => `${r.id} ${r.account} ${r.status}`} exportName="prop-payouts" rowKey={(r) => r.id} />
         <div className="mt-3 flex items-start gap-2 text-[12px] text-fg-3">
@@ -357,10 +357,10 @@ function DemoPropPayoutsPage() {
         <Card>
           <CardHeader
             title="Certificates"
-            subtitle="Verified on kalks.com — share your milestones"
+            subtitle="Verified on ezymex.com — share your milestones"
             icon={<Award />}
             action={
-              <Button size="sm" variant="surface" onClick={() => toast.success("All certificates downloaded", { description: `${PROP_CERTIFICATES.length} PNG files · kalks-certificates.zip` })}>
+              <Button size="sm" variant="surface" onClick={() => toast.success("All certificates downloaded", { description: `${PROP_CERTIFICATES.length} PNG files · ezymex-certificates.zip` })}>
                 Download all
               </Button>
             }

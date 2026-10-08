@@ -1,6 +1,6 @@
 # ib
 
-The Kalks IB / referral programme (Round 3, D53–D64). Every client is an IB from sign-up. The service mirrors the referral tree from the gateway, reads closed live deals from the trading engine, computes multi-tier per-lot commissions with client rebates and sub-IB splits, pays CPA bonuses, upgrades levels monthly, tracks campaign links, raises fraud flags, and pays approved batches into client wallets. It is a Rust service (axum 0.8, sqlx 0.9, PostgreSQL) on `127.0.0.1:8096`.
+The Ezymex IB / referral programme (Round 3, D53–D64). Every client is an IB from sign-up. The service mirrors the referral tree from the gateway, reads closed live deals from the trading engine, computes multi-tier per-lot commissions with client rebates and sub-IB splits, pays CPA bonuses, upgrades levels monthly, tracks campaign links, raises fraud flags, and pays approved batches into client wallets. It is a Rust service (axum 0.8, sqlx 0.9, PostgreSQL) on `127.0.0.1:8096`.
 
 - [Run locally](#run-locally)
 - [How it works](#how-it-works)
@@ -19,12 +19,12 @@ You need PostgreSQL on `127.0.0.1:5433` (user `postgres`, trust auth), the gatew
 ```bash
 export PATH="$HOME/.cargo/bin:$PATH"
 cargo build -p ib
-(cd services/ib && IB_LOG_FORMAT=pretty nohup ../../target/debug/ib > ~/.kalks-local/ib.log 2>&1 &)
+(cd services/ib && IB_LOG_FORMAT=pretty nohup ../../target/debug/ib > ~/.ezymex-local/ib.log 2>&1 &)
 curl -s localhost:8096/health
 cargo test -p ib
 ```
 
-On first start the service creates the `kalks_ib` database, runs `migrations/`, and seeds the default programme (settings and the Bronze → Diamond levels) for tenant `kalks`. It reads `IB_*`, `GATEWAY_INTERNAL_TOKEN`, `TRADING_INTERNAL_TOKEN` and `WALLET_INTERNAL_TOKEN` from the repo-root `.env.local`.
+On first start the service creates the `ezymex_ib` database, runs `migrations/`, and seeds the default programme (settings and the Bronze → Diamond levels) for tenant `ezymex`. It reads `IB_*`, `GATEWAY_INTERNAL_TOKEN`, `TRADING_INTERNAL_TOKEN` and `WALLET_INTERNAL_TOKEN` from the repo-root `.env.local`.
 
 ## How it works
 
@@ -57,7 +57,7 @@ On first start the service creates the `kalks_ib` database, runs `migrations/`, 
 | Attribution (D63) | The upline is the gateway's `referred_by` at sign-up, set once. Only an admin reassignment changes it (audited, loop-checked). The campaign (`referral_campaign`) is attributed when it is one of that IB's campaign slugs |
 | Qualifying deal (D54, D59) | Closed deal on a **live** account, not in an excluded group (default `prop`), not reopened, not a price-correction deal, held ≥ `minTradeSeconds` (default 120 s), client has an upline and no self-referral block, symbol maps to a symbol group |
 | Lots | Deal volume in lots; cent accounts × `centLotFactor` (0.01) |
-| Options (O34) | A Kalks FX Options deal (`instrument: "option"` / `option` in the engine feed, or an option series symbol `EURUSD-20261009-1.1650-C`) is paid **per contract**: tier *k* IB earns `contracts × optionsRate(its level) × tiers[k] %`, with the same rebates, splits, caps and filters as CFD deals. `optionsRate` (USD per contract, round turn, paid on the closing deal: close, expiry or knock-out) is set per level in the Back Office and is **0 by default**, so options earn nothing until the broker sets it. CFD per-lot rates are never applied to an option deal. Contracts are not scaled on cent accounts and are **never lots**: option deals have 0 lots, so they never count toward `minMonthlyLots` or lot statistics (they do make a client active) |
+| Options (O34) | A Ezymex FX Options deal (`instrument: "option"` / `option` in the engine feed, or an option series symbol `EURUSD-20261009-1.1650-C`) is paid **per contract**: tier *k* IB earns `contracts × optionsRate(its level) × tiers[k] %`, with the same rebates, splits, caps and filters as CFD deals. `optionsRate` (USD per contract, round turn, paid on the closing deal: close, expiry or knock-out) is set per level in the Back Office and is **0 by default**, so options earn nothing until the broker sets it. CFD per-lot rates are never applied to an option deal. Contracts are not scaled on cent accounts and are **never lots**: option deals have 0 lots, so they never count toward `minMonthlyLots` or lot statistics (they do make a client active) |
 | Symbol groups | Explicit symbol lists first (forex majors), then the asset class from `config/instruments.json` |
 | Tier amounts (D55) | Tier *k* IB: `lots × rate(its level, symbol group) × tiers[k] %`, rounded to cents. Default tiers 100 / 20 / 10 |
 | Splits (D60) | An IB at tier *k ≥ 2* passes `splitPct` of its own tier amount to the IB below it in that chain |
@@ -78,7 +78,7 @@ Money is `rust_decimal` everywhere and `NUMERIC` in the database; every line is 
 
 ## Data model
 
-Database `kalks_ib` (`migrations/0001_ib.sql`). Every row has `tenant` (gateway tenant slug).
+Database `ezymex_ib` (`migrations/0001_ib.sql`). Every row has `tenant` (gateway tenant slug).
 
 | Table | Contents |
 |---|---|
@@ -97,7 +97,7 @@ Database `kalks_ib` (`migrations/0001_ib.sql`). Every row has `tenant` (gateway 
 
 ## API
 
-Every route except `GET /health` needs `X-Kalks-Internal: $IB_INTERNAL_TOKEN`. Tenant: `X-Kalks-Tenant` (default `kalks`). JSON camelCase; money and lots are JSON numbers (programme settings return decimals as strings and accept numbers or strings). Errors: `{"error": {"code", "message", "field"?}}` with 400 `bad_request`, 401 `unauthorized`, 403 `forbidden`, 404 `not_found`, 409 `not_ready` | `exists` | `invalid_state` | `nothing_to_pay` | `no_change` | `limit`, 422 `validation`, 503 `unavailable`.
+Every route except `GET /health` needs `X-Ezymex-Internal: $IB_INTERNAL_TOKEN`. Tenant: `X-Ezymex-Tenant` (default `ezymex`). JSON camelCase; money and lots are JSON numbers (programme settings return decimals as strings and accept numbers or strings). Errors: `{"error": {"code", "message", "field"?}}` with 400 `bad_request`, 401 `unauthorized`, 403 `forbidden`, 404 `not_found`, 409 `not_ready` | `exists` | `invalid_state` | `nothing_to_pay` | `no_change` | `limit`, 422 `validation`, 503 `unavailable`.
 
 **Public / services**
 
@@ -107,7 +107,7 @@ Every route except `GET /health` needs `X-Kalks-Internal: $IB_INTERNAL_TOKEN`. T
 | `POST /v1/ib/events/deposit` | `{userId, amount, at?}` | `{status, firstDeposit}` — confirmed real-money deposit (wallet) |
 | `POST /v1/ib/events/lots` | `{source: pamm\|copy, dealId, userId, symbol, side?, lots, openTime, closeTime, login?, reversed?}` | `{status: recorded\|duplicate, qualified, reason, lines}` |
 
-**Client Area** (`X-Kalks-User-Id: <gateway user id>`, set by the CRM BFF from the session)
+**Client Area** (`X-Ezymex-User-Id: <gateway user id>`, set by the CRM BFF from the session)
 
 | Method & path | Response |
 |---|---|
@@ -121,7 +121,7 @@ Every route except `GET /health` needs `X-Kalks-Internal: $IB_INTERNAL_TOKEN`. T
 | `GET /v1/ib/me/payouts` | payouts (awaiting_approval / processing / paid / rejected), unbatched amount, schedule, next close |
 | `PUT /v1/ib/me/settings` | `{rebatePct, splitPct}` within the programme maximums |
 
-**Back Office** (`X-Kalks-Staff-Id`, `X-Kalks-Staff-Name` (percent-encoded), `X-Kalks-Staff-Role`, set by the admin BFF). Reads: any role. Writes: `platform_owner`, `super_admin`, `admin`, `partner_manager`. Money decisions: `platform_owner`, `super_admin`, `admin`, `finance`. Writes need `reason` (3–500 chars).
+**Back Office** (`X-Ezymex-Staff-Id`, `X-Ezymex-Staff-Name` (percent-encoded), `X-Ezymex-Staff-Role`, set by the admin BFF). Reads: any role. Writes: `platform_owner`, `super_admin`, `admin`, `partner_manager`. Money decisions: `platform_owner`, `super_admin`, `admin`, `finance`. Writes need `reason` (3–500 chars).
 
 | Method & path | |
 |---|---|
@@ -145,10 +145,10 @@ Every route except `GET /health` needs `X-Kalks-Internal: $IB_INTERNAL_TOKEN`. T
 | App / service | Integration |
 |---|---|
 | **Gateway** | `GET /v1/internal/referrals/users?since&after_id&limit` (internal token) in `(changed_at, id)` order. Sign-up (`/v1/auth/register`, `/v1/auth/google/complete`) takes `referral_campaign` next to `referral_code` |
-| **Client Area** | `proxy.ts`: `/r/CODE[/campaign]` and any `?ref=CODE&c=campaign` record a click (`POST /v1/ib/clicks`, 1.5 s budget), set the first-party `kalks_ref` cookie and send signed-out visitors to `/register?ref=…`. The register and Google-complete BFFs add `referral_campaign` from the cookie when the code matches. `/api/partner/*` → `/v1/ib/me/*` |
+| **Client Area** | `proxy.ts`: `/r/CODE[/campaign]` and any `?ref=CODE&c=campaign` record a click (`POST /v1/ib/clicks`, 1.5 s budget), set the first-party `ezymex_ref` cookie and send signed-out visitors to `/register?ref=…`. The register and Google-complete BFFs add `referral_campaign` from the cookie when the code matches. `/api/partner/*` → `/v1/ib/me/*` |
 | **Back Office** | `/api/partners/*` → `/v1/ib/admin/*` with permissions `partners.read / write / approve` (`apps/admin/lib/partners-perms.ts`) |
 | **Wallet** | The IB service calls `POST /v1/wallets/transfers` (`direction: credit`, `kind: ib_payout`, `currency: USDT`). The wallet may call `POST /v1/ib/events/deposit` on confirmed deposits |
-| **Support** | After each payout step, paid payouts not yet announced go to `POST $SUPPORT_URL/v1/notify` as `ib.commission_paid` (link `/partner/payouts`, `dedupeKey ib:payout:<id>:paid`): bell in the Client Area and Kalks Trader, email per the partner's `ib` preference. Retries back off (`payouts.notify_attempts`, `notify_error`) and never hold a payout back |
+| **Support** | After each payout step, paid payouts not yet announced go to `POST $SUPPORT_URL/v1/notify` as `ib.commission_paid` (link `/partner/payouts`, `dedupeKey ib:payout:<id>:paid`): bell in the Client Area and Ezymex Trader, email per the partner's `ib` preference. Retries back off (`payouts.notify_attempts`, `notify_error`) and never hold a payout back |
 | **Copy / PAMM** | Push investor allocations with `POST /v1/ib/events/lots` when the master deal closes (not for trades on the investor's own account, which are read from the engine) |
 | **Website** | Partner links should point to the Client Area (`https://app.<domain>/r/CODE/campaign`), or pass `?ref=&c=` through to it |
 
@@ -157,7 +157,7 @@ Every route except `GET /health` needs `X-Kalks-Internal: $IB_INTERNAL_TOKEN`. T
 | Variable | Default | |
 |---|---|---|
 | `IB_BIND` | `127.0.0.1:8096` | |
-| `IB_DATABASE_URL` | `postgres://postgres@127.0.0.1:5433/kalks_ib` | created and migrated on first start |
+| `IB_DATABASE_URL` | `postgres://postgres@127.0.0.1:5433/ezymex_ib` | created and migrated on first start |
 | `IB_INTERNAL_TOKEN` | – | required when `IB_ENV=production`; also set in the CRM and admin `.env*.local` |
 | `IB_ENV` | `development` | |
 | `GATEWAY_URL` / `GATEWAY_INTERNAL_TOKEN` | `http://127.0.0.1:8080` | referral feed |
@@ -169,7 +169,7 @@ Every route except `GET /health` needs `X-Kalks-Internal: $IB_INTERNAL_TOKEN`. T
 | `IB_WORKERS` | `true` | `false` serves the API only |
 | `IB_LOG_FORMAT` | `json` | `json` or `pretty` |
 
-Production runs `deploy/systemd/kalks-ib.service`. `deploy/deploy.sh` builds it, generates `IB_INTERNAL_TOKEN` once, derives `IB_DATABASE_URL` from `GATEWAY_DATABASE_URL` with the database `kalks_ib`, and writes `IB_URL` / `IB_INTERNAL_TOKEN` into the CRM and admin `.env.production.local`.
+Production runs `deploy/systemd/ezymex-ib.service`. `deploy/deploy.sh` builds it, generates `IB_INTERNAL_TOKEN` once, derives `IB_DATABASE_URL` from `GATEWAY_DATABASE_URL` with the database `ezymex_ib`, and writes `IB_URL` / `IB_INTERNAL_TOKEN` into the CRM and admin `.env.production.local`.
 
 ## Tests
 
@@ -178,7 +178,7 @@ cargo test -p ib
 ```
 
 - **Unit** (`calc`, `model`): option deals per contract and never lots, the options rate (default 0, validation, kept when absent), option series codes, per-lot amounts, three tiers with shares, rebate + split within the IB's own amount, caps, suspended IBs, rounding conservation, tiny deals, anti-abuse filters (demo, excluded group, reopened, price correction, minimum duration), cent lots, level evaluation (both targets, lock, demotion), wash-pair matching, payout periods, backoff, symbol groups, settings validation.
-- **Database** (`tests/programme.rs`, throw-away `kalks_ib_test_*` database, skipped without PostgreSQL): option deals paid per contract only (rate 0 by default = no lines; the Back Office rate card through `PUT levels`, kept when a PUT omits it; tier %, rebate; short / demo / reopened filters; 0 lots, so level upgrades ignore them; a series pushed as PAMM / copy lots; feed parsing), multi-tier lines with rebate and split, the same deal twice (no double pay), a three-tier chain, short / demo / prop / no-referrer deals, PAMM lots, deals that arrive before the client is mirrored; self-referral block and admin clearing, loopback IPs ignored, wash-pair flag; CPA only after a deposit ≥ minimum and a trade, once; batch creation with carry-over, approval, a wallet that fails once (pending transfer, same idempotency key on retry, then paid), clawback after a paid deal is reopened, void of an unpaid one; batch rejection releasing lines; click tracking (unique per visitor, unknown campaign, unknown code).
+- **Database** (`tests/programme.rs`, throw-away `ezymex_ib_test_*` database, skipped without PostgreSQL): option deals paid per contract only (rate 0 by default = no lines; the Back Office rate card through `PUT levels`, kept when a PUT omits it; tier %, rebate; short / demo / reopened filters; 0 lots, so level upgrades ignore them; a series pushed as PAMM / copy lots; feed parsing), multi-tier lines with rebate and split, the same deal twice (no double pay), a three-tier chain, short / demo / prop / no-referrer deals, PAMM lots, deals that arrive before the client is mirrored; self-referral block and admin clearing, loopback IPs ignored, wash-pair flag; CPA only after a deposit ≥ minimum and a trade, once; batch creation with carry-over, approval, a wallet that fails once (pending transfer, same idempotency key on retry, then paid), clawback after a paid deal is reopened, void of an unpaid one; batch rejection releasing lines; click tracking (unique per visitor, unknown campaign, unknown code).
 
 ## Known gaps
 

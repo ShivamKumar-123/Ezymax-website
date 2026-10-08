@@ -1,4 +1,4 @@
-//! Client Area partner routes (`/v1/ib/me/*`). The caller is the signed-in client (X-Kalks-User-Id).
+//! Client Area partner routes (`/v1/ib/me/*`). The caller is the signed-in client (X-Ezymex-User-Id).
 
 use super::{UserCtx, paging};
 use crate::audit::{self, Actor};

@@ -32,7 +32,7 @@ terms:
   - slug: "asset-class"
     term: "Asset class"
     category: "Markets"
-    definition: "A group of instruments that share similar characteristics and respond to similar drivers. On Kalks the main asset classes are forex, metals, stock indices, energies, cryptocurrencies and US stocks, all traded as CFDs. Each class has its own trading hours, volatility and cost profile."
+    definition: "A group of instruments that share similar characteristics and respond to similar drivers. On Ezymex the main asset classes are forex, metals, stock indices, energies, cryptocurrencies and US stocks, all traded as CFDs. Each class has its own trading hours, volatility and cost profile."
     related: ["cfd", "commodity", "stock-index", "cryptocurrency"]
   - slug: "atr"
     term: "Average True Range (ATR)"
@@ -42,7 +42,7 @@ terms:
   - slug: "backtesting"
     term: "Backtesting"
     category: "Technical analysis"
-    definition: "Testing a set of trading rules on historical price data to see how they would have performed. In Kalks, strategies built under Client Area, Developer, Strategies can be tested in Developer, Backtests. Past results never guarantee future performance and must account for spreads, commission and swaps."
+    definition: "Testing a set of trading rules on historical price data to see how they would have performed. In Ezymex, strategies built under Client Area, Developer, Strategies can be tested in Developer, Backtests. Past results never guarantee future performance and must account for spreads, commission and swaps."
     related: ["overfitting", "walk-forward-analysis", "forward-testing", "trading-system"]
   - slug: "balance"
     term: "Balance"
@@ -57,7 +57,7 @@ terms:
   - slug: "barrier-option"
     term: "Barrier option"
     category: "Trading mechanics"
-    definition: "A call or put with an extra price level, the barrier, that cancels the option (knock-out) or activates it (knock-in) if the underlying touches it. Barrier options cost less than standard options because they pay in fewer scenarios. On Kalks the barrier is watched continuously on the mid price until the cut."
+    definition: "A call or put with an extra price level, the barrier, that cancels the option (knock-out) or activates it (knock-in) if the underlying touches it. Barrier options cost less than standard options because they pay in fewer scenarios. On Ezymex the barrier is watched continuously on the mid price until the cut."
     related: ["knock-out", "knock-in", "option"]
   - slug: "base-currency"
     term: "Base currency"
@@ -172,8 +172,8 @@ terms:
   - slug: "client-area"
     term: "Client Area"
     category: "Platform"
-    definition: "The Kalks web portal where clients manage their accounts and funds and access tools outside the trading terminal. Modules include Accounts, Portfolio for trade history and statements, Markets, Economic calendar, News, Developer for strategies and backtests, copy trading and PAMM, Prop challenges and the Academy."
-    related: ["kalks-trader", "account-group", "economic-calendar"]
+    definition: "The Ezymex web portal where clients manage their accounts and funds and access tools outside the trading terminal. Modules include Accounts, Portfolio for trade history and statements, Markets, Economic calendar, News, Developer for strategies and backtests, copy trading and PAMM, Prop challenges and the Academy."
+    related: ["ezymex-trader", "account-group", "economic-calendar"]
   - slug: "close-by"
     term: "Close By"
     category: "Platform"
@@ -192,7 +192,7 @@ terms:
   - slug: "commodity"
     term: "Commodity"
     category: "Markets"
-    definition: "A raw material traded in standardised form, such as gold, silver, crude oil or natural gas. Commodity prices react to supply, demand, the US dollar and geopolitics. On Kalks, metals such as XAUUSD and energies such as USOIL and UKOIL are traded as CFDs."
+    definition: "A raw material traded in standardised form, such as gold, silver, crude oil or natural gas. Commodity prices react to supply, demand, the US dollar and geopolitics. On Ezymex, metals such as XAUUSD and energies such as USOIL and UKOIL are traded as CFDs."
     related: ["precious-metals", "crude-oil", "commodity-currency"]
   - slug: "commodity-currency"
     term: "Commodity currency"
@@ -232,17 +232,17 @@ terms:
   - slug: "contract-size"
     term: "Contract size"
     category: "Trading mechanics"
-    definition: "The amount of the underlying asset represented by one lot. For forex it is 100,000 units of the base currency and for XAUUSD it is 100 troy ounces. Index, oil, crypto and stock sizes vary, so check the contract specification in Kalks Trader for each symbol."
+    definition: "The amount of the underlying asset represented by one lot. For forex it is 100,000 units of the base currency and for XAUUSD it is 100 troy ounces. Index, oil, crypto and stock sizes vary, so check the contract specification in Ezymex Trader for each symbol."
     related: ["lot", "notional-value", "contract-specification"]
   - slug: "contract-specification"
     term: "Contract specification"
     category: "Platform"
-    definition: "The reference sheet for a symbol in Kalks Trader listing contract size, minimum and maximum lot, lot step, digits, margin percentage, swap rates, commission and trading hours. Reading it before trading a new instrument prevents sizing errors, especially on indices, energies and crypto where sizes differ."
+    definition: "The reference sheet for a symbol in Ezymex Trader listing contract size, minimum and maximum lot, lot step, digits, margin percentage, swap rates, commission and trading hours. Reading it before trading a new instrument prevents sizing errors, especially on indices, energies and crypto where sizes differ."
     related: ["contract-size", "swap", "trading-hours"]
   - slug: "copy-trading"
     term: "Copy trading"
     category: "Platform"
-    definition: "A service in which your account automatically replicates the trades of a chosen strategy provider in proportion to your allocation. Kalks offers it under Social in the Client Area. You keep control of your account, but past performance does not guarantee future results and you bear the losses of copied trades."
+    definition: "A service in which your account automatically replicates the trades of a chosen strategy provider in proportion to your allocation. Ezymex offers it under Social in the Client Area. You keep control of your account, but past performance does not guarantee future results and you bear the losses of copied trades."
     related: ["pamm", "drawdown", "risk-per-trade"]
   - slug: "correlation"
     term: "Correlation"
@@ -257,12 +257,12 @@ terms:
   - slug: "crude-oil"
     term: "Crude oil"
     category: "Markets"
-    definition: "Unrefined petroleum, traded mainly as WTI (USOIL on Kalks) and Brent (UKOIL). Prices respond to OPEC+ supply decisions, inventories, global growth and geopolitical risk. Oil moves feed into inflation data and into currencies of exporters such as the Canadian dollar."
+    definition: "Unrefined petroleum, traded mainly as WTI (USOIL on Ezymex) and Brent (UKOIL). Prices respond to OPEC+ supply decisions, inventories, global growth and geopolitical risk. Oil moves feed into inflation data and into currencies of exporters such as the Canadian dollar."
     related: ["commodity", "commodity-currency", "inflation"]
   - slug: "cryptocurrency"
     term: "Cryptocurrency"
     category: "Markets"
-    definition: "A digital asset secured by cryptography and recorded on a blockchain, such as Bitcoin or Ether. On Kalks, BTCUSD, ETHUSD, SOLUSD and XRPUSD trade as CFDs 24/7, with swaps charged every night. Crypto is typically far more volatile than major currency pairs."
+    definition: "A digital asset secured by cryptography and recorded on a blockchain, such as Bitcoin or Ether. On Ezymex, BTCUSD, ETHUSD, SOLUSD and XRPUSD trade as CFDs 24/7, with swaps charged every night. Crypto is typically far more volatile than major currency pairs."
     related: ["asset-class", "volatility", "weekend-gap"]
   - slug: "currency-pair"
     term: "Currency pair"
@@ -292,8 +292,8 @@ terms:
   - slug: "demo-account"
     term: "Demo account"
     category: "Platform"
-    definition: "A free practice account funded with virtual money that uses live prices in Kalks Trader. It is the right place to learn the platform, test order types and trial a strategy. Demo fills can differ from live ones, and trading without real money feels psychologically different."
-    related: ["live-account", "kalks-trader", "cent-account"]
+    definition: "A free practice account funded with virtual money that uses live prices in Ezymex Trader. It is the right place to learn the platform, test order types and trial a strategy. Demo fills can differ from live ones, and trading without real money feels psychologically different."
+    related: ["live-account", "ezymex-trader", "cent-account"]
   - slug: "descending-triangle"
     term: "Descending triangle"
     category: "Technical analysis"
@@ -367,7 +367,7 @@ terms:
   - slug: "economic-calendar"
     term: "Economic calendar"
     category: "Fundamental analysis"
-    definition: "A schedule of upcoming data releases, central-bank decisions and events, showing time, impact level, consensus and previous values. Kalks provides one in the Client Area. Checking it before trading helps you avoid being caught by high-impact news with a position you did not plan for."
+    definition: "A schedule of upcoming data releases, central-bank decisions and events, showing time, impact level, consensus and previous values. Ezymex provides one in the Client Area. Checking it before trading helps you avoid being caught by high-impact news with a position you did not plan for."
     related: ["actual-consensus-previous", "nfp", "cpi"]
   - slug: "effective-leverage"
     term: "Effective leverage"
@@ -472,7 +472,7 @@ terms:
   - slug: "good-till-cancelled"
     term: "Good till cancelled (GTC)"
     category: "Trading mechanics"
-    definition: "An expiry setting for pending orders that keeps the order active until it is filled or you cancel it. In Kalks Trader you can instead choose Today or a specific date. Forgotten GTC orders can trigger unexpectedly weeks later, so review them regularly."
+    definition: "An expiry setting for pending orders that keeps the order active until it is filled or you cancel it. In Ezymex Trader you can instead choose Today or a specific date. Forgotten GTC orders can trigger unexpectedly weeks later, so review them regularly."
     related: ["order-expiry", "pending-order", "limit-order"]
   - slug: "government-debt"
     term: "Government debt"
@@ -559,10 +559,10 @@ terms:
     category: "Trading mechanics"
     definition: "The part of an option's premium that it would pay if it expired now: spot minus strike for a call, strike minus spot for a put, and never less than zero. With EURUSD at 1.1650, a 1.1600 call has 0.0050 of intrinsic value."
     related: ["time-value", "option-premium", "in-the-money"]
-  - slug: "kalks-trader"
-    term: "Kalks Trader"
+  - slug: "ezymex-trader"
+    term: "Ezymex Trader"
     category: "Platform"
-    definition: "The Kalks web trading terminal where you view charts and quotes, place and manage orders and monitor positions, margin and account history. It supports market and pending orders, stop loss, take profit, trailing stops, OCO pairs, partial close and Close By on hedging accounts."
+    definition: "The Ezymex web trading terminal where you view charts and quotes, place and manage orders and monitor positions, margin and account history. It supports market and pending orders, stop loss, take profit, trailing stops, OCO pairs, partial close and Close By on hedging accounts."
     related: ["client-area", "demo-account", "contract-specification"]
   - slug: "knock-in"
     term: "Knock-in"
@@ -582,7 +582,7 @@ terms:
   - slug: "leverage-change"
     term: "Leverage change rule"
     category: "Platform"
-    definition: "On Kalks, leverage options typically range from 1:50 to 1:1000 depending on account group and symbol, and some symbols have lower caps. Account leverage can only be changed when there are no open positions. Choosing a lower setting reduces the chance of an early stop-out."
+    definition: "On Ezymex, leverage options typically range from 1:50 to 1:1000 depending on account group and symbol, and some symbols have lower caps. Account leverage can only be changed when there are no open positions. Choosing a lower setting reduces the chance of an early stop-out."
     related: ["leverage", "account-group", "margin"]
   - slug: "limit-order"
     term: "Limit order"
@@ -622,7 +622,7 @@ terms:
   - slug: "lot"
     term: "Lot"
     category: "Trading mechanics"
-    definition: "The unit used to express trade size in the terminal. One lot equals one contract size, so 1.00 lot of EURUSD is 100,000 euros and 1.00 lot of XAUUSD is 100 ounces. On Kalks the minimum trade is 0.01 lot."
+    definition: "The unit used to express trade size in the terminal. One lot equals one contract size, so 1.00 lot of EURUSD is 100,000 euros and 1.00 lot of XAUUSD is 100 ounces. On Ezymex the minimum trade is 0.01 lot."
     related: ["standard-lot", "contract-size", "mini-lot"]
   - slug: "lower-highs-lower-lows"
     term: "Lower highs and lower lows"
@@ -642,7 +642,7 @@ terms:
   - slug: "margin"
     term: "Margin"
     category: "Trading mechanics"
-    definition: "The collateral required to open and hold a leveraged position. On Kalks it is notional value divided by leverage, adjusted by any symbol margin percentage. One lot of EURUSD at 1.0850 is $108,500 notional, so at 1:100 the margin required is $1,085."
+    definition: "The collateral required to open and hold a leveraged position. On Ezymex it is notional value divided by leverage, adjusted by any symbol margin percentage. One lot of EURUSD at 1.0850 is $108,500 notional, so at 1:100 the margin required is $1,085."
     related: ["leverage", "used-margin", "margin-level"]
   - slug: "margin-call"
     term: "Margin call"
@@ -687,7 +687,7 @@ terms:
   - slug: "micro-lot"
     term: "Micro lot"
     category: "Trading mechanics"
-    definition: "A trade size of 0.01 lot, equal to 1,000 units of base currency in forex. On EURUSD a micro lot is worth about $0.10 per pip. It is the smallest size on Kalks and suits careful practice with real money."
+    definition: "A trade size of 0.01 lot, equal to 1,000 units of base currency in forex. On EURUSD a micro lot is worth about $0.10 per pip. It is the smallest size on Ezymex and suits careful practice with real money."
     related: ["mini-lot", "standard-lot", "pip-value"]
   - slug: "mini-lot"
     term: "Mini lot"
@@ -737,7 +737,7 @@ terms:
   - slug: "ny-close"
     term: "New York close"
     category: "Platform"
-    definition: "17:00 New York time, the conventional end of the forex trading day, equal to 00:00 Kalks server time. Daily candles open and close here, giving five daily candles per week for FX, and swaps are charged at this moment."
+    definition: "17:00 New York time, the conventional end of the forex trading day, equal to 00:00 Ezymex server time. Daily candles open and close here, giving five daily candles per week for FX, and swaps are charged at this moment."
     related: ["server-time", "swap", "timeframe"]
   - slug: "news-trading"
     term: "News trading"
@@ -757,7 +757,7 @@ terms:
   - slug: "ohlc"
     term: "OHLC"
     category: "Technical analysis"
-    definition: "Short for open, high, low and close, the four prices that summarise a period of trading. Candlestick and bar charts are drawn from OHLC data. On Kalks, daily OHLC values run from one New York close to the next."
+    definition: "Short for open, high, low and close, the four prices that summarise a period of trading. Candlestick and bar charts are drawn from OHLC data. On Ezymex, daily OHLC values run from one New York close to the next."
     related: ["candlestick", "bar-chart", "timeframe"]
   - slug: "oco"
     term: "One-cancels-other (OCO)"
@@ -767,22 +767,22 @@ terms:
   - slug: "option"
     term: "Option"
     category: "Trading mechanics"
-    definition: "A contract that gives its buyer the right, but not the obligation, to a payoff based on a fixed strike price at expiry, in exchange for a premium paid to the seller. Kalks FX Options are European style and cash-settled in USD on FX pairs, gold, silver and oil. Buyers can lose at most the premium; sellers can lose much more."
+    definition: "A contract that gives its buyer the right, but not the obligation, to a payoff based on a fixed strike price at expiry, in exchange for a premium paid to the seller. Ezymex FX Options are European style and cash-settled in USD on FX pairs, gold, silver and oil. Buyers can lose at most the premium; sellers can lose much more."
     related: ["call-option", "put-option", "option-premium", "strike-price"]
   - slug: "option-expiry"
     term: "Option expiry and cut"
     category: "Trading mechanics"
-    definition: "The date and time at which an option is settled. Kalks lists daily, weekly (Friday) and monthly (last Friday) expiries, moved to the previous business day for holidays, with a default cut of 10:00 New York time (17:00 server time). New positions cannot be opened in the last 15 minutes before the cut."
+    definition: "The date and time at which an option is settled. Ezymex lists daily, weekly (Friday) and monthly (last Friday) expiries, moved to the previous business day for holidays, with a default cut of 10:00 New York time (17:00 server time). New positions cannot be opened in the last 15 minutes before the cut."
     related: ["twap", "option", "server-time"]
   - slug: "option-premium"
     term: "Option premium"
     category: "Trading mechanics"
-    definition: "The price of an option, paid in full by the buyer to the seller when the trade is opened. On Kalks it is shown in USD per contract alongside pips or points, with a bid and an ask. The premium is made up of intrinsic value plus time value."
+    definition: "The price of an option, paid in full by the buyer to the seller when the trade is opened. On Ezymex it is shown in USD per contract alongside pips or points, with a bid and an ask. The premium is made up of intrinsic value plus time value."
     related: ["intrinsic-value", "time-value", "implied-volatility"]
   - slug: "order-expiry"
     term: "Order expiry"
     category: "Trading mechanics"
-    definition: "The setting that determines how long a pending order stays active. Kalks Trader offers GTC, Today (cancelled at the end of the trading day) and a specified date. Using expiry prevents stale orders from triggering after the reasons behind them have changed."
+    definition: "The setting that determines how long a pending order stays active. Ezymex Trader offers GTC, Today (cancelled at the end of the trading day) and a specified date. Using expiry prevents stale orders from triggering after the reasons behind them have changed."
     related: ["good-till-cancelled", "pending-order", "limit-order"]
   - slug: "outcome-bias"
     term: "Outcome bias"
@@ -817,7 +817,7 @@ terms:
   - slug: "pamm"
     term: "PAMM"
     category: "Platform"
-    definition: "Percentage Allocation Management Module: a structure where investors allocate funds to a manager's pooled account and profits and losses are shared in proportion to each allocation. Available under Social in the Kalks Client Area. Investors carry the manager's losses and should review drawdown history carefully."
+    definition: "Percentage Allocation Management Module: a structure where investors allocate funds to a manager's pooled account and profits and losses are shared in proportion to each allocation. Available under Social in the Ezymex Client Area. Investors carry the manager's losses and should review drawdown history carefully."
     related: ["copy-trading", "drawdown", "maximum-drawdown"]
   - slug: "partial-close"
     term: "Partial close"
@@ -887,7 +887,7 @@ terms:
   - slug: "precious-metals"
     term: "Precious metals"
     category: "Markets"
-    definition: "Rare metals such as gold and silver, traded on Kalks as XAUUSD and XAGUSD. Gold is sensitive to real interest rates, the dollar and safe-haven demand. One lot of XAUUSD is 100 ounces, so a $1 move is worth $100 per lot."
+    definition: "Rare metals such as gold and silver, traded on Ezymex as XAUUSD and XAGUSD. Gold is sensitive to real interest rates, the dollar and safe-haven demand. One lot of XAUUSD is 100 ounces, so a $1 move is worth $100 per lot."
     related: ["commodity", "safe-haven", "real-yield"]
   - slug: "process-over-outcome"
     term: "Process over outcome"
@@ -1057,7 +1057,7 @@ terms:
   - slug: "server-time"
     term: "Server time"
     category: "Platform"
-    definition: "The clock used by the Kalks trading server: GMT+2 in winter and GMT+3 during US daylight saving time, so that 00:00 server time always equals 17:00 New York. Candle times, trading hours, swaps and trade history timestamps all use it."
+    definition: "The clock used by the Ezymex trading server: GMT+2 in winter and GMT+3 during US daylight saving time, so that 00:00 server time always equals 17:00 New York. Candle times, trading hours, swaps and trade history timestamps all use it."
     related: ["ny-close", "swap", "trading-hours"]
   - slug: "session-overlap"
     term: "Session overlap"
@@ -1117,7 +1117,7 @@ terms:
   - slug: "stock-cfd"
     term: "Stock CFD"
     category: "Markets"
-    definition: "A CFD on shares of a single listed company, such as AAPL, TSLA or NVDA. It lets you trade long or short with leverage without owning the shares or voting rights. On Kalks, US stock CFDs trade from 09:30 to 16:00 New York time."
+    definition: "A CFD on shares of a single listed company, such as AAPL, TSLA or NVDA. It lets you trade long or short with leverage without owning the shares or voting rights. On Ezymex, US stock CFDs trade from 09:30 to 16:00 New York time."
     related: ["cfd", "earnings-season", "dividend-adjustment"]
   - slug: "stock-index"
     term: "Stock index"
@@ -1142,17 +1142,17 @@ terms:
   - slug: "stop-out"
     term: "Stop-out"
     category: "Platform"
-    definition: "The automatic closing of positions by the broker when margin level falls to the stop-out threshold. On Kalks, the largest losing position is closed first, and the process repeats until margin level recovers above the threshold."
+    definition: "The automatic closing of positions by the broker when margin level falls to the stop-out threshold. On Ezymex, the largest losing position is closed first, and the process repeats until margin level recovers above the threshold."
     related: ["stop-out-level", "margin-level", "margin-call"]
   - slug: "stop-out-level"
     term: "Stop-out level"
     category: "Platform"
-    definition: "The margin level at which forced closing begins, typically 50% on Kalks depending on account group. With used margin of $1,000, stop-out begins when equity falls to $500. It is a last-resort safety mechanism, not a risk plan."
+    definition: "The margin level at which forced closing begins, typically 50% on Ezymex depending on account group. With used margin of $1,000, stop-out begins when equity falls to $500. It is a last-resort safety mechanism, not a risk plan."
     related: ["stop-out", "margin-call", "account-group"]
   - slug: "strategy-builder"
     term: "Strategy builder"
     category: "Platform"
-    definition: "A Kalks Client Area tool, under Developer, Strategies, for defining trading rules such as entry conditions, exits and filters without writing code. Strategies can then be tested in Developer, Backtests. Results are hypothetical and exclude real-world emotions."
+    definition: "A Ezymex Client Area tool, under Developer, Strategies, for defining trading rules such as entry conditions, exits and filters without writing code. Strategies can then be tested in Developer, Backtests. Results are hypothetical and exclude real-world emotions."
     related: ["backtesting", "trading-system", "client-area"]
   - slug: "strike-price"
     term: "Strike price"
@@ -1242,7 +1242,7 @@ terms:
   - slug: "trading-hours"
     term: "Trading hours"
     category: "Platform"
-    definition: "The times a symbol can be traded, shown in server time in the contract specification. On Kalks, crypto trades 24/7, forex, metals, indices and energies close at the weekend, and US stock CFDs trade 09:30 to 16:00 New York time."
+    definition: "The times a symbol can be traded, shown in server time in the contract specification. On Ezymex, crypto trades 24/7, forex, metals, indices and energies close at the weekend, and US stock CFDs trade 09:30 to 16:00 New York time."
     related: ["server-time", "weekend-gap", "trading-session"]
   - slug: "trading-journal"
     term: "Trading journal"
@@ -1272,7 +1272,7 @@ terms:
   - slug: "trailing-stop"
     term: "Trailing stop"
     category: "Trading mechanics"
-    definition: "A stop loss that automatically follows price as a trade moves in your favour by a set distance, but never moves back. On Kalks it is managed server-side. A 20-pip trailing stop on a long from 1.0850 would sit at 1.0860 once the bid reaches 1.0880."
+    definition: "A stop loss that automatically follows price as a trade moves in your favour by a set distance, but never moves back. On Ezymex it is managed server-side. A 20-pip trailing stop on a long from 1.0850 would sit at 1.0860 once the bid reaches 1.0880."
     related: ["stop-loss", "break-even-stop", "trend"]
   - slug: "trend"
     term: "Trend"
@@ -1292,12 +1292,12 @@ terms:
   - slug: "triple-swap"
     term: "Triple swap"
     category: "Trading mechanics"
-    definition: "The three-day swap charge applied once a week to cover the weekend. On Kalks, forex and metals incur triple swap on Wednesday night, while indices, energies and stocks incur it on Friday night. Crypto is charged every night."
+    definition: "The three-day swap charge applied once a week to cover the weekend. On Ezymex, forex and metals incur triple swap on Wednesday night, while indices, energies and stocks incur it on Friday night. Crypto is charged every night."
     related: ["swap", "rollover", "server-time"]
   - slug: "twap"
     term: "TWAP (time-weighted average price)"
     category: "Trading mechanics"
-    definition: "The average of prices sampled evenly over a period of time. Kalks options settle at the TWAP of the mid price over the 30 minutes before the cut, which makes the settlement price much harder to distort with a single spike."
+    definition: "The average of prices sampled evenly over a period of time. Ezymex options settle at the TWAP of the mid price over the 30 minutes before the cut, which makes the settlement price much harder to distort with a single spike."
     related: ["option-expiry", "vwap"]
   - slug: "underlying-asset"
     term: "Underlying asset"

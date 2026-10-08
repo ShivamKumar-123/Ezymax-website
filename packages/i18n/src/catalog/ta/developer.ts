@@ -233,8 +233,8 @@ const developer: NsMessages<"developer"> = {
   "assetClass.crypto": "கிரிப்டோ",
   "assetClass.stocks": "பங்குகள்",
 
-  // Code editor (Kalks strategy language)
-  "code.language": "Kalks உத்தி மொழி",
+  // Code editor (Ezymex strategy language)
+  "code.language": "Ezymex உத்தி மொழி",
   "code.checking": "சரிபார்க்கிறது…",
   "code.errors": { one: "{count} பிழை", other: "{count} பிழைகள்" },
   "code.compiles": "கம்பைல் ஆகிறது",
@@ -281,7 +281,7 @@ const developer: NsMessages<"developer"> = {
   // Kill switch
   "kill.title": "கில் ஸ்விட்ச்",
   "kill.subtitle": "உங்கள் கணக்குகளில் உள்ள ஒவ்வொரு உத்தி, webhook மற்றும் API ஆர்டரையும் நிறுத்துகிறது",
-  "kill.globalPaused": "Kalks அபாய நிர்வாகத்தால் தானியங்கி டிரேடிங் தளம் முழுவதும் இடைநிறுத்தப்பட்டுள்ளது.",
+  "kill.globalPaused": "Ezymex அபாய நிர்வாகத்தால் தானியங்கி டிரேடிங் தளம் முழுவதும் இடைநிறுத்தப்பட்டுள்ளது.",
   "kill.onSince": "{at} முதல் இயக்கத்தில்",
   "kill.release": "கில் ஸ்விட்சை விடுவி",
   "kill.stopAll": "அனைத்து ஆட்டோமேஷனையும் நிறுத்து",
@@ -363,7 +363,7 @@ const developer: NsMessages<"developer"> = {
   "docs.bearer": "Bearer (எளிமையானது)",
   "docs.hmac": "HMAC கையொப்பம் (பாட்களுக்குப் பரிந்துரைக்கப்படுகிறது)",
   // <code> wraps header names and paths; keep them untranslated
-  "docs.signature": "கையொப்பம் = hex(HMAC-SHA256(secret, timestamp + METHOD + path with query + body)), <code>X-Kalks-Key</code>, <code>X-Kalks-Timestamp</code> (unix ms, ±30 s) மற்றும் <code>X-Kalks-Signature</code> உடன் அனுப்பப்படும். பாத் <code>/public/v1/…</code> ஆகக் கையொப்பமிடப்படும். ஒவ்வொரு கையொப்பமும் ஒருமுறை மட்டுமே ஏற்கப்படும்.",
+  "docs.signature": "கையொப்பம் = hex(HMAC-SHA256(secret, timestamp + METHOD + path with query + body)), <code>X-Ezymex-Key</code>, <code>X-Ezymex-Timestamp</code> (unix ms, ±30 s) மற்றும் <code>X-Ezymex-Signature</code> உடன் அனுப்பப்படும். பாத் <code>/public/v1/…</code> ஆகக் கையொப்பமிடப்படும். ஒவ்வொரு கையொப்பமும் ஒருமுறை மட்டுமே ஏற்கப்படும்.",
   // "api", clientOrderId and duplicate are API values; keep them
   "docs.endpointsSub": "உள்ளேயும் வெளியேயும் JSON. ஒவ்வொரு ஆர்டரும் source “api” கொண்டிருக்கும்; மீண்டும் வரும் clientOrderId, status duplicate ஐத் திருப்பும்.",
   "docs.errorsSub": "பிழைகள் {shape} வடிவில் இருக்கும்",
@@ -473,9 +473,9 @@ const developer: NsMessages<"developer"> = {
 
   // Strategy marketplace
   "market.title": "உத்தி மார்க்கெட்பிளேஸ்",
-  "market.subtitle": "Kalks கணக்குகளிலிருந்து சரிபார்க்கப்பட்ட டிராக் ரெக்கார்டு கொண்ட உத்திகள். ஒன்றை உங்கள் கணக்கில் நகலெடுக்கவும், அல்லது உங்களுடையதை வெளியிட்டு சந்தாக்களிலிருந்து சம்பாதிக்கவும்.",
-  "market.houseChip": "ஹவுஸ் உத்தி · Kalks ஆல் இயக்கப்படுகிறது",
-  "market.houseNote": "Kalks ஆல் இயக்கப்படும் ஹவுஸ் உத்தி: இந்த உத்தியை இயக்கும் புரோக்கருக்குச் சொந்தமான லைவ் கணக்கு. டிராக் ரெக்கார்டு, அது தொடங்கியதிலிருந்து அதன் சொந்த லைவ் டிரேடுகள் மட்டுமே; எதுவும் சிமுலேட் செய்யப்படவோ பின்னோக்கி நிரப்பப்படவோ இல்லை.",
+  "market.subtitle": "Ezymex கணக்குகளிலிருந்து சரிபார்க்கப்பட்ட டிராக் ரெக்கார்டு கொண்ட உத்திகள். ஒன்றை உங்கள் கணக்கில் நகலெடுக்கவும், அல்லது உங்களுடையதை வெளியிட்டு சந்தாக்களிலிருந்து சம்பாதிக்கவும்.",
+  "market.houseChip": "ஹவுஸ் உத்தி · Ezymex ஆல் இயக்கப்படுகிறது",
+  "market.houseNote": "Ezymex ஆல் இயக்கப்படும் ஹவுஸ் உத்தி: இந்த உத்தியை இயக்கும் புரோக்கருக்குச் சொந்தமான லைவ் கணக்கு. டிராக் ரெக்கார்டு, அது தொடங்கியதிலிருந்து அதன் சொந்த லைவ் டிரேடுகள் மட்டுமே; எதுவும் சிமுலேட் செய்யப்படவோ பின்னோக்கி நிரப்பப்படவோ இல்லை.",
   // Date range, e.g. "2025-01-01 to 2025-12-31"
   "market.range": "{from} முதல் {to} வரை",
   "market.backtestSimulated": "பேக்டெஸ்ட் · சிமுலேட் செய்யப்பட்டது",
@@ -502,7 +502,7 @@ const developer: NsMessages<"developer"> = {
   "market.subscriptionStatus": "சந்தா {status}",
   "market.reviewSaved": "மதிப்புரை சேமிக்கப்பட்டது",
   "market.reviewFailed": "மதிப்புரையைச் சேமிக்க முடியவில்லை",
-  "market.trackNote": "{since} முதல் Kalks இல் ஆசிரியரின் சொந்த டிப்ளாய்மென்ட்டிலிருந்து டிராக் ரெக்கார்டு: {days} நாட்கள், நிகர {net}. டிரேடிங் எஞ்சினில் உள்ள மூடிய டீல்களிலிருந்து கணக்கிடப்பட்டது, ஆசிரியரால் உள்ளிடப்படவில்லை.",
+  "market.trackNote": "{since} முதல் Ezymex இல் ஆசிரியரின் சொந்த டிப்ளாய்மென்ட்டிலிருந்து டிராக் ரெக்கார்டு: {days} நாட்கள், நிகர {net}. டிரேடிங் எஞ்சினில் உள்ள மூடிய டீல்களிலிருந்து கணக்கிடப்பட்டது, ஆசிரியரால் உள்ளிடப்படவில்லை.",
   "market.riskSettings": "அபாய அமைப்புகள்",
   "market.riskLine": "அளவு {size} · ஸ்டாப் {stop} · இலக்கு {target}",
   "market.riskPct": "{pct}% அபாயம்",
@@ -520,7 +520,7 @@ const developer: NsMessages<"developer"> = {
   "market.cloneRules": "விதிகளை நகலெடு",
   "market.subscribePaid": "சந்தா செய் · {price} USDT / மாதம்",
   "market.subscribeFree": "இலவசமாகச் சந்தா செய்",
-  "market.paidNote": "உங்கள் Kalks வாலட்டிலிருந்து (USDT) செலுத்தப்படும். ஒவ்வொரு 30 நாட்களுக்கும் புதுப்பிக்கப்படும்; எப்போது வேண்டுமானாலும் ரத்துசெய்யலாம்.",
+  "market.paidNote": "உங்கள் Ezymex வாலட்டிலிருந்து (USDT) செலுத்தப்படும். ஒவ்வொரு 30 நாட்களுக்கும் புதுப்பிக்கப்படும்; எப்போது வேண்டுமானாலும் ரத்துசெய்யலாம்.",
   "market.reviews": "மதிப்புரைகள் ({n})",
   "market.stars": { one: "{count} நட்சத்திரம்", other: "{count} நட்சத்திரங்கள்" },
   "market.reviewPlaceholder": "இது உங்களுக்கு எப்படி டிரேட் செய்தது?",
@@ -552,7 +552,7 @@ const developer: NsMessages<"developer"> = {
   "market.popular": "பிரபலமானவை",
   "market.emptyTitle": "இன்னும் உத்திகள் பட்டியலிடப்படவில்லை",
   "market.emptyText": "முதல் நபராக இருங்கள்: டெமோ கணக்கில் ஒரு உத்தியை டிப்ளாய் செய்து, பின்னர் அதன் சரிபார்க்கப்பட்ட டிராக் ரெக்கார்டுடன் வெளியிடவும்.",
-  "market.disclaimer": "கடந்தகால செயல்திறன் எதிர்கால முடிவுகளுக்கு உத்தரவாதம் அளிக்காது. டிராக் ரெக்கார்டுகள் Kalks இல் உள்ள லைவ் அல்லது டெமோ கணக்குகளிலிருந்து வருகின்றன, அதற்கேற்ப குறிக்கப்பட்டுள்ளன. கட்டண சந்தாக்களுக்கான தளக் கட்டணம்: {pct}%.",
+  "market.disclaimer": "கடந்தகால செயல்திறன் எதிர்கால முடிவுகளுக்கு உத்தரவாதம் அளிக்காது. டிராக் ரெக்கார்டுகள் Ezymex இல் உள்ள லைவ் அல்லது டெமோ கணக்குகளிலிருந்து வருகின்றன, அதற்கேற்ப குறிக்கப்பட்டுள்ளன. கட்டண சந்தாக்களுக்கான தளக் கட்டணம்: {pct}%.",
   "market.mode": "முறை",
   "market.renews": "புதுப்பிப்பு",
   "market.copyOn": "#{login} இல் நகல்",

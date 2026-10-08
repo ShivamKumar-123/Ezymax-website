@@ -1,11 +1,11 @@
 // Live stream check of the catalogue: subscribes to every forex / metals / energies / indices / crypto catalogue
-// symbol on a Kalks market-data stream (a client like any browser: no provider key) for N seconds and writes
+// symbol on a Ezymex market-data stream (a client like any browser: no provider key) for N seconds and writes
 // config/provider/stream-check.json: live ticks, median raw spread and last mid per symbol.
 //
 // scripts/gen-catalogue.mjs reads it: the typical spread (base_spread) comes from the measured spread, and a symbol
 // that did not tick, or ticked rarely with a very wide spread, is kept off live trading (with the reason in the row).
 //
-// USAGE  node scripts/stream-check.mjs [seconds=100] [stream=wss://api.kalkstrade.com/v1/stream]
+// USAGE  node scripts/stream-check.mjs [seconds=100] [stream=wss://api.ezymex.com/v1/stream]
 // Run it while the markets are open (a weekday, US session); Asian cash indices are closed then (their exchange
 // sessions handle that).
 
@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const secs = Number(process.argv[2] || 100);
-const url = process.argv[3] || "wss://api.kalkstrade.com/v1/stream";
+const url = process.argv[3] || "wss://api.ezymex.com/v1/stream";
 const CLASSES = ["forex", "metals", "energies", "indices", "crypto"];
 const cat = JSON.parse(readFileSync(join(ROOT, "config", "instruments.json"), "utf8")).filter((r) => r.tier === "catalogue" && CLASSES.includes(r.asset_class));
 const stats = Object.fromEntries(cat.map((r) => [r.symbol, { live: 0, spreads: [], mid: null }]));

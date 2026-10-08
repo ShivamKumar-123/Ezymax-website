@@ -5,7 +5,7 @@
 import * as React from "react";
 import { AlertTriangle, CalendarClock, CheckCircle2, Download, FileSpreadsheet, FileText, History, Mail, Pencil, Play, Plus, ShieldCheck, Trash2, Users, XCircle } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, DataTable, Dialog, Field, IconButton, Input, KpiCard, PageHeader, Reveal, Segmented, Toggle, cn, formatDateTime, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, Dialog, Field, IconButton, Input, KpiCard, PageHeader, Reveal, Segmented, Toggle, cn, formatDateTime, type Column } from "@ezymex/ui";
 import { useCan } from "@/components/staff-session";
 import { ReportFailed, ReportLoading, download, reportsApi, useReport } from "./common";
 import { useConfirm } from "@/components/confirm";
@@ -258,7 +258,7 @@ function ScheduleForm({ draft, reports, onClose, onSaved }: { draft: Draft; repo
           </Field>
         </div>
         <Field label="Recipients" hint="Up to 20 email addresses, separated by commas" error={bad.length ? `Not an email address: ${bad.join(", ")}` : undefined}>
-          <textarea className="min-h-[80px] w-full rounded-[14px] border border-line bg-surface-2 px-3.5 py-2.5 text-sm text-fg outline-none transition-colors focus:border-ember/50" value={recipients} onChange={(e) => setRecipients(e.target.value)} placeholder="finance@kalkstrade.com, ceo@kalkstrade.com" />
+          <textarea className="min-h-[80px] w-full rounded-[14px] border border-line bg-surface-2 px-3.5 py-2.5 text-sm text-fg outline-none transition-colors focus:border-ember/50" value={recipients} onChange={(e) => setRecipients(e.target.value)} placeholder="finance@ezymex.com, ceo@ezymex.com" />
         </Field>
         <div className="flex items-center justify-between rounded-[14px] border border-line bg-surface-2 px-4 py-3 text-[13px] text-fg-2">
           Enabled

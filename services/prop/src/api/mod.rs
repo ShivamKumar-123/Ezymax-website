@@ -1,8 +1,8 @@
-//! HTTP API (axum). Every route except `/health` needs `X-Kalks-Internal: $PROP_INTERNAL_TOKEN`; only the
-//! Client Area / Back Office BFFs hold it. Tenant: `X-Kalks-Tenant` (default `kalks`).
-//! - Client routes: the BFF forwards the signed-in gateway user in `X-Kalks-User-Id` (+ `X-Kalks-User-Name`,
-//!   `X-Kalks-User-Kyc`).
-//! - Staff routes (`/v1/admin/*`): `X-Kalks-Staff-Id`, `X-Kalks-Staff-Name` (percent-encoded), `X-Kalks-Staff-Role`
+//! HTTP API (axum). Every route except `/health` needs `X-Ezymex-Internal: $PROP_INTERNAL_TOKEN`; only the
+//! Client Area / Back Office BFFs hold it. Tenant: `X-Ezymex-Tenant` (default `ezymex`).
+//! - Client routes: the BFF forwards the signed-in gateway user in `X-Ezymex-User-Id` (+ `X-Ezymex-User-Name`,
+//!   `X-Ezymex-User-Kyc`).
+//! - Staff routes (`/v1/admin/*`): `X-Ezymex-Staff-Id`, `X-Ezymex-Staff-Name` (percent-encoded), `X-Ezymex-Staff-Role`
 //!   from the verified staff session; the role is checked against [`PERMS`].
 
 pub mod admin;
@@ -75,7 +75,7 @@ async fn health(State(app): State<App>) -> impl IntoResponse {
 async fn internal_only(State(app): State<App>, req: Request, next: Next) -> Response {
     let want = app.cfg.internal_token.as_bytes();
     if !want.is_empty() {
-        let got = req.headers().get("x-kalks-internal").map(|v| v.as_bytes()).unwrap_or_default();
+        let got = req.headers().get("x-ezymex-internal").map(|v| v.as_bytes()).unwrap_or_default();
         if got.len() != want.len() || !bool::from(got.ct_eq(want)) {
             return ApiError::Forbidden("Missing or invalid internal token".into()).into_response();
         }
@@ -106,13 +106,13 @@ fn percent_decode(s: &str) -> String {
     String::from_utf8_lossy(&out).into_owned()
 }
 
-/// Tenant slug from `X-Kalks-Tenant`.
+/// Tenant slug from `X-Ezymex-Tenant`.
 pub struct Tenant(pub String);
 
 impl<S: Send + Sync> FromRequestParts<S> for Tenant {
     type Rejection = ApiError;
     async fn from_request_parts(parts: &mut Parts, _: &S) -> Result<Self, Self::Rejection> {
-        let t = header(parts, "x-kalks-tenant").unwrap_or_else(|| "kalks".into()).to_lowercase();
+        let t = header(parts, "x-ezymex-tenant").unwrap_or_else(|| "ezymex".into()).to_lowercase();
         if t.len() > 40 || !t.chars().all(|c| c.is_ascii_alphanumeric() || c == '-') {
             return Err(ApiError::BadRequest("Invalid tenant".into()));
         }
@@ -132,9 +132,9 @@ impl<S: Send + Sync> FromRequestParts<S> for User {
     type Rejection = ApiError;
     async fn from_request_parts(parts: &mut Parts, s: &S) -> Result<Self, Self::Rejection> {
         let Tenant(tenant) = Tenant::from_request_parts(parts, s).await?;
-        let id = header(parts, "x-kalks-user-id").and_then(|v| v.parse::<i64>().ok()).filter(|v| *v > 0).ok_or(ApiError::Unauthorized)?;
-        let name = header(parts, "x-kalks-user-name").map(|n| percent_decode(&n)).unwrap_or_default().chars().take(120).collect();
-        let kyc = header(parts, "x-kalks-user-kyc").filter(|k| k.len() <= 20);
+        let id = header(parts, "x-ezymex-user-id").and_then(|v| v.parse::<i64>().ok()).filter(|v| *v > 0).ok_or(ApiError::Unauthorized)?;
+        let name = header(parts, "x-ezymex-user-name").map(|n| percent_decode(&n)).unwrap_or_default().chars().take(120).collect();
+        let kyc = header(parts, "x-ezymex-user-kyc").filter(|k| k.len() <= 20);
         Ok(User { tenant, id, name, kyc })
     }
 }
@@ -168,12 +168,12 @@ impl<S: Send + Sync> FromRequestParts<S> for Staff {
     type Rejection = ApiError;
     async fn from_request_parts(parts: &mut Parts, s: &S) -> Result<Self, Self::Rejection> {
         let Tenant(tenant) = Tenant::from_request_parts(parts, s).await?;
-        let id = header(parts, "x-kalks-staff-id").ok_or(ApiError::Unauthorized)?;
-        let role = header(parts, "x-kalks-staff-role").ok_or(ApiError::Unauthorized)?;
+        let id = header(parts, "x-ezymex-staff-id").ok_or(ApiError::Unauthorized)?;
+        let role = header(parts, "x-ezymex-staff-role").ok_or(ApiError::Unauthorized)?;
         if id.len() > 64 || role.len() > 32 {
             return Err(ApiError::BadRequest("Invalid staff headers".into()));
         }
-        let name = header(parts, "x-kalks-staff-name").map(|n| percent_decode(&n)).unwrap_or_else(|| format!("Staff {id}"));
+        let name = header(parts, "x-ezymex-staff-name").map(|n| percent_decode(&n)).unwrap_or_else(|| format!("Staff {id}"));
         Ok(Staff { tenant, actor: Actor { id: format!("staff:{id}"), name: name.chars().take(120).collect(), role } })
     }
 }

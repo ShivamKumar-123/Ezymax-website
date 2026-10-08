@@ -1,4 +1,4 @@
-//! Kalks ALGO service (see README.md): strategies (visual spec + DSL), backtester, 24/7 strategy runtime,
+//! Ezymex ALGO service (see README.md): strategies (visual spec + DSL), backtester, 24/7 strategy runtime,
 //! webhook signals, public API keys, marketplace and the AI strategy assistant.
 
 pub mod ai;

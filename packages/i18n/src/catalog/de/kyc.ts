@@ -195,7 +195,7 @@ const kyc: NsMessages<"kyc"> = {
   "review.missing": "Fehlt",
   "review.flagged": "Zur Prüfung markiert",
   "review.passed": "Prüfungen bestanden",
-  "review.consent": "Ich bestätige, dass die Dokumente echt sind und mir (bzw. dem Unternehmen und seinen Organen) gehören, und willige in die Identitäts- und AML-Prüfung durch Kalks ein.",
+  "review.consent": "Ich bestätige, dass die Dokumente echt sind und mir (bzw. dem Unternehmen und seinen Organen) gehören, und willige in die Identitäts- und AML-Prüfung durch Ezymex ein.",
 
   // More information requested by the review team
   "moreInfo.title": "Wir benötigen noch etwas von Ihnen",
@@ -360,7 +360,7 @@ const kyc: NsMessages<"kyc"> = {
   // Client-side fallback errors (the server's own message is shown when it sends one)
   "error.sessionEnded": "Ihre Sitzung ist abgelaufen.",
   "error.generic": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
-  "error.network": "Kalks ist nicht erreichbar. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+  "error.network": "Ezymex ist nicht erreichbar. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
   "error.uploadFailed": "Hochladen fehlgeschlagen. Bitte versuchen Sie es erneut.",
   "error.uploadInterrupted": "Hochladen unterbrochen. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
 

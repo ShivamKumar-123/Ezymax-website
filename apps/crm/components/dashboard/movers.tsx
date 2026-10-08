@@ -2,9 +2,9 @@
 
 import * as React from "react";
 import { CardHeader, Card, Delta, ListRow, PriceText, Segmented, SymbolAvatar, Sparkline, useCloses, useFeedMode, useQuotes } from "@/components/kit";
-import { INSTRUMENTS, fetchCandles, sparkline, topMovers, type Quote } from "@kalks/mock";
+import { INSTRUMENTS, fetchCandles, sparkline, topMovers, type Quote } from "@ezymex/mock";
 import { TERMINAL_URL } from "@/lib/live";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 
 // Top movers card, shared by the live and the demo dashboard (its own module so live builds don't load the demo one).
 

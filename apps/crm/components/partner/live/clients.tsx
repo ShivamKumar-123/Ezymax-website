@@ -20,7 +20,7 @@ import {
   formatMoney,
   type Column,
 } from "@/components/kit";
-// engine symbols include Kalks FX Options series codes, which @kalks/ui SymbolAvatar / SymbolCell (static list) throw on
+// engine symbols include Ezymex FX Options series codes, which @ezymex/ui SymbolAvatar / SymbolCell (static list) throw on
 import { TradeSymbolAvatar as SymbolAvatar, symbolLabel } from "@/components/trading/instrument";
 import {
   fmtDate,
@@ -40,7 +40,7 @@ import {
   type NetworkClient,
   type PartnerApiError,
 } from "./api";
-import { tr, useT } from "@kalks/i18n/react";
+import { tr, useT } from "@ezymex/i18n/react";
 import {
   CardEmpty,
   ClientStatusChip,
@@ -606,7 +606,7 @@ export function LivePartnerClients() {
                 ? t("partner.clients.searchFull")
                 : t("partner.clients.searchLimited")
             }
-            exportName={all.length ? "kalks-referred-clients" : undefined}
+            exportName={all.length ? "ezymex-referred-clients" : undefined}
             empty={
               all.length === 0 ? (
                 <div className="py-6">

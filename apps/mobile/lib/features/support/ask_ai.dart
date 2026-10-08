@@ -1,8 +1,8 @@
-// Ask Kalks AI (port of apps/crm/components/ai/ask-ai.tsx, phone layout): the compact pill in the Dashboard's flow
+// Ask Ezymex AI (port of apps/crm/components/ai/ask-ai.tsx, phone layout): the compact pill in the Dashboard's flow
 // that opens a bottom sheet with the suggestions, the question box, the bot's streamed answer and its follow-ups
 // (Continue in chat, Talk to a person, New question); answered by the real support bot over the support chat
 // (ask_ai_engine.dart), with the open-request-for-a-person handling (hold the question; close that request and ask
-// Kalks AI, or send it to the team; View opens the chat). View-only and read-only sessions get nothing (the web's
+// Ezymex AI, or send it to the team; View opens the chat). View-only and read-only sessions get nothing (the web's
 // dashboard leaves it out for them).
 // CONTRACT used by the Dashboard — keep these names and parameters:
 //   AskAi(chips:)                     the pill at the top of the dashboard (opens the phone sheet)
@@ -151,7 +151,7 @@ class AiLink extends StatelessWidget {
   }
 }
 
-/// The Dashboard's AI entry on phones: a compact pill that opens the Ask Kalks AI sheet.
+/// The Dashboard's AI entry on phones: a compact pill that opens the Ask Ezymex AI sheet.
 class AskAi extends ConsumerStatefulWidget {
   const AskAi({super.key, required this.chips});
   final List<AiChip> chips;

@@ -6,10 +6,10 @@ import { AnimatePresence, motion } from "motion/react";
 import { ChevronDown, ChevronsDownUp, ChevronsUpDown, Infinity as InfinityIcon, Network, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Button, Card, CardHeader, Chip, Donut, Flag, Icon3D, Money, PageHeader, Progress, Reveal, cn, formatMoney } from "@/components/kit";
-import { ME } from "@kalks/mock";
-import { PARTNER, REFERRED_CLIENTS, TIERS, type ReferredClient } from "@kalks/mock/partner";
+import { ME } from "@ezymex/mock";
+import { PARTNER, REFERRED_CLIENTS, TIERS, type ReferredClient } from "@ezymex/mock/partner";
 import { TierChip } from "@/components/partner/partner-bits";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LivePartnerNetwork } from "@/components/partner/live/network";
 
 /* ------------------------------------------------------------------ */

@@ -1,18 +1,18 @@
 import type { NsMessages } from "../../core";
 
-// Kalks FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Kalks Trader in options mode.
+// Ezymex FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Ezymex Trader in options mode.
 const options: NsMessages<"options"> = {
   // Navigation entry
   "nav.title": "옵션",
 
   // Page header
-  "page.title": "Kalks FX Options",
-  "page.subtitle": "Kalks Trader에서 바로 외환, 금, 은, 원유 옵션을 매수하거나 매도하세요.",
+  "page.title": "Ezymex FX Options",
+  "page.subtitle": "Ezymex Trader에서 바로 외환, 금, 은, 원유 옵션을 매수하거나 매도하세요.",
   "page.statusReady": "거래 가능",
   "page.learnCourse": "옵션 과정",
 
   // Hero card
-  "hero.eyebrow": "Kalks Trader의 새로운 기능",
+  "hero.eyebrow": "Ezymex Trader의 새로운 기능",
   "hero.title": "13개 시장의 옵션, 쉽고 간단하게",
   "hero.text": "외환 메이저 및 크로스 통화쌍, 금, 은, 원유를 대상으로 하는 유럽형 옵션입니다. 일간, 주간, 월간 만기 중에서 선택할 수 있습니다. 모든 옵션은 미국 달러로 현금결제되므로 실물을 인수하는 일은 없습니다.",
   "hero.feature.underlyings.title": "13개 기초자산",
@@ -56,16 +56,16 @@ const options: NsMessages<"options"> = {
   "terms.inShort": "요약",
   "terms.point.buy": "옵션 매수: 최대 손실은 지불한 금액입니다.",
   "terms.point.sell": "옵션 매도는 받은 금액보다 더 큰 손실이 날 수 있으며, 증거금이 사용됩니다.",
-  "terms.point.prices": "가격은 Kalks 호가창에서 정해지며, Kalks가 직접 제시하기도 합니다.",
+  "terms.point.prices": "가격은 Ezymex 호가창에서 정해지며, Ezymex가 직접 제시하기도 합니다.",
   "terms.point.settle": "옵션은 만기에 현금으로 결제됩니다.",
   "terms.englishNote": "아래 전문은 법적 구속력이 있는 영문본입니다.",
   "terms.acceptedOn": "{date}에 버전 {version}에 동의했습니다.",
   "terms.close": "닫기",
   "terms.unavailable": "지금은 옵션 약관을 불러올 수 없습니다. 잠시 후 다시 시도하세요.",
 
-  // Kalks Trader button
-  "trade.ready": "준비가 끝났습니다. 옵션은 Kalks Trader에서 CFD와 같은 계좌로 거래됩니다.",
-  "trade.cta": "Kalks Trader에서 옵션 거래",
+  // Ezymex Trader button
+  "trade.ready": "준비가 끝났습니다. 옵션은 Ezymex Trader에서 CFD와 같은 계좌로 거래됩니다.",
+  "trade.cta": "Ezymex Trader에서 옵션 거래",
   "trade.chooseAccount": "계좌 선택",
   "trade.noAccount": "옵션을 거래하려면 활성 거래 계좌가 필요합니다.",
   "trade.openAccount": "계좌 개설",
@@ -74,7 +74,7 @@ const options: NsMessages<"options"> = {
   "trade.demo": "데모",
 
   // Key facts card
-  "facts.title": "Kalks FX Options 작동 방식",
+  "facts.title": "Ezymex FX Options 작동 방식",
   "facts.style": "유럽형: 만기에 자동으로 행사되며, 만기 전에는 행사되지 않습니다.",
   "facts.premium": "프리미엄은 계약당 USD로 표시되며, 매수자는 포지션을 열 때 전액을 지불합니다.",
   "facts.contracts": "1계약: 통화 10,000단위, 금 1온스, 은 50온스 또는 원유 10배럴.",

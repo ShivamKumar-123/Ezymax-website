@@ -72,7 +72,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "kpi.demo": "ทดลอง {count}",
   "alloc.title": "การกระจายอิควิตี้",
   "alloc.subtitle": "บัญชีจริง เทียบเท่า USD",
-  "alloc.noEquity": "บัญชีจริงของคุณยังไม่มีอิควิตี้ เติมเงินได้จากวอลเล็ต Kalks ของคุณ",
+  "alloc.noEquity": "บัญชีจริงของคุณยังไม่มีอิควิตี้ เติมเงินได้จากวอลเล็ต Ezymex ของคุณ",
   "alloc.noLive": "เปิดบัญชีจริงเพื่อดูการกระจายอิควิตี้ของคุณที่นี่",
   "accounts.subtitle": "อิควิตี้และมาร์จิ้นของแต่ละบัญชี",
   "accounts.manage": "จัดการ",

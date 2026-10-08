@@ -25,9 +25,9 @@ import {
   cn,
   formatNumber,
   type Column,
-} from "@kalks/ui";
-import { ASSET_CLASS_LABEL, type AssetClass } from "@kalks/mock/symbols";
-import { BRK_FEEDS, BRK_SYMBOLS, BRK_TENANTS, type BrkSymbol } from "@kalks/mock/admin-platform-brokers";
+} from "@ezymex/ui";
+import { ASSET_CLASS_LABEL, type AssetClass } from "@ezymex/mock/symbols";
+import { BRK_FEEDS, BRK_SYMBOLS, BRK_TENANTS, type BrkSymbol } from "@ezymex/mock/admin-platform-brokers";
 import { SectionLabel, Select, TenantLogo, timeAgo } from "@/components/brokers/kit";
 
 type ClassFilter = "all" | AssetClass;

@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader order ticket, New Order window, DOM ladder, position/pending dialogs and trade toasts.
+// Ezymex Trader order ticket, New Order window, DOM ladder, position/pending dialogs and trade toasts.
 // MT5 Turkish terms: Stop Loss = Zarar Durdur, Take Profit = Kâr Al, Trailing stop = İz süren stop.
 const order: NsMessages<"order"> = {
   // Order types (ticket type switcher)
@@ -270,9 +270,9 @@ const order: NsMessages<"order"> = {
 
   // Specification / About dialogs
   "spec.title": "Özellikler · {symbol}",
-  "about.title": "Kalks Trader Hakkında",
+  "about.title": "Ezymex Trader Hakkında",
   "about.version": "Sürüm {version} · derleme {build} · Web x64",
-  "about.text": "Kalks Global Markets için çoklu varlık işlem odası. Kotasyonlar Kalks fiyat ağ geçidinden akar; sunucu saati GMT+3'tür.",
+  "about.text": "Ezymex Global Markets için çoklu varlık işlem odası. Kotasyonlar Ezymex fiyat ağ geçidinden akar; sunucu saati GMT+3'tür.",
 
   // Rejection reasons (MT5 journal wording)
   "reject.market_closed": "Piyasa kapalı",

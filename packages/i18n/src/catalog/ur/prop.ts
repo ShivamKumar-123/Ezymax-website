@@ -101,13 +101,13 @@ const prop: NsMessages<"prop"> = {
 
   // Public certificate verification page (/verify/<code>)
   "verify.shellTitle": "سرٹیفکیٹ کی تصدیق",
-  "verify.footer": "Kalks Prop اکاؤنٹس سمیولیٹڈ ہیں۔ سرٹیفکیٹس Kalks Prop چیلنج پر ٹریڈر کے نتائج دکھاتے ہیں؛ ٹریڈر کا نام پہلے نام اور آخری نام کے پہلے حرف تک مختصر کیا جاتا ہے۔",
+  "verify.footer": "Ezymex Prop اکاؤنٹس سمیولیٹڈ ہیں۔ سرٹیفکیٹس Ezymex Prop چیلنج پر ٹریڈر کے نتائج دکھاتے ہیں؛ ٹریڈر کا نام پہلے نام اور آخری نام کے پہلے حرف تک مختصر کیا جاتا ہے۔",
   "verify.linkCopied": "لنک کاپی ہو گیا",
   "verify.copyFailed": "لنک کاپی نہیں ہو سکا",
   "verify.copyLink": "لنک کاپی کریں",
   "verify.downloadPng": "PNG ڈاؤن لوڈ کریں",
   "verify.notFoundTitle": "سرٹیفکیٹ نہیں ملا",
-  "verify.notFoundText": "اس نمبر کا کوئی Kalks Prop سرٹیفکیٹ نہیں ہے۔ لنک چیک کریں یا ٹریڈر سے دوبارہ شیئر کرنے کو کہیں۔",
+  "verify.notFoundText": "اس نمبر کا کوئی Ezymex Prop سرٹیفکیٹ نہیں ہے۔ لنک چیک کریں یا ٹریڈر سے دوبارہ شیئر کرنے کو کہیں۔",
   "verify.unavailableTitle": "تصدیق اس وقت دستیاب نہیں",
   "verify.unavailableText": "ہم اس وقت یہ سرٹیفکیٹ چیک نہیں کر سکے۔ براہ کرم چند منٹ بعد دوبارہ کوشش کریں۔",
   "verify.kind.pass": "فیز پاس",
@@ -121,9 +121,9 @@ const prop: NsMessages<"prop"> = {
   "verify.row.issued": "جاری کردہ",
   "verify.row.number": "سرٹیفکیٹ نمبر",
   "verify.validTitle": "درست سرٹیفکیٹ",
-  "verify.validText": "Kalks Prop کی جانب سے جاری کردہ اور ہمارے ریکارڈ سے تصدیق شدہ۔",
+  "verify.validText": "Ezymex Prop کی جانب سے جاری کردہ اور ہمارے ریکارڈ سے تصدیق شدہ۔",
   "verify.revokedTitle": "منسوخ شدہ سرٹیفکیٹ",
-  "verify.revokedText": "یہ سرٹیفکیٹ Kalks نے منسوخ کر دیا ہے اور اب درست نہیں۔",
+  "verify.revokedText": "یہ سرٹیفکیٹ Ezymex نے منسوخ کر دیا ہے اور اب درست نہیں۔",
   "verify.valid": "درست",
   "verify.revoked": "منسوخ",
   // Certificate titles
@@ -248,8 +248,8 @@ const prop: NsMessages<"prop"> = {
   "checkout.goToMine": "میرے چیلنجز پر جائیں",
   "checkout.readyTitle": "آپ کا چیلنج تیار ہے",
   "checkout.paidText": "{fee} آپ کے USDT والیٹ سے ادا ہو گئے اور آپ کا {size} اکاؤنٹ کھل گیا۔ قواعد اب سے لاگو ہیں۔",
-  "checkout.savePasswords": "یہ پاس ورڈز ابھی محفوظ کریں: یہ صرف ایک بار دکھائے جاتے ہیں اور ہم انہیں محفوظ نہیں کرتے۔ ٹریڈ بٹن آپ کو بغیر پاس ورڈ Kalks Trader میں سائن اِن کرتا ہے، اس لیے آپ ہمیشہ یہاں سے ٹریڈ کر سکتے ہیں۔",
-  "checkout.passwordsShown": "ٹریڈنگ پاس ورڈز اس خریداری کی پہلی تصدیق پر دکھائے گئے تھے۔ Kalks Trader کھولنے کے لیے ٹریڈ بٹن استعمال کریں: یہ آپ کو بغیر پاس ورڈ سائن اِن کرتا ہے۔",
+  "checkout.savePasswords": "یہ پاس ورڈز ابھی محفوظ کریں: یہ صرف ایک بار دکھائے جاتے ہیں اور ہم انہیں محفوظ نہیں کرتے۔ ٹریڈ بٹن آپ کو بغیر پاس ورڈ Ezymex Trader میں سائن اِن کرتا ہے، اس لیے آپ ہمیشہ یہاں سے ٹریڈ کر سکتے ہیں۔",
+  "checkout.passwordsShown": "ٹریڈنگ پاس ورڈز اس خریداری کی پہلی تصدیق پر دکھائے گئے تھے۔ Ezymex Trader کھولنے کے لیے ٹریڈ بٹن استعمال کریں: یہ آپ کو بغیر پاس ورڈ سائن اِن کرتا ہے۔",
 
   // Account credentials
   "cred.login": "لاگ اِن",
@@ -376,7 +376,7 @@ const prop: NsMessages<"prop"> = {
   "account.passed": "پاس · صرف پڑھنے کے لیے",
   "account.failed": "ناکام · غیر فعال",
   "account.opening": "کھل رہا ہے",
-  "account.tradableText": "ٹریڈ بٹن اس اکاؤنٹ میں سائن اِن کر کے Kalks Trader کھولتا ہے۔ پاس ورڈز خریداری کے وقت ایک بار دکھائے گئے تھے۔",
+  "account.tradableText": "ٹریڈ بٹن اس اکاؤنٹ میں سائن اِن کر کے Ezymex Trader کھولتا ہے۔ پاس ورڈز خریداری کے وقت ایک بار دکھائے گئے تھے۔",
   "account.passedText": "یہ فیز مکمل ہو گیا۔ اکاؤنٹ صرف پڑھنے کے لیے ہے؛ اپنے اگلے فیز پر ٹریڈ کریں۔",
   "account.failedText": "اس اکاؤنٹ پر ٹریڈنگ غیر فعال ہے۔",
   "account.unavailableText": "اس اکاؤنٹ پر ٹریڈنگ دستیاب نہیں۔",

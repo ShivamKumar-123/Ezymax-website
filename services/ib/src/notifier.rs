@@ -1,5 +1,5 @@
 //! Tells partners when a commission payout lands in their wallet: `POST $SUPPORT_URL/v1/notify` with type
-//! `ib.commission_paid` (bell in the Client Area and Kalks Trader, realtime, email per the `ib` preference).
+//! `ib.commission_paid` (bell in the Client Area and Ezymex Trader, realtime, email per the `ib` preference).
 //!
 //! The `payouts` row is the outbox: it is marked paid in the transfer step's transaction and announced
 //! afterwards by this pass (run after every transfer step), so a support outage never holds a payout back.
@@ -71,9 +71,9 @@ pub async fn push_paid(st: &AppState) -> anyhow::Result<(usize, usize)> {
         let res = st
             .http
             .post(format!("{}/v1/notify", st.cfg.support_url))
-            .header("x-kalks-internal", &st.cfg.support_token)
-            .header("x-kalks-tenant", &tenant)
-            .header("x-kalks-service", "ib")
+            .header("x-ezymex-internal", &st.cfg.support_token)
+            .header("x-ezymex-tenant", &tenant)
+            .header("x-ezymex-service", "ib")
             .json(&body)
             .send()
             .await;

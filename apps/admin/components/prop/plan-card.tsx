@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Copy, MoreHorizontal, Pause, Play, Trash2 } from "lucide-react";
-import { Chip, IconButton, Menu, Sparkline, StatusChip, cn } from "@kalks/ui";
+import { Chip, IconButton, Menu, Sparkline, StatusChip, cn } from "@ezymex/ui";
 import type { PropPlan } from "./data";
 import { PlanTypeChip } from "./rules";
 

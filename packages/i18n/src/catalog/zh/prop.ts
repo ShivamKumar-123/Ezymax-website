@@ -101,13 +101,13 @@ const prop: NsMessages<"prop"> = {
 
   // Public certificate verification page (/verify/<code>)
   "verify.shellTitle": "证书验证",
-  "verify.footer": "Kalks Prop 账户为模拟账户。证书显示交易者在 Kalks Prop 挑战中的成绩；交易者姓名缩写为名字加姓氏首字母。",
+  "verify.footer": "Ezymex Prop 账户为模拟账户。证书显示交易者在 Ezymex Prop 挑战中的成绩；交易者姓名缩写为名字加姓氏首字母。",
   "verify.linkCopied": "链接已复制",
   "verify.copyFailed": "无法复制链接",
   "verify.copyLink": "复制链接",
   "verify.downloadPng": "下载 PNG",
   "verify.notFoundTitle": "未找到证书",
-  "verify.notFoundText": "不存在此编号的 Kalks Prop 证书。请检查链接，或请交易者重新分享。",
+  "verify.notFoundText": "不存在此编号的 Ezymex Prop 证书。请检查链接，或请交易者重新分享。",
   "verify.unavailableTitle": "验证暂不可用",
   "verify.unavailableText": "我们目前无法核验此证书。请几分钟后重试。",
   "verify.kind.pass": "阶段已通过",
@@ -121,9 +121,9 @@ const prop: NsMessages<"prop"> = {
   "verify.row.issued": "颁发日期",
   "verify.row.number": "证书编号",
   "verify.validTitle": "有效证书",
-  "verify.validText": "由 Kalks Prop 颁发，并已与我们的记录核对。",
+  "verify.validText": "由 Ezymex Prop 颁发，并已与我们的记录核对。",
   "verify.revokedTitle": "已撤销的证书",
-  "verify.revokedText": "此证书已被 Kalks 撤销，不再有效。",
+  "verify.revokedText": "此证书已被 Ezymex 撤销，不再有效。",
   "verify.valid": "有效",
   "verify.revoked": "已撤销",
   // Certificate titles
@@ -248,8 +248,8 @@ const prop: NsMessages<"prop"> = {
   "checkout.goToMine": "前往我的挑战",
   "checkout.readyTitle": "您的挑战已就绪",
   "checkout.paidText": "已从您的 USDT 钱包支付 {fee}，您的 {size} 账户已开立。规则即刻生效。",
-  "checkout.savePasswords": "请立即保存这些密码：它们只显示一次，我们不会存储。“交易”按钮无需密码即可登录 Kalks Trader，因此您随时可以从这里进行交易。",
-  "checkout.passwordsShown": "交易密码已在首次确认此购买时显示。请使用“交易”按钮打开 Kalks Trader：无需密码即可登录。",
+  "checkout.savePasswords": "请立即保存这些密码：它们只显示一次，我们不会存储。“交易”按钮无需密码即可登录 Ezymex Trader，因此您随时可以从这里进行交易。",
+  "checkout.passwordsShown": "交易密码已在首次确认此购买时显示。请使用“交易”按钮打开 Ezymex Trader：无需密码即可登录。",
 
   // Account credentials
   "cred.login": "登录账号",
@@ -376,7 +376,7 @@ const prop: NsMessages<"prop"> = {
   "account.passed": "已通过 · 只读",
   "account.failed": "未通过 · 已停用",
   "account.opening": "开户中",
-  "account.tradableText": "“交易”将打开已登录此账户的 Kalks Trader。密码已在购买时显示一次。",
+  "account.tradableText": "“交易”将打开已登录此账户的 Ezymex Trader。密码已在购买时显示一次。",
   "account.passedText": "此阶段已完成。账户为只读；请在下一阶段进行交易。",
   "account.failedText": "此账户的交易已停用。",
   "account.unavailableText": "此账户无法交易。",

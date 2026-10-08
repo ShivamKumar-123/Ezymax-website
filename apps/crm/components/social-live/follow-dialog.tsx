@@ -5,9 +5,9 @@ import Link from "next/link";
 import { Activity, AlertTriangle, ArrowLeft, ArrowRight, Check, Coins, Copy, Layers, Loader2, Pause, Percent, Scale, Search, ShieldCheck, Square, Target, UserX, Wallet, X as XIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Dialog, Field, Input, KeyValue, Stepper,  Toggle, cn } from "@/components/kit";
-// engine symbols include Kalks FX Options series codes, which @kalks/ui SymbolAvatar / SymbolCell (static list) throw on
+// engine symbols include Ezymex FX Options series codes, which @ezymex/ui SymbolAvatar / SymbolCell (static list) throw on
 import { TradeSymbolAvatar as SymbolAvatar } from "@/components/trading/instrument";
-import { Trans, useT } from "@kalks/i18n/react";
+import { Trans, useT } from "@ezymex/i18n/react";
 import { Checkbox, RadioCard, RangeSlider, ToggleChip } from "@/components/social/controls";
 import { TradeButton } from "@/components/trading/ui";
 import { ApiError, PERIOD_LABEL, SIZING_LABEL, sizingText, socialApi, usd, useSocial, type FollowResult, type MasterView, type SizingMode } from "./api";

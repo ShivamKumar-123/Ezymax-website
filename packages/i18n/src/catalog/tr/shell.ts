@@ -21,7 +21,7 @@ const shell: NsMessages<"shell"> = {
   security: "Güvenlik",
   verification: "Doğrulama",
   preferences: "Tercihler",
-  kalksTrader: "Kalks Trader",
+  ezymexTrader: "Ezymex Trader",
   deposit: "Para yatır",
   // Client Area navigation
   "nav.dashboard": "Gösterge paneli",
@@ -92,7 +92,7 @@ const shell: NsMessages<"shell"> = {
   "gate.title": "Hesabınız için henüz etkin değil",
   "gate.text": "Bu bölüm hesabınız için henüz etkinleştirilmedi. Erişime ihtiyacınız varsa {email} adresiyle iletişime geçin.",
   "gate.backToDashboard": "Gösterge paneline dön",
-  "gate.launchTrader": "Kalks Trader'ı başlat",
+  "gate.launchTrader": "Ezymex Trader'ı başlat",
   // market sessions clock
   "sessions.title": "Piyasa seansları",
   "sessions.openLeft": "Açık · {h} sa {m} dk kaldı",

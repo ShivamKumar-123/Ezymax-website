@@ -6,7 +6,7 @@
 import * as React from "react";
 import { Check, ChevronDown, Plus, Repeat2, Trash2, X } from "lucide-react";
 import { Menu, Segmented, SymbolAvatar, Toggle, cn } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { operand, type Condition, type Meta, type Operand, type RuleSet, type StrategySpec } from "./api";
 
 type Tone = "ember" | "gold" | "up" | "down" | "info" | "neutral";

@@ -72,7 +72,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "kpi.demo": "{count} demo",
   "alloc.title": "Varlık dağılımı",
   "alloc.subtitle": "Gerçek hesaplar, USD karşılığı",
-  "alloc.noEquity": "Gerçek hesaplarınızda henüz varlık yok. Kalks cüzdanınızdan para yatırın.",
+  "alloc.noEquity": "Gerçek hesaplarınızda henüz varlık yok. Ezymex cüzdanınızdan para yatırın.",
   "alloc.noLive": "Varlık dağılımınızı burada görmek için gerçek hesap açın.",
   "accounts.subtitle": "Hesap bazında varlık ve teminat",
   "accounts.manage": "Yönet",

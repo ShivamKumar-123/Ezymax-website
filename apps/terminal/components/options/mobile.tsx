@@ -11,9 +11,9 @@
 // desktop workspace.
 import * as React from "react";
 import { CandlestickChart, ChevronDown, Layers, List, ShoppingCart, Table2, Wand2 } from "lucide-react";
-import { parseSeriesCode } from "@kalks/mock/options";
-import { cn } from "@kalks/ui";
-import { useLocale, useT } from "@kalks/i18n/react";
+import { parseSeriesCode } from "@ezymex/mock/options";
+import { cn } from "@ezymex/ui";
+import { useLocale, useT } from "@ezymex/i18n/react";
 import { useTerminal } from "@/lib/store";
 import { GuestNotice } from "@/components/shell/guest";
 import { useOptionBook } from "@/lib/options/book";

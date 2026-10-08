@@ -22,11 +22,11 @@ import {
   Toggle,
   cn,
   formatNumber,
-} from "@kalks/ui";
-import { PEOPLE } from "@kalks/mock";
-import { SUP_CANNED, SUP_VARIABLES, type SupCanned } from "@kalks/mock/admin-growth-support";
+} from "@ezymex/ui";
+import { PEOPLE } from "@ezymex/mock";
+import { SUP_CANNED, SUP_VARIABLES, type SupCanned } from "@ezymex/mock/admin-growth-support";
 import { VarText, fillVars } from "@/components/support/shared";
-import { IS_DEMO as IS_DEMO_MODE } from "@kalks/mock/mode";
+import { IS_DEMO as IS_DEMO_MODE } from "@ezymex/mock/mode";
 import { LiveCanned } from "@/components/support-live/canned";
 
 const CATS = ["All", "Withdrawals", "Deposits", "KYC", "Trading", "Accounts", "Partners", "Security", "General", "Prop"] as const;
@@ -38,8 +38,8 @@ const SAMPLE: Record<string, string> = {
   withdrawal_id: "WD-904375",
   eta: "4 business hours",
   agent_name: "Priya Nair",
-  kb_link: "kalks.com/help/news-spreads",
-  tenant_name: "Kalks Markets",
+  kb_link: "ezymex.com/help/news-spreads",
+  tenant_name: "Ezymex Markets",
   deposit_id: "TX904412",
   leverage: "1:500",
 };

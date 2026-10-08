@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { AlertTriangle, Check } from "lucide-react";
-import { Button, Chip, DataTable, Dialog, Segmented, StatusChip, Tooltip, cn, type Column } from "@kalks/ui";
-import { FIN_PAYOUT_KIND_LABEL, type FinBatchStatus, type FinPayoutBatch, type FinPayoutLine } from "@kalks/mock/admin-finance";
+import { Button, Chip, DataTable, Dialog, Segmented, StatusChip, Tooltip, cn, type Column } from "@ezymex/ui";
+import { FIN_PAYOUT_KIND_LABEL, type FinBatchStatus, type FinPayoutBatch, type FinPayoutLine } from "@ezymex/mock/admin-finance";
 import { Addr, Checkbox, PersonCell } from "@/components/config/kit";
 import { num, usd } from "./shared";
 

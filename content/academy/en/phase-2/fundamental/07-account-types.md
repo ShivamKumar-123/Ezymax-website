@@ -34,7 +34,7 @@ quiz:
       - "The number of symbols available"
     answer: 0
     explanation: "A low spread with a commission can be cheaper or more expensive than a wider spread with none. Only the total cost per round turn makes them comparable."
-  - question: "Which of these is set per trading account on Kalks?"
+  - question: "Which of these is set per trading account on Ezymex?"
     options:
       - "The price of EURUSD"
       - "Leverage and position mode (netting or hedging)"
@@ -48,7 +48,7 @@ In the Client Area, the Accounts module lets you open more than one trading acco
 
 ## Demo and live
 
-A **demo account** is funded with virtual money and connected to realistic live prices. It is free, it can be reset, and it lets you learn Kalks Trader, test order types and practise a routine without risking anything. Everything in the technical track of this phase is designed to be tried on demo first.
+A **demo account** is funded with virtual money and connected to realistic live prices. It is free, it can be reset, and it lets you learn Ezymex Trader, test order types and practise a routine without risking anything. Everything in the technical track of this phase is designed to be tried on demo first.
 
 A **live account** uses real money. Prices and order types work the same way, but two things change:
 
@@ -65,7 +65,7 @@ A **cent account** shows balances and results in US cents, labelled **USC**. The
 
 > **Example:** You deposit 20 USD into a cent account and see 2,000.00 USC. After a week, trade history shows a closed loss of 150.00 USC and a closed profit of 1,240.00 USC. In dollars, that is a 1.50 USD loss and a 12.40 USD profit, leaving a balance of 2,000 - 150 + 1,240 = 3,090 USC, or 30.90 USD.
 
-The risk with cent accounts is psychological: a number like 3,090 looks large and can encourage careless sizing when you later move to a standard account where the same figure means real dollars. Always translate USC back into USD when you review results. Check the contract specification in Kalks Trader for how lot size maps to real exposure on a cent account, because it is not the same as on a standard account.
+The risk with cent accounts is psychological: a number like 3,090 looks large and can encourage careless sizing when you later move to a standard account where the same figure means real dollars. Always translate USC back into USD when you review results. Check the contract specification in Ezymex Trader for how lot size maps to real exposure on a cent account, because it is not the same as on a standard account.
 
 ## Account groups and their conditions
 

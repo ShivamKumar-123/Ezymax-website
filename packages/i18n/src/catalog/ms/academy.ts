@@ -20,7 +20,7 @@ const academy: NsMessages<"academy"> = {
   "practice.demo": "Berlatih pada demo",
   "practice.openFreeDemo": "Buka akaun demo percuma",
   "practice.openDemo": "Buka demo",
-  "practice.inTrader": "Berlatih dalam Kalks Trader",
+  "practice.inTrader": "Berlatih dalam Ezymex Trader",
 
   // Levels (sent by the Academy service)
   "level.beginner": "Pemula",
@@ -31,12 +31,12 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "Analisis fundamental",
   "track.technical": "Analisis teknikal",
-  // Product track of the Kalks FX Options elective (phase 9)
+  // Product track of the Ezymex FX Options elective (phase 9)
   "track.options": "Dagangan opsyen",
   "trackShort.fundamental": "Fundamental",
   "trackShort.technical": "Teknikal",
   "trackShort.options": "Opsyen",
-  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  // Chip on a product course (e.g. Ezymex FX Options) that sits outside the eight core phases and can be taken at any time
   elective: "Elektif",
 
   // Durations (h = hours, m = minutes)
@@ -52,7 +52,7 @@ const academy: NsMessages<"academy"> = {
   "home.pathText": "Setiap fasa teras mempunyai trek fundamental dan teknikal, peperiksaan akhir dan sijil.",
   // Section under the learning path listing the electives
   "home.electivesTitle": "Kursus elektif",
-  "home.electivesText": "Kursus tentang produk Kalks. Ambil pada bila-bila masa: setiap satu mempunyai peperiksaan akhir dan sijilnya sendiri.",
+  "home.electivesText": "Kursus tentang produk Ezymex. Ambil pada bila-bila masa: setiap satu mempunyai peperiksaan akhir dan sijilnya sendiri.",
   "hero.allDone": "Semua bab selesai",
   "hero.continue": "Teruskan belajar",
   "hero.upNext": "Seterusnya",
@@ -219,7 +219,7 @@ const academy: NsMessages<"academy"> = {
   "callout.example": "Contoh",
   "callout.tip": "Petua",
   "callout.note": "Nota",
-  "callout.inKalksTrader": "Dalam Kalks Trader",
+  "callout.inEzymexTrader": "Dalam Ezymex Trader",
   diagram: "Rajah",
 };
 export default academy;

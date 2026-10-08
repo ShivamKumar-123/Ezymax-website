@@ -3,10 +3,10 @@
 import * as React from "react";
 import { toast } from "@/lib/notify";
 import { Copy, ExternalLink, Link2, Loader2, Share2, Trash2, X } from "lucide-react";
-import { getInstrument } from "@kalks/mock";
-import { SymbolAvatar, cn } from "@kalks/ui";
+import { getInstrument } from "@ezymex/mock";
+import { SymbolAvatar, cn } from "@ezymex/ui";
 import { useTerminal } from "@/lib/store";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { PENDING_LABEL, fmtServer, fmtVol } from "@/lib/trading";
 import { buildSnapshot, shareApi, shareLinks, shareUi, shareUrl, snapshotSig, useShareLinks, useShareSync, useShareUi, type ShareLink, type ShareTrade } from "@/lib/share";
 import { Badge, Empty, MiniSwitch, TButton, TDialog, TInput } from "@/components/ui/primitives";

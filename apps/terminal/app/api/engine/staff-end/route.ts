@@ -1,5 +1,5 @@
 /**
- * POST /api/engine/staff-end {login}: ends a staff session in Kalks Trader (banner "End"). The engine signs the
+ * POST /api/engine/staff-end {login}: ends a staff session in Ezymex Trader (banner "End"). The engine signs the
  * session out; the gateway audits the end with the staff id. Only staff sessions can be ended here.
  */
 import type { NextRequest } from "next/server";

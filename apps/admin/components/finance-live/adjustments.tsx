@@ -10,7 +10,7 @@ import * as React from "react";
 import { useSearchParams } from "next/navigation";
 import { Check, Clock3, Download, Plus, ShieldCheck, TrendingDown, TrendingUp, X } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, Input, KpiCard, PageHeader, cn, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, Input, KpiCard, PageHeader, cn, type Column } from "@ezymex/ui";
 import { ErrorState, FilterSelect, Pager, TableSkeleton, ago, downloadCsv, qs, useApi, useDebounced, useNow, when } from "@/components/live/kit";
 import { useCan, useStaff } from "@/components/staff-session";
 import { MiniField } from "@/components/config/kit";

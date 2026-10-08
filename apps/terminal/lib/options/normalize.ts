@@ -4,7 +4,7 @@
 // (premiums are at least one tick, so 0 never is a price) with `bidQty` / `askQty` null, the USD fields are filled
 // from the mark's own USD rate when the service leaves them out, and `book` marks a quote that came from the book.
 // Engine answers (orders, fills, previews) are parsed defensively: the engine is new and fields may be added.
-import { defaultPremiumTick, OPTION_SPEC, parseSeriesCode } from "@kalks/mock/options";
+import { defaultPremiumTick, OPTION_SPEC, parseSeriesCode } from "@ezymex/mock/options";
 import type { BookFill, BookOrder, BookOrderResult, BookPreview, ChainBook, OptionChain, OptionChainRow, OptionQuote, OptionUnderlying, Rfq, RfqAcceptResult, RfqQuote, SeriesDepth, StopTrigger, TapeTrade } from "./types";
 
 type Obj = Record<string, unknown>;
@@ -299,7 +299,7 @@ export function normRfqQuote(raw: unknown): RfqQuote | null {
   const x = raw as Obj;
   const quoteId = str(x.quoteId) ?? str(x.id);
   if (!quoteId) return null;
-  return { quoteId, responder: str(x.responder) ?? "kalks", bid: numOrNull(x.bid), ask: numOrNull(x.ask), qty: num(x.qty) ?? 0, validUntil: iso(x.validUntil) ?? new Date(Date.now() + 5_000).toISOString() };
+  return { quoteId, responder: str(x.responder) ?? "ezymex", bid: numOrNull(x.bid), ask: numOrNull(x.ask), qty: num(x.qty) ?? 0, validUntil: iso(x.validUntil) ?? new Date(Date.now() + 5_000).toISOString() };
 }
 
 /* ------------------------------------------------------------------ */

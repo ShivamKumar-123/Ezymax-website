@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader order ticket, New Order window, DOM ladder, position/pending dialogs and trade toasts.
+// Ezymex Trader order ticket, New Order window, DOM ladder, position/pending dialogs and trade toasts.
 // MT5 trading terms (Stop Loss, Take Profit, Buy Limit, Sell Stop, Close By, Trailing stop, Margin call,
 // Stop out, Requote) are kept as Swahili-speaking traders know them from MT5.
 const order: NsMessages<"order"> = {
@@ -271,9 +271,9 @@ const order: NsMessages<"order"> = {
 
   // Specification / About dialogs
   "spec.title": "Vipimo · {symbol}",
-  "about.title": "Kuhusu Kalks Trader",
+  "about.title": "Kuhusu Ezymex Trader",
   "about.version": "Toleo {version} · build {build} · Web x64",
-  "about.text": "Chumba cha biashara cha mali nyingi cha Kalks Global Markets. Bei hutiririka kutoka lango la bei la Kalks; saa za seva ni GMT+3.",
+  "about.text": "Chumba cha biashara cha mali nyingi cha Ezymex Global Markets. Bei hutiririka kutoka lango la bei la Ezymex; saa za seva ni GMT+3.",
 
   // Rejection reasons
   "reject.market_closed": "Soko limefungwa",

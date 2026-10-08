@@ -1,5 +1,5 @@
 // The chart on Android: assets/chart/chart.html (lightweight-charts 5.2.1, offline) in a WebView. Commands go in
-// through `window.K.recv(...)` / `window.K.batch(...)` (one call per frame), events come back on the `KalksChart`
+// through `window.K.recv(...)` / `window.K.batch(...)` (one call per frame), events come back on the `EzymexChart`
 // JavaScript channel.
 import 'dart:convert';
 
@@ -31,7 +31,7 @@ class _WebViewChartState extends State<_WebViewChart> {
     _web = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0x00000000))
-      ..addJavaScriptChannel('KalksChart', onMessageReceived: (m) => _onMessage(m.message))
+      ..addJavaScriptChannel('EzymexChart', onMessageReceived: (m) => _onMessage(m.message))
       ..setNavigationDelegate(
         NavigationDelegate(onNavigationRequest: (r) => r.url.startsWith('file:') ? NavigationDecision.navigate : NavigationDecision.prevent),
       );

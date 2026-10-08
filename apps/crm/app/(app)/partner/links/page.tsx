@@ -28,12 +28,12 @@ import {
   formatMoney,
   type Column,
 } from "@/components/kit";
-import { ME } from "@kalks/mock";
-import { BANNERS, BANNER_SIZES, CAMPAIGNS, LANDING_PAGES, type Campaign } from "@kalks/mock/partner";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { ME } from "@ezymex/mock";
+import { BANNERS, BANNER_SIZES, CAMPAIGNS, LANDING_PAGES, type Campaign } from "@ezymex/mock/partner";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LivePartnerLinks } from "@/components/partner/live/links";
 
-const BASE = ME.referralLink; // https://kalks.com/r/ARJUN24
+const BASE = ME.referralLink; // https://ezymex.com/r/ARJUN24
 const linkFor = (c: Pick<Campaign, "slug">) => `${BASE}/${c.slug}`;
 const short = (u: string) => u.replace("https://", "");
 
@@ -122,7 +122,7 @@ function CreateLinkDialog({ open, onOpenChange, onCreate }: { open: boolean; onO
                 <img src={l.photo} alt="" className="h-10 w-14 shrink-0 rounded-lg object-cover" />
                 <span className="min-w-0">
                   <span className="block truncate text-[13px] font-medium">{l.name}</span>
-                  <span className="block truncate font-mono text-[11px] text-fg-3">kalks.com{l.path}</span>
+                  <span className="block truncate font-mono text-[11px] text-fg-3">ezymex.com{l.path}</span>
                 </span>
               </button>
             ))}
@@ -176,7 +176,7 @@ function BannersCard() {
   const [size, setSize] = React.useState<(typeof BANNER_SIZES)[number]["key"]>("300x250");
   const sz = BANNER_SIZES.find((s) => s.key === size)!;
   const html = (b: (typeof BANNERS)[number]) =>
-    `<a href="${BASE}/banner-${b.id}?utm_source=banner&utm_medium=${size}" target="_blank" rel="noopener"><img src="https://cdn.kalks.com/partners/${b.id}-${size}.jpg" width="${sz.w}" height="${sz.h}" alt="${b.title}" /></a>`;
+    `<a href="${BASE}/banner-${b.id}?utm_source=banner&utm_medium=${size}" target="_blank" rel="noopener"><img src="https://cdn.ezymex.com/partners/${b.id}-${size}.jpg" width="${sz.w}" height="${sz.h}" alt="${b.title}" /></a>`;
   return (
     <Card className="h-full">
       <CardHeader
@@ -206,7 +206,7 @@ function BannersCard() {
                 >
                   <Code2 /> Copy HTML
                 </Button>
-                <IconButton size="sm" aria-label="Download banner" onClick={() => toast.success("Banner downloaded", { description: `kalks-${b.id}-${size}.jpg` })}>
+                <IconButton size="sm" aria-label="Download banner" onClick={() => toast.success("Banner downloaded", { description: `ezymex-${b.id}-${size}.jpg` })}>
                   <Download />
                 </IconButton>
               </div>
@@ -245,7 +245,7 @@ function QrCard({ campaigns }: { campaigns: Campaign[] }) {
         />
         <div className="grid place-items-center rounded-[18px] border border-line py-6" style={{ background: theme === "light" ? "radial-gradient(circle at 50% 30%, color-mix(in oklab, var(--k-ember) 18%, transparent), transparent 70%)" : undefined }}>
           <div className="rounded-[16px] p-3.5 shadow-[0_20px_50px_-20px_color-mix(in_oklab,var(--k-ember)_60%,transparent)] transition-all" style={{ background: bg }}>
-            <QRCodeSVG value={linkFor(c)} size={px} level="H" fgColor={fg} bgColor={bg} imageSettings={logo ? { src: "/assets/brand/kalks-mark.svg", width: px * 0.2, height: px * 0.2, excavate: true } : undefined} />
+            <QRCodeSVG value={linkFor(c)} size={px} level="H" fgColor={fg} bgColor={bg} imageSettings={logo ? { src: "/assets/brand/ezymex-mark.svg", width: px * 0.2, height: px * 0.2, excavate: true } : undefined} />
           </div>
           <div className="mt-3 max-w-full truncate px-4 font-mono text-[11.5px] text-fg-2">{short(linkFor(c))}</div>
         </div>
@@ -263,7 +263,7 @@ function QrCard({ campaigns }: { campaigns: Campaign[] }) {
           <Segmented size="xs" value={size} onChange={setSize} options={["S", "M", "L"] as const} className="w-full justify-between" />
         </div>
         <div className="flex items-center justify-between text-[13px] text-fg-2">
-          Kalks mark in centre
+          Ezymex mark in centre
           <Toggle checked={logo} onChange={setLogo} label="Logo" />
         </div>
         <div className="mt-auto grid grid-cols-2 gap-2">
@@ -389,7 +389,7 @@ function DemoPartnerLinksPage() {
         <Card>
           <CardHeader title="Campaign links" subtitle="Each link carries your code — ARJUN24 — plus its own tracking" icon={<Link2 />} />
           <div className="px-4 pb-5 pt-4 sm:px-6">
-            <DataTable columns={columns} rows={campaigns} rowKey={(c) => c.id} pageSize={8} search={(c) => `${c.name} ${c.slug} ${c.utmSource}`} searchPlaceholder="Search campaigns…" exportName="kalks-campaigns" />
+            <DataTable columns={columns} rows={campaigns} rowKey={(c) => c.id} pageSize={8} search={(c) => `${c.name} ${c.slug} ${c.utmSource}`} searchPlaceholder="Search campaigns…" exportName="ezymex-campaigns" />
           </div>
         </Card>
       </Reveal>
@@ -420,7 +420,7 @@ function DemoPartnerLinksPage() {
                   <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0">
                       <div className="truncate text-[14px] font-medium">{l.name}</div>
-                      <div className="truncate font-mono text-[11.5px] text-fg-3">kalks.com{l.path}?ref=ARJUN24</div>
+                      <div className="truncate font-mono text-[11.5px] text-fg-3">ezymex.com{l.path}?ref=ARJUN24</div>
                     </div>
                     <span className="k-num shrink-0 text-right text-[12px] text-fg-2">{l.visits.toLocaleString()} visits</span>
                   </div>
@@ -432,14 +432,14 @@ function DemoPartnerLinksPage() {
                     ))}
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-2">
-                    <Button size="xs" variant="surface" onClick={() => toast("Opening preview", { description: `kalks.com${l.path} in a new tab` })}>
+                    <Button size="xs" variant="surface" onClick={() => toast("Opening preview", { description: `ezymex.com${l.path} in a new tab` })}>
                       <Eye /> Preview
                     </Button>
                     <Button
                       size="xs"
                       variant="surface"
                       onClick={() => {
-                        navigator.clipboard?.writeText(`https://kalks.com${l.path}?ref=ARJUN24`).catch(() => {});
+                        navigator.clipboard?.writeText(`https://ezymex.com${l.path}?ref=ARJUN24`).catch(() => {});
                         toast.success("Landing link copied");
                       }}
                     >

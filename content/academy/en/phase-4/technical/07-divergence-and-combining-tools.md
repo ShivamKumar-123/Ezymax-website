@@ -120,7 +120,7 @@ Add ATR for stop distance and size, and the toolkit is complete. A trade is take
 - Trigger: on H4, RSI turns up from below 40 with a bullish engulfing candle.
 - Risk: stop 1.5 x H4 ATR below the entry candle; size from a fixed percentage risk.
 
-This layout can be written as rules, which means it can be tested in the Kalks strategy builder and backtested, as Phase 6 will show.
+This layout can be written as rules, which means it can be tested in the Ezymex strategy builder and backtested, as Phase 6 will show.
 
 ## Common mistakes
 

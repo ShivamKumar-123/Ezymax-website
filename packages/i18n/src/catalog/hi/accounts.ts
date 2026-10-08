@@ -90,7 +90,7 @@ const accounts: NsMessages<"accounts"> = {
   "empty.openFirst": "ट्रेडिंग शुरू करने के लिए अपना पहला अकाउंट खोलें।",
   "empty.noLive": "अभी कोई लाइव अकाउंट नहीं",
   "empty.noDemo": "अभी कोई डेमो अकाउंट नहीं",
-  "empty.liveText": "अभी लाइव अकाउंट खोलें और तुरंत अपना लॉगिन और पासवर्ड पाएँ। इसे अपने Kalks वॉलेट से फ़ंड करें।",
+  "empty.liveText": "अभी लाइव अकाउंट खोलें और तुरंत अपना लॉगिन और पासवर्ड पाएँ। इसे अपने Ezymex वॉलेट से फ़ंड करें।",
   "empty.demoText": "डेमो अकाउंट में रियल-टाइम कीमतों पर वर्चुअल फ़ंड मिलते हैं, ताकि आप बिना जोखिम के प्रैक्टिस कर सकें।",
   "error.unavailableTitle": "ट्रेडिंग अकाउंट उपलब्ध नहीं हैं",
   "error.unavailableText": "हम ट्रेडिंग सेवा से कनेक्ट नहीं हो सके। आपके अकाउंट और बैलेंस सुरक्षित हैं; कृपया थोड़ी देर में फिर से कोशिश करें।",
@@ -112,13 +112,13 @@ const accounts: NsMessages<"accounts"> = {
   // Platforms card (demo build). WebTerminal is a product name.
   "platform.mt5Compatible": "MT5 कम्पैटिबल",
   "platform.title": "कहीं से भी ट्रेड करें",
-  "platform.text": "Kalks WebTerminal, MetaTrader 5 डेस्कटॉप और मोबाइल — एक लॉगिन, वही क्रेडेंशियल।",
+  "platform.text": "Ezymex WebTerminal, MetaTrader 5 डेस्कटॉप और मोबाइल — एक लॉगिन, वही क्रेडेंशियल।",
   "platform.downloading": "MetaTrader 5 डाउनलोड हो रहा है",
   "platform.mt5Desktop": "MT5 डेस्कटॉप",
 
   // Account types section on the accounts list
   "types.title": "अकाउंट के प्रकार",
-  "types.subtitle": "हर प्रकार में वही इंस्ट्रूमेंट और Kalks Trader। अपने अनुसार प्राइसिंग और पोज़िशन मोड चुनें।",
+  "types.subtitle": "हर प्रकार में वही इंस्ट्रूमेंट और Ezymex Trader। अपने अनुसार प्राइसिंग और पोज़िशन मोड चुनें।",
   "types.footer": "हर अकाउंट पर नेगेटिव बैलेंस प्रोटेक्शन · लीवरेज केवल तभी बदला जा सकता है जब कोई पोज़िशन खुली न हो · डेमो बैलेंस दिन में कुछ बार रीफ़िल किया जा सकता है।",
   "compare.title": "अकाउंट के प्रकारों की तुलना करें",
   "compare.subtitle": "वही इंस्ट्रूमेंट, प्लेटफ़ॉर्म और सुरक्षा — अपनी ट्रेडिंग शैली के अनुसार प्राइसिंग चुनें।",
@@ -163,7 +163,7 @@ const accounts: NsMessages<"accounts"> = {
   // Account row and its actions menu
   "row.trade": "ट्रेड",
   "row.refill": "रीफ़िल",
-  "row.cantOpenTrader": "यह अकाउंट Kalks Trader में नहीं खोला जा सकता",
+  "row.cantOpenTrader": "यह अकाउंट Ezymex Trader में नहीं खोला जा सकता",
   "row.openPositions": { one: "{count} खुली पोज़िशन", other: "{count} खुली पोज़िशन" },
   "row.pendingOrders": { one: "{count} पेंडिंग ऑर्डर", other: "{count} पेंडिंग ऑर्डर" },
   // Followed by the floating profit/loss amount
@@ -198,7 +198,7 @@ const accounts: NsMessages<"accounts"> = {
   "fund.centAccount": "सेंट अकाउंट (USC)",
   "fund.depositUsdt": "USDT जमा करें",
   "fund.transferFromWallet": "वॉलेट से ट्रांसफ़र करें",
-  "fund.fromWallet": "आपके Kalks वॉलेट से फ़ंड किया गया",
+  "fund.fromWallet": "आपके Ezymex वॉलेट से फ़ंड किया गया",
   "fund.text": "BNB Chain या TRON पर अपने वॉलेट में USDT जमा करें, फिर इसे तुरंत इस अकाउंट में ट्रांसफ़र करें। USDT को USD में 1:1 क्रेडिट किया जाता है।",
   "fund.textCent": "BNB Chain या TRON पर अपने वॉलेट में USDT जमा करें, फिर इसे तुरंत इस अकाउंट में ट्रांसफ़र करें। USDT को USD में 1:1 क्रेडिट किया जाता है, सेंट अकाउंट पर USC में ×100 दिखाया जाता है।",
 
@@ -254,7 +254,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.swapFreeTitle": "स्वैप-फ़्री (इस्लामिक) अकाउंट",
   "wizard.swapFreeText": "कोई ओवरनाइट स्वैप नहीं। कुछ इंस्ट्रूमेंट पर 5 रातों के बाद एक तय एडमिन शुल्क लग सकता है।",
   "wizard.setPasswordTitle": "ट्रेडिंग पासवर्ड सेट करें",
-  "wizard.setPasswordSubtitle": "MT5 और Kalks टर्मिनल के लिए आपका मास्टर पासवर्ड। इन्वेस्टर (केवल देखने वाला) पासवर्ड आपके लिए बनाया जाता है।",
+  "wizard.setPasswordSubtitle": "MT5 और Ezymex टर्मिनल के लिए आपका मास्टर पासवर्ड। इन्वेस्टर (केवल देखने वाला) पासवर्ड आपके लिए बनाया जाता है।",
   // <client> and <risk> wrap links; keep the tags
   "wizard.agreeMock": "मैं <client>क्लाइंट एग्रीमेंट</client> और <risk>रिस्क डिस्क्लोज़र</risk> से सहमत हूँ, और समझता/समझती हूँ कि CFD में पैसा गँवाने का उच्च जोखिम होता है।",
   "wizard.clientAgreementOpened": "क्लाइंट एग्रीमेंट खोला गया",
@@ -287,10 +287,10 @@ const accounts: NsMessages<"accounts"> = {
   "kind.demoText": "रियल-टाइम कीमतों पर बिना जोखिम प्रैक्टिस करें।",
   "kind.liveTextMock": "असली पैसे से असली मार्केट में ट्रेड करें। अपने USDT वॉलेट से तुरंत फ़ंड करें।",
   "kind.demoTextMock": "रियल-टाइम कीमतों पर वर्चुअल फ़ंड से बिना जोखिम प्रैक्टिस करें।",
-  "kind.live.point1": "Kalks-Live पर असली एक्ज़िक्यूशन",
+  "kind.live.point1": "Ezymex-Live पर असली एक्ज़िक्यूशन",
   "kind.live.point2": "शून्य बैलेंस से शुरू; आपके वॉलेट से फ़ंड",
   "kind.live.point3": "लॉगिन और पासवर्ड तुरंत जारी",
-  "kind.live.mock1": "Kalks-Live सर्वर पर असली एक्ज़िक्यूशन",
+  "kind.live.mock1": "Ezymex-Live सर्वर पर असली एक्ज़िक्यूशन",
   "kind.live.mock2": "तुरंत USDT फ़ंडिंग, USD में 1:1",
   "kind.live.mock3": "कभी भी मुनाफ़ा निकालें (KYC के बाद)",
   "kind.demo.virtualFunds": "वर्चुअल फ़ंड (डिफ़ॉल्ट {amount})",
@@ -306,12 +306,12 @@ const accounts: NsMessages<"accounts"> = {
 
   // Open account wizard: account created
   "created.title": "आपका अकाउंट तैयार है",
-  "created.liveText": "यह शून्य बैलेंस से शुरू होता है। इसे अपने Kalks वॉलेट से फ़ंड करें, फिर इन क्रेडेंशियल से Kalks Trader में लॉग इन करें।",
+  "created.liveText": "यह शून्य बैलेंस से शुरू होता है। इसे अपने Ezymex वॉलेट से फ़ंड करें, फिर इन क्रेडेंशियल से Ezymex Trader में लॉग इन करें।",
   "created.demoText": "{amount} वर्चुअल फ़ंड के साथ लोड किया गया।",
   "created.demoExpires": "टर्मिनल लॉगिन के बिना {days} दिन बाद एक्सपायर हो जाएगा।",
   "created.liveTextMock": "इसे अपने USDT वॉलेट से फ़ंड करें और कुछ ही सेकंड में ट्रेडिंग शुरू करें।",
   "created.demoTextMock": "{amount} वर्चुअल फ़ंड के साथ लोड किया गया। {days} दिन में एक्सपायर होगा।",
-  "created.openInTrader": "Kalks Trader में खोलें",
+  "created.openInTrader": "Ezymex Trader में खोलें",
   "created.openTerminal": "टर्मिनल खोलें",
   "created.viewAccount": "अकाउंट देखें",
   "created.credentials": "लॉगिन क्रेडेंशियल",
@@ -333,7 +333,7 @@ const accounts: NsMessages<"accounts"> = {
   "error.account_limit": "आप इस प्रकार के अकाउंट की अधिकतम संख्या तक पहुँच गए हैं।",
   "error.invalid_leverage": "यह लीवरेज इस अकाउंट के ग्रुप के लिए उपलब्ध नहीं है।",
   "error.unavailable": "ट्रेडिंग सेवा उपलब्ध नहीं है। कृपया थोड़ी देर बाद फिर से कोशिश करें।",
-  "toast.openTraderFailed": "Kalks Trader नहीं खुल सका",
+  "toast.openTraderFailed": "Ezymex Trader नहीं खुल सका",
   "toast.exportStarted": "स्टेटमेंट एक्सपोर्ट शुरू हुआ",
   // {kind} is "trades" or "ledger" (export.trades / export.ledger)
   "toast.exportDesc": "#{login} · {kind} · CSV, समय UTC में",
@@ -410,7 +410,7 @@ const accounts: NsMessages<"accounts"> = {
   "close.subtitle": "बंद किया गया अकाउंट आप वापस चालू नहीं कर सकते। अगर आपको इसकी दोबारा ज़रूरत पड़ सकती है, तो इसे बंद करने के बजाय डिलीट (आर्काइव) करें।",
   "close.blocked": "यह अकाउंट अभी बंद नहीं किया जा सकता",
   "close.finalTitle": "बंद करना अंतिम है",
-  "close.final1": "ट्रेडिंग, ट्रांसफ़र और Kalks Trader साइन-इन हमेशा के लिए बंद हो जाते हैं, और लॉगिन नंबर दोबारा कभी इस्तेमाल नहीं होता।",
+  "close.final1": "ट्रेडिंग, ट्रांसफ़र और Ezymex Trader साइन-इन हमेशा के लिए बंद हो जाते हैं, और लॉगिन नंबर दोबारा कभी इस्तेमाल नहीं होता।",
   "close.final2": "स्टेटमेंट और हिस्ट्री अकाउंट › आर्काइव्ड में उपलब्ध रहती हैं।",
   "close.final3": "हमारी कंप्लायंस टीम अनुरोध की समीक्षा करती है और आपको ईमेल और आपकी नोटिफ़िकेशन में बताती है।",
   "close.whyTitle": "आप यह अकाउंट क्यों बंद कर रहे हैं?",
@@ -518,7 +518,7 @@ const accounts: NsMessages<"accounts"> = {
   "dormant.chip": "निष्क्रिय",
   "history.zip": "पूरा इतिहास डाउनलोड करें (ZIP)",
 
-  // Kalks FX Options in trade history, positions, orders and exports
+  // Ezymex FX Options in trade history, positions, orders and exports
   "opt.tag": "ऑप्शन",
   "opt.call": "कॉल",
   "opt.put": "पुट",
@@ -534,7 +534,7 @@ const accounts: NsMessages<"accounts"> = {
   "opt.filter.cfd": "CFD",
   "opt.filter.options": "ऑप्शन",
   "opt.emptyOptions": "इस अवधि में कोई ऑप्शन ट्रेड नहीं",
-  "opt.emptyOptionsText": "Kalks Trader में आप जो ऑप्शन खरीदते या बेचते हैं, वे यहाँ दिखते हैं, साथ में यह भी कि हर एक कैसे खत्म हुआ: बंद, एक्सपायर या नॉक-आउट।",
+  "opt.emptyOptionsText": "Ezymex Trader में आप जो ऑप्शन खरीदते या बेचते हैं, वे यहाँ दिखते हैं, साथ में यह भी कि हर एक कैसे खत्म हुआ: बंद, एक्सपायर या नॉक-आउट।",
   "opt.emptyCfd": "इस अवधि में कोई CFD ट्रेड नहीं",
   "opt.truncated": "सबसे नई {count} मेल खाने वाली डील दिखाई जा रही हैं। पुरानी देखने के लिए छोटी अवधि चुनें।",
   // How a deal was closed

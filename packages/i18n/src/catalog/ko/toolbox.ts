@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader 하단 패널 (MT5의 도구 상자): 거래, 내역, 노출, 뉴스, 캘린더, 알림, 저널
+// Ezymex Trader 하단 패널 (MT5의 도구 상자): 거래, 내역, 노출, 뉴스, 캘린더, 알림, 저널
 const toolbox: NsMessages<"toolbox"> = {
   // 패널 헤더
   title: "도구 상자",

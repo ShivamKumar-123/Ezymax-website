@@ -19,8 +19,8 @@
 // market in the band, reduce-only, stops) and a strategy by request for quote (./rfq). Otherwise: house prices.
 import * as React from "react";
 import { ChevronRight, Crosshair, Lock, MousePointerClick, Plus, Table2, Trash2, Wand2, X } from "lucide-react";
-import { cn } from "@kalks/ui";
-import { useLocale, useT } from "@kalks/i18n/react";
+import { cn } from "@ezymex/ui";
+import { useLocale, useT } from "@ezymex/i18n/react";
 import { toast } from "@/lib/notify";
 import { useTerminal } from "@/lib/store";
 import { GuestActions } from "@/components/shell/guest";
@@ -39,7 +39,7 @@ import { commissionOf, OutcomeCard, OutcomeSkeleton } from "./outcome";
 import { PreviewSummary, usePreview } from "./preview";
 import { BookOrderForm } from "./book-ticket";
 import { hasBarrierLeg, RfqPanel } from "./rfq";
-import { KalksQuotedTag } from "./book-bits";
+import { EzymexQuotedTag } from "./book-bits";
 
 function Label({ children, right, help }: { children: React.ReactNode; right?: React.ReactNode; help?: React.ReactNode }) {
   return (
@@ -225,8 +225,8 @@ export function OptionTicket({ onDone, onAddLeg, onOpenChain, className }: { onD
   const [busy, setBusy] = React.useState(false);
   const [lastErr, setLastErr] = React.useState<{ code: string; message: string } | null>(null);
   const bookLiveRaw = useBookLive();
-  // barrier options are Kalks-quoted, never on the order book: a strategy with a barrier leg (or one the engine
-  // refused as an RFQ with `kalks_quoted`) is placed on the house ticket, one order at Kalks prices
+  // barrier options are Ezymex-quoted, never on the order book: a strategy with a barrier leg (or one the engine
+  // refused as an RFQ with `ezymex_quoted`) is placed on the house ticket, one order at Ezymex prices
   const [houseRoute, setHouseRoute] = React.useState(false);
   const legKey = legs.map((l) => `${l.series}:${l.side}:${l.contracts}`).join("|");
   React.useEffect(() => {
@@ -413,14 +413,14 @@ export function OptionTicket({ onDone, onAddLeg, onOpenChain, className }: { onD
           ) : T.readOnly ? (
             <ReadOnlyBox />
           ) : (
-            <RfqPanel legs={legs.map((l) => ({ series: l.series, side: l.side, contracts: l.contracts, barrier: !!l.barrier }))} onDone={() => (opt.afterFill(), onDone?.())} onKalksQuoted={() => setHouseRoute(true)} />
+            <RfqPanel legs={legs.map((l) => ({ series: l.series, side: l.side, contracts: l.contracts, barrier: !!l.barrier }))} onDone={() => (opt.afterFill(), onDone?.())} onEzymexQuoted={() => setHouseRoute(true)} />
           )}
         </>
       ) : (
         <>
           {bookLiveRaw && (barrierLegs || houseRoute) && (
             <div className="flex items-start gap-2 rounded-[10px] border border-gold/35 bg-gold-soft px-3 py-2 text-[11.5px] leading-snug text-fg-2" dir="auto">
-              <KalksQuotedTag className="mt-px shrink-0" />
+              <EzymexQuotedTag className="mt-px shrink-0" />
               <span>{t("trader.opt.rfq.houseNote")}</span>
             </div>
           )}

@@ -8,15 +8,15 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
-import { cn } from "@kalks/ui";
-import { useLocale, useT } from "@kalks/i18n/react";
-import type { MessageKey } from "@kalks/i18n";
+import { cn } from "@ezymex/ui";
+import { useLocale, useT } from "@ezymex/i18n/react";
+import type { MessageKey } from "@ezymex/i18n";
 import { useTerminal } from "@/lib/store";
 import { useTradeMode, type TradeMode } from "@/lib/options/mode";
 import { Button } from "@/components/ui/kit";
 import { showSide } from "./commands";
 
-const DONE_KEY: Record<TradeMode, string> = { cfd: "kalks.terminal.tour.v1", options: "kalks.terminal.tour.options.v1" };
+const DONE_KEY: Record<TradeMode, string> = { cfd: "ezymex.terminal.tour.v1", options: "ezymex.terminal.tour.options.v1" };
 
 type Step = { target: string; title: MessageKey; text: MessageKey; guestText?: MessageKey; open?: (T: ReturnType<typeof useTerminal>) => void; account?: boolean };
 

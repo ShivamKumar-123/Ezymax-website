@@ -7,7 +7,7 @@ version: 1
 takeaways:
   - "A currency pair shows how many units of the quote currency one unit of the base currency costs, so buying EURUSD means buying euros and selling dollars."
   - "The FX market is a tiered dealer network: big banks at the core, then prime brokers and electronic venues, then retail brokers."
-  - "FX trades around the clock from Monday 00:00 to Friday close in Kalks server time, passing through the Sydney, Tokyo, London and New York sessions."
+  - "FX trades around the clock from Monday 00:00 to Friday close in Ezymex server time, passing through the Sydney, Tokyo, London and New York sessions."
   - "The London and New York overlap, roughly 15:00 to 19:00 server time, usually brings the most liquidity and the largest moves in the major pairs."
   - "Quiet hours and the daily rollover bring thinner liquidity and wider spreads, which affects both costs and the reliability of price moves."
 practice:
@@ -30,7 +30,7 @@ quiz:
       - "No currency exposure, only price exposure"
     answer: 2
     explanation: "Selling a pair means selling the base currency (USD) and buying the quote currency (JPY). You profit if the dollar weakens against the yen."
-  - question: "In Kalks server time, when is the London and New York overlap approximately?"
+  - question: "In Ezymex server time, when is the London and New York overlap approximately?"
     options:
       - "15:00 to 19:00"
       - "00:00 to 04:00"
@@ -67,13 +67,13 @@ FX is a dealer network organised in tiers.
 
 1. **The interbank core.** A small group of global banks deal with each other in very large sizes and provide most of the market's liquidity.
 2. **Prime brokers and electronic venues.** Institutions, funds and non-bank market makers access that liquidity through prime brokerage relationships and electronic communication networks.
-3. **Retail brokers.** Brokers such as Kalks aggregate prices from one or more liquidity providers and offer them to clients, typically as CFDs.
+3. **Retail brokers.** Brokers such as Ezymex aggregate prices from one or more liquidity providers and offer them to clients, typically as CFDs.
 
 Because prices come from different providers, EURUSD can differ by a fraction of a pip between brokers at the same instant. In a liquid pair these differences are tiny; in thin conditions they can be larger.
 
 ## The trading day in sessions
 
-FX follows the sun. As one financial centre closes, another opens. Kalks Trader shows time in **server time** (GMT+2 in winter, GMT+3 when the US is on daylight saving). This offset is chosen so that 00:00 server time always equals 17:00 in New York, the traditional end of the FX day. The market opens for the week at Monday 00:00 server time and closes on Friday at the New York close.
+FX follows the sun. As one financial centre closes, another opens. Ezymex Trader shows time in **server time** (GMT+2 in winter, GMT+3 when the US is on daylight saving). This offset is chosen so that 00:00 server time always equals 17:00 in New York, the traditional end of the FX day. The market opens for the week at Monday 00:00 server time and closes on Friday at the New York close.
 
 | Session | Approximate server time | Character |
 |---|---|---|
@@ -88,7 +88,7 @@ Asia-Pacific times shift by about an hour during parts of the year because Austr
 <svg viewBox="0 0 640 230" xmlns="http://www.w3.org/2000/svg">
   <rect width="100%" height="100%" fill="#121216"/>
   <g font-family="Inter, Arial, sans-serif" font-size="12" fill="#c9c9d1">
-    <text x="320" y="22" text-anchor="middle" font-size="14">FX sessions in Kalks server time (approximate)</text>
+    <text x="320" y="22" text-anchor="middle" font-size="14">FX sessions in Ezymex server time (approximate)</text>
     <text x="52" y="58" text-anchor="end">Sydney</text>
     <text x="52" y="88" text-anchor="end">Tokyo</text>
     <text x="52" y="118" text-anchor="end">London</text>
@@ -130,6 +130,6 @@ The session changes three practical things.
 
 - **Trading majors in dead hours by default.** Entering EURUSD at 01:00 server time means paying wider spreads for a market that often does little.
 - **Forgetting daylight-saving changes.** Session times in your local clock move twice a year. Server time is designed to stay aligned with New York, which is why it is the better reference.
-- **Treating all pairs the same.** AUDUSD and USDJPY can be more active in Asian hours than EURUSD; exotic pairs like USDINR may have restricted trading hours. Always check the symbol's trading hours in Kalks Trader.
+- **Treating all pairs the same.** AUDUSD and USDJPY can be more active in Asian hours than EURUSD; exotic pairs like USDINR may have restricted trading hours. Always check the symbol's trading hours in Ezymex Trader.
 
-Open a demo account in Kalks Trader and watch one major pair through a full day: note the spread and candle size in each session.
+Open a demo account in Ezymex Trader and watch one major pair through a full day: note the spread and candle size in each session.

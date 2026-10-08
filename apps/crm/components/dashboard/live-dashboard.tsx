@@ -24,7 +24,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { Button, Card, CardHeader, Chip, CoinIcon, KpiCard, MarketSessions, Money, PageHeader, Reveal, cn, formatMoney, useQuotes } from "@/components/kit";
-import { INSTRUMENTS, isMarketOpen } from "@kalks/mock";
+import { INSTRUMENTS, isMarketOpen } from "@ezymex/mock";
 import { KYC_CHIP, useReadOnly, useSession, type SessionUser } from "@/components/session";
 import { FeedGuard } from "@/components/feed-guard";
 import { SUPPORT_EMAIL, TERMINAL_URL } from "@/lib/live";
@@ -37,7 +37,7 @@ import { KIND_LABEL } from "@/components/wallet-live/ui";
 import { useGrowth, type Rewards } from "@/components/growth/api";
 import { BannerSlot } from "@/components/growth/banner-slot";
 import { LiveCalendarCard, LiveNewsCard, LiveWorldCard } from "@/components/news-live/dashboard";
-import { Trans, useFormat, useT } from "@kalks/i18n/react";
+import { Trans, useFormat, useT } from "@ezymex/i18n/react";
 import { AccountsPanel, type CardAccount } from "@/components/dashboard/home/accounts-panel";
 import { BalancePanel, QuickActions } from "@/components/dashboard/home/balance-panel";
 import { ActivityTabs, ChecklistCard, type ListRowItem } from "@/components/dashboard/home/list-cards";
@@ -238,7 +238,7 @@ function TraderBanner() {
           <Chip tone="ember" className="mb-3">
             <CandlestickChart className="size-3.5" /> {t("dashboard.trader.chip")}
           </Chip>
-          <h3 className="k-display text-[22px] font-bold tracking-[-0.02em] sm:text-2xl">Kalks Trader</h3>
+          <h3 className="k-display text-[22px] font-bold tracking-[-0.02em] sm:text-2xl">Ezymex Trader</h3>
           <p className="mt-2 text-sm text-fg-2">{t("dashboard.trader.text", { count: INSTRUMENTS.length })}</p>
         </div>
         <a href={TERMINAL_URL} target="_blank" rel="noopener" className="shrink-0 self-start">
@@ -486,7 +486,7 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
       ? []
       : null;
   const linkedRows: ListRowItem[] = [
-    { key: "trader", icon: <CandlestickChart />, tone: "accent", title: "Kalks Trader", sub: t("dashboard.trader.chip"), action: { label: t("common.open"), href: TERMINAL_URL, external: true } },
+    { key: "trader", icon: <CandlestickChart />, tone: "accent", title: "Ezymex Trader", sub: t("dashboard.trader.chip"), action: { label: t("common.open"), href: TERMINAL_URL, external: true } },
     { key: "copy", icon: <Copy />, tone: "pink", title: t("shell.nav.copyTrading"), sub: t("shell.nav.social"), action: { label: t("common.open"), href: "/social" } },
     { key: "ib", icon: <Award />, tone: "amber", title: t("shell.nav.partner"), sub: t("dashboard.partner.chip"), action: { label: t("common.open"), href: "/partner" } },
     {
@@ -499,7 +499,7 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
     },
   ];
 
-  // Ask Kalks AI: suggestions answered by the real support bot; account questions also show the client's own figures
+  // Ask Ezymex AI: suggestions answered by the real support bot; account questions also show the client's own figures
   const liveAccts = totals.live;
   const money2 = (a: EngineAccount, v: number) => `${curOf(a)}${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const aiChips: AiChip[] = [
@@ -634,7 +634,7 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
             title={t("dashboard.home.quickActions")}
             items={[
               { key: "transfer", label: t("common.transfer"), href: "/wallet/transfer", icon: <ArrowLeftRight className="rtl:-scale-x-100" />, tone: "lavender" },
-              { key: "trader", label: "Kalks Trader", href: TERMINAL_URL, icon: <CandlestickChart />, tone: "accent", external: true },
+              { key: "trader", label: "Ezymex Trader", href: TERMINAL_URL, icon: <CandlestickChart />, tone: "accent", external: true },
               { key: "copy", label: t("shell.nav.copyTrading"), href: "/social", icon: <Copy />, tone: "pink" },
               { key: "support", label: t("shell.nav.support"), href: "/support", icon: <LifeBuoy />, tone: "amber" },
             ]}

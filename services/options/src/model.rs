@@ -11,7 +11,7 @@ use optmath::{Date, SmileQuotes, VolClock};
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgPool};
 
-pub const PLATFORM_TENANT: &str = "kalks";
+pub const PLATFORM_TENANT: &str = "ezymex";
 
 #[derive(Clone, Debug, Serialize, FromRow)]
 #[serde(rename_all = "camelCase")]
@@ -75,9 +75,9 @@ pub struct Underlying {
     pub mark_max_spread_mult: f64,
 }
 
-/// Barrier options are not listed on the order book: RFQ only, quoted by Kalks at the model price ± spread (§5).
+/// Barrier options are not listed on the order book: RFQ only, quoted by Ezymex at the model price ± spread (§5).
 pub const BARRIER_VENUE: &str = "rfq";
-pub const BARRIER_LABEL: &str = "Kalks-quoted (RFQ only)";
+pub const BARRIER_LABEL: &str = "Ezymex-quoted (RFQ only)";
 
 /// §2 default premium tick: FX pip / 10, XAU 0.01, other metals and oil 0.001 (same rule as the migration's
 /// `default_premium_tick`).
@@ -307,7 +307,7 @@ pub fn fee_rule_violation(rows: &[(String, f64, f64)]) -> Option<String> {
     ))
 }
 
-/// The Kalks market maker's quoting parameters for (tenant or `*`, account kind `live|demo|*`, underlying or `*`)
+/// The Ezymex market maker's quoting parameters for (tenant or `*`, account kind `live|demo|*`, underlying or `*`)
 /// (docs/OPTIONS-EXCHANGE.md §4). Spreads are decimal vols each side of the smile vol per tenor bucket.
 #[derive(Clone, Debug, Serialize, FromRow, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -500,7 +500,7 @@ pub struct RefData {
     pub limits: Vec<ClientLimit>,
     pub expiries: Vec<Expiry>,
     pub series: Vec<Series>,
-    /// Kalks market maker quoting parameters (§4), every row.
+    /// Ezymex market maker quoting parameters (§4), every row.
     pub mm: Vec<MmSettings>,
 }
 
@@ -723,7 +723,7 @@ mod tests {
     use super::*;
 
     fn g(code: &str, maker: Option<f64>, taker: Option<f64>, commission: f64) -> GroupSettings {
-        GroupSettings { group_code: code.into(), maker_fee_per_contract: maker, taker_fee_per_contract: taker, commission_per_contract: commission, ..GroupSettings::builtin("kalks") }
+        GroupSettings { group_code: code.into(), maker_fee_per_contract: maker, taker_fee_per_contract: taker, commission_per_contract: commission, ..GroupSettings::builtin("ezymex") }
     }
 
     #[test]
@@ -752,14 +752,14 @@ mod tests {
     #[test]
     fn mm_settings_most_specific_row_wins() {
         let row = |t: &str, k: &str, u: &str, base: f64| MmSettings { tenant: t.into(), kind: k.into(), underlying: u.into(), base_size: base, ..MmSettings::builtin() };
-        let rows = vec![row("*", "*", "*", 10.0), row("*", "demo", "*", 25.0), row("*", "*", "UKOIL", 5.0), row("kalks", "live", "XAUUSD", 3.0), row("other", "*", "*", 7.0)];
-        assert_eq!(resolve_mm(&rows, "kalks", "live", "EURUSD").base_size, 10.0);
-        assert_eq!(resolve_mm(&rows, "kalks", "demo", "EURUSD").base_size, 25.0);
-        assert_eq!(resolve_mm(&rows, "kalks", "live", "UKOIL").base_size, 5.0);
-        assert_eq!(resolve_mm(&rows, "kalks", "demo", "UKOIL").base_size, 25.0, "kind (2) outranks underlying (1)");
-        assert_eq!(resolve_mm(&rows, "kalks", "live", "XAUUSD").base_size, 3.0);
+        let rows = vec![row("*", "*", "*", 10.0), row("*", "demo", "*", 25.0), row("*", "*", "UKOIL", 5.0), row("ezymex", "live", "XAUUSD", 3.0), row("other", "*", "*", 7.0)];
+        assert_eq!(resolve_mm(&rows, "ezymex", "live", "EURUSD").base_size, 10.0);
+        assert_eq!(resolve_mm(&rows, "ezymex", "demo", "EURUSD").base_size, 25.0);
+        assert_eq!(resolve_mm(&rows, "ezymex", "live", "UKOIL").base_size, 5.0);
+        assert_eq!(resolve_mm(&rows, "ezymex", "demo", "UKOIL").base_size, 25.0, "kind (2) outranks underlying (1)");
+        assert_eq!(resolve_mm(&rows, "ezymex", "live", "XAUUSD").base_size, 3.0);
         assert_eq!(resolve_mm(&rows, "other", "demo", "UKOIL").base_size, 7.0, "tenant (4) outranks the rest");
-        assert_eq!(resolve_mm(&[], "kalks", "live", "EURUSD"), MmSettings::builtin());
+        assert_eq!(resolve_mm(&[], "ezymex", "live", "EURUSD"), MmSettings::builtin());
         let j = serde_json::to_value(MmSettings::builtin()).unwrap();
         for k in ["spreadVol0dte", "spreadVol7d", "spreadVol30d", "spreadVolLong", "minSpreadTicks", "skewVol", "skewTicksPerContract", "baseSize", "maxNetDelta", "maxGamma", "maxVega", "maxContractsPerSeries", "enabled", "tenant", "kind", "underlying"] {
             assert!(j.get(k).is_some(), "{k}: {j}");

@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { CheckCircle2, Copy, FileCode2, RotateCcw, ShieldCheck, TriangleAlert, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Chip, Tooltip, cn } from "@/components/kit";
-import { validateCode } from "@kalks/mock/algo";
+import { validateCode } from "@ezymex/mock/algo";
 
 const TOKEN =
   /(#.*$)|("[^"]*")|\b(strategy|when|and|or|not|all|any|if|else|True|False)\b|\b(buy|sell)\b(?=\()|\b([a-z_][a-z0-9_]*)(?=\()|(\.[a-z_]+)|\b(symbol|timeframe|session|lots|risk_pct|sl|tp|stop|start|close)\b|\b([A-Z]{2}[A-Z0-9]{2,}|[MHD]\d{1,2})\b|(\d+(?:\.\d+)?)|([=*<>+\-/]+|[(),:])/g;
@@ -168,11 +168,11 @@ export function CodeEditor({
         <AnimatePresence mode="wait" initial={false}>
           <motion.span key={log?.t ?? 0} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className={cn("flex min-w-0 items-center gap-2 truncate", log ? (log.ok ? "text-up" : "text-down") : "text-fg-3")}>
             {log ? log.ok ? <CheckCircle2 className="size-3.5 shrink-0" /> : <TriangleAlert className="size-3.5 shrink-0" /> : <span className="text-ember">›</span>}
-            <span className="truncate">{log ? log.text : "kalks compile — press Validate or ⌘S"}</span>
+            <span className="truncate">{log ? log.text : "ezymex compile — press Validate or ⌘S"}</span>
           </motion.span>
         </AnimatePresence>
         <span className="ml-auto hidden shrink-0 text-fg-3 sm:inline">
-          Ln {lines.length} · UTF-8 · Kalks DSL 2.4
+          Ln {lines.length} · UTF-8 · Ezymex DSL 2.4
         </span>
       </div>
     </div>

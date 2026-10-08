@@ -6,7 +6,7 @@ import * as React from "react";
 import { Copy as CopyIcon, Link2, Loader2, Megaphone, RefreshCw, Send, UserCog } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, Field, Input, Toggle, cn } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { socialApi, type Announcement, type MasterUpdateResult, type MasterView } from "./api";
 import { InfoBox, useNumber } from "./bits";
 import { AnnouncementList } from "./execution";

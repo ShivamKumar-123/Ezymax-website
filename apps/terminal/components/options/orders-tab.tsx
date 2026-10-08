@@ -6,9 +6,9 @@
 // taker, fee or rebate, the position each fill went to). Prices in USD per contract, sent per unit on the tick.
 import * as React from "react";
 import { Ban, Check as CheckIcon, Pencil, RefreshCw, X } from "lucide-react";
-import { OPTION_SPEC, parseSeriesCode } from "@kalks/mock/options";
-import { cn } from "@kalks/ui";
-import { useLocale, useT } from "@kalks/i18n/react";
+import { OPTION_SPEC, parseSeriesCode } from "@ezymex/mock/options";
+import { cn } from "@ezymex/ui";
+import { useLocale, useT } from "@ezymex/i18n/react";
 import { toast } from "@/lib/notify";
 import { useTerminal } from "@/lib/store";
 import { fmtServer } from "@/lib/trading";

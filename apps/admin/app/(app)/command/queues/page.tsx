@@ -5,9 +5,9 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { CheckCheck, Clock, Download, Hourglass, Inbox, TimerOff, UserPlus, X } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, Chip, KpiCard, Menu, PageHeader, Reveal, Tabs, Tooltip, cn, formatNumber } from "@kalks/ui";
-import { getClient, REASON_CODES, STAFF_MEMBERS, staff, timeAgo } from "@kalks/mock/admin-clients";
-import { QUEUE_KYC, QUEUE_MASTERS, QUEUE_PAYOUTS, QUEUE_PROP, QUEUE_WITHDRAWALS, WITHDRAWAL_QUEUE, type QueueItem } from "@kalks/mock/admin-ops";
+import { Avatar, Button, Card, Chip, KpiCard, Menu, PageHeader, Reveal, Tabs, Tooltip, cn, formatNumber } from "@ezymex/ui";
+import { getClient, REASON_CODES, STAFF_MEMBERS, staff, timeAgo } from "@ezymex/mock/admin-clients";
+import { QUEUE_KYC, QUEUE_MASTERS, QUEUE_PAYOUTS, QUEUE_PROP, QUEUE_WITHDRAWALS, WITHDRAWAL_QUEUE, type QueueItem } from "@ezymex/mock/admin-ops";
 import { Check, ClientCell, ReasonDialog, SlaTimer } from "@/components/command/kit";
 import { RiskChecks } from "@/components/command/overview";
 

@@ -14,7 +14,7 @@ val keyProps = Properties().apply {
 }
 
 android {
-    namespace = "com.kalkstrade.app"
+    namespace = "com.ezymex.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -24,8 +24,8 @@ android {
     }
 
     defaultConfig {
-        // One app, "Kalks" (Client Area + Kalks Trader). Android 7.0+ (API 24).
-        applicationId = "com.kalkstrade.app"
+        // One app, "Ezymex" (Client Area + Ezymex Trader). Android 7.0+ (API 24).
+        applicationId = "com.ezymex.app"
         minSdk = 24
         targetSdk = flutter.targetSdkVersion
         // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION

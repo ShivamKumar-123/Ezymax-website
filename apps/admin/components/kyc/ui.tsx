@@ -1,6 +1,6 @@
 "use client";
 
-import { Chip, cn, type ChipTone } from "@kalks/ui";
+import { Chip, cn, type ChipTone } from "@ezymex/ui";
 import type { CaseStatus, Sla } from "./types";
 
 export const STATUS: Record<CaseStatus, { tone: ChipTone; label: string }> = {

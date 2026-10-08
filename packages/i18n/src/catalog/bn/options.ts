@@ -1,19 +1,19 @@
 import type { NsMessages } from "../../core";
 
-// Kalks FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Kalks Trader in options mode.
-// Kalks, Kalks Trader and Kalks FX Options stay in English.
+// Ezymex FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Ezymex Trader in options mode.
+// Ezymex, Ezymex Trader and Ezymex FX Options stay in English.
 const options: NsMessages<"options"> = {
   // Navigation entry
   "nav.title": "অপশন",
 
   // Page header
-  "page.title": "Kalks FX Options",
-  "page.subtitle": "ফরেক্স, গোল্ড, সিলভার ও অয়েলে অপশন কিনুন বা বিক্রি করুন, সরাসরি Kalks Trader-এর ভেতরেই।",
+  "page.title": "Ezymex FX Options",
+  "page.subtitle": "ফরেক্স, গোল্ড, সিলভার ও অয়েলে অপশন কিনুন বা বিক্রি করুন, সরাসরি Ezymex Trader-এর ভেতরেই।",
   "page.statusReady": "ট্রেডের জন্য প্রস্তুত",
   "page.learnCourse": "অপশন কোর্স",
 
   // Hero card
-  "hero.eyebrow": "Kalks Trader-এ নতুন",
+  "hero.eyebrow": "Ezymex Trader-এ নতুন",
   "hero.title": "13টি মার্কেটে অপশন, একদম সহজভাবে",
   "hero.text": "ফরেক্স মেজর ও ক্রস পেয়ার, গোল্ড, সিলভার এবং ক্রুড অয়েলে ইউরোপিয়ান অপশন। দৈনিক, সাপ্তাহিক বা মাসিক এক্সপায়ারি বেছে নিন। প্রতিটি অপশন নগদে, মার্কিন ডলারে সেটেল হয়, তাই আপনাকে কখনো কোনো কিছুর ডেলিভারি নিতে হয় না।",
   "hero.feature.underlyings.title": "13টি আন্ডারলাইং",
@@ -57,16 +57,16 @@ const options: NsMessages<"options"> = {
   "terms.inShort": "সংক্ষেপে",
   "terms.point.buy": "অপশন কিনলে: সর্বোচ্চ ক্ষতি হলো আপনার দেওয়া অর্থ।",
   "terms.point.sell": "অপশন বিক্রি করলে প্রাপ্ত অর্থের চেয়ে বেশি ক্ষতি হতে পারে, এবং এতে মার্জিন লাগে।",
-  "terms.point.prices": "প্রাইস নির্ধারিত হয় Kalks অর্ডার বুকে এবং Kalks-এর মাধ্যমে।",
+  "terms.point.prices": "প্রাইস নির্ধারিত হয় Ezymex অর্ডার বুকে এবং Ezymex-এর মাধ্যমে।",
   "terms.point.settle": "এক্সপায়ারিতে অপশন নগদে সেটেল হয়।",
   "terms.englishNote": "নিচের সম্পূর্ণ টেক্সটটি ইংরেজিতে, এবং এটিই আইনত বাধ্যতামূলক ভার্সন।",
   "terms.acceptedOn": "আপনি ভার্সন {version} {date} তারিখে গ্রহণ করেছেন।",
   "terms.close": "বন্ধ করুন",
   "terms.unavailable": "অপশনের শর্তাবলি এখন উপলব্ধ নয়। অনুগ্রহ করে পরে আবার চেষ্টা করুন।",
 
-  // Kalks Trader button
-  "trade.ready": "আপনি পুরোপুরি প্রস্তুত। অপশন Kalks Trader-এ খোলে, আপনার CFD যে অ্যাকাউন্টে আছে সেই একই অ্যাকাউন্টে।",
-  "trade.cta": "Kalks Trader-এ অপশন ট্রেড করুন",
+  // Ezymex Trader button
+  "trade.ready": "আপনি পুরোপুরি প্রস্তুত। অপশন Ezymex Trader-এ খোলে, আপনার CFD যে অ্যাকাউন্টে আছে সেই একই অ্যাকাউন্টে।",
+  "trade.cta": "Ezymex Trader-এ অপশন ট্রেড করুন",
   "trade.chooseAccount": "একটি অ্যাকাউন্ট বেছে নিন",
   "trade.noAccount": "অপশন ট্রেড করতে আপনার একটি সক্রিয় ট্রেডিং অ্যাকাউন্ট প্রয়োজন।",
   "trade.openAccount": "অ্যাকাউন্ট খুলুন",
@@ -75,7 +75,7 @@ const options: NsMessages<"options"> = {
   "trade.demo": "ডেমো",
 
   // Key facts card
-  "facts.title": "Kalks FX Options কীভাবে কাজ করে",
+  "facts.title": "Ezymex FX Options কীভাবে কাজ করে",
   "facts.style": "ইউরোপিয়ান স্টাইল: এক্সপায়ারিতে স্বয়ংক্রিয়ভাবে এক্সারসাইজ হয়, তার আগে কখনো নয়।",
   "facts.premium": "প্রিমিয়াম USD-তে, প্রতি কন্ট্রাক্টে; ক্রেতারা পজিশন খোলার সময় পুরোটা পরিশোধ করেন।",
   "facts.contracts": "একটি কন্ট্রাক্ট: একটি কারেন্সির 10,000 ইউনিট, 1 আউন্স গোল্ড, 50 আউন্স সিলভার বা 10 ব্যারেল অয়েল।",

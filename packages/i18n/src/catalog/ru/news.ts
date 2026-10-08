@@ -45,7 +45,7 @@ const news: NsMessages<"news"> = {
   "markets.trade": "Торговать",
   "markets.searchPlaceholder": "Поиск по символу или названию…",
   "markets.clearSearch": "Очистить",
-  "markets.liveTooltip": "Котировки поступают из ценового потока Kalks",
+  "markets.liveTooltip": "Котировки поступают из ценового потока Ezymex",
   "markets.footnote": "Спреды группы Standard: в пунктах для FX, в единицах цены для остальных · для закрытых рынков показана последняя цена · нажмите на строку, чтобы увидеть спецификацию контракта",
   // Short trading-hours summary per asset class (24/5 = 24 hours, 5 days a week)
   "hoursShort.forex": "24/5",
@@ -281,7 +281,7 @@ const news: NsMessages<"news"> = {
   "cal.removeReminder": "Удалить напоминание",
   "cal.remindMe": "Напомнить за 15 мин",
   "cal.toWatch": "Инструменты для наблюдения",
-  "cal.noLinked": "С этой валютой не связаны напрямую инструменты Kalks.",
+  "cal.noLinked": "С этой валютой не связаны напрямую инструменты Ezymex.",
   // High-impact alerts card
   "alerts.title": "Оповещения о важных событиях",
   "alerts.toggle": "Оповещать перед событиями высокой важности",

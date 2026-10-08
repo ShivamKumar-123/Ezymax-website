@@ -4,8 +4,8 @@ import * as React from "react";
 import { AlertTriangle, BadgeCheck, Check, Clock, FileSearch, Lock, Mail, RotateCcw, ShieldCheck, UserCheck, X } from "lucide-react";
 import { motion } from "motion/react";
 import { Button, Chip, Illustration, cn } from "@/components/kit";
-import { tr, useT } from "@kalks/i18n/react";
-import type { T } from "@kalks/i18n";
+import { tr, useT } from "@ezymex/i18n/react";
+import type { T } from "@ezymex/i18n";
 import type { KycDocument, KycState, TimelineEvent } from "./api";
 
 function fmt(iso: string | null | undefined, withTime = true) {

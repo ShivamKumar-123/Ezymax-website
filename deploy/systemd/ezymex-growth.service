@@ -1,0 +1,21 @@
+[Unit]
+Description=Ezymex growth: rewards and marketing (:8101)
+After=network-online.target postgresql.service ezymex-gateway.service ezymex-trading.service ezymex-wallet.service
+Wants=network-online.target
+
+[Service]
+User=ezymex
+WorkingDirectory=/home/ezymex/ezymex/services/growth
+EnvironmentFile=/home/ezymex/ezymex/.env.local
+Environment=RUST_LOG=info
+Environment=GROWTH_ENV=production
+Environment=GROWTH_BIND=127.0.0.1:8101
+ExecStart=/home/ezymex/ezymex/target/release/growth
+Restart=always
+RestartSec=3
+KillSignal=SIGINT
+TimeoutStopSec=20
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

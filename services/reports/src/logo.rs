@@ -1,12 +1,12 @@
-//! The Kalks logo as vector paths, parsed from the brand SVG (assets/brand/kalks-logo.svg: absolute M / L / C / Z
+//! The Ezymex logo as vector paths, parsed from the brand SVG (assets/brand/ezymex-logo.svg: absolute M / L / C / Z
 //! commands with implicit repeats). The mark (the subpaths left of the wordmark) is drawn in ember, the wordmark in ink.
 
 use crate::pdf::{A4_H, Page, Rgb};
 
-const SVG: &str = include_str!("../../../assets/brand/kalks-logo.svg");
+const SVG: &str = include_str!("../../../assets/brand/ezymex-logo.svg");
 /// SVG viewBox of the logo.
-const VIEW_W: f64 = 1954.0;
-const VIEW_H: f64 = 541.0;
+const VIEW_W: f64 = 2801.0;
+const VIEW_H: f64 = 559.0;
 /// Subpaths entirely left of this x belong to the mark.
 const MARK_MAX_X: f64 = 660.0;
 
@@ -116,8 +116,8 @@ mod tests {
     #[test]
     fn logo_has_mark_and_wordmark() {
         let p = super::parse();
-        assert_eq!(p.len(), 8);
+        assert_eq!(p.len(), 10);
         let marks = p.iter().filter(|s| super::max_x(s) < super::MARK_MAX_X).count();
-        assert_eq!(marks, 3);
+        assert_eq!(marks, 4);
     }
 }

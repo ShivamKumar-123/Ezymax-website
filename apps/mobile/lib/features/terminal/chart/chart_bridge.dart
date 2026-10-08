@@ -1,6 +1,6 @@
 // The message codec between the app and the chart page (assets/chart/chart.html, lightweight-charts 5.2.1, the same
 // engine as the web terminal). Dart -> page: JSON passed to `window.K.recv(...)`; page -> Dart: JSON posted on the
-// `KalksChart` JavaScript channel. Both sides are tiny and versioned by `type`, so the page stays dumb: Dart owns the
+// `EzymexChart` JavaScript channel. Both sides are tiny and versioned by `type`, so the page stays dumb: Dart owns the
 // data (history, forming bars, quotes, trade lines) and the page draws it and reports gestures.
 import 'dart:convert';
 
@@ -182,7 +182,7 @@ abstract final class ChartCmd {
 sealed class ChartEvent {
   const ChartEvent();
 
-  /// Parses one message of the `KalksChart` channel; null for anything unknown or malformed.
+  /// Parses one message of the `EzymexChart` channel; null for anything unknown or malformed.
   static ChartEvent? decode(String raw) {
     Object? m;
     try {

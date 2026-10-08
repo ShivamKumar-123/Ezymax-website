@@ -23,8 +23,8 @@ import {
   Wand2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Chip, Flag, IconButton, Kbd, Menu, Popover, Segmented, Tooltip, cn } from "@kalks/ui";
-import { SUP_AGENTS, SUP_CANNED, type SupConversation, type SupMessage } from "@kalks/mock/admin-growth-support";
+import { Avatar, Button, Chip, Flag, IconButton, Kbd, Menu, Popover, Segmented, Tooltip, cn } from "@ezymex/ui";
+import { SUP_AGENTS, SUP_CANNED, type SupConversation, type SupMessage } from "@ezymex/mock/admin-growth-support";
 import { AiSpark, ChannelBadge, ConvStatusChip, SlaCountdown, VarText, closeFloating, fillVars } from "./shared";
 
 /* ------------------------------------------------------------------ */
@@ -242,7 +242,7 @@ export function ChatThread({
     amount: conv.context.lastWithdrawal ? `${conv.context.lastWithdrawal.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })} USDT` : "{{amount}}",
     withdrawal_id: conv.context.lastWithdrawal?.id ?? "{{withdrawal_id}}",
     eta: "4 business hours",
-    kb_link: "kalks.com/help/news-spreads",
+    kb_link: "ezymex.com/help/news-spreads",
     leverage: "1:500",
     deposit_id: "TX904412",
   };

@@ -6,7 +6,7 @@
 import * as React from "react";
 import dynamic from "next/dynamic";
 import { ChevronsRight } from "lucide-react";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { useTerminal, type SideTab } from "@/lib/store";
 import { PanelTabs } from "@/components/ui/panel";
 import { IconButton } from "@/components/ui/kit";

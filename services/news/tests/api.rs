@@ -3,7 +3,7 @@
 //! hide / retag, the world map, calendar ranges and server-time display across the November DST change,
 //! event history, reminders, staff actuals / impact and the Back Office guards.
 //!
-//! Needs the local Postgres (127.0.0.1:5433). Uses a throw-away database `kalks_news_test_<pid>`; skipped
+//! Needs the local Postgres (127.0.0.1:5433). Uses a throw-away database `ezymex_news_test_<pid>`; skipped
 //! with a message when Postgres is not reachable. Override with NEWS_TEST_DATABASE_URL (a server URL).
 
 use axum::body::Body;
@@ -24,7 +24,7 @@ use news::{AppState, feed, store};
 async fn test_db() -> Option<String> {
     let server = std::env::var("NEWS_TEST_DATABASE_URL").unwrap_or_else(|_| "postgres://postgres@127.0.0.1:5433/postgres".into());
     let opts = PgConnectOptions::from_str(&server).ok()?;
-    let db = format!("kalks_news_test_{}", std::process::id());
+    let db = format!("ezymex_news_test_{}", std::process::id());
     let mut conn = match opts.clone().database("postgres").connect().await {
         Ok(c) => c,
         Err(e) => {
@@ -51,7 +51,7 @@ struct T {
 
 impl T {
     async fn call(&self, method: &str, path: &str, headers: &[(&str, &str)], body: Option<Value>) -> (StatusCode, Value) {
-        let mut req = Request::builder().method(method).uri(path).header("x-kalks-internal", "test-token");
+        let mut req = Request::builder().method(method).uri(path).header("x-ezymex-internal", "test-token");
         for (k, v) in headers {
             req = req.header(*k, *v);
         }
@@ -148,8 +148,8 @@ async fn news_and_calendar_end_to_end() {
     assert_ne!(p1["items"][1]["id"], p2["items"][0]["id"]);
 
     // --- Back Office: pin / hide / retag are per tenant ---
-    let staff = [("x-kalks-staff", "editor@kalks.com")];
-    let other = [("x-kalks-staff", "ops@acme.com"), ("x-kalks-tenant", "acme")];
+    let staff = [("x-ezymex-staff", "editor@ezymex.com")];
+    let other = [("x-ezymex-staff", "ops@acme.com"), ("x-ezymex-tenant", "acme")];
     let fomc_id = v["items"].as_array().unwrap().iter().find(|i| i["title"] == "Federal Reserve issues FOMC statement").unwrap()["id"].as_i64().unwrap();
     let btc_id = v["items"].as_array().unwrap().iter().find(|i| i["symbols"][0] == "BTCUSD").unwrap()["id"].as_i64().unwrap();
     let (s, _) = t.call("PUT", &format!("/v1/admin/news/{fomc_id}"), &[], Some(json!({"pinned": true}))).await;
@@ -165,7 +165,7 @@ async fn news_and_calendar_end_to_end() {
     let (s, _) = t.call("GET", &format!("/v1/news/{btc_id}"), &[], None).await;
     assert_eq!(s, StatusCode::NOT_FOUND);
     // another tenant sees the automatic feed
-    let (_, acme) = t.call("GET", "/v1/news", &[("x-kalks-tenant", "acme")], None).await;
+    let (_, acme) = t.call("GET", "/v1/news", &[("x-ezymex-tenant", "acme")], None).await;
     assert!(acme["pinned"].as_array().unwrap().is_empty());
     assert!(titles(&acme, "items").iter().any(|x| x.contains("Bitcoin")));
     // retag: symbols + countries drive currencies; unknown values rejected
@@ -276,7 +276,7 @@ async fn news_and_calendar_end_to_end() {
     let next = t.get("/v1/calendar/next").await;
     assert_eq!(next["event"]["title"], "CPI m/m");
     let cpi_id = next["event"]["id"].as_i64().unwrap();
-    let user = [("x-kalks-user-id", "42")];
+    let user = [("x-ezymex-user-id", "42")];
     let (s, _) = t.call("POST", "/v1/me/calendar/reminders", &[], Some(json!({"eventId": cpi_id}))).await;
     assert_eq!(s, StatusCode::UNAUTHORIZED);
     let (s, e) = t.call("POST", "/v1/me/calendar/reminders", &user, Some(json!({"eventId": cpi_id, "minutes": 7}))).await;
@@ -293,7 +293,7 @@ async fn news_and_calendar_end_to_end() {
     let (_, me) = t.call("GET", "/v1/me/calendar", &user, None).await;
     assert_eq!(me["reminders"], json!([cpi_id]));
     assert_eq!(me["alerts"]["minutes"], 15);
-    let (_, me2) = t.call("GET", "/v1/me/calendar", &[("x-kalks-user-id", "42"), ("x-kalks-tenant", "acme")], None).await;
+    let (_, me2) = t.call("GET", "/v1/me/calendar", &[("x-ezymex-user-id", "42"), ("x-ezymex-tenant", "acme")], None).await;
     assert_eq!(me2["reminders"], json!([]), "reminders are per tenant");
     t.call("DELETE", &format!("/v1/me/calendar/reminders/{cpi_id}"), &user, None).await;
     assert_eq!(t.call("GET", "/v1/me/calendar", &user, None).await.1["reminders"], json!([]));
@@ -348,9 +348,9 @@ async fn calendar_reminders_are_delivered_once() {
     let cpi: i64 = sqlx::query_scalar("SELECT id FROM calendar_events WHERE ext_key = 'a'").fetch_one(&pool).await.unwrap();
     let permits: i64 = sqlx::query_scalar("SELECT id FROM calendar_events WHERE ext_key = 'b'").fetch_one(&pool).await.unwrap();
     for (u, ev, m) in [(1_i64, cpi, 15), (2, cpi, 15), (3, permits, 15)] {
-        sqlx::query("INSERT INTO calendar_reminders (tenant, user_id, event_id, minutes) VALUES ('kalks', $1, $2, $3)").bind(u).bind(ev).bind(m).execute(&pool).await.unwrap();
+        sqlx::query("INSERT INTO calendar_reminders (tenant, user_id, event_id, minutes) VALUES ('ezymex', $1, $2, $3)").bind(u).bind(ev).bind(m).execute(&pool).await.unwrap();
     }
-    sqlx::query("INSERT INTO calendar_alerts (tenant, user_id, high_impact, minutes) VALUES ('kalks', 9, true, 15)").execute(&pool).await.unwrap();
+    sqlx::query("INSERT INTO calendar_alerts (tenant, user_id, high_impact, minutes) VALUES ('ezymex', 9, true, 15)").execute(&pool).await.unwrap();
 
     let mut cfg = Config::for_tests(&url);
     cfg.support_url = "http://127.0.0.1:9".into(); // nothing listens: delivery fails
@@ -366,7 +366,7 @@ async fn calendar_reminders_are_delivered_once() {
         axum::routing::post(move |h: axum::http::HeaderMap, axum::Json(b): axum::Json<Value>| {
             let s2 = s2.clone();
             async move {
-                s2.lock().unwrap().push((h.get("x-kalks-service").and_then(|v| v.to_str().ok()).unwrap_or("").to_string(), b));
+                s2.lock().unwrap().push((h.get("x-ezymex-service").and_then(|v| v.to_str().ok()).unwrap_or("").to_string(), b));
                 axum::Json(json!({"results": []}))
             }
         }),

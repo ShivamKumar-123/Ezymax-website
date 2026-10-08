@@ -20,7 +20,7 @@ const academy: NsMessages<"academy"> = {
   "practice.demo": "डेमो पर अभ्यास करें",
   "practice.openFreeDemo": "मुफ़्त डेमो अकाउंट खोलें",
   "practice.openDemo": "डेमो खोलें",
-  "practice.inTrader": "Kalks Trader में अभ्यास करें",
+  "practice.inTrader": "Ezymex Trader में अभ्यास करें",
 
   // Levels (sent by the Academy service)
   "level.beginner": "शुरुआती",
@@ -31,12 +31,12 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "फ़ंडामेंटल एनालिसिस",
   "track.technical": "टेक्निकल एनालिसिस",
-  // Product track of the Kalks FX Options elective (phase 9)
+  // Product track of the Ezymex FX Options elective (phase 9)
   "track.options": "ऑप्शंस ट्रेडिंग",
   "trackShort.fundamental": "फ़ंडामेंटल",
   "trackShort.technical": "टेक्निकल",
   "trackShort.options": "ऑप्शंस",
-  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  // Chip on a product course (e.g. Ezymex FX Options) that sits outside the eight core phases and can be taken at any time
   elective: "वैकल्पिक",
 
   // Durations (h = hours, m = minutes)
@@ -52,7 +52,7 @@ const academy: NsMessages<"academy"> = {
   "home.pathText": "हर मुख्य फ़ेज़ में एक फ़ंडामेंटल और एक टेक्निकल ट्रैक, एक अंतिम परीक्षा और एक सर्टिफ़िकेट है।",
   // Section under the learning path listing the electives
   "home.electivesTitle": "वैकल्पिक कोर्स",
-  "home.electivesText": "Kalks प्रोडक्ट्स पर कोर्स। इन्हें कभी भी करें: हर कोर्स की अपनी अंतिम परीक्षा और सर्टिफ़िकेट है।",
+  "home.electivesText": "Ezymex प्रोडक्ट्स पर कोर्स। इन्हें कभी भी करें: हर कोर्स की अपनी अंतिम परीक्षा और सर्टिफ़िकेट है।",
   "hero.allDone": "सभी चैप्टर पूरे",
   "hero.continue": "सीखना जारी रखें",
   "hero.upNext": "अगला",
@@ -220,7 +220,7 @@ const academy: NsMessages<"academy"> = {
   "callout.example": "उदाहरण",
   "callout.tip": "सुझाव",
   "callout.note": "नोट",
-  "callout.inKalksTrader": "Kalks Trader में",
+  "callout.inEzymexTrader": "Ezymex Trader में",
   diagram: "डायग्राम",
 };
 export default academy;

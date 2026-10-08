@@ -3,15 +3,15 @@
 import * as React from "react";
 import { toast } from "@/lib/notify";
 import { Bot, ChevronDown, ChevronRight, Compass, FileCode2, Spline, UserRound } from "lucide-react";
-import { MY_STRATEGIES } from "@kalks/mock/algo";
-import { cn } from "@kalks/ui";
+import { MY_STRATEGIES } from "@ezymex/mock/algo";
+import { cn } from "@ezymex/ui";
 import { useTerminal } from "@/lib/store";
 import { INDICATOR_CATEGORIES, INDICATOR_LIST } from "@/lib/indicators";
 import { addIndicator } from "@/components/chart/indicators/state";
 import { PanelHeader } from "@/components/ui/panel";
 import { Badge } from "@/components/ui/primitives";
 import { openRegister, openSignIn } from "@/lib/guest";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 
 function Group({ icon, title, count, children, defaultOpen = true }: { icon: React.ReactNode; title: string; count?: number; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = React.useState(defaultOpen);

@@ -1,15 +1,15 @@
 "use client";
 
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveSessions } from "@/components/live/sessions";
 
 import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import { Clock3, KeyRound, Laptop, LogOut, MonitorSmartphone, ShieldAlert, ShieldCheck, Smartphone, Tablet, Timer, Usb } from "lucide-react";
-import { Avatar, Button, Card, CardHeader, Chip, Dialog, DialogClose, Flag, KpiCard, PageHeader, Reveal, Segmented, Toggle, Tooltip, cn } from "@kalks/ui";
-import { PEOPLE } from "@kalks/mock";
-import { ORG_ROLE_META, SEC_SESSIONS, orgEmployee, type SecSession } from "@kalks/mock/admin-platform-security";
+import { Avatar, Button, Card, CardHeader, Chip, Dialog, DialogClose, Flag, KpiCard, PageHeader, Reveal, Segmented, Toggle, Tooltip, cn } from "@ezymex/ui";
+import { PEOPLE } from "@ezymex/mock";
+import { ORG_ROLE_META, SEC_SESSIONS, orgEmployee, type SecSession } from "@ezymex/mock/admin-platform-security";
 import { Mono, TenantDot, ago, timeGmt3, dayGmt3 } from "@/components/security/shared";
 
 const MFA_LABEL = { hardware: "Security key", totp: "Authenticator", sms: "SMS", none: "None" } as const;

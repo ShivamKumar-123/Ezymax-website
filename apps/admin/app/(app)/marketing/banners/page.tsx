@@ -3,11 +3,11 @@
 import * as React from "react";
 import { CalendarRange, Copy, Eye, Image as ImageIcon, LayoutDashboard, LogIn, MoreHorizontal, MousePointerClick, Pencil, Plus, Trash2, Users, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, IconButton, KpiCard, Menu, PageHeader, Reveal, Segmented, StatusChip, Toggle, cn } from "@kalks/ui";
-import { MKT_BANNERS, type MktBanner, type MktPlacement } from "@kalks/mock/admin-growth-marketing";
+import { Button, Card, CardHeader, Chip, IconButton, KpiCard, Menu, PageHeader, Reveal, Segmented, StatusChip, Toggle, cn } from "@ezymex/ui";
+import { MKT_BANNERS, type MktBanner, type MktPlacement } from "@ezymex/mock/admin-growth-marketing";
 import { BannerEditor } from "@/components/marketing/banner-editor";
 import { BannerPreview, fmtDate, fmtInt, fmtK } from "@/components/marketing/kit";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveBanners } from "@/components/marketing/live/banners";
 
 type P = "all" | MktPlacement;

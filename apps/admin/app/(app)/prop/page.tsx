@@ -3,11 +3,11 @@
 import * as React from "react";
 import Link from "next/link";
 import { Activity, CircleDollarSign, Layers, Percent, Plus, Scale, Trophy } from "lucide-react";
-import { Button, Chip, KpiCard, Money, PageHeader, Reveal } from "@kalks/ui";
+import { Button, Chip, KpiCard, Money, PageHeader, Reveal } from "@ezymex/ui";
 import { auditToast } from "@/components/config/kit";
 import { OVERVIEW } from "@/components/prop/data";
 import { ActivityCard, BreachReasonsCard, FeesPayoutsCard, FunnelCard, PlanMixCard, PlanPerformanceStrip } from "@/components/prop/overview";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LivePropOverview } from "@/components/prop-live/overview";
 
 export default function PropOverviewPage() {
@@ -23,7 +23,7 @@ function DemoPropOverviewPage() {
         subtitle="Evaluation pipeline, funded traders and the fee vs payout book · September 2026"
         actions={
           <>
-            <Button variant="surface" size="sm" onClick={() => auditToast("Monthly prop report queued", "PDF + CSV will be emailed to finance@kalks.com")}>
+            <Button variant="surface" size="sm" onClick={() => auditToast("Monthly prop report queued", "PDF + CSV will be emailed to finance@ezymex.com")}>
               <Layers /> Export report
             </Button>
             <Link href="/prop/payouts">

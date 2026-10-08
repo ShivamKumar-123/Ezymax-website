@@ -1,6 +1,6 @@
 "use client";
 
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveStaff } from "@/components/rbac/staff";
 
 import * as React from "react";
@@ -22,9 +22,9 @@ import {
   Users,
   Wifi,
 } from "lucide-react";
-import { Avatar, Button, Card, CardHeader, Chip, DataTable, Donut, IconButton, KpiCard, Menu, PageHeader, Reveal, Segmented, Tooltip, cn, type Column } from "@kalks/ui";
-import { PEOPLE } from "@kalks/mock";
-import { ORG_DESKS, ORG_EMPLOYEES, ORG_ROLE_META, type OrgEmployee, type OrgRoleKey } from "@kalks/mock/admin-platform-security";
+import { Avatar, Button, Card, CardHeader, Chip, DataTable, Donut, IconButton, KpiCard, Menu, PageHeader, Reveal, Segmented, Tooltip, cn, type Column } from "@ezymex/ui";
+import { PEOPLE } from "@ezymex/mock";
+import { ORG_DESKS, ORG_EMPLOYEES, ORG_ROLE_META, type OrgEmployee, type OrgRoleKey } from "@ezymex/mock/admin-platform-security";
 import { InviteDialog, type InviteDraft } from "@/components/org/invite-dialog";
 import { AvatarStack, RoleChip, TWOFA_LABEL, deskName } from "@/components/org/shared";
 import { TenantStack, ago } from "@/components/security/shared";

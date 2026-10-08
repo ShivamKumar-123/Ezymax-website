@@ -24,8 +24,8 @@ import {
   formatDateTime,
   type Column,
 } from "@/components/kit";
-import { ACCOUNTS, getInstrument } from "@kalks/mock";
-import { type FanoutTarget, type SignalWebhook, type SizingMode, type WebhookDelivery } from "@kalks/mock/developer";
+import { ACCOUNTS, getInstrument } from "@ezymex/mock";
+import { type FanoutTarget, type SignalWebhook, type SizingMode, type WebhookDelivery } from "@ezymex/mock/developer";
 import { CodeBlock, toJson } from "./code-block";
 import { ago } from "./api-keys";
 
@@ -496,7 +496,7 @@ export function CreateWebhookDialog({ open, onOpenChange, onCreate }: { open: bo
       name: name.trim(),
       source,
       symbols,
-      url: `https://hooks.kalks.com/v1/signal/${id}${Array.from(crypto.getRandomValues(new Uint8Array(2)), (b) => b.toString(16).padStart(2, "0")).join("")}`,
+      url: `https://hooks.ezymex.com/v1/signal/${id}${Array.from(crypto.getRandomValues(new Uint8Array(2)), (b) => b.toString(16).padStart(2, "0")).join("")}`,
       secret,
       enabled: true,
       createdAt: new Date().toISOString(),

@@ -23,7 +23,7 @@ before(async () => {
     const url = new URL(req.url, "http://x");
     res.writeHead(url.pathname === "/v1/public/tenant-config" ? 200 : 404, { "content-type": "application/json" });
     if (url.pathname !== "/v1/public/tenant-config") return res.end(JSON.stringify({ error: { code: "not_found", message: "stub" } }));
-    res.end(JSON.stringify({ maintenance: { active: false }, modules: MODULES[req.headers["x-kalks-host"]] ?? {}, flags: {} }));
+    res.end(JSON.stringify({ maintenance: { active: false }, modules: MODULES[req.headers["x-ezymex-host"]] ?? {}, flags: {} }));
   });
   await new Promise((resolve) => gateway.listen(0, "127.0.0.1", resolve));
   process.env.GATEWAY_URL = `http://127.0.0.1:${gateway.address().port}`;

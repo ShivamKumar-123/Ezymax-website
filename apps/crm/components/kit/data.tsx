@@ -2,12 +2,12 @@
 
 // Page header and KPI card of the Client Area: a big friendly display title with a grey line under it, and KPI
 // cards with a thin coloured accent bar, a large bold value and a small change chip (the pastel dashboard look).
-// Same props as the @kalks/ui versions.
+// Same props as the @ezymex/ui versions.
 
 import * as React from "react";
 import Link from "next/link";
 import { ArrowDownRight, ArrowUpRight, MoreHorizontal } from "lucide-react";
-import { cn } from "@kalks/ui";
+import { cn } from "@ezymex/ui";
 import type { ChipTone } from "./primitives";
 
 /** Page title block: title + subtitle + actions. */

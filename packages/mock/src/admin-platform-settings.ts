@@ -11,8 +11,8 @@ import { seeded } from "./rng";
 /* ------------------------------------------------------------------ */
 
 export const SET_GENERAL = {
-  brandName: "Kalks Markets",
-  legalName: "Kalks Markets Ltd",
+  brandName: "Ezymex Markets",
+  legalName: "Ezymex Markets Ltd",
   regNumber: "HY00724-KM",
   regulator: "FSA Seychelles · SD118",
   address: "Suite 305, Griffith Corporate Centre, Kingstown, St. Vincent & the Grenadines",
@@ -21,8 +21,8 @@ export const SET_GENERAL = {
   baseCurrency: "USD",
   primary: "#FF5A1F",
   accent: "#E9B949",
-  supportEmail: "support@kalks.com",
-  complianceEmail: "compliance@kalks.com",
+  supportEmail: "support@ezymex.com",
+  complianceEmail: "compliance@ezymex.com",
   supportPhone: "+971 4 568 2210",
   whatsapp: "+971 50 118 4420",
   liveChatHours: "24/5 · Mon 00:00 – Sat 00:00 GMT+3",
@@ -39,11 +39,11 @@ export interface SetDomain {
 }
 
 export const SET_DOMAINS: SetDomain[] = [
-  { host: "app.kalks.com", purpose: "Client Area", dns: "verified", ssl: "active", expires: "2026-12-19" },
-  { host: "trade.kalks.com", purpose: "Web terminal", dns: "verified", ssl: "active", expires: "2026-12-19" },
-  { host: "admin.kalks.com", purpose: "Back Office", dns: "verified", ssl: "active", expires: "2026-12-19" },
-  { host: "api.kalks.com", purpose: "Public API & webhooks", dns: "verified", ssl: "active", expires: "2026-12-19" },
-  { host: "status.kalks.com", purpose: "Status page", dns: "pending", ssl: "pending", expires: "—" },
+  { host: "app.ezymex.com", purpose: "Client Area", dns: "verified", ssl: "active", expires: "2026-12-19" },
+  { host: "trade.ezymex.com", purpose: "Web terminal", dns: "verified", ssl: "active", expires: "2026-12-19" },
+  { host: "admin.ezymex.com", purpose: "Back Office", dns: "verified", ssl: "active", expires: "2026-12-19" },
+  { host: "api.ezymex.com", purpose: "Public API & webhooks", dns: "verified", ssl: "active", expires: "2026-12-19" },
+  { host: "status.ezymex.com", purpose: "Status page", dns: "pending", ssl: "pending", expires: "—" },
 ];
 
 export const SET_TIMEZONES = [
@@ -186,14 +186,14 @@ export const SET_INTEGRATIONS: SetIntegration[] = [
     icon: "bank",
     status: "disabled",
     need: "post-launch",
-    description: "A-book routing to an external LP over FIX. Disabled — Kalks runs B-book at launch; routing rules live in Trading → Book & routing.",
+    description: "A-book routing to an external LP over FIX. Disabled — Ezymex runs B-book at launch; routing rules live in Trading → Book & routing.",
     docsUrl: "https://www.fixtrading.org/standards/fix-4-4/",
     whereToGet: "From your LP / prime-of-prime onboarding pack (session sheet).",
     note: "B-book at launch",
     fields: [
       { key: "host", label: "FIX host", type: "text", placeholder: "fix.lp-provider.com" },
       { key: "port", label: "Port", type: "number", placeholder: "9880" },
-      { key: "sender", label: "SenderCompID", type: "text", placeholder: "KALKS_UAT" },
+      { key: "sender", label: "SenderCompID", type: "text", placeholder: "EZYMEX_UAT" },
       { key: "target", label: "TargetCompID", type: "text", placeholder: "LPPRIME" },
     ],
   },
@@ -207,7 +207,7 @@ export const SET_INTEGRATIONS: SetIntegration[] = [
     need: "required",
     description: "Welcome, OTP, deposit and withdrawal emails. Templates live in Content → Email templates.",
     docsUrl: "https://docs.aws.amazon.com/ses/latest/dg/send-email-smtp.html",
-    whereToGet: "AWS console → SES → verified identity (kalks.com) → SMTP settings → create SMTP credentials. Or an API key from SendGrid / Postmark.",
+    whereToGet: "AWS console → SES → verified identity (ezymex.com) → SMTP settings → create SMTP credentials. Or an API key from SendGrid / Postmark.",
     lastChecked: "2026-09-24T15:41:00Z",
     latencyMs: 212,
     meta: [
@@ -224,8 +224,8 @@ export const SET_INTEGRATIONS: SetIntegration[] = [
       { key: "tls", label: "STARTTLS", type: "toggle", value: "on", when: "SMTP" },
       { key: "provider", label: "API provider", type: "select", value: "Amazon SES", options: ["Amazon SES", "SendGrid", "Postmark"], when: "API" },
       { key: "apiKey", label: "API key", type: "secret", placeholder: "Paste provider API key", required: true, when: "API" },
-      { key: "fromName", label: "From name", type: "text", value: "Kalks Markets", required: true },
-      { key: "fromEmail", label: "From email", type: "text", value: "no-reply@kalks.com", required: true },
+      { key: "fromName", label: "From name", type: "text", value: "Ezymex Markets", required: true },
+      { key: "fromEmail", label: "From email", type: "text", value: "no-reply@ezymex.com", required: true },
     ],
   },
   {
@@ -249,8 +249,8 @@ export const SET_INTEGRATIONS: SetIntegration[] = [
       { key: "provider", label: "Provider", type: "select", value: "Twilio", options: ["Twilio", "MSG91", "Gupshup"], required: true },
       { key: "sid", label: "Account SID", type: "text", value: "AC7f3e••••••••••••••••••••1b90", required: true },
       { key: "token", label: "Auth token", type: "secret", value: "••••••••••••••••••••••••••••c4d2", reveal: "EXAMPLEEXAMPLEEXAMPLEEXAMPLEc4d2", required: true },
-      { key: "sender", label: "Sender ID", type: "text", value: "KALKS", required: true },
-      { key: "wa", label: "WhatsApp template", type: "text", value: "kalks_otp_v2", hint: "Approved · en, ar, hi" },
+      { key: "sender", label: "Sender ID", type: "text", value: "EZYMEX", required: true },
+      { key: "wa", label: "WhatsApp template", type: "text", value: "ezymex_otp_v2", hint: "Approved · en, ar, hi" },
       { key: "waNumber", label: "WhatsApp number", type: "text", value: "+971 50 118 4420" },
     ],
   },
@@ -268,7 +268,7 @@ export const SET_INTEGRATIONS: SetIntegration[] = [
     fields: [
       { key: "public", label: "VAPID public key", type: "text", placeholder: "BEl6…", required: true, span: 2 },
       { key: "private", label: "VAPID private key", type: "secret", placeholder: "Keep secret", required: true },
-      { key: "subject", label: "Subject (mailto)", type: "text", value: "mailto:ops@kalks.com", required: true },
+      { key: "subject", label: "Subject (mailto)", type: "text", value: "mailto:ops@ezymex.com", required: true },
     ],
   },
   {
@@ -292,8 +292,8 @@ export const SET_INTEGRATIONS: SetIntegration[] = [
       { key: "token", label: "App token", type: "secret", value: "prd:••••••••••••••••••••Qw8Z", reveal: "prd:EXAMPLEEXAMPLEEXAMPLQw8Z", required: true },
       { key: "secret", label: "Secret key", type: "secret", value: "••••••••••••••••••••••••", reveal: "EXAMPLEEXAMPLEEXAMPLE000", required: true },
       { key: "whSecret", label: "Webhook secret", type: "secret", value: "••••••••••••••••", reveal: "whsec_EXAMPLE00000", required: true },
-      { key: "level", label: "Level name", type: "text", value: "kalks-basic-kyc-level", required: true },
-      { key: "webhook", label: "Webhook URL (paste into Sumsub)", type: "readonly", value: "https://api.kalks.com/webhooks/sumsub", span: 2 },
+      { key: "level", label: "Level name", type: "text", value: "ezymex-basic-kyc-level", required: true },
+      { key: "webhook", label: "Webhook URL (paste into Sumsub)", type: "readonly", value: "https://api.ezymex.com/webhooks/sumsub", span: 2 },
     ],
   },
   {
@@ -304,7 +304,7 @@ export const SET_INTEGRATIONS: SetIntegration[] = [
     icon: "key",
     status: "connected",
     need: "optional",
-    description: "One-tap sign-up and login with Google on app.kalks.com.",
+    description: "One-tap sign-up and login with Google on app.ezymex.com.",
     docsUrl: "https://developers.google.com/identity/protocols/oauth2/web-server",
     whereToGet: "Google Cloud console → APIs & Services → Credentials → OAuth client ID (Web). Add the redirect URL below.",
     lastChecked: "2026-09-24T15:30:00Z",
@@ -313,7 +313,7 @@ export const SET_INTEGRATIONS: SetIntegration[] = [
     fields: [
       { key: "clientId", label: "Client ID", type: "text", value: "418027733915-q8r1…apps.googleusercontent.com", required: true, span: 2 },
       { key: "secret", label: "Client secret", type: "secret", value: "GOCSPX-••••••••••••••••Xs2", reveal: "GOCSPX-EXAMPLEEXAMPLEEXAMPXs2", required: true },
-      { key: "redirect", label: "Redirect URL", type: "readonly", value: "https://app.kalks.com/auth/callback/google" },
+      { key: "redirect", label: "Redirect URL", type: "readonly", value: "https://app.ezymex.com/auth/callback/google" },
     ],
   },
   {
@@ -385,7 +385,7 @@ export const SET_INTEGRATIONS: SetIntegration[] = [
     ],
     fields: [
       { key: "endpoint", label: "Endpoint", type: "url", value: "https://s3.eu-central-1.amazonaws.com", required: true },
-      { key: "bucket", label: "Bucket", type: "text", value: "kalks-prod-private", required: true },
+      { key: "bucket", label: "Bucket", type: "text", value: "ezymex-prod-private", required: true },
       { key: "access", label: "Access key", type: "text", value: "AKIAEXAMPLE•••••••••", required: true },
       { key: "secret", label: "Secret key", type: "secret", value: "••••••••••••••••••••••••••••••••", reveal: "EXAMPLE-secret-access-key-EXAMPLE000", required: true },
     ],
@@ -440,7 +440,7 @@ export const SET_GO_LIVE: { id: string; label: string; detail: string; done: boo
   { id: "legal", label: "Legal documents published", detail: "7 documents · v1.0", done: true, href: "/content/legal" },
   { id: "news", label: "Fix news feed error", detail: "1 RSS feed returning 403", done: false, href: "/settings/integrations" },
   { id: "push", label: "Web push keys", detail: "Generate VAPID key pair", done: false, href: "/settings/integrations" },
-  { id: "status", label: "Status page domain", detail: "status.kalks.com DNS pending", done: false, href: "/settings" },
+  { id: "status", label: "Status page domain", detail: "status.ezymex.com DNS pending", done: false, href: "/settings" },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -545,11 +545,11 @@ export interface SetWebhook {
 }
 
 export const SET_WEBHOOKS: SetWebhook[] = [
-  { id: "wh_01", name: "CRM sync (HubSpot)", url: "https://hooks.kalks-crm.io/hubspot/ingest", events: ["client.created", "client.updated", "kyc.approved", "deposit.completed"], status: "active", secret: "whsec_EXAMPLE000000001", successRate: 99.8, deliveries24h: 1842, avgMs: 184, created: "2026-02-11" },
-  { id: "wh_02", name: "Data warehouse", url: "https://ingest.kalks-dwh.net/events", events: ["trade.opened", "trade.closed", "deposit.completed", "withdrawal.approved", "account.created"], status: "active", secret: "whsec_EXAMPLE000000002", successRate: 99.97, deliveries24h: 64210, avgMs: 62, created: "2026-01-04" },
-  { id: "wh_03", name: "IB portal · Aurum partners", url: "https://partners.aurumfx.com/api/kalks-webhook", events: ["ib.client.linked", "ib.commission.paid"], status: "failing", secret: "whsec_EXAMPLE000000003", successRate: 71.4, deliveries24h: 318, avgMs: 2410, created: "2026-06-22" },
+  { id: "wh_01", name: "CRM sync (HubSpot)", url: "https://hooks.ezymex-crm.io/hubspot/ingest", events: ["client.created", "client.updated", "kyc.approved", "deposit.completed"], status: "active", secret: "whsec_EXAMPLE000000001", successRate: 99.8, deliveries24h: 1842, avgMs: 184, created: "2026-02-11" },
+  { id: "wh_02", name: "Data warehouse", url: "https://ingest.ezymex-dwh.net/events", events: ["trade.opened", "trade.closed", "deposit.completed", "withdrawal.approved", "account.created"], status: "active", secret: "whsec_EXAMPLE000000002", successRate: 99.97, deliveries24h: 64210, avgMs: 62, created: "2026-01-04" },
+  { id: "wh_03", name: "IB portal · Aurum partners", url: "https://partners.aurumfx.com/api/ezymex-webhook", events: ["ib.client.linked", "ib.commission.paid"], status: "failing", secret: "whsec_EXAMPLE000000003", successRate: 71.4, deliveries24h: 318, avgMs: 2410, created: "2026-06-22" },
   { id: "wh_04", name: "Risk alerts → Slack", url: "https://hooks.slack.com/services/T04K…/B07Q…", events: ["margin.call", "stop.out", "withdrawal.requested"], status: "active", secret: "whsec_EXAMPLE000000004", successRate: 100, deliveries24h: 207, avgMs: 141, created: "2026-03-30" },
-  { id: "wh_05", name: "Marketing automation (legacy)", url: "https://api.old-mailer.com/v1/kalks", events: ["client.created"], status: "paused", secret: "whsec_EXAMPLE000000005", successRate: 96.2, deliveries24h: 0, avgMs: 420, created: "2025-12-01" },
+  { id: "wh_05", name: "Marketing automation (legacy)", url: "https://api.old-mailer.com/v1/ezymex", events: ["client.created"], status: "paused", secret: "whsec_EXAMPLE000000005", successRate: 96.2, deliveries24h: 0, avgMs: 420, created: "2025-12-01" },
 ];
 
 export interface SetDelivery {

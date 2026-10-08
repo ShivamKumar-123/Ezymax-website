@@ -1,4 +1,4 @@
-/* Kalks design tokens — see .superdesign/design-system.md */
+/* Ezymex design tokens — see .superdesign/design-system.md */
 @import "flag-icons/css/flag-icons.min.css" layer(base);
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -205,7 +205,7 @@
   .fi.fis { border-radius: 999px; }
 }
 
-/* ---------------- Kalks icon tiles (AnimIcon) — static, crisp, no blur or motion ---------------- */
+/* ---------------- Ezymex icon tiles (AnimIcon) — static, crisp, no blur or motion ---------------- */
 @layer components {
   .anim-icon {
     display: inline-grid;

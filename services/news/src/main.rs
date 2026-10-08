@@ -1,4 +1,4 @@
-//! Kalks news + economic calendar service (:8103). See src/api.rs for the API contract.
+//! Ezymex news + economic calendar service (:8103). See src/api.rs for the API contract.
 
 use news::config::Config;
 use news::{AppState, api, store, workers};

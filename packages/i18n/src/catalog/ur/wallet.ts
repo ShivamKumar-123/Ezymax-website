@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Keep brand and network names as they are: Kalks, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
+// Keep brand and network names as they are: Ezymex, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
 // MetaMask, TronLink, Tronscan, USD, USC, KYC.
 const wallet: NsMessages<"wallet"> = {
   // Shared labels
@@ -389,17 +389,17 @@ const wallet: NsMessages<"wallet"> = {
   "demo.linkCopied": "لنک کلپ بورڈ پر کاپی ہو گیا",
   "demo.sendOnlyWarning": "<b>صرف TRON (TRC20) کے ذریعے USDT بھیجیں۔</b> کوئی دوسرا ٹوکن بھیجنے، یا ERC20 / BEP20 استعمال کرنے سے رقم مستقل طور پر ضائع ہو جائے گی۔",
   "demo.arrival": "آمد",
-  "demo.kalksFee": "Kalks فیس",
+  "demo.ezymexFee": "Ezymex فیس",
   "demo.noKycDeposit": "ڈپازٹ کے لیے KYC کی ضرورت نہیں۔ تصدیق صرف پہلی بار رقم نکالنے سے پہلے درکار ہے۔",
   // Withdraw
   "demo.addrStartT": "TRC20 ایڈریس “T” سے شروع ہوتے ہیں",
   "demo.addrLength": "34 حروف ہونے چاہئیں ({length}/34)",
   "demo.addrChars": "غلط حروف موجود ہیں (0، O، I، l کی اجازت نہیں)",
-  "demo.addrOwn": "یہ آپ کا اپنا Kalks ڈپازٹ ایڈریس ہے",
+  "demo.addrOwn": "یہ آپ کا اپنا Ezymex ڈپازٹ ایڈریس ہے",
   "demo.justNow": "ابھی",
   "demo.codeConfirmed": "کوڈ کی تصدیق {email} کے ذریعے ہو گئی",
   "demo.financeReviews": "فنانس ٹیم ہر نکاسی کا جائزہ لیتی ہے · عام طور پر 2 گھنٹے سے کم",
-  "demo.sentFromHot": "منظوری کے بعد Kalks ہاٹ والیٹ سے بھیجا جاتا ہے",
+  "demo.sentFromHot": "منظوری کے بعد Ezymex ہاٹ والیٹ سے بھیجا جاتا ہے",
   "demo.arriveAfter": "20 تصدیقات کے بعد رقم آپ کے ایڈریس پر پہنچ جاتی ہے",
   "demo.pendingTitle": "زیر التوا نکاسیاں",
   "demo.awaitingCompletion": "{count} تکمیل کے منتظر",
@@ -458,7 +458,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.alwaysReviewed": "ہمیشہ فنانس ٹیم جائزہ لیتی ہے",
   "demo.unrecoverable": "ایسے ایکسچینجز پر جو TRC20 USDT سپورٹ نہیں کرتے، یا اسمارٹ کنٹریکٹ ایڈریسز پر بھیجی گئی رقم واپس نہیں مل سکتی۔",
   // Transfer
-  "demo.kalksWallet": "Kalks والیٹ",
+  "demo.ezymexWallet": "Ezymex والیٹ",
   "demo.freeMargin": "فری مارجن",
   "demo.assetAvailable": "{amount} {asset} دستیاب · {network}",
   "demo.throughWallet": "ٹرانسفرز ہمیشہ آپ کے والیٹ کے ذریعے ہوتے ہیں۔",
@@ -493,7 +493,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.rule4Title": "فری مارجن محفوظ",
   "demo.rule4Text": "آپ صرف اتنی رقم نکال سکتے ہیں جتنی آپ کا فری مارجن اجازت دے، تاکہ کھلی ٹریڈز محفوظ رہیں۔",
   "demo.into": "میں",
-  "demo.intoKalksWallet": "آپ کے Kalks والیٹ میں",
+  "demo.intoEzymexWallet": "آپ کے Ezymex والیٹ میں",
   "demo.freeMarginAfter": "بعد میں فری مارجن",
   "demo.marginLevelAfter": "بعد میں مارجن لیول",
   "demo.convertedNote": "{asset} کو لائیو ریٹ سے {markup}% مارک اپ کم کر کے USD میں تبدیل کیا جاتا ہے۔ تصدیق تک ریٹ ہر ٹک پر ریفریش ہوتا ہے۔",

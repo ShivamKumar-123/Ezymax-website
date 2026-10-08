@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { Minus, Plus, Trash2, Wand2 } from "lucide-react";
-import { Button, Card, CardHeader, Chip, Flag, Menu, Toggle, cn } from "@kalks/ui";
-import { LEVELS, SYMBOL_GROUPS, type CommissionPlan, type LevelKey, type SymbolGroup } from "@kalks/mock/admin-partners";
+import { Button, Card, CardHeader, Chip, Flag, Menu, Toggle, cn } from "@ezymex/ui";
+import { LEVELS, SYMBOL_GROUPS, type CommissionPlan, type LevelKey, type SymbolGroup } from "@ezymex/mock/admin-partners";
 import { ChipList, MiniField, NumInput, SettingRow, Select } from "@/components/config/kit";
 import { LEVEL_COLOR } from "./common";
 

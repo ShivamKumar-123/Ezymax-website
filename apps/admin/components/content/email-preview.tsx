@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { cn } from "@kalks/ui";
+import { cn } from "@ezymex/ui";
 
 /** Replace {{var}} with sample values; unknown variables render as a red token. */
 function renderInline(text: string, samples: Record<string, string>, raw: boolean) {
@@ -30,7 +30,7 @@ export function substitute(text: string, samples: Record<string, string>) {
 }
 
 /**
- * The email as the client receives it: dark Kalks shell, masked logo,
+ * The email as the client receives it: dark Ezymex shell, masked logo,
  * ember CTA pill and a regulatory footer. `rtl` flips direction for Arabic/Urdu.
  */
 export function EmailPreview({
@@ -42,7 +42,7 @@ export function EmailPreview({
   rtl,
   raw,
   width = "desktop",
-  brand = "Kalks Markets",
+  brand = "Ezymex Markets",
 }: {
   subject: string;
   preheader: string;
@@ -64,7 +64,7 @@ export function EmailPreview({
             <span
               aria-hidden
               className="block h-3 w-3.5 bg-white"
-              style={{ WebkitMask: "url(/assets/brand/kalks-mark.svg) center / contain no-repeat", mask: "url(/assets/brand/kalks-mark.svg) center / contain no-repeat" }}
+              style={{ WebkitMask: "url(/assets/brand/ezymex-mark.svg) center / contain no-repeat", mask: "url(/assets/brand/ezymex-mark.svg) center / contain no-repeat" }}
             />
           </span>
           <div className="min-w-0 flex-1">
@@ -89,9 +89,9 @@ export function EmailPreview({
             <div className="pointer-events-none absolute inset-x-0 -top-24 h-48 bg-[radial-gradient(60%_100%_at_50%_0%,rgba(255,92,31,0.55),rgba(196,52,20,0.18)_45%,transparent_75%)]" />
             <span
               role="img"
-              aria-label="Kalks"
+              aria-label="Ezymex"
               className="relative block h-[22px] w-[80px] bg-white"
-              style={{ WebkitMask: "url(/assets/brand/kalks-logo.svg) left center / contain no-repeat", mask: "url(/assets/brand/kalks-logo.svg) left center / contain no-repeat", ...(rtl ? { WebkitMaskPosition: "right center", maskPosition: "right center", marginInlineStart: 0 } : {}) }}
+              style={{ WebkitMask: "url(/assets/brand/ezymex-logo.svg) left center / contain no-repeat", mask: "url(/assets/brand/ezymex-logo.svg) left center / contain no-repeat", ...(rtl ? { WebkitMaskPosition: "right center", maskPosition: "right center", marginInlineStart: 0 } : {}) }}
             />
           </div>
 
@@ -132,7 +132,7 @@ export function EmailPreview({
                 ? "عقود الفروقات أدوات معقدة وتنطوي على مخاطر عالية لفقدان الأموال بسرعة بسبب الرافعة المالية. يجب أن تفكر فيما إذا كنت تستطيع تحمل مخاطر خسارة أموالك."
                 : "CFDs are complex instruments and come with a high risk of losing money rapidly due to leverage. 74% of retail investor accounts lose money when trading CFDs. You should consider whether you can afford to take the high risk of losing your money."}
             </p>
-            <p className="mt-2">Kalks Markets Ltd · FSA Seychelles SD142 · CT House, Providence, Mahé, Seychelles</p>
+            <p className="mt-2">Ezymex Markets Ltd · FSA Seychelles SD142 · CT House, Providence, Mahé, Seychelles</p>
             <p className="mt-2 flex flex-wrap gap-x-3 text-[#8a8a94]">
               <span className="underline decoration-white/20">{rtl ? "إعدادات البريد" : "Email preferences"}</span>
               <span className="underline decoration-white/20">{rtl ? "سياسة الخصوصية" : "Privacy policy"}</span>

@@ -1,4 +1,4 @@
--- Kalks FX Options trading contests and options share cards (founder decision O36). Additive only: every existing
+-- Ezymex FX Options trading contests and options share cards (founder decision O36). Additive only: every existing
 -- contest keeps `instrument = 'cfd'` and scores exactly as before. Option deals still earn no loyalty points,
 -- cashback or bonus lot-release (O34); they now count, and only count, in contests with `instrument = 'options'`.
 

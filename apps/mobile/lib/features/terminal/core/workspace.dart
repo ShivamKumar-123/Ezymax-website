@@ -1,4 +1,4 @@
-// Kalks Trader workspace on this phone (web: lib/store.tsx Workspace, saved per browser): favourites, the watchlist
+// Ezymex Trader workspace on this phone (web: lib/store.tsx Workspace, saved per browser): favourites, the watchlist
 // segment, one-click trading, sounds, the default volume, max deviation, the chart's symbol and timeframe, price
 // alerts and the last account. Kept in the app's preferences (not secret).
 import 'package:flutter/foundation.dart';

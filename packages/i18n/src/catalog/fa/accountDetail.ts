@@ -60,7 +60,7 @@ const accountDetail: NsMessages<"accountDetail"> = {
   "overview.openPositions": "پوزیشن‌های باز",
   "overview.positionsSubtitle": "{open} باز · {pending} معلق",
   "overview.allPositions": "همه پوزیشن‌ها",
-  "overview.noPositions": "پوزیشن بازی وجود ندارد. در Kalks Trader معامله کنید تا اینجا نمایش داده شوند.",
+  "overview.noPositions": "پوزیشن بازی وجود ندارد. در Ezymex Trader معامله کنید تا اینجا نمایش داده شوند.",
   "overview.recentDeals": "معاملات اخیر",
   "overview.dealsCount": { one: "{count} معامله در این حساب", other: "{count} معامله در این حساب" },
   "overview.recentDealsSubtitle": "آخرین ورودها و خروج‌ها",
@@ -112,10 +112,10 @@ const accountDetail: NsMessages<"accountDetail"> = {
 
   // Positions tab (live)
   "positions.emptyTitle": "پوزیشن باز یا سفارش معلقی وجود ندارد",
-  "positions.emptyText": "در Kalks Trader معامله کنید؛ پوزیشن‌های باز و سود و زیان آن‌ها اینجا نمایش داده شده و هر چند ثانیه به‌روز می‌شوند.",
-  "positions.openTrader": "باز کردن Kalks Trader",
+  "positions.emptyText": "در Ezymex Trader معامله کنید؛ پوزیشن‌های باز و سود و زیان آن‌ها اینجا نمایش داده شده و هر چند ثانیه به‌روز می‌شوند.",
+  "positions.openTrader": "باز کردن Ezymex Trader",
   // <pnl>…</pnl> wraps the coloured floating P&L amount
-  "positions.subtitleTrader": "{count} باز · شناور <pnl>{amount}</pnl> · مدیریت و بستن آن‌ها در Kalks Trader",
+  "positions.subtitleTrader": "{count} باز · شناور <pnl>{amount}</pnl> · مدیریت و بستن آن‌ها در Ezymex Trader",
   "positions.manageInTrader": "مدیریت در Trader",
   "positions.none": "پوزیشن بازی وجود ندارد.",
   "orders.title": "سفارش‌های معلق",
@@ -164,7 +164,7 @@ const accountDetail: NsMessages<"accountDetail"> = {
   "history.subtitle": "همه معاملات ورود و خروج، به وقت سرور",
   "history.loadError": "بارگذاری تاریخچه انجام نشد",
   "history.emptyTitle": "در این بازه معامله‌ای وجود ندارد",
-  "history.emptyText": "معاملاتی که در Kalks Trader انجام می‌دهید، همراه با ورود و خروج آن‌ها اینجا نمایش داده می‌شوند.",
+  "history.emptyText": "معاملاتی که در Ezymex Trader انجام می‌دهید، همراه با ورود و خروج آن‌ها اینجا نمایش داده می‌شوند.",
   "history.closedSummary": "{count} معامله بسته‌شده · خالص <net>{amount}</net>",
   "history.searchPlaceholder": "نماد یا تیکت",
 
@@ -274,9 +274,9 @@ const accountDetail: NsMessages<"accountDetail"> = {
 
   // Credentials tab
   "creds.title": "اطلاعات ورود",
-  "creds.subtitle": "برای ورود به Kalks Trader از این اطلاعات استفاده کنید.",
+  "creds.subtitle": "برای ورود به Ezymex Trader از این اطلاعات استفاده کنید.",
   "creds.mt5Title": "اطلاعات ورود MT5",
-  "creds.mt5Subtitle": "برای ورود به ترمینال Kalks یا هر برنامه MetaTrader 5 از این اطلاعات استفاده کنید.",
+  "creds.mt5Subtitle": "برای ورود به ترمینال Ezymex یا هر برنامه MetaTrader 5 از این اطلاعات استفاده کنید.",
   "creds.fullAccess": "دسترسی کامل",
   "creds.master": "اصلی",
   "creds.readOnly": "فقط‌خواندنی",
@@ -285,13 +285,13 @@ const accountDetail: NsMessages<"accountDetail"> = {
   "creds.tradingDescDemo": "دسترسی کامل — باز کردن، ویرایش و بستن معاملات. آخرین تغییر: 12 فوریه 2026.",
   "creds.investorDesc": "مشاهده پوزیشن‌ها و تاریخچه بدون امکان معامله.",
   "creds.investorDescDemo": "دسترسی فقط‌خواندنی برای مربیان، حسابرسان و سرمایه‌گذاران. امکان ثبت معامله ندارد.",
-  "creds.securityNote": "برای امنیت شما، Kalks هرگز رمزهای عبور موجود را نمایش نمی‌دهد یا ایمیل نمی‌کند. اگر رمزی را گم کردید، رمز جدیدی اینجا تعیین کنید.",
-  "creds.securityNoteDemo": "برای امنیت شما، Kalks هرگز رمزهای عبور موجود را نمایش نمی‌دهد یا ایمیل نمی‌کند. تغییر هر یک از رمزها به کد یک‌بارمصرفی نیاز دارد که به ایمیل شما ارسال می‌شود.",
+  "creds.securityNote": "برای امنیت شما، Ezymex هرگز رمزهای عبور موجود را نمایش نمی‌دهد یا ایمیل نمی‌کند. اگر رمزی را گم کردید، رمز جدیدی اینجا تعیین کنید.",
+  "creds.securityNoteDemo": "برای امنیت شما، Ezymex هرگز رمزهای عبور موجود را نمایش نمی‌دهد یا ایمیل نمی‌کند. تغییر هر یک از رمزها به کد یک‌بارمصرفی نیاز دارد که به ایمیل شما ارسال می‌شود.",
   "investor.title": "دسترسی سرمایه‌گذار",
   "investor.subtitle": "اجازه دهید یک مربی، حسابرس یا سرمایه‌گذار این حساب را مشاهده کند",
   "investor.step1": "یک رمز عبور سرمایه‌گذار تعیین کنید که مایل به اشتراک‌گذاری آن هستید.",
   "investor.step2": "لاگین {login}، سرور {server} و همان رمز عبور را به اشتراک بگذارید.",
-  "investor.step3": "آن‌ها با این اطلاعات وارد Kalks Trader می‌شوند و پوزیشن‌های زنده و تاریخچه را به‌صورت فقط‌خواندنی می‌بینند.",
+  "investor.step3": "آن‌ها با این اطلاعات وارد Ezymex Trader می‌شوند و پوزیشن‌های زنده و تاریخچه را به‌صورت فقط‌خواندنی می‌بینند.",
   "investor.step4": "برای لغو دسترسی، هر زمان رمز عبور سرمایه‌گذار را تغییر دهید؛ نشست آن‌ها فوراً پایان می‌یابد.",
   "investor.webTerminal": "ترمینال وب · بدون دانلود",
   "platforms.title": "اتصال پلتفرم",
@@ -304,7 +304,7 @@ const accountDetail: NsMessages<"accountDetail"> = {
   "platforms.sendLink": "ارسال لینک",
   "platforms.storeLinksSent": "لینک‌های فروشگاه به ایمیل شما ارسال شد",
   // 2FA = two-factor authentication
-  "platforms.twoFaHint": "برای محافظت از برداشت‌ها و تغییر اطلاعات ورود، 2FA را در پروفایل Kalks خود فعال کنید.",
+  "platforms.twoFaHint": "برای محافظت از برداشت‌ها و تغییر اطلاعات ورود، 2FA را در پروفایل Ezymex خود فعال کنید.",
 
   // Change password dialog
   "pw.trading": "رمز عبور معاملاتی",
@@ -324,7 +324,7 @@ const accountDetail: NsMessages<"accountDetail"> = {
   "pw.stepUpWhat.investor": "تعیین رمز عبور سرمایه‌گذار جدید برای #{login}",
   "pw.sessionsSignedOut": { one: "{count} نشست باز خارج شد", other: "{count} نشست باز خارج شد" },
   "pw.confirmWithCode": "با کدی که به ایمیل شما ارسال کردیم تأیید کنید.",
-  "pw.descTrading": "رمز عبور با دسترسی کامل برای #{login}. نشست‌های Kalks Trader که با رمز قبلی وارد شده‌اند خارج می‌شوند.",
+  "pw.descTrading": "رمز عبور با دسترسی کامل برای #{login}. نشست‌های Ezymex Trader که با رمز قبلی وارد شده‌اند خارج می‌شوند.",
   "pw.descInvestor": "رمز عبور فقط‌خواندنی برای #{login}. آن را به اشتراک بگذارید تا کسی بتواند حساب را بدون معامله مشاهده کند. نشست‌هایی که از رمز قبلی استفاده می‌کنند خارج می‌شوند.",
   "pw.descTradingDemo": "رمز عبور اصلی برای #{login}. نشست‌های باز ترمینال خارج خواهند شد.",
   "pw.descInvestorDemo": "دسترسی فقط‌خواندنی برای #{login} — آن را با یک مربی یا سرمایه‌گذار به اشتراک بگذارید تا فقط مشاهده کنند، نه معامله.",
@@ -334,7 +334,7 @@ const accountDetail: NsMessages<"accountDetail"> = {
   "pw.sendingCode": "در حال ارسال کد…",
   "pw.updating": "در حال به‌روزرسانی…",
   "pw.update": "به‌روزرسانی رمز عبور",
-  "pw.shownOnce": "فقط یک بار نمایش داده می‌شود. همین حالا آن را کپی کنید؛ Kalks هرگز رمزهای عبور موجود را نمایش نمی‌دهد یا ایمیل نمی‌کند.",
+  "pw.shownOnce": "فقط یک بار نمایش داده می‌شود. همین حالا آن را کپی کنید؛ Ezymex هرگز رمزهای عبور موجود را نمایش نمی‌دهد یا ایمیل نمی‌کند.",
   "pw.new": "رمز عبور جدید",
   "pw.confirmNew": "تکرار رمز عبور جدید",
   "pw.mismatch": "رمزهای عبور مطابقت ندارند",
@@ -354,8 +354,8 @@ const accountDetail: NsMessages<"accountDetail"> = {
   "leverage.changeError": "تغییر اهرم انجام نشد",
   "leverage.lockedTitle": "تا زمانی که پوزیشن باز دارید، اهرم قفل است",
   "leverage.lockedTextTrader": {
-    one: "برای تغییر اهرم، {count} پوزیشن باز خود را در Kalks Trader ببندید. این کار از تغییر ناگهانی مارجین معاملات جاری جلوگیری می‌کند.",
-    other: "برای تغییر اهرم، {count} پوزیشن باز خود را در Kalks Trader ببندید. این کار از تغییر ناگهانی مارجین معاملات جاری جلوگیری می‌کند.",
+    one: "برای تغییر اهرم، {count} پوزیشن باز خود را در Ezymex Trader ببندید. این کار از تغییر ناگهانی مارجین معاملات جاری جلوگیری می‌کند.",
+    other: "برای تغییر اهرم، {count} پوزیشن باز خود را در Ezymex Trader ببندید. این کار از تغییر ناگهانی مارجین معاملات جاری جلوگیری می‌کند.",
   },
   "leverage.lockedText": {
     one: "برای تغییر اهرم، {count} پوزیشن باز خود را ببندید. این کار از تغییر ناگهانی مارجین معاملات جاری جلوگیری می‌کند.",
@@ -375,7 +375,7 @@ const accountDetail: NsMessages<"accountDetail"> = {
   // <n>…</n> wraps the number of refills left
   "demoFunds.refillsLeft": "<n>{left}</n> از {total} شارژ مجدد امروز باقی‌مانده",
   "demoFunds.full": "موجودی برابر مبلغ اولیه است، بنابراین نیازی به شارژ مجدد نیست.",
-  "demoFunds.resetNote": "شارژهای مجدد ساعت 00:00 به وقت سرور بازنشانی می‌شوند. حساب پس از {days} روز بدون ورود به Kalks Trader منقضی می‌شود.",
+  "demoFunds.resetNote": "شارژهای مجدد ساعت 00:00 به وقت سرور بازنشانی می‌شوند. حساب پس از {days} روز بدون ورود به Ezymex Trader منقضی می‌شود.",
   "demoFunds.expiresIn": "انقضا تا",
   "demoFunds.refilled": "موجودی دمو شارژ شد",
   "demoFunds.refilledDesc": "#{login} به {amount} بازنشانی شد · {left} بار امروز باقی‌مانده",

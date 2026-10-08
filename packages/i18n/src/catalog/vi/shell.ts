@@ -21,7 +21,7 @@ const shell: NsMessages<"shell"> = {
   security: "Bảo mật",
   verification: "Xác minh",
   preferences: "Tùy chọn",
-  kalksTrader: "Kalks Trader",
+  ezymexTrader: "Ezymex Trader",
   deposit: "Nạp tiền",
   // Client Area navigation
   "nav.dashboard": "Bảng điều khiển",
@@ -92,7 +92,7 @@ const shell: NsMessages<"shell"> = {
   "gate.title": "Chưa được bật cho tài khoản của bạn",
   "gate.text": "Mục này chưa được bật cho tài khoản của bạn. Vui lòng liên hệ {email} nếu bạn cần truy cập.",
   "gate.backToDashboard": "Về bảng điều khiển",
-  "gate.launchTrader": "Mở Kalks Trader",
+  "gate.launchTrader": "Mở Ezymex Trader",
   // market sessions clock
   "sessions.title": "Phiên giao dịch",
   "sessions.openLeft": "Đang mở · còn {h}g {m}p",

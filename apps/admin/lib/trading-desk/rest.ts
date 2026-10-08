@@ -12,7 +12,7 @@
  *     every second; on `resync` or reconnect the state is reloaded over REST
  *   - writes: POST/PATCH/PUT with { reasonCode, note }; the returned audit entries are merged immediately.
  */
-import type { RoutingRule, TradingGroup } from "@kalks/mock/admin-trading";
+import type { RoutingRule, TradingGroup } from "@ezymex/mock/admin-trading";
 import { liveAccount, loadAccounts, loadDirectory } from "./directory";
 import type {
   AccountControl,

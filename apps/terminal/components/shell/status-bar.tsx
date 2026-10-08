@@ -6,9 +6,9 @@
 // in the ☰ menu.
 import * as React from "react";
 import { ArrowDown, ChevronDown, ChevronUp } from "lucide-react";
-import { priceFeed } from "@kalks/mock";
-import { cn, useFeedMode } from "@kalks/ui";
-import { useT } from "@kalks/i18n/react";
+import { priceFeed } from "@ezymex/mock";
+import { cn, useFeedMode } from "@ezymex/ui";
+import { useT } from "@ezymex/i18n/react";
 import { useTerminal } from "@/lib/store";
 import { useQps } from "@/lib/market";
 import { serverTime } from "@/lib/trading";

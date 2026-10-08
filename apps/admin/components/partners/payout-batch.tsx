@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { Check, Clock3, FileSearch, PauseCircle, ShieldCheck } from "lucide-react";
-import { Avatar, Button, Card, CardHeader, Chip, DataTable, Dialog, Icon3D, Money, StatusChip, cn, type Column } from "@kalks/ui";
-import { PARTNERS, PAYOUT_BATCHES, type PayoutBatch } from "@kalks/mock/admin-partners";
+import { Avatar, Button, Card, CardHeader, Chip, DataTable, Dialog, Icon3D, Money, StatusChip, cn, type Column } from "@ezymex/ui";
+import { PARTNERS, PAYOUT_BATCHES, type PayoutBatch } from "@ezymex/mock/admin-partners";
 import { auditToast, useReason } from "@/components/config/kit";
 import { LevelChip, ShareBar, fmtDT, fmtLots } from "./common";
 
@@ -70,7 +70,7 @@ export function PendingBatchCard() {
       </div>
       <div className="px-6 pt-4">
         <div className="mb-2 text-[11.5px] uppercase tracking-wider text-fg-3">Payout rails</div>
-        <ShareBar parts={[{ label: "USDT TRC20", value: batch.method.usdt, color: "var(--k-up)" }, { label: "Bank", value: batch.method.bank, color: "var(--k-gold)" }, { label: "Kalks wallet", value: batch.method.wallet, color: "var(--k-ember)" }]} />
+        <ShareBar parts={[{ label: "USDT TRC20", value: batch.method.usdt, color: "var(--k-up)" }, { label: "Bank", value: batch.method.bank, color: "var(--k-gold)" }, { label: "Ezymex wallet", value: batch.method.wallet, color: "var(--k-ember)" }]} />
       </div>
       <div className="mt-auto flex flex-wrap items-center gap-2 px-6 pb-6 pt-5">
         <Button

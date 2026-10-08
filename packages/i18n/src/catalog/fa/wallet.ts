@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Keep brand and network names as they are: Kalks, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
+// Keep brand and network names as they are: Ezymex, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
 // MetaMask, TronLink, Tronscan, USD, USC, KYC.
 const wallet: NsMessages<"wallet"> = {
   // Shared labels
@@ -408,17 +408,17 @@ const wallet: NsMessages<"wallet"> = {
   // <b> is bold
   "demo.sendOnlyWarning": "<b>فقط USDT را از طریق TRON (TRC20) ارسال کنید.</b> ارسال هر توکن دیگر یا استفاده از ERC20 / BEP20 باعث از دست رفتن دائمی وجه می‌شود.",
   "demo.arrival": "زمان رسیدن",
-  "demo.kalksFee": "کارمزد Kalks",
+  "demo.ezymexFee": "کارمزد Ezymex",
   "demo.noKycDeposit": "برای واریز نیازی به احراز هویت نیست. احراز هویت فقط پیش از اولین برداشت لازم است.",
   // Withdraw
   "demo.addrStartT": "آدرس‌های TRC20 با «T» شروع می‌شوند",
   "demo.addrLength": "باید 34 کاراکتر باشد ({length}/34)",
   "demo.addrChars": "شامل کاراکترهای نامعتبر است (0، O، I و l مجاز نیستند)",
-  "demo.addrOwn": "این آدرس واریز Kalks خود شماست",
+  "demo.addrOwn": "این آدرس واریز Ezymex خود شماست",
   "demo.justNow": "همین حالا",
   "demo.codeConfirmed": "کد از طریق {email} تأیید شد",
   "demo.financeReviews": "تیم مالی هر برداشت را بررسی می‌کند · معمولاً کمتر از 2 ساعت",
-  "demo.sentFromHot": "پس از تأیید از کیف پول گرم Kalks ارسال می‌شود",
+  "demo.sentFromHot": "پس از تأیید از کیف پول گرم Ezymex ارسال می‌شود",
   "demo.arriveAfter": "وجه پس از 20 تأییدیه به آدرس شما می‌رسد",
   "demo.pendingTitle": "برداشت‌های در انتظار",
   "demo.awaitingCompletion": "{count} در انتظار تکمیل",
@@ -480,7 +480,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.alwaysReviewed": "همیشه توسط تیم مالی بررسی می‌شود",
   "demo.unrecoverable": "برداشت به صرافی‌هایی که از USDT روی TRC20 پشتیبانی نمی‌کنند یا به آدرس‌های قرارداد هوشمند قابل بازیابی نیست.",
   // Transfer
-  "demo.kalksWallet": "کیف پول Kalks",
+  "demo.ezymexWallet": "کیف پول Ezymex",
   "demo.freeMargin": "مارجین آزاد",
   "demo.assetAvailable": "{amount} {asset} در دسترس · {network}",
   "demo.throughWallet": "انتقال‌ها همیشه از طریق کیف پول شما انجام می‌شوند.",
@@ -515,7 +515,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.rule4Title": "محافظت از مارجین آزاد",
   "demo.rule4Text": "فقط به اندازه‌ای که مارجین آزاد اجازه می‌دهد می‌توانید برداشت کنید تا معاملات باز امن بمانند.",
   "demo.into": "به",
-  "demo.intoKalksWallet": "به کیف پول Kalks شما",
+  "demo.intoEzymexWallet": "به کیف پول Ezymex شما",
   "demo.freeMarginAfter": "مارجین آزاد پس از انتقال",
   "demo.marginLevelAfter": "سطح مارجین پس از انتقال",
   "demo.convertedNote": "{asset} با نرخ لحظه‌ای منهای {markup}% کارمزد به USD تبدیل می‌شود. نرخ تا زمان تأیید شما با هر تیک به‌روز می‌شود.",

@@ -3,8 +3,8 @@
 import * as React from "react";
 import Link from "next/link";
 import { ArrowUpRight, Info, RotateCcw, Save } from "lucide-react";
-import { Button, Chip, Dialog, Segmented, Toggle, cn } from "@kalks/ui";
-import { ALL_LEVERAGES, type AdminGroup, type ChargeOn, type MarkupType, type Route } from "@kalks/mock/admin-config";
+import { Button, Chip, Dialog, Segmented, Toggle, cn } from "@ezymex/ui";
+import { ALL_LEVERAGES, type AdminGroup, type ChargeOn, type MarkupType, type Route } from "@ezymex/mock/admin-config";
 import { ChipList, MiniField, NumInput, Section, Select, SettingRow, Slider, TextInput, auditToast } from "./kit";
 
 export const ROUTE_LABEL: Record<Route, string> = { A: "A-book", B: "B-book", auto: "Auto" };
@@ -12,7 +12,7 @@ export const CHARGE_LABEL: Record<ChargeOn, string> = { open: "On open", close: 
 
 export function blankGroup(): AdminGroup {
   return {
-    id: "new", name: "New group", tagline: "", mode: "hedging", cent: false, currency: "USD", server: "Kalks-Live01",
+    id: "new", name: "New group", tagline: "", mode: "hedging", cent: false, currency: "USD", server: "Ezymex-Live01",
     leverage: [50, 100, 200, 500], defaultLeverage: 200, marginCall: 100, stopOut: 50, hedgedMargin: 50, minDeposit: 100,
     swapFree: false, islamicFee: { enabled: false, perLot: 0, graceDays: 0, basis: "per-lot-night" }, route: "B",
     autoRule: { aBookAboveLots: 10, toxicityScore: 70, profitableDays: 10 }, commission: { perLot: 0, chargeOn: "round" },
@@ -83,7 +83,7 @@ export function GroupEditor({ group, open, onOpenChange, onSave }: { group: Admi
               <TextInput value={g.name} onChange={(v) => set("name", v)} />
             </MiniField>
             <MiniField label="Trade server" className="col-span-2 sm:col-span-1">
-              <Select value={g.server} onChange={(v) => set("server", v)} options={["Kalks-Live01", "Kalks-Live02", "Kalks-Live03"]} />
+              <Select value={g.server} onChange={(v) => set("server", v)} options={["Ezymex-Live01", "Ezymex-Live02", "Ezymex-Live03"]} />
             </MiniField>
             <MiniField label="Client Area tagline" className="col-span-2">
               <TextInput value={g.tagline} onChange={(v) => set("tagline", v)} placeholder="Shown on the open-account screen" />
@@ -201,7 +201,7 @@ export function GroupEditor({ group, open, onOpenChange, onSave }: { group: Admi
           ) : (
             <p className="mt-3 flex items-start gap-2 text-[12px] text-fg-3">
               <Info className="mt-0.5 size-3.5 shrink-0" />
-              {g.route === "A" ? "Every order is hedged 1:1 with the LP bridge (Kalks-LP · Tier-1 pool). Broker earns commission + markup only." : "Orders are internalised; exposure is netted on the dealer desk and hedged by risk thresholds."}
+              {g.route === "A" ? "Every order is hedged 1:1 with the LP bridge (Ezymex-LP · Tier-1 pool). Broker earns commission + markup only." : "Orders are internalised; exposure is netted on the dealer desk and hedged by risk thresholds."}
             </p>
           )}
         </Section>

@@ -10,9 +10,9 @@
 // rebate (maker) and the order margin held; the answer to the order shows its fills, partial fills and what rests.
 import * as React from "react";
 import { ArrowUpRight, CheckCircle2, CircleDashed, Info, Lock, X } from "lucide-react";
-import { OPTION_SPEC, parseSeriesCode, tickDecimals } from "@kalks/mock/options";
-import { cn } from "@kalks/ui";
-import { useLocale, useT } from "@kalks/i18n/react";
+import { OPTION_SPEC, parseSeriesCode, tickDecimals } from "@ezymex/mock/options";
+import { cn } from "@ezymex/ui";
+import { useLocale, useT } from "@ezymex/i18n/react";
 import { toast } from "@/lib/notify";
 import { useTerminal } from "@/lib/store";
 import { GuestActions } from "@/components/shell/guest";

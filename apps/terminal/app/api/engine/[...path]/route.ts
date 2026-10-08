@@ -1,7 +1,7 @@
 import type { NextRequest, NextResponse } from "next/server";
 import { clientAccount, csrf, engine, error, readSessions, reply, sessionFor, soft, streamUrl, writeSessions, type EngineSession, type Obj } from "@/lib/engine/server";
 
-// Kalks Trader trading BFF. Browser -> /api/engine/<route> (same origin, `X-Kalks-Login: <login>` picks which
+// Ezymex Trader trading BFF. Browser -> /api/engine/<route> (same origin, `X-Ezymex-Login: <login>` picks which
 // of this browser's sessions acts) -> engine /v1/terminal/<route> with that session's bearer token + the
 // internal token. Neither token reaches the browser. CSRF: the cookie is SameSite=Lax and every write must
 // be a same-origin JSON request. Investor sessions are read-only in the engine (403 read_only).
@@ -19,7 +19,7 @@ import { clientAccount, csrf, engine, error, readSessions, reply, sessionFor, so
 //   POST   demo-refill                      demo accounts: top the balance back up (Client Area API, owner resolved here)
 //   GET    mam?symbol&volume                MAM role of the account + allocation summary (manager) / managing programme (client)
 //
-// Kalks FX Options (same account, same session; investor sessions are read-only):
+// Ezymex FX Options (same account, same session; investor sessions are read-only):
 //   POST   options/preview                  {legs:[{series, side, contracts}], type, limitPremium?} -> margin / P&L preview
 //   POST   options/orders                   {legs, type, limitPremium?, sl?, tp?, trigger?:{symbol, op, price}, tif?, clientOrderId}
 //   POST   options/combos/{comboId}/close   close every leg of a strategy at once (all-or-nothing)
@@ -27,7 +27,7 @@ import { clientAccount, csrf, engine, error, readSessions, reply, sessionFor, so
 //   (closing one option position, also partially: positions/{ticket}/close {volume}; on a book-venue position the
 //   engine closes it reduce-only at market through the book: {status: filled|partial, filled, avgPrice, left})
 //
-// Kalks FX Options order book (docs/OPTIONS-EXCHANGE.md §2, §5, §12; prices per unit in the quote currency):
+// Ezymex FX Options order book (docs/OPTIONS-EXCHANGE.md §2, §5, §12; prices per unit in the quote currency):
 //   POST   options/book/preview             same body as an order (clientOrderId optional) -> reserve, est. avg price, fee
 //   POST   options/book/orders              {series, side, type: limit|market|stop_market|stop_limit, qty, price?,
 //                                            tif: gtc|ioc|fok|gtd, expireAt?, postOnly?, reduceOnly?,
@@ -126,7 +126,7 @@ function optionBody(b: Obj, order: boolean): Obj | NextResponse {
     if (l.side !== "buy" && l.side !== "sell") return error(422, "validation", "Invalid side.");
     if (contracts === undefined || contracts <= 0 || contracts > 100_000) return error(422, "validation", "Invalid contracts.");
     const leg: Obj = { series: l.series, side: l.side, contracts };
-    // a barrier leg (Kalks-quoted, house ticket): {kind: UO|DO|UI|DI, level, rebate?}
+    // a barrier leg (Ezymex-quoted, house ticket): {kind: UO|DO|UI|DI, level, rebate?}
     if (l.barrier !== undefined && l.barrier !== null) {
       const x = l.barrier as Obj;
       const level = num(x.level);
@@ -349,10 +349,10 @@ async function handle(req: NextRequest, { params }: Ctx, method: "GET" | "POST" 
     if (st.status !== 200) return reply(st.status, scrub(st.data));
     if (st.data.readOnly) return error(403, "read_only", "Investor (read-only) sessions can't refill the balance.");
     const acc = (st.data.account ?? {}) as Obj;
-    const r = await engine<Obj>(`/v1/accounts/${s.l}/demo-refill`, { method: "POST", req, headers: { "x-kalks-user-id": String(acc.userId ?? "") } });
+    const r = await engine<Obj>(`/v1/accounts/${s.l}/demo-refill`, { method: "POST", req, headers: { "x-ezymex-user-id": String(acc.userId ?? "") } });
     return reply(r.status, scrub(r.data));
   }
-  // ---- Kalks FX Options
+  // ---- Ezymex FX Options
   if (a === "options") {
     if (method === "POST" && b === "preview" && path.length === 2) {
       const o = optionBody(body, false);

@@ -1,18 +1,18 @@
 import type { NsMessages } from "../../core";
 
-// Kalks FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Kalks Trader in options mode.
+// Ezymex FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Ezymex Trader in options mode.
 const options: NsMessages<"options"> = {
   // Navigation entry
   "nav.title": "Опционы",
 
   // Page header
-  "page.title": "Kalks FX Options",
-  "page.subtitle": "Покупайте и продавайте опционы на валюты, золото, серебро и нефть прямо в Kalks Trader.",
+  "page.title": "Ezymex FX Options",
+  "page.subtitle": "Покупайте и продавайте опционы на валюты, золото, серебро и нефть прямо в Ezymex Trader.",
   "page.statusReady": "Можно торговать",
   "page.learnCourse": "Курс по опционам",
 
   // Hero card
-  "hero.eyebrow": "Новое в Kalks Trader",
+  "hero.eyebrow": "Новое в Ezymex Trader",
   "hero.title": "Опционы на 13 рынках — просто и понятно",
   "hero.text": "Европейские опционы на основные валютные пары и кросс-курсы, золото, серебро и сырую нефть. Выбирайте дневные, недельные или месячные экспирации. Все опционы рассчитываются деньгами в долларах США, поэтому Вы никогда не получаете физическую поставку актива.",
   "hero.feature.underlyings.title": "13 базовых активов",
@@ -56,16 +56,16 @@ const options: NsMessages<"options"> = {
   "terms.inShort": "Вкратце",
   "terms.point.buy": "Покупка опциона: максимум, что Вы можете потерять, — то, что Вы платите.",
   "terms.point.sell": "Продавая опцион, можно потерять больше полученного, и для этого нужна маржа.",
-  "terms.point.prices": "Цены формируются в книге заявок Kalks, а также котируются напрямую Kalks.",
+  "terms.point.prices": "Цены формируются в книге заявок Ezymex, а также котируются напрямую Ezymex.",
   "terms.point.settle": "Опционы рассчитываются деньгами при экспирации.",
   "terms.englishNote": "Полный текст ниже на английском языке — это юридически обязывающая версия.",
   "terms.acceptedOn": "Вы приняли версию {version} {date}.",
   "terms.close": "Закрыть",
   "terms.unavailable": "Условия торговли опционами сейчас недоступны. Пожалуйста, повторите попытку позже.",
 
-  // Kalks Trader button
-  "trade.ready": "Всё готово. Опционы открываются в Kalks Trader, на том же счёте, что и Ваши CFD.",
-  "trade.cta": "Торговать опционами в Kalks Trader",
+  // Ezymex Trader button
+  "trade.ready": "Всё готово. Опционы открываются в Ezymex Trader, на том же счёте, что и Ваши CFD.",
+  "trade.cta": "Торговать опционами в Ezymex Trader",
   "trade.chooseAccount": "Выберите счёт",
   "trade.noAccount": "Для торговли опционами нужен активный торговый счёт.",
   "trade.openAccount": "Открыть счёт",
@@ -74,7 +74,7 @@ const options: NsMessages<"options"> = {
   "trade.demo": "Демо",
 
   // Key facts card
-  "facts.title": "Как работают Kalks FX Options",
+  "facts.title": "Как работают Ezymex FX Options",
   "facts.style": "Европейский тип: автоматическое исполнение при экспирации, не раньше.",
   "facts.premium": "Премия в USD за контракт; покупатель уплачивает её полностью при открытии.",
   "facts.contracts": "Один контракт: 10,000 единиц валюты, 1 унция золота, 50 унций серебра или 10 баррелей нефти.",

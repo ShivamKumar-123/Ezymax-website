@@ -1,6 +1,6 @@
 # algo
 
-The Kalks ALGO service: strategies (visual builder spec and a safe Python-like DSL), an AI assistant (natural language to strategy, D87), a server-side backtester (D80, D86), a 24/7 strategy runtime on demo and live accounts (D81), webhook signals with fan-out (D85), the public REST API with API keys (D77, D78), kill switches and source tags (D84), and the strategy marketplace (D83).
+The Ezymex ALGO service: strategies (visual builder spec and a safe Python-like DSL), an AI assistant (natural language to strategy, D87), a server-side backtester (D80, D86), a 24/7 strategy runtime on demo and live accounts (D81), webhook signals with fan-out (D85), the public REST API with API keys (D77, D78), kill switches and source tags (D84), and the strategy marketplace (D83).
 
 It is a Rust service (axum 0.8, sqlx 0.9, PostgreSQL) on `127.0.0.1:8099`.
 
@@ -28,12 +28,12 @@ Before you start, you need:
 
 ```bash
 cargo build -p algo
-(cd services/algo && nohup ../../target/debug/algo > ~/.kalks-local/algo.log 2>&1 &)
+(cd services/algo && nohup ../../target/debug/algo > ~/.ezymex-local/algo.log 2>&1 &)
 curl -s localhost:8099/health
 cargo test -p algo
 ```
 
-On first start the service creates the `kalks_algo` database and runs `migrations/`.
+On first start the service creates the `ezymex_algo` database and runs `migrations/`.
 
 It reads `ALGO_*`, `TRADING_*`, `WALLET_*` and `MARKET_DATA_URL` from the repo-root `.env.local`, and `ANTHROPIC_API_KEY` from the repo-root `.env.claude`. None of these files are committed.
 
@@ -42,15 +42,15 @@ The CRM and Back Office BFFs need two variables in their `.env.local`: `ALGO_URL
 ## Architecture
 
 ```
- CRM BFF (/api/algo/*) ─┐  X-Kalks-Internal + X-Kalks-User-Id
- Admin BFF (/api/algo/*)┤  X-Kalks-Internal + X-Kalks-Staff-*          ┌── market-data :8081 (candles, quotes)
+ CRM BFF (/api/algo/*) ─┐  X-Ezymex-Internal + X-Ezymex-User-Id
+ Admin BFF (/api/algo/*)┤  X-Ezymex-Internal + X-Ezymex-Staff-*          ┌── market-data :8081 (candles, quotes)
                         ▼                                               │
                   algo :8099 ── strategies / versions (immutable)      ├── trading engine :8090
-                        │       backtest queue (N workers, SKIP LOCKED) │     Client Area routes (X-Kalks-User-Id)
+                        │       backtest queue (N workers, SKIP LOCKED) │     Client Area routes (X-Ezymex-User-Id)
  TradingView ──► /hooks/{token}  runtime (bar scheduler + manage tick) │     terminal API via one-time SSO sessions
  API clients ──► /public/v1/*    webhooks, API keys, marketplace       └── wallet :8095 (subscription payments)
                         │
-                  PostgreSQL kalks_algo
+                  PostgreSQL ezymex_algo
 ```
 
 - **One evaluator.** Visual specs compile to the same expression tree as DSL code (`dsl::from_spec`). The backtester and the runtime run the same vectorised evaluator (`dsl::eval`) on closed bars, so a deployed strategy fires where its backtest did.
@@ -208,7 +208,7 @@ Logs are stored per deployment with a level and a kind: `eval`, `signal`, `order
 
 ## Webhooks
 
-**URLs.** `POST /hooks/wh_…` is exposed publicly as `https://api.kalkstrade.com/algo/hooks/wh_…`. Only a SHA-256 of the token is stored. An optional passphrase is also stored hashed.
+**URLs.** `POST /hooks/wh_…` is exposed publicly as `https://api.ezymex.com/algo/hooks/wh_…`. Only a SHA-256 of the token is stored. An optional passphrase is also stored hashed.
 
 **Body.** A JSON body of at most 16 KB, TradingView style:
 
@@ -239,7 +239,7 @@ plus an optional `maxLots`. Close actions close only the positions this webhook 
 
 ## Public API
 
-The base URL is `https://api.kalkstrade.com/algo/public/v1` (locally `http://127.0.0.1:8099/public/v1`). `GET /public/v1/openapi.json` returns the OpenAPI document.
+The base URL is `https://api.ezymex.com/algo/public/v1` (locally `http://127.0.0.1:8099/public/v1`). `GET /public/v1/openapi.json` returns the OpenAPI document.
 
 | Method & path | Scope | |
 |---|---|---|
@@ -265,11 +265,11 @@ The secret is `HMAC(ALGO_KEY_SECRET, key_id:salt)`. It is shown once and never s
 
 ```bash
 # bearer
-curl -H "Authorization: Bearer $KEY_ID:$SECRET" https://api.kalkstrade.com/algo/public/v1/account
+curl -H "Authorization: Bearer $KEY_ID:$SECRET" https://api.ezymex.com/algo/public/v1/account
 # HMAC (each signature accepted once, timestamp ±30 s)
 TS=$(date +%s000); BODY='{"symbol":"EURUSD","side":"buy","volume":0.1}'
 SIG=$(printf '%s' "${TS}POST/public/v1/orders${BODY}" | openssl dgst -sha256 -hmac "$SECRET" -hex | sed 's/^.* //')
-curl -X POST -H "X-Kalks-Key: $KEY_ID" -H "X-Kalks-Timestamp: $TS" -H "X-Kalks-Signature: $SIG" -H 'content-type: application/json' -d "$BODY" http://127.0.0.1:8099/public/v1/orders
+curl -X POST -H "X-Ezymex-Key: $KEY_ID" -H "X-Ezymex-Timestamp: $TS" -H "X-Ezymex-Signature: $SIG" -H 'content-type: application/json' -d "$BODY" http://127.0.0.1:8099/public/v1/orders
 ```
 
 The HMAC signs the path as the service sees it, `/public/v1/…`, without the `/algo` edge prefix.
@@ -308,7 +308,7 @@ House accounts are platform-owned accounts that give copy trading and the market
 
 **The honesty rule.** Each house account is a real live trading account on the real engine running a real strategy through this runtime on live market data. Its leaderboard statistics, profile and marketplace track record are computed only from what it actually trades, from the moment it is provisioned. Nothing is backfilled: no trades, equity, followers, AUM or history are written by this feature. The backtest is stored and shown, but only ever labelled as a backtest.
 
-**Disclosure.** Clients see every house account labelled **"House strategy · Operated by Kalks"**: on the leaderboard, the master profile (with an explanation box), the copy dialog, their subscription cards and the marketplace listing card and detail. The engine exposes the flag as `house: true` on the master view and on the subscription's master; this service exposes it as `house: true` on listings.
+**Disclosure.** Clients see every house account labelled **"House strategy · Operated by Ezymex"**: on the leaderboard, the master profile (with an explanation box), the copy dialog, their subscription cards and the marketplace listing card and detail. The engine exposes the flag as `house: true` on the master view and on the subscription's master; this service exposes it as `house: true` on listings.
 
 **What provisioning creates** (`src/house.rs`, one step at a time, resumable after a failure):
 
@@ -373,10 +373,10 @@ The service reads `GATEWAY_URL` (default `http://127.0.0.1:8080`) and `GATEWAY_I
 
 ## Internal API
 
-Every `/v1/*` route needs `X-Kalks-Internal: $ALGO_INTERNAL_TOKEN`. JSON uses camelCase keys, and errors are `{"error": {"code", "message", ...}}`.
+Every `/v1/*` route needs `X-Ezymex-Internal: $ALGO_INTERNAL_TOKEN`. JSON uses camelCase keys, and errors are `{"error": {"code", "message", ...}}`.
 
-- **Client routes** need `X-Kalks-User-Id` (the gateway user id) and optionally `X-Kalks-User-Name` (percent-encoded).
-- **Admin routes** need `X-Kalks-Staff-Id`, `X-Kalks-Staff-Name` and `X-Kalks-Staff-Role`. Admin writes need a `note` for the audit log.
+- **Client routes** need `X-Ezymex-User-Id` (the gateway user id) and optionally `X-Ezymex-User-Name` (percent-encoded).
+- **Admin routes** need `X-Ezymex-Staff-Id`, `X-Ezymex-Staff-Name` and `X-Ezymex-Staff-Role`. Admin writes need a `note` for the audit log.
 
 | Area | Routes |
 |---|---|
@@ -394,11 +394,11 @@ Every `/v1/*` route needs `X-Kalks-Internal: $ALGO_INTERNAL_TOKEN`. JSON uses ca
 | Variable | Default | |
 |---|---|---|
 | `ALGO_BIND` | `127.0.0.1:8099` | |
-| `ALGO_DATABASE_URL` | `postgres://postgres@127.0.0.1:5433/kalks_algo` | created and migrated on first start |
+| `ALGO_DATABASE_URL` | `postgres://postgres@127.0.0.1:5433/ezymex_algo` | created and migrated on first start |
 | `ALGO_INTERNAL_TOKEN` | – | required when `ALGO_ENV=production` |
 | `ALGO_KEY_SECRET` | dev placeholder | ≥ 32 chars in production; HMAC master for API key secrets (rotating it invalidates every key) |
 | `ALGO_ENV` | `development` | |
-| `ALGO_PUBLIC_URL` | `http://127.0.0.1:8099` | shown for webhook URLs and the API base (production: `https://api.kalkstrade.com/algo`) |
+| `ALGO_PUBLIC_URL` | `http://127.0.0.1:8099` | shown for webhook URLs and the API base (production: `https://api.ezymex.com/algo`) |
 | `ALGO_WORKERS` | `true` | run the runtime, backtest workers and renewals (exactly one instance) |
 | `ALGO_BACKTEST_WORKERS` / `ALGO_BACKTEST_SECS` | `2` / `120` | |
 | `ALGO_AI_MODEL` | `claude-opus-5-5` | |
@@ -409,15 +409,15 @@ Every `/v1/*` route needs `X-Kalks-Internal: $ALGO_INTERNAL_TOKEN`. JSON uses ca
 | `GATEWAY_URL`, `GATEWAY_INTERNAL_TOKEN` | `http://127.0.0.1:8080` | house users (house accounts) |
 | `ALGO_LOG_FORMAT` | `json` | or `pretty` |
 
-Production runs `deploy/systemd/kalks-algo.service`. `deploy/deploy.sh` does the following:
+Production runs `deploy/systemd/ezymex-algo.service`. `deploy/deploy.sh` does the following:
 
 - builds and restarts the service;
 - generates `ALGO_INTERNAL_TOKEN` and `ALGO_KEY_SECRET` once;
-- derives `ALGO_DATABASE_URL` from `GATEWAY_DATABASE_URL` (database `kalks_algo`);
+- derives `ALGO_DATABASE_URL` from `GATEWAY_DATABASE_URL` (database `ezymex_algo`);
 - copies the Claude key from the terminal's production env into `.env.claude` if it is missing;
 - writes `ALGO_URL` / `ALGO_INTERNAL_TOKEN` into the CRM and admin production env.
 
-Caddy exposes only `/algo/hooks/*` and `/algo/public/v1/*` on `api.kalkstrade.com`.
+Caddy exposes only `/algo/hooks/*` and `/algo/public/v1/*` on `api.ezymex.com`.
 
 ## Tests
 
@@ -434,7 +434,7 @@ cargo test -p algo
 
 ## Known gaps
 
-- **Options.** Strategies, webhooks and the public order route trade CFDs only (`/v1/terminal/orders`); Kalks FX Options orders through the algo API (O35) are not built yet. A deployment books only the exits of CFD tickets it opened itself and ignores option deals (`option` / `instrument: "option"` / series symbol), so premiums and contracts never reach its P&L, daily-loss limit or track record.
+- **Options.** Strategies, webhooks and the public order route trade CFDs only (`/v1/terminal/orders`); Ezymex FX Options orders through the algo API (O35) are not built yet. A deployment books only the exits of CFD tickets it opened itself and ignores option deals (`option` / `instrument: "option"` / series symbol), so premiums and contracts never reach its P&L, daily-loss limit or track record.
 
 - **Sandbox.** The DSL is an interpreted expression language. It is not WASM (D82 said "compiled to WASM"); the grammar, the limits and the deadline make it safe. User-defined functions, loops and state across bars are intentionally absent.
 - **Data.** Tick data is not available (D80 "tick-level later"). The intrabar model uses M1 bars where market-data has them (14 days locally by default) and bar OHLC elsewhere. Margin and stop-out are not modelled in backtests.

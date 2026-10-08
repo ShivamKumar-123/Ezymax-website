@@ -48,7 +48,7 @@ quiz:
     explanation: "A larger-than-expected draw signals tighter supply, which is usually bullish for oil. A tighter oil market tends to support, not weaken, the Canadian dollar."
 ---
 
-Crude oil is the world's most important commodity and one of the most headline-driven markets you can trade. On Kalks it is available as USOIL, tracking West Texas Intermediate (WTI), and UKOIL, tracking Brent. Both are quoted in US dollars per barrel. This chapter explains what moves them and the practical details that separate oil from currency trading.
+Crude oil is the world's most important commodity and one of the most headline-driven markets you can trade. On Ezymex it is available as USOIL, tracking West Texas Intermediate (WTI), and UKOIL, tracking Brent. Both are quoted in US dollars per barrel. This chapter explains what moves them and the practical details that separate oil from currency trading.
 
 ## Supply: OPEC+ and US shale
 
@@ -75,7 +75,7 @@ Gasoline and distillate stocks and refinery utilisation are also watched. Spread
 
 ```text
 Example contract: 1,000 barrels per lot (check the contract specification
-in Kalks Trader for USOIL and UKOIL)
+in Ezymex Trader for USOIL and UKOIL)
 
 Buy 0.20 lot USOIL at 78.40 before the inventory report
 Surprise build, price drops to 76.90
@@ -115,7 +115,7 @@ Oil is traded mainly through futures with monthly expiries. The prices of succes
 
 In **contango**, later contracts are more expensive than the front month. This usually happens when supply is plentiful and holders must pay for storage. In **backwardation**, the front month is more expensive, a sign of a tight market where buyers pay up for immediate barrels.
 
-Oil CFDs that follow futures must roll from one contract to the next before expiry. Because the two contracts trade at different prices, the rollover is usually handled with a price or balance adjustment so that your profit or loss is not distorted by the jump itself. Holding oil for many weeks in steep contango can still be costly through financing and roll effects, so check the contract specification and swap rates in Kalks Trader before holding oil positions for long periods.
+Oil CFDs that follow futures must roll from one contract to the next before expiry. Because the two contracts trade at different prices, the rollover is usually handled with a price or balance adjustment so that your profit or loss is not distorted by the jump itself. Holding oil for many weeks in steep contango can still be costly through financing and roll effects, so check the contract specification and swap rates in Ezymex Trader before holding oil positions for long periods.
 
 ## Common mistakes
 

@@ -4,12 +4,12 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowUpCircle, CalendarCheck, CircleDollarSign, Download, Landmark, Trophy } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, DataTable, KpiCard, Money, PageHeader, Progress, Reveal, StatusChip, cn, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, KpiCard, Money, PageHeader, Progress, Reveal, StatusChip, cn, type Column } from "@ezymex/ui";
 import { PersonCell, SegBar, auditToast, useReason } from "@/components/config/kit";
 import { FUNDED, PLANS, type FundedAccount } from "@/components/prop/data";
 import { FUNDED_STATUS, FundedDrawer, eligibility } from "@/components/prop/funded-drawer";
 import { FilterPills } from "@/components/prop/rules";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveFundedPage } from "@/components/prop-live/funded";
 
 export default function FundedPage() {
@@ -38,7 +38,7 @@ function DemoFundedPage() {
 
   const columns: Column<FundedAccount>[] = [
     { key: "trader", header: "Trader", cell: (a) => <PersonCell name={a.trader.name} photo={a.trader.photo} country={a.trader.country} sub={<span className="font-mono">#{a.login}</span>} verified={a.kyc} />, sort: (a) => a.trader.name },
-    { key: "plan", header: "Plan", cell: (a) => <span className="whitespace-nowrap text-[12.5px] text-fg-2">{a.planName.replace("Kalks ", "")}</span>, hideOn: "lg" },
+    { key: "plan", header: "Plan", cell: (a) => <span className="whitespace-nowrap text-[12.5px] text-fg-2">{a.planName.replace("Ezymex ", "")}</span>, hideOn: "lg" },
     {
       key: "size",
       header: "Size",

@@ -1,10 +1,10 @@
 import type { NsMessages } from "../../core";
 
-// Client Area support: live chat, launcher, support page. "Kalks" and "Kalks AI" stay as they are.
+// Client Area support: live chat, launcher, support page. "Ezymex" and "Ezymex AI" stay as they are.
 const support: NsMessages<"support"> = {
   // Support page
   "page.title": "Msaada",
-  "page.subtitle": "Zungumza na Kalks AI kupata majibu papo hapo. Omba mtu wakati wowote na timu yetu itaendelea na mazungumzo yote.",
+  "page.subtitle": "Zungumza na Ezymex AI kupata majibu papo hapo. Omba mtu wakati wowote na timu yetu itaendelea na mazungumzo yote.",
   "email.prefer": "Unapendelea barua pepe?",
   // <email> and <id> wrap the client's email address and client ID
   "email.writeFrom": "Andika kutoka <email>{email}</email> na ujumuishe kitambulisho chako cha mteja <id>{id}</id>.",
@@ -46,7 +46,7 @@ const support: NsMessages<"support"> = {
   "quick.withdrawal": "Utoaji wangu utafika lini?",
   "quick.stopOut": "Stop-out ni nini?",
   "header.supportTeam": "Timu ya msaada",
-  "header.agentSub": "Msaada kwa Wateja · Kalks",
+  "header.agentSub": "Msaada kwa Wateja · Ezymex",
   "header.connecting": "Tunakuunganisha na wakala…",
   "header.replySoon": "Timu yetu itajibu hapa hivi karibuni",
   "header.helpCentre": "Majibu ya kituo cha msaada · mtu anaweza kujiunga wakati wowote",

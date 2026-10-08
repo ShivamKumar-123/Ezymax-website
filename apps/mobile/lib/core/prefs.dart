@@ -12,14 +12,14 @@ class Prefs {
 
   static Future<Prefs> open() async => Prefs(await SharedPreferences.getInstance());
 
-  static const _kLocale = 'kalks.locale';
-  static const _kTheme = 'kalks.theme';
-  static const _kTraderTheme = 'kalks.trader.theme';
-  static const _kBiometric = 'kalks.biometric';
-  static const _kBiometricAsked = 'kalks.biometric.asked';
-  static const _kConfig = 'kalks.config';
-  static const _kHideBalances = 'kalks.hideBalances';
-  static const _kDemo = 'kalks.demo';
+  static const _kLocale = 'ezymex.locale';
+  static const _kTheme = 'ezymex.theme';
+  static const _kTraderTheme = 'ezymex.trader.theme';
+  static const _kBiometric = 'ezymex.biometric';
+  static const _kBiometricAsked = 'ezymex.biometric.asked';
+  static const _kConfig = 'ezymex.config';
+  static const _kHideBalances = 'ezymex.hideBalances';
+  static const _kDemo = 'ezymex.demo';
 
   String? get locale => _p.getString(_kLocale);
   Future<void> setLocale(String code) => _p.setString(_kLocale, code);
@@ -28,7 +28,7 @@ class Prefs {
   ThemeMode get themeMode => _mode(_p.getString(_kTheme), ThemeMode.light);
   Future<void> setThemeMode(ThemeMode m) => _p.setString(_kTheme, m.name);
 
-  /// Kalks Trader theme: dark by default, like the web terminal.
+  /// Ezymex Trader theme: dark by default, like the web terminal.
   ThemeMode get traderThemeMode => _mode(_p.getString(_kTraderTheme), ThemeMode.dark);
   Future<void> setTraderThemeMode(ThemeMode m) => _p.setString(_kTraderTheme, m.name);
 
@@ -55,7 +55,7 @@ class Prefs {
 
   /// Per-client local event log (toasts kept in the bell, like the web's event log).
   List<Map<String, dynamic>> eventLog(String userKey) {
-    final raw = _p.getString('kalks.events.$userKey');
+    final raw = _p.getString('ezymex.events.$userKey');
     if (raw == null) return const [];
     try {
       return (jsonDecode(raw) as List).whereType<Map<String, dynamic>>().toList();
@@ -64,12 +64,12 @@ class Prefs {
     }
   }
 
-  Future<void> setEventLog(String userKey, List<Map<String, dynamic>> events) => _p.setString('kalks.events.$userKey', jsonEncode(events));
+  Future<void> setEventLog(String userKey, List<Map<String, dynamic>> events) => _p.setString('ezymex.events.$userKey', jsonEncode(events));
 
-  /// A feature's own settings as one JSON object under `kalks.<key>` (Kalks Trader's workspace: favourites, one-click
+  /// A feature's own settings as one JSON object under `ezymex.<key>` (Ezymex Trader's workspace: favourites, one-click
   /// trading, volume…).
-  Map<String, dynamic>? featureJson(String key) => _json('kalks.$key');
-  Future<void> setFeatureJson(String key, Map<String, dynamic> v) => _p.setString('kalks.$key', jsonEncode(v));
+  Map<String, dynamic>? featureJson(String key) => _json('ezymex.$key');
+  Future<void> setFeatureJson(String key, Map<String, dynamic> v) => _p.setString('ezymex.$key', jsonEncode(v));
 
   Map<String, dynamic>? _json(String key) {
     final raw = _p.getString(key);
@@ -83,7 +83,7 @@ class Prefs {
 
   /// Sign-out: drop what belongs to the client (the language, theme and biometric switch stay with the device).
   Future<void> clearClientData() async {
-    for (final k in _p.getKeys().where((k) => k.startsWith('kalks.events.'))) {
+    for (final k in _p.getKeys().where((k) => k.startsWith('ezymex.events.'))) {
       await _p.remove(k);
     }
     await _p.remove(_kHideBalances);

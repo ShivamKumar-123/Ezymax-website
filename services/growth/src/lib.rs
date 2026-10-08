@@ -1,4 +1,4 @@
-//! Kalks growth: rewards (loyalty points, tiers, catalogue, cashback, contests) and marketing (bonus
+//! Ezymex growth: rewards (loyalty points, tiers, catalogue, cashback, contests) and marketing (bonus
 //! campaigns with per-lot release, promo codes, targeted banners, share P&L cards). D29, D121, D135, D136, D144.
 //! Reads closed deals from the trading engine, posts bonus / credit through the engine's admin account API and
 //! pays cash rewards through the wallet service. See README.md.

@@ -4,8 +4,8 @@ import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Chip, Dialog, IconButton, Money, SymbolAvatar, cn, formatDateTime, formatNumber } from "@/components/kit";
-import type { ClosedTrade } from "@kalks/mock";
-import { useFormat, useT } from "@kalks/i18n/react";
+import type { ClosedTrade } from "@ezymex/mock";
+import { useFormat, useT } from "@ezymex/i18n/react";
 
 // 2024-01-01 is a Monday: the calendar is Monday-first. Names come from Intl in the reader's language.
 const DOW_DATES = Array.from({ length: 7 }, (_, i) => Date.UTC(2024, 0, 1 + i));

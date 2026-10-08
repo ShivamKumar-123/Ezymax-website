@@ -3,7 +3,7 @@
 //!
 //! Authentication (either):
 //! - `Authorization: Bearer <key_id>:<secret>` (or `X-API-Key` + `X-API-Secret`);
-//! - HMAC: `X-Kalks-Key: <key_id>`, `X-Kalks-Timestamp: <unix ms>`, `X-Kalks-Signature: hex(HMAC-SHA256(secret,
+//! - HMAC: `X-Ezymex-Key: <key_id>`, `X-Ezymex-Timestamp: <unix ms>`, `X-Ezymex-Signature: hex(HMAC-SHA256(secret,
 //!   timestamp + METHOD + path_with_query + body))`; the timestamp must be within 30 s and a signature is
 //!   accepted once.
 
@@ -42,8 +42,8 @@ fn h(headers: &HeaderMap, k: &str) -> Option<String> {
 async fn authenticate(st: &AppState, headers: &HeaderMap, method: &HttpMethod, path_q: &str, body: &[u8], ip: &str) -> Result<Key, ApiError> {
     st.limiter.hit(&format!("apiip:{ip}"), 600, Duration::from_secs(60)).map_err(ApiError::RateLimited)?;
     let bad = || ApiError::Unauthorized("Invalid API key or signature.".into());
-    let (key_id, secret, hmac) = if let Some(k) = h(headers, "x-kalks-key") {
-        (k, None, Some((h(headers, "x-kalks-timestamp").ok_or_else(bad)?, h(headers, "x-kalks-signature").ok_or_else(bad)?)))
+    let (key_id, secret, hmac) = if let Some(k) = h(headers, "x-ezymex-key") {
+        (k, None, Some((h(headers, "x-ezymex-timestamp").ok_or_else(bad)?, h(headers, "x-ezymex-signature").ok_or_else(bad)?)))
     } else if let Some(a) = h(headers, "authorization") {
         let t = a.strip_prefix("Bearer ").or_else(|| a.strip_prefix("bearer ")).ok_or_else(bad)?;
         let (k, s) = t.split_once(':').ok_or_else(bad)?;
@@ -274,12 +274,12 @@ pub async fn openapi(State(st): State<AppState>) -> Json<Value> {
     let op = |summary: &str, scope: &str| json!({"summary": summary, "security": [{"bearer": []}, {"hmac": []}], "x-scope": scope, "responses": {"200": {"description": "OK"}, "401": err, "403": err, "422": err, "429": err}});
     Json(json!({
         "openapi": "3.1.0",
-        "info": {"title": "Kalks Trading API", "version": "1.0", "description": "REST access to one trading account per API key. Orders carry source \"api\". Withdrawals are never possible through the API."},
+        "info": {"title": "Ezymex Trading API", "version": "1.0", "description": "REST access to one trading account per API key. Orders carry source \"api\". Withdrawals are never possible through the API."},
         "servers": [{"url": format!("{}/public/v1", st.cfg.public_url)}],
         "components": {
             "securitySchemes": {
                 "bearer": {"type": "http", "scheme": "bearer", "description": "Authorization: Bearer <key_id>:<secret>"},
-                "hmac": {"type": "apiKey", "in": "header", "name": "X-Kalks-Signature", "description": "X-Kalks-Key, X-Kalks-Timestamp (unix ms, ±30 s) and X-Kalks-Signature = hex(HMAC-SHA256(secret, timestamp + METHOD + path_with_query + body)); each signature is accepted once"}
+                "hmac": {"type": "apiKey", "in": "header", "name": "X-Ezymex-Signature", "description": "X-Ezymex-Key, X-Ezymex-Timestamp (unix ms, ±30 s) and X-Ezymex-Signature = hex(HMAC-SHA256(secret, timestamp + METHOD + path_with_query + body)); each signature is accepted once"}
             },
             "responses": {"Error": {"description": "Error", "content": {"application/json": {"schema": {"type": "object", "properties": {"error": {"type": "object", "properties": {"code": {"type": "string"}, "message": {"type": "string"}}}}}}}}}
         },

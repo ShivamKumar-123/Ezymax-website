@@ -7,7 +7,7 @@
  */
 import * as React from "react";
 import { Briefcase, Layers, OctagonAlert, PlayCircle, RefreshCw, Unlink, Users, Wallet } from "lucide-react";
-import { Button, Card, Chip, DataTable, Dialog, EmptyState, KpiCard, PageHeader, Segmented, Toggle, type Column } from "@kalks/ui";
+import { Button, Card, Chip, DataTable, Dialog, EmptyState, KpiCard, PageHeader, Segmented, Toggle, type Column } from "@ezymex/ui";
 import { MiniStat } from "@/components/config/kit";
 import { TableSkeleton, ago, day, useApi, useNow, when } from "@/components/live/kit";
 import { PERIOD_LABEL, ReadOnlyNote, SocialError, SocialStatus, int, socialWrite, useNoteAction, useSocialCan, usd, usdK } from "./kit";

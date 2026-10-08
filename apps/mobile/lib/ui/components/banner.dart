@@ -46,14 +46,14 @@ class KBannerController extends ChangeNotifier {
 
   KBannerData? get current => _current;
 
-  /// The look of the banners while a differently themed full-screen route is open (Kalks Trader sets its dark
+  /// The look of the banners while a differently themed full-screen route is open (Ezymex Trader sets its dark
   /// terminal theme, so engine banners match the screen under them); null = the app's theme.
   ThemeData? theme;
 
   /// The app's name over every banner, as iOS prints it (`config.tenantName`).
-  String appName = 'Kalks';
+  String appName = 'Ezymex';
 
-  /// A white-label broker's initial on its brand colour as the app icon; null = the Kalks launcher icon.
+  /// A white-label broker's initial on its brand colour as the app icon; null = the Ezymex launcher icon.
   String? brandLetter;
 
   void show(KBannerData b) {
@@ -363,7 +363,7 @@ class _BannerState extends State<_Banner> {
   }
 }
 
-/// The app's icon as iOS prints it on a banner: the launcher icon (the ember K on near-black) for Kalks, a
+/// The app's icon as iOS prints it on a banner: the launcher icon (the ember K on near-black) for Ezymex, a
 /// white-label broker's initial on its brand colour (KBrandAvatar's disc, squared).
 class _AppIcon extends StatelessWidget {
   const _AppIcon({this.letter});

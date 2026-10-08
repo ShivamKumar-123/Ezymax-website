@@ -1,16 +1,16 @@
 import type { IPanePrimitive, IPanePrimitivePaneView, IPrimitivePaneRenderer, PaneAttachedParameter, Time } from "lightweight-charts";
 
 /**
- * Broker branding inside a chart pane: only the small Kalks K in the bottom-left corner of the plot (as TradingView
+ * Broker branding inside a chart pane: only the small Ezymex K in the bottom-left corner of the plot (as TradingView
  * shows its logo); no symbol watermark, so the plot stays clean (docs/TERMINAL-DESIGN.md §2.2). Drawn on the chart
  * canvas (bottom z-order): never takes pointer events, stays inside the pane (never on the axes) and is part of
  * `chart.takeScreenshot()`. The symbol / timeframe / name options are kept for callers but no longer drawn.
  */
 
-/** Kalks mark (public/assets/brand/kalks-mark.svg), viewBox 653 x 541. */
-const MARK_D = "M 403.113 2.545 C 382.191 7.084, 370.755 13.650, 346.500 35.052 C 338.250 42.332, 320.925 57.415, 308 68.571 C 295.075 79.727, 271.225 100.410, 255 114.535 C 238.775 128.659, 217.888 146.794, 208.584 154.835 C 184.119 175.980, 178.518 183.282, 173.512 200.554 L 171 209.224 171 273.457 C 171 343.176, 170.712 339.361, 176.125 341.269 C 179.126 342.326, 187.413 337.402, 223.546 313.086 C 299.928 261.683, 352.834 224.527, 423.005 173 C 436.861 162.825, 455.241 149.385, 463.849 143.133 C 472.457 136.882, 484.450 128.070, 490.500 123.551 C 496.550 119.032, 506.225 111.857, 512 107.606 C 525.694 97.526, 590.533 48.622, 602.811 39.112 C 608.057 35.049, 617.783 27.637, 624.425 22.642 C 631.066 17.647, 640.031 10.734, 644.346 7.280 L 652.192 1 530.846 1.079 C 431.400 1.145, 408.347 1.409, 403.113 2.545 M 135.134 63.542 C 106.181 79.766, 63.818 105.655, 49.568 115.834 C 39.269 123.191, 23.932 137.825, 18.510 145.470 C 12.674 153.699, 7.552 164.207, 4.257 174.712 L 1.500 183.500 1.232 338.325 L 0.963 493.151 5.232 490.175 C 7.579 488.539, 21.875 478.983, 37 468.941 C 102.832 425.232, 131.171 400.632, 140.735 378.892 C 146.852 364.986, 146.500 375.277, 146.500 210.500 L 146.500 60.500 144 60.238 C 142.583 60.089, 138.744 61.520, 135.134 63.542 M 320 284.624 C 300.125 288.511, 288.493 295.042, 231.500 334.316 C 199.923 356.077, 192.902 361.250, 193.199 362.540 C 193.731 364.854, 322.089 498.457, 338.940 514.237 C 351.464 525.965, 366.500 534.233, 382.107 537.974 C 390.252 539.927, 393.740 539.986, 500.250 539.993 C 560.612 539.997, 610 539.747, 610 539.437 C 610 538.507, 567.999 494.055, 509.045 432.590 C 478.495 400.739, 447.695 368.564, 440.599 361.090 C 415.222 334.357, 386.390 305.726, 380 300.913 C 366.069 290.420, 351.004 285.163, 333 284.514 C 327.225 284.306, 321.375 284.355, 320 284.624";
-const MARK_W = 653;
-const MARK_H = 541;
+/** Ezymex mark (public/assets/brand/ezymex-mark.svg), viewBox 652 x 460. */
+const MARK_D = "M 39.497 56.42 L 125.414 5.126 C 130.156 2.295 134 4.477 134 10 L 134 370 C 134 375.523 130.156 382.295 125.414 385.126 L 5.152 456.924 C 2.306 458.623 0 457.314 0 454 L 0 126 C 0 100.594 17.683 69.443 39.497 56.42 Z M 192 0 L 649 0 C 651.209 0 651.57 1.078 649.805 2.407 L 526.685 95.185 C 523.156 97.845 516.714 100 512.296 100 L 168 100 C 162.477 100 158 95.523 158 90 L 158 34 C 158 15.222 173.222 0 192 0 Z M 168 180 L 556 180 C 558.209 180 558.57 181.078 556.805 182.407 L 433.685 275.185 C 430.156 277.845 423.714 280 419.296 280 L 168 280 C 162.477 280 158 275.523 158 270 L 158 190 C 158 184.477 162.477 180 168 180 Z M 168 360 L 512.296 360 C 516.714 360 523.156 362.155 526.685 364.815 L 649.805 457.593 C 651.57 458.922 651.209 460 649 460 L 192 460 C 173.222 460 158 444.778 158 426 L 158 370 C 158 364.477 162.477 360 168 360 Z";
+const MARK_W = 652;
+const MARK_H = 460;
 
 export interface BrandWatermarkOptions {
   symbol: string;
@@ -32,7 +32,7 @@ class Renderer implements IPrimitivePaneRenderer {
     target.useMediaCoordinateSpace(({ context: ctx, mediaSize }) => {
       const { width: w, height: h } = mediaSize;
       if (w < 120 || h < 80) return;
-      // the Kalks K in the plot's bottom-left corner, the way TradingView shows its logo: small, subtle, inside the
+      // the Ezymex K in the plot's bottom-left corner, the way TradingView shows its logo: small, subtle, inside the
       // pane (never on the price or time scale), drawn on the canvas so screenshots carry it
       const markH = h < 220 ? 14 : 18;
       const markW = (markH * MARK_W) / MARK_H;

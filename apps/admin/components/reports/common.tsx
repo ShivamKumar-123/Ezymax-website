@@ -7,7 +7,7 @@ import * as React from "react";
 import Link from "next/link";
 import { CalendarClock, Download, FileSpreadsheet, FileText, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, EmptyState, Menu, Segmented, Skeleton } from "@kalks/ui";
+import { Button, Card, EmptyState, Menu, Segmented, Skeleton } from "@ezymex/ui";
 import { useCan } from "@/components/staff-session";
 
 export const PERIODS = ["7D", "30D", "90D", "YTD", "1Y"] as const;

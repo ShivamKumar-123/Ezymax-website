@@ -1,14 +1,14 @@
 "use client";
 
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveSpreads } from "@/components/live/spreads";
 
 import * as React from "react";
 import { Info, RotateCcw, Save, Wand2 } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, Dialog, PageHeader, Reveal, Segmented, SymbolAvatar, cn, formatNumber } from "@kalks/ui";
-import { INSTRUMENTS, ASSET_CLASS_LABEL, type AssetClass, type Instrument } from "@kalks/mock";
-import { ADMIN_GROUPS, SPREAD_FLOORS, SPREAD_MARKUPS, pipSize, type MarkupCell } from "@kalks/mock/admin-config";
+import { Button, Card, CardHeader, Chip, Dialog, PageHeader, Reveal, Segmented, SymbolAvatar, cn, formatNumber } from "@ezymex/ui";
+import { INSTRUMENTS, ASSET_CLASS_LABEL, type AssetClass, type Instrument } from "@ezymex/mock";
+import { ADMIN_GROUPS, SPREAD_FLOORS, SPREAD_MARKUPS, pipSize, type MarkupCell } from "@ezymex/mock/admin-config";
 import { ChipList, MiniField, MiniStat, NumInput, Select, auditToast } from "@/components/config/kit";
 
 type Matrix = Record<string, Record<string, MarkupCell>>;

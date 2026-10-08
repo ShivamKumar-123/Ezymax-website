@@ -247,7 +247,7 @@ class _SignInFormState extends ConsumerState<SignInForm> {
             const SizedBox(height: 18),
             Center(
               child: KRichText(
-                t('auth.login.newToKalks'),
+                t('auth.login.newToEzymex'),
                 textAlign: TextAlign.center,
                 style: context.text.callout.copyWith(color: k.fg3),
                 tags: {

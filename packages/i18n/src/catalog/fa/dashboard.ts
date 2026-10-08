@@ -6,9 +6,9 @@ const dashboard: NsMessages<"dashboard"> = {
   "greeting.afternoon": "عصر بخیر، {name}",
   "greeting.evening": "شب بخیر، {name}",
   "greeting.welcome": "خوش آمدید، {name}",
-  "subtitle.live": "به Kalks خوش آمدید. وضعیت حساب شما و بازارهای امروز را اینجا ببینید.",
+  "subtitle.live": "به Ezymex خوش آمدید. وضعیت حساب شما و بازارهای امروز را اینجا ببینید.",
   "subtitle.demo": "عملکرد امروز حساب‌های شما را اینجا ببینید.",
-  launchTrader: "اجرای Kalks Trader",
+  launchTrader: "اجرای Ezymex Trader",
   openTerminal: "باز کردن ترمینال معاملاتی",
 
   // Getting started checklist
@@ -63,7 +63,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "account.memberSince": "عضو از",
   "account.profile": "پروفایل",
 
-  // Kalks Trader banner
+  // Ezymex Trader banner
   "trader.chip": "قیمت‌های زنده",
   "trader.text": "قیمت‌ها و نمودارهای لحظه‌ای برای {count} ابزار در فارکس، فلزات، شاخص‌ها، انرژی، رمزارز و سهام. در مرورگر شما اجرا می‌شود و نیازی به نصب ندارد.",
 
@@ -217,7 +217,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "home.marketsTitle": "بازارها",
   "home.moreTitle": "بیشتر برای شما",
 
-  // Ask Kalks AI on the Overview
+  // Ask Ezymex AI on the Overview
   "ai.title": "از {name} بپرسید",
   "ai.subtitle": "پاسخ فوری درباره حساب، واریز و معاملات شما.",
   "ai.placeholder": "هر سؤالی درباره حساب یا معاملات دارید بپرسید…",

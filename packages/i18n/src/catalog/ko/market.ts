@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader 왼쪽 패널: 시장 감시(시세 목록), 자산군 칩, 네비게이터
+// Ezymex Trader 왼쪽 패널: 시장 감시(시세 목록), 자산군 칩, 네비게이터
 const market: NsMessages<"market"> = {
   // 시장 감시 헤더 및 탭
   title: "시장 감시",
@@ -72,7 +72,7 @@ const market: NsMessages<"market"> = {
   "nav.guest": "게스트",
   "nav.noAccount": "아직 거래 계좌가 없습니다",
   "nav.openAccount": "계좌 개설",
-  "nav.openAccountTitle": "Kalks 계정 만들기 (Client Area가 열립니다)",
+  "nav.openAccountTitle": "Ezymex 계정 만들기 (Client Area가 열립니다)",
   "nav.signIn": "로그인",
   "nav.signInTitle": "Client Area에 로그인",
   "nav.accountType.live": "실계좌",

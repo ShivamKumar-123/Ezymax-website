@@ -3,9 +3,9 @@
 import * as React from "react";
 import { ChevronLeft, ChevronRight, Plus, Upload } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, Dialog, Flag, IconButton, PageHeader, Reveal, Segmented, SymbolAvatar, Tooltip, cn } from "@kalks/ui";
-import { INSTRUMENTS } from "@kalks/mock";
-import { HOLIDAYS, SESSIONS, SYMBOL_SPECS, WEEKDAYS, type Holiday, type SessionTemplate } from "@kalks/mock/admin-config";
+import { Button, Card, CardHeader, Chip, Dialog, Flag, IconButton, PageHeader, Reveal, Segmented, SymbolAvatar, Tooltip, cn } from "@ezymex/ui";
+import { INSTRUMENTS } from "@ezymex/mock";
+import { HOLIDAYS, SESSIONS, SYMBOL_SPECS, WEEKDAYS, type Holiday, type SessionTemplate } from "@ezymex/mock/admin-config";
 import { MiniField, Select, TextInput, auditToast } from "@/components/config/kit";
 
 const fmtH = (h: number) => `${String(Math.floor(h)).padStart(2, "0")}:${String(Math.round((h % 1) * 60)).padStart(2, "0")}`;

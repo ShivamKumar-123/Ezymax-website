@@ -21,13 +21,13 @@ import {
   StatusChip,
   type Column,
   cn,
-} from "@kalks/ui";
-import { MKT_BONUS_CAMPAIGNS, MKT_BONUS_FLOW, MKT_BONUS_GRANTS, MKT_BONUS_KPIS, type MktBonusCampaign, type MktBonusGrant } from "@kalks/mock/admin-growth-marketing";
+} from "@ezymex/ui";
+import { MKT_BONUS_CAMPAIGNS, MKT_BONUS_FLOW, MKT_BONUS_GRANTS, MKT_BONUS_KPIS, type MktBonusCampaign, type MktBonusGrant } from "@ezymex/mock/admin-growth-marketing";
 import { BonusCampaignCard } from "@/components/marketing/bonus-campaign-card";
 import { BonusEditor } from "@/components/marketing/bonus-editor";
 import { ComboChart } from "@/components/marketing/charts";
 import { MiniStat, daysFromToday, fmtDate, fmtDateTime, fmtK } from "@/components/marketing/kit";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveBonuses } from "@/components/marketing/live/bonuses";
 
 const CAMPAIGN_NAME = Object.fromEntries(MKT_BONUS_CAMPAIGNS.map((c) => [c.id, c.name]));

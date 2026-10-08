@@ -1,7 +1,7 @@
 // The one HTTP client of the app (docs/MOBILE-API.md). Every call goes to <base>/api/mobile/... with:
 //   Authorization: Bearer <gateway session>   (signed-in calls; never with cookies — Dio keeps no cookie jar)
-//   X-Kalks-Device, X-Kalks-Platform: android, X-Kalks-App-Version, X-Kalks-Locale, User-Agent
-//   X-Kalks-Trade (Kalks Trader account calls), X-Kalks-Stepup (step-up protected writes, or `stepup_token` in the body)
+//   X-Ezymex-Device, X-Ezymex-Platform: android, X-Ezymex-App-Version, X-Ezymex-Locale, User-Agent
+//   X-Ezymex-Trade (Ezymex Trader account calls), X-Ezymex-Stepup (step-up protected writes, or `stepup_token` in the body)
 // Errors become ApiException (api_error.dart). A dead session (401 unauthorized) and maintenance (503) are reported
 // to the app once, so it can show sign-in or the maintenance screen.
 import 'dart:async';
@@ -57,10 +57,10 @@ class ApiClient {
     final token = auth ? context.token() : null;
     o.headers.remove('cookie');
     if (token != null) o.headers['Authorization'] = 'Bearer $token';
-    o.headers['X-Kalks-Device'] = await context.deviceId();
-    o.headers['X-Kalks-Platform'] = Env.platform;
-    o.headers['X-Kalks-App-Version'] = context.appVersion;
-    o.headers['X-Kalks-Locale'] = context.locale();
+    o.headers['X-Ezymex-Device'] = await context.deviceId();
+    o.headers['X-Ezymex-Platform'] = Env.platform;
+    o.headers['X-Ezymex-App-Version'] = context.appVersion;
+    o.headers['X-Ezymex-Locale'] = context.locale();
     // browsers refuse to let scripts set the User-Agent (web preview only)
     if (!kIsWeb) o.headers['User-Agent'] = context.userAgent;
     o.extra['bearer'] = token != null;
@@ -167,7 +167,7 @@ class ApiClient {
           method: method,
           responseType: responseType,
           contentType: body == null ? null : (contentType ?? Headers.jsonContentType),
-          headers: {'X-Kalks-Trade': ?tradeToken, 'X-Kalks-Stepup': ?stepupToken, ...?extraHeaders},
+          headers: {'X-Ezymex-Trade': ?tradeToken, 'X-Ezymex-Stepup': ?stepupToken, ...?extraHeaders},
           extra: {'auth': auth},
         ),
       );

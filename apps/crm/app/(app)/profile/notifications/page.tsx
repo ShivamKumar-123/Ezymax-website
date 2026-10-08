@@ -5,8 +5,8 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { ArrowLeft, Lock, Mail, Smartphone } from "lucide-react";
 import { Card, CardHeader, PageHeader, Reveal, Toggle } from "@/components/kit";
-import { IS_DEMO } from "@kalks/mock";
-import { tr, useT } from "@kalks/i18n/react";
+import { IS_DEMO } from "@ezymex/mock";
+import { tr, useT } from "@ezymex/i18n/react";
 
 type Cat = { key: string; label: string; hint: string; locked: boolean };
 type Prefs = Record<string, { inApp: boolean; email: boolean }>;

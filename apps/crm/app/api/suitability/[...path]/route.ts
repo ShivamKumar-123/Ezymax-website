@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, clientIp, gateway, sameOrigin } from "@/lib/gateway";
 
-// Client Area suitability BFF (Kalks FX Options onboarding, O41). Browser -> /api/suitability/<product>[/<action>]
+// Client Area suitability BFF (Ezymex FX Options onboarding, O41). Browser -> /api/suitability/<product>[/<action>]
 // (same origin, HttpOnly session cookie) -> gateway /v1/suitability/<product>[/<action>] with the session as bearer.
 // The gateway resolves the client from the session, records the IP of an acceptance, and grades the quiz (the
 // browser never receives the answers). View-only logins and staff sessions can read but never accept or answer.

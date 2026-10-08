@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Clock, GraduationCap, Lightbulb, MonitorPlay } from "lucide-react";
 import { Button, Card, Chip, cn } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { LEVEL_TONE, academyApi, isElective, levelLabel, trackLabel, trackTone, useAcademy, type ChapterView, type QuizReply } from "./api";
 import { Markdown, headingsOf } from "./markdown";
 import { ChapterQuiz } from "./quiz";

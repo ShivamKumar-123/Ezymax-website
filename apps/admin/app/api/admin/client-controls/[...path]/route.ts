@@ -10,19 +10,19 @@ import { engine } from "@/lib/trading";
 //
 //   GET  presence                                  Online now / Away lists and counts
 //   GET  users/{id}                                presence + devices, restrictions, history, staff sessions
-//   GET  users/{id}/accounts                       the client's trading accounts (Kalks Trader staff session picker)
+//   GET  users/{id}/accounts                       the client's trading accounts (Ezymex Trader staff session picker)
 //   PUT  users/{id}/restrictions/{kind}            {reason, expires_at?}   then the engine reloads the client
 //   POST users/{id}/restrictions/{kind}/lift       {reason}
 //   POST bulk                                      {user_ids[], kind, action: set|lift, reason, expires_at?}
 //   POST users/{id}/impersonate                    {reason, mode, confirm?} -> {url} (Client Area, one-time, 60 s)
-//   POST users/{id}/impersonate/trader             {login, reason, mode, confirm?} -> {url} (Kalks Trader, one-time)
+//   POST users/{id}/impersonate/trader             {login, reason, mode, confirm?} -> {url} (Ezymex Trader, one-time)
 //   POST impersonations/{sessionId}/end
 
 type Method = "GET" | "POST" | "PUT";
 const ID = /^\d{1,18}$/;
 const KIND = /^(login|trading|close_only|deposits|withdrawals|transfers|ib|social|freeze)$/;
 
-/** Client Area and Kalks Trader origins of this broker: env override, else the Back Office host's sibling
+/** Client Area and Ezymex Trader origins of this broker: env override, else the Back Office host's sibling
  *  (admin.<domain> -> app.<domain> / trade.<domain>; localhost:3001 -> :3000 / :3002). */
 function appOrigins(req: NextRequest): { app: string; trade: string } {
   const envApp = process.env.CLIENT_AREA_URL ?? process.env.NEXT_PUBLIC_CRM_URL;

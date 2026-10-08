@@ -193,7 +193,7 @@ const kyc: NsMessages<"kyc"> = {
   "review.missing": "Tiada",
   "review.flagged": "Ditanda untuk semakan",
   "review.passed": "Semakan lulus",
-  "review.consent": "Saya mengesahkan bahawa dokumen ini tulen dan milik saya (atau milik syarikat dan pegawainya), dan saya bersetuju dengan saringan identiti dan AML oleh Kalks.",
+  "review.consent": "Saya mengesahkan bahawa dokumen ini tulen dan milik saya (atau milik syarikat dan pegawainya), dan saya bersetuju dengan saringan identiti dan AML oleh Ezymex.",
 
   // More information requested by the review team
   "moreInfo.title": "Kami memerlukan sedikit lagi daripada anda",
@@ -358,7 +358,7 @@ const kyc: NsMessages<"kyc"> = {
   // Client-side fallback errors
   "error.sessionEnded": "Sesi anda telah tamat.",
   "error.generic": "Berlaku ralat. Sila cuba lagi.",
-  "error.network": "Tidak dapat menghubungi Kalks. Semak sambungan anda dan cuba lagi.",
+  "error.network": "Tidak dapat menghubungi Ezymex. Semak sambungan anda dan cuba lagi.",
   "error.uploadFailed": "Muat naik gagal. Sila cuba lagi.",
   "error.uploadInterrupted": "Muat naik terganggu. Semak sambungan anda dan cuba lagi.",
 

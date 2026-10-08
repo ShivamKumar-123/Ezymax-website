@@ -10,10 +10,10 @@ import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
 import { ChevronsLeft, ChevronsRight, LogOut, Settings } from "lucide-react";
 import { LogoMark, Tooltip, cn, useBrand, type NavModule } from "@/components/kit";
-import { useLocale, useT } from "@kalks/i18n/react";
+import { useLocale, useT } from "@ezymex/i18n/react";
 import { isActive } from "./nav-utils";
 
-const KEY = "kalks.crm.rail";
+const KEY = "ezymex.crm.rail";
 
 /** Expanded (labelled) or slim rail, remembered per browser. */
 export function useRailExpanded(): [boolean, (v: boolean) => void] {
@@ -36,7 +36,7 @@ export function useRailExpanded(): [boolean, (v: boolean) => void] {
   return [open, set];
 }
 
-/** The broker's mark on a brand-coloured disc (Kalks: the K glyph; a broker: its logo on white, or its initial). */
+/** The broker's mark on a brand-coloured disc (Ezymex: the K glyph; a broker: its logo on white, or its initial). */
 export function BrandAvatar({ size = 46 }: { size?: number }) {
   const brand = useBrand();
   if (brand?.logo_url)

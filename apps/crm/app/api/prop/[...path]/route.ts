@@ -5,7 +5,7 @@ import { sameOrigin, sessionUser } from "@/lib/trading";
 
 // Client Area prop BFF. Browser -> /api/prop/<route> (same origin) -> prop service /v1/…
 // The client is resolved from the HttpOnly gateway session cookie (gateway /v1/auth/me) and forwarded as
-// X-Kalks-User-Id / X-Kalks-User-Name / X-Kalks-User-Kyc; ids sent by the browser are never used, and the
+// X-Ezymex-User-Id / X-Ezymex-User-Name / X-Ezymex-User-Kyc; ids sent by the browser are never used, and the
 // service returns 404 for challenges the user doesn't own. CSRF: cookies are SameSite=Lax, POSTs must be JSON
 // with a same-origin Origin.
 //

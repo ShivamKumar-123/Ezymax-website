@@ -5,7 +5,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { ArrowRight, ArrowUpRight, BadgeCheck, Banknote, Check, Clock, Loader2, Receipt, Rocket, ShieldAlert, Trophy, Wallet } from "lucide-react";
 import { Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, EmptyState, KpiCard, Money, PageHeader, Reveal, Skeleton, cn, type Column } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import {
   blockerText,
   fmtDate,
@@ -155,7 +155,7 @@ function FundedCard({ f, plan, kyc, onDone }: { f: FundedAccount; plan: Challeng
           <div className="mt-3 text-[22px] font-semibold tracking-tight">{t("prop.sizeAccount", { size: sizeLabel(f.size) })}</div>
           {f.login && (
             <div dir="ltr" className="mt-1 flex items-center gap-1 font-mono text-[12px] text-fg-2">
-              #{f.login} · Kalks-Live
+              #{f.login} · Ezymex-Live
               <CopyButton value={String(f.login)} label={t("prop.cred.login")} />
             </div>
           )}

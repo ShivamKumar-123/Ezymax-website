@@ -20,11 +20,11 @@ import {
   formatCompact,
   type Column,
 } from "@/components/kit";
-import { MASTERS, PAMM_FUNDS, masterSpark, type Master } from "@kalks/mock/social";
+import { MASTERS, PAMM_FUNDS, masterSpark, type Master } from "@ezymex/mock/social";
 import { MasterCard, MasterIdentity, RiskBadge, formatAge } from "@/components/social/master-bits";
 import { CopyDialog } from "@/components/social/copy-dialog";
 import { InvestDialog } from "@/components/social/invest-dialog";
-import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LiveDiscoverPage } from "@/components/social-live/leaderboard";
 
 type Period = "1M" | "3M" | "1Y" | "All";
@@ -65,7 +65,7 @@ function Featured({ onCopy, onInvest }: { onCopy: (m: Master) => void; onInvest:
           <h2 className="flex items-center gap-2 text-[18px] font-medium tracking-tight">
             <Sparkles className="size-4 text-gold" /> Featured masters
           </h2>
-          <p className="text-[13px] text-fg-3">Hand-picked by the Kalks risk desk for consistency and transparency</p>
+          <p className="text-[13px] text-fg-3">Hand-picked by the Ezymex risk desk for consistency and transparency</p>
         </div>
         <div className="flex gap-2">
           <IconButton aria-label="Previous" onClick={() => scroll(-1)}>

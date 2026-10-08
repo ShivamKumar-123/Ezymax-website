@@ -4,7 +4,7 @@ const profile: NsMessages<"profile"> = {
   // Profile page (shared)
   title: "Profil",
   subtitle: "Vos informations personnelles et les préférences de votre compte.",
-  liveSubtitle: "Vos informations personnelles telles qu'enregistrées chez Kalks.",
+  liveSubtitle: "Vos informations personnelles telles qu'enregistrées chez Ezymex.",
   memberSince: "Membre depuis le {date}",
   notVerified: "Non vérifié",
   "photo.upload": "Importer une nouvelle photo",
@@ -59,7 +59,7 @@ const profile: NsMessages<"profile"> = {
   "data.exportRequested": "Export des données demandé",
   "data.exportRequestedHint": "Vous recevrez un lien de téléchargement par e-mail sous 72 heures.",
   "data.export": "Exporter mes données",
-  "closure.title": "Clôturer votre compte Kalks",
+  "closure.title": "Clôturer votre compte Ezymex",
   "closure.description": "Tous les comptes de trading doivent avoir un solde nul et aucune position ouverte.",
   "closure.request": "Demander la clôture du compte",
   "closure.submitted": "Demande de clôture envoyée",

@@ -1,11 +1,11 @@
 {
-    "name": "Kalks",
-    "short_name": "Kalks",
+    "name": "Ezymex",
+    "short_name": "Ezymex",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#07070A",
     "theme_color": "#FF5A1F",
-    "description": "Kalks app, development preview",
+    "description": "Ezymex app, development preview",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

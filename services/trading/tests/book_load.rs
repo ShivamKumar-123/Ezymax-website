@@ -1,5 +1,5 @@
 //! Order book LOAD test (docs/OPTIONS-EXCHANGE.md §13) against the REAL local services (market-data :8081, options
-//! service :8104, PostgreSQL :5433; no mocked market data): the Kalks market maker quotes the FULL chain of every
+//! service :8104, PostgreSQL :5433; no mocked market data): the Ezymex market maker quotes the FULL chain of every
 //! underlying at 4 Hz while 200 clients trade near the money — passive limits inside the MM's spread, marketable
 //! IOCs against its quotes, cancels and reduce-only closes — through `book::entry::submit` (the gates, reservations,
 //! actors, journal, outbox and shards of production; only the HTTP layer is skipped).
@@ -71,7 +71,7 @@ async fn full_chain_market_maker_at_4hz_and_200_clients() {
     loop {
         tokio::time::sleep(Duration::from_millis(500)).await;
         let cov = trading::book::mm::coverage(&hub, 1, AccountKind::Demo);
-        let quoted = series.iter().filter(|(s, _)| rig.options.top.get("kalks", AccountKind::Demo, s).is_some_and(|t| t.bid.is_some() && t.ask.is_some())).count();
+        let quoted = series.iter().filter(|(s, _)| rig.options.top.get("ezymex", AccountKind::Demo, s).is_some_and(|t| t.bid.is_some() && t.ask.is_some())).count();
         if (cov >= 85.0 && quoted * 10 >= series.len() * 8) || t_warm.elapsed() > Duration::from_secs(120) {
             eprintln!("warm-up {:?}: MM coverage {cov:.1} %, client series quoted {quoted}/{}", t_warm.elapsed(), series.len());
             break;
@@ -105,7 +105,7 @@ async fn full_chain_market_maker_at_4hz_and_200_clients() {
             while !stop.load(Ordering::Relaxed) {
                 tokio::time::sleep(Duration::from_millis(300 + next() % 400)).await;
                 let (s, tick) = &series[(next() % series.len() as u64) as usize];
-                let Some(top) = rig.options.top.get("kalks", AccountKind::Demo, s) else { continue };
+                let Some(top) = rig.options.top.get("ezymex", AccountKind::Demo, s) else { continue };
                 let roll = next() % 100;
                 let t0 = Instant::now();
                 let res = if roll < 20 {

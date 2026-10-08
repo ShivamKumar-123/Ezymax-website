@@ -20,7 +20,7 @@ const academy: NsMessages<"academy"> = {
   "practice.demo": "デモで練習",
   "practice.openFreeDemo": "無料デモ口座を開設",
   "practice.openDemo": "デモを開く",
-  "practice.inTrader": "Kalks Traderで練習",
+  "practice.inTrader": "Ezymex Traderで練習",
 
   // Levels (sent by the Academy service)
   "level.beginner": "初級",
@@ -31,12 +31,12 @@ const academy: NsMessages<"academy"> = {
   // Tracks
   "track.fundamental": "ファンダメンタル分析",
   "track.technical": "テクニカル分析",
-  // Product track of the Kalks FX Options elective (phase 9)
+  // Product track of the Ezymex FX Options elective (phase 9)
   "track.options": "オプション取引",
   "trackShort.fundamental": "ファンダメンタル",
   "trackShort.technical": "テクニカル",
   "trackShort.options": "オプション",
-  // Chip on a product course (e.g. Kalks FX Options) that sits outside the eight core phases and can be taken at any time
+  // Chip on a product course (e.g. Ezymex FX Options) that sits outside the eight core phases and can be taken at any time
   elective: "選択科目",
 
   // Durations (h = hours, m = minutes)
@@ -52,7 +52,7 @@ const academy: NsMessages<"academy"> = {
   "home.pathText": "各コアフェーズにはファンダメンタルとテクニカルのトラック、最終試験、修了証があります。",
   // Section under the learning path listing the electives
   "home.electivesTitle": "選択科目",
-  "home.electivesText": "Kalksの商品について学ぶコースです。いつでも受講でき、それぞれに最終試験と修了証があります。",
+  "home.electivesText": "Ezymexの商品について学ぶコースです。いつでも受講でき、それぞれに最終試験と修了証があります。",
   "hero.allDone": "全章修了",
   "hero.continue": "学習を続ける",
   "hero.upNext": "次の章",
@@ -219,7 +219,7 @@ const academy: NsMessages<"academy"> = {
   "callout.example": "例",
   "callout.tip": "ヒント",
   "callout.note": "注記",
-  "callout.inKalksTrader": "Kalks Traderでは",
+  "callout.inEzymexTrader": "Ezymex Traderでは",
   diagram: "図",
 };
 export default academy;

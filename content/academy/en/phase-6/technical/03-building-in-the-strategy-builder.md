@@ -1,7 +1,7 @@
 ---
 slug: "p6-t-building-in-the-strategy-builder"
-title: "Building a strategy in the Kalks strategy builder"
-summary: "How to translate a written rule set into the Kalks strategy builder under Client Area, Developer, Strategies, and check that the strategy does what you intended."
+title: "Building a strategy in the Ezymex strategy builder"
+summary: "How to translate a written rule set into the Ezymex strategy builder under Client Area, Developer, Strategies, and check that the strategy does what you intended."
 order: 3
 version: 1
 takeaways:
@@ -13,7 +13,7 @@ practice:
   label: "Take the EURUSD trend-pullback rules from this chapter, find three recent signals by hand on the demo H1 chart, and record the entry, stop and target for each."
   symbol: "EURUSD"
 quiz:
-  - question: "Where in Kalks do you build a rule-based strategy?"
+  - question: "Where in Ezymex do you build a rule-based strategy?"
     options:
       - "In the Client Area under Developer, then Strategies"
       - "In the Portfolio section under statements"
@@ -47,7 +47,7 @@ quiz:
     explanation: "Versioning keeps a record of what changed and when, so you can attribute differences in results to specific changes and roll back if a change makes things worse."
 ---
 
-Once your rules are written, the next step is to encode them so they can be tested on history. In Kalks, this happens in the **strategy builder**, found in the Client Area under **Developer**, then **Strategies**. The builder lets you express a strategy as a set of conditions on price and indicators, combined with entry, exit, filter and position-sizing rules, and then send it to **Developer**, then **Backtests**, for testing.
+Once your rules are written, the next step is to encode them so they can be tested on history. In Ezymex, this happens in the **strategy builder**, found in the Client Area under **Developer**, then **Strategies**. The builder lets you express a strategy as a set of conditions on price and indicators, combined with entry, exit, filter and position-sizing rules, and then send it to **Developer**, then **Backtests**, for testing.
 
 This chapter walks through the process in general terms. The exact layout of the screens may change as the platform develops, but the logic of building a strategy does not.
 
@@ -72,7 +72,7 @@ Before you open the builder, you should have a table like this one, based on the
 
 ## Encoding the rules
 
-Most builders, including Kalks, organise a strategy into the same blocks you already know.
+Most builders, including Ezymex, organise a strategy into the same blocks you already know.
 
 1. **General settings.** Choose the symbol and timeframe, and name the strategy clearly, for example `EURUSD-H1-pullback-v1`.
 2. **Entry conditions.** Each condition compares two things: an indicator with a number, an indicator with another indicator, or price with an indicator. Conditions are combined with AND (all must be true) or OR (any may be true). For this system the long entry is: EMA(50) greater than EMA(200) AND the low of one of the last three candles at or below EMA(50) AND RSI(14) crossing above 50.
@@ -85,7 +85,7 @@ A detail worth attention is **"crosses above" versus "is above"**. "RSI is above
 
 ## Verify by hand before you test
 
-Before running a single backtest, find three to five signals manually on the chart in Kalks Trader and compare them with what the strategy should do.
+Before running a single backtest, find three to five signals manually on the chart in Ezymex Trader and compare them with what the strategy should do.
 
 ```text
 Manual check of one signal, EURUSD H1

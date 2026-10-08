@@ -88,7 +88,7 @@ pub fn current(env: &Env, st: &AccountState, p: &Position) -> (Option<D>, Option
     (Some(px), profit)
 }
 
-/// Kalks FX Options fields of a position (`option`, `mark`, `greeks`, `comboId`; null for CFD positions).
+/// Ezymex FX Options fields of a position (`option`, `mark`, `greeks`, `comboId`; null for CFD positions).
 pub fn option_fields(env: &Env, st: &AccountState, p: &Position) -> Value {
     match &p.option {
         None => json!({"option": null, "mark": null, "greeks": null, "comboId": null}),

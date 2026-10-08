@@ -5,14 +5,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/features/prop/certificates_screen.dart';
-import 'package:kalks/features/prop/mine_screen.dart';
-import 'package:kalks/features/prop/payouts_screen.dart';
-import 'package:kalks/features/prop/prop_api.dart';
-import 'package:kalks/features/prop/store_screen.dart';
-import 'package:kalks/features/prop/widgets/mine_sections.dart';
-import 'package:kalks/router/router.dart';
-import 'package:kalks/ui/ui.dart';
+import 'package:ezymex/features/prop/certificates_screen.dart';
+import 'package:ezymex/features/prop/mine_screen.dart';
+import 'package:ezymex/features/prop/payouts_screen.dart';
+import 'package:ezymex/features/prop/prop_api.dart';
+import 'package:ezymex/features/prop/store_screen.dart';
+import 'package:ezymex/features/prop/widgets/mine_sections.dart';
+import 'package:ezymex/router/router.dart';
+import 'package:ezymex/ui/ui.dart';
 
 import '../helpers/test_app.dart';
 
@@ -84,7 +84,7 @@ void main() {
     expect(find.text('Choose your challenge'), findsOneWidget);
     // two running challenges in the sample data
     expect(find.text('2'), findsWidgets);
-    expect(find.text('Kalks Classic 2-Step'), findsWidgets);
+    expect(find.text('Ezymex Classic 2-Step'), findsWidgets);
     expect(find.text('Two evaluation phases with lower targets and wider limits.'), findsOneWidget);
 
     final buy = find.text(r'Buy challenge · $299');
@@ -92,7 +92,7 @@ void main() {
     await tester.tap(buy);
     await settle(tester);
 
-    expect(find.text('Buy Kalks Classic 2-Step'), findsOneWidget);
+    expect(find.text('Buy Ezymex Classic 2-Step'), findsOneWidget);
     expect(find.text('Wallet balance: 3,000.40 USDT'), findsOneWidget);
     expect(find.text('Rules of this challenge'), findsOneWidget);
     // Pay stays off until the rules are accepted
@@ -126,7 +126,7 @@ void main() {
     expect(find.text('Phase 2 · Active'), findsOneWidget);
     expect(find.text("54% of today's loss limit used"), findsOneWidget);
     expect(find.text('Phase 2 · live'), findsOneWidget);
-    expect(find.text('Kalks Classic 2-Step · \$50k'), findsOneWidget);
+    expect(find.text('Ezymex Classic 2-Step · \$50k'), findsOneWidget);
 
     final page = _page<PropMineScreen>();
     await _scrollTo(tester, find.text('Trading account'), page);

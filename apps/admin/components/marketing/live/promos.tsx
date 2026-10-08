@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Ban, Dices, Plus, RefreshCw, ShieldAlert, Ticket, Users } from "lucide-react";
-import { Button, Card, CardHeader, Chip, CopyButton, DataTable, KpiCard, PageHeader, Progress, Reveal, Segmented, type ChipTone, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, CopyButton, DataTable, KpiCard, PageHeader, Progress, Reveal, Segmented, type ChipTone, type Column } from "@ezymex/ui";
 import { FilterSelect, Pager, TableSkeleton, countryName, day, qs, useApi, when } from "@/components/live/kit";
 import { M, mkSend, type AppliesTo, type Campaign, type Overview, type Paged, type Promo, type PromoInput, type PromoKind, type PromoUse } from "./api";
 import {

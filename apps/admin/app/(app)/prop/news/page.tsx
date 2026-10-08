@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { CalendarClock } from "lucide-react";
-import { Card, CardHeader, Chip, PageHeader } from "@kalks/ui";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { Card, CardHeader, Chip, PageHeader } from "@ezymex/ui";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveNewsPage } from "@/components/prop-live/news";
 
 export default function NewsCalendarPage() {

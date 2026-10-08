@@ -25,12 +25,12 @@ import {
   cn,
   formatNumber,
   type Column,
-} from "@kalks/ui";
-import { PEOPLE } from "@kalks/mock";
-import { serverTime } from "@kalks/mock/admin-clients";
-import { CNT_ACCEPTANCE_LOG, CNT_LEGAL_DOCS, CNT_TENANTS, type CntAcceptance, type CntLegalDoc, type CntTenantId } from "@kalks/mock/admin-growth-content";
+} from "@ezymex/ui";
+import { PEOPLE } from "@ezymex/mock";
+import { serverTime } from "@ezymex/mock/admin-clients";
+import { CNT_ACCEPTANCE_LOG, CNT_LEGAL_DOCS, CNT_TENANTS, type CntAcceptance, type CntLegalDoc, type CntTenantId } from "@ezymex/mock/admin-growth-content";
 
-const BASE_CLIENTS: Record<CntTenantId, number> = { kalks: 48210, aurum: 12840, nova: 6420, dunes: 3180 };
+const BASE_CLIENTS: Record<CntTenantId, number> = { ezymex: 48210, aurum: 12840, nova: 6420, dunes: 3180 };
 
 function bump(v: string, major: boolean) {
   const [a, b] = v.slice(1).split(".").map(Number) as [number, number];
@@ -178,9 +178,9 @@ function PublishDialog({
 }
 
 export default function LegalDocumentsPage() {
-  const [tenant, setTenant] = React.useState<CntTenantId>("kalks");
+  const [tenant, setTenant] = React.useState<CntTenantId>("ezymex");
   const [docs, setDocs] = React.useState<CntLegalDoc[]>(CNT_LEGAL_DOCS);
-  const [sel, setSel] = React.useState("kalks-client-agreement");
+  const [sel, setSel] = React.useState("ezymex-client-agreement");
   const [pub, setPub] = React.useState(false);
   const [docFilter, setDocFilter] = React.useState("All");
   const tDocs = docs.filter((d) => d.tenant === tenant);
@@ -189,7 +189,7 @@ export default function LegalDocumentsPage() {
   const pending = tDocs.reduce((s, d) => s + d.pending, 0);
   const avg = tDocs.reduce((s, d) => s + d.acceptance, 0) / tDocs.length;
 
-  const log = CNT_ACCEPTANCE_LOG.filter((a) => a.tenant === tenant || tenant === "kalks").filter((a) => docFilter === "All" || a.doc === docFilter);
+  const log = CNT_ACCEPTANCE_LOG.filter((a) => a.tenant === tenant || tenant === "ezymex").filter((a) => docFilter === "All" || a.doc === docFilter);
 
   const cols: Column<CntAcceptance>[] = [
     {

@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Coins, FilePlus2, Receipt, RefreshCw } from "lucide-react";
-import { Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, Field, Input, KpiCard, Menu, PageHeader, Segmented, Toggle, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, Field, Input, KpiCard, Menu, PageHeader, Segmented, Toggle, type Column } from "@ezymex/ui";
 import { ErrorState, TableSkeleton, day, useApi } from "@/components/live/kit";
 import { STATUS_TONE, Select, act, cap, money, pct } from "@/components/rbac/kit";
 import type { Billing, Invoice } from "./types";

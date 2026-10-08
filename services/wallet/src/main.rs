@@ -1,4 +1,4 @@
-//! Kalks wallet service (:8095). See services/wallet/README.md.
+//! Ezymex wallet service (:8095). See services/wallet/README.md.
 
 use std::collections::HashMap;
 use std::sync::Arc;

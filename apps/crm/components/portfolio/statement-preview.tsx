@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { Logo, formatNumber } from "@/components/kit";
-import { ACCOUNTS, HISTORY, ME, POSITIONS, accountUsd, getInstrument } from "@kalks/mock";
-import { BROKER_INFO, LEDGER } from "@kalks/mock/portfolio-extra";
+import { ACCOUNTS, HISTORY, ME, POSITIONS, accountUsd, getInstrument } from "@ezymex/mock";
+import { BROKER_INFO, LEDGER } from "@ezymex/mock/portfolio-extra";
 import { serverTime } from "./export";
 
 const n2 = (v: number) => formatNumber(Math.abs(v) < 0.005 ? 0 : v, 2);
@@ -207,7 +207,7 @@ export function StatementPreview({ login, period, from, to }: { login: string; p
       {/* Totals */}
       <div className="mt-5 grid gap-4 sm:grid-cols-[1fr_280px]">
         <p className="text-[10px] leading-relaxed text-[#8a8a93]">
-          This statement is generated automatically from the Kalks trade server and reflects all transactions in server time (GMT+3). Spread costs are included in execution prices and are not charged separately. Please report any discrepancy to {BROKER_INFO.support} within 7 days.
+          This statement is generated automatically from the Ezymex trade server and reflects all transactions in server time (GMT+3). Spread costs are included in execution prices and are not charged separately. Please report any discrepancy to {BROKER_INFO.support} within 7 days.
         </p>
         <div className="rounded-lg ring-1 ring-[#e3e1dc]">
           {[

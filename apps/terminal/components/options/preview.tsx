@@ -6,9 +6,9 @@
 // whose engine doesn't take option orders yet.
 import * as React from "react";
 import { ChevronRight, Info } from "lucide-react";
-import { IS_LIVE } from "@kalks/mock";
-import { cn } from "@kalks/ui";
-import { useT } from "@kalks/i18n/react";
+import { IS_LIVE } from "@ezymex/mock";
+import { cn } from "@ezymex/ui";
+import { useT } from "@ezymex/i18n/react";
 import { useMetrics, useTerminal } from "@/lib/store";
 import { accMoney } from "@/lib/trading";
 import type { EngineErr } from "@/lib/engine/map";
@@ -20,7 +20,7 @@ import { reasonCode, reasonText } from "@/lib/options/errors";
 import type { BarrierSpec, LegInput, OptionChain, OptionRight, Preview, Side } from "@/lib/options/types";
 import { ErrorNote } from "./bits";
 import { greek, pips, px, usd, usdSigned } from "./format";
-import { isMarketOpen } from "@kalks/mock";
+import { isMarketOpen } from "@ezymex/mock";
 
 export interface PreviewLegSpec {
   series: string;

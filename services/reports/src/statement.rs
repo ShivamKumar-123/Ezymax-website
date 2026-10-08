@@ -70,7 +70,7 @@ pub struct DealRow {
     pub open_time: Option<DateTime<Utc>>,
     pub comment: String,
     pub reversed: bool,
-    /// Kalks FX Options terms and cash of the deal (engine `option`: series, underlying, right, strike, expiry,
+    /// Ezymex FX Options terms and cash of the deal (engine `option`: series, underlying, right, strike, expiry,
     /// cash, fixing, commissionCharged, …); None for CFD deals. Option deals: `volume` = contracts, prices =
     /// premium per unit of the underlying.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -157,9 +157,9 @@ pub struct Summary {
     pub trade_results: Decimal,
     pub commission: Decimal,
     pub performance_fees: Decimal,
-    /// Kalks FX Options premiums booked (`option_premium`: paid −, received +). Trading flows, never deposits.
+    /// Ezymex FX Options premiums booked (`option_premium`: paid −, received +). Trading flows, never deposits.
     pub option_premiums: Decimal,
-    /// Kalks FX Options expiry payouts / charges and knock-out rebates (`option_settlement`).
+    /// Ezymex FX Options expiry payouts / charges and knock-out rebates (`option_settlement`).
     pub option_settlements: Decimal,
     pub adjustments: Decimal,
     pub closing_balance: Decimal,
@@ -172,7 +172,7 @@ pub struct Summary {
     pub net_pnl: Decimal,
 }
 
-/// Kalks FX Options activity of the period (O46), from the non-reversed option deals. Account currency.
+/// Ezymex FX Options activity of the period (O46), from the non-reversed option deals. Account currency.
 #[derive(Clone, Debug, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OptionsSection {
@@ -247,7 +247,7 @@ pub struct Statement {
     pub reconciliation: Reconciliation,
     /// Closed CFD positions (exit deals) in the period, oldest first. Option exits are in `options`.
     pub trades: Vec<DealRow>,
-    /// Kalks FX Options: premiums, settlements with their fixing, commission, realised P&L and every option deal.
+    /// Ezymex FX Options: premiums, settlements with their fixing, commission, realised P&L and every option deal.
     pub options: OptionsSection,
     /// Every deal (entries and exits), oldest first.
     pub deals: Vec<DealRow>,

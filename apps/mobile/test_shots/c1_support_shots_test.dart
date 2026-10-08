@@ -1,6 +1,6 @@
 // Screenshots of the Support module in light, dark and Arabic: the Support page (top and scrolled), the live chat's
 // states (a new chat with the bot writing, the rating after the end, the queue for a person, the chat sheet of the
-// floating button), Ask Kalks AI on the Dashboard (pill, sheet, streaming, answered, the open request for a person:
+// floating button), Ask Ezymex AI on the Dashboard (pill, sheet, streaming, answered, the open request for a person:
 // note, held question, sent to the team, closed and asked) and the floating launcher with its badge.
 // Run: flutter test test_shots/c1_support_shots_test.dart --update-goldens
 import 'dart:async';
@@ -8,18 +8,18 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/app.dart';
-import 'package:kalks/features/support/launcher.dart';
-import 'package:kalks/features/support/support_data.dart';
-import 'package:kalks/preview/c1/preview_support.dart';
-import 'package:kalks/router/router.dart';
-import 'package:kalks/ui/ui.dart';
+import 'package:ezymex/app.dart';
+import 'package:ezymex/features/support/launcher.dart';
+import 'package:ezymex/features/support/support_data.dart';
+import 'package:ezymex/preview/c1/preview_support.dart';
+import 'package:ezymex/router/router.dart';
+import 'package:ezymex/ui/ui.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../test/helpers/test_app.dart';
 import 'shots.dart';
 
-SupportFrames _frames(WidgetTester tester) => ProviderScope.containerOf(tester.element(find.byType(KalksApp))).read(supportFramesProvider);
+SupportFrames _frames(WidgetTester tester) => ProviderScope.containerOf(tester.element(find.byType(EzymexApp))).read(supportFramesProvider);
 
 /// Plays the bot's streamed answer into the open conversation.
 Future<void> _stream(WidgetTester tester, String text) async {
@@ -198,7 +198,7 @@ void main() {
     });
   }
 
-  /* ---------------------------------------------------------------- Ask Kalks AI on the Dashboard */
+  /* ---------------------------------------------------------------- Ask Ezymex AI on the Dashboard */
 
   for (final (name, theme, locale) in looks) {
     testWidgets('ai pill $name', (tester) async {
@@ -298,7 +298,7 @@ void main() {
           await _openAi(tester);
           await tester.tap(find.byKey(const ValueKey('ai-chip-deposit')));
           await settle(tester);
-          await tester.tap(find.text('Close it and ask Kalks AI'));
+          await tester.tap(find.text('Close it and ask Ezymex AI'));
           await settle(tester);
           await _poll(tester);
         },

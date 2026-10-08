@@ -35,7 +35,7 @@ pub struct DealInput {
     pub kind: String,
     pub reversed: bool,
     pub account: Option<AccountInfo>,
-    /// Kalks FX Options deal: `volume` is contracts, paid at the level's per-contract options rate (O34).
+    /// Ezymex FX Options deal: `volume` is contracts, paid at the level's per-contract options rate (O34).
     pub option: bool,
 }
 

@@ -4,7 +4,7 @@
 //! (a feed gap holds the previous mid). Before the first sample the `prior` mid (last one before the
 //! window) is used, or else the first sample is back-filled (`backfilled_ms` says for how long).
 //!
-//! Gap accounting: the window is cut into `interval` slots (1 s for Kalks). `coverage` is the share of
+//! Gap accounting: the window is cut into `interval` slots (1 s for Ezymex). `coverage` is the share of
 //! slots holding at least one sample and `max_gap_ms` the longest stretch without a sample (window edges
 //! included). The caller decides when coverage is too low and falls back to bars ([`twap_bars`]).
 

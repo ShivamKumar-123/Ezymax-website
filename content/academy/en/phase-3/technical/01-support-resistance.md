@@ -127,4 +127,4 @@ The stop sits where the idea is invalidated: if price trades below the zone, buy
 - **Ignoring the higher timeframe.** An M15 support directly under a daily resistance is a weak buy.
 - **Assuming more touches means stronger.** Repeated tests often wear a level down.
 
-> **In Kalks Trader:** Use the chart's drawing tools to mark each zone on the daily or H4 chart first, then switch to a lower timeframe to see how price behaves as it approaches the zone.
+> **In Ezymex Trader:** Use the chart's drawing tools to mark each zone on the daily or H4 chart first, then switch to a lower timeframe to see how price behaves as it approaches the zone.

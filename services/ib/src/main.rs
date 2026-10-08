@@ -1,4 +1,4 @@
-//! Kalks IB service (127.0.0.1:8096). See README.md.
+//! Ezymex IB service (127.0.0.1:8096). See README.md.
 
 use ib::{api, config, db, state::AppState, workers};
 
@@ -22,8 +22,8 @@ async fn main() -> anyhow::Result<()> {
         tracing::warn!("IB_INTERNAL_TOKEN is empty: any local process can call the IB service (dev only)");
     }
     let pool = db::connect(&cfg.database_url).await?;
-    db::settings(&pool, "kalks").await?;
-    db::levels(&pool, "kalks").await?;
+    db::settings(&pool, "ezymex").await?;
+    db::levels(&pool, "ezymex").await?;
     let st = AppState::new(pool, cfg);
     if st.cfg.workers {
         workers::spawn(&st);

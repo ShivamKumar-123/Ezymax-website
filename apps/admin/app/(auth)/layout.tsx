@@ -3,8 +3,8 @@
 import * as React from "react";
 import { motion } from "motion/react";
 import { Activity, Lock, ShieldCheck } from "lucide-react";
-import { BrandName, Logo, Starfield, ThemeToggle, useBrand } from "@kalks/ui";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { BrandName, Logo, Starfield, ThemeToggle, useBrand } from "@ezymex/ui";
+import { IS_DEMO } from "@ezymex/mock/mode";
 
 function StatusCard({ icon, title, sub, className }: { icon: React.ReactNode; title: string; sub: string; className?: string }) {
   return (
@@ -47,7 +47,7 @@ export default function AdminAuthLayout({ children }: { children: React.ReactNod
               <StatusCard icon={<Lock />} title="Email code on sign-in" sub="One-time code sent to your work email" className="ml-6 self-start" />
             </motion.div>
             <h2 className="max-w-md text-[40px] font-medium leading-[1.08] tracking-[-0.03em] text-white">Run the whole brokerage from one console.</h2>
-            <p className="mt-4 max-w-md text-[15px] text-white/70">Dealing, risk, compliance, finance and partners — live exposure, queues and alerts for {brand ? brand.name : "Kalks Markets and every white-label tenant"}.</p>
+            <p className="mt-4 max-w-md text-[15px] text-white/70">Dealing, risk, compliance, finance and partners — live exposure, queues and alerts for {brand ? brand.name : "Ezymex Markets and every white-label tenant"}.</p>
             <p className="mt-10 max-w-lg text-[11px] leading-relaxed text-white/45">
               Authorised staff only. Access is logged and monitored. Unauthorised use of this system is prohibited and may be subject to criminal and civil penalties.
             </p>
@@ -69,7 +69,7 @@ export default function AdminAuthLayout({ children }: { children: React.ReactNod
             {children}
           </motion.div>
         </div>
-        <div className="relative px-6 pb-6 text-center text-[11.5px] text-fg-3"><BrandName fallback="Kalks Markets" /> · Staff console · Server time GMT+3</div>
+        <div className="relative px-6 pb-6 text-center text-[11.5px] text-fg-3"><BrandName fallback="Ezymex Markets" /> · Staff console · Server time GMT+3</div>
       </div>
     </div>
   );

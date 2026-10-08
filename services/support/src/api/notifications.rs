@@ -166,7 +166,7 @@ fn segment(v: &Value) -> ApiResult<Segment> {
 }
 
 fn matches(seg: &Segment, tenant: &str, u: &Value) -> bool {
-    if u["tenant"].as_str().unwrap_or("kalks") != tenant || u["status"].as_str() != Some("active") {
+    if u["tenant"].as_str().unwrap_or("ezymex") != tenant || u["status"].as_str() != Some("active") {
         return false;
     }
     let id = u["id"].as_i64().unwrap_or(0);

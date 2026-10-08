@@ -1,6 +1,6 @@
-// Server-only client for the Kalks reports service (services/reports, 127.0.0.1:8102): analytics, monthly
+// Server-only client for the Ezymex reports service (services/reports, 127.0.0.1:8102): analytics, monthly
 // statement list and statement files. The browser never sees the service or its token: /api/reports resolves the
-// signed-in client from the gateway session and forwards the gateway user id as X-Kalks-User-Id.
+// signed-in client from the gateway session and forwards the gateway user id as X-Ezymex-User-Id.
 // Contract: services/reports/README.md ("Client routes").
 
 import type { GatewayUser } from "@/lib/gateway";
@@ -12,7 +12,7 @@ const REPORTS_TOKEN = process.env.REPORTS_INTERNAL_TOKEN ?? "";
 export async function reportsFetch(path: string, user: GatewayUser, timeoutMs = 60_000): Promise<Response | null> {
   try {
     return await fetch(`${REPORTS_URL}${path}`, {
-      headers: { "x-kalks-internal": REPORTS_TOKEN, "x-kalks-tenant": user.tenant?.slug || "kalks", "x-kalks-user-id": String(user.id) },
+      headers: { "x-ezymex-internal": REPORTS_TOKEN, "x-ezymex-tenant": user.tenant?.slug || "ezymex", "x-ezymex-user-id": String(user.id) },
       cache: "no-store",
       signal: AbortSignal.timeout(timeoutMs),
     });

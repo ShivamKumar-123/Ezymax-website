@@ -6,8 +6,8 @@ import { Plus, RotateCw } from "lucide-react";
 import { Avatar, Button, Card, Chip, EmptyState, Flag, PageHeader, Skeleton, cn, type ChipTone } from "@/components/kit";
 import { accountTitle, fmtAmount, curOf, useAccounts, type EngineAccount } from "@/components/trading/api";
 import { KindBadge } from "@/components/trading/ui";
-import type { MessageKey } from "@kalks/i18n";
-import { useT } from "@kalks/i18n/react";
+import type { MessageKey } from "@ezymex/i18n";
+import { useT } from "@ezymex/i18n/react";
 import type { GrowthApiError } from "./api";
 
 /* ------------------------------------------------------------------ */

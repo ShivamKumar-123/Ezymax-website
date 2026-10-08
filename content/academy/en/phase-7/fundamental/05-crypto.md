@@ -38,7 +38,7 @@ quiz:
       - "A regulatory limit on leverage"
     answer: 2
     explanation: "Every 210,000 blocks, about four years, the block reward to miners is halved, slowing new supply. It says nothing certain about price."
-  - question: "How does swap on crypto CFDs typically differ from FX on Kalks?"
+  - question: "How does swap on crypto CFDs typically differ from FX on Ezymex?"
     options:
       - "Crypto has no swap"
       - "Crypto swap is charged every night, including weekends"
@@ -65,7 +65,7 @@ Bitcoin commonly moves 2% to 5% in a day, and larger altcoins can move more. EUR
 
 ```text
 Example contract: 1 BTC per lot (check the contract specification
-in Kalks Trader for each crypto symbol)
+in Ezymex Trader for each crypto symbol)
 
 Buy 0.05 lot BTCUSD at 64,000
 A 4% fall takes price to 61,440
@@ -91,7 +91,7 @@ Bitcoin is the largest asset and usually sets the direction for the market. ETHU
 
 ## Swap and holding costs
 
-Because crypto trades seven days a week, Kalks charges swap on crypto CFD positions every night at 00:00 server time, including Saturdays and Sundays. Crypto financing rates are often higher than on FX, so a position held for several weeks can accumulate a significant cost. Check the swap rates in the symbol specification before planning a long hold.
+Because crypto trades seven days a week, Ezymex charges swap on crypto CFD positions every night at 00:00 server time, including Saturdays and Sundays. Crypto financing rates are often higher than on FX, so a position held for several weeks can accumulate a significant cost. Check the swap rates in the symbol specification before planning a long hold.
 
 > **Example:** A trader holds 0.10 lot ETHUSD for 20 nights with an example swap of 1.50 USD per night on that volume. The financing cost is 20 x 1.50 = 30 USD, which must be recovered before the trade is profitable.
 

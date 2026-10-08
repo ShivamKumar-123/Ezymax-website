@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Check, CheckCircle2, RefreshCw, Settings2, X, XCircle } from "lucide-react";
-import { Button, Card, CardHeader, Chip, CopyButton, EmptyState, PageHeader, Reveal, Segmented, Sparkline, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, CopyButton, EmptyState, PageHeader, Reveal, Segmented, Sparkline, cn } from "@ezymex/ui";
 import { MiniStat, SegBar } from "@/components/config/kit";
 import { TableSkeleton, ago, day, useApi, useNow, when } from "@/components/live/kit";
 import { PERIOD_LABEL, Pct, ProgramChip, ReadOnlyNote, SocialError, SocialStatus, int, socialWrite, useNoteAction, useSocialCan, usd, type MasterView, type Overview, type SocialSettings } from "./kit";

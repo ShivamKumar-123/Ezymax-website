@@ -10,7 +10,7 @@
 //! * `POST /v1/admin/corporate-actions/{id}/check`                          Infoway factor cross-check now
 //! * `GET  /v1/accounts/{login}/corporate-actions`                          a client's own (Client Area history)
 //!
-//! Instruments are the platform's, so changes are made by platform staff (tenant `kalks`): dealing roles propose and
+//! Instruments are the platform's, so changes are made by platform staff (tenant `ezymex`): dealing roles propose and
 //! edit, admins approve and reject. Every change is audited with its reason.
 
 use axum::Json;
@@ -26,7 +26,7 @@ use super::{ApiError, ApiResult, AppState, Body, Ctx, ROLES_CONFIG, ROLES_DEALIN
 use crate::corporate::{self, ActionRow, COLUMNS, audit, from_row, needs_four_eyes};
 use crate::money::D;
 
-const PLATFORM_TENANT: &str = "kalks";
+const PLATFORM_TENANT: &str = "ezymex";
 const ROLES_APPROVE: &[&str] = &["platform_owner", "super_admin", "admin"];
 
 fn require_read(s: &StaffCtx) -> ApiResult<()> {
@@ -357,7 +357,7 @@ pub struct UserQ {
     user_id: Option<i64>,
 }
 
-/// A client's corporate actions (Client Area / Kalks Trader history): splits and dividends applied to the account.
+/// A client's corporate actions (Client Area / Ezymex Trader history): splits and dividends applied to the account.
 pub async fn account(State(st): State<AppState>, ctx: Ctx, headers: HeaderMap, Path(login): Path<i64>, Query(q): Query<UserQ>) -> ApiResult<Json<Value>> {
     let user = super::accounts::user_of(&headers, q.user_id)?;
     super::accounts::owned(&st, &ctx, login, user)?;

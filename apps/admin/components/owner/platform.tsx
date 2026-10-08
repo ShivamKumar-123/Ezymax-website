@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Activity, Flag, Layers, Plus, RefreshCw, RotateCcw, Server, Trash2 } from "lucide-react";
-import { Button, Card, CardHeader, Chip, Dialog, EmptyState, Field, IconButton, Input, KpiCard, PageHeader, Toggle, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Dialog, EmptyState, Field, IconButton, Input, KpiCard, PageHeader, Toggle, cn } from "@ezymex/ui";
 import { ErrorState, TableSkeleton, ago, useApi, useNow, when } from "@/components/live/kit";
 import { STATUS_TONE, act, call, cap } from "@/components/rbac/kit";
 import type { FeatureCatalogue, Probe } from "./types";
@@ -182,7 +182,7 @@ export function LiveSystem() {
     <div className="pb-10">
       <PageHeader
         title="System status"
-        subtitle="Health of every Kalks service, probed from the Back Office server every 30 seconds"
+        subtitle="Health of every Ezymex service, probed from the Back Office server every 30 seconds"
         actions={
           <>
             <Link href={(process.env.NEXT_PUBLIC_CRM_URL ?? "http://localhost:3000") + "/status"} target="_blank">

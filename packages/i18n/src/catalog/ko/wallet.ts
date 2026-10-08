@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// 브랜드 및 네트워크 이름(Kalks, USDT, TRC20, BEP20, TRON, BNB Smart Chain, MetaMask, TronLink, Tronscan 등)은 그대로 유지합니다.
+// 브랜드 및 네트워크 이름(Ezymex, USDT, TRC20, BEP20, TRON, BNB Smart Chain, MetaMask, TronLink, Tronscan 등)은 그대로 유지합니다.
 const wallet: NsMessages<"wallet"> = {
   // 공통 라벨
   wallet: "지갑",
@@ -388,17 +388,17 @@ const wallet: NsMessages<"wallet"> = {
   "demo.linkCopied": "링크가 클립보드에 복사되었습니다",
   "demo.sendOnlyWarning": "<b>TRON (TRC20)을 통해 USDT만 보내세요.</b> 다른 토큰을 보내거나 ERC20 / BEP20을 사용하면 자금을 영구적으로 잃게 됩니다.",
   "demo.arrival": "도착",
-  "demo.kalksFee": "Kalks 수수료",
+  "demo.ezymexFee": "Ezymex 수수료",
   "demo.noKycDeposit": "입금에는 KYC가 필요하지 않습니다. 인증은 첫 출금 전에만 필요합니다.",
   // 출금
   "demo.addrStartT": "TRC20 주소는 “T”로 시작합니다",
   "demo.addrLength": "34자여야 합니다 ({length}/34)",
   "demo.addrChars": "잘못된 문자가 포함되어 있습니다 (0, O, I, l은 사용할 수 없음)",
-  "demo.addrOwn": "본인의 Kalks 입금 주소입니다",
+  "demo.addrOwn": "본인의 Ezymex 입금 주소입니다",
   "demo.justNow": "방금 전",
   "demo.codeConfirmed": "{email}을(를) 통해 코드 확인됨",
   "demo.financeReviews": "재무팀이 모든 출금을 검토합니다 · 보통 2시간 이내",
-  "demo.sentFromHot": "승인 후 Kalks 핫 월렛에서 송금",
+  "demo.sentFromHot": "승인 후 Ezymex 핫 월렛에서 송금",
   "demo.arriveAfter": "20회 확인 후 주소에 자금이 도착합니다",
   "demo.pendingTitle": "대기 중인 출금",
   "demo.awaitingCompletion": "{count}건 완료 대기 중",
@@ -457,7 +457,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.alwaysReviewed": "항상 재무팀 검토",
   "demo.unrecoverable": "TRC20 USDT를 지원하지 않는 거래소나 스마트 계약 주소로 보낸 출금은 복구할 수 없습니다.",
   // 이체
-  "demo.kalksWallet": "Kalks 지갑",
+  "demo.ezymexWallet": "Ezymex 지갑",
   "demo.freeMargin": "가용 증거금",
   "demo.assetAvailable": "{amount} {asset} 사용 가능 · {network}",
   "demo.throughWallet": "이체는 항상 지갑을 거쳐 처리됩니다.",
@@ -492,7 +492,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.rule4Title": "가용 증거금 보호",
   "demo.rule4Text": "가용 증거금이 허용하는 만큼만 이동할 수 있어 보유 중인 거래가 안전하게 유지됩니다.",
   "demo.into": "받는 곳",
-  "demo.intoKalksWallet": "Kalks 지갑으로",
+  "demo.intoEzymexWallet": "Ezymex 지갑으로",
   "demo.freeMarginAfter": "이체 후 가용 증거금",
   "demo.marginLevelAfter": "이체 후 증거금 수준",
   "demo.convertedNote": "{asset}은(는) 실시간 환율에서 {markup}% 마크업을 뺀 금액으로 USD로 환전됩니다. 확인하기 전까지 환율은 틱마다 갱신됩니다.",

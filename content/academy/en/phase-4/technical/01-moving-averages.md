@@ -10,7 +10,7 @@ takeaways:
   - "The slope and the position of price relative to the average are more useful than any single crossover."
   - "Moving averages work well in trends and generate repeated false signals in ranges."
 practice:
-  label: "Add a 20 EMA and a 50 SMA to a daily EURUSD chart in Kalks Trader and mark every crossover in the last six months, noting which ones were followed by a sustained move."
+  label: "Add a 20 EMA and a 50 SMA to a daily EURUSD chart in Ezymex Trader and mark every crossover in the last six months, noting which ones were followed by a sustained move."
   symbol: "EURUSD"
 quiz:
   - question: "What is the smoothing multiplier for a 19-period EMA?"
@@ -133,6 +133,6 @@ A higher-timeframe filter works the same way: an H1 trader can check the slope o
 - Trading every crossover in a sideways market, where they reverse repeatedly.
 - Optimising periods on past data until the average fits perfectly, which rarely carries forward.
 - Stacking many averages that all say the same thing.
-- Forgetting that the daily candle, and so the daily average, closes at the New York close on Kalks Trader; averages from platforms with a different daily close can differ slightly.
+- Forgetting that the daily candle, and so the daily average, closes at the New York close on Ezymex Trader; averages from platforms with a different daily close can differ slightly.
 
 > **Risk warning:** Indicator signals describe past prices and do not predict future ones. Any strategy built on moving averages can suffer strings of losses, and leveraged CFD losses can exceed your expectations.

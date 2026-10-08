@@ -3,7 +3,7 @@
  *
  * The gateway RBAC (services/gateway/src/rbac.rs) defines marketing.read / write / approve and returns them in the
  * staff session (`rbac: true`); that list always wins, custom roles included. This map is the fallback for sessions
- * without RBAC. The BFF forwards the resolved permissions to the growth service in `X-Kalks-Staff-Perms`, which
+ * without RBAC. The BFF forwards the resolved permissions to the growth service in `X-Ezymex-Staff-Perms`, which
  * checks them again (role lists below when the header is absent).
  *
  * | permission         | what it allows                                                                        | roles                                           |

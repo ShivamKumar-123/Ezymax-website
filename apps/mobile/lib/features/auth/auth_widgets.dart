@@ -160,8 +160,8 @@ class PasswordStrength extends StatelessWidget {
   }
 }
 
-/// "Try the demo" (web TryDemo): Kalks' own sample-data demo, without an account. The web links to
-/// demo.kalkstrade.com; the app opens its own demo in place (AuthController.enterDemo), never the browser.
+/// "Try the demo" (web TryDemo): Ezymex' own sample-data demo, without an account. The web links to
+/// demo.ezymex.com; the app opens its own demo in place (AuthController.enterDemo), never the browser.
 /// Hidden for white-label brokers.
 class TryDemoCard extends ConsumerWidget {
   const TryDemoCard({super.key});

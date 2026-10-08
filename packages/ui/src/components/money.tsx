@@ -7,7 +7,7 @@ import { splitNumber, formatPct } from "../lib/format";
 
 /**
  * Big number with dimmed decimals ($54,208.<dim>11</dim>) and an optional
- * count-up on first view — the signature Kalks number treatment.
+ * count-up on first view — the signature Ezymex number treatment.
  */
 export function Money({
   value,

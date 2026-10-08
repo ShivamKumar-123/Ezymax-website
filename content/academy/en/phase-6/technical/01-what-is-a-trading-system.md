@@ -49,7 +49,7 @@ quiz:
 
 Most traders begin with ideas: "gold tends to bounce off round numbers", "breakouts in the London session work", "buy dips in an uptrend". Ideas are where every strategy starts, but an idea is not something you can test, measure or trust with money. A **trading system** is what you get when you turn an idea into rules so precise that anyone, including a computer, would take exactly the same trades.
 
-This track takes you from that first definition through building a strategy in the Kalks strategy builder, backtesting it honestly, avoiding overfitting, reading the performance metrics and finally forward-testing on a demo account.
+This track takes you from that first definition through building a strategy in the Ezymex strategy builder, backtesting it honestly, avoiding overfitting, reading the performance metrics and finally forward-testing on a demo account.
 
 ## Discretionary and systematic trading
 

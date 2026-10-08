@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowRightLeft, Check, ChevronDown, FileText, Loader2, Lock, MessageSquareText, Paperclip, RotateCcw, Search, SendHorizontal, Sparkles, Star, Tag, UserPlus } from "lucide-react";
-import { Avatar, Button, Card, Chip, EmptyState, IconButton, Menu, PageHeader, Popover, Segmented, Tooltip, cn } from "@kalks/ui";
+import { Avatar, Button, Card, Chip, EmptyState, IconButton, Menu, PageHeader, Popover, Segmented, Tooltip, cn } from "@ezymex/ui";
 import { realtime, type Frame } from "@/lib/realtime";
 import { ConvStatusChip, Rich, SlaCountdown, ago, errMsg, fillVars, hhmm, sapi, usePerms, type Conversation, type Message } from "./common";
 

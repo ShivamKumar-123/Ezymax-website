@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ArrowUpRight, IdCard } from "lucide-react";
-import { Card, CardHeader, Skeleton } from "@kalks/ui";
+import { Card, CardHeader, Skeleton } from "@ezymex/ui";
 import { useCan } from "@/components/staff-session";
 import { KycChip, Mono, ago, useApi, useNow, when } from "@/components/live/kit";
 import type { QueuePage } from "./types";

@@ -1,6 +1,6 @@
-// Server-only helpers for talking to the Kalks trading engine (services/trading, 127.0.0.1:8090).
+// Server-only helpers for talking to the Ezymex trading engine (services/trading, 127.0.0.1:8090).
 // The browser never sees the engine or its internal token: route handlers under /api/trading resolve the
-// signed-in client from the gateway session cookie and forward the gateway user id as X-Kalks-User-Id.
+// signed-in client from the gateway session cookie and forward the gateway user id as X-Ezymex-User-Id.
 // Contract: services/trading/README.md ("Client Area API").
 
 import type { NextRequest } from "next/server";
@@ -10,7 +10,7 @@ const TRADING_URL = process.env.TRADING_URL ?? "http://127.0.0.1:8090";
 const TRADING_TOKEN = process.env.TRADING_INTERNAL_TOKEN ?? "";
 
 /**
- * Kalks Trader base URL. The Trade button opens `${TERMINAL_BASE}/?sso=<one-time token>`; the terminal
+ * Ezymex Trader base URL. The Trade button opens `${TERMINAL_BASE}/?sso=<one-time token>`; the terminal
  * redeems the token with POST /v1/terminal/sso (one-time, 60 s) and drops the query param.
  */
 export const TERMINAL_BASE = (process.env.NEXT_PUBLIC_TERMINAL_URL ?? "http://localhost:3002").replace(/\/+$/, "");
@@ -22,9 +22,9 @@ export async function engine<T = Record<string, unknown>>(
   init: { method?: "GET" | "POST" | "PATCH"; body?: unknown; user: GatewayUser; req: NextRequest },
 ): Promise<EngineResult<T>> {
   const headers: Record<string, string> = {
-    "x-kalks-internal": TRADING_TOKEN,
-    "x-kalks-tenant": init.user.tenant?.slug || "kalks",
-    "x-kalks-user-id": String(init.user.id),
+    "x-ezymex-internal": TRADING_TOKEN,
+    "x-ezymex-tenant": init.user.tenant?.slug || "ezymex",
+    "x-ezymex-user-id": String(init.user.id),
     "x-forwarded-for": clientIp(init.req.headers),
   };
   const ua = init.req.headers.get("user-agent");

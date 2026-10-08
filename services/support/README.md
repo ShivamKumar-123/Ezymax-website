@@ -1,6 +1,6 @@
 # support
 
-Kalks support and notifications service (Rust, axum 0.8, sqlx 0.9, PostgreSQL) on `127.0.0.1:8100`.
+Ezymex support and notifications service (Rust, axum 0.8, sqlx 0.9, PostgreSQL) on `127.0.0.1:8100`.
 
 - **Live chat with an AI help bot (D95, D124).** Claude answers first from the knowledge base, streaming. It hands over to human agents on request, when unsure, on complaints, payment and withdrawal problems, security concerns and anything that needs an account action. Agents see the transcript and a user context panel.
 - **Notification centre (D37, D41).** Per-client and per-staff inboxes, read / unread, preferences (in-app / email per topic), realtime push, email through the SMTP relay, Back Office broadcasts to segments, and an ingestion endpoint other services call: `POST /v1/notify`.
@@ -12,16 +12,16 @@ cargo run -p support        # http://127.0.0.1:8100 (BFFs and internal services 
 cargo test -p support       # unit tests + end-to-end flows against a throw-away database on :5433
 ```
 
-It creates `kalks_support` and runs migrations on first start, then seeds the knowledge base (the help articles in `kb/help.md` and the Academy glossary `content/academy/en/glossary.yaml`). Settings come from the repo-root `.env.local`; the Claude key from `.env.claude` (`ANTHROPIC_API_KEY`). Without a key the bot answers from the best-matching article and hands over when it isn't confident. Without `SMTP_HOST`, emails are logged as `DEV email`.
+It creates `ezymex_support` and runs migrations on first start, then seeds the knowledge base (the help articles in `kb/help.md` and the Academy glossary `content/academy/en/glossary.yaml`). Settings come from the repo-root `.env.local`; the Claude key from `.env.claude` (`ANTHROPIC_API_KEY`). Without a key the bot answers from the best-matching article and hands over when it isn't confident. Without `SMTP_HOST`, emails are logged as `DEV email`.
 
 The Client Area and Back Office need `SUPPORT_URL` (default `http://127.0.0.1:8100`) and `SUPPORT_INTERNAL_TOKEN` in their `.env.local`. In development the browser opens the stream on the service directly (`ws://127.0.0.1:8100/v1/stream`); in production it opens `wss://<app or admin host>/support/stream` (Caddy rewrites to `/v1/stream`). `SUPPORT_STREAM_URL` overrides this.
 
 | Variable | Default | |
 |---|---|---|
 | `SUPPORT_BIND` | `127.0.0.1:8100` | |
-| `SUPPORT_DATABASE_URL` | `postgres://postgres@127.0.0.1:5433/kalks_support` | created on first start |
+| `SUPPORT_DATABASE_URL` | `postgres://postgres@127.0.0.1:5433/ezymex_support` | created on first start |
 | `SUPPORT_INTERNAL_TOKEN` | – | required when `SUPPORT_ENV=production` |
-| `SUPPORT_STORAGE_DIR` | `~/.kalks-data/support` | chat attachments (0600 files, outside any web root) |
+| `SUPPORT_STORAGE_DIR` | `~/.ezymex-data/support` | chat attachments (0600 files, outside any web root) |
 | `SUPPORT_MAX_ATTACHMENT_MB` | `10` | images (PNG, JPG, GIF, WEBP) and PDF only, type sniffed from the bytes |
 | `ANTHROPIC_API_KEY` | – | Claude key (`.env.claude`) |
 | `SUPPORT_AI_MODEL` | `claude-opus-5-5` | |
@@ -43,10 +43,10 @@ Messages are `client`, `bot`, `agent`, `system` (joins, handovers, ratings) and 
 
 ## API
 
-Every route except `GET /health` and `GET /v1/stream` needs `X-Kalks-Internal: $SUPPORT_INTERNAL_TOKEN`. `X-Kalks-Tenant` (default `kalks`) scopes everything. Errors: `{"error": {"code", "message", "field"?}}`.
+Every route except `GET /health` and `GET /v1/stream` needs `X-Ezymex-Internal: $SUPPORT_INTERNAL_TOKEN`. `X-Ezymex-Tenant` (default `ezymex`) scopes everything. Errors: `{"error": {"code", "message", "field"?}}`.
 
-- **Client routes** take `X-Kalks-User-Id` (+ `X-Kalks-User-Name`, `X-Kalks-User-Email`, percent-encoded), set by the CRM BFF from the session cookie.
-- **Staff routes** take `X-Kalks-Staff-Id`, `X-Kalks-Staff-Name` (percent-encoded), `X-Kalks-Staff-Role` and `X-Kalks-Staff-Perms` (comma-separated). Permissions: `support.read`, `support.write`, `notifications.write` (gateway RBAC keys; the admin BFF resolves them). Without `X-Kalks-Staff-Perms` the service falls back to role lists in `src/api/mod.rs`.
+- **Client routes** take `X-Ezymex-User-Id` (+ `X-Ezymex-User-Name`, `X-Ezymex-User-Email`, percent-encoded), set by the CRM BFF from the session cookie.
+- **Staff routes** take `X-Ezymex-Staff-Id`, `X-Ezymex-Staff-Name` (percent-encoded), `X-Ezymex-Staff-Role` and `X-Ezymex-Staff-Perms` (comma-separated). Permissions: `support.read`, `support.write`, `notifications.write` (gateway RBAC keys; the admin BFF resolves them). Without `X-Ezymex-Staff-Perms` the service falls back to role lists in `src/api/mod.rs`.
 
 ### Client (`/v1/support/me…`, CRM BFF `/api/support/*`)
 
@@ -94,7 +94,7 @@ Every route except `GET /health` and `GET /v1/stream` needs `X-Kalks-Internal: $
 
 ## Notifications API (for other services)
 
-`POST /v1/notify` with `X-Kalks-Internal`, optional `X-Kalks-Tenant` and `X-Kalks-Service: wallet|kyc|prop|ib|…` (stored as the source).
+`POST /v1/notify` with `X-Ezymex-Internal`, optional `X-Ezymex-Tenant` and `X-Ezymex-Service: wallet|kyc|prop|ib|…` (stored as the source).
 
 ```json
 {
@@ -117,7 +117,7 @@ Every route except `GET /health` and `GET /v1/stream` needs `X-Kalks-Internal: $
 - Response: `{"results": [{"audience", "recipient", "id", "duplicate", "inApp", "emailed"}]}`.
 
 ```bash
-curl -s localhost:8100/v1/notify -H "x-kalks-internal: $SUPPORT_INTERNAL_TOKEN" -H "x-kalks-service: wallet" \
+curl -s localhost:8100/v1/notify -H "x-ezymex-internal: $SUPPORT_INTERNAL_TOKEN" -H "x-ezymex-service: wallet" \
   -H 'content-type: application/json' -d '{"type":"wallet.deposit_credited","userId":42,"title":"Deposit credited","dedupeKey":"deposit:991"}'
 ```
 

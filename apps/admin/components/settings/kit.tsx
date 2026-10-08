@@ -3,9 +3,9 @@
 import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ChevronDown, Eye, EyeOff, RotateCcw, Save } from "lucide-react";
-import { Button, CopyButton, Icon3D, CoinIcon, cn } from "@kalks/ui";
+import { Button, CopyButton, Icon3D, CoinIcon, cn } from "@ezymex/ui";
 
-/** Native <select> styled like the Kalks `Input`. */
+/** Native <select> styled like the Ezymex `Input`. */
 export function SelectInput({
   value,
   onChange,
@@ -172,14 +172,14 @@ export function ClientOnly({ children, fallback = null }: { children: React.Reac
   return <>{m ? children : fallback}</>;
 }
 
-/** Brand asset renderer: the Kalks SVGs use currentColor, so render them as a CSS mask; uploaded files render as <img>. */
+/** Brand asset renderer: the Ezymex SVGs use currentColor, so render them as a CSS mask; uploaded files render as <img>. */
 export function BrandImg({ src, className, color = "#F5F5F7", ratio }: { src: string; className?: string; color?: string; ratio?: number }) {
   if (src.startsWith("/assets/brand/")) {
-    const r = ratio ?? (src.includes("mark") ? 653 / 541 : 1954 / 541);
+    const r = ratio ?? (src.includes("mark") ? 652 / 460 : 2801 / 559);
     return (
       <span
         role="img"
-        aria-label="Kalks"
+        aria-label="Ezymex"
         className={cn("inline-block", className)}
         style={{ aspectRatio: r, backgroundColor: color, WebkitMask: `url(${src}) center / contain no-repeat`, mask: `url(${src}) center / contain no-repeat` }}
       />

@@ -8,7 +8,7 @@ const security: NsMessages<"security"> = {
   "signingOut": "Déconnexion…",
   "resetSigningOut": "Déconnexion pour réinitialiser votre mot de passe…",
   "error.generic": "Une erreur s'est produite. Veuillez réessayer.",
-  "error.network": "Impossible de joindre Kalks. Vérifiez votre connexion et réessayez.",
+  "error.network": "Impossible de joindre Ezymex. Vérifiez votre connexion et réessayez.",
 
   // Device labels
   "device.unknownBrowser": "Navigateur inconnu",
@@ -222,7 +222,7 @@ const security: NsMessages<"security"> = {
   "page.calendar": "Calendrier",
   // Investor passwords card
   "investor.title": "Mots de passe investisseur",
-  "investor.text": "Chaque compte de trading dispose aussi d'un mot de passe investisseur pour un accès en lecture seule dans Kalks Trader, comme sur MT5 : positions et historique, sans trading.",
+  "investor.text": "Chaque compte de trading dispose aussi d'un mot de passe investisseur pour un accès en lecture seule dans Ezymex Trader, comme sur MT5 : positions et historique, sans trading.",
   "investor.hint": "Définissez-le ou modifiez-le sur la page du compte.",
   "investor.goToAccounts": "Aller aux comptes",
   // Create / edit dialog

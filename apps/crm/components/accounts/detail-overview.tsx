@@ -23,9 +23,9 @@ import {
   formatNumber,
   type SeriesPoint,
 } from "@/components/kit";
-import { ASSET_CLASS_LABEL, equitySeries, freeMargin, getInstrument, hashString, marginLevel, type ClosedTrade, type TradingAccount } from "@kalks/mock";
+import { ASSET_CLASS_LABEL, equitySeries, freeMargin, getInstrument, hashString, marginLevel, type ClosedTrade, type TradingAccount } from "@ezymex/mock";
 import { PnlCalendar } from "./pnl-calendar";
-import { useFormat, useT } from "@kalks/i18n/react";
+import { useFormat, useT } from "@ezymex/i18n/react";
 
 export const curOf = (a: TradingAccount) => (a.cent ? "USC " : "$");
 export const multOf = (a: TradingAccount) => (a.cent ? 100 : 1);

@@ -5,7 +5,7 @@
 // blocks and ```svg diagrams (shown as <img> data URIs, so a diagram can never run script).
 
 import * as React from "react";
-import { cn } from "@kalks/ui";
+import { cn } from "@ezymex/ui";
 
 export type Heading = { id: string; text: string; level: 2 | 3 };
 
@@ -156,7 +156,7 @@ const CALLOUT: Record<string, { cls: string; label: string }> = {
   example: { cls: "border-info/25 bg-info-soft [&_.lbl]:text-info", label: "Example" },
   tip: { cls: "border-up/25 bg-up-soft [&_.lbl]:text-up", label: "Tip" },
   note: { cls: "border-line bg-surface-2 [&_.lbl]:text-fg-2", label: "Note" },
-  "in kalks trader": { cls: "border-ember/30 bg-ember-soft [&_.lbl]:text-ember", label: "In Kalks Trader" },
+  "in ezymex trader": { cls: "border-ember/30 bg-ember-soft [&_.lbl]:text-ember", label: "In Ezymex Trader" },
 };
 
 function Callout({ text }: { text: string }) {

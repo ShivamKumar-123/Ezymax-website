@@ -3,9 +3,9 @@
 import * as React from "react";
 import { CalendarDays, Dices, Save, Sparkles, Ticket } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Dialog, DialogClose, Field, Icon3D, Input, Toggle, cn } from "@kalks/ui";
-import { PROMO_SEGMENTS, PROMO_TYPE_META, type PromoCode, type PromoSegment, type PromoType } from "@kalks/mock/admin-promo-codes";
-import { PEOPLE } from "@kalks/mock";
+import { Button, Dialog, DialogClose, Field, Icon3D, Input, Toggle, cn } from "@ezymex/ui";
+import { PROMO_SEGMENTS, PROMO_TYPE_META, type PromoCode, type PromoSegment, type PromoType } from "@ezymex/mock/admin-promo-codes";
+import { PEOPLE } from "@ezymex/mock";
 import { NumField, SectionLabel, fmtDate } from "./kit";
 
 const CAP_DEFAULT: Record<PromoType, string> = { "deposit-bonus": "3000", "fee-waiver": "14", "prop-retry": "50000" };

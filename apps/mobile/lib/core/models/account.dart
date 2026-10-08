@@ -63,8 +63,8 @@ class EngineAccount {
   /// Prop challenge accounts (group "prop…").
   bool get prop => group.toLowerCase().startsWith('prop');
 
-  /// "Kalks-Live" / "Kalks-Demo".
-  String get server => live ? 'Kalks-Live' : 'Kalks-Demo';
+  /// "Ezymex-Live" / "Ezymex-Demo".
+  String get server => live ? 'Ezymex-Live' : 'Ezymex-Demo';
 
   /// "$", "USC ", "EUR " (web curOf).
   String get currencyPrefix => Fmt.accountPrefix(currency: currency, cent: cent);

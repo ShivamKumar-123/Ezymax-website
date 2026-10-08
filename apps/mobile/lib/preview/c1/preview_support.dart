@@ -186,8 +186,8 @@ abstract final class PreviewSupport {
     _boot();
     final rest = path.substring('support/'.length);
     final settings = {
-      'botName': 'Kalks AI',
-      'greeting': "Hi there. I'm Kalks AI. Ask me about deposits, withdrawals, verification or trading, or ask for a person at any time.",
+      'botName': 'Ezymex AI',
+      'greeting': "Hi there. I'm Ezymex AI. Ask me about deposits, withdrawals, verification or trading, or ask for a person at any time.",
       'ai': true,
       'agentsOnline': 3,
       'maxAttachmentMb': 10,

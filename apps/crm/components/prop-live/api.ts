@@ -1,13 +1,13 @@
 "use client";
 
 // Browser side of the prop BFF (app/api/prop/[...path]/route.ts). Live builds only: demo builds keep the mock
-// challenges from @kalks/mock/prop. Shapes: services/prop/README.md.
+// challenges from @ezymex/mock/prop. Shapes: services/prop/README.md.
 
 import * as React from "react";
 import { toast } from "sonner";
-import { intlTag, type MessageKey } from "@kalks/i18n";
-import { tr } from "@kalks/i18n/react";
-import { readCached, writeCached } from "@kalks/ui/swr-cache";
+import { intlTag, type MessageKey } from "@ezymex/i18n";
+import { tr } from "@ezymex/i18n/react";
+import { readCached, writeCached } from "@ezymex/ui/swr-cache";
 
 /* ------------------------------------------------------------------ */
 /* Service shapes                                                      */
@@ -346,7 +346,7 @@ export function errorToast(title: string, e: unknown) {
 }
 
 /** Polls `path` every `ms` while the tab is visible (0 = once). `reload()` refetches at once.
- *  Opened again, a page starts from this tab's last answer while it refetches (@kalks/ui/swr-cache). */
+ *  Opened again, a page starts from this tab's last answer while it refetches (@ezymex/ui/swr-cache). */
 export function usePropPoll<T>(path: string | null, ms: number) {
   const [data, setData] = React.useState<T | null>(() => (path ? (readCached<T>(`prop:${path}`) ?? null) : null));
   const [error, setError] = React.useState<PropError | null>(null);

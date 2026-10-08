@@ -8,7 +8,7 @@ const security: NsMessages<"security"> = {
   "signingOut": "در حال خروج…",
   "resetSigningOut": "در حال خروج شما برای بازنشانی رمز عبور…",
   "error.generic": "مشکلی پیش آمد. لطفاً دوباره تلاش کنید.",
-  "error.network": "اتصال به Kalks برقرار نشد. اتصال اینترنت خود را بررسی کنید و دوباره تلاش کنید.",
+  "error.network": "اتصال به Ezymex برقرار نشد. اتصال اینترنت خود را بررسی کنید و دوباره تلاش کنید.",
 
   // Device labels from the browser's user agent; browser and OS brand names stay as they are
   "device.unknownBrowser": "مرورگر ناشناخته",
@@ -226,7 +226,7 @@ const security: NsMessages<"security"> = {
   "page.calendar": "تقویم",
   // Investor passwords card
   "investor.title": "رمزهای سرمایه‌گذار",
-  "investor.text": "هر حساب معاملاتی یک رمز سرمایه‌گذار نیز برای دسترسی فقط‌خواندنی در Kalks Trader دارد، به سبک MT5: پوزیشن‌ها و تاریخچه، بدون امکان معامله.",
+  "investor.text": "هر حساب معاملاتی یک رمز سرمایه‌گذار نیز برای دسترسی فقط‌خواندنی در Ezymex Trader دارد، به سبک MT5: پوزیشن‌ها و تاریخچه، بدون امکان معامله.",
   "investor.hint": "آن را در صفحه حساب تنظیم یا تغییر دهید.",
   "investor.goToAccounts": "رفتن به حساب‌ها",
   // Create / edit dialog

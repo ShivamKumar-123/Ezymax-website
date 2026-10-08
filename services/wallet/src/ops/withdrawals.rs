@@ -137,7 +137,7 @@ async fn check_or_request(st: &AppState, ctx: &Ctx, r: RequestIn, dry_run: bool)
     }
     let cfg = settings::chain(&st.pool, tenant_id, chain).await?.filter(|c| c.withdrawals_enabled).ok_or_else(|| ApiError::unprocessable("chain_disabled", format!("Withdrawals on {} are not available", chain.network())))?;
     if settings::company_addresses(&st.pool, tenant_id, chain).await?.contains(&to) {
-        return Err(ApiError::validation("to_address", "This is a Kalks deposit address. Enter your own wallet address."));
+        return Err(ApiError::validation("to_address", "This is a Ezymex deposit address. Enter your own wallet address."));
     }
     let limits = settings::limits(&st.pool, tenant_id).await?;
     if amount < limits.withdraw_min {

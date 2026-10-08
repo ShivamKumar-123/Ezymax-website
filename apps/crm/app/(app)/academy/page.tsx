@@ -5,10 +5,10 @@ import Link from "next/link";
 import { ArrowUpRight, Award, Bot, Flame, PlayCircle, Target } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Button, Card, Chip, Icon3D, PageHeader, Reveal, Starfield, cn } from "@/components/kit";
-import { PEOPLE } from "@kalks/mock";
-import { CONTINUE_LEARNING, COURSES } from "@kalks/mock/academy";
+import { PEOPLE } from "@ezymex/mock";
+import { CONTINUE_LEARNING, COURSES } from "@ezymex/mock/academy";
 import { CourseGrid, Glossary, LEVEL_TONE, LearningPaths, QuizCard } from "@/components/academy/learn";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveAcademyHome } from "@/components/academy/live/home";
 
 function ContinueHero() {
@@ -131,7 +131,7 @@ function DemoChallengeCard() {
           </div>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <Button variant="surface" onClick={() => toast.success("Demo challenge account #90023117 created", { description: "$25,000 demo balance · Kalks-Demo01" })}>
+          <Button variant="surface" onClick={() => toast.success("Demo challenge account #90023117 created", { description: "$25,000 demo balance · Ezymex-Demo01" })}>
             Start on demo
           </Button>
           <Link href="/prop">
@@ -156,7 +156,7 @@ function CoachTeaser() {
             </div>
             <ArrowUpRight className="size-4 text-fg-3 transition-colors group-hover:text-fg" />
           </div>
-          <div className="mt-4 text-[16px] font-medium">Kalks Coach</div>
+          <div className="mt-4 text-[16px] font-medium">Ezymex Coach</div>
           <p className="mt-1 text-[13px] text-fg-3">Your weekly review is ready. 22 trades analysed.</p>
           <div className="mt-4 rounded-[14px] border border-line bg-surface-2 p-3.5 text-[12.5px] leading-relaxed text-fg-2">
             “Your New York session trades made <span className="font-medium text-up">$11,260</span> — more than Asia and London combined. Friday late-session trades are dragging your win rate.”
@@ -181,7 +181,7 @@ export default function AcademyPage() {
         actions={
           <Link href="/academy/coach">
             <Button variant="ember" size="lg" shimmer>
-              <Bot /> Ask Kalks Coach
+              <Bot /> Ask Ezymex Coach
             </Button>
           </Link>
         }

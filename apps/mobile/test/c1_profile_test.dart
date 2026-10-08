@@ -21,20 +21,20 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/core/api/api_providers.dart';
-import 'package:kalks/core/theme_controller.dart';
-import 'package:kalks/features/profile/kyc/kyc_checks.dart';
-import 'package:kalks/features/profile/kyc/kyc_models.dart';
-import 'package:kalks/features/profile/kyc/kyc_upload.dart';
-import 'package:kalks/features/profile/notification_prefs_screen.dart';
-import 'package:kalks/features/profile/security_data.dart';
-import 'package:kalks/features/profile/viewers_screen.dart';
-import 'package:kalks/features/profile/widgets/change_password_card.dart';
-import 'package:kalks/i18n/i18n.dart';
-import 'package:kalks/preview/c1/preview_profile.dart';
-import 'package:kalks/preview/preview_adapter.dart';
-import 'package:kalks/router/router.dart';
-import 'package:kalks/ui/ui.dart';
+import 'package:ezymex/core/api/api_providers.dart';
+import 'package:ezymex/core/theme_controller.dart';
+import 'package:ezymex/features/profile/kyc/kyc_checks.dart';
+import 'package:ezymex/features/profile/kyc/kyc_models.dart';
+import 'package:ezymex/features/profile/kyc/kyc_upload.dart';
+import 'package:ezymex/features/profile/notification_prefs_screen.dart';
+import 'package:ezymex/features/profile/security_data.dart';
+import 'package:ezymex/features/profile/viewers_screen.dart';
+import 'package:ezymex/features/profile/widgets/change_password_card.dart';
+import 'package:ezymex/i18n/i18n.dart';
+import 'package:ezymex/preview/c1/preview_profile.dart';
+import 'package:ezymex/preview/preview_adapter.dart';
+import 'package:ezymex/router/router.dart';
+import 'package:ezymex/ui/ui.dart';
 
 import 'helpers/test_app.dart';
 
@@ -649,7 +649,7 @@ void main() {
 
     test('sign-in results and request statuses have the web tones', () {
       expect(kLoginResultTone['failed'], isNotNull);
-      expect(loginResultLabel(t, 'unknown_thing', 'Kalks'), 'unknown_thing');
+      expect(loginResultLabel(t, 'unknown_thing', 'Ezymex'), 'unknown_thing');
       expect(kRequestStatus.keys, ['open', 'in_progress', 'completed', 'rejected', 'cancelled']);
       expect(ClientRequest.fromJson({'id': 1, 'kind': 'closure', 'status': 'in_progress'}).pending, isTrue);
     });

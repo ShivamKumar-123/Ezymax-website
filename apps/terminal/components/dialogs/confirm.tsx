@@ -4,7 +4,7 @@
 // opened from anywhere through askConfirm(). docs/TERMINAL-DESIGN.md §2.5 "Strong, logical keys".
 import * as React from "react";
 import { TriangleAlert } from "lucide-react";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { TDialog } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/kit";
 

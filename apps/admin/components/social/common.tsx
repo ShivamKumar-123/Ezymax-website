@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { OctagonAlert } from "lucide-react";
-import { Button, Chip, Dialog, Money, cn } from "@kalks/ui";
+import { Button, Chip, Dialog, Money, cn } from "@ezymex/ui";
 import { Checkbox, MiniField, Select, TextArea, TextInput, auditToast } from "@/components/config/kit";
 
 export function TypeChip({ type }: { type: "copy" | "pamm" | "signal" }) {

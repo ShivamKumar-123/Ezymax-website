@@ -2,10 +2,10 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/features/terminal/chart/chart_bridge.dart';
-import 'package:kalks/features/terminal/chart/chart_surface.dart';
-import 'package:kalks/features/terminal/chart/indicators.dart';
-import 'package:kalks/features/terminal/chart/terminal_chart.dart';
+import 'package:ezymex/features/terminal/chart/chart_bridge.dart';
+import 'package:ezymex/features/terminal/chart/chart_surface.dart';
+import 'package:ezymex/features/terminal/chart/indicators.dart';
+import 'package:ezymex/features/terminal/chart/terminal_chart.dart';
 
 void main() {
   const palette = ChartPalette(

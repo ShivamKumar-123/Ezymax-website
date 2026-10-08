@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Plus, RefreshCw, RotateCcw, Save, Trash2 } from "lucide-react";
-import { Button, Card, CardHeader, Chip, PageHeader, Reveal, Segmented, Skeleton, Toggle, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, PageHeader, Reveal, Segmented, Skeleton, Toggle, cn } from "@ezymex/ui";
 import { ChipList, MiniField, NumInput, Select, SettingRow, TextInput } from "@/components/config/kit";
 import { day, useApi, when } from "@/components/live/kit";
 import { OPTIONS_RATE_MAX, P, ibSend, levelBody, toSettings, type Level, type LevelsDoc, type SelfRefAction, type Settings, type SettingsDoc, type SymbolGroup, type WriteResult } from "./api";

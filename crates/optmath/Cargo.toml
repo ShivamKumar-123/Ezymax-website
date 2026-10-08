@@ -2,7 +2,7 @@
 name = "optmath"
 version = "0.1.0"
 edition = "2024"
-description = "Pure-Rust option maths for Kalks FX Options: generalized Black-Scholes-Merton, Greeks, implied vol, FX smile, barriers, term structure, vol clock, realized vol, expiry calendar, strike ladder, TWAP, scenario grid, payoff."
+description = "Pure-Rust option maths for Ezymex FX Options: generalized Black-Scholes-Merton, Greeks, implied vol, FX smile, barriers, term structure, vol clock, realized vol, expiry calendar, strike ladder, TWAP, scenario grid, payoff."
 publish = false
 
 [lib]

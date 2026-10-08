@@ -10,7 +10,7 @@ takeaways:
   - "For XAUUSD with a 100 oz contract, a $1.00 move is worth $100 per lot, so a $8.00 stop on a $100 risk allows 0.12 lots."
   - "Always round the result down to the nearest lot step, and skip the trade if the correct size is below the minimum lot."
 practice:
-  label: "On your demo account, calculate the lot size for a 1% risk XAUUSD trade with a $10.00 stop, then check the contract specification in Kalks Trader to confirm the contract size you used."
+  label: "On your demo account, calculate the lot size for a 1% risk XAUUSD trade with a $10.00 stop, then check the contract specification in Ezymex Trader to confirm the contract size you used."
   symbol: "XAUUSD"
 quiz:
   - question: "Account equity $10,000, risk 1%, EURUSD stop 25 pips. What is the correct position size?"
@@ -47,7 +47,7 @@ quiz:
     explanation: "50 points x EUR 1 = EUR 50 per lot. Converted to dollars: 50 x 1.0850 = $54.25. Instruments priced in another currency must be converted into your account currency."
 ---
 
-The previous chapter fixed how much you are willing to lose. This chapter turns that amount into a lot size. The method is the same for every instrument on Kalks; only the value of a price move changes. Master one formula and a handful of conversions and you can size any trade correctly in under a minute.
+The previous chapter fixed how much you are willing to lose. This chapter turns that amount into a lot size. The method is the same for every instrument on Ezymex; only the value of a price move changes. Master one formula and a handful of conversions and you can size any trade correctly in under a minute.
 
 ## The universal formula
 
@@ -59,7 +59,7 @@ Position size (lots) = Risk amount / (Stop distance x Value per unit move per lo
 - **Stop distance**: the distance from entry to stop loss, in pips or points or price units.
 - **Value per unit move per lot**: what one pip or point, or one full unit of price, is worth on one lot, converted into your account currency.
 
-All the examples below assume a USD account, equity of $10,000 and 1% risk ($100) unless stated. Always round **down** to the lot step, which is 0.01 on Kalks, so that the actual risk never exceeds the plan.
+All the examples below assume a USD account, equity of $10,000 and 1% risk ($100) unless stated. Always round **down** to the lot step, which is 0.01 on Ezymex, so that the actual risk never exceeds the plan.
 
 ## Forex pairs
 
@@ -108,7 +108,7 @@ Size = $100 / $800 = 0.125 -> round down to 0.12 lots
 Actual risk: 0.12 x 100 x 8.00 = $96.00
 ```
 
-Silver has a different contract size. Check the contract specification in Kalks Trader for XAGUSD before sizing.
+Silver has a different contract size. Check the contract specification in Ezymex Trader for XAGUSD before sizing.
 
 ## Indices, energies, crypto and stocks
 
@@ -124,7 +124,7 @@ Contract sizes for these vary by broker and symbol, so always check the specific
 
 The GER40 line shows the currency step that is easy to forget: an index priced in euros generates euro profits and losses, which must be converted into dollars for a USD account.
 
-> **In Kalks Trader:** The contract specification for each symbol shows the contract size, lot step, minimum lot and the currency in which profit is calculated. Open it before trading any symbol for the first time.
+> **In Ezymex Trader:** The contract specification for each symbol shows the contract size, lot step, minimum lot and the currency in which profit is calculated. Open it before trading any symbol for the first time.
 
 ## When the size is too small
 

@@ -5,10 +5,10 @@ import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, ArrowUpRight, CandlestickChart, Eye, EyeOff, KeyRound, Loader2, Lock, Server, ShieldCheck, Trash2, UserPlus, UserRound } from "lucide-react";
 import { toast } from "@/lib/notify";
-import { ACCOUNTS, ALL_INSTRUMENTS, ME } from "@kalks/mock";
-import { BrandName, LivePrice, LogoMark, SymbolAvatar, ThemeToggle, cn, useQuote } from "@kalks/ui";
-import { Trans, useT } from "@kalks/i18n/react";
-import type { MessageKey } from "@kalks/i18n";
+import { ACCOUNTS, ALL_INSTRUMENTS, ME } from "@ezymex/mock";
+import { BrandName, LivePrice, LogoMark, SymbolAvatar, ThemeToggle, cn, useQuote } from "@ezymex/ui";
+import { Trans, useT } from "@ezymex/i18n/react";
+import type { MessageKey } from "@ezymex/i18n";
 import { LanguageMenu } from "@/components/shell/language-menu";
 import { SAVED_KEY, writeActive, writeSession } from "@/lib/store";
 import { SERVERS } from "@/lib/trading";
@@ -43,7 +43,7 @@ function LoginForm() {
   const t = useT();
   const [login, setLogin] = React.useState(sp.get("login") ?? "");
   const [password, setPassword] = React.useState("");
-  const [server, setServer] = React.useState<string>("Kalks-Live01");
+  const [server, setServer] = React.useState<string>("Ezymex-Live01");
   const [investor, setInvestor] = React.useState(false);
   const [savePw, setSavePw] = React.useState(true);
   const [show, setShow] = React.useState(false);
@@ -353,8 +353,8 @@ function LiveLogin() {
               {saved.map((s) => (
                 <div key={s.login} className={cn("group flex items-center gap-2.5 rounded-[8px] px-2.5 py-2 transition-colors", login === s.login ? "bg-ember-soft/60" : "hover:bg-surface-2")}>
                   <button type="button" onClick={() => setLogin(s.login)} className="flex min-w-0 flex-1 items-center gap-2.5 text-start">
-                    <Badge tone={s.server === "Kalks-Live" ? "ember" : "gold"} className="w-11 justify-center">
-                      {s.server === "Kalks-Live" ? t("trader.accountType.live") : t("trader.accountType.demo")}
+                    <Badge tone={s.server === "Ezymex-Live" ? "ember" : "gold"} className="w-11 justify-center">
+                      {s.server === "Ezymex-Live" ? t("trader.accountType.live") : t("trader.accountType.demo")}
                     </Badge>
                     <span className="min-w-0">
                       <span className="block font-mono text-[12.5px] text-fg">{s.login}</span>

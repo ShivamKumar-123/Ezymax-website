@@ -18,12 +18,12 @@ import {
   Segmented,
   cn,
   formatNumber,
-} from "@kalks/ui";
-import { SUP_AGENT_SCORES, SUP_CSAT_BY_CHANNEL, SUP_CSAT_DISTRIBUTION, SUP_CSAT_KPIS, SUP_CSAT_TREND, SUP_FEEDBACK } from "@kalks/mock/admin-growth-support";
+} from "@ezymex/ui";
+import { SUP_AGENT_SCORES, SUP_CSAT_BY_CHANNEL, SUP_CSAT_DISTRIBUTION, SUP_CSAT_KPIS, SUP_CSAT_TREND, SUP_FEEDBACK } from "@ezymex/mock/admin-growth-support";
 import { ShareBar } from "@/components/command/kit";
 import { CsatTrend } from "@/components/support/csat-trend";
 import { AiSpark, ChannelBadge } from "@/components/support/shared";
-import { IS_DEMO as IS_DEMO_MODE } from "@kalks/mock/mode";
+import { IS_DEMO as IS_DEMO_MODE } from "@ezymex/mock/mode";
 import { LiveCsat } from "@/components/support-live/csat";
 
 const CH_COLORS = ["var(--k-ember)", "var(--k-gold)", "var(--k-up)", "var(--k-info)"];

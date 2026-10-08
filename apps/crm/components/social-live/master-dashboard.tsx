@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowUpRight, BadgeCheck, Check, Clock, Copy as CopyIcon, Crown, FileText, KeyRound, Landmark, Layers, Link2, Loader2, Pencil, Percent, Plus, Send, ShieldCheck, TrendingDown, TriangleAlert, UserMinus, UserPlus, Users, UserX, Wallet, X as XIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, Field, Input, KpiCard, Money, PageHeader, Segmented, StatusChip, cn, type Column } from "@/components/kit";
-import { Trans, useT } from "@kalks/i18n/react";
+import { Trans, useT } from "@ezymex/i18n/react";
 import { RadioCard, RangeSlider } from "@/components/social/controls";
 import { SecretField, TradeButton } from "@/components/trading/ui";
 import { fmtDate, serverTime } from "@/components/trading/api";
@@ -495,7 +495,7 @@ function FundFormDialog({ fund, settings, open, onOpenChange, onSaved }: { fund:
   if (creds) {
     const c = creds.credentials;
     const copyAll = () => {
-      const text = [`${t("social.md.fund.login")}: ${c.login}`, `${t("social.md.fund.server")}: Kalks-Live`, c.password ? `${t("social.md.fund.tradingPassword")}: ${c.password}` : null, c.investorPassword ? `${t("social.md.fund.investorPassword")}: ${c.investorPassword}` : null].filter(Boolean).join("\n");
+      const text = [`${t("social.md.fund.login")}: ${c.login}`, `${t("social.md.fund.server")}: Ezymex-Live`, c.password ? `${t("social.md.fund.tradingPassword")}: ${c.password}` : null, c.investorPassword ? `${t("social.md.fund.investorPassword")}: ${c.investorPassword}` : null].filter(Boolean).join("\n");
       navigator.clipboard?.writeText(text).then(
         () => toast.success(t("social.md.fund.credsCopied"), { description: t("social.md.fund.credsCopiedDesc") }),
         () => toast.error(t("social.md.fund.copyFailed")),
@@ -527,7 +527,7 @@ function FundFormDialog({ fund, settings, open, onOpenChange, onSaved }: { fund:
             </Button>
           </div>
           <SecretField label={t("social.md.fund.login")} value={String(c.login)} />
-          <SecretField label={t("social.md.fund.server")} value="Kalks-Live" />
+          <SecretField label={t("social.md.fund.server")} value="Ezymex-Live" />
           {c.password && <SecretField label={t("social.md.fund.tradingPassword")} value={c.password} secret hint={t("social.md.fund.fullAccess")} />}
           {c.investorPassword && <SecretField label={t("social.md.fund.investorPassword")} value={c.investorPassword} secret hint={t("social.md.fund.readOnly")} />}
           <InfoBox tone="warn" icon={<TriangleAlert />}>

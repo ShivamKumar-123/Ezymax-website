@@ -16,7 +16,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Check, CircleCheck, CircleX, Clock, Gavel, ListChecks, RefreshCw, Search, ShieldCheck, Users, X } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, Field, Input, KpiCard, PageHeader, Reveal, Segmented, Tabs, Toggle, cn, formatNumber, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, Field, Input, KpiCard, PageHeader, Reveal, Segmented, Tabs, Toggle, cn, formatNumber, type Column } from "@ezymex/ui";
 import { ErrorState, Pager, TableSkeleton, ago, qs, sendJson, useApi, useDebounced, useNow, when } from "@/components/live/kit";
 import { useCan, useStaff } from "@/components/staff-session";
 import { MiniClient } from "@/components/trading/shared";

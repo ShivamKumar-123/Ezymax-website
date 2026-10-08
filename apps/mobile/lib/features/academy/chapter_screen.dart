@@ -1,6 +1,6 @@
 // Academy › chapter reader (/academy/chapter/:slug): port of the web's LiveChapter (components/academy/live/reader.tsx),
 // phone layout (the xl side rails with the chapter list, contents and reading % are desktop-only):
-//   reading bar · back link · chips · title · summary · meta · markdown body · key takeaways · practise in Kalks
+//   reading bar · back link · chips · title · summary · meta · markdown body · key takeaways · practise in Ezymex
 //   Trader · chapter quiz · previous / next chapter · risk note.
 // Reading progress is reported like the web: the furthest point seen, throttled (1.5 s), on leave and when the app
 // goes to the background; the visit itself is registered after 0.8 s.

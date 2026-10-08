@@ -3,8 +3,8 @@
 import * as React from "react";
 import { CalendarClock, Clock, MoreHorizontal, Pencil, Plus, Shuffle, UserPlus, Users, UsersRound, Wifi } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Chip, Flag, Icon3D, IconButton, KpiCard, Menu, PageHeader, Progress, Reveal, Segmented, Sparkline, Toggle, Tooltip, cn } from "@kalks/ui";
-import { DSK_DESKS, type DskDesk } from "@kalks/mock/admin-desks";
+import { Avatar, Button, Chip, Flag, Icon3D, IconButton, KpiCard, Menu, PageHeader, Progress, Reveal, Segmented, Sparkline, Toggle, Tooltip, cn } from "@ezymex/ui";
+import { DSK_DESKS, type DskDesk } from "@ezymex/mock/admin-desks";
 import { ReassignDialog, type ReassignResult } from "@/components/org/reassign-dialog";
 
 type Filter = "all" | "client" | "ops";

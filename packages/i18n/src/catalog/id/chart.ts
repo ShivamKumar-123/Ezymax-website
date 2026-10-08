@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader charts: toolbar, drawing tools, legend, trade lines, context menu, one-click panel.
+// Ezymex Trader charts: toolbar, drawing tools, legend, trade lines, context menu, one-click panel.
 const chart: NsMessages<"chart"> = {
   // Chart tabs
   "tab.visibleInGrid": "Terlihat di grid",
@@ -46,7 +46,7 @@ const chart: NsMessages<"chart"> = {
   "tool.text": "Teks",
   "tool.ruler": "Penggaris",
   "tool.coming": "{tool} segera hadir",
-  "tool.comingText": "Tersedia di build Kalks Trader berikutnya.",
+  "tool.comingText": "Tersedia di build Ezymex Trader berikutnya.",
   "tool.deleteAll": "Hapus semua objek",
   "tool.noObjects": "Tidak ada objek di grafik ini",
   "tool.deleted": { other: "{count} objek dihapus" },

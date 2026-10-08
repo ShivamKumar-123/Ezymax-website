@@ -2,7 +2,7 @@
 //! market data): market-data (:8081, live raw and group quotes over its WebSocket), the options service (:8104,
 //! the real snapshot: underlyings, surfaces, expiries, series) and PostgreSQL (:5433, a throw-away database).
 //!
-//! Two demo accounts of tenant `kalks` trade through the terminal API handlers (SSO sessions, the same gates,
+//! Two demo accounts of tenant `ezymex` trade through the terminal API handlers (SSO sessions, the same gates,
 //! reservations, book actor, outbox and shards as production): a resting sell below the model mid clamps the
 //! mark, a market buy fills against it, the tape / snapshot / internal WebSocket show the trade, open interest =
 //! the positions, the buyer closes through the generic close route (a reduce-only market IOC on the book), the
@@ -80,7 +80,7 @@ fn account(login: i64, user: i64) -> Account {
 async fn token(st: &AppState, tenant: &Arc<trading::rules::TenantConfig>, login: i64, user: i64) -> String {
     let ctx = || Ctx { tenant: tenant.clone(), ip: "198.51.100.9".into(), user_agent: "e2e".into(), bearer: None };
     let mut h = HeaderMap::new();
-    h.insert("x-kalks-user-id", user.to_string().parse().unwrap());
+    h.insert("x-ezymex-user-id", user.to_string().parse().unwrap());
     let Json(sso) = api::accounts::sso(State(st.clone()), ctx(), h, Path(login), Query(serde_json::from_value(json!({})).unwrap())).await.unwrap();
     let Json(s) = api::terminal::sso(State(st.clone()), ctx(), body(json!({"token": sso["token"]}))).await.unwrap();
     s["token"].as_str().unwrap().to_string()
@@ -119,7 +119,7 @@ async fn order_book_end_to_end_against_the_real_services() {
     let opt_url = env("OPTIONS_URL", "http://127.0.0.1:8104");
     let md_ws = env("MARKET_DATA_WS_URL", "ws://127.0.0.1:8081/v1/stream");
     let base = env("TRADING_TEST_DATABASE_URL", "postgres://postgres@127.0.0.1:5433/postgres");
-    let db = format!("kalks_trading_book_e2e_{}", std::process::id());
+    let db = format!("ezymex_trading_book_e2e_{}", std::process::id());
     let server = PgConnectOptions::from_str(&base).unwrap();
     let url = server.clone().database(&db).to_url_lossy().to_string();
     let pool = trading::persist::connect(&url).await.expect("PostgreSQL :5433");
@@ -183,7 +183,7 @@ async fn order_book_end_to_end_against_the_real_services() {
         presence: Arc::new(trading::controls::Presence::default()),
         gateway: Arc::new(trading::controls::Gateway::new(&cfg.gateway_url, &cfg.gateway_token)),
     };
-    let tenant = registry.by_slug("kalks").unwrap();
+    let tenant = registry.by_slug("ezymex").unwrap();
     let ctx = |b: &str| Ctx { tenant: tenant.clone(), ip: "198.51.100.9".into(), user_agent: "e2e".into(), bearer: Some(b.to_string()) };
     let (a, b, ua, ub) = (50_009_301i64, 50_009_302i64, 9301i64, 9302i64);
     hub.open(account(a, ua), ("h".into(), "i".into()), "e2e").await.unwrap();
@@ -235,7 +235,7 @@ async fn order_book_end_to_end_against_the_real_services() {
     let Json(dup) = api::options_book::place(State(st.clone()), ctx(&ta), body(order(&series, "sell", "limit", 2, Some(px), "a1"))).await.unwrap();
     assert_eq!((dup["duplicate"].as_bool(), dup["order"]["id"].clone()), (Some(true), o["order"]["id"].clone()));
     // the mark clamps to the book: a qualifying ask below the model mid
-    let top = options.top.get("kalks", AccountKind::Demo, &series).expect("top of book published");
+    let top = options.top.get("ezymex", AccountKind::Demo, &series).expect("top of book published");
     assert_eq!(top.ask, Some((px, D::from(2))));
     let s3 = series.clone();
     let clamped = hub.read(b, Box::new(move |x| {
@@ -250,7 +250,7 @@ async fn order_book_end_to_end_against_the_real_services() {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
     tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
-    let (mut ws, _) = tokio_tungstenite::connect_async(format!("ws://{addr}/v1/internal/options/book/stream?tenant=kalks&kind=demo")).await.unwrap();
+    let (mut ws, _) = tokio_tungstenite::connect_async(format!("ws://{addr}/v1/internal/options/book/stream?tenant=ezymex&kind=demo")).await.unwrap();
     let mut first = Vec::new();
     while first.len() < 2 {
         let m = tokio::time::timeout(Duration::from_secs(5), ws.next()).await.unwrap().unwrap().unwrap();
@@ -277,10 +277,10 @@ async fn order_book_end_to_end_against_the_real_services() {
         }
     }
     assert!(saw_trade, "a trade frame on the internal stream");
-    let Json(snapv) = api::book_feed::snapshot(State(st.clone()), Path(("kalks".into(), "demo".into()))).await.unwrap();
+    let Json(snapv) = api::book_feed::snapshot(State(st.clone()), Path(("ezymex".into(), "demo".into()))).await.unwrap();
     let sv = snapv["books"][0]["series"].as_array().unwrap().iter().find(|x| x["series"] == series.as_str()).unwrap().clone();
     assert_eq!((dec(&sv["oi"]), dec(&sv["vol"]), dec(&sv["last"]), dec(&sv["asks"][0]["qty"])), (D::ONE, D::ONE, px, D::ONE), "{sv}");
-    let Json(tape) = api::book_feed::trades(State(st.clone()), Path(("kalks".into(), "demo".into())), Query(serde_json::from_value(json!({})).unwrap())).await.unwrap();
+    let Json(tape) = api::book_feed::trades(State(st.clone()), Path(("ezymex".into(), "demo".into())), Query(serde_json::from_value(json!({})).unwrap())).await.unwrap();
     assert_eq!(tape["trades"].as_array().unwrap().len(), 1);
     // OI = the positions; clearing nets to zero
     let book_pos = |l: i64| {
@@ -349,7 +349,7 @@ async fn order_book_end_to_end_against_the_real_services() {
     {
         eprintln!("0DTE {s0}, cut {cut0}: trading, then waiting for the fixing");
         fixing_leg = true;
-        let m0 = (options.price("kalks", "*", &trading::engine::options_book::terms_of(&snap, &s0).unwrap().0, Utc::now()).unwrap().mark / tick).floor() * tick;
+        let m0 = (options.price("ezymex", "*", &trading::engine::options_book::terms_of(&snap, &s0).unwrap().0, Utc::now()).unwrap().mark / tick).floor() * tick;
         let p0 = m0.max(tick);
         let _ = api::options_book::place(State(st.clone()), ctx(&ta), body(order(&s0, "sell", "limit", 3, Some(p0), "z1"))).await.unwrap();
         let Json(z) = api::options_book::place(State(st.clone()), ctx(&tb), body(order(&s0, "buy", "limit", 3, Some(p0), "z2"))).await.unwrap();

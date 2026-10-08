@@ -158,7 +158,7 @@ class SupportMessage {
 }
 
 class SupportSettings {
-  const SupportSettings({this.botName = 'Kalks AI', this.greeting = '', this.ai = true, this.agentsOnline = 0, this.maxAttachmentMb = 10});
+  const SupportSettings({this.botName = 'Ezymex AI', this.greeting = '', this.ai = true, this.agentsOnline = 0, this.maxAttachmentMb = 10});
   final String botName;
   final String greeting;
   final bool ai;
@@ -169,7 +169,7 @@ class SupportSettings {
     final j = raw is Map ? raw.cast<String, dynamic>() : const <String, dynamic>{};
     final name = j['botName'];
     return SupportSettings(
-      botName: name is String && name.isNotEmpty ? name : 'Kalks AI',
+      botName: name is String && name.isNotEmpty ? name : 'Ezymex AI',
       greeting: '${j['greeting'] ?? ''}',
       ai: j['ai'] != false,
       agentsOnline: (j['agentsOnline'] as num?)?.toInt() ?? 0,

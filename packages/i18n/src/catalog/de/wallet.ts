@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Keep brand and network names as they are: Kalks, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
+// Keep brand and network names as they are: Ezymex, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
 // MetaMask, TronLink, Tronscan, USD, USC, KYC.
 const wallet: NsMessages<"wallet"> = {
   // Shared labels
@@ -408,17 +408,17 @@ const wallet: NsMessages<"wallet"> = {
   // <b> is bold
   "demo.sendOnlyWarning": "<b>Senden Sie nur USDT über TRON (TRC20).</b> Das Senden anderer Token oder die Nutzung von ERC20 / BEP20 führt zum dauerhaften Verlust des Geldes.",
   "demo.arrival": "Eingang",
-  "demo.kalksFee": "Kalks-Gebühr",
+  "demo.ezymexFee": "Ezymex-Gebühr",
   "demo.noKycDeposit": "Für Einzahlungen ist kein KYC nötig. Die Verifizierung ist erst vor Ihrer ersten Auszahlung erforderlich.",
   // Withdraw
   "demo.addrStartT": "TRC20-Adressen beginnen mit „T“",
   "demo.addrLength": "Muss 34 Zeichen lang sein ({length}/34)",
   "demo.addrChars": "Enthält ungültige Zeichen (0, O, I, l sind nicht erlaubt)",
-  "demo.addrOwn": "Dies ist Ihre eigene Kalks-Einzahlungsadresse",
+  "demo.addrOwn": "Dies ist Ihre eigene Ezymex-Einzahlungsadresse",
   "demo.justNow": "Gerade eben",
   "demo.codeConfirmed": "Code über {email} bestätigt",
   "demo.financeReviews": "Das Finanzteam prüft jede Auszahlung · meist unter 2 Stunden",
-  "demo.sentFromHot": "Nach Freigabe aus der Kalks Hot Wallet gesendet",
+  "demo.sentFromHot": "Nach Freigabe aus der Ezymex Hot Wallet gesendet",
   "demo.arriveAfter": "Das Geld erreicht Ihre Adresse nach 20 Bestätigungen",
   "demo.pendingTitle": "Ausstehende Auszahlungen",
   "demo.awaitingCompletion": "{count} warten auf Abschluss",
@@ -480,7 +480,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.alwaysReviewed": "Immer vom Finanzteam geprüft",
   "demo.unrecoverable": "Auszahlungen an Börsen ohne TRC20-USDT-Unterstützung oder an Smart-Contract-Adressen können nicht wiederhergestellt werden.",
   // Transfer
-  "demo.kalksWallet": "Kalks Wallet",
+  "demo.ezymexWallet": "Ezymex Wallet",
   "demo.freeMargin": "Freie Margin",
   "demo.assetAvailable": "{amount} {asset} verfügbar · {network}",
   "demo.throughWallet": "Überträge laufen immer über Ihre Wallet.",
@@ -515,7 +515,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.rule4Title": "Freie Margin geschützt",
   "demo.rule4Text": "Sie können nur so viel übertragen, wie Ihre freie Margin zulässt, damit offene Trades sicher bleiben.",
   "demo.into": "auf",
-  "demo.intoKalksWallet": "in Ihre Kalks Wallet",
+  "demo.intoEzymexWallet": "in Ihre Ezymex Wallet",
   "demo.freeMarginAfter": "Freie Margin danach",
   "demo.marginLevelAfter": "Margin-Level danach",
   "demo.convertedNote": "{asset} wird zum Live-Kurs abzüglich {markup}% Aufschlag in USD umgerechnet. Der Kurs wird bis zu Ihrer Bestätigung bei jedem Tick aktualisiert.",

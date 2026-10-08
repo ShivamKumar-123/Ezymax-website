@@ -1,5 +1,5 @@
 // Markets tab of the options mode (web: components/options/instruments.tsx, phone variant): every underlying of
-// Kalks FX Options with its spot and daily change (and the ATM implied vol with the Pro columns), grouped by asset
+// Ezymex FX Options with its spot and daily change (and the ATM implied vol with the Pro columns), grouped by asset
 // class; underlyings not open here yet are listed as "soon". Picking one sets the underlying of the chain, the chart
 // and the ticket.
 import 'package:flutter/material.dart';

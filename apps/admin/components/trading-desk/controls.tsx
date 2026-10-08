@@ -2,10 +2,10 @@
 
 import * as React from "react";
 import { AlertTriangle, Ban, CirclePause, CirclePlay, SlidersHorizontal } from "lucide-react";
-import { Button, Card, CardHeader, Chip, DataTable, Field, Input, Menu, Segmented, SymbolCell, Toggle, Tooltip, cn, formatNumber, type Column } from "@kalks/ui";
-import { INSTRUMENTS } from "@kalks/mock";
-import { IS_DEMO } from "@kalks/mock/mode";
-import type { TradingGroup } from "@kalks/mock/admin-trading";
+import { Button, Card, CardHeader, Chip, DataTable, Field, Input, Menu, Segmented, SymbolCell, Toggle, Tooltip, cn, formatNumber, type Column } from "@ezymex/ui";
+import { INSTRUMENTS } from "@ezymex/mock";
+import { IS_DEMO } from "@ezymex/mock/mode";
+import type { TradingGroup } from "@ezymex/mock/admin-trading";
 import { MiniClient } from "@/components/trading/shared";
 import { ago, clientName, groupLabel, groupOptions, useDesk, useLiveDirectory, type AccountControl, type ControlMode } from "@/lib/trading-desk";
 import { AccountPicker, DeskDialog, MetaTile } from "./kit";

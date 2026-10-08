@@ -406,7 +406,7 @@ impl Social {
                 tracing::debug!(written = w, "social snapshots");
             }
             let slugs = self.hub.shared.registry.clone();
-            super::wallet::flush(&self.pool, &self.wallet, |t| slugs.get(t).map(|x| x.slug.clone()).unwrap_or_else(|| "kalks".into())).await;
+            super::wallet::flush(&self.pool, &self.wallet, |t| slugs.get(t).map(|x| x.slug.clone()).unwrap_or_else(|| "ezymex".into())).await;
         }
     }
 

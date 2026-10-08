@@ -24,7 +24,7 @@ impl TestDb {
             eprintln!("skipping {what} DB tests: no PostgreSQL at {base}");
             return None;
         }
-        let name = format!("kalks_gw_test_{}", crypto::random_token(6).to_lowercase().replace(['-', '_'], "x"));
+        let name = format!("ezymex_gw_test_{}", crypto::random_token(6).to_lowercase().replace(['-', '_'], "x"));
         let url = admin.clone().database(&name).to_url_lossy().to_string();
         let pool = crate::db::connect(&url).await.expect("create + migrate test database");
         let cfg = Config {
@@ -44,6 +44,7 @@ impl TestDb {
             trade_url: String::new(),
             support_email: String::new(),
             staff_otp_every_login: true,
+            password_only: false,
             super_admin_email: String::new(),
             super_admin_password: String::new(),
             super_admin_name: String::new(),

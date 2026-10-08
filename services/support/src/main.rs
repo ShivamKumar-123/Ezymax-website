@@ -1,4 +1,4 @@
-//! Kalks support service (127.0.0.1:8100). See README.md.
+//! Ezymex support service (127.0.0.1:8100). See README.md.
 
 use support::{api, config, db, kb, state::AppState, workers};
 
@@ -29,7 +29,7 @@ async fn main() -> anyhow::Result<()> {
     }
     tokio::fs::create_dir_all(&cfg.storage_dir).await?;
     let pool = db::connect(&cfg.database_url).await?;
-    kb::seed(&pool, "kalks", &cfg.academy_glossary).await?;
+    kb::seed(&pool, "ezymex", &cfg.academy_glossary).await?;
     let st = AppState::new(pool, cfg);
     if st.cfg.workers {
         workers::spawn(&st);

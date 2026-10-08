@@ -1,4 +1,4 @@
--- Client controls (gateway client_controls.rs): Kalks Trader sessions a staff member opened as the client from
+-- Client controls (gateway client_controls.rs): Ezymex Trader sessions a staff member opened as the client from
 -- the Back Office ("log in as client"). They are read-only unless the Super Admin chose full access, last 30
 -- minutes, and trades placed in a full-access staff session are recorded with the actor `staff:<id>`.
 ALTER TABLE sso_tokens

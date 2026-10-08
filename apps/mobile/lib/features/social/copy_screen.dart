@@ -512,7 +512,7 @@ class _SubCardState extends ConsumerState<_SubCard> {
             const SizedBox(height: 12),
             TileGrid(tiles: buttons),
             const SizedBox(height: 8),
-            TraderButton(login: s.login, label: 'Kalks Trader', expand: true),
+            TraderButton(login: s.login, label: 'Ezymex Trader', expand: true),
           ],
         ),
       ),

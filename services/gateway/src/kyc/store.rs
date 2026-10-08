@@ -2,7 +2,7 @@
 //!
 //! Layout: `<KYC_STORAGE_DIR>/<tenant_id>/<first 2 chars of ref>/<ref>` where `ref` is a random 32-character
 //! URL-safe token (the only thing the database stores). Directories are 0700, files 0600, and the directory
-//! must be outside every web root (default `~/.kalks-data/kyc`).
+//! must be outside every web root (default `~/.ezymex-data/kyc`).
 //!
 //! File format: `KKYC1` magic, 12-byte random nonce, AES-256-GCM ciphertext + 16-byte tag. The file ref is
 //! the associated data, so a file copied or renamed onto another ref fails to decrypt.

@@ -5,8 +5,8 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { Download, Filter, Mail, Plus, RefreshCw, Save, Sparkles, Users, X, Zap } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardHeader, Chip, Delta, Input, Menu, PageHeader, Reveal, Segmented, Toggle, cn } from "@kalks/ui";
-import { ADMIN_NOW, CLIENTS, SEGMENTS, SEGMENT_FIELDS, timeAgo, type AdminClient, type Segment, type SegmentCondition } from "@kalks/mock/admin-clients";
+import { Avatar, Button, Card, CardHeader, Chip, Delta, Input, Menu, PageHeader, Reveal, Segmented, Toggle, cn } from "@ezymex/ui";
+import { ADMIN_NOW, CLIENTS, SEGMENTS, SEGMENT_FIELDS, timeAgo, type AdminClient, type Segment, type SegmentCondition } from "@ezymex/mock/admin-clients";
 
 const TOTAL_USERS = 18_412;
 const DAY = 86_400_000;

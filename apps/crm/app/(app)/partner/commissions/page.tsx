@@ -35,10 +35,10 @@ import {
   rateFor,
   type CommissionEvent,
   type CommissionStatus,
-} from "@kalks/mock/partner";
+} from "@ezymex/mock/partner";
 import { RangeSlider } from "@/components/social/controls";
 import { ClientCell, CommissionStatusChip, TierChip, fmtDT } from "@/components/partner/partner-bits";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LivePartnerCommissions } from "@/components/partner/live/commissions";
 
 /* ------------------------------------------------------------------ */
@@ -220,7 +220,7 @@ function SplitRow({ title, gross, parts }: { title: string; gross: number; parts
 function TiersCard() {
   return (
     <Card className="h-full">
-      <CardHeader title="Multi-tier rates" subtitle="Set by Kalks · share of the base rate" />
+      <CardHeader title="Multi-tier rates" subtitle="Set by Ezymex · share of the base rate" />
       <div className="space-y-2.5 px-4 pb-5 pt-4 sm:px-6">
         {TIERS.map((t) => (
           <div key={t.tier} className="k-row px-4 py-3">
@@ -363,7 +363,7 @@ function LedgerCard() {
           rowKey={(e) => e.id}
           search={(e) => `${e.ticket ?? ""} ${e.clientName} ${e.symbol ?? "cpa"}`}
           searchPlaceholder="Ticket, client, symbol…"
-          exportName="kalks-commission-ledger"
+          exportName="ezymex-commission-ledger"
           toolbar={
             <div className="flex flex-wrap items-center gap-2">
               <Segmented
@@ -405,7 +405,7 @@ function DemoPartnerCommissionsPage() {
         title="Commissions"
         subtitle="Per-lot rates by level, multi-tier overrides, CPA and your full ledger."
         actions={
-          <Button variant="surface" size="lg" onClick={() => toast.success("Statement generated", { description: "kalks-ib-statement-2026-09.pdf will download shortly" })}>
+          <Button variant="surface" size="lg" onClick={() => toast.success("Statement generated", { description: "ezymex-ib-statement-2026-09.pdf will download shortly" })}>
             <Download /> September statement
           </Button>
         }

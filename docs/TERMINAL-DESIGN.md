@@ -1,8 +1,8 @@
-# Kalks Trader: terminal design
+# Ezymex Trader: terminal design
 
-The design of Kalks Trader (`apps/terminal`) on desktop, CFD and Options modes. It has four parts: what the terminal can do (the feature inventory) with the problems found in the old shell, the design spec the redesign follows, the result of the first redesign (v2, exchange columns), and the current chart-first layout (v3, MT5 web clean + Delta Exchange page scroll, Part 4), which is what the code does now. The phone layout (`components/mobile`, `components/options/mobile.tsx`) follows the same principles and tokens; see 3.4 "Notes for the phone layout".
+The design of Ezymex Trader (`apps/terminal`) on desktop, CFD and Options modes. It has four parts: what the terminal can do (the feature inventory) with the problems found in the old shell, the design spec the redesign follows, the result of the first redesign (v2, exchange columns), and the current chart-first layout (v3, MT5 web clean + Delta Exchange page scroll, Part 4), which is what the code does now. The phone layout (`components/mobile`, `components/options/mobile.tsx`) follows the same principles and tokens; see 3.4 "Notes for the phone layout".
 
-Screens referenced below: `scratchpad/redesign/before/*` (old shell) and `scratchpad/redesign/after/*` (new shell), captured at 1600×950, 1470×900 (the founder's MacBook width) and 1366×768, dark and light, on the local demo build (`NEXT_PUBLIC_KALKS_MODE=demo`, account 80412337).
+Screens referenced below: `scratchpad/redesign/before/*` (old shell) and `scratchpad/redesign/after/*` (new shell), captured at 1600×950, 1470×900 (the founder's MacBook width) and 1366×768, dark and light, on the local demo build (`NEXT_PUBLIC_EZYMEX_MODE=demo`, account 80412337).
 
 ---
 
@@ -16,7 +16,7 @@ Every control, menu item, shortcut, setting and action the old desktop terminal 
 
 | ID | Feature | Old place |
 |---|---|---|
-| A1 | Brand (logo, "Kalks Trader") | title bar |
+| A1 | Brand (logo, "Ezymex Trader") | title bar |
 | A2 | CFD / Options mode switch, "new" dot on Options | title bar |
 | A3 | Cent (USC) badge, Read-only badge | title bar |
 | A4 | Account switcher: every login with type, group, mode, leverage, server, live equity; switch account | title bar chip ▾ |
@@ -290,7 +290,7 @@ The chart-first layout (v3, the founder's MT5 web / Delta Exchange directions of
 
 ```
 ┌ Top bar 48 (sticky, frosted over the scrolling page) ─────────────────────────────────────────────────┐
-│ ☰  K Kalks Trader  [CFD|Options]  🔍 Search markets and actions ⌘K     LIVE 80412337 ▣ 26,308 USD ▾ [Deposit] 🔔 ◯ │
+│ ☰  K Ezymex Trader  [CFD|Options]  🔍 Search markets and actions ⌘K     LIVE 80412337 ▣ 26,308 USD ▾ [Deposit] 🔔 ◯ │
 ├───────────────────────────────────────────────────────────────────────────────┬──────────────────────┤
 │ XAUUSD M15 ▾ | ▥▾ M1 M5 M15 M30 H1 H4 D1 W1 MN | 🛒 New order | ⊕ ⊖ ⛶ | ∿2 ⧉ ▦ 🔔 📷   ⤢ ⛶ │ Instruments | Order book | Ticks » │
 │┌─┐ XAUUSD, M15  Gold vs US Dollar  O H L C                                    │ 🔍 Search symbol  ≣ ▦ │
@@ -311,7 +311,7 @@ The chart-first layout (v3, the founder's MT5 web / Delta Exchange directions of
 ```
 
 - **Top bar (48 px, sticky, frosted).** ☰ menu · brand · a small CFD | Options switch (28 px, sliding frosted thumb) · search (⌘K) · account pill (badges, login, equity; group, mode, leverage in its tooltip and dropdown) · Deposit / Top up demo (the bar's only accent button) · notifications · profile. The ☰ menu (MT5 web) holds: trading accounts ▸, chart settings ▸ (type, indicators, template, picture, grid, layouts, panels), one-click trading (F10), dark / light theme, language ▸, sounds, max price change ▸, full screen, all settings, keyboard shortcuts, trading terms explained, the tour, help center, contact support, about. Guest: the guest chip, Open account, Log in.
-- **Chart card (the first screen, hero).** ONE toolbar row: open charts (every chart as a tab when the card is ≥ 1240 px wide, otherwise the active chart as a chip with the others in its menu) · chart type ▾ · timeframes M1…MN (a menu below 860 px) · **New order** (F9) · zoom in / out / fit · Indicators (n) · Templates ▾ · Layout ▾ (grid, presets, panels, reset) · price alert · picture · **Full chart** (Shift+F) · browser full screen (F11). A thin drawing rail on the left. On the plot only: the legend (symbol, timeframe, name, OHLC, indicators) top-left, the Buy / Sell box (sell price · volume − + · spread · buy price) under it, trade lines, and the small Kalks K in the bottom-left corner (as TradingView shows its logo; drawn on the canvas, never on the scales). No watermark, no quote strip.
+- **Chart card (the first screen, hero).** ONE toolbar row: open charts (every chart as a tab when the card is ≥ 1240 px wide, otherwise the active chart as a chip with the others in its menu) · chart type ▾ · timeframes M1…MN (a menu below 860 px) · **New order** (F9) · zoom in / out / fit · Indicators (n) · Templates ▾ · Layout ▾ (grid, presets, panels, reset) · price alert · picture · **Full chart** (Shift+F) · browser full screen (F11). A thin drawing rail on the left. On the plot only: the legend (symbol, timeframe, name, OHLC, indicators) top-left, the Buy / Sell box (sell price · volume − + · spread · buy price) under it, trade lines, and the small Ezymex K in the bottom-left corner (as TradingView shows its logo; drawn on the canvas, never on the scales). No watermark, no quote strip.
 - **Right-hand column (~344 px, resizable 288–480, collapsible to an edge tab, Ctrl+M).** Tabs: **Instruments** | **Order book** | **Ticks** (Options: the underlyings | the selected option's book or the spot depth | Trades / Ticks); the Navigator joins as a tab when chosen in Layout ▾. Instruments (MT5 web "Search symbol"): search (symbol first, then name; ↑ ↓ Enter), a one-row asset-class filter that scrolls sideways (☆ Favourites, All, then every class the catalogue has, new ones included), list or cards, rows Symbol · Bid · Ask · Daily %, virtualised for 1,000+ markets. A row opens its market on the chart; Bid / Ask open the order form with that side; double-click = New order; hover = ☆ and ⋯; right-click = the row menu; hover card = day range.
 - **Order form = a centred popup.** Opened by Buy / Sell on the chart (one-click off), New order, F9 / Ctrl+D, a Bid / Ask in Instruments, a level in the order book (limit at that price), empty states. 440 px wide; the MT5 tick chart can be shown beside it (header button, remembered). The form itself is the Exness flow of §2.5.
 - **Bar at the foot of the first screen (40 px).** Account health (balance, equity, floating P&L, margin, free margin, margin level with its meter and state, each with (?)) · connection (prices: connected / simulated with the delay; the trade-server stream on live builds; server name and quotes per second in the tooltip) · server time · **Positions (n)**: ↓ scrolls the page down (full page) or ⌄ / ⌃ collapses and expands the panel (split).
@@ -323,7 +323,7 @@ The chart-first layout (v3, the founder's MT5 web / Delta Exchange directions of
 
 ### 2.3 Tokens and materials
 
-Defined in `apps/terminal/app/globals.css` on top of `@kalks/ui/styles.css` (packages/ui is unchanged). Brand colours are never hard-coded: stronger variants are mixed from the brand colour.
+Defined in `apps/terminal/app/globals.css` on top of `@ezymex/ui/styles.css` (packages/ui is unchanged). Brand colours are never hard-coded: stronger variants are mixed from the brand colour.
 
 **Spacing** (4 px base): 4 · 8 · 12 · 16 · 24. Panel gaps and gutters 8; card padding 8–12; between groups 8–12.
 
@@ -468,7 +468,7 @@ Every item of 1.1 is present. "Clicks" = clicks to reach the control from the de
 | B31 | Settings ⚙ › All settings… | 2 ✓ |
 | B32 | Status bar Shortcuts; Help ? › Keyboard shortcuts (F1) | 1 ✓ |
 | B33 | Help ? › Help center / Contact support; status bar Support | 1–2 ✓ |
-| B34 | Help ? › About Kalks Trader | 2 ✓ |
+| B34 | Help ? › About Ezymex Trader | 2 ✓ |
 | C1 | Markets list / cards toggle; ★ Favourites chip | 1 ✓ |
 | C2 | Status bar server time (GMT+3) | 0 ✓ |
 | C3 | Markets chips (with counts in tooltips; ★ shows its count) | 1 ✓ |
@@ -556,7 +556,7 @@ Every item of 1.1 is present. "Clicks" = clicks to reach the control from the de
 ### 3.3 Checks
 
 - `npx tsc --noEmit` in apps/terminal: no errors.
-- `pnpm turbo run build --filter=@kalks/terminal`: success.
+- `pnpm turbo run build --filter=@ezymex/terminal`: success.
 - `node packages/i18n/scripts/check-parity.mjs`: OK for all 21 languages (9,017 / 9,017 keys; the new `desk` namespace has 345 keys).
 - Rendering performance while prices stream (1470×900, order book open, headless Chrome): 56.7–57.7 fps as shipped vs 57.4–57.9 fps with every blur and mask disabled; no element is blurred on the main screen. Blur on cards (23 fps) and on the bars (26–37 fps) was measured and removed.
 - Checked live: demo build (accounts, orders, SL / TP inline edits, pending, bulk confirm), guest mode (live build without an account), read-only (investor) session, Options mode with the book on, the public option chain page, the phone layout (unchanged files, still renders), Arabic RTL, dark and light.
@@ -586,13 +586,13 @@ The founder's directions after testing v2: make it clean like the MetaTrader 5 w
 
 - **Shell** (`shell/desktop.tsx`). The first screen is the chart card plus the right-hand column (`shell/side-column.tsx`) and the bar at its foot (`shell/status-bar.tsx` → `ScreenBar`); the positions section (`toolbox/toolbox.tsx`, one viewport tall) sits below it and the page scrolls (`ACTIVITY_ID`, `scrollToActivity`, "Positions (n) ↓", "↑ Back to chart", Ctrl+T). One component tree for every state, so the chart never remounts when the column opens, closes or Full chart toggles. The v2 Markets column, symbol header card, order-book column, permanent order form and status bar are gone (files removed: `market/market-watch.tsx`, `shell/symbol-header.tsx`, `order/book-card.tsx`; `RightPanel` removed from `order/right-panel.tsx`, which keeps the specification and tick sparkline).
 - **Top bar** (`shell/title-bar.tsx`, `shell/mode-switch.tsx`, `shell/commands.tsx`). ☰ menu (`useMainMenuItems`) replaces the Settings and Help buttons; the CFD | Options switch is 28 px, text only, with a frosted thumb; the bar is sticky and frosted over the scrolling page.
-- **Chart** (`chart/workspace.tsx`, `chart/chart-view.tsx`, `chart/brand-watermark.ts`). One toolbar row (tabs or the compact chart chip, type, M1…MN, New order, zoom, indicators, templates, layout, alert, picture, Full chart, full screen). The centred "SYMBOL, TF / name · Kalks" watermark became the small K in the bottom-left corner (also in the options premium chart and on phones); the bottom-left Bid / Ask / Spread strip was removed (the Buy / Sell box carries the prices and spread).
-- **Instruments** (`market/instruments.tsx`, `lib/stress-instruments.ts`). Virtualised list (32 px rows, 8 rows overscan; cards view 124 px), fast ranked search with ↑ ↓ Enter, a one-row asset-class filter built from the catalogue, ☆ and ⋯ on hover, hover range card, row menu, hidden markets. `?stress=1500` (or `localStorage["kalks.stress"]`) adds generated test markets with their own simulated prices.
+- **Chart** (`chart/workspace.tsx`, `chart/chart-view.tsx`, `chart/brand-watermark.ts`). One toolbar row (tabs or the compact chart chip, type, M1…MN, New order, zoom, indicators, templates, layout, alert, picture, Full chart, full screen). The centred "SYMBOL, TF / name · Ezymex" watermark became the small K in the bottom-left corner (also in the options premium chart and on phones); the bottom-left Bid / Ask / Spread strip was removed (the Buy / Sell box carries the prices and spread).
+- **Instruments** (`market/instruments.tsx`, `lib/stress-instruments.ts`). Virtualised list (32 px rows, 8 rows overscan; cards view 124 px), fast ranked search with ↑ ↓ Enter, a one-row asset-class filter built from the catalogue, ☆ and ⋯ on hover, hover range card, row menu, hidden markets. `?stress=1500` (or `localStorage["ezymex.stress"]`) adds generated test markets with their own simulated prices.
 - **Order popup** (`order/new-order-dialog.tsx`). 440 px form, optional tick chart (840 px), More options folded. Everything that used to focus the side panel opens it: chart Buy / Sell (one-click off), New order, F9 / Ctrl+D, Instruments Bid / Ask / double-click, order-book levels, empty states. The prefilled side no longer resets under React's dev double-run (`order/order-ticket.tsx`).
 - **Full chart.** `ui.fullChart` in the store, Shift+F, toolbar buttons in both modes; Esc closes the slid-in column, then Full chart.
-- **Options** (`options/desktop.tsx` → `OptionsMain`, `OptionsTicketPopup`; `options/side.tsx`; `options/book-card.tsx` → `OptionsBookBody`). First built as a big chart with one arrow opening an options panel under it; after the founder's feedback the card has one tab row of full-size views instead (Part 5.2, §2.2). Quick trade and Order as a popup that opens by itself when a price, a book level or "Send to ticket" picks an option; a wide desktop chain starts on Standard columns once (`kalks.options.deskStd`). The "Options in 30 seconds" card is a one-line banner until opened (`options/explain.tsx`).
+- **Options** (`options/desktop.tsx` → `OptionsMain`, `OptionsTicketPopup`; `options/side.tsx`; `options/book-card.tsx` → `OptionsBookBody`). First built as a big chart with one arrow opening an options panel under it; after the founder's feedback the card has one tab row of full-size views instead (Part 5.2, §2.2). Quick trade and Order as a popup that opens by itself when a price, a book level or "Send to ticket" picks an option; a wide desktop chain starts on Standard columns once (`ezymex.options.deskStd`). The "Options in 30 seconds" card is a one-line banner until opened (`options/explain.tsx`).
 - **Options help.** An Options tour (5 steps, first time Options mode opens), "(?)" on Expiry, Time to the cut and ATM IV, an Options tab in Trading terms explained with 18 terms (`desk.og.*`), "Words explained" in the options panel.
-- **AI routes** (`lib/ai-guard.ts`, `lib/ai-client.ts`, `app/api/ai-trader/route.ts`, `app/api/options/explain/route.ts`). A paid model call needs a same-origin request and a terminal session the trading engine confirms (the `kalks_trade` session cookie of the engine BFF; the engine check is cached for a minute), and stays within 10 calls a minute and 200 a day per login. Refusals: 403 `forbidden`, 401 `signin` ("Sign in to use AI"), 429 `rate_minute` / `rate_day` (with Retry-After), 503 `unavailable` when the engine cannot confirm the session (fail closed). Demo builds have no sign-in: there the routes answer only on localhost, so the public demo showcase cannot spend credits. The terminal shows the refusals in the reader's language; guests see "Sign in to use AI" (the AI Trader falls back to its local parser). The GET "configured?" probes are unchanged. The budget is per server process (in memory).
+- **AI routes** (`lib/ai-guard.ts`, `lib/ai-client.ts`, `app/api/ai-trader/route.ts`, `app/api/options/explain/route.ts`). A paid model call needs a same-origin request and a terminal session the trading engine confirms (the `ezymex_trade` session cookie of the engine BFF; the engine check is cached for a minute), and stays within 10 calls a minute and 200 a day per login. Refusals: 403 `forbidden`, 401 `signin` ("Sign in to use AI"), 429 `rate_minute` / `rate_day` (with Retry-After), 503 `unavailable` when the engine cannot confirm the session (fail closed). Demo builds have no sign-in: there the routes answer only on localhost, so the public demo showcase cannot spend credits. The terminal shows the refusals in the reader's language; guests see "Sign in to use AI" (the AI Trader falls back to its local parser). The GET "configured?" probes are unchanged. The budget is per server process (in memory).
 
 ### 4.2 Inventory changes since 3.2
 
@@ -630,7 +630,7 @@ Rendering: headless Chrome on this machine is now capped at 30 fps (about:blank 
 ### 4.4 Checks
 
 - `npx tsc --noEmit` (apps/terminal): passes.
-- `pnpm turbo run build --filter=@kalks/terminal`: passes.
+- `pnpm turbo run build --filter=@ezymex/terminal`: passes.
 - `node packages/i18n/scripts/check-parity.mjs`: OK for all 21 languages in every namespace (desk 403 keys, 32 unused desk keys removed, 90 added and translated).
 - Fresh browser profile on the dev server: log in, the CFD tour runs to the end, switch to Options (its tour runs), Quick trade popup, back to CFD, Buy on the chart opens the order popup with Buy chosen; no console errors. (Fixed on the way: an effect in the tour returned `window.scrollTo(...)`'s Promise, which crashed React; every one-line effect that could return a value now has a block body.)
 - AI gate on a production build (live mode) with a dummy key: no session → 401 `signin`; another origin → 403; a forged session cookie → 503 (the engine can't confirm it; no model call); GET still reports `configured`.

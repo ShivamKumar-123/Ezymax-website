@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Button, Logo } from "@/components/kit";
-import { Trans, useT } from "@kalks/i18n/react";
+import { Trans, useT } from "@ezymex/i18n/react";
 
 type State = { kind: "ask" } | { kind: "busy" } | { kind: "done"; email: string } | { kind: "error"; message: string };
 

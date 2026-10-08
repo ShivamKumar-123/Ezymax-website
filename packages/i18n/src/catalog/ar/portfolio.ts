@@ -33,7 +33,7 @@ const portfolio: NsMessages<"portfolio"> = {
 
   // Statements page
   "st.title": "الكشوف",
-  "st.subtitle": "كشوف PDF بهوية Kalks وتصدير Excel / CSV للصفقات ودفتر الحركات والرسوم لأي فترة.",
+  "st.subtitle": "كشوف PDF بهوية Ezymex وتصدير Excel / CSV للصفقات ودفتر الحركات والرسوم لأي فترة.",
   "st.format.pdf": "كشف بهوية العلامة: الملخص، الصفقات، المراكز، دفتر الحركات",
   "st.format.xlsx": "ورقة لكل قسم",
   "st.format.csv": "جميع الأقسام في ملف واحد",
@@ -93,7 +93,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "kpi.demo": "{count} تجريبي",
   "alloc.title": "توزيع حقوق الملكية",
   "alloc.subtitle": "الحسابات الحقيقية، بما يعادل USD",
-  "alloc.noEquity": "لا توجد حقوق ملكية في حساباتك الحقيقية بعد. موّلها من محفظة Kalks الخاصة بك.",
+  "alloc.noEquity": "لا توجد حقوق ملكية في حساباتك الحقيقية بعد. موّلها من محفظة Ezymex الخاصة بك.",
   "alloc.noLive": "افتح حسابًا حقيقيًا لرؤية توزيع حقوق الملكية هنا.",
   "accounts.subtitle": "حقوق الملكية والهامش لكل حساب",
   "accounts.manage": "إدارة",

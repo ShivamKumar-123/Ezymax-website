@@ -1,5 +1,5 @@
-// Kalks FX Options in Kalks Trader: shapes of the options service (chain, expiries, underlyings; the wire types
-// live next to the demo pricer in @kalks/mock/options) and of the trading engine's options API (positions,
+// Ezymex FX Options in Ezymex Trader: shapes of the options service (chain, expiries, underlyings; the wire types
+// live next to the demo pricer in @ezymex/mock/options) and of the trading engine's options API (positions,
 // preview, orders, settlements: services/trading, "Terminal API · options").
 
 export type {
@@ -17,8 +17,8 @@ export type {
   PremiumCandle,
   SeriesDepth,
   TapeTrade,
-} from "@kalks/mock/options";
-import type { OptionRight } from "@kalks/mock/options";
+} from "@ezymex/mock/options";
+import type { OptionRight } from "@ezymex/mock/options";
 
 export type Side = "buy" | "sell";
 
@@ -62,7 +62,7 @@ export interface OptPosition {
   comboId?: string;
   sl?: number;
   tp?: number;
-  /** where the position lives: `book` (the order book, closes through it), `house` (Kalks-quoted: barriers, legacy) */
+  /** where the position lives: `book` (the order book, closes through it), `house` (Ezymex-quoted: barriers, legacy) */
   venue?: "book" | "house" | string;
   option: OptionInfo;
 }
@@ -82,7 +82,7 @@ export interface OptOrder {
   option: OptionInfo;
 }
 
-/** Knock-in / knock-out terms of a barrier leg (Kalks-quoted, never on the order book). */
+/** Knock-in / knock-out terms of a barrier leg (Ezymex-quoted, never on the order book). */
 export interface BarrierSpec {
   kind: "UO" | "DO" | "UI" | "DI";
   /** barrier level, a price of the underlying */
@@ -95,7 +95,7 @@ export interface LegInput {
   series: string;
   side: Side;
   contracts: number;
-  /** a barrier leg: the strategy is placed at Kalks prices (house ticket), never as an RFQ */
+  /** a barrier leg: the strategy is placed at Ezymex prices (house ticket), never as an RFQ */
   barrier?: BarrierSpec;
 }
 

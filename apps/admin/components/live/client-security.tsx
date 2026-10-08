@@ -6,7 +6,7 @@
 import * as React from "react";
 import { Eye, FileArchive, LogOut, ShieldOff } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, Dialog, Skeleton, type ChipTone } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Dialog, Skeleton, type ChipTone } from "@ezymex/ui";
 import { TextArea } from "@/components/config/kit";
 import { ErrorState, sendJson, useApi, when } from "./kit";
 

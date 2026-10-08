@@ -4,8 +4,8 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
-import type { Locale, PartialCatalog } from "@kalks/i18n";
-import { I18nProvider, useLocale } from "@kalks/i18n/react";
+import type { Locale, PartialCatalog } from "@ezymex/i18n";
+import { I18nProvider, useLocale } from "@ezymex/i18n/react";
 import { TooltipProvider } from "../components/overlays";
 
 export type I18nInit = {

@@ -9,8 +9,8 @@ import { ACCOUNTS, HISTORY, POSITIONS, type ClosedTrade, type TradingAccount } f
 export const DEMO_RULES = { refillsPerDay: 3, expiryDays: 10, startBalances: [1000, 10000, 50000, 100000] };
 
 export const ARCHIVED_ACCOUNTS: TradingAccount[] = [
-  { login: "80409914", type: "live", group: "ECN", mode: "netting", cent: false, server: "Kalks-Live01", leverage: 100, currency: "USD", balance: 0, equity: 0, credit: 0, margin: 0, nickname: "Old ECN scalper", createdAt: "2024-03-02", swapFree: false },
-  { login: "90018420", type: "demo", group: "Standard", mode: "hedging", cent: false, server: "Kalks-Demo", leverage: 200, currency: "USD", balance: 8412.5, equity: 8412.5, credit: 0, margin: 0, createdAt: "2026-08-01", expiresAt: "2026-08-11", swapFree: false },
+  { login: "80409914", type: "live", group: "ECN", mode: "netting", cent: false, server: "Ezymex-Live01", leverage: 100, currency: "USD", balance: 0, equity: 0, credit: 0, margin: 0, nickname: "Old ECN scalper", createdAt: "2024-03-02", swapFree: false },
+  { login: "90018420", type: "demo", group: "Standard", mode: "hedging", cent: false, server: "Ezymex-Demo", leverage: 200, currency: "USD", balance: 8412.5, equity: 8412.5, credit: 0, margin: 0, createdAt: "2026-08-01", expiresAt: "2026-08-11", swapFree: false },
 ];
 
 export function findAccount(login: string): TradingAccount | undefined {

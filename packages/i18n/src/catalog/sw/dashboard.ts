@@ -6,9 +6,9 @@ const dashboard: NsMessages<"dashboard"> = {
   "greeting.afternoon": "Habari za mchana, {name}",
   "greeting.evening": "Habari za jioni, {name}",
   "greeting.welcome": "Karibu, {name}",
-  "subtitle.live": "Karibu Kalks. Hii ndiyo akaunti yako na masoko ya leo.",
+  "subtitle.live": "Karibu Ezymex. Hii ndiyo akaunti yako na masoko ya leo.",
   "subtitle.demo": "Hivi ndivyo akaunti zako zinavyofanya leo.",
-  launchTrader: "Fungua Kalks Trader",
+  launchTrader: "Fungua Ezymex Trader",
   openTerminal: "Fungua terminal ya biashara",
 
   // Getting started checklist
@@ -62,7 +62,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "account.memberSince": "Mwanachama tangu",
   "account.profile": "Wasifu",
 
-  // Kalks Trader banner
+  // Ezymex Trader banner
   "trader.chip": "Bei za moja kwa moja",
   "trader.text": "Bei na chati za wakati halisi kwa vyombo {count} katika forex, metali, fahirisi, nishati, crypto na hisa. Inafanya kazi kwenye kivinjari chako, hakuna cha kusakinisha.",
 
@@ -214,7 +214,7 @@ const dashboard: NsMessages<"dashboard"> = {
   "home.marketsTitle": "Masoko",
   "home.moreTitle": "Zaidi kwa ajili yako",
 
-  // Ask Kalks AI on the Overview
+  // Ask Ezymex AI on the Overview
   "ai.title": "Muulize {name}",
   "ai.subtitle": "Majibu ya papo hapo kuhusu akaunti yako, amana na biashara.",
   "ai.placeholder": "Uliza chochote kuhusu akaunti yako au biashara…",

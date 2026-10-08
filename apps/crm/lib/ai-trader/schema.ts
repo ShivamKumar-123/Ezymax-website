@@ -1,7 +1,7 @@
 /**
- * AI Trader strategy schema: a server-side copy of Kalks Trader's apps/terminal/lib/ai-trader/schema.ts for the
+ * AI Trader strategy schema: a server-side copy of Ezymex Trader's apps/terminal/lib/ai-trader/schema.ts for the
  * mobile app's AI Trader route (app/api/mobile/trade/ai-trader). Keep the two in step: the app shows and runs the
- * same StrategySpec as the web terminal. Only the contract lookups differ (lot limits from @kalks/mock directly).
+ * same StrategySpec as the web terminal. Only the contract lookups differ (lot limits from @ezymex/mock directly).
  *
  * One flat, non-recursive shape is used everywhere: the Claude structured-output schema, the local
  * parser, the runtime and the editor. "Unset" is encoded with sentinels (0, "none", "same", [])
@@ -9,12 +9,12 @@
  *
  * Rule tree: RuleSet (all/any) -> RuleGroup (all/any) -> Condition (left op right).
  */
-import { INSTRUMENTS, getInstrument, instrumentSpec } from "@kalks/mock";
+import { INSTRUMENTS, getInstrument, instrumentSpec } from "@ezymex/mock";
 
 export const TIMEFRAMES = ["M1", "M5", "M15", "M30", "H1", "H4", "D1", "W1", "MN"] as const;
 export type Timeframe = (typeof TIMEFRAMES)[number];
 
-/** Volume limits of a symbol (Kalks Trader's contractSpec: config/trading-specs.json, then the instrument). */
+/** Volume limits of a symbol (Ezymex Trader's contractSpec: config/trading-specs.json, then the instrument). */
 function contractSpec(symbol: string): { minVolume: number; maxVolume: number } {
   const inst = getInstrument(symbol);
   const spec = instrumentSpec(symbol);

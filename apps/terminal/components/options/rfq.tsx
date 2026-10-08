@@ -1,18 +1,18 @@
 "use client";
 
 // Strategies on the order book trade by request for quote (docs/OPTIONS-EXCHANGE.md §5): the legs (sides and whole
-// ratios) and a size go out as one RFQ (`POST …/rfq`, open 30 s); the Kalks market maker answers with a firm net
+// ratios) and a size go out as one RFQ (`POST …/rfq`, open 30 s); the Ezymex market maker answers with a firm net
 // bid / ask per strategy unit (valid a few seconds, refreshed after that); accepting (`POST …/rfq/{id}/accept`
 // {quoteId, side, limitNet}) fills every leg at once in one journal entry, or nothing. "Buy" trades the strategy as
-// built at the ask, "Sell" the reverse at the bid. Barrier legs are Kalks-quoted, never on the order book: the engine
-// answers an RFQ with a barrier leg with 422 `kalks_quoted`, and `onKalksQuoted` hands the strategy to the house ticket
-// (one order at Kalks prices). Refusals read in plain words (./errors rfqErrorText), with "Get a new price" when only
+// built at the ask, "Sell" the reverse at the bid. Barrier legs are Ezymex-quoted, never on the order book: the engine
+// answers an RFQ with a barrier leg with 422 `ezymex_quoted`, and `onEzymexQuoted` hands the strategy to the house ticket
+// (one order at Ezymex prices). Refusals read in plain words (./errors rfqErrorText), with "Get a new price" when only
 // the price went stale and "Request a new quote" once the request itself expired.
 import * as React from "react";
 import { Hourglass, MessagesSquare, RefreshCw, X } from "lucide-react";
-import { parseSeriesCode } from "@kalks/mock/options";
-import { cn } from "@kalks/ui";
-import { useT } from "@kalks/i18n/react";
+import { parseSeriesCode } from "@ezymex/mock/options";
+import { cn } from "@ezymex/ui";
+import { useT } from "@ezymex/i18n/react";
 import { toast } from "@/lib/notify";
 import { useTerminal } from "@/lib/store";
 import { bookApi, bookMissing } from "@/lib/options/book-api";
@@ -21,7 +21,7 @@ import { opt } from "@/lib/options-store";
 import type { Rfq, RfqAcceptResult, RfqQuote, Side } from "@/lib/options/types";
 import { ErrorNote, RightTag } from "./bits";
 import { TriangleAlert } from "lucide-react";
-import { isBarrierSeries, KalksQuotedTag, qty, useSeriesUnits } from "./book-bits";
+import { isBarrierSeries, EzymexQuotedTag, qty, useSeriesUnits } from "./book-bits";
 import { usd } from "./format";
 import { MmRulesLink } from "./mm-rules";
 
@@ -29,11 +29,11 @@ export interface RfqLegSpec {
   series: string;
   side: Side;
   contracts: number;
-  /** a barrier leg (Kalks-quoted): such a strategy never goes out as an RFQ */
+  /** a barrier leg (Ezymex-quoted): such a strategy never goes out as an RFQ */
   barrier?: boolean;
 }
 
-/** A strategy with a barrier leg is Kalks-quoted: it trades on the house ticket, not by RFQ. */
+/** A strategy with a barrier leg is Ezymex-quoted: it trades on the house ticket, not by RFQ. */
 export const hasBarrierLeg = (legs: { series: string; barrier?: unknown }[]) => legs.some((l) => !!l.barrier || isBarrierSeries(l.series));
 
 const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : Math.abs(a));
@@ -57,7 +57,7 @@ function useNowTick(active: boolean, ms = 250) {
 
 type Phase = "idle" | "requesting" | "live" | "accepting" | "expired" | "done";
 
-export function RfqPanel({ legs, onDone, className, disabled, onKalksQuoted }: { legs: RfqLegSpec[]; onDone?: (r: RfqAcceptResult) => void; className?: string; disabled?: boolean; onKalksQuoted?: () => void }) {
+export function RfqPanel({ legs, onDone, className, disabled, onEzymexQuoted }: { legs: RfqLegSpec[]; onDone?: (r: RfqAcceptResult) => void; className?: string; disabled?: boolean; onEzymexQuoted?: () => void }) {
   const T = useTerminal();
   const t = useT();
   const login = T.account.login;
@@ -134,8 +134,8 @@ export function RfqPanel({ legs, onDone, className, disabled, onKalksQuoted }: {
         opt.setBookOff(true);
         return;
       }
-      // a barrier leg: barrier strategies are Kalks-quoted, the house ticket places them
-      if (!r.ok && r.err.code === "kalks_quoted") onKalksQuoted?.();
+      // a barrier leg: barrier strategies are Ezymex-quoted, the house ticket places them
+      if (!r.ok && r.err.code === "ezymex_quoted") onEzymexQuoted?.();
       if (!r.ok) setErr({ code: r.err.code, message: r.err.message });
       return;
     }
@@ -229,7 +229,7 @@ export function RfqPanel({ legs, onDone, className, disabled, onKalksQuoted }: {
               <span className="font-mono text-fg-3">{l.ratio}×</span>
               {p && <RightTag right={p.right} className="h-[15px] min-w-[15px] text-[9px]" />}
               <span className="truncate font-mono text-fg-2">{p ? `${p.underlying} ${p.strikeLabel}` : l.series}</span>
-              {isBarrierSeries(l.series) && <KalksQuotedTag />}
+              {isBarrierSeries(l.series) && <EzymexQuotedTag />}
             </li>
           );
         })}
@@ -266,7 +266,7 @@ export function RfqPanel({ legs, onDone, className, disabled, onKalksQuoted }: {
           </div>
           <div className="flex items-center justify-between text-[10.5px] text-fg-3">
             <span>
-              {t("trader.opt.rfq.from", { who: quote?.responder === "kalks" || quote?.responder?.startsWith("kalks") ? t("trader.opt.rfq.kalksMm") : (quote?.responder ?? "—") })} · {t("trader.opt.rfq.openFor", { s: rfqLeft })}
+              {t("trader.opt.rfq.from", { who: quote?.responder === "ezymex" || quote?.responder?.startsWith("ezymex") ? t("trader.opt.rfq.ezymexMm") : (quote?.responder ?? "—") })} · {t("trader.opt.rfq.openFor", { s: rfqLeft })}
             </span>
             <button onClick={() => void cancel()} className="inline-flex items-center gap-1 rounded-[4px] px-1 hover:bg-surface-3 hover:text-fg">
               <X className="size-3" /> {t("common.cancel")}
@@ -284,9 +284,9 @@ function RfqError({ code, message, live, onNewPrice, onAskAgain }: { code: strin
   const t = useT();
   const requote = rfqRequotable(code);
   return (
-    <div role="alert" className={cn("rounded-[10px] border px-3 py-2 text-[11.5px] leading-snug", code === "kalks_quoted" ? "border-gold/35 bg-gold-soft text-fg-2" : requote ? "border-warn/35 bg-warn-soft text-fg-2" : "border-down/30 bg-down-soft/60 text-fg-2")} dir="auto">
+    <div role="alert" className={cn("rounded-[10px] border px-3 py-2 text-[11.5px] leading-snug", code === "ezymex_quoted" ? "border-gold/35 bg-gold-soft text-fg-2" : requote ? "border-warn/35 bg-warn-soft text-fg-2" : "border-down/30 bg-down-soft/60 text-fg-2")} dir="auto">
       <div className="flex items-start gap-1.5">
-        <TriangleAlert className={cn("mt-px size-3.5 shrink-0", code === "kalks_quoted" ? "text-gold" : requote ? "text-warn" : "text-down")} />
+        <TriangleAlert className={cn("mt-px size-3.5 shrink-0", code === "ezymex_quoted" ? "text-gold" : requote ? "text-warn" : "text-down")} />
         <span>{rfqErrorText(code, message)}</span>
       </div>
       {(requote || code === "rfq_expired") && (

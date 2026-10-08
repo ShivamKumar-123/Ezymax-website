@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { ArrowDownLeft, ArrowUpRight, Check, OctagonAlert, PauseCircle, PlayCircle, RefreshCw, X } from "lucide-react";
-import { Avatar, Button, Chip, Dialog, Delta, EquityChart, Flag, Money, Segmented, StatusChip, cn } from "@kalks/ui";
-import { navSeries, type PammFund, type PammRequest } from "@kalks/mock/admin-partners";
+import { Avatar, Button, Chip, Dialog, Delta, EquityChart, Flag, Money, Segmented, StatusChip, cn } from "@ezymex/ui";
+import { navSeries, type PammFund, type PammRequest } from "@ezymex/mock/admin-partners";
 import { MiniStat, Section, auditToast, useReason } from "@/components/config/kit";
 import { fmtDT, ago } from "@/components/partners/common";
 import { STATUS_LABEL } from "./common";

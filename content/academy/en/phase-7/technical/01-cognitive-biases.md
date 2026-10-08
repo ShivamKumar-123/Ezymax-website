@@ -91,7 +91,7 @@ The statistics of any real strategy include streaks. With a 45% win rate, the pr
 Biases are strongest when money is at risk and a decision must be made quickly. The most effective counter is to decide before that moment.
 
 1. Write entry, stop, target and invalidation in your journal before placing the order.
-2. Place the stop loss and take profit with the order in Kalks Trader, so the plan is live on the server rather than in your head.
+2. Place the stop loss and take profit with the order in Ezymex Trader, so the plan is live on the server rather than in your head.
 3. Allow the stop to move only in the direction of reducing risk, for example to breakeven or with a trailing stop.
 4. Evaluate strategy changes only after a meaningful sample, such as 50 to 100 trades.
 5. Review trades weekly and tag any decision that broke a rule, so you can see which biases cost you most.

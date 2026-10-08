@@ -3,7 +3,7 @@
 /**
  * Options › Settlements (O6, O38, O39): the settlement monitor. Per expiry: the TWAP window and its live sample
  * coverage, the fixing (source, run, coverage, longest gap), the engine's settlement run, and the two corrections
- * allowed within 1 hour of the first fixing (Kalks staff, options.settle): re-fix the price and re-run the settlement.
+ * allowed within 1 hour of the first fixing (Ezymex staff, options.settle): re-fix the price and re-run the settlement.
  *
  *   GET  /api/options/expiries?u=&status=&limit=                     options service
  *   POST /api/options/expiries/{id}/refix {price?, reason}           re-fix (recompute from samples, or a manual price)
@@ -12,7 +12,7 @@
  */
 import * as React from "react";
 import { CircleCheck, Gauge, Hourglass, RefreshCw, RotateCcw, Timer, TriangleAlert } from "lucide-react";
-import { Button, Card, Chip, DataTable, Dialog, EmptyState, Field, KpiCard, PageHeader, Progress, Reveal, Segmented, cn, formatNumber, type Column } from "@kalks/ui";
+import { Button, Card, Chip, DataTable, Dialog, EmptyState, Field, KpiCard, PageHeader, Progress, Reveal, Segmented, cn, formatNumber, type Column } from "@ezymex/ui";
 import { ErrorState, TableSkeleton, ago, useNow, when } from "@/components/live/kit";
 import type { AdminExpiry, Book, BookSettlement, Underlying } from "./types";
 import { EnginePending, ExpiryStatusChip, NumInput, REASONS, ReasonDialog, countdown, enginePending, optSend, parseNum, signedUsd, useOpt, useOptPerms } from "./kit";

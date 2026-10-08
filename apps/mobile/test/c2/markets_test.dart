@@ -5,14 +5,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/features/calendar/calendar_screen.dart';
-import 'package:kalks/features/markets/markets_feed.dart';
-import 'package:kalks/features/markets/markets_screen.dart';
-import 'package:kalks/features/news/news_screen.dart';
-import 'package:kalks/features/options_intro/options_screen.dart';
-import 'package:kalks/features/terminal/preview/preview_server.dart';
-import 'package:kalks/preview/c2/options.dart';
-import 'package:kalks/router/router.dart';
+import 'package:ezymex/features/calendar/calendar_screen.dart';
+import 'package:ezymex/features/markets/markets_feed.dart';
+import 'package:ezymex/features/markets/markets_screen.dart';
+import 'package:ezymex/features/news/news_screen.dart';
+import 'package:ezymex/features/options_intro/options_screen.dart';
+import 'package:ezymex/features/terminal/preview/preview_server.dart';
+import 'package:ezymex/preview/c2/options.dart';
+import 'package:ezymex/router/router.dart';
 
 import '../helpers/test_app.dart';
 
@@ -112,7 +112,7 @@ void main() {
     c.read(routerProvider).go('/options');
     await settle(tester);
     expect(find.byType(OptionsScreen), findsOneWidget);
-    expect(find.text('Kalks FX Options'), findsOneWidget);
+    expect(find.text('Ezymex FX Options'), findsOneWidget);
     expect(find.text('Get started'), findsOneWidget);
     final page = _page<OptionsScreen>();
     await _scrollTo(tester, find.text('Options in three simple ideas'), page);
@@ -127,12 +127,12 @@ void main() {
     await tester.tap(find.text('I understand how options work'));
     await settle(tester, frames: 3);
     await _scrollTo(tester, find.text('Start trading options'), page);
-    // Kalks Trader's sample trade server ticks on a periodic timer with no stop: start it under real async, so it
+    // Ezymex Trader's sample trade server ticks on a periodic timer with no stop: start it under real async, so it
     // isn't a fake timer left pending when this test ends
     await tester.runAsync(() async => PreviewServer.instance.answer('GET', 'trade/symbols', const {}, const {}, null));
     await tester.tap(find.text('Start trading options'));
     await settle(tester);
-    // Kalks Trader (agent D's screen) opens next; its chart is a WebView, which widget tests can't host: its errors
+    // Ezymex Trader (agent D's screen) opens next; its chart is a WebView, which widget tests can't host: its errors
     // are not this page's
     final original = FlutterError.onError;
     final foreign = <FlutterErrorDetails>[];

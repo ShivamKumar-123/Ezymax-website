@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Archive, Copy, MoreHorizontal, Pause, Play, Plus, RotateCcw, Save, Send } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, Dialog, DialogClose, IconButton, Menu, PageHeader, Reveal, Segmented, Skeleton, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Dialog, DialogClose, IconButton, Menu, PageHeader, Reveal, Segmented, Skeleton, cn } from "@ezymex/ui";
 import { MiniField, TextInput } from "@/components/config/kit";
 import { ago, useApi, useNow } from "@/components/live/kit";
 import { PlanTypeChip, PropError, PropStatus, ReadOnlyNote, int, pct, propWrite, reasonText, usd, useAction, usePropCan, usdK, type EngineGroup, type Plan, type PlanRow, type PlanStatus, type PlanType } from "./kit";
@@ -440,7 +440,7 @@ function NewPlanDialog({ open, onOpenChange, taken, onCreate }: { open: boolean;
     >
       <div className="space-y-4">
         <MiniField label="Plan name">
-          <TextInput value={name} onChange={setName} placeholder="Kalks Rapid 1-Step" />
+          <TextInput value={name} onChange={setName} placeholder="Ezymex Rapid 1-Step" />
         </MiniField>
         <MiniField label="Plan id" hint={bad ? <span className="text-down">{bad}</span> : "Used in links and reports"}>
           <TextInput

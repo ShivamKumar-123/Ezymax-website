@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Coins, Gift, HandCoins, RefreshCw, Trophy, Wallet } from "lucide-react";
-import { Button, Card, CardHeader, DataTable, KpiCard, PageHeader, Reveal, Segmented, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, DataTable, KpiCard, PageHeader, Reveal, Segmented, type Column } from "@ezymex/ui";
 import { TableSkeleton, qs, useApi } from "@/components/live/kit";
 import { StackedBars } from "@/components/marketing/stacked-bars";
 import { M, type Report } from "./api";

@@ -7,7 +7,7 @@
 import * as React from "react";
 import { motion } from "motion/react";
 import { Check } from "lucide-react";
-import { Flag, cn } from "@kalks/ui";
+import { Flag, cn } from "@ezymex/ui";
 
 export const fmtInt = (v: number) => v.toLocaleString("en-US");
 export const fmtUsd0 = (v: number) => `$${Math.round(v).toLocaleString("en-US")}`;

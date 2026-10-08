@@ -1,6 +1,6 @@
 # trading
 
-The Kalks trading engine: trading accounts, orders and positions (netting and hedging, cent), margin, margin call and stop-out, swaps, the double-entry ledger for balance / credit / bonus, wallet transfers, the Back Office dealing desk, and [Kalks FX Options](#kalks-fx-options) (European cash-settled options in the same account as CFDs). It is a Rust service (axum 0.8, sqlx 0.9, PostgreSQL) on `127.0.0.1:8090`.
+The Ezymex trading engine: trading accounts, orders and positions (netting and hedging, cent), margin, margin call and stop-out, swaps, the double-entry ledger for balance / credit / bonus, wallet transfers, the Back Office dealing desk, and [Ezymex FX Options](#ezymex-fx-options) (European cash-settled options in the same account as CFDs). It is a Rust service (axum 0.8, sqlx 0.9, PostgreSQL) on `127.0.0.1:8090`.
 
 The engine executes B-book only. A/B routing is decided and recorded on every ticket. A-book trades are passed to an LP adapter, which is a stub until an LP is signed (D2, D25).
 
@@ -17,7 +17,7 @@ The engine executes B-book only. A/B routing is decided and recorded on every ti
 - [Copy trading and PAMM](#copy-trading-and-pamm)
 - [MAM (multi-account manager)](#mam-multi-account-manager)
 - [Client controls](#client-controls)
-- [Kalks FX Options](#kalks-fx-options)
+- [Ezymex FX Options](#ezymex-fx-options)
 - [Options order book](#options-order-book)
 - [Streams](#streams)
 - [How the apps integrate](#how-the-apps-integrate)
@@ -33,12 +33,12 @@ Before you start, you need PostgreSQL 16 on `127.0.0.1:5433` (user `postgres`, t
 export PATH="$HOME/.cargo/bin:$PATH"
 cargo build -p trading
 # background, logs as JSON lines
-(cd services/trading && nohup ../../target/debug/trading > ~/.kalks-local/trading.log 2>&1 &)
+(cd services/trading && nohup ../../target/debug/trading > ~/.ezymex-local/trading.log 2>&1 &)
 curl -s localhost:8090/health
 cargo test -p trading
 ```
 
-On first start the engine creates the `kalks_trading` database and runs `migrations/`. It reads `TRADING_*` from the repo-root `.env.local`. `TRADING_SESSION_SECRET` and `TRADING_INTERNAL_TOKEN` are generated there and are never committed.
+On first start the engine creates the `ezymex_trading` database and runs `migrations/`. It reads `TRADING_*` from the repo-root `.env.local`. `TRADING_SESSION_SECRET` and `TRADING_INTERNAL_TOKEN` are generated there and are never committed.
 
 ## Architecture
 
@@ -55,7 +55,7 @@ On first start the engine creates the `kalks_trading` database and runs `migrati
    │  commit: events + projections + ledger + audit rows in ONE Postgres transaction
    │  then swap the new state in, publish stream frames, call the LP hook for A-book fills
    ▼
- PostgreSQL kalks_trading: events (source of truth) + projections
+ PostgreSQL ezymex_trading: events (source of truth) + projections
 ```
 
 - **Single writer per account.** Every request for an account is sent to that account's shard task as a closure. The shard runs it against a copy of the state (`engine::Tx`). It commits the resulting events in one database transaction and only then replaces the in-memory state. If the commit fails, memory stays unchanged. Commands are served before price ticks.
@@ -79,14 +79,14 @@ Source layout:
 | `src/views.rs` | JSON views (terminal and Back Office shapes) |
 | `src/social/` | copy trading and PAMM: `math` (sizing, HWM fees, NAV, statistics), `mirror` (follower side of a master event), `copier` (event tap, catch-up, guard, scheduler), `pamm`, `stats`, `wallet` (client + outbox) |
 | `src/api/social.rs`, `src/api/social_admin.rs` | Client Area and Back Office social routes |
-| `src/options/` | Kalks FX Options link: `OptionsCtx` (snapshot poller, raw spots, mark / scenario caches, suitability), `snapshot` (parsed reference data, gates), `pricing` (same maths as services/options), `settle` (expiry scheduler), `hedger` (house delta hedge) |
+| `src/options/` | Ezymex FX Options link: `OptionsCtx` (snapshot poller, raw spots, mark / scenario caches, suitability), `snapshot` (parsed reference data, gates), `pricing` (same maths as services/options), `settle` (expiry scheduler), `hedger` (house delta hedge) |
 | `src/engine/options.rs`, `src/api/options.rs` | option orders, combos, closes, knocks, settlement, re-run, void, scenario margin, stop-out by units; the options HTTP routes |
 | `src/book/` | the options **order book** (docs/OPTIONS-EXCHANGE.md): `types`, `matching` (pure price-time matching), `actor` (one per tenant / kind / underlying, group commit), `journal` (persistence, load, replay audit), `outbox` (fills and removals applied to the accounts), `reserve` (order margin, `AccountState.book`), `md` (top of book, depth, feed), `entry` (`submit`, the one way in) |
 | `src/engine/options_book.rs`, `src/api/options_book.rs`, `src/api/book_feed.rs` | book entry gates and reservations, `apply_fill` / `apply_done`, stops and SL / TP; the terminal book routes; the internal market-data feed |
 
 ## Data model
 
-Database `kalks_trading` (`migrations/0001_trading.sql`). Every table has `tenant_id` and an RLS policy on `current_setting('kalks.tenant_id')`. The engine connects as the table owner and filters by tenant itself. The policies protect every other database role.
+Database `ezymex_trading` (`migrations/0001_trading.sql`). Every table has `tenant_id` and an RLS policy on `current_setting('ezymex.tenant_id')`. The engine connects as the table owner and filters by tenant itself. The policies protect every other database role.
 
 | Table | Kind | Contents |
 |---|---|---|
@@ -152,8 +152,8 @@ Ids: logins are 8 digits (live 10 000 001+, demo 50 000 001+). Order and positio
 ## API conventions
 
 - **Base URL.** Base `http://127.0.0.1:8090`. JSON in and out, camelCase keys.
-- **Internal token.** Every route except `GET /health`, `GET /v1/terminal/stream` and `GET /v1/dealing/stream` needs the header `X-Kalks-Internal: $TRADING_INTERNAL_TOKEN`. Only the apps' BFFs and internal services hold it.
-- **Tenant.** Set it with `X-Kalks-Tenant: <slug>`; the default is `kalks`. Forward the client IP as `X-Forwarded-For` and the user agent as `User-Agent`.
+- **Internal token.** Every route except `GET /health`, `GET /v1/terminal/stream` and `GET /v1/dealing/stream` needs the header `X-Ezymex-Internal: $TRADING_INTERNAL_TOKEN`. Only the apps' BFFs and internal services hold it.
+- **Tenant.** Set it with `X-Ezymex-Tenant: <slug>`; the default is `ezymex`. Forward the client IP as `X-Forwarded-For` and the user agent as `User-Agent`.
 - **Numbers.**
   - Money, prices and volumes are JSON numbers, and requests also accept numeric strings.
   - Terminal and client tickets are numbers. Dealing tickets are strings, because the Back Office contract uses strings.
@@ -173,7 +173,7 @@ Ids: logins are 8 digits (live 10 000 001+, demo 50 000 001+). Order and positio
 
 Write responses can carry `notifications: [{kind, message, data}]` (fill, close, sl, tp, nbp, margin_call, stop_out, order_filled, …). The same notifications also go out on the stream.
 
-The examples below use `H='-H x-kalks-internal:$TOK -H content-type:application/json'`.
+The examples below use `H='-H x-ezymex-internal:$TOK -H content-type:application/json'`.
 
 ## Terminal API
 
@@ -240,7 +240,7 @@ Cent accounts report `currency: "USC"`: every amount is USD × 100 and lot sizes
 
 ## Client Area API
 
-The CRM BFF calls these after its own session check. It passes the gateway user id in `X-Kalks-User-Id: <id>` (or `?user_id=`). Every `/v1/accounts/{login}/*` route returns 404 unless the account belongs to that user and tenant.
+The CRM BFF calls these after its own session check. It passes the gateway user id in `X-Ezymex-User-Id: <id>` (or `?user_id=`). Every `/v1/accounts/{login}/*` route returns 404 unless the account belongs to that user and tenant.
 
 | Method & path | Body | Response |
 |---|---|---|
@@ -281,9 +281,9 @@ This API is for the wallet service (D3, D36). Amounts are in USD; a cent account
 This implements the contract at the top of `apps/admin/lib/trading-desk/store.ts`. The Back Office BFF verifies the staff session with the gateway and then forwards the staff identity:
 
 ```
-X-Kalks-Staff-Id: 12
-X-Kalks-Staff-Name: Julia%20Novak      (percent-encoded UTF-8)
-X-Kalks-Staff-Role: dealer             (gateway staff role)
+X-Ezymex-Staff-Id: 12
+X-Ezymex-Staff-Name: Julia%20Novak      (percent-encoded UTF-8)
+X-Ezymex-Staff-Role: dealer             (gateway staff role)
 ```
 
 - **Roles.**
@@ -341,7 +341,7 @@ Shapes follow `apps/admin/lib/trading-desk/types.ts`:
   - Account ops add `account.balance|credit|status|group|leverage|rejected` and `group.create|update`.
 
 ```bash
-S='-H x-kalks-staff-id:1 -H x-kalks-staff-name:Julia%20Novak -H x-kalks-staff-role:dealer'
+S='-H x-ezymex-staff-id:1 -H x-ezymex-staff-name:Julia%20Novak -H x-ezymex-staff-role:dealer'
 curl -s -X POST localhost:8090/v1/dealing/trades $H $S -d '{"login":"10000001","symbol":"EURUSD","side":"buy","type":"market","volume":1,"reasonCode":"DLR-01 · Client request","note":"client called desk"}'
 curl -s -X POST localhost:8090/v1/dealing/book-transfers $H $S -d '{"tickets":["1000006"],"to":"A","volume":0.4,"reasonCode":"DLR-03 · Risk management","note":"hedge"}'
 ```
@@ -366,7 +366,7 @@ These use the same staff headers, reason rules and response shape as the dealing
 
 ### Balance & credit
 
-Manual adjustments from the Back Office go through `POST /v1/admin/accounts/{login}/adjust` (`funds::staff_adjust`). The wallet service calls it (`services/wallet`, `ops/adjustments.rs`) with the staff identity of the requester and their permission keys in `X-Kalks-Staff-Perms`; the engine checks them again.
+Manual adjustments from the Back Office go through `POST /v1/admin/accounts/{login}/adjust` (`funds::staff_adjust`). The wallet service calls it (`services/wallet`, `ops/adjustments.rs`) with the staff identity of the requester and their permission keys in `X-Ezymex-Staff-Perms`; the engine checks them again.
 
 | Operation | Permission | Ledger kind (house account) | Limit |
 |---|---|---|---|
@@ -377,7 +377,7 @@ Manual adjustments from the Back Office go through `POST /v1/admin/accounts/{log
 
 - Categories: `deposit`, `withdrawal`, `correction`, `compensation`, `bonus`, `fee`, `chargeback`, `other`. Only `deposit` on add and `withdrawal` on deduct are real money: the reports count ledger kinds `deposit` / `withdrawal` as client deposits, withdrawals and FTDs, and never `adjustment` or `credit`. `deposit` can't be a deduction and `withdrawal` can't add funds.
 - Demo accounts book every leg against `house:demo_funding` as `adjustment` / `credit`: never real money.
-- **Force** (`force: true`, permission `finance.adjust_force`, Super Admin only) lifts the free-margin limit of a deduction or of taking credit back. Negative balance protection (D16) is always on in Kalks, so even a forced deduction can take at most the balance (`422 negative_balance`: the balance never goes below 0 by a staff action), and credit taken back can never exceed the credit held (`422 insufficient_credit`). After every adjustment the margin level is re-checked, so a forced deduction can raise the margin call or stop out positions at once; the stop-out's realised loss is then covered by NBP as usual.
+- **Force** (`force: true`, permission `finance.adjust_force`, Super Admin only) lifts the free-margin limit of a deduction or of taking credit back. Negative balance protection (D16) is always on in Ezymex, so even a forced deduction can take at most the balance (`422 negative_balance`: the balance never goes below 0 by a staff action), and credit taken back can never exceed the credit held (`422 insufficient_credit`). After every adjustment the margin level is re-checked, so a forced deduction can raise the margin call or stop out positions at once; the stop-out's realised loss is then covered by NBP as usual.
 - Refusals: `insufficient_funds` (above the free funds / free margin), `insufficient_credit`, `negative_balance`, `invalid_category`, `invalid_amount` (≤ 0 or more than 2 decimals), `pamm_account` (fund accounts move money only through invest / redeem). A refusal is audited as `account.rejected`.
 - The ledger `note` is the client-visible `statementNote` (a neutral label such as "Balance adjustment" or "Credit" when empty); the internal comment (`note` in the body) goes to the audit only. `reasonCode` is `ADJ-<CAT> · <label>`.
 - Idempotent on `idempotencyKey` (stored as `adj:<key>`): the same key and body returns the original booking with `replayed: true`; the same key with another body is `409 idempotency_conflict`.
@@ -451,7 +451,7 @@ master account shard ── commit (events) ──► event tap (only logins wit
 ### PAMM (D65–D67, D74)
 
 - **Fund.**
-  - A fund is a live account in group `pamm` owned by the master, who trades it in Kalks Trader with the credentials returned at creation. Orders on it are tagged source `pamm`.
+  - A fund is a live account in group `pamm` owned by the master, who trades it in Ezymex Trader with the credentials returned at creation. Orders on it are tagged source `pamm`.
   - Wallet ↔ account transfers on a fund login are refused (`422 pamm_account`): money moves only through invest/redeem.
   - `NAV = fund equity ÷ total units`. The first NAV is 1.00: the master's seed capital buys the first units.
 - **Requests.**
@@ -490,7 +490,7 @@ master account shard ── commit (events) ──► event tap (only logins wit
 
 ### Social API
 
-Same conventions as the rest of the engine: the internal token, `X-Kalks-Tenant`, camelCase JSON, money in USD, percentages as numbers (`12.5` = 12.5 %). Client routes need `X-Kalks-User-Id` (the signed-in gateway user). The CRM BFF also sends `X-Kalks-Kyc: unverified|pending|verified|rejected` from the gateway profile (D68). Staff routes need the staff headers.
+Same conventions as the rest of the engine: the internal token, `X-Ezymex-Tenant`, camelCase JSON, money in USD, percentages as numbers (`12.5` = 12.5 %). Client routes need `X-Ezymex-User-Id` (the signed-in gateway user). The CRM BFF also sends `X-Ezymex-Kyc: unverified|pending|verified|rejected` from the gateway profile (D68). Staff routes need the staff headers.
 
 **Shapes**
 
@@ -528,7 +528,7 @@ Same conventions as the rest of the engine: the internal token, `X-Kalks-Tenant`
  "equity":1043.2,"status":"pending|approved|paid|rejected|failed","reviewedBy":null,"note":null,"createdAt":"…","paidAt":null}
 ```
 
-**Public and client routes** (`X-Kalks-User-Id`)
+**Public and client routes** (`X-Ezymex-User-Id`)
 
 | Method & path | Body / query | Response |
 |---|---|---|
@@ -575,7 +575,7 @@ Same conventions as the rest of the engine: the internal token, `X-Kalks-Tenant`
 | `POST /v1/social/admin/fees/{id}/review` | `{decision:"approve"\|"reject", note}` | `{fee}`: approve pays the master through the wallet (`copy_fee`) |
 | `GET /v1/social/admin/audit?limit=&before=` | – | `AuditEntry[]` (`social.*` actions) |
 
-**House accounts** (driven by the ALGO service, services/algo README "House accounts"). A house master is a platform-owned live account running an automated strategy; `social_masters.is_house` marks it and every master view (and a subscription's `master`) carries `"house": true` so the apps show the "House strategy · Operated by Kalks" label. A hidden house master takes no new followers (`master_status`). Staff headers, `ROLES_SOCIAL_WRITE`, a note on every write, audited as `social.house.*`:
+**House accounts** (driven by the ALGO service, services/algo README "House accounts"). A house master is a platform-owned live account running an automated strategy; `social_masters.is_house` marks it and every master view (and a subscription's `master`) carries `"house": true` so the apps show the "House strategy · Operated by Ezymex" label. A hidden house master takes no new followers (`master_status`). Staff headers, `ROLES_SOCIAL_WRITE`, a note on every write, audited as `social.house.*`:
 
 | Method & path | Body | Response |
 |---|---|---|
@@ -591,7 +591,7 @@ Errors use the standard shape. Social codes: `not_master`, `master_status`, `req
 
 A MAM manager is an approved social master (same application, KYC and review as copy / PAMM) who runs a **MAM programme**: one dedicated **MAM master account** and any number of **linked client accounts**. Code: `src/social/mam.rs` (lifecycle, allocation, fees, guard, views), `src/social/allocation.rs` (pure maths), `src/api/mam.rs` (routes), `migrations/20260929190000_mam.sql`.
 
-- **Master account.** Opening a programme opens a live account for the manager in the system group `mam` (hedging, not offered in the open-account wizard), optionally funded from the manager's wallet. The manager trades it in Kalks Trader like any account. Every **opening** trade on it is a **block**: a market fill, a pending order, or volume added. The master account needs its own margin for the block (decision: it is a real, funded account, so the manager has capital at risk and the whole existing execution path is reused; a virtual block account would need a second execution model).
+- **Master account.** Opening a programme opens a live account for the manager in the system group `mam` (hedging, not offered in the open-account wizard), optionally funded from the manager's wallet. The manager trades it in Ezymex Trader like any account. Every **opening** trade on it is a **block**: a market fill, a pending order, or volume added. The master account needs its own margin for the block (decision: it is a real, funded account, so the manager has capital at risk and the whole existing execution path is reused; a virtual block account would need a second execution model).
 - **Linking (consent).** A client links one of their **own live hedging accounts** in the Client Area. They must send the SHA-256 `termsHash` of the programme's current terms and `accept: true`; the engine refuses a stale hash (`terms_changed`). The link stores the full consent text (terms + account + user + time), the hash, IP and user agent, and the fee terms the client accepted (later programme changes apply to new links only). Netting accounts, demo accounts, system accounts (`copy`, `copy-netting`, `pamm`, `mam`), copy-trading master accounts and accounts already managed cannot be linked. The programme's `minEquity` applies. A manager cannot link to their own programme.
 - **Authority.** The manager has trading authority only. No MAM route moves money, and the engine's free-margin rule keeps every withdrawal above the margin of open positions. The client keeps trading their own positions next to the MAM trades.
 - **Allocation.** The copier taps the master account's committed events (the same tap as copy trading). For each block it reads every active link's equity and balance, computes the split with `allocation::allocate`, then mirrors the whole master transaction into each linked account's shard (`mirror::mirror` with `MirrorCfg::mam`: key prefixes `mp`/`mo`/`mx`, source `mam`, platform `MAM`). The methods are:
@@ -615,7 +615,7 @@ A MAM manager is an approved social master (same application, KYC and review as 
   - Both are debited from the client account (`perf_fee` ledger kind, `house:perf_fees` / `house:mgmt_fees`) and recorded in `social_fees` with `source='mam'`, `link_id`, `perf_amount`, `mgmt_amount`. They go through the same approval as copy / PAMM fees: approve pays the manager's wallet (wallet kind `mam_fee`) minus the platform cut; reject refunds the client's wallet.
 - **IB.** The IB service never pays commission on group `mam` (reason `mam_master`, hard-coded in `services/ib/src/calc.rs`). The block traded on the master account is traded again on the linked client accounts, and those deals are what IBs are paid on. Counting both would pay the same volume twice.
 
-**Client Area routes** (`X-Kalks-User-Id` from the BFF):
+**Client Area routes** (`X-Ezymex-User-Id` from the BFF):
 
 | Method & path | Body | Response |
 |---|---|---|
@@ -655,16 +655,16 @@ The Back Office sets per-client restrictions in the gateway (`services/gateway/s
 - **`close_only`**: new exposure is refused with `close_only` ("Your account is in close-only mode: you can close positions but not open new ones."); closes, reductions and SL/TP changes pass.
 - **`login`**: terminal sign-in, SSO (the Client Area's Trade button) and every request of an existing session answer 403 `account_suspended`; the client's terminal sessions are revoked when the block arrives and open streams close with `{"type":"ended","reason":"suspended"}`.
 - **`social`**: new copy subscriptions, PAMM investments and funds, master applications, MAM links and programmes answer 422 `restricted`.
-- **Presence.** Every Kalks Trader stream of the client's own session is reported to the gateway (`POST /v1/internal/presence/trader`, every 15 s and ~1 s after a change). Staff sessions are never reported.
+- **Presence.** Every Ezymex Trader stream of the client's own session is reported to the gateway (`POST /v1/internal/presence/trader`, every 15 s and ~1 s after a change). Staff sessions are never reported.
 - **Staff sessions ("log in as client").** `POST /v1/admin/accounts/{login}/staff-sso {userId, readOnly, minutes}` (staff headers; the BFF checked `clients.impersonate` / `clients.impersonate_full` with the gateway and audited it) returns a one-time SSO token. The session it opens is read-only unless full access was granted, lasts `minutes` (30), carries `staff` in `/v1/terminal/state` and `GET /v1/terminal/controls`, and full-access trades are recorded with the actor `staff:<id>`.
 
-## Kalks FX Options
+## Ezymex FX Options
 
 European, cash-settled (USD) options on FX, metals and oil, B-book, in the **same account as CFDs** (cross-margin). The options service (`services/options`, :8104) owns the reference data (underlyings, holidays, rates, vol surfaces, series, fixings) and publishes a versioned snapshot; the engine is the system of record for the money: premiums, positions, margin, settlement. Both price with `crates/optmath`, with the same conventions, so a fill equals the chain the client saw.
 
 ### How it works
 
-- **Snapshot.** `GET {OPTIONS_URL}/v1/internal/options/snapshot` every 2 s with `If-None-Match` (`X-Kalks-Internal: OPTIONS_INTERNAL_TOKEN`). The last good snapshot stays in memory and in `option_snapshot`, so a restart while the options service is down still has it. Once the last successful poll is older than `staleAfterSecs`, options are **close-only** (`stale_prices`).
+- **Snapshot.** `GET {OPTIONS_URL}/v1/internal/options/snapshot` every 2 s with `If-None-Match` (`X-Ezymex-Internal: OPTIONS_INTERNAL_TOKEN`). The last good snapshot stays in memory and in `option_snapshot`, so a restart while the options service is down still has it. Once the last successful poll is older than `staleAfterSecs`, options are **close-only** (`stale_prices`).
 - **Prices.** Raw mids from a second market-data socket (`group=raw`, kept in the QuoteBook under `raw`). Fills, SL/TP and limit checks are always **priced fresh**; marks (equity, margin, views, streams) are cached for at most 250 ms (the cache key carries the spot, the USD rate and the snapshot version). Bid/ask follow the group's vol spread and minimum USD spread (snapshot `groups`). A position is never dropped from `metrics()`: without a model price it is valued at its intrinsic value (a short at least at its premium), after the cut at the payoff at the fixing.
 - **Units.** A position's `symbol` is the series code (`EURUSD-20261009-1.1650-C`), `volume` the contracts, `openPrice` / `currentPrice` / `mark` the premium **per unit of the underlying in its quote currency** (the chain's `bid`/`ask`/`mark`). One contract = `contractSize` units (EURUSD 10 000 EUR). Money (premium, P&L, margin) is in the account currency.
 - **Premium in cash.** A buy pays the full premium at once, a sell receives it (`option_premium` ↔ `house:options_premium`). Equity = balance + credit + bonus + CFD P&L + swap + **`optionValue`** (the options at their mark, long +, short −). `profit` includes the options' unrealised P&L (`optionPnl` = value + premium basis). `Position.premium` is the premium cash of the remaining contracts; realised P&L = exit cash + that basis.
@@ -685,7 +685,7 @@ European, cash-settled (USD) options on FX, metals and oil, B-book, in the **sam
 
 ### Options API
 
-Terminal (Kalks Trader session):
+Terminal (Ezymex Trader session):
 
 | Route | Body → answer |
 |---|---|
@@ -700,7 +700,7 @@ Position JSON (terminal, account detail, dealing, streams) gains `option: {serie
 
 Error codes: `options_disabled`, `not_eligible`, `market_closed`, `cutoff`, `series_halted`, `close_only`, `limit_contracts`, `insufficient_cash`, `insufficient_margin`, `stale_prices`, plus `unknown_series`, `invalid_volume`, `invalid_barrier`, `invalid_order`, `invalid_price`, `invalid_sl` / `invalid_tp`, `invalid_trigger`, `no_price`, `not_found` (HTTP 422, `not_found` 404).
 
-Back Office (staff headers; `X-Kalks-Staff-Perms` checked when sent):
+Back Office (staff headers; `X-Ezymex-Staff-Perms` checked when sent):
 
 | Route | Permission (role fallback) | |
 |---|---|---|
@@ -714,7 +714,7 @@ Data (`migrations/20261003000000_options.sql`): `option`, `combo_id` (and `trigg
 
 ## Options order book
 
-The exchange of docs/OPTIONS-EXCHANGE.md (decision O49): clients trade options **with each other** in a price-time priority book per series; the Kalks market maker quotes every listed series both sides through the very same entry path under the same rules; strategies trade by combo RFQ with atomic fills; stop-out liquidates book positions on the book first, then to the Kalks backstop. **Dormant by default:** a tenant's live or demo accounts trade on the book only once its `option_book_venues` row exists (the enable / novation flow writes it); without it every option keeps trading at the house price exactly as described above, and the book routes answer 422 `book_disabled`. Once it exists, `POST /v1/terminal/options/orders` refuses orders with a listed (vanilla) leg (422 `book_venue`); barrier-only orders stay Kalks-quoted.
+The exchange of docs/OPTIONS-EXCHANGE.md (decision O49): clients trade options **with each other** in a price-time priority book per series; the Ezymex market maker quotes every listed series both sides through the very same entry path under the same rules; strategies trade by combo RFQ with atomic fills; stop-out liquidates book positions on the book first, then to the Ezymex backstop. **Dormant by default:** a tenant's live or demo accounts trade on the book only once its `option_book_venues` row exists (the enable / novation flow writes it); without it every option keeps trading at the house price exactly as described above, and the book routes answer 422 `book_disabled`. Once it exists, `POST /v1/terminal/options/orders` refuses orders with a listed (vanilla) leg (422 `book_venue`); barrier-only orders stay Ezymex-quoted.
 
 ### How it works
 
@@ -730,8 +730,8 @@ The exchange of docs/OPTIONS-EXCHANGE.md (decision O49): clients trade options *
 - **Book positions** carry `venue: "book"` (absent = house). The house hedger and the Back Office house exposure ignore clients' book positions (another account is the counterparty) but count the market maker's (the house's own side); the house-priced close, combo close and void refuse them (`book_venue`, bust the fill instead); stop-out hands them to the liquidator (below).
 - **Mark** (docs §6): the actors publish the top of book into `OptionsCtx.top` (`book::md::Top`, versioned); `engine::options::mark_of` clamps the cached model mark inside it with `optmath::mark::clamp_mark` (both sides ≥ `markMinQty` and spread ≤ `markMaxSpreadMult` × model spread → clamp; one side → max(model, bid) / min(model, ask); else the model). The clamp is applied on every read (never cached), so it never lags the book. It drives equity, margin valuation, stop-out, stop triggers, SL / TP and the bands.
 - **Expiry and housekeeping** (`book::spawn_scheduler`, with the rollover job): GTD expiry every second, deadman switches, `Expire` at cut − `closeOnlyMinutes` (cancels the expiry's orders, closes its series), `OpenCheck` at session open (cancels resting orders outside the band against the new mark), the throttled feed (250 ms), the nightly **replay audit** (`book::replay_audit`: every journal re-run byte for byte; `ALERT` on a difference). After a settlement pass without failures the books drop the expiry's series and positions (`Expire{purge}`).
-- **Kalks market maker** (`book::mm`, docs §4): one house account per (tenant, kind) — user `OPTIONS_MM_USER_ID`, group `options-mm` (else `standard`), house capital `OPTIONS_MM_CAPITAL` (ledger kind `house_capital`; demo: its demo funding) — `option_mm_accounts`. A single-instance loop (every 250 ms per enabled venue) prices every listed vanilla series from the model (one pricing context per expiry; the snapshot's `mm[]` settings, most specific row wins): bid / ask at σ ∓ the tenor spread (0DTE / ≤ 7 d / ≤ 30 d / longer) on ticks, at least `minSpreadTicks` apart, vol skewed by −`skewVol` × (expiry vega / `maxVega`), prices shifted by −`skewTicksPerContract` × inventory, size `baseSize` × moneyness × room to the limits; a side that would push `maxNetDelta`, `maxGamma`, `maxVega` or `maxContractsPerSeries` further is withdrawn; it never crosses other participants (one tick inside the public book). Quotes go through `entry::mass_quote` → `enter` like any order (post-only, ephemeral, the 0 / 0 market-maker fee tier, no per-client contract limit — its own limits apply); a series is requoted only when a side moved by max(1 tick, 25 % of the half-spread) or its size changed; near-the-money series ≤ 7 d every 250 ms, the rest every 2 s on a spot move, everything every 5 s and after a snapshot change or an own fill; at most 400 series per pass (nearest the money first) so its shard stays responsive. It pulls an underlying's quotes when the spot is older than 10 s (the relay has multi-second gaps; docs say 3 s), the snapshot is stale, the market is closed, a series reaches its cut-off, or the desk pauses it (`option_mm_pauses`); a 5 s deadman cancels its quotes if the loop stalls. It reads only the public book (`md::Top`) and its own account (a grep test enforces it); its quotes are firm (nothing asks it before a client trades). Its delta counts in the house hedger.
-- **Combo RFQ** (`book::rfq`, docs §5): `{legs[{series, side, ratio}], qty, reduceOnly?}` (1–8 listed vanilla series of one underlying, each once; barrier legs answer `kalks_quoted`), open 30 s. The market maker answers at once with a firm net bid / ask per combo unit (summed theos ± 60 % of the summed half-spreads, at least `minSpreadTicks`), valid `rfqQuoteTtlSecs`, holding its worst side's reserve (`BookState::rfq_holds`, part of `order_reserve`) until the quote is used or lapses; a lapsed quote is replaced on the next read. Accept `{quoteId, side, limitNet}` runs every leg through `enter` (gates, limits, a reservation at its split price), then `Cmd::RfqAccept` fills every leg in ONE journal entry, or none (`quote_expired`, `price_moved`, `reduce_only`, `self_trade`, …). Leg prices: the theos shifted pro rata (ratio × theo) to sum to the net, on ticks, the remainder on the largest leg, never below 0 (`matching::rfq_split`; when no whole-tick split exists the last tick goes the taker's way). Each account gets ONE outbox item holding all its legs (`Fills`, atomic per account); fills are kind `rfq` with the combo id; the tape gets the legs plus one `combo` print; outright levels and the last trade are not touched (positions and volume are).
+- **Ezymex market maker** (`book::mm`, docs §4): one house account per (tenant, kind) — user `OPTIONS_MM_USER_ID`, group `options-mm` (else `standard`), house capital `OPTIONS_MM_CAPITAL` (ledger kind `house_capital`; demo: its demo funding) — `option_mm_accounts`. A single-instance loop (every 250 ms per enabled venue) prices every listed vanilla series from the model (one pricing context per expiry; the snapshot's `mm[]` settings, most specific row wins): bid / ask at σ ∓ the tenor spread (0DTE / ≤ 7 d / ≤ 30 d / longer) on ticks, at least `minSpreadTicks` apart, vol skewed by −`skewVol` × (expiry vega / `maxVega`), prices shifted by −`skewTicksPerContract` × inventory, size `baseSize` × moneyness × room to the limits; a side that would push `maxNetDelta`, `maxGamma`, `maxVega` or `maxContractsPerSeries` further is withdrawn; it never crosses other participants (one tick inside the public book). Quotes go through `entry::mass_quote` → `enter` like any order (post-only, ephemeral, the 0 / 0 market-maker fee tier, no per-client contract limit — its own limits apply); a series is requoted only when a side moved by max(1 tick, 25 % of the half-spread) or its size changed; near-the-money series ≤ 7 d every 250 ms, the rest every 2 s on a spot move, everything every 5 s and after a snapshot change or an own fill; at most 400 series per pass (nearest the money first) so its shard stays responsive. It pulls an underlying's quotes when the spot is older than 10 s (the relay has multi-second gaps; docs say 3 s), the snapshot is stale, the market is closed, a series reaches its cut-off, or the desk pauses it (`option_mm_pauses`); a 5 s deadman cancels its quotes if the loop stalls. It reads only the public book (`md::Top`) and its own account (a grep test enforces it); its quotes are firm (nothing asks it before a client trades). Its delta counts in the house hedger.
+- **Combo RFQ** (`book::rfq`, docs §5): `{legs[{series, side, ratio}], qty, reduceOnly?}` (1–8 listed vanilla series of one underlying, each once; barrier legs answer `ezymex_quoted`), open 30 s. The market maker answers at once with a firm net bid / ask per combo unit (summed theos ± 60 % of the summed half-spreads, at least `minSpreadTicks`), valid `rfqQuoteTtlSecs`, holding its worst side's reserve (`BookState::rfq_holds`, part of `order_reserve`) until the quote is used or lapses; a lapsed quote is replaced on the next read. Accept `{quoteId, side, limitNet}` runs every leg through `enter` (gates, limits, a reservation at its split price), then `Cmd::RfqAccept` fills every leg in ONE journal entry, or none (`quote_expired`, `price_moved`, `reduce_only`, `self_trade`, …). Leg prices: the theos shifted pro rata (ratio × theo) to sum to the net, on ticks, the remainder on the largest leg, never below 0 (`matching::rfq_split`; when no whole-tick split exists the last tick goes the taker's way). Each account gets ONE outbox item holding all its legs (`Fills`, atomic per account); fills are kind `rfq` with the combo id; the tape gets the legs plus one `combo` print; outright levels and the last trade are not touched (positions and volume are).
 - **Liquidation** (`book::liquidator`, docs §8): stop-out closes what closes at the house (CFDs, house-priced options); when an order-book unit would free the most margin it flags the transaction and the shard hands the account to the liquidator (single instance, one run per account at a time, 5 s cooldown). A run cancels the account's book orders, then repeatedly takes the book unit that frees the most margin: an option is a reduce-only IOC at mark × (1 ∓ `liqBandPct`) (its fills print `liquidation`), a strategy a reduce-only combo RFQ auto-accepted at the MM's quote (legged when that fails); what is left goes to `Cmd::Backstop`: the market maker takes it at mark ∓ max(`liqFeePct` × mark, 1 tick), outside its quoting limits (`backstop`). It stops above the stop-out level or when nothing more closes (a closed market waits for the next tick). Every step is a row of `option_liquidations`.
 - **Bust** (four-eyes, `Cmd::Bust` + `apply_bust`): the fill is traded back on both accounts at its price — premium, fee refunded, rebate taken back, positions — with keys `bust:{fillId}:{login}:prem|fee|rebate`, shown to both clients as a correction; the book's positions move back; `book_fills.busted_at` / `bust` record it. A settled (expired) series cannot be busted.
 - **Enable / novation** (`book::enable`, docs §11; four-eyes, forward-only, every step idempotent): (1) the venue goes on in memory (house opens of listed series stop), (2) pending house option orders are cancelled with a notice, (3) the market maker's account and quoting passes until 90 % coverage (a closed market is a warning), (4) per series a `Seed` (clients' steps and the MM's opposite, Σ = 0), the MM's mirror position (deal reason `novation`) with the premium the house took for those positions (`house:options_premium → MM balance`, key `novate:{tenant}:{kind}:{series}:cash`) and the clients' positions moved to `venue = book` (they keep price, premium and P&L), barriers stay house, (5) the `option_book_venues` row. Run again, it completes a crashed enable without doing anything twice.
@@ -739,7 +739,7 @@ The exchange of docs/OPTIONS-EXCHANGE.md (decision O49): clients trade options *
 
 ### Order book API
 
-Terminal (Kalks Trader session; add these to the terminal BFF allow-list). Errors as everywhere: 422 with an engine code — `book_disabled`, `settling`, `price_out_of_band`, `invalid_price` (tick), `invalid_volume`, `reduce_only`, `too_many_orders`, `insufficient_cash`, `insufficient_margin`, `not_eligible`, `cutoff`, `close_only`, `series_halted`, `market_closed`, `stale_prices`, `no_price`, `amend_pending`, `no_liquidity`; 429 `rate_limited` (20 orders / s per login); 503 `book_unavailable`.
+Terminal (Ezymex Trader session; add these to the terminal BFF allow-list). Errors as everywhere: 422 with an engine code — `book_disabled`, `settling`, `price_out_of_band`, `invalid_price` (tick), `invalid_volume`, `reduce_only`, `too_many_orders`, `insufficient_cash`, `insufficient_margin`, `not_eligible`, `cutoff`, `close_only`, `series_halted`, `market_closed`, `stale_prices`, `no_price`, `amend_pending`, `no_liquidity`; 429 `rate_limited` (20 orders / s per login); 503 `book_unavailable`.
 
 | Route | Body → answer |
 |---|---|
@@ -752,14 +752,14 @@ Terminal (Kalks Trader session; add these to the terminal BFF allow-list). Error
 | `POST /v1/terminal/options/book/preview` | the order body → `{ok, reasons: [{code, message}], reserve, orderReserveAfter, freeMarginAfter, price, tick, step, side, series, underlying, feeTaker, feeMaker, contractSize, currency, mark, estFilled, estAvgPrice, fee}` (estimated from the depth, stopping at the caller's own orders) |
 | `POST /v1/terminal/options/book/deadman` | `{timeoutMs}` (1000–600000, 0 = off; call again as the heartbeat) → `{timeoutMs, expiresAt}`; when it lapses every book order of the account is cancelled |
 | `POST /v1/terminal/options/book/mass-quote` | market-maker programme accounts only: `{quotes: [{series, bid?: {price, qty}, ask?: {price, qty}}]}` → `{books: [{underlying, seq, rested: [ids], replaced, rejected: [{id, series, side, code}]}], refused: [{series, side, code, message}]}`; replaces the account's quotes in every listed series (post-only, ephemeral) |
-| `POST /v1/terminal/options/rfq` | `{legs: [{series, side, ratio}], qty, reduceOnly?}` → `{rfq: {id, expiresAt, legs, qty, status, underlying, reduceOnly, comboId}, quotes: [{quoteId, responder: "kalks-mm", bid, ask, qty, validUntil}], note}` (ids are strings; nets per unit of the underlying, quote currency; 422 `rfq_underlyings`, `kalks_quoted`, `invalid_volume`) |
+| `POST /v1/terminal/options/rfq` | `{legs: [{series, side, ratio}], qty, reduceOnly?}` → `{rfq: {id, expiresAt, legs, qty, status, underlying, reduceOnly, comboId}, quotes: [{quoteId, responder: "ezymex-mm", bid, ask, qty, validUntil}], note}` (ids are strings; nets per unit of the underlying, quote currency; 422 `rfq_underlyings`, `ezymex_quoted`, `invalid_volume`) |
 | `GET /v1/terminal/options/rfq/{id}` | `{rfq, quotes}` — a lapsed quote is replaced by a new firm one while the request is open; `rfq.status` open / filled / cancelled / expired |
 | `POST /v1/terminal/options/rfq/{id}/accept` | `{quoteId, side: buy\|sell, limitNet}` → `{status: "filled", comboId, net, fills: [{fillId, series, side, role: "taker", price, qty, fee, rebate, positionTicket, kind: "rfq", comboId, at}], settling?}`; refused with 422 `quote_expired`, `price_moved`, `rfq_expired`, `reduce_only`, `self_trade`, `series_cancel_only`, … (nothing fills) |
 | `DELETE /v1/terminal/options/rfq/{id}` | `{status, rfq}` |
 | `POST /v1/terminal/options/combos/{comboId}/close` | on a strategy held on the book: one reduce-only combo RFQ to the market maker, accepted at its firm quote (every leg at once or none) → `{status: "closed", comboId, venue: "book", legs: [{ticket, dealId, profit, fillId, series, price, qty}], profit, net, rfq}` (422 `mixed_venue` when legs are on both venues, `no_liquidity` without a quote); a house strategy closes at the house price as before |
 | `POST /v1/terminal/positions/{ticket}/close` | on a book position: `{volume?}` → `{status: filled\|partial, filled, avgPrice, left, orderId, fills}` (reduce-only market IOC; 422 `no_liquidity` when nothing traded) |
 
-Internal market data (`X-Kalks-Internal`; consumed by the options service, `api/book_feed.rs`):
+Internal market data (`X-Ezymex-Internal`; consumed by the options service, `api/book_feed.rs`):
 
 | Route | |
 |---|---|
@@ -823,7 +823,7 @@ apart, and stores **proposed** actions (nothing applies without an approval). Ti
 `A.US`, `BRK.B` → `BRK-B.US`, `00700.HK` → `0700.HK`, `7203.JP` → `7203.TSE`.
 
 **The key:** add `EODHD_API_KEY=<key>` to the repo-root `.env.local` on the server (the file every service reads;
-`chmod 600`), then restart the engine: `sudo systemctl restart kalks-trading`. It is never logged: request errors are
+`chmod 600`), then restart the engine: `sudo systemctl restart ezymex-trading`. It is never logged: request errors are
 reported without their URL. Without it the import stays idle and the Back Office shows "EODHD not configured: add
 EODHD_API_KEY"; manual entry keeps working.
 
@@ -861,7 +861,7 @@ The dealing stream sends `snapshot` (`positions` as DeskPosition[], `orders` as 
 
 | App | Integration |
 |---|---|
-| **Kalks Trader (terminal)** | `/login` posts `{login, password}` through its BFF to `POST /v1/terminal/login` and keeps the token in an HttpOnly cookie. The `sso?token=` route calls `POST /v1/terminal/sso`. It loads `GET /v1/terminal/state`, then opens the stream with a ticket. Trading actions map 1:1 to `/v1/terminal/*`. When `readOnly` is set, the UI hides trade actions; the server rejects them anyway. Prices for charts still come from market-data with the account's `groupName`/spread group. |
+| **Ezymex Trader (terminal)** | `/login` posts `{login, password}` through its BFF to `POST /v1/terminal/login` and keeps the token in an HttpOnly cookie. The `sso?token=` route calls `POST /v1/terminal/sso`. It loads `GET /v1/terminal/state`, then opens the stream with a ticket. Trading actions map 1:1 to `/v1/terminal/*`. When `readOnly` is set, the UI hides trade actions; the server rejects them anyway. Prices for charts still come from market-data with the account's `groupName`/spread group. |
 | **Client Area (CRM)** | Open account wizard: `GET /v1/groups`, `POST /v1/accounts`. Accounts page: `GET /v1/accounts?user_id=`. Portfolio pages: `/history`, `/ledger`. Demo refill, password change (after email OTP), leverage. The Trade button calls `POST /v1/accounts/{login}/sso` and redirects to `trade.<domain>/sso?token=`. Always send the signed-in gateway user id. |
 | **Back Office** | A `RestTradingDesk` implementing `TradingDeskApi` maps each method to the dealing routes above, forwarding the staff headers from the gateway session. Hydrate with `GET /v1/dealing/state` + the dealing stream. The audit page uses `GET /v1/dealing/audit`. Accounts pages use `/v1/admin/accounts*`. The group builder uses `/v1/admin/groups`. Spread markups stay in market-data (`/v1/admin/spreads`); a group's `spreadGroup` is the market-data group code. |
 | **Wallet service (future)** | `POST /v1/ledger/transfers` with its own idempotency keys (for example the wallet ledger entry id). Treat `409 idempotency_conflict` as a bug and `422 insufficient_funds` as a user error. Look up `GET /v1/ledger/transfers/{key}` when the outcome is unknown after a timeout. |
@@ -871,7 +871,7 @@ The dealing stream sends `snapshot` (`positions` as DeskPosition[], `orders` as 
 | Variable | Default | |
 |---|---|---|
 | `TRADING_BIND` | `127.0.0.1:8090` | |
-| `TRADING_DATABASE_URL` | `postgres://postgres@127.0.0.1:5433/kalks_trading` | created and migrated on first start |
+| `TRADING_DATABASE_URL` | `postgres://postgres@127.0.0.1:5433/ezymex_trading` | created and migrated on first start |
 | `TRADING_INTERNAL_TOKEN` | – | required when `TRADING_ENV=production` |
 | `TRADING_SESSION_SECRET` | – | ≥ 32 chars; HMAC key for session / SSO / stream-ticket hashes |
 | `TRADING_ENV` | `development` | `production` requires the internal token |
@@ -883,15 +883,15 @@ The dealing stream sends `snapshot` (`positions` as DeskPosition[], `orders` as 
 | `TRADING_LOG_FORMAT` | `json` | `json` (structured) or `pretty` |
 | `TRADING_ROLLOVER` | `true` | only one engine instance may run rollovers |
 | `WALLET_URL` | `http://127.0.0.1:8095` | wallet service (copy allocations, PAMM invest / redeem, fee payouts) |
-| `WALLET_INTERNAL_TOKEN` | – | sent as `X-Kalks-Internal` to the wallet |
+| `WALLET_INTERNAL_TOKEN` | – | sent as `X-Ezymex-Internal` to the wallet |
 | `IB_URL` / `IB_INTERNAL_TOKEN` | `http://127.0.0.1:8096` / – | IB service (PAMM lots allocated to investors) |
 | `GATEWAY_URL` / `GATEWAY_INTERNAL_TOKEN` | `http://127.0.0.1:8080` / – | client restrictions, presence, options suitability |
-| `OPTIONS_URL` / `OPTIONS_INTERNAL_TOKEN` | – / – | Kalks FX Options service (snapshot, fixings); empty = options off. `deploy.sh` writes both |
+| `OPTIONS_URL` / `OPTIONS_INTERNAL_TOKEN` | – / – | Ezymex FX Options service (snapshot, fixings); empty = options off. `deploy.sh` writes both |
 | `OPTIONS_HEDGER` | `true` | house delta hedger (with `TRADING_ROLLOVER`; needs `OPTIONS_URL`) |
 | `OPTIONS_HEDGE_USER_ID` / `OPTIONS_HEDGE_GROUP` | `0` / `standard` | the house user and the group of the per-tenant hedge accounts |
 | `OPTIONS_HEDGE_CAPITAL` | `1000000` | house capital (USD) booked on a new hedge account |
 | `OPTIONS_HEDGE_LIMIT_USD` | `250000` | house delta (USD notional) per underlying carried before hedging |
-| `OPTIONS_MM_USER_ID` | `0` | the Kalks market-maker user: its accounts are options order book liquidity providers (mass quotes, no-open exemption until cut − 1 min); the `options-mm` group always is |
+| `OPTIONS_MM_USER_ID` | `0` | the Ezymex market-maker user: its accounts are options order book liquidity providers (mass quotes, no-open exemption until cut − 1 min); the `options-mm` group always is |
 | `OPTIONS_MM_CAPITAL` | `25000000` | house capital (USD) booked on a new market-maker account (demo: its demo funding); it must cover the order reserve of a full-chain quote (max(bid premium, ask margin) per series) |
 | `EODHD_API_KEY` | – | corporate-actions import (EODHD All-in-One); empty = import idle, manual entry only |
 | `EODHD_URL` | `https://eodhd.com/api` | |
@@ -900,7 +900,7 @@ The dealing stream sends `snapshot` (`positions` as DeskPosition[], `orders` as 
 
 The config is logged at start with every secret and the DB password redacted.
 
-Production runs `deploy/systemd/kalks-trading.service`, which reads the root `.env.local` and binds to 127.0.0.1:8090. `deploy/deploy.sh` builds and restarts it. On first deploy it generates the missing `TRADING_*` secrets on the server and derives `TRADING_DATABASE_URL` from `GATEWAY_DATABASE_URL`, using the database `kalks_trading`.
+Production runs `deploy/systemd/ezymex-trading.service`, which reads the root `.env.local` and binds to 127.0.0.1:8090. `deploy/deploy.sh` builds and restarts it. On first deploy it generates the missing `TRADING_*` secrets on the server and derives `TRADING_DATABASE_URL` from `GATEWAY_DATABASE_URL`, using the database `ezymex_trading`.
 
 ## Tests
 
@@ -942,7 +942,7 @@ cargo test -p trading
   - `tests/book_e2e.rs` (`--ignored`, the **real** market-data :8081, options service :8104 and PostgreSQL; how to run is in the file): dormant until enabled, a resting sell under the model mid clamps the mark, duplicate `clientOrderId`, the internal WebSocket (`depth`, `top`, `trade`), a market buy filled at the resting price with its position ticket, snapshot / tape / OI = positions, fills and preview, a close through the generic close route on the book, clearing 0, reserve 0, journal replay, ledger and account replay; with `BOOK_E2E_FIXING_WAIT_SECS` it also trades the 0DTE expiry and settles it at the real fixing.
   - `tests/book_mm_e2e.rs` (`--ignored`, the **real** market-data, options service and PostgreSQL): enable / novation through the Back Office handlers (plan counts, four-eyes refusal for the same staff member, a pending house order cancelled, the client's house position moved to the book, the MM mirror position and the house premium, reconcile clean, a second enable changes nothing); the market maker quoting the real chain (coverage, bid < model < ask, ephemeral quotes in the quote journal), a client taking its ask at the quoted price (no last look, MM fee 0, taker fee); a call-spread RFQ answered by the MM (worst-side hold), a limit below the ask refused, the accept filling both legs at once (one `fills` outbox item per account, hold released, legs sum to the net, second accept refused); a liquidation (book first inside the band against a resting offer, printed `liquidation`, the rest to the backstop); a four-eyes bust (both sides reversed with `bust:` keys, positions back, reconcile clean); the monitors, halt / resume and MM pause / resume; reserves 0, clearing 0, ledger, account replay and journal replay.
   - `tests/book_load.rs` (`--ignored`, `--release`, real services): the full-chain MM at 4 Hz plus 200 clients (passive limits inside the MM spread, marketable IOCs, cancels, reduce-only closes) for `LOAD_SECS`; targets actor batch p99 < 5 ms and outbox lag p99 < 50 ms; then everything cancelled, reserves 0, clearing 0, ledger and replays identical.
-- **Integration test** (`tests/replay.rs`). This runs against a throw-away database `kalks_trading_test_<pid>` on the local Postgres; it is skipped when Postgres is unreachable. It runs trades, reversal, pending fills, a partial close, a book split, swaps, a demo refill, credit and manual adjustments (a repeated adjustment key books once) through the shards. It then checks that `replay_all` from the `events` table equals the live state. It also checks the database guarantees: a reused ledger idempotency key is refused, an unbalanced transaction cannot commit, and `events` / `ledger_postings` are append-only.
+- **Integration test** (`tests/replay.rs`). This runs against a throw-away database `ezymex_trading_test_<pid>` on the local Postgres; it is skipped when Postgres is unreachable. It runs trades, reversal, pending fills, a partial close, a book split, swaps, a demo refill, credit and manual adjustments (a repeated adjustment key books once) through the shards. It then checks that `replay_all` from the `events` table equals the live state. It also checks the database guarantees: a reused ledger idempotency key is refused, an unbalanced transaction cannot commit, and `events` / `ledger_postings` are append-only.
 
 ## Known gaps
 
@@ -951,7 +951,7 @@ cargo test -p trading
   - A hedging master's dealer "add volume" is mirrored as a dealer-style add, so that deal carries source `dealer`, not `copy`.
   - Book splits of a master position (A/B transfer of part of a ticket) are not mirrored.
   - A PAMM rollover posts its ledger in the fund's shard, then writes the unit ledger in a second database transaction. If the engine stops between the two, that rollover must be reconciled by hand. The error is logged with the plan.
-  - Master KYC comes from the CRM BFF (`X-Kalks-Kyc`), not from a call to the gateway.
+  - Master KYC comes from the CRM BFF (`X-Ezymex-Kyc`), not from a call to the gateway.
 - **MAM.**
   - Linked accounts must be hedging accounts. A netting account would net the manager's trades with the client's own on the same symbol.
   - Allocation reads each linked account's equity once per block, one account after another, and executes the accounts one after another (like copy trading). The shares therefore come from a snapshot taken a few milliseconds before execution.
@@ -967,7 +967,7 @@ cargo test -p trading
   - Short-option minimum margin floors and event-vol bumps (top risk 1) are not implemented; the scenario grid and the weekend add-on are.
   - Statements (services/reports) still label `option_premium` / `option_settlement` as "Other" / adjustments until they learn the new kinds; contests (growth) treat them as trading, as intended.
 - **Options order book** (milestones after the core; see "For the next milestones" above).
-  - The Kalks market maker (`book/mm.rs`), combo RFQ (`Cmd::RfqQuote` / `RfqAccept` answer `not_implemented`), the liquidator (stop-out skips book positions until it exists), the enable / novation flow and the admin routes (books monitor, halts, MM, liquidations, clearing, fill bust) are not built yet. A venue is switched on by writing `option_book_venues` (`Books::enable_venue`).
+  - The Ezymex market maker (`book/mm.rs`), combo RFQ (`Cmd::RfqQuote` / `RfqAccept` answer `not_implemented`), the liquidator (stop-out skips book positions until it exists), the enable / novation flow and the admin routes (books monitor, halts, MM, liquidations, clearing, fill bust) are not built yet. A venue is switched on by writing `option_book_venues` (`Books::enable_venue`).
   - Settlement still posts book positions against `house:options_settlement` (correct in total: long payouts = short charges); the settlement-venue milestone moves it to the expiry's clearing account and adds the rounding sweep.
   - The no-open exemption for liquidity providers and the 200-orders cap exemption for MM quotes are by group / user (`options-mm`, `OPTIONS_MM_USER_ID`).
   - The reserve of an opening sell includes the weekend margin add-on (the position's margin will).

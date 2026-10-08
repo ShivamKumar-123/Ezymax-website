@@ -3,7 +3,7 @@
 import * as React from "react";
 import { geoEqualEarth, type GeoProjection } from "d3-geo";
 import { cn } from "../lib/cn";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { WORLD_H, WORLD_ROWS, WORLD_SCALE, WORLD_STEP, WORLD_TRANSLATE, WORLD_W } from "./world-dots";
 
 const W = WORLD_W;

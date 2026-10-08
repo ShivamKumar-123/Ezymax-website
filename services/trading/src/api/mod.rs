@@ -1,5 +1,5 @@
 //! HTTP + WebSocket API (axum, 127.0.0.1:8090). Every route except `/health` and the ticket-authenticated
-//! stream sockets requires `X-Kalks-Internal` (the apps' BFFs and internal services call this service; the
+//! stream sockets requires `X-Ezymex-Internal` (the apps' BFFs and internal services call this service; the
 //! browser never does, except for the stream sockets which it opens with a one-time ticket).
 
 pub mod accounts;
@@ -60,7 +60,7 @@ pub struct AppState {
     pub open_lock: Arc<tokio::sync::Mutex<()>>,
     /// Copy trading and PAMM (src/social).
     pub social: Arc<crate::social::Social>,
-    /// Kalks Trader connections reported to the gateway (client presence, controls.rs).
+    /// Ezymex Trader connections reported to the gateway (client presence, controls.rs).
     pub presence: Arc<crate::controls::Presence>,
     /// The gateway's internal API (client restrictions, controls.rs).
     pub gateway: Arc<crate::controls::Gateway>,
@@ -82,12 +82,12 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/terminal/bulk-close", post(terminal::bulk_close))
         .route("/v1/terminal/stream-ticket", post(terminal::stream_ticket))
         .route("/v1/terminal/mam", get(mam::terminal))
-        // Kalks FX Options (api/options.rs; closing one position: /v1/terminal/positions/{ticket}/close)
+        // Ezymex FX Options (api/options.rs; closing one position: /v1/terminal/positions/{ticket}/close)
         .route("/v1/terminal/options/preview", post(options::preview))
         .route("/v1/terminal/options/orders", post(options::place))
         .route("/v1/terminal/options/combos/{combo}/close", post(options::close_combo))
         .route("/v1/terminal/options/settlements", get(options::settlements))
-        // Kalks FX Options order book (api/options_book.rs, api/book_feed.rs; docs/OPTIONS-EXCHANGE.md)
+        // Ezymex FX Options order book (api/options_book.rs, api/book_feed.rs; docs/OPTIONS-EXCHANGE.md)
         .route("/v1/terminal/options/book/orders", post(options_book::place).get(options_book::orders).delete(options_book::cancel_many))
         .route("/v1/terminal/options/book/orders/{id}", patch(options_book::amend).delete(options_book::cancel))
         .route("/v1/terminal/options/book/fills", get(options_book::fills))
@@ -120,7 +120,7 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/admin/options/settlements/{expiry}/rerun", post(options::rerun))
         .route("/v1/admin/options/trades/{ticket}/void", post(options::void))
         .route("/v1/terminal/controls", get(controls::terminal_controls))
-        // client controls: staff sessions in Kalks Trader, restriction refresh (Back Office BFF)
+        // client controls: staff sessions in Ezymex Trader, restriction refresh (Back Office BFF)
         .route("/v1/admin/accounts/{login}/staff-sso", post(controls::staff_sso))
         .route("/v1/internal/restrictions/refresh", post(controls::refresh))
         // Client Area (CRM BFF, with the gateway user id)
@@ -209,7 +209,7 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/admin/groups", get(admin::groups).post(admin::create_group))
         .route("/v1/admin/groups/{code}", put(admin::update_group))
         .route("/v1/admin/ledger/accounts", get(admin::ledger_accounts))
-        // copy trading and PAMM: Client Area (X-Kalks-User-Id) and public reads
+        // copy trading and PAMM: Client Area (X-Ezymex-User-Id) and public reads
         .route("/v1/social/leaderboard", get(social::leaderboard))
         .route("/v1/social/masters/{id}", get(social::master_profile))
         .route("/v1/social/masters/{id}/preview", get(social::master_preview))
@@ -281,7 +281,7 @@ pub fn router(st: AppState) -> Router {
 async fn internal_only(State(st): State<AppState>, req: Request, next: Next) -> Response {
     let expected = st.cfg.internal_token.as_bytes();
     if !expected.is_empty() {
-        let got = req.headers().get("x-kalks-internal").map(|v| v.as_bytes()).unwrap_or_default();
+        let got = req.headers().get("x-ezymex-internal").map(|v| v.as_bytes()).unwrap_or_default();
         if !crate::auth::ct_eq(got, expected) {
             return ApiError::Forbidden("Not allowed.".into()).into_response();
         }
@@ -438,7 +438,7 @@ pub fn header(parts: &Parts, name: &str) -> Option<String> {
     parts.headers.get(name).and_then(|v| v.to_str().ok()).map(str::trim).filter(|v| !v.is_empty()).map(str::to_string)
 }
 
-/// Tenant (`X-Kalks-Tenant` slug, default `kalks`), client ip and user agent as forwarded by the BFF.
+/// Tenant (`X-Ezymex-Tenant` slug, default `ezymex`), client ip and user agent as forwarded by the BFF.
 pub struct Ctx {
     pub tenant: Arc<TenantConfig>,
     pub ip: String,
@@ -449,7 +449,7 @@ pub struct Ctx {
 impl FromRequestParts<AppState> for Ctx {
     type Rejection = ApiError;
     async fn from_request_parts(parts: &mut Parts, st: &AppState) -> Result<Self, Self::Rejection> {
-        let slug = header(parts, "x-kalks-tenant").unwrap_or_else(|| "kalks".into()).to_lowercase();
+        let slug = header(parts, "x-ezymex-tenant").unwrap_or_else(|| "ezymex".into()).to_lowercase();
         // a broker created in the Owner panel is provisioned here on its first request (tenants.rs)
         let tenant = match st.hub.shared.registry.by_slug(&slug) {
             Some(t) => t,
@@ -463,11 +463,11 @@ impl FromRequestParts<AppState> for Ctx {
 }
 
 /// Staff identity forwarded by the Back Office BFF after it verified the staff session with the gateway:
-/// `X-Kalks-Staff-Id`, `X-Kalks-Staff-Name` (percent-encoded UTF-8), `X-Kalks-Staff-Role`.
+/// `X-Ezymex-Staff-Id`, `X-Ezymex-Staff-Name` (percent-encoded UTF-8), `X-Ezymex-Staff-Role`.
 pub struct StaffCtx {
     pub ctx: Ctx,
     pub staff: Staff,
-    /// `X-Kalks-Staff-Perms`: the gateway permission keys the BFF (or the wallet service, for balance
+    /// `X-Ezymex-Staff-Perms`: the gateway permission keys the BFF (or the wallet service, for balance
     /// adjustments) forwards. None when the caller sent no list (older callers): then only the role is checked.
     pub perms: Option<Vec<String>>,
 }
@@ -516,18 +516,18 @@ impl FromRequestParts<AppState> for StaffCtx {
     type Rejection = ApiError;
     async fn from_request_parts(parts: &mut Parts, st: &AppState) -> Result<Self, Self::Rejection> {
         let ctx = Ctx::from_request_parts(parts, st).await?;
-        let id = header(parts, "x-kalks-staff-id").ok_or(ApiError::Unauthorized)?;
-        let role = header(parts, "x-kalks-staff-role").ok_or(ApiError::Unauthorized)?;
-        let name = header(parts, "x-kalks-staff-name").map(|n| percent_decode(&n)).unwrap_or_else(|| format!("Staff {id}"));
+        let id = header(parts, "x-ezymex-staff-id").ok_or(ApiError::Unauthorized)?;
+        let role = header(parts, "x-ezymex-staff-role").ok_or(ApiError::Unauthorized)?;
+        let name = header(parts, "x-ezymex-staff-name").map(|n| percent_decode(&n)).unwrap_or_else(|| format!("Staff {id}"));
         if id.len() > 64 || role.len() > 32 {
             return Err(ApiError::BadRequest("Invalid staff headers".into()));
         }
-        let perms = header(parts, "x-kalks-staff-perms").map(|v| v.split(',').map(|p| p.trim().to_string()).filter(|p| !p.is_empty() && p.len() <= 64).take(200).collect());
+        let perms = header(parts, "x-ezymex-staff-perms").map(|v| v.split(',').map(|p| p.trim().to_string()).filter(|p| !p.is_empty() && p.len() <= 64).take(200).collect());
         Ok(StaffCtx { ctx, staff: Staff { id, name: name.chars().take(120).collect(), role }, perms })
     }
 }
 
-/// The gateway client id, from `X-Kalks-User-Id` or `?user_id=`.
+/// The gateway client id, from `X-Ezymex-User-Id` or `?user_id=`.
 pub fn user_id(parts_user: Option<String>, query_user: Option<i64>) -> ApiResult<i64> {
     query_user.or_else(|| parts_user.and_then(|v| v.parse().ok())).ok_or(ApiError::Validation { field: "user_id", message: "user_id is required".into() })
 }

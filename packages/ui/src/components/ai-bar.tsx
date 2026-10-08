@@ -6,7 +6,7 @@ import { Mic, Sparkles, ArrowUp, X } from "lucide-react";
 import { cn } from "../lib/cn";
 
 /**
- * Docked "Ask Kalks AI" prompt bar with suggestion chips and an ember glow border.
+ * Docked "Ask Ezymex AI" prompt bar with suggestion chips and an ember glow border.
  * Answers are mocked until the Claude API integration is wired.
  */
 export function AiPromptBar({ suggestions, answer }: { suggestions: string[]; answer: (q: string) => string }) {
@@ -67,7 +67,7 @@ export function AiPromptBar({ suggestions, answer }: { suggestions: string[]; an
               <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[radial-gradient(circle_at_30%_30%,#ff9a57,#e8431a)] text-white shadow-[0_0_24px_-4px_rgba(255,90,31,0.8)]">
                 <Sparkles className="size-[18px]" />
               </span>
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ask Kalks AI anything about markets or your accounts…" className="h-10 min-w-0 flex-1 bg-transparent px-1 text-[14px] outline-none placeholder:text-fg-3" />
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ask Ezymex AI anything about markets or your accounts…" className="h-10 min-w-0 flex-1 bg-transparent px-1 text-[14px] outline-none placeholder:text-fg-3" />
               <button type="submit" className={cn("grid size-10 shrink-0 place-items-center rounded-full border border-line transition-colors", q ? "bg-fg text-bg" : "bg-surface-3 text-fg-2")} aria-label={q ? "Send" : "Voice"}>
                 {q ? <ArrowUp className="size-4" /> : <Mic className="size-4" />}
               </button>

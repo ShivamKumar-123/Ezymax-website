@@ -68,11 +68,11 @@ fn code(e: &ApiError) -> String {
 }
 
 fn ctx(bearer: Option<&str>) -> Ctx {
-    Ctx { ip: "203.0.113.30".into(), user_agent: "Mozilla/5.0 (Macintosh) Chrome/131".into(), device: Some("device-controls-aaaa".into()), tenant_slug: "kalks".into(), bearer: bearer.map(str::to_string) }
+    Ctx { ip: "203.0.113.30".into(), user_agent: "Mozilla/5.0 (Macintosh) Chrome/131".into(), device: Some("device-controls-aaaa".into()), tenant_slug: "ezymex".into(), bearer: bearer.map(str::to_string) }
 }
 
 async fn user(db: &TestDb, email: &str) -> i64 {
-    let hash = crypto::hash_password("Kalks@2026").unwrap();
+    let hash = crypto::hash_password("Ezymex@2026").unwrap();
     sqlx::query_scalar(
         "INSERT INTO users (tenant_id, email, password_hash, first_name, last_name, phone_dial, phone, country, date_of_birth,
                             referral_code, terms_accepted_at, email_verified_at)
@@ -92,7 +92,7 @@ async fn staff(db: &TestDb, role: &str) -> (i64, String) {
         "INSERT INTO staff (tenant_id, email, password_hash, name, role, role_id)
          VALUES (1, $1, 'x', $2, $3, (SELECT id FROM roles WHERE tenant_id = 1 AND key = $3)) RETURNING id",
     )
-    .bind(format!("{role}-{}@kalks.test", crypto::random_token(4).to_lowercase()))
+    .bind(format!("{role}-{}@ezymex.test", crypto::random_token(4).to_lowercase()))
     .bind(format!("Staff {role}"))
     .bind(role)
     .fetch_one(&db.st.pool)
@@ -111,7 +111,7 @@ fn lift_body(reason: &str) -> Json<LiftReq> {
 }
 
 async fn login(db: &TestDb, email: &str) -> Result<Json<Value>, ApiError> {
-    crate::client_auth::login(State(db.st.clone()), ctx(None), Ok(Json(crate::client_auth::LoginReq { email: email.into(), password: "Kalks@2026".into() }))).await
+    crate::client_auth::login(State(db.st.clone()), ctx(None), Ok(Json(crate::client_auth::LoginReq { email: email.into(), password: "Ezymex@2026".into() }))).await
 }
 
 #[tokio::test]
@@ -260,7 +260,7 @@ async fn presence_follows_the_client_not_viewers_or_staff() {
     let last: Option<DateTime<Utc>> = sqlx::query_scalar("SELECT last_active_at FROM users WHERE id = $1").bind(idle).fetch_one(&db.st.pool).await.unwrap();
     assert_eq!(last, None);
 
-    // Kalks Trader connections reported by the engine
+    // Ezymex Trader connections reported by the engine
     let report = |items: Value, ended: Value| Json(serde_json::from_value::<TraderReport>(json!({ "items": items, "ended": ended })).unwrap());
     let Json(r) = trader_report(st(), Ok(report(json!([{ "conn": "e1-7", "user_id": trader_only, "login": 10000042, "ip": "198.51.100.7", "country": "IN", "user_agent": "Chrome", "since": Utc::now() }]), json!([])))).await.unwrap();
     assert_eq!(r["live"], 1);
@@ -273,7 +273,7 @@ async fn presence_follows_the_client_not_viewers_or_staff() {
     let c = p["items"].as_array().unwrap().iter().find(|x| x["id"] == uid).unwrap().clone();
     assert_eq!(c["apps"], json!(["client_area"]));
 
-    // closing Kalks Trader: Away after 2 minutes, Offline after 15
+    // closing Ezymex Trader: Away after 2 minutes, Offline after 15
     let _ = trader_report(st(), Ok(report(json!([]), json!(["e1-7"])))).await.unwrap();
     let Json(d) = controls(st(), ctx(Some(&support)), Path(trader_only)).await.unwrap();
     assert_eq!(d["presence"]["state"], "online");

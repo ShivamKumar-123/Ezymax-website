@@ -1,12 +1,12 @@
 "use client";
 
 // Client Area segmented control (selected option filled with the brand colour), underline text tabs and the
-// wizard stepper, in the pastel dashboard language. Same props as the @kalks/ui versions.
+// wizard stepper, in the pastel dashboard language. Same props as the @ezymex/ui versions.
 
 import * as React from "react";
 import { motion } from "motion/react";
 import { Check } from "lucide-react";
-import { cn } from "@kalks/ui";
+import { cn } from "@ezymex/ui";
 
 /** Segmented pill control: a soft white track, the selected option filled with the accent colour. */
 export function Segmented<T extends string>({

@@ -26,12 +26,12 @@ import {
   type ChipTone,
   type Column,
   cn,
-} from "@kalks/ui";
-import { PROMO_CODES, PROMO_DAILY, PROMO_KPIS, PROMO_REDEMPTIONS, PROMO_TYPE_META, type PromoCode, type PromoStatus, type PromoType } from "@kalks/mock/admin-promo-codes";
+} from "@ezymex/ui";
+import { PROMO_CODES, PROMO_DAILY, PROMO_KPIS, PROMO_REDEMPTIONS, PROMO_TYPE_META, type PromoCode, type PromoStatus, type PromoType } from "@ezymex/mock/admin-promo-codes";
 import { MiniStat, daysFromToday, fmtDate, fmtDateTime, fmtK } from "@/components/marketing/kit";
 import { PromoCreateDialog } from "@/components/marketing/promo-create-dialog";
 import { StackedBars } from "@/components/marketing/stacked-bars";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LivePromoCodes } from "@/components/marketing/live/promos";
 
 const TYPE_COLOR: Record<PromoType, string> = { "deposit-bonus": "#ff5a1f", "fee-waiver": "#e9b949", "prop-retry": "#22c55e" };
@@ -173,7 +173,7 @@ function DemoPromoCodesPage() {
               c.status === "active"
                 ? { label: "Pause code", icon: <Pause />, onSelect: () => (setStatus(c.id, "paused"), toast.success(`${c.code} paused`, { description: "New redemptions are blocked; existing benefits stay." })) }
                 : { label: "Activate code", icon: <Play />, onSelect: () => (setStatus(c.id, "active"), toast.success(`${c.code} is live`)) },
-              { label: "Copy share link", icon: <Copy />, onSelect: () => (navigator.clipboard?.writeText(`https://kalks.com/r/${c.code}`).catch(() => {}), toast.success("Link copied", { description: `kalks.com/r/${c.code}` })) },
+              { label: "Copy share link", icon: <Copy />, onSelect: () => (navigator.clipboard?.writeText(`https://ezymex.com/r/${c.code}`).catch(() => {}), toast.success("Link copied", { description: `ezymex.com/r/${c.code}` })) },
               { label: "Export redemptions", icon: <Download />, onSelect: () => toast.success("Export started", { description: `${c.code.toLowerCase()}-redemptions.csv · ${c.uses.toLocaleString("en-US")} rows` }) },
               "sep",
               { label: "Expire now", icon: <TimerOff />, danger: true, onSelect: () => (setStatus(c.id, "expired"), toast.success(`${c.code} expired`, { description: "Logged in the admin audit trail." })) },

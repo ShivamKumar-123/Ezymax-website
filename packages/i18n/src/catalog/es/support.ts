@@ -1,10 +1,10 @@
 import type { NsMessages } from "../../core";
 
-// Área de clientes, soporte: chat en vivo, botón flotante, página de soporte. Se mantienen "Kalks" y "Kalks AI".
+// Área de clientes, soporte: chat en vivo, botón flotante, página de soporte. Se mantienen "Ezymex" y "Ezymex AI".
 const support: NsMessages<"support"> = {
   // Página de soporte
   "page.title": "Soporte",
-  "page.subtitle": "Chatee con Kalks AI para obtener respuestas al instante. Pida hablar con una persona en cualquier momento y nuestro equipo continuará con la conversación completa.",
+  "page.subtitle": "Chatee con Ezymex AI para obtener respuestas al instante. Pida hablar con una persona en cualquier momento y nuestro equipo continuará con la conversación completa.",
   "email.prefer": "¿Prefiere el correo electrónico?",
   // <email> e <id> envuelven el correo electrónico y el ID de cliente
   "email.writeFrom": "Escriba desde <email>{email}</email> e incluya su ID de cliente <id>{id}</id>.",
@@ -46,7 +46,7 @@ const support: NsMessages<"support"> = {
   "quick.withdrawal": "¿Cuándo llegará mi retiro?",
   "quick.stopOut": "¿Qué es un stop out?",
   "header.supportTeam": "Equipo de soporte",
-  "header.agentSub": "Atención al cliente · Kalks",
+  "header.agentSub": "Atención al cliente · Ezymex",
   "header.connecting": "Conectándole con un agente…",
   "header.replySoon": "Nuestro equipo le responderá aquí en breve",
   "header.helpCentre": "Respuestas del centro de ayuda · una persona puede unirse en cualquier momento",

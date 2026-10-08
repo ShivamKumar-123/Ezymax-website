@@ -5,8 +5,8 @@ import Link from "next/link";
 import { ChevronDown, FlaskConical, Plus, Save, Server, ShieldAlert, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, Field, Icon3D, Input, Menu, Money, Sparkline, StatusChip, SymbolAvatar, Toggle, cn } from "@/components/kit";
-import { ACCOUNTS } from "@kalks/mock";
-import { LIVE_SIGNALS, MY_STRATEGIES, TEMPLATES, type StrategyRules } from "@kalks/mock/algo";
+import { ACCOUNTS } from "@ezymex/mock";
+import { LIVE_SIGNALS, MY_STRATEGIES, TEMPLATES, type StrategyRules } from "@ezymex/mock/algo";
 
 /* ------------------------------------------------------------------ */
 /* Templates + my strategies (left column)                             */
@@ -164,7 +164,7 @@ export function DeployCard({ rules, initialRunning, initialLogin }: { rules: Str
                   </span>
                 </span>
               ),
-              hint: a.login === login ? <Check className="size-3.5 text-ember" /> : a.server.replace("Kalks-", ""),
+              hint: a.login === login ? <Check className="size-3.5 text-ember" /> : a.server.replace("Ezymex-", ""),
               onSelect: () => {
                 setLogin(a.login);
                 if (running) toast(`Strategy moved to #${a.login}`, { description: `${a.server} · restarts on next bar` });

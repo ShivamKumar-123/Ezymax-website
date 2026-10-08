@@ -1,7 +1,7 @@
 /**
  * POST /api/mobile/trade/ai-trader  { prompt, symbol?, timeframe? }   (docs/MOBILE-API.md)
  *
- * The mobile app's AI Trader: Kalks Trader's /api/ai-trader (apps/terminal/app/api/ai-trader/route.ts) with the app's
+ * The mobile app's AI Trader: Ezymex Trader's /api/ai-trader (apps/terminal/app/api/ai-trader/route.ts) with the app's
  * auth. Converts a plain-language trading instruction into a StrategySpec with Claude, validated server-side
  * (lib/ai-trader/schema.ts, a copy of the terminal's). Without ANTHROPIC_API_KEY it answers { configured: false } and
  * the app falls back to its local parser. The key is read from the server environment only.
@@ -10,7 +10,7 @@
  */
 import Anthropic from "@anthropic-ai/sdk";
 import type { NextRequest } from "next/server";
-import { INSTRUMENTS } from "@kalks/mock";
+import { INSTRUMENTS } from "@ezymex/mock";
 import { mobileAiGate } from "@/lib/mobile-ai";
 import { PARSE_RESULT_JSON_SCHEMA, TIMEFRAMES, validateSpec, type ParseResult } from "@/lib/ai-trader/schema";
 
@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 
 const MODEL = "claude-opus-5-5";
 
-const SYSTEM = `You convert a trader's plain-language instructions into a strategy for the Kalks Trader terminal's rule engine.
+const SYSTEM = `You convert a trader's plain-language instructions into a strategy for the Ezymex Trader terminal's rule engine.
 The strategy is shown to the trader as a card that they review, edit and explicitly activate; it trades real or demo money, so never invent aggressive settings.
 
 Engine semantics:

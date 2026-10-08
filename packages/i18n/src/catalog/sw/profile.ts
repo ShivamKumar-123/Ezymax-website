@@ -4,7 +4,7 @@ const profile: NsMessages<"profile"> = {
   // Profile page (shared)
   title: "Wasifu",
   subtitle: "Maelezo yako binafsi na mapendeleo ya akaunti.",
-  liveSubtitle: "Maelezo yako binafsi kama yalivyosajiliwa na Kalks.",
+  liveSubtitle: "Maelezo yako binafsi kama yalivyosajiliwa na Ezymex.",
   memberSince: "Mwanachama tangu {date}",
   notVerified: "Haijathibitishwa",
   "photo.upload": "Pakia picha mpya",
@@ -59,7 +59,7 @@ const profile: NsMessages<"profile"> = {
   "data.exportRequested": "Ombi la kuhamisha data limetumwa",
   "data.exportRequestedHint": "Utapokea kiungo cha kupakua kwa barua pepe ndani ya saa 72.",
   "data.export": "Hamisha data yangu",
-  "closure.title": "Funga akaunti yako ya Kalks",
+  "closure.title": "Funga akaunti yako ya Ezymex",
   "closure.description": "Akaunti zote za biashara lazima ziwe na salio sifuri na zisiwe na nafasi zilizo wazi.",
   "closure.request": "Omba kufunga akaunti",
   "closure.submitted": "Ombi la kufunga limewasilishwa",

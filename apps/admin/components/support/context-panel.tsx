@@ -4,9 +4,9 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowUpRight, Ban, KeyRound, LifeBuoy, Siren, UserRound, Wallet, ArrowDownToLine, Ticket, Smartphone, Languages } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Chip, CopyButton, Flag, Money, StatusChip, Tooltip, cn } from "@kalks/ui";
-import { REASON_CODES } from "@kalks/mock/admin-clients";
-import type { SupConversation } from "@kalks/mock/admin-growth-support";
+import { Avatar, Chip, CopyButton, Flag, Money, StatusChip, Tooltip, cn } from "@ezymex/ui";
+import { REASON_CODES } from "@ezymex/mock/admin-clients";
+import type { SupConversation } from "@ezymex/mock/admin-growth-support";
 import { KycChip, ReasonDialog } from "@/components/command/kit";
 import { AiSpark } from "./shared";
 

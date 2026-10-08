@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader charts: toolbar, drawing tools, legend, trade lines, context menu, one-click panel.
+// Ezymex Trader charts: toolbar, drawing tools, legend, trade lines, context menu, one-click panel.
 const chart: NsMessages<"chart"> = {
   // Chart tabs
   "tab.visibleInGrid": "그리드에 표시",
@@ -46,7 +46,7 @@ const chart: NsMessages<"chart"> = {
   "tool.text": "텍스트",
   "tool.ruler": "자",
   "tool.coming": "{tool} 기능 준비 중",
-  "tool.comingText": "다음 Kalks Trader 빌드에서 제공됩니다.",
+  "tool.comingText": "다음 Ezymex Trader 빌드에서 제공됩니다.",
   "tool.deleteAll": "모든 개체 삭제",
   "tool.noObjects": "이 차트에 개체가 없습니다",
   "tool.deleted": { other: "개체 {count}개 삭제됨" },

@@ -3,9 +3,9 @@
 import * as React from "react";
 import { ArrowDownToLine, ArrowUpFromLine, Calculator, Moon, RefreshCcw, RotateCcw, Save, Timer, Repeat } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, Donut, Money, PageHeader, Reveal, Segmented, Toggle, cn, formatMoney, CHART_COLORS } from "@kalks/ui";
-import { INSTRUMENTS, ASSET_CLASS_LABEL, getInstrument, type AssetClass } from "@kalks/mock";
-import { ADMIN_GROUPS, COMMISSIONS, COMMISSION_CLASSES, FEE_RULES, type ChargeOn, type CommissionCell, type FeeRule } from "@kalks/mock/admin-config";
+import { Button, Card, CardHeader, Chip, Donut, Money, PageHeader, Reveal, Segmented, Toggle, cn, formatMoney, CHART_COLORS } from "@ezymex/ui";
+import { INSTRUMENTS, ASSET_CLASS_LABEL, getInstrument, type AssetClass } from "@ezymex/mock";
+import { ADMIN_GROUPS, COMMISSIONS, COMMISSION_CLASSES, FEE_RULES, type ChargeOn, type CommissionCell, type FeeRule } from "@ezymex/mock/admin-config";
 import { MiniField, NumInput, Select, auditToast } from "@/components/config/kit";
 
 type Plans = typeof COMMISSIONS;

@@ -5,7 +5,7 @@ import { motion } from "motion/react";
 import { Check, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, Dialog, DialogClose, Icon3D, KeyValue, cn } from "@/components/kit";
-import { LOYALTY, LOYALTY_TIERS, REDEEM_CATALOGUE } from "@kalks/mock/rewards";
+import { LOYALTY, LOYALTY_TIERS, REDEEM_CATALOGUE } from "@ezymex/mock/rewards";
 
 const TIER_STYLE: Record<string, string> = {
   bronze: "bg-[radial-gradient(circle_at_30%_25%,#ffd9b8,#d98b4a_45%,#8a4b1f)]",

@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Ban, Eye, EyeOff, HandCoins, MoreHorizontal, OctagonAlert, PlayCircle, RefreshCw, ShieldCheck, Snowflake, Square, Users, Wallet } from "lucide-react";
-import { Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, DialogClose, EmptyState, EquityChart, IconButton, KpiCard, ListRow, Menu, PageHeader, Reveal, Segmented, Sparkline, cn, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, DialogClose, EmptyState, EquityChart, IconButton, KpiCard, ListRow, Menu, PageHeader, Reveal, Segmented, Sparkline, cn, type Column } from "@ezymex/ui";
 import { MiniStat, Section } from "@/components/config/kit";
 import { TableSkeleton, ago, day, useApi, useNow, when } from "@/components/live/kit";
 import { AuditNotice, Checkbox, ErrorBanner } from "@/components/trading-desk/kit";

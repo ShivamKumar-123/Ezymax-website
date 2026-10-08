@@ -51,7 +51,7 @@ String latinDigits(String s) {
   return changed ? out.toString() : s;
 }
 
-/// Trading and money figures: en-US grouping, Latin digits, the same output as @kalks/ui (formatMoney, Money).
+/// Trading and money figures: en-US grouping, Latin digits, the same output as @ezymex/ui (formatMoney, Money).
 abstract final class Fmt {
   static final Map<String, NumberFormat> _nf = {};
 

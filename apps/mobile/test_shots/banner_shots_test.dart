@@ -1,9 +1,9 @@
 // The iOS-style banner over the Dashboard: an engine fill and an error toast, light and dark. Run:
-//   flutter test test_shots/banner_shots_test.dart --update-goldens --dart-define=KALKS_PREVIEW=true
+//   flutter test test_shots/banner_shots_test.dart --update-goldens --dart-define=EZYMEX_PREVIEW=true
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/app.dart';
-import 'package:kalks/core/notifications/notifications.dart';
-import 'package:kalks/router/router.dart';
+import 'package:ezymex/app.dart';
+import 'package:ezymex/core/notifications/notifications.dart';
+import 'package:ezymex/router/router.dart';
 
 import '../test/helpers/test_app.dart';
 import 'shots.dart';
@@ -16,7 +16,7 @@ Future<void> _shot(WidgetTester tester, String name, String theme, void Function
   // the drop (420 ms) and the icon's SVG
   await tester.pump(const Duration(milliseconds: 500));
   await settle(tester, frames: 2);
-  await expectLater(find.byType(KalksApp), matchesGoldenFile(Uri.file('$shotsDir/$name.png')));
+  await expectLater(find.byType(EzymexApp), matchesGoldenFile(Uri.file('$shotsDir/$name.png')));
   await unmount(tester);
 }
 

@@ -1,11 +1,11 @@
 import type { NsMessages } from "../../core";
 
 // Client Area support: live chat, launcher, support page.
-// Keep "Kalks" and "Kalks AI" as they are. {placeholders} are filled in by the app.
+// Keep "Ezymex" and "Ezymex AI" as they are. {placeholders} are filled in by the app.
 const support: NsMessages<"support"> = {
   // Support page
   "page.title": "Hỗ trợ",
-  "page.subtitle": "Trò chuyện với Kalks AI để được giải đáp ngay. Bạn có thể yêu cầu gặp nhân viên bất cứ lúc nào, đội ngũ của chúng tôi sẽ tiếp nhận cùng toàn bộ cuộc trò chuyện.",
+  "page.subtitle": "Trò chuyện với Ezymex AI để được giải đáp ngay. Bạn có thể yêu cầu gặp nhân viên bất cứ lúc nào, đội ngũ của chúng tôi sẽ tiếp nhận cùng toàn bộ cuộc trò chuyện.",
   "email.prefer": "Muốn liên hệ qua email?",
   // <email> and <id> wrap the client's email address and client ID
   "email.writeFrom": "Gửi từ <email>{email}</email> và ghi kèm mã khách hàng <id>{id}</id>.",
@@ -47,7 +47,7 @@ const support: NsMessages<"support"> = {
   "quick.withdrawal": "Khi nào tôi nhận được tiền rút?",
   "quick.stopOut": "Stop-out là gì?",
   "header.supportTeam": "Đội ngũ hỗ trợ",
-  "header.agentSub": "Hỗ trợ khách hàng · Kalks",
+  "header.agentSub": "Hỗ trợ khách hàng · Ezymex",
   "header.connecting": "Đang kết nối bạn với nhân viên…",
   "header.replySoon": "Đội ngũ của chúng tôi sẽ sớm trả lời tại đây",
   "header.helpCentre": "Giải đáp từ trung tâm trợ giúp · có thể gặp nhân viên bất cứ lúc nào",

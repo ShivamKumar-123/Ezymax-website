@@ -30,7 +30,7 @@ quiz:
   - question: "Why should part of the historical data be kept aside and not used while developing the strategy?"
     options:
       - "To make the backtest run faster"
-      - "Because Kalks limits the number of backtests"
+      - "Because Ezymex limits the number of backtests"
       - "Because old data is always wrong"
       - "So there is an untouched out-of-sample period to check whether the strategy works on data it was not fitted to"
     answer: 3
@@ -45,7 +45,7 @@ quiz:
     explanation: "Companies that failed or were removed from the index are missing, so the test only includes survivors. This tends to overstate the results of long strategies."
 ---
 
-A backtest is an experiment: apply fixed rules to historical data and record what would have happened. Done well, it tells you whether an idea is worth more work. Done carelessly, it produces beautiful equity curves that collapse the moment real money is involved. In Kalks, backtests are run from the Client Area under **Developer**, then **Backtests**, using a strategy saved in the strategy builder. This chapter covers the method that makes the result worth reading.
+A backtest is an experiment: apply fixed rules to historical data and record what would have happened. Done well, it tells you whether an idea is worth more work. Done carelessly, it produces beautiful equity curves that collapse the moment real money is involved. In Ezymex, backtests are run from the Client Area under **Developer**, then **Backtests**, using a strategy saved in the strategy builder. This chapter covers the method that makes the result worth reading.
 
 ## Start with a hypothesis
 

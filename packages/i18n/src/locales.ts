@@ -30,8 +30,8 @@ export type LocaleInfo = (typeof LOCALES)[number];
 export type Locale = LocaleInfo["code"];
 
 export const DEFAULT_LOCALE: Locale = "en";
-/** Cookie that carries the chosen language (shared by the Client Area and Kalks Trader). */
-export const LOCALE_COOKIE = "kalks_locale";
+/** Cookie that carries the chosen language (shared by the Client Area and Ezymex Trader). */
+export const LOCALE_COOKIE = "ezymex_locale";
 /** Right-to-left scripts. `he` is listed so a future Hebrew catalog flips direction without code changes. */
 const RTL = new Set<string>(["ar", "ur", "fa", "he"]);
 

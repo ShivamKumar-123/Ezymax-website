@@ -1,6 +1,6 @@
-# Kalks: integrations checklist (founder guide)
+# Ezymex: integrations checklist (founder guide)
 
-This is every external service Kalks connects to, what the Super Admin has to paste in, where to get it, and whether you need it on launch day.
+This is every external service Ezymex connects to, what the Super Admin has to paste in, where to get it, and whether you need it on launch day.
 
 It mirrors **Back Office → Settings → Integrations** (`/settings/integrations`), where each item has a card with the same fields, a **Test connection** button and a docs link. The page data lives in `packages/mock/src/admin-platform-settings.ts` (`SET_INTEGRATIONS`), so keep both in sync.
 
@@ -37,7 +37,7 @@ It mirrors **Back Office → Settings → Integrations** (`/settings/integration
 
 **At launch: 9 of 13 configured, all 6 required integrations ready.**
 
-Charts are not a third-party integration: the Kalks Trader terminal, Client Area and Back Office use Kalks' own in-house chart, fed by the Kalks market-data service (`services/market-data`). No chart licence is needed.
+Charts are not a third-party integration: the Ezymex Trader terminal, Client Area and Back Office use Ezymex' own in-house chart, fed by the Ezymex market-data service (`services/market-data`). No chart licence is needed.
 
 ---
 
@@ -49,7 +49,7 @@ Real-time quotes for all asset classes. The feed drives the pricing engine, the 
 | API key (secret) | `iw_live_…`. Needs a commercial redistribution licence. |
 | WebSocket URL | `wss://stream.infoways.io/v2/quotes` |
 | REST URL | `https://api.infoways.io/v2` |
-| Symbols mapping | Managed in **Brokers → Global symbols** (Kalks symbol ↔ feed symbol). |
+| Symbols mapping | Managed in **Brokers → Global symbols** (Ezymex symbol ↔ feed symbol). |
 | Backup feed provider | None / Twelve Data / Polygon.io / Finnhub |
 | Backup feed API key (secret) | From the backup provider's dashboard |
 
@@ -66,10 +66,10 @@ Choose **SMTP** or **API** mode.
 | Username / password (secret) | SES SMTP credentials |
 | STARTTLS | On |
 | *or* API provider + API key (secret) | Amazon SES / SendGrid / Postmark |
-| From name / From email | `Kalks Markets` / `no-reply@kalks.com` |
+| From name / From email | `Ezymex Markets` / `no-reply@ezymex.com` |
 
 **Where to get it:**
-1. In the AWS console, go to SES and verify the domain `kalks.com`.
+1. In the AWS console, go to SES and verify the domain `ezymex.com`.
 2. Go to SMTP settings and create SMTP credentials.
 3. In your DNS, add the SPF, DKIM and DMARC records. The card shows whether each one passes.
 
@@ -81,8 +81,8 @@ Sends the codes for sign-up, withdrawals and the 2FA fallback. WhatsApp goes fir
 | Provider | Twilio / MSG91 / Gupshup |
 | Account SID | `AC…` |
 | Auth token (secret) | Provider console |
-| Sender ID | `KALKS` (register it in countries that require it, e.g. India DLT) |
-| WhatsApp template | `kalks_otp_v2`, approved in Meta Business Manager |
+| Sender ID | `EZYMEX` (register it in countries that require it, e.g. India DLT) |
+| WhatsApp template | `ezymex_otp_v2`, approved in Meta Business Manager |
 | WhatsApp number | The business number linked to the provider |
 
 **Where to get it:**
@@ -98,8 +98,8 @@ Runs ID document, liveness and proof-of-address checks. The results arrive in **
 | App token (secret) | `prd:…` |
 | Secret key (secret) | Paired with the app token |
 | Webhook secret (secret) | From the webhook you create in Sumsub |
-| Level name | `kalks-basic-kyc-level` |
-| Webhook URL (read-only) | Paste `https://api.kalks.com/webhooks/sumsub` into Sumsub |
+| Level name | `ezymex-basic-kyc-level` |
+| Webhook URL (read-only) | Paste `https://api.ezymex.com/webhooks/sumsub` into Sumsub |
 
 **Where to get it:**
 - Sumsub dashboard → Dev space → App tokens.
@@ -136,7 +136,7 @@ Stores KYC documents, statements, invoices, avatars and report exports. Encrypti
 | Field | Example / notes |
 |---|---|
 | Endpoint | `https://s3.eu-central-1.amazonaws.com` or your MinIO URL |
-| Bucket | `kalks-prod-private` (private, versioning on) |
+| Bucket | `ezymex-prod-private` (private, versioning on) |
 | Access key | IAM user limited to this bucket |
 | Secret key (secret) | Paired with the access key |
 
@@ -183,7 +183,7 @@ Browser/PWA notifications for price alerts, margin calls and deposit confirmatio
 |---|---|
 | VAPID public key | Generated on the card ("Generate key pair") |
 | VAPID private key (secret) | Generated together with the public key |
-| Subject | `mailto:ops@kalks.com` |
+| Subject | `mailto:ops@ezymex.com` |
 
 **Where to get it:** no external account is needed. Generate the keys on the card or with `npx web-push generate-vapid-keys`.
 
@@ -195,7 +195,7 @@ Browser/PWA notifications for price alerts, margin calls and deposit confirmatio
 | Client ID | `…apps.googleusercontent.com` → `GOOGLE_CLIENT_ID` in `apps/crm/.env.production.local` |
 | Client secret (secret) | `GOCSPX-…` → `GOOGLE_CLIENT_SECRET` in `apps/crm/.env.production.local` |
 | Show the button | `NEXT_PUBLIC_GOOGLE_LOGIN=1` in the same file (read at build time, so rebuild after changing it) |
-| Authorised redirect URI | `https://app.kalkstrade.com/api/auth/google/callback` (add `http://localhost:3000/api/auth/google/callback` too if you want to test locally) |
+| Authorised redirect URI | `https://app.ezymex.com/api/auth/google/callback` (add `http://localhost:3000/api/auth/google/callback` too if you want to test locally) |
 | Authorised JavaScript origin | not needed (the flow is server-side) |
 
 **Where to get it:** Google Cloud console → APIs & Services → Credentials → OAuth client ID (Web application). On the OAuth consent screen, use the scopes `openid`, `email` and `profile` only, add the app name, logo, support email, and the privacy policy and terms links, then publish the app ("In production"). While it is in "Testing", only the listed test users can sign in.
@@ -210,7 +210,7 @@ Sends sign-up, KYC and FTD conversions with UTM parameters. This feeds **Marketi
 | Conversions API token (secret) | Meta Events Manager |
 
 ## 13. Liquidity provider: FIX 4.4 · Post-launch (disabled)
-**Kalks runs 100% B-book at launch.** When an LP or prime-of-prime is onboarded:
+**Ezymex runs 100% B-book at launch.** When an LP or prime-of-prime is onboarded:
 1. Enable the session on the card.
 2. Fill in the fields below.
 3. Set the A-book rules in **Trading → Book & routing**.
@@ -218,13 +218,13 @@ Sends sign-up, KYC and FTD conversions with UTM parameters. This feeds **Marketi
 | Field | Example / notes |
 |---|---|
 | FIX host / port | From the LP's session sheet |
-| SenderCompID | e.g. `KALKS_UAT`, then `KALKS_PROD` |
+| SenderCompID | e.g. `EZYMEX_UAT`, then `EZYMEX_PROD` |
 | TargetCompID | e.g. `LPPRIME` |
 
 ---
 
 ## Go-live checklist (also shown on the page)
-- [x] Domains & SSL: `app.` / `trade.` / `admin.` / `api.kalks.com` verified (Settings → General)
+- [x] Domains & SSL: `app.` / `trade.` / `admin.` / `api.ezymex.com` verified (Settings → General)
 - [x] Market data streaming: 28 symbols
 - [x] Email sender authenticated: SPF, DKIM, DMARC pass
 - [x] OTP delivery tested: WhatsApp and SMS fallback
@@ -234,7 +234,7 @@ Sends sign-up, KYC and FTD conversions with UTM parameters. This feeds **Marketi
 - [x] Legal documents published (Content → Legal)
 - [ ] Fix the news RSS feed error
 - [ ] Generate web push VAPID keys
-- [ ] `status.kalks.com` DNS record
+- [ ] `status.ezymex.com` DNS record
 
 ## Other settings that are not third-party integrations but must be filled in
 - **General & branding:**

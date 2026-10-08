@@ -1,6 +1,6 @@
-import { Card } from "@kalks/ui/primitives";
-import { Illustration } from "@kalks/ui/illustration";
-import { getT } from "@kalks/i18n/server";
+import { Card } from "@ezymex/ui/primitives";
+import { Illustration } from "@ezymex/ui/illustration";
+import { getT } from "@ezymex/i18n/server";
 import { VerifyShell } from "@/components/prop-live/verify-shell";
 
 export default async function CertificateNotFound() {

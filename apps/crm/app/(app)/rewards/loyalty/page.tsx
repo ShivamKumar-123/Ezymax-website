@@ -21,9 +21,9 @@ import {
   formatDateTime,
   type Column,
 } from "@/components/kit";
-import { EARN_RULES, LOYALTY, LOYALTY_TIERS, POINTS_HISTORY, type PointsTx } from "@kalks/mock/rewards";
+import { EARN_RULES, LOYALTY, LOYALTY_TIERS, POINTS_HISTORY, type PointsTx } from "@ezymex/mock/rewards";
 import { RedeemCatalogue, TierOrb, TierTrack } from "@/components/rewards/loyalty";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveLoyaltyPage } from "@/components/growth/loyalty";
 
 function useCountUp(target: number, ms = 900) {
@@ -216,7 +216,7 @@ function DemoLoyaltyPage() {
               rowKey={(r) => r.id}
               search={(r) => `${r.description} ${r.account ?? ""}`}
               searchPlaceholder="Search activity…"
-              exportName="kalks-points-history"
+              exportName="ezymex-points-history"
               toolbar={<Segmented size="xs" value={filter} onChange={setFilter} options={[{ value: "all", label: "All" }, { value: "earned", label: "Earned" }, { value: "redeemed", label: "Redeemed" }, { value: "bonus", label: "Bonus" }]} />}
             />
           </div>

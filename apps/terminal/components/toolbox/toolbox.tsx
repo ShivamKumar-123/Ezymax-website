@@ -6,7 +6,7 @@
 import * as React from "react";
 import dynamic from "next/dynamic";
 import { ArrowUp, BarChart3, ChevronDown, ChevronsDown, History, Layers, Maximize2, Minimize2, PanelBottom, PieChart, Rows2 } from "lucide-react";
-import { cn } from "@kalks/ui";
+import { cn } from "@ezymex/ui";
 import { useTerminal, type ToolboxTab } from "@/lib/store";
 import { PanelTabs } from "@/components/ui/panel";
 import { CountBadge, IconButton, Segmented } from "@/components/ui/kit";
@@ -20,12 +20,12 @@ import { LiveCalendarTab, LiveNewsTab } from "./news-live";
 import { ShareControls } from "@/components/share/share-dialogs";
 import { GuestNotice } from "@/components/shell/guest";
 import { AccountHealth } from "@/components/shell/account-health";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { useTradeMode } from "@/lib/options/mode";
 import { useOptionBook } from "@/lib/options/book";
 import { useBookFlag } from "@/lib/options/book-flag";
 
-// Kalks FX Options tabs: their own chunk (loaded when the tab first shows)
+// Ezymex FX Options tabs: their own chunk (loaded when the tab first shows)
 const OptionsPositionsTab = dynamic(() => import("@/components/options/positions-tab").then((m) => m.OptionsPositionsTab), { ssr: false });
 const SettlementsTab = dynamic(() => import("@/components/options/settlements-tab").then((m) => m.SettlementsTab), { ssr: false });
 const OrdersTab = dynamic(() => import("@/components/options/orders-tab").then((m) => m.OrdersTab), { ssr: false });

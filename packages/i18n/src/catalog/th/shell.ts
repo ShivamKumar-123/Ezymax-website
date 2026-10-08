@@ -21,7 +21,7 @@ const shell: NsMessages<"shell"> = {
   security: "ความปลอดภัย",
   verification: "การยืนยันตัวตน",
   preferences: "การตั้งค่า",
-  kalksTrader: "Kalks Trader",
+  ezymexTrader: "Ezymex Trader",
   deposit: "ฝากเงิน",
   // Client Area navigation
   "nav.dashboard": "แดชบอร์ด",
@@ -92,7 +92,7 @@ const shell: NsMessages<"shell"> = {
   "gate.title": "ส่วนนี้ยังไม่เปิดใช้งานสำหรับบัญชีของคุณ",
   "gate.text": "ส่วนนี้ยังไม่เปิดใช้งานสำหรับบัญชีของคุณ หากต้องการเข้าถึง โปรดติดต่อ {email}",
   "gate.backToDashboard": "กลับไปที่แดชบอร์ด",
-  "gate.launchTrader": "เปิด Kalks Trader",
+  "gate.launchTrader": "เปิด Ezymex Trader",
   // market sessions clock
   "sessions.title": "ช่วงเวลาตลาด",
   "sessions.openLeft": "เปิด · เหลือ {h} ชม. {m} นาที",

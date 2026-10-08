@@ -5,7 +5,7 @@
 import * as React from "react";
 import { Megaphone } from "lucide-react";
 import { Chip, DataTable, cn, type Column } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { fmtPrice, serverTime } from "@/components/trading/api";
 import { delayText, pips1, useSocial, type Announcement, type ExecutionReport, type ExecutionRow, type ExecutionSummary } from "./api";
 import { BlockSkeleton, InfoBox, Tile } from "./bits";

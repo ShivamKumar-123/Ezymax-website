@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { cn } from "@kalks/ui";
+import { cn } from "@ezymex/ui";
 import { compactMoney, niceDomain } from "./stacked-bars";
 
 export interface LineSeries {

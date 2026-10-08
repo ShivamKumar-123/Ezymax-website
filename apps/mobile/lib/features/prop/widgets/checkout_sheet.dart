@@ -312,7 +312,7 @@ class _CheckoutSheetState extends ConsumerState<CheckoutSheet> {
               if (creds != null) ...[
                 CredentialField(label: t('prop.cred.login'), value: '${creds.login}'),
                 const SizedBox(height: 12),
-                CredentialField(label: t('prop.cred.server'), value: 'Kalks-Live', mono: false),
+                CredentialField(label: t('prop.cred.server'), value: 'Ezymex-Live', mono: false),
                 const SizedBox(height: 12),
                 CredentialField(label: t('prop.cred.password'), value: creds.password, secret: true),
                 const SizedBox(height: 12),

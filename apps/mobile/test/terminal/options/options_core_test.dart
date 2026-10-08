@@ -4,14 +4,14 @@
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/features/terminal/core/models.dart' show LivePos;
-import 'package:kalks/features/terminal/options/core/data.dart';
-import 'package:kalks/features/terminal/options/core/math.dart';
-import 'package:kalks/features/terminal/options/core/models.dart';
-import 'package:kalks/features/terminal/options/core/pricer.dart';
-import 'package:kalks/features/terminal/options/core/store.dart';
-import 'package:kalks/features/terminal/options/ui/book_ticket.dart';
-import 'package:kalks/features/terminal/options/ui/simple.dart';
+import 'package:ezymex/features/terminal/core/models.dart' show LivePos;
+import 'package:ezymex/features/terminal/options/core/data.dart';
+import 'package:ezymex/features/terminal/options/core/math.dart';
+import 'package:ezymex/features/terminal/options/core/models.dart';
+import 'package:ezymex/features/terminal/options/core/pricer.dart';
+import 'package:ezymex/features/terminal/options/core/store.dart';
+import 'package:ezymex/features/terminal/options/ui/book_ticket.dart';
+import 'package:ezymex/features/terminal/options/ui/simple.dart';
 
 Map<String, dynamic> quote(
   String code, {

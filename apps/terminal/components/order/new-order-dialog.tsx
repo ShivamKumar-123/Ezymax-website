@@ -2,17 +2,17 @@
 
 import * as React from "react";
 import { Activity, ShoppingCart } from "lucide-react";
-import { getInstrument } from "@kalks/mock";
-import { PriceText, SymbolAvatar, cn, useQuote } from "@kalks/ui";
+import { getInstrument } from "@ezymex/mock";
+import { PriceText, SymbolAvatar, cn, useQuote } from "@ezymex/ui";
 import { useTerminal } from "@/lib/store";
 import { getRange, getTicks, useMarketClock } from "@/lib/market";
 import { fmtPrice } from "@/lib/trading";
 import { TDialog } from "@/components/ui/primitives";
 import { IconButton } from "@/components/ui/kit";
 import { OrderTicket } from "./order-ticket";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 
-const TICKS_KEY = "kalks.order.ticks";
+const TICKS_KEY = "ezymex.order.ticks";
 
 /**
  * The order form as a centred popup (docs/TERMINAL-DESIGN.md §2.2): Buy / Sell on the chart (one-click off), New

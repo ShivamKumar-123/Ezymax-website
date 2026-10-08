@@ -1,4 +1,4 @@
-// Kalks FX Options pricing maths (port of packages/mock/src/options.ts: the generalized Black-Scholes-Merton pricer with
+// Ezymex FX Options pricing maths (port of packages/mock/src/options.ts: the generalized Black-Scholes-Merton pricer with
 // cost of carry, the smile from ATM + 25-delta RR / BF, the business-time vol clock, series codes, New York cuts and the
 // scenario margin). The terminal uses it for the strategy builder's "today" curve, the client-side preview estimate and
 // the analytics; the preview server prices its sample chains with it. Pure: no Flutter.
@@ -43,7 +43,7 @@ class OptionSpec {
 
 const _fx = 'forex';
 
-/// Every underlying of Kalks FX Options (services/options/src/seed.rs); NZDUSD is seeded off ("soon").
+/// Every underlying of Ezymex FX Options (services/options/src/seed.rs); NZDUSD is seeded off ("soon").
 const List<OptionSpec> optionUnderlyings = [
   OptionSpec(
     symbol: 'EURUSD',

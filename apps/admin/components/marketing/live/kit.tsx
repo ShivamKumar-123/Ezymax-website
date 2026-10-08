@@ -7,7 +7,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { ShieldCheck } from "lucide-react";
-import { Button, Card, Chip, Dialog, DialogClose, Toggle, cn, formatNumber, type ChipTone } from "@kalks/ui";
+import { Button, Card, Chip, Dialog, DialogClose, Toggle, cn, formatNumber, type ChipTone } from "@ezymex/ui";
 import { ErrorState, useApi, type ApiErr } from "@/components/live/kit";
 import { ErrorBanner } from "@/components/trading-desk/kit";
 import { M, errText, type Perms, type WriteResult } from "./api";

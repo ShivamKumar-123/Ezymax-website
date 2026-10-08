@@ -1,6 +1,6 @@
 //! Realtime WebSocket stream for the Client Area chat / bell and the Back Office inbox / bell.
 //!
-//! 1. The BFF calls `POST /v1/stream/ticket` with the client (`X-Kalks-User-Id`) or staff identity headers
+//! 1. The BFF calls `POST /v1/stream/ticket` with the client (`X-Ezymex-User-Id`) or staff identity headers
 //!    and gets a one-time ticket (30 s).
 //! 2. The browser opens `wss://<app host>/support/stream?ticket=…` (Caddy -> `GET /v1/stream`).
 //!
@@ -39,7 +39,7 @@ pub enum Caller {
 impl<S: Send + Sync> FromRequestParts<S> for Caller {
     type Rejection = crate::error::ApiError;
     async fn from_request_parts(parts: &mut Parts, s: &S) -> Result<Self, Self::Rejection> {
-        if parts.headers.contains_key("x-kalks-staff-id") {
+        if parts.headers.contains_key("x-ezymex-staff-id") {
             Ok(Caller::Staff(Staff::from_request_parts(parts, s).await?))
         } else {
             Ok(Caller::User(Client::from_request_parts(parts, s).await?))

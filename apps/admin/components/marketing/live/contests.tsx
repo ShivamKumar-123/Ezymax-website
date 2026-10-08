@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { AlertTriangle, CalendarRange, Flag as FlagIcon, Pencil, Plus, RefreshCw, Trash2, Trophy, Users, Wallet } from "lucide-react";
-import { Button, Card, CardHeader, Chip, Dialog, KpiCard, PageHeader, Progress, Reveal, Segmented, cn } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, Dialog, KpiCard, PageHeader, Progress, Reveal, Segmented, cn } from "@ezymex/ui";
 import { TableSkeleton, ago, countryName, useApi, useNow, when } from "@/components/live/kit";
 import { M, mkSend, type Contest, type ContestDetail, type ContestFlag, type ContestInput, type ContestInstrument, type Overview, type Prize, type Scoring, type Standing } from "./api";
 import {
@@ -43,7 +43,7 @@ const FLAG_KIND: Record<string, { label: string; desc: string }> = {
 };
 const isOptions = (c: { instrument?: ContestInstrument }) => c.instrument === "options";
 
-/** OPTIONS badge next to LIVE / DEMO (Kalks FX Options contests, O36). */
+/** OPTIONS badge next to LIVE / DEMO (Ezymex FX Options contests, O36). */
 function InstrumentChip({ c }: { c: { instrument?: ContestInstrument } }) {
   return isOptions(c) ? (
     <Chip size="sm" tone="info">
@@ -327,7 +327,7 @@ function ContestDrawer({ id, onClose, perms, onChanged }: { id: string | null; o
       onOpenChange={(o) => !o && onClose()}
       width={1120}
       title={c ? c.name : "Contest"}
-      description={c ? `${c.kind === "live" ? "Live accounts" : "Demo accounts"}${isOptions(c) ? " · Kalks FX Options" : ""} · ${SCORING[c.scoring] ?? c.scoring} · ${when(c.startsAt)} – ${when(c.endsAt)}` : undefined}
+      description={c ? `${c.kind === "live" ? "Live accounts" : "Demo accounts"}${isOptions(c) ? " · Ezymex FX Options" : ""} · ${SCORING[c.scoring] ?? c.scoring} · ${when(c.startsAt)} – ${when(c.endsAt)}` : undefined}
     >
       {error && !data ? (
         <MkError error={error} onRetry={reload} />
@@ -533,7 +533,7 @@ function ContestDrawer({ id, onClose, perms, onChanged }: { id: string | null; o
                 <div>
                   <div className="k-label mb-2">Options scoring</div>
                   <ul className="k-row space-y-1.5 px-3 py-2.5 text-[12px] text-fg-2" data-testid="contest-options-rules">
-                    <li>Only Kalks FX Options trades count: closes, expiry settlements and knock-outs, on realised P&L (no floating part). CFD trades on the account don't count.</li>
+                    <li>Only Ezymex FX Options trades count: closes, expiry settlements and knock-outs, on realised P&L (no floating part). CFD trades on the account don't count.</li>
                     <li>Volume is in contracts{c.minPremium ? `; a trade with an opening premium under ${usd(c.minPremium)} adds no volume and no trade count (its P&L still counts)` : ""}.</li>
                     <li>Self-trades between a client's own accounts (one fill on both, a hedge in the same series, or a cross at the same moment) are left out and flagged.</li>
                     <li>Joining needs the options intro and an account that can trade options (no copy, PAMM, MAM or prop). Options never earn loyalty points, cashback or bonus release.</li>
@@ -740,7 +740,7 @@ function ContestWizard({ open, onOpenChange, onSaved, initial }: { open: boolean
             onChange={pickInstrument}
             options={[
               { value: "cfd", label: "CFD (lots)" },
-              { value: "options", label: "Options (Kalks FX Options, contracts)" },
+              { value: "options", label: "Options (Ezymex FX Options, contracts)" },
             ]}
             hint={options ? "Only option trades count, on realised P&L" : "CFD trades only; options never count"}
             className="col-span-2"
@@ -781,7 +781,7 @@ function ContestWizard({ open, onOpenChange, onSaved, initial }: { open: boolean
         </div>
         {options && (
           <div className="rounded-[12px] border border-info/25 bg-info-soft px-4 py-3 text-[12.5px] leading-relaxed text-fg-2" data-testid="contest-options-note">
-            Open only to clients who can trade Kalks FX Options (the options intro accepted) on accounts outside copy, PAMM, MAM and prop groups. Self-trades between a client&apos;s own accounts are left out of the score and flagged for review. Options still earn no loyalty points, cashback or bonus release.
+            Open only to clients who can trade Ezymex FX Options (the options intro accepted) on accounts outside copy, PAMM, MAM and prop groups. Self-trades between a client&apos;s own accounts are left out of the score and flagged for review. Options still earn no loyalty points, cashback or bonus release.
           </div>
         )}
       </fieldset>

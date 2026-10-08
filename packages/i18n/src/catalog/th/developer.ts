@@ -233,8 +233,8 @@ const developer: NsMessages<"developer"> = {
   "assetClass.crypto": "คริปโต",
   "assetClass.stocks": "หุ้น",
 
-  // Code editor (Kalks strategy language)
-  "code.language": "ภาษากลยุทธ์ Kalks",
+  // Code editor (Ezymex strategy language)
+  "code.language": "ภาษากลยุทธ์ Ezymex",
   "code.checking": "กำลังตรวจสอบ…",
   "code.errors": { other: "ข้อผิดพลาด {count} รายการ" },
   "code.compiles": "คอมไพล์ได้",
@@ -281,7 +281,7 @@ const developer: NsMessages<"developer"> = {
   // Kill switch
   "kill.title": "Kill Switch",
   "kill.subtitle": "หยุดทุกกลยุทธ์ Webhook และคำสั่ง API ในบัญชีของคุณ",
-  "kill.globalPaused": "ฝ่ายบริหารความเสี่ยงของ Kalks ได้หยุดการเทรดอัตโนมัติทั้งแพลตฟอร์มชั่วคราว",
+  "kill.globalPaused": "ฝ่ายบริหารความเสี่ยงของ Ezymex ได้หยุดการเทรดอัตโนมัติทั้งแพลตฟอร์มชั่วคราว",
   "kill.onSince": "เปิดตั้งแต่ {at}",
   "kill.release": "ปลด Kill Switch",
   "kill.stopAll": "หยุดระบบอัตโนมัติทั้งหมด",
@@ -363,7 +363,7 @@ const developer: NsMessages<"developer"> = {
   "docs.bearer": "Bearer (ง่ายที่สุด)",
   "docs.hmac": "ลายเซ็น HMAC (แนะนำสำหรับบอท)",
   // <code> wraps header names and paths; keep them untranslated
-  "docs.signature": "ลายเซ็น = hex(HMAC-SHA256(secret, timestamp + METHOD + path พร้อม query + body)) ส่งพร้อม <code>X-Kalks-Key</code>, <code>X-Kalks-Timestamp</code> (unix ms, ±30 วินาที) และ <code>X-Kalks-Signature</code> path ที่ลงนามอยู่ในรูป <code>/public/v1/…</code> แต่ละลายเซ็นใช้ได้เพียงครั้งเดียว",
+  "docs.signature": "ลายเซ็น = hex(HMAC-SHA256(secret, timestamp + METHOD + path พร้อม query + body)) ส่งพร้อม <code>X-Ezymex-Key</code>, <code>X-Ezymex-Timestamp</code> (unix ms, ±30 วินาที) และ <code>X-Ezymex-Signature</code> path ที่ลงนามอยู่ในรูป <code>/public/v1/…</code> แต่ละลายเซ็นใช้ได้เพียงครั้งเดียว",
   // "api", clientOrderId and duplicate are API values; keep them
   "docs.endpointsSub": "รับและส่งข้อมูลเป็น JSON ทุกคำสั่งมี source “api” หากส่ง clientOrderId ซ้ำจะได้สถานะ duplicate",
   "docs.errorsSub": "ข้อผิดพลาดอยู่ในรูป {shape}",
@@ -473,9 +473,9 @@ const developer: NsMessages<"developer"> = {
 
   // Strategy marketplace
   "market.title": "มาร์เก็ตเพลสกลยุทธ์",
-  "market.subtitle": "กลยุทธ์ที่มีประวัติผลงานยืนยันแล้วจากบัญชี Kalks คัดลอกไปใช้ในบัญชีของคุณ หรือเผยแพร่กลยุทธ์ของคุณเองและรับรายได้จากการสมัครสมาชิก",
-  "market.houseChip": "กลยุทธ์ของโบรกเกอร์ · ดำเนินการโดย Kalks",
-  "market.houseNote": "กลยุทธ์ของโบรกเกอร์ที่ดำเนินการโดย Kalks: บัญชีจริงของโบรกเกอร์ที่ใช้กลยุทธ์นี้ ประวัติผลงานมาจากการเทรดจริงของบัญชีนี้นับตั้งแต่เริ่มต้นเท่านั้น ไม่มีการจำลองหรือเติมข้อมูลย้อนหลัง",
+  "market.subtitle": "กลยุทธ์ที่มีประวัติผลงานยืนยันแล้วจากบัญชี Ezymex คัดลอกไปใช้ในบัญชีของคุณ หรือเผยแพร่กลยุทธ์ของคุณเองและรับรายได้จากการสมัครสมาชิก",
+  "market.houseChip": "กลยุทธ์ของโบรกเกอร์ · ดำเนินการโดย Ezymex",
+  "market.houseNote": "กลยุทธ์ของโบรกเกอร์ที่ดำเนินการโดย Ezymex: บัญชีจริงของโบรกเกอร์ที่ใช้กลยุทธ์นี้ ประวัติผลงานมาจากการเทรดจริงของบัญชีนี้นับตั้งแต่เริ่มต้นเท่านั้น ไม่มีการจำลองหรือเติมข้อมูลย้อนหลัง",
   // Date range, e.g. "2025-01-01 to 2025-12-31"
   "market.range": "{from} ถึง {to}",
   "market.backtestSimulated": "แบ็กเทสต์ · จำลอง",
@@ -502,7 +502,7 @@ const developer: NsMessages<"developer"> = {
   "market.subscriptionStatus": "การสมัคร{status}",
   "market.reviewSaved": "บันทึกรีวิวแล้ว",
   "market.reviewFailed": "ไม่สามารถบันทึกรีวิวได้",
-  "market.trackNote": "ประวัติผลงานจากการดีพลอยของผู้สร้างเองบน Kalks ตั้งแต่ {since}: {days} วัน สุทธิ {net} คำนวณจากดีลที่ปิดแล้วในระบบเทรด ไม่ได้ป้อนโดยผู้สร้าง",
+  "market.trackNote": "ประวัติผลงานจากการดีพลอยของผู้สร้างเองบน Ezymex ตั้งแต่ {since}: {days} วัน สุทธิ {net} คำนวณจากดีลที่ปิดแล้วในระบบเทรด ไม่ได้ป้อนโดยผู้สร้าง",
   "market.riskSettings": "การตั้งค่าความเสี่ยง",
   "market.riskLine": "ขนาด {size} · Stop {stop} · เป้าหมาย {target}",
   "market.riskPct": "ความเสี่ยง {pct}%",
@@ -520,7 +520,7 @@ const developer: NsMessages<"developer"> = {
   "market.cloneRules": "โคลนกฎ",
   "market.subscribePaid": "สมัคร · {price} USDT / เดือน",
   "market.subscribeFree": "สมัครฟรี",
-  "market.paidNote": "ชำระจากวอลเล็ต Kalks ของคุณ (USDT) ต่ออายุทุก 30 วัน ยกเลิกได้ทุกเมื่อ",
+  "market.paidNote": "ชำระจากวอลเล็ต Ezymex ของคุณ (USDT) ต่ออายุทุก 30 วัน ยกเลิกได้ทุกเมื่อ",
   "market.reviews": "รีวิว ({n})",
   "market.stars": { other: "{count} ดาว" },
   "market.reviewPlaceholder": "กลยุทธ์นี้เทรดให้คุณเป็นอย่างไร?",
@@ -552,7 +552,7 @@ const developer: NsMessages<"developer"> = {
   "market.popular": "ยอดนิยม",
   "market.emptyTitle": "ยังไม่มีกลยุทธ์ในรายการ",
   "market.emptyText": "เป็นคนแรก: ดีพลอยกลยุทธ์บนบัญชีทดลอง แล้วเผยแพร่พร้อมประวัติผลงานที่ยืนยันแล้ว",
-  "market.disclaimer": "ผลการดำเนินงานในอดีตไม่ได้รับประกันผลลัพธ์ในอนาคต ประวัติผลงานมาจากบัญชีจริงหรือบัญชีทดลองบน Kalks และมีป้ายกำกับตามนั้น ค่าธรรมเนียมแพลตฟอร์มสำหรับการสมัครแบบมีค่าใช้จ่าย: {pct}%",
+  "market.disclaimer": "ผลการดำเนินงานในอดีตไม่ได้รับประกันผลลัพธ์ในอนาคต ประวัติผลงานมาจากบัญชีจริงหรือบัญชีทดลองบน Ezymex และมีป้ายกำกับตามนั้น ค่าธรรมเนียมแพลตฟอร์มสำหรับการสมัครแบบมีค่าใช้จ่าย: {pct}%",
   "market.mode": "โหมด",
   "market.renews": "ต่ออายุ",
   "market.copyOn": "คัดลอกบน #{login}",

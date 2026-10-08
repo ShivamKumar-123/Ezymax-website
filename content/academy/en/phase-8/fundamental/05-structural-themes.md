@@ -65,7 +65,7 @@ For traders this has several implications: goods inflation may no longer provide
 
 Decarbonisation requires enormous investment in power grids, renewables, batteries and electric vehicles. That raises demand for metals such as copper, lithium, nickel and silver, while under-investment in fossil fuel supply can leave oil and gas markets tighter and more prone to spikes. Some economists call the resulting price pressure "greenflation".
 
-Silver is a useful example for Kalks traders: XAGUSD has both a precious metal component, linked to gold and real yields, and an industrial component that includes solar panel demand. Its larger swings compared with XAUUSD partly reflect this dual nature.
+Silver is a useful example for Ezymex traders: XAGUSD has both a precious metal component, linked to gold and real yields, and an industrial component that includes solar panel demand. Its larger swings compared with XAUUSD partly reflect this dual nature.
 
 ## Technology investment and index concentration
 

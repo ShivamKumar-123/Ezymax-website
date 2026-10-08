@@ -1,19 +1,19 @@
 import type { NsMessages } from "../../core";
 
-// Kalks FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Kalks Trader in options mode.
-// Kalks, Kalks Trader and Kalks FX Options stay in English.
+// Ezymex FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Ezymex Trader in options mode.
+// Ezymex, Ezymex Trader and Ezymex FX Options stay in English.
 const options: NsMessages<"options"> = {
   // Navigation entry
   "nav.title": "اختیار معامله",
 
   // Page header
-  "page.title": "Kalks FX Options",
-  "page.subtitle": "اختیار معامله روی فارکس، طلا، نقره و نفت را مستقیماً داخل Kalks Trader بخرید یا بفروشید.",
+  "page.title": "Ezymex FX Options",
+  "page.subtitle": "اختیار معامله روی فارکس، طلا، نقره و نفت را مستقیماً داخل Ezymex Trader بخرید یا بفروشید.",
   "page.statusReady": "آماده معامله",
   "page.learnCourse": "دوره اختیار معامله",
 
   // Hero card
-  "hero.eyebrow": "جدید در Kalks Trader",
+  "hero.eyebrow": "جدید در Ezymex Trader",
   "hero.title": "اختیار معامله روی 13 بازار، به ساده‌ترین شکل",
   "hero.text": "اختیار معامله اروپایی روی جفت‌ارزهای اصلی و فرعی فارکس، طلا، نقره و نفت خام. سررسید روزانه، هفتگی یا ماهانه را انتخاب کنید. همه اختیارها به‌صورت نقدی و به دلار آمریکا تسویه می‌شوند، بنابراین هرگز چیزی را به‌صورت فیزیکی تحویل نمی‌گیرید.",
   "hero.feature.underlyings.title": "13 دارایی پایه",
@@ -57,16 +57,16 @@ const options: NsMessages<"options"> = {
   "terms.inShort": "به‌طور خلاصه",
   "terms.point.buy": "خرید اختیار: حداکثر زیان شما همان مبلغی است که می‌پردازید.",
   "terms.point.sell": "فروش اختیار ممکن است بیش از مبلغ دریافتی زیان داشته باشد و به مارجین نیاز دارد.",
-  "terms.point.prices": "قیمت‌ها در دفتر سفارش Kalks و توسط Kalks تعیین می‌شوند.",
+  "terms.point.prices": "قیمت‌ها در دفتر سفارش Ezymex و توسط Ezymex تعیین می‌شوند.",
   "terms.point.settle": "اختیارها در سررسید به‌صورت نقدی تسویه می‌شوند.",
   "terms.englishNote": "متن کامل زیر، به زبان انگلیسی، نسخه الزام‌آور است.",
   "terms.acceptedOn": "شما نسخه {version} را در تاریخ {date} پذیرفتید.",
   "terms.close": "بستن",
   "terms.unavailable": "شرایط اختیار معامله در حال حاضر در دسترس نیست. لطفاً بعداً دوباره تلاش کنید.",
 
-  // Kalks Trader button
-  "trade.ready": "همه‌چیز آماده است. اختیار معامله در Kalks Trader و روی همان حسابی باز می‌شود که CFDهای شما روی آن است.",
-  "trade.cta": "معامله اختیار در Kalks Trader",
+  // Ezymex Trader button
+  "trade.ready": "همه‌چیز آماده است. اختیار معامله در Ezymex Trader و روی همان حسابی باز می‌شود که CFDهای شما روی آن است.",
+  "trade.cta": "معامله اختیار در Ezymex Trader",
   "trade.chooseAccount": "یک حساب انتخاب کنید",
   "trade.noAccount": "برای معامله اختیار به یک حساب معاملاتی فعال نیاز دارید.",
   "trade.openAccount": "افتتاح حساب",
@@ -75,7 +75,7 @@ const options: NsMessages<"options"> = {
   "trade.demo": "دمو",
 
   // Key facts card
-  "facts.title": "Kalks FX Options چگونه کار می‌کنند",
+  "facts.title": "Ezymex FX Options چگونه کار می‌کنند",
   "facts.style": "سبک اروپایی: در سررسید به‌طور خودکار اعمال می‌شوند، هرگز پیش از آن.",
   "facts.premium": "پرمیوم به USD و برای هر قرارداد؛ خریداران هنگام باز کردن پوزیشن آن را کامل می‌پردازند.",
   "facts.contracts": "هر قرارداد: 10,000 واحد از یک ارز، 1 اونس طلا، 50 اونس نقره یا 10 بشکه نفت.",

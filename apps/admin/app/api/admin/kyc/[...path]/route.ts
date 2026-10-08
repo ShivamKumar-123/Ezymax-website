@@ -54,8 +54,8 @@ async function streamFile(req: NextRequest, token: string, id: string) {
   try {
     res = await fetch(`${GATEWAY_URL}/v1/admin/kyc/documents/${id}/file`, {
       headers: {
-        "x-kalks-internal": INTERNAL_TOKEN,
-        "x-kalks-tenant": "kalks",
+        "x-ezymex-internal": INTERNAL_TOKEN,
+        "x-ezymex-tenant": "ezymex",
         authorization: `Bearer ${token}`,
         "x-forwarded-for": clientIp(req.headers),
         "user-agent": req.headers.get("user-agent") ?? "",

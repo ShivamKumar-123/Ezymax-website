@@ -25,6 +25,6 @@ export async function GET(req: NextRequest, { params }: Ctx) {
 
   const headers = new Headers(img.headers);
   headers.set("cache-control", "public, max-age=300");
-  if (req.nextUrl.searchParams.get("download")) headers.set("content-disposition", `attachment; filename="kalks-share-${s.code}.png"`);
+  if (req.nextUrl.searchParams.get("download")) headers.set("content-disposition", `attachment; filename="ezymex-share-${s.code}.png"`);
   return new Response(img.body, { status: 200, headers });
 }

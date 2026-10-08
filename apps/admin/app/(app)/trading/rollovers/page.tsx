@@ -3,10 +3,10 @@
 import * as React from "react";
 import { ArrowRight, CalendarClock, CheckCircle2, History, RefreshCw, Settings2 } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, KpiCard, PageHeader, Reveal, Segmented, SymbolAvatar, cn, formatMoney, formatNumber } from "@kalks/ui";
-import { getInstrument } from "@kalks/mock";
-import { ADMIN_NOW } from "@kalks/mock/admin-clients";
-import { ROLLOVERS, type Rollover } from "@kalks/mock/admin-trading";
+import { Button, Card, CardHeader, Chip, KpiCard, PageHeader, Reveal, Segmented, SymbolAvatar, cn, formatMoney, formatNumber } from "@ezymex/ui";
+import { getInstrument } from "@ezymex/mock";
+import { ADMIN_NOW } from "@ezymex/mock/admin-clients";
+import { ROLLOVERS, type Rollover } from "@ezymex/mock/admin-trading";
 import { ReasonDialog } from "@/components/command/kit";
 
 const DAY = 86_400_000;

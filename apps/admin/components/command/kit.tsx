@@ -5,8 +5,8 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import { toast } from "sonner";
 import { ShieldCheck, Timer } from "lucide-react";
-import { Avatar, Button, Chip, Dialog, DialogClose, Flag, cn, formatMoney, type ChipTone } from "@kalks/ui";
-import { KYC_LABEL, type AdminClient, type KycStatus } from "@kalks/mock/admin-clients";
+import { Avatar, Button, Chip, Dialog, DialogClose, Flag, cn, formatMoney, type ChipTone } from "@ezymex/ui";
+import { KYC_LABEL, type AdminClient, type KycStatus } from "@ezymex/mock/admin-clients";
 
 /* ------------------------------------------------------------------ */
 /* Reason-code dialog — every admin action is audited                  */

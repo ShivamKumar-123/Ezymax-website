@@ -35,8 +35,8 @@ fn money(v: &Value) -> String {
 
 pub async fn tenants(st: &AppState) -> Vec<String> {
     let mut t: Vec<String> = sqlx::query_scalar("SELECT DISTINCT tenant FROM conversations UNION SELECT DISTINCT tenant FROM notification_prefs").fetch_all(&st.pool).await.unwrap_or_default();
-    if !t.iter().any(|x| x == "kalks") {
-        t.push("kalks".into());
+    if !t.iter().any(|x| x == "ezymex") {
+        t.push("ezymex".into());
     }
     t
 }
@@ -155,7 +155,7 @@ pub async fn kyc(st: &AppState) -> anyhow::Result<usize> {
             last = (changed.to_string(), id);
         }
         let Some(id) = u["id"].as_i64() else { continue };
-        let tenant = u["tenant"].as_str().unwrap_or("kalks");
+        let tenant = u["tenant"].as_str().unwrap_or("ezymex");
         let day = u["changed_at"].as_str().unwrap_or("").get(..10).unwrap_or("").to_string();
         let mut nn = match u["kyc_status"].as_str() {
             Some("verified") => NewNotification::user(id, "kyc.verified", "Your identity is verified", "You can now withdraw from your wallet. Your name and date of birth are locked.").severity("success").link("/profile/verification").dedupe("kyc:verified".to_string()),
@@ -185,7 +185,7 @@ pub async fn wallet(st: &AppState) -> anyhow::Result<usize> {
     let mut n = 0;
     for (tenant, user) in st.hub.recent_users(std::time::Duration::from_secs(24 * 3600)) {
         let url = format!("{}/v1/wallets/{user}/notifications?limit=20", st.cfg.wallet_url);
-        let r = st.http.get(url).header("x-kalks-internal", &st.cfg.wallet_token).header("x-kalks-tenant", &tenant).header("x-kalks-service", "support").send().await;
+        let r = st.http.get(url).header("x-ezymex-internal", &st.cfg.wallet_token).header("x-ezymex-tenant", &tenant).header("x-ezymex-service", "support").send().await;
         let Ok(r) = r else { continue };
         if !r.status().is_success() {
             continue;

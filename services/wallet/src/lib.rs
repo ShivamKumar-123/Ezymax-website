@@ -1,4 +1,4 @@
-//! Kalks wallet service (see README.md): central client wallet on a double-entry ledger, on-chain USDT
+//! Ezymex wallet service (see README.md): central client wallet on a double-entry ledger, on-chain USDT
 //! deposits and withdrawals (BNB Chain BEP20, TRON TRC20), wallet <-> trading account transfers.
 
 pub mod api;

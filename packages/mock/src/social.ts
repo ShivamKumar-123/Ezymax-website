@@ -59,7 +59,7 @@ export const MASTERS: Master[] = [
   },
   {
     id: "nguyen-thu-ha", person: P(3), strategy: "Saigon FX Momentum",
-    description: "Systematic intraday momentum on majors, running on a VPS via the Kalks API. Trades the Asian-to-London handover with volatility-scaled sizing and a daily loss cap of 1.5%.",
+    description: "Systematic intraday momentum on majors, running on a VPS via the Ezymex API. Trades the Asian-to-London handover with volatility-scaled sizing and a daily loss cap of 1.5%.",
     tags: ["Forex", "Algo", "Intraday"], program: "copy", verified: true, featured: true,
     returnAll: 96.2, return1y: 41.8, return3m: 9.6, return1m: 2.8, maxDD: 8.4, currentDD: 0.9, risk: 3, followers: 1932, aum: 1_284_000, ageDays: 812,
     winRate: 57.2, profitFactor: 1.74, avgHold: "3h 20m", tradesPerWeek: 38, sharpe: 2.11, perfFee: 20, hwm: true, rollover: "weekly", minInvestment: 100, lockInDays: 0, ownCapitalPct: 11, leverage: 100, api: true,
@@ -91,7 +91,7 @@ export const MASTERS: Master[] = [
   },
   {
     id: "yuki-tanaka", person: P(14), strategy: "Tokyo Yen Scalper",
-    description: "High-frequency yen scalping during the Tokyo session with tight 8–15 pip stops. Uses the Kalks API with sub-50ms execution; best copied on Pro or ECN accounts.",
+    description: "High-frequency yen scalping during the Tokyo session with tight 8–15 pip stops. Uses the Ezymex API with sub-50ms execution; best copied on Pro or ECN accounts.",
     tags: ["Forex", "Scalping", "Algo"], program: "copy", verified: true, featured: false,
     returnAll: 128.4, return1y: 51.2, return3m: 11.9, return1m: 3.4, maxDD: 13.9, currentDD: 3.2, risk: 5, followers: 1488, aum: 842_600, ageDays: 544,
     winRate: 71.6, profitFactor: 1.58, avgHold: "18m", tradesPerWeek: 142, sharpe: 1.66, perfFee: 25, hwm: true, rollover: "weekly", minInvestment: 300, lockInDays: 0, ownCapitalPct: 12, leverage: 500, api: true,

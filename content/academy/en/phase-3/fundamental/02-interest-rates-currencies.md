@@ -10,7 +10,7 @@ takeaways:
   - "Two-year government bond yields are a useful market-based proxy for expected policy rates."
   - "The overnight swap on an FX position reflects the rate differential between the two currencies, plus the broker's markup."
 practice:
-  label: "Open the contract specification for USDJPY in Kalks Trader and compare the long and short swap rates. Which side earns and which side pays?"
+  label: "Open the contract specification for USDJPY in Ezymex Trader and compare the long and short swap rates. Which side earns and which side pays?"
   symbol: "USDJPY"
 quiz:
   - question: "Country A has a 5% policy rate and 6% inflation. Country B has a 3% policy rate and 1% inflation. Which has the higher real rate?"
@@ -82,7 +82,7 @@ The differential rule works best in calm markets. In a panic, investors sell hig
 
 When you hold an FX position past 00:00 server time, you effectively hold one currency and borrow the other overnight. The swap charged or credited to your account reflects that interest-rate differential, adjusted by the broker's markup.
 
-> **Example:** Suppose USD rates are 4.50% and EUR rates are 2.50%. One lot of EURUSD at 1.0850 is 100,000 EUR, a notional of 108,500 USD. The raw differential of 2.00% on that notional is about 108,500 × 0.02 / 365 = 5.95 USD per night. A short EURUSD position (long the higher-yielding USD) would be credited roughly this amount before markup, while a long position would pay roughly this plus markup. Actual swap rates are set per symbol and are shown in the contract specification in Kalks Trader.
+> **Example:** Suppose USD rates are 4.50% and EUR rates are 2.50%. One lot of EURUSD at 1.0850 is 100,000 EUR, a notional of 108,500 USD. The raw differential of 2.00% on that notional is about 108,500 × 0.02 / 365 = 5.95 USD per night. A short EURUSD position (long the higher-yielding USD) would be credited roughly this amount before markup, while a long position would pay roughly this plus markup. Actual swap rates are set per symbol and are shown in the contract specification in Ezymex Trader.
 
 Remember the Wednesday triple swap for FX and metals, which covers the weekend. For a trade held for weeks, swap can become a meaningful part of the result, positive or negative.
 

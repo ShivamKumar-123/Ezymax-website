@@ -2,11 +2,11 @@
 
 import * as React from "react";
 import { Bot, Code2, Copy as CopyIcon, Hand, Headset, Network, Sparkles, Users2, Webhook } from "lucide-react";
-import { Avatar, Chip, SymbolAvatar, Tooltip, cn, formatNumber } from "@kalks/ui";
-import { getInstrument } from "@kalks/mock";
-import { getClient } from "@kalks/mock/admin-clients";
-import { IS_DEMO } from "@kalks/mock/mode";
-import type { OrderSource } from "@kalks/mock/admin-trading";
+import { Avatar, Chip, SymbolAvatar, Tooltip, cn, formatNumber } from "@ezymex/ui";
+import { getInstrument } from "@ezymex/mock";
+import { getClient } from "@ezymex/mock/admin-clients";
+import { IS_DEMO } from "@ezymex/mock/mode";
+import type { OrderSource } from "@ezymex/mock/admin-trading";
 import { digitsOf } from "@/lib/trading-desk/calc";
 import { liveClientName, useLiveDirectory } from "@/lib/trading-desk/directory";
 

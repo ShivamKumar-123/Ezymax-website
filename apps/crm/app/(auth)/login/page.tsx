@@ -6,8 +6,8 @@ import { Eye, EyeOff, Lock, Mail, ArrowRight, ShieldCheck } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import { Button, Field, Input } from "@/components/kit";
-import { IS_DEMO } from "@kalks/mock/mode";
-import { useT, Trans } from "@kalks/i18n/react";
+import { IS_DEMO } from "@ezymex/mock/mode";
+import { useT, Trans } from "@ezymex/i18n/react";
 import { DemoEntry, DevCodeHint, FormError, GOOGLE_LOGIN, GoogleButton, useGoogleError, OrDivider, OtpInput, ResendLink, TryDemo } from "@/components/auth";
 import { authPost, nextPath, type ApiError, type OtpChallenge } from "@/lib/auth-client";
 
@@ -101,7 +101,7 @@ export default function LoginPage() {
             </Button>
           </form>
           <p className="mt-6 text-center text-[13.5px] text-fg-3">
-            <Trans k="auth.login.newToKalks" tags={{ link: (c) => <Link href="/register" className="font-medium text-fg hover:text-ember">{c}</Link> }} />
+            <Trans k="auth.login.newToEzymex" tags={{ link: (c) => <Link href="/register" className="font-medium text-fg hover:text-ember">{c}</Link> }} />
           </p>
           {!IS_DEMO && <TryDemo />}
         </motion.div>

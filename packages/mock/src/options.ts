@@ -1,9 +1,9 @@
-// Kalks FX Options: client-side pricer and the options-service wire shapes.
+// Ezymex FX Options: client-side pricer and the options-service wire shapes.
 //
 // A TypeScript port of crates/optmath (generalized Black-Scholes-Merton with cost of carry, Haug ch. 1) and of
 // the chain conventions of services/options/src/pricing.rs (smile from ATM + 25-delta RR/BF, vol spread, minimum
 // USD spread, Greeks units). Used by:
-//   * demo builds (NEXT_PUBLIC_KALKS_MODE=demo): a complete mock chain, so the options workspace works without
+//   * demo builds (NEXT_PUBLIC_EZYMEX_MODE=demo): a complete mock chain, so the options workspace works without
 //     the options service or the trading engine;
 //   * every build: the strategy builder's "today" payoff curve and the payoff maths;
 //   * demo builds only: `BookSim`, a small in-browser price-time matching simulator so the order-book screens of the

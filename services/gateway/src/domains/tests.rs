@@ -10,7 +10,7 @@ use axum::body::Body;
 use axum::extract::FromRequestParts;
 
 fn ctx(tok: Option<&str>) -> Ctx {
-    Ctx { ip: "203.0.113.9".into(), user_agent: "test-agent".into(), device: Some("device-0123456789abcdef".into()), tenant_slug: "kalks".into(), bearer: tok.map(str::to_string) }
+    Ctx { ip: "203.0.113.9".into(), user_agent: "test-agent".into(), device: Some("device-0123456789abcdef".into()), tenant_slug: "ezymex".into(), bearer: tok.map(str::to_string) }
 }
 
 #[test]
@@ -27,12 +27,12 @@ fn hosts_and_kinds() {
     assert_eq!(infer_kind("broker.com"), "website");
     assert_eq!(infer_kind("www.broker.com"), "website");
     assert!(clean_kind("trade").is_ok() && clean_kind("api").is_err());
-    assert_eq!(explicit_slug(Some(" Kalks ")).as_deref(), Some("kalks"));
+    assert_eq!(explicit_slug(Some(" Ezymex ")).as_deref(), Some("ezymex"));
     assert_eq!(explicit_slug(Some("x'; drop")), None);
 }
 
-async fn kalks(st: &AppState) -> i64 {
-    sqlx::query_scalar("SELECT id FROM tenants WHERE slug = 'kalks'").fetch_one(&st.pool).await.unwrap()
+async fn ezymex(st: &AppState) -> i64 {
+    sqlx::query_scalar("SELECT id FROM tenants WHERE slug = 'ezymex'").fetch_one(&st.pool).await.unwrap()
 }
 
 async fn staff(st: &AppState, tenant: i64, email: &str, role: &str) -> (i64, String) {
@@ -105,17 +105,17 @@ async fn check(st: &AppState, domain: &str, peer: Option<&str>, forwarded: bool)
 async fn domains_resolution_and_domain_check() {
     let Some(db) = TestDb::new("domains").await else { return };
     let st = db.st.clone();
-    let k = kalks(&st).await;
+    let k = ezymex(&st).await;
 
     // migrated from tenants.domains with kinds
     let kinds: Vec<(String, String)> = sqlx::query_as("SELECT domain, kind FROM tenant_domains WHERE tenant_id = $1 ORDER BY domain").bind(k).fetch_all(&st.pool).await.unwrap();
     assert_eq!(
         kinds,
         vec![
-            ("admin.kalkstrade.com".to_string(), "admin".to_string()),
-            ("app.kalkstrade.com".into(), "app".into()),
-            ("kalkstrade.com".into(), "website".into()),
-            ("trade.kalkstrade.com".into(), "trade".into()),
+            ("admin.ezymex.com".to_string(), "admin".to_string()),
+            ("app.ezymex.com".into(), "app".into()),
+            ("ezymex.com".into(), "website".into()),
+            ("trade.ezymex.com".into(), "trade".into()),
         ]
     );
 
@@ -125,11 +125,11 @@ async fn domains_resolution_and_domain_check() {
     assert_eq!(kinds.iter().map(|(_, k)| k.as_str()).collect::<Vec<_>>(), vec!["admin", "app", "website", "trade"]);
 
     // precedence: known host > explicit header > default
-    assert_eq!(ctx_for(&st, &[("x-kalks-host", "App.Broker2.test:443"), ("x-kalks-tenant", "kalks")]).await.tenant_slug, "broker-two");
-    assert_eq!(ctx_for(&st, &[("x-kalks-host", "localhost:3000"), ("x-kalks-tenant", "broker-two")]).await.tenant_slug, "broker-two");
-    assert_eq!(ctx_for(&st, &[("x-kalks-host", "localhost:3000")]).await.tenant_slug, "kalks");
-    assert_eq!(ctx_for(&st, &[]).await.tenant_slug, "kalks");
-    assert_eq!(resolve(&st, Some("app.kalkstrade.com"), Some("broker-two")).await, ("kalks".to_string(), Source::Host));
+    assert_eq!(ctx_for(&st, &[("x-ezymex-host", "App.Broker2.test:443"), ("x-ezymex-tenant", "ezymex")]).await.tenant_slug, "broker-two");
+    assert_eq!(ctx_for(&st, &[("x-ezymex-host", "localhost:3000"), ("x-ezymex-tenant", "broker-two")]).await.tenant_slug, "broker-two");
+    assert_eq!(ctx_for(&st, &[("x-ezymex-host", "localhost:3000")]).await.tenant_slug, "ezymex");
+    assert_eq!(ctx_for(&st, &[]).await.tenant_slug, "ezymex");
+    assert_eq!(resolve(&st, Some("app.ezymex.com"), Some("broker-two")).await, ("ezymex".to_string(), Source::Host));
 
     // public branding by host
     let Json(v) = tenant_by_host(State(st.clone()), Ok(Query(HostQuery { host: Some("trade.broker2.test".into()) }))).await.unwrap();
@@ -154,14 +154,14 @@ async fn domains_resolution_and_domain_check() {
     let (code, Json(v)) = owner_add(State(st.clone()), ctx(Some(&owner_tok)), Path(t2), Ok(Json(add("portal.broker2.test", "app")))).await.unwrap();
     assert_eq!(code, StatusCode::CREATED);
     let did = v["domain"]["id"].as_i64().unwrap();
-    assert!(matches!(owner_add(State(st.clone()), ctx(Some(&owner_tok)), Path(t2), Ok(Json(add("app.kalkstrade.com", "app")))).await, Err(ApiError::Coded { code: "domain_taken", .. })));
+    assert!(matches!(owner_add(State(st.clone()), ctx(Some(&owner_tok)), Path(t2), Ok(Json(add("app.ezymex.com", "app")))).await, Err(ApiError::Coded { code: "domain_taken", .. })));
     assert!(matches!(owner_add(State(st.clone()), ctx(Some(&owner_tok)), Path(t2), Ok(Json(add("x.broker2.test", "api")))).await, Err(ApiError::Validation { .. })));
     let mirror = |pool: PgPool| async move { sqlx::query_scalar::<_, Vec<String>>("SELECT domains FROM tenants WHERE id = $1").bind(t2).fetch_one(&pool).await.unwrap() };
     assert!(mirror(st.pool.clone()).await.contains(&"portal.broker2.test".to_string()));
-    assert_eq!(ctx_for(&st, &[("x-kalks-host", "portal.broker2.test")]).await.tenant_slug, "broker-two");
+    assert_eq!(ctx_for(&st, &[("x-ezymex-host", "portal.broker2.test")]).await.tenant_slug, "broker-two");
     owner_update(State(st.clone()), ctx(Some(&owner_tok)), Path((t2, did)), Ok(Json(UpdateReq { kind: None, status: Some("disabled".into()) }))).await.unwrap();
     assert!(!mirror(st.pool.clone()).await.contains(&"portal.broker2.test".to_string()));
-    assert_eq!(ctx_for(&st, &[("x-kalks-host", "portal.broker2.test")]).await.tenant_slug, "kalks");
+    assert_eq!(ctx_for(&st, &[("x-ezymex-host", "portal.broker2.test")]).await.tenant_slug, "ezymex");
     assert_eq!(check(&st, "portal.broker2.test", Some("127.0.0.1:1"), false).await, StatusCode::NOT_FOUND);
     // wrong tenant in the path can't touch the row
     assert!(matches!(owner_delete(State(st.clone()), ctx(Some(&owner_tok)), Path((k, did))).await, Err(ApiError::NotFound)));
@@ -191,11 +191,11 @@ async fn domains_resolution_and_domain_check() {
 async fn row_level_security_isolates_tenants() {
     let Some(db) = TestDb::new("rls").await else { return };
     let st = db.st.clone();
-    let t1 = kalks(&st).await;
+    let t1 = ezymex(&st).await;
     let (_, owner_tok) = staff(&st, t1, "owner@example.com", "platform_owner").await;
     let t2 = broker2(&st, &owner_tok).await;
-    let a1 = client(&st.pool, t1, "alice@kalks.test").await;
-    let _b1 = client(&st.pool, t1, "bob@kalks.test").await;
+    let a1 = client(&st.pool, t1, "alice@ezymex.test").await;
+    let _b1 = client(&st.pool, t1, "bob@ezymex.test").await;
     let c2 = client(&st.pool, t2, "carol@broker2.test").await;
 
     // the pool's own login (no scope) still sees everything: existing queries are unaffected
@@ -205,7 +205,7 @@ async fn row_level_security_isolates_tenants() {
     // scoped to tenant 2: tenant 1's rows are invisible, even when asked for by id / tenant
     let mut tx = tenant_tx(&st.pool, t2).await.unwrap();
     let role: String = sqlx::query_scalar("SELECT current_user::text").fetch_one(&mut *tx).await.unwrap();
-    assert_eq!(role, "kalks_tenant");
+    assert_eq!(role, "ezymex_tenant");
     let ids: Vec<i64> = sqlx::query_scalar("SELECT id FROM users ORDER BY id").fetch_all(&mut *tx).await.unwrap();
     assert_eq!(ids, vec![c2]);
     let n: i64 = sqlx::query_scalar("SELECT count(*) FROM users WHERE tenant_id = $1 OR id = $2").bind(t1).bind(a1).fetch_one(&mut *tx).await.unwrap();
@@ -225,7 +225,7 @@ async fn row_level_security_isolates_tenants() {
     let mut tx = tenant_tx(&st.pool, t2).await.unwrap();
     let bad = sqlx::query(
         "INSERT INTO users (tenant_id, email, password_hash, first_name, last_name, phone_dial, phone, country, date_of_birth, referral_code, terms_accepted_at)
-         VALUES ($1,'eve@kalks.test','h','Eve','X','+91','9876543210','IN','1990-01-01','REVE1', now())",
+         VALUES ($1,'eve@ezymex.test','h','Eve','X','+91','9876543210','IN','1990-01-01','REVE1', now())",
     )
     .bind(t1)
     .execute(&mut *tx)
@@ -247,9 +247,9 @@ async fn row_level_security_isolates_tenants() {
     assert_eq!(n, 2);
     tx.commit().await.unwrap();
 
-    // kalks_tenant without a tenant set sees nothing (fail closed)
+    // ezymex_tenant without a tenant set sees nothing (fail closed)
     let mut tx = st.pool.begin().await.unwrap();
-    sqlx::query("SET LOCAL ROLE kalks_tenant").execute(&mut *tx).await.unwrap();
+    sqlx::query("SET LOCAL ROLE ezymex_tenant").execute(&mut *tx).await.unwrap();
     let n: i64 = sqlx::query_scalar("SELECT count(*) FROM users").fetch_one(&mut *tx).await.unwrap();
     assert_eq!(n, 0);
     tx.rollback().await.unwrap();
@@ -262,7 +262,7 @@ async fn row_level_security_isolates_tenants() {
     let Json(v) = admin::users(State(st.clone()), ctx(Some(&t2_support)), Ok(Query(UsersQuery { per_page: Some(200), ..Default::default() }))).await.unwrap();
     assert_eq!(v["total"], 2);
     let text = v.to_string();
-    assert!(!text.contains("@kalks.test"), "{text}");
+    assert!(!text.contains("@ezymex.test"), "{text}");
     let Json(v) = admin::users(State(st.clone()), ctx(Some(&t2_support)), Ok(Query(UsersQuery { q: Some("alice".into()), ..Default::default() }))).await.unwrap();
     assert_eq!(v["total"], 0);
     assert!(matches!(admin::user_detail(State(st.clone()), ctx(Some(&t2_support)), Path(a1)).await, Err(ApiError::NotFound)));

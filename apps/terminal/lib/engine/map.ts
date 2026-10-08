@@ -1,12 +1,12 @@
 // Engine JSON → terminal shapes. Pure (no React, no browser APIs), so the share BFF can use it too.
 // Money convention of the terminal store: USD internally; cent accounts report USC from the engine (× 100),
 // so their amounts are divided by 100 here (the UI multiplies back through accMoney()).
-import type { TradingAccount } from "@kalks/mock";
+import type { TradingAccount } from "@ezymex/mock";
 import type { PendingOrder, TClosed, TPosition, TradeSource } from "../trading";
 import { pointSize } from "../trading";
 import type { EngAccount, EngDeal, EngOrder, EngPosition } from "./types";
 
-export const serverName = (type: "live" | "demo") => (type === "demo" ? "Kalks-Demo" : "Kalks-Live");
+export const serverName = (type: "live" | "demo") => (type === "demo" ? "Ezymex-Demo" : "Ezymex-Live");
 
 const SOURCES: Record<string, TradeSource> = { manual: "manual", ai: "ai", api: "api", fix: "api", webhook: "api", strategy: "strategy", copy: "copy", pamm: "pamm", mam: "mam" };
 export const mapSource = (s: string): TradeSource => SOURCES[s] ?? "manual";
@@ -46,7 +46,7 @@ export function copyMasterName(name: string | null | undefined) {
 }
 
 /** Fired in the browser when the engine rejects a request with `copy_account` (the account is managed by copy trading). */
-export const COPY_ACCOUNT_EVENT = "kalks:copy-account";
+export const COPY_ACCOUNT_EVENT = "ezymex:copy-account";
 
 export type EngineTradingAccount = TradingAccount & { engine: EngineAccountExtra };
 

@@ -1,7 +1,7 @@
 import type { NsMessages } from "../../core";
 
 // Client Area social trading: copy trading leaderboard, strategy providers, subscriptions, PAMM funds, MAM, investments.
-// Keep as-is: Kalks, Kalks Trader, Kalks-Live, PAMM, MAM, NAV, HWM, AUM, DD, SL/TP, USD.
+// Keep as-is: Ezymex, Ezymex Trader, Ezymex-Live, PAMM, MAM, NAV, HWM, AUM, DD, SL/TP, USD.
 const social: NsMessages<"social"> = {
   // Error messages keyed by server error codes (keys mirror the codes; keep them as they are)
   "error.unavailable": "کپی ترید در حال حاضر در دسترس نیست. لطفاً کمی بعد دوباره تلاش کنید.",
@@ -69,8 +69,8 @@ const social: NsMessages<"social"> = {
   master: "مستر",
   // {r} = score 1-10, {level} = Low / Medium / High
   "riskBadge.tooltip": "امتیاز ریسک سیستم {r}/10 · ریسک {level} (بر اساس حداکثر افت سرمایه و نوسان)",
-  "house.disclosure": "استراتژی داخلی اجراشده توسط Kalks: یک حساب واقعی متعلق به بروکر که یک استراتژی خودکار را اجرا می‌کند. آمار آن فقط شامل معاملات واقعی خود آن از زمان شروع است؛ هیچ چیز شبیه‌سازی یا به‌صورت عطف به ماسبق اضافه نشده است.",
-  "house.badge": "استراتژی داخلی · اجراشده توسط Kalks",
+  "house.disclosure": "استراتژی داخلی اجراشده توسط Ezymex: یک حساب واقعی متعلق به بروکر که یک استراتژی خودکار را اجرا می‌کند. آمار آن فقط شامل معاملات واقعی خود آن از زمان شروع است؛ هیچ چیز شبیه‌سازی یا به‌صورت عطف به ماسبق اضافه نشده است.",
+  "house.badge": "استراتژی داخلی · اجراشده توسط Ezymex",
   // Program tag chips (PAMM stays as is)
   "program.copy": "کپی",
   "errorState.title": "کپی ترید در دسترس نیست",
@@ -128,7 +128,7 @@ const social: NsMessages<"social"> = {
   "lb.empty.text": "ارائه‌دهندگان استراتژی پس از تأیید تیم ما اینجا نمایش داده می‌شوند. با یک حساب واقعی معامله کنید و اولین متقاضی باشید.",
   "lb.searchPlaceholder": "نام مستعار یا استراتژی…",
   "lb.disclaimer": "بازده‌ها به‌صورت وزن‌دهی‌شده زمانی از اکوئیتی پایان روز و بدون اثر واریز و برداشت محاسبه می‌شوند. عملکرد گذشته تضمینی برای نتایج آینده نیست. کپی ترید و سرمایه‌گذاری PAMM با ریسک زیان همراه است.",
-  "lb.houseNote": "مسترهایی با برچسب «استراتژی داخلی · اجراشده توسط Kalks» حساب‌های واقعی متعلق به بروکر هستند که یک استراتژی خودکار را اجرا می‌کنند. آمار آن‌ها فقط شامل معاملات واقعی خودشان از زمان شروع است؛ هیچ چیز شبیه‌سازی یا به‌صورت عطف به ماسبق اضافه نشده است.",
+  "lb.houseNote": "مسترهایی با برچسب «استراتژی داخلی · اجراشده توسط Ezymex» حساب‌های واقعی متعلق به بروکر هستند که یک استراتژی خودکار را اجرا می‌کنند. آمار آن‌ها فقط شامل معاملات واقعی خودشان از زمان شروع است؛ هیچ چیز شبیه‌سازی یا به‌صورت عطف به ماسبق اضافه نشده است.",
   allocation: "تخصیص",
   equityStop: "توقف اکوئیتی",
   maxLot: "حداکثر لات",
@@ -138,7 +138,7 @@ const social: NsMessages<"social"> = {
   lotsUnit: "لات",
   lotsValue: "{lots} لات",
   minAmount: "حداقل {amount}",
-  openInTrader: "باز کردن در Kalks Trader",
+  openInTrader: "باز کردن در Ezymex Trader",
 
   // Follow (copy a master) dialog
   "follow.step.sizing": "حجم",
@@ -160,13 +160,13 @@ const social: NsMessages<"social"> = {
   "follow.toast.createdDesc": "واریز از کیف پول انجام نشد. می‌توانید از کیف پول به آن واریز کنید.",
   "follow.toast.failed": "شروع کپی ممکن نشد",
   "follow.done.createdTitle": "حساب کپی ایجاد شد",
-  "follow.done.description": "حساب کپی #{login} · Kalks-Live",
+  "follow.done.description": "حساب کپی #{login} · Ezymex-Live",
   // <acc>…</acc> wraps the account number
   "follow.done.okText": "{amount} از کیف پول شما به حساب کپی <acc>#{login}</acc> منتقل شد. از این پس معاملات جدید {name} کپی می‌شوند.",
   // Followed by the server's reason (": …") or a full stop
   "follow.done.failText": "حساب کپی <acc>#{login}</acc> ایجاد شد، اما انتقال از کیف پول انجام نشد",
   "follow.done.failHint": "می‌توانید از کیف پول به آن واریز کنید؛ کپی پس از داشتن موجودی آغاز می‌شود.",
-  "follow.done.exitNote": "معاملات کپی‌شده را نمی‌توان یکی‌یکی در Kalks Trader بست. برای خروج، از بخش کپی ترید ← اشتراک‌های من کپی را متوقف کنید: همه پوزیشن‌های کپی‌شده بسته می‌شوند و موجودی می‌تواند به کیف پول شما بازگردد.",
+  "follow.done.exitNote": "معاملات کپی‌شده را نمی‌توان یکی‌یکی در Ezymex Trader بست. برای خروج، از بخش کپی ترید ← اشتراک‌های من کپی را متوقف کنید: همه پوزیشن‌های کپی‌شده بسته می‌شوند و موجودی می‌تواند به کیف پول شما بازگردد.",
   "follow.title": "کپی {name}",
   "follow.description": "هر اشتراک در یک حساب کپی اختصاصی اجرا می‌شود که از کیف پول شما تأمین می‌شود.",
   "follow.confirm": "تأیید و شروع کپی",
@@ -200,7 +200,7 @@ const social: NsMessages<"social"> = {
   // {amount} = a sum like "$500" or the words "the amount"
   "follow.amountNote": "برای این اشتراک یک حساب کپی جدید افتتاح می‌شود و {amount} از کیف پول شما به آن منتقل می‌شود. واریزها و برداشت‌های بعدی در حساب کپی، High-water mark شما را تعدیل می‌کنند، بنابراین کارمزد فقط از سود معاملاتی کسر می‌شود.",
   "follow.theAmount": "مبلغ",
-  "follow.reviewBanner": "یک حساب کپی اختصاصی در Kalks-Live افتتاح و از کیف پول شما تأمین می‌شود.",
+  "follow.reviewBanner": "یک حساب کپی اختصاصی در Ezymex-Live افتتاح و از کیف پول شما تأمین می‌شود.",
   "follow.excludedSymbols": "نمادهای مستثنی",
   // {period} = daily / weekly / monthly (lower case)
   "follow.feeTerms": "{fee}% بالاتر از High-water mark · تسویه {period}",
@@ -483,7 +483,7 @@ const social: NsMessages<"social"> = {
   "subs.stop.moveBack": "موجودی به کیف پول من بازگردانده شود",
   "subs.stop.closeAll": "همین حالا همه بسته شود",
   "subs.stop.keepOpen": "پوزیشن‌هایم باز بماند",
-  "subs.stop.keepText": "کپی متوقف می‌شود. پوزیشن‌ها و سفارش‌های کپی‌شدهٔ باز در حساب کپی #{login} باقی می‌مانند و به معاملات عادی تبدیل می‌شوند که خودتان در Kalks Trader مدیریت می‌کنید.",
+  "subs.stop.keepText": "کپی متوقف می‌شود. پوزیشن‌ها و سفارش‌های کپی‌شدهٔ باز در حساب کپی #{login} باقی می‌مانند و به معاملات عادی تبدیل می‌شوند که خودتان در Ezymex Trader مدیریت می‌کنید.",
   "subs.stop.keepFunds": "تا زمانی که پوزیشن‌ها باز هستند، فقط مارجین آزاد به کیف پول شما منتقل می‌شود و انتقال آن فضای کمتری تا مارجین کال برایشان باقی می‌گذارد.",
   "subs.stop.confirmKeep": "توقف کپی",
   "subs.stop.kept": "پوزیشن‌های کپی‌شده در حساب کپی #{login} باز می‌مانند؛ از این پس خودتان آن‌ها را مدیریت می‌کنید.",
@@ -704,7 +704,7 @@ const social: NsMessages<"social"> = {
   "md.fund.credsCopied": "اطلاعات ورود کپی شد",
   "md.fund.credsCopiedDesc": "آن‌ها را در یک مدیر رمز عبور ذخیره کنید.",
   "md.fund.copyFailed": "کپی ممکن نشد، لطفاً هر فیلد را جداگانه کپی کنید",
-  "md.fund.credsDesc": "با این اطلاعات ورود، حساب صندوق را در Kalks Trader معامله کنید.",
+  "md.fund.credsDesc": "با این اطلاعات ورود، حساب صندوق را در Ezymex Trader معامله کنید.",
   "md.fund.trade": "معامله صندوق",
   "md.fund.creds": "اطلاعات ورود حساب صندوق",
   "md.fund.copyAll": "کپی همه",
@@ -753,7 +753,7 @@ const social: NsMessages<"social"> = {
   "md.performanceSub": "محاسبه‌شده توسط پلتفرم از حساب استراتژی شما",
   "md.pamm.notInProgramme": "بخشی از برنامه شما نیست",
   "md.pamm.copyOnly": "برنامه شما فقط کپی ترید است. تغییر به PAMM نیاز به بررسی مجدد دارد؛ با پشتیبانی تماس بگیرید.",
-  "md.pamm.openText": "یک صندوق تجمیعی افتتاح کنید که سرمایه‌گذاران در رول‌اور در آن سرمایه‌گذاری می‌کنند. شما آن را در Kalks Trader معامله می‌کنید.",
+  "md.pamm.openText": "یک صندوق تجمیعی افتتاح کنید که سرمایه‌گذاران در رول‌اور در آن سرمایه‌گذاری می‌کنند. شما آن را در Ezymex Trader معامله می‌کنید.",
   "md.pamm.create": "ایجاد صندوق PAMM",
   "md.yourFunds": "صندوق‌های شما",
   "md.yourFundsSub": "سرمایه‌گذاران، درخواست‌های در انتظار و حساب صندوق",
@@ -825,7 +825,7 @@ const social: NsMessages<"social"> = {
   "mam.revoke.now": "لغو فوری",
   "mam.revoke.text": "از این لحظه هیچ معامله جدیدی به حساب شما تخصیص داده نمی‌شود. کارمزدهای معوق تا این لحظه بلافاصله تسویه می‌شوند.",
   "mam.revoke.closeTrades": { one: "بستن {count} معامله باز MAM اکنون با قیمت بازار", other: "بستن {count} معامله باز MAM اکنون با قیمت بازار" },
-  "mam.revoke.keepNote": "اگر آن‌ها را نگه دارید، به معاملات عادی تبدیل می‌شوند که خودتان در Kalks Trader مدیریت می‌کنید.",
+  "mam.revoke.keepNote": "اگر آن‌ها را نگه دارید، به معاملات عادی تبدیل می‌شوند که خودتان در Ezymex Trader مدیریت می‌کنید.",
   "mam.revoke.noTrades": "هیچ معامله باز MAM روی این حساب وجود ندارد.",
   "mam.programme": "برنامه MAM",
   "mam.revoked": "لغوشده",
@@ -840,7 +840,7 @@ const social: NsMessages<"social"> = {
   "mam.page.title": "حساب‌های مدیریت‌شده",
   "mam.page.subtitle": "به یک مدیر MAM تأییدشده اختیار معامله روی یکی از حساب‌های واقعی خود بدهید. حساب و پول متعلق به شما باقی می‌ماند؛ هر زمان قابل لغو است.",
   "mam.page.run": "اجرای برنامه MAM",
-  "mam.page.info": "مدیر فقط می‌تواند معاملات را در حساب متصل باز، ویرایش و بسته کند. او هرگز نمی‌تواند پول واریز، برداشت یا منتقل کند و هیچ مبلغی کمتر از مارجین معاملات باز قابل برداشت نیست. همه معاملات را با برچسب MAM در Kalks Trader می‌بینید.",
+  "mam.page.info": "مدیر فقط می‌تواند معاملات را در حساب متصل باز، ویرایش و بسته کند. او هرگز نمی‌تواند پول واریز، برداشت یا منتقل کند و هیچ مبلغی کمتر از مارجین معاملات باز قابل برداشت نیست. همه معاملات را با برچسب MAM در Ezymex Trader می‌بینید.",
   "mam.page.yours": "حساب‌های مدیریت‌شده شما",
   "mam.page.activeLinks": { one: "{count} اتصال فعال", other: "{count} اتصال فعال" },
   "mam.page.noneManaged": "هنوز هیچ حسابی مدیریت نمی‌شود",
@@ -936,7 +936,7 @@ const social: NsMessages<"social"> = {
   "mm.noLinks": "هنوز حسابی متصل نشده. مشتریان برنامه شما را در بخش اجتماعی ← حساب‌های مدیریت‌شده پیدا می‌کنند.",
   "mm.audit": "حسابرسی تخصیص",
   "mm.auditSub": "همه بلوک‌های حساب مستر و نحوه تقسیم آن‌ها",
-  "mm.noBlocks": "هنوز بلوکی وجود ندارد. حساب مستر را در Kalks Trader معامله کنید؛ هر معامله باز شده به حساب‌های متصل تخصیص داده می‌شود.",
+  "mm.noBlocks": "هنوز بلوکی وجود ندارد. حساب مستر را در Ezymex Trader معامله کنید؛ هر معامله باز شده به حساب‌های متصل تخصیص داده می‌شود.",
   "mm.edit.title": "ویرایش برنامه",
   "mm.edit.description": "تغییرات کارمزد برای حساب‌هایی که از این پس متصل می‌شوند اعمال می‌شود.",
   "mm.termsTitle": "شرایطی که مشتریان می‌پذیرند",
@@ -1201,6 +1201,6 @@ const social: NsMessages<"social"> = {
   "md.ann.err": "عنوانی با دست‌کم 3 کاراکتر وارد کنید.",
   "md.ann.past": "ارسال‌شده",
   "md.ann.empty": "هنوز اطلاعیه‌ای وجود ندارد.",
-  "md.ann.rules": "اطلاعیه‌ها به همه دنبال‌کنندگانی که اکنون شما را کپی می‌کنند می‌رسند، در اعلان‌هایشان و در صورت انتخاب خودشان از طریق ایمیل. هرگز وعده بازده ندهید و از دنبال‌کنندگان نخواهید خارج از Kalks با شما تماس بگیرند.",
+  "md.ann.rules": "اطلاعیه‌ها به همه دنبال‌کنندگانی که اکنون شما را کپی می‌کنند می‌رسند، در اعلان‌هایشان و در صورت انتخاب خودشان از طریق ایمیل. هرگز وعده بازده ندهید و از دنبال‌کنندگان نخواهید خارج از Ezymex با شما تماس بگیرند.",
 };
 export default social;

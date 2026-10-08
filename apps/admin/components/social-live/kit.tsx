@@ -7,8 +7,8 @@
  */
 import * as React from "react";
 import { toast } from "sonner";
-import { Button, Card, Chip, Dialog, DialogClose, cn, formatNumber, type ChipTone } from "@kalks/ui";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { Button, Card, Chip, Dialog, DialogClose, cn, formatNumber, type ChipTone } from "@ezymex/ui";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { ErrorState, sendJson, type ApiErr } from "@/components/live/kit";
 import { useStaff } from "@/components/staff-session";
 import { AuditNotice, ErrorBanner } from "@/components/trading-desk/kit";

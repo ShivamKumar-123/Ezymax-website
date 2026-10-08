@@ -4,7 +4,7 @@ import * as React from "react";
 import { CalendarClock, Loader2, Lock, Snowflake } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Dialog, Field, Input, KeyValue, Skeleton, Toggle, cn } from "@/components/kit";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 import { Checkbox, RangeSlider, ToggleChip } from "@/components/social/controls";
 import { serverTime } from "@/components/trading/api";
 import { PERIOD_LABEL, nav4, socialApi, units4, usd, useSocial, type FundDetail, type RequestView } from "./api";

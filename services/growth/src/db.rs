@@ -9,7 +9,7 @@ use std::str::FromStr;
 /// Connects, creating the database on first run, and applies migrations.
 pub async fn connect(url: &str) -> anyhow::Result<PgPool> {
     let opts = PgConnectOptions::from_str(url)?;
-    let db = opts.get_database().unwrap_or("kalks_growth").to_string();
+    let db = opts.get_database().unwrap_or("ezymex_growth").to_string();
     let mut admin = opts.clone().database("postgres").connect().await?;
     let exists: Option<i32> = sqlx::query_scalar("SELECT 1 FROM pg_database WHERE datname = $1").bind(&db).fetch_optional(&mut admin).await?;
     if exists.is_none() {
@@ -160,8 +160,8 @@ pub async fn set_cursor(pool: &PgPool, name: &str, value: &str) -> anyhow::Resul
 /// Tenants the workers serve: every tenant with configuration, plus the default.
 pub async fn tenants(pool: &PgPool) -> anyhow::Result<Vec<String>> {
     let mut t: Vec<String> = sqlx::query_scalar("SELECT tenant FROM settings").fetch_all(pool).await?;
-    if !t.iter().any(|x| x == "kalks") {
-        t.push("kalks".into());
+    if !t.iter().any(|x| x == "ezymex") {
+        t.push("ezymex".into());
     }
     Ok(t)
 }

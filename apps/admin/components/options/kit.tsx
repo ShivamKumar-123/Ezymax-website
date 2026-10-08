@@ -13,10 +13,10 @@ import * as React from "react";
 import Link from "next/link";
 import { Hourglass, Lock, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Chip, Dialog, DialogClose, EmptyState, SymbolAvatar, cn, formatNumber, type ChipTone } from "@kalks/ui";
-import { INSTRUMENT_MAP } from "@kalks/mock";
-import { IS_DEMO } from "@kalks/mock/mode";
-import { mockOptionsRequest } from "@kalks/mock/admin-options";
+import { Button, Chip, Dialog, DialogClose, EmptyState, SymbolAvatar, cn, formatNumber, type ChipTone } from "@ezymex/ui";
+import { INSTRUMENT_MAP } from "@ezymex/mock";
+import { IS_DEMO } from "@ezymex/mock/mode";
+import { mockOptionsRequest } from "@ezymex/mock/admin-options";
 import { useApi, type ApiErr } from "@/components/live/kit";
 import { useCan, useStaff } from "@/components/staff-session";
 import { ErrorBanner, ReasonFields, useReason } from "@/components/trading-desk/kit";
@@ -106,7 +106,7 @@ export function useOptPerms() {
   const dealing = useCan("options.dealing");
   const settle = useCan("options.settle");
   const read = useCan("options.read");
-  /** Kalks staff: platform-wide data (underlyings, rates, holidays, surfaces, fixings, switches) is theirs to change. */
+  /** Ezymex staff: platform-wide data (underlyings, rates, holidays, surfaces, fixings, switches) is theirs to change. */
   const platform = (staff.tenant?.slug || PLATFORM_TENANT) === PLATFORM_TENANT;
   const owner = IS_DEMO || !!staff.permissions?.includes("owner.tenants");
   return { read, config, dealing, settle, platform, owner, tenant: staff.tenant?.slug || PLATFORM_TENANT };
@@ -115,7 +115,7 @@ export function useOptPerms() {
 /** Why a platform-wide action is unavailable, or null when it is. */
 export function platformBlock(p: ReturnType<typeof useOptPerms>, need: "config" | "settle" = "config"): string | null {
   if (!p[need]) return "Read-only for your role";
-  if (!p.platform) return "Shared from Kalks: only Kalks staff change this";
+  if (!p.platform) return "Shared from Ezymex: only Ezymex staff change this";
   return null;
 }
 
@@ -527,5 +527,5 @@ export function UnderlyingCell({ symbol, sub, size = 26 }: { symbol: string; sub
   );
 }
 
-/** "kalks" → "Kalks", "*" → "All brokers". */
+/** "ezymex" → "Ezymex", "*" → "All brokers". */
 export const tenantLabel = (t: string) => (t === "*" ? "All brokers" : t);

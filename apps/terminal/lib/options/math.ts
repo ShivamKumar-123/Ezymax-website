@@ -1,6 +1,6 @@
 // Payoff maths, strategy templates and the client-side preview estimate of the options workspace. Pure functions:
 // the strategy builder, the simple mode and the ticket all draw from here.
-import { OPTION_SPEC, carryOf, legValue, normCdf, scenarioMargin, pricingContext, volYears, type OptionRight } from "@kalks/mock/options";
+import { OPTION_SPEC, carryOf, legValue, normCdf, scenarioMargin, pricingContext, volYears, type OptionRight } from "@ezymex/mock/options";
 import type { OptionChain, OptionChainRow, OptionQuote, OptGreeks, Preview, Side } from "./types";
 
 export interface PayLeg {

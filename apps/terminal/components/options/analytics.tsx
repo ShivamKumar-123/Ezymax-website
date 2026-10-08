@@ -7,8 +7,8 @@
 // on the underlying under a price / date / vol scenario (./analytics-whatif).
 import * as React from "react";
 import { BookOpenText, Info } from "lucide-react";
-import { cn } from "@kalks/ui";
-import { useT } from "@kalks/i18n/react";
+import { cn } from "@ezymex/ui";
+import { useT } from "@ezymex/i18n/react";
 import { maxPain, putCallRatio, skewOf } from "@/lib/options/math";
 import { opt, underlyingOf, useOpt } from "@/lib/options-store";
 import { Seg } from "./bits";
@@ -18,7 +18,7 @@ import { oiOf, useSmile, useTermStructure } from "./analytics-data";
 import { WhatIfPanel } from "./analytics-whatif";
 
 type View = "market" | "whatif";
-const VIEW_KEY = "kalks.options.analytics.view";
+const VIEW_KEY = "ezymex.options.analytics.view";
 
 function readView(): View {
   try {

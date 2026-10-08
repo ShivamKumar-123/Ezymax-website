@@ -1,18 +1,18 @@
 import type { NsMessages } from "../../core";
 
-// Kalks FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Kalks Trader in options mode.
+// Ezymex FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Ezymex Trader in options mode.
 const options: NsMessages<"options"> = {
   // Navigation entry
   "nav.title": "Opsiyonlar",
 
   // Page header
-  "page.title": "Kalks FX Options",
-  "page.subtitle": "Döviz, altın, gümüş ve petrol opsiyonlarını doğrudan Kalks Trader içinde alın veya satın.",
+  "page.title": "Ezymex FX Options",
+  "page.subtitle": "Döviz, altın, gümüş ve petrol opsiyonlarını doğrudan Ezymex Trader içinde alın veya satın.",
   "page.statusReady": "İşleme hazır",
   "page.learnCourse": "Opsiyon kursu",
 
   // Hero card
-  "hero.eyebrow": "Kalks Trader'da yeni",
+  "hero.eyebrow": "Ezymex Trader'da yeni",
   "hero.title": "13 piyasada opsiyonlar, kolay ve sade",
   "hero.text": "Majör ve çapraz döviz pariteleri, altın, gümüş ve ham petrol üzerine Avrupa tipi opsiyonlar. Günlük, haftalık veya aylık vadeler arasından seçim yapın. Tüm opsiyonlar ABD doları cinsinden nakdi uzlaşıyla kapanır; bu nedenle hiçbir zaman fiziki teslimat almazsınız.",
   "hero.feature.underlyings.title": "13 dayanak varlık",
@@ -56,16 +56,16 @@ const options: NsMessages<"options"> = {
   "terms.inShort": "Kısaca",
   "terms.point.buy": "Opsiyon almak: kaybedebileceğiniz en fazla tutar, ödediğiniz tutardır.",
   "terms.point.sell": "Opsiyon satışında aldığınızdan fazlasını kaybedebilirsiniz ve satış teminat gerektirir.",
-  "terms.point.prices": "Fiyatlar, Kalks emir defterinde ve doğrudan Kalks tarafından belirlenir.",
+  "terms.point.prices": "Fiyatlar, Ezymex emir defterinde ve doğrudan Ezymex tarafından belirlenir.",
   "terms.point.settle": "Opsiyonlar vade sonunda nakdi olarak uzlaşılır.",
   "terms.englishNote": "Aşağıdaki tam metin, bağlayıcı olan İngilizce sürümdür.",
   "terms.acceptedOn": "{version} sürümünü {date} tarihinde kabul ettiniz.",
   "terms.close": "Kapat",
   "terms.unavailable": "Opsiyon koşulları şu anda kullanılamıyor. Lütfen daha sonra tekrar deneyin.",
 
-  // Kalks Trader button
-  "trade.ready": "Her şey hazır. Opsiyonlar, CFD'lerinizle aynı hesapta Kalks Trader'da açılır.",
-  "trade.cta": "Kalks Trader'da opsiyon işlemi yap",
+  // Ezymex Trader button
+  "trade.ready": "Her şey hazır. Opsiyonlar, CFD'lerinizle aynı hesapta Ezymex Trader'da açılır.",
+  "trade.cta": "Ezymex Trader'da opsiyon işlemi yap",
   "trade.chooseAccount": "Bir hesap seçin",
   "trade.noAccount": "Opsiyon işlemi yapmak için aktif bir işlem hesabınız olmalı.",
   "trade.openAccount": "Hesap aç",
@@ -74,7 +74,7 @@ const options: NsMessages<"options"> = {
   "trade.demo": "Demo",
 
   // Key facts card
-  "facts.title": "Kalks FX Options nasıl işler",
+  "facts.title": "Ezymex FX Options nasıl işler",
   "facts.style": "Avrupa tipi: vade sonunda otomatik olarak kullanılır, asla daha önce değil.",
   "facts.premium": "Prim, kontrat başına USD cinsindendir; alıcılar işlemi açarken tamamını öder.",
   "facts.contracts": "Bir kontrat: 10,000 birim döviz, 1 ons altın, 50 ons gümüş veya 10 varil petrol.",

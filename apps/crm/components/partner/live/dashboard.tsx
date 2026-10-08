@@ -40,10 +40,10 @@ import {
   formatMoney,
 } from "@/components/kit";
 import type { SeriesPoint } from "@/components/kit";
-import { tr, useFormat, useT } from "@kalks/i18n/react";
-import { intlTag } from "@kalks/i18n/locales";
+import { tr, useFormat, useT } from "@ezymex/i18n/react";
+import { intlTag } from "@ezymex/i18n/locales";
 import { ShareButtons } from "@/components/partner/share-buttons";
-// readable names for engine symbols, including Kalks FX Options series codes
+// readable names for engine symbols, including Ezymex FX Options series codes
 import { symbolLabel } from "@/components/trading/instrument";
 import {
   fmtDate,
@@ -444,7 +444,7 @@ function ReferralCard({ d }: { d: Dashboard }) {
         onOpenChange={setQr}
         value={link}
         title={t("partner.dash.referralQr")}
-        fileBase={`kalks-${d.member.code}-qr`}
+        fileBase={`ezymex-${d.member.code}-qr`}
       />
     </Card>
   );

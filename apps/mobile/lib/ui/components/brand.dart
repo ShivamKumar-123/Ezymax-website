@@ -5,7 +5,7 @@ import '../illustrations.g.dart';
 import '../tokens.dart';
 import '../typography.dart';
 
-/// The Kalks "K" mark (assets/brand/kalks-mark.svg) in any colour.
+/// The Ezymex "K" mark (assets/brand/ezymex-mark.svg) in any colour.
 class KLogoMark extends StatelessWidget {
   const KLogoMark({super.key, this.size = 24, this.color});
   final double size;
@@ -13,15 +13,15 @@ class KLogoMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SvgPicture.asset(
-    'assets/brand/kalks-mark.svg',
+    'assets/brand/ezymex-mark.svg',
     width: size,
     height: size * 541 / 653,
     colorFilter: ColorFilter.mode(color ?? context.k.ember, BlendMode.srcIn),
-    semanticsLabel: 'Kalks',
+    semanticsLabel: 'Ezymex',
   );
 }
 
-/// The full "Kalks" word mark (assets/brand/kalks-logo.svg).
+/// The full "Ezymex" word mark (assets/brand/ezymex-logo.svg).
 class KLogo extends StatelessWidget {
   const KLogo({super.key, this.height = 22, this.color});
   final double height;
@@ -29,10 +29,10 @@ class KLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SvgPicture.asset(
-    'assets/brand/kalks-logo.svg',
+    'assets/brand/ezymex-logo.svg',
     height: height,
     colorFilter: ColorFilter.mode(color ?? context.k.fg, BlendMode.srcIn),
-    semanticsLabel: 'Kalks',
+    semanticsLabel: 'Ezymex',
   );
 }
 
@@ -42,7 +42,7 @@ class KBrandAvatar extends StatelessWidget {
   const KBrandAvatar({super.key, this.size = 40, this.letter});
   final double size;
 
-  /// The broker's initial (config.tenant.name) when it isn't the stock Kalks brand.
+  /// The broker's initial (config.tenant.name) when it isn't the stock Ezymex brand.
   final String? letter;
 
   @override

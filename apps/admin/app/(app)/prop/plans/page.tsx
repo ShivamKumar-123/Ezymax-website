@@ -3,13 +3,13 @@
 import * as React from "react";
 import { Copy, History, Plus, Save, Send } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Chip, PageHeader, Reveal } from "@kalks/ui";
+import { Button, Chip, PageHeader, Reveal } from "@ezymex/ui";
 import { auditToast, useReason } from "@/components/config/kit";
 import { PLANS, type PropPlan } from "@/components/prop/data";
 import { PlanCard } from "@/components/prop/plan-card";
 import { FundedTermsCard, ModelCard, RiskCard, SizesCard, TradingRulesCard, defaultPhases } from "@/components/prop/plan-editor";
 import { ChangeSummary, PlanPreview, diffPlan } from "@/components/prop/plan-preview";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LivePlanBuilder } from "@/components/prop-live/plans";
 
 export default function PlanBuilderPage() {

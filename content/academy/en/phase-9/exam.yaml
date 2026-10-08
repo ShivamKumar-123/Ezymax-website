@@ -3,9 +3,9 @@ questions:
   - question: "Which statement about the seller, or writer, of an option is correct?"
     options: ["They pay the premium and gain the right to the payoff", "They receive the premium and must pay the payout if the option finishes in the money", "Their maximum loss is the premium received", "They must deliver the underlying at expiry"]
     answer: 1
-    explanation: "The seller collects the premium upfront and must pay the payout if the option ends in the money. The gain is capped at the premium, while the loss can be far larger. Kalks options are cash-settled, so nothing is delivered."
+    explanation: "The seller collects the premium upfront and must pay the payout if the option ends in the money. The gain is capped at the premium, while the loss can be far larger. Ezymex options are cash-settled, so nothing is delivered."
     chapter: "p9-o-what-are-options"
-  - question: "How does buying a Kalks option differ from opening a CFD position?"
+  - question: "How does buying a Ezymex option differ from opening a CFD position?"
     options: ["The buyer pays the full premium upfront with no leverage, and that premium is the maximum loss", "Options use more leverage than CFDs", "Options never lose value over time", "Options can be held indefinitely without an expiry"]
     answer: 0
     explanation: "A bought option is paid for in full, so there is no leverage and the premium is the most you can lose. A CFD uses margin and leverage, and its loss can exceed a planned stop. Options lose time value and always have an expiry."
@@ -65,7 +65,7 @@ questions:
     answer: 1
     explanation: "A knock-in only comes alive if the barrier is touched. Gold never reached 3,700, so the option expires worthless even though a standard 3,850 put would have paid 90 USD."
     chapter: "p9-o-barrier-options"
-  - question: "Which price does Kalks use to decide whether a barrier has been touched?"
+  - question: "Which price does Ezymex use to decide whether a barrier has been touched?"
     options: ["The underlying's mid price, monitored continuously until the cut", "The daily closing bid", "The settlement average at the cut only", "The ask price, checked once an hour"]
     answer: 0
     explanation: "The barrier is watched continuously on the mid price. Because charts normally plot the bid, the mid can touch an up-barrier slightly before the bid line on your chart does."
@@ -75,7 +75,7 @@ questions:
     answer: 3
     explanation: "A weekend add-on is applied on Fridays because prices can reopen far from Friday's close, and a short option cannot be closed or protected while the market is shut."
     chapter: "p9-o-selling-risk-and-margin"
-  - question: "Which statement about Kalks FX Options is true?"
+  - question: "Which statement about Ezymex FX Options is true?"
     options: ["A seller can be assigned at any time before expiry", "In-the-money options are settled by delivering the currency", "There is no early exercise or assignment, because the options are European and cash-settled", "Sellers need no margin because they receive the premium"]
     answer: 2
     explanation: "European, cash-settled options can only settle at expiry, in USD, so there is no assignment. Sellers still post scenario-based margin, because their potential loss can be far larger than the premium."

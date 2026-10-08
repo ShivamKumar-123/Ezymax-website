@@ -47,7 +47,7 @@ quiz:
     explanation: "An order with Today expiry is removed at the end of the trading day if unfilled. GTC orders stay active until filled or cancelled."
 ---
 
-A market order acts on the price in front of you. A **pending order** is an instruction to act at a price that has not been reached yet. It lets you define an entry in advance, walk away from the screen and still have the trade opened, or not, according to your plan. Kalks Trader supports limit, stop and stop-limit orders, each with an expiry.
+A market order acts on the price in front of you. A **pending order** is an instruction to act at a price that has not been reached yet. It lets you define an entry in advance, walk away from the screen and still have the trade opened, or not, according to your plan. Ezymex Trader supports limit, stop and stop-limit orders, each with an expiry.
 
 ## The four basic pending orders
 
@@ -103,7 +103,7 @@ A **stop-limit** combines both ideas. You set a stop price and a limit price. Wh
 
 > **Example:** EURUSD is at 1.0851. You place a buy stop-limit with stop 1.0880 and limit 1.0885. If the ask reaches 1.0880, a buy limit at 1.0885 is placed, so you can be filled anywhere up to 1.0885 but never above it. If news makes the price jump straight to 1.0895, you are not filled; the limit order waits until the price comes back to 1.0885 or better, or until it expires.
 
-The trade-off is clear: a plain stop guarantees entry but not price; a stop-limit protects price but not entry. Before relying on stop-limits, check in the Kalks Trader order ticket which combinations of stop and limit price it accepts for each direction.
+The trade-off is clear: a plain stop guarantees entry but not price; a stop-limit protects price but not entry. Before relying on stop-limits, check in the Ezymex Trader order ticket which combinations of stop and limit price it accepts for each direction.
 
 ## Expiry
 

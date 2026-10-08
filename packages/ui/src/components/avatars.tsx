@@ -1,5 +1,5 @@
 import * as React from "react";
-import { getInstrument, type SymbolIcon } from "@kalks/mock";
+import { getInstrument, type SymbolIcon } from "@ezymex/mock";
 import { cn } from "../lib/cn";
 import { AnimIcon } from "./anim-icon";
 
@@ -53,7 +53,7 @@ export function CoinIcon({ coin, size = 32, className }: { coin: string; size?: 
 }
 
 /**
- * Accent icon for KPIs, heroes and empty states. Formerly a 3D emoji PNG; now the Kalks animated line icon
+ * Accent icon for KPIs, heroes and empty states. Formerly a 3D emoji PNG; now the Ezymex animated line icon
  * (same `name` keys, see ANIM_ICONS).
  */
 export function Icon3D({ name, size = 64, className }: { name: string; size?: number; className?: string }) {

@@ -88,7 +88,7 @@ const accounts: NsMessages<"accounts"> = {
   "empty.openFirst": "Buka akun pertama Anda untuk mulai trading.",
   "empty.noLive": "Belum ada akun live",
   "empty.noDemo": "Belum ada akun demo",
-  "empty.liveText": "Buka akun live sekarang dan dapatkan login serta kata sandi Anda secara instan. Danai akun dari dompet Kalks Anda.",
+  "empty.liveText": "Buka akun live sekarang dan dapatkan login serta kata sandi Anda secara instan. Danai akun dari dompet Ezymex Anda.",
   "empty.demoText": "Akun demo dilengkapi dana virtual dengan harga real-time, sehingga Anda dapat berlatih tanpa risiko.",
   "error.unavailableTitle": "Akun trading tidak tersedia",
   "error.unavailableText": "Kami tidak dapat terhubung ke layanan trading. Akun dan saldo Anda aman; silakan coba lagi sebentar lagi.",
@@ -110,13 +110,13 @@ const accounts: NsMessages<"accounts"> = {
   // Platforms card (demo build). WebTerminal is a product name.
   "platform.mt5Compatible": "Kompatibel dengan MT5",
   "platform.title": "Trading di mana saja",
-  "platform.text": "Kalks WebTerminal, MetaTrader 5 desktop dan seluler — satu login, kredensial yang sama.",
+  "platform.text": "Ezymex WebTerminal, MetaTrader 5 desktop dan seluler — satu login, kredensial yang sama.",
   "platform.downloading": "Mengunduh MetaTrader 5",
   "platform.mt5Desktop": "MT5 desktop",
 
   // Account types section on the accounts list
   "types.title": "Jenis akun",
-  "types.subtitle": "Instrumen dan Kalks Trader yang sama di setiap jenis. Pilih harga dan mode posisi yang sesuai untuk Anda.",
+  "types.subtitle": "Instrumen dan Ezymex Trader yang sama di setiap jenis. Pilih harga dan mode posisi yang sesuai untuk Anda.",
   "types.footer": "Perlindungan saldo negatif di setiap akun · Leverage hanya dapat diubah tanpa posisi terbuka · Saldo demo dapat diisi ulang beberapa kali per hari.",
   "compare.title": "Bandingkan jenis akun",
   "compare.subtitle": "Instrumen, platform, dan perlindungan yang sama — pilih harga yang sesuai dengan gaya Anda.",
@@ -161,7 +161,7 @@ const accounts: NsMessages<"accounts"> = {
   // Account row and its actions menu
   "row.trade": "Trading",
   "row.refill": "Isi ulang",
-  "row.cantOpenTrader": "Akun ini tidak dapat dibuka di Kalks Trader",
+  "row.cantOpenTrader": "Akun ini tidak dapat dibuka di Ezymex Trader",
   "row.openPositions": { other: "{count} posisi terbuka" },
   "row.pendingOrders": { other: "{count} pending order" },
   // Followed by the floating profit/loss amount
@@ -196,7 +196,7 @@ const accounts: NsMessages<"accounts"> = {
   "fund.centAccount": "akun sen (USC)",
   "fund.depositUsdt": "Deposit USDT",
   "fund.transferFromWallet": "Transfer dari dompet",
-  "fund.fromWallet": "Didanai dari dompet Kalks Anda",
+  "fund.fromWallet": "Didanai dari dompet Ezymex Anda",
   "fund.text": "Deposit USDT di BNB Chain atau TRON ke dompet Anda, lalu transfer ke akun ini secara instan. USDT dikreditkan 1:1 dalam USD.",
   "fund.textCent": "Deposit USDT di BNB Chain atau TRON ke dompet Anda, lalu transfer ke akun ini secara instan. USDT dikreditkan 1:1 dalam USD, ditampilkan ×100 dalam USC pada akun sen.",
 
@@ -252,7 +252,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.swapFreeTitle": "Akun bebas swap (Islami)",
   "wizard.swapFreeText": "Tanpa swap menginap. Biaya admin tetap dapat berlaku setelah 5 malam pada beberapa instrumen.",
   "wizard.setPasswordTitle": "Tetapkan kata sandi trading",
-  "wizard.setPasswordSubtitle": "Kata sandi master Anda untuk MT5 dan terminal Kalks. Kata sandi investor (hanya baca) dibuat untuk Anda.",
+  "wizard.setPasswordSubtitle": "Kata sandi master Anda untuk MT5 dan terminal Ezymex. Kata sandi investor (hanya baca) dibuat untuk Anda.",
   "wizard.agreeMock": "Saya menyetujui <client>Perjanjian Klien</client> dan <risk>Pengungkapan Risiko</risk>, serta memahami bahwa CFD memiliki risiko tinggi kehilangan uang.",
   "wizard.clientAgreementOpened": "Perjanjian klien dibuka",
   "wizard.riskDisclosureOpened": "Pengungkapan risiko dibuka",
@@ -284,10 +284,10 @@ const accounts: NsMessages<"accounts"> = {
   "kind.demoText": "Berlatih tanpa risiko dengan harga real-time.",
   "kind.liveTextMock": "Trading di pasar nyata dengan uang sungguhan. Danai secara instan dari dompet USDT Anda.",
   "kind.demoTextMock": "Berlatih tanpa risiko dengan dana virtual pada harga real-time.",
-  "kind.live.point1": "Eksekusi nyata di Kalks-Live",
+  "kind.live.point1": "Eksekusi nyata di Ezymex-Live",
   "kind.live.point2": "Dimulai dengan saldo nol; didanai dari dompet Anda",
   "kind.live.point3": "Login dan kata sandi diterbitkan secara instan",
-  "kind.live.mock1": "Eksekusi nyata di server Kalks-Live",
+  "kind.live.mock1": "Eksekusi nyata di server Ezymex-Live",
   "kind.live.mock2": "Pendanaan USDT instan, 1:1 ke USD",
   "kind.live.mock3": "Tarik profit kapan saja (setelah KYC)",
   "kind.demo.virtualFunds": "Dana virtual (default {amount})",
@@ -303,12 +303,12 @@ const accounts: NsMessages<"accounts"> = {
 
   // Open account wizard: account created
   "created.title": "Akun Anda sudah siap",
-  "created.liveText": "Akun dimulai dengan saldo nol. Danai akun dari dompet Kalks Anda, lalu masuk ke Kalks Trader dengan kredensial ini.",
+  "created.liveText": "Akun dimulai dengan saldo nol. Danai akun dari dompet Ezymex Anda, lalu masuk ke Ezymex Trader dengan kredensial ini.",
   "created.demoText": "Terisi {amount} dana virtual.",
   "created.demoExpires": "Kedaluwarsa setelah {days} hari tanpa login terminal.",
   "created.liveTextMock": "Danai dari dompet USDT Anda dan mulai trading dalam hitungan detik.",
   "created.demoTextMock": "Terisi {amount} dana virtual. Kedaluwarsa dalam {days} hari.",
-  "created.openInTrader": "Buka di Kalks Trader",
+  "created.openInTrader": "Buka di Ezymex Trader",
   "created.openTerminal": "Buka terminal",
   "created.viewAccount": "Lihat akun",
   "created.credentials": "Kredensial login",
@@ -329,7 +329,7 @@ const accounts: NsMessages<"accounts"> = {
   "error.account_limit": "Anda telah mencapai jumlah maksimum akun untuk jenis ini.",
   "error.invalid_leverage": "Leverage ini tidak tersedia untuk grup akun ini.",
   "error.unavailable": "Layanan trading tidak tersedia. Silakan coba lagi sebentar lagi.",
-  "toast.openTraderFailed": "Tidak dapat membuka Kalks Trader",
+  "toast.openTraderFailed": "Tidak dapat membuka Ezymex Trader",
   "toast.exportStarted": "Ekspor laporan dimulai",
   // {kind} is "transaksi" or "buku besar" (export.trades / export.ledger)
   "toast.exportDesc": "#{login} · {kind} · CSV, waktu dalam UTC",
@@ -406,7 +406,7 @@ const accounts: NsMessages<"accounts"> = {
   "close.subtitle": "Akun yang sudah ditutup tidak dapat Anda pulihkan sendiri. Jika mungkin Anda memerlukannya lagi, hapus (arsipkan) saja.",
   "close.blocked": "Akun ini tidak dapat ditutup saat ini",
   "close.finalTitle": "Penutupan bersifat final",
-  "close.final1": "Trading, transfer, dan login Kalks Trader dihentikan selamanya, dan nomor login tidak akan dipakai ulang.",
+  "close.final1": "Trading, transfer, dan login Ezymex Trader dihentikan selamanya, dan nomor login tidak akan dipakai ulang.",
   "close.final2": "Laporan dan riwayat tetap tersedia di Akun › Diarsipkan.",
   "close.final3": "Tim kepatuhan kami meninjau permintaan ini dan memberi tahu Anda melalui email dan notifikasi.",
   "close.whyTitle": "Mengapa Anda menutup akun ini?",
@@ -514,7 +514,7 @@ const accounts: NsMessages<"accounts"> = {
   "dormant.chip": "Tidak aktif",
   "history.zip": "Unduh riwayat lengkap (ZIP)",
 
-  // Kalks FX Options in trade history, positions, orders and exports
+  // Ezymex FX Options in trade history, positions, orders and exports
   "opt.tag": "Opsi",
   "opt.call": "Call",
   "opt.put": "Put",
@@ -530,7 +530,7 @@ const accounts: NsMessages<"accounts"> = {
   "opt.filter.cfd": "CFD",
   "opt.filter.options": "Opsi",
   "opt.emptyOptions": "Tidak ada transaksi opsi pada periode ini",
-  "opt.emptyOptionsText": "Opsi yang Anda beli atau jual di Kalks Trader muncul di sini, beserta cara masing-masing berakhir: ditutup, kedaluwarsa, atau knock-out.",
+  "opt.emptyOptionsText": "Opsi yang Anda beli atau jual di Ezymex Trader muncul di sini, beserta cara masing-masing berakhir: ditutup, kedaluwarsa, atau knock-out.",
   "opt.emptyCfd": "Tidak ada transaksi CFD pada periode ini",
   "opt.truncated": "Menampilkan {count} deal terbaru yang cocok. Pilih periode yang lebih pendek untuk melihat yang lebih lama.",
   // How a deal was closed

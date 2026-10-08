@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Camera, Eye, MoreHorizontal, PlayCircle, RefreshCw, RotateCw, Snowflake, Timer, Users, Wallet } from "lucide-react";
-import { Button, Card, Chip, CopyButton, DataTable, Dialog, EmptyState, EquityChart, IconButton, KpiCard, Menu, PageHeader, Reveal, cn, formatNumber, type Column } from "@kalks/ui";
+import { Button, Card, Chip, CopyButton, DataTable, Dialog, EmptyState, EquityChart, IconButton, KpiCard, Menu, PageHeader, Reveal, cn, formatNumber, type Column } from "@ezymex/ui";
 import { MiniStat, Section } from "@/components/config/kit";
 import { TableSkeleton, day, useApi, useNow, when } from "@/components/live/kit";
 import { Checkbox } from "@/components/trading-desk/kit";

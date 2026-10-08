@@ -1,7 +1,7 @@
-//! HTTP API (internal; every route except /health needs `X-Kalks-Internal`). `X-Kalks-Tenant` picks the
-//! tenant whose staff decisions (pin / hide / retag) apply; default "kalks".
+//! HTTP API (internal; every route except /health needs `X-Ezymex-Internal`). `X-Ezymex-Tenant` picks the
+//! tenant whose staff decisions (pin / hide / retag) apply; default "ezymex".
 //!
-//! Read API (Client Area, Kalks Trader and Back Office BFFs; no user needed):
+//! Read API (Client Area, Ezymex Trader and Back Office BFFs; no user needed):
 //!
 //! | route                                  | query                                                        | response                                   |
 //! |----------------------------------------|--------------------------------------------------------------|--------------------------------------------|
@@ -14,11 +14,11 @@
 //! | `GET /v1/calendar/{id}`                | –                                                            | `{event, history[]}` (past releases)       |
 //! | `GET /v1/brief`                        | `day` (YYYY-MM-DD, default today server time)               | `{brief|null, day, model, createdAt, configured}` |
 //!
-//! Client routes (the CRM BFF adds `X-Kalks-User-Id`):
+//! Client routes (the CRM BFF adds `X-Ezymex-User-Id`):
 //! `GET /v1/me/calendar` · `POST /v1/me/calendar/reminders {eventId, minutes?}` ·
 //! `DELETE /v1/me/calendar/reminders/{eventId}` · `PUT|DELETE /v1/me/calendar/alerts {highImpact, currencies[], minutes}`
 //!
-//! Back Office (admin BFF checks `content.read` / `content.write` and adds `X-Kalks-Staff`):
+//! Back Office (admin BFF checks `content.read` / `content.write` and adds `X-Ezymex-Staff`):
 //! `GET /v1/admin/news?status&source&q&limit&offset` · `PUT /v1/admin/news/{id} {pinned?, hidden?, symbols?,
 //! countries?, importance?}` · `DELETE /v1/admin/news/{id}` (reset to automatic tags) · `GET /v1/admin/sources` ·
 //! `PUT /v1/admin/sources/{id} {enabled}` (platform tenant only) · `POST /v1/admin/sources/{id}/refresh` ·
@@ -42,7 +42,7 @@ use crate::calendar::{self, impact_label, server_offset_hours, server_week_start
 use crate::tagging::{self, COUNTRIES};
 use crate::{AppState, brief, store, workers};
 
-pub const PLATFORM_TENANT: &str = "kalks";
+pub const PLATFORM_TENANT: &str = "ezymex";
 
 /* ------------------------------------------------------------------ */
 /* Errors and request context                                          */
@@ -88,12 +88,12 @@ fn is_slug(s: &str) -> bool {
 }
 
 fn tenant(h: &HeaderMap) -> String {
-    let t = h.get("x-kalks-tenant").and_then(|v| v.to_str().ok()).unwrap_or(PLATFORM_TENANT).trim().to_ascii_lowercase();
+    let t = h.get("x-ezymex-tenant").and_then(|v| v.to_str().ok()).unwrap_or(PLATFORM_TENANT).trim().to_ascii_lowercase();
     if is_slug(&t) { t } else { PLATFORM_TENANT.into() }
 }
 
 fn user_id(h: &HeaderMap) -> R<i64> {
-    h.get("x-kalks-user-id")
+    h.get("x-ezymex-user-id")
         .and_then(|v| v.to_str().ok())
         .and_then(|v| v.parse::<i64>().ok())
         .filter(|v| *v > 0)
@@ -101,7 +101,7 @@ fn user_id(h: &HeaderMap) -> R<i64> {
 }
 
 fn staff(h: &HeaderMap) -> R<String> {
-    h.get("x-kalks-staff")
+    h.get("x-ezymex-staff")
         .and_then(|v| v.to_str().ok())
         .map(|s| s.trim().chars().take(120).collect::<String>())
         .filter(|s| !s.is_empty())
@@ -110,7 +110,7 @@ fn staff(h: &HeaderMap) -> R<String> {
 
 async fn require_internal(State(st): State<AppState>, req: Request, next: Next) -> Response {
     if !st.cfg.internal_token.is_empty() {
-        let got = req.headers().get("x-kalks-internal").map(|v| v.as_bytes()).unwrap_or(b"");
+        let got = req.headers().get("x-ezymex-internal").map(|v| v.as_bytes()).unwrap_or(b"");
         if !bool::from(got.ct_eq(st.cfg.internal_token.as_bytes())) {
             return ApiError::new(StatusCode::UNAUTHORIZED, "unauthorized", "Internal token required.").into_response();
         }

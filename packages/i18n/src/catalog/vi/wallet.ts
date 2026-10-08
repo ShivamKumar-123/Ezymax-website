@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Keep brand and network names as they are: Kalks, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
+// Keep brand and network names as they are: Ezymex, USDT, TRC20, BEP20, TRON, BNB Smart Chain, BNB Chain,
 // MetaMask, TronLink, Tronscan, USD, USC, KYC.
 const wallet: NsMessages<"wallet"> = {
   // Shared labels
@@ -387,17 +387,17 @@ const wallet: NsMessages<"wallet"> = {
   "demo.linkCopied": "Đã sao chép liên kết",
   "demo.sendOnlyWarning": "<b>Chỉ gửi USDT qua TRON (TRC20).</b> Gửi bất kỳ token nào khác hoặc dùng ERC20 / BEP20 sẽ khiến bạn mất tiền vĩnh viễn.",
   "demo.arrival": "Thời gian đến",
-  "demo.kalksFee": "Phí Kalks",
+  "demo.ezymexFee": "Phí Ezymex",
   "demo.noKycDeposit": "Không cần KYC để nạp tiền. Chỉ cần xác minh trước lần rút tiền đầu tiên.",
   // Withdraw
   "demo.addrStartT": "Địa chỉ TRC20 bắt đầu bằng “T”",
   "demo.addrLength": "Phải có 34 ký tự ({length}/34)",
   "demo.addrChars": "Chứa ký tự không hợp lệ (không cho phép 0, O, I, l)",
-  "demo.addrOwn": "Đây là địa chỉ nạp tiền Kalks của chính bạn",
+  "demo.addrOwn": "Đây là địa chỉ nạp tiền Ezymex của chính bạn",
   "demo.justNow": "Vừa xong",
   "demo.codeConfirmed": "Đã xác nhận mã qua {email}",
   "demo.financeReviews": "Bộ phận tài chính xét duyệt mọi lệnh rút · thường dưới 2 giờ",
-  "demo.sentFromHot": "Được gửi từ ví nóng Kalks sau khi được duyệt",
+  "demo.sentFromHot": "Được gửi từ ví nóng Ezymex sau khi được duyệt",
   "demo.arriveAfter": "Tiền đến địa chỉ của bạn sau 20 xác nhận",
   "demo.pendingTitle": "Lệnh rút tiền đang chờ",
   "demo.awaitingCompletion": "{count} lệnh đang chờ hoàn tất",
@@ -455,7 +455,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.alwaysReviewed": "Luôn được bộ phận tài chính xét duyệt",
   "demo.unrecoverable": "Rút tiền đến sàn không hỗ trợ USDT TRC20, hoặc đến địa chỉ hợp đồng thông minh, sẽ không thể khôi phục.",
   // Transfer
-  "demo.kalksWallet": "Ví Kalks",
+  "demo.ezymexWallet": "Ví Ezymex",
   "demo.freeMargin": "Ký quỹ khả dụng",
   "demo.assetAvailable": "{amount} {asset} khả dụng · {network}",
   "demo.throughWallet": "Chuyển tiền luôn đi qua ví của bạn.",
@@ -490,7 +490,7 @@ const wallet: NsMessages<"wallet"> = {
   "demo.rule4Title": "Bảo vệ ký quỹ khả dụng",
   "demo.rule4Text": "Bạn chỉ có thể chuyển ra số tiền mà ký quỹ khả dụng cho phép, để các lệnh đang mở luôn an toàn.",
   "demo.into": "vào",
-  "demo.intoKalksWallet": "vào ví Kalks của bạn",
+  "demo.intoEzymexWallet": "vào ví Ezymex của bạn",
   "demo.freeMarginAfter": "Ký quỹ khả dụng sau",
   "demo.marginLevelAfter": "Mức ký quỹ sau",
   "demo.convertedNote": "{asset} được quy đổi sang USD theo tỷ giá trực tiếp trừ phụ phí {markup}%. Tỷ giá được làm mới theo từng tick cho đến khi bạn xác nhận.",

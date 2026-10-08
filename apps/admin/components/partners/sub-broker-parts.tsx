@@ -3,8 +3,8 @@
 import * as React from "react";
 import { MessageSquare, Pause, Play, Save, UserPlus } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Chip, Dialog, Flag, Money, Progress, SpotlightCard, StatusChip } from "@kalks/ui";
-import { PARTNERS, type SubBroker } from "@kalks/mock/admin-partners";
+import { Avatar, Button, Chip, Dialog, Flag, Money, Progress, SpotlightCard, StatusChip } from "@ezymex/ui";
+import { PARTNERS, type SubBroker } from "@ezymex/mock/admin-partners";
 import { ChipList, MiniField, MiniStat, NumInput, Section, Select, TextInput, auditToast, useReason } from "@/components/config/kit";
 import { LevelChip, fmtDate, fmtInt, fmtLots } from "./common";
 

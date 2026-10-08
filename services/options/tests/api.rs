@@ -3,7 +3,7 @@
 //! smile, snapshot + ETag, Back Office writes with audit, controls, TWAP fixing, expiry golden lists against
 //! the seeded holiday calendars, and the WebSocket frame rate.
 //!
-//! Needs the local Postgres (127.0.0.1:5433). Uses `kalks_options_test_<pid>`; skipped with a message when
+//! Needs the local Postgres (127.0.0.1:5433). Uses `ezymex_options_test_<pid>`; skipped with a message when
 //! Postgres is not reachable. Override with OPTIONS_TEST_DATABASE_URL (a server URL).
 
 use axum::body::Body;
@@ -24,7 +24,7 @@ use options::{AppState, jobs, seed, store};
 async fn test_db(tag: &str) -> Option<String> {
     let server = std::env::var("OPTIONS_TEST_DATABASE_URL").unwrap_or_else(|_| "postgres://postgres@127.0.0.1:5433/postgres".into());
     let opts = PgConnectOptions::from_str(&server).ok()?;
-    let db = format!("kalks_options_test_{}_{tag}", std::process::id());
+    let db = format!("ezymex_options_test_{}_{tag}", std::process::id());
     let mut conn = match opts.clone().database("postgres").connect().await {
         Ok(c) => c,
         Err(e) => {
@@ -50,11 +50,11 @@ struct T {
     st: AppState,
 }
 
-const STAFF: (&str, &str) = ("x-kalks-staff", "ops@kalks");
+const STAFF: (&str, &str) = ("x-ezymex-staff", "ops@ezymex");
 
 impl T {
     async fn call(&self, method: &str, path: &str, headers: &[(&str, &str)], body: Option<Value>) -> (StatusCode, Value) {
-        let mut req = Request::builder().method(method).uri(path).header("x-kalks-internal", "test-token");
+        let mut req = Request::builder().method(method).uri(path).header("x-ezymex-internal", "test-token");
         for (k, v) in headers {
             req = req.header(*k, *v);
         }
@@ -109,7 +109,7 @@ async fn options_service_end_to_end() {
 
     // ---------------- seed + module switches
     let rd = t.st.refdata().await;
-    let k = rd.tenant("kalks");
+    let k = rd.tenant("ezymex");
     assert!(k.enabled_demo && k.enabled_live && !k.public_chain, "tenant 1 seeded demo + live ON, public chain OFF");
     assert!(!rd.tenant("otherbroker").any_enabled(), "unknown tenants are OFF");
     assert!(!rd.underlying("NZDUSD").unwrap().enabled, "NZDUSD has no feed yet");
@@ -118,11 +118,11 @@ async fn options_service_end_to_end() {
     assert!(rd.calendars.get("EUR").unwrap().is_holiday(optmath::Date::parse("2026-12-25").unwrap()));
     drop(rd);
 
-    let (s, v) = t.call("GET", "/v1/options/underlyings", &[("x-kalks-tenant", "otherbroker")], None).await;
+    let (s, v) = t.call("GET", "/v1/options/underlyings", &[("x-ezymex-tenant", "otherbroker")], None).await;
     assert_eq!((s, v["error"]["code"].as_str()), (StatusCode::NOT_FOUND, Some("options_disabled")));
-    let (s, _) = t.call("GET", "/v1/options/underlyings", &[("x-kalks-account-kind", "live")], None).await;
+    let (s, _) = t.call("GET", "/v1/options/underlyings", &[("x-ezymex-account-kind", "live")], None).await;
     assert_eq!(s, StatusCode::OK, "live accounts are on for tenant 1");
-    let (s, _) = t.call("GET", "/v1/options/underlyings", &[("x-kalks-account-kind", "demo")], None).await;
+    let (s, _) = t.call("GET", "/v1/options/underlyings", &[("x-ezymex-account-kind", "demo")], None).await;
     assert_eq!(s, StatusCode::OK);
     let (s, _) = t.call("GET", "/v1/public/options/chain/EURUSD", &[], None).await;
     assert_eq!(s, StatusCode::NOT_FOUND, "public chain off by default");
@@ -187,7 +187,7 @@ async fn options_service_end_to_end() {
     assert!(sm["points"].as_array().unwrap().len() >= 21 && sm["pillars"].as_array().unwrap().len() == 5);
 
     // ---------------- snapshot + ETag
-    let res = t.app.clone().oneshot(Request::get("/v1/internal/options/snapshot").header("x-kalks-internal", "test-token").body(Body::empty()).unwrap()).await.unwrap();
+    let res = t.app.clone().oneshot(Request::get("/v1/internal/options/snapshot").header("x-ezymex-internal", "test-token").body(Body::empty()).unwrap()).await.unwrap();
     assert_eq!(res.status(), StatusCode::OK);
     let etag = res.headers().get("etag").unwrap().to_str().unwrap().to_string();
     let snap: Value = serde_json::from_slice(&res.into_body().collect().await.unwrap().to_bytes()).unwrap();
@@ -200,7 +200,7 @@ async fn options_service_end_to_end() {
     let res = t
         .app
         .clone()
-        .oneshot(Request::get("/v1/internal/options/snapshot").header("x-kalks-internal", "test-token").header("if-none-match", &etag).body(Body::empty()).unwrap())
+        .oneshot(Request::get("/v1/internal/options/snapshot").header("x-ezymex-internal", "test-token").header("if-none-match", &etag).body(Body::empty()).unwrap())
         .await
         .unwrap();
     assert_eq!(res.status(), StatusCode::NOT_MODIFIED);
@@ -215,7 +215,7 @@ async fn options_service_end_to_end() {
     assert!(v["version"].as_i64().unwrap() > snap["version"].as_i64().unwrap());
     let hist = t.call("GET", "/v1/admin/options/rates/USD/history", &[STAFF], None).await.1;
     assert_eq!(hist["history"][0]["prevRate"], 0.03625);
-    let (s, _) = t.call("PUT", "/v1/admin/options/rates/USD", &[STAFF, ("x-kalks-tenant", "otherbroker")], Some(json!({"rate": 0.01, "reason": "nope"}))).await;
+    let (s, _) = t.call("PUT", "/v1/admin/options/rates/USD", &[STAFF, ("x-ezymex-tenant", "otherbroker")], Some(json!({"rate": 0.01, "reason": "nope"}))).await;
     assert_eq!(s, StatusCode::FORBIDDEN, "brokers cannot change platform rates");
     let (s, _) = t.call("PUT", "/v1/admin/options/rates/USD", &[], Some(json!({"rate": 0.01, "reason": "nope"}))).await;
     assert_eq!(s, StatusCode::UNAUTHORIZED, "staff header required");
@@ -245,13 +245,13 @@ async fn options_service_end_to_end() {
     let (s, _) = t.call("DELETE", "/v1/admin/options/groups/*/*", &[STAFF], None).await;
     assert_eq!(s, StatusCode::UNPROCESSABLE_ENTITY);
 
-    // tenant switch: Kalks staff only, reason required, audited
-    let (s, _) = t.call("PUT", "/v1/admin/options/tenants/otherbroker", &[STAFF, ("x-kalks-tenant", "otherbroker")], Some(json!({"enabledDemo": true, "reason": "self-enable"}))).await;
+    // tenant switch: Ezymex staff only, reason required, audited
+    let (s, _) = t.call("PUT", "/v1/admin/options/tenants/otherbroker", &[STAFF, ("x-ezymex-tenant", "otherbroker")], Some(json!({"enabledDemo": true, "reason": "self-enable"}))).await;
     assert_eq!(s, StatusCode::FORBIDDEN);
     let (s, v) = t.call("PUT", "/v1/admin/options/tenants/otherbroker", &[STAFF], Some(json!({"enabledDemo": true, "underlyings": ["XAUUSD"], "reason": "pilot"}))).await;
     assert_eq!(s, StatusCode::OK, "{v}");
     assert_eq!(v["tenant"]["enabledLive"], false);
-    let ob = t.call("GET", "/v1/options/underlyings", &[("x-kalks-tenant", "otherbroker")], None).await.1;
+    let ob = t.call("GET", "/v1/options/underlyings", &[("x-ezymex-tenant", "otherbroker")], None).await.1;
     assert_eq!(ob["underlyings"].as_array().unwrap().len(), 1);
 
     // controls: halt one expiry, freeze another, manual vol
@@ -262,9 +262,9 @@ async fn options_service_end_to_end() {
     let halted = t.get(&format!("/v1/options/chain?u=EURUSD&expiry={date}")).await;
     assert_eq!(halted["state"], "halted");
     assert_eq!(halted["rows"][0]["call"]["state"], "halted");
-    let (s, _) = t.call("DELETE", &format!("/v1/admin/options/controls/{ctl_id}"), &[STAFF, ("x-kalks-tenant", "otherbroker")], None).await;
+    let (s, _) = t.call("DELETE", &format!("/v1/admin/options/controls/{ctl_id}"), &[STAFF, ("x-ezymex-tenant", "otherbroker")], None).await;
     assert_eq!(s, StatusCode::UNPROCESSABLE_ENTITY, "reason required");
-    let (s, _) = t.call("DELETE", &format!("/v1/admin/options/controls/{ctl_id}?reason=feed%20ok"), &[STAFF, ("x-kalks-tenant", "otherbroker")], None).await;
+    let (s, _) = t.call("DELETE", &format!("/v1/admin/options/controls/{ctl_id}?reason=feed%20ok"), &[STAFF, ("x-ezymex-tenant", "otherbroker")], None).await;
     assert_eq!(s, StatusCode::FORBIDDEN, "a broker cannot clear another tenant's control");
     let (s, _) = t.call("DELETE", &format!("/v1/admin/options/controls/{ctl_id}?reason=feed%20ok"), &[STAFF], None).await;
     assert_eq!(s, StatusCode::OK);
@@ -286,7 +286,7 @@ async fn options_service_end_to_end() {
     }
 
     // public chain once enabled, cached 1 s, without internal inputs
-    t.call("PUT", "/v1/admin/options/tenants/kalks", &[STAFF], Some(json!({"publicChain": true, "reason": "guest page"}))).await;
+    t.call("PUT", "/v1/admin/options/tenants/ezymex", &[STAFF], Some(json!({"publicChain": true, "reason": "guest page"}))).await;
     let res = t.app.clone().oneshot(Request::get("/v1/public/options/chain/xauusd").body(Body::empty()).unwrap()).await.unwrap();
     assert_eq!(res.status(), StatusCode::OK);
     let pc: Value = serde_json::from_slice(&res.into_body().collect().await.unwrap().to_bytes()).unwrap();

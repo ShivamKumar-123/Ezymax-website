@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Avatar, Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, DialogClose, Flag, Icon3D, Illustration, KeyValue, KpiCard, Money, PageHeader, Reveal, cn, type Column } from "@/components/kit";
 import { TERMINAL_URL } from "@/lib/live";
 import { Countdown } from "@/components/rewards/countdown";
-import { tr, useT } from "@kalks/i18n/react";
+import { tr, useT } from "@ezymex/i18n/react";
 import { BannerSlot } from "./banner-slot";
 import {
   GrowthApiError,
@@ -111,7 +111,7 @@ function Credentials({ c, creds }: { c: Contest; creds: NonNullable<JoinResult["
             ["Login", t("rewards.join.login"), String(creds.login)],
             ["Password", t("rewards.join.password"), creds.password],
             ["Investor password", t("rewards.join.investorPassword"), creds.investorPassword],
-            ["Server", t("rewards.join.server"), "Kalks-Demo"],
+            ["Server", t("rewards.join.server"), "Ezymex-Demo"],
           ] as const
         ).map(([k, label, v]) => (
           <div key={k} className="flex items-center gap-3 px-4 py-2.5">

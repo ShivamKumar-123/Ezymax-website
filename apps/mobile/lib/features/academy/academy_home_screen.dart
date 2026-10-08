@@ -1,6 +1,6 @@
 // Academy › Courses (/academy): port of the web's LiveAcademyHome (components/academy/live/home.tsx), phone order:
 //   header (Glossary · My progress) · continue hero · learning stats · your learning path (core phase cards) ·
-//   electives · glossary teaser · certificates · practise in Kalks Trader · risk note.
+//   electives · glossary teaser · certificates · practise in Ezymex Trader · risk note.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';

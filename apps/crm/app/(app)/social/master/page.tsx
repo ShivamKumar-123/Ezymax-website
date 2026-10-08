@@ -23,11 +23,11 @@ import {
   cn,
   formatMoney,
 } from "@/components/kit";
-import { ACCOUNTS, ME, equitySeries } from "@kalks/mock";
-import { MASTER_APPLICATION, SOCIAL_POLICY, type MasterProgram, type Rollover } from "@kalks/mock/social";
+import { ACCOUNTS, ME, equitySeries } from "@ezymex/mock";
+import { MASTER_APPLICATION, SOCIAL_POLICY, type MasterProgram, type Rollover } from "@ezymex/mock/social";
 import { RadioCard, RangeSlider, ToggleChip } from "@/components/social/controls";
 import { ProgramTags, RiskBadge } from "@/components/social/master-bits";
-import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LiveMasterPage } from "@/components/social-live/master-dashboard";
 
 const TAGS = ["Gold", "Forex", "Indices", "Crypto", "Swing", "Intraday", "Scalping", "Algo", "Low risk", "News", "Swap-free"];
@@ -174,18 +174,18 @@ function DemoBecomeMasterPage() {
           <div className="relative grid grid-cols-1 gap-6 p-6 sm:p-8 lg:grid-cols-[1.3fr_1fr] lg:items-center">
             <div>
               <Chip tone="gold" className="mb-3">
-                <Crown className="size-3.5" /> Kalks Masters programme
+                <Crown className="size-3.5" /> Ezymex Masters programme
               </Chip>
               <h2 className="max-w-xl text-[26px] font-medium leading-tight tracking-tight sm:text-[32px]">Turn your track record into a second income.</h2>
               <p className="mt-2 max-w-xl text-[14px] text-fg-2">
-                Charge {SOCIAL_POLICY.perfFeeMin}–{SOCIAL_POLICY.perfFeeMax}% on new profits above the high-water mark. Kalks handles allocation, reporting and payouts.
+                Charge {SOCIAL_POLICY.perfFeeMin}–{SOCIAL_POLICY.perfFeeMax}% on new profits above the high-water mark. Ezymex handles allocation, reporting and payouts.
               </p>
             </div>
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 lg:grid-cols-1">
               {[
                 { icon: <Percent />, t: "Performance fees", s: "Paid to your wallet after admin approval" },
                 { icon: <Users />, t: "Grow AUM", s: "Featured on Discover once approved" },
-                { icon: <Bot />, t: "API & algo welcome", s: "Run EAs or the Kalks API on your account" },
+                { icon: <Bot />, t: "API & algo welcome", s: "Run EAs or the Ezymex API on your account" },
               ].map((b) => (
                 <div key={b.t} className="flex items-center gap-3 rounded-[16px] border border-white/10 light:border-line bg-black/35 light:bg-white/70 px-4 py-3 backdrop-blur">
                   <span className="grid size-8 shrink-0 place-items-center rounded-full bg-ember/20 text-ember [&_svg]:size-4">{b.icon}</span>

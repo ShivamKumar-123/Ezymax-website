@@ -46,7 +46,7 @@ class AppConfig {
   final String appUrl, terminalUrl, marketDataHttp, marketDataWs, engineStream, optionsStream, supportStream;
   final String tenantSlug, tenantName;
 
-  /// The stock Kalks look (no white-label branding).
+  /// The stock Ezymex look (no white-label branding).
   final bool tenantDefault;
   final String? logoUrl;
 
@@ -71,16 +71,16 @@ class AppConfig {
   static final AppConfig fallback = AppConfig.fromJson(const {
     'apiVersion': 1,
     'urls': {
-      'app': 'https://app.kalkstrade.com',
-      'terminal': 'https://trade.kalkstrade.com',
-      'marketData': {'http': 'https://api.kalkstrade.com', 'ws': 'wss://api.kalkstrade.com/v1/stream'},
+      'app': 'https://app.ezymex.com',
+      'terminal': 'https://trade.ezymex.com',
+      'marketData': {'http': 'https://api.ezymex.com', 'ws': 'wss://api.ezymex.com/v1/stream'},
       'streams': {
-        'engine': 'wss://trade.kalkstrade.com/engine/stream',
-        'options': 'wss://trade.kalkstrade.com/options/stream',
-        'support': 'wss://app.kalkstrade.com/support/stream',
+        'engine': 'wss://trade.ezymex.com/engine/stream',
+        'options': 'wss://trade.ezymex.com/options/stream',
+        'support': 'wss://app.ezymex.com/support/stream',
       },
     },
-    'tenant': {'slug': 'kalks', 'name': 'Kalks', 'default': true},
+    'tenant': {'slug': 'ezymex', 'name': 'Ezymex', 'default': true},
   });
 
   static AppConfig fromJson(Map<String, dynamic> j) {
@@ -95,15 +95,15 @@ class AppConfig {
     return AppConfig(
       apiVersion: (j['apiVersion'] as num?)?.toInt() ?? 1,
       minAppVersion: j['minAppVersion'] as String?,
-      appUrl: s(urls['app'], 'https://app.kalkstrade.com'),
-      terminalUrl: s(urls['terminal'], 'https://trade.kalkstrade.com'),
-      marketDataHttp: s(md['http'], 'https://api.kalkstrade.com'),
-      marketDataWs: s(md['ws'], 'wss://api.kalkstrade.com/v1/stream'),
-      engineStream: s(streams['engine'], 'wss://trade.kalkstrade.com/engine/stream'),
-      optionsStream: s(streams['options'], 'wss://trade.kalkstrade.com/options/stream'),
-      supportStream: s(streams['support'], 'wss://app.kalkstrade.com/support/stream'),
-      tenantSlug: s(tenant['slug'], 'kalks'),
-      tenantName: s(tenant['name'], 'Kalks'),
+      appUrl: s(urls['app'], 'https://app.ezymex.com'),
+      terminalUrl: s(urls['terminal'], 'https://trade.ezymex.com'),
+      marketDataHttp: s(md['http'], 'https://api.ezymex.com'),
+      marketDataWs: s(md['ws'], 'wss://api.ezymex.com/v1/stream'),
+      engineStream: s(streams['engine'], 'wss://trade.ezymex.com/engine/stream'),
+      optionsStream: s(streams['options'], 'wss://trade.ezymex.com/options/stream'),
+      supportStream: s(streams['support'], 'wss://app.ezymex.com/support/stream'),
+      tenantSlug: s(tenant['slug'], 'ezymex'),
+      tenantName: s(tenant['name'], 'Ezymex'),
       tenantDefault: tenant['default'] != false,
       logoUrl: tenant['logoUrl'] as String?,
       primary: parseHex(tenant['primary'] as String?),

@@ -144,7 +144,7 @@ mod tests {
     #[test]
     fn emails() {
         assert_eq!(email("  Arjun.Mehta@Mail.com ").unwrap(), "arjun.mehta@mail.com");
-        assert!(email("a+tag@kalks.co.in").is_ok());
+        assert!(email("a+tag@ezymex.co.in").is_ok());
         for bad in ["", "plain", "a@b", "a@.com", "a@b.c", ".a@b.com", "a..b@c.com", "a@b..com", "a b@c.com", "a@b_c.com"] {
             assert!(email(bad).is_err(), "{bad} should be rejected");
         }
@@ -152,12 +152,12 @@ mod tests {
 
     #[test]
     fn passwords() {
-        assert!(password("Kalks@2026").is_ok());
+        assert!(password("Ezymex@2026").is_ok());
         assert_eq!(password("Ka@1"), Err("Use at least 8 characters."));
-        assert_eq!(password("kalks@2026"), Err("Add an uppercase letter."));
-        assert_eq!(password("KALKS@2026"), Err("Add a lowercase letter."));
-        assert_eq!(password("Kalks@abcd"), Err("Add a number."));
-        assert_eq!(password("Kalks2026x"), Err("Add a symbol such as ! # @ or %."));
+        assert_eq!(password("ezymex@2026"), Err("Add an uppercase letter."));
+        assert_eq!(password("EZYMEX@2026"), Err("Add a lowercase letter."));
+        assert_eq!(password("Ezymex@abcd"), Err("Add a number."));
+        assert_eq!(password("Ezymex2026x"), Err("Add a symbol such as ! # @ or %."));
         assert!(password(&format!("Aa1!{}", "x".repeat(130))).is_err());
     }
 

@@ -51,8 +51,8 @@ impl Users for GatewayUsers {
         let r = self
             .http
             .get(format!("{}/v1/internal/users/{user_id}", self.base))
-            .header("x-kalks-internal", &self.token)
-            .header("x-kalks-tenant", tenant)
+            .header("x-ezymex-internal", &self.token)
+            .header("x-ezymex-tenant", tenant)
             .send()
             .await
             .map_err(|e| anyhow::anyhow!("gateway: {}", e.without_url()))?;
@@ -79,7 +79,7 @@ impl Users for GatewayUsers {
         let r = self
             .http
             .get(format!("{}/v1/internal/tenants/{slug}", self.base))
-            .header("x-kalks-internal", &self.token)
+            .header("x-ezymex-internal", &self.token)
             .send()
             .await
             .map_err(|e| anyhow::anyhow!("gateway: {}", e.without_url()))?;

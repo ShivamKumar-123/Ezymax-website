@@ -195,7 +195,7 @@ const kyc: NsMessages<"kyc"> = {
   "review.missing": "Faltando",
   "review.flagged": "Sinalizado para análise",
   "review.passed": "Verificações aprovadas",
-  "review.consent": "Confirmo que os documentos são autênticos e pertencem a mim (ou à empresa e seus representantes) e autorizo a Kalks a realizar a verificação de identidade e a triagem AML.",
+  "review.consent": "Confirmo que os documentos são autênticos e pertencem a mim (ou à empresa e seus representantes) e autorizo a Ezymex a realizar a verificação de identidade e a triagem AML.",
 
   // Mais informações solicitadas pela equipe de análise
   "moreInfo.title": "Precisamos de um pouco mais de informação",
@@ -360,7 +360,7 @@ const kyc: NsMessages<"kyc"> = {
   // Erros de fallback no cliente
   "error.sessionEnded": "Sua sessão foi encerrada.",
   "error.generic": "Algo deu errado. Tente novamente.",
-  "error.network": "Não foi possível conectar à Kalks. Verifique sua conexão e tente novamente.",
+  "error.network": "Não foi possível conectar à Ezymex. Verifique sua conexão e tente novamente.",
   "error.uploadFailed": "Falha no envio. Tente novamente.",
   "error.uploadInterrupted": "Envio interrompido. Verifique sua conexão e tente novamente.",
 

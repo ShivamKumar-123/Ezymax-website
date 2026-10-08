@@ -1,18 +1,18 @@
 import type { NsMessages } from "../../core";
 
-// Kalks FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Kalks Trader in options mode.
+// Ezymex FX Options in the Client Area: the Options page, a friendly three-card intro and the button that opens Ezymex Trader in options mode.
 const options: NsMessages<"options"> = {
   // Navigation entry
   "nav.title": "ออปชัน",
 
   // Page header
-  "page.title": "Kalks FX Options",
-  "page.subtitle": "ซื้อหรือขายออปชันบนฟอเร็กซ์ ทองคำ เงิน และน้ำมัน ได้โดยตรงใน Kalks Trader",
+  "page.title": "Ezymex FX Options",
+  "page.subtitle": "ซื้อหรือขายออปชันบนฟอเร็กซ์ ทองคำ เงิน และน้ำมัน ได้โดยตรงใน Ezymex Trader",
   "page.statusReady": "พร้อมเทรด",
   "page.learnCourse": "หลักสูตรออปชัน",
 
   // Hero card
-  "hero.eyebrow": "ใหม่ใน Kalks Trader",
+  "hero.eyebrow": "ใหม่ใน Ezymex Trader",
   "hero.title": "ออปชันใน 13 ตลาด แบบเข้าใจง่าย",
   "hero.text": "ออปชันแบบยุโรปบนคู่เงินหลักและคู่เงินไขว้ในตลาดฟอเร็กซ์ ทองคำ เงิน และน้ำมันดิบ เลือกวันหมดอายุได้ทั้งรายวัน รายสัปดาห์ หรือรายเดือน ออปชันทุกสัญญาชำระราคาเป็นเงินสดสกุลดอลลาร์สหรัฐ คุณจึงไม่ต้องรับมอบสินทรัพย์ใดๆ เลย",
   "hero.feature.underlyings.title": "สินทรัพย์อ้างอิง 13 รายการ",
@@ -56,16 +56,16 @@ const options: NsMessages<"options"> = {
   "terms.inShort": "สรุปสั้นๆ",
   "terms.point.buy": "การซื้อออปชัน: ขาดทุนสูงสุดเท่ากับจำนวนที่คุณจ่าย",
   "terms.point.sell": "การขายออปชันอาจขาดทุนมากกว่าที่ได้รับ และต้องใช้มาร์จิ้น",
-  "terms.point.prices": "ราคากำหนดบนสมุดคำสั่งของ Kalks และโดย Kalks",
+  "terms.point.prices": "ราคากำหนดบนสมุดคำสั่งของ Ezymex และโดย Ezymex",
   "terms.point.settle": "ออปชันชำระราคาเป็นเงินสดเมื่อหมดอายุ",
   "terms.englishNote": "ข้อความฉบับเต็มด้านล่างเป็นภาษาอังกฤษ และเป็นฉบับที่มีผลผูกพัน",
   "terms.acceptedOn": "คุณยอมรับเวอร์ชัน {version} เมื่อ {date}",
   "terms.close": "ปิด",
   "terms.unavailable": "ขณะนี้ไม่สามารถแสดงข้อกำหนดการเทรดออปชันได้ โปรดลองอีกครั้งในภายหลัง",
 
-  // Kalks Trader button
-  "trade.ready": "พร้อมแล้ว เทรดออปชันได้ใน Kalks Trader บนบัญชีเดียวกับ CFD ของคุณ",
-  "trade.cta": "เทรดออปชันใน Kalks Trader",
+  // Ezymex Trader button
+  "trade.ready": "พร้อมแล้ว เทรดออปชันได้ใน Ezymex Trader บนบัญชีเดียวกับ CFD ของคุณ",
+  "trade.cta": "เทรดออปชันใน Ezymex Trader",
   "trade.chooseAccount": "เลือกบัญชี",
   "trade.noAccount": "คุณต้องมีบัญชีเทรดที่ใช้งานอยู่จึงจะเทรดออปชันได้",
   "trade.openAccount": "เปิดบัญชี",
@@ -74,7 +74,7 @@ const options: NsMessages<"options"> = {
   "trade.demo": "ทดลอง",
 
   // Key facts card
-  "facts.title": "Kalks FX Options ทำงานอย่างไร",
+  "facts.title": "Ezymex FX Options ทำงานอย่างไร",
   "facts.style": "แบบยุโรป: ใช้สิทธิโดยอัตโนมัติเมื่อหมดอายุ และไม่มีการใช้สิทธิก่อนหน้านั้น",
   "facts.premium": "ค่าพรีเมียมคิดเป็น USD ต่อสัญญา ผู้ซื้อจ่ายเต็มจำนวนเมื่อเปิดสถานะ",
   "facts.contracts": "1 สัญญา: สกุลเงิน 10,000 หน่วย ทองคำ 1 ออนซ์ เงิน 50 ออนซ์ หรือน้ำมัน 10 บาร์เรล",

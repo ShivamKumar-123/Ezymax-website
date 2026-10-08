@@ -1,4 +1,4 @@
-//! Kalks FX Options in the reports mirror, against a throw-away database `kalks_reports_test_<pid>` on the local
+//! Ezymex FX Options in the reports mirror, against a throw-away database `ezymex_reports_test_<pid>` on the local
 //! PostgreSQL (REPORTS_TEST_DATABASE_URL, default :5433). Skipped when PostgreSQL is unreachable. Option deals
 //! are mirrored with their `option` object, statements get their own lines and Options section, monthly results
 //! count the realised option P&L, and broker revenue counts option commission on every trade but never lots.
@@ -39,7 +39,7 @@ async fn option_deals_flow_through_statements_months_and_broker_reports() {
         eprintln!("skipping reports DB tests: no PostgreSQL at {base}");
         return;
     }
-    let name = format!("kalks_reports_test_{}", std::process::id());
+    let name = format!("ezymex_reports_test_{}", std::process::id());
     let url = admin.clone().database(&name).to_url_lossy().to_string();
     let pool = db::connect(&url).await.expect("create + migrate");
     let mut cfg = Config::from_env().unwrap();
@@ -53,7 +53,7 @@ async fn option_deals_flow_through_statements_months_and_broker_reports() {
 
     let now = Utc::now();
     let t0 = now - Duration::hours(3);
-    sqlx::query("INSERT INTO accounts (tenant, login, user_id, kind, group_code, group_name, mode, currency, leverage, name, created_at) VALUES ('kalks', 10000001, 1, 'live', 'standard', 'Standard', 'hedging', 'USD', 500, 'T', $1)")
+    sqlx::query("INSERT INTO accounts (tenant, login, user_id, kind, group_code, group_name, mode, currency, leverage, name, created_at) VALUES ('ezymex', 10000001, 1, 'live', 'standard', 'Standard', 'hedging', 'USD', 500, 'T', $1)")
         .bind(now - Duration::days(2))
         .execute(&pool)
         .await
@@ -68,14 +68,14 @@ async fn option_deals_flow_through_statements_months_and_broker_reports() {
         engine_deal(2000005, 1000001, series, "out", "sell", "expiry", 1.0, 0.0062, 10.0, 0.25, t0 + Duration::minutes(30), opt(62.0, 0.0, json!(1.1712))),
     ];
     for x in &deals {
-        sync::upsert_deal(&app, "kalks", x).await.unwrap();
+        sync::upsert_deal(&app, "ezymex", x).await.unwrap();
     }
     // re-reading a deal from a feed without the option object never drops it
     let mut bare = deals[0].clone();
     bare["option"] = Value::Null;
     bare["instrument"] = Value::Null;
     bare["symbol"] = json!("EURUSD-OPT");
-    sync::upsert_deal(&app, "kalks", &bare).await.unwrap();
+    sync::upsert_deal(&app, "ezymex", &bare).await.unwrap();
     let kept: i64 = sqlx::query_scalar("SELECT count(*) FROM deals WHERE option IS NOT NULL").fetch_one(&pool).await.unwrap();
     assert_eq!(kept, 3);
     let ledger = [
@@ -88,7 +88,7 @@ async fn option_deals_flow_through_statements_months_and_broker_reports() {
         (7, "option_settlement", "62", 30),
     ];
     for (txn, kind, amt, min) in ledger {
-        sqlx::query("INSERT INTO ledger (tenant, login, txn, sub_ledger, kind, amount, currency, at) VALUES ('kalks', 10000001, $1, 'balance', $2, $3, 'USD', $4)")
+        sqlx::query("INSERT INTO ledger (tenant, login, txn, sub_ledger, kind, amount, currency, at) VALUES ('ezymex', 10000001, $1, 'balance', $2, $3, 'USD', $4)")
             .bind(txn as i64)
             .bind(kind)
             .bind(d(amt))
@@ -99,7 +99,7 @@ async fn option_deals_flow_through_statements_months_and_broker_reports() {
     }
 
     // statement: premiums and settlements are their own lines, the options section adds up, everything reconciles
-    let s = statement::generate(&app, "kalks", 10000001, t0 - Duration::hours(1), now + Duration::hours(1)).await.unwrap();
+    let s = statement::generate(&app, "ezymex", 10000001, t0 - Duration::hours(1), now + Duration::hours(1)).await.unwrap();
     assert!(s.reconciliation.ok, "{:?}", s.reconciliation.notes);
     assert_eq!((s.summary.option_premiums, s.summary.option_settlements, s.summary.deposits, s.summary.adjustments), (d("-44"), d("62"), d("0"), d("0")));
     assert_eq!(s.summary.closing_balance, d("30.25"));
@@ -114,20 +114,20 @@ async fn option_deals_flow_through_statements_months_and_broker_reports() {
     assert!(labels.contains(&"Option premium") && labels.contains(&"Option settlement"));
 
     // months: the month's result is realised (CFD 20 + options 18 − commission 7.75), premiums are not deposits
-    let m = client::months(&app, "kalks", 10000001).await.unwrap();
+    let m = client::months(&app, "ezymex", 10000001).await.unwrap();
     let month = m["months"].as_array().unwrap().iter().find(|x| x["trades"].as_i64().unwrap_or(0) > 0).unwrap();
     assert_eq!((month["net"].as_f64(), month["deposits"].as_f64(), month["trades"].as_i64()), (Some(30.25), Some(0.0), Some(3)));
 
     // broker: option commission on every trade (0.75), the house's option P&L (−18), no lots for contracts
-    let ds = broker::deals(&app, "kalks", t0 - Duration::hours(1), now + Duration::hours(1)).await.unwrap();
+    let ds = broker::deals(&app, "ezymex", t0 - Duration::hours(1), now + Duration::hours(1)).await.unwrap();
     let o: Vec<&broker::D> = ds.iter().filter(|x| x.option).collect();
     assert_eq!(o.len(), 3);
     assert!(o.iter().all(|x| x.lots == 0.0));
-    let (v, _) = broker::pnl(&app, "kalks", t0 - Duration::hours(1), now + Duration::hours(1)).await.unwrap();
+    let (v, _) = broker::pnl(&app, "ezymex", t0 - Duration::hours(1), now + Duration::hours(1)).await.unwrap();
     let tot = &v["totals"];
     assert_eq!((tot["commission"].as_f64(), tot["lots"].as_f64(), tot["optionContracts"].as_f64(), tot["optionsPnl"].as_f64()), (Some(7.75), Some(1.0), Some(2.0), Some(-18.0)), "{tot}");
     assert_eq!(tot["bbook"].as_f64(), Some(-38.0), "−(CFD 20 + options 18)");
-    let (a, _) = broker::activity(&app, "kalks", t0 - Duration::hours(1), now + Duration::hours(1)).await.unwrap();
+    let (a, _) = broker::activity(&app, "ezymex", t0 - Duration::hours(1), now + Duration::hours(1)).await.unwrap();
     let top = a["topAccounts"].as_array().cloned().unwrap_or_default();
     assert!(top.iter().all(|x| x["lots"].as_f64().unwrap_or(0.0) <= 1.0), "{top:?}");
 

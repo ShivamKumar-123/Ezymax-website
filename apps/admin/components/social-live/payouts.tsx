@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Check, HandCoins, RefreshCw, X } from "lucide-react";
-import { Button, Card, Chip, DataTable, EmptyState, KpiCard, PageHeader, Reveal, Segmented, type Column } from "@kalks/ui";
+import { Button, Card, Chip, DataTable, EmptyState, KpiCard, PageHeader, Reveal, Segmented, type Column } from "@ezymex/ui";
 import { MiniStat } from "@/components/config/kit";
 import { TableSkeleton, ago, day, useApi, useNow, when } from "@/components/live/kit";
 import { ReadOnlyNote, SocialError, SocialStatus, amountOf, socialWrite, useNoteAction, useSocialCan, usd, type FeeView } from "./kit";

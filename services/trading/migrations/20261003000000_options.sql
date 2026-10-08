@@ -1,4 +1,4 @@
--- Kalks FX Options in the trading engine (services/trading/README.md, "Kalks FX Options").
+-- Ezymex FX Options in the trading engine (services/trading/README.md, "Ezymex FX Options").
 --
 -- Option positions, orders and deals live in the same event streams as CFDs (the full JSON stays in `data`);
 -- these columns only make them queryable (settlement lists, the options book, statements). Old rows keep NULL.
@@ -97,6 +97,6 @@ BEGIN
     FOREACH t IN ARRAY ARRAY['option_knocks', 'option_settlement_runs', 'option_hedge_accounts', 'option_hedges'] LOOP
         EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
         EXECUTE format('DROP POLICY IF EXISTS tenant_isolation ON %I', t);
-        EXECUTE format('CREATE POLICY tenant_isolation ON %I USING (tenant_id = NULLIF(current_setting(''kalks.tenant_id'', true), '''')::bigint)', t);
+        EXECUTE format('CREATE POLICY tenant_isolation ON %I USING (tenant_id = NULLIF(current_setting(''ezymex.tenant_id'', true), '''')::bigint)', t);
     END LOOP;
 END $$;

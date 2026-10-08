@@ -158,7 +158,7 @@ class _PartnerPayoutsScreenState extends ConsumerState<PartnerPayoutsScreen> {
                           onPressed: () => exportCsv(
                             context,
                             ref,
-                            name: 'kalks-ib-payouts',
+                            name: 'ezymex-ib-payouts',
                             headers: [
                               t('partner.pay.batch'),
                               t('partner.pay.lines'),

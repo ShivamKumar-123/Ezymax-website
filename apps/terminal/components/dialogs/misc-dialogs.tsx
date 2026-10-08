@@ -5,12 +5,12 @@ import { createPortal } from "react-dom";
 import { toast } from "@/lib/notify";
 import { BarChart2, BookOpen, Check, CornerDownLeft, Info, Keyboard, Search, Settings2, ShoppingCart, Star } from "lucide-react";
 import { useTheme } from "next-themes";
-import { LOCALES } from "@kalks/i18n/locales";
-import { useLocale } from "@kalks/i18n/react";
-import type { MessageKey } from "@kalks/i18n";
-import { ASSET_CLASS_LABEL, INSTRUMENT_MAP } from "@kalks/mock";
+import { LOCALES } from "@ezymex/i18n/locales";
+import { useLocale } from "@ezymex/i18n/react";
+import type { MessageKey } from "@ezymex/i18n";
+import { ASSET_CLASS_LABEL, INSTRUMENT_MAP } from "@ezymex/mock";
 import { useMarketScope } from "@/lib/scope";
-import { LogoMark, PriceText, SymbolAvatar, cn, useQuote } from "@kalks/ui";
+import { LogoMark, PriceText, SymbolAvatar, cn, useQuote } from "@ezymex/ui";
 import { useTradeMode } from "@/lib/options/mode";
 import { useTerminal } from "@/lib/store";
 import { Kbd } from "./kbd";
@@ -20,7 +20,7 @@ import { SymbolInfo } from "@/components/order/right-panel";
 import { SegmentChips, inSegment } from "@/components/market/segments";
 import { MAX_DEVIATIONS, PRESETS, applyPreset, toggleOneClick, useCommands, type Command } from "@/components/shell/commands";
 import type { Segment } from "@/lib/store";
-import { useT } from "@kalks/i18n/react";
+import { useT } from "@ezymex/i18n/react";
 
 /* ------------------------------------------------------------------ */
 /* Command palette (Ctrl/⌘ K): markets and actions                     */
@@ -463,11 +463,11 @@ export function AboutDialog() {
           <LogoMark size={26} className="text-fg" />
         </div>
         <div>
-          <div className="text-[17px] font-semibold">Kalks Trader</div>
+          <div className="text-[17px] font-semibold">Ezymex Trader</div>
           <div className="font-mono text-[12px] text-fg-3">{t("order.about.version", { version: "5.1", build: 5200 })}</div>
         </div>
         <p className="text-[13px] leading-relaxed text-fg-2">{t("order.about.text")}</p>
-        <div className="font-mono text-[11.5px] text-fg-3">© 2026 Kalks Global Markets Ltd</div>
+        <div className="font-mono text-[11.5px] text-fg-3">© 2026 Ezymex Global Markets Ltd</div>
       </div>
     </TDialog>
   );

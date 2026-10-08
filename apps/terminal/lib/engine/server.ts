@@ -1,7 +1,7 @@
-// Server-only helpers for the Kalks trading engine (services/trading, 127.0.0.1:8090).
+// Server-only helpers for the Ezymex trading engine (services/trading, 127.0.0.1:8090).
 // The browser never talks to the engine's HTTP API and never sees the internal token or a terminal
 // session token: route handlers under /api/engine/* hold the engine session tokens in an HttpOnly cookie
-// and forward each call with `Authorization: Bearer <session>` + `X-Kalks-Internal`.
+// and forward each call with `Authorization: Bearer <session>` + `X-Ezymex-Internal`.
 // Contract: services/trading/README.md ("Terminal API", "Streams").
 
 import { NextResponse, type NextRequest } from "next/server";
@@ -27,7 +27,7 @@ export async function engine<T = Obj>(
   path: string,
   init: { method?: "GET" | "POST" | "PATCH" | "DELETE"; body?: unknown; bearer?: string; req?: NextRequest; headers?: Record<string, string> } = {},
 ): Promise<EngineResult<T>> {
-  const headers: Record<string, string> = { "x-kalks-internal": TRADING_TOKEN, "x-kalks-tenant": "kalks", ...init.headers };
+  const headers: Record<string, string> = { "x-ezymex-internal": TRADING_TOKEN, "x-ezymex-tenant": "ezymex", ...init.headers };
   if (init.bearer) headers.authorization = `Bearer ${init.bearer}`;
   if (init.req) {
     headers["x-forwarded-for"] = clientIp(init.req.headers);
@@ -54,12 +54,12 @@ export async function engine<T = Obj>(
 }
 
 /**
- * The terminal's own fetches send `X-Kalks-Errors: body`: a rejection (market closed, invalid stops,
+ * The terminal's own fetches send `X-Ezymex-Errors: body`: a rejection (market closed, invalid stops,
  * wrong password…) is an expected answer, so it comes back as HTTP 200 with `error.status` instead of a
  * 4xx that browsers log as a console error. Other callers get the plain status codes.
  */
 export async function soft(req: NextRequest, res: NextResponse): Promise<NextResponse> {
-  if (res.status < 400 || req.headers.get("x-kalks-errors") !== "body") return res;
+  if (res.status < 400 || req.headers.get("x-ezymex-errors") !== "body") return res;
   const body = (await res.clone().json().catch(() => ({}))) as Obj;
   const err = (body.error ?? {}) as Obj;
   const out = NextResponse.json({ ...body, error: { ...err, status: res.status } }, { status: 200, headers: NO_STORE });
@@ -71,7 +71,7 @@ export async function soft(req: NextRequest, res: NextResponse): Promise<NextRes
 /* Session cookie: every terminal login on this browser (multi-account) */
 /* ------------------------------------------------------------------ */
 
-export const SESSION_COOKIE = "kalks_trade";
+export const SESSION_COOKIE = "ezymex_trade";
 export const MAX_SESSIONS = 8;
 export const LOGIN_RE = /^\d{8}$/;
 
@@ -122,9 +122,9 @@ export function withSession(list: EngineSession[], s: EngineSession): EngineSess
   return [s, ...list.filter((x) => x.l !== s.l)].slice(0, MAX_SESSIONS);
 }
 
-/** The session for the login named in `x-kalks-login` (the account the terminal is acting on). */
+/** The session for the login named in `x-ezymex-login` (the account the terminal is acting on). */
 export function sessionFor(req: NextRequest, list = readSessions(req)): EngineSession | null {
-  const login = req.headers.get("x-kalks-login") ?? req.nextUrl.searchParams.get("login");
+  const login = req.headers.get("x-ezymex-login") ?? req.nextUrl.searchParams.get("login");
   if (!login || !LOGIN_RE.test(login)) return null;
   return list.find((s) => s.l === login) ?? null;
 }

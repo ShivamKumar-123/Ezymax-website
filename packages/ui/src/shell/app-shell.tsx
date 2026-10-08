@@ -9,7 +9,7 @@ import { LogOut, MoreHorizontal } from "lucide-react";
 import { cn } from "../lib/cn";
 import { Logo, LogoMark } from "./logo";
 import { Tooltip, TooltipProvider, Menu } from "../components/overlays";
-import { useLocale, useT } from "@kalks/i18n/react";
+import { useLocale, useT } from "@ezymex/i18n/react";
 
 export interface SubNavItem {
   href: string;

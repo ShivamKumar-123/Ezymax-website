@@ -2,9 +2,9 @@
 
 import * as React from "react";
 import { toast } from "@/lib/notify";
-import { tr } from "@kalks/i18n/react";
-import { ACCOUNTS, HISTORY, INSTRUMENTS, INSTRUMENT_MAP, IS_LIVE, POSITIONS, getInstrument, isMarketOpen, liveTradable, priceFeed, rebaseTrades, type Quote, type TradingAccount } from "@kalks/mock";
-import { useQuotes } from "@kalks/ui";
+import { tr } from "@ezymex/i18n/react";
+import { ACCOUNTS, HISTORY, INSTRUMENTS, INSTRUMENT_MAP, IS_LIVE, POSITIONS, getInstrument, isMarketOpen, liveTradable, priceFeed, rebaseTrades, type Quote, type TradingAccount } from "@ezymex/mock";
+import { useQuotes } from "@ezymex/ui";
 import { startLiveFlags, syncRestricted, useMarketScope, visibleSymbol } from "@/lib/scope";
 import {
   DEFAULT_SYMBOLS,
@@ -60,7 +60,7 @@ export interface Session {
 }
 
 /** The trading account the terminal last showed (live builds, several logins on one browser). */
-export const ACTIVE_KEY = "kalks.terminal.active";
+export const ACTIVE_KEY = "ezymex.terminal.active";
 export function readActive(): string | null {
   try {
     return localStorage.getItem(ACTIVE_KEY);
@@ -119,7 +119,7 @@ export type MwTab = "symbols" | "details" | "favourites";
 export type SideTab = "instruments" | "book" | "ticks" | "navigator";
 /** Instrument list filter: an asset class, everything, or favourites (Market Watch, symbol search). */
 export type Segment = "all" | "forex" | "metals" | "indices" | "energies" | "crypto" | "stocks" | "favourites";
-/** Which chart engine renders chart tiles. "kalks" = the original lightweight-charts engine. */
+/** Which chart engine renders chart tiles. "ezymex" = the original lightweight-charts engine. */
 
 export interface Workspace {
   layout: Layout;
@@ -214,9 +214,9 @@ interface Core {
 /* Defaults & persistence                                              */
 /* ------------------------------------------------------------------ */
 
-const WS_KEY = "kalks.terminal.workspace";
-export const SESSION_KEY = "kalks.terminal.session";
-export const SAVED_KEY = "kalks.terminal.saved";
+const WS_KEY = "ezymex.terminal.workspace";
+export const SESSION_KEY = "ezymex.terminal.session";
+export const SAVED_KEY = "ezymex.terminal.saved";
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 
@@ -585,7 +585,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
   );
 
   const accountTypeRef = React.useRef<string>("demo");
-  const account: TradingAccount = engine ? (engAccounts[session.login] ?? { ...GUEST_ACCOUNT, login: session.login, server: session.server, type: session.server === "Kalks-Demo" ? "demo" : "live" }) : accountOf(session.login);
+  const account: TradingAccount = engine ? (engAccounts[session.login] ?? { ...GUEST_ACCOUNT, login: session.login, server: session.server, type: session.server === "Ezymex-Demo" ? "demo" : "live" }) : accountOf(session.login);
   accountTypeRef.current = account.type;
   // live accounts and guests only see markets that trade live (lib/scope.ts); demo accounts see everything
   syncRestricted(guest || account.type === "live");
@@ -611,7 +611,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
       const feed = priceFeed();
       let last = feed.mode;
       const report = () => {
-        if (feed.mode === "live") log("Network", "market data: connected to the Kalks market-data stream");
+        if (feed.mode === "live") log("Network", "market data: connected to the Ezymex market-data stream");
         else if (feed.mode === "sim") log("Network", "market data: service unreachable, showing reference prices until it reconnects", "warn");
       };
       const off = feed.onMode(() => {
@@ -620,22 +620,22 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
       });
       if (guestBooted.current) return () => void off();
       guestBooted.current = true;
-      log("Terminal", `Kalks Trader started · ${navigator.platform || "Web"}, ${INSTRUMENTS.length - feed.unavailable.size} symbols`);
+      log("Terminal", `Ezymex Trader started · ${navigator.platform || "Web"}, ${INSTRUMENTS.length - feed.unavailable.size} symbols`);
       log("Terminal", "guest mode: charts and quotes only, no trading account connected");
       report();
       return () => void off();
     }
     if (engine) {
-      log("Terminal", `Kalks Trader started · ${navigator.platform || "Web"}, ${INSTRUMENTS.length - priceFeed().unavailable.size} symbols, GMT+3 server time`);
+      log("Terminal", `Ezymex Trader started · ${navigator.platform || "Web"}, ${INSTRUMENTS.length - priceFeed().unavailable.size} symbols, GMT+3 server time`);
       return;
     }
     const a = accountOf(initialSession.login);
     const n = coreRef.current.positions.filter((p) => p.login === a.login).length;
     const o = coreRef.current.pendings.filter((p) => p.login === a.login).length;
-    log("Terminal", "Kalks Trader x64 build 5120 started for Kalks Global Markets Ltd");
+    log("Terminal", "Ezymex Trader x64 build 5120 started for Ezymex Global Markets Ltd");
     log("Terminal", `${navigator.platform || "Web"}, ${navigator.hardwareConcurrency ?? 8} cores, ${INSTRUMENTS.length} symbols, GMT+3 server time`);
     log("Network", `'${a.login}': authorized on ${a.server} through Access Point EU Frankfurt (ping 38.2 ms)${initialSession.investor ? ", investor mode (read-only)" : ""}`);
-    log("Network", `'${a.login}': terminal synchronized with Kalks Global: ${n} positions, ${o} orders, ${INSTRUMENTS.length} symbols, 0 spreads`);
+    log("Network", `'${a.login}': terminal synchronized with Ezymex Global: ${n} positions, ${o} orders, ${INSTRUMENTS.length} symbols, 0 spreads`);
     log("Trade", `'${a.login}': ${a.mode} account, leverage 1:${a.leverage}, ${accCcy(a)}`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1153,7 +1153,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
       const a = mapAccount(st.account);
       priceFeed().setGroup(a.engine.spreadGroup);
       log("Network", `'${login}': authorized on ${a.server}${st.readOnly ? ", investor mode (read-only)" : ""}`);
-      log("Network", `'${login}': terminal synchronized with Kalks: ${st.positions.length} positions, ${st.orders.length} orders, ${st.history.deals.length} recent deals`);
+      log("Network", `'${login}': terminal synchronized with Ezymex: ${st.positions.length} positions, ${st.orders.length} orders, ${st.history.deals.length} recent deals`);
       log("Trade", `'${login}': ${a.mode} account, ${a.group}, leverage 1:${a.leverage}, ${a.currency}`);
     });
     const stream = new AccountStream(login, {
@@ -1174,8 +1174,8 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
       onUnauthorized: () => expiredRef.current(login),
     });
     streamRef.current = stream;
-    // dev-only handle for the E2E reconnect test (window.__kalksStream.kill())
-    if (process.env.NODE_ENV !== "production") (window as unknown as { __kalksStream?: AccountStream }).__kalksStream = stream;
+    // dev-only handle for the E2E reconnect test (window.__ezymexStream.kill())
+    if (process.env.NODE_ENV !== "production") (window as unknown as { __ezymexStream?: AccountStream }).__ezymexStream = stream;
     return () => {
       stream.stop();
       if (streamRef.current === stream) streamRef.current = null;
@@ -1529,7 +1529,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
   const resetWorkspace = React.useCallback(() => {
     setWsState(() => defaultWorkspace());
     try {
-      for (const k of Object.keys(localStorage)) if (k.startsWith("react-resizable-panels:kalks")) localStorage.removeItem(k);
+      for (const k of Object.keys(localStorage)) if (k.startsWith("react-resizable-panels:ezymex")) localStorage.removeItem(k);
     } catch {
       /* ignore */
     }
@@ -1580,7 +1580,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
       setSession(s);
       writeSession(s);
       log("Network", `'${login}': authorized on ${a.server} through Access Point EU Frankfurt (ping ${(30 + Math.random() * 14).toFixed(1)} ms)`);
-      log("Network", `'${login}': terminal synchronized with Kalks Global`);
+      log("Network", `'${login}': terminal synchronized with Ezymex Global`);
       toast.success(tr(a.type === "demo" ? "order.toast.switchedDemo" : "order.toast.switchedLive", { login }), { description: `${a.group} · ${tr.dyn(`order.mode.${a.mode}`, a.mode)} · ${a.server}` });
     },
     [log],

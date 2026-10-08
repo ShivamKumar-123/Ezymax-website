@@ -1,4 +1,4 @@
-//! Kalks reports service (:8102): statements (D48, D50), client analytics (D91), broker reports (D120) and
+//! Ezymex reports service (:8102): statements (D48, D50), client analytics (D91), broker reports (D120) and
 //! cohorts / LTV / funnel / scheduled reports (D145). See services/reports/README.md.
 
 pub mod api;

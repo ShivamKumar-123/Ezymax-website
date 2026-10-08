@@ -72,7 +72,7 @@ const portfolio: NsMessages<"portfolio"> = {
   "kpi.demo": "{count} demo",
   "alloc.title": "Alokasi ekuitas",
   "alloc.subtitle": "Akun live, setara USD",
-  "alloc.noEquity": "Akun live Anda belum memiliki ekuitas. Danai akun tersebut dari dompet Kalks Anda.",
+  "alloc.noEquity": "Akun live Anda belum memiliki ekuitas. Danai akun tersebut dari dompet Ezymex Anda.",
   "alloc.noLive": "Buka akun live untuk melihat pembagian ekuitas Anda di sini.",
   "accounts.subtitle": "Ekuitas dan margin per akun",
   "accounts.manage": "Kelola",

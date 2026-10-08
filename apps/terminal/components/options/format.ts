@@ -1,6 +1,6 @@
 // Number and date formatting of the options workspace. Premiums are shown in USD per contract with pips / points
 // under them (plan O8); strikes keep the ladder's own decimals; expiries are dated by their cut (10:00 New York).
-import { OPTION_SPEC } from "@kalks/mock/options";
+import { OPTION_SPEC } from "@ezymex/mock/options";
 import type { OptionExpiry, OptionRight } from "@/lib/options/types";
 
 /** Rounded to `d` decimals without a "-0". */

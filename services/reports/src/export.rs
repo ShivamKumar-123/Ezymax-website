@@ -548,7 +548,7 @@ fn f64dec(x: f64) -> Decimal {
 /// P&L, then every option deal of the period.
 fn options_pdf(w: &mut Writer, s: &Statement, cur: &str) {
     let o = &s.options;
-    w.section("Options", &format!("Kalks FX Options, amounts in {cur}"));
+    w.section("Options", &format!("Ezymex FX Options, amounts in {cur}"));
     w.kv_grid(&[
         ("Premiums paid", fmt_money(o.premiums_paid), None),
         ("Premiums received", fmt_money(o.premiums_received), None),
@@ -1007,7 +1007,7 @@ mod tests {
         assert!(csv.contains("Deposits,0.00") && csv.contains("Withdrawals,0.00") && csv.contains("Adjustments,0.00"));
         assert!(csv.contains("Net trading result (realised),30.25"), "{csv}"); // CFD 20 + options 18 − commission 7.75
         // the PDF: decompress the content streams and look for the section
-        let pdf = statement_pdf(&s, "Kalks", "kalks.com", "support@kalks.com", &Sections::default());
+        let pdf = statement_pdf(&s, "Ezymex", "ezymex.com", "support@ezymex.com", &Sections::default());
         let mut text = String::new();
         let mut i = 0;
         while let Some(p) = pdf[i..].windows(7).position(|w| w == b"stream\n") {

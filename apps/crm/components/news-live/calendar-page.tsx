@@ -6,11 +6,11 @@ import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import { BellOff, BellPlus, BellRing, ChevronDown, ChevronLeft, ChevronRight, Clock3, Flame, Info } from "lucide-react";
 import { Button, Card, Chip, Delta, PageHeader, PriceText, Reveal, Segmented, Skeleton, SymbolAvatar, Toggle, cn, useQuotes } from "@/components/kit";
-import { INSTRUMENT_MAP } from "@kalks/mock";
+import { INSTRUMENT_MAP } from "@ezymex/mock";
 import { ColumnBars } from "@/components/portfolio/charts";
 import { NewsError, newsApi, useNewsApi, type CalDetail, type CalEvent, type CalendarWeek, type MyCalendar } from "./api";
 import { ActualValue, Flag, ImpactBars, countdown, gmt, localTime, useNow } from "./shared";
-import { tr, useFormat, useT } from "@kalks/i18n/react";
+import { tr, useFormat, useT } from "@ezymex/i18n/react";
 import { TERMINAL_URL } from "@/lib/live";
 type Formatter = ReturnType<typeof useFormat>;
 

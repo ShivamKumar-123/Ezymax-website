@@ -1,6 +1,6 @@
 //! HTTP API on 127.0.0.1:8100. Every route except `GET /health` and `GET /v1/stream` needs
-//! `X-Kalks-Internal: $SUPPORT_INTERNAL_TOKEN`. Client routes take the signed-in gateway user in
-//! `X-Kalks-User-Id` (+ `X-Kalks-User-Name` percent-encoded, `X-Kalks-User-Email`), resolved by the CRM BFF
+//! `X-Ezymex-Internal: $SUPPORT_INTERNAL_TOKEN`. Client routes take the signed-in gateway user in
+//! `X-Ezymex-User-Id` (+ `X-Ezymex-User-Name` percent-encoded, `X-Ezymex-User-Email`), resolved by the CRM BFF
 //! from the session cookie; staff routes take the staff identity headers the admin BFF verified with the gateway.
 //! The WebSocket stream authenticates with a one-time ticket from `POST /v1/stream/ticket`.
 
@@ -93,7 +93,7 @@ async fn health(State(st): State<AppState>) -> impl IntoResponse {
 async fn internal_only(State(st): State<AppState>, req: Request, next: Next) -> Response {
     let expected = st.cfg.internal_token.as_bytes();
     if !expected.is_empty() {
-        let got = req.headers().get("x-kalks-internal").map(|v| v.as_bytes()).unwrap_or_default();
+        let got = req.headers().get("x-ezymex-internal").map(|v| v.as_bytes()).unwrap_or_default();
         if got.len() != expected.len() || !bool::from(got.ct_eq(expected)) {
             return ApiError::Forbidden("Missing or wrong internal token.".into()).into_response();
         }
@@ -106,7 +106,7 @@ fn header(parts: &Parts, name: &str) -> Option<String> {
 }
 
 pub fn tenant_of(parts: &Parts) -> ApiResult<String> {
-    let t = header(parts, "x-kalks-tenant").unwrap_or_else(|| "kalks".into()).to_lowercase();
+    let t = header(parts, "x-ezymex-tenant").unwrap_or_else(|| "ezymex".into()).to_lowercase();
     if t.len() > 40 || !t.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_') {
         return Err(ApiError::BadRequest("Invalid tenant.".into()));
     }
@@ -123,13 +123,13 @@ impl<S: Send + Sync> FromRequestParts<S> for Tenant {
     }
 }
 
-/// Calling service name (`X-Kalks-Service`), for the notification `source`.
+/// Calling service name (`X-Ezymex-Service`), for the notification `source`.
 pub struct Service(pub String);
 
 impl<S: Send + Sync> FromRequestParts<S> for Service {
     type Rejection = ApiError;
     async fn from_request_parts(parts: &mut Parts, _: &S) -> Result<Self, Self::Rejection> {
-        let s = header(parts, "x-kalks-service").unwrap_or_else(|| "service".into());
+        let s = header(parts, "x-ezymex-service").unwrap_or_else(|| "service".into());
         Ok(Service(s.chars().filter(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_').take(32).collect()))
     }
 }
@@ -137,20 +137,20 @@ impl<S: Send + Sync> FromRequestParts<S> for Service {
 impl<S: Send + Sync> FromRequestParts<S> for Client {
     type Rejection = ApiError;
     async fn from_request_parts(parts: &mut Parts, _: &S) -> Result<Self, Self::Rejection> {
-        let id = header(parts, "x-kalks-user-id").and_then(|v| v.parse::<i64>().ok()).filter(|v| *v > 0).ok_or(ApiError::Unauthorized)?;
-        let name = header(parts, "x-kalks-user-name").map(|n| percent_decode(&n)).unwrap_or_default();
-        let email = header(parts, "x-kalks-user-email").map(|n| percent_decode(&n)).unwrap_or_default();
+        let id = header(parts, "x-ezymex-user-id").and_then(|v| v.parse::<i64>().ok()).filter(|v| *v > 0).ok_or(ApiError::Unauthorized)?;
+        let name = header(parts, "x-ezymex-user-name").map(|n| percent_decode(&n)).unwrap_or_default();
+        let email = header(parts, "x-ezymex-user-email").map(|n| percent_decode(&n)).unwrap_or_default();
         Ok(Client { tenant: tenant_of(parts)?, id, name: name.chars().take(120).collect(), email: email.chars().take(200).collect() })
     }
 }
 
-/// Back Office staff, as verified by the admin BFF, plus the permissions it resolved (`X-Kalks-Staff-Perms`).
+/// Back Office staff, as verified by the admin BFF, plus the permissions it resolved (`X-Ezymex-Staff-Perms`).
 pub struct Staff {
     pub agent: Agent,
     perms: Option<Vec<String>>,
 }
 
-/// Roles per permission, used when the BFF sends no `X-Kalks-Staff-Perms`.
+/// Roles per permission, used when the BFF sends no `X-Ezymex-Staff-Perms`.
 pub const SUPPORT_READ: &[&str] = &["platform_owner", "super_admin", "admin", "support", "compliance", "finance", "risk_manager", "viewer"];
 pub const SUPPORT_WRITE: &[&str] = &["platform_owner", "super_admin", "admin", "support"];
 pub const NOTIFICATIONS_WRITE: &[&str] = &["platform_owner", "super_admin", "admin", "marketing"];
@@ -174,13 +174,13 @@ impl Staff {
 impl<S: Send + Sync> FromRequestParts<S> for Staff {
     type Rejection = ApiError;
     async fn from_request_parts(parts: &mut Parts, _: &S) -> Result<Self, Self::Rejection> {
-        let id = header(parts, "x-kalks-staff-id").ok_or(ApiError::Unauthorized)?;
-        let role = header(parts, "x-kalks-staff-role").ok_or(ApiError::Unauthorized)?;
+        let id = header(parts, "x-ezymex-staff-id").ok_or(ApiError::Unauthorized)?;
+        let role = header(parts, "x-ezymex-staff-role").ok_or(ApiError::Unauthorized)?;
         if id.len() > 64 || role.len() > 32 {
             return Err(ApiError::BadRequest("Invalid staff headers.".into()));
         }
-        let name = header(parts, "x-kalks-staff-name").map(|n| percent_decode(&n)).unwrap_or_else(|| format!("Staff {id}"));
-        let perms = header(parts, "x-kalks-staff-perms").map(|p| p.split(',').map(|x| x.trim().to_string()).filter(|x| !x.is_empty()).collect());
+        let name = header(parts, "x-ezymex-staff-name").map(|n| percent_decode(&n)).unwrap_or_else(|| format!("Staff {id}"));
+        let perms = header(parts, "x-ezymex-staff-perms").map(|p| p.split(',').map(|x| x.trim().to_string()).filter(|x| !x.is_empty()).collect());
         Ok(Staff { agent: Agent { tenant: tenant_of(parts)?, id, name: name.chars().take(80).collect(), role }, perms })
     }
 }

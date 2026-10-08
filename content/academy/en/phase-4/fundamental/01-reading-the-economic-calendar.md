@@ -30,7 +30,7 @@ quiz:
       - "The central bank's target for that indicator"
     answer: 2
     explanation: "Consensus is the median or average of forecasts gathered from economists and analysts before the release. It is the market's working estimate, not an official target."
-  - question: "A US release is scheduled for 08:30 New York time. What is that in Kalks server time?"
+  - question: "A US release is scheduled for 08:30 New York time. What is that in Ezymex server time?"
     options:
       - "13:30"
       - "14:30"
@@ -52,7 +52,7 @@ In Phase 3 you learned what inflation, growth and employment data say about an e
 
 ## What a calendar entry contains
 
-Every line in a calendar, including the one in the Kalks Client Area under **Economic calendar**, follows the same structure:
+Every line in a calendar, including the one in the Ezymex Client Area under **Economic calendar**, follows the same structure:
 
 | Column | What it tells you |
 |---|---|
@@ -82,7 +82,7 @@ A revision changes the trend. If payrolls beat consensus by 40K but the prior tw
 
 ## Time zones and the server clock
 
-Calendars can display times in your local zone, in GMT, or in the release country's zone. Kalks Trader charts run on server time, which is GMT+2 in winter and GMT+3 during US daylight saving, arranged so that 17:00 New York is always 00:00 server time. That gives a fixed seven-hour offset from New York.
+Calendars can display times in your local zone, in GMT, or in the release country's zone. Ezymex Trader charts run on server time, which is GMT+2 in winter and GMT+3 during US daylight saving, arranged so that 17:00 New York is always 00:00 server time. That gives a fixed seven-hour offset from New York.
 
 ```text
 US release at 08:30 New York   -> 08:30 + 7h = 15:30 server time
@@ -93,7 +93,7 @@ UK release at 07:00 London      -> depends on the DST calendar;
 
 The UK and Europe change clocks on different dates from the US, so for a few weeks each year the gap to London or Frankfurt shifts by one hour. Always check the calendar setting rather than relying on memory.
 
-> **In Kalks Trader:** set the calendar display to the same zone you use for charts. When you mark an event on the chart, you then know exactly which candle it will appear in.
+> **In Ezymex Trader:** set the calendar display to the same zone you use for charts. When you mark an event on the chart, you then know exactly which candle it will appear in.
 
 ## Building a weekly event plan
 

@@ -11,8 +11,8 @@ const NEWS_TOKEN = process.env.NEWS_INTERNAL_TOKEN ?? "";
 export type NewsResult = { status: number; data: unknown };
 
 export async function newsService(path: string, init: { method?: "GET" | "POST" | "PUT" | "DELETE"; body?: unknown; user?: GatewayUser | null; tenant?: string } = {}): Promise<NewsResult> {
-  const headers: Record<string, string> = { "x-kalks-internal": NEWS_TOKEN, "x-kalks-tenant": init.user?.tenant?.slug || init.tenant || "kalks" };
-  if (init.user) headers["x-kalks-user-id"] = String(init.user.id);
+  const headers: Record<string, string> = { "x-ezymex-internal": NEWS_TOKEN, "x-ezymex-tenant": init.user?.tenant?.slug || init.tenant || "ezymex" };
+  if (init.user) headers["x-ezymex-user-id"] = String(init.user.id);
   if (init.body !== undefined) headers["content-type"] = "application/json";
   try {
     const res = await fetch(`${NEWS_URL}${path}`, {
@@ -35,6 +35,6 @@ const publicReads = new Memo<NewsResult>(PUBLIC_TTL_MS, 2_000);
 
 /** A public (non-personal) read, shared per broker for PUBLIC_TTL_MS; failures are never cached. */
 export function publicNews(path: string, user?: GatewayUser | null): Promise<NewsResult> {
-  const tenant = user?.tenant?.slug || "kalks";
+  const tenant = user?.tenant?.slug || "ezymex";
   return publicReads.get(`${tenant}|${path}`, () => newsService(path, { user }), (r) => r.status === 200);
 }

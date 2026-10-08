@@ -1,7 +1,7 @@
 import type { NsMessages } from "../../core";
 
 // Client Area prop trading: challenge catalogue, my challenges, payouts, certificates.
-// "Kalks", "Kalks Prop", "Kalks Trader", "USDT", "New York" and "17:00" stay as they are.
+// "Ezymex", "Ezymex Prop", "Ezymex Trader", "USDT", "New York" and "17:00" stay as they are.
 const prop: NsMessages<"prop"> = {
   // Error next-step buttons
   "errorLink.deposit": "إيداع USDT",
@@ -102,13 +102,13 @@ const prop: NsMessages<"prop"> = {
 
   // Public certificate verification page (/verify/<code>)
   "verify.shellTitle": "التحقق من الشهادة",
-  "verify.footer": "حسابات Kalks Prop حسابات محاكاة. تعرض الشهادات نتائج المتداول في تحدي Kalks Prop؛ ويُختصر اسم المتداول إلى الاسم الأول والحرف الأول من اسم العائلة.",
+  "verify.footer": "حسابات Ezymex Prop حسابات محاكاة. تعرض الشهادات نتائج المتداول في تحدي Ezymex Prop؛ ويُختصر اسم المتداول إلى الاسم الأول والحرف الأول من اسم العائلة.",
   "verify.linkCopied": "تم نسخ الرابط",
   "verify.copyFailed": "تعذّر نسخ الرابط",
   "verify.copyLink": "نسخ الرابط",
   "verify.downloadPng": "تنزيل PNG",
   "verify.notFoundTitle": "الشهادة غير موجودة",
-  "verify.notFoundText": "لا توجد شهادة Kalks Prop بهذا الرقم. تحقّق من الرابط أو اطلب من المتداول مشاركته مرة أخرى.",
+  "verify.notFoundText": "لا توجد شهادة Ezymex Prop بهذا الرقم. تحقّق من الرابط أو اطلب من المتداول مشاركته مرة أخرى.",
   "verify.unavailableTitle": "التحقق غير متاح حاليًا",
   "verify.unavailableText": "تعذّر التحقق من هذه الشهادة في الوقت الحالي. يُرجى المحاولة مرة أخرى بعد بضع دقائق.",
   "verify.kind.pass": "اجتياز مرحلة",
@@ -122,9 +122,9 @@ const prop: NsMessages<"prop"> = {
   "verify.row.issued": "تاريخ الإصدار",
   "verify.row.number": "رقم الشهادة",
   "verify.validTitle": "شهادة صالحة",
-  "verify.validText": "صادرة عن Kalks Prop وتم التحقق منها مقابل سجلاتنا.",
+  "verify.validText": "صادرة عن Ezymex Prop وتم التحقق منها مقابل سجلاتنا.",
   "verify.revokedTitle": "شهادة ملغاة",
-  "verify.revokedText": "ألغت Kalks هذه الشهادة ولم تعد صالحة.",
+  "verify.revokedText": "ألغت Ezymex هذه الشهادة ولم تعد صالحة.",
   "verify.valid": "صالحة",
   "verify.revoked": "ملغاة",
   // Certificate titles
@@ -256,8 +256,8 @@ const prop: NsMessages<"prop"> = {
   "checkout.goToMine": "الانتقال إلى تحدياتي",
   "checkout.readyTitle": "تحديك جاهز",
   "checkout.paidText": "تم دفع {fee} من محفظة USDT الخاصة بك وفُتح حسابك بحجم {size}. القواعد سارية اعتبارًا من الآن.",
-  "checkout.savePasswords": "احفظ كلمات المرور هذه الآن: تُعرض مرة واحدة فقط ولا نحتفظ بها. يسجّل زر «تداول» دخولك إلى Kalks Trader دون كلمة مرور، لذا يمكنك التداول من هنا دائمًا.",
-  "checkout.passwordsShown": "عُرضت كلمات مرور التداول عند تأكيد هذا الشراء لأول مرة. استخدم زر «تداول» لفتح Kalks Trader: فهو يسجّل دخولك دون كلمة مرور.",
+  "checkout.savePasswords": "احفظ كلمات المرور هذه الآن: تُعرض مرة واحدة فقط ولا نحتفظ بها. يسجّل زر «تداول» دخولك إلى Ezymex Trader دون كلمة مرور، لذا يمكنك التداول من هنا دائمًا.",
+  "checkout.passwordsShown": "عُرضت كلمات مرور التداول عند تأكيد هذا الشراء لأول مرة. استخدم زر «تداول» لفتح Ezymex Trader: فهو يسجّل دخولك دون كلمة مرور.",
 
   // Account credentials
   "cred.login": "رقم الحساب",
@@ -412,7 +412,7 @@ const prop: NsMessages<"prop"> = {
   "account.passed": "ناجح · قراءة فقط",
   "account.failed": "فاشل · معطّل",
   "account.opening": "قيد الفتح",
-  "account.tradableText": "يفتح زر «تداول» منصة Kalks Trader مع تسجيل الدخول إلى هذا الحساب. عُرضت كلمات المرور مرة واحدة عند الشراء.",
+  "account.tradableText": "يفتح زر «تداول» منصة Ezymex Trader مع تسجيل الدخول إلى هذا الحساب. عُرضت كلمات المرور مرة واحدة عند الشراء.",
   "account.passedText": "اكتملت هذه المرحلة. الحساب للقراءة فقط؛ تداول في مرحلتك التالية.",
   "account.failedText": "التداول على هذا الحساب معطّل.",
   "account.unavailableText": "التداول غير متاح على هذا الحساب.",

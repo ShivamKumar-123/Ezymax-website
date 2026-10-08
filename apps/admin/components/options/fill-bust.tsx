@@ -19,8 +19,8 @@
  */
 import * as React from "react";
 import { CircleCheck, Gavel, Hourglass, ShieldAlert, UsersRound } from "lucide-react";
-import { Button, Card, CardHeader, Chip, Dialog, DialogClose, EmptyState, Field, Input, Tooltip, cn, formatNumber } from "@kalks/ui";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { Button, Card, CardHeader, Chip, Dialog, DialogClose, EmptyState, Field, Input, Tooltip, cn, formatNumber } from "@ezymex/ui";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { ErrorState, TableSkeleton, ago, useNow, when } from "@/components/live/kit";
 import { useStaff } from "@/components/staff-session";
 import type { Approval, BookTrade, BustDone, EnableDone, FourEyesPending } from "./types";

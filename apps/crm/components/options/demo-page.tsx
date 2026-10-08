@@ -5,8 +5,8 @@
 
 import * as React from "react";
 import { toast } from "sonner";
-import { ACCOUNTS } from "@kalks/mock";
-import { useT } from "@kalks/i18n/react";
+import { ACCOUNTS } from "@ezymex/mock";
+import { useT } from "@ezymex/i18n/react";
 import { TERMINAL_URL } from "@/lib/live";
 import type { Suitability } from "./api";
 import { demoSuitability } from "./demo";

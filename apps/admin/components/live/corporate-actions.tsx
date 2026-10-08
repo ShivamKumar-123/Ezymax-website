@@ -10,7 +10,7 @@
 import * as React from "react";
 import { CalendarDays, CheckCircle2, Coins, Pencil, Plus, RefreshCw, Scissors, ShieldAlert, ShieldCheck, XCircle } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, PageHeader, Reveal, Segmented, Skeleton, cn, type ChipTone, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, PageHeader, Reveal, Segmented, Skeleton, cn, type ChipTone, type Column } from "@ezymex/ui";
 import { MiniField, MiniStat, NumInput, Select, TextArea, TextInput } from "@/components/config/kit";
 import { ErrorState, ago, sendJson, useApi, useNow, when } from "./kit";
 

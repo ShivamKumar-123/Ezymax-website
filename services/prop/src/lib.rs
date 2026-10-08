@@ -1,4 +1,4 @@
-//! Kalks prop firm service (module 15, D147–D150). See services/prop/README.md.
+//! Ezymex prop firm service (module 15, D147–D150). See services/prop/README.md.
 
 pub mod api;
 pub mod certs;

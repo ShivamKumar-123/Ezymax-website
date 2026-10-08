@@ -1,7 +1,7 @@
-import { getInstrument, priceFeed, type AssetClass } from "@kalks/mock";
-import { IS_DEMO } from "@kalks/mock/mode";
-import { ADMIN_ACCOUNTS, ADMIN_POSITIONS, TRADING_GROUPS, type AdminAccountRow, type RoutingRule } from "@kalks/mock/admin-trading";
-import { getClient } from "@kalks/mock/admin-clients";
+import { getInstrument, priceFeed, type AssetClass } from "@ezymex/mock";
+import { IS_DEMO } from "@ezymex/mock/mode";
+import { ADMIN_ACCOUNTS, ADMIN_POSITIONS, TRADING_GROUPS, type AdminAccountRow, type RoutingRule } from "@ezymex/mock/admin-trading";
+import { getClient } from "@ezymex/mock/admin-clients";
 import { liveAccount, liveClientName, liveGroups, liveSymbol, type LiveAccount } from "./directory";
 import type { Book, DeskPosition, DeskState, Side } from "./types";
 
@@ -168,7 +168,7 @@ function liveRow(a: LiveAccount): AdminAccountRow {
     credit: a.credit,
     margin: a.margin,
     route: a.route,
-    server: a.type === "demo" ? "Kalks-Demo" : "Kalks-Live",
+    server: a.type === "demo" ? "Ezymex-Demo" : "Ezymex-Live",
     openPositions: a.positions,
     created: a.createdAt,
     status: a.status === "active" ? "active" : a.status === "close_only" || a.status === "read_only" ? "read-only" : "disabled",

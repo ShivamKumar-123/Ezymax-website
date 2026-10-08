@@ -1,6 +1,6 @@
 import type { NsMessages } from "../../core";
 
-// Kalks Trader (apps/terminal): MT5-style web terminal shell, login and mobile layout.
+// Ezymex Trader (apps/terminal): MT5-style web terminal shell, login and mobile layout.
 const trader: NsMessages<"trader"> = {
   // Shared shell words
   clientArea: "Kawasan Pelanggan",
@@ -133,7 +133,7 @@ const trader: NsMessages<"trader"> = {
   "menu.keyboardShortcuts": "Pintasan Papan Kekunci",
   "menu.helpTopics": "Topik Bantuan",
   "menu.contactSupport": "Hubungi Sokongan",
-  "menu.about": "Perihal Kalks Trader",
+  "menu.about": "Perihal Ezymex Trader",
   // Tools > Options toast
   "options.title": "Pilihan",
   "options.trading": "Dagangan",
@@ -168,7 +168,7 @@ const trader: NsMessages<"trader"> = {
   "guest.noAccount": "Tiada akaun dagangan",
   "guest.liveData": "Data pasaran langsung",
   "guest.cardHeader": "Tetamu · carta dan sebut harga",
-  "guest.cardText": "Carta, penunjuk, lukisan, amaran dan spesifikasi simbol berjalan pada data pasaran langsung Kalks. Log masuk dengan akaun dagangan anda untuk berdagang, atau buka akaun di Kawasan Pelanggan.",
+  "guest.cardText": "Carta, penunjuk, lukisan, amaran dan spesifikasi simbol berjalan pada data pasaran langsung Ezymex. Log masuk dengan akaun dagangan anda untuk berdagang, atau buka akaun di Kawasan Pelanggan.",
 
   // Notifications bell
   "notifications.title": "Pemberitahuan",
@@ -278,7 +278,7 @@ const trader: NsMessages<"trader"> = {
   "login.serverTime": "Waktu pelayan GMT+3",
   "login.notice.expired": "Sesi anda telah tamat tempoh. Log masuk semula.",
   "login.notice.expiredFor": "Sesi anda untuk {login} telah tamat tempoh. Log masuk semula.",
-  "login.notice.ssoExpired": "Pautan log masuk itu telah tamat tempoh atau sudah digunakan. Buka Kalks Trader sekali lagi dari Kawasan Pelanggan, atau log masuk di bawah.",
+  "login.notice.ssoExpired": "Pautan log masuk itu telah tamat tempoh atau sudah digunakan. Buka Ezymex Trader sekali lagi dari Kawasan Pelanggan, atau log masuk di bawah.",
   "login.notice.ssoFailed": "Log masuk dari Kawasan Pelanggan gagal. Log masuk di bawah.",
   "login.error.invalid": "Akaun atau kata laluan tidak sah.",
   "login.error.locked": "Terlalu banyak cubaan gagal. Log masuk ini dikunci selama 15 minit.",
@@ -301,9 +301,9 @@ const trader: NsMessages<"trader"> = {
   "mobile.tab.history": "Sejarah",
   "mobile.tab.account": "Akaun",
   "mobile.guestSubtitle": "Data pasaran langsung · tiada akaun dagangan",
-  "mobile.guestTrade": "Posisi, pesanan, baki dan margin dipaparkan di sini sebaik sahaja anda berdagang daripada akaun Kalks. Carta dan sebut harga berfungsi sekarang.",
+  "mobile.guestTrade": "Posisi, pesanan, baki dan margin dipaparkan di sini sebaik sahaja anda berdagang daripada akaun Ezymex. Carta dan sebut harga berfungsi sekarang.",
   "mobile.guestHistory": "Dagangan anda yang ditutup disenaraikan di sini sebaik sahaja anda log masuk ke akaun dagangan.",
-  "mobile.guestAccountText": "Log masuk ke akaun dagangan untuk berdagang. Carta, penunjuk, lukisan dan amaran berjalan pada data pasaran langsung Kalks sekarang.",
+  "mobile.guestAccountText": "Log masuk ke akaun dagangan untuk berdagang. Carta, penunjuk, lukisan dan amaran berjalan pada data pasaran langsung Ezymex sekarang.",
   "mobile.watchSegment": "Segmen senarai pantau",
   "mobile.noFavourites": "Belum ada kegemaran.",
   "mobile.noSymbols": "Tiada simbol yang sepadan.",
@@ -332,14 +332,14 @@ const trader: NsMessages<"trader"> = {
   "copyBanner.textNoName": "Akaun salinan — dagangan diurus oleh master yang anda salin; anda boleh memantau P&L di sini.",
   "copyBanner.manage": "Urus salinan di Kawasan Pelanggan",
 
-  // ---- Kalks FX Options workspace (CFD | Options switch in Kalks Trader; components/options/*) ----
-  // Keep "Kalks FX Options", "Claude", tickers (EURUSD), "IV", "ATM", "OTM", "ITM", "P&L", "USD", "UTC", "GTC" and the
+  // ---- Ezymex FX Options workspace (CFD | Options switch in Ezymex Trader; components/options/*) ----
+  // Keep "Ezymex FX Options", "Claude", tickers (EURUSD), "IV", "ATM", "OTM", "ITM", "P&L", "USD", "UTC", "GTC" and the
   // Greek letters (Δ Γ Θ) as they are. Premiums are in USD per contract; "pips" are price points of the underlying.
   "opt.mode.label": "Mod dagangan",
   "opt.mode.cfd": "CFD",
   "opt.mode.options": "Opsyen",
   "opt.mode.cfdHint": "Dagangan CFD: carta, Pemerhatian Pasaran dan panel pesanan",
-  "opt.mode.optionsHint": "Kalks FX Options: rantaian opsyen, strategi dan profil bayaran",
+  "opt.mode.optionsHint": "Ezymex FX Options: rantaian opsyen, strategi dan profil bayaran",
   "opt.call": "Call",
   "opt.put": "Put",
   "opt.calls": "Call",
@@ -508,7 +508,7 @@ const trader: NsMessages<"trader"> = {
 
   // Module not open yet / price server down
   "opt.soon.title": "Opsyen akan dilancarkan tidak lama lagi",
-  "opt.soon.text": "Kalks FX Options belum dibuka pada akaun ini. Sebaik sahaja dibuka, rantaian opsyen akan dipaparkan di sini, pada akaun yang sama dengan CFD anda.",
+  "opt.soon.text": "Ezymex FX Options belum dibuka pada akaun ini. Sebaik sahaja dibuka, rantaian opsyen akan dipaparkan di sini, pada akaun yang sama dengan CFD anda.",
   "opt.soon.point1": "Call dan put bagi forex, emas, perak dan minyak",
   "opt.soon.point2": "Tamat tempoh harian, mingguan dan bulanan, diselesaikan secara tunai dalam USD",
   "opt.soon.point3": "Sebagai pembeli, anda tidak akan rugi lebih daripada premium yang anda bayar",
@@ -653,14 +653,14 @@ const trader: NsMessages<"trader"> = {
 
   // Public option chain page (/options/chain/EURUSD)
   "opt.public.brand": "Rantaian opsyen",
-  "opt.public.kicker": "Kalks FX Options",
+  "opt.public.kicker": "Ezymex FX Options",
   "opt.public.title": "Rantaian opsyen {name}",
   "opt.public.subtitle": "Call dan put langsung untuk tamat tempoh harian, mingguan dan bulanan: bid dan ask dalam USD bagi setiap kontrak, volatiliti tersirat, delta, kebarangkalian in the money dan titik pulang modal. Opsyen gaya Eropah, diselesaikan secara tunai dalam USD.",
   "opt.public.trade": "Dagang opsyen {u}",
   "opt.public.atmStraddle": "Straddle ATM",
-  "opt.public.soonText": "Rantaian opsyen awam dibuka bersama Kalks FX Options. Buka akaun sekarang supaya bersedia sejak hari pertama.",
+  "opt.public.soonText": "Rantaian opsyen awam dibuka bersama Ezymex FX Options. Buka akaun sekarang supaya bersedia sejak hari pertama.",
   "opt.public.ctaTitle": "Dagang rantaian ini.",
-  "opt.public.ctaText": "Log masuk ke Kalks Trader untuk membeli atau menjual mana-mana opsyen di sini, membina strategi dan melihat profil bayaran anda.",
+  "opt.public.ctaText": "Log masuk ke Ezymex Trader untuk membeli atau menjual mana-mana opsyen di sini, membina strategi dan melihat profil bayaran anda.",
   "opt.public.howTitle": "Cara membaca rantaian",
   "opt.public.how1": "Call membayar apabila harga berakhir di atas harga laksana, put apabila harga berakhir di bawahnya.",
   "opt.public.how2": "Bid ialah harga yang anda terima apabila menjual, ask ialah harga yang anda bayar apabila membeli, kedua-duanya dalam USD bagi setiap kontrak.",
@@ -692,11 +692,11 @@ const trader: NsMessages<"trader"> = {
   "opt.m.chain": "Rantaian",
   "opt.m.positions": "Posisi",
 
-  // ---- Options ORDER BOOK (docs/OPTIONS-EXCHANGE.md): clients trade with each other and with the Kalks market maker (MM)
-  // on a price-time order book. Keep GTC, IOC, FOK, GTD, RFQ and MM as they are; "Kalks" is a brand name.
+  // ---- Options ORDER BOOK (docs/OPTIONS-EXCHANGE.md): clients trade with each other and with the Ezymex market maker (MM)
+  // on a price-time order book. Keep GTC, IOC, FOK, GTD, RFQ and MM as they are; "Ezymex" is a brand name.
   "opt.book.tab": "Buku pesanan",
   "opt.book.badge": "Buku pesanan",
-  "opt.book.badgeHint": "Harga datang daripada buku pesanan: pesanan pelanggan lain dan pembuat pasaran Kalks, di bawah peraturan yang sama untuk semua.",
+  "opt.book.badgeHint": "Harga datang daripada buku pesanan: pesanan pelanggan lain dan pembuat pasaran Ezymex, di bawah peraturan yang sama untuk semua.",
   "opt.book.size": { other: "{count} kontrak" },
   "opt.book.noOffers": "Tiada tawaran",
   "opt.book.noBids": "Tiada bid",
@@ -765,7 +765,7 @@ const trader: NsMessages<"trader"> = {
   "opt.bt.needPrice": "Masukkan harga limit.",
   "opt.bt.needGtd": "Pilih sehingga bila pesanan kekal dalam buku.",
   "opt.bt.needTrigger": "Masukkan harga pencetus.",
-  "opt.bt.bookOff": "Buku pesanan tidak tersedia sekarang: harga dan pesanan kembali kepada harga Kalks.",
+  "opt.bt.bookOff": "Buku pesanan tidak tersedia sekarang: harga dan pesanan kembali kepada harga Ezymex.",
   "opt.bt.pv.fillsNow": "Dilaksanakan sekarang",
   "opt.bt.pv.fillsAt": "{n} daripada {total} pada purata {price}",
   "opt.bt.pv.none": "Tiada pada harga ini",
@@ -854,7 +854,7 @@ const trader: NsMessages<"trader"> = {
   "opt.rfq.title": "Permintaan sebut harga",
   "opt.rfq.request": "Minta sebut harga",
   "opt.rfq.again": "Minta sebut harga baharu",
-  "opt.rfq.note": "Keseluruhan strategi didagangkan sebagai satu: pembuat pasaran Kalks memberikan satu harga bersih, dan semua kaki dilaksanakan serentak atau tiada langsung.",
+  "opt.rfq.note": "Keseluruhan strategi didagangkan sebagai satu: pembuat pasaran Ezymex memberikan satu harga bersih, dan semua kaki dilaksanakan serentak atau tiada langsung.",
   "opt.rfq.builderNote": "Strategi didagangkan melalui permintaan sebut harga (RFQ): satu harga bersih, semua kaki serentak.",
   "opt.rfq.size": "Saiz: {n} × strategi",
   "opt.rfq.waiting": "Menunggu sebut harga…",
@@ -865,17 +865,17 @@ const trader: NsMessages<"trader"> = {
   "opt.rfq.validFor": "sah {s} saat",
   "opt.rfq.refreshing": "sebut harga baharu…",
   "opt.rfq.from": "Sebut harga daripada {who}",
-  "opt.rfq.kalksMm": "pembuat pasaran Kalks",
+  "opt.rfq.ezymexMm": "pembuat pasaran Ezymex",
   "opt.rfq.openFor": "permintaan dibuka {s} saat",
   "opt.rfq.expired": "Permintaan telah tamat tempoh.",
   "opt.rfq.toast.filled": "Strategi dilaksanakan",
   "opt.rfq.toast.desc": { other: "{count} kaki dilaksanakan serentak · bersih {price} USD" },
-  "opt.rfq.kalksQuoted": "Sebut harga Kalks (bukan buku pesanan)",
-  "opt.rfq.kalksQuotedHint": "Opsyen barrier tidak disenaraikan dalam buku pesanan: Kalks memberikan sebut harga pada harga model ditambah spread.",
+  "opt.rfq.ezymexQuoted": "Sebut harga Ezymex (bukan buku pesanan)",
+  "opt.rfq.ezymexQuotedHint": "Opsyen barrier tidak disenaraikan dalam buku pesanan: Ezymex memberikan sebut harga pada harga model ditambah spread.",
   // Market-maker rules (public disclosure)
   "opt.mm.link": "Peraturan pembuat pasaran",
   "opt.mm.title": "Peraturan pembuat pasaran",
-  "opt.mm.intro": "Kalks mengendalikan pembuat pasaran yang memberikan harga beli dan jual bagi setiap opsyen, supaya sentiasa ada pihak untuk berdagang. Ia berdagang dalam buku pesanan yang sama seperti anda, di bawah peraturan yang sama.",
+  "opt.mm.intro": "Ezymex mengendalikan pembuat pasaran yang memberikan harga beli dan jual bagi setiap opsyen, supaya sentiasa ada pihak untuk berdagang. Ia berdagang dalam buku pesanan yang sama seperti anda, di bawah peraturan yang sama.",
   "opt.mm.sameTitle": "Peraturan yang sama seperti setiap pelanggan",
   "opt.mm.rule1": "Ia menghantar sebut harganya melalui saluran kemasukan pesanan yang sama seperti pelanggan, dengan semakan yang sama.",
   "opt.mm.rule2": "Tiada keutamaan: pesanan dilaksanakan mengikut harga, kemudian masa. Pada harga yang sama, tiada sesiapa didahulukan di hadapan anda kerana identiti mereka.",
@@ -975,7 +975,7 @@ const trader: NsMessages<"trader"> = {
   "opt.an.oi.emptyOi": "Belum ada kepentingan terbuka dalam tamat tempoh ini.",
   "opt.an.oi.emptyVolume": "Belum ada dagangan dalam tamat tempoh ini hari ini.",
   "opt.an.oi.none": "Kepentingan terbuka dan nisbah put / call dipaparkan di sini sebaik sahaja opsyen {u} didagangkan dalam buku pesanan.",
-  "opt.an.oi.noneSub": "Buat masa ini Kalks memberikan sebut harga bagi opsyen ini, jadi belum ada kepentingan terbuka atau volum untuk dipaparkan. Smile dan struktur tempoh di atas adalah langsung.",
+  "opt.an.oi.noneSub": "Buat masa ini Ezymex memberikan sebut harga bagi opsyen ini, jadi belum ada kepentingan terbuka atau volum untuk dipaparkan. Smile dan struktur tempoh di atas adalah langsung.",
   "opt.an.oi.aria": "Kepentingan terbuka mengikut strike: call di atas, put di bawah",
   "opt.an.pcr.title": "Nisbah put / call",
   "opt.an.pcr.hint": "Put dibahagi dengan call dalam tamat tempoh ini. Melebihi 1: lebih banyak put daripada call.",
@@ -1033,7 +1033,7 @@ const trader: NsMessages<"trader"> = {
   "opt.share.copy": "Salin pautan",
   "opt.share.copied": "Pautan disalin",
   "opt.share.shareTo": "Kongsi ke",
-  "opt.share.text": "Dagangan opsyen {contract} saya di Kalks",
+  "opt.share.text": "Dagangan opsyen {contract} saya di Ezymex",
   "opt.share.error": "Tidak dapat mencipta kad kongsi",
   "opt.share.readOnly": "Log masuk pelabur (baca sahaja) tidak boleh mencipta kad kongsi.",
   "opt.share.preview": "Pratonton kad kongsi",
@@ -1194,7 +1194,7 @@ const trader: NsMessages<"trader"> = {
   "opt.pos.d.nowEach": "Nilai sekarang, setiap kontrak",
   "opt.pos.d.where": "Didagangkan di",
   "opt.pos.d.book": "Buku pesanan",
-  "opt.pos.d.house": "Harga Kalks",
+  "opt.pos.d.house": "Harga Ezymex",
   "opt.pos.comboPaid": "Anda membayar {amount} untuk strategi ini.",
   "opt.pos.comboReceived": "Anda menerima {amount} untuk strategi ini.",
   "opt.pos.emptyTitle": "Belum ada opsyen terbuka",
@@ -1220,8 +1220,8 @@ const trader: NsMessages<"trader"> = {
   "opt.err.series_cancel_only": "Dagangan bagi salah satu opsyen ini dihentikan sementara buat masa ini (batal sahaja). Cuba lagi nanti.",
   "opt.err.series_closed": "Salah satu opsyen ini telah berhenti didagangkan: ia terlalu hampir dengan tarikh tamat tempohnya.",
   "opt.err.rfq_underlyings": "Semua kaki dalam strategi mesti dalam pasaran yang sama, contohnya semuanya EURUSD.",
-  "opt.err.kalks_quoted": "Strategi ini mempunyai kaki barrier. Opsyen barrier diberi harga oleh Kalks, bukan dalam buku pesanan, jadi strategi ini dibuat sebagai satu pesanan pada harga Kalks.",
-  "opt.err.mixed_venue": "Strategi ini mempunyai kaki dalam buku pesanan dan kaki yang diberi harga oleh Kalks, jadi ia tidak boleh ditutup sekali gus. Tutup kaki satu demi satu.",
+  "opt.err.ezymex_quoted": "Strategi ini mempunyai kaki barrier. Opsyen barrier diberi harga oleh Ezymex, bukan dalam buku pesanan, jadi strategi ini dibuat sebagai satu pesanan pada harga Ezymex.",
+  "opt.err.mixed_venue": "Strategi ini mempunyai kaki dalam buku pesanan dan kaki yang diberi harga oleh Ezymex, jadi ia tidak boleh ditutup sekali gus. Tutup kaki satu demi satu.",
   "opt.err.book_venue": "Opsyen ini didagangkan dalam buku pesanan. Strategi tidak boleh mencampurkan kaki buku pesanan dengan kaki barrier: buat pesanan secara berasingan.",
   "opt.rfq.err.quote_expired": "Harga itu sudah tidak sah (sebut harga hanya sah untuk beberapa saat). Dapatkan harga baharu dan terimanya.",
   "opt.rfq.err.price_moved": "Harga bergerak sebelum pesanan anda sampai, jadi tiada dagangan berlaku. Dapatkan harga baharu dan cuba lagi.",
@@ -1232,7 +1232,7 @@ const trader: NsMessages<"trader"> = {
   "opt.rfq.err.no_liquidity": "Pembuat pasaran tidak dapat memberi harga untuk strategi ini buat masa ini. Cuba sebentar lagi, atau tutup kaki satu demi satu.",
   "opt.rfq.err.rejected": "Strategi tidak dilaksanakan, dan tiada dagangan berlaku. Cuba lagi.",
   "opt.rfq.newPrice": "Dapatkan harga baharu",
-  "opt.rfq.houseNote": "Opsyen barrier diberi harga oleh Kalks, bukan dalam buku pesanan: strategi ini dibuat sebagai satu pesanan pada harga Kalks, semua kaki serentak atau tiada langsung.",
+  "opt.rfq.houseNote": "Opsyen barrier diberi harga oleh Ezymex, bukan dalam buku pesanan: strategi ini dibuat sebagai satu pesanan pada harga Ezymex, semua kaki serentak atau tiada langsung.",
   "opt.toast.settling": "angka akhir sebentar lagi",
   "opt.toast.tryAgain": "Cuba lagi",
   "opt.toast.strategyClosedBook": "Strategi ditutup melalui buku pesanan",
@@ -1240,10 +1240,10 @@ const trader: NsMessages<"trader"> = {
   "opt.pos.closedNetGot": "Semua kaki ditutup serentak: anda menerima {amount} · P&L {pnl}",
   "opt.hist.reason.bust": "Dibatalkan",
   "opt.hist.why.risk": "Ditutup oleh kawalan risiko (margin terlalu rendah)",
-  "opt.hist.why.backstop": "Ditutup oleh kawalan risiko (margin terlalu rendah): pembuat pasaran Kalks mengambil alih posisi itu",
+  "opt.hist.why.backstop": "Ditutup oleh kawalan risiko (margin terlalu rendah): pembuat pasaran Ezymex mengambil alih posisi itu",
   "opt.hist.why.bust": "Dagangan dibatalkan oleh dealing desk; telah diterbalikkan",
   "opt.hist.closedRisk": "Ditutup oleh kawalan risiko (margin terlalu rendah) pada {close}, bagi setiap kontrak",
-  "opt.hist.closedBackstop": "Ditutup oleh kawalan risiko (margin terlalu rendah): pembuat pasaran Kalks mengambil alihnya pada {close}, bagi setiap kontrak",
+  "opt.hist.closedBackstop": "Ditutup oleh kawalan risiko (margin terlalu rendah): pembuat pasaran Ezymex mengambil alihnya pada {close}, bagi setiap kontrak",
   "opt.hist.closedBust": "Dagangan dibatalkan oleh dealing desk dan diterbalikkan pada {close}, bagi setiap kontrak",
   "opt.bust.title": "Dagangan dibatalkan oleh dealing desk",
   "opt.bust.text": "{what} × {n}: dagangan telah diterbalikkan dan sebarang fi telah dikembalikan.",

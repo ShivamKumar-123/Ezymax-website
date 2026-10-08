@@ -233,8 +233,8 @@ const developer: NsMessages<"developer"> = {
   "assetClass.crypto": "암호화폐",
   "assetClass.stocks": "주식",
 
-  // 코드 편집기 (Kalks 전략 언어)
-  "code.language": "Kalks 전략 언어",
+  // 코드 편집기 (Ezymex 전략 언어)
+  "code.language": "Ezymex 전략 언어",
   "code.checking": "확인 중…",
   "code.errors": { other: "오류 {count}개" },
   "code.compiles": "컴파일 성공",
@@ -280,7 +280,7 @@ const developer: NsMessages<"developer"> = {
   // 킬 스위치
   "kill.title": "킬 스위치",
   "kill.subtitle": "계좌의 모든 전략, 웹훅 및 API 주문을 중지합니다",
-  "kill.globalPaused": "Kalks 리스크 관리팀이 플랫폼 전체에서 자동 거래를 일시 중지했습니다.",
+  "kill.globalPaused": "Ezymex 리스크 관리팀이 플랫폼 전체에서 자동 거래를 일시 중지했습니다.",
   "kill.onSince": "{at}부터 활성",
   "kill.release": "킬 스위치 해제",
   "kill.stopAll": "모든 자동화 중지",
@@ -362,7 +362,7 @@ const developer: NsMessages<"developer"> = {
   "docs.bearer": "Bearer (가장 간단)",
   "docs.hmac": "HMAC 서명 (봇에 권장)",
   // <code>는 헤더 이름과 경로를 감쌉니다
-  "docs.signature": "서명 = hex(HMAC-SHA256(secret, timestamp + METHOD + 쿼리 포함 경로 + body))이며, <code>X-Kalks-Key</code>, <code>X-Kalks-Timestamp</code> (unix ms, ±30초) 및 <code>X-Kalks-Signature</code>와 함께 전송합니다. 경로는 <code>/public/v1/…</code> 형식으로 서명됩니다. 각 서명은 한 번만 허용됩니다.",
+  "docs.signature": "서명 = hex(HMAC-SHA256(secret, timestamp + METHOD + 쿼리 포함 경로 + body))이며, <code>X-Ezymex-Key</code>, <code>X-Ezymex-Timestamp</code> (unix ms, ±30초) 및 <code>X-Ezymex-Signature</code>와 함께 전송합니다. 경로는 <code>/public/v1/…</code> 형식으로 서명됩니다. 각 서명은 한 번만 허용됩니다.",
   "docs.endpointsSub": "JSON 입출력. 모든 주문에는 source “api”가 지정되며, 반복된 clientOrderId는 status duplicate를 반환합니다.",
   "docs.errorsSub": "오류 형식: {shape}",
   "docs.ep.account": "잔고, 평가 잔액, 증거금, 가용 증거금, 증거금 수준",
@@ -470,9 +470,9 @@ const developer: NsMessages<"developer"> = {
 
   // 전략 마켓플레이스
   "market.title": "전략 마켓플레이스",
-  "market.subtitle": "Kalks 계좌에서 검증된 실적을 가진 전략입니다. 내 계좌로 복사하거나, 직접 전략을 게시하고 구독으로 수익을 얻으세요.",
-  "market.houseChip": "하우스 전략 · Kalks 운영",
-  "market.houseNote": "Kalks가 운영하는 하우스 전략: 브로커 소유의 실계좌에서 이 전략을 실행합니다. 실적은 시작 이후의 실제 거래만 포함하며, 시뮬레이션이나 소급 데이터는 없습니다.",
+  "market.subtitle": "Ezymex 계좌에서 검증된 실적을 가진 전략입니다. 내 계좌로 복사하거나, 직접 전략을 게시하고 구독으로 수익을 얻으세요.",
+  "market.houseChip": "하우스 전략 · Ezymex 운영",
+  "market.houseNote": "Ezymex가 운영하는 하우스 전략: 브로커 소유의 실계좌에서 이 전략을 실행합니다. 실적은 시작 이후의 실제 거래만 포함하며, 시뮬레이션이나 소급 데이터는 없습니다.",
   // 기간, 예: "2025-01-01 ~ 2025-12-31"
   "market.range": "{from} ~ {to}",
   "market.backtestSimulated": "백테스트 · 시뮬레이션",
@@ -499,7 +499,7 @@ const developer: NsMessages<"developer"> = {
   "market.subscriptionStatus": "구독 {status}",
   "market.reviewSaved": "리뷰가 저장되었습니다",
   "market.reviewFailed": "리뷰를 저장하지 못했습니다",
-  "market.trackNote": "{since}부터 Kalks에서 작성자가 직접 배포한 실적: {days}일, 순손익 {net}. 작성자가 입력한 값이 아니라 거래 엔진의 청산된 체결로 계산됩니다.",
+  "market.trackNote": "{since}부터 Ezymex에서 작성자가 직접 배포한 실적: {days}일, 순손익 {net}. 작성자가 입력한 값이 아니라 거래 엔진의 청산된 체결로 계산됩니다.",
   "market.riskSettings": "위험 설정",
   "market.riskLine": "크기 {size} · 손절 {stop} · 목표 {target}",
   "market.riskPct": "위험 {pct}%",
@@ -517,7 +517,7 @@ const developer: NsMessages<"developer"> = {
   "market.cloneRules": "규칙 복제",
   "market.subscribePaid": "구독 · 월 {price} USDT",
   "market.subscribeFree": "무료로 구독",
-  "market.paidNote": "Kalks 지갑(USDT)에서 결제됩니다. 30일마다 갱신되며 언제든지 취소할 수 있습니다.",
+  "market.paidNote": "Ezymex 지갑(USDT)에서 결제됩니다. 30일마다 갱신되며 언제든지 취소할 수 있습니다.",
   "market.reviews": "리뷰 ({n})",
   "market.stars": { other: "별 {count}개" },
   "market.reviewPlaceholder": "거래 결과는 어떠셨나요?",
@@ -549,7 +549,7 @@ const developer: NsMessages<"developer"> = {
   "market.popular": "인기순",
   "market.emptyTitle": "아직 등록된 전략이 없습니다",
   "market.emptyText": "첫 번째가 되어 보세요: 데모 계좌에 전략을 배포한 뒤 검증된 실적과 함께 게시하세요.",
-  "market.disclaimer": "과거 성과는 미래 결과를 보장하지 않습니다. 실적은 Kalks의 실계좌 또는 데모 계좌에서 나온 것이며 그에 따라 표시됩니다. 유료 구독 플랫폼 수수료: {pct}%.",
+  "market.disclaimer": "과거 성과는 미래 결과를 보장하지 않습니다. 실적은 Ezymex의 실계좌 또는 데모 계좌에서 나온 것이며 그에 따라 표시됩니다. 유료 구독 플랫폼 수수료: {pct}%.",
   "market.mode": "방식",
   "market.renews": "갱신",
   "market.copyOn": "#{login}에서 복사",

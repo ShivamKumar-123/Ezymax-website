@@ -42,11 +42,11 @@ import {
   riskLabel,
   type Master,
   type MasterTrade,
-} from "@kalks/mock/social";
+} from "@ezymex/mock/social";
 import { ProgramTags, RiskBadge, formatAge } from "@/components/social/master-bits";
 import { CopyDialog } from "@/components/social/copy-dialog";
 import { InvestDialog } from "@/components/social/invest-dialog";
-import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LiveMasterProfilePage } from "@/components/social-live/master-profile";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -389,7 +389,7 @@ function DemoMasterProfilePage() {
               <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-[12.5px] text-fg-3">
                 <span>Trading since {since} · {formatAge(m.ageDays)}</span>
                 <span>
-                  Account <span className="font-mono text-fg-2">#{m.account}</span> · Kalks-Live01
+                  Account <span className="font-mono text-fg-2">#{m.account}</span> · Ezymex-Live01
                 </span>
                 <span className="flex items-center gap-1">
                   <Users className="size-3.5" /> {m.followers.toLocaleString()} followers
@@ -431,7 +431,7 @@ function DemoMasterProfilePage() {
                     size="sm"
                     aria-label="Share profile"
                     onClick={() => {
-                      navigator.clipboard?.writeText(`https://kalks.com/masters/${m.id}`).catch(() => {});
+                      navigator.clipboard?.writeText(`https://ezymex.com/masters/${m.id}`).catch(() => {});
                       toast.success("Profile link copied");
                     }}
                   >

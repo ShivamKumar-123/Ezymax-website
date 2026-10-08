@@ -1,5 +1,5 @@
--- Kalks identity core: tenants, client users, staff, sessions, email OTPs, trusted devices, audit log.
--- Every row carries tenant_id (white-label multi-tenant; tenant #1 = Kalks).
+-- Ezymex identity core: tenants, client users, staff, sessions, email OTPs, trusted devices, audit log.
+-- Every row carries tenant_id (white-label multi-tenant; tenant #1 = Ezymex).
 
 CREATE TABLE tenants (
     id          BIGSERIAL PRIMARY KEY,
@@ -131,4 +131,4 @@ CREATE TRIGGER audit_log_no_update BEFORE UPDATE OR DELETE ON audit_log
 CREATE TRIGGER audit_log_no_truncate BEFORE TRUNCATE ON audit_log
     FOR EACH STATEMENT EXECUTE FUNCTION audit_log_immutable();
 
-INSERT INTO tenants (slug, name) VALUES ('kalks', 'Kalks Markets');
+INSERT INTO tenants (slug, name) VALUES ('ezymex', 'Ezymex Markets');

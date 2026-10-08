@@ -10,7 +10,7 @@ import { accountTitle, curOf, fmtAmount, fmtPrice, isArchived, isoDay, toUsd, tr
 import { AccountsError, liveTotals } from "./accounts-page";
 import { HistoryPanel, LedgerPanel } from "./activity";
 import { KindBadge, TradeButton, isPropAccount } from "./ui";
-import { tr, useFormat, useT } from "@kalks/i18n/react";
+import { tr, useFormat, useT } from "@ezymex/i18n/react";
 import { OptionTag, TradeSymbolAvatar, fmtContracts, symbolLabel } from "./instrument";
 import { isOptionTrade, positionPremiumsUsd, usdFactorOf } from "./option-deal";
 

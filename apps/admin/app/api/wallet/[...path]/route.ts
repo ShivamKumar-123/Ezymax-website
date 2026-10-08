@@ -11,7 +11,7 @@ import { tradingAllows } from "@/lib/trading-perms";
 //   GET names?ids=1,2  -> client names / emails from the gateway (needs clients.read in the gateway)
 // Balance & credit (adjustments/*): a route lists the permissions of which any one is enough here; the wallet
 // service then enforces the exact key (finance.adjust for add / deduct, finance.credit for credit,
-// finance.adjust_force to force, finance.adjust_approve to approve) from the forwarded x-kalks-staff-perms.
+// finance.adjust_force to force, finance.adjust_approve to approve) from the forwarded x-ezymex-staff-perms.
 
 type Method = "GET" | "POST" | "PUT";
 type Perm = WalletPerm | "finance.adjust";

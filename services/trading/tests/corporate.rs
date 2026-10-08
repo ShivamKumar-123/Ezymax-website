@@ -64,7 +64,7 @@ async fn exec(hub: &Hub, login: i64, op: Op) -> Result<Value, ExecError> {
 }
 
 fn staff(st: &AppState, id: &str, role: &str) -> StaffCtx {
-    let tenant = st.hub.shared.registry.by_slug("kalks").unwrap();
+    let tenant = st.hub.shared.registry.by_slug("ezymex").unwrap();
     StaffCtx { ctx: Ctx { tenant, ip: "127.0.0.1".into(), user_agent: "it".into(), bearer: None }, staff: Staff { id: id.into(), name: format!("IT {id}"), role: role.into() }, perms: None }
 }
 
@@ -89,7 +89,7 @@ async fn state(hub: &Hub, login: i64) -> Value {
 #[tokio::test]
 async fn splits_and_dividends_end_to_end_with_a_crash_and_replay() {
     let base = std::env::var("TRADING_TEST_DATABASE_URL").unwrap_or_else(|_| "postgres://postgres@127.0.0.1:5433/postgres".into());
-    let db = format!("kalks_trading_corporate_{}", std::process::id());
+    let db = format!("ezymex_trading_corporate_{}", std::process::id());
     let server = PgConnectOptions::from_str(&base).unwrap();
     server.clone().database("postgres").connect().await.expect("PostgreSQL :5433 must be running for this test");
     let url = server.clone().database(&db).to_url_lossy().to_string();
@@ -236,8 +236,8 @@ async fn splits_and_dividends_end_to_end_with_a_crash_and_replay() {
     assert!(trading::persist::verify_balances(&pool, &replayed).await.unwrap().is_empty());
     // the client's own history, and the audit trail
     let mut h = HeaderMap::new();
-    h.insert("x-kalks-user-id", "77".parse().unwrap());
-    let ctx = Ctx { tenant: registry.by_slug("kalks").unwrap(), ip: "1.1.1.1".into(), user_agent: "it".into(), bearer: None };
+    h.insert("x-ezymex-user-id", "77".parse().unwrap());
+    let ctx = Ctx { tenant: registry.by_slug("ezymex").unwrap(), ip: "1.1.1.1".into(), user_agent: "it".into(), bearer: None };
     let mine = api::corporate::account(State(st.clone()), ctx, h, Path(lv), Query(serde_json::from_value(json!({})).unwrap())).await.unwrap().0;
     let labels: Vec<&str> = mine["items"].as_array().unwrap().iter().filter_map(|i| i["label"].as_str()).collect();
     assert!(labels.contains(&"4-for-1 split") && labels.contains(&"Dividend adjustment"), "{labels:?}");

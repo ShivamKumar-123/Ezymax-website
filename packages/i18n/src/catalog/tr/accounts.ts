@@ -88,7 +88,7 @@ const accounts: NsMessages<"accounts"> = {
   "empty.openFirst": "İşleme başlamak için ilk hesabınızı açın.",
   "empty.noLive": "Henüz gerçek hesap yok",
   "empty.noDemo": "Henüz demo hesap yok",
-  "empty.liveText": "Şimdi gerçek hesap açın; giriş bilgileriniz ve şifreleriniz anında oluşturulsun. Hesabınıza Kalks cüzdanınızdan para yatırın.",
+  "empty.liveText": "Şimdi gerçek hesap açın; giriş bilgileriniz ve şifreleriniz anında oluşturulsun. Hesabınıza Ezymex cüzdanınızdan para yatırın.",
   "empty.demoText": "Demo hesap, gerçek zamanlı fiyatlarla sanal fonlar sunar; böylece risksiz pratik yapabilirsiniz.",
   "error.unavailableTitle": "İşlem hesapları kullanılamıyor",
   "error.unavailableText": "İşlem hizmetine ulaşamadık. Hesaplarınız ve bakiyeleriniz güvende; lütfen biraz sonra tekrar deneyin.",
@@ -110,13 +110,13 @@ const accounts: NsMessages<"accounts"> = {
   // Platforms card (demo build)
   "platform.mt5Compatible": "MT5 uyumlu",
   "platform.title": "Her yerden işlem yapın",
-  "platform.text": "Kalks WebTerminal, MetaTrader 5 masaüstü ve mobil: tek giriş, aynı bilgiler.",
+  "platform.text": "Ezymex WebTerminal, MetaTrader 5 masaüstü ve mobil: tek giriş, aynı bilgiler.",
   "platform.downloading": "MetaTrader 5 indiriliyor",
   "platform.mt5Desktop": "MT5 masaüstü",
 
   // Account types section
   "types.title": "Hesap türleri",
-  "types.subtitle": "Her türde aynı enstrümanlar ve Kalks Trader. Size uygun fiyatlandırmayı ve pozisyon modunu seçin.",
+  "types.subtitle": "Her türde aynı enstrümanlar ve Ezymex Trader. Size uygun fiyatlandırmayı ve pozisyon modunu seçin.",
   "types.footer": "Tüm hesaplarda negatif bakiye koruması · Kaldıraç yalnızca açık pozisyon yokken değiştirilebilir · Demo bakiyeler günde birkaç kez yenilenebilir.",
   "compare.title": "Hesap türlerini karşılaştırın",
   "compare.subtitle": "Aynı enstrümanlar, platformlar ve koruma; tarzınıza uygun fiyatlandırmayı seçin.",
@@ -161,7 +161,7 @@ const accounts: NsMessages<"accounts"> = {
   // Account row and its actions menu
   "row.trade": "İşlem yap",
   "row.refill": "Yenile",
-  "row.cantOpenTrader": "Bu hesap Kalks Trader'da açılamaz",
+  "row.cantOpenTrader": "Bu hesap Ezymex Trader'da açılamaz",
   "row.openPositions": { other: "{count} açık pozisyon" },
   "row.pendingOrders": { other: "{count} bekleyen emir" },
   // Followed by the floating profit/loss amount
@@ -196,7 +196,7 @@ const accounts: NsMessages<"accounts"> = {
   "fund.centAccount": "cent hesap (USC)",
   "fund.depositUsdt": "USDT yatır",
   "fund.transferFromWallet": "Cüzdandan transfer",
-  "fund.fromWallet": "Kalks cüzdanınızdan fonlanır",
+  "fund.fromWallet": "Ezymex cüzdanınızdan fonlanır",
   "fund.text": "BNB Chain veya TRON üzerinden cüzdanınıza USDT yatırın, ardından anında bu hesaba transfer edin. USDT, USD olarak 1:1 yatırılır.",
   "fund.textCent": "BNB Chain veya TRON üzerinden cüzdanınıza USDT yatırın, ardından anında bu hesaba transfer edin. USDT, USD olarak 1:1 yatırılır; cent hesapta USC olarak ×100 gösterilir.",
 
@@ -252,7 +252,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.swapFreeTitle": "Swapsız (İslami) hesap",
   "wizard.swapFreeText": "Gecelik swap yok. Bazı enstrümanlarda 5 geceden sonra sabit bir yönetim ücreti uygulanabilir.",
   "wizard.setPasswordTitle": "İşlem şifresi belirleyin",
-  "wizard.setPasswordSubtitle": "MT5 ve Kalks terminali için ana şifreniz. Sizin için bir yatırımcı (salt okunur) şifresi oluşturulur.",
+  "wizard.setPasswordSubtitle": "MT5 ve Ezymex terminali için ana şifreniz. Sizin için bir yatırımcı (salt okunur) şifresi oluşturulur.",
   "wizard.agreeMock": "<client>Müşteri Sözleşmesi</client> ve <risk>Risk Bildirimi</risk>'ni kabul ediyor, CFD'lerin yüksek para kaybı riski taşıdığını anlıyorum.",
   "wizard.clientAgreementOpened": "Müşteri sözleşmesi açıldı",
   "wizard.riskDisclosureOpened": "Risk bildirimi açıldı",
@@ -284,10 +284,10 @@ const accounts: NsMessages<"accounts"> = {
   "kind.demoText": "Gerçek zamanlı fiyatlarla risksiz pratik yapın.",
   "kind.liveTextMock": "Gerçek parayla gerçek piyasalarda işlem yapın. USDT cüzdanınızdan anında fonlayın.",
   "kind.demoTextMock": "Gerçek zamanlı fiyatlarla sanal fonlarla risksiz pratik yapın.",
-  "kind.live.point1": "Kalks-Live üzerinde gerçek gerçekleşme",
+  "kind.live.point1": "Ezymex-Live üzerinde gerçek gerçekleşme",
   "kind.live.point2": "Sıfır bakiyeyle başlar; cüzdanınızdan fonlanır",
   "kind.live.point3": "Giriş bilgileri ve şifreler anında oluşturulur",
-  "kind.live.mock1": "Kalks-Live sunucularında gerçek gerçekleşme",
+  "kind.live.mock1": "Ezymex-Live sunucularında gerçek gerçekleşme",
   "kind.live.mock2": "Anında USDT fonlama, USD'ye 1:1",
   "kind.live.mock3": "Kârlarınızı istediğiniz zaman çekin (KYC sonrası)",
   "kind.demo.virtualFunds": "Sanal fon (varsayılan {amount})",
@@ -303,12 +303,12 @@ const accounts: NsMessages<"accounts"> = {
 
   // Open account wizard: account created
   "created.title": "Hesabınız hazır",
-  "created.liveText": "Sıfır bakiyeyle başlar. Kalks cüzdanınızdan para yatırın, ardından bu bilgilerle Kalks Trader'a giriş yapın.",
+  "created.liveText": "Sıfır bakiyeyle başlar. Ezymex cüzdanınızdan para yatırın, ardından bu bilgilerle Ezymex Trader'a giriş yapın.",
   "created.demoText": "{amount} sanal fon yüklendi.",
   "created.demoExpires": "Terminale {days} gün giriş yapılmazsa süresi dolar.",
   "created.liveTextMock": "USDT cüzdanınızdan fonlayın ve saniyeler içinde işleme başlayın.",
   "created.demoTextMock": "{amount} sanal fon yüklendi. Süresi {days} gün içinde dolar.",
-  "created.openInTrader": "Kalks Trader'da aç",
+  "created.openInTrader": "Ezymex Trader'da aç",
   "created.openTerminal": "Terminali aç",
   "created.viewAccount": "Hesabı görüntüle",
   "created.credentials": "Giriş bilgileri",
@@ -329,7 +329,7 @@ const accounts: NsMessages<"accounts"> = {
   "error.account_limit": "Bu türde maksimum hesap sayısına ulaştınız.",
   "error.invalid_leverage": "Bu kaldıraç, hesabın grubu için kullanılamıyor.",
   "error.unavailable": "İşlem hizmeti kullanılamıyor. Lütfen kısa süre sonra tekrar deneyin.",
-  "toast.openTraderFailed": "Kalks Trader açılamadı",
+  "toast.openTraderFailed": "Ezymex Trader açılamadı",
   "toast.exportStarted": "Hesap özeti dışa aktarımı başladı",
   // {kind} is export.trades / export.ledger
   "toast.exportDesc": "#{login} · {kind} · CSV, saatler UTC",
@@ -406,7 +406,7 @@ const accounts: NsMessages<"accounts"> = {
   "close.subtitle": "Kapatılan hesabı kendiniz geri yükleyemezsiniz. Tekrar ihtiyacınız olabilirse bunun yerine silin (arşivleyin).",
   "close.blocked": "Bu hesap şu anda kapatılamıyor",
   "close.finalTitle": "Kapatma geri alınamaz",
-  "close.final1": "İşlem, transfer ve Kalks Trader girişi kalıcı olarak durur; hesap numarası bir daha kullanılmaz.",
+  "close.final1": "İşlem, transfer ve Ezymex Trader girişi kalıcı olarak durur; hesap numarası bir daha kullanılmaz.",
   "close.final2": "Ekstreler ve geçmiş Hesaplar › Arşivlenenler altında erişilebilir kalır.",
   "close.final3": "Uyum ekibimiz talebi inceler ve size e-posta ile bildirimlerinizde haber verir.",
   "close.whyTitle": "Bu hesabı neden kapatıyorsunuz?",
@@ -514,7 +514,7 @@ const accounts: NsMessages<"accounts"> = {
   "dormant.chip": "Etkin değil",
   "history.zip": "Tüm geçmişi indir (ZIP)",
 
-  // Kalks FX Options in trade history, positions, orders and exports
+  // Ezymex FX Options in trade history, positions, orders and exports
   "opt.tag": "Opsiyon",
   "opt.call": "Call",
   "opt.put": "Put",
@@ -530,7 +530,7 @@ const accounts: NsMessages<"accounts"> = {
   "opt.filter.cfd": "CFD",
   "opt.filter.options": "Opsiyonlar",
   "opt.emptyOptions": "Bu dönemde opsiyon işlemi yok",
-  "opt.emptyOptionsText": "Kalks Trader'da aldığınız veya sattığınız opsiyonlar, her birinin nasıl sona erdiğiyle birlikte burada görünür: kapatıldı, vadesi doldu veya knock-out oldu.",
+  "opt.emptyOptionsText": "Ezymex Trader'da aldığınız veya sattığınız opsiyonlar, her birinin nasıl sona erdiğiyle birlikte burada görünür: kapatıldı, vadesi doldu veya knock-out oldu.",
   "opt.emptyCfd": "Bu dönemde CFD işlemi yok",
   "opt.truncated": "Eşleşen en yeni {count} işlem gösteriliyor. Daha eskileri görmek için daha kısa bir dönem seçin.",
   // How a deal was closed

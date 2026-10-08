@@ -20,10 +20,10 @@ import {
   formatCompact,
   type Column,
 } from "@/components/kit";
-import { PAMM_FUNDS, masterById, masterSpark, type PammFund, type Rollover } from "@kalks/mock/social";
+import { PAMM_FUNDS, masterById, masterSpark, type PammFund, type Rollover } from "@ezymex/mock/social";
 import { RiskBadge } from "@/components/social/master-bits";
 import { InvestDialog } from "@/components/social/invest-dialog";
-import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
+import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LivePammPage } from "@/components/social-live/funds";
 
 type RollF = "all" | Rollover;
@@ -265,7 +265,7 @@ function DemoPammPage() {
           <Card>
             <CardHeader title="All PAMM funds" subtitle="Click a fund to invest" />
             <div className="px-4 pb-5 pt-4 sm:px-6">
-              <DataTable columns={columns} rows={funds} rowKey={(f) => f.id} onRowClick={setSel} search={(f) => `${f.name} ${masterById(f.masterId)!.person.name}`} exportName="kalks-pamm-funds" />
+              <DataTable columns={columns} rows={funds} rowKey={(f) => f.id} onRowClick={setSel} search={(f) => `${f.name} ${masterById(f.masterId)!.person.name}`} exportName="ezymex-pamm-funds" />
             </div>
           </Card>
         )}

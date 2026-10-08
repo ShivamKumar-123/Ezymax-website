@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { RefreshCw, RotateCcw, X } from "lucide-react";
-import { Button, Card, Chip, DataTable, Money, PageHeader, Reveal, type Column } from "@kalks/ui";
+import { Button, Card, Chip, DataTable, Money, PageHeader, Reveal, type Column } from "@ezymex/ui";
 import { MiniStat } from "@/components/config/kit";
 import { FilterSelect, Pager, TableSkeleton, ago, useApi, useDebounced, useNow, when } from "@/components/live/kit";
 import { P, ibSend, type CommissionsDoc, type Commission } from "./api";

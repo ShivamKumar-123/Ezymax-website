@@ -12,7 +12,7 @@
 import * as React from "react";
 import { CalendarClock, Layers, ListChecks, Pencil, Play, RefreshCw, Rows3 } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, DataTable, EmptyState, Field, Input, KpiCard, PageHeader, Reveal, Segmented,  Toggle, cn, formatNumber, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, EmptyState, Field, Input, KpiCard, PageHeader, Reveal, Segmented,  Toggle, cn, formatNumber, type Column } from "@ezymex/ui";
 import { ErrorState, TableSkeleton, ago, useNow, when } from "@/components/live/kit";
 import { useConfirm } from "@/components/confirm";
 import type { AdminExpiry, Chain, ExpiryKind, Overview, Underlying } from "./types";

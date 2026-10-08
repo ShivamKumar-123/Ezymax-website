@@ -1,7 +1,7 @@
-// Support module: the Ask Kalks AI routing rules (lib/ask-ai.ts, as apps/crm/tests/ask-ai.test.mjs), attachment
-// checks, the bot's markdown, the API shapes, the chat's and Ask Kalks AI's stream frames, the attachment upload
+// Support module: the Ask Ezymex AI routing rules (lib/ask-ai.ts, as apps/crm/tests/ask-ai.test.mjs), attachment
+// checks, the bot's markdown, the API shapes, the chat's and Ask Ezymex AI's stream frames, the attachment upload
 // path; and on the sample-data API: the Support page in the web's phone order, sending a message, attaching a file
-// with an injected picker, the Ask Kalks AI sheet (suggestion -> question -> answer with its extra), the open request
+// with an injected picker, the Ask Ezymex AI sheet (suggestion -> question -> answer with its extra), the open request
 // for a person (hold, send to the team, close it and ask), and the floating launcher.
 import 'dart:async';
 import 'dart:convert';
@@ -13,21 +13,21 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kalks/app.dart';
-import 'package:kalks/core/api/api_providers.dart';
-import 'package:kalks/core/notifications/notifications.dart';
-import 'package:kalks/features/support/ask_ai.dart';
-import 'package:kalks/features/support/ask_ai_engine.dart';
-import 'package:kalks/features/support/ask_ai_rules.dart';
-import 'package:kalks/features/support/launcher.dart';
-import 'package:kalks/features/support/live_chat_controller.dart';
-import 'package:kalks/features/support/support_data.dart';
-import 'package:kalks/features/support/support_models.dart';
-import 'package:kalks/i18n/t.dart';
-import 'package:kalks/preview/c1/preview_support.dart';
-import 'package:kalks/preview/preview_adapter.dart';
-import 'package:kalks/router/router.dart';
-import 'package:kalks/ui/ui.dart';
+import 'package:ezymex/app.dart';
+import 'package:ezymex/core/api/api_providers.dart';
+import 'package:ezymex/core/notifications/notifications.dart';
+import 'package:ezymex/features/support/ask_ai.dart';
+import 'package:ezymex/features/support/ask_ai_engine.dart';
+import 'package:ezymex/features/support/ask_ai_rules.dart';
+import 'package:ezymex/features/support/launcher.dart';
+import 'package:ezymex/features/support/live_chat_controller.dart';
+import 'package:ezymex/features/support/support_data.dart';
+import 'package:ezymex/features/support/support_models.dart';
+import 'package:ezymex/i18n/t.dart';
+import 'package:ezymex/preview/c1/preview_support.dart';
+import 'package:ezymex/preview/preview_adapter.dart';
+import 'package:ezymex/router/router.dart';
+import 'package:ezymex/ui/ui.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'helpers/test_app.dart';
@@ -67,7 +67,7 @@ Future<void> _flush() async {
   }
 }
 
-ProviderContainer _container(WidgetTester tester) => ProviderScope.containerOf(tester.element(find.byType(KalksApp)));
+ProviderContainer _container(WidgetTester tester) => ProviderScope.containerOf(tester.element(find.byType(EzymexApp)));
 
 /// Opens a page with the given body on top of the app (the Dashboard hosts AskAi once wired; the shell the launcher).
 Future<void> _page(WidgetTester tester, Widget body) async {
@@ -131,7 +131,7 @@ const _chips = [
 void main() {
   setUp(() => PreviewSupport.reset('agent'));
 
-  group('Ask Kalks AI routing (lib/ask-ai.ts)', () {
+  group('Ask Ezymex AI routing (lib/ask-ai.ts)', () {
     test('a question goes to the bot when there is no open request for a person', () {
       expect(askRoute(null), AskRoute.bot);
       expect(askRoute('bot'), AskRoute.bot);
@@ -185,7 +185,7 @@ void main() {
     });
 
     test('greeting, status chips and the API shapes', () {
-      expect(greetingRest("Hi there. I'm Kalks AI. Ask me anything."), "I'm Kalks AI. Ask me anything.");
+      expect(greetingRest("Hi there. I'm Ezymex AI. Ask me anything."), "I'm Ezymex AI. Ask me anything.");
       expect(greetingRest('Welcome to support.'), 'Welcome to support.');
       expect(supportStatus('waiting'), (label: 'support.status.waiting', tone: KChipTone.warn));
       expect(supportStatus('resolved').tone, KChipTone.neutral);
@@ -335,7 +335,7 @@ void main() {
     });
   });
 
-  group('Ask Kalks AI engine', () {
+  group('Ask Ezymex AI engine', () {
     late _Recorder rec;
     late SupportFrames frames;
 
@@ -416,7 +416,7 @@ void main() {
       c.read(routerProvider).go('/support');
       await settle(tester);
       expect(
-        find.text('Chat with Kalks AI for instant answers. Ask for a person at any time and our team takes over with the full conversation.'),
+        find.text('Chat with Ezymex AI for instant answers. Ask for a person at any time and our team takes over with the full conversation.'),
         findsOneWidget,
       );
       // the chat with Mei Lin: header, the bot answer, the agent's reply, the attachment
@@ -440,7 +440,7 @@ void main() {
       await _reveal(tester, find.byKey(const ValueKey('support-email'), skipOffstage: false));
       final email = find.byKey(const ValueKey('support-email'));
       expect(find.text('Prefer email?'), findsOneWidget);
-      expect(find.text('support@kalkstrade.com'), findsOneWidget);
+      expect(find.text('support@ezymex.com'), findsOneWidget);
       expect(find.text('Write to support'), findsOneWidget);
       expect(find.text('Copy client ID'), findsOneWidget);
       expect(_y(tester, email), greaterThan(historyY));
@@ -478,7 +478,7 @@ void main() {
       c.read(routerProvider).go('/support');
       await settle(tester);
       expect(find.textContaining('Hi Arjun.'), findsOneWidget);
-      expect(find.text('Ask Kalks AI anything…'), findsOneWidget);
+      expect(find.text('Ask Ezymex AI anything…'), findsOneWidget);
       // the quick replies scroll sideways (web: overflow-x-auto)
       await tester.scrollUntilVisible(
         find.text('What is a stop-out?'),
@@ -531,12 +531,12 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('Ask Kalks AI: pill -> sheet -> suggestion -> answer with its extra', (tester) async {
+    testWidgets('Ask Ezymex AI: pill -> sheet -> suggestion -> answer with its extra', (tester) async {
       PreviewSupport.reset('none');
       await pumpApp(tester, signedIn: true);
       await _page(tester, const AskAi(chips: _chips));
-      expect(find.text('Ask Kalks AI'), findsOneWidget);
-      expect(find.text('Ask Kalks AI anything…'), findsOneWidget);
+      expect(find.text('Ask Ezymex AI'), findsOneWidget);
+      expect(find.text('Ask Ezymex AI anything…'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('ask-ai-pill')));
       await settle(tester);
       expect(find.text('Instant answers about your account, deposits and trading.'), findsOneWidget);
@@ -563,7 +563,7 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('Ask Kalks AI with an open request for a person: hold, then send to our team', (tester) async {
+    testWidgets('Ask Ezymex AI with an open request for a person: hold, then send to our team', (tester) async {
       PreviewSupport.reset('waiting');
       await pumpApp(tester, signedIn: true);
       await _page(tester, const AskAi(chips: _chips));
@@ -575,10 +575,10 @@ void main() {
       await settle(tester);
       expect(find.byKey(const ValueKey('ai-blocked')), findsOneWidget);
       expect(
-        find.text("Kalks AI can't answer here while your request for a person is open. Close that request to ask Kalks AI, or send this to our team."),
+        find.text("Ezymex AI can't answer here while your request for a person is open. Close that request to ask Ezymex AI, or send this to our team."),
         findsOneWidget,
       );
-      expect(find.text('Close it and ask Kalks AI'), findsOneWidget);
+      expect(find.text('Close it and ask Ezymex AI'), findsOneWidget);
       expect(PreviewSupport.sent, isEmpty);
       await tester.tap(find.text('Send to our team'));
       await settle(tester);
@@ -587,7 +587,7 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('Ask Kalks AI: close the request and ask, the bot answers; Continue in chat opens the chat', (tester) async {
+    testWidgets('Ask Ezymex AI: close the request and ask, the bot answers; Continue in chat opens the chat', (tester) async {
       PreviewSupport.reset('agent');
       await pumpApp(tester, signedIn: true);
       await _page(tester, const AskAi(chips: _chips));
@@ -597,7 +597,7 @@ void main() {
       await tester.enterText(find.byKey(const ValueKey('ai-input')), 'How do I verify my identity?');
       await tester.testTextInput.receiveAction(TextInputAction.send);
       await settle(tester);
-      await tester.tap(find.text('Close it and ask Kalks AI'));
+      await tester.tap(find.text('Close it and ask Ezymex AI'));
       await settle(tester);
       await _poll(tester);
       expect(

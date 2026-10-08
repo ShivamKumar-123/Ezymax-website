@@ -1,13 +1,13 @@
 "use client";
 
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveFlags } from "@/components/owner/platform";
 
 import * as React from "react";
 import { Activity, ChevronDown, FlaskConical, Flag as FlagIcon, History, Plus, Rocket, Search, ShieldAlert, Timer } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardHeader, Chip, KpiCard, PageHeader, Reveal, Segmented, Toggle, Tooltip, type ChipTone, cn } from "@kalks/ui";
-import { FLG_ENVS, FLG_EVENTS, FLG_FLAGS, FLG_TENANTS, type FlgEnv, type FlgFlag } from "@kalks/mock/admin-flags";
+import { Avatar, Button, Card, CardHeader, Chip, KpiCard, PageHeader, Reveal, Segmented, Toggle, Tooltip, type ChipTone, cn } from "@ezymex/ui";
+import { FLG_ENVS, FLG_EVENTS, FLG_FLAGS, FLG_TENANTS, type FlgEnv, type FlgFlag } from "@ezymex/mock/admin-flags";
 import { RangeSlider, TenantLogo, TenantMini, timeAgo } from "@/components/brokers/kit";
 import { NewFlagDialog } from "@/components/brokers/new-flag-dialog";
 

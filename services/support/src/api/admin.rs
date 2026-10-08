@@ -223,7 +223,7 @@ fn canned_json(r: &sqlx::postgres::PgRow) -> Value {
 }
 
 const DEFAULT_CANNED: &[(&str, &str, &str)] = &[
-    ("/hi", "Greeting", "Hi {{first_name}}, {{agent_name}} here from Kalks support. I've read your conversation with our assistant. How can I help?"),
+    ("/hi", "Greeting", "Hi {{first_name}}, {{agent_name}} here from Ezymex support. I've read your conversation with our assistant. How can I help?"),
     ("/kyc", "Verification in review", "Thanks {{first_name}}. Your documents are with our compliance team, who usually decide within one business day. We'll email you as soon as there is a decision."),
     ("/wd", "Withdrawal check", "Thanks {{first_name}}. I'm checking your withdrawal with our payments team now and will update you here shortly."),
     ("/hash", "Ask for transaction hash", "Could you send me the transaction hash (TXID) of your deposit? You'll find it in the wallet you sent from."),

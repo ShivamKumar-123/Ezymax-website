@@ -5,8 +5,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { BookOpen, Check, CheckCircle2, Clock, PlayCircle, RotateCcw, Search, Star, Users, X, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Button, Card, CardHeader, Chip, Icon3D, Progress, Segmented, cn } from "@/components/kit";
-import { PEOPLE } from "@kalks/mock";
-import { COURSES, GLOSSARY, LEARNING_PATHS, QUIZ, type Course, type Level } from "@kalks/mock/academy";
+import { PEOPLE } from "@ezymex/mock";
+import { COURSES, GLOSSARY, LEARNING_PATHS, QUIZ, type Course, type Level } from "@ezymex/mock/academy";
 
 export const LEVEL_TONE: Record<Level, "up" | "warn" | "down"> = { Beginner: "up", Intermediate: "warn", Advanced: "down" };
 export const fmtMin = (m: number) => (m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`);
@@ -89,7 +89,7 @@ export function CourseGrid() {
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-[19px] font-medium tracking-tight">Courses</h2>
-          <p className="text-[13px] text-fg-3">{COURSES.length} courses · taught by Kalks analysts and funded traders</p>
+          <p className="text-[13px] text-fg-3">{COURSES.length} courses · taught by Ezymex analysts and funded traders</p>
         </div>
         <div className="-mx-1 overflow-x-auto px-1">
           <Segmented

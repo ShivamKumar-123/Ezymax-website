@@ -1,5 +1,5 @@
 // The instrument sheet (web components/markets/instrument-drawer.tsx, live build): symbol, asset class, open/closed,
-// favourite; Sell · bid / Buy · ask (each opens Kalks Trader on that side); change, day range, spread; daily close
+// favourite; Sell · bid / Buy · ask (each opens Ezymex Trader on that side); change, day range, spread; daily close
 // chart (1M / 3M / 6M); contract specification (no swap rows in live builds); trading hours (server time) with today
 // marked. Footer: Sell · Buy · Trade <symbol>.
 import 'package:flutter/material.dart';
@@ -14,7 +14,7 @@ import '../../ui/ui.dart';
 import 'instruments.dart';
 import 'markets_feed.dart';
 
-/// Opens Kalks Trader on `symbol` (optionally on a side), like the web's `${TERMINAL_URL}/?symbol=…&side=…`.
+/// Opens Ezymex Trader on `symbol` (optionally on a side), like the web's `${TERMINAL_URL}/?symbol=…&side=…`.
 void openTrader(BuildContext context, String symbol, {String? side}) =>
     GoRouter.of(context).push('/trader?symbol=${Uri.encodeQueryComponent(symbol)}${side == null ? '' : '&side=$side'}');
 

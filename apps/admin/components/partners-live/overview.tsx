@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowUpRight, BarChart3, ChevronDown, Handshake, Play, RefreshCw, ShieldAlert, Users, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardHeader, Chip, Donut, Flag, KpiCard, ListRow, Menu, Money, PageHeader, Reveal, Skeleton, cn } from "@kalks/ui";
+import { Avatar, Button, Card, CardHeader, Chip, Donut, Flag, KpiCard, ListRow, Menu, Money, PageHeader, Reveal, Skeleton, cn } from "@ezymex/ui";
 import { ColumnChart, MiniStat } from "@/components/config/kit";
 import { ago, day, useApi, useNow } from "@/components/live/kit";
 import { P, ibSend, type BatchesDoc, type FlagsDoc, type Level, type Overview } from "./api";

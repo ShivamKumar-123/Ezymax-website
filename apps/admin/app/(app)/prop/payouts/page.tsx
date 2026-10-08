@@ -3,11 +3,11 @@
 import * as React from "react";
 import { CheckCircle2, Clock, Download, HandCoins, RotateCcw, ShieldAlert, XCircle } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, CardHeader, Chip, DataTable, IconButton, KpiCard, Money, PageHeader, Reveal, StatusChip, Tabs, Tooltip, type Column } from "@kalks/ui";
+import { Button, Card, CardHeader, Chip, DataTable, IconButton, KpiCard, Money, PageHeader, Reveal, StatusChip, Tabs, Tooltip, type Column } from "@ezymex/ui";
 import { Checkbox, ColumnChart, PersonCell, auditToast, useReason } from "@/components/config/kit";
 import { MONTHLY, PAYOUTS, TODAY, fmtAgo, fmtDate, type PayoutRequest } from "@/components/prop/data";
 import { CheckIcons, PayoutDrawer, payoutTotal } from "@/components/prop/payout-parts";
-import { IS_DEMO } from "@kalks/mock/mode";
+import { IS_DEMO } from "@ezymex/mock/mode";
 import { LivePayoutsPage } from "@/components/prop-live/payouts";
 
 export default function PayoutsPage() {

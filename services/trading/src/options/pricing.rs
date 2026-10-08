@@ -279,8 +279,8 @@ mod tests {
         let u = s.underlying("EURUSD").unwrap();
         let now = chrono::DateTime::parse_from_rfc3339("2026-10-05T12:00:00Z").unwrap().timestamp_millis();
         let cut = chrono::DateTime::parse_from_rfc3339("2026-10-09T14:00:00Z").unwrap().timestamp_millis();
-        let ctx = context(&s, u, "EURUSD:2026-10-09", cut, Some(1.16), Some(1.0), now, "kalks").unwrap();
-        let g = GroupSettings::builtin("kalks");
+        let ctx = context(&s, u, "EURUSD:2026-10-09", cut, Some(1.16), Some(1.0), now, "ezymex").unwrap();
+        let g = GroupSettings::builtin("ezymex");
         let c = vanilla(&ctx, u, OptRight::Call, 1.16, &g);
         let p = vanilla(&ctx, u, OptRight::Put, 1.16, &g);
         assert!(c.bid <= c.mark && c.mark <= c.ask && c.bid > 0.0, "{c:?}");
@@ -300,8 +300,8 @@ mod tests {
         let u = s.underlying("EURUSD").unwrap();
         let now = chrono::DateTime::parse_from_rfc3339("2026-10-05T12:00:00Z").unwrap().timestamp_millis();
         let cut = chrono::DateTime::parse_from_rfc3339("2026-10-09T14:00:00Z").unwrap().timestamp_millis();
-        let ctx = context(&s, u, "EURUSD:2026-10-09", cut, Some(1.16), Some(1.0), now, "kalks").unwrap();
-        let g = GroupSettings { min_spread_usd: 0.0, vol_spread: 0.0, ..GroupSettings::builtin("kalks") };
+        let ctx = context(&s, u, "EURUSD:2026-10-09", cut, Some(1.16), Some(1.0), now, "ezymex").unwrap();
+        let g = GroupSettings { min_spread_usd: 0.0, vol_spread: 0.0, ..GroupSettings::builtin("ezymex") };
         let lvl = crate::money::from_f64(1.18).unwrap();
         let uo = BarrierTerms { kind: BarrierKind::UO, level: lvl, rebate: crate::money::ZERO, knocked_in: false, knocked_at: None, knock_spot: None };
         let ui = BarrierTerms { kind: BarrierKind::UI, ..uo.clone() };

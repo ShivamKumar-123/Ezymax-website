@@ -5,8 +5,8 @@
 
 import * as React from "react";
 import { ExternalLink, Newspaper, RefreshCw, CalendarDays } from "lucide-react";
-import { Flag, cn } from "@kalks/ui";
-import { ALL_INSTRUMENTS } from "@kalks/mock";
+import { Flag, cn } from "@ezymex/ui";
+import { ALL_INSTRUMENTS } from "@ezymex/mock";
 import { visibleSymbol } from "@/lib/scope";
 import { useTerminal } from "@/lib/store";
 import { Td, Th } from "@/components/ui/panel";
@@ -48,7 +48,7 @@ const ALL = new Set(ALL_INSTRUMENTS.map((i) => i.symbol));
 const KNOWN = { has: (s: string) => ALL.has(s) && visibleSymbol(s) };
 const CCYS = ["USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "NZD", "CNY"];
 
-/** Currencies of a Kalks symbol (EURUSD → EUR, USD; XAUUSD → USD; indices by country). */
+/** Currencies of a Ezymex symbol (EURUSD → EUR, USD; XAUUSD → USD; indices by country). */
 function symbolCurrencies(s: string): string[] {
   if (/^[A-Z]{6}$/.test(s)) return [s.slice(0, 3), s.slice(3)].filter((c) => CCYS.includes(c));
   if (s.endsWith("USD")) return ["USD"];

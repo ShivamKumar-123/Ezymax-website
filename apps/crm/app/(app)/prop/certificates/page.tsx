@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { Trophy } from "lucide-react";
 import { Button, PageHeader } from "@/components/kit";
-import { ME } from "@kalks/mock";
-import { IS_DEMO as DEMO_BUILD } from "@kalks/mock/mode";
-import { PROP_CERTIFICATES } from "@kalks/mock/prop";
+import { ME } from "@ezymex/mock";
+import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
+import { PROP_CERTIFICATES } from "@ezymex/mock/prop";
 import { CertificateCard } from "@/components/prop/certificate-card";
 import { LivePropCertificates } from "@/components/prop-live/certificates";
 

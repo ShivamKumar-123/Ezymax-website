@@ -381,7 +381,7 @@ List<Map<String, Object?>> _myCertificates() => [
     'score_pct': 87,
     'issued_at': _certIssued,
     'learner_name': 'Arjun Mehta',
-    'verify_url': 'https://app.kalkstrade.com/certificate/$_certCode',
+    'verify_url': 'https://app.ezymex.com/certificate/$_certCode',
   },
 ];
 
@@ -390,7 +390,7 @@ String _certificateSvg(String code) {
   // the sample certificate is phase 1's; one issued in the preview is shown as the FX Options elective's
   final first = code == _certCode;
   final level = first ? 'Beginner' : 'Intermediate';
-  final title = first ? 'Phase 1 · Markets and instruments' : 'Phase 9 · Kalks FX Options';
+  final title = first ? 'Phase 1 · Markets and instruments' : 'Phase 9 · Ezymex FX Options';
   final tracks = first ? 'Fundamental and technical analysis tracks' : 'Options trading track';
   final score = first ? 87 : 81;
   final issued = first ? '12 Sep 2026' : '8 Oct 2026';
@@ -401,7 +401,7 @@ String _certificateSvg(String code) {
   <g fill="none" stroke="#1d1d24" stroke-width="1">
     <path d="M1180 1095 L1564 711"/><path d="M1260 1095 L1564 791"/><path d="M1340 1095 L1564 871"/><path d="M1420 1095 L1564 951"/>
   </g>
-  <text x="120" y="170" font-size="30" font-weight="700" fill="#f4f4f6" letter-spacing="1">Kalks</text>
+  <text x="120" y="170" font-size="30" font-weight="700" fill="#f4f4f6" letter-spacing="1">Ezymex</text>
   <text x="120" y="206" font-size="20" fill="#ff5a1f" letter-spacing="6">ACADEMY</text>
   <text x="1480" y="170" text-anchor="end" font-size="18" fill="#8b8b96" letter-spacing="3">CERTIFICATE OF COMPLETION</text>
   <text x="1480" y="200" text-anchor="end" font-size="16" fill="#8b8b96">$level level</text>
@@ -417,7 +417,7 @@ String _certificateSvg(String code) {
   <text x="520" y="900" font-size="16" fill="#8b8b96" letter-spacing="2">CERTIFICATE ID</text>
   <text x="520" y="935" font-size="24" fill="#f4f4f6" font-family="'JetBrains Mono', Menlo, monospace">$code</text>
   <text x="1480" y="900" text-anchor="end" font-size="16" fill="#8b8b96" letter-spacing="2">VERIFY</text>
-  <text x="1480" y="935" text-anchor="end" font-size="20" fill="#ff5a1f">app.kalkstrade.com/certificate/$code</text>
+  <text x="1480" y="935" text-anchor="end" font-size="20" fill="#ff5a1f">app.ezymex.com/certificate/$code</text>
   <text x="120" y="1030" font-size="15" fill="#6b6b76">Educational certificate. It is not a financial qualification or licence. Trading CFDs on margin carries a high risk of losing money.</text>
 </svg>''';
 }
@@ -457,14 +457,14 @@ const List<Map<String, Object?>> _phases = [
     'order': 1,
     'title': 'Markets and instruments',
     'level': 'Beginner',
-    'summary': 'Understand how financial markets and CFD brokers work, which instruments you can trade on Kalks and what moves their prices, and read a price chart with confidence in Kalks Trader.',
+    'summary': 'Understand how financial markets and CFD brokers work, which instruments you can trade on Ezymex and what moves their prices, and read a price chart with confidence in Ezymex Trader.',
     'elective': false,
     'sections': [
       {
         'slug': 'p1-fundamental',
         'track': 'fundamental',
         'title': 'How financial markets work',
-        'summary': 'Who trades, where prices come from, what a CFD is, the asset classes on Kalks and the real risks of leveraged trading.',
+        'summary': 'Who trades, where prices come from, what a CFD is, the asset classes on Ezymex and the real risks of leveraged trading.',
         'chapters': [
           {
             'slug': 'p1-f-how-financial-markets-work',
@@ -493,7 +493,7 @@ const List<Map<String, Object?>> _phases = [
           },
           {
             'slug': 'p1-f-asset-classes',
-            'title': 'Asset classes you can trade on Kalks',
+            'title': 'Asset classes you can trade on Ezymex',
             'summary': 'Forex, metals, indices, energies, crypto and US shares: what each one represents, when it trades and how differently it behaves.',
             'minutes': 5,
             'order': 4,
@@ -552,7 +552,7 @@ const List<Map<String, Object?>> _phases = [
           {
             'slug': 'p1-t-timeframes-server-time',
             'title': 'Timeframes, server time and the New York close',
-            'summary': 'How timeframes group price data, why Kalks server time is aligned with the New York close, and how to convert it to your own clock.',
+            'summary': 'How timeframes group price data, why Ezymex server time is aligned with the New York close, and how to convert it to your own clock.',
             'minutes': 5,
             'order': 3,
             'questions': 4,
@@ -574,9 +574,9 @@ const List<Map<String, Object?>> _phases = [
             'questions': 4,
           },
           {
-            'slug': 'p1-t-navigating-charts-kalks-trader',
-            'title': 'Navigating charts in Kalks Trader',
-            'summary': 'A practical tour of the Kalks Trader chart workspace: symbols, tabs, timeframes, chart types, tools, indicators, templates and on-chart trade lines.',
+            'slug': 'p1-t-navigating-charts-ezymex-trader',
+            'title': 'Navigating charts in Ezymex Trader',
+            'summary': 'A practical tour of the Ezymex Trader chart workspace: symbols, tabs, timeframes, chart types, tools, indicators, templates and on-chart trade lines.',
             'minutes': 5,
             'order': 6,
             'questions': 4,
@@ -590,7 +590,7 @@ const List<Map<String, Object?>> _phases = [
     'order': 2,
     'title': 'How trading works',
     'level': 'Beginner',
-    'summary': 'Understand exactly what a trade costs and what it can make or lose: pips, lots, leverage, margin, spreads, swaps and P&L, and place, manage and close orders confidently in Kalks Trader.',
+    'summary': 'Understand exactly what a trade costs and what it can make or lose: pips, lots, leverage, margin, spreads, swaps and P&L, and place, manage and close orders confidently in Ezymex Trader.',
     'elective': false,
     'sections': [
       {
@@ -661,7 +661,7 @@ const List<Map<String, Object?>> _phases = [
       {
         'slug': 'p2-technical',
         'track': 'technical',
-        'title': 'Orders and execution in Kalks Trader',
+        'title': 'Orders and execution in Ezymex Trader',
         'summary': 'Market and pending orders, stops and targets, position modes, execution risk and a guided first demo trade.',
         'chapters': [
           {
@@ -716,7 +716,7 @@ const List<Map<String, Object?>> _phases = [
           {
             'slug': 'p2-t-first-demo-trade',
             'title': 'A guided first demo trade',
-            'summary': 'Plan, size, place, manage and review a complete EURUSD trade on a Kalks demo account, using everything from this phase.',
+            'summary': 'Plan, size, place, manage and review a complete EURUSD trade on a Ezymex demo account, using everything from this phase.',
             'minutes': 5,
             'order': 7,
             'questions': 4,
@@ -1223,7 +1223,7 @@ const List<Map<String, Object?>> _phases = [
         'slug': 'p6-technical',
         'track': 'technical',
         'title': 'Strategy design and backtesting',
-        'summary': 'Define a trading system, build it in the Kalks strategy builder, backtest it properly, avoid overfitting, judge the metrics and forward-test on demo.',
+        'summary': 'Define a trading system, build it in the Ezymex strategy builder, backtest it properly, avoid overfitting, judge the metrics and forward-test on demo.',
         'chapters': [
           {
             'slug': 'p6-t-what-is-a-trading-system',
@@ -1243,8 +1243,8 @@ const List<Map<String, Object?>> _phases = [
           },
           {
             'slug': 'p6-t-building-in-the-strategy-builder',
-            'title': 'Building a strategy in the Kalks strategy builder',
-            'summary': 'How to translate a written rule set into the Kalks strategy builder under Client Area, Developer, Strategies, and check that the strategy does what you intended.',
+            'title': 'Building a strategy in the Ezymex strategy builder',
+            'summary': 'How to translate a written rule set into the Ezymex strategy builder under Client Area, Developer, Strategies, and check that the strategy does what you intended.',
             'minutes': 5,
             'order': 3,
             'questions': 4,
@@ -1276,7 +1276,7 @@ const List<Map<String, Object?>> _phases = [
           {
             'slug': 'p6-t-forward-testing-on-demo',
             'title': 'Forward testing on a demo account',
-            'summary': 'How to forward-test a backtested strategy on a Kalks demo account, what to record, how to compare the results fairly with the backtest, and when to stop, adjust or move to small live size.',
+            'summary': 'How to forward-test a backtested strategy on a Ezymex demo account, what to record, how to compare the results fairly with the backtest, and when to stop, adjust or move to small live size.',
             'minutes': 5,
             'order': 7,
             'questions': 4,
@@ -1290,7 +1290,7 @@ const List<Map<String, Object?>> _phases = [
     'order': 7,
     'title': "Asset classes and the trader's mind",
     'level': 'Advanced',
-    'summary': 'Understand what really drives each asset class traded on Kalks, and build the plan, routine, journal and review process that turn a strategy into consistent execution.',
+    'summary': 'Understand what really drives each asset class traded on Ezymex, and build the plan, routine, journal and review process that turn a strategy into consistent execution.',
     'elective': false,
     'sections': [
       {
@@ -1563,21 +1563,21 @@ const List<Map<String, Object?>> _phases = [
   {
     'slug': 'phase-9',
     'order': 9,
-    'title': 'Kalks FX Options',
+    'title': 'Ezymex FX Options',
     'level': 'Intermediate',
-    'summary': 'An elective course on Kalks FX Options that you can take at any time: what calls and puts are, how premiums, expiries and settlement work, payoffs and the Greeks, common strategies, barrier options and the real risks of selling options.',
+    'summary': 'An elective course on Ezymex FX Options that you can take at any time: what calls and puts are, how premiums, expiries and settlement work, payoffs and the Greeks, common strategies, barrier options and the real risks of selling options.',
     'elective': true,
     'sections': [
       {
         'slug': 'p9-options',
         'track': 'options',
-        'title': 'Trading options on Kalks',
+        'title': 'Trading options on Ezymex',
         'summary': 'European, cash-settled options on 9 FX pairs, gold, silver and oil: premiums, payoffs, breakevens, Greeks, strategies, barriers, margin for sellers and sizing rules, with worked examples in USD per contract.',
         'chapters': [
           {
             'slug': 'p9-o-what-are-options',
             'title': 'What options are',
-            'summary': 'An option gives its buyer a right, not an obligation. How Kalks FX Options work, why traders use options and how they differ from the CFDs you already know.',
+            'summary': 'An option gives its buyer a right, not an obligation. How Ezymex FX Options work, why traders use options and how they differ from the CFDs you already know.',
             'minutes': 5,
             'order': 1,
             'questions': 4,
@@ -1625,7 +1625,7 @@ const List<Map<String, Object?>> _phases = [
           {
             'slug': 'p9-o-barrier-options',
             'title': 'Barrier options',
-            'summary': 'Knock-in and knock-out options, why they cost less than standard options, how Kalks monitors the barrier, and what happens when the market gaps through it.',
+            'summary': 'Knock-in and knock-out options, why they cost less than standard options, how Ezymex monitors the barrier, and what happens when the market gaps through it.',
             'minutes': 5,
             'order': 7,
             'questions': 4,
@@ -1633,7 +1633,7 @@ const List<Map<String, Object?>> _phases = [
           {
             'slug': 'p9-o-selling-risk-and-margin',
             'title': 'Selling options: risk and margin',
-            'summary': 'Why option sellers can lose many times the premium, how Kalks calculates scenario-based margin, what happens at margin call and stop-out, and practical sizing rules for options.',
+            'summary': 'Why option sellers can lose many times the premium, how Ezymex calculates scenario-based margin, what happens at margin call and stop-out, and practical sizing rules for options.',
             'minutes': 5,
             'order': 8,
             'questions': 4,
@@ -1646,7 +1646,7 @@ const List<Map<String, Object?>> _phases = [
 
 const Map<String, Map<String, Object?>> _bodies = {
   'p2-f-pips-and-points': {
-    'body': 'Every price you see in Kalks Trader changes in small steps. Before you can talk sensibly about profit, loss, stops or costs, you need a shared unit for measuring those steps. In currency trading that unit is the **pip**; on metals, indices and crypto traders usually talk in **points**. This chapter explains both and shows how to convert a move in pips into an amount of money.\n\n## What a pip is\n\nA pip ("percentage in point") is the conventional minimum meaningful move in a currency pair. For most pairs it is the fourth decimal place, **0.0001**. For pairs quoted against the Japanese yen, where the price is a much larger number, it is the second decimal place, **0.01**.\n\n| Symbol | Example quote | One pip |\n|---|---|---|\n| EURUSD | 1.0850 | 0.0001 |\n| GBPUSD | 1.2700 | 0.0001 |\n| USDCAD | 1.3700 | 0.0001 |\n| USDJPY | 155.20 | 0.01 |\n| GBPJPY | 195.00 | 0.01 |\n\nModern platforms quote one more decimal than the pip: EURUSD appears as 1.08503 and USDJPY as 155.204. That last digit is a **fractional pip**, one tenth of a pip. Many platforms call this smallest step a *point*. It is useful for precision, but the pip remains the unit traders use for stops, targets and spreads, so do not confuse the two: 35 pips and 350 points describe the same move on EURUSD.\n\n## Counting pips\n\nCounting a move is just subtraction followed by division by the pip size.\n\n```text\nEURUSD  1.0850 -> 1.0885   difference 0.0035 / 0.0001 = 35 pips\nUSDJPY  155.20 -> 154.75   difference 0.45   / 0.01   = 45 pips\nEURUSD  1.08503 -> 1.08547 difference 0.00044 / 0.0001 = 4.4 pips\n```\n\nThe direction tells you whether that move helped or hurt you. If you bought EURUSD, a rise from 1.0850 to 1.0885 is 35 pips in your favour; if you sold, it is 35 pips against you.\n\n## Points on metals, indices and crypto\n\nOutside FX there is no universal pip. Gold (XAUUSD) is quoted to two decimals, for example 2,350.40, and traders normally describe moves in dollars: "gold is up 12 dollars" means the price rose by 12.00. Indices such as US30 or GER40 are quoted in index points, so US30 moving from 39,200 to 39,285 is an 85-point move. Crypto such as BTCUSD at 64,000 is usually described in dollars too.\n\nBecause conventions vary, the reliable approach is to open the contract specification for the symbol in Kalks Trader and check three things: the number of digits, the contract size and the tick (minimum price step). Everything else follows from those.\n\n## Pip value: turning pips into money\n\nA pip only matters because of the amount of money attached to it. The pip value, in the **quote currency** (the second currency of the pair), is:\n\n```text\npip value (quote currency) = position size in units x pip size\n```\n\nFor EURUSD the quote currency is USD, so the answer is already in dollars. One standard lot is 100,000 units (lots are covered in the next chapter):\n\n```text\n1.00 lot EURUSD: 100,000 x 0.0001 = 10.00 USD per pip\n0.10 lot EURUSD:  10,000 x 0.0001 =  1.00 USD per pip\n0.01 lot EURUSD:   1,000 x 0.0001 =  0.10 USD per pip\n```\n\nWhen USD is not the quote currency, the result comes out in another currency and must be converted to your account currency at the current rate:\n\n```text\n1.00 lot USDJPY: 100,000 x 0.01   = 1,000 JPY per pip\n                 1,000 / 155.00    = 6.45 USD per pip  (USDJPY at 155.00)\n\n1.00 lot USDCAD: 100,000 x 0.0001 = 10 CAD per pip\n                 10 / 1.3700       = 7.30 USD per pip  (USDCAD at 1.3700)\n```\n\nThis is why pip value on USDJPY or USDCAD changes slightly as the exchange rate moves, while EURUSD, GBPUSD and AUDUSD stay fixed at 10 USD per lot for a USD account.\n\n> **Example:** Gold is quoted per troy ounce and one XAUUSD lot is 100 oz. A 1.00 move in price (2,350.40 to 2,351.40) is worth 100 x 1.00 = 100 USD per lot, and the smallest step of 0.01 is worth 1 USD per lot. On an index, on a 1-unit-per-point contract, one lot of US30 earns or loses 1 USD per index point; check the contract specification in Kalks Trader for the real size of each symbol.\n\n## Why this matters\n\nPips let you describe a trade independently of its size. A plan such as "stop 25 pips below entry, target 50 pips above" works whether you trade 0.01 or 1.00 lot. Pip value then converts that plan into money, which is what you actually risk. A 25-pip stop on 0.10 lot EURUSD risks about 25 USD; the same stop on 1.00 lot risks about 250 USD. Same chart, very different consequence.\n\n## Common mistakes\n\n- Confusing points with pips. A 4-pip spread is 40 points, and typing 30 into a field measured in points gives a 3-pip stop, not a 30-pip one.\n- Applying 0.0001 to JPY pairs. On USDJPY a move from 155.20 to 155.30 is 10 pips, not 1,000.\n- Assuming every symbol is worth 10 USD per pip per lot. That only holds for pairs quoted in USD on a USD account.\n- Judging a gold or index move by its size in points without checking what one point is worth on that contract.',
+    'body': 'Every price you see in Ezymex Trader changes in small steps. Before you can talk sensibly about profit, loss, stops or costs, you need a shared unit for measuring those steps. In currency trading that unit is the **pip**; on metals, indices and crypto traders usually talk in **points**. This chapter explains both and shows how to convert a move in pips into an amount of money.\n\n## What a pip is\n\nA pip ("percentage in point") is the conventional minimum meaningful move in a currency pair. For most pairs it is the fourth decimal place, **0.0001**. For pairs quoted against the Japanese yen, where the price is a much larger number, it is the second decimal place, **0.01**.\n\n| Symbol | Example quote | One pip |\n|---|---|---|\n| EURUSD | 1.0850 | 0.0001 |\n| GBPUSD | 1.2700 | 0.0001 |\n| USDCAD | 1.3700 | 0.0001 |\n| USDJPY | 155.20 | 0.01 |\n| GBPJPY | 195.00 | 0.01 |\n\nModern platforms quote one more decimal than the pip: EURUSD appears as 1.08503 and USDJPY as 155.204. That last digit is a **fractional pip**, one tenth of a pip. Many platforms call this smallest step a *point*. It is useful for precision, but the pip remains the unit traders use for stops, targets and spreads, so do not confuse the two: 35 pips and 350 points describe the same move on EURUSD.\n\n## Counting pips\n\nCounting a move is just subtraction followed by division by the pip size.\n\n```text\nEURUSD  1.0850 -> 1.0885   difference 0.0035 / 0.0001 = 35 pips\nUSDJPY  155.20 -> 154.75   difference 0.45   / 0.01   = 45 pips\nEURUSD  1.08503 -> 1.08547 difference 0.00044 / 0.0001 = 4.4 pips\n```\n\nThe direction tells you whether that move helped or hurt you. If you bought EURUSD, a rise from 1.0850 to 1.0885 is 35 pips in your favour; if you sold, it is 35 pips against you.\n\n## Points on metals, indices and crypto\n\nOutside FX there is no universal pip. Gold (XAUUSD) is quoted to two decimals, for example 2,350.40, and traders normally describe moves in dollars: "gold is up 12 dollars" means the price rose by 12.00. Indices such as US30 or GER40 are quoted in index points, so US30 moving from 39,200 to 39,285 is an 85-point move. Crypto such as BTCUSD at 64,000 is usually described in dollars too.\n\nBecause conventions vary, the reliable approach is to open the contract specification for the symbol in Ezymex Trader and check three things: the number of digits, the contract size and the tick (minimum price step). Everything else follows from those.\n\n## Pip value: turning pips into money\n\nA pip only matters because of the amount of money attached to it. The pip value, in the **quote currency** (the second currency of the pair), is:\n\n```text\npip value (quote currency) = position size in units x pip size\n```\n\nFor EURUSD the quote currency is USD, so the answer is already in dollars. One standard lot is 100,000 units (lots are covered in the next chapter):\n\n```text\n1.00 lot EURUSD: 100,000 x 0.0001 = 10.00 USD per pip\n0.10 lot EURUSD:  10,000 x 0.0001 =  1.00 USD per pip\n0.01 lot EURUSD:   1,000 x 0.0001 =  0.10 USD per pip\n```\n\nWhen USD is not the quote currency, the result comes out in another currency and must be converted to your account currency at the current rate:\n\n```text\n1.00 lot USDJPY: 100,000 x 0.01   = 1,000 JPY per pip\n                 1,000 / 155.00    = 6.45 USD per pip  (USDJPY at 155.00)\n\n1.00 lot USDCAD: 100,000 x 0.0001 = 10 CAD per pip\n                 10 / 1.3700       = 7.30 USD per pip  (USDCAD at 1.3700)\n```\n\nThis is why pip value on USDJPY or USDCAD changes slightly as the exchange rate moves, while EURUSD, GBPUSD and AUDUSD stay fixed at 10 USD per lot for a USD account.\n\n> **Example:** Gold is quoted per troy ounce and one XAUUSD lot is 100 oz. A 1.00 move in price (2,350.40 to 2,351.40) is worth 100 x 1.00 = 100 USD per lot, and the smallest step of 0.01 is worth 1 USD per lot. On an index, on a 1-unit-per-point contract, one lot of US30 earns or loses 1 USD per index point; check the contract specification in Ezymex Trader for the real size of each symbol.\n\n## Why this matters\n\nPips let you describe a trade independently of its size. A plan such as "stop 25 pips below entry, target 50 pips above" works whether you trade 0.01 or 1.00 lot. Pip value then converts that plan into money, which is what you actually risk. A 25-pip stop on 0.10 lot EURUSD risks about 25 USD; the same stop on 1.00 lot risks about 250 USD. Same chart, very different consequence.\n\n## Common mistakes\n\n- Confusing points with pips. A 4-pip spread is 40 points, and typing 30 into a field measured in points gives a 3-pip stop, not a 30-pip one.\n- Applying 0.0001 to JPY pairs. On USDJPY a move from 155.20 to 155.30 is 10 pips, not 1,000.\n- Assuming every symbol is worth 10 USD per pip per lot. That only holds for pairs quoted in USD on a USD account.\n- Judging a gold or index move by its size in points without checking what one point is worth on that contract.',
     'takeaways': [
       'A pip is 0.0001 on most currency pairs and 0.01 on JPY pairs; the extra quoted digit is a fraction of a pip, not a full pip.',
       'Pip value in the quote currency is simply position size in units multiplied by the pip size.',
@@ -1687,12 +1687,12 @@ const Map<String, Map<String, Object?>> _bodies = {
     ],
   },
   'p2-t-stop-loss-take-profit-trailing': {
-    'body': "Placing a trade is a decision about where you think price is going. Placing a **stop loss** is a decision about where you admit you were wrong. Placing a **take profit** is a decision about where you will be satisfied. Kalks Trader lets you attach both to any market or pending order, and adds a server-side **trailing stop** that follows the price for you. This chapter explains how each behaves in practice.\n\n## Stop loss: the exit when you are wrong\n\nA stop loss is an instruction to close the position if price moves against you to a given level. For a long position it sits below the entry; for a short, above.\n\nTwo mechanics matter:\n\n- **Trigger side.** A long is closed by selling, so its stop triggers when the **bid** reaches the level. A short is closed by buying, so its stop triggers when the **ask** reaches the level. Since the chart normally shows the bid, a short's stop can trigger when the chart appears not to have reached it, especially when spreads widen.\n- **Fill.** Once triggered, a stop becomes a market order. In calm markets you are filled at or very near the level. In a fast market, a news spike or a weekend gap, the fill can be worse. A stop loss limits your loss; it does not guarantee an exact price.\n\n## Take profit: the exit when you are right\n\nA take profit closes the position once price reaches your target. It behaves like a limit order: filled at the target price or better. A long's take profit triggers on the bid, a short's on the ask.\n\nA take profit forces you to decide the reward before emotion takes over. Without one, traders often watch a winning trade return to breakeven while waiting for \"a bit more\".\n\n## Turning levels into money\n\n```text\nLong 0.20 lot EURUSD at 1.0851 (pip value 2.00 USD)\nStop loss   1.0821  -> 30 pips x 2.00 = 60.00 USD risk\nTake profit 1.0911  -> 60 pips x 2.00 = 120.00 USD target\nReward to risk = 120 / 60 = 2 : 1\n\nShort 0.10 lot XAUUSD at 2,350.40 (10 oz, 10 USD per 1.00 move)\nStop loss   2,362.40 -> 12.00 x 10 = 120.00 USD risk\nTake profit 2,326.40 -> 24.00 x 10 = 240.00 USD target\n```\n\nDoing this before placing the order tells you whether the potential loss is acceptable. How much to risk per trade, and where to put stops relative to market structure, are covered in depth in later phases.\n\n> **Risk warning:** CFDs are leveraged and stop losses can be filled at worse prices during gaps or fast markets, so your actual loss can exceed the planned amount. A stop loss is still far better than none: it is the main tool that keeps a single trade from damaging your account.\n\n## Trailing stops\n\nA trailing stop is a stop loss that moves automatically in your favour. You set a distance, for example 20 pips. For a long, each time the bid makes a new high the stop is moved up so it stays 20 pips below that high. If the price falls, the stop stays where it is. It never moves against you.\n\nOn Kalks the trailing stop is **server-side**: it is managed by the server, so it keeps trailing when your browser or Kalks Trader is closed.\n\n```svg\n<svg viewBox=\"0 0 640 320\" xmlns=\"http://www.w3.org/2000/svg\">\n  <rect width=\"100%\" height=\"100%\" fill=\"#121216\"/>\n  <line x1=\"60\" y1=\"30\" x2=\"60\" y2=\"290\" stroke=\"#3a3a44\" stroke-width=\"1\"/>\n  <line x1=\"60\" y1=\"290\" x2=\"560\" y2=\"290\" stroke=\"#3a3a44\" stroke-width=\"1\"/>\n  <text x=\"8\" y=\"59\" fill=\"#c9c9d1\" font-family=\"Inter, Arial, sans-serif\" font-size=\"12\">1.0905</text>\n  <text x=\"8\" y=\"119\" fill=\"#c9c9d1\" font-family=\"Inter, Arial, sans-serif\" font-size=\"12\">1.0885</text>\n  <text x=\"8\" y=\"224\" fill=\"#c9c9d1\" font-family=\"Inter, Arial, sans-serif\" font-size=\"12\">1.0850</text>\n  <text x=\"8\" y=\"281\" fill=\"#c9c9d1\" font-family=\"Inter, Arial, sans-serif\" font-size=\"12\">1.0831</text>\n  <polyline points=\"60,217 140,190 220,160 280,175 340,100 400,115 450,55 520,115\" fill=\"none\" stroke=\"#22c55e\" stroke-width=\"2\"/>\n  <path d=\"M60,277 H140 V250 H220 V220 H340 V160 H450 V115 H520\" fill=\"none\" stroke=\"#ff5a1f\" stroke-width=\"2\"/>\n  <circle cx=\"520\" cy=\"115\" r=\"5\" fill=\"#ef4444\"/>\n  <text x=\"530\" y=\"112\" fill=\"#c9c9d1\" font-family=\"Inter, Arial, sans-serif\" font-size=\"12\">Stop hit</text>\n  <text x=\"530\" y=\"128\" fill=\"#c9c9d1\" font-family=\"Inter, Arial, sans-serif\" font-size=\"12\">1.0885</text>\n  <line x1=\"380\" y1=\"250\" x2=\"410\" y2=\"250\" stroke=\"#22c55e\" stroke-width=\"2\"/>\n  <text x=\"416\" y=\"254\" fill=\"#c9c9d1\" font-family=\"Inter, Arial, sans-serif\" font-size=\"12\">Bid price</text>\n  <line x1=\"380\" y1=\"270\" x2=\"410\" y2=\"270\" stroke=\"#ff5a1f\" stroke-width=\"2\"/>\n  <text x=\"416\" y=\"274\" fill=\"#c9c9d1\" font-family=\"Inter, Arial, sans-serif\" font-size=\"12\">Trailing stop, 20 pips</text>\n  <text x=\"310\" y=\"312\" fill=\"#c9c9d1\" font-family=\"Inter, Arial, sans-serif\" font-size=\"12\" text-anchor=\"middle\">Time (simplified: the stop rises only when price makes a new high)</text>\n</svg>\n```\n\n> **Example:** You buy 0.20 lot EURUSD at 1.0851 with a 20-pip trailing stop. The bid climbs to 1.0890, so the stop moves to 1.0870. The bid dips to 1.0875; the stop stays at 1.0870. The bid then rises to 1.0905 and the stop moves to 1.0885. When the bid falls back to 1.0885, the position closes: (1.0885 - 1.0851) = 34 pips x 2.00 USD = 68.00 USD profit.\n\nThe distance is the key choice. Too tight, and normal fluctuations close the trade early; too wide, and you give back much of the profit before exiting. A distance based on the symbol's typical movement (gold needs far more room than EURUSD) works better than a fixed number used everywhere.\n\n## Common mistakes\n\n- Placing stops at round numbers or obvious levels where many other stops sit, making them easy to reach in a quick spike.\n- Widening the stop when price approaches it. This turns a planned loss into an unplanned larger one.\n- Setting a take profit so far away that it is rarely reached, or so close that costs eat most of the gain.\n- Forgetting the spread on short positions: the ask, not the bid shown on the chart, triggers the stop.",
+    'body': "Placing a trade is a decision about where you think price is going. Placing a **stop loss** is a decision about where you admit you were wrong. Placing a **take profit** is a decision about where you will be satisfied. Ezymex Trader lets you attach both to any market or pending order, and adds a server-side **trailing stop** that follows the price for you. This chapter explains how each behaves in practice.\n\n## Stop loss: the exit when you are wrong\n\nA stop loss is an instruction to close the position if price moves against you to a given level. For a long position it sits below the entry; for a short, above.\n\nTwo mechanics matter:\n\n- **Trigger side.** A long is closed by selling, so its stop triggers when the **bid** reaches the level. A short is closed by buying, so its stop triggers when the **ask** reaches the level. Since the chart normally shows the bid, a short's stop can trigger when the chart appears not to have reached it, especially when spreads widen.\n- **Fill.** Once triggered, a stop becomes a market order. In calm markets you are filled at or very near the level. In a fast market, a news spike or a weekend gap, the fill can be worse. A stop loss limits your loss; it does not guarantee an exact price.\n\n## Take profit: the exit when you are right\n\nA take profit closes the position once price reaches your target. It behaves like a limit order: filled at the target price or better. A long's take profit triggers on the bid, a short's on the ask.\n\nA take profit forces you to decide the reward before emotion takes over. Without one, traders often watch a winning trade return to breakeven while waiting for \"a bit more\".\n\n## Turning levels into money\n\n```text\nLong 0.20 lot EURUSD at 1.0851 (pip value 2.00 USD)\nStop loss   1.0821  -> 30 pips x 2.00 = 60.00 USD risk\nTake profit 1.0911  -> 60 pips x 2.00 = 120.00 USD target\nReward to risk = 120 / 60 = 2 : 1\n\nShort 0.10 lot XAUUSD at 2,350.40 (10 oz, 10 USD per 1.00 move)\nStop loss   2,362.40 -> 12.00 x 10 = 120.00 USD risk\nTake profit 2,326.40 -> 24.00 x 10 = 240.00 USD target\n```\n\nDoing this before placing the order tells you whether the potential loss is acceptable. How much to risk per trade, and where to put stops relative to market structure, are covered in depth in later phases.\n\n> **Risk warning:** CFDs are leveraged and stop losses can be filled at worse prices during gaps or fast markets, so your actual loss can exceed the planned amount. A stop loss is still far better than none: it is the main tool that keeps a single trade from damaging your account.\n\n## Trailing stops\n\nA trailing stop is a stop loss that moves automatically in your favour. You set a distance, for example 20 pips. For a long, each time the bid makes a new high the stop is moved up so it stays 20 pips below that high. If the price falls, the stop stays where it is. It never moves against you.\n\nOn Ezymex the trailing stop is **server-side**: it is managed by the server, so it keeps trailing when your browser or Ezymex Trader is closed.\n\n```svg\n<svg viewBox=\"0 0 640 320\" xmlns=\"http://www.w3.org/2000/svg\">\n  <rect width=\"100%\" height=\"100%\" fill=\"#121216\"/>\n  <line x1=\"60\" y1=\"30\" x2=\"60\" y2=\"290\" stroke=\"#3a3a44\" stroke-width=\"1\"/>\n  <line x1=\"60\" y1=\"290\" x2=\"560\" y2=\"290\" stroke=\"#3a3a44\" stroke-width=\"1\"/>\n  <text x=\"8\" y=\"59\" fill=\"#c9c9d1\" font-family=\"Inter, Arial, sans-serif\" font-size=\"12\">1.0905</text>\n  <text x=\"8\" y=\"119\" fill=\"#c9c9d1\" font-family=\"Inter, Arial, sans-serif\" font-size=\"12\">1.0885</text>\n  <text x=\"8\" y=\"224\" fill=\"#c9c9d1\" font-family=\"Inter, Arial, sans-serif\" font-size=\"12\">1.0850</text>\n  <text x=\"8\" y=\"281\" fill=\"#c9c9d1\" font-family=\"Inter, Arial, sans-serif\" font-size=\"12\">1.0831</text>\n  <polyline points=\"60,217 140,190 220,160 280,175 340,100 400,115 450,55 520,115\" fill=\"none\" stroke=\"#22c55e\" stroke-width=\"2\"/>\n  <path d=\"M60,277 H140 V250 H220 V220 H340 V160 H450 V115 H520\" fill=\"none\" stroke=\"#ff5a1f\" stroke-width=\"2\"/>\n  <circle cx=\"520\" cy=\"115\" r=\"5\" fill=\"#ef4444\"/>\n  <text x=\"530\" y=\"112\" fill=\"#c9c9d1\" font-family=\"Inter, Arial, sans-serif\" font-size=\"12\">Stop hit</text>\n  <text x=\"530\" y=\"128\" fill=\"#c9c9d1\" font-family=\"Inter, Arial, sans-serif\" font-size=\"12\">1.0885</text>\n  <line x1=\"380\" y1=\"250\" x2=\"410\" y2=\"250\" stroke=\"#22c55e\" stroke-width=\"2\"/>\n  <text x=\"416\" y=\"254\" fill=\"#c9c9d1\" font-family=\"Inter, Arial, sans-serif\" font-size=\"12\">Bid price</text>\n  <line x1=\"380\" y1=\"270\" x2=\"410\" y2=\"270\" stroke=\"#ff5a1f\" stroke-width=\"2\"/>\n  <text x=\"416\" y=\"274\" fill=\"#c9c9d1\" font-family=\"Inter, Arial, sans-serif\" font-size=\"12\">Trailing stop, 20 pips</text>\n  <text x=\"310\" y=\"312\" fill=\"#c9c9d1\" font-family=\"Inter, Arial, sans-serif\" font-size=\"12\" text-anchor=\"middle\">Time (simplified: the stop rises only when price makes a new high)</text>\n</svg>\n```\n\n> **Example:** You buy 0.20 lot EURUSD at 1.0851 with a 20-pip trailing stop. The bid climbs to 1.0890, so the stop moves to 1.0870. The bid dips to 1.0875; the stop stays at 1.0870. The bid then rises to 1.0905 and the stop moves to 1.0885. When the bid falls back to 1.0885, the position closes: (1.0885 - 1.0851) = 34 pips x 2.00 USD = 68.00 USD profit.\n\nThe distance is the key choice. Too tight, and normal fluctuations close the trade early; too wide, and you give back much of the profit before exiting. A distance based on the symbol's typical movement (gold needs far more room than EURUSD) works better than a fixed number used everywhere.\n\n## Common mistakes\n\n- Placing stops at round numbers or obvious levels where many other stops sit, making them easy to reach in a quick spike.\n- Widening the stop when price approaches it. This turns a planned loss into an unplanned larger one.\n- Setting a take profit so far away that it is rarely reached, or so close that costs eat most of the gain.\n- Forgetting the spread on short positions: the ask, not the bid shown on the chart, triggers the stop.",
     'takeaways': [
       'A stop loss closes a losing position at the next available price once its level is touched, so it limits loss but can slip in fast markets.',
       'A take profit closes at your target price or better once it is reached.',
       'Stops and targets on long positions trigger on the bid; on short positions they trigger on the ask.',
-      'A server-side trailing stop moves only in your favour at a fixed distance and keeps working when Kalks Trader is closed.',
+      'A server-side trailing stop moves only in your favour at a fixed distance and keeps working when Ezymex Trader is closed.',
     ],
     'practice': {
       'label':
@@ -1733,13 +1733,13 @@ const Map<String, Map<String, Object?>> _bodies = {
     ],
   },
   'p9-o-what-are-options': {
-    'body': "Up to now this course has been about CFDs, where profit and loss move in a straight line with the price. Options work differently. With an option you pay a price today, the **premium**, for a payoff that depends on where the market settles on a future date. Kalks FX Options lets you trade options on currencies, metals and oil from the same account you use for CFDs. This chapter explains what you are actually buying or selling.\n\n## A right, not an obligation\n\nAn option is a contract between a buyer and a seller.\n\n- The **buyer** (or holder) pays the premium and receives a **right**. If the market finishes on the right side of an agreed price, the buyer is paid. If not, the option simply expires and the buyer has lost only the premium.\n- The **seller** (or **writer**) receives the premium and takes on an **obligation**. If the option finishes in the buyer's favour, the seller must pay. The seller's gain is capped at the premium; the loss is not.\n\nThe agreed price is the **strike**, and the date is the **expiry**. There are two basic types. A **call** pays when the price finishes above the strike, and a **put** pays when it finishes below. The next chapter covers both in detail.\n\n## European style and cash settlement\n\nKalks FX Options are **European style**. They cannot be exercised early: the only moment that decides the payoff is expiry. You do not have to do anything at expiry, because exercise is automatic.\n\nThey are also **cash-settled in USD**. Nobody receives euros, gold bars or barrels of oil. At expiry:\n\n- an option that is **in the money** pays the difference between the settlement price and the strike, multiplied by the contract size, in USD;\n- an option that is **out of the money** expires worthless.\n\nThe **settlement price** is not the last tick. It is the time-weighted average (TWAP) of the mid price over the last 30 minutes before the **cut**, which is 10:00 New York time by default. Averaging over half an hour makes the settlement much harder to distort with one sharp spike.\n\n> **Example:** You hold one EURUSD call with a strike of 1.1700. The average mid price from 09:30 to 10:00 New York time on expiry day is 1.1760. The option is in the money by 0.0060, and one contract is 10,000 euros, so 0.0060 x 10,000 = 60 USD is credited to your account automatically.\n\n## Why traders use options\n\n| Use | What you do | Why |\n|---|---|---|\n| Directional view with a known maximum loss | Buy a call or a put | The most you can lose is the premium, fixed before you trade, and no gap can skip past it |\n| Hedging | Buy a put against a long CFD, or a call against a short CFD | Puts a floor or a ceiling under an existing position for a known cost |\n| Income | Sell options and collect the premium | Earns the premium if the market stays away from the strike, but with large potential losses |\n\nThe first two uses buy protection or opportunity for a fixed price. The third sells it, which is a very different business. The last chapter of this course is dedicated to the risks of selling.\n\n## How options differ from CFDs\n\n| | CFD | Bought option |\n|---|---|---|\n| Profit and loss | Moves one-for-one with the price | Nothing below the strike (for a call), then rises with the price |\n| Cost to open | Margin, a fraction of the position value | The full premium, paid upfront |\n| Leverage | Yes | No: you pay the full price of what you buy |\n| Maximum loss | Can exceed your planned stop, especially through gaps | The premium paid |\n| Time | No expiry | Loses value as expiry approaches |\n| Direction | Long or short the same instrument | Calls for rises, puts for falls |\n\nA sold option behaves differently again: the seller posts margin and can face losses many times the premium received.\n\n## What you can trade\n\nKalks FX Options covers 13 underlyings, each with a fixed contract size.\n\n| Underlying | Symbols | One contract |\n|---|---|---|\n| FX pairs | EURUSD, GBPUSD, USDJPY, AUDUSD, USDCAD, USDCHF, NZDUSD, EURJPY, GBPJPY | 10,000 units of the base currency |\n| Gold | XAUUSD | 1 troy ounce |\n| Silver | XAGUSD | 50 troy ounces |\n| Crude oil | USOIL (WTI), UKOIL (Brent) | 10 barrels |\n\nPremiums are always shown in USD per contract. The options are priced with standard models: Garman-Kohlhagen for currency pairs, Black-Scholes for gold and silver, and Black-76 for oil. You do not need the formulas, but the next chapters explain what drives the price.\n\n## Who is on the other side\n\nThere is no exchange order book. **Kalks is the counterparty** to every option trade and quotes a bid and an ask for every listed strike. You buy at the ask, and you can close before expiry by selling at the bid, in full or in part. Options positions live in the **same trading account** as your CFDs and share its margin, so a losing options position reduces the margin available to your CFD trades, and the other way round. Whether options are available on a given account depends on your broker's settings.\n\n> **Risk warning:** Buying options can lose 100% of the premium, and this happens often: many options expire worthless. Selling options can lose much more than the premium received. Learn the mechanics on a demo account before trading options with real money.\n\n## Common mistakes\n\n- **Thinking an option is a cheap CFD.** A bought option needs the move to happen before expiry and to be large enough to cover the premium.\n- **Expecting delivery.** Settlement is cash in USD only.\n- **Assuming you must act at expiry.** Exercise is automatic; your only decision is whether to hold until then or close earlier at the bid.",
+    'body': "Up to now this course has been about CFDs, where profit and loss move in a straight line with the price. Options work differently. With an option you pay a price today, the **premium**, for a payoff that depends on where the market settles on a future date. Ezymex FX Options lets you trade options on currencies, metals and oil from the same account you use for CFDs. This chapter explains what you are actually buying or selling.\n\n## A right, not an obligation\n\nAn option is a contract between a buyer and a seller.\n\n- The **buyer** (or holder) pays the premium and receives a **right**. If the market finishes on the right side of an agreed price, the buyer is paid. If not, the option simply expires and the buyer has lost only the premium.\n- The **seller** (or **writer**) receives the premium and takes on an **obligation**. If the option finishes in the buyer's favour, the seller must pay. The seller's gain is capped at the premium; the loss is not.\n\nThe agreed price is the **strike**, and the date is the **expiry**. There are two basic types. A **call** pays when the price finishes above the strike, and a **put** pays when it finishes below. The next chapter covers both in detail.\n\n## European style and cash settlement\n\nEzymex FX Options are **European style**. They cannot be exercised early: the only moment that decides the payoff is expiry. You do not have to do anything at expiry, because exercise is automatic.\n\nThey are also **cash-settled in USD**. Nobody receives euros, gold bars or barrels of oil. At expiry:\n\n- an option that is **in the money** pays the difference between the settlement price and the strike, multiplied by the contract size, in USD;\n- an option that is **out of the money** expires worthless.\n\nThe **settlement price** is not the last tick. It is the time-weighted average (TWAP) of the mid price over the last 30 minutes before the **cut**, which is 10:00 New York time by default. Averaging over half an hour makes the settlement much harder to distort with one sharp spike.\n\n> **Example:** You hold one EURUSD call with a strike of 1.1700. The average mid price from 09:30 to 10:00 New York time on expiry day is 1.1760. The option is in the money by 0.0060, and one contract is 10,000 euros, so 0.0060 x 10,000 = 60 USD is credited to your account automatically.\n\n## Why traders use options\n\n| Use | What you do | Why |\n|---|---|---|\n| Directional view with a known maximum loss | Buy a call or a put | The most you can lose is the premium, fixed before you trade, and no gap can skip past it |\n| Hedging | Buy a put against a long CFD, or a call against a short CFD | Puts a floor or a ceiling under an existing position for a known cost |\n| Income | Sell options and collect the premium | Earns the premium if the market stays away from the strike, but with large potential losses |\n\nThe first two uses buy protection or opportunity for a fixed price. The third sells it, which is a very different business. The last chapter of this course is dedicated to the risks of selling.\n\n## How options differ from CFDs\n\n| | CFD | Bought option |\n|---|---|---|\n| Profit and loss | Moves one-for-one with the price | Nothing below the strike (for a call), then rises with the price |\n| Cost to open | Margin, a fraction of the position value | The full premium, paid upfront |\n| Leverage | Yes | No: you pay the full price of what you buy |\n| Maximum loss | Can exceed your planned stop, especially through gaps | The premium paid |\n| Time | No expiry | Loses value as expiry approaches |\n| Direction | Long or short the same instrument | Calls for rises, puts for falls |\n\nA sold option behaves differently again: the seller posts margin and can face losses many times the premium received.\n\n## What you can trade\n\nEzymex FX Options covers 13 underlyings, each with a fixed contract size.\n\n| Underlying | Symbols | One contract |\n|---|---|---|\n| FX pairs | EURUSD, GBPUSD, USDJPY, AUDUSD, USDCAD, USDCHF, NZDUSD, EURJPY, GBPJPY | 10,000 units of the base currency |\n| Gold | XAUUSD | 1 troy ounce |\n| Silver | XAGUSD | 50 troy ounces |\n| Crude oil | USOIL (WTI), UKOIL (Brent) | 10 barrels |\n\nPremiums are always shown in USD per contract. The options are priced with standard models: Garman-Kohlhagen for currency pairs, Black-Scholes for gold and silver, and Black-76 for oil. You do not need the formulas, but the next chapters explain what drives the price.\n\n## Who is on the other side\n\nThere is no exchange order book. **Ezymex is the counterparty** to every option trade and quotes a bid and an ask for every listed strike. You buy at the ask, and you can close before expiry by selling at the bid, in full or in part. Options positions live in the **same trading account** as your CFDs and share its margin, so a losing options position reduces the margin available to your CFD trades, and the other way round. Whether options are available on a given account depends on your broker's settings.\n\n> **Risk warning:** Buying options can lose 100% of the premium, and this happens often: many options expire worthless. Selling options can lose much more than the premium received. Learn the mechanics on a demo account before trading options with real money.\n\n## Common mistakes\n\n- **Thinking an option is a cheap CFD.** A bought option needs the move to happen before expiry and to be large enough to cover the premium.\n- **Expecting delivery.** Settlement is cash in USD only.\n- **Assuming you must act at expiry.** Exercise is automatic; your only decision is whether to hold until then or close earlier at the bid.",
     'takeaways': [
       'An option gives its buyer the right, but not the obligation, to a payoff based on a fixed strike price at expiry. The seller, or writer, takes on the matching obligation in exchange for the premium.',
-      'Kalks FX Options are European style and cash-settled in USD: they are exercised automatically at expiry, an in-the-money option pays the difference and an out-of-the-money option expires worthless.',
+      'Ezymex FX Options are European style and cash-settled in USD: they are exercised automatically at expiry, an in-the-money option pays the difference and an out-of-the-money option expires worthless.',
       'A buyer pays the full premium upfront with no leverage, so the most a buyer can lose is the premium. A seller receives the premium but posts margin and can lose many times that amount.',
       'Traders use options for directional views with a known maximum loss, for hedging existing positions and for income, and each use has a very different risk profile.',
-      'Options sit in the same trading account as your CFDs, and Kalks is the counterparty to every trade, quoting a bid and an ask for every strike.',
+      'Options sit in the same trading account as your CFDs, and Ezymex is the counterparty to every trade, quoting a bid and an ask for every strike.',
     ],
     'practice': {
       'label': 'Open EURUSD and XAUUSD on your demo account, note the current prices, and write down which strike would be at the money for each and what one option contract represents (10,000 euros and 1 ounce).',
@@ -1759,7 +1759,7 @@ const Map<String, Map<String, Object?>> _bodies = {
         'explanation': 'The buyer pays the premium for a right. If the option finishes in the money it pays out; if not, the buyer has lost only the premium. The obligation sits with the seller.',
       },
       {
-        'question': 'Kalks FX Options are European style. What does that mean?',
+        'question': 'Ezymex FX Options are European style. What does that mean?',
         'options': [
           'They can be exercised at any time before expiry',
           'They can only be traded during European market hours',
@@ -1784,7 +1784,7 @@ const Map<String, Map<String, Object?>> _bodies = {
           'It is exercised automatically and the difference is paid to your account in USD',
         ],
         'answer': 3,
-        'explanation': 'Kalks options are cash-settled. An in-the-money option pays the difference between the settlement price and the strike, multiplied by the contract size, in USD. There is no delivery and no manual exercise.',
+        'explanation': 'Ezymex options are cash-settled. An in-the-money option pays the difference between the settlement price and the strike, multiplied by the contract size, in USD. There is no delivery and no manual exercise.',
       },
     ],
   },
@@ -1820,7 +1820,7 @@ const Map<String, Map<String, Object?>> _exams = {
         'explanation': 'A short loses when price rises. The move is 2,358.90 - 2,350.40 = 8.50 USD per ounce, and 8.50 x 20 oz = 170 USD lost.',
       },
       {
-        'question': 'Which Kalks instrument is most likely to gap sharply at the open after a company reports quarterly results overnight?',
+        'question': 'Which Ezymex instrument is most likely to gap sharply at the open after a company reports quarterly results overnight?',
         'options': ['EURUSD', 'NVDA', 'USDCHF', 'XAGUSD'],
         'answer': 1,
         'explanation': 'Single-share CFDs follow their exchange session and often gap on earnings released outside trading hours.',
@@ -1878,7 +1878,7 @@ const Map<String, Map<String, Object?>> _exams = {
         'explanation': 'A line chart joins closes and removes intra-period noise, which makes the big picture easy to see, especially on D1 or W1.',
       },
       {
-        'question': 'On Kalks Trader, at what server times do H4 candles open?',
+        'question': 'On Ezymex Trader, at what server times do H4 candles open?',
         'options': [
           '01:00, 05:00, 09:00, 13:00, 17:00, 21:00',
           '00:00, 04:00, 08:00, 12:00, 16:00, 20:00',
@@ -1901,7 +1901,7 @@ const Map<String, Map<String, Object?>> _exams = {
         'explanation': '240 / 18,000 = 0.0133, or about 1.3% of the price.',
       },
       {
-        'question': 'What is the main benefit of setting an alert at a key level in Kalks Trader?',
+        'question': 'What is the main benefit of setting an alert at a key level in Ezymex Trader?',
         'options': [
           'It automatically opens a trade at that level',
           'It reduces your spread',
@@ -2034,10 +2034,10 @@ const Map<String, Map<String, Object?>> _exams = {
           'They must deliver the underlying at expiry',
         ],
         'answer': 1,
-        'explanation': 'The seller collects the premium upfront and must pay the payout if the option ends in the money. The gain is capped at the premium, while the loss can be far larger. Kalks options are cash-settled, so nothing is delivered.',
+        'explanation': 'The seller collects the premium upfront and must pay the payout if the option ends in the money. The gain is capped at the premium, while the loss can be far larger. Ezymex options are cash-settled, so nothing is delivered.',
       },
       {
-        'question': 'How does buying a Kalks option differ from opening a CFD position?',
+        'question': 'How does buying a Ezymex option differ from opening a CFD position?',
         'options': [
           'The buyer pays the full premium upfront with no leverage, and that premium is the maximum loss',
           'Options use more leverage than CFDs',
@@ -2135,7 +2135,7 @@ const Map<String, Map<String, Object?>> _exams = {
         'explanation': 'A knock-in only comes alive if the barrier is touched. Gold never reached 3,700, so the option expires worthless even though a standard 3,850 put would have paid 90 USD.',
       },
       {
-        'question': 'Which price does Kalks use to decide whether a barrier has been touched?',
+        'question': 'Which price does Ezymex use to decide whether a barrier has been touched?',
         'options': [
           "The underlying's mid price, monitored continuously until the cut",
           'The daily closing bid',
@@ -2157,7 +2157,7 @@ const Map<String, Map<String, Object?>> _exams = {
         'explanation': "A weekend add-on is applied on Fridays because prices can reopen far from Friday's close, and a short option cannot be closed or protected while the market is shut.",
       },
       {
-        'question': 'Which statement about Kalks FX Options is true?',
+        'question': 'Which statement about Ezymex FX Options is true?',
         'options': [
           'A seller can be assigned at any time before expiry',
           'In-the-money options are settled by delivering the currency',
@@ -2218,7 +2218,7 @@ const List<Map<String, Object?>> _terms = [
     'slug': 'asset-class',
     'term': 'Asset class',
     'category': 'Markets',
-    'definition': 'A group of instruments that share similar characteristics and respond to similar drivers. On Kalks the main asset classes are forex, metals, stock indices, energies, cryptocurrencies and US stocks, all traded as CFDs. Each class has its own trading hours, volatility and cost profile.',
+    'definition': 'A group of instruments that share similar characteristics and respond to similar drivers. On Ezymex the main asset classes are forex, metals, stock indices, energies, cryptocurrencies and US stocks, all traded as CFDs. Each class has its own trading hours, volatility and cost profile.',
     'related': ['cfd'],
   },
   {
@@ -2232,7 +2232,7 @@ const List<Map<String, Object?>> _terms = [
     'slug': 'backtesting',
     'term': 'Backtesting',
     'category': 'Technical analysis',
-    'definition': 'Testing a set of trading rules on historical price data to see how they would have performed. In Kalks, strategies built under Client Area, Developer, Strategies can be tested in Developer, Backtests. Past results never guarantee future performance and must account for spreads, commission and swaps.',
+    'definition': 'Testing a set of trading rules on historical price data to see how they would have performed. In Ezymex, strategies built under Client Area, Developer, Strategies can be tested in Developer, Backtests. Past results never guarantee future performance and must account for spreads, commission and swaps.',
     'related': ['overfitting'],
   },
   {
@@ -2309,7 +2309,7 @@ const List<Map<String, Object?>> _terms = [
     'slug': 'economic-calendar',
     'term': 'Economic calendar',
     'category': 'Fundamental analysis',
-    'definition': 'A schedule of upcoming data releases, central-bank decisions and events, showing time, impact level, consensus and previous values. Kalks provides one in the Client Area. Checking it before trading helps you avoid being caught by high-impact news with a position you did not plan for.',
+    'definition': 'A schedule of upcoming data releases, central-bank decisions and events, showing time, impact level, consensus and previous values. Ezymex provides one in the Client Area. Checking it before trading helps you avoid being caught by high-impact news with a position you did not plan for.',
     'related': ['actual-consensus-previous', 'nfp', 'cpi'],
   },
   {
@@ -2365,7 +2365,7 @@ const List<Map<String, Object?>> _terms = [
     'slug': 'lot',
     'term': 'Lot',
     'category': 'Trading mechanics',
-    'definition': 'The unit used to express trade size in the terminal. One lot equals one contract size, so 1.00 lot of EURUSD is 100,000 euros and 1.00 lot of XAUUSD is 100 ounces. On Kalks the minimum trade is 0.01 lot.',
+    'definition': 'The unit used to express trade size in the terminal. One lot equals one contract size, so 1.00 lot of EURUSD is 100,000 euros and 1.00 lot of XAUUSD is 100 ounces. On Ezymex the minimum trade is 0.01 lot.',
     'related': [],
   },
   {
@@ -2379,7 +2379,7 @@ const List<Map<String, Object?>> _terms = [
     'slug': 'margin',
     'term': 'Margin',
     'category': 'Trading mechanics',
-    'definition': 'The collateral required to open and hold a leveraged position. On Kalks it is notional value divided by leverage, adjusted by any symbol margin percentage. One lot of EURUSD at 1.0850 is \$108,500 notional, so at 1:100 the margin required is \$1,085.',
+    'definition': 'The collateral required to open and hold a leveraged position. On Ezymex it is notional value divided by leverage, adjusted by any symbol margin percentage. One lot of EURUSD at 1.0850 is \$108,500 notional, so at 1:100 the margin required is \$1,085.',
     'related': ['leverage', 'margin-level'],
   },
   {
@@ -2484,7 +2484,7 @@ const List<Map<String, Object?>> _terms = [
     'slug': 'stop-out-level',
     'term': 'Stop-out level',
     'category': 'Platform',
-    'definition': 'The margin level at which forced closing begins, typically 50% on Kalks depending on account group. With used margin of \$1,000, stop-out begins when equity falls to \$500. It is a last-resort safety mechanism, not a risk plan.',
+    'definition': 'The margin level at which forced closing begins, typically 50% on Ezymex depending on account group. With used margin of \$1,000, stop-out begins when equity falls to \$500. It is a last-resort safety mechanism, not a risk plan.',
     'related': ['margin-call', 'account-group'],
   },
   {
@@ -2519,7 +2519,7 @@ const List<Map<String, Object?>> _terms = [
     'slug': 'trailing-stop',
     'term': 'Trailing stop',
     'category': 'Trading mechanics',
-    'definition': 'A stop loss that automatically follows price as a trade moves in your favour by a set distance, but never moves back. On Kalks it is managed server-side. A 20-pip trailing stop on a long from 1.0850 would sit at 1.0860 once the bid reaches 1.0880.',
+    'definition': 'A stop loss that automatically follows price as a trade moves in your favour by a set distance, but never moves back. On Ezymex it is managed server-side. A 20-pip trailing stop on a long from 1.0850 would sit at 1.0860 once the bid reaches 1.0880.',
     'related': ['stop-loss', 'trend'],
   },
   {

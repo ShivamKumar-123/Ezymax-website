@@ -45,7 +45,7 @@ const news: NsMessages<"news"> = {
   "markets.trade": "معامله",
   "markets.searchPlaceholder": "جستجوی نماد یا نام…",
   "markets.clearSearch": "پاک کردن",
-  "markets.liveTooltip": "قیمت‌ها از فید قیمت Kalks دریافت می‌شوند",
+  "markets.liveTooltip": "قیمت‌ها از فید قیمت Ezymex دریافت می‌شوند",
   "markets.footnote": "اسپردهای گروه Standard: پیپ برای فارکس، واحد قیمت برای بقیه · بازارهای بسته آخرین قیمت را نشان می‌دهند · برای مشخصات قرارداد روی یک ردیف کلیک کنید",
   // Short trading-hours summary per asset class (24/5 = 24 hours, 5 days a week)
   "hoursShort.forex": "24/5",
@@ -270,7 +270,7 @@ const news: NsMessages<"news"> = {
   "cal.removeReminder": "حذف یادآور",
   "cal.remindMe": "15 دقیقه قبل یادآوری کن",
   "cal.toWatch": "ابزارهای قابل توجه",
-  "cal.noLinked": "هیچ ابزاری در Kalks مستقیماً به این ارز مرتبط نیست.",
+  "cal.noLinked": "هیچ ابزاری در Ezymex مستقیماً به این ارز مرتبط نیست.",
   // High-impact alerts card
   "alerts.title": "هشدارهای رویدادهای مهم",
   "alerts.toggle": "پیش از رویدادهای مهم به من هشدار بده",
