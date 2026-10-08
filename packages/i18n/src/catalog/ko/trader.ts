@@ -507,7 +507,7 @@ const trader: NsMessages<"trader"> = {
 
   // Module not open yet / price server down
   "opt.soon.title": "옵션 출시 예정",
-  "opt.soon.text": "이 계좌에서는 아직 Ezymex FX Options를 이용할 수 없습니다. 이용 가능해지면 CFD와 같은 계좌로 옵션 체인이 여기에 표시됩니다.",
+  "opt.soon.text": "이 계좌에서는 아직 Ezymex FX Options를 이용할 수 없습니다. 이용 가능해지면 옵션 체인이 여기에 표시됩니다.",
   "opt.soon.point1": "외환, 금, 은, 원유의 콜과 풋",
   "opt.soon.point2": "일간, 주간, 월간 만기, USD 현금결제",
   "opt.soon.point3": "매수자는 지불한 프리미엄보다 더 많이 잃지 않습니다",

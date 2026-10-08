@@ -502,7 +502,7 @@ const trader: NsMessages<"trader"> = {
 
   // Module not open yet / price server down
   "opt.soon.title": "Options zinakuja hivi karibuni",
-  "opt.soon.text": "Ezymex FX Options bado haijafunguliwa kwenye akaunti hii. Itakapofunguliwa, jedwali la options litaonekana hapa, kwenye akaunti ile ile ya CFD zako.",
+  "opt.soon.text": "Ezymex FX Options bado haijafunguliwa kwenye akaunti hii. Itakapofunguliwa, jedwali la options litaonekana hapa.",
   "opt.soon.point1": "Call na put kwenye forex, dhahabu, fedha na mafuta",
   "opt.soon.point2": "Tarehe za kuisha za kila siku, kila wiki na kila mwezi, hulipwa kwa pesa taslimu kwa USD",
   "opt.soon.point3": "Ukiwa mnunuzi, kamwe huwezi kupoteza zaidi ya premium unayolipa",

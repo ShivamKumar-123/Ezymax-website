@@ -519,7 +519,7 @@ const trader: NsMessages<"trader"> = {
 
   // Module not open yet / price server down
   "opt.soon.title": "Optionen starten bald",
-  "opt.soon.text": "Ezymex FX Options ist auf diesem Konto noch nicht freigeschaltet. Sobald es so weit ist, erscheint hier die Optionskette, auf demselben Konto wie Ihre CFDs.",
+  "opt.soon.text": "Ezymex FX Options ist auf diesem Konto noch nicht freigeschaltet. Sobald es so weit ist, erscheint hier die Optionskette.",
   "opt.soon.point1": "Calls und Puts auf Devisen, Gold, Silber und Öl",
   "opt.soon.point2": "Tägliche, wöchentliche und monatliche Verfallstermine, Barausgleich in USD",
   "opt.soon.point3": "Als Käufer können Sie nie mehr als die gezahlte Prämie verlieren",

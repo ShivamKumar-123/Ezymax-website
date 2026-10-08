@@ -2,7 +2,7 @@
 
 // Desktop layout (docs/TERMINAL-DESIGN.md §2.2): chart-first, MT5 web clean, Delta Exchange full-page scroll.
 //
-//   ┌ top bar (sticky): ☰ · brand · CFD | Options · search · account · Deposit · bell · profile ──────────────┐
+//   ┌ top bar (sticky): ☰ · brand · search · account (LIVE · CFD / OPTIONS) · Deposit · bell · profile ────────┐
 //   │ chart card (one toolbar row, drawing rail, Buy / Sell box on the plot)        │ Instruments | Order book │
 //   │                                                                               │ (collapsible column)     │
 //   └ account health · connection · server time · [Positions (3) ↓] ──────────────────────────────────────────┘
@@ -10,8 +10,9 @@
 //   positions · orders · history · alerts · news … full width
 //
 // The order form is a centred popup (Buy / Sell on the chart, New order, F9). "Full chart" covers the window with the
-// chart; an edge arrow slides the instruments back in. Options mode uses the same frame: the underlying's chart with
-// one toggle for the options panel (chain, analytics, book), the same column and popup order form.
+// chart; an edge arrow slides the instruments back in. An Options account (the account's product decides, never a
+// switch: lib/options/mode.ts) uses the same frame with the options workspace in place of the CFD chart: the
+// underlying's chart, the option chain, analytics and the book, the same column and a popup option ticket.
 import * as React from "react";
 import dynamic from "next/dynamic";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
@@ -29,7 +30,7 @@ import { Tour } from "./tour";
 import { ACTIVITY_ID, scrollToChart, showSide } from "./commands";
 import { useTradeMode } from "@/lib/options/mode";
 
-// Options workspace: its own chunk, downloaded the first time a trader switches to Options.
+// Options workspace: its own chunk, downloaded the first time an Options account opens (CFD accounts never load it).
 const OptionsMain = dynamic(() => import("@/components/options/desktop").then((m) => m.OptionsMain), { ssr: false, loading: () => <div className="h-full animate-pulse rounded-[14px] border border-line bg-panel" /> });
 const OptionsTicketPopup = dynamic(() => import("@/components/options/desktop").then((m) => m.OptionsTicketPopup), { ssr: false });
 
@@ -60,8 +61,8 @@ function useViewportWidth() {
 export function DesktopTerminal() {
   const T = useTerminal();
   const t = useT();
-  const mode = useTradeMode();
-  const options = mode === "options";
+  // the active account's product: an Options account shows the options workspace, a CFD account the chart workspace
+  const options = useTradeMode() === "options";
   const full = T.ui.fullChart;
   const split = T.ws.posLayout === "split";
   const open = T.ws.panels.watch;

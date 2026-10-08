@@ -508,7 +508,7 @@ const trader: NsMessages<"trader"> = {
 
   // Module not open yet / price server down
   "opt.soon.title": "Quyền chọn sắp ra mắt",
-  "opt.soon.text": "Ezymex FX Options chưa được mở trên tài khoản này. Ngay khi mở, chuỗi quyền chọn sẽ hiển thị tại đây, trên cùng tài khoản với các CFD của bạn.",
+  "opt.soon.text": "Ezymex FX Options chưa được mở trên tài khoản này. Ngay khi mở, chuỗi quyền chọn sẽ hiển thị tại đây.",
   "opt.soon.point1": "Quyền chọn mua và bán trên forex, vàng, bạc và dầu",
   "opt.soon.point2": "Kỳ đáo hạn theo ngày, tuần và tháng, thanh toán tiền mặt bằng USD",
   "opt.soon.point3": "Khi là người mua, bạn không bao giờ lỗ quá phí quyền chọn đã trả",

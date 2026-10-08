@@ -508,7 +508,7 @@ const trader: NsMessages<"trader"> = {
 
   // Module not open yet / price server down
   "opt.soon.title": "オプション取引はまもなく開始",
-  "opt.soon.text": "この口座ではEzymex FX Optionsをまだご利用いただけません。利用可能になり次第、CFDと同じ口座でオプションチェーンがここに表示されます。",
+  "opt.soon.text": "この口座ではEzymex FX Optionsをまだご利用いただけません。利用可能になり次第、オプションチェーンがここに表示されます。",
   "opt.soon.point1": "FX、金、銀、原油のコールとプット",
   "opt.soon.point2": "日次・週次・月次の満期、米ドルで現金決済",
   "opt.soon.point3": "買い手の損失は支払ったプレミアムを超えることはありません",

@@ -13,27 +13,30 @@ import { useT } from "@ezymex/i18n/react";
 import { LanguageMenu } from "@/components/shell/language-menu";
 import { useMarketOpen } from "@/lib/market-hours";
 import { PENDING_LABEL, TIMEFRAMES, accCcy, accMoney, fmtPrice, fmtServer, fmtVol, marginState } from "@/lib/trading";
-import { Badge, LiveMoney, MiniSwitch, Pnl, Stepper } from "@/components/ui/primitives";
+import { Badge, LiveMoney, MiniSwitch, Pnl, Stepper, TDialog } from "@/components/ui/primitives";
 import { ChartView } from "@/components/chart/chart-view";
-import { CLIENT_AREA } from "@/components/shell/title-bar";
+import { CLIENT_AREA, ProductBadge } from "@/components/shell/title-bar";
 import { GuestActions, GuestNotice } from "@/components/shell/guest";
 import { SegmentChips, inSegment } from "@/components/market/segments";
 import { NotificationBell } from "@/components/shell/notifications";
 import { REGISTER_URL } from "@/lib/guest";
 import { DomLadder } from "@/components/order/dom-ladder";
-import { ModeSwitch } from "@/components/shell/mode-switch";
 import { useTradeMode } from "@/lib/options/mode";
 
-// Options mode: its own chunk, downloaded the first time a trader switches to Options
+// An Options account's workspace: its own chunk, downloaded the first time an Options account opens
 const OptionsMobile = dynamic(() => import("@/components/options/mobile").then((m) => m.OptionsMobile), { ssr: false, loading: () => <div className="h-full animate-pulse bg-panel" /> });
 
 type MTab = "watch" | "chart" | "trade" | "history" | "account";
 
-/** cTrader-mobile-like layout for < 1024px: content + bottom tab bar. */
+/**
+ * cTrader-mobile-like layout for < 1024px: content + bottom tab bar. An Options account shows the options workspace
+ * (its own tab bar) instead; the account in the header opens the accounts sheet there (switch, refill, log out).
+ */
 export function MobileTerminal() {
   const T = useTerminal();
   const t = useT();
   const [tab, setTab] = React.useState<MTab>("chart");
+  const [sheet, setSheet] = React.useState(false);
   // toasts: below the header and the chart's symbol/timeframe strip (see providers.tsx)
   React.useEffect(() => {
     const root = document.documentElement.style;
@@ -42,7 +45,12 @@ export function MobileTerminal() {
   }, []);
   const a = T.account;
   const m = useMetrics();
+  // CFD or options: the active account's product (lib/options/mode.ts)
   const options = useTradeMode() === "options";
+  // a switch to another account closes the sheet
+  React.useEffect(() => {
+    setSheet(false);
+  }, [a.login]);
   const tabs: { id: MTab; label: string; icon: React.ReactNode }[] = [
     { id: "watch", label: t("trader.mobile.tab.watch"), icon: <List /> },
     { id: "chart", label: t("trader.mobile.tab.chart"), icon: <CandlestickChart /> },
@@ -58,7 +66,6 @@ export function MobileTerminal() {
         <span className="hidden size-7 shrink-0 place-items-center rounded-[7px] border border-line-top bg-surface-3 min-[420px]:grid">
           <LogoMark size={12} className="text-fg" />
         </span>
-        <ModeSwitch size="sm" />
         {T.guest ? (
           <>
             <div className="min-w-0 leading-tight">
@@ -74,16 +81,19 @@ export function MobileTerminal() {
           </>
         ) : (
           <>
-        <div className="min-w-0 leading-tight">
+        {/* the accounts: the Account tab (CFD), the accounts sheet (Options: its own tab bar has no Account tab) */}
+        <button onClick={() => (options ? setSheet(true) : setTab("account"))} aria-label={t("trader.account.switch")} aria-haspopup={options ? "dialog" : undefined} className="min-w-0 text-left leading-tight">
           <div className="flex items-center gap-1.5 text-[12.5px] font-semibold">
             <span className="font-mono">{a.login}</span>
             <Badge tone={a.type === "live" ? "ember" : "gold"}>{t.dyn(`trader.accountType.${a.type}`, a.type)}</Badge>
+            <ProductBadge account={a} />
             {T.readOnly && <Badge tone="warn">{t("trader.badge.readOnly")}</Badge>}
+            <ChevronDown className="size-3.5 shrink-0 text-fg-3" />
           </div>
           <div className="truncate text-[10.5px] text-fg-3">
             {a.group} · {a.mode} · {a.server}
           </div>
-        </div>
+        </button>
         <div className="ml-auto text-right leading-tight">
           <div className="font-mono text-[13px] font-semibold"><LiveMoney value={m.equity} format={(v) => accMoney(a, v)} /></div>
           <div className="font-mono text-[10.5px]">
@@ -117,6 +127,11 @@ export function MobileTerminal() {
           </button>
         ))}
       </nav>
+      {!T.guest && (
+        <TDialog open={sheet} onClose={() => setSheet(false)} width={440} icon={<UserRound />} title={t("desk.acc.title")}>
+          <MAccount />
+        </TDialog>
+      )}
     </div>
   );
 }
@@ -352,6 +367,8 @@ function MAccount() {
   const T = useTerminal();
   const t = useT();
   const { resolvedTheme, setTheme } = useTheme();
+  // one-click trading places CFD orders: CFD accounts only
+  const options = useTradeMode() === "options";
   return (
     <div className="t-scroll h-full space-y-3 overflow-y-auto p-3">
       <div className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-fg-3">{t("common.accounts")}</div>
@@ -361,9 +378,11 @@ function MAccount() {
         ))}
       </div>
       <div className="overflow-hidden rounded-[8px] border border-line bg-panel">
-        <Row label={t("trader.oneClick.name")} icon={<Zap />}>
-          <MiniSwitch checked={T.ws.oneClick} onChange={(v) => T.setWs({ oneClick: v })} label={t("trader.oneClick.name")} />
-        </Row>
+        {!options && (
+          <Row label={t("trader.oneClick.name")} icon={<Zap />}>
+            <MiniSwitch checked={T.ws.oneClick} onChange={(v) => T.setWs({ oneClick: v })} label={t("trader.oneClick.name")} />
+          </Row>
+        )}
         <Row label={t("trader.mobile.soundOnFills")}>
           <MiniSwitch checked={T.ws.sound} onChange={(v) => T.setWs({ sound: v })} label={t("trader.mobile.sound")} />
         </Row>
@@ -429,7 +448,10 @@ function MAccountRow({ login }: { login: string }) {
         {t.dyn(`trader.accountType.${a.type}`, a.type)}
       </Badge>
       <div className="min-w-0 flex-1">
-        <div className="font-mono text-[12.5px]">{a.login}</div>
+        <div className="flex items-center gap-1.5">
+          <span className="font-mono text-[12.5px]">{a.login}</span>
+          <ProductBadge account={a} />
+        </div>
         <div className="text-[10.5px] text-fg-3">
           {a.group} · {a.mode} · 1:{a.leverage}
         </div>

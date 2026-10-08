@@ -42,6 +42,7 @@ import { liveStore, useLiveEquity, useLivePosition } from "./engine/live";
 import { mapAccount, mapHistory, mapOrder, mapPosition, rejectReason, serverName, type EngineTradingAccount } from "./engine/map";
 import type { EngAccount, EngDeal, EngState, SessionInfo, StreamFrame } from "./engine/types";
 import { routeOptionFrame, splitOptionState } from "./options/book";
+import { productOf, useSyncTradeMode, type TradeMode } from "./options/mode";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -113,6 +114,8 @@ export const LAYOUT_COUNT: Record<Layout, number> = { "1": 1, "2h": 2, "2v": 2, 
 
 /** Activity-panel tabs. "trade" is the old combined positions + orders tab (saved workspaces), shown as "positions". */
 export type ToolboxTab = "positions" | "pending" | "trade" | "history" | "exposure" | "news" | "calendar" | "alerts" | "journal" | "ai" | "mam" | "options" | "orders" | "closed" | "settlements";
+/** Tabs of one product only (the other tabs show on every account). */
+const TAB_PRODUCT: Partial<Record<ToolboxTab, TradeMode>> = { positions: "cfd", pending: "cfd", trade: "cfd", history: "cfd", exposure: "cfd", ai: "cfd", options: "options", orders: "options", closed: "options", settlements: "options" };
 export type RightTab = "order" | "depth" | "info";
 export type MwTab = "symbols" | "details" | "favourites";
 /** The right-hand column of the desktop terminal (docs/TERMINAL-DESIGN.md §2.2): instruments, the order book, or the Navigator. */
@@ -544,7 +547,7 @@ export function usePositionProfit(p: TPosition): number {
 /* Provider                                                            */
 /* ------------------------------------------------------------------ */
 
-export function TerminalProvider({ initialSession, engineSessions, children, onLogout }: { initialSession: Session; engineSessions?: SessionInfo[]; children: React.ReactNode; onLogout: (to?: string) => void }) {
+export function TerminalProvider({ initialSession, engineSessions, guestMode, children, onLogout }: { initialSession: Session; engineSessions?: SessionInfo[]; /** a guest has no account: the product the link asked for (`?mode=options`) */ guestMode?: TradeMode | null; children: React.ReactNode; onLogout: (to?: string) => void }) {
   const [session, setSession] = React.useState(initialSession);
   const guest = !!initialSession.guest;
   const engine = !!initialSession.engine;
@@ -590,6 +593,21 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
   // live accounts and guests only see markets that trade live (lib/scope.ts); demo accounts see everything
   syncRestricted(guest || account.type === "live");
   const readOnly = session.investor;
+  // CFD or options: the active account's product decides what the terminal trades and shows (lib/options/mode.ts);
+  // a guest has no account and follows the link that opened the terminal
+  const product: TradeMode = guest ? (guestMode ?? "cfd") : productOf(account);
+  useSyncTradeMode(product);
+  const productRef = React.useRef(product);
+  productRef.current = product;
+  // the activity panel opens on a tab of this product (an Options account has no CFD positions, and the reverse); a
+  // CFD order form left open by the previous account closes
+  React.useEffect(() => {
+    setWsState((w) => {
+      const of = TAB_PRODUCT[w.toolboxTab];
+      return of && of !== product ? { ...w, toolboxTab: product === "options" ? "options" : "positions" } : w;
+    });
+    if (product === "options") setUiState((u) => (u.newOrder ? { ...u, newOrder: null } : u));
+  }, [product]);
 
   const notify = React.useCallback((kind: "fill" | "close" | "alert" | "error") => {
     if (wsRef.current.sound) beep(kind);
@@ -1216,8 +1234,16 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
     return false;
   };
 
+  /** An Options account trades options only: CFD order forms and orders explain that instead (the engine refuses them too). */
+  const optionsOnly = (quiet = false) => {
+    if (productRef.current !== "options" || sessionRef.current.guest) return false;
+    if (!quiet) toast(tr("accounts.product.optionsOnly"), { id: "product-options-only" });
+    return true;
+  };
+
   const placeOrder = React.useCallback(
     async (o: OrderRequest): Promise<boolean> => {
+      if (optionsOnly(o.source === "ai")) return false;
       // a market hidden from this account (live trading off) can't be opened here; the engine refuses it too
       // (symbol_demo_only). Closing and modifying stay allowed.
       if (accountTypeRef.current === "live" && !liveTradable(o.symbol)) {
@@ -1415,7 +1441,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
           const x = engAccRef.current[login];
           return x ? x.balance / (x.cent ? 100 : 1) : 0;
         },
-        placeOrder: (o) => (sessionRef.current.investor ? Promise.resolve({ ok: false }) : eng.placeOrder(o)),
+        placeOrder: (o) => (sessionRef.current.investor || productRef.current === "options" ? Promise.resolve({ ok: false }) : eng.placeOrder(o)),
         modifyPosition: (t, p) => eng.modifyPosition(t, p),
         closePosition: (t, reason) => eng.closePosition(t, undefined, reason),
         log,
@@ -1540,6 +1566,7 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
   const openNewOrder = React.useCallback(
     (p?: Partial<NewOrderPrefill>) => {
       if (sessionRef.current.guest) return void guestNotice(tr("order.guest.placingOrder"));
+      if (optionsOnly()) return;
       if (sessionRef.current.investor) return void toast.error(tr("order.toast.readOnly"), { description: tr("order.toast.readOnlyDesc") });
       const w = wsRef.current;
       const sym = p?.symbol ?? w.tabs.find((t) => t.id === w.activeId)?.symbol ?? "EURUSD";

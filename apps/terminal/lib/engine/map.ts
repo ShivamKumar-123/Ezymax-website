@@ -56,6 +56,8 @@ export function mapAccount(a: EngAccount): EngineTradingAccount {
     login: String(a.login),
     type: a.type,
     group: a.groupName || a.group,
+    // CFD or options account (older servers send none: CFD); the terminal's trade mode follows it (lib/options/mode.ts)
+    product: a.product === "options" ? "options" : "cfd",
     mode: a.mode,
     cent: a.cent,
     server: serverName(a.type),

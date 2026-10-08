@@ -511,7 +511,7 @@ const trader: NsMessages<"trader"> = {
 
   // Module not open yet / price server down
   "opt.soon.title": "آپشنز جلد آ رہے ہیں",
-  "opt.soon.text": "Ezymex FX Options اس اکاؤنٹ پر ابھی فعال نہیں۔ جیسے ہی فعال ہوں گے، آپشن چین یہاں نظر آئے گی، اسی اکاؤنٹ پر جس پر آپ کے CFDs ہیں۔",
+  "opt.soon.text": "Ezymex FX Options اس اکاؤنٹ پر ابھی فعال نہیں۔ جیسے ہی فعال ہوں گے، آپشن چین یہاں نظر آئے گی۔",
   "opt.soon.point1": "فاریکس، گولڈ، سلور اور تیل پر کالز اور پٹس",
   "opt.soon.point2": "روزانہ، ہفتہ وار اور ماہانہ ایکسپائریز، USD میں نقد سیٹلمنٹ",
   "opt.soon.point3": "خریدار کے طور پر آپ کبھی بھی ادا کیے گئے پریمیم سے زیادہ نہیں کھو سکتے",

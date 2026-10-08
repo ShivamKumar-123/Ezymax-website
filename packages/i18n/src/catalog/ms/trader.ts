@@ -508,7 +508,7 @@ const trader: NsMessages<"trader"> = {
 
   // Module not open yet / price server down
   "opt.soon.title": "Opsyen akan dilancarkan tidak lama lagi",
-  "opt.soon.text": "Ezymex FX Options belum dibuka pada akaun ini. Sebaik sahaja dibuka, rantaian opsyen akan dipaparkan di sini, pada akaun yang sama dengan CFD anda.",
+  "opt.soon.text": "Ezymex FX Options belum dibuka pada akaun ini. Sebaik sahaja dibuka, rantaian opsyen akan dipaparkan di sini.",
   "opt.soon.point1": "Call dan put bagi forex, emas, perak dan minyak",
   "opt.soon.point2": "Tamat tempoh harian, mingguan dan bulanan, diselesaikan secara tunai dalam USD",
   "opt.soon.point3": "Sebagai pembeli, anda tidak akan rugi lebih daripada premium yang anda bayar",
