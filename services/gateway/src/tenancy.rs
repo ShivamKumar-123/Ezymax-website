@@ -1,7 +1,8 @@
 //! Per-tenant runtime configuration (D112, D146): module toggles, feature flags and maintenance mode.
 //!
-//! * Modules (copy trading, PAMM, prop, IB, algo, public API, academy, wallet, rewards) are switched per tenant
-//!   by the Platform Owner. The Client Area hides a disabled module's pages and its BFF rejects its API calls.
+//! * Modules (copy trading, PAMM, prop, IB, algo, public API, academy, wallet, rewards, FX options, news, economic
+//!   calendar, AI assistant, support chat) are switched per tenant by the Platform Owner. The Client Area, Ezymex
+//!   Trader and the mobile app hide a disabled module and its BFF routes reject its API calls.
 //! * Feature flags are switched by the tenant (`settings.write`); the Platform Owner can add new flags.
 //! * Maintenance mode: clients see a maintenance page and can't sign in; staff keep working.
 //!
@@ -42,6 +43,12 @@ pub const BUILTIN_FEATURES: &[FeatureDef] = &[
     FeatureDef { key: "academy", kind: "module", name: "Academy", description: "Courses, quizzes, exams and certificates.", default_enabled: true },
     FeatureDef { key: "wallet", kind: "module", name: "USDT wallet", description: "Crypto deposits, withdrawals and transfers.", default_enabled: true },
     FeatureDef { key: "rewards", kind: "module", name: "Rewards", description: "Contests, loyalty and cashback.", default_enabled: true },
+    // visibility switch only: whether options can be traded live / on demo stays with the options service (tenant_settings)
+    FeatureDef { key: "options", kind: "module", name: "FX Options", description: "The options page, the options mode of the trading terminal and options trading in the mobile app.", default_enabled: true },
+    FeatureDef { key: "news", kind: "module", name: "News", description: "Market headlines, the news map and the daily brief.", default_enabled: true },
+    FeatureDef { key: "calendar", kind: "module", name: "Economic calendar", description: "Economic events, event reminders and high-impact alerts.", default_enabled: true },
+    FeatureDef { key: "ai_assistant", kind: "module", name: "AI assistant", description: "Ask AI on the dashboard, the AI Trader, the academy's AI Coach and the AI strategy assistant.", default_enabled: true },
+    FeatureDef { key: "support", kind: "module", name: "Support chat", description: "Live chat with the support team and the help bot. Notifications are not affected.", default_enabled: true },
     FeatureDef { key: "client_registration", kind: "flag", name: "New client sign-ups", description: "Visitors can open an account. Off: existing clients can still sign in.", default_enabled: true },
     FeatureDef { key: "google_login", kind: "flag", name: "Continue with Google", description: "Clients can sign in and sign up with Google.", default_enabled: true },
     FeatureDef { key: "trade_sharing", kind: "flag", name: "Trade share links", description: "Clients can publish read-only links to their trades.", default_enabled: true },
@@ -306,4 +313,26 @@ pub async fn set_feature(State(st): State<AppState>, ctx: Ctx, Path(key): Path<S
     let r = body(req)?;
     let me = require_key(&st, &ctx, "settings.write").await?;
     Ok(Json(write_feature(&st, &ctx, &me, me.tenant_id, &key, r.enabled).await?))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::BTreeSet;
+
+    #[test]
+    fn catalogue_is_consistent() {
+        let mut seen = BTreeSet::new();
+        for f in BUILTIN_FEATURES {
+            assert!(seen.insert(f.key), "duplicate {}", f.key);
+            assert!(["module", "flag"].contains(&f.kind), "kind of {}", f.key);
+            assert!(f.key.chars().all(|c| c.is_ascii_lowercase() || c == '_'), "key {}", f.key);
+            assert!(!f.name.is_empty() && f.description.ends_with('.'), "texts of {}", f.key);
+        }
+        // every module the Client Area, Ezymex Trader and the mobile app switch (apps/crm/lib/modules.ts); all on by default
+        for k in ["copy_trading", "pamm", "prop", "ib", "algo", "api", "academy", "wallet", "rewards", "options", "news", "calendar", "ai_assistant", "support"] {
+            let f = BUILTIN_FEATURES.iter().find(|f| f.key == k).unwrap_or_else(|| panic!("missing module {k}"));
+            assert!(f.kind == "module" && f.default_enabled, "{k}");
+        }
+    }
 }

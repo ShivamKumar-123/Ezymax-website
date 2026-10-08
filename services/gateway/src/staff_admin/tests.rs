@@ -265,6 +265,9 @@ async fn maintenance_and_features() {
     let Json(cfg) = tenancy::public_config(State(st.clone()), ctx(None, ip)).await.unwrap();
     assert_eq!(cfg["maintenance"]["active"], false);
     assert_eq!(cfg["modules"]["prop"], true);
+    for k in ["options", "news", "calendar", "ai_assistant", "support"] {
+        assert_eq!(cfg["modules"][k], true, "{k}");
+    }
 
     // maintenance: clients are held at the door, staff keep working
     assert!(matches!(tenancy::set_maintenance(State(st.clone()), ctx(Some(&support), ip), Ok(Json(serde_json::from_value(json!({"enabled": true})).unwrap()))).await, Err(ApiError::Forbidden)));
@@ -295,6 +298,14 @@ async fn maintenance_and_features() {
     flag(&owner, "prop", Some(false)).await.unwrap();
     let Json(cfg) = tenancy::public_config(State(st.clone()), ctx(None, ip)).await.unwrap();
     assert_eq!(cfg["modules"]["prop"], false);
+    // the newer modules switch the same way: support chat off leaves news on, and the admin grid shows its name
+    assert_eq!(code(&flag(&admin, "support", Some(false)).await.unwrap_err()), "forbidden");
+    flag(&owner, "support", Some(false)).await.unwrap();
+    let Json(cfg) = tenancy::public_config(State(st.clone()), ctx(None, ip)).await.unwrap();
+    assert_eq!((&cfg["modules"]["support"], &cfg["modules"]["news"]), (&json!(false), &json!(true)));
+    let Json(all) = tenancy::get_features(State(st.clone()), ctx(Some(&owner), ip)).await.unwrap();
+    let support = all["modules"].as_array().unwrap().iter().find(|m| m["key"] == "support").unwrap();
+    assert_eq!((&support["name"], &support["enabled"], &support["overridden"]), (&json!("Support chat"), &json!(false), &json!(true)));
     flag(&admin, "client_registration", Some(false)).await.unwrap();
     assert_eq!(code(&tenancy::require_feature(&st, t, "client_registration").await.unwrap_err()), "feature_disabled");
     db.drop_db().await;
