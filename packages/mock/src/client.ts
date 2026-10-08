@@ -33,10 +33,13 @@ export const ONBOARDING = [
 /* ------------------------------------------------------------------ */
 
 export type AccountMode = "hedging" | "netting";
+export type AccountProduct = "cfd" | "options";
 export interface TradingAccount {
   login: string;
   type: "live" | "demo";
-  group: string; // Standard / Pro / ECN / Cent
+  group: string; // Standard / Pro / ECN / Cent / Options
+  /** What the account trades (its account type decides): CFDs, or Ezymex FX Options only. Missing = cfd. */
+  product?: AccountProduct;
   mode: AccountMode;
   cent: boolean;
   server: string;
@@ -59,6 +62,7 @@ export const ACCOUNTS: TradingAccount[] = [
   { login: "80413001", type: "live", group: "Cent", mode: "hedging", cent: true, server: "Ezymex-Live02", leverage: 1000, currency: "USC", balance: 1240500, equity: 1251097, credit: 0, margin: 18420, createdAt: "2024-08-19", swapFree: false },
   { login: "90022871", type: "demo", group: "Pro", mode: "hedging", cent: false, server: "Ezymex-Demo", leverage: 500, currency: "USD", balance: 100000, equity: 102418.62, credit: 0, margin: 3120, createdAt: "2026-09-18", expiresAt: "2026-09-28", refillsLeft: 2, swapFree: false },
   { login: "90022904", type: "demo", group: "ECN", mode: "netting", cent: false, server: "Ezymex-Demo", leverage: 100, currency: "USD", balance: 10000, equity: 9612.4, credit: 0, margin: 402.5, createdAt: "2026-09-21", expiresAt: "2026-10-01", refillsLeft: 3, swapFree: false },
+  { login: "90023115", type: "demo", group: "Options", product: "options", mode: "hedging", cent: false, server: "Ezymex-Demo", leverage: 100, currency: "USD", balance: 10000, equity: 10184.5, credit: 0, margin: 0, nickname: "Options practice", createdAt: "2026-09-24", expiresAt: "2026-10-04", refillsLeft: 3, swapFree: false },
 ];
 
 export function accountUsd(a: TradingAccount, field: "balance" | "equity" | "margin" | "credit") {
@@ -68,10 +72,11 @@ export const freeMargin = (a: TradingAccount) => a.equity - a.margin;
 export const marginLevel = (a: TradingAccount) => (a.margin > 0 ? (a.equity / a.margin) * 100 : Infinity);
 
 export const ACCOUNT_GROUPS = [
-  { id: "standard", name: "Standard", tagline: "Zero commission, all-in spreads", minDeposit: 10, spreadFrom: "1.0", commission: "None", leverage: [50, 100, 200, 500, 1000], modes: ["hedging", "netting"], cent: false, photo: "/assets/photos/skyline.jpg", popular: false },
-  { id: "pro", name: "Pro", tagline: "Tight raw-feel spreads for active traders", minDeposit: 200, spreadFrom: "0.3", commission: "None", leverage: [50, 100, 200, 500], modes: ["hedging", "netting"], cent: false, photo: "/assets/photos/london.jpg", popular: true },
-  { id: "ecn", name: "ECN", tagline: "Raw spreads from 0.0 + $3.5/lot/side", minDeposit: 500, spreadFrom: "0.0", commission: "$3.5 / lot / side", leverage: [50, 100, 200, 500], modes: ["netting", "hedging"], cent: false, photo: "/assets/photos/nyc.jpg", popular: false },
-  { id: "cent", name: "Cent", tagline: "Trade in cents — ideal to test strategies live", minDeposit: 10, spreadFrom: "1.0", commission: "None", leverage: [100, 500, 1000, 2000], modes: ["hedging"], cent: true, photo: "/assets/photos/singapore.jpg", popular: false },
+  { id: "standard", product: "cfd" as AccountProduct, name: "Standard", tagline: "Zero commission, all-in spreads", minDeposit: 10, spreadFrom: "1.0", commission: "None", leverage: [50, 100, 200, 500, 1000], modes: ["hedging", "netting"], cent: false, photo: "/assets/photos/skyline.jpg", popular: false },
+  { id: "pro", product: "cfd" as AccountProduct, name: "Pro", tagline: "Tight raw-feel spreads for active traders", minDeposit: 200, spreadFrom: "0.3", commission: "None", leverage: [50, 100, 200, 500], modes: ["hedging", "netting"], cent: false, photo: "/assets/photos/london.jpg", popular: true },
+  { id: "ecn", product: "cfd" as AccountProduct, name: "ECN", tagline: "Raw spreads from 0.0 + $3.5/lot/side", minDeposit: 500, spreadFrom: "0.0", commission: "$3.5 / lot / side", leverage: [50, 100, 200, 500], modes: ["netting", "hedging"], cent: false, photo: "/assets/photos/nyc.jpg", popular: false },
+  { id: "cent", product: "cfd" as AccountProduct, name: "Cent", tagline: "Trade in cents — ideal to test strategies live", minDeposit: 10, spreadFrom: "1.0", commission: "None", leverage: [100, 500, 1000, 2000], modes: ["hedging"], cent: true, photo: "/assets/photos/singapore.jpg", popular: false },
+  { id: "options", product: "options" as AccountProduct, name: "Options", tagline: "Calls, puts and spreads on forex, gold, silver and oil", minDeposit: 10, spreadFrom: "—", commission: "$0.25 / contract", leverage: [100], modes: ["hedging"], cent: false, photo: "/assets/photos/charts.jpg", popular: false },
 ];
 
 /* ------------------------------------------------------------------ */
