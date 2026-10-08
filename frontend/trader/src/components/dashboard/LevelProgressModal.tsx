@@ -8,7 +8,7 @@ import {
 
 /**
  * Rank-ladder level popup — a horizontal track of every tier (Novice → Mythic)
- * in the landing "Obsidian & Lime" theme: cleared tiers are glossy lime with a
+ * in the landing theme: cleared tiers are glossy orange with a
  * check, the current one glows + pulses with a floating "YOU" marker, upcoming
  * tiers are frosted-locked. A lime rail with a moving shimmer + leading glow-dot
  * fills to exact progress, the track auto-scrolls to centre you, and "XP to
@@ -30,10 +30,10 @@ const LEVELS = [
 ];
 const MAX_LEVEL = LEVELS.length; // 10
 
-// Landing "Obsidian & Lime" palette.
-const ACCENT = '#1E88FF';
-const ACCENT_HI = '#7CC9FF';
-const ON_ACCENT = '#0a0a0a';
+// Landing palette.
+const ACCENT = '#FF6A00';
+const ACCENT_HI = '#FFB380';
+const ON_ACCENT = '#060606';
 
 const COL = 96;      // px per tier column
 const YOU_ROW = 30;  // px reserved above nodes for the YOU marker
@@ -129,15 +129,15 @@ export default function LevelProgressModal({
         @keyframes lvlPing { 0%{transform:scale(1);opacity:.65} 80%{transform:scale(1.9);opacity:0} 100%{opacity:0} }
         @keyframes lvlBob  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
         @keyframes lvlShim { 0%{transform:translateX(-140%)} 100%{transform:translateX(360%)} }
-        @keyframes lvlHead { 0%,100%{box-shadow:0 0 8px 2px rgba(30,136,255,.7)} 50%{box-shadow:0 0 16px 5px rgba(30,136,255,.95)} }
+        @keyframes lvlHead { 0%,100%{box-shadow:0 0 8px 2px rgba(255,106,0,.7)} 50%{box-shadow:0 0 16px 5px rgba(255,106,0,.95)} }
       `}</style>
 
       <div
         onClick={(e) => e.stopPropagation()}
         className="relative w-full max-w-2xl overflow-hidden rounded-3xl p-6 shadow-2xl"
         style={{
-          background: 'radial-gradient(120% 90% at 80% -10%, rgba(30,136,255,0.10), transparent 55%), var(--bg-card)',
-          border: '1px solid rgba(30,136,255,0.16)',
+          background: 'radial-gradient(120% 90% at 80% -10%, rgba(255,106,0,0.10), transparent 55%), var(--bg-card)',
+          border: '1px solid rgba(255,106,0,0.16)',
           transform: go ? 'translateY(0) scale(1)' : 'translateY(14px) scale(0.97)',
           opacity: go ? 1 : 0,
           transition: 'transform 340ms cubic-bezier(0.22,1,0.36,1), opacity 340ms ease',
@@ -182,7 +182,7 @@ export default function LevelProgressModal({
                 className="absolute left-0 top-0 h-[5px] overflow-hidden rounded-full"
                 style={{
                   width: go ? `${railPct}%` : '0%',
-                  background: `linear-gradient(90deg, #0B5BD3, ${ACCENT} 70%, ${ACCENT_HI})`,
+                  background: `linear-gradient(90deg, #C2410C, ${ACCENT} 70%, ${ACCENT_HI})`,
                   transition: 'width 1300ms cubic-bezier(0.22,1,0.36,1)',
                 }}
               >
@@ -225,7 +225,7 @@ export default function LevelProgressModal({
                         >
                           <span
                             className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-extrabold tracking-wide"
-                            style={{ background: `linear-gradient(90deg, ${ACCENT_HI}, ${ACCENT})`, color: ON_ACCENT, boxShadow: '0 6px 18px rgba(30,136,255,0.5)' }}
+                            style={{ background: `linear-gradient(90deg, ${ACCENT_HI}, ${ACCENT})`, color: ON_ACCENT, boxShadow: '0 6px 18px rgba(255,106,0,0.5)' }}
                           >
                             <span className="size-1.5 rounded-full" style={{ background: ON_ACCENT }} /> YOU
                           </span>
@@ -251,16 +251,16 @@ export default function LevelProgressModal({
                         className="grid size-full place-items-center rounded-full transition-transform duration-200 group-hover:scale-110"
                         style={{
                           background: on
-                            ? `radial-gradient(circle at 32% 28%, ${ACCENT_HI}, ${ACCENT} 62%, #0B5BD3)`
+                            ? `radial-gradient(circle at 32% 28%, ${ACCENT_HI}, ${ACCENT} 62%, #C2410C)`
                             : 'var(--bg-tertiary)',
                           border: on
                             ? '1.5px solid rgba(255,255,255,0.35)'
-                            : `1.5px solid ${next ? 'rgba(30,136,255,0.55)' : 'var(--border-primary)'}`,
+                            : `1.5px solid ${next ? 'rgba(255,106,0,0.55)' : 'var(--border-primary)'}`,
                           boxShadow: current
-                            ? '0 0 0 5px rgba(30,136,255,0.14), 0 0 26px rgba(30,136,255,0.6), inset 0 1px 0 rgba(255,255,255,0.55)'
+                            ? '0 0 0 5px rgba(255,106,0,0.14), 0 0 26px rgba(255,106,0,0.6), inset 0 1px 0 rgba(255,255,255,0.55)'
                             : passed
-                              ? '0 6px 16px rgba(30,136,255,0.28), inset 0 1px 0 rgba(255,255,255,0.5)'
-                              : next ? '0 0 14px rgba(30,136,255,0.18)' : 'none',
+                              ? '0 6px 16px rgba(255,106,0,0.28), inset 0 1px 0 rgba(255,255,255,0.5)'
+                              : next ? '0 0 14px rgba(255,106,0,0.18)' : 'none',
                           transform: go ? (current ? 'scale(1.06)' : 'scale(1)') : 'scale(0.5)',
                           opacity: go ? 1 : 0,
                           transition: `transform 460ms cubic-bezier(0.34,1.56,0.64,1) ${i * 70}ms, opacity 360ms ease ${i * 70}ms`,
@@ -279,7 +279,7 @@ export default function LevelProgressModal({
                     {/* Labels */}
                     <p
                       className="mt-2.5 px-1 text-center text-[10px] font-bold uppercase leading-tight tracking-wide"
-                      style={{ color: on ? ACCENT : next ? 'rgba(30,136,255,0.75)' : locked ? 'var(--text-tertiary, #8a8a8a)' : 'var(--text-secondary)', textShadow: current ? '0 0 12px rgba(30,136,255,0.55)' : 'none' }}
+                      style={{ color: on ? ACCENT : next ? 'rgba(255,106,0,0.75)' : locked ? 'var(--text-tertiary, #8a8a8a)' : 'var(--text-secondary)', textShadow: current ? '0 0 12px rgba(255,106,0,0.55)' : 'none' }}
                     >
                       {lv.label}
                     </p>
@@ -301,7 +301,7 @@ export default function LevelProgressModal({
               {WAYS.map((w, i) => (
                 <div
                   key={w.title}
-                  className="flex items-center gap-2.5 rounded-2xl p-2.5 transition-colors hover:border-[rgba(30,136,255,0.35)]"
+                  className="flex items-center gap-2.5 rounded-2xl p-2.5 transition-colors hover:border-[rgba(255,106,0,0.35)]"
                   style={{
                     background: 'rgba(255,255,255,0.02)',
                     border: '1px solid var(--border-primary)',
@@ -310,7 +310,7 @@ export default function LevelProgressModal({
                     transition: `opacity 400ms ease ${360 + i * 80}ms, transform 400ms ease ${360 + i * 80}ms`,
                   }}
                 >
-                  <span className="grid size-9 shrink-0 place-items-center rounded-xl" style={{ background: 'rgba(30,136,255,0.12)' }}>
+                  <span className="grid size-9 shrink-0 place-items-center rounded-xl" style={{ background: 'rgba(255,106,0,0.12)' }}>
                     <w.icon size={16} style={{ color: 'var(--accent-ink)' }} />
                   </span>
                   <div className="min-w-0">
@@ -328,7 +328,7 @@ export default function LevelProgressModal({
           type="button"
           onClick={() => { onClose(); router.push('/rewards'); }}
           className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-extrabold transition-transform hover:brightness-105 active:scale-[0.98]"
-          style={{ background: `linear-gradient(90deg, ${ACCENT_HI}, ${ACCENT})`, color: ON_ACCENT, boxShadow: '0 10px 28px rgba(30,136,255,0.32)' }}
+          style={{ background: `linear-gradient(90deg, ${ACCENT_HI}, ${ACCENT})`, color: ON_ACCENT, boxShadow: '0 10px 28px rgba(255,106,0,0.32)' }}
         >
           {isMax ? 'View your rewards' : 'Go to Rewards & missions'}
           <ArrowRight size={16} />

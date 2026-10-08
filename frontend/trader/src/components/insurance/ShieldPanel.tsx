@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Ezymex Shield — aggregate period-plan insurance panel.
+ * Ezymax Shield — aggregate period-plan insurance panel.
  *
  * Separate product from the per-trade micro-insurance. The user buys ONE plan
  * (Daily / Weekly / Monthly) at a tier; it covers a share of their *cumulative*
@@ -22,7 +22,7 @@ import {
   type ShieldTier,
 } from '@/lib/api/insurance';
 
-const LIME = '#1E88FF';
+const LIME = '#FF6A00';
 
 const PERIOD_LABEL: Record<ShieldPeriod, string> = {
   daily: 'Daily',
@@ -474,7 +474,7 @@ function PlanCard({
         <span className="text-xs font-bold text-text-primary">{TIER_LABEL[plan.tier]}</span>
         {isCurrent && (
           <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full"
-            style={{ color: '#0a0a0a', background: LIME }}>
+            style={{ color: '#060606', background: LIME }}>
             Active
           </span>
         )}
@@ -494,7 +494,7 @@ function PlanCard({
           onClick={onBuy}
           disabled={busy || isCurrent}
           className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg disabled:opacity-50 inline-flex items-center gap-1"
-          style={{ color: '#0a0a0a', background: isCurrent ? 'var(--border-primary)' : LIME }}
+          style={{ color: '#060606', background: isCurrent ? 'var(--border-primary)' : LIME }}
         >
           {busy ? <Loader2 size={12} className="animate-spin" /> : isCurrent ? <Check size={12} /> : null}
           {isCurrent ? 'Active' : 'Buy'}

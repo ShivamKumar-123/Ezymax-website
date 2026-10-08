@@ -15,7 +15,7 @@ import { adminApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Loader2, Save, RefreshCw, Plus, Trash2, Store } from 'lucide-react';
 
-const LIME = '#1E88FF';
+const LIME = '#FF6A00';
 const CATEGORIES = ['cashback', 'bonus', 'perk', 'tool', 'lifestyle'] as const;
 type Category = (typeof CATEGORIES)[number];
 
@@ -159,12 +159,12 @@ export default function AdminRewardStorePage() {
             <RefreshCw className="w-3.5 h-3.5" /> Reload
           </button>
           <button type="button" onClick={() => setAdding((v) => !v)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-primary bg-bg-secondary text-xs text-text-primary hover:border-[#1E88FF]/40">
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-primary bg-bg-secondary text-xs text-text-primary hover:border-[#FF6A00]/40">
             <Plus className="w-3.5 h-3.5" /> Add item
           </button>
           <button type="button" onClick={() => void save()} disabled={saving}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold disabled:opacity-60"
-            style={{ color: '#0a0a0a', background: LIME }}>
+            style={{ color: '#060606', background: LIME }}>
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
             Save changes
           </button>
@@ -190,7 +190,7 @@ export default function AdminRewardStorePage() {
           <Field label="Description"><input className="inp" value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} placeholder="Shown on the store card" /></Field>
           <div className="flex justify-end gap-2">
             <button type="button" onClick={() => { setAdding(false); setDraft({ ...BLANK }); }} className="px-3 py-1.5 rounded-lg border border-border-primary bg-bg-secondary text-xs text-text-secondary">Cancel</button>
-            <button type="button" onClick={() => void create()} disabled={saving} className="px-4 py-1.5 rounded-lg text-xs font-bold disabled:opacity-60" style={{ color: '#0a0a0a', background: LIME }}>Create</button>
+            <button type="button" onClick={() => void create()} disabled={saving} className="px-4 py-1.5 rounded-lg text-xs font-bold disabled:opacity-60" style={{ color: '#060606', background: LIME }}>Create</button>
           </div>
         </div>
       )}
@@ -254,7 +254,7 @@ export default function AdminRewardStorePage() {
         </table>
       </div>
       <p className="text-[11px] text-text-tertiary">
-        AC price = Ezymex Coins a trader spends. <span className="font-bold text-text-secondary">Min PS</span> only
+        AC price = Ezymax Coins a trader spends. <span className="font-bold text-text-secondary">Min PS</span> only
         applies to <span style={{ color: CAT_COLOR.lifestyle }}>lifestyle</span> items (Power-Score gate). Turn
         <b> Active</b> off to hide an item from the store. Edits are live after <b>Save changes</b>.
       </p>

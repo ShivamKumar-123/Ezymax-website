@@ -33,7 +33,7 @@ export default function AcademyQuizPage() {
       <DashboardShell>
         <div className="page-main max-w-4xl mx-auto text-center py-20">
           <p className="text-text-secondary">Quiz not found</p>
-          <Link href="/academy" className="text-[#1E88FF] hover:underline text-sm mt-2 inline-block">
+          <Link href="/academy" className="text-[#FF6A00] hover:underline text-sm mt-2 inline-block">
             ← Back to Academy
           </Link>
         </div>
@@ -54,20 +54,20 @@ export default function AcademyQuizPage() {
       <div className="page-main max-w-6xl mx-auto w-full pb-8">
         <Link
           href={`/academy/${phaseSlug}`}
-          className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-[#1E88FF] transition-colors mb-6 px-4 py-2 rounded-lg border border-border-glass hover:border-[#1E88FF]/30"
+          className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-[#FF6A00] transition-colors mb-6 px-4 py-2 rounded-lg border border-border-glass hover:border-[#FF6A00]/30"
         >
           <ArrowLeft size={14} />
           BACK TO {phase.title}
         </Link>
 
-        <div className="bg-bg-secondary border border-[#1E88FF]/20 rounded-xl p-6 mb-6">
-          <p className="text-[10px] uppercase tracking-widest text-[#1E88FF] font-medium mb-1">KNOWLEDGE CHECK</p>
+        <div className="bg-bg-secondary border border-[#FF6A00]/20 rounded-xl p-6 mb-6">
+          <p className="text-[10px] uppercase tracking-widest text-[#FF6A00] font-medium mb-1">KNOWLEDGE CHECK</p>
           <h1 className="text-xl font-bold text-text-primary mb-3">{quiz.title}</h1>
 
           <div className="flex items-center gap-3 mb-6">
             <div className="flex-1 h-2 bg-bg-tertiary rounded-full overflow-hidden">
               <div
-                className="h-full bg-[#1E88FF] rounded-full transition-all"
+                className="h-full bg-[#FF6A00] rounded-full transition-all"
                 style={{ width: `${(answeredCount / quiz.questions.length) * 100}%` }}
               />
             </div>
@@ -78,7 +78,7 @@ export default function AcademyQuizPage() {
 
           <div className="mb-6">
             <p className="text-sm text-text-primary font-medium mb-4">
-              <span className="text-[#1E88FF] font-bold mr-2">{String(currentQuestion + 1).padStart(2, '0')}</span>
+              <span className="text-[#FF6A00] font-bold mr-2">{String(currentQuestion + 1).padStart(2, '0')}</span>
               {question.question}
             </p>
 
@@ -94,11 +94,11 @@ export default function AcademyQuizPage() {
                     className={clsx(
                       'w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-colors text-sm',
                       isSelected
-                        ? 'border-[#1E88FF] bg-[#1E88FF]/5 text-text-primary'
+                        ? 'border-[#FF6A00] bg-[#FF6A00]/5 text-text-primary'
                         : 'border-border-glass bg-bg-tertiary text-text-secondary hover:border-text-tertiary hover:text-text-primary',
                     )}
                   >
-                    <span className={clsx('text-xs font-medium', isSelected ? 'text-[#1E88FF]' : 'text-text-tertiary')}>
+                    <span className={clsx('text-xs font-medium', isSelected ? 'text-[#FF6A00]' : 'text-text-tertiary')}>
                       {letter}
                     </span>
                     {option}
@@ -125,7 +125,7 @@ export default function AcademyQuizPage() {
               <button
                 type="button"
                 onClick={() => setCurrentQuestion((p) => p + 1)}
-                className="flex items-center gap-1 text-sm text-[#1E88FF] hover:underline"
+                className="flex items-center gap-1 text-sm text-[#FF6A00] hover:underline"
               >
                 NEXT
                 <ArrowRight size={14} />
@@ -139,7 +139,7 @@ export default function AcademyQuizPage() {
         <button
           type="button"
           disabled={answeredCount < quiz.questions.length}
-          className="px-6 py-3 bg-[#1E88FF]/20 text-[#1E88FF] font-semibold rounded-lg text-sm uppercase tracking-wider disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#1E88FF]/30 transition-colors"
+          className="px-6 py-3 bg-[#FF6A00]/20 text-[#FF6A00] font-semibold rounded-lg text-sm uppercase tracking-wider disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#FF6A00]/30 transition-colors"
         >
           SUBMIT ANSWERS
         </button>

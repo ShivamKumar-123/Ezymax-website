@@ -41,14 +41,14 @@ const PREMIUM_CARD =
   'rounded-2xl border relative overflow-hidden transition-all duration-300';
 const PREMIUM_STYLE = {
   background:
-    'radial-gradient(130% 120% at 95% -25%, rgba(30,136,255,0.10), transparent 55%), var(--bg-card)',
-  borderColor: 'rgba(30,136,255,0.16)',
+    'radial-gradient(130% 120% at 95% -25%, rgba(255,106,0,0.10), transparent 55%), var(--bg-card)',
+  borderColor: 'rgba(255,106,0,0.16)',
   boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
 } as const;
 const ACCENT_BAR = (
   <div
     className="pointer-events-none absolute left-0 top-0 bottom-0 w-1"
-    style={{ background: 'linear-gradient(180deg, #7CC9FF, #1E88FF 55%, #0B5BD3)', boxShadow: '0 0 14px rgba(30,136,255,0.5)' }}
+    style={{ background: 'linear-gradient(180deg, #FFB380, #FF6A00 55%, #C2410C)', boxShadow: '0 0 14px rgba(255,106,0,0.5)' }}
   />
 );
 
@@ -76,8 +76,8 @@ function StatTile({
 }) {
   return (
     <div className={clsx(PREMIUM_CARD, 'hover:-translate-y-1 p-3.5')} style={PREMIUM_STYLE}>
-      <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2.5" style={{ background: 'rgba(30,136,255,0.10)' }}>
-        <Icon className="w-4 h-4 text-[#1E88FF]" />
+      <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2.5" style={{ background: 'rgba(255,106,0,0.10)' }}>
+        <Icon className="w-4 h-4 text-[#FF6A00]" />
       </div>
       <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">{label}</p>
       <p className={clsx('text-2xl font-bold tabular-nums mt-0.5', valueColor)}>{value}</p>
@@ -100,8 +100,8 @@ function TableCard({
   return (
     <div className={clsx(PREMIUM_CARD)} style={PREMIUM_STYLE}>
       <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border-primary">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(30,136,255,0.10)' }}>
-          <Icon className="w-4 h-4 text-[#1E88FF]" />
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(255,106,0,0.10)' }}>
+          <Icon className="w-4 h-4 text-[#FF6A00]" />
         </div>
         <div className="min-w-0">
           <h3 className="text-sm font-bold text-text-primary">{title}</h3>
@@ -114,7 +114,7 @@ function TableCard({
 }
 
 const TH = 'px-4 py-2.5 text-[10px] font-bold text-text-tertiary uppercase tracking-wider';
-const ROW = 'border-b border-border-primary/50 hover:bg-[#1E88FF]/[0.04] transition-colors';
+const ROW = 'border-b border-border-primary/50 hover:bg-[#FF6A00]/[0.04] transition-colors';
 
 // Once a user is an approved IB / Master IB, the full dashboard lives in the
 // dedicated partner portal — the trader app just points them there.
@@ -122,8 +122,8 @@ function IBPortalCTA({ subtitle }: { subtitle?: string }) {
   return (
     <div className={clsx(PREMIUM_CARD, 'p-6 sm:p-10 pl-7 text-center space-y-5 max-w-lg mx-auto')} style={PREMIUM_STYLE}>
       {ACCENT_BAR}
-      <div className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center" style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.25)' }}>
-        <BadgeCheck className="w-7 h-7 text-[#1E88FF]" />
+      <div className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center" style={{ background: 'rgba(255,106,0,0.12)', border: '1px solid rgba(255,106,0,0.25)' }}>
+        <BadgeCheck className="w-7 h-7 text-[#FF6A00]" />
       </div>
       <h3 className="text-lg sm:text-xl font-bold text-text-primary">You&apos;re an approved partner</h3>
       <p className="text-xs sm:text-sm text-text-secondary max-w-md mx-auto leading-relaxed">
@@ -133,7 +133,7 @@ function IBPortalCTA({ subtitle }: { subtitle?: string }) {
         href={IB_PORTAL_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center justify-center gap-1.5 w-full max-w-xs mx-auto px-6 py-3.5 rounded-xl text-sm font-semibold bg-[#1E88FF] hover:bg-[#0B5BD3] text-[#0a0a0a] shadow-[0_0_24px_rgba(30,136,255,0.35)] transition-all"
+        className="inline-flex items-center justify-center gap-1.5 w-full max-w-xs mx-auto px-6 py-3.5 rounded-xl text-sm font-semibold bg-[#FF6A00] hover:bg-[#C2410C] text-[#060606] shadow-[0_0_24px_rgba(255,106,0,0.35)] transition-all"
       >
         Login to IB Portal <ExternalLink className="w-4 h-4" />
       </a>
@@ -156,7 +156,7 @@ function ReferralLinkCard() {
     <div className={clsx(PREMIUM_CARD, 'p-4 pl-5')} style={PREMIUM_STYLE}>
       {ACCENT_BAR}
       <div className="flex items-center gap-2 mb-2.5">
-        <Link2 className="w-4 h-4 text-[#1E88FF]" />
+        <Link2 className="w-4 h-4 text-[#FF6A00]" />
         <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">Your Referral Link</p>
       </div>
       <div className="flex items-center gap-2">
@@ -164,17 +164,17 @@ function ReferralLinkCard() {
           type="text"
           readOnly
           value={link}
-          className="flex-1 min-w-0 text-xs font-mono bg-bg-secondary border border-border-primary rounded-xl px-3 py-2.5 text-text-primary focus:outline-none focus:border-[#1E88FF]/40"
+          className="flex-1 min-w-0 text-xs font-mono bg-bg-secondary border border-border-primary rounded-xl px-3 py-2.5 text-text-primary focus:outline-none focus:border-[#FF6A00]/40"
         />
         <button
           type="button"
           onClick={() => { navigator.clipboard.writeText(link); toast.success('Copied!'); }}
-          className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold rounded-xl bg-[#1E88FF] hover:bg-[#0B5BD3] text-[#0a0a0a] transition-colors"
+          className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold rounded-xl bg-[#FF6A00] hover:bg-[#C2410C] text-[#060606] transition-colors"
         >
           <Copy className="w-3.5 h-3.5" /> Copy
         </button>
       </div>
-      <p className="text-[11px] text-text-tertiary mt-2.5">Code: <span className="text-[#1E88FF] font-mono font-bold">{data.code}</span></p>
+      <p className="text-[11px] text-text-tertiary mt-2.5">Code: <span className="text-[#FF6A00] font-mono font-bold">{data.code}</span></p>
     </div>
   );
 }
@@ -206,9 +206,9 @@ export default function BusinessPage() {
           <div className="flex items-center gap-3 mb-4 sm:mb-5">
             <div
               className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.25)' }}
+              style={{ background: 'rgba(255,106,0,0.12)', border: '1px solid rgba(255,106,0,0.25)' }}
             >
-              <Handshake className="w-5 h-5 text-[#1E88FF]" />
+              <Handshake className="w-5 h-5 text-[#FF6A00]" />
             </div>
             <div className="min-w-0">
               <h1 className="text-xl md:text-2xl font-bold text-text-primary">Affiliates &amp; IB Program</h1>
@@ -250,7 +250,7 @@ export default function BusinessPage() {
                     )}
                   >
                     {active ? (
-                      <span className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_20px_rgba(30,136,255,0.7)]">
+                      <span className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_20px_rgba(255,106,0,0.7)]">
                         {t.label}
                       </span>
                     ) : (
@@ -307,7 +307,7 @@ function IBTab() {
         {ACCENT_BAR}
         <div className="min-w-0">
           <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
-            <BadgeCheck className="w-4 h-4 text-[#1E88FF]" /> Your IB Partner Dashboard
+            <BadgeCheck className="w-4 h-4 text-[#FF6A00]" /> Your IB Partner Dashboard
           </h3>
           <p className="text-[11px] text-text-tertiary mt-0.5 max-w-xl">
             {isIb
@@ -320,7 +320,7 @@ function IBTab() {
             href={IB_PORTAL_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="shrink-0 inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl text-sm font-semibold bg-[#1E88FF] hover:bg-[#0B5BD3] text-[#0a0a0a] shadow-[0_0_20px_rgba(30,136,255,0.3)] transition-all"
+            className="shrink-0 inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl text-sm font-semibold bg-[#FF6A00] hover:bg-[#C2410C] text-[#060606] shadow-[0_0_20px_rgba(255,106,0,0.3)] transition-all"
           >
             Go to IB Dashboard <ExternalLink className="w-4 h-4" />
           </a>
@@ -422,8 +422,8 @@ function SubBrokerTab() {
     return (
       <div className={clsx(PREMIUM_CARD, 'p-6 sm:p-8 pl-7 text-center max-w-lg mx-auto space-y-3')} style={PREMIUM_STYLE}>
         {ACCENT_BAR}
-        <div className="w-12 h-12 mx-auto rounded-2xl flex items-center justify-center" style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.25)' }}>
-          <Hourglass className="w-6 h-6 text-[#1E88FF]" />
+        <div className="w-12 h-12 mx-auto rounded-2xl flex items-center justify-center" style={{ background: 'rgba(255,106,0,0.12)', border: '1px solid rgba(255,106,0,0.25)' }}>
+          <Hourglass className="w-6 h-6 text-[#FF6A00]" />
         </div>
         <h3 className="text-base font-bold text-text-primary">Application Pending</h3>
         <p className="text-xs text-text-tertiary">Your Master IB application is under review.</p>
@@ -444,12 +444,12 @@ function SubBrokerTab() {
         <div className={clsx(PREMIUM_CARD, 'p-4 pl-5')} style={PREMIUM_STYLE}>
           {ACCENT_BAR}
           <div className="flex items-center gap-2 mb-2.5">
-            <Link2 className="w-4 h-4 text-[#1E88FF]" />
+            <Link2 className="w-4 h-4 text-[#FF6A00]" />
             <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">Your Referral Code</p>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-2xl font-bold font-mono text-[#1E88FF]">{dashboard.referral_code}</span>
-            <button type="button" onClick={() => { navigator.clipboard.writeText(dashboard.referral_code); toast.success('Copied!'); }} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-[#1E88FF] hover:bg-[#0B5BD3] text-[#0a0a0a] transition-colors">
+            <span className="text-2xl font-bold font-mono text-[#FF6A00]">{dashboard.referral_code}</span>
+            <button type="button" onClick={() => { navigator.clipboard.writeText(dashboard.referral_code); toast.success('Copied!'); }} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-[#FF6A00] hover:bg-[#C2410C] text-[#060606] transition-colors">
               <Copy className="w-3.5 h-3.5" /> Copy
             </button>
           </div>
@@ -481,14 +481,14 @@ function SubBrokerTab() {
   return (
     <div className={clsx(PREMIUM_CARD, 'p-6 sm:p-10 pl-7 text-center space-y-5 max-w-2xl mx-auto')} style={PREMIUM_STYLE}>
       {ACCENT_BAR}
-      <div className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center" style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.25)' }}>
-        <Building2 className="w-7 h-7 text-[#1E88FF]" />
+      <div className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center" style={{ background: 'rgba(255,106,0,0.12)', border: '1px solid rgba(255,106,0,0.25)' }}>
+        <Building2 className="w-7 h-7 text-[#FF6A00]" />
       </div>
       <h3 className="text-lg sm:text-xl font-bold text-text-primary">Become a Master IB</h3>
       <p className="text-xs sm:text-sm text-text-secondary max-w-md mx-auto leading-relaxed">Partner with us as a Master IB. Get your own referral code, manage clients, and earn revenue share on all their trading activity.</p>
       <div className="max-w-sm mx-auto text-left">
         <label className="text-[11px] font-semibold text-text-secondary block mb-1.5">Company Name (optional)</label>
-        <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Your company name" className="w-full text-text-primary rounded-xl py-2.5 px-4 text-xs bg-bg-secondary border border-border-primary focus:border-[#1E88FF]/50 focus:ring-1 focus:ring-[#1E88FF]/30 focus:outline-none" />
+        <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Your company name" className="w-full text-text-primary rounded-xl py-2.5 px-4 text-xs bg-bg-secondary border border-border-primary focus:border-[#FF6A00]/50 focus:ring-1 focus:ring-[#FF6A00]/30 focus:outline-none" />
       </div>
       <button
         type="button"
@@ -496,7 +496,7 @@ function SubBrokerTab() {
         disabled={applying}
         className={clsx(
           'inline-flex items-center justify-center w-full max-w-xs mx-auto px-6 py-3.5 rounded-xl text-sm font-semibold transition-all',
-          applying ? 'opacity-50 cursor-not-allowed bg-[#1E88FF] text-[#0a0a0a]' : 'bg-[#1E88FF] hover:bg-[#0B5BD3] text-[#0a0a0a] shadow-[0_0_24px_rgba(30,136,255,0.35)]',
+          applying ? 'opacity-50 cursor-not-allowed bg-[#FF6A00] text-[#060606]' : 'bg-[#FF6A00] hover:bg-[#C2410C] text-[#060606] shadow-[0_0_24px_rgba(255,106,0,0.35)]',
         )}
       >
         {applying ? 'Submitting...' : 'Apply as Master IB'}
@@ -535,13 +535,13 @@ function NetworkTab() {
         {ACCENT_BAR}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Network className="w-4 h-4 text-[#1E88FF]" />
+            <Network className="w-4 h-4 text-[#FF6A00]" />
             <h3 className="text-sm font-bold text-text-primary">Your MLM Network</h3>
           </div>
           <span className="text-[11px] text-text-tertiary">{tree.total_nodes || 0} members</span>
         </div>
         <div className="flex items-center gap-3 text-xs flex-wrap">
-          <span className="text-text-tertiary">Your Code: <span className="text-[#1E88FF] font-mono font-bold">{tree.root?.referral_code}</span></span>
+          <span className="text-text-tertiary">Your Code: <span className="text-[#FF6A00] font-mono font-bold">{tree.root?.referral_code}</span></span>
           <span className="text-text-tertiary">Level: <span className="text-text-primary font-bold">L{tree.root?.level}</span></span>
           <span className="text-text-tertiary">Total Earned: <span className="text-success font-mono font-bold">${fmt(tree.root?.total_earned || 0)}</span></span>
         </div>
@@ -567,14 +567,14 @@ function TreeNode({ node, depth }: { node: any; depth: number }) {
 
   return (
     <div style={{ marginLeft: depth * 20 }}>
-      <button onClick={() => hasChildren && setExpanded(!expanded)} className="flex items-center gap-2 w-full text-left py-1.5 px-2 rounded-lg hover:bg-[#1E88FF]/[0.05] transition-colors text-xs">
+      <button onClick={() => hasChildren && setExpanded(!expanded)} className="flex items-center gap-2 w-full text-left py-1.5 px-2 rounded-lg hover:bg-[#FF6A00]/[0.05] transition-colors text-xs">
         {hasChildren ? (
-          expanded ? <ChevronDown className="w-3.5 h-3.5 text-[#1E88FF]" /> : <ChevronRight className="w-3.5 h-3.5 text-text-tertiary" />
+          expanded ? <ChevronDown className="w-3.5 h-3.5 text-[#FF6A00]" /> : <ChevronRight className="w-3.5 h-3.5 text-text-tertiary" />
         ) : (
           <span className="text-text-tertiary ml-1">•</span>
         )}
         <span className="text-text-primary font-medium">{node.name || node.email}</span>
-        <span className="text-[11px] text-[#1E88FF] font-mono">L{node.depth}</span>
+        <span className="text-[11px] text-[#FF6A00] font-mono">L{node.depth}</span>
         <span className="text-[11px] text-text-tertiary ml-auto font-mono">${fmt(node.total_earned || 0)}</span>
         {!node.is_active && <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-danger/15 text-danger">inactive</span>}
       </button>

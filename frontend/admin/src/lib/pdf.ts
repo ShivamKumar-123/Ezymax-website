@@ -1,5 +1,5 @@
 // Lightweight table-to-PDF export used by the per-user ledger tabs.
-// Renders a branded header, a centered Ezymex logo watermark (from
+// Renders a branded header, a centered Ezymax logo watermark (from
 // /public/logo.png), and the section's rows as a table.
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -66,7 +66,7 @@ export async function exportTablePdf(meta: PdfExport): Promise<void> {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
   doc.setTextColor(20, 20, 20);
-  doc.text('Ezymex', 40, 46);
+  doc.text('Ezymax', 40, 46);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(13);
   doc.setTextColor(70, 70, 70);

@@ -26,7 +26,7 @@ const motionAllowed = () =>
   !window.matchMedia('(pointer: coarse)').matches;
 
 /* ── dark: WebGL tubes, void-black, screen blend ── */
-const TUBES = ['#050505', '#0d0d0d', '#161616'];
+const TUBES = ['#050505', '#0e0a08', '#1a1512'];
 const TUBE_LIGHTS = ['#6b6b6b', '#3d3d3d', '#ffffff', '#242424'];
 const randomVoid = () => `hsl(0 0% ${(2 + Math.random() * 14).toFixed(0)}%)`;
 
@@ -123,11 +123,11 @@ function GoldTrail() {
         const p0 = points[i - 1];
         const p1 = points[i];
         const alpha = p1.life * (i / points.length) * 0.55;
-        ctx.strokeStyle = `rgba(30, 136, 255, ${alpha})`;
+        ctx.strokeStyle = `rgba(255, 106, 0, ${alpha})`;
         ctx.lineWidth = 3 * p1.life;
         ctx.lineCap = 'round';
         ctx.shadowBlur = 14;
-        ctx.shadowColor = `rgba(30, 136, 255, ${alpha})`;
+        ctx.shadowColor = `rgba(255, 106, 0, ${alpha})`;
         ctx.beginPath();
         ctx.moveTo(p0.x, p0.y);
         ctx.lineTo(p1.x, p1.y);

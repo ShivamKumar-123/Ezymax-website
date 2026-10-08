@@ -13,23 +13,26 @@ import OnboardingTourLazy from '@/components/Onboarding/OnboardingTourLazy';
 import TopLoader from '@/components/TopLoader';
 import PWARegister from '@/components/PWARegister';
 
+// Was: "your funds stay in a smart contract you control". They do not --
+// deposits credit an account balance and withdrawals are reviewed. See the
+// landing site's content/facts.ts for the rule on claims like this.
 const SHARE_DESCRIPTION =
-  'Trade CFDs while your funds stay in a smart contract you control — only open-trade margin is locked, the rest stays withdrawable.';
+  'Trade CFDs on forex, indices, commodities and crypto, with every cost itemised on the ticket and the same published margin rules for every account.';
 
 export const metadata: Metadata = {
   // Makes the relative share image below resolve to an absolute URL, which
   // every social scraper requires.
   metadataBase: new URL('https://trade.ezymex.com'),
-  title: 'Ezymex',
-  description: 'Ezymex — professional forex and CFD trading platform',
-  applicationName: 'Ezymex',
+  title: 'Ezymax',
+  description: 'Ezymax — professional forex and CFD trading platform',
+  applicationName: 'Ezymax',
   manifest: '/manifest.webmanifest',
   // Without these, a shared link showed whatever image the scraper found first
   // on the page.
   openGraph: {
     type: 'website',
-    siteName: 'Ezymex',
-    title: 'Ezymex — trade with your funds still yours',
+    siteName: 'Ezymax',
+    title: 'Ezymax — CFD trading with published rules',
     description: SHARE_DESCRIPTION,
     url: '/',
     images: [{ url: '/open-graph.png', width: 1200, height: 630 }],
@@ -37,14 +40,14 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Ezymex — trade with your funds still yours',
+    title: 'Ezymax — CFD trading with published rules',
     description: SHARE_DESCRIPTION,
     images: ['/open-graph.png'],
   },
   // Drives iOS "Add to Home Screen": standalone launch, app title, status bar.
   appleWebApp: {
     capable: true,
-    title: 'Ezymex',
+    title: 'Ezymax',
     // 'default' = the iOS status bar keeps its own space (does NOT overlay
     // content), so no page's top is ever hidden under the notch/clock.
     statusBarStyle: 'default',
@@ -64,7 +67,7 @@ export const viewport: Viewport = {
   // env(safe-area-inset-*) so nothing is hidden behind them on iPhone.
   viewportFit: 'cover',
   themeColor: [
-    { media: '(prefers-color-scheme: dark)', color: '#0a0a0a' },
+    { media: '(prefers-color-scheme: dark)', color: '#060606' },
     { media: '(prefers-color-scheme: light)', color: '#ffffff' },
   ],
 };
@@ -77,7 +80,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/images/ezymex_icon.png" />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var L='ezymex-ui',N='ezymex-ui';var o=localStorage.getItem(L),n=localStorage.getItem(N);if(o&&!n){localStorage.setItem(N,o);localStorage.removeItem(L);}var s=localStorage.getItem(N);var t='dark';if(s){var j=JSON.parse(s);t=(j&&j.state&&j.state.theme)||(j&&j.theme)||'dark';}var d=document.documentElement;d.setAttribute('data-theme',t);d.classList.add(t==='light'?'theme-light':'theme-dark');if(t==='light'){d.style.backgroundColor='#ffffff';d.style.color='#111827';}else{d.style.backgroundColor='#0a0a0a';d.style.color='#ffffff';}}catch(e){document.documentElement.setAttribute('data-theme','light');document.documentElement.style.backgroundColor='#ffffff';document.documentElement.style.color='#111827';}})();`,
+            __html: `(function(){try{var L='ezymex-ui',N='ezymex-ui';var o=localStorage.getItem(L),n=localStorage.getItem(N);if(o&&!n){localStorage.setItem(N,o);localStorage.removeItem(L);}var s=localStorage.getItem(N);var t='dark';if(s){var j=JSON.parse(s);t=(j&&j.state&&j.state.theme)||(j&&j.theme)||'dark';}var d=document.documentElement;d.setAttribute('data-theme',t);d.classList.add(t==='light'?'theme-light':'theme-dark');if(t==='light'){d.style.backgroundColor='#ffffff';d.style.color='#111827';}else{d.style.backgroundColor='#060606';d.style.color='#ffffff';}}catch(e){document.documentElement.setAttribute('data-theme','light');document.documentElement.style.backgroundColor='#ffffff';document.documentElement.style.color='#111827';}})();`,
           }}
         />
       </head>
@@ -130,7 +133,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   className: 'ezymex-hot-toast',
                   // White check on a gold disc reads as "good" instantly on
                   // dark surface without losing the brand accent.
-                  iconTheme: { primary: '#1E88FF', secondary: '#1a1408' },
+                  iconTheme: { primary: '#FF6A00', secondary: '#1a1408' },
                 },
                 error: {
                   duration: 4000,
@@ -142,7 +145,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 loading: {
                   duration: Infinity,
                   className: 'ezymex-hot-toast',
-                  iconTheme: { primary: '#1E88FF', secondary: 'var(--toast-bg)' },
+                  iconTheme: { primary: '#FF6A00', secondary: 'var(--toast-bg)' },
                 },
               }}
             />

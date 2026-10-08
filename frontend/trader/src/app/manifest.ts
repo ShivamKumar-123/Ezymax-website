@@ -7,15 +7,15 @@ import type { MetadataRoute } from 'next';
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Ezymex — Trading Platform',
-    short_name: 'Ezymex',
-    description: 'Ezymex — professional forex and CFD trading platform',
+    name: 'Ezymax — Trading Platform',
+    short_name: 'Ezymax',
+    description: 'Ezymax — professional forex and CFD trading platform',
     start_url: '/dashboard',
     scope: '/',
     display: 'standalone',
     orientation: 'portrait',
-    background_color: '#0a0a0a',
-    theme_color: '#0a0a0a',
+    background_color: '#060606',
+    theme_color: '#060606',
     icons: [
       { src: '/images/ezymex_icon.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
       { src: '/images/ezymex_icon.png', sizes: '512x512', type: 'image/png', purpose: 'any' },

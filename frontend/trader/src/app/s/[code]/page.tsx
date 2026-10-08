@@ -131,7 +131,7 @@ export default function SharedTradePage() {
             </div>
           )}
 
-          <p className="text-white/40 text-xs mt-10">Ezymex © {new Date().getFullYear()}. All rights reserved.</p>
+          <p className="text-white/40 text-xs mt-10">Ezymax © {new Date().getFullYear()}. All rights reserved.</p>
         </>
       )}
     </div>

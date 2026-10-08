@@ -144,7 +144,7 @@ export default function AppTopNav() {
                   'group relative flex h-9 shrink-0 items-center gap-2 rounded-full px-2.5 xl:px-3.5',
                   'text-[13px] font-semibold transition-colors duration-200',
                   active
-                    ? 'text-[#0a0a0a]'
+                    ? 'text-[#060606]'
                     : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary',
                 )}
               >
@@ -152,7 +152,7 @@ export default function AppTopNav() {
                   <motion.span
                     layoutId="topnav-active-pill"
                     aria-hidden
-                    className="absolute inset-0 rounded-full bg-[#1E88FF] shadow-[0_2px_12px_-3px_rgba(30,136,255,0.75)]"
+                    className="absolute inset-0 rounded-full bg-[#FF6A00] shadow-[0_2px_12px_-3px_rgba(255,106,0,0.75)]"
                     transition={{ type: 'spring', stiffness: 520, damping: 42, mass: 0.9 }}
                   />
                 )}
@@ -179,7 +179,7 @@ export default function AppTopNav() {
               'relative flex h-9 shrink-0 items-center gap-2 rounded-full px-2.5 xl:px-3.5',
               'text-[13px] font-semibold transition-colors duration-200',
               moreActive
-                ? 'bg-[#1E88FF] text-[#0a0a0a] shadow-[0_2px_12px_-3px_rgba(30,136,255,0.75)]'
+                ? 'bg-[#FF6A00] text-[#060606] shadow-[0_2px_12px_-3px_rgba(255,106,0,0.75)]'
                 : menu
                   ? 'bg-bg-hover text-text-primary'
                   : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary',
@@ -213,7 +213,7 @@ export default function AppTopNav() {
             {/* Lime hairline along the top edge — matches the sidebar accent */}
             <span
               aria-hidden
-              className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#1E88FF]/50 to-transparent"
+              className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#FF6A00]/50 to-transparent"
             />
             <div className="[column-count:3] [column-gap:1.25rem]">
               {rest.map((section) => (
@@ -235,7 +235,7 @@ export default function AppTopNav() {
                           className={cn(
                             'group flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors',
                             active
-                              ? 'bg-[#1E88FF]/10 text-[#1E88FF]'
+                              ? 'bg-[#FF6A00]/10 text-[#FF6A00]'
                               : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary',
                           )}
                         >
@@ -243,8 +243,8 @@ export default function AppTopNav() {
                             className={cn(
                               'flex h-7 w-7 shrink-0 items-center justify-center rounded-md border transition-colors',
                               active
-                                ? 'border-[#1E88FF]/30 bg-[#1E88FF]/10 text-[#1E88FF]'
-                                : 'border-border-primary bg-bg-base text-text-tertiary group-hover:border-[#1E88FF]/25 group-hover:text-[#1E88FF]',
+                                ? 'border-[#FF6A00]/30 bg-[#FF6A00]/10 text-[#FF6A00]'
+                                : 'border-border-primary bg-bg-base text-text-tertiary group-hover:border-[#FF6A00]/25 group-hover:text-[#FF6A00]',
                             )}
                           >
                             <Icon size={14} />

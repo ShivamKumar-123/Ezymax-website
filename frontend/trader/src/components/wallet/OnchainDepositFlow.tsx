@@ -5,7 +5,7 @@
  *
  * The user picks a chain (USDT-ERC20 / USDT-BEP20 / USDT-TRC20), enters
  * a USD amount, and signs the transfer in their own wallet (MetaMask
- * / TronLink / etc.) — funds go directly to Ezymex's per-chain admin
+ * / TronLink / etc.) — funds go directly to Ezymax's per-chain admin
  * deposit address. The backend's chain_verifier_engine watches the
  * tx hash and credits the user's main wallet once confirmations hit.
  *
@@ -234,8 +234,8 @@ export default function OnchainDepositFlow({
                   className={
                     'w-full text-left rounded-xl px-4 py-3 transition-all border ' +
                     (active
-                      ? 'border-[#1E88FF] bg-[#1E88FF]/8 ring-2 ring-[#1E88FF]/40'
-                      : 'border-border-primary bg-bg-secondary hover:border-[#1E88FF]/50')
+                      ? 'border-[#FF6A00] bg-[#FF6A00]/8 ring-2 ring-[#FF6A00]/40'
+                      : 'border-border-primary bg-bg-secondary hover:border-[#FF6A00]/50')
                   }
                 >
                   <div className="flex items-center justify-between">
@@ -251,7 +251,7 @@ export default function OnchainDepositFlow({
         <button
           type="button"
           onClick={() => setStep('amount')}
-          className="w-full py-3 rounded-xl font-bold text-base bg-[#1E88FF] text-bg-base hover:brightness-110 transition-all"
+          className="w-full py-3 rounded-xl font-bold text-base bg-[#FF6A00] text-bg-base hover:brightness-110 transition-all"
         >
           Continue
         </button>
@@ -286,15 +286,15 @@ export default function OnchainDepositFlow({
               onChange={(e) => setAmount(e.target.value)}
               placeholder={`Min ${MIN_AMOUNT}`}
               autoFocus
-              className="w-full pl-7 pr-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-[#1E88FF]/50 font-mono font-bold text-lg tabular-nums"
+              className="w-full pl-7 pr-4 py-3 rounded-xl border border-border-primary bg-bg-secondary text-text-primary placeholder:text-text-tertiary outline-none focus:border-[#FF6A00]/50 font-mono font-bold text-lg tabular-nums"
             />
           </div>
         </div>
 
-        <div className="rounded-xl border border-[#1E88FF]/20 bg-[#1E88FF]/5 px-4 py-3">
+        <div className="rounded-xl border border-[#FF6A00]/20 bg-[#FF6A00]/5 px-4 py-3">
           <p className="text-xs text-text-secondary leading-relaxed">
             You'll send <span className="text-text-primary font-semibold">USDT</span>{' '}
-            on {chosen.short} from your own wallet to Ezymex's deposit
+            on {chosen.short} from your own wallet to Ezymax's deposit
             address. Your balance is credited automatically once the
             transfer reaches {(network === 'eth' ? 12 : network === 'bsc' ? 15 : 19)}{' '}
             confirmations.
@@ -313,7 +313,7 @@ export default function OnchainDepositFlow({
             'w-full py-3.5 rounded-xl font-bold text-base transition-all active:scale-[0.99] ' +
             (creating || !amount || Number(amount) < MIN_AMOUNT
               ? 'bg-bg-hover text-text-tertiary cursor-not-allowed'
-              : 'bg-[#1E88FF] text-bg-base hover:brightness-110')
+              : 'bg-[#FF6A00] text-bg-base hover:brightness-110')
           }
         >
           {creating ? (
@@ -435,7 +435,7 @@ function DepositAddressCard({ deposit }: { deposit: CreateOnchainResp }) {
       .catch(() => toast.error('Copy failed'));
   };
   return (
-    <div className="rounded-xl border border-[#1E88FF]/30 bg-bg-secondary p-4 space-y-3">
+    <div className="rounded-xl border border-[#FF6A00]/30 bg-bg-secondary p-4 space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-xs text-text-tertiary">Send exactly</p>
         <p className="text-base font-bold text-text-primary tabular-nums">
@@ -456,7 +456,7 @@ function DepositAddressCard({ deposit }: { deposit: CreateOnchainResp }) {
           <button
             type="button"
             onClick={onCopy}
-            className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#1E88FF] hover:brightness-110"
+            className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#FF6A00] hover:brightness-110"
           >
             {copied ? <Check size={11} /> : <Copy size={11} />}
             {copied ? 'Copied' : 'Copy'}
@@ -509,7 +509,7 @@ function TronManualSubmit({
         value={hash}
         onChange={(e) => setHash(e.target.value)}
         placeholder="Tron transaction hash (0x… or 64-hex)"
-        className="w-full px-3 py-2.5 rounded-lg border border-border-primary bg-bg-base text-text-primary text-xs font-mono outline-none focus:border-[#1E88FF]"
+        className="w-full px-3 py-2.5 rounded-lg border border-border-primary bg-bg-base text-text-primary text-xs font-mono outline-none focus:border-[#FF6A00]"
       />
       <button
         type="button"
@@ -519,7 +519,7 @@ function TronManualSubmit({
           'w-full py-3 rounded-xl font-bold text-sm transition-all ' +
           (busy || !hash.trim()
             ? 'bg-bg-hover text-text-tertiary cursor-not-allowed'
-            : 'bg-[#1E88FF] text-bg-base hover:brightness-110')
+            : 'bg-[#FF6A00] text-bg-base hover:brightness-110')
         }
       >
         {busy ? (
@@ -550,8 +550,8 @@ function StatusBar({
   if (status.status === 'submitted') {
     const confs = status.confirmations ?? 0;
     return (
-      <div className="rounded-lg border border-[#1E88FF]/30 bg-[#1E88FF]/5 px-3 py-2.5 text-xs text-text-primary flex items-center gap-2">
-        <Loader2 size={12} className="animate-spin text-[#1E88FF]" />
+      <div className="rounded-lg border border-[#FF6A00]/30 bg-[#FF6A00]/5 px-3 py-2.5 text-xs text-text-primary flex items-center gap-2">
+        <Loader2 size={12} className="animate-spin text-[#FF6A00]" />
         Verifying on chain — {confs}/{minConfirmations} confirmations
       </div>
     );

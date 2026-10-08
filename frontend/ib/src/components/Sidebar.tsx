@@ -27,7 +27,7 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <img
           src="/ezymex_icon.png"
           alt=""
-          className="h-8 w-8 shrink-0 object-contain drop-shadow-[0_0_10px_rgba(214,169,61,0.45)]"
+          className="h-8 w-8 shrink-0 object-contain drop-shadow-[0_0_10px_rgba(255,106,0,0.45)]"
         />
         <div className="min-w-0">
           <span className="block text-base font-bold leading-none tracking-tight">
@@ -49,8 +49,8 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
               active ? 'text-black' : 'text-text-secondary hover:bg-white/[0.045] hover:text-text-primary',
             )}
             style={active ? {
-              background: 'linear-gradient(90deg, #1E88FF 0%, #0B5BD3 100%)',
-              boxShadow: '0 8px 20px -8px rgba(30,136,255,0.55)',
+              background: 'linear-gradient(90deg, #FF6A00 0%, #C2410C 100%)',
+              boxShadow: '0 8px 20px -8px rgba(255,106,0,0.55)',
             } : undefined}
           >
             <span

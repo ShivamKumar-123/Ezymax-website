@@ -470,7 +470,7 @@ function MapTab() {
       }
       layerRef.current.clearLayers();
       points.forEach((p) => {
-        const color = p.shared ? '#ef4444' : '#2962FF';
+        const color = p.shared ? '#ef4444' : '#22C55E';
         const m = L.circleMarker([p.latitude, p.longitude], {
           radius: p.shared ? 7 : 5, color, fillColor: color, fillOpacity: 0.7, weight: 1,
         });
@@ -495,7 +495,7 @@ function MapTab() {
     <div className="bg-bg-secondary border border-border-primary rounded-md overflow-hidden">
       <div className="flex items-center justify-between px-3 py-2 border-b border-border-primary">
         <div className="flex items-center gap-3 text-xxs text-text-tertiary">
-          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-[#2962FF] inline-block" /> Normal</span>
+          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-[#22C55E] inline-block" /> Normal</span>
           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-[#ef4444] inline-block" /> Shared-IP user</span>
         </div>
         <span className="text-xxs text-text-tertiary">{points.length} located {loading && <Loader2 className="inline animate-spin ml-1" size={11} />}</span>

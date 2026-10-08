@@ -3,7 +3,7 @@
 import { Toaster } from 'react-hot-toast';
 
 const toastStyle = {
-  background: '#111111',
+  background: '#121010',
   color: '#f0f0f0',
   border: '1px solid rgba(255,255,255,0.06)',
   fontSize: '12px',
@@ -17,7 +17,7 @@ export default function AppToaster() {
       position="top-right"
       toastOptions={{
         style: toastStyle,
-        success: { iconTheme: { primary: '#1E88FF', secondary: '#000' } },
+        success: { iconTheme: { primary: '#FF6A00', secondary: '#000' } },
         error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
       }}
     />

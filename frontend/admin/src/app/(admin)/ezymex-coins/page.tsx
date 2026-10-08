@@ -15,7 +15,7 @@ import { adminApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Loader2, Save, RefreshCw, Search, Coins, ChevronLeft, ChevronRight } from 'lucide-react';
 
-const LIME = '#1E88FF';
+const LIME = '#FF6A00';
 const PER_PAGE = 25;
 
 interface Row {
@@ -116,13 +116,13 @@ export default function AdminFxaCoinsPage() {
         <button
           type="button"
           onClick={load}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-primary bg-bg-secondary text-xs text-text-primary hover:border-[#1E88FF]/40"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-primary bg-bg-secondary text-xs text-text-primary hover:border-[#FF6A00]/40"
         >
           <RefreshCw size={13} /> Refresh
         </button>
       </div>
       <p className="text-xs text-text-tertiary mb-4">
-        Edit any user&apos;s AC (Ezymex Coin) balance, XP and PS. Every change is logged to the rewards ledger.
+        Edit any user&apos;s AC (Ezymax Coin) balance, XP and PS. Every change is logged to the rewards ledger.
       </p>
 
       <form onSubmit={submitSearch} className="flex items-center gap-2 mb-4">

@@ -20,9 +20,9 @@ const INDICATOR_LIST = [
   { name: 'SMA 20', fn: (d: OHLCV[]) => indicators.sma(d, 20), color: '#F7931A' },
   { name: 'SMA 50', fn: (d: OHLCV[]) => indicators.sma(d, 50), color: '#8B5CF6' },
   { name: 'EMA 20', fn: (d: OHLCV[]) => indicators.ema(d, 20), color: '#29B6F6' },
-  { name: 'BB Upper', fn: (d: OHLCV[]) => indicators.bollingerBands(d).upper, color: '#2962FF' },
+  { name: 'BB Upper', fn: (d: OHLCV[]) => indicators.bollingerBands(d).upper, color: '#22C55E' },
   { name: 'BB Middle', fn: (d: OHLCV[]) => indicators.bollingerBands(d).middle, color: '#2962FF80' },
-  { name: 'BB Lower', fn: (d: OHLCV[]) => indicators.bollingerBands(d).lower, color: '#2962FF' },
+  { name: 'BB Lower', fn: (d: OHLCV[]) => indicators.bollingerBands(d).lower, color: '#22C55E' },
   { name: 'VWAP', fn: (d: OHLCV[]) => indicators.vwap(d), color: '#FF2440' },
 ];
 

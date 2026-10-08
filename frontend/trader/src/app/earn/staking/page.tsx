@@ -270,7 +270,7 @@ function Inner() {
         <div className="rounded-xl border border-border-primary bg-bg-secondary p-5 sm:p-6 grid grid-cols-1 lg:grid-cols-3 gap-5">
           <div className="lg:col-span-2 space-y-3">
             <h2 className="text-base font-semibold text-text-primary flex items-center gap-2">
-              {selectedPlan.mode === 'locked' ? <Lock size={16} className="text-[#1E88FF]" /> : <Sparkles size={16} className="text-[#1E88FF]" />}
+              {selectedPlan.mode === 'locked' ? <Lock size={16} className="text-[#FF6A00]" /> : <Sparkles size={16} className="text-[#FF6A00]" />}
               Open a {selectedPlan.label} stake
             </h2>
             <div className="flex flex-col sm:flex-row sm:items-end gap-3">
@@ -283,14 +283,14 @@ function Inner() {
                   placeholder={`Min ${fmtUsd(selectedPlan.min_amount)}`}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-lg bg-bg-base border border-border-primary text-sm text-text-primary tabular-nums focus:border-[#1E88FF] focus:outline-none"
+                  className="w-full px-3 py-2.5 rounded-lg bg-bg-base border border-border-primary text-sm text-text-primary tabular-nums focus:border-[#FF6A00] focus:outline-none"
                 />
               </div>
               <button
                 type="button"
                 onClick={handleOpen}
                 disabled={busy || !amount}
-                className="inline-flex items-center justify-center gap-1.5 px-6 py-2.5 rounded-lg text-sm font-bold bg-[#1E88FF] text-bg-base hover:brightness-110 disabled:opacity-60 transition-colors"
+                className="inline-flex items-center justify-center gap-1.5 px-6 py-2.5 rounded-lg text-sm font-bold bg-[#FF6A00] text-bg-base hover:brightness-110 disabled:opacity-60 transition-colors"
               >
                 {busy ? <Loader2 size={14} className="animate-spin" /> : <ArrowRight size={14} />}
                 Stake
@@ -303,7 +303,7 @@ function Inner() {
                   type="checkbox"
                   checked={useTradingBonus}
                   onChange={(e) => setUseTradingBonus(e.target.checked)}
-                  className="mt-0.5 accent-[#1E88FF]"
+                  className="mt-0.5 accent-[#FF6A00]"
                 />
                 <span>
                   Activate {selectedPlan.trading_bonus_pct.toFixed(0)}% trading bonus
@@ -359,7 +359,7 @@ function Inner() {
                       type="button"
                       onClick={() => handleClaim(p)}
                       disabled={busyPosId === p.id}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium bg-[#1E88FF] text-bg-base hover:brightness-110 disabled:opacity-60"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium bg-[#FF6A00] text-bg-base hover:brightness-110 disabled:opacity-60"
                     >
                       {busyPosId === p.id ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
                       Claim
@@ -383,7 +383,7 @@ function Inner() {
                         onClick={() => handleWithdraw(p)}
                         disabled={busyPosId === p.id || stillLocked}
                         title={stillLocked ? `This stake unlocks on ${unlockLabel}` : undefined}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium border border-border-primary text-text-secondary hover:text-text-primary hover:border-[#1E88FF]/45 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:text-text-secondary disabled:hover:border-border-primary"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium border border-border-primary text-text-secondary hover:text-text-primary hover:border-[#FF6A00]/45 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:text-text-secondary disabled:hover:border-border-primary"
                       >
                         {stillLocked ? `Unlocks ${unlockLabel}` : 'Withdraw'}
                       </button>
@@ -418,7 +418,7 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
   return (
     <div>
       <p className="text-[10.5px] uppercase tracking-wider text-text-tertiary">{label}</p>
-      <p className={'text-sm font-semibold tabular-nums ' + (accent ? 'text-[#1E88FF]' : 'text-text-primary')}>
+      <p className={'text-sm font-semibold tabular-nums ' + (accent ? 'text-[#FF6A00]' : 'text-text-primary')}>
         {value}
       </p>
     </div>

@@ -192,13 +192,13 @@ export default function WalletDepositModal({
     >
       <div className="flex min-h-full p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
         <div
-          className="relative m-auto w-full max-w-md rounded-2xl border border-[#1E88FF]/30 bg-bg-secondary shadow-2xl"
+          className="relative m-auto w-full max-w-md rounded-2xl border border-[#FF6A00]/30 bg-bg-secondary shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="sticky top-0 z-10 rounded-t-2xl bg-bg-secondary px-6 pt-5 pb-3 border-b border-border-primary flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h2 id="wallet-deposit-title" className="text-base font-semibold text-text-primary flex items-center gap-2">
-                <Wallet size={16} className="text-[#1E88FF]" /> Crypto deposit
+                <Wallet size={16} className="text-[#FF6A00]" /> Crypto deposit
               </h2>
               <p className="text-xs text-text-tertiary mt-1">
                 ${amountUsd.toFixed(2)} via {labelForAsset(cryptoAsset)}
@@ -329,7 +329,7 @@ function DepositBody({
         <button
           type="button"
           onClick={onClose}
-          className="mt-2 px-5 py-2 rounded-md bg-[#1E88FF] text-bg-base text-sm font-bold"
+          className="mt-2 px-5 py-2 rounded-md bg-[#FF6A00] text-bg-base text-sm font-bold"
         >
           Done
         </button>
@@ -358,7 +358,7 @@ function DepositBody({
 
   return (
     <div className="px-6 py-5 space-y-4">
-      <div className="flex items-center gap-3 p-3 rounded-lg bg-[#1E88FF]/5 border border-[#1E88FF]/25">
+      <div className="flex items-center gap-3 p-3 rounded-lg bg-[#FF6A00]/5 border border-[#FF6A00]/25">
         <div className="bg-white p-2 rounded shrink-0">
           <QRCodeCanvas value={deposit.pay_address} size={88} bgColor="#ffffff" fgColor="#000000" />
         </div>
@@ -532,7 +532,7 @@ function Countdown({ deposit, expired }: { deposit: CreatedDeposit; expired: boo
   }
   return (
     <p className="text-[11px] text-text-tertiary flex items-center gap-1.5">
-      <Clock size={11} className="text-[#1E88FF]" /> Payment window: {remaining}
+      <Clock size={11} className="text-[#FF6A00]" /> Payment window: {remaining}
     </p>
   );
 }

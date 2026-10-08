@@ -1,44 +1,42 @@
-import { cn } from "@/lib/cn";
+import Image from "next/image";
+
 import { site } from "@/content/site";
+import { cn } from "@/lib/cn";
 
 /**
- * The Ezymax wordmark, set as type.
+ * The Ezymax wordmark.
  *
- * Two things it is not, and why:
+ * The mark is a chrome-and-orange 3D lockup, which happens to sit in the same
+ * palette as the page it renders on — so one cut serves everywhere and there
+ * is no reversed version to keep in sync.
  *
- * It is not the previous brand's traced SVG path — that was ~7 KB of geometry
- * spelling out a different name, which is why it could only be replaced, not
- * renamed.
- *
- * And it is not the existing EZYMAX PNG. That artwork is blue and silver on
- * transparent; this page is #060606 with an orange accent, so the darker half
- * of the mark disappears into the background and the rest fights the palette.
- * Type in the display face reads correctly and costs nothing.
- *
- * TEMPORARY: replace with real artwork cut for a dark, warm ground when it
- * arrives. Keep the `h-*` + `w-auto` contract — every call site sizes this by
- * height.
+ * Callers size it by height and let the width follow; every call site passes
+ * `h-*` and relies on `w-auto` below. The source is 800px wide, roughly 4x the
+ * largest 2x render on the site.
  */
+const LOGO_WIDTH = 800;
+const LOGO_HEIGHT = 242;
+
+export const LOGO_SRC = "/assets/brand/logo.png";
+
 export function Logo({
   className,
   title = site.name,
+  priority = false,
 }: {
   className?: string;
   title?: string;
+  /** Set on the header, which is above the fold on every route. */
+  priority?: boolean;
 }) {
   return (
-    <span
-      role="img"
-      aria-label={title}
-      className={cn(
-        "inline-flex items-center font-display text-[1.45em] leading-none font-bold tracking-tight text-ink select-none",
-        className,
-      )}
-    >
-      {title}
-      <span aria-hidden className="text-orange-500">
-        .
-      </span>
-    </span>
+    <Image
+      src={LOGO_SRC}
+      alt={title}
+      width={LOGO_WIDTH}
+      height={LOGO_HEIGHT}
+      priority={priority}
+      className={cn("h-6 w-auto", className)}
+    />
   );
 }

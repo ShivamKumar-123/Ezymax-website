@@ -12,11 +12,11 @@ const INIT = `
       d.style.backgroundColor='#f2efe9';d.style.color='#141414';
     }else{
       d.classList.add('dark');d.classList.remove('light');
-      d.style.backgroundColor='#050707';d.style.color='#f0f0f0';
+      d.style.backgroundColor='#060606';d.style.color='#f0f0f0';
     }
   } catch(e){
     document.documentElement.classList.add('dark');
-    document.documentElement.style.backgroundColor='#050707';
+    document.documentElement.style.backgroundColor='#060606';
   }
 })();
 `;

@@ -71,7 +71,7 @@ export default function AppHeader() {
   }, [userMenuOpen]);
 
   return (
-    /* Outer wrapper — sits on #050707 page bg */
+    /* Outer wrapper — sits on #060606 page bg */
     <div className="px-2 sm:px-3 pt-2 sm:pt-3 pb-0 shrink-0">
       <header
         className="relative h-[56px] sm:h-[65px] flex items-center justify-between gap-2 px-3 sm:px-5 rounded-2xl bg-bg-secondary border border-border-primary shadow-[0_6px_24px_-16px_rgba(0,0,0,0.55)]"
@@ -80,7 +80,7 @@ export default function AppHeader() {
             the More menu use, so the chrome reads as one system. */}
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-x-6 top-0 h-px rounded-full bg-gradient-to-r from-transparent via-[#1E88FF]/40 to-transparent"
+          className="pointer-events-none absolute inset-x-6 top-0 h-px rounded-full bg-gradient-to-r from-transparent via-[#FF6A00]/40 to-transparent"
         />
         {/* LEFT — brand lockup: the mandala mark still toggles the sidebar (no
             hamburger), and the wordmark beside it links home. The name is set
@@ -91,22 +91,22 @@ export default function AppHeader() {
             type="button"
             onClick={toggleSidebar}
             title="Menu"
-            className="group grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[#1E88FF]/25 bg-[#1E88FF]/[0.06] transition-all hover:border-[#1E88FF]/50 hover:bg-[#1E88FF]/10 hover:shadow-[0_0_18px_-6px_rgba(30,136,255,0.9)] active:scale-95"
+            className="group grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[#FF6A00]/25 bg-[#FF6A00]/[0.06] transition-all hover:border-[#FF6A00]/50 hover:bg-[#FF6A00]/10 hover:shadow-[0_0_18px_-6px_rgba(255,106,0,0.9)] active:scale-95"
             aria-label="Toggle menu"
           >
             <img
               src="/images/ezymex_icon.png"
-              alt="Ezymex"
+              alt="Ezymax"
               className="h-7 w-7 object-contain transition-transform duration-200 group-hover:scale-110"
             />
           </button>
           <Link
             href="/dashboard"
-            aria-label="Ezymex — dashboard"
+            aria-label="Ezymax — dashboard"
             className="hidden select-none items-baseline gap-px text-[19px] font-extrabold leading-none tracking-[-0.02em] text-text-primary transition-opacity hover:opacity-80 sm:inline-flex"
           >
-            Ezymex
-            <span aria-hidden className="ml-1 h-1.5 w-1.5 self-center rounded-full bg-[#1E88FF]" />
+            Ezymax
+            <span aria-hidden className="ml-1 h-1.5 w-1.5 self-center rounded-full bg-[#FF6A00]" />
           </Link>
           {/* Hairline separates the brand from the nav capsule */}
           <span aria-hidden className="hidden h-6 w-px bg-border-primary lg:block" />
@@ -122,9 +122,9 @@ export default function AppHeader() {
             href="/earn/tasks"
             title="XP & rewards"
             aria-label="XP and rewards"
-            className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-border-primary bg-bg-base px-2.5 lg:px-3 text-[13px] font-semibold text-text-secondary transition-colors hover:border-[#1E88FF]/40 hover:text-text-primary"
+            className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-border-primary bg-bg-base px-2.5 lg:px-3 text-[13px] font-semibold text-text-secondary transition-colors hover:border-[#FF6A00]/40 hover:text-text-primary"
           >
-            <Sparkles size={15} className="shrink-0 text-[#1E88FF]" />
+            <Sparkles size={15} className="shrink-0 text-[#FF6A00]" />
             <span className="hidden xl:inline">Rewards</span>
           </Link>
 
@@ -134,7 +134,7 @@ export default function AppHeader() {
             href="/wallet"
             title={`Balance: ${formatUsd(balance)}`}
             aria-label={`Deposit — balance ${formatUsd(balance)}`}
-            className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-[#1E88FF] px-2.5 sm:px-3.5 text-[13px] font-bold text-[#0a0a0a] shadow-[0_2px_12px_-3px_rgba(30,136,255,0.75)] transition-transform hover:scale-[1.03] active:scale-95"
+            className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-[#FF6A00] px-2.5 sm:px-3.5 text-[13px] font-bold text-[#060606] shadow-[0_2px_12px_-3px_rgba(255,106,0,0.75)] transition-transform hover:scale-[1.03] active:scale-95"
           >
             <Wallet size={15} className="shrink-0" />
             <span className="hidden sm:inline">Deposit</span>
@@ -161,7 +161,7 @@ export default function AppHeader() {
                   the light theme. */}
               <div
                 title={handle}
-                className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-full bg-[#1E88FF] flex items-center justify-center text-[#0a0a0a] text-[10px] sm:text-xs font-bold uppercase"
+                className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-full bg-[#FF6A00] flex items-center justify-center text-[#060606] text-[10px] sm:text-xs font-bold uppercase"
               >
                 {initials}
               </div>

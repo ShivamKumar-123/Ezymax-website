@@ -104,7 +104,7 @@ export default function ShareTradeCard({
       <div className="absolute bottom-5 right-5 w-6 h-6 border-r-2 border-b-2 border-white/40" />
 
       <div className="relative h-full flex flex-col p-6 md:p-8">
-        {/* Header logo — the full Ezymex logo image only (emblem + wordmark
+        {/* Header logo — the full Ezymax logo image only (emblem + wordmark
             are baked into the asset), shown large and centered. No separate
             text wordmark. Same-origin public image so html-to-image inlines
             it into the captured/downloaded PNG. Height-based sizing keeps the
@@ -112,7 +112,7 @@ export default function ShareTradeCard({
         <div className="flex justify-center pt-3 pb-5">
           <img
             src="/images/ezymex-logo.png"
-            alt="Ezymex"
+            alt="Ezymax"
             className="h-16 w-auto object-contain"
           />
         </div>

@@ -27,11 +27,11 @@ export default function PortalShell({ children }: { children: React.ReactNode })
         <div
           className="sidebar-scroll sticky top-0 h-[100dvh] overflow-y-auto"
           style={{
-            background: 'linear-gradient(180deg, rgba(19,21,13,0.82) 0%, rgba(10,10,10,0.9) 100%)',
+            background: 'linear-gradient(180deg, rgba(19,21,13,0.82) 0%, rgba(6,6,6,0.9) 100%)',
             backdropFilter: 'blur(14px)',
             WebkitBackdropFilter: 'blur(14px)',
             borderRight: '1px solid rgba(255,255,255,0.07)',
-            boxShadow: 'inset -14px 0 28px -22px rgba(30,136,255,0.22)',
+            boxShadow: 'inset -14px 0 28px -22px rgba(255,106,0,0.22)',
           }}
         >
           <Sidebar />

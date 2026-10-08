@@ -16,7 +16,7 @@ import { adminApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Loader2, Save, RefreshCw, Plus, Trash2, Sparkles } from 'lucide-react';
 
-const LIME = '#1E88FF';
+const LIME = '#FF6A00';
 const KINDS = ['ac', 'cashback', 'xp', 'nothing'] as const;
 type Kind = (typeof KINDS)[number];
 
@@ -159,12 +159,12 @@ export default function AdminSpinWheelPage() {
             <RefreshCw className="w-3.5 h-3.5" /> Reload
           </button>
           <button type="button" onClick={() => setAdding((v) => !v)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-primary bg-bg-secondary text-xs text-text-primary hover:border-[#1E88FF]/40">
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-primary bg-bg-secondary text-xs text-text-primary hover:border-[#FF6A00]/40">
             <Plus className="w-3.5 h-3.5" /> Add slot
           </button>
           <button type="button" onClick={() => void save()} disabled={saving}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold disabled:opacity-60"
-            style={{ color: '#0a0a0a', background: LIME }}>
+            style={{ color: '#060606', background: LIME }}>
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
             Save changes
           </button>
@@ -205,7 +205,7 @@ export default function AdminSpinWheelPage() {
           </div>
           <div className="flex justify-end gap-2">
             <button type="button" onClick={() => { setAdding(false); setDraft({ ...BLANK }); }} className="px-3 py-1.5 rounded-lg border border-border-primary bg-bg-secondary text-xs text-text-secondary">Cancel</button>
-            <button type="button" onClick={() => void create()} disabled={saving} className="px-4 py-1.5 rounded-lg text-xs font-bold disabled:opacity-60" style={{ color: '#0a0a0a', background: LIME }}>Create</button>
+            <button type="button" onClick={() => void create()} disabled={saving} className="px-4 py-1.5 rounded-lg text-xs font-bold disabled:opacity-60" style={{ color: '#060606', background: LIME }}>Create</button>
           </div>
         </div>
       )}
@@ -273,7 +273,7 @@ export default function AdminSpinWheelPage() {
         <span className="font-bold text-text-secondary">Weight</span> sets each slot&apos;s draw chance —
         <span className="font-bold"> Win %</span> = weight ÷ total active weight (recomputes live as you edit).
         <span style={{ color: KIND_COLOR.ac }}> ac</span>/<span style={{ color: KIND_COLOR.cashback }}>cashback</span> credit
-        Ezymex Coins, <span style={{ color: KIND_COLOR.xp }}>xp</span> credits XP, <span style={{ color: KIND_COLOR.nothing }}>nothing</span> = no reward.
+        Ezymax Coins, <span style={{ color: KIND_COLOR.xp }}>xp</span> credits XP, <span style={{ color: KIND_COLOR.nothing }}>nothing</span> = no reward.
         Turn <b>Active</b> off to remove a slot from the wheel. Edits are live after <b>Save changes</b>.
       </p>
 

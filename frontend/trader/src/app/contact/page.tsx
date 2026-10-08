@@ -2,7 +2,7 @@ import LandingHeader from '@/components/landing/LandingHeader'
 import LandingFooter from '@/components/landing/LandingFooter'
 import { Phone, Mail, MessageCircle, MapPin, Clock } from 'lucide-react'
 
-export const metadata = { title: 'Contact Us — Ezymex' }
+export const metadata = { title: 'Contact Us — Ezymax' }
 
 export default function ContactPage() {
   return (

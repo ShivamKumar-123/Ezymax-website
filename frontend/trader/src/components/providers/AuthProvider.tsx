@@ -12,7 +12,7 @@ function MaintenanceScreen() {
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 9999,
-      background: '#050707',
+      background: '#060606',
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
       gap: 16, padding: 24,

@@ -5,7 +5,7 @@ import { useUIStore } from '@/stores/uiStore';
 
 const LIGHT_BG = '#ffffff';
 const LIGHT_TEXT = '#111827';
-const DARK_BG = '#0a0a0a';
+const DARK_BG = '#060606';
 const DARK_TEXT = '#ffffff';
 
 /**

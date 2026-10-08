@@ -126,7 +126,7 @@ export default function HedgePage() {
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-text-primary flex items-center gap-2">
-            <Scale size={20} className="text-[#1E88FF]" /> Hedged Trades
+            <Scale size={20} className="text-[#FF6A00]" /> Hedged Trades
           </h1>
           <p className="text-sm text-text-secondary mt-0.5">
             Clients holding both sides of an instrument, live book exposure, and hedge history.
@@ -144,7 +144,7 @@ export default function HedgePage() {
             onClick={() => setTab(k)}
             className={cn(
               'px-4 py-2 text-sm font-medium -mb-px border-b-2 transition-colors',
-              tab === k ? 'border-[#1E88FF] text-text-primary' : 'border-transparent text-text-tertiary hover:text-text-primary',
+              tab === k ? 'border-[#FF6A00] text-text-primary' : 'border-transparent text-text-tertiary hover:text-text-primary',
             )}
           >
             {label}

@@ -87,7 +87,10 @@ function loadLibrary(): Promise<void> {
 }
 
 function buildOverrides(theme: 'dark' | 'light'): Record<string, string> {
-  const up = '#1E88FF';
+  // Green/red, deliberately not the brand orange: the accent is orange
+  // everywhere else on the screen, so an orange rising candle stops
+  // reading as direction.
+  const up = '#22c55e';
   const down = '#ff4d4d';
   const candle = {
     'mainSeriesProperties.candleStyle.upColor': up,
@@ -100,7 +103,7 @@ function buildOverrides(theme: 'dark' | 'light'): Record<string, string> {
   if (theme === 'light') return candle;
   return {
     ...candle,
-    'paneProperties.background': '#0e0e0e',
+    'paneProperties.background': '#0e0a08',
     'paneProperties.backgroundType': 'solid',
     'paneProperties.vertGridProperties.color': 'rgba(255,255,255,0.04)',
     'paneProperties.horzGridProperties.color': 'rgba(255,255,255,0.04)',
@@ -196,8 +199,8 @@ function AdvancedChartInner({ onRequestFullscreen }: { onRequestFullscreen?: () 
           ],
           enabled_features: ['side_toolbar_in_fullscreen_mode', 'hide_left_toolbar_by_default'],
           loading_screen: {
-            backgroundColor: startTheme === 'light' ? '#ffffff' : '#0e0e0e',
-            foregroundColor: '#1E88FF',
+            backgroundColor: startTheme === 'light' ? '#ffffff' : '#0e0a08',
+            foregroundColor: '#FF6A00',
           },
           overrides: buildOverrides(startTheme),
           custom_font_family: "'Inter', sans-serif",
@@ -756,7 +759,7 @@ function AdvancedChartInner({ onRequestFullscreen }: { onRequestFullscreen?: () 
     };
   }, [status, selectedSymbol, positionsKey, openDialog]);
 
-  const surface = tvTheme === 'light' ? 'bg-bg-base' : 'bg-[#0e0e0e]';
+  const surface = tvTheme === 'light' ? 'bg-bg-base' : 'bg-[#0e0a08]';
   const digits = getDigits(selectedSymbol ?? 'EURUSD');
   const fmt = (n: number | undefined | null) =>
     n == null || !Number.isFinite(n) ? '—' : n.toFixed(digits);
@@ -766,7 +769,7 @@ function AdvancedChartInner({ onRequestFullscreen }: { onRequestFullscreen?: () 
       {/* The library renders its own iframe into this container. */}
       <div ref={containerRef} className="absolute inset-0" />
 
-      {/* Ezymex logo watermark — faint, centered, non-interactive. Sits over
+      {/* Ezymax logo watermark — faint, centered, non-interactive. Sits over
           the chart canvas but under the SL/TP overlay (DOM order). */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
         <img
@@ -786,17 +789,17 @@ function AdvancedChartInner({ onRequestFullscreen }: { onRequestFullscreen?: () 
         <div className={clsx('absolute inset-0 z-20 flex flex-col items-center justify-center gap-3', surface)}>
           {status === 'loading' ? (
             <>
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#1E88FF]/30 border-t-[#1E88FF]" />
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#FF6A00]/30 border-t-[#FF6A00]" />
               <p className="text-xs text-text-tertiary">Loading advanced chart…</p>
             </>
           ) : (
             <>
-              <TriangleAlert className="h-7 w-7 text-[#1E88FF]" />
+              <TriangleAlert className="h-7 w-7 text-[#FF6A00]" />
               <p className="text-xs text-text-secondary">Chart failed to load.</p>
               <button
                 type="button"
                 onClick={reloadChart}
-                className="rounded-lg bg-[#1E88FF] px-3 py-1.5 text-xs font-semibold text-[#0a0a0a] hover:bg-[#0B5BD3] transition-colors"
+                className="rounded-lg bg-[#FF6A00] px-3 py-1.5 text-xs font-semibold text-[#060606] hover:bg-[#C2410C] transition-colors"
               >
                 Retry
               </button>
@@ -843,7 +846,7 @@ function AdvancedChartInner({ onRequestFullscreen }: { onRequestFullscreen?: () 
                     else if (e.key === 'Escape') { setDialog(null); }
                   }}
                   placeholder={dialog.input.placeholder}
-                  className="w-full mb-3 px-3 py-2 rounded-lg border border-border-primary bg-bg-secondary font-mono text-sm text-text-primary outline-none focus:border-[#1E88FF]/50"
+                  className="w-full mb-3 px-3 py-2 rounded-lg border border-border-primary bg-bg-secondary font-mono text-sm text-text-primary outline-none focus:border-[#FF6A00]/50"
                 />
               )}
               <div className="flex gap-2">

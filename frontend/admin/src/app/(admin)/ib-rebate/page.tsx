@@ -13,7 +13,7 @@ import { adminApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Loader2, Save, RefreshCw, Play, Plus, Trash2, Network, AlertTriangle } from 'lucide-react';
 
-const LIME = '#1E88FF';
+const LIME = '#FF6A00';
 
 interface Tier { tier: string; min_lots: number; min_clients: number; rate: number }
 interface Config {
@@ -113,7 +113,7 @@ export default function AdminIbRebatePage() {
           <button type="button" onClick={() => void run()} disabled={running} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-bold disabled:opacity-60" style={{ borderColor: `${LIME}55`, color: LIME }}>
             {running ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />} Run settlement
           </button>
-          <button type="button" onClick={() => void save()} disabled={saving} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold disabled:opacity-60" style={{ color: '#0a0a0a', background: LIME }}>
+          <button type="button" onClick={() => void save()} disabled={saving} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold disabled:opacity-60" style={{ color: '#060606', background: LIME }}>
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Save config
           </button>
         </div>
@@ -132,7 +132,7 @@ export default function AdminIbRebatePage() {
             {(['instant', 'accrual'] as const).map((m) => (
               <button key={m} type="button" onClick={() => setCfg({ ...cfg, model: m })}
                 className="text-xs font-bold px-4 py-1.5 rounded-md"
-                style={cfg.model === m ? { color: '#0a0a0a', background: LIME } : { color: 'rgb(var(--c-text-secondary) / 1)', background: 'transparent' }}>
+                style={cfg.model === m ? { color: '#060606', background: LIME } : { color: 'rgb(var(--c-text-secondary) / 1)', background: 'transparent' }}>
                 {m}
               </button>
             ))}

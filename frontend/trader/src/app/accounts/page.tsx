@@ -519,7 +519,7 @@ export default function AccountsPage() {
   };
 
   const newAccountCtaClass =
-    'inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg border-2 border-[#1E88FF] text-[#1E88FF] text-sm font-bold hover:bg-[#1E88FF]/10 transition-colors shrink-0';
+    'inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg border-2 border-[#FF6A00] text-[#FF6A00] text-sm font-bold hover:bg-[#FF6A00]/10 transition-colors shrink-0';
 
   /** Open the live account picker only if KYC is approved; otherwise show the KYC gate modal. */
   const handleOpenNewAccount = () => {
@@ -583,7 +583,7 @@ export default function AccountsPage() {
             <Link
               href="/kyc"
               onClick={() => setKycGateOpen(false)}
-              className="px-5 py-2.5 rounded-lg bg-[#1E88FF] text-black text-sm font-bold hover:bg-[#0B5BD3] transition-colors text-center"
+              className="px-5 py-2.5 rounded-lg bg-[#FF6A00] text-black text-sm font-bold hover:bg-[#C2410C] transition-colors text-center"
             >
               Complete KYC
             </Link>
@@ -612,7 +612,7 @@ export default function AccountsPage() {
             <Link
               href="/auth/register"
               onClick={() => setDemoUpgradeOpen(false)}
-              className="px-5 py-2.5 rounded-lg bg-[#1E88FF] text-black text-sm font-bold hover:bg-[#0B5BD3] transition-colors text-center"
+              className="px-5 py-2.5 rounded-lg bg-[#FF6A00] text-black text-sm font-bold hover:bg-[#C2410C] transition-colors text-center"
             >
               Register Real Account
             </Link>
@@ -698,13 +698,13 @@ export default function AccountsPage() {
           >
             <div
               className="relative overflow-hidden rounded-2xl border border-accent/25 p-5 sm:p-6"
-              style={{ background: 'radial-gradient(120% 90% at 85% -10%, rgba(30,136,255,0.10), transparent 55%), var(--bg-card)' }}
+              style={{ background: 'radial-gradient(120% 90% at 85% -10%, rgba(255,106,0,0.10), transparent 55%), var(--bg-card)' }}
             >
               <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/50 to-transparent" aria-hidden />
               <div className="relative flex items-start gap-3 mb-6">
                 <div
                   className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-                  style={{ background: 'linear-gradient(135deg, #7CC9FF, #1E88FF 60%, #0B5BD3)', color: '#0a0a0a', boxShadow: '0 8px 22px rgba(30,136,255,0.35)' }}
+                  style={{ background: 'linear-gradient(135deg, #FFB380, #FF6A00 60%, #C2410C)', color: '#060606', boxShadow: '0 8px 22px rgba(255,106,0,0.35)' }}
                 >
                   <ArrowLeftRight size={22} strokeWidth={2.5} />
                 </div>
@@ -732,7 +732,7 @@ export default function AccountsPage() {
                         setTab('accounts');
                         handleOpenNewAccount();
                       }}
-                      className="text-sm font-bold text-[#1E88FF] hover:underline"
+                      className="text-sm font-bold text-[#FF6A00] hover:underline"
                     >
                       Open live account
                     </button>
@@ -775,7 +775,7 @@ export default function AccountsPage() {
                       const isWallet = uniFrom === 'wallet';
                       return (
                         <div className="rounded-xl border border-accent/35 bg-bg-base p-4 flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-[#1E88FF]/12 flex items-center justify-center text-[#1E88FF] shrink-0">
+                          <div className="w-10 h-10 rounded-full bg-[#FF6A00]/12 flex items-center justify-center text-[#FF6A00] shrink-0">
                             {isWallet ? <Wallet size={20} strokeWidth={2} /> : <Landmark size={20} strokeWidth={2} />}
                           </div>
                           <div className="min-w-0 flex-1">
@@ -834,7 +834,7 @@ export default function AccountsPage() {
                       const isWallet = uniTo === 'wallet';
                       return (
                         <div className="rounded-xl border border-border-primary bg-bg-base p-4 flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-[#1E88FF]/12 flex items-center justify-center text-[#1E88FF] shrink-0">
+                          <div className="w-10 h-10 rounded-full bg-[#FF6A00]/12 flex items-center justify-center text-[#FF6A00] shrink-0">
                             {isWallet ? <Wallet size={20} strokeWidth={2} /> : <Landmark size={20} strokeWidth={2} />}
                           </div>
                           <div className="min-w-0 flex-1">
@@ -861,7 +861,7 @@ export default function AccountsPage() {
                           setTransferAmount(uniFromBalance > 0 ? uniFromBalance.toFixed(2) : '')
                         }
                         disabled={uniFromBalance <= 0}
-                        className="text-sm font-bold text-[#1E88FF] hover:underline disabled:opacity-40 disabled:pointer-events-none"
+                        className="text-sm font-bold text-[#FF6A00] hover:underline disabled:opacity-40 disabled:pointer-events-none"
                       >
                         Max: {fmt(uniFromBalance)}
                       </button>
@@ -915,7 +915,7 @@ export default function AccountsPage() {
                       uniFrom === uniTo
                     }
                     className="w-full py-4 rounded-xl text-base font-extrabold disabled:opacity-45 disabled:pointer-events-none transition-transform hover:brightness-105 active:scale-[0.99] flex items-center justify-center gap-2"
-                    style={{ background: 'linear-gradient(90deg, #7CC9FF, #1E88FF)', color: '#0a0a0a', boxShadow: '0 10px 28px rgba(30,136,255,0.30)' }}
+                    style={{ background: 'linear-gradient(90deg, #FFB380, #FF6A00)', color: '#060606', boxShadow: '0 10px 28px rgba(255,106,0,0.30)' }}
                   >
                     <ArrowLeftRight size={20} />
                     {transferSubmitting ? 'Transferring…' : 'Transfer'}
@@ -1112,7 +1112,7 @@ function BalanceTrendBlock({ accountId, balance }: { accountId: string; balance:
       <div className="rounded-xl bg-bg-base border border-border-primary relative overflow-hidden" style={{ minHeight: '140px', maxHeight: '220px', aspectRatio: `${W}/${H + 10}` }}>
         {loading ? (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="h-5 w-5 border-2 border-[#1E88FF] border-t-transparent rounded-full animate-spin" />
+            <div className="h-5 w-5 border-2 border-[#FF6A00] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
           <svg className="w-full h-full" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
@@ -1243,15 +1243,15 @@ function AccountCard({
       id={`account-card-${row.id}`}
       className="group relative overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1"
       style={{
-        background: 'radial-gradient(130% 120% at 95% -25%, rgba(30,136,255,0.14), transparent 55%), var(--bg-card)',
-        border: open ? '1px solid rgba(30,136,255,0.45)' : '1px solid rgba(30,136,255,0.16)',
-        boxShadow: open ? '0 16px 40px rgba(30,136,255,0.16)' : '0 6px 22px rgba(0,0,0,0.32)',
+        background: 'radial-gradient(130% 120% at 95% -25%, rgba(255,106,0,0.14), transparent 55%), var(--bg-card)',
+        border: open ? '1px solid rgba(255,106,0,0.45)' : '1px solid rgba(255,106,0,0.16)',
+        boxShadow: open ? '0 16px 40px rgba(255,106,0,0.16)' : '0 6px 22px rgba(0,0,0,0.32)',
       }}
     >
       {/* Left accent bar — a clear lime edge that brightens on hover. */}
       <div
         className="pointer-events-none absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover:w-1.5"
-        style={{ background: 'linear-gradient(180deg, #7CC9FF, #1E88FF 55%, #0B5BD3)', boxShadow: '0 0 14px rgba(30,136,255,0.5)' }}
+        style={{ background: 'linear-gradient(180deg, #FFB380, #FF6A00 55%, #C2410C)', boxShadow: '0 0 14px rgba(255,106,0,0.5)' }}
         aria-hidden
       />
       {/* Top hairline — brightens on hover for a premium lift. */}
@@ -1271,7 +1271,7 @@ function AccountCard({
         <span
           className={clsx(
             'mt-2 h-2.5 w-2.5 rounded-full shrink-0',
-            row.is_demo ? 'bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.7)]' : 'bg-[#1E88FF] shadow-[0_0_6px_rgba(30,136,255,0.7)]',
+            row.is_demo ? 'bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.7)]' : 'bg-[#FF6A00] shadow-[0_0_6px_rgba(255,106,0,0.7)]',
           )}
           aria-hidden
         />
@@ -1282,7 +1282,7 @@ function AccountCard({
             <span className="text-xs sm:text-sm text-text-tertiary font-mono">{idLabel}</span>
             {row.is_wallet_account && (
               <span
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-[#1E88FF]/15 text-[#1E88FF] border border-[#1E88FF]/35"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-[#FF6A00]/15 text-[#FF6A00] border border-[#FF6A00]/35"
                 title="Wallet-bound account — deposits land here and withdrawals return to your linked wallet"
               >
                 <Wallet size={10} /> Wallet
@@ -1321,13 +1321,13 @@ function AccountCard({
               <p className="text-[10px] sm:text-[11px] text-text-tertiary font-medium mb-0.5">P&amp;L</p>
               <div className="flex items-center gap-1.5">
                 {pnlPositive
-                  ? <TrendingUp size={14} className="shrink-0 text-[#1E88FF]" />
+                  ? <TrendingUp size={14} className="shrink-0 text-[#FF6A00]" />
                   : <TrendingDown size={14} className="shrink-0 text-red-400" />}
-                <span className={clsx('text-sm sm:text-lg font-bold tabular-nums font-mono truncate', pnlPositive ? 'text-[#1E88FF]' : 'text-red-400')}>
+                <span className={clsx('text-sm sm:text-lg font-bold tabular-nums font-mono truncate', pnlPositive ? 'text-[#FF6A00]' : 'text-red-400')}>
                   {pnlPositive ? '+' : ''}{fmt(pnl, row.currency)}
                 </span>
               </div>
-              <p className={clsx('text-[10px] sm:text-xs font-semibold tabular-nums', pnlPositive ? 'text-[#1E88FF]/70' : 'text-red-400/70')}>
+              <p className={clsx('text-[10px] sm:text-xs font-semibold tabular-nums', pnlPositive ? 'text-[#FF6A00]/70' : 'text-red-400/70')}>
                 ({pnlPositive ? '+' : ''}{pct.toFixed(2)}%)
               </p>
             </div>
@@ -1335,7 +1335,7 @@ function AccountCard({
               <p className="text-[10px] sm:text-[11px] text-text-tertiary font-medium mb-0.5">Leverage</p>
               <span
                 className="inline-flex items-center rounded-md px-2 py-0.5 text-sm sm:text-base font-bold tabular-nums font-mono"
-                style={{ background: 'rgba(30,136,255,0.10)', color: 'var(--accent-ink)', border: '1px solid rgba(30,136,255,0.25)' }}
+                style={{ background: 'rgba(255,106,0,0.10)', color: 'var(--accent-ink)', border: '1px solid rgba(255,106,0,0.25)' }}
               >
                 1:{row.leverage}
               </span>
@@ -1398,7 +1398,7 @@ function AccountCard({
                 <Link
                   href={`/portfolio?account_id=${encodeURIComponent(row.id)}&account_no=${encodeURIComponent(row.account_number)}&tab=history`}
                   onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#1E88FF] text-black text-sm font-bold hover:bg-[#0B5BD3] transition-colors"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#FF6A00] text-black text-sm font-bold hover:bg-[#C2410C] transition-colors"
                 >
                   <BookOpen size={16} />
                   View Trades
@@ -1423,7 +1423,7 @@ function AccountCard({
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => { e.stopPropagation(); onTradePrepare(); }}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#1E88FF] text-black text-sm font-bold hover:bg-[#0B5BD3] transition-colors"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#FF6A00] text-black text-sm font-bold hover:bg-[#C2410C] transition-colors"
                 >
                   Trade
                   <ExternalLink size={14} />
@@ -1451,7 +1451,7 @@ function AccountCard({
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => { e.stopPropagation(); onTradePrepare(); }}
-                  className="inline-flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg bg-[#1E88FF] text-black text-xs sm:text-sm font-bold hover:bg-[#0B5BD3] transition-colors"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg bg-[#FF6A00] text-black text-xs sm:text-sm font-bold hover:bg-[#C2410C] transition-colors"
                 >
                   Trade
                   <ExternalLink size={13} />

@@ -1,6 +1,6 @@
 import { FileText } from 'lucide-react'
 
-export const metadata = { title: 'Terms and Conditions — Ezymex' }
+export const metadata = { title: 'Terms and Conditions — Ezymax' }
 
 export default function TermsPage() {
   return (
@@ -8,18 +8,18 @@ export default function TermsPage() {
       <div className="max-w-3xl mx-auto px-6 lg:px-8 py-16">
         {/* Header */}
         <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 rounded-xl bg-[#2962FF]/10 flex items-center justify-center">
-            <FileText className="w-5 h-5 text-[#2962FF]" />
+          <div className="w-10 h-10 rounded-xl bg-[#22C55E]/10 flex items-center justify-center">
+            <FileText className="w-5 h-5 text-[#22C55E]" />
           </div>
           <h1 className="text-3xl font-bold text-text-primary">Terms and Conditions</h1>
         </div>
 
-        <p className="text-lg font-semibold text-text-primary mt-8 mb-1">Ezymex — Terms and Conditions</p>
+        <p className="text-lg font-semibold text-text-primary mt-8 mb-1">Ezymax — Terms and Conditions</p>
         <p className="text-sm text-text-secondary mb-10">Last updated: February 2026</p>
 
         <div className="space-y-8">
           <Section title="1. Acceptance of Terms">
-            By creating an account and using the Ezymex platform, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions. If you do not agree with any part of these terms, you must not use our services.
+            By creating an account and using the Ezymax platform, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions. If you do not agree with any part of these terms, you must not use our services.
           </Section>
 
           <Section title="2. Eligibility">
@@ -39,7 +39,7 @@ export default function TermsPage() {
           </Section>
 
           <Section title="6. Bonus Terms">
-            Promotional bonuses, including the welcome bonus, are subject to specific terms and conditions. Bonus funds may have trading volume requirements and withdrawal restrictions. Ezymex reserves the right to modify or discontinue bonus programs at any time.
+            Promotional bonuses, including the welcome bonus, are subject to specific terms and conditions. Bonus funds may have trading volume requirements and withdrawal restrictions. Ezymax reserves the right to modify or discontinue bonus programs at any time.
           </Section>
 
           <Section title="7. Prohibited Conduct">
@@ -49,13 +49,13 @@ export default function TermsPage() {
               'Using the platform for money laundering or any illegal activity.',
               'Attempting to exploit system vulnerabilities or interfere with platform operations.',
               'Creating multiple accounts to circumvent platform rules or bonus limitations.',
-              'Engaging in defamatory, malicious, or harmful attacks against Ezymex, its brand, employees, partners, or other users. This includes but is not limited to spreading false information, making threatening communications, filing fraudulent complaints, or conducting coordinated campaigns intended to damage the company\u2019s reputation.',
-              'Making false or unsubstantiated accusations against Ezymex, including but not limited to publicly or privately labeling the platform as a \u201cscam,\u201d \u201cfraud,\u201d or similar defamatory terms without legitimate basis. Such conduct undermines trust and will not be tolerated, and may result in immediate account suspension or termination.',
+              'Engaging in defamatory, malicious, or harmful attacks against Ezymax, its brand, employees, partners, or other users. This includes but is not limited to spreading false information, making threatening communications, filing fraudulent complaints, or conducting coordinated campaigns intended to damage the company\u2019s reputation.',
+              'Making false or unsubstantiated accusations against Ezymax, including but not limited to publicly or privately labeling the platform as a \u201cscam,\u201d \u201cfraud,\u201d or similar defamatory terms without legitimate basis. Such conduct undermines trust and will not be tolerated, and may result in immediate account suspension or termination.',
             ]} />
           </Section>
 
           <Section title="8. Account Suspension and Termination">
-            Ezymex reserves the right to suspend, restrict, or terminate any account at its sole discretion, including but not limited to cases where a user:
+            Ezymax reserves the right to suspend, restrict, or terminate any account at its sole discretion, including but not limited to cases where a user:
             <List items={[
               'Violates any provision of these Terms and Conditions.',
               'Engages in malicious conduct against the brand, its affiliates, or other users.',
@@ -66,7 +66,7 @@ export default function TermsPage() {
           </Section>
 
           <Section title="9. Affiliate Program">
-            Participation in the affiliate program is subject to additional terms. Affiliates must promote Ezymex responsibly and in compliance with all applicable advertising standards. Commissions are subject to review and may be adjusted or revoked in cases of abuse.
+            Participation in the affiliate program is subject to additional terms. Affiliates must promote Ezymax responsibly and in compliance with all applicable advertising standards. Commissions are subject to review and may be adjusted or revoked in cases of abuse.
           </Section>
 
           <Section title="10. PAMM Investments">
@@ -78,11 +78,11 @@ export default function TermsPage() {
           </Section>
 
           <Section title="12. Limitation of Liability">
-            Ezymex shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the platform. Our total liability shall not exceed the amount of funds deposited in your account.
+            Ezymax shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the platform. Our total liability shall not exceed the amount of funds deposited in your account.
           </Section>
 
           <Section title="13. Modifications">
-            Ezymex reserves the right to modify these Terms and Conditions at any time. Continued use of the platform after changes are posted constitutes acceptance of the revised terms. Users will be notified of material changes via email or platform notification.
+            Ezymax reserves the right to modify these Terms and Conditions at any time. Continued use of the platform after changes are posted constitutes acceptance of the revised terms. Users will be notified of material changes via email or platform notification.
           </Section>
 
           <Section title="14. Governing Law">

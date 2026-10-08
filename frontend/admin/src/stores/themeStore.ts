@@ -16,7 +16,7 @@ function applyThemeClass(theme: AdminTheme) {
   } else {
     el.classList.add('dark');
     el.classList.remove('light');
-    el.style.backgroundColor = '#050707';
+    el.style.backgroundColor = '#060606';
     el.style.color = '#f0f0f0';
   }
 }

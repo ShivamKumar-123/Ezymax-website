@@ -69,7 +69,7 @@ export default function AcademyModulePage() {
       <DashboardShell>
         <div className="page-main max-w-4xl mx-auto text-center py-20">
           <p className="text-text-secondary">Module not found</p>
-          <Link href="/academy" className="text-[#1E88FF] hover:underline text-sm mt-2 inline-block">
+          <Link href="/academy" className="text-[#FF6A00] hover:underline text-sm mt-2 inline-block">
             ← Back to Academy
           </Link>
         </div>
@@ -103,7 +103,7 @@ export default function AcademyModulePage() {
       <div className="page-main max-w-6xl mx-auto w-full pb-8">
         <Link
           href={`/academy/${phaseSlug}`}
-          className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-[#1E88FF] transition-colors mb-6 px-4 py-2 rounded-lg border border-border-glass hover:border-[#1E88FF]/30"
+          className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-[#FF6A00] transition-colors mb-6 px-4 py-2 rounded-lg border border-border-glass hover:border-[#FF6A00]/30"
         >
           <ArrowLeft size={14} />
           BACK TO {phase.title}
@@ -117,7 +117,7 @@ export default function AcademyModulePage() {
               className={clsx(
                 'w-8 h-8 rounded-full border flex items-center justify-center text-xs font-bold transition-colors',
                 m.id === moduleId
-                  ? 'border-[#1E88FF] bg-[#1E88FF]/10 text-[#1E88FF]'
+                  ? 'border-[#FF6A00] bg-[#FF6A00]/10 text-[#FF6A00]'
                   : 'border-border-glass text-text-tertiary hover:border-text-tertiary',
               )}
             >
@@ -128,13 +128,13 @@ export default function AcademyModulePage() {
 
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
-            <span className="text-xs px-2.5 py-1 rounded bg-[#1E88FF]/10 text-[#1E88FF] font-bold border border-[#1E88FF]/20">
+            <span className="text-xs px-2.5 py-1 rounded bg-[#FF6A00]/10 text-[#FF6A00] font-bold border border-[#FF6A00]/20">
               MODULE {module.id}
             </span>
             <span className="text-xs text-text-tertiary">{module.minutes} min read</span>
           </div>
           <h1 className="text-3xl font-bold text-text-primary mb-2">{module.title}</h1>
-          <div className="w-12 h-0.5 bg-[#1E88FF]" />
+          <div className="w-12 h-0.5 bg-[#FF6A00]" />
         </div>
 
         {content && (
@@ -146,7 +146,7 @@ export default function AcademyModulePage() {
               <button
                 type="button"
                 onClick={toggleAll}
-                className="text-xs text-[#1E88FF] hover:underline font-medium uppercase tracking-wider"
+                className="text-xs text-[#FF6A00] hover:underline font-medium uppercase tracking-wider"
               >
                 {allExpanded ? 'COLLAPSE ALL' : 'EXPAND ALL'}
               </button>
@@ -163,14 +163,14 @@ export default function AcademyModulePage() {
                       className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-bg-hover transition-colors"
                     >
                       <span
-                        className="w-8 h-8 rounded-full border-2 border-[#1E88FF]/30 flex items-center justify-center text-xs font-bold shrink-0"
+                        className="w-8 h-8 rounded-full border-2 border-[#FF6A00]/30 flex items-center justify-center text-xs font-bold shrink-0"
                         style={{ color: phase.color }}
                       >
                         {String(topic.id).padStart(2, '0')}
                       </span>
                       <span className="text-text-primary text-sm font-medium flex-1">{topic.title}</span>
                       {isOpen ? (
-                        <ChevronDown size={16} className="text-[#1E88FF] shrink-0" />
+                        <ChevronDown size={16} className="text-[#FF6A00] shrink-0" />
                       ) : (
                         <ChevronRight size={16} className="text-text-tertiary shrink-0" />
                       )}
@@ -180,8 +180,8 @@ export default function AcademyModulePage() {
                       <div className="px-5 pb-5 border-t border-border-glass">
                         <div className="flex items-center justify-between mt-4 mb-3">
                           <div className="flex items-center gap-2">
-                            <div className="w-6 h-0.5 bg-[#1E88FF]" />
-                            <span className="text-[10px] uppercase tracking-widest text-[#1E88FF] font-medium">
+                            <div className="w-6 h-0.5 bg-[#FF6A00]" />
+                            <span className="text-[10px] uppercase tracking-widest text-[#FF6A00] font-medium">
                               LESSON CONTENT
                             </span>
                           </div>
@@ -192,10 +192,10 @@ export default function AcademyModulePage() {
                           {topic.blocks.map((block: TopicBlock, bi: number) => {
                             if (block.type === 'definition') {
                               return (
-                                <div key={bi} className="border-l-2 border-[#1E88FF] bg-[#1E88FF]/5 rounded-r-lg p-4">
+                                <div key={bi} className="border-l-2 border-[#FF6A00] bg-[#FF6A00]/5 rounded-r-lg p-4">
                                   <div className="flex items-center gap-1.5 mb-2">
-                                    <BookOpen size={12} className="text-[#1E88FF]" />
-                                    <span className="text-[10px] uppercase tracking-widest text-[#1E88FF] font-bold">DEFINITION</span>
+                                    <BookOpen size={12} className="text-[#FF6A00]" />
+                                    <span className="text-[10px] uppercase tracking-widest text-[#FF6A00] font-bold">DEFINITION</span>
                                   </div>
                                   <p className="text-sm text-text-secondary leading-relaxed">{block.content}</p>
                                 </div>
@@ -203,10 +203,10 @@ export default function AcademyModulePage() {
                             }
                             if (block.type === 'keyConcept') {
                               return (
-                                <div key={bi} className="border-l-2 border-[#1E88FF] bg-[#1E88FF]/5 rounded-r-lg p-4">
+                                <div key={bi} className="border-l-2 border-[#FF6A00] bg-[#FF6A00]/5 rounded-r-lg p-4">
                                   <div className="flex items-center gap-1.5 mb-2">
-                                    <KeyRound size={12} className="text-[#1E88FF]" />
-                                    <span className="text-[10px] uppercase tracking-widest text-[#1E88FF] font-bold">KEY CONCEPT</span>
+                                    <KeyRound size={12} className="text-[#FF6A00]" />
+                                    <span className="text-[10px] uppercase tracking-widest text-[#FF6A00] font-bold">KEY CONCEPT</span>
                                   </div>
                                   <p className="text-sm text-text-secondary leading-relaxed">{block.content}</p>
                                 </div>
@@ -216,8 +216,8 @@ export default function AcademyModulePage() {
                               return (
                                 <div key={bi} className="bg-bg-secondary border border-border-glass rounded-xl p-4">
                                   <div className="flex items-center gap-1.5 mb-2">
-                                    <Lightbulb size={12} className="text-[#1E88FF]" />
-                                    <span className="text-[10px] uppercase tracking-widest text-[#1E88FF] font-bold">PRACTICE TIP</span>
+                                    <Lightbulb size={12} className="text-[#FF6A00]" />
+                                    <span className="text-[10px] uppercase tracking-widest text-[#FF6A00] font-bold">PRACTICE TIP</span>
                                   </div>
                                   <p className="text-sm text-text-secondary leading-relaxed">{block.content}</p>
                                 </div>
@@ -228,8 +228,8 @@ export default function AcademyModulePage() {
                               return (
                                 <div key={bi}>
                                   <div className="flex items-center gap-2 mb-3">
-                                    <div className="w-6 h-0.5 bg-[#1E88FF]" />
-                                    <span className="text-[10px] uppercase tracking-widest text-[#1E88FF] font-bold">{block.content}</span>
+                                    <div className="w-6 h-0.5 bg-[#FF6A00]" />
+                                    <span className="text-[10px] uppercase tracking-widest text-[#FF6A00] font-bold">{block.content}</span>
                                   </div>
                                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div className="bg-bg-secondary border border-border-glass rounded-xl p-4">
@@ -260,14 +260,14 @@ export default function AcademyModulePage() {
                               return (
                                 <div key={bi}>
                                   <div className="flex items-center gap-2 mb-3">
-                                    <div className="w-6 h-0.5 bg-[#1E88FF]" />
-                                    <span className="text-[10px] uppercase tracking-widest text-[#1E88FF] font-bold">{block.content}</span>
+                                    <div className="w-6 h-0.5 bg-[#FF6A00]" />
+                                    <span className="text-[10px] uppercase tracking-widest text-[#FF6A00] font-bold">{block.content}</span>
                                   </div>
                                   <div className="space-y-0">
                                     {block.timelineData.map((item, ti) => (
                                       <div key={ti} className="flex gap-4">
                                         <div className="flex flex-col items-center">
-                                          <div className="w-8 h-8 rounded-full bg-[#1E88FF]/10 border border-[#1E88FF]/30 flex items-center justify-center text-sm shrink-0">
+                                          <div className="w-8 h-8 rounded-full bg-[#FF6A00]/10 border border-[#FF6A00]/30 flex items-center justify-center text-sm shrink-0">
                                             {item.icon}
                                           </div>
                                           {ti < block.timelineData!.length - 1 && (
@@ -276,7 +276,7 @@ export default function AcademyModulePage() {
                                         </div>
                                         <div className="pb-4 min-w-0">
                                           <div className="flex items-center gap-2 mb-0.5">
-                                            <span className="text-[10px] font-bold text-[#1E88FF] uppercase tracking-wider">{item.year}</span>
+                                            <span className="text-[10px] font-bold text-[#FF6A00] uppercase tracking-wider">{item.year}</span>
                                             <span className="text-sm font-semibold text-text-primary">{item.label}</span>
                                           </div>
                                           <p className="text-xs text-text-tertiary">{item.desc}</p>
@@ -291,8 +291,8 @@ export default function AcademyModulePage() {
                               return (
                                 <div key={bi}>
                                   <div className="flex items-center gap-2 mb-3">
-                                    <div className="w-6 h-0.5 bg-[#1E88FF]" />
-                                    <span className="text-[10px] uppercase tracking-widest text-[#1E88FF] font-bold">{block.content}</span>
+                                    <div className="w-6 h-0.5 bg-[#FF6A00]" />
+                                    <span className="text-[10px] uppercase tracking-widest text-[#FF6A00] font-bold">{block.content}</span>
                                   </div>
                                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                     {block.sessionsData.map((s, si) => (
@@ -310,18 +310,18 @@ export default function AcademyModulePage() {
                               return (
                                 <div key={bi}>
                                   <div className="flex items-center gap-2 mb-3">
-                                    <div className="w-6 h-0.5 bg-[#1E88FF]" />
-                                    <span className="text-[10px] uppercase tracking-widest text-[#1E88FF] font-bold">{block.content}</span>
+                                    <div className="w-6 h-0.5 bg-[#FF6A00]" />
+                                    <span className="text-[10px] uppercase tracking-widest text-[#FF6A00] font-bold">{block.content}</span>
                                   </div>
                                   <div className="space-y-0">
                                     {block.hierarchyData.map((h, hi) => (
                                       <div key={hi} className="flex gap-3">
                                         <div className="flex flex-col items-center">
-                                          <div className="w-8 h-8 rounded-full bg-[#1E88FF]/10 border border-[#1E88FF]/20 flex items-center justify-center text-sm shrink-0">
+                                          <div className="w-8 h-8 rounded-full bg-[#FF6A00]/10 border border-[#FF6A00]/20 flex items-center justify-center text-sm shrink-0">
                                             {h.icon}
                                           </div>
                                           {hi < block.hierarchyData!.length - 1 && (
-                                            <div className="w-px flex-1 border-l border-dashed border-[#1E88FF]/20 my-1" />
+                                            <div className="w-px flex-1 border-l border-dashed border-[#FF6A00]/20 my-1" />
                                           )}
                                         </div>
                                         <div className="pb-3">
@@ -338,8 +338,8 @@ export default function AcademyModulePage() {
                               return (
                                 <div key={bi}>
                                   <div className="flex items-center gap-2 mb-3">
-                                    <div className="w-6 h-0.5 bg-[#1E88FF]" />
-                                    <span className="text-[10px] uppercase tracking-widest text-[#1E88FF] font-bold">{block.content}</span>
+                                    <div className="w-6 h-0.5 bg-[#FF6A00]" />
+                                    <span className="text-[10px] uppercase tracking-widest text-[#FF6A00] font-bold">{block.content}</span>
                                   </div>
                                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                     {block.statsData.map((s, si) => (
@@ -368,12 +368,12 @@ export default function AcademyModulePage() {
               })}
             </div>
 
-            <div className="border-l-2 border-[#1E88FF] bg-bg-secondary rounded-r-xl p-5 mb-6">
-              <h3 className="text-[11px] uppercase tracking-widest text-[#1E88FF] font-bold mb-3">KEY TAKEAWAYS</h3>
+            <div className="border-l-2 border-[#FF6A00] bg-bg-secondary rounded-r-xl p-5 mb-6">
+              <h3 className="text-[11px] uppercase tracking-widest text-[#FF6A00] font-bold mb-3">KEY TAKEAWAYS</h3>
               <div className="space-y-2">
                 {content.keyTakeaways.map((t, i) => (
                   <div key={i} className="flex items-start gap-2">
-                    <CheckCircle size={14} className="text-[#1E88FF] mt-0.5 shrink-0" />
+                    <CheckCircle size={14} className="text-[#FF6A00] mt-0.5 shrink-0" />
                     <p className="text-sm text-text-secondary">{t}</p>
                   </div>
                 ))}
@@ -393,7 +393,7 @@ export default function AcademyModulePage() {
                   'px-6 py-2.5 font-semibold rounded-lg transition-colors text-sm flex items-center gap-1.5 w-fit',
                   isCompleted
                     ? 'bg-green-600/20 text-green-400 border border-green-600/40 cursor-default'
-                    : 'bg-[#1E88FF] hover:bg-[#0B5BD3] text-black'
+                    : 'bg-[#FF6A00] hover:bg-[#C2410C] text-black'
                 )}
               >
                 {isCompleted ? <><CheckCircle size={14} /> COMPLETED</> : <>MARK AS COMPLETE <ArrowRight size={14} /></>}
@@ -435,7 +435,7 @@ export default function AcademyModulePage() {
           ) : (
             <Link
               href={`/academy/${phaseSlug}/quiz`}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[#1E88FF] text-sm text-[#1E88FF] hover:bg-[#1E88FF]/10 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[#FF6A00] text-sm text-[#FF6A00] hover:bg-[#FF6A00]/10 transition-colors"
             >
               TAKE QUIZ
               <ArrowRight size={14} />

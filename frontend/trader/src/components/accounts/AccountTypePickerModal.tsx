@@ -242,11 +242,11 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
                     transition={{ delay: 0.06 + i * 0.07, type: 'spring', stiffness: 260, damping: 24 }}
                     className={clsx(
                       'group relative text-left rounded-xl p-4 transition-all',
-                      sel ? 'ring-2 ring-[#1E88FF]/60' : '',
+                      sel ? 'ring-2 ring-[#FF6A00]/60' : '',
                     )}
                     style={{
                       background: 'var(--bg-card-nested)',
-                      border: `1px solid ${sel ? '#1E88FF' : 'var(--border-primary)'}`,
+                      border: `1px solid ${sel ? '#FF6A00' : 'var(--border-primary)'}`,
                     }}
                   >
                     {stocks && <Badge color="#f59e0b">Trading on stocks</Badge>}
@@ -255,9 +255,9 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
                       <motion.div
                         className="flex h-10 w-10 items-center justify-center rounded-xl"
                         style={{
-                          background: 'rgba(30,136,255,0.12)',
+                          background: 'rgba(255,106,0,0.12)',
                           color: 'var(--accent-ink)',
-                          border: '1px solid rgba(30,136,255,0.3)',
+                          border: '1px solid rgba(255,106,0,0.3)',
                         }}
                         whileHover={{ scale: 1.15, rotate: 8 }}
                         transition={{ type: 'spring', stiffness: 320, damping: 15 }}
@@ -275,7 +275,7 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
                       {sel && (
                         <span
                           className="ml-auto rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
-                          style={{ background: 'rgba(30,136,255,0.16)', color: 'var(--accent-ink)' }}
+                          style={{ background: 'rgba(255,106,0,0.16)', color: 'var(--accent-ink)' }}
                         >
                           Selected
                         </span>
@@ -342,7 +342,7 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
                 onClick={handleCreate}
                 disabled={creating || !selected}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-bold transition-all disabled:opacity-50"
-                style={{ background: '#1E88FF', color: '#1a1408' }}
+                style={{ background: '#FF6A00', color: '#1a1408' }}
               >
                 {creating && <Loader2 size={14} className="animate-spin" />}
                 Create account
@@ -371,7 +371,7 @@ function TypePill({ active, disabled, label }: { active: boolean; disabled: bool
     <span
       className="px-4 py-1.5 text-sm font-semibold rounded-md transition-colors select-none"
       style={{
-        background: active ? '#1E88FF' : 'transparent',
+        background: active ? '#FF6A00' : 'transparent',
         color: active ? '#1a1408' : 'var(--text-secondary)',
         opacity: disabled ? 0.55 : 1,
         cursor: disabled ? 'not-allowed' : 'default',

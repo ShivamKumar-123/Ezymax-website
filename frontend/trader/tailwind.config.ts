@@ -37,11 +37,11 @@ const config: Config = {
           inverse: 'var(--text-inverse)',
         },
         buy: {
-          DEFAULT: '#2962FF',
-          light: '#5B8CFF',
-          dark: '#0D3FA3',
-          bg: 'rgba(41,98,255,0.1)',
-          glow: 'rgba(41,98,255,0.22)',
+          DEFAULT: '#22C55E',
+          light: '#4ADE80',
+          dark: '#15803D',
+          bg: 'rgba(34,197,94,0.1)',
+          glow: 'rgba(34,197,94,0.22)',
         },
         sell: {
           DEFAULT: '#ef4444',
@@ -50,8 +50,8 @@ const config: Config = {
           bg: 'rgba(239,68,68,0.1)',
           glow: 'rgba(239,68,68,0.2)',
         },
-        accent: { DEFAULT: '#1E88FF', light: '#7CC9FF', dark: '#0B5BD3' },
-        success: '#9b7d3a',
+        accent: { DEFAULT: '#FF6A00', light: '#FFB380', dark: '#C2410C' },
+        success: '#22c55e',
         warning: '#FFB300',
         info: '#29B6F6',
         danger: '#FF1744',
@@ -64,19 +64,19 @@ const config: Config = {
           purple: '#9775FA',
           pink: '#F06595',
         },
-        /* Landing-page palette — Ezymex gold-on-black brand */
+        /* Brand palette — Ezymax orange-on-black, matching the landing site */
         'primary': {
-          bg: '#08090b',
-          secondary: '#101114',
-          accent: '#1E88FF',
-          purple: '#9b7d3a',
+          bg: '#060606',
+          secondary: '#121010',
+          accent: '#FF6A00',
+          purple: '#22c55e',
         },
       },
       backgroundImage: {
-        'gradient-primary': 'linear-gradient(135deg, #7CC9FF 0%, #1E88FF 50%, #0B5BD3 100%)',
-        'gradient-hero': 'linear-gradient(135deg, #08090b 0%, #0e0d09 50%, #08090b 100%)',
-        'gradient-section': 'linear-gradient(180deg, #08090b 0%, #101114 100%)',
-        'gradient-section-alt': 'linear-gradient(180deg, #101114 0%, #08090b 100%)',
+        'gradient-primary': 'linear-gradient(135deg, #FFB380 0%, #FF6A00 50%, #C2410C 100%)',
+        'gradient-hero': 'linear-gradient(135deg, #060606 0%, #0e0a08 50%, #060606 100%)',
+        'gradient-section': 'linear-gradient(180deg, #060606 0%, #121010 100%)',
+        'gradient-section-alt': 'linear-gradient(180deg, #121010 0%, #060606 100%)',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
@@ -117,30 +117,30 @@ const config: Config = {
         fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
         slideUp: { '0%': { opacity: '0', transform: 'translateY(8px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
         slideDown: { '0%': { opacity: '0', transform: 'translateY(-8px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
-        flashBlue: { '0%': { backgroundColor: 'rgba(41,98,255,0.22)' }, '100%': { backgroundColor: 'transparent' } },
+        flashBlue: { '0%': { backgroundColor: 'rgba(34,197,94,0.22)' }, '100%': { backgroundColor: 'transparent' } },
         flashRed: { '0%': { backgroundColor: 'rgba(239,68,68,0.2)' }, '100%': { backgroundColor: 'transparent' } },
-        glowPulse: { '0%, 100%': { boxShadow: '0 0 20px rgba(214,169,61,0.18)' }, '50%': { boxShadow: '0 0 40px rgba(214,169,61,0.32)' } },
+        glowPulse: { '0%, 100%': { boxShadow: '0 0 20px rgba(255,106,0,0.18)' }, '50%': { boxShadow: '0 0 40px rgba(255,106,0,0.32)' } },
         float: { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-10px)' } },
         shimmer: { '0%': { backgroundPosition: '-200% 0' }, '100%': { backgroundPosition: '200% 0' } },
         walletNeonTabGlow: {
           '0%, 100%': {
             boxShadow:
-              '0 -1px 20px rgba(214, 169, 61, 0.22), 0 0 32px rgba(214, 169, 61, 0.12), inset 0 0 24px rgba(214, 169, 61, 0.04)',
+              '0 -1px 20px rgba(255, 106, 0, 0.22), 0 0 32px rgba(255, 106, 0, 0.12), inset 0 0 24px rgba(255, 106, 0, 0.04)',
           },
           '50%': {
             boxShadow:
-              '0 -1px 36px rgba(214, 169, 61, 0.45), 0 0 52px rgba(214, 169, 61, 0.22), inset 0 0 32px rgba(214, 169, 61, 0.08)',
+              '0 -1px 36px rgba(255, 106, 0, 0.45), 0 0 52px rgba(255, 106, 0, 0.22), inset 0 0 32px rgba(255, 106, 0, 0.08)',
           },
         },
         /** Deposit / Withdraw main tabs — stronger pulsing glow */
         walletMainTabGlow: {
           '0%, 100%': {
             boxShadow:
-              '0 -6px 40px rgba(214, 169, 61, 0.38), 0 0 56px rgba(214, 169, 61, 0.2), inset 0 1px 0 rgba(214, 169, 61, 0.14)',
+              '0 -6px 40px rgba(255, 106, 0, 0.38), 0 0 56px rgba(255, 106, 0, 0.2), inset 0 1px 0 rgba(255, 106, 0, 0.14)',
           },
           '50%': {
             boxShadow:
-              '0 -10px 64px rgba(214, 169, 61, 0.62), 0 0 88px rgba(214, 169, 61, 0.32), inset 0 1px 0 rgba(214, 169, 61, 0.22)',
+              '0 -10px 64px rgba(255, 106, 0, 0.62), 0 0 88px rgba(255, 106, 0, 0.32), inset 0 1px 0 rgba(255, 106, 0, 0.22)',
           },
         },
         walletMainTabText: {
@@ -168,10 +168,10 @@ const config: Config = {
         'glass-lg': '0 16px 48px 0 rgba(0,0,0,0.5)',
         'inner-light': 'inset 0 1px 0 0 rgba(255,255,255,0.05)',
         'skeu': 'inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.2), 0 2px 8px rgba(0,0,0,0.3)',
-        'glow-blue': '0 0 20px rgba(41,98,255,0.28), 0 0 60px rgba(41,98,255,0.1)',
+        'glow-blue': '0 0 20px rgba(34,197,94,0.28), 0 0 60px rgba(34,197,94,0.1)',
         'glow-red': '0 0 20px rgba(239,68,68,0.3), 0 0 60px rgba(239,68,68,0.1)',
-        'neon-green-sm': '0 0 20px rgba(214, 169, 61, 0.25), 0 0 48px rgba(214, 169, 61, 0.08)',
-        'neon-green-lg': '0 0 28px rgba(214, 169, 61, 0.4), 0 0 64px rgba(214, 169, 61, 0.15)',
+        'neon-green-sm': '0 0 20px rgba(255, 106, 0, 0.25), 0 0 48px rgba(255, 106, 0, 0.08)',
+        'neon-green-lg': '0 0 28px rgba(255, 106, 0, 0.4), 0 0 64px rgba(255, 106, 0, 0.15)',
       },
     },
   },

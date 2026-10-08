@@ -2,7 +2,7 @@
  * Brand constants — single source of truth for white-label values.
  */
 
-export const BRAND_NAME = 'Ezymex';
+export const BRAND_NAME = 'Ezymax';
 export const BRAND_LOGO = '/images/ezymex-logo.png';
 export const BRAND_DOMAIN = 'ezymex.com';
 export const BRAND_SUPPORT_EMAIL = 'support@ezymex.com';

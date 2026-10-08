@@ -11,7 +11,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api/client';
 
-const LIME = '#1E88FF';
+const LIME = '#FF6A00';
 
 interface Tier {
   tier: string;
@@ -100,12 +100,12 @@ export default function RebateCalculator() {
         .rebate-range { height: 6px; border-radius: 9999px; cursor: pointer; }
         .rebate-range::-webkit-slider-thumb {
           -webkit-appearance: none; appearance: none; width: 20px; height: 20px;
-          border-radius: 9999px; background: ${LIME}; border: 3px solid #0a0a0a;
+          border-radius: 9999px; background: ${LIME}; border: 3px solid #060606;
           box-shadow: 0 0 0 4px ${LIME}33, 0 0 12px ${LIME}88; cursor: pointer;
         }
         .rebate-range::-moz-range-thumb {
           width: 18px; height: 18px; border-radius: 9999px; background: ${LIME};
-          border: 3px solid #0a0a0a; box-shadow: 0 0 0 4px ${LIME}33; cursor: pointer;
+          border: 3px solid #060606; box-shadow: 0 0 0 4px ${LIME}33; cursor: pointer;
         }
       `}</style>
 

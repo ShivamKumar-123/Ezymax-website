@@ -9,7 +9,7 @@ import { Lock, Check, Sparkles, ArrowRight } from 'lucide-react';
  * as the level popup, but shown directly on the page (no click needed).
  * Cleared tiers are lime with a check, the current one glows with a "YOU"
  * marker, upcoming tiers are locked; a lime rail fills to exact progress and
- * auto-scrolls to centre the current tier. Landing "Obsidian & Lime" theme.
+ * auto-scrolls to centre the current tier. Landing theme.
  */
 const LEVELS = [
   { label: 'Novice', xp: 0 },
@@ -25,9 +25,9 @@ const LEVELS = [
 ];
 const MAX_LEVEL = LEVELS.length;
 
-const ACCENT = '#1E88FF';
-const ACCENT_HI = '#7CC9FF';
-const ON_ACCENT = '#0a0a0a';
+const ACCENT = '#FF6A00';
+const ACCENT_HI = '#FFB380';
+const ON_ACCENT = '#060606';
 
 const COL = 92;
 const YOU_ROW = 28;
@@ -110,7 +110,7 @@ export default function LevelLadderCard({
   return (
     <div
       className="relative overflow-hidden rounded-2xl border p-5 sm:p-6"
-      style={{ background: 'radial-gradient(120% 90% at 85% -10%, rgba(30,136,255,0.08), transparent 55%), var(--bg-card)', borderColor: 'rgba(30,136,255,0.18)' }}
+      style={{ background: 'radial-gradient(120% 90% at 85% -10%, rgba(255,106,0,0.08), transparent 55%), var(--bg-card)', borderColor: 'rgba(255,106,0,0.18)' }}
     >
       <style>{`
         @keyframes llPing { 0%{transform:scale(1);opacity:.6} 80%{transform:scale(1.85);opacity:0} 100%{opacity:0} }
@@ -192,7 +192,7 @@ export default function LevelLadderCard({
               className="absolute left-0 top-0 h-[5px] overflow-hidden rounded-full"
               style={{
                 width: go ? `${railPct}%` : '0%',
-                background: `linear-gradient(90deg, #0B5BD3, ${ACCENT} 70%, ${ACCENT_HI})`,
+                background: `linear-gradient(90deg, #C2410C, ${ACCENT} 70%, ${ACCENT_HI})`,
                 transition: 'width 1300ms cubic-bezier(0.22,1,0.36,1)',
               }}
             >
@@ -221,7 +221,7 @@ export default function LevelLadderCard({
                         className="mb-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-extrabold tracking-wide"
                         style={{
                           background: `linear-gradient(90deg, ${ACCENT_HI}, ${ACCENT})`, color: ON_ACCENT,
-                          boxShadow: '0 4px 14px rgba(30,136,255,0.45)',
+                          boxShadow: '0 4px 14px rgba(255,106,0,0.45)',
                           opacity: go ? 1 : 0, transition: 'opacity 400ms ease 500ms',
                           animation: go ? 'llBob 2.6s ease-in-out infinite 600ms' : undefined,
                         }}
@@ -238,11 +238,11 @@ export default function LevelLadderCard({
                     <div
                       className="grid size-full place-items-center rounded-full"
                       style={{
-                        background: on ? `radial-gradient(circle at 32% 28%, ${ACCENT_HI}, ${ACCENT} 62%, #0B5BD3)` : 'var(--bg-tertiary)',
-                        border: on ? '1.5px solid rgba(255,255,255,0.35)' : `1.5px solid ${next ? 'rgba(30,136,255,0.55)' : 'var(--border-primary)'}`,
+                        background: on ? `radial-gradient(circle at 32% 28%, ${ACCENT_HI}, ${ACCENT} 62%, #C2410C)` : 'var(--bg-tertiary)',
+                        border: on ? '1.5px solid rgba(255,255,255,0.35)' : `1.5px solid ${next ? 'rgba(255,106,0,0.55)' : 'var(--border-primary)'}`,
                         boxShadow: current
-                          ? '0 0 0 5px rgba(30,136,255,0.14), 0 0 22px rgba(30,136,255,0.55), inset 0 1px 0 rgba(255,255,255,0.5)'
-                          : passed ? '0 5px 14px rgba(30,136,255,0.25), inset 0 1px 0 rgba(255,255,255,0.45)' : 'none',
+                          ? '0 0 0 5px rgba(255,106,0,0.14), 0 0 22px rgba(255,106,0,0.55), inset 0 1px 0 rgba(255,255,255,0.5)'
+                          : passed ? '0 5px 14px rgba(255,106,0,0.25), inset 0 1px 0 rgba(255,255,255,0.45)' : 'none',
                         transform: go ? (current ? 'scale(1.06)' : 'scale(1)') : 'scale(0.5)',
                         opacity: go ? 1 : 0,
                         transition: `transform 440ms cubic-bezier(0.34,1.56,0.64,1) ${i * 60}ms, opacity 340ms ease ${i * 60}ms`,

@@ -36,7 +36,7 @@ export function TerminalPositionCard({
             <span
               className={clsx(
                 'text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded',
-                pos.side === 'buy' ? 'bg-[#2962FF]/18 text-[#2962FF]' : 'bg-[#ff5252]/18 text-[#ff5252]',
+                pos.side === 'buy' ? 'bg-[#22C55E]/18 text-[#22C55E]' : 'bg-[#ff5252]/18 text-[#ff5252]',
               )}
             >
               {pos.side}

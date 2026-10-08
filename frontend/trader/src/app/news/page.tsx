@@ -66,14 +66,14 @@ export default function EconomicNewsPage() {
             className="relative overflow-hidden rounded-2xl border mb-4 sm:mb-5"
             style={{
               background:
-                'radial-gradient(130% 120% at 95% -25%, rgba(30,136,255,0.10), transparent 55%), var(--bg-card)',
-              borderColor: 'rgba(30,136,255,0.16)',
+                'radial-gradient(130% 120% at 95% -25%, rgba(255,106,0,0.10), transparent 55%), var(--bg-card)',
+              borderColor: 'rgba(255,106,0,0.16)',
               boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
             }}
           >
             <div
               className="pointer-events-none absolute left-0 top-0 bottom-0 w-1"
-              style={{ background: 'linear-gradient(180deg, #7CC9FF, #1E88FF 55%, #0B5BD3)', boxShadow: '0 0 14px rgba(30,136,255,0.5)' }}
+              style={{ background: 'linear-gradient(180deg, #FFB380, #FF6A00 55%, #C2410C)', boxShadow: '0 0 14px rgba(255,106,0,0.5)' }}
             />
             <div className="relative z-10 px-4 sm:px-6 py-4 sm:py-6 pl-5 sm:pl-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex items-center gap-3 min-w-0">
@@ -87,9 +87,9 @@ export default function EconomicNewsPage() {
                 </button>
                 <div
                   className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.25)' }}
+                  style={{ background: 'rgba(255,106,0,0.12)', border: '1px solid rgba(255,106,0,0.25)' }}
                 >
-                  <Newspaper className="w-5 h-5 text-[#1E88FF]" />
+                  <Newspaper className="w-5 h-5 text-[#FF6A00]" />
                 </div>
                 <div className="min-w-0">
                   <h1 className="text-xl md:text-2xl font-bold text-text-primary">Economic News</h1>
@@ -104,8 +104,8 @@ export default function EconomicNewsPage() {
                 <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-amber-500/12 text-amber-400 border border-amber-500/25">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400" /> Medium
                 </span>
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#1E88FF]/12 text-[#1E88FF] border border-[#1E88FF]/25">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#1E88FF]" /> Low
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#FF6A00]/12 text-[#FF6A00] border border-[#FF6A00]/25">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#FF6A00]" /> Low
                 </span>
               </div>
             </div>
@@ -146,7 +146,7 @@ export default function EconomicNewsPage() {
                   >
                     <Icon className="w-4 h-4 shrink-0" />
                     {active ? (
-                      <span className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_20px_rgba(30,136,255,0.7)]">
+                      <span className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_20px_rgba(255,106,0,0.7)]">
                         {label}
                       </span>
                     ) : (
@@ -213,8 +213,8 @@ export default function EconomicNewsPage() {
               {mainTab === 'calendar' ? (
                 <div className="overflow-hidden border-t border-border-primary">
                   <div className="flex items-start gap-3 px-4 py-3 border-b border-border-primary bg-card">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(30,136,255,0.10)' }}>
-                      <Calendar className="w-4 h-4 text-[#1E88FF]" />
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(255,106,0,0.10)' }}>
+                      <Calendar className="w-4 h-4 text-[#FF6A00]" />
                     </div>
                     <p className="text-xs text-text-secondary leading-relaxed">
                       Live economic events from TradingView. Use the widget&apos;s built-in filters to pick

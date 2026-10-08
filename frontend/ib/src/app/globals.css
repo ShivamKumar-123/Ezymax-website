@@ -13,25 +13,25 @@
 /* CSS VARIABLES — DARK (Vantablack) THEME */
 /* ======================================= */
 
-/* Dark theme — aligned with crucial-ui (SetupFX): #0a0a0a base, #111 cards, #1E88FF accent */
+/* Dark theme — aligned with crucial-ui (SetupFX): #060606 base, #111 cards, #FF6A00 accent */
 [data-theme="dark"], .theme-dark {
-  --bg-page: #050707;
-  --bg-base: #0a0a0a;
-  --bg-primary: #0a0a0a;
-  --bg-secondary: #111111;
-  --bg-tertiary: #0d0d0d;
-  --bg-hover: #161616;
-  --bg-active: #1f1f1f;
-  --bg-input: #111111;
-  --bg-card: #111111;
-  --bg-card-nested: #0d0d0d;
-  --bg-glass: rgba(17, 17, 17, 0.72);
-  --bg-glass-light: rgba(13, 13, 13, 0.55);
-  --bg-glass-heavy: rgba(10, 10, 10, 0.92);
+  --bg-page: #060606;
+  --bg-base: #060606;
+  --bg-primary: #060606;
+  --bg-secondary: #121010;
+  --bg-tertiary: #0e0a08;
+  --bg-hover: #1a1512;
+  --bg-active: #241d18;
+  --bg-input: #121010;
+  --bg-card: #121010;
+  --bg-card-nested: #0e0a08;
+  --bg-glass: rgba(18, 16, 16, 0.72);
+  --bg-glass-light: rgba(14, 10, 8, 0.55);
+  --bg-glass-heavy: rgba(6, 6, 6, 0.92);
 
-  --border-primary: #2a2a2a;
-  --border-secondary: #1f1f1f;
-  --border-accent: #2a2a2a;
+  --border-primary: #2a2320;
+  --border-secondary: #241d18;
+  --border-accent: #2a2320;
   --border-glass: rgba(255, 255, 255, 0.06);
   --border-glass-bright: rgba(255, 255, 255, 0.08);
 
@@ -40,27 +40,27 @@
   --text-tertiary: #8a8a8a;
   --text-inverse: #000000;
 
-  --scrollbar-track: #0a0a0a;
-  --scrollbar-thumb: #2a2a2a;
+  --scrollbar-track: #060606;
+  --scrollbar-thumb: #2a2320;
   --scrollbar-hover: #3a3a3a;
 
-  --input-bg: #111111;
-  --input-border: #1f1f1f;
+  --input-bg: #121010;
+  --input-border: #241d18;
   --input-shadow: inset 0 2px 6px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.02);
-  --input-focus-border: rgba(30, 136, 255, 0.55);
-  --input-focus-shadow: inset 0 2px 6px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(30, 136, 255, 0.12), 0 0 0 3px rgba(30, 136, 255, 0.12);
+  --input-focus-border: rgba(255, 106, 0, 0.55);
+  --input-focus-shadow: inset 0 2px 6px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255, 106, 0, 0.12), 0 0 0 3px rgba(255, 106, 0, 0.12);
   --input-placeholder: #555555;
 
-  --selection-bg: rgba(30, 136, 255, 0.22);
+  --selection-bg: rgba(255, 106, 0, 0.22);
 
   --noise-opacity: 0.012;
   --emboss-bg: rgba(0, 0, 0, 0.5);
   --emboss-shadow: 0 1px 0 rgba(255, 255, 255, 0.03);
 
   /* react-hot-toast — always dark surface (readable on charts + light UI) */
-  --toast-bg: #111111;
+  --toast-bg: #121010;
   --toast-fg: #f0f0f0;
-  --toast-border: rgba(30, 136, 255, 0.28);
+  --toast-border: rgba(255, 106, 0, 0.28);
 
   /* Colored stat-card surfaces. The trader/admin UIs lean heavily on
    * gradient stat cards (Total Balance, Bonus, Trade Now, etc.).
@@ -226,38 +226,38 @@
 /* ======================================= */
 
 .theme-dark {
-  --bg-base: #0a0a0a;
-  --bg-primary: #0a0a0a;
-  --bg-secondary: #111111;
-  --bg-tertiary: #0d0d0d;
-  --bg-hover: #161616;
-  --bg-active: #1f1f1f;
-  --bg-input: #111111;
-  --bg-card: #111111;
-  --bg-card-nested: #0d0d0d;
-  --bg-glass: rgba(17, 17, 17, 0.72);
-  --bg-glass-light: rgba(13, 13, 13, 0.55);
-  --bg-glass-heavy: rgba(10, 10, 10, 0.92);
-  --border-primary: #2a2a2a;
-  --border-secondary: #1f1f1f;
-  --border-accent: #2a2a2a;
+  --bg-base: #060606;
+  --bg-primary: #060606;
+  --bg-secondary: #121010;
+  --bg-tertiary: #0e0a08;
+  --bg-hover: #1a1512;
+  --bg-active: #241d18;
+  --bg-input: #121010;
+  --bg-card: #121010;
+  --bg-card-nested: #0e0a08;
+  --bg-glass: rgba(18, 16, 16, 0.72);
+  --bg-glass-light: rgba(14, 10, 8, 0.55);
+  --bg-glass-heavy: rgba(6, 6, 6, 0.92);
+  --border-primary: #2a2320;
+  --border-secondary: #241d18;
+  --border-accent: #2a2320;
   --border-glass: rgba(255, 255, 255, 0.06);
   --border-glass-bright: rgba(255, 255, 255, 0.08);
   --text-primary: #ffffff;
   --text-secondary: #b4b4b4;
   --text-tertiary: #8a8a8a;
   --text-inverse: #000000;
-  --scrollbar-track: #0a0a0a;
-  --scrollbar-thumb: #2a2a2a;
+  --scrollbar-track: #060606;
+  --scrollbar-thumb: #2a2320;
   --scrollbar-hover: #3a3a3a;
-  --input-bg: #111111;
-  --input-border: #1f1f1f;
-  --input-focus-border: rgba(30, 136, 255, 0.55);
-  --input-focus-shadow: inset 0 2px 6px rgba(0,0,0,0.5), 0 0 0 3px rgba(30, 136, 255, 0.12);
-  --selection-bg: rgba(30, 136, 255, 0.22);
-  --toast-bg: #111111;
+  --input-bg: #121010;
+  --input-border: #241d18;
+  --input-focus-border: rgba(255, 106, 0, 0.55);
+  --input-focus-shadow: inset 0 2px 6px rgba(0,0,0,0.5), 0 0 0 3px rgba(255, 106, 0, 0.12);
+  --selection-bg: rgba(255, 106, 0, 0.22);
+  --toast-bg: #121010;
   --toast-fg: #f0f0f0;
-  --toast-border: rgba(30, 136, 255, 0.28);
+  --toast-border: rgba(255, 106, 0, 0.28);
   color-scheme: dark;
 }
 
@@ -497,30 +497,30 @@ html {
 }
 
 .skeu-btn-buy {
-  background: linear-gradient(180deg, #7CC9FF 0%, #1E88FF 50%, #0B5BD3 100%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 0 rgba(0,0,0,0.15), 0 4px 16px rgba(30,136,255,0.28), 0 2px 4px rgba(0,0,0,0.15);
+  background: linear-gradient(180deg, #FFB380 0%, #FF6A00 50%, #C2410C 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 0 rgba(0,0,0,0.15), 0 4px 16px rgba(255,106,0,0.28), 0 2px 4px rgba(0,0,0,0.15);
   color: #ffffff;
 }
 .skeu-btn-buy:hover {
-  background: linear-gradient(180deg, #f2ff9e 0%, #7CC9FF 50%, #1E88FF 100%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.12), 0 6px 24px rgba(30,136,255,0.38);
+  background: linear-gradient(180deg, #f2ff9e 0%, #FFB380 50%, #FF6A00 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.12), 0 6px 24px rgba(255,106,0,0.38);
 }
 .skeu-btn-buy:active {
-  background: linear-gradient(180deg, #1E88FF 0%, #0B5BD3 100%);
-  box-shadow: inset 0 2px 6px rgba(0,0,0,0.35), 0 2px 8px rgba(30,136,255,0.2);
+  background: linear-gradient(180deg, #FF6A00 0%, #C2410C 100%);
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.35), 0 2px 8px rgba(255,106,0,0.2);
   transform: translateY(1px);
 }
 [data-theme="light"] .skeu-btn-buy,
 .theme-light .skeu-btn-buy {
-  background: #1E88FF;
+  background: #FF6A00;
   color: #ffffff;
   border: none;
-  box-shadow: 0 2px 8px rgba(30, 136, 255, 0.3);
+  box-shadow: 0 2px 8px rgba(255, 106, 0, 0.3);
 }
 [data-theme="light"] .skeu-btn-buy:hover,
 .theme-light .skeu-btn-buy:hover {
-  background: #0B5BD3;
-  box-shadow: 0 4px 12px rgba(30, 136, 255, 0.4);
+  background: #C2410C;
+  box-shadow: 0 4px 12px rgba(255, 106, 0, 0.4);
 }
 
 .skeu-btn-sell {
@@ -597,11 +597,11 @@ html {
 
 .flash-blue { animation: flashAccent 0.15s ease-out; }
 .flash-red { animation: flashRed 0.15s ease-out; }
-@keyframes flashAccent { 0% { background-color: rgba(30,136,255,0.22); } 100% { background-color: transparent; } }
+@keyframes flashAccent { 0% { background-color: rgba(255,106,0,0.22); } 100% { background-color: transparent; } }
 @keyframes flashRed { 0% { background-color: rgba(239,68,68,0.2); } 100% { background-color: transparent; } }
 
 /* react-hot-toast — library defaults are washed-out white squares; reskin
- * to the Ezymex dark surface with proper padding, gap, and typography so
+ * to the Ezymax dark surface with proper padding, gap, and typography so
  * single-line errors don't wrap mid-word and the icon doesn't crash into
  * the text. */
 .ezymex-hot-toast {
@@ -658,8 +658,8 @@ html {
 
 /* Sidebar icon glow pulse */
 @keyframes iconGlowPulse {
-  0%, 100% { filter: drop-shadow(0 0 4px rgba(30,136,255,0.15)); }
-  50%      { filter: drop-shadow(0 0 10px rgba(30,136,255,0.55)); }
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(255,106,0,0.15)); }
+  50%      { filter: drop-shadow(0 0 10px rgba(255,106,0,0.55)); }
 }
 .sidebar-icon-glow {
   animation: iconGlowPulse 2.5s ease-in-out infinite;
@@ -673,7 +673,7 @@ html {
 
 .resize-handle-h { cursor: col-resize; }
 .resize-handle-v { cursor: row-resize; }
-.focus-ring:focus { outline: 1px solid #1E88FF; outline-offset: -1px; }
+.focus-ring:focus { outline: 1px solid #FF6A00; outline-offset: -1px; }
 .no-drag { -webkit-user-drag: none; user-select: none; }
 
 @layer components {
@@ -830,8 +830,8 @@ html {
     box-shadow: none !important;
   }
   .accounts-native-select:focus {
-    border-color: rgba(30, 136, 255, 0.55) !important;
-    box-shadow: 0 0 0 2px rgba(30, 136, 255, 0.2) !important;
+    border-color: rgba(255, 106, 0, 0.55) !important;
+    box-shadow: 0 0 0 2px rgba(255, 106, 0, 0.2) !important;
   }
   .accounts-native-select option {
     background-color: var(--bg-secondary);
@@ -888,7 +888,7 @@ html[data-page="accounts"] div:has(> header.h-\[65px\]) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   Landing-page "Obsidian & Lime" texture — a faint grid + film grain plus
+   Landing-page texture — a faint grid + film grain plus
    a soft lime top-aura behind the whole portal (dark mode only), matching
    the marketing site. Sits at z-index -1: above the body background, below
    the (transparent-in-dark) PortalShell root, so it reads through gaps and
@@ -902,7 +902,7 @@ html[data-page="accounts"] div:has(> header.h-\[65px\]) {
   z-index: -1;
   pointer-events: none;
   background-image:
-    radial-gradient(120% 60% at 50% -8%, rgba(30, 136, 255, 0.06), transparent 60%),
+    radial-gradient(120% 60% at 50% -8%, rgba(255, 106, 0, 0.06), transparent 60%),
     linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
   background-size: 100% 100%, 56px 56px, 56px 56px;
@@ -918,7 +918,7 @@ html[data-page="accounts"] div:has(> header.h-\[65px\]) {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
 }
 
-/* Positive "success" text — IB's success token is lime (#0B5BD3), invisible
+/* Positive "success" text — IB's success token is lime (#C2410C), invisible
    on the white light-mode surfaces. Darken it (and any light emerald shades)
    to a readable green as a foreground only in light mode. */
 [data-theme="light"] .text-success,

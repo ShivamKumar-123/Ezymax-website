@@ -10,11 +10,11 @@ import {
  * "Where do my AC come from?" popup, opened from the dashboard AC chip.
  * AC Coins = rewards `ac_balance`. It's earned from streak check-ins,
  * missions and reward events, and spent in the Rewards Store — so this explains
- * the sources and links to earn / spend. Landing "Obsidian & Lime" theme.
+ * the sources and links to earn / spend. Landing theme.
  */
-const ACCENT = '#1E88FF';
-const ACCENT_HI = '#7CC9FF';
-const ON_ACCENT = '#0a0a0a';
+const ACCENT = '#FF6A00';
+const ACCENT_HI = '#FFB380';
+const ON_ACCENT = '#060606';
 
 const EARN = [
   { icon: Flame, title: 'Daily check-ins', desc: 'Keep your streak alive to earn AC every day.' },
@@ -77,8 +77,8 @@ export default function FxaDetailsModal({
         onClick={(e) => e.stopPropagation()}
         className="relative w-full max-w-md overflow-hidden rounded-3xl p-6 shadow-2xl"
         style={{
-          background: 'radial-gradient(120% 90% at 80% -10%, rgba(30,136,255,0.10), transparent 55%), var(--bg-card)',
-          border: '1px solid rgba(30,136,255,0.16)',
+          background: 'radial-gradient(120% 90% at 80% -10%, rgba(255,106,0,0.10), transparent 55%), var(--bg-card)',
+          border: '1px solid rgba(255,106,0,0.16)',
           transform: go ? 'translateY(0) scale(1)' : 'translateY(14px) scale(0.97)',
           opacity: go ? 1 : 0,
           transition: 'transform 340ms cubic-bezier(0.22,1,0.36,1), opacity 340ms ease',
@@ -96,9 +96,9 @@ export default function FxaDetailsModal({
           <div
             className="grid size-16 place-items-center rounded-full"
             style={{
-              background: `radial-gradient(circle at 32% 28%, ${ACCENT_HI}, ${ACCENT} 62%, #0B5BD3)`,
+              background: `radial-gradient(circle at 32% 28%, ${ACCENT_HI}, ${ACCENT} 62%, #C2410C)`,
               border: '1.5px solid rgba(255,255,255,0.35)',
-              boxShadow: '0 0 0 5px rgba(30,136,255,0.12), 0 0 26px rgba(30,136,255,0.5), inset 0 1px 0 rgba(255,255,255,0.55)',
+              boxShadow: '0 0 0 5px rgba(255,106,0,0.12), 0 0 26px rgba(255,106,0,0.5), inset 0 1px 0 rgba(255,255,255,0.55)',
               transform: go ? 'scale(1)' : 'scale(0.6)',
               transition: 'transform 460ms cubic-bezier(0.34,1.56,0.64,1)',
             }}
@@ -132,7 +132,7 @@ export default function FxaDetailsModal({
                   transition: `opacity 400ms ease ${180 + i * 80}ms, transform 400ms ease ${180 + i * 80}ms`,
                 }}
               >
-                <span className="grid size-9 shrink-0 place-items-center rounded-xl" style={{ background: 'rgba(30,136,255,0.12)' }}>
+                <span className="grid size-9 shrink-0 place-items-center rounded-xl" style={{ background: 'rgba(255,106,0,0.12)' }}>
                   <w.icon size={16} style={{ color: 'var(--accent-ink)' }} />
                 </span>
                 <div className="min-w-0">
@@ -147,7 +147,7 @@ export default function FxaDetailsModal({
         {/* ── Spend note ── */}
         <div
           className="mt-3 flex items-center gap-3 rounded-2xl p-3"
-          style={{ background: 'rgba(30,136,255,0.06)', border: '1px solid rgba(30,136,255,0.22)' }}
+          style={{ background: 'rgba(255,106,0,0.06)', border: '1px solid rgba(255,106,0,0.22)' }}
         >
           <ShoppingBag size={16} style={{ color: 'var(--accent-ink)' }} className="shrink-0" />
           <p className="text-[11px] text-text-secondary">
@@ -161,7 +161,7 @@ export default function FxaDetailsModal({
             type="button"
             onClick={() => { onClose(); router.push('/earn/store'); }}
             className="flex flex-1 items-center justify-center gap-2 rounded-2xl py-3 text-sm font-extrabold transition-transform hover:brightness-105 active:scale-[0.98]"
-            style={{ background: `linear-gradient(90deg, ${ACCENT_HI}, ${ACCENT})`, color: ON_ACCENT, boxShadow: '0 10px 28px rgba(30,136,255,0.30)' }}
+            style={{ background: `linear-gradient(90deg, ${ACCENT_HI}, ${ACCENT})`, color: ON_ACCENT, boxShadow: '0 10px 28px rgba(255,106,0,0.30)' }}
           >
             Rewards Store <ArrowRight size={16} />
           </button>

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import { useEffect } from 'react';
-import { AlertTriangle, Eye, EyeOff, Loader2, Lock, Mail, Star } from 'lucide-react';
+import { AlertTriangle, Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { usePlatformStatusStore } from '@/stores/platformStatusStore';
 import toast from 'react-hot-toast';
@@ -26,8 +26,18 @@ const formVariants = {
   exit: { opacity: 0, y: -16 },
 };
 
-/* ── brand-panel copy (flat split-screen design) ── */
-const TRUST_MARKS = ['NOVAQUANT', 'HELIXFX', 'MERIDIAN', 'OAKBRIDGE'];
+/* ── brand-panel copy (flat split-screen design) ──
+   This panel used to carry a five-star testimonial from "A. Rao" and a
+   "Trusted by modern trading desks" row listing NOVAQUANT, HELIXFX, MERIDIAN
+   and OAKBRIDGE. None of those are real: no such client exists and no such
+   firm was ever a client. On a deposit-taking site that is a fabricated
+   endorsement, so it is replaced by the platform's published rules -- every
+   one of them read from the risk-engine config the account actually runs on. */
+const PLATFORM_RULES: ReadonlyArray<{ value: string; label: string }> = [
+  { value: '1:100', label: 'Default leverage' },
+  { value: '80%', label: 'Margin call' },
+  { value: '50%', label: 'Stop-out' },
+];
 
 /* ── error helper ── */
 function authErrorMessage(err: unknown, kind: 'login' | 'demo' | 'forgot'): string {
@@ -217,45 +227,28 @@ export default function LoginPage() {
             <div className="auth-left__mandala" aria-hidden="true" />
             <div className="auth-left__content">
               <motion.a className="auth-brand" href="/" {...fadeUp(0.15)}>
-                <img src="/images/ezymex-logo.png" alt="Ezymex" />
+                <img src="/images/ezymex-logo.png" alt="Ezymax" />
               </motion.a>
 
               <div>
                 <motion.h1 className="auth-brand__headline" {...fadeUp(0.3)}>
-                  Trade with your money still{' '}
-                  <span className="auth-brand__uword">yours.</span>
+                  The rules are the same for{' '}
+                  <span className="auth-brand__uword">everyone.</span>
                 </motion.h1>
                 <motion.p className="auth-brand__support" {...fadeUp(0.4)}>
-                  Only margin locks when you open a trade — the rest stays
-                  withdrawable, and settlement is automatic.
+                  Margin call, stop-out and position limits are published, not
+                  negotiated per client. Every cost is itemised on the ticket
+                  before you confirm.
                 </motion.p>
-
-                <motion.figure className="auth-quote" {...fadeUp(0.5)}>
-                  <div className="auth-quote__stars" aria-hidden="true">
-                    {[0, 1, 2, 3, 4].map((i) => (
-                      <Star key={i} size={14} fill="currentColor" />
-                    ))}
-                  </div>
-                  <blockquote className="auth-quote__text">
-                    &ldquo;The first platform where I never wonder whether I can
-                    withdraw.&rdquo;
-                  </blockquote>
-                  <figcaption className="auth-quote__who">
-                    <span className="auth-quote__avatar">AR</span>
-                    <span>
-                      <span className="auth-quote__name">A. Rao</span>
-                      <br />
-                      <span className="auth-quote__role">Derivatives trader · demo community</span>
-                    </span>
-                  </figcaption>
-                </motion.figure>
               </div>
 
               <motion.div className="auth-trust" {...fadeUp(0.6)}>
-                <p className="auth-trust__eyebrow">Trusted by modern trading desks</p>
+                <p className="auth-trust__eyebrow">Published platform rules</p>
                 <div className="auth-trust__row">
-                  {TRUST_MARKS.map((mark) => (
-                    <span key={mark}>{mark}</span>
+                  {PLATFORM_RULES.map((rule) => (
+                    <span key={rule.label}>
+                      {rule.value} {rule.label}
+                    </span>
                   ))}
                 </div>
               </motion.div>

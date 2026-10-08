@@ -244,9 +244,9 @@ export default function KycPage() {
           <div className="flex items-start gap-3">
             <div
               className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.25)' }}
+              style={{ background: 'rgba(255,106,0,0.12)', border: '1px solid rgba(255,106,0,0.25)' }}
             >
-              <ShieldCheck className="w-5 h-5 text-[#1E88FF]" />
+              <ShieldCheck className="w-5 h-5 text-[#FF6A00]" />
             </div>
             <div className="min-w-0">
               <h1 className="text-xl md:text-2xl font-bold text-text-primary">KYC Verification</h1>
@@ -261,22 +261,22 @@ export default function KycPage() {
           <div
             className="rounded-2xl border relative overflow-hidden transition-all duration-300 hover:-translate-y-1"
             style={{
-              background: 'radial-gradient(130% 120% at 95% -25%, rgba(30,136,255,0.10), transparent 55%), var(--bg-card)',
-              borderColor: 'rgba(30,136,255,0.16)',
+              background: 'radial-gradient(130% 120% at 95% -25%, rgba(255,106,0,0.10), transparent 55%), var(--bg-card)',
+              borderColor: 'rgba(255,106,0,0.16)',
               boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
             }}
           >
             <div
               className="pointer-events-none absolute left-0 top-0 bottom-0 w-1"
-              style={{ background: 'linear-gradient(180deg, #7CC9FF, #1E88FF 55%, #0B5BD3)', boxShadow: '0 0 14px rgba(30,136,255,0.5)' }}
+              style={{ background: 'linear-gradient(180deg, #FFB380, #FF6A00 55%, #C2410C)', boxShadow: '0 0 14px rgba(255,106,0,0.5)' }}
               aria-hidden
             />
             <div className="p-8 md:p-10 pl-5 text-center space-y-5">
               <div
                 className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto"
-                style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.25)' }}
+                style={{ background: 'rgba(255,106,0,0.12)', border: '1px solid rgba(255,106,0,0.25)' }}
               >
-                <CheckCircle2 className="w-10 h-10 text-[#1E88FF]" strokeWidth={2} />
+                <CheckCircle2 className="w-10 h-10 text-[#FF6A00]" strokeWidth={2} />
               </div>
               <div>
                 <StatusBadge status={profile?.kyc_status ?? 'approved'} />
@@ -313,22 +313,22 @@ export default function KycPage() {
             <div
               className="rounded-2xl border relative overflow-hidden transition-all duration-300 hover:-translate-y-1"
               style={{
-                background: 'radial-gradient(130% 120% at 95% -25%, rgba(30,136,255,0.10), transparent 55%), var(--bg-card)',
-                borderColor: 'rgba(30,136,255,0.16)',
+                background: 'radial-gradient(130% 120% at 95% -25%, rgba(255,106,0,0.10), transparent 55%), var(--bg-card)',
+                borderColor: 'rgba(255,106,0,0.16)',
                 boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
               }}
             >
               <div
                 className="pointer-events-none absolute left-0 top-0 bottom-0 w-1"
-                style={{ background: 'linear-gradient(180deg, #7CC9FF, #1E88FF 55%, #0B5BD3)', boxShadow: '0 0 14px rgba(30,136,255,0.5)' }}
+                style={{ background: 'linear-gradient(180deg, #FFB380, #FF6A00 55%, #C2410C)', boxShadow: '0 0 14px rgba(255,106,0,0.5)' }}
                 aria-hidden
               />
               <div className="p-5 md:p-6 pl-5 border-b border-border-primary flex flex-wrap items-start gap-4">
                 <div
                   className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: 'rgba(30,136,255,0.12)', border: '1px solid rgba(30,136,255,0.25)' }}
+                  style={{ background: 'rgba(255,106,0,0.12)', border: '1px solid rgba(255,106,0,0.25)' }}
                 >
-                  <ShieldCheck size={22} className="text-[#1E88FF]" strokeWidth={2} />
+                  <ShieldCheck size={22} className="text-[#FF6A00]" strokeWidth={2} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-base font-bold text-text-primary">Identity Verification</p>
@@ -365,7 +365,7 @@ export default function KycPage() {
                       type="button"
                       onClick={() => void startDidit()}
                       disabled={startingDidit}
-                      className="text-xs font-semibold text-[#1E88FF] hover:text-[#0B5BD3] disabled:opacity-60 underline underline-offset-4 transition-colors"
+                      className="text-xs font-semibold text-[#FF6A00] hover:text-[#C2410C] disabled:opacity-60 underline underline-offset-4 transition-colors"
                     >
                       Verify instantly instead
                     </button>
@@ -390,9 +390,9 @@ export default function KycPage() {
                 <div className="p-8 md:p-10 pl-5 text-center space-y-5">
                   <div
                     className="w-[4.5rem] h-[4.5rem] rounded-2xl flex items-center justify-center mx-auto"
-                    style={{ background: 'rgba(30,136,255,0.10)', border: '1px solid rgba(30,136,255,0.25)' }}
+                    style={{ background: 'rgba(255,106,0,0.10)', border: '1px solid rgba(255,106,0,0.25)' }}
                   >
-                    <FileImage size={32} className="text-[#1E88FF]" strokeWidth={1.75} />
+                    <FileImage size={32} className="text-[#FF6A00]" strokeWidth={1.75} />
                   </div>
                   <div>
                     <h2 className="text-lg font-bold text-text-primary">Start Verification</h2>
@@ -406,11 +406,11 @@ export default function KycPage() {
                       type="button"
                       onClick={() => void startDidit()}
                       disabled={startingDidit}
-                      className="inline-flex items-center justify-center gap-2 w-full sm:w-auto min-w-[240px] px-8 py-3.5 rounded-xl text-sm font-semibold bg-[#1E88FF] hover:bg-[#0B5BD3] disabled:opacity-60 text-[#0a0a0a] transition-all shadow-[0_0_24px_rgba(30,136,255,0.35)]"
+                      className="inline-flex items-center justify-center gap-2 w-full sm:w-auto min-w-[240px] px-8 py-3.5 rounded-xl text-sm font-semibold bg-[#FF6A00] hover:bg-[#C2410C] disabled:opacity-60 text-[#060606] transition-all shadow-[0_0_24px_rgba(255,106,0,0.35)]"
                     >
                       {startingDidit ? (
                         <>
-                          <div className="w-4 h-4 border-2 border-[#0a0a0a]/30 border-t-[#0a0a0a] rounded-full animate-spin" />
+                          <div className="w-4 h-4 border-2 border-[#060606]/30 border-t-[#060606] rounded-full animate-spin" />
                           Opening…
                         </>
                       ) : (
@@ -438,8 +438,8 @@ export default function KycPage() {
                 <div
                   className="rounded-2xl border relative overflow-hidden p-5 md:p-6"
                   style={{
-                    background: 'radial-gradient(130% 120% at 95% -25%, rgba(30,136,255,0.06), transparent 55%), var(--bg-card)',
-                    borderColor: 'rgba(30,136,255,0.14)',
+                    background: 'radial-gradient(130% 120% at 95% -25%, rgba(255,106,0,0.06), transparent 55%), var(--bg-card)',
+                    borderColor: 'rgba(255,106,0,0.14)',
                     boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
                   }}
                 >
@@ -467,16 +467,16 @@ export default function KycPage() {
                     ].map(({ num, title, desc, Icon }) => (
                       <div
                         key={num}
-                        className="relative rounded-xl border border-border-primary bg-bg-secondary p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#1E88FF]/30"
+                        className="relative rounded-xl border border-border-primary bg-bg-secondary p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#FF6A00]/30"
                       >
                         <span className="absolute top-3 right-3 text-[10px] font-bold text-text-tertiary uppercase tracking-wider">
                           Step {num}
                         </span>
                         <div
                           className="w-9 h-9 rounded-lg flex items-center justify-center mb-3"
-                          style={{ background: 'rgba(30,136,255,0.10)', border: '1px solid rgba(30,136,255,0.20)' }}
+                          style={{ background: 'rgba(255,106,0,0.10)', border: '1px solid rgba(255,106,0,0.20)' }}
                         >
-                          <Icon size={18} className="text-[#1E88FF]" strokeWidth={2} />
+                          <Icon size={18} className="text-[#FF6A00]" strokeWidth={2} />
                         </div>
                         <p className="text-sm font-semibold text-text-primary">{title}</p>
                         <p className="text-xs text-text-secondary mt-1 leading-relaxed">{desc}</p>
@@ -488,8 +488,8 @@ export default function KycPage() {
                 <div
                   className="rounded-2xl border relative overflow-hidden p-5 md:p-6"
                   style={{
-                    background: 'radial-gradient(130% 120% at 95% -25%, rgba(30,136,255,0.06), transparent 55%), var(--bg-card)',
-                    borderColor: 'rgba(30,136,255,0.14)',
+                    background: 'radial-gradient(130% 120% at 95% -25%, rgba(255,106,0,0.06), transparent 55%), var(--bg-card)',
+                    borderColor: 'rgba(255,106,0,0.14)',
                     boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
                   }}
                 >
@@ -503,13 +503,13 @@ export default function KycPage() {
                     ].map((item) => (
                       <div
                         key={item}
-                        className="flex items-center gap-3 p-3.5 rounded-xl bg-bg-secondary border border-border-primary transition-colors hover:border-[#1E88FF]/25"
+                        className="flex items-center gap-3 p-3.5 rounded-xl bg-bg-secondary border border-border-primary transition-colors hover:border-[#FF6A00]/25"
                       >
                         <div
                           className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                          style={{ background: 'rgba(30,136,255,0.10)', border: '1px solid rgba(30,136,255,0.20)' }}
+                          style={{ background: 'rgba(255,106,0,0.10)', border: '1px solid rgba(255,106,0,0.20)' }}
                         >
-                          <CheckCircle2 size={16} className="text-[#1E88FF]" strokeWidth={2.5} />
+                          <CheckCircle2 size={16} className="text-[#FF6A00]" strokeWidth={2.5} />
                         </div>
                         <span className="text-sm text-text-primary font-medium leading-snug">{item}</span>
                       </div>
@@ -523,8 +523,8 @@ export default function KycPage() {
               <div
                 className="rounded-2xl border relative overflow-hidden"
                 style={{
-                  background: 'radial-gradient(130% 120% at 95% -25%, rgba(30,136,255,0.06), transparent 55%), var(--bg-card)',
-                  borderColor: 'rgba(30,136,255,0.14)',
+                  background: 'radial-gradient(130% 120% at 95% -25%, rgba(255,106,0,0.06), transparent 55%), var(--bg-card)',
+                  borderColor: 'rgba(255,106,0,0.14)',
                   boxShadow: '0 8px 26px rgba(0,0,0,0.28)',
                 }}
               >
@@ -537,9 +537,9 @@ export default function KycPage() {
                       <div className="flex items-center gap-2.5 min-w-0">
                         <div
                           className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                          style={{ background: 'rgba(30,136,255,0.10)', border: '1px solid rgba(30,136,255,0.20)' }}
+                          style={{ background: 'rgba(255,106,0,0.10)', border: '1px solid rgba(255,106,0,0.20)' }}
                         >
-                          <FileText size={14} className="text-[#1E88FF] shrink-0" />
+                          <FileText size={14} className="text-[#FF6A00] shrink-0" />
                         </div>
                         <span className="text-sm text-text-primary capitalize truncate">
                           {doc.document_type.replace(/_/g, ' ')}
@@ -616,8 +616,8 @@ export default function KycPage() {
                   className={clsx(
                     'group flex items-center justify-center gap-2 w-full min-h-[5.5rem] rounded-xl border-2 border-dashed cursor-pointer transition-all px-3',
                     file
-                      ? 'border-[#1E88FF]/50 bg-[#1E88FF]/[0.06]'
-                      : 'border-border-primary hover:border-[#1E88FF]/50 hover:bg-[#1E88FF]/[0.04] bg-bg-secondary',
+                      ? 'border-[#FF6A00]/50 bg-[#FF6A00]/[0.06]'
+                      : 'border-border-primary hover:border-[#FF6A00]/50 hover:bg-[#FF6A00]/[0.04] bg-bg-secondary',
                   )}
                 >
                   <input
@@ -627,14 +627,14 @@ export default function KycPage() {
                     onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                   />
                   {file ? (
-                    <span className="text-sm text-[#1E88FF] font-medium break-all text-center">{file.name}</span>
+                    <span className="text-sm text-[#FF6A00] font-medium break-all text-center">{file.name}</span>
                   ) : (
                     <div className="flex flex-col items-center gap-1.5 text-center py-2">
                       <div
                         className="w-9 h-9 rounded-lg flex items-center justify-center transition-colors"
-                        style={{ background: 'rgba(30,136,255,0.10)', border: '1px solid rgba(30,136,255,0.20)' }}
+                        style={{ background: 'rgba(255,106,0,0.10)', border: '1px solid rgba(255,106,0,0.20)' }}
                       >
-                        <Upload size={16} className="text-[#1E88FF]" />
+                        <Upload size={16} className="text-[#FF6A00]" />
                       </div>
                       <span className="text-xs text-text-secondary">
                         Tap to upload · JPG, PNG, PDF, WEBP · max 10 MB
@@ -669,8 +669,8 @@ export default function KycPage() {
                   className={clsx(
                     'flex items-center justify-center gap-2 w-full min-h-[4rem] rounded-xl border-2 border-dashed cursor-pointer transition-all px-3',
                     file2
-                      ? 'border-[#1E88FF]/50 bg-[#1E88FF]/[0.06]'
-                      : 'border-border-primary hover:border-[#1E88FF]/50 hover:bg-[#1E88FF]/[0.04] bg-bg-secondary',
+                      ? 'border-[#FF6A00]/50 bg-[#FF6A00]/[0.06]'
+                      : 'border-border-primary hover:border-[#FF6A00]/50 hover:bg-[#FF6A00]/[0.04] bg-bg-secondary',
                   )}
                 >
                   <input
@@ -680,7 +680,7 @@ export default function KycPage() {
                     onChange={(e) => setFile2(e.target.files?.[0] ?? null)}
                   />
                   {file2 ? (
-                    <span className="text-xs text-[#1E88FF] font-medium px-2 break-all text-center">{file2.name}</span>
+                    <span className="text-xs text-[#FF6A00] font-medium px-2 break-all text-center">{file2.name}</span>
                   ) : (
                     <>
                       <Upload size={15} className="text-text-tertiary shrink-0" />
@@ -730,11 +730,11 @@ export default function KycPage() {
                 type="button"
                 onClick={() => void handleSubmit()}
                 disabled={submitting}
-                className="w-full py-3.5 rounded-xl bg-[#1E88FF] hover:bg-[#0B5BD3] disabled:opacity-60 text-[#0a0a0a] font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(30,136,255,0.25)]"
+                className="w-full py-3.5 rounded-xl bg-[#FF6A00] hover:bg-[#C2410C] disabled:opacity-60 text-[#060606] font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,106,0,0.25)]"
               >
                 {submitting ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-[#0a0a0a]/30 border-t-[#0a0a0a] rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-[#060606]/30 border-t-[#060606] rounded-full animate-spin" />
                     Uploading…
                   </>
                 ) : (

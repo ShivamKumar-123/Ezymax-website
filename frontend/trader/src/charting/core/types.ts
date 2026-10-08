@@ -34,18 +34,20 @@ export interface ChartTheme {
 }
 
 export const DARK_THEME: ChartTheme = {
-  background: '#0f1117',
-  gridLine: '#1e2130',
-  crosshair: '#4a4d5e',
-  text: '#a1a1aa',
-  textMuted: '#71717a',
+  // Warm near-black to match the rest of the platform; the candles stay
+  // green/red because direction must not share a hue with the brand orange.
+  background: '#060606',
+  gridLine: '#241d18',
+  crosshair: '#6f6a66',
+  text: '#a39e98',
+  textMuted: '#6f6a66',
   bullCandle: '#10B981',
   bearCandle: '#EF4444',
   bullWick: '#10B981',
   bearWick: '#EF4444',
   volumeUp: 'rgba(16,185,129,0.3)',
   volumeDown: 'rgba(239,68,68,0.3)',
-  currentPriceLine: '#3B82F6',
+  currentPriceLine: '#ff6a00',
   slLine: '#EF4444',
   tpLine: '#10B981',
   bidLine: '#10B981',

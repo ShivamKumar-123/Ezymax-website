@@ -1,7 +1,7 @@
 /**
  * Client-side PDF statement export for the IB portal. Generic table exporter
  * built on jspdf + jspdf-autotable (dynamically imported so they never enter
- * the initial bundle). Mirrors the trader app's statement style with Ezymex
+ * the initial bundle). Mirrors the trader app's statement style with Ezymax
  * gold branding.
  */
 
@@ -56,7 +56,7 @@ export async function downloadStatementPdf(
   doc.setTextColor(20, 20, 20);
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('Ezymex — IB Partner Portal', margin, 7);
+  doc.text('Ezymax — IB Partner Portal', margin, 7);
 
   doc.setTextColor(30, 30, 30);
   doc.setFontSize(16);
@@ -109,7 +109,7 @@ export async function downloadStatementPdf(
       doc.setFontSize(7);
       doc.setTextColor(140, 140, 140);
       doc.text(`Page ${data.pageNumber} of ${pageCount}`, pageW - margin - 28, doc.internal.pageSize.getHeight() - 6);
-      doc.text('Ezymex — for information only.', margin, doc.internal.pageSize.getHeight() - 6);
+      doc.text('Ezymax — for information only.', margin, doc.internal.pageSize.getHeight() - 6);
     },
   });
 

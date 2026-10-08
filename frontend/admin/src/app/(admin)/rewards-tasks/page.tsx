@@ -24,7 +24,7 @@ import {
   Loader2, Save, RefreshCw, Search, CheckSquare, Trash2, Plus, X,
 } from 'lucide-react';
 
-const LIME = '#1E88FF';
+const LIME = '#FF6A00';
 
 interface Task {
   id: string;
@@ -187,7 +187,7 @@ export default function AdminRewardTasksPage() {
   };
 
   const inputCls =
-    'w-full px-2 py-1.5 rounded-md bg-bg-base border border-border-primary text-xs text-text-primary focus:outline-none focus:border-[#1E88FF]/50';
+    'w-full px-2 py-1.5 rounded-md bg-bg-base border border-border-primary text-xs text-text-primary focus:outline-none focus:border-[#FF6A00]/50';
 
   return (
     <div className="p-5 max-w-6xl mx-auto">
@@ -200,14 +200,14 @@ export default function AdminRewardTasksPage() {
           <button
             type="button"
             onClick={() => setCreating(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#1E88FF]/40 bg-[#1E88FF]/10 text-xs font-semibold text-text-primary hover:bg-[#1E88FF]/20"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#FF6A00]/40 bg-[#FF6A00]/10 text-xs font-semibold text-text-primary hover:bg-[#FF6A00]/20"
           >
             <Plus size={13} /> New task
           </button>
           <button
             type="button"
             onClick={load}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-primary bg-bg-secondary text-xs text-text-primary hover:border-[#1E88FF]/40"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-primary bg-bg-secondary text-xs text-text-primary hover:border-[#FF6A00]/40"
           >
             <RefreshCw size={13} /> Refresh
           </button>
@@ -225,7 +225,7 @@ export default function AdminRewardTasksPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search title, slug or description…"
-            className="w-full pl-8 pr-3 py-2 rounded-lg bg-bg-secondary border border-border-primary text-xs text-text-primary focus:outline-none focus:border-[#1E88FF]/50"
+            className="w-full pl-8 pr-3 py-2 rounded-lg bg-bg-secondary border border-border-primary text-xs text-text-primary focus:outline-none focus:border-[#FF6A00]/50"
           />
         </div>
         <select
@@ -240,7 +240,7 @@ export default function AdminRewardTasksPage() {
         </select>
         <button
           type="submit"
-          className="px-3 py-2 rounded-lg border border-border-primary bg-bg-secondary text-xs text-text-primary hover:border-[#1E88FF]/40"
+          className="px-3 py-2 rounded-lg border border-border-primary bg-bg-secondary text-xs text-text-primary hover:border-[#FF6A00]/40"
         >
           Search
         </button>
@@ -367,7 +367,7 @@ export default function AdminRewardTasksPage() {
                             type="checkbox"
                             checked={d.is_active}
                             onChange={(e) => setField(t.id, 'is_active', e.target.checked)}
-                            className="h-3.5 w-3.5 accent-[#1E88FF]"
+                            className="h-3.5 w-3.5 accent-[#FF6A00]"
                           />
                           Active
                         </label>
@@ -375,7 +375,7 @@ export default function AdminRewardTasksPage() {
                           type="button"
                           onClick={() => save(t)}
                           disabled={!dirty || savingId === t.id}
-                          className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-[#0a0a0a] transition-opacity disabled:opacity-40"
+                          className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-[#060606] transition-opacity disabled:opacity-40"
                           style={{ background: LIME }}
                         >
                           {savingId === t.id ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
@@ -448,7 +448,7 @@ function CreateTaskModal({
   };
 
   const cls =
-    'w-full px-2.5 py-2 rounded-lg bg-bg-base border border-border-primary text-xs text-text-primary focus:outline-none focus:border-[#1E88FF]/50';
+    'w-full px-2.5 py-2 rounded-lg bg-bg-base border border-border-primary text-xs text-text-primary focus:outline-none focus:border-[#FF6A00]/50';
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4" onClick={onClose}>
@@ -508,7 +508,7 @@ function CreateTaskModal({
         <button
           type="submit"
           disabled={busy}
-          className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold text-[#0a0a0a] disabled:opacity-50"
+          className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold text-[#060606] disabled:opacity-50"
           style={{ background: LIME }}
         >
           {busy ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />} Create

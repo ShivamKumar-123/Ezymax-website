@@ -65,7 +65,7 @@ export function Header() {
       >
         <div className="container-x flex h-[72px] items-center justify-between gap-4">
           <Link href="/" className="relative z-10 flex items-center text-ink" aria-label="Ezymax home">
-            <Logo className="h-[22px] md:h-6" />
+            <Logo className="h-[26px] md:h-7" priority />
           </Link>
 
           {/* Center pill nav */}

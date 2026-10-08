@@ -201,7 +201,7 @@ function TerminalPositionStaticCard({
             <span
               className={clsx(
                 'text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded',
-                pos.side === 'buy' ? 'bg-[#2962FF]/18 text-[#2962FF]' : 'bg-[#ff5252]/18 text-[#ff5252]',
+                pos.side === 'buy' ? 'bg-[#22C55E]/18 text-[#22C55E]' : 'bg-[#ff5252]/18 text-[#ff5252]',
               )}
             >
               {pos.side}
@@ -214,7 +214,7 @@ function TerminalPositionStaticCard({
             className={clsx(
               'inline-block px-2 py-0.5 rounded text-[10px] font-mono font-bold tabular-nums border',
               pnl >= 0
-                ? 'bg-green-500/10 border-green-500/20 text-[#1E88FF]'
+                ? 'bg-green-500/10 border-green-500/20 text-[#FF6A00]'
                 : 'bg-red-500/10 border-red-500/20 text-[#ff5252]',
             )}
           >
@@ -248,7 +248,7 @@ function TerminalPositionStaticCard({
               (priceDown ? (
                 <TrendingDown className="w-3 h-3 text-[#ff5252]" aria-hidden />
               ) : (
-                <TrendingUp className="w-3 h-3 text-[#1E88FF]" aria-hidden />
+                <TrendingUp className="w-3 h-3 text-[#FF6A00]" aria-hidden />
               ))}
           </div>
         </div>
@@ -973,7 +973,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                           <div className="min-w-0 flex-1 space-y-1.5">
                             {([
                               ['Balance', `$${activeAccount.balance.toFixed(2)}`, undefined],
-                              ['Floating P&L', fmtPnl(totalPnl), totalPnl >= 0 ? 'text-[#1E88FF]' : 'text-[#ef5350]'],
+                              ['Floating P&L', fmtPnl(totalPnl), totalPnl >= 0 ? 'text-[#FF6A00]' : 'text-[#ef5350]'],
                               ['Equity', `$${equity.toFixed(2)}`, undefined],
                               ['Margin Used', `$${activeAccount.margin_used.toFixed(2)}`, undefined],
                               ['Free Margin', `$${freeMarginCalc.toFixed(2)}`, undefined],
@@ -1102,7 +1102,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                     className={clsx(
                       'flex-1 min-w-0 py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-bold transition-colors border-b-2 -mb-px',
                       activeTab === tab.id
-                        ? clsx('text-text-primary border-[#1E88FF]', 'bg-bg-secondary/70')
+                        ? clsx('text-text-primary border-[#FF6A00]', 'bg-bg-secondary/70')
                         : clsx(
                             'text-text-tertiary border-transparent hover:text-text-secondary',
                             'hover:bg-bg-hover/40',
@@ -1233,7 +1233,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                             </div>
                             <span
                               className="font-mono text-sm font-bold tabular-nums"
-                              style={{ color: pnl >= 0 ? '#2962FF' : '#FF2440' }}
+                              style={{ color: pnl >= 0 ? '#22C55E' : '#FF2440' }}
                               title={`Floating (gross) ${fmtPnl(pnl)} · commission -$${charges.toFixed(2)} · net if closed now ${fmtPnl(net)}`}
                             >
                               {fmtPnl(pnl)}
@@ -1357,7 +1357,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                             </td>
                             <td
                               className={clsx(td, 'font-mono font-bold tabular-nums')}
-                              style={{ color: pnl >= 0 ? '#2962FF' : '#FF2440' }}
+                              style={{ color: pnl >= 0 ? '#22C55E' : '#FF2440' }}
                               title={`Floating (gross) ${fmtPnl(pnl)} · commission -$${charges.toFixed(2)} · net if closed now ${fmtPnl(net)}`}
                             >
                               {fmtPnl(pnl)}
@@ -1656,7 +1656,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                   {trade.trade_type === 'copy_trade' ? 'Copy' : 'Real'}
                                 </span>
                               </div>
-                              <span className="font-mono text-sm font-bold tabular-nums" style={{ color: net >= 0 ? '#2962FF' : '#FF2440' }}>
+                              <span className="font-mono text-sm font-bold tabular-nums" style={{ color: net >= 0 ? '#22C55E' : '#FF2440' }}>
                                 {net >= 0 ? '+' : ''}${net.toFixed(2)}
                               </span>
                             </div>
@@ -1754,7 +1754,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                             <td className={clsx(td, 'font-mono', trade.take_profit != null ? 'text-buy' : 'text-text-tertiary')}>
                               {trade.take_profit != null ? trade.take_profit.toFixed(d) : '—'}
                             </td>
-                            <td className={clsx(td, 'font-mono font-bold tabular-nums')} style={{ color: net >= 0 ? '#2962FF' : '#FF2440' }}>
+                            <td className={clsx(td, 'font-mono font-bold tabular-nums')} style={{ color: net >= 0 ? '#22C55E' : '#FF2440' }}>
                               {net >= 0 ? '+' : ''}${net.toFixed(2)}
                             </td>
                             <td className={td}>

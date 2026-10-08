@@ -4,7 +4,7 @@
  * Custom-styled "Continue with Google" button.
  *
  * Replaces @react-oauth/google's <GoogleLogin> iframe (which forces a white
- * surface and a fixed "personalized" pill shape) with a dark Ezymex
+ * surface and a fixed "personalized" pill shape) with a dark Ezymax
  * `.auth-btn--outline` button so it visually matches the wallet + demo
  * buttons stacked below it on the auth page.
  *

@@ -114,7 +114,7 @@ export default function LevelBenefitsPage() {
         <button
           onClick={save}
           disabled={saving}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-accent text-[#0a0a0a] rounded hover:brightness-110 disabled:opacity-60 transition-fast"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-accent text-[#060606] rounded hover:brightness-110 disabled:opacity-60 transition-fast"
         >
           {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
           Save changes

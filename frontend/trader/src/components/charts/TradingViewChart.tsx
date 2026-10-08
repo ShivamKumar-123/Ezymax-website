@@ -89,7 +89,7 @@ function TradingViewChartInner() {
     [selectedSymbol, tvTheme, interval],
   );
 
-  const surface = tvTheme === 'light' ? 'bg-bg-base' : 'bg-[#0e0e0e]';
+  const surface = tvTheme === 'light' ? 'bg-bg-base' : 'bg-[#0e0a08]';
   const digits = getDigits(selectedSymbol ?? 'EURUSD');
   const fmt = (n: number | undefined | null) =>
     n == null || !Number.isFinite(n) ? '—' : n.toFixed(digits);

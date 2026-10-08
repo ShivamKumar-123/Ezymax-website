@@ -1,5 +1,5 @@
 /** Dashboard / in-app product name. */
-export const BRAND_NAME = 'Ezymex';
+export const BRAND_NAME = 'Ezymax';
 
 /** Zustand persist key for UI preferences (theme, terminal layout). */
 export const STORAGE_KEY_UI = 'ezymex-ui';

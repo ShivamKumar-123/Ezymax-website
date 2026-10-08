@@ -144,7 +144,7 @@ export default function OnchainConnectAndSend({ deposit, onSubmittedTx }: Props)
             'w-full py-3.5 rounded-xl font-bold text-sm transition-all ' +
             (sending
               ? 'bg-bg-hover text-text-tertiary cursor-not-allowed'
-              : 'bg-[#1E88FF] text-bg-base hover:brightness-110')
+              : 'bg-[#FF6A00] text-bg-base hover:brightness-110')
           }
         >
           {sending ? (

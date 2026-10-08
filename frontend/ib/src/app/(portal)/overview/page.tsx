@@ -54,14 +54,14 @@ export default function OverviewPage() {
       <section
         className="relative overflow-hidden rounded-3xl border p-6 sm:p-8 noise-texture"
         style={{
-          background: 'radial-gradient(120% 140% at 100% 0%, rgba(30,136,255,0.16), transparent 55%), linear-gradient(180deg, var(--bg-card), var(--bg-card-nested))',
-          borderColor: 'rgba(30,136,255,0.28)',
+          background: 'radial-gradient(120% 140% at 100% 0%, rgba(255,106,0,0.16), transparent 55%), linear-gradient(180deg, var(--bg-card), var(--bg-card-nested))',
+          borderColor: 'rgba(255,106,0,0.28)',
           boxShadow: '0 20px 60px -24px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.05)',
         }}
       >
         {/* Decorative lime orbs for an eye-catching hero. */}
-        <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full opacity-50 blur-3xl" style={{ background: 'rgba(30,136,255,0.18)' }} aria-hidden />
-        <div className="pointer-events-none absolute -left-24 bottom-[-40%] h-52 w-52 rounded-full opacity-30 blur-3xl" style={{ background: 'rgba(30,136,255,0.10)' }} aria-hidden />
+        <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full opacity-50 blur-3xl" style={{ background: 'rgba(255,106,0,0.18)' }} aria-hidden />
+        <div className="pointer-events-none absolute -left-24 bottom-[-40%] h-52 w-52 rounded-full opacity-30 blur-3xl" style={{ background: 'rgba(255,106,0,0.10)' }} aria-hidden />
 
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
@@ -69,7 +69,7 @@ export default function OverviewPage() {
               <span className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-widest text-success">
                 <CheckCircle2 size={13} /> Approved IB
               </span>
-              <span className="rounded-full border border-accent/40 bg-accent/10 px-2.5 py-1 text-[11px] font-bold text-accent shadow-[0_0_16px_rgba(30,136,255,0.25)]">Level {d.level}</span>
+              <span className="rounded-full border border-accent/40 bg-accent/10 px-2.5 py-1 text-[11px] font-bold text-accent shadow-[0_0_16px_rgba(255,106,0,0.25)]">Level {d.level}</span>
             </div>
             <h1 className="mt-3 text-3xl font-bold tracking-tight text-text-primary sm:text-4xl">Welcome back</h1>
             <p className="mt-1.5 text-xs text-text-tertiary">
@@ -81,7 +81,7 @@ export default function OverviewPage() {
               <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-text-tertiary">Your referral link</p>
               <div className="flex items-center gap-2">
                 <input type="text" readOnly value={d.referral_link} className="min-w-0 flex-1 rounded-xl border border-border-primary bg-bg-secondary px-3 py-2.5 font-mono text-xs text-text-primary outline-none focus:border-accent/50" />
-                <button type="button" onClick={() => { navigator.clipboard.writeText(d.referral_link); toast.success('Copied!'); }} className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-accent px-3.5 py-2.5 text-xs font-bold text-black shadow-[0_0_20px_rgba(30,136,255,0.3)] transition-all hover:brightness-110">
+                <button type="button" onClick={() => { navigator.clipboard.writeText(d.referral_link); toast.success('Copied!'); }} className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-accent px-3.5 py-2.5 text-xs font-bold text-black shadow-[0_0_20px_rgba(255,106,0,0.3)] transition-all hover:brightness-110">
                   <CopyIcon size={13} /> Copy
                 </button>
               </div>

@@ -163,7 +163,7 @@ function CompactInstrumentPicker({
                 type="button"
                 onClick={() => { onChange(inst.symbol); setOpen(false); setSearch(''); }}
                 className="w-full flex items-center justify-between px-2 py-1.5 text-left transition-colors hover:bg-bg-hover"
-                style={{ color: inst.symbol === value ? 'var(--accent, #2962FF)' : 'var(--text-secondary)' }}
+                style={{ color: inst.symbol === value ? 'var(--accent, #22C55E)' : 'var(--text-secondary)' }}
               >
                 <span className="text-[11px] font-semibold">{inst.symbol}</span>
                 <span className="text-[9px] text-text-tertiary">{inst.segment}</span>
@@ -449,8 +449,8 @@ export default function RiskCalculator() {
           <div
             className="rounded-xl flex flex-col items-center justify-center p-5"
             style={{
-              background: 'linear-gradient(135deg, rgba(41,98,255,0.12) 0%, rgba(94,179,255,0.06) 100%)',
-              border: '1px solid rgba(41,98,255,0.2)',
+              background: 'linear-gradient(135deg, rgba(34,197,94,0.12) 0%, rgba(94,179,255,0.06) 100%)',
+              border: '1px solid rgba(34,197,94,0.2)',
             }}
           >
             <span className="text-[11px] font-semibold text-text-secondary mb-1">{resultLabel}</span>

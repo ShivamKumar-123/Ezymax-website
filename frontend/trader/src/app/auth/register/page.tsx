@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
-import { Eye, EyeOff, Loader2, Check, Lock, Mail, Star, X } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Check, Lock, Mail, X } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import toast from 'react-hot-toast';
 import GoogleAuthButton from '@/components/auth/GoogleAuthButton';
@@ -23,8 +23,15 @@ const formVariants = {
   exit: { opacity: 0, y: -16 },
 };
 
-/* ── brand-panel copy (flat split-screen design) ── */
-const TRUST_MARKS = ['NOVAQUANT', 'HELIXFX', 'MERIDIAN', 'OAKBRIDGE'];
+/* ── brand-panel copy (flat split-screen design) ──
+   Same treatment as the login panel: the "M. Kaur" testimonial and the
+   NOVAQUANT / HELIXFX / MERIDIAN / OAKBRIDGE client row were invented, so
+   they are replaced by the published platform rules. */
+const PLATFORM_RULES: ReadonlyArray<{ value: string; label: string }> = [
+  { value: '1:100', label: 'Default leverage' },
+  { value: '80%', label: 'Margin call' },
+  { value: '50%', label: 'Stop-out' },
+];
 
 /* ── Input Field ── */
 function AuthInput({
@@ -168,7 +175,7 @@ function RegisterContent() {
     if (pwd.length >= 10 && pwVariety >= 3) return 3;
     return 2;
   })();
-  const strengthColors = ['#ef4444', '#f59e0b', '#22c55e', '#5f7800'];
+  const strengthColors = ['#ef4444', '#f59e0b', '#22c55e', '#15803d'];
   const strengthLabel = ['', 'Weak', 'Fair', 'Good', 'Strong'][strength];
 
   return (
@@ -191,45 +198,27 @@ function RegisterContent() {
             <div className="auth-left__mandala" aria-hidden="true" />
             <div className="auth-left__content">
               <motion.a className="auth-brand" href="/" {...fadeUp(0.15)}>
-                <img src="/images/ezymex-logo.png" alt="Ezymex" />
+                <img src="/images/ezymex-logo.png" alt="Ezymax" />
               </motion.a>
 
               <div>
                 <motion.h1 className="auth-brand__headline" {...fadeUp(0.3)}>
-                  Open your account in{' '}
-                  <span className="auth-brand__uword">minutes.</span>
+                  Access is reviewed, not{' '}
+                  <span className="auth-brand__uword">instant.</span>
                 </motion.h1>
                 <motion.p className="auth-brand__support" {...fadeUp(0.4)}>
-                  Connect a wallet or an email, allocate into the trading
-                  contract, and only your margin ever locks.
+                  Register, verify your identity, then fund the account. We
+                  will tell you where you are at each step.
                 </motion.p>
-
-                <motion.figure className="auth-quote" {...fadeUp(0.5)}>
-                  <div className="auth-quote__stars" aria-hidden="true">
-                    {[0, 1, 2, 3, 4].map((i) => (
-                      <Star key={i} size={14} fill="currentColor" />
-                    ))}
-                  </div>
-                  <blockquote className="auth-quote__text">
-                    &ldquo;Signed up, allocated, first trade — before my coffee
-                    went cold.&rdquo;
-                  </blockquote>
-                  <figcaption className="auth-quote__who">
-                    <span className="auth-quote__avatar">MK</span>
-                    <span>
-                      <span className="auth-quote__name">M. Kaur</span>
-                      <br />
-                      <span className="auth-quote__role">Swing trader · demo community</span>
-                    </span>
-                  </figcaption>
-                </motion.figure>
               </div>
 
               <motion.div className="auth-trust" {...fadeUp(0.6)}>
-                <p className="auth-trust__eyebrow">Trusted by modern trading desks</p>
+                <p className="auth-trust__eyebrow">Published platform rules</p>
                 <div className="auth-trust__row">
-                  {TRUST_MARKS.map((mark) => (
-                    <span key={mark}>{mark}</span>
+                  {PLATFORM_RULES.map((rule) => (
+                    <span key={rule.label}>
+                      {rule.value} {rule.label}
+                    </span>
                   ))}
                 </div>
               </motion.div>

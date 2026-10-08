@@ -44,11 +44,11 @@ export default function ReferralPage() {
       <div className="space-y-5 pb-8 max-w-2xl">
         <div>
           <h1 className="text-2xl font-bold text-text-primary tracking-tight flex items-center gap-2">
-            <Users size={22} className="text-[#1E88FF]" /> Refer &amp; Earn
+            <Users size={22} className="text-[#FF6A00]" /> Refer &amp; Earn
           </h1>
           <p className="text-sm text-text-secondary mt-1">
             Share your link. Everyone you bring in is tracked to you — and once you refer even one
-            trader, you automatically become an <span className="text-[#1E88FF] font-semibold">IB partner</span>
+            trader, you automatically become an <span className="text-[#FF6A00] font-semibold">IB partner</span>
             {' '}and start earning per-lot rebates.
           </p>
         </div>
@@ -69,14 +69,14 @@ export default function ReferralPage() {
                 </div>
                 <button type="button" onClick={copy}
                   className="shrink-0 inline-flex items-center gap-1.5 px-4 rounded-xl text-sm font-bold"
-                  style={{ color: '#0a0a0a', background: '#1E88FF' }}>
+                  style={{ color: '#060606', background: '#FF6A00' }}>
                   {copied ? <Check size={16} /> : <Copy size={16} />}{copied ? 'Copied' : 'Copy'}
                 </button>
               </div>
               <div className="flex items-center justify-between mt-3">
                 <span className="text-xs text-text-tertiary">Code: <span className="font-mono font-bold text-text-secondary">{data.code}</span></span>
                 {typeof navigator !== 'undefined' && 'share' in navigator && (
-                  <button type="button" onClick={() => navigator.share?.({ url: link, title: 'Join me on Ezymex' })}
+                  <button type="button" onClick={() => navigator.share?.({ url: link, title: 'Join me on Ezymax' })}
                     className="inline-flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary">
                     <Share2 size={13} /> Share
                   </button>
@@ -90,7 +90,7 @@ export default function ReferralPage() {
                 <p className="text-[11px] uppercase tracking-wider text-text-tertiary font-bold">People referred</p>
                 <p className="text-2xl sm:text-3xl font-bold text-text-primary font-mono tabular-nums mt-1 truncate">{data.referred_count}</p>
               </div>
-              <div className="rounded-2xl p-4 flex flex-col justify-center" style={{ background: 'var(--bg-card)', border: `1px solid ${data.is_ib ? '#1E88FF55' : 'var(--border-primary)'}` }}>
+              <div className="rounded-2xl p-4 flex flex-col justify-center" style={{ background: 'var(--bg-card)', border: `1px solid ${data.is_ib ? '#FF6A0055' : 'var(--border-primary)'}` }}>
                 <p className="text-[11px] uppercase tracking-wider text-text-tertiary font-bold">Partner status</p>
                 {data.is_ib ? (
                   <p className="text-lg font-bold mt-1 flex items-center gap-1.5" style={{ color: 'var(--accent-ink)' }}>
