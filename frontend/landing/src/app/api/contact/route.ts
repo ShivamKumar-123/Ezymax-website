@@ -1,42 +1,51 @@
-import { z } from "zod";
-
 import { getServerEnv } from "@/env";
 import { ApiError, handle } from "@/lib/api";
+import { leadSchema } from "@/lib/lead-schema";
 
 /**
- * Example `app/api` endpoint — a contact / lead submission.
+ * The one lead endpoint. Every form on the site posts here — contact,
+ * newsletter, CV, partner enquiry — distinguished by `type`.
  *
- * Demonstrates the convention: the handler owns the work — it validates input,
- * reads a secret env var, and calls an upstream service inline. Secrets are
- * safe here because `route.ts` is never bundled to the browser.
+ * It replaces an `/api/lead` route that only `console.log`ed its input, which
+ * meant every submission was silently discarded. Do not recreate that route:
+ * a second endpoint is a second place for leads to vanish.
+ *
+ * The *waitlist* deliberately does not come here. It is the invite gate and
+ * has to reach the gateway, so it keeps its own route at `/api/waitlist`.
+ *
+ * Secrets are safe in this file — `route.ts` is never bundled to the browser.
  */
 
-// Request schema — kept in the route since it isn't shared. Lift to a shared
-// module only once another route needs it.
-const contactSchema = z.object({
-  name: z.string().min(1).max(100),
-  email: z.email(),
-  message: z.string().min(1).max(2000),
-});
-
 export const POST = handle(async (req) => {
-  const input = contactSchema.parse(await req.json());
+  const { _hp, ...lead } = leadSchema.parse(await req.json());
+
+  // Honeypot: a real person never sees this field, so anything in it is a bot.
+  // Report success and store nothing, rather than telling the bot it failed.
+  if (_hp) return { received: true };
 
   const { CONTACT_ENDPOINT } = getServerEnv();
 
   if (CONTACT_ENDPOINT) {
-    // Forward the lead to the configured upstream (CRM, webhook, …).
     const upstream = await fetch(CONTACT_ENDPOINT, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(input),
+      body: JSON.stringify(lead),
     });
     if (!upstream.ok) {
-      throw new ApiError(502, "upstream_error", "Failed to deliver the message.");
+      throw new ApiError(
+        502,
+        "upstream_error",
+        "Failed to deliver the message.",
+      );
     }
   } else {
-    // No upstream configured — log server-side so the starter runs as-is.
-    console.log("[api/contact] submission:", input);
+    // No upstream configured yet. Logging at least leaves the submission in
+    // the container logs instead of dropping it on the floor -- but this is a
+    // stopgap: set CONTACT_ENDPOINT before pointing real traffic at a form.
+    console.warn(
+      `[api/contact] no CONTACT_ENDPOINT set; lead:${lead.type} logged only`,
+      JSON.stringify(lead),
+    );
   }
 
   return { received: true };

@@ -59,8 +59,13 @@ export function Footer() {
         <div className="mt-12 border-t border-line pt-8">
           <p className="max-w-4xl text-xs leading-relaxed text-dim">{site.disclaimer}</p>
           <div className="mt-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            {/* The brand and the domain are spelled differently on purpose
+                (see content/site.ts), so the footer says it once rather than
+                leaving every visitor to wonder which is the typo. No legal
+                entity is named until the real one is confirmed. */}
             <p className="text-xs text-dim">
-              © {site.copyrightYear} {site.name} ({site.legalName}). All rights reserved.
+              © {site.copyrightYear} {site.name}. All rights reserved. {site.name}{" "}
+              operates at {site.domain}.
             </p>
             <ul className="flex flex-wrap gap-x-5 gap-y-2">
               {legalLinks.map((l) => (
