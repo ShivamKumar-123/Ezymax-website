@@ -3,7 +3,7 @@
  *
  * `generateMetadata` builds a Next.js `Metadata` object — basic meta tags,
  * OpenGraph, Twitter cards, canonical URL, icons, robots. `metadataBase` is
- * always set (from `siteConfig`) so relative URLs (OG image, canonical)
+ * always set (from `site`) so relative URLs (OG image, canonical)
  * resolve to absolute — required by social scrapers.
  *
  * `generateViewport` builds the `Viewport` export. `themeColor` lives here, not
@@ -12,7 +12,16 @@
 
 import { Metadata, Viewport } from "next";
 
-import { siteConfig } from "@/lib/site";
+import { site } from "@/content/site";
+
+/** Default Open Graph / Twitter share image (path under `public/`). */
+const OG_IMAGE = "/open-graph.png";
+
+/**
+ * Browser theme-color (address bar / PWA). Matches `--color-bg` in
+ * globals.css — keep the two in step.
+ */
+const THEME_COLOR = "#060606";
 
 interface MetadataProps {
   title?: string;
@@ -27,22 +36,20 @@ interface MetadataProps {
 }
 
 export function generateMetadata({
-  title = siteConfig.name,
-  description = siteConfig.description,
+  title = site.name,
+  description = site.description,
   url = "/",
-  ogImage = siteConfig.ogImage,
-  twitterHandle = siteConfig.twitterHandle,
-  author = siteConfig.author,
-  siteName = siteConfig.name,
+  ogImage = OG_IMAGE,
+  twitterHandle,
+  author,
+  siteName = site.name,
 }: MetadataProps = {}): Metadata {
   return {
     // Resolves every relative URL below to an absolute one.
-    metadataBase: new URL(siteConfig.url),
+    metadataBase: new URL(site.url),
     title,
     description,
-    authors: [{ name: author }],
-    creator: author,
-    publisher: author,
+    ...(author ? { authors: [{ name: author }], creator: author, publisher: author } : {}),
     alternates: {
       canonical: url,
     },
@@ -60,8 +67,7 @@ export function generateMetadata({
       card: "summary_large_image",
       title,
       description,
-      site: twitterHandle,
-      creator: twitterHandle,
+      ...(twitterHandle ? { site: twitterHandle, creator: twitterHandle } : {}),
       images: [ogImage],
     },
     icons: {
@@ -84,7 +90,7 @@ export function generateMetadata({
 
 export function generateViewport(): Viewport {
   return {
-    themeColor: siteConfig.themeColor,
+    themeColor: THEME_COLOR,
     width: "device-width",
     initialScale: 1,
   };

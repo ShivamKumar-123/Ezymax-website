@@ -6,11 +6,17 @@
  * Render the output inside a `<script type="application/ld+json">` tag.
  */
 
-import { siteConfig } from "@/lib/site";
+import { site } from "@/content/site";
 
 /**
  * Organization + WebSite schema for the site root. Emit once, in the root
  * layout. The two nodes are linked by `@id` so crawlers treat them as related.
+ *
+ * Three things are deliberately absent. `legalName` and `address`, because the
+ * company entity behind Ezymax has not been confirmed and a wrong one in
+ * structured data is a wrong one republished everywhere. And `sameAs`, because
+ * the only social links available were bare domains — `sameAs: ["https://x.com/"]`
+ * asserts that this organisation *is* x.com. Add each back when it is real.
  */
 export function getSiteStructuredData() {
   return {
@@ -18,18 +24,24 @@ export function getSiteStructuredData() {
     "@graph": [
       {
         "@type": "Organization",
-        "@id": `${siteConfig.url}/#organization`,
-        name: siteConfig.name,
-        url: siteConfig.url,
-        logo: `${siteConfig.url}/android-icon-192x192.png`,
+        "@id": `${site.url}/#organization`,
+        name: site.name,
+        // The brand and the domain are spelled differently; this tells
+        // crawlers the two names are one entity rather than a typo.
+        alternateName: site.alternateName,
+        url: site.url,
+        logo: `${site.url}/android-icon-192x192.png`,
+        description: site.description,
+        slogan: site.tagline,
+        email: site.email,
       },
       {
         "@type": "WebSite",
-        "@id": `${siteConfig.url}/#website`,
-        name: siteConfig.name,
-        description: siteConfig.description,
-        url: siteConfig.url,
-        publisher: { "@id": `${siteConfig.url}/#organization` },
+        "@id": `${site.url}/#website`,
+        name: site.name,
+        description: site.description,
+        url: site.url,
+        publisher: { "@id": `${site.url}/#organization` },
       },
     ],
   };

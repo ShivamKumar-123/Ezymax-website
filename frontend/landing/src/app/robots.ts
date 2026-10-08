@@ -1,18 +1,9 @@
 import type { MetadataRoute } from "next";
+import { site } from "@/content/site";
 
-import { siteConfig } from "@/lib/site";
-
-/**
- * Generates `/robots.txt`. Allows all crawlers and points them at the sitemap.
- * Tighten the rules per environment (e.g. disallow `/` on staging).
- */
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: {
-      userAgent: "*",
-      allow: "/",
-    },
-    sitemap: `${siteConfig.url}/sitemap.xml`,
-    host: siteConfig.url,
+    rules: [{ userAgent: "*", allow: "/", disallow: ["/api/"] }],
+    sitemap: new URL("/sitemap.xml", site.url).toString(),
   };
 }

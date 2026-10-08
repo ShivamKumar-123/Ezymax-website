@@ -1,314 +1,274 @@
 @import "tailwindcss";
 
-/* ---------------------------------------------------------------------------
-   TIER 1 — PRIMITIVES  (`--raw-*`)
-   Raw literal values. The only tier allowed to contain a hex/px/ms literal.
-   Never referenced in markup, never bound into @theme. Rename freely.
-   Grammar: --raw-<category>-<name>[-<shade>]
-   See obsidian/frontend/design-system.md → "Token naming convention".
-   --------------------------------------------------------------------------- */
-:root {
-  --raw-color-white: #ffffff;
-  --raw-color-neutral-100: #ebebeb;
-  --raw-color-neutral-900: #171717;
-  --raw-color-neutral-950: #0a0a0a;
-
-  --raw-duration-fast: 150ms;
-  --raw-duration-normal: 250ms;
-
-  /* Obsidian & Lime palette — glassmorphism reference adoption (ADR-0020).
-     Obsidian base #0a0a0a with #0c0c0c surfaces, neon-lime primary accent
-     #1E88FF, emerald secondary #10b981, and rgba-white glass fills/borders
-     straight from the reference spec. */
-  --raw-color-black: #000000;
-  --raw-color-ink-950: #0a0a0a;
-  --raw-color-ink-900: #0c0c0c;
-  --raw-color-ink-800: #161616;
-  --raw-color-grey-500: #8d8d8d;
-  --raw-color-grey-400: #b6b6b6;
-  --raw-color-lime-300: #deff4d;
-  --raw-color-lime-400: #1E88FF;
-  --raw-color-lime-600: #9ec700;
-  --raw-color-emerald-500: #10b981;
-  --raw-color-glass-fill: rgba(255, 255, 255, 0.03);
-  --raw-color-glass-border: rgba(255, 255, 255, 0.1);
-
-  --raw-blur-glass: 16px;
-  --raw-shadow-glow: 0 0 30px rgba(30, 136, 255, 0.3);
-
-  --raw-radius-pill: 9999px;
-  --raw-radius-card: 2.5rem;
-  --raw-radius-card-sm: 1.5rem;
-  --raw-radius-control: 0.875rem;
-
-  --raw-text-watermark: 13rem;
-  --raw-container-shell: 88rem;
-}
-
-/* ---------------------------------------------------------------------------
-   TIER 2 — SEMANTIC  (role names, no namespace prefix)
-   Purpose, not appearance. Always `var(--raw-*)` — never a literal.
-   This is the themeable layer: dark mode overrides happen HERE, which is why
-   these are separate from the @theme bindings below (see the note there).
-   Grammar: --<role>[-<variant>][-<state>]
-   --------------------------------------------------------------------------- */
-:root {
-  --background: var(--raw-color-ink-950);
-  --foreground: var(--raw-color-white);
-
-  --duration-fast: var(--raw-duration-fast);
-  --duration-normal: var(--raw-duration-normal);
-
-  /* Obsidian & Lime roles. The design is a fixed DARK palette — near-white
-     type and neon-lime accents on obsidian — so there is no
-     prefers-color-scheme override; a light mode would be a different brand,
-     not a variant of this one. `--ink` is the deepest surface (below the
-     page), `--surface` / `--surface-raised` step upward from it. `--glass` +
-     `--glass-blur` are the glassmorphism pair — always used together. */
-  --ink: var(--raw-color-black);
-  --muted: var(--raw-color-grey-500);
-  --subtle: var(--raw-color-grey-400);
-  --line: var(--raw-color-glass-border);
-  --surface: var(--raw-color-ink-900);
-  --surface-raised: var(--raw-color-ink-800);
-  --accent: var(--raw-color-lime-400);
-  --accent-from: var(--raw-color-lime-300);
-  --accent-to: var(--raw-color-lime-600);
-  --accent-positive: var(--raw-color-emerald-500);
-  --glass: var(--raw-color-glass-fill);
-  --glass-blur: var(--raw-blur-glass);
-  --glow: var(--raw-shadow-glow);
-  --hero-from: var(--raw-color-black);
-  --hero-to: var(--raw-color-ink-950);
-}
-
-/* ---------------------------------------------------------------------------
-   THEME BINDINGS — map semantic tokens into Tailwind namespaces.
-   Every entry is exactly `--<tw-namespace>-<role>: var(--<role>)`.
-   `inline` is required: it inlines the var() into each utility, so the
-   dark-mode overrides on the Tier 2 tokens above cascade. Binding a literal
-   here instead would freeze the value and break theming.
-
-   Only these namespaces generate utilities (verified against tailwindcss
-   v4.3.3): --color-* --spacing-* --radius-* --leading-* --tracking-* --text-*
-   --font-* --ease-* --breakpoint-* --container-* --shadow-* --blur-* --animate-*
-   NOTE: there is NO --duration-* namespace in v4 — `duration-fast` compiles to
-   nothing. Durations stay Tier 2 only and are used as duration-[var(--duration-fast)].
-   --------------------------------------------------------------------------- */
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-ink: var(--ink);
-  --color-muted: var(--muted);
-  --color-subtle: var(--subtle);
-  --color-line: var(--line);
-  --color-surface: var(--surface);
-  --color-surface-raised: var(--surface-raised);
-  --color-accent: var(--accent);
-  --color-accent-from: var(--accent-from);
-  --color-accent-to: var(--accent-to);
-  --color-accent-positive: var(--accent-positive);
-  --color-glass: var(--glass);
-  --color-hero-from: var(--hero-from);
-  --color-hero-to: var(--hero-to);
-
-  --blur-glass: var(--glass-blur);
-  --shadow-glow: var(--glow);
-
-  --radius-pill: var(--raw-radius-pill);
-  --radius-card: var(--raw-radius-card);
-  --radius-card-sm: var(--raw-radius-card-sm);
-  --radius-control: var(--raw-radius-control);
-
-  --text-watermark: var(--raw-text-watermark);
-  --container-shell: var(--raw-container-shell);
-
-  --font-sans: var(--font-space-grotesk);
-  --font-mono: var(--font-jetbrains-mono);
-
-  /* Leading floor for clipped TextEngine reveals — see
-     obsidian/frontend/text-engine.md → "Alignment & line-height". */
-  --leading-display: 1.1;
-
-  /* Type-scale literals, following the --leading-display precedent: squeezed
-     display tracking + tracked-out mono labels (Obsidian & Lime reference). */
-  --tracking-display: -0.05em;
-  --tracking-label: 0.2em;
-
-  --ease-entrance: cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* The starter centres a single screen in a 100vh box; a scrolling page needs
-   the body to grow instead. */
-body {
-  background: var(--background);
-  color: var(--foreground);
-  overflow-x: hidden;
-}
-
-@layer base {
-  /* Adaptive scaling grid — scales the root font-size with the viewport so a
-     rem-based layout stays proportional. Each breakpoint divides FONT_BASE
-     (16px) by the design base width its range was laid out at:
-       font-size: 16 * 100 / baseWidth  (vw)
-     Above 1920px the AdaptiveGrid component takes over (scale-up).
-     Keep in sync with src/components/common/grid/grid.config.ts. */
-  html {
-    font-size: 16px;
-  }
-
-  :focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
-
-  @media (max-width: 1920px) {
-    html {
-      font-size: 0.833333vw; /* 16 * 100 / 1920 */
-    }
-  }
-
-  @media (max-width: 1440px) {
-    html {
-      font-size: 1.111111vw; /* 16 * 100 / 1440 */
-    }
-  }
-
-  @media (max-width: 1024px) {
-    html {
-      font-size: 1.5625vw; /* 16 * 100 / 1024 */
-    }
-  }
-
-  @media (max-width: 640px) {
-    html {
-      font-size: 4.444444vw; /* 16 * 100 / 360 */
-    }
-  }
-}
-
-@layer utilities {
-  /* Page gutter + max width, repeated on every section wrapper. Pure-utility
-     combo with no structure of its own, so it is a @utility, not a component
-     (design-system.md → "Where a style goes"). */
-  .shell {
-    margin-inline: auto;
-    max-width: var(--container-shell);
-  }
-}
-
-@layer components {
-  /* Anti-flat-dark-mode textures (Obsidian & Lime reference, ADR-0020):
-     a 60px grid plus grainy noise, fixed behind the content. Pseudo-elements
-     are the sanctioned @layer components case (ADR-0012). They sit at z-index
-     1 — above the tubes canvas (z-0), below every section (z-10) — so they
-     read through translucent surfaces without washing out the cards. */
-  body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: 1;
-    pointer-events: none;
-    background-image:
-      linear-gradient(var(--line) 1px, transparent 1px),
-      linear-gradient(90deg, var(--line) 1px, transparent 1px);
-    background-size: 60px 60px;
-    opacity: 0.25;
-  }
-
-  body::after {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: 1;
-    pointer-events: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    opacity: 0.15;
-  }
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   New Era intro-experience tokens (ported).
-   The experience components in src/views/home/experience/ use a viewport-fluid
-   type scale + frosted-glass surfaces from the source project. Added here so
-   they render correctly. The display font is mapped to Space Grotesk (FX
-   Ezymex's display face) instead of the source's Assistant.
-   ───────────────────────────────────────────────────────────────────────── */
-:root {
-  /* Ported from the source project as salmon/periwinkle; retuned to the FX
-     Ezymex palette so the intro experience matches the rest of the site.
-     Warm = the lime accent family, cool = emerald. */
-  --accent-warm: var(--raw-color-lime-300);
-  --accent-cool: var(--raw-color-emerald-500);
-}
-
+/* ---------- Design tokens ---------- */
 @theme {
-  --font-display: var(--font-space-grotesk);
+  --color-bg: #060606;
+  --color-bg-2: #0e0a08;
+  --color-surface: #121010;
+  --color-surface-2: #1a1512;
+  --color-ink: #f3efe9;
+  --color-cream: #f3efe9;
+  --color-muted: #a39e98;
+  --color-dim: #6f6a66;
 
-  --text-display: clamp(34px, 5.4vw, 80px);
-  --text-display-sm: clamp(30px, 4.6vw, 64px);
-  --text-stat: clamp(44px, 4.8vw, 72px);
-  --text-lead: clamp(15px, 1.25vw, 18px);
-  --text-eyebrow: clamp(13px, 0.95vw, 14px);
-  --text-kicker: clamp(12px, 0.9vw, 13px);
-  --text-button: clamp(15px, 1.1vw, 16px);
+  --color-orange-300: #ffb380;
+  --color-orange-400: #ff8a3d;
+  --color-orange-500: #ff6a00;
+  --color-orange-600: #ff5a1f;
+  --color-orange-700: #c2410c;
+  --color-ember: #b3121b;
+  --color-ember-deep: #7a0f0f;
 
-  --leading-title: 1.2;
-  --tracking-title: -0.03em;
+  --color-line: rgb(255 255 255 / 0.1);
+  --color-line-strong: rgb(255 255 255 / 0.18);
 
-  --container-title: 62.5rem;
-  --container-title-sm: 50rem;
-  --container-lead: 37.5rem;
-  --container-lead-sm: 31.25rem;
+  --radius-card: 20px;
+  --radius-panel: 28px;
 
-  --color-surface-glass: rgba(255, 255, 255, 0.04);
-  --color-surface-glass-strong: rgba(255, 255, 255, 0.05);
-  --color-surface-glass-hover: rgba(255, 255, 255, 0.08);
-  --color-surface-icon: rgba(255, 255, 255, 0.02);
-  --color-surface-card: rgba(12, 14, 22, 0.55);
-  --color-border-glass-strong: rgba(255, 255, 255, 0.15);
-  --color-accent-warm: var(--accent-warm);
-  --color-accent-cool: var(--accent-cool);
+  --shadow-glow: 0 0 40px rgb(255 106 0 / 0.35), 0 0 120px rgb(255 106 0 / 0.15);
+  --shadow-glow-sm: 0 0 18px rgb(255 106 0 / 0.4);
+  --shadow-glass: inset 0 1px 0 rgb(255 255 255 / 0.08), 0 10px 40px rgb(0 0 0 / 0.4);
+  --shadow-card: 0 20px 60px rgb(0 0 0 / 0.45);
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --animate-marquee: marquee 44s linear infinite;
+  --animate-spin-slow: spin 28s linear infinite;
+  --animate-pulse-glow: pulse-glow 4.5s ease-in-out infinite;
+  --animate-float: float 7s ease-in-out infinite;
+  --animate-float-delayed: float 8.5s ease-in-out 1.2s infinite;
+  --animate-caret: caret 1s steps(2, start) infinite;
+
+  @keyframes marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  @keyframes pulse-glow {
+    0%,
+    100% {
+      opacity: 0.55;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+  @keyframes caret {
+    to {
+      visibility: hidden;
+    }
+  }
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-12px);
+    }
+  }
 }
 
-@utility text-gradient-accent {
-  background-image: linear-gradient(90deg, var(--accent-warm), var(--accent-cool));
+@theme inline {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-manrope), var(--font-inter), ui-sans-serif, sans-serif;
+  --font-pixel: var(--font-silkscreen), ui-monospace, monospace;
+  --font-mono: var(--font-space-mono), ui-monospace, SFMono-Regular, monospace;
+}
+
+/* ---------- Base ---------- */
+@layer base {
+  html {
+    color-scheme: dark;
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    overflow-x: clip;
+  }
+  body {
+    background-color: var(--color-bg);
+    background-image:
+      radial-gradient(1200px 700px at 8% -10%, rgb(255 106 0 / 0.08), transparent 60%),
+      radial-gradient(900px 600px at 100% 10%, rgb(122 15 15 / 0.12), transparent 60%);
+    background-attachment: fixed;
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: clip;
+  }
+  ::selection {
+    background: var(--color-orange-500);
+    color: #000;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  * {
+    border-color: var(--color-line);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-orange-500);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0a0a0a;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #2a2320;
+    border-radius: 999px;
+    border: 2px solid #0a0a0a;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* ---------- Utilities ---------- */
+@utility bracket {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-orange-400);
+  white-space: nowrap;
+  &::before {
+    content: "";
+    display: inline-block;
+    width: 24px;
+    height: 1px;
+    background: var(--color-orange-500);
+  }
+}
+@utility bracket-muted {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+@utility glass {
+  background: rgb(255 255 255 / 0.045);
+  border: 1px solid var(--color-line);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: var(--shadow-glass);
+}
+@utility glass-strong {
+  background: rgb(255 255 255 / 0.07);
+  border: 1px solid var(--color-line-strong);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  box-shadow: var(--shadow-glass);
+}
+@utility glass-dark {
+  background: rgb(10 8 7 / 0.72);
+  border: 1px solid var(--color-line);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  box-shadow: var(--shadow-glass);
+}
+@utility glow {
+  box-shadow: var(--shadow-glow);
+}
+@utility glow-sm {
+  box-shadow: var(--shadow-glow-sm);
+}
+@utility text-glow {
+  text-shadow: 0 0 24px rgb(255 106 0 / 0.55);
+}
+@utility highlight {
+  background: linear-gradient(92deg, #ffb380 0%, #ff6a00 55%, #ff5a1f 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
-
-@utility text-fade-trailing {
-  -webkit-mask-image: linear-gradient(90deg, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0.2) 100%);
-  mask-image: linear-gradient(90deg, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0.2) 100%);
+@utility dropcap {
+  &::first-letter {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 3.4em;
+    line-height: 0.8;
+    float: left;
+    margin: 0.08em 0.14em 0 0;
+    color: var(--color-ink);
+  }
 }
-
-@utility shadow-glass-btn {
-  box-shadow:
-    inset 0 2px 10px rgba(255, 255, 255, 0.35),
-    inset 0 -6px 16px rgba(0, 0, 0, 0.75),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
-    0 8px 24px rgba(0, 0, 0, 0.4);
+@utility underline-orange {
+  text-decoration: underline;
+  text-decoration-color: var(--color-orange-500);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 6px;
 }
-
-@utility shadow-glass-btn-hover {
-  box-shadow:
-    inset 0 3px 14px rgba(255, 255, 255, 0.45),
-    inset 0 -6px 16px rgba(0, 0, 0, 0.85),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
-    0 12px 32px rgba(0, 0, 0, 0.6);
+@utility orange-backdrop {
+  position: relative;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -8% -4%;
+    z-index: -1;
+    border-radius: 50%;
+    background:
+      radial-gradient(60% 55% at 30% 30%, rgb(255 106 0 / 0.55), transparent 70%),
+      radial-gradient(55% 50% at 75% 70%, rgb(179 18 27 / 0.45), transparent 70%);
+    filter: blur(70px);
+    opacity: 0.9;
+    pointer-events: none;
+  }
 }
-
-@utility shadow-glass-btn-secondary {
-  box-shadow:
-    0 12px 32px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+@utility ember-glow {
+  background:
+    radial-gradient(60% 60% at 50% 40%, rgb(255 106 0 / 0.5), transparent 70%),
+    radial-gradient(55% 55% at 55% 60%, rgb(122 15 15 / 0.55), transparent 72%);
+  filter: blur(60px);
 }
-
-@utility shadow-glass-eyebrow {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+@utility container-x {
+  width: 100%;
+  max-width: 1320px;
+  margin-inline: auto;
+  padding-inline: 20px;
+  @media (width >= 640px) {
+    padding-inline: 32px;
+  }
+  @media (width >= 1024px) {
+    padding-inline: 48px;
+  }
 }
-
-@utility shadow-glass-card {
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+@utility hide-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+@utility text-balance {
+  text-wrap: balance;
 }

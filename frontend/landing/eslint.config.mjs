@@ -13,18 +13,11 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
-  {
-    rules: {
-      "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/ban-ts-comment": "off",
-      "@typescript-eslint/no-unused-expressions": "off",
-      "@typescript-eslint/no-unused-vars": "off",
-      "@typescript-eslint/no-empty-object-type": "off",
-      "prefer-const": "off",
-      "@typescript-eslint/no-empty-function": "off",
-      "react-hooks/set-state-in-effect": "off",
-    },
-  },
+  // There was a block here switching off no-explicit-any, no-unused-vars,
+  // prefer-const, set-state-in-effect and four others -- which meant the
+  // project's own "no `any`, type everything" rule had never actually been
+  // enforced by anything. The imported codebase passes under the defaults,
+  // so the overrides are gone and the rule is real now.
 ]);
 
 export default eslintConfig;

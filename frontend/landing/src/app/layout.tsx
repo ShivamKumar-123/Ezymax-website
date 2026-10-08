@@ -1,90 +1,81 @@
-import type { Metadata, Viewport } from "next";
-import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import { Inter, Manrope, Silkscreen, Space_Mono } from "next/font/google";
 
+import "./globals.css";
+
+import { WaitlistModal } from "@/components/forms/WaitlistModal";
+import { Footer } from "@/components/layout/Footer";
+import { Header } from "@/components/layout/Header";
+import { Preloader } from "@/components/layout/Preloader";
+import { site } from "@/content/site";
 import {
-  generateMetadata,
-  generateViewport,
+  generateMetadata as buildMetadata,
+  generateViewport as buildViewport,
 } from "@/utils/seo/generate-page-metadata";
 import { getSiteStructuredData } from "@/utils/seo/structured-data";
 
-import { LazyCookie } from "@/components/common/Cookie";
-import { Header } from "@/components/common/chrome/header";
-import { NavMenu } from "@/components/common/chrome/nav-menu";
-import { RequestModal } from "@/components/common/chrome/request-modal";
-import { WaitlistModal } from "@/components/common/chrome/waitlist-modal";
-import { WaitlistAutoOpen } from "@/components/common/waitlist-auto-open";
-import { SiteFooter } from "@/components/common/chrome/site-footer";
-import { AdaptiveGrid } from "@/components/common/grid";
-import { ReducedMotion } from "@/components/common/reduced-motion";
-import { TubesCursor } from "@/components/common/tubes-cursor";
-import { ScrollLayout } from "@/layouts/scroll-layout";
-
-import { navPages } from "@/data/mocks/nav-pages";
-import {
-  footerContent,
-  headerCta,
-  modalContent,
-  navGroups,
-  navLabels,
-} from "@/data/mocks/site";
-
-import "@/app/globals.css";
-
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
+/**
+ * The four families the design depends on. Fetched by next/font at BUILD time
+ * and self-hosted, so the Docker builder stage needs network access — see the
+ * note in the Dockerfile.
+ */
+const inter = Inter({
   subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+const manrope = Manrope({
+  subsets: ["latin"],
+  variable: "--font-manrope",
+  display: "swap",
+});
+const silkscreen = Silkscreen({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-silkscreen",
+  display: "swap",
+});
+const spaceMono = Space_Mono({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-space-mono",
   display: "swap",
 });
 
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
-  subsets: ["latin"],
-  display: "swap",
-});
+export const metadata = {
+  ...buildMetadata({ description: site.positioning }),
+  title: {
+    default: `${site.name} | ${site.tagline}`,
+    template: `%s | ${site.name}`,
+  },
+  applicationName: site.name,
+};
 
-export const metadata: Metadata = generateMetadata();
-export const viewport: Viewport = generateViewport();
+export const viewport = buildViewport();
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en">
-      <body
-        className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} font-sans`}
-      >
+    <html
+      lang="en"
+      data-scroll-behavior="smooth"
+      className={`${inter.variable} ${manrope.variable} ${silkscreen.variable} ${spaceMono.variable} h-full antialiased`}
+    >
+      <body className="flex min-h-full flex-col">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify(getSiteStructuredData()),
           }}
         />
-        <ScrollLayout>
-          <AdaptiveGrid />
-          <ReducedMotion />
-          <LazyCookie />
-          <TubesCursor />
-          <a
-            href="#main"
-            className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-60 focus:rounded-control focus:bg-ink focus:px-4 focus:py-2 focus:text-sm focus:text-white"
-          >
-            Skip to content
-          </a>
-          <Header />
-          {children}
-          <SiteFooter content={footerContent} />
-          <NavMenu
-            groups={navGroups}
-            cta={headerCta}
-            labels={navLabels}
-            pages={navPages}
-          />
-          <RequestModal content={modalContent} />
-          <WaitlistModal />
-          <WaitlistAutoOpen />
-        </ScrollLayout>
+        <Preloader />
+        <Header />
+        {/* z-[1] puts the page above the body's ambient gradients; the hero's
+            absolutely-positioned glows rely on this stacking context, and the
+            footer needs the same one to sit above them. */}
+        <main className="relative z-[1] flex-1">{children}</main>
+        <div className="relative z-[1]">
+          <Footer />
+        </div>
+        <WaitlistModal />
       </body>
     </html>
   );

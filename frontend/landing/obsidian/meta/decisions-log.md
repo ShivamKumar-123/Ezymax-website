@@ -768,3 +768,66 @@ No JS config file. Raw values in class names are banned. See [[design-system]].
 **Consequences.** Design tokens are the only styling currency. New values must be
 added to `globals.css` first — and, per ADR-0015, must follow the three-tier
 naming convention.
+
+---
+
+## ADR-0016 — The landing app is replaced by the setupzero.com codebase
+
+- **Status:** Accepted
+- **Date:** 2026-10-08
+
+**Context.** Two things converged. The landing site was mid-way through a
+dark→light palette flip: the CSS tokens had moved but the WebGL stage behind
+them had not, so body text rendered dark navy over a black scene and the hero
+was unreadable in production. And a second, finished marketing site existed
+(setupzero.com — a vendor selling brokerage software) whose design was wanted
+for Ezymax instead.
+
+Finishing the palette flip would have been work thrown away. The two projects
+turned out to be unusually compatible — both Next 16 / React 19 / Tailwind v4
+CSS-first — so the design transplanted cleanly.
+
+**Decision.** Replace the landing app's source wholesale with the setupzero
+build, keeping its dark black-and-orange design exactly as-is, and rewrite
+every word for a retail CFD broker.
+
+Superseded, and now false:
+
+- **ADR-0003** (routes delegate to `src/views/`) — pages compose
+  `components/sections/**` and read copy from `content/**`. There is no
+  `src/views/`.
+- **ADR-0004 / 0015** (three-tier `--raw-*` → semantic → `@theme` tokens) —
+  the token layer is single-tier `@theme` plus `@utility` composites. Tailwind
+  v4 CSS-first still holds; the naming convention does not.
+- Every ADR covering `@react-spring/web`, `spring-text-engine` or Lenis.
+  Motion is `motion/react` (Motion v14).
+
+**Consequences.** Production kept the old dark theme (a partial revert of the
+flip) until the replacement shipped, rather than staying broken for the days
+it took. Nine vault notes documenting deleted code were removed and
+`tech-stack` / `folder-structure` rewritten — an agent confidently applying
+the old conventions is now the most likely failure mode.
+
+The content rewrite was the larger half of the work, and not optional. The
+imported copy sold technology to brokers; Ezymax *is* a broker. It also
+shipped twelve placeholder statistics, three testimonials rendering a literal
+"pending" badge, and five social links that were bare domains being fed to
+JSON-LD as `sameAs`.
+
+Three claims carried over from the *previous Ezymax* copy were removed for the
+same reason — they contradict the backend:
+
+1. "We never hold your money / funds sit in a contract / no approval queue."
+   Deposits credit a database balance from an admin-held address, withdrawals
+   are written `pending`, the vault contract's README documents a BSC
+   **testnet** deploy, and the live `.env` has no vault address or chain config
+   at all. The site's own terms already said the opposite.
+2. Leverage as 1:200 (marketing) and 1:500 (risk disclosure). The risk engine
+   runs 1:100.
+3. "Executed through Ezymax's liquidity providers." The backend is a b-book
+   engine — Ezymax is the counterparty, which the risk disclosure now states
+   as a conflict of interest.
+
+`content/facts.ts` exists to stop this recurring: every number the site may
+state carries a `source:` comment, and the figures with no honest source are
+listed as deliberately absent, with the reason.

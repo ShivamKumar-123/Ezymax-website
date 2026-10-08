@@ -29,19 +29,18 @@ humans and AI agents (Claude Code, Cursor).
 - [[environment-variables]] — config & secrets handling
 
 ### 02 — Frontend
-- [[routing]] — App Router conventions, route → view delegation
 - [[design-system]] — Tailwind v4 tokens, CSS layers, styling rules
-- [[animation-system]] — the spring component library (the core of this starter)
-- [[text-engine]] — `spring-text-engine` usage summary & project rules
-- [[text-engine-reference]] — full `spring-text-engine` API reference
-- [[smooth-scroll]] — Lenis integration + scroll store
-- [[component-conventions]] — how to write & place components
 - [[html-semantics]] — semantic, accessible, SEO-correct markup rules
 - [[seo-metadata]] — metadata generation & bot detection
-- [[components/animation-springs|Spring components catalog]]
-- [[components/common|Common components catalog]]
-- [[hooks]] — custom hooks catalog
-- [[utils]] — utility functions catalog
+- [[routing]] — App Router conventions ⚠️ *predates ADR-0016; there is no
+  `src/views/` layer any more*
+
+> **October 2026 — this app was rebuilt.** The notes on the spring animation
+> system, `spring-text-engine`, Lenis smooth scroll, and the component, hook
+> and util catalogs described code that no longer exists, and were deleted
+> rather than left to mislead. Start from [[tech-stack]] and
+> [[folder-structure]], and read ADR-0016 in [[decisions-log]] for what
+> changed and why. `AGENTS.md` at the app root is the current rulebook.
 
 ### 03 — Backend
 - [[backend/README|Backend overview]] — API layer; no DB/auth yet
