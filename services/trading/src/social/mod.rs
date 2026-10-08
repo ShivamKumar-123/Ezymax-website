@@ -632,6 +632,7 @@ impl Social {
                             "margin": (m.margin / f).to_string(), "freeMargin": (m.free_margin / f).to_string(),
                             "positions": st.positions.len(), "orders": st.orders.len(), "version": st.version, "createdAt": st.account.created_at,
                             "group": st.account.group, "netting": st.account.mode == crate::model::Mode::Netting, "live": st.account.kind == AccountKind::Live,
+                            "options": env.group.product == crate::rules::Product::Options,
                             "userId": st.account.user_id, "tenantId": st.account.tenant_id, "status": st.account.status.as_str(),
                         })
                     }
@@ -656,6 +657,7 @@ impl Social {
             group: v["group"].as_str().unwrap_or_default().to_string(),
             netting: v["netting"].as_bool().unwrap_or(false),
             live: v["live"].as_bool().unwrap_or(false),
+            options: v["options"].as_bool().unwrap_or(false),
             user_id: v["userId"].as_i64().unwrap_or(0),
             tenant_id: v["tenantId"].as_i64().unwrap_or(0),
             status: v["status"].as_str().unwrap_or_default().to_string(),
@@ -756,6 +758,8 @@ pub struct Brief {
     pub group: String,
     pub netting: bool,
     pub live: bool,
+    /// An options account (copy trading, PAMM and MAM trade CFDs).
+    pub options: bool,
     pub user_id: i64,
     pub tenant_id: i64,
     pub status: String,

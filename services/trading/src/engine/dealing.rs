@@ -2,7 +2,7 @@
 
 use serde_json::{Value, json};
 
-use super::trade::{DealerCtx, gate, market_open};
+use super::trade::{DealerCtx, gate, market_open, product_gate};
 use super::{Env, Reject, Tx, metrics, pnl, total_margin};
 use crate::model::{Book, Deal, DealEntry, DealReason, Position, RouteEvent, TxnKind, acct_code, house_code};
 use crate::money::{D, ZERO, num, r2, rdp};
@@ -27,6 +27,7 @@ pub fn add_volume(tx: &mut Tx, env: &Env, ticket: i64, volume: D, dealer: &Deale
     if let Some(e) = spec.volume_error(volume).or_else(|| spec.volume_error(p.volume + volume)) {
         return Err(Reject::new("invalid_volume", e));
     }
+    product_gate(env, crate::rules::Product::Cfd)?;
     gate(env, &tx.st, &p.symbol, true, p.volume + volume, Some(dealer))?;
     market_open(env, &spec)?;
     let q = env.live_quote(&tx.st.account, &p.symbol)?;
@@ -266,7 +267,11 @@ pub fn fill_order(tx: &mut Tx, env: &Env, ticket: i64, dealer: &DealerCtx) -> Re
         return Err(Reject::new("not_supported", "Option orders fill at the model price when their limit or trigger is reached"));
     }
     let spec = env.spec(&o.symbol)?.clone();
-    gate(env, &tx.st, &o.symbol, is_opening(&tx.st, &o.symbol, o.side, o.volume), o.volume, Some(dealer))?;
+    let opening = is_opening(&tx.st, &o.symbol, o.side, o.volume);
+    if opening {
+        product_gate(env, crate::rules::Product::Cfd)?;
+    }
+    gate(env, &tx.st, &o.symbol, opening, o.volume, Some(dealer))?;
     market_open(env, &spec)?;
     let q = env.live_quote(&tx.st.account, &o.symbol)?;
     let price = q.open_price(o.side);

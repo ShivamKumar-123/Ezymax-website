@@ -260,7 +260,7 @@ pub fn enter_with(tx: &mut Tx, env: &Env, req: BookReq, agg: &mut reserve::Agg, 
     let opening = whole(opening_c, step).unwrap_or(0);
     let opens = opening > 0;
     // gates
-    eopt::module_gate(env, &tx.st, &snap, &u.symbol)?;
+    eopt::module_gate(env, &tx.st, &snap, &u.symbol, opens)?;
     eopt::client_gate(env, &tx.st, &snap, opens)?;
     gate(env, &tx.st, &u.symbol, opens, ZERO, None)?;
     if opens && !req.eligible {
@@ -1098,7 +1098,7 @@ pub fn place_stop(tx: &mut Tx, env: &Env, r: StopReq) -> Result<Order, Reject> {
     let (tick, step) = units(&u);
     eopt::contracts_gate(&u, req.qty)?;
     whole(req.qty, step).ok_or_else(|| rej("invalid_volume", format!("Contracts must be a multiple of {}", step.normalize())))?;
-    eopt::module_gate(env, &tx.st, &snap, &u.symbol)?;
+    eopt::module_gate(env, &tx.st, &snap, &u.symbol, !req.reduce_only)?;
     gate(env, &tx.st, &u.symbol, !req.reduce_only, ZERO, None)?;
     if req.kind == ReqKind::Limit {
         let p = req.price.filter(|p| *p > ZERO).ok_or_else(|| rej("invalid_price", "Enter the limit price of the stop-limit"))?;

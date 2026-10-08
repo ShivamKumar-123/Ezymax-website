@@ -38,6 +38,7 @@ pub fn account_json(env: &Env, st: &AccountState) -> Value {
         "type": a.kind.as_str(),
         "group": a.group,
         "groupName": env.group.name,
+        "product": env.group.product.as_str(),
         "mode": if a.mode == crate::model::Mode::Netting { "netting" } else { "hedging" },
         "cent": a.cent,
         "currency": a.ccy(),

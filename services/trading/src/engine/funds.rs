@@ -341,15 +341,18 @@ pub fn change_leverage(tx: &mut Tx, env: &Env, leverage: u32, staff: bool) -> Re
     Ok((from, leverage))
 }
 
-/// Moves the account to another group. Mode (netting/hedging) can only change while flat, and the cent flag
-/// never changes (the ledger currency is fixed at opening).
-pub fn change_group(tx: &mut Tx, new: &crate::rules::Group) -> Result<(String, String), Reject> {
+/// Moves the account to another group. Mode (netting/hedging) can only change while flat, and the cent flag and the
+/// product never change (the ledger currency is fixed at opening; a CFD account never becomes an options account).
+pub fn change_group(tx: &mut Tx, env: &Env, new: &crate::rules::Group) -> Result<(String, String), Reject> {
     let a0 = tx.st.account.clone();
     if new.code == a0.group {
         return Err(Reject::new("no_change", "Nothing changed"));
     }
     if new.cent != a0.cent {
         return Err(Reject::new("invalid_group", "An account cannot move between cent and standard currency groups"));
+    }
+    if new.product != env.group.product {
+        return Err(Reject::new("product_mismatch", "An account can't move between CFD and Options account types"));
     }
     if !new.allows(a0.kind.as_str()) {
         return Err(Reject::new("invalid_group", format!("Group {} does not accept {} accounts", new.name, a0.kind.as_str())));

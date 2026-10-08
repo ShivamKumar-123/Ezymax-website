@@ -249,6 +249,9 @@ async fn candidates(st: &AppState, tenant: i64, user: i64, kyc_ok: bool) -> Vec<
     let mut out = Vec::new();
     for login in logins {
         let Some(b) = so.account_brief(login).await else { continue };
+        if b.options {
+            continue; // followers copy CFD trades
+        }
         let age = (Utc::now() - b.created_at).num_days();
         let checks = vec![
             json!({"key": "kyc", "ok": kyc_ok, "label": "Identity verified (KYC)", "detail": if kyc_ok { "Verified".to_string() } else { "Complete identity verification in your profile first".to_string() }}),

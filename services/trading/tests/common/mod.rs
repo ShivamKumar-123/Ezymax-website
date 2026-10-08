@@ -206,7 +206,7 @@ impl Rig {
             login,
             user_id: user,
             kind: AccountKind::Demo,
-            group: "standard".into(),
+            group: "options".into(),
             mode: Mode::Hedging,
             cent: false,
             leverage: 100,

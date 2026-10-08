@@ -10,7 +10,7 @@ use std::sync::{Arc, Mutex};
 use super::{Env, Ids, Quote, Quotes, Tx};
 use crate::model::{Account, AccountKind, Book, Controls, DemoCfg, Mode, Status};
 use crate::money::D;
-use crate::rules::{Group, TenantConfig, TenantPolicy};
+use crate::rules::{Group, Product, TenantConfig, TenantPolicy};
 use crate::specs::Specs;
 use crate::state::{AccountState, Event};
 
@@ -54,6 +54,7 @@ pub fn group(code: &str, mode: Mode, cent: bool) -> Group {
         demo_refills_per_day: 2,
         demo_expiry_days: 10,
         enabled: true,
+        product: Product::Cfd,
     }
 }
 
@@ -192,6 +193,10 @@ impl Kit {
         let mut ecn = group("ecn", Mode::Hedging, false);
         ecn.commission_per_lot = d("7");
         tenant.groups.insert("ecn".into(), ecn);
+        // an options account type: option trades only
+        let mut options = group("options", Mode::Hedging, false);
+        options.product = Product::Options;
+        tenant.groups.insert("options".into(), options);
         // Monday 2026-09-28 12:00 UTC: FX open
         let now = t("2026-09-28T12:00:00Z");
         let options = FixedPricer::default();

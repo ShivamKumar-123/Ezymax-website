@@ -12,7 +12,7 @@ use std::str::FromStr;
 
 use crate::model::{Book, Deal, LedgerTxn, Mode, Order, Position};
 use crate::money::D;
-use crate::rules::{Group, RoutingRule, SymbolControl, TenantConfig, TenantPolicy};
+use crate::rules::{Group, Product, RoutingRule, SymbolControl, TenantConfig, TenantPolicy};
 use crate::state::{AccountState, Event};
 
 /// Connects, creating the database on first run, and applies migrations.
@@ -63,6 +63,7 @@ pub fn group_from_row(r: &sqlx::postgres::PgRow) -> Group {
         demo_refills_per_day: r.get::<i32, _>("demo_refills_per_day").max(0) as u32,
         demo_expiry_days: r.get::<i32, _>("demo_expiry_days").max(1) as u32,
         enabled: r.get("enabled"),
+        product: Product::parse(r.get::<String, _>("product").as_str()).unwrap_or_default(),
     }
 }
 

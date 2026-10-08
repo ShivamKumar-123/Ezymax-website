@@ -9,7 +9,7 @@ use proptest::prelude::*;
 use std::collections::BTreeMap;
 
 use super::options_book::{self as ob, BookReq, Entered};
-use super::testkit::{Harness, Kit, d, opt_snapshot};
+use super::testkit::{Harness, Kit, d, group, opt_snapshot};
 use super::{Tx, metrics};
 use crate::book::matching::apply;
 use crate::book::outbox::{Item, items_of};
@@ -22,7 +22,11 @@ const C116: &str = "EURUSD-20261002-1.1600-C";
 const CLEARING: &str = "house:options_clearing.EURUSD.20261002:USD";
 
 fn kit() -> Kit {
-    let kit = Kit::new();
+    let mut kit = Kit::new();
+    // the order book trades on options accounts, USD and cent
+    let mut cent = group("options-cent", crate::model::Mode::Hedging, true);
+    cent.product = crate::rules::Product::Options;
+    kit.tenant.groups.insert("options-cent".into(), cent);
     kit.quote("EURUSD", "1.15990", "1.16010");
     kit.quote("USDJPY", "149.990", "150.010");
     kit.options.fix(C116, "0.0050", "0.0052");
@@ -125,8 +129,8 @@ fn a_trade_between_two_clients_books_premium_through_clearing_fees_and_releases_
     let kit = kit();
     let (a, b) = (10_000_001, 10_000_002);
     let mut w = World::new(kit, vec![]);
-    w.accts.insert(a, account(&w.kit, a, 7, "hedge", "10000"));
-    w.accts.insert(b, account(&w.kit, b, 8, "hedge", "10000"));
+    w.accts.insert(a, account(&w.kit, a, 7, "options", "10000"));
+    w.accts.insert(b, account(&w.kit, b, 8, "options", "10000"));
     // A rests a sell of 2 at 0.0051: the fee and the opening margin are reserved, free margin drops by it
     let out = w.order(a, limit(Side::Sell, "2", "0.0051")).unwrap();
     assert_eq!(out.rested.len(), 1);
@@ -190,8 +194,8 @@ fn cent_accounts_use_the_four_leg_clearing_form() {
     let kit = kit();
     let (a, c) = (10_000_001, 10_000_003);
     let mut w = World::new(kit, vec![]);
-    w.accts.insert(a, account(&w.kit, a, 7, "hedge", "10000"));
-    w.accts.insert(c, account(&w.kit, c, 9, "cent", "1000"));
+    w.accts.insert(a, account(&w.kit, a, 7, "options", "10000"));
+    w.accts.insert(c, account(&w.kit, c, 9, "options-cent", "1000"));
     assert_eq!(w.st(c).balance, d("100000"));
     w.order(a, limit(Side::Sell, "1", "0.0051")).unwrap();
     w.order(c, limit(Side::Buy, "1", "0.0051")).unwrap();
@@ -213,7 +217,7 @@ fn entry_gates_band_tick_reduce_only_limits_and_funds() {
     let kit = kit();
     let a = 10_000_001;
     let mut w = World::new(kit, vec![]);
-    w.accts.insert(a, account(&w.kit, a, 7, "hedge", "60"));
+    w.accts.insert(a, account(&w.kit, a, 7, "options", "60"));
     let run = |w: &mut World, r: BookReq| w.accts.get_mut(&a).unwrap().run(&w.kit, |tx, env| ob::enter(tx, env, r)).map(|_| ());
     // not a tick multiple, out of band (mark 0.0051: a buy at most 0.0051 × 1.5 + 5 ticks)
     assert_eq!(run(&mut w, limit(Side::Buy, "1", "0.005105")).unwrap_err().code, "invalid_price");
@@ -243,8 +247,8 @@ fn market_orders_become_ioc_at_the_band_and_stops_fire_on_the_mark() {
     let kit = kit();
     let (a, b) = (10_000_001, 10_000_002);
     let mut w = World::new(kit, vec![]);
-    w.accts.insert(a, account(&w.kit, a, 7, "hedge", "10000"));
-    w.accts.insert(b, account(&w.kit, b, 8, "hedge", "10000"));
+    w.accts.insert(a, account(&w.kit, a, 7, "options", "10000"));
+    w.accts.insert(b, account(&w.kit, b, 8, "options", "10000"));
     // a market buy at mark 0.0051 becomes an IOC limit at max(0.0051 × 1.1, 0.0051 + 5 ticks) = 0.00561
     let e = w.accts.get_mut(&a).unwrap().run(&w.kit, |tx, env| ob::enter(tx, env, BookReq::market(C116, Side::Buy, d("1")))).unwrap();
     let Entered::New { cmd, .. } = e else { panic!() };
@@ -300,7 +304,7 @@ proptest! {
         let logins = [10_000_001i64, 10_000_002, 10_000_003];
         let mut w = World::new(kit, vec![]);
         for (i, l) in logins.iter().enumerate() {
-            let group = if i == 2 { "cent" } else { "hedge" };
+            let group = if i == 2 { "options-cent" } else { "options" };
             w.accts.insert(*l, account(&w.kit, *l, 7 + i as i64, group, "20000"));
         }
         for f in &flows {
@@ -345,8 +349,8 @@ fn the_mark_clamps_inside_the_published_book_and_values_positions() {
     let kit = kit();
     let (a, b) = (10_000_001, 10_000_002);
     let mut w = World::new(kit, vec![]);
-    w.accts.insert(a, account(&w.kit, a, 7, "hedge", "10000"));
-    w.accts.insert(b, account(&w.kit, b, 8, "hedge", "10000"));
+    w.accts.insert(a, account(&w.kit, a, 7, "options", "10000"));
+    w.accts.insert(b, account(&w.kit, b, 8, "options", "10000"));
     // model 0.0050 / 0.0052 → mid 0.0051; B buys 1 from A at 0.0051
     w.order(a, limit(Side::Sell, "2", "0.0051")).unwrap();
     w.order(b, limit(Side::Buy, "1", "0.0051")).unwrap();
@@ -384,7 +388,7 @@ fn book_positions_settle_at_the_fixing_and_both_sides_net_to_zero() {
     let (a, b, c) = (10_000_001, 10_000_002, 10_000_004);
     let mut w = World::new(kit, vec![]);
     for (l, u) in [(a, 7), (b, 8), (c, 9)] {
-        w.accts.insert(l, account(&w.kit, l, u, "hedge", "10000"));
+        w.accts.insert(l, account(&w.kit, l, u, "options", "10000"));
     }
     // A sells 3: B buys 2, C buys 1, all at 0.0051; B also rests a buy of 1 at 0.0040
     w.order(a, limit(Side::Sell, "3", "0.0051")).unwrap();
@@ -443,9 +447,9 @@ fn usd_and_cent_book_positions_settle_through_clearing_and_net_to_zero() {
     let kit = kit();
     let (a, c, b) = (10_000_001, 10_000_003, 10_000_002);
     let mut w = World::new(kit, vec![]);
-    w.accts.insert(a, account(&w.kit, a, 7, "hedge", "10000"));
-    w.accts.insert(c, account(&w.kit, c, 9, "cent", "1000"));
-    w.accts.insert(b, account(&w.kit, b, 8, "cent", "1000"));
+    w.accts.insert(a, account(&w.kit, a, 7, "options", "10000"));
+    w.accts.insert(c, account(&w.kit, c, 9, "options-cent", "1000"));
+    w.accts.insert(b, account(&w.kit, b, 8, "options-cent", "1000"));
     // A (USD) sells 3: C (cent) buys 2, B (cent) buys 1
     w.order(a, limit(Side::Sell, "3", "0.0051")).unwrap();
     w.order(c, limit(Side::Buy, "2", "0.0051")).unwrap();
@@ -508,7 +512,7 @@ fn per_position_rounding_stays_within_the_sweep_limit() {
     let (a, b, c) = (10_000_001, 10_000_002, 10_000_004);
     let mut w = World::new(kit, vec![]);
     for (l, u) in [(a, 7), (b, 8), (c, 9)] {
-        w.accts.insert(l, account(&w.kit, l, u, "hedge", "10000"));
+        w.accts.insert(l, account(&w.kit, l, u, "options", "10000"));
     }
     w.order(a, limit(Side::Sell, "3", "0.0051")).unwrap();
     w.order(b, limit(Side::Buy, "1", "0.0051")).unwrap();

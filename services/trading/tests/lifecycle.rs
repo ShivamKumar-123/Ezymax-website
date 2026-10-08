@@ -394,6 +394,10 @@ async fn closure_queue_four_eyes_reopen_and_jobs() {
     assert!(listed["accounts"].as_array().unwrap().iter().any(|x| x["login"] == json!(a) && x["isDefault"] == json!(true)));
     let opts = lifecycle::group_options(State(st.clone()), ctx(&st).await, headers(), Path(a), q()).await.unwrap().0;
     assert!(opts["groups"].as_array().unwrap().iter().all(|g| !g["code"].as_str().unwrap().starts_with("prop")), "{opts}");
+    // a CFD account never becomes an options account: options types are neither offered nor accepted
+    assert!(opts["groups"].as_array().unwrap().iter().all(|g| g["product"] == json!("cfd") && g["code"] != json!("options")), "{opts}");
+    let e = lifecycle::change_group(State(st.clone()), ctx(&st).await, headers(), Path(a), q(), body(json!({"group": "options"}))).await.unwrap_err();
+    assert_eq!(err_code(e), "product_mismatch");
     let r = lifecycle::demo_balance(State(st.clone()), ctx(&st).await, headers(), Path(d1), q(), body(json!({"amount": 2500}))).await.unwrap().0;
     assert_eq!(r["balance"], json!(2500.0), "{r}");
     assert!(lifecycle::demo_balance(State(st.clone()), ctx(&st).await, headers(), Path(d1), q(), body(json!({"amount": 5}))).await.is_err());
