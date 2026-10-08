@@ -262,6 +262,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.review.minDeposit": "この口座タイプでは、初回入金は{amount}以上が必要です。",
   "wizard.review.fixed": "ポジションモード（{mode}）と通貨（{currency}）は開設後に変更できません。",
   "wizard.agreeLive": "CFDは複雑な金融商品であり、レバレッジにより短期間で資金を失うリスクが高いことを理解しています。",
+  "wizard.agreeLiveOptions": "オプションは複雑な金融商品であり、買ったオプションはプレミアム全額を失う可能性があり、売ったオプションは受け取ったプレミアムを超える損失が生じる可能性があることを理解しています。",
   "wizard.agreeDemo": "デモの結果は仮想資金によるものであり、リアル口座での結果を保証するものではないことを理解しています。",
   "wizard.opening": "口座を開設中…",
   "wizard.openLive": "リアル口座を開設",

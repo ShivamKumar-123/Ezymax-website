@@ -264,6 +264,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.review.minDeposit": "Deposit pertama minimal {amount} berlaku untuk jenis akun ini.",
   "wizard.review.fixed": "Mode posisi ({mode}) dan mata uang ({currency}) tidak dapat diubah setelah akun dibuka.",
   "wizard.agreeLive": "Saya memahami bahwa CFD adalah instrumen yang kompleks dan memiliki risiko tinggi kehilangan uang dengan cepat karena leverage.",
+  "wizard.agreeLiveOptions": "Saya memahami bahwa opsi adalah instrumen yang kompleks: opsi yang dibeli dapat kehilangan seluruh premiumnya, dan opsi yang dijual dapat rugi lebih dari premium yang diterima.",
   "wizard.agreeDemo": "Saya memahami bahwa hasil demo menggunakan dana virtual dan tidak menjamin hasil live.",
   "wizard.opening": "Membuka akun…",
   "wizard.openLive": "Buka akun live",

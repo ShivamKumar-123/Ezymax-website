@@ -595,7 +595,7 @@ function Wizard() {
                         <input type="checkbox" checked={cfg.agree} onChange={(e) => set("agree", e.target.checked)} className="mt-0.5 size-4 accent-[var(--k-ember)]" />
                         <span>
                           {cfg.kind === "live"
-                            ? t("accounts.wizard.agreeLive")
+                            ? t(optionsGroup ? "accounts.wizard.agreeLiveOptions" : "accounts.wizard.agreeLive")
                             : t("accounts.wizard.agreeDemo")}
                         </span>
                       </label>

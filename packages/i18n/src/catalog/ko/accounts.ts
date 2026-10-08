@@ -262,6 +262,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.review.minDeposit": "이 계좌 유형은 최소 {amount}의 첫 입금이 필요합니다.",
   "wizard.review.fixed": "포지션 모드({mode})와 통화({currency})는 개설 후 변경할 수 없습니다.",
   "wizard.agreeLive": "CFD는 복잡한 상품이며 레버리지로 인해 빠르게 자금을 잃을 위험이 높다는 것을 이해합니다.",
+  "wizard.agreeLiveOptions": "옵션은 복잡한 상품이며, 매수한 옵션은 프리미엄 전액을 잃을 수 있고 매도한 옵션은 받은 프리미엄보다 더 큰 손실이 날 수 있다는 것을 이해합니다.",
   "wizard.agreeDemo": "데모 결과는 가상 자금을 사용하며 실거래 결과를 보장하지 않는다는 것을 이해합니다.",
   "wizard.opening": "계좌 개설 중…",
   "wizard.openLive": "실계좌 개설",

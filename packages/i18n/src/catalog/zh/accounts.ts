@@ -262,6 +262,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.review.minDeposit": "此账户类型的首次入金至少为 {amount}。",
   "wizard.review.fixed": "开户后无法更改持仓模式（{mode}）和货币（{currency}）。",
   "wizard.agreeLive": "我了解差价合约是复杂的金融工具，由于杠杆作用，存在快速亏损资金的高风险。",
+  "wizard.agreeLiveOptions": "我了解期权是复杂的金融工具：买入的期权可能损失全部权利金，卖出的期权可能损失超过所收取的权利金。",
   "wizard.agreeDemo": "我了解模拟交易结果基于虚拟资金，不代表真实交易结果。",
   "wizard.opening": "正在开立账户…",
   "wizard.openLive": "开立真实账户",
