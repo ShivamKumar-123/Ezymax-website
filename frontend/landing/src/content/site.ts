@@ -13,13 +13,13 @@ export const site = {
   domain: "ezymex.com",
   url,
 
-  tagline: "Invite-only CFD trading.",
+  tagline: "CFD trading with published rules.",
 
   positioning:
-    "Ezymex is a CFD trading platform for forex, indices, commodities and crypto. Access is by invitation: join the waitlist and we will email you when a place opens.",
+    "Ezymex is a CFD trading platform for forex, indices, commodities and crypto, with every cost itemised on the ticket and the same published margin rules for every account.",
 
   description:
-    "Ezymex is an invite-only CFD trading platform covering forex, indices, commodities and crypto, with published margin rules, optional loss cover and a partner rebate programme.",
+    "Ezymex is a CFD trading platform covering forex, indices, commodities and crypto, with published margin rules, optional loss cover and a partner rebate programme.",
 
   email: "support@ezymex.com",
 

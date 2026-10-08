@@ -1,3 +1,4 @@
+import { tradeConfig } from "./site";
 import { facts } from "./facts";
 import type { CtaBlock, Feature, FaqItem, PlanTable } from "./schema";
 
@@ -84,9 +85,9 @@ export const protectionPage = {
 
   cta: {
     heading: "Trade with the cushion on",
-    sub: "Access is by invitation. Join the waitlist and we will email you when a place opens.",
+    sub: "Open an account, verify your identity, and fund it when you are ready.",
     ctas: [
-      { label: "Join Waitlist", action: "waitlist" },
+      { label: "Open account", href: tradeConfig.register },
       {
         label: "Read the risk disclosure",
         href: "/legal/risk-disclosure",

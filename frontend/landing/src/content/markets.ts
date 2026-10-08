@@ -1,3 +1,4 @@
+import { tradeConfig } from "./site";
 import { facts } from "./facts";
 import type { MarketPage } from "./schema";
 
@@ -34,7 +35,7 @@ export const markets: MarketPage[] = [
       highlight: "Cost in Front of You",
       sub: "Majors, minors and exotics as CFDs. The live spread sits next to the price on the ticket — the number traders actually shop on — and every other cost is itemised before you confirm.",
       ctas: [
-        { label: "Join Waitlist", action: "waitlist" },
+        { label: "Open account", href: tradeConfig.register },
         { label: "How margin works", href: "/protection", variant: "outline" },
       ],
       badges: ["Majors", "Minors", "Exotics", `Up to ${facts.defaultLeverage}`],
@@ -72,9 +73,9 @@ export const markets: MarketPage[] = [
     note: "CFDs are leveraged products. Losses can exceed your initial deposit.",
     cta: {
       heading: "Trade forex on Ezymex",
-      sub: "Access is by invitation. Join the waitlist and we will email you when a place opens.",
+      sub: "Open an account, verify your identity, and fund it when you are ready.",
       ctas: [
-        { label: "Join Waitlist", action: "waitlist" },
+        { label: "Open account", href: tradeConfig.register },
         {
           label: "Read the risk disclosure",
           href: "/legal/risk-disclosure",
@@ -104,7 +105,7 @@ export const markets: MarketPage[] = [
       highlight: "Whole Market at Once",
       sub: "US, European and Asian benchmarks as CFDs. Fixed contract sizes mean predictable margin, and the overnight swap is shown before you confirm rather than appearing on a statement later.",
       ctas: [
-        { label: "Join Waitlist", action: "waitlist" },
+        { label: "Open account", href: tradeConfig.register },
         { label: "See all markets", href: "/markets", variant: "outline" },
       ],
       badges: ["US", "Europe", "Asia", "Long or short"],
@@ -142,9 +143,9 @@ export const markets: MarketPage[] = [
     note: "CFDs are leveraged products. Losses can exceed your initial deposit.",
     cta: {
       heading: "Trade indices on Ezymex",
-      sub: "Access is by invitation. Join the waitlist and we will email you when a place opens.",
+      sub: "Open an account, verify your identity, and fund it when you are ready.",
       ctas: [
-        { label: "Join Waitlist", action: "waitlist" },
+        { label: "Open account", href: tradeConfig.register },
         {
           label: "Read the risk disclosure",
           href: "/legal/risk-disclosure",
@@ -174,7 +175,7 @@ export const markets: MarketPage[] = [
       highlight: "a Size That Fits",
       sub: "Gold, silver and oil as CFDs. Hedge an existing exposure or take a view outright, long or short, with every cost itemised before you confirm.",
       ctas: [
-        { label: "Join Waitlist", action: "waitlist" },
+        { label: "Open account", href: tradeConfig.register },
         { label: "See all markets", href: "/markets", variant: "outline" },
       ],
       badges: ["Gold", "Silver", "Oil", "Long or short"],
@@ -212,9 +213,9 @@ export const markets: MarketPage[] = [
     note: "CFDs are leveraged products. Losses can exceed your initial deposit.",
     cta: {
       heading: "Trade commodities on Ezymex",
-      sub: "Access is by invitation. Join the waitlist and we will email you when a place opens.",
+      sub: "Open an account, verify your identity, and fund it when you are ready.",
       ctas: [
-        { label: "Join Waitlist", action: "waitlist" },
+        { label: "Open account", href: tradeConfig.register },
         {
           label: "Read the risk disclosure",
           href: "/legal/risk-disclosure",
@@ -244,7 +245,7 @@ export const markets: MarketPage[] = [
       highlight: "Never Close",
       sub: "BTC, ETH and the major pairs as CFDs, settled from the same account balance as your forex and index positions. No separate wallet, no separate funding step.",
       ctas: [
-        { label: "Join Waitlist", action: "waitlist" },
+        { label: "Open account", href: tradeConfig.register },
         { label: "See all markets", href: "/markets", variant: "outline" },
       ],
       badges: ["BTC", "ETH", "Major pairs", "24/7"],
@@ -282,9 +283,9 @@ export const markets: MarketPage[] = [
     note: "CFDs are leveraged products. Losses can exceed your initial deposit.",
     cta: {
       heading: "Trade crypto on Ezymex",
-      sub: "Access is by invitation. Join the waitlist and we will email you when a place opens.",
+      sub: "Open an account, verify your identity, and fund it when you are ready.",
       ctas: [
-        { label: "Join Waitlist", action: "waitlist" },
+        { label: "Open account", href: tradeConfig.register },
         {
           label: "Read the risk disclosure",
           href: "/legal/risk-disclosure",

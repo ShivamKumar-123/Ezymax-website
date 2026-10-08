@@ -50,7 +50,7 @@ export const facts = {
  * Deliberately absent, and why — so the next person does not "fix" it by
  * inventing one:
  *
- * - client / trader counts .... the platform is invite-only and pre-launch
+ * - client / trader counts .... nothing counts or publishes them
  * - uptime percentage ......... nothing measures or publishes it
  * - years in business ......... the company has no verifiable founding date
  * - countries served .......... onboarding is per-application, not per-market

@@ -1,3 +1,4 @@
+import { tradeConfig } from "./site";
 import { facts } from "./facts";
 import type { PlatformPage } from "./schema";
 
@@ -30,7 +31,7 @@ export const platformProducts: PlatformPage[] = [
       highlight: "Nothing to Install",
       sub: "Charting, order tickets and your account balance on a single screen. Spread, swap, commission and margin are itemised on every ticket before you confirm — what you read is what settles.",
       ctas: [
-        { label: "Join Waitlist", action: "waitlist" },
+        { label: "Open account", href: tradeConfig.register },
         { label: "See the markets", href: "/markets", variant: "outline" },
       ],
       badges: ["Browser", "No install", "Full cost preview"],
@@ -44,9 +45,9 @@ export const platformProducts: PlatformPage[] = [
     ],
     cta: {
       heading: "Start on the web platform",
-      sub: "Access is by invitation. Join the waitlist and we will email you when a place opens.",
+      sub: "Open an account, verify your identity, and fund it when you are ready.",
       ctas: [
-        { label: "Join Waitlist", action: "waitlist" },
+        { label: "Open account", href: tradeConfig.register },
         {
           label: "Read the risk disclosure",
           href: "/legal/risk-disclosure",
@@ -76,7 +77,7 @@ export const platformProducts: PlatformPage[] = [
       highlight: "MT5 Setup",
       sub: "If MT5 is where you work, connect it as your execution front end. Your indicators, templates and expert advisors run unchanged, against the same account and the same published margin rules.",
       ctas: [
-        { label: "Join Waitlist", action: "waitlist" },
+        { label: "Open account", href: tradeConfig.register },
         {
           label: "See the web platform",
           href: "/platform/web-platform",
@@ -93,9 +94,9 @@ export const platformProducts: PlatformPage[] = [
     ],
     cta: {
       heading: "Connect MT5 to Ezymex",
-      sub: "Access is by invitation. Join the waitlist and we will email you when a place opens.",
+      sub: "Open an account, verify your identity, and fund it when you are ready.",
       ctas: [
-        { label: "Join Waitlist", action: "waitlist" },
+        { label: "Open account", href: tradeConfig.register },
         {
           label: "Read the risk disclosure",
           href: "/legal/risk-disclosure",
@@ -125,7 +126,7 @@ export const platformProducts: PlatformPage[] = [
       highlight: "Not a Screenshot",
       sub: "Every published result was generated on this platform, so a profile leads with months of history and maximum drawdown rather than a selected highlight. You choose the allocation and the risk cap.",
       ctas: [
-        { label: "Join Waitlist", action: "waitlist" },
+        { label: "Open account", href: tradeConfig.register },
         { label: "See risk tools", href: "/protection", variant: "outline" },
       ],
       badges: ["Drawdown caps", "Your size", "Pause any time"],
@@ -139,9 +140,9 @@ export const platformProducts: PlatformPage[] = [
     ],
     cta: {
       heading: "Copy a trader on Ezymex",
-      sub: "Access is by invitation. Join the waitlist and we will email you when a place opens.",
+      sub: "Open an account, verify your identity, and fund it when you are ready.",
       ctas: [
-        { label: "Join Waitlist", action: "waitlist" },
+        { label: "Open account", href: tradeConfig.register },
         {
           label: "Read the risk disclosure",
           href: "/legal/risk-disclosure",
@@ -171,7 +172,7 @@ export const platformProducts: PlatformPage[] = [
       highlight: "Published Rules",
       sub: "Pass a rules-based evaluation and trade a funded account with defined drawdown limits and a stated profit split. The rules, the limits and the split are published before you start.",
       ctas: [
-        { label: "Join Waitlist", action: "waitlist" },
+        { label: "Open account", href: tradeConfig.register },
         { label: "See the markets", href: "/markets", variant: "outline" },
       ],
       badges: ["Evaluation", "Defined limits", "Published split"],
@@ -184,9 +185,9 @@ export const platformProducts: PlatformPage[] = [
     ],
     cta: {
       heading: "Apply for a funded account",
-      sub: "Access is by invitation. Join the waitlist and we will email you when a place opens.",
+      sub: "Open an account, verify your identity, and fund it when you are ready.",
       ctas: [
-        { label: "Join Waitlist", action: "waitlist" },
+        { label: "Open account", href: tradeConfig.register },
         {
           label: "Read the risk disclosure",
           href: "/legal/risk-disclosure",
@@ -217,7 +218,7 @@ export const platformProducts: PlatformPage[] = [
       sub: "Shield is bought for a day, a week or a month. It covers a share of everything you lose across that window, up to the plan's maximum payout. No per-trade toggle and no claim form.",
       ctas: [
         { label: "See the plans", href: "/protection" },
-        { label: "Join Waitlist", action: "waitlist", variant: "outline" },
+        { label: "Open account", href: tradeConfig.register, variant: "outline" },
       ],
       badges: ["Daily", "Weekly", "Monthly"],
     },
@@ -233,7 +234,7 @@ export const platformProducts: PlatformPage[] = [
       sub: "Every plan, what it covers and what it costs.",
       ctas: [
         { label: "View plans", href: "/protection" },
-        { label: "Join Waitlist", action: "waitlist", variant: "outline" },
+        { label: "Open account", href: tradeConfig.register, variant: "outline" },
       ],
     },
     seo: {
@@ -258,7 +259,7 @@ export const platformProducts: PlatformPage[] = [
       highlight: "Before You Take It",
       sub: "Every cost on the ticket before you confirm, exits you can attach to any order, alerts as free margin tightens, and a drawdown cap on anyone you copy.",
       ctas: [
-        { label: "Join Waitlist", action: "waitlist" },
+        { label: "Open account", href: tradeConfig.register },
         { label: "See Shield plans", href: "/protection", variant: "outline" },
       ],
       badges: ["Cost preview", "Stop loss", "Margin alerts"],
@@ -272,9 +273,9 @@ export const platformProducts: PlatformPage[] = [
     ],
     cta: {
       heading: "Trade with the numbers in front of you",
-      sub: "Access is by invitation. Join the waitlist and we will email you when a place opens.",
+      sub: "Open an account, verify your identity, and fund it when you are ready.",
       ctas: [
-        { label: "Join Waitlist", action: "waitlist" },
+        { label: "Open account", href: tradeConfig.register },
         {
           label: "Read the risk disclosure",
           href: "/legal/risk-disclosure",
@@ -304,7 +305,7 @@ export const platformProducts: PlatformPage[] = [
       highlight: "Sit Idle",
       sub: "Between setups, unallocated balance earns nothing on most platforms. Stake it here for a flexible or fixed term, at a reward rate shown before you commit.",
       ctas: [
-        { label: "Join Waitlist", action: "waitlist" },
+        { label: "Open account", href: tradeConfig.register },
         { label: "See rewards", href: "/earn", variant: "outline" },
       ],
       badges: ["Flexible", "Fixed term", "Rate shown upfront"],
@@ -317,9 +318,9 @@ export const platformProducts: PlatformPage[] = [
     ],
     cta: {
       heading: "Stake on Ezymex",
-      sub: "Access is by invitation. Join the waitlist and we will email you when a place opens.",
+      sub: "Open an account, verify your identity, and fund it when you are ready.",
       ctas: [
-        { label: "Join Waitlist", action: "waitlist" },
+        { label: "Open account", href: tradeConfig.register },
         {
           label: "Read the risk disclosure",
           href: "/legal/risk-disclosure",
@@ -349,7 +350,7 @@ export const platformProducts: PlatformPage[] = [
       highlight: "How You Trade",
       sub: "Most platforms give their best terms to their biggest deposits. Here XP rises with consistency, risk control and education, and your spreads, swaps and commission follow it. Deposit size is not an input.",
       ctas: [
-        { label: "Join Waitlist", action: "waitlist" },
+        { label: "Open account", href: tradeConfig.register },
         { label: "See the ladder", href: "/earn", variant: "outline" },
       ],
       badges: ["XP", "Performance score", "Platform credits"],
@@ -363,9 +364,9 @@ export const platformProducts: PlatformPage[] = [
     ],
     cta: {
       heading: "Earn your terms",
-      sub: "Access is by invitation. Join the waitlist and we will email you when a place opens.",
+      sub: "Open an account, verify your identity, and fund it when you are ready.",
       ctas: [
-        { label: "Join Waitlist", action: "waitlist" },
+        { label: "Open account", href: tradeConfig.register },
         { label: "See the ladder", href: "/earn", variant: "outline" },
       ],
     },
@@ -392,7 +393,7 @@ export const platformProducts: PlatformPage[] = [
       sub: "Rewards are tied to the real trading activity of the people you introduce — not to recruitment depth. No tiers below tiers and no volume quotas inherited from someone else's downline.",
       ctas: [
         { label: "Become a partner", href: "/partners" },
-        { label: "Join Waitlist", action: "waitlist", variant: "outline" },
+        { label: "Open account", href: tradeConfig.register, variant: "outline" },
       ],
       badges: ["Activity-based", "Reporting", "IB dashboard"],
     },
@@ -407,7 +408,7 @@ export const platformProducts: PlatformPage[] = [
       sub: "See the rebate tiers and what the programme pays on.",
       ctas: [
         { label: "See the programme", href: "/partners" },
-        { label: "Join Waitlist", action: "waitlist", variant: "outline" },
+        { label: "Open account", href: tradeConfig.register, variant: "outline" },
       ],
     },
     seo: {

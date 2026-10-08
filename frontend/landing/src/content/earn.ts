@@ -1,3 +1,4 @@
+import { tradeConfig } from "./site";
 import type { CtaBlock, Feature, PlanTable } from "./schema";
 
 /**
@@ -73,9 +74,9 @@ export const earnPage = {
 
   cta: {
     heading: "Start earning on Ezymex",
-    sub: "Access is by invitation. Join the waitlist and we will email you when a place opens.",
+    sub: "Open an account, verify your identity, and fund it when you are ready.",
     ctas: [
-      { label: "Join Waitlist", action: "waitlist" },
+      { label: "Open account", href: tradeConfig.register },
       { label: "See the partner programme", href: "/partners", variant: "outline" },
     ],
   } as CtaBlock,

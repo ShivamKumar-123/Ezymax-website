@@ -20,8 +20,8 @@ export const faqs: FaqItem[] = [
     a: "A CFD trading platform covering forex, indices, commodities and crypto. You can trade in the browser or through MetaTrader 5, copy other traders, buy optional loss cover, stake an unallocated balance, and earn rebates by introducing traders.",
   },
   {
-    q: "Why can't I just sign up?",
-    a: "Access is by invitation. Join the waitlist with your name and email and we will contact you when a place opens. There is no deposit or payment involved in applying.",
+    q: "How do I get an account?",
+    a: "You can open one now. Registration is open; identity verification happens before the account is funded, and there is no payment involved in signing up.",
   },
   {
     q: "Is Ezymex regulated?",

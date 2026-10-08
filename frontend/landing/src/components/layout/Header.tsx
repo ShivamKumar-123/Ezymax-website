@@ -8,6 +8,7 @@ import { ArrowUpRight, ChevronDown, Menu, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { getIcon } from "@/lib/icons";
 import { mainNav, type NavGroup } from "@/content/nav";
+import { tradeConfig } from "@/content/site";
 import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 
@@ -129,8 +130,20 @@ export function Header() {
           </nav>
 
           <div className="relative z-10 flex items-center gap-3">
-            <Button action="waitlist" size="sm" className="hidden sm:inline-flex">
-              Join Waitlist
+            <Button
+              href={tradeConfig.login}
+              variant="ghost"
+              size="sm"
+              className="hidden sm:inline-flex"
+            >
+              Log in
+            </Button>
+            <Button
+              href={tradeConfig.register}
+              size="sm"
+              className="hidden sm:inline-flex"
+            >
+              Sign up
             </Button>
             <button
               type="button"
@@ -226,11 +239,11 @@ export function Header() {
                 <MobileGroup key={group.label} group={group} pathname={pathname} />
               ))}
               <div className="mt-6 flex flex-col gap-3">
-                <Button action="waitlist" size="lg">
-                  Join Waitlist
+                <Button href={tradeConfig.register} size="lg">
+                  Sign up
                 </Button>
-                <Button href="/contact" variant="outline" size="lg">
-                  Contact support
+                <Button href={tradeConfig.login} variant="outline" size="lg">
+                  Log in
                 </Button>
               </div>
             </div>

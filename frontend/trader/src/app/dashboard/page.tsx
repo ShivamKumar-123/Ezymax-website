@@ -26,6 +26,9 @@ import FxaDetailsModal from '@/components/dashboard/FxaDetailsModal';
 import XpDetailsModal from '@/components/dashboard/XpDetailsModal';
 import PsDetailsModal from '@/components/dashboard/PsDetailsModal';
 import LevelLadderCard, { type LevelBenefits } from '@/components/dashboard/LevelLadderCard';
+import { MetricStrip } from '@/components/dashboard/MetricStrip';
+import { MarginRingCard } from '@/components/dashboard/MarginRingCard';
+import { SetupChecklist, type SetupStep } from '@/components/dashboard/SetupChecklist';
 import api from '@/lib/api/client';
 import { useAuthStore } from '@/stores/authStore';
 import { TOUR_TARGETS } from '@/components/Onboarding/tourTargets';
@@ -68,6 +71,32 @@ const tradeUrl = (accountId: string) => {
   const path = `/trading/terminal?account=${encodeURIComponent(accountId)}&view=chart`;
   return host ? `https://${host}${path}` : path;
 };
+
+/**
+ * One of the oversized counts in the page header. The number carries the
+ * weight; the icon and label sit under it, quiet and small, as in the
+ * reference layout.
+ */
+function HeadlineStat({
+  icon: Icon,
+  value,
+  label,
+}: {
+  icon: React.ComponentType<{ className?: string; size?: number }>;
+  value: string;
+  label: string;
+}) {
+  return (
+    <div className="text-right">
+      <p className="text-3xl font-semibold tabular-nums leading-none text-text-primary md:text-4xl">
+        {value}
+      </p>
+      <p className="mt-1.5 flex items-center justify-end gap-1 text-[11px] text-text-tertiary">
+        <Icon size={12} /> {label}
+      </p>
+    </div>
+  );
+}
 
 /* ─────────────────────────────────────────────────────────────────────
    Shared premium primitives — kept consistent with the
@@ -328,11 +357,40 @@ function BrokerHome() {
   // Only greet by a real given name — never a raw email/username like "setup".
   const rawFirst = (user?.first_name || '').trim();
   const firstName = rawFirst ? rawFirst.charAt(0).toUpperCase() + rawFirst.slice(1) : '';
+  const kycVerified = (user?.kyc_status || '').toLowerCase() === 'verified';
   const level = rewardsState?.level ?? 1;
   const levelLabel = rewardsState?.level_label || 'New Trader';
   const dgcCoins = rewardsState?.ac_balance ?? 0;
   const xpTotal = rewardsState?.xp ?? 0;
   const psScore = rewardsState?.ps ?? 0;
+
+  // Margin level is equity / used margin. With nothing open there is no
+  // ratio to show, which is different from showing zero.
+  const marginUsed = realAccounts.reduce((t, a) => t + (Number(a.margin_used) || 0), 0);
+  const freeMargin = realAccounts.reduce((t, a) => t + (Number(a.free_margin) || 0), 0);
+  const marginLevel = marginUsed > 0 ? (totalEquity / marginUsed) * 100 : null;
+
+  const metricItems = [
+    { label: 'Balance', value: fmtUsd(totalBalance), weight: 1, tone: 'accent' as const },
+    { label: 'Equity', value: fmtUsd(totalEquity), weight: 1, tone: 'solid' as const },
+    { label: 'Free margin', value: fmtUsd(freeMargin), weight: 1.2, tone: 'outline' as const },
+    {
+      label: 'Margin level',
+      value: marginLevel === null ? 'no positions' : `${Math.round(marginLevel)}%`,
+      weight: 0.9,
+      tone: 'outline' as const,
+    },
+  ];
+
+  // Each step is read from account state rather than stored, so the card
+  // cannot disagree with what the account can actually do.
+  const setupSteps: SetupStep[] = [
+    { label: 'Create your account', hint: 'Done when you signed up', done: true, href: '/profile' },
+    { label: 'Verify your identity', hint: 'Required before funding', done: kycVerified, href: '/kyc' },
+    { label: 'Open a trading account', hint: 'Live or demo', done: accounts.length > 0, href: '/trading/open-account' },
+    { label: 'Fund it', hint: 'Deposit to start trading', done: totalBalance > 0, href: '/wallet' },
+    { label: 'Place your first trade', hint: 'Costs shown before you confirm', done: marginUsed > 0, href: '/trading/terminal' },
+  ];
   const psRank = rewardsState?.ps_rank ?? '';
 
   const goTrade = () => {
@@ -346,55 +404,69 @@ function BrokerHome() {
       {/* ── Ezymex TV banner — the commercial, full width, slides in R→L ── */}
       <TvCard />
 
-      {/* ── Greeting bar ── */}
-      <div className="dash-rise flex flex-wrap items-center justify-between gap-3" style={{ animationDelay: '0ms' }}>
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold text-text-primary flex items-center gap-2">
-            Welcome back{firstName ? `, ${firstName}` : ''} <span>👋</span>
-          </h1>
-          <p className="text-xs text-text-tertiary mt-0.5">Here's your portfolio at a glance.</p>
+      {/* ── Greeting + metric strip + headline numbers ── */}
+      <div className="dash-rise" style={{ animationDelay: '0ms' }}>
+        <div className="flex flex-wrap items-start justify-between gap-6">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-3xl font-light tracking-tight text-text-primary md:text-4xl">
+              Welcome back{firstName ? `, ${firstName}` : ''}
+            </h1>
+          </div>
+
+          {/* The reference puts three large counts up here; these are the
+              three that change how the account behaves. */}
+          <div className="flex items-end gap-7">
+            <HeadlineStat icon={WalletIcon} value={String(realAccounts.length)} label="Accounts" />
+            <HeadlineStat icon={BadgeCheck} value={String(level)} label="Level" />
+            <HeadlineStat icon={Zap} value={fmtNum(xpTotal)} label="XP" />
+          </div>
         </div>
-        <div className="flex flex-wrap items-center justify-start gap-2 sm:justify-end">
+
+        <div className="mt-6">
+          <MetricStrip items={metricItems} />
+        </div>
+
+        <div className="mt-5 flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setShowLevel(true)}
             title="See your level progress"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer"
             style={{ border: '1px solid rgba(255,106,0,0.30)', background: 'rgba(255,106,0,0.07)', color: 'var(--accent-ink)' }}>
-            <BadgeCheck size={13} /> Lvl {level} · {levelLabel}
+            <BadgeCheck size={13} /> {levelLabel}
           </button>
-          {/* XP — total experience, drives your level. Opens the XP details popup. */}
-          <button
-            type="button"
-            onClick={() => setShowXp(true)}
-            title="Experience points — earn XP to level up"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tabular-nums transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer"
-            style={{ border: '1px solid rgba(255,106,0,0.30)', background: 'rgba(255,106,0,0.07)', color: 'var(--accent-ink)' }}>
-            <Zap size={13} /> {xpTotal.toLocaleString()} XP
-          </button>
-          {/* AC — reward coins. Opens the "where AC come from" popup. */}
           <button
             type="button"
             onClick={() => setShowFxa(true)}
             title="Where your AC come from"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tabular-nums transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold tabular-nums transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer"
             style={{ border: '1px solid rgba(255,106,0,0.30)', background: 'rgba(255,106,0,0.07)', color: 'var(--accent-ink)' }}>
             <Coins size={13} /> {dgcCoins.toLocaleString(undefined, { maximumFractionDigits: 2 })} AC
           </button>
-          {/* PS — prestige score + rank. Opens the PS details popup. */}
           <button
             type="button"
             onClick={() => setShowPs(true)}
             title={psRank ? `Prestige score — ${psRank}` : 'Prestige score'}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tabular-nums transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold tabular-nums transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer"
             style={{ border: '1px solid rgba(255,106,0,0.30)', background: 'rgba(255,106,0,0.07)', color: 'var(--accent-ink)' }}>
             <Gem size={13} /> {psScore.toLocaleString()} PS
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowXp(true)}
+            title="Experience points — earn XP to level up"
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold tabular-nums transition-transform hover:scale-[1.03] active:scale-95 cursor-pointer"
+            style={{ border: '1px solid rgba(255,106,0,0.30)', background: 'rgba(255,106,0,0.07)', color: 'var(--accent-ink)' }}>
+            <Zap size={13} /> {xpTotal.toLocaleString()} XP
           </button>
         </div>
       </div>
 
-      {/* ── Portfolio chart hero (exchange-style) ── */}
-      <div className="dash-rise" style={{ animationDelay: '70ms' }}>
+      {/* ── Bento band: the chart beside the ring and the checklist ── */}
+      <div
+        className="dash-rise grid grid-cols-1 gap-3 sm:gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
+        style={{ animationDelay: '70ms' }}
+      >
         <PortfolioHero
           accounts={accounts}
           active={activeAccount}
@@ -413,6 +485,15 @@ function BrokerHome() {
           onWithdraw={() => router.push('/wallet?action=withdraw')}
           onDetails={() => router.push('/accounts')}
         />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-1">
+          <MarginRingCard
+            marginLevel={marginLevel}
+            marginUsed={marginUsed}
+            freeMargin={freeMargin}
+            fmt={fmtUsd}
+          />
+          <SetupChecklist steps={setupSteps} />
+        </div>
       </div>
 
       {/* ── Rank ladder (shown directly, not behind the badge popup) ── */}

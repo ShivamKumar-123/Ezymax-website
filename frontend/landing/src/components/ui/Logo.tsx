@@ -6,16 +6,17 @@ import { cn } from "@/lib/cn";
 /**
  * The Ezymex wordmark.
  *
- * The mark is a chrome-and-orange 3D lockup, which happens to sit in the same
- * palette as the page it renders on — so one cut serves everywhere and there
- * is no reversed version to keep in sync.
+ * A glowing orange lockup whose halo is carried in the alpha channel, so it
+ * composites on any dark surface rather than only on pure black. It sits in
+ * the page's own palette, so one cut serves everywhere and there is no
+ * reversed version to keep in sync.
  *
  * Callers size it by height and let the width follow; every call site passes
- * `h-*` and relies on `w-auto` below. The source is 800px wide, roughly 4x the
- * largest 2x render on the site.
+ * `h-*` and relies on `w-auto` below. The source is 760px wide, comfortably
+ * above the largest 2x render on the site.
  */
-const LOGO_WIDTH = 800;
-const LOGO_HEIGHT = 242;
+const LOGO_WIDTH = 760;
+const LOGO_HEIGHT = 160;
 
 export const LOGO_SRC = "/assets/brand/logo.png";
 

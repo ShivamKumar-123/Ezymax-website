@@ -1,3 +1,4 @@
+import { tradeConfig } from "./site";
 import { facts } from "./facts";
 import type { CtaBlock, Feature } from "./schema";
 
@@ -21,12 +22,12 @@ export const aboutPage = {
   eyebrow: "About Ezymex",
   headline: "A Trading Platform That Publishes Its Rules",
   highlight: "Publishes Its Rules",
-  sub: "Ezymex is an invite-only CFD platform covering forex, indices, commodities and crypto. The margin rules, the costs and the conflicts are stated upfront rather than discovered later.",
+  sub: "Ezymex is a CFD platform covering forex, indices, commodities and crypto. The margin rules, the costs and the conflicts are stated upfront rather than discovered later.",
 
   storyHeading: "What Ezymex is",
   story: [
     "Ezymex is a CFD trading platform. You deposit, you trade forex, indices, commodities and crypto on leverage, and you withdraw. There is a copy-trading system, an optional loss-cover product, staking for an unallocated balance, and a partner programme that pays on introduced traders' activity.",
-    "Access is by application rather than instant sign-up. That is a deliberate constraint, not a growth tactic: a smaller book of traders who were actually screened is easier to run honestly than a large one that was not.",
+    "Registration is open. Identity verification happens before an account can be funded, which is a requirement rather than a courtesy -- it is how the platform knows who it is holding money for.",
   ],
 
   mission: {
@@ -63,10 +64,10 @@ export const aboutPage = {
   ] as Feature[],
 
   cta: {
-    heading: "Request access to Ezymex",
-    sub: "Access is reviewed. Join the waitlist and we will email you when a place opens.",
+    heading: "Open an Ezymex account",
+    sub: "Open an account, verify your identity, and fund it when you are ready.",
     ctas: [
-      { label: "Join Waitlist", action: "waitlist" },
+      { label: "Open account", href: tradeConfig.register },
       {
         label: "Read the risk disclosure",
         href: "/legal/risk-disclosure",

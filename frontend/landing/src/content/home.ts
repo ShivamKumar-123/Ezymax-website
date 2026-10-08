@@ -1,3 +1,4 @@
+import { tradeConfig } from "./site";
 import { facts } from "./facts";
 import type { CtaBlock, Feature, HeroBlock, Stat, Step } from "./schema";
 
@@ -12,20 +13,20 @@ import type { CtaBlock, Feature, HeroBlock, Stat, Step } from "./schema";
  *    rules, every one of them read from server config. See facts.ts.
  *  - `testimonials` is gone. All three entries were marked `placeholder: true`
  *    and rendered a visible "pending" badge; Ezymex is pre-launch and
- *    invite-only, so there is no client to quote.
+ *    pre-launch, so there is no client to quote.
  */
 
 export const homeHero: HeroBlock = {
-  eyebrow: "Invite-only CFD trading",
+  eyebrow: "CFD trading with published rules",
   /** `Hero.tsx` renders these two lines around the typewriter. */
   headline: "Trade CFDs on",
   highlight: "",
   sub: "Forex, indices, commodities and crypto, with every cost itemised on the ticket before you confirm and the same published margin rules for every account.",
   ctas: [
-    { label: "Join Waitlist", action: "waitlist" },
+    { label: "Open account", href: tradeConfig.register },
     { label: "How it works", href: "#how-it-works", variant: "outline" },
   ],
-  badges: [...facts.markets, "Invite only"],
+  badges: [...facts.markets],
 };
 
 /**
@@ -40,7 +41,7 @@ export const homeHero: HeroBlock = {
 export const heroTypewriter = ["Forex.", "Indices.", "Commodities.", "Crypto."];
 
 /** The closing line of the hero headline, after the typewriter. */
-export const heroHeadlineTail = "Invite only.";
+export const heroHeadlineTail = "On published rules.";
 
 /**
  * The two glass cards floating over the hero scene. They used to read "25+
@@ -133,12 +134,12 @@ export const howItWorks = {
   eyebrow: "How it works",
   heading: "From Request to First Trade in 5 Steps",
   highlight: "5 Steps",
-  sub: "Access is reviewed rather than instant, so the first step is an application, not a deposit.",
+  sub: "Five steps from signing up to withdrawing, with what happens at each one.",
   steps: [
     {
       step: "01",
-      title: "Request access",
-      body: "Join the waitlist with your name, email and phone. We email you when a place opens.",
+      title: "Open an account",
+      body: "Register with your name, email and phone. It takes a couple of minutes.",
     },
     {
       step: "02",
@@ -169,8 +170,8 @@ export const whyEzymex = {
   highlight: "Choose Ezymex",
   items: [
     {
-      title: "Access is reviewed",
-      body: "Invite-only, by application. A smaller book of traders who were actually screened.",
+      title: "Verified before you fund",
+      body: "Identity checks happen before the account can be funded, not after a problem.",
       icon: "lock",
     },
     {
@@ -202,10 +203,10 @@ export const whyEzymex = {
 };
 
 export const finalCta: CtaBlock = {
-  heading: "Trade CFDs on an invite-only platform",
-  sub: "Access is reviewed. Join the waitlist and we will email you when a place opens.",
+  heading: "Trade CFDs with the costs in front of you",
+  sub: "Open an account, verify your identity, and fund it when you are ready.",
   ctas: [
-    { label: "Join Waitlist", action: "waitlist" },
+    { label: "Open account", href: tradeConfig.register },
     {
       label: "Read the risk disclosure",
       href: "/legal/risk-disclosure",

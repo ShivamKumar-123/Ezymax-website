@@ -10,9 +10,9 @@ export type Cta = {
   /** Link target. Omit when `action` is set. */
   href?: string;
   /**
-   * "waitlist" opens the access form. The site is invite-only, so this is the
-   * primary conversion everywhere — it replaced a "demo" action that opened a
-   * sales enquiry form, which is a different product's funnel.
+   * Opens the access form. Kept for the few places that still collect an
+   * email rather than linking straight into the trader app — registration
+   * itself is open, so the main CTAs are plain links to `tradeConfig`.
    */
   action?: "waitlist";
   variant?: ButtonVariant;
