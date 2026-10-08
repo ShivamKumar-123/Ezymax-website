@@ -52,7 +52,11 @@ export type BrkModuleKey =
   | "strategy"
   | "stocks"
   | "mobile"
-  | "kyc_auto";
+  | "kyc_auto"
+  | "options"
+  | "news"
+  | "calendar"
+  | "support";
 
 export interface BrkModule {
   key: BrkModuleKey;
@@ -73,13 +77,20 @@ export const BRK_MODULES: BrkModule[] = [
   { key: "prop", name: "Prop challenges", description: "Evaluation phases, rules engine, funded accounts, payouts", addOn: 1800, plans: { starter: false, growth: false, enterprise: true }, tenants: 4 },
   { key: "contests", name: "Contests & rewards", description: "Demo/live contests, leaderboards, loyalty points", addOn: 600, plans: { starter: false, growth: true, enterprise: true }, tenants: 6 },
   { key: "academy", name: "Academy", description: "Courses, lessons, quizzes and certificates", addOn: 400, plans: { starter: true, growth: true, enterprise: true }, tenants: 9 },
-  { key: "ai_coach", name: "AI Coach", description: "Trade journal insights, market Q&A, risk nudges", addOn: 1500, plans: { starter: false, growth: false, enterprise: true }, tenants: 3 },
+  { key: "ai_coach", name: "AI assistant", description: "Ask AI, AI Trader, AI Coach and the strategy assistant", addOn: 1500, plans: { starter: false, growth: false, enterprise: true }, tenants: 3 },
   { key: "api", name: "API & Algo", description: "REST/WebSocket API keys, FIX bridge, rate limits", addOn: 1100, plans: { starter: false, growth: true, enterprise: true }, tenants: 5 },
   { key: "strategy", name: "Strategy builder", description: "No-code bots, backtesting, paper deployment", addOn: 800, plans: { starter: false, growth: false, enterprise: true }, tenants: 3 },
   { key: "stocks", name: "Stock CFDs", description: "US/EU equities with corporate actions & dividends", addOn: 700, plans: { starter: false, growth: true, enterprise: true }, tenants: 7 },
   { key: "mobile", name: "Branded mobile app", description: "iOS & Android builds under tenant brand, push", addOn: 2200, plans: { starter: false, growth: false, enterprise: true }, tenants: 4 },
   { key: "kyc_auto", name: "KYC automation", description: "Sumsub liveness, document OCR, AML screening", addOn: 500, plans: { starter: true, growth: true, enterprise: true }, tenants: 10 },
+  { key: "options", name: "FX Options", description: "Options page, options mode in the terminal and the mobile app", addOn: 1600, plans: { starter: false, growth: true, enterprise: true }, tenants: 6 },
+  { key: "news", name: "News", description: "Market headlines, news map and the daily brief", addOn: 0, plans: { starter: true, growth: true, enterprise: true }, tenants: 10 },
+  { key: "calendar", name: "Economic calendar", description: "Economic events, reminders and high-impact alerts", addOn: 0, plans: { starter: true, growth: true, enterprise: true }, tenants: 10 },
+  { key: "support", name: "Support chat", description: "Live chat with the support team and the help bot", addOn: 0, plans: { starter: true, growth: true, enterprise: true }, tenants: 10 },
 ];
+
+/** Included with every plan and on unless the platform owner switches them off (gateway default). */
+const DEFAULT_ON: BrkModuleKey[] = ["news", "calendar", "support"];
 
 /* ------------------------------------------------------------------ */
 /* Tenants                                                             */
@@ -144,7 +155,7 @@ type Seed = [
 ];
 
 const ALL_MODS: BrkModuleKey[] = BRK_MODULES.map((m) => m.key);
-const GROWTH_MODS: BrkModuleKey[] = ["trading", "wallet", "ib", "copy", "contests", "academy", "api", "stocks", "kyc_auto"];
+const GROWTH_MODS: BrkModuleKey[] = ["trading", "wallet", "ib", "copy", "contests", "academy", "api", "stocks", "kyc_auto", "options"];
 const STARTER_MODS: BrkModuleKey[] = ["trading", "wallet", "academy", "kyc_auto"];
 
 const SEEDS: Seed[] = [
@@ -197,7 +208,7 @@ export const BRK_TENANTS: BrkTenant[] = SEEDS.map((s, i) => {
     billingEmail: `billing@${domain}`,
     contact: PEOPLE[contactIdx]!,
     createdAt,
-    modules,
+    modules: [...modules, ...DEFAULT_ON.filter((k) => !modules.includes(k))],
     trend,
     onboardingStep: status === "onboarding" ? 2 : status === "trial" ? 4 : undefined,
   };

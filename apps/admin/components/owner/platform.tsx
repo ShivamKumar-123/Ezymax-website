@@ -63,7 +63,7 @@ export function LiveModules() {
   const { data, error, reload } = useApi<FeatureCatalogue>("/api/owner/features");
   return (
     <div className="pb-10">
-      <PageHeader title="Modules per tenant" subtitle="Switch PAMM, copy trading, prop, IB, algo, API and more for each brokerage (D112). Clients' navigation and APIs follow within seconds." actions={<Button variant="surface" onClick={reload}><RefreshCw /> Refresh</Button>} />
+      <PageHeader title="Modules per tenant" subtitle="Switch FX options, copy trading, PAMM, prop, IB, algo, API, news, the calendar, the AI assistant, support chat and more for each brokerage (D112). The Client Area, Ezymex Trader and the mobile app follow within seconds." actions={<Button variant="surface" onClick={reload}><RefreshCw /> Refresh</Button>} />
       {error ? <ErrorState error={error} onRetry={reload} /> : !data ? <TableSkeleton rows={6} /> : (
         <Card>
           <CardHeader title="Modules" icon={<Layers />} />
