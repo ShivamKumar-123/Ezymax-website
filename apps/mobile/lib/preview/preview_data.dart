@@ -84,17 +84,20 @@ Map<String, dynamic> _account(
   int positions = 0,
   double margin = 0,
   String name = '',
+  String product = 'cfd',
 }) => {
   'login': login,
   'type': type,
   'group': group,
   'groupName': groupName,
+  'product': product,
   'mode': 'hedging',
   'cent': cent,
   'currency': cent ? 'USC' : 'USD',
   'baseCurrency': 'USD',
-  'leverage': type == 'demo' ? 500 : 200,
-  'leverages': [50, 100, 200, 500],
+  // options accounts don't use leverage: the group's default
+  'leverage': product == 'options' ? 100 : (type == 'demo' ? 500 : 200),
+  'leverages': product == 'options' ? [100] : [50, 100, 200, 500],
   'status': 'active',
   'name': name,
   'marginCall': false,
@@ -121,6 +124,8 @@ final Map<String, dynamic> previewAccounts = {
     _account(10042817, 'live', 'pro', 'Pro', 12480.55, 12893.4, positions: 3, margin: 1840, name: 'Main'),
     _account(10051123, 'live', 'cent', 'Cent', 254300, 251980.2, cent: true, positions: 1, margin: 12000),
     _account(20017734, 'demo', 'standard', 'Standard', 10000, 10342.75, positions: 2, margin: 640),
+    // an Options account (an account trades CFDs or options): Ezymex Trader opens it in options mode
+    _account(20031150, 'demo', 'options', 'Options', 10000, 10000, product: 'options'),
   ],
 };
 

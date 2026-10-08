@@ -792,7 +792,9 @@ class _ChangeTypeSheetState extends State<_ChangeTypeSheet> {
     try {
       final j = await apiOf(context).get<Map<String, dynamic>>('trading/accounts/${widget.a.login}/group-options');
       if (!mounted) return;
-      setState(() => _opts = [for (final g in (j['groups'] as List? ?? const [])) GroupOption.fromJson((g as Map).cast<String, dynamic>())]);
+      // only types of the account's product: it never moves between CFD and Options
+      final all = [for (final g in (j['groups'] as List? ?? const [])) GroupOption.fromJson((g as Map).cast<String, dynamic>())];
+      setState(() => _opts = all.where((g) => g.product == widget.a.product).toList());
     } catch (e) {
       if (mounted) setState(() => _err = errorText(e, context.t));
     }

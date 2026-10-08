@@ -3,7 +3,7 @@
 //   1 header (Trading accounts) + Open account
 //   2 KPI cards: live equity, free margin, accounts, demo accounts (stacked on phones)
 //   3 My accounts: Live / Demo / Archived (?tab=), the account rows, "Open a new … account"
-//   4 Account types (the broker's groups -> /accounts/new?group=)
+//   4 Account types (the broker's groups -> /accounts/new?group=; options groups only while the options module is on)
 // `GET trading/accounts` every 5 s (web useAccounts), `GET trading/groups` once.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +12,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/api/api_providers.dart';
 import '../../core/auth/auth_controller.dart';
+import '../../core/config/app_config.dart';
 import '../../core/format/format.dart';
 import '../../core/models/account.dart';
 import '../../data/client_data.dart';
@@ -71,7 +72,8 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
     final k = context.k;
     final readOnly = ref.watch(meProvider)?.readOnly ?? false;
     final acc = ref.watch(accountsPageProvider);
-    final groups = ref.watch(groupsProvider).value;
+    final optionsOn = ref.watch(configProvider.select((c) => c.moduleOn('options')));
+    final groups = ref.watch(groupsProvider).value?.where((g) => optionsOn || !g.isOptions).toList();
     final all = acc.value ?? const <EngineAccount>[];
     final loading = !acc.hasValue && !acc.hasError;
     final totals = AccountTotals(all);

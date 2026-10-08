@@ -1,7 +1,7 @@
 // Accounts of Ezymex Trader: the list used by the Account tab and the header's switcher (web MAccountRow: Live / Demo,
-// login, group · mode · leverage, equity; one tap switches, opening the client's own account if needed), and the
-// MT5-style "Login to trade account" sheet (web EngineLoginForm: login, password, server; the investor password opens
-// a read-only session).
+// login, CFD / Options, group · mode · leverage, equity; one tap switches, opening the client's own account if needed,
+// and the terminal's mode follows its product), and the MT5-style "Login to trade account" sheet (web EngineLoginForm:
+// login, password, server; the investor password opens a read-only session).
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/api/api_error.dart';
+import '../../../core/config/app_config.dart';
 import '../../../core/models/account.dart';
 import '../../../core/notifications/notifications.dart';
 import '../../../i18n/i18n.dart';
@@ -31,12 +32,16 @@ class AccountEntry {
     required this.leverage,
     required this.equity,
     required this.cent,
+    this.product = 'cfd',
     this.readOnly = false,
   });
   final String login;
   final bool live;
   final String group, mode;
   final int leverage;
+
+  /// cfd | options
+  final String product;
 
   /// USD.
   final double equity;
@@ -64,6 +69,7 @@ final accountEntriesProvider = Provider.autoDispose<List<AccountEntry>>((ref) {
         leverage: sa?.leverage ?? a.leverage,
         equity: sa?.equity ?? (a.cent ? a.equity / 100 : a.equity),
         cent: a.cent,
+        product: sa?.product ?? a.product,
         readOnly: s?.readOnly ?? false,
       ),
     );
@@ -80,6 +86,7 @@ final accountEntriesProvider = Provider.autoDispose<List<AccountEntry>>((ref) {
         leverage: a?.leverage ?? 0,
         equity: a?.equity ?? 0,
         cent: a?.cent ?? false,
+        product: a?.product ?? 'cfd',
         readOnly: s.readOnly,
       ),
     );
@@ -109,11 +116,14 @@ class AccountList extends ConsumerWidget {
             onTap: () async {
               if (e.login == sessions.active) return;
               KHaptics.selection();
+              // an account of the other product turns the terminal to it: say so
+              final other = e.product != ref.read(tradeModeProvider);
               final ok = await ref.read(tradeSessionsProvider.notifier).activate(e.login);
               if (ok) {
-                ref
-                    .read(notificationsProvider.notifier)
-                    .toast(NotificationKind.info, t(e.live ? 'order.toast.switchedLive' : 'order.toast.switchedDemo', {'login': e.login}), keep: false);
+                final text = other
+                    ? (e.product == 'options' ? 'accounts.product.switchedOptions' : 'accounts.product.switchedCfd')
+                    : (e.live ? 'order.toast.switchedLive' : 'order.toast.switchedDemo');
+                ref.read(notificationsProvider.notifier).toast(NotificationKind.info, t(text, {'login': e.login}), keep: false);
                 onSwitched?.call();
               } else {
                 final err = ref.read(tradeSessionsProvider).error;
@@ -141,11 +151,13 @@ class AccountList extends ConsumerWidget {
                         Row(
                           children: [
                             Text(e.login, style: context.text.mono(12.5, weight: FontWeight.w600)),
+                            ProductTag(e.product, gap: 5),
                             if (e.readOnly) ...[const SizedBox(width: 5), TBadge(t('trader.badge.readOnly'), tone: TBadgeTone.warn)],
                           ],
                         ),
                         Text(
-                          '${e.group} · ${e.mode}${e.leverage > 0 ? ' · 1:${e.leverage}' : ''}',
+                          // options accounts don't use leverage
+                          '${e.group} · ${e.mode}${e.leverage > 0 && e.product != 'options' ? ' · 1:${e.leverage}' : ''}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: context.text.footnote.copyWith(color: k.fg3, fontSize: 10.5),
@@ -173,6 +185,30 @@ class AccountList extends ConsumerWidget {
           ),
       ],
     );
+  }
+}
+
+/// CFD / OPTIONS: what an account trades (one product per account; web ProductBadge). A CFD account shows none while
+/// the options module is off (every account is a CFD one then); `gap` goes before it when shown.
+class ProductTag extends ConsumerWidget {
+  const ProductTag(this.product, {super.key, this.gap = 0});
+
+  /// cfd | options
+  final String product;
+  final double gap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final optionsOn = ref.watch(configProvider.select((c) => c.moduleOn('options')));
+    if (product != 'options' && !optionsOn) return const SizedBox.shrink();
+    final t = context.t;
+    final tag = product == 'options' ? TBadge(t('accounts.product.options'), tone: TBadgeTone.info) : TBadge(t('accounts.product.cfd'));
+    return gap > 0
+        ? Padding(
+            padding: EdgeInsets.only(left: gap),
+            child: tag,
+          )
+        : tag;
   }
 }
 

@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:ezymex/app.dart';
@@ -60,7 +61,8 @@ Messages _catalog(String code) => (jsonDecode(File('assets/i18n/$code.json').rea
 /// `ezymex.demo` flag set, as after a restart in it); `theme`: light | dark; `locale`: any of the 22.
 /// `sampleTransport`: every call answered by the sample-data adapter (the default); false leaves the app its own
 /// choice (the live transport, pointed at a closed local port, or the sample adapter once the demo is on).
-/// `config`: a fixed app config instead of the sample API's (a white-label broker, …).
+/// `config`: a fixed app config instead of the sample API's (a white-label broker, …); `overrides`: more providers
+/// replaced (a client without some sample data, …).
 Future<ProviderContainer> pumpApp(
   WidgetTester tester, {
   bool signedIn = false,
@@ -70,6 +72,7 @@ Future<ProviderContainer> pumpApp(
   String? location,
   bool sampleTransport = true,
   AppConfig? config,
+  List<Override> overrides = const [],
 }) async {
   await loadFonts();
   await initializeDateFormatting();
@@ -100,6 +103,7 @@ Future<ProviderContainer> pumpApp(
         apiBaseProvider.overrideWithValue('http://127.0.0.1:9/api/mobile'),
       biometricsProvider.overrideWithValue(const NoBiometrics()),
       if (config != null) configProvider.overrideWith(() => _FixedConfig(config)),
+      ...overrides,
     ],
   );
   _current = container;

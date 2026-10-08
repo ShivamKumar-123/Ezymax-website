@@ -6,7 +6,8 @@
 // - on start `POST trade/sessions/check` says which stored tokens are still alive (the account switcher);
 // - `POST trade/logout` ends one.
 // The active login drives the terminal (terminal_controller.dart); the switcher lists the client's own accounts
-// (trading/accounts, one tap opens them) plus the other logins added with a password.
+// (trading/accounts, one tap opens them) plus the other logins added with a password. An account trades one product,
+// CFDs or options: a link for the other product (`?mode=`, a CFD market) moves to the client's account of that product.
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -48,6 +49,25 @@ class TradeSession {
     );
   }
 }
+
+/// The product a route asks for (web linkProduct): `mode=options|cfd`, else a CFD market (`symbol`, `side`) asks for
+/// CFD; null when it doesn't care.
+String? linkProduct({String? mode, String? symbol, String? side}) {
+  final m = mode?.toLowerCase();
+  if (m == 'options' || m == 'cfd') return m;
+  return (symbol != null && symbol.isNotEmpty) || side == 'buy' || side == 'sell' ? 'cfd' : null;
+}
+
+/// The client's account a link for `want` moves to when the account on screen trades the other product: one of that
+/// product that can trade, the same live / demo kind first (web accountForLink); null when there is none.
+EngineAccount? accountForProduct(List<EngineAccount> accounts, String want, {required bool live}) {
+  final fits = accounts.where((a) => a.product == want && !a.tradeBlocked).toList();
+  return fits.where((a) => a.live == live).firstOrNull ?? fits.firstOrNull;
+}
+
+/// What a link for the other product did: moved to the client's account `switched` of that product, or found none
+/// (`missing`: the terminal stays on the account it opened).
+typedef ProductLink = ({String? switched, bool missing});
 
 enum TradeSessionsPhase { starting, ready, failed }
 
@@ -101,9 +121,10 @@ class TradeSessionsController extends Notifier<TradeSessionsState> {
   bool _started = false;
 
   /// Opens the terminal: the stored sessions still alive, then `preferred` (the Trade button's account), else the
-  /// last one used, else the default own account.
-  Future<void> start({String? preferred}) async {
-    if (_started && preferred == null && state.current != null) return;
+  /// last one used, else the default own account. A link for one `product` (cfd | options) opens the client's account
+  /// of that product instead when that one trades the other (see followProduct).
+  Future<ProductLink?> start({String? preferred, String? product}) async {
+    if (_started && preferred == null && state.current != null) return product == null ? null : followProduct(product);
     _started = true;
     state = state.copyWith(phase: TradeSessionsPhase.starting, clearError: true);
     final alive = <String, TradeSession>{...state.sessions};
@@ -138,9 +159,38 @@ class TradeSessionsController extends Notifier<TradeSessionsState> {
         phase: TradeSessionsPhase.failed,
         error: const ApiException(status: 404, code: 'no_account', message: 'No trading account.'),
       );
-      return;
+      return null;
     }
-    await activate(login);
+    final link = product == null ? null : await _forProduct(login, product, alive);
+    return await activate(link?.switched ?? login) ? link : null;
+  }
+
+  /// A link for `want` (cfd | options) while the account on screen trades the other product: switches to the client's
+  /// account of that product (followed by a short note on screen). null: nothing to change, or the switch failed (the
+  /// error is in the state).
+  Future<ProductLink?> followProduct(String want) async {
+    final cur = state.current;
+    if (cur == null) return null;
+    final link = await _forProduct(cur.login, want, state.sessions);
+    if (link?.switched != null && !await activate(link!.switched!)) return null;
+    return link;
+  }
+
+  /// Which account a link for `want` opens instead of `login` (web accountForLink): null while `login` trades `want`
+  /// (its live view, else the Client Area's record: older servers send no product, i.e. CFD) or the accounts can't be
+  /// listed.
+  Future<ProductLink?> _forProduct(String login, String want, Map<String, TradeSession> alive) async {
+    final List<EngineAccount> own;
+    try {
+      own = (await _ownAccounts()).where((a) => !a.archived).toList();
+    } catch (_) {
+      return null;
+    }
+    final record = own.where((a) => '${a.login}' == login).firstOrNull;
+    final view = alive[login]?.account;
+    if ((view?.product ?? record?.product ?? 'cfd') == want) return null;
+    final pick = accountForProduct(own, want, live: view?.live ?? record?.live ?? true);
+    return pick == null ? (switched: null, missing: true) : (switched: '${pick.login}', missing: false);
   }
 
   /// The client's accounts (kept alive while read: the provider is autoDispose).

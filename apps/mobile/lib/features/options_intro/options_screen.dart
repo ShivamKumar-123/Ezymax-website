@@ -2,9 +2,11 @@
 //   1 header: Ezymex FX Options (+ "Ready to trade" once accepted)
 //   2 hero: eyebrow, title, text; accepted: "Trade options in Ezymex Trader" + How options work; else Get started
 //     (scrolls to the intro) + Options course; the 13 underlyings by class; four features
-//   3 not accepted yet: "Options in three simple ideas" (Buy a Call / Buy a Put / limited risk, payoff sketches),
+//   3 no Options account yet (options trade on their own account type, CFD accounts can't): "Options trade on an
+//     Options account" and "Open an Options account" (the open-account wizard preset to Options) instead of the intro;
+//     not accepted yet: "Options in three simple ideas" (Buy a Call / Buy a Put / limited risk, payoff sketches),
 //     "I understand how options work", the terms link, "Start trading options" (records the acceptance through
-//     suitability, then opens Ezymex Trader in options mode on the chosen account)
+//     suitability, then opens Ezymex Trader on the chosen Options account, which opens in options mode)
 //   4 How Ezymex FX Options work (facts) and New to options? (the Academy course)
 //   sheets: the full terms (key points translated + the binding English text), How options work
 // API: GET suitability/options · POST suitability/options/accept {version}; accounts from trading/accounts.
@@ -67,14 +69,18 @@ final suitabilityProvider = FutureProvider.autoDispose<Suitability>(
   (ref) async => Suitability.fromJson(await ref.watch(apiProvider).get<Map<String, dynamic>>('suitability/options')),
 );
 
-/// Accounts options can be traded on: active, not prop, not a copy / PAMM / MAM account; default first, live first.
+/// The open-account wizard preset to the Options product (options trade on an Options account only).
+const String kOpenOptionsHref = '/accounts/new?product=options';
+
+/// Accounts options can be traded on: the client's Options accounts (an account trades CFDs or options, never both),
+/// active, not prop, not a copy / PAMM / MAM account; default first, live first.
 List<EngineAccount> optionsAccounts(List<EngineAccount> all) {
   bool flavor(EngineAccount a) {
     final g = a.group.toLowerCase();
     return ['copy', 'pamm', 'mam'].any((c) => g == c || g.startsWith('$c-'));
   }
 
-  final list = all.where((a) => a.status == 'active' && !a.prop && !flavor(a)).toList()
+  final list = all.where((a) => a.isOptions && a.status == 'active' && !a.prop && !flavor(a)).toList()
     ..sort((a, b) {
       if (a.isDefault != b.isDefault) return a.isDefault ? -1 : 1;
       if (a.live != b.live) return a.live ? -1 : 1;
@@ -122,8 +128,8 @@ class _OptionsScreenState extends ConsumerState<OptionsScreen> {
     }
   }
 
-  /// Opens Ezymex Trader in options mode: one account directly, several through a choice, none -> open an account
-  /// (the web's TraderButton). `before` runs first and must succeed.
+  /// Opens Ezymex Trader on an Options account (it opens in options mode): one account directly, several through a
+  /// choice, none -> open an Options account (the web's TraderButton). `before` runs first and must succeed.
   Future<void> _trade({Future<bool> Function()? before}) async {
     final t = context.t;
     final router = GoRouter.of(context);
@@ -151,7 +157,7 @@ class _OptionsScreenState extends ConsumerState<OptionsScreen> {
     try {
       if (before != null && !await before()) return;
       if (accounts != null && accounts.isEmpty) {
-        router.go('/accounts/new');
+        router.go(kOpenOptionsHref);
       } else if (pick != null) {
         unawaited(router.push('/trader?login=${pick.login}&mode=options'));
       } else {
@@ -174,8 +180,10 @@ class _OptionsScreenState extends ConsumerState<OptionsScreen> {
     final accounts = acc.value == null ? null : optionsAccounts(acc.value!);
     final readOnly = _readOnly;
     final accountsLoading = accounts == null && !acc.hasError;
+    // no Options account: the call to open one takes the intro's place
+    final noAccount = accounts != null && accounts.isEmpty;
 
-    final tradeLabel = accounts != null && accounts.isEmpty ? t('options.trade.openAccount') : t('options.trade.cta');
+    final tradeLabel = noAccount ? t('accounts.product.openOptions') : t('options.trade.cta');
 
     return KPageScroll(
       onRefresh: () async {
@@ -247,7 +255,7 @@ class _OptionsScreenState extends ConsumerState<OptionsScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              t(accounts != null && accounts.isEmpty ? 'options.trade.noAccount' : 'options.trade.ready'),
+                              t(noAccount ? 'options.account.noneTitle' : 'options.trade.ready'),
                               style: context.text.footnote.copyWith(color: k.fg2, fontSize: 13),
                             ),
                           ),
@@ -316,8 +324,13 @@ class _OptionsScreenState extends ConsumerState<OptionsScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        // 3. the intro (until the terms are accepted)
-        if (!eligible)
+        // 3. no Options account yet: open one first; else the intro (until the terms are accepted)
+        if (noAccount)
+          KeyedSubtree(
+            key: _introKey,
+            child: _NoAccountCard(readOnly: ref.watch(meProvider)?.readOnly ?? false),
+          )
+        else if (!eligible)
           KeyedSubtree(
             key: _introKey,
             child: data != null
@@ -347,7 +360,7 @@ class _OptionsScreenState extends ConsumerState<OptionsScreen> {
                   )
                 : const KSkeletonCard(height: 360, lines: 6),
           ),
-        if (!eligible) const SizedBox(height: 16),
+        if (noAccount || !eligible) const SizedBox(height: 16),
         // 4. facts + learn
         KCard(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
@@ -701,6 +714,63 @@ class _PayoffPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_PayoffPainter old) => old.kind != kind || old.up != up;
+}
+
+/// No Options account yet (web NoAccountCard): options trade on their own account type, so opening one comes first;
+/// the intro and the terms follow once there is one. View-only logins see why, without the button.
+class _NoAccountCard extends StatelessWidget {
+  const _NoAccountCard({required this.readOnly});
+  final bool readOnly;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.t;
+    final k = context.k;
+    return KCard(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: KIconTile(icon: LucideIcons.chartSpline, tone: KTone.sky, size: 56),
+          ),
+          const SizedBox(height: 16),
+          Text(t('options.account.noneTitle'), style: context.text.title1.copyWith(fontSize: 19, fontWeight: FontWeight.w500, height: 1.2)),
+          const SizedBox(height: 6),
+          Text(t('options.account.noneText'), style: context.text.callout.copyWith(color: k.fg2, height: 1.5)),
+          const SizedBox(height: 14),
+          for (final p in const ['accounts.product.optionsPoint1', 'accounts.product.optionsPoint2', 'accounts.product.optionsPoint3'])
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 1),
+                    child: Icon(LucideIcons.circleCheck, size: 15, color: k.up),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(t(p), style: context.text.footnote.copyWith(color: k.fg2, fontSize: 13)),
+                  ),
+                ],
+              ),
+            ),
+          if (!readOnly) ...[
+            const SizedBox(height: 10),
+            KButton(
+              label: t('accounts.product.openOptions'),
+              trailingIcon: Directionality.of(context) == TextDirection.rtl ? LucideIcons.arrowLeft : LucideIcons.arrowRight,
+              size: KButtonSize.lg,
+              expand: true,
+              onPressed: () => context.go(kOpenOptionsHref),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 }
 
 class _IntroCard extends StatelessWidget {

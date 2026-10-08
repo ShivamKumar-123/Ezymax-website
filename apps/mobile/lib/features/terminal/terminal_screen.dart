@@ -1,8 +1,9 @@
 // Ezymex Trader, full screen (its own route above the Client Area; back returns to it). The web's PHONE layout
 // (apps/terminal/components/mobile/mobile-terminal.tsx) in the app's iOS look:
-//   header      back · CFD | Options · account pill (login, Live / Demo / read-only, equity, floating P&L) · bell
+//   header      back · account pill (login, Live / Demo, CFD / Options, read-only, equity, floating P&L) · bell
 //   CFD         Watchlist · Chart · Trade · History · Account (bottom bar; the chart opens first)
 //   Options     its own body and bottom bar (options/options_terminal.dart)
+// An account trades one product: a CFD account shows the CFD body, an Options account the Options one (no switch).
 // Like the web's mobile terminal (dir="ltr") the terminal keeps its left-to-right layout in Arabic, Urdu and Persian:
 // bid / ask, Sell / Buy and the chart keep their places, only the words are translated.
 import 'dart:async';
@@ -38,14 +39,9 @@ import 'core/workspace.dart';
 import 'options/options_terminal.dart';
 import 'widgets/kit.dart';
 
-/// The terminal's mode (web useTradeMode): cfd | options.
-class TradeModeController extends Notifier<String> {
-  @override
-  String build() => 'cfd';
-  void set(String m) => state = m;
-}
-
-final tradeModeProvider = NotifierProvider<TradeModeController, String>(TradeModeController.new);
+/// The terminal's mode (web useTradeMode): cfd | options. Not a choice: an account trades one product, so the mode is
+/// the `product` of the account on screen (CFD while none is open, and from older servers that send none).
+final tradeModeProvider = Provider<String>((ref) => ref.watch(tradeSessionsProvider.select((s) => s.current?.account?.product ?? 'cfd')));
 
 /// The CFD bottom-bar tab: watch | chart | trade | history | account.
 class CfdTabController extends Notifier<String> {
@@ -62,13 +58,15 @@ class TerminalScreen extends ConsumerStatefulWidget {
   /// The account the Trade button was pressed on (null: the last one, else the default account).
   final String? login;
 
-  /// `/trader?symbol=EURUSD`: open that market's chart (Markets, the Client Area's Trade buttons on a market).
+  /// `/trader?symbol=EURUSD`: open that market's chart (Markets, the Client Area's Trade buttons on a market); a CFD
+  /// market, so an Options account moves to the client's CFD account, if any.
   final String? symbol;
 
   /// `&side=buy|sell`: then the order sheet with that side, once the account is open.
   final String? side;
 
-  /// `?mode=options`: open in Options mode (the Options intro page).
+  /// `?mode=options|cfd` (the Options intro page): the product wanted. It never forces the mode (the account's product
+  /// decides): an account of the other product moves to the client's account of this one, if any.
   final String? mode;
 
   /// The route's query (`/trader?login=&symbol=&side=&mode=`).
@@ -88,27 +86,56 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> with WidgetsBin
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     Future.microtask(() {
-      if (!mounted) return;
-      final readOnly = ref.read(authProvider.select((s) => s is AuthSignedIn && s.me.viewer != null));
-      if (!readOnly) unawaited(ref.read(tradeSessionsProvider.notifier).start(preferred: widget.login));
-      _applyRoute();
+      if (mounted) unawaited(_open(start: true));
     });
   }
 
-  /// symbol / side / mode of the route.
-  void _applyRoute() {
-    if (widget.mode == 'options' || widget.mode == 'cfd') ref.read(tradeModeProvider.notifier).set(widget.mode!);
+  /// Opens the route's account (`start`: the terminal opening, `activate`: `?login=` changed), then follows its
+  /// symbol / side / mode (`route`).
+  Future<void> _open({bool start = false, bool activate = false, bool route = true}) async {
     final symbol = widget.symbol;
-    if (symbol != null && symbol.isNotEmpty) {
+    if (route && symbol != null && symbol.isNotEmpty) {
       ref.read(workspaceProvider.notifier).update((w) => w.copyWith(symbol: symbol));
-      ref.read(tradeModeProvider.notifier).set('cfd');
       ref.read(cfdTabProvider.notifier).set('chart');
-      final side = widget.side;
-      if (side == 'buy' || side == 'sell') _orderWhenReady(symbol, side!);
+    }
+    final viewer = ref.read(authProvider.select((s) => s is AuthSignedIn && s.me.viewer != null));
+    if (!viewer) {
+      final sessions = ref.read(tradeSessionsProvider.notifier);
+      // `?mode=` or a CFD market on an account of the other product: the client's account of that product
+      final want = linkProduct(mode: widget.mode, symbol: symbol, side: widget.side);
+      ProductLink? link;
+      if (start) {
+        link = await sessions.start(preferred: widget.login, product: want);
+      } else {
+        if (activate) await sessions.activate(widget.login!);
+        if (want != null) link = await sessions.followProduct(want);
+      }
+      if (!mounted) return;
+      if (link != null) _linkNote(want!, link);
+    }
+    final side = widget.side;
+    if (route && symbol != null && symbol.isNotEmpty && (side == 'buy' || side == 'sell')) _orderWhenReady(symbol, side!);
+  }
+
+  /// Which account a link for the other product opened (web Shell note): the client's account of `want`, or none.
+  void _linkNote(String want, ProductLink link) {
+    final t = ref.read(tProvider);
+    final notes = ref.read(notificationsProvider.notifier);
+    final switched = link.switched;
+    if (switched != null) {
+      notes.toast(
+        NotificationKind.info,
+        t(want == 'options' ? 'accounts.product.switchedOptions' : 'accounts.product.switchedCfd', {'login': switched}),
+        keep: false,
+      );
+    } else if (link.missing) {
+      // no Options account: the Client Area opens one; no CFD account: this one trades options only
+      notes.toast(NotificationKind.info, t(want == 'options' ? 'accounts.product.noOptionsAccount' : 'accounts.product.optionsOnly'), keep: false);
     }
   }
 
-  /// Opens the order sheet once the account is open and the market is known (and tradable on it).
+  /// Opens the order sheet once the account is open and the market is known (and tradable on it). An Options account
+  /// has no CFD order (the link's note said so).
   void _orderWhenReady(String symbol, String side) {
     _stopWaiting();
     void check() {
@@ -116,7 +143,7 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> with WidgetsBin
       if (!ready || !mounted) return;
       _stopWaiting();
       final st = ref.read(terminalProvider);
-      if (st.readOnly || !ref.read(symbolBookProvider).isVisible(symbol, live: st.account?.live ?? true)) return;
+      if (st.readOnly || ref.read(tradeModeProvider) != 'cfd' || !ref.read(symbolBookProvider).isVisible(symbol, live: st.account?.live ?? true)) return;
       unawaited(showOrderSheet(context, symbol: symbol, side: side));
     }
 
@@ -136,8 +163,9 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> with WidgetsBin
   @override
   void didUpdateWidget(TerminalScreen old) {
     super.didUpdateWidget(old);
-    if (widget.login != null && widget.login != old.login) unawaited(ref.read(tradeSessionsProvider.notifier).activate(widget.login!));
-    if (widget.symbol != old.symbol || widget.side != old.side || widget.mode != old.mode) _applyRoute();
+    final login = widget.login != null && widget.login != old.login;
+    final route = widget.symbol != old.symbol || widget.side != old.side || widget.mode != old.mode;
+    if (login || route) unawaited(_open(activate: login, route: route));
   }
 
   @override
@@ -211,7 +239,6 @@ class _Header extends ConsumerWidget {
     final t = context.t;
     final k = context.k;
     final unread = ref.watch(notificationsProvider.select((s) => s.unread));
-    final mode = ref.watch(tradeModeProvider);
     final rtl = Directionality.of(context) == TextDirection.rtl;
     return KFrosted(
       color: k.bar,
@@ -230,18 +257,9 @@ class _Header extends ConsumerWidget {
                   semanticLabel: t('common.back'),
                   onPressed: () => context.canPop() ? context.pop() : context.go('/'),
                 ),
-                SizedBox(
-                  width: 118,
-                  child: KSegmented<String>(
-                    height: 30,
-                    values: const ['cfd', 'options'],
-                    labels: [t('trader.opt.mode.cfd'), t('trader.opt.mode.options')],
-                    selected: mode,
-                    onChanged: (v) => ref.read(tradeModeProvider.notifier).set(v),
-                  ),
-                ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 2),
                 const Expanded(child: _AccountPill()),
+                const SizedBox(width: 2),
                 KIconButton(
                   icon: LucideIcons.bell,
                   size: 36,
@@ -258,8 +276,8 @@ class _Header extends ConsumerWidget {
   }
 }
 
-/// The account on screen (web header block): login + Live / Demo (+ read-only), equity and floating P&L. Tap: the
-/// account switcher.
+/// The account on screen (web header block): login + Live / Demo, CFD / Options (+ read-only), equity and floating
+/// P&L. Tap: the account switcher.
 class _AccountPill extends ConsumerWidget {
   const _AccountPill();
 
@@ -305,6 +323,7 @@ class _AccountPill extends ConsumerWidget {
                       if (a != null) ...[
                         const SizedBox(width: 4),
                         TBadge(t.dyn('trader.accountType.${a.type}', fallback: a.type), tone: a.live ? TBadgeTone.ember : TBadgeTone.gold),
+                        ProductTag(a.product, gap: 3),
                       ],
                       if (st.readOnly) ...[const SizedBox(width: 3), TBadge(t('trader.badge.readOnly'), tone: TBadgeTone.warn)],
                       if (streamDown) ...[

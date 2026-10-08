@@ -1,5 +1,6 @@
 // Small pieces of the Accounts pages, ported from the web's trading components:
 //   KindBadge, StatusBadge, FlavorChip, DefaultStar            (ui.tsx, archive.tsx, extras.tsx)
+//   ProductBadge, AccountProductBadge                          CFD / Options (one product per account)
 //   LoginCopy                                                  "#10042817" + CopyButton
 //   SecretField, PasswordInput, PasswordRules                  (ui.tsx SecretField / PasswordRules, accounts/security.tsx)
 //   TradeSymbolAvatar, OptionTag, symbolLabel, optionLabel     (instrument.tsx)
@@ -14,6 +15,7 @@ import 'package:intl/intl.dart' show DateFormat;
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/api/api_providers.dart';
+import '../../../core/config/app_config.dart';
 import '../../../core/format/format.dart';
 import '../../../core/models/account.dart';
 import '../../../core/models/trading.dart';
@@ -52,6 +54,37 @@ class KindBadge extends StatelessWidget {
     return a.live
         ? KChip(label: t('accounts.badge.live'), tone: KChipTone.ember, small: small)
         : KChip(label: t('accounts.badge.demo'), tone: KChipTone.gold, small: small);
+  }
+}
+
+/// CFD (neutral) / OPTIONS (info): what the account or group trades (an account trades one product).
+class ProductBadge extends StatelessWidget {
+  const ProductBadge({super.key, required this.product, this.small = true});
+
+  /// cfd | options
+  final String product;
+  final bool small;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.t;
+    return product == 'options'
+        ? KChip(label: t('accounts.product.options'), tone: KChipTone.info, small: small)
+        : KChip(label: t('accounts.product.cfd'), small: small);
+  }
+}
+
+/// An account's ProductBadge next to its KindBadge; a CFD account shows none while the options module is off (every
+/// account is a CFD one then).
+class AccountProductBadge extends ConsumerWidget {
+  const AccountProductBadge({super.key, required this.account});
+  final EngineAccount account;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final optionsOn = ref.watch(configProvider.select((c) => c.moduleOn('options')));
+    if (!account.isOptions && !optionsOn) return const SizedBox.shrink();
+    return ProductBadge(product: account.product);
   }
 }
 

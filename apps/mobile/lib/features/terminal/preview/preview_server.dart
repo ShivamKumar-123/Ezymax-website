@@ -95,11 +95,14 @@ double _pip(_Sym s) => switch (s.cls) {
 double _round(double v, int d) => double.parse(v.toStringAsFixed(d));
 
 class _Account {
-  _Account(this.login, this.type, this.group, this.groupName, this.balance, {this.cent = false, this.leverage = 200});
+  _Account(this.login, this.type, this.group, this.groupName, this.balance, {this.cent = false, this.leverage = 200, this.product = 'cfd'});
   final int login;
   final String type, group, groupName;
   final bool cent;
   final int leverage;
+
+  /// cfd | options (an Options account trades options only).
+  final String product;
 
   /// Account currency (USC on cent accounts: x 100 USD).
   double balance;
@@ -164,7 +167,8 @@ class PreviewServer {
     final pro = _Account(10042817, 'live', 'pro', 'Pro', 12480.55);
     final cent = _Account(10051123, 'live', 'cent', 'Cent', 254300, cent: true);
     final demo = _Account(20017734, 'demo', 'standard', 'Standard', 10000, leverage: 500);
-    for (final a in [pro, cent, demo]) {
+    final options = _Account(20031150, 'demo', 'options', 'Options', 10000, leverage: 100, product: 'options');
+    for (final a in [pro, cent, demo, options]) {
       _accounts[a.login] = a;
     }
     final now = DateTime.now().toUtc();
@@ -408,12 +412,13 @@ class PreviewServer {
       'type': a.type,
       'group': a.group,
       'groupName': a.groupName,
-      'spreadGroup': a.group == 'cent' ? 'standard' : a.group,
+      'product': a.product,
+      'spreadGroup': _spreadGroup(a),
       'mode': 'hedging',
       'cent': a.cent,
       'currency': a.cent ? 'USC' : 'USD',
       'leverage': a.leverage,
-      'leverages': [50, 100, 200, 500],
+      'leverages': a.product == 'options' ? [100] : [50, 100, 200, 500],
       'status': 'active',
       'name': a.login == 10042817 ? 'Main' : '',
       'marginCall': false,
@@ -434,7 +439,7 @@ class PreviewServer {
     };
   }
 
-  String _spreadGroup(_Account a) => a.group == 'cent' ? 'standard' : a.group;
+  String _spreadGroup(_Account a) => a.group == 'cent' || a.group == 'options' ? 'standard' : a.group;
 
   /// Floating numbers in the account currency.
   ({double profit, double swap, double equity, double margin, Map<int, double> each}) _metrics(_Account a) {
@@ -622,6 +627,7 @@ class PreviewServer {
     final symbol = '${b['symbol']}';
     final s = _sym(symbol);
     if (s == null) return (404, _err('not_found', 'Unknown symbol.'));
+    if (a.product == 'options') return (403, _err('product_mismatch', "This is an Options account: CFD trading isn't available on it."));
     if (a.type == 'live' && !s.core && !s.live) return (403, _err('symbol_demo_only', 'Live trading for $symbol is not enabled yet.'));
     final vol = (b['volume'] as num?)?.toDouble() ?? 0;
     if (vol < 0.01) return (422, _err('invalid_volume', 'Invalid volume.'));

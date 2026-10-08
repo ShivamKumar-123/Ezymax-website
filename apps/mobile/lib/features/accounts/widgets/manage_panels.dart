@@ -232,14 +232,15 @@ class SettingsPanel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        LeverageCard(account: a, onChanged: onChanged),
-        if (!a.live && a.demo != null) ...[const SizedBox(height: 16), DemoFundsCard(account: a, onChanged: onChanged)],
-        const SizedBox(height: 16),
+        // options accounts don't use leverage (option margin ignores it)
+        if (!a.isOptions) ...[LeverageCard(account: a, onChanged: onChanged), const SizedBox(height: 16)],
+        if (!a.live && a.demo != null) ...[DemoFundsCard(account: a, onChanged: onChanged), const SizedBox(height: 16)],
         DetailCard(
           title: t('accountDetail.details.title'),
           child: KKeyValues([
             KKV(t('accountDetail.info.login'), '${a.login}', mono: true),
             KKV(t('common.type'), '${a.live ? t('common.live') : t('common.demo')} · ${a.groupName}'),
+            KKV(t('accounts.label.product'), a.isOptions ? t('accounts.product.options') : t('accounts.product.cfd')),
             KKV(t('accountDetail.info.positionMode'), t.dyn('accounts.mode.${a.mode}', fallback: modeLabel(a.mode))),
             KKV(t('common.currency'), a.cent ? t('accountDetail.info.uscCents') : a.currency),
             KKV(t('accountDetail.info.marginCallStopOut'), '${a.marginCallLevel}% / ${a.stopOutLevel}%', mono: true),

@@ -131,6 +131,7 @@ class LiveAccountRow extends ConsumerWidget {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     KindBadge(account: a),
+                    AccountProductBadge(account: a),
                     FlavorChip(account: a),
                     Text(title, style: context.text.headline.copyWith(fontWeight: FontWeight.w500)),
                     LoginCopy(login: a.login),
@@ -149,8 +150,8 @@ class LiveAccountRow extends ConsumerWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              KChip(label: levLabel(a.leverage), small: true),
+              // options accounts don't use leverage
+              if (!a.isOptions) ...[const SizedBox(width: 8), KChip(label: levLabel(a.leverage), small: true)],
             ],
           ),
           const SizedBox(height: 14),
@@ -259,6 +260,7 @@ class _ArchivedAccountRowState extends ConsumerState<ArchivedAccountRow> {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               KindBadge(account: a),
+              AccountProductBadge(account: a),
               FlavorChip(account: a),
               Text(
                 a.groupName,

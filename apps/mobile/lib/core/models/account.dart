@@ -28,6 +28,7 @@ class EngineAccount {
     required this.marginLevel,
     required this.createdAt,
     this.isDefault = false,
+    this.product = 'cfd',
     this.demo,
     this.raw = const {},
   });
@@ -53,11 +54,15 @@ class EngineAccount {
   final DateTime createdAt;
   final bool isDefault;
 
+  /// What the account trades: cfd | options (an Options account trades options only, a CFD account CFDs only).
+  final String product;
+
   /// Demo accounts: {initialBalance, refillsPerDay, refillsUsedToday, expiryDays}.
   final Map<String, dynamic>? demo;
   final Map<String, dynamic> raw;
 
   bool get live => type == AccountKind.live;
+  bool get isOptions => product == 'options';
   bool get archived => status == 'archived' || status == 'closed';
 
   /// Prop challenge accounts (group "prop…").
@@ -74,6 +79,9 @@ class EngineAccount {
 
   String money(num v) => Fmt.accountMoney(v, currency: currency, cent: cent);
   double usd(num v) => Fmt.toUsd(v, cent: cent).toDouble();
+
+  /// cfd | options from the engine's `product` (missing on older servers: cfd).
+  static String productOf(Object? v) => v == 'options' ? 'options' : 'cfd';
 
   static double _d(Object? v) => v is num ? v.toDouble() : double.tryParse('$v') ?? 0;
 
@@ -100,6 +108,7 @@ class EngineAccount {
     marginLevel: j['marginLevel'] is num ? (j['marginLevel'] as num).toDouble() : null,
     createdAt: DateTime.tryParse('${j['createdAt']}') ?? DateTime.now(),
     isDefault: j['isDefault'] == true,
+    product: productOf(j['product']),
     demo: j['demo'] is Map ? (j['demo'] as Map).cast<String, dynamic>() : null,
     raw: j,
   );
