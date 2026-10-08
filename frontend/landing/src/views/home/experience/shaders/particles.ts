@@ -317,13 +317,13 @@ export const particleVertexShader = /* glsl */ `
         vEdgeFade *= smoothstep(0.0, 0.2, uIntro);
 
         // --- COLORS ---
-        // Both ends are tokens from globals.css so the ring reads as the same
-        // brand as the rest of the page. This was emerald -> chartreuse, which
-        // is the green-to-lime halo the brand no longer uses:
-        //   blue-700  #0b5bd3 -> the deep end
-        //   blue-300  #7cc9ff -> the bright end
-        vec3 cBottom = vec3(0.043, 0.357, 0.827); // blue-700
-        vec3 cTop = vec3(0.486, 0.788, 1.000);    // blue-300
+        // Ezymex's palette, not the source project's blue-to-orange. Both ends
+        // are tokens from globals.css so the ring reads as the same brand as the
+        // rest of the page:
+        //   emerald-500 #10b981 -> the deep end
+        //   lime-300    #deff4d -> the bright end (the site accent family)
+        vec3 cBottom = vec3(0.063, 0.725, 0.506); // emerald-500
+        vec3 cTop = vec3(0.871, 1.000, 0.302);    // lime-300
 
         // 1. Base color mix (used for sphere, DNA, wave)
         float baseColorMix = smoothstep(-3.0, 3.0, position.y + position.x * 0.5);

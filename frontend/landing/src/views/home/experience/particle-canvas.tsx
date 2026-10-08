@@ -83,10 +83,8 @@ export const ParticleCanvas = () => {
         uResolution: {
           value: new THREE.Vector2(window.innerWidth, window.innerHeight),
         },
-        // Cyan -> brand blue, so the intro field reads as the logo
-        // rather than the salmon/periwinkle it was ported with.
-        color1: { value: new THREE.Color("#7cc9ff") },
-        color2: { value: new THREE.Color("#1e88ff") },
+        color1: { value: new THREE.Color("#ff4c33") },
+        color2: { value: new THREE.Color("#3366ff") },
       },
       vertexShader: backgroundVertexShader,
       fragmentShader: backgroundFragmentShader,
