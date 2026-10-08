@@ -1,6 +1,7 @@
 // The Client Area navigation, 1:1 with the web (apps/crm/lib/nav.ts): the same modules, sub-pages, order, icons and
 // label keys, the same paths (so web links in notifications and deep links open the same page), the broker's
-// module switches (navForFeatures) and the view-only rules (navForViewer, lib/viewer.ts).
+// module switches (navForFeatures, pageOn for links; apps/crm/lib/modules.ts) and the view-only rules (navForViewer,
+// lib/viewer.ts).
 import 'package:flutter/widgets.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -193,7 +194,9 @@ const List<NavModule> kNav = [
 /// The four modules of the bottom bar; everything else is under More.
 const List<String> kPrimaryModules = ['dashboard', 'accounts', 'wallet', 'portfolio'];
 
-/// Nav path -> module switch (apps/crm/components/tenant-config.tsx PAGE_MODULES).
+/// Page path -> module expression: the page entries of the Client Area's map (apps/crm/lib/modules.ts MODULE_PATHS,
+/// the /api ones are the server's business); keep them in step. "a|b": open while either is on, "a&b": only while
+/// both are on.
 const List<(String, String)> _pageModules = [
   ('/social/pamm', 'pamm'),
   ('/social/investments', 'pamm'),
@@ -206,23 +209,37 @@ const List<(String, String)> _pageModules = [
   ('/developer/marketplace', 'algo'),
   ('/developer', 'api'),
   ('/academy', 'academy'),
+  ('/academy/coach', 'academy&ai_assistant'),
   ('/wallet', 'wallet'),
   ('/rewards', 'rewards'),
+  ('/options', 'options'),
+  ('/news', 'news'),
+  ('/calendar', 'calendar'),
+  ('/support', 'support'),
 ];
 
 bool _under(String path, String prefix) => prefix == '/' ? path == '/' : path == prefix || path.startsWith('$prefix/');
 
+/// The module expression of a page (longest prefix; a query is ignored), or null when it belongs to no module.
 String? pageModule(String href) {
-  final hits = _pageModules.where((p) => _under(href, p.$1)).toList()..sort((a, b) => b.$1.length.compareTo(a.$1.length));
+  final path = href.split('?').first;
+  final hits = _pageModules.where((p) => _under(path, p.$1)).toList()..sort((a, b) => b.$1.length.compareTo(a.$1.length));
   return hits.isEmpty ? null : hits.first.$2;
 }
 
+/// True unless the broker switched off what `expr` needs: "a", "a|b" (either on), "a&b" (both on); null or empty is
+/// always on (apps/crm/lib/modules.ts modulesOn).
+bool modulesOn(AppConfig cfg, String? expr) {
+  if (expr == null || expr.isEmpty) return true;
+  return expr.contains('&') ? expr.split('&').every(cfg.moduleOn) : expr.split('|').any(cfg.moduleOn);
+}
+
+/// Whether a link to a Client Area page may show: false when its module is switched off (web usePageOn).
+bool pageOn(AppConfig cfg, String href) => modulesOn(cfg, pageModule(href));
+
 /// Without the modules this broker switched off.
 List<NavModule> navForFeatures(List<NavModule> nav, AppConfig cfg) {
-  bool on(String href) {
-    final m = pageModule(href);
-    return m == null || cfg.moduleOn(m);
-  }
+  bool on(String href) => pageOn(cfg, href);
 
   return [
     for (final m in nav)

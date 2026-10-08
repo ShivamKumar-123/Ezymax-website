@@ -50,6 +50,16 @@ class MaintenanceFlag extends Notifier<bool> {
 
 final maintenanceProvider = NotifierProvider<MaintenanceFlag, bool>(MaintenanceFlag.new);
 
+/// API calls answered 403 module_disabled (a count): the broker switched a module off after the config was read, so
+/// the config controller reads it again and the module disappears.
+class ModuleDisabledSignal extends Notifier<int> {
+  @override
+  int build() => 0;
+  void hit() => state++;
+}
+
+final moduleDisabledProvider = NotifierProvider<ModuleDisabledSignal, int>(ModuleDisabledSignal.new);
+
 final apiProvider = Provider<ApiClient>((ref) {
   final holder = ref.watch(sessionHolderProvider);
   final store = ref.watch(sessionStoreProvider);
@@ -66,6 +76,7 @@ final apiProvider = Provider<ApiClient>((ref) {
     ),
     onSessionDead: (_) => ref.read(authProvider.notifier).sessionEnded(),
     onMaintenance: (_) => ref.read(maintenanceProvider.notifier).set(true),
+    onModuleDisabled: (_) => ref.read(moduleDisabledProvider.notifier).hit(),
     onDeviceMinted: store.setDeviceId,
   );
 });

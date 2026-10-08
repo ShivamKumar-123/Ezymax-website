@@ -1,7 +1,8 @@
-// Full-screen system states: the broker's maintenance mode (web /maintenance) and "update required"
-// (config.minAppVersion).
+// Full-screen system states: the broker's maintenance mode (web /maintenance), "update required"
+// (config.minAppVersion) and a page of a module the broker switched off (web /unavailable).
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/api/api_providers.dart';
@@ -99,6 +100,42 @@ class UpdateScreen extends ConsumerWidget {
             onPressed: () => launchUrl(Uri.parse('https://play.google.com/store/apps/details?id=com.ezymex.app'), mode: LaunchMode.externalApplication),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// A page of a module the broker switched off (web app/unavailable/page.tsx): the router sends its deep links,
+/// notification links and stale links here. Back (or the button) returns to the Dashboard.
+class UnavailableScreen extends StatelessWidget {
+  const UnavailableScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.t;
+    final k = context.k;
+    // reached with `go` there is nothing under it: the system back leads to the Dashboard instead of closing the app
+    return PopScope(
+      canPop: context.canPop(),
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) context.go('/');
+      },
+      child: _Frame(
+        child: Column(
+          children: [
+            const KIllustration(KIllustrationName.marketClosed, width: 220, maxHeight: 165),
+            const SizedBox(height: 22),
+            Text(t('shell.system.unavailable.title'), key: const ValueKey('unavailable-title'), textAlign: TextAlign.center, style: context.text.largeTitle),
+            const SizedBox(height: 10),
+            Text(
+              t('shell.system.unavailable.text'),
+              textAlign: TextAlign.center,
+              style: context.text.body.copyWith(color: k.fg2),
+            ),
+            const SizedBox(height: 24),
+            KButton(label: t('shell.system.unavailable.back'), variant: KButtonVariant.surface, onPressed: () => context.go('/')),
+          ],
+        ),
       ),
     );
   }

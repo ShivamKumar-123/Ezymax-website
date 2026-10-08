@@ -134,10 +134,18 @@ bool isOlderVersion(String version, String? min) {
 
 class ConfigController extends Notifier<AppConfig> {
   Timer? _retry;
+  DateTime? _staleAt;
 
   @override
   AppConfig build() {
     ref.onDispose(() => _retry?.cancel());
+    // a call answered 403 module_disabled: the switches changed since the last read (read again, at most once a minute)
+    ref.listen(moduleDisabledProvider, (_, _) {
+      final now = DateTime.now();
+      if (_staleAt != null && now.difference(_staleAt!) < const Duration(minutes: 1)) return;
+      _staleAt = now;
+      unawaited(refresh());
+    });
     final cached = ref.read(prefsProvider).cachedConfig;
     Future.microtask(refresh);
     return cached == null ? AppConfig.fallback : AppConfig.fromJson(cached);

@@ -6,8 +6,10 @@
 //                                                 · More), each with its own stack; module pages under More
 //   /trader?login=                                Ezymex Trader, full screen above the shell (any Trade button)
 //   /maintenance /update                          system states
+//   /unavailable                                  a page of a module the broker switched off (web /unavailable)
 // Sub-pages of a module are siblings that share one page, the module pager (a finger slides between them, the URL
 // follows); detail pages are children (iOS push).
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -145,8 +147,9 @@ final ModuleScreens _c1Screens = {
 /// Path and query of a location (deep links arrive with a scheme and host).
 String _loc(Uri uri) => '${uri.path.isEmpty ? '/' : uri.path}${uri.hasQuery ? '?${uri.query}' : ''}';
 
-/// Decides where a location may go, from the sign-in state, maintenance and the minimum app version.
-String? redirectFor({required AuthState auth, required bool maintenance, required bool updateRequired, required Uri uri}) {
+/// Decides where a location may go, from the sign-in state, maintenance, the minimum app version and the broker's
+/// module switches and flags (`config`; none: everything on).
+String? redirectFor({required AuthState auth, required bool maintenance, required bool updateRequired, required Uri uri, AppConfig? config}) {
   // https://trade.ezymex.com/… (Ezymex Trader links) -> the terminal
   if (uri.host.startsWith('trade.')) return '/trader';
   final path = uri.path.isEmpty ? '/' : uri.path;
@@ -161,6 +164,8 @@ String? redirectFor({required AuthState auth, required bool maintenance, require
       if (path == '/unlock') return null;
       return _systemPaths.contains(path) || _authPaths.contains(path) || path == '/' ? '/unlock' : '/unlock?next=${Uri.encodeComponent(_loc(uri))}';
     case AuthSignedOut():
+      // sign-up switched off (flag client_registration): the gateway refuses it anyway
+      if (path == '/register' && config?.flag('client_registration', fallback: true) == false) return '/login';
       if (_authPaths.contains(path)) return null;
       final next = _systemPaths.contains(path) || path == '/' ? null : _loc(uri);
       return next == null ? '/login' : '/login?next=${Uri.encodeComponent(next)}';
@@ -169,6 +174,8 @@ String? redirectFor({required AuthState auth, required bool maintenance, require
         final next = uri.queryParameters['next'];
         return next != null && next.startsWith('/') && !next.startsWith('//') ? next : '/';
       }
+      // open for every session (a view-only login whose sections are all switched off lands here too)
+      if (path == '/unavailable') return null;
       final v = me.viewer;
       if (v != null && path != '/more' && !viewerPageAllowed(v, path)) {
         return const ['dashboard', 'accounts', 'history', 'wallet', 'partner']
@@ -177,6 +184,9 @@ String? redirectFor({required AuthState auth, required bool maintenance, require
                 .firstOrNull ??
             '/more';
       }
+      // a page of a module the broker switched off (deep links, notifications, links shown before the config
+      // changed): the "not available" page, never the page itself (its API answers 403 module_disabled)
+      if (config != null && !pageOn(config, path)) return '/unavailable';
       return null;
   }
 }
@@ -190,7 +200,10 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.listen(authProvider, (_, _) => refresh.ping());
   ref.listen(maintenanceProvider, (_, _) => refresh.ping());
   ref.listen(configProvider, (a, b) {
-    if (a?.maintenance != b.maintenance || a?.minAppVersion != b.minAppVersion) refresh.ping();
+    // a module switched off while its page is open leaves it at once (and one switched on opens its links again)
+    final changed =
+        a?.maintenance != b.maintenance || a?.minAppVersion != b.minAppVersion || !mapEquals(a?.modules, b.modules) || !mapEquals(a?.flags, b.flags);
+    if (changed) refresh.ping();
   });
   ref.onDispose(refresh.dispose);
 
@@ -205,6 +218,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         maintenance: cfg.maintenance || ref.read(maintenanceProvider),
         updateRequired: isOlderVersion(ref.read(appInfoProvider).version, cfg.minAppVersion),
         uri: state.uri,
+        config: cfg,
       );
       return to;
     },
@@ -220,6 +234,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/unlock', pageBuilder: (c, s) => _tab(const UnlockScreen(), s)),
       GoRoute(path: '/maintenance', pageBuilder: (c, s) => _tab(const MaintenanceScreen(), s)),
       GoRoute(path: '/update', pageBuilder: (c, s) => _tab(const UpdateScreen(), s)),
+      GoRoute(path: '/unavailable', pageBuilder: (c, s) => _tab(const UnavailableScreen(), s)),
       GoRoute(
         path: '/trader',
         parentNavigatorKey: rootNavigatorKey,

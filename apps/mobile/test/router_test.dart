@@ -20,8 +20,8 @@ void main() {
       'sections': ['wallet', 'history'],
     },
   });
-  String? go(AuthState a, String location, {bool maintenance = false, bool update = false}) =>
-      redirectFor(auth: a, maintenance: maintenance, updateRequired: update, uri: Uri.parse(location));
+  String? go(AuthState a, String location, {bool maintenance = false, bool update = false, AppConfig? config}) =>
+      redirectFor(auth: a, maintenance: maintenance, updateRequired: update, uri: Uri.parse(location), config: config);
 
   test('booting, signed out and locked', () {
     expect(go(const AuthBooting(), '/wallet'), '/boot');
@@ -74,5 +74,93 @@ void main() {
     expect(isOlderVersion('1.0.0+5', '1.0.1'), isTrue);
     expect(isOlderVersion('1.10.0', '1.9.9'), isFalse);
     expect(isOlderVersion('1.0.0', null), isFalse);
+  });
+
+  test('module expressions and page links follow apps/crm/lib/modules.ts', () {
+    final cfg = AppConfig.fromJson(const {
+      'modules': {'algo': false, 'ai_assistant': false, 'options': false, 'news': false, 'support': false},
+    });
+    expect(modulesOn(cfg, null), isTrue);
+    expect(modulesOn(cfg, ''), isTrue);
+    expect(modulesOn(cfg, 'api'), isTrue);
+    expect(modulesOn(cfg, 'algo'), isFalse);
+    expect(modulesOn(cfg, 'algo|api'), isTrue);
+    expect(modulesOn(cfg, 'academy&ai_assistant'), isFalse);
+    expect(modulesOn(cfg, 'academy&api'), isTrue);
+    expect(pageModule('/academy/coach'), 'academy&ai_assistant');
+    expect(pageModule('/wallet/transfer?to=10042817'), 'wallet');
+    expect(pageModule('/accounts'), isNull);
+    expect(pageOn(cfg, '/options'), isFalse);
+    expect(pageOn(cfg, '/academy'), isTrue);
+    expect(pageOn(cfg, '/academy/coach'), isFalse);
+    expect(pageOn(cfg, '/calendar'), isTrue);
+    // the new switches hide their pages from the navigation (Options, News, Support; Calendar stays)
+    final nav = navFor(cfg, me);
+    expect(nav.map((m) => m.key), isNot(contains('options')));
+    expect(nav.map((m) => m.key), isNot(contains('support')));
+    expect(nav.firstWhere((m) => m.key == 'dashboard').sub.map((s) => s.href), ['/', '/markets', '/calendar']);
+    // nothing switched off (or a key the app doesn't know): everything stays
+    expect(
+      navFor(
+        AppConfig.fromJson(const {
+          'modules': {'something_new': false},
+        }),
+        me,
+      ).length,
+      kNav.length,
+    );
+  });
+
+  test('a page of a switched-off module opens /unavailable, never the page', () {
+    final s = AuthSignedIn(session, me);
+    final cfg = AppConfig.fromJson(const {
+      'modules': {'copy_trading': false, 'ai_assistant': false, 'news': false, 'options': false},
+    });
+    String? at(String location) => go(s, location, config: cfg);
+    expect(at('/social'), '/unavailable');
+    expect(at('/social/copy?tab=active'), '/unavailable');
+    expect(at('ezymex://app/news'), '/unavailable');
+    expect(at('/options'), '/unavailable');
+    expect(at('/academy/coach'), '/unavailable');
+    // still on: PAMM under /social, the academy itself, the calendar, pages of no module, the page itself
+    expect(at('/social/pamm'), isNull);
+    expect(at('/academy'), isNull);
+    expect(at('/academy/glossary'), isNull);
+    expect(at('/calendar'), isNull);
+    expect(at('/'), isNull);
+    expect(at('/trader'), isNull);
+    expect(at('/unavailable'), isNull);
+    // no config, or a module the app doesn't know: everything is on
+    expect(go(s, '/social'), isNull);
+    expect(
+      go(
+        s,
+        '/options',
+        config: AppConfig.fromJson(const {
+          'modules': {'something_new': false},
+        }),
+      ),
+      isNull,
+    );
+    // signed out: sign-in first, then the check
+    expect(go(const AuthSignedOut(), '/social', config: cfg), '/login?next=%2Fsocial');
+    expect(go(s, '/login?next=%2Fsocial', config: cfg), '/social');
+    // a view-only login whose only section is switched off doesn't loop between its section and /unavailable
+    final v = AuthSignedIn(session, viewer);
+    final noWallet = AppConfig.fromJson(const {
+      'modules': {'wallet': false},
+    });
+    expect(go(v, '/wallet', config: noWallet), '/unavailable');
+    expect(go(v, '/unavailable', config: noWallet), isNull);
+  });
+
+  test('sign-up switched off (flag client_registration) leads to sign-in', () {
+    final closed = AppConfig.fromJson(const {
+      'flags': {'client_registration': false},
+    });
+    expect(go(const AuthSignedOut(), '/register?ref=ABC', config: closed), '/login');
+    expect(go(const AuthSignedOut(), '/login', config: closed), isNull);
+    expect(go(const AuthSignedOut(), '/register', config: AppConfig.fromJson(const {})), isNull);
+    expect(go(const AuthSignedOut(), '/register'), isNull);
   });
 }
