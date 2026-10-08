@@ -6,8 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../core/config/app_config.dart';
 import '../../i18n/i18n.dart';
 import '../../ui/ui.dart';
+
+/// Whether the page at `path` opens on the picture: the Overview of the stock Kalks brand. The shell (its chrome and
+/// the page's top padding), the module pager and the page itself decide by this one rule.
+bool dashboardHeroAt(String path, AppConfig cfg) => path == '/' && cfg.tenantDefault;
 
 /// The picture's height: 46 % of the screen, 300–440 px. The shell's collapse point and the page share it.
 double dashboardHeroHeight(MediaQueryData mq) => (mq.size.height * 0.46).clamp(300.0, 440.0);

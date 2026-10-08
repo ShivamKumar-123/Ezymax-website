@@ -6,7 +6,9 @@
 // - in the in-app demo, a slim "Demo · Sample data · Exit demo" strip above the header.
 // The Dashboard of the stock Kalks brand opens on its picture (dashboard_hero.dart): the page gets no top padding,
 // the same controls float over the picture as round white buttons, and the frosted header fades in once the page's
-// sheet reaches the header zone.
+// sheet reaches the header zone — or as soon as the module pager (module_pager.dart) starts sliding the picture page
+// out; the hero chrome stays while the picture is still partly on screen and comes back with it.
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,6 +27,7 @@ import '../features/dashboard/dashboard_hero.dart';
 import '../features/support/launcher.dart';
 import '../i18n/i18n.dart';
 import '../ui/ui.dart';
+import 'chrome.dart';
 import 'menus.dart';
 import 'nav.dart';
 import 'session_keeper.dart';
@@ -54,14 +57,32 @@ class _AppShellState extends ConsumerState<AppShell> {
   /// Hero page: the page's sheet has reached the header zone (the frosted header is up, the floating controls gone).
   bool _collapsed = false;
 
-  /// Set by build: whether the page opens on its picture, and the scroll offset where it collapses.
+  /// Set by build: whether the hero chrome is up (the page opens on its picture, or the pager is sliding it), and the
+  /// picture page's scroll offset where it collapses.
   bool _hero = false;
   double _collapseAt = double.infinity;
+
+  /// The module pager's slide (chrome.dart), and whether it is between the picture page and the next one.
+  late final ValueNotifier<double> _slide = ref.read(modulePagerOffsetProvider);
+  bool _sliding = false;
 
   @override
   void initState() {
     super.initState();
+    _slide.addListener(_onSlide);
     WidgetsBinding.instance.addPostFrameCallback((_) => _offerBiometric());
+  }
+
+  @override
+  void dispose() {
+    _slide.removeListener(_onSlide);
+    super.dispose();
+  }
+
+  void _onSlide() {
+    final v = _slide.value;
+    final s = v > 0 && v < 1;
+    if (s != _sliding) setState(() => _sliding = s);
   }
 
   /// After the first sign-in on this phone: "Unlock faster next time?" (once; not for the demo's sample client).
@@ -83,10 +104,11 @@ class _AppShellState extends ConsumerState<AppShell> {
   }
 
   /// The page's own scroll (depth 0, vertical): scroll updates, and the metrics a fresh page reports on its first
-  /// layout (a page replaced in its branch starts at the top again without scrolling).
-  void _onScroll(ScrollMetrics m) {
+  /// layout (a page replaced in its branch starts at the top again without scrolling). From the module pager the
+  /// scroll names its page (`path`); the picture page's scroll alone decides the collapse.
+  void _onScroll(ScrollMetrics m, {String? path}) {
     final s = m.pixels > 8;
-    final c = _hero ? m.pixels >= _collapseAt : _collapsed;
+    final c = dashboardHeroAt(path ?? widget.path, ref.read(configProvider)) ? m.pixels >= _collapseAt : _collapsed;
     if (s == _scrolled && c == _collapsed) return;
     setState(() {
       _scrolled = s;
@@ -110,9 +132,10 @@ class _AppShellState extends ConsumerState<AppShell> {
     final barH = KSize.tabBar + barBottom + 8;
 
     // the Dashboard's picture (stock Kalks brand): the sheet's edge starts under the picture and collapses the chrome
-    // once it reaches the bottom of the header row
-    _hero = widget.path == '/' && cfg.tenantDefault;
-    _collapseAt = _hero ? dashboardHeroHeight(mq) - kDashboardHeroOverlap - (mq.padding.top + demoH + KSize.header) : double.infinity;
+    // once it reaches the bottom of the header row; while the pager slides the picture page in or out, the hero
+    // chrome stays (collapsed by the slide itself)
+    _hero = dashboardHeroAt(widget.path, cfg) || (_sliding && cfg.tenantDefault && module?.key == 'dashboard');
+    _collapseAt = dashboardHeroHeight(mq) - kDashboardHeroOverlap - (mq.padding.top + demoH + KSize.header);
     final collapsed = _hero && _collapsed;
     final b = Theme.of(context).brightness;
     // light status-bar icons over the picture
@@ -130,21 +153,31 @@ class _AppShellState extends ConsumerState<AppShell> {
             children: [
               const Positioned.fill(child: KBackdrop()),
               Positioned.fill(
-                child: MediaQuery(
-                  data: mq.copyWith(
-                    padding: mq.padding.copyWith(top: _hero ? 0 : headerH, bottom: barH),
-                  ),
-                  child: NotificationListener<ScrollUpdateNotification>(
-                    onNotification: (n) {
-                      if (n.depth == 0 && n.metrics.axis == Axis.vertical) _onScroll(n.metrics);
-                      return false;
-                    },
-                    child: NotificationListener<ScrollMetricsNotification>(
+                child: ShellInsets(
+                  headerHeight: headerH,
+                  child: MediaQuery(
+                    data: mq.copyWith(
+                      padding: mq.padding.copyWith(top: _hero ? 0 : headerH, bottom: barH),
+                    ),
+                    child: NotificationListener<ScrollUpdateNotification>(
                       onNotification: (n) {
                         if (n.depth == 0 && n.metrics.axis == Axis.vertical) _onScroll(n.metrics);
                         return false;
                       },
-                      child: widget.shell,
+                      child: NotificationListener<ScrollMetricsNotification>(
+                        onNotification: (n) {
+                          if (n.depth == 0 && n.metrics.axis == Axis.vertical) _onScroll(n.metrics);
+                          return false;
+                        },
+                        // the page in front of a module pager (its own scroll reaches here at depth 1)
+                        child: NotificationListener<ModulePageScrollNotification>(
+                          onNotification: (n) {
+                            _onScroll(n.metrics, path: n.path);
+                            return true;
+                          },
+                          child: widget.shell,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -156,6 +189,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                 child: _hero
                     ? _HeroChrome(
                         collapsed: collapsed,
+                        slide: _slide,
                         controls: _HeroControls(key: kShellHeroControls, nav: nav, demo: demo),
                         header: (fade) =>
                             _Header(key: kShellHeroHeader, module: module, subs: subs, path: widget.path, scrolled: true, nav: nav, demo: demo, fade: fade),
@@ -297,10 +331,14 @@ class _Header extends ConsumerWidget {
 }
 
 /// Over the Dashboard's picture: the floating controls while the picture shows, the frosted header once the sheet
-/// is up; a 180 ms crossfade, touches only on the layer that is meant to be there.
+/// is up or the picture page starts sliding away under a finger (and back when the slide returns); a 180 ms
+/// crossfade, touches only on the layer that is meant to be there.
 class _HeroChrome extends StatefulWidget {
-  const _HeroChrome({required this.collapsed, required this.controls, required this.header});
+  const _HeroChrome({required this.collapsed, required this.slide, required this.controls, required this.header});
   final bool collapsed;
+
+  /// The module pager's slide (chrome.dart): past 0.02 the picture is leaving.
+  final ValueListenable<double> slide;
   final Widget controls;
   final Widget Function(double fade) header;
 
@@ -309,16 +347,37 @@ class _HeroChrome extends StatefulWidget {
 }
 
 class _HeroChromeState extends State<_HeroChrome> with SingleTickerProviderStateMixin {
-  late final AnimationController _fade = AnimationController(vsync: this, duration: const Duration(milliseconds: 180), value: widget.collapsed ? 1 : 0);
+  late bool _up = _target;
+  late final AnimationController _fade = AnimationController(vsync: this, duration: const Duration(milliseconds: 180), value: _up ? 1 : 0);
+
+  bool get _target => widget.collapsed || widget.slide.value > 0.02;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.slide.addListener(_sync);
+  }
 
   @override
   void didUpdateWidget(_HeroChrome old) {
     super.didUpdateWidget(old);
-    if (old.collapsed != widget.collapsed) _fade.animateTo(widget.collapsed ? 1 : 0, curve: Curves.easeOut);
+    if (old.slide != widget.slide) {
+      old.slide.removeListener(_sync);
+      widget.slide.addListener(_sync);
+    }
+    _sync();
+  }
+
+  void _sync() {
+    final t = _target;
+    if (t == _up) return;
+    _up = t;
+    _fade.animateTo(t ? 1 : 0, curve: Curves.easeOut);
   }
 
   @override
   void dispose() {
+    widget.slide.removeListener(_sync);
     _fade.dispose();
     super.dispose();
   }
@@ -332,10 +391,10 @@ class _HeroChromeState extends State<_HeroChrome> with SingleTickerProviderState
         children: [
           if (v < 1)
             IgnorePointer(
-              ignoring: widget.collapsed,
+              ignoring: _up,
               child: v == 0 ? widget.controls : Opacity(opacity: 1 - v, child: widget.controls),
             ),
-          if (v > 0) IgnorePointer(ignoring: !widget.collapsed, child: widget.header(v)),
+          if (v > 0) IgnorePointer(ignoring: !_up, child: widget.header(v)),
         ],
       );
     },

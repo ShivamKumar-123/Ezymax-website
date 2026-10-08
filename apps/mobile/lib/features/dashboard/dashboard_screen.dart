@@ -381,7 +381,7 @@ class DashboardScreen extends ConsumerWidget {
     final config = ref.watch(configProvider);
     // the module's pages under the sheet's grabber (the shell's sub-nav, in the sheet while the picture shows)
     final subs = moduleOf(navFor(config, me), '/')?.sub ?? const <NavSub>[];
-    final hero = config.tenantDefault
+    final hero = dashboardHeroAt('/', config)
         ? KPageHero(
             height: dashboardHeroHeight(MediaQuery.of(context)),
             picture: const DashboardHeroPicture(),

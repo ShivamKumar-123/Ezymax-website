@@ -6,7 +6,8 @@
 //                                                 · More), each with its own stack; module pages under More
 //   /trader?login=                                Kalks Trader, full screen above the shell (any Trade button)
 //   /maintenance /update                          system states
-// Sub-pages of a module are siblings (tab-like, no slide); detail pages are children (iOS push).
+// Sub-pages of a module are siblings that share one page, the module pager (a finger slides between them, the URL
+// follows); detail pages are children (iOS push).
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -58,6 +59,7 @@ import '../features/wallet/wallet_screen.dart';
 import '../features/wallet/withdraw_screen.dart';
 import '../preview/gallery_screen.dart';
 import '../shell/app_shell.dart';
+import '../shell/module_pager.dart';
 import '../shell/more_screen.dart';
 import '../shell/nav.dart';
 import '../ui/ui.dart';
@@ -78,15 +80,24 @@ int branchOf(String moduleKey) => switch (moduleKey) {
 
 Page<void> _tab(Widget child, GoRouterState s) => NoTransitionPage<void>(key: s.pageKey, child: child);
 
-/// Every sub-page of the module as a sibling route (a stub until its screen is built).
-List<RouteBase> _moduleRoutes(String key, {Map<String, Widget Function(GoRouterState)> screens = const {}, List<RouteBase> extra = const []}) {
+/// Every sub-page of the module as a sibling route (a stub until its screen is built). A module with several pages
+/// gets one page for all of them, the module pager, under one key per module: going from one sub-route to another
+/// updates that page in place, so the Navigator keeps the pager's State (its slide position and the pages visited).
+/// Sub-routes must therefore never be pushed over each other (always `go`); detail pages in `extra` are pushed.
+List<RouteBase> _moduleRoutes(String key, {ModuleScreens screens = const {}, List<RouteBase> extra = const []}) {
   final m = kNav.firstWhere((x) => x.key == key);
   final paths = {if (m.sub.isEmpty) m.href, for (final s in m.sub) s.href};
+  final pagerKey = ValueKey('pager:$key');
   return [
     for (final p in paths)
       GoRoute(
         path: p,
-        pageBuilder: (c, s) => _tab(screens[p]?.call(s) ?? StubScreen(path: p), s),
+        pageBuilder: paths.length > 1
+            ? (c, s) => NoTransitionPage<void>(
+                key: pagerKey,
+                child: ModulePager(key: pagerKey, moduleKey: key, state: s, screens: screens),
+              )
+            : (c, s) => _tab(moduleScreen(screens, p, s), s),
       ),
     ...extra,
   ];
@@ -94,7 +105,7 @@ List<RouteBase> _moduleRoutes(String key, {Map<String, Widget Function(GoRouterS
 
 /// Agent C2's pages (Markets, News, Calendar, Options, Copy & PAMM, Partner, Prop, Rewards, Academy, Developer), by
 /// web path, and their detail pages (iOS push).
-final Map<String, Widget Function(GoRouterState)> _c2Screens = {
+final ModuleScreens _c2Screens = {
   ...marketsScreens,
   ...newsScreens,
   ...calendarScreens,
@@ -109,7 +120,7 @@ final Map<String, Widget Function(GoRouterState)> _c2Screens = {
 final List<RouteBase> _c2Routes = [...socialRoutes, ...partnerRoutes, ...propRoutes, ...rewardsRoutes, ...academyRoutes, ...developerRoutes, ...optionsRoutes];
 
 /// Agent C1's pages (Accounts, Wallet, Portfolio, Profile & Security, Support), by web path.
-final Map<String, Widget Function(GoRouterState)> _c1Screens = {
+final ModuleScreens _c1Screens = {
   '/accounts': (s) => AccountsScreen(query: s.uri.queryParameters),
   '/accounts/new': (s) => OpenAccountScreen(query: s.uri.queryParameters),
   '/wallet': (s) => WalletScreen(query: s.uri.queryParameters),

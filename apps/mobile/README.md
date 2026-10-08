@@ -59,9 +59,11 @@ lib/
   main.dart, app.dart        start-up (prefs, i18n, app info) and the MaterialApp (themes, locale, RTL, banners)
   env.dart                   --dart-define switches: API base, preview
   router/router.dart         every route (web paths), redirects (sign-in, lock, maintenance, update, view-only)
-  shell/                     the Client Area chrome: app_shell (header + sub-page tabs + bottom bar), menus (bell,
-                             profile menu, search), more_screen, nav (the web's nav: modules, pages, keys, icons,
-                             module switches, view-only rules), session_keeper (heartbeat 45 s, me 30 s)
+  shell/                     the Client Area chrome: app_shell (header + sub-page tabs + bottom bar), module_pager
+                             (a module's sub-pages side by side: swipe or tap a tab, the URL follows, visited pages
+                             keep their state), chrome (what the shell and the pager share), menus (bell, profile
+                             menu, search), more_screen, nav (the web's nav: modules, pages, keys, icons, module
+                             switches, view-only rules), session_keeper (heartbeat 45 s, me 30 s)
   features/                  screens, one folder per web module
     auth/                    login, register, forgot, unlock (+ auth_widgets)
     dashboard/               the reference screen and its section widgets
@@ -131,7 +133,9 @@ The web is the source of truth: **same sections, same order, same buttons, same 
    calling the same path under `/api/mobile/<family>/…` (`ref.watch(apiProvider).get/post`). Parse into small models
    in `lib/core/models` or next to the feature. Show `KSkeleton` while loading and the web's empty / error states.
 4. Replace the stub in `lib/router/router.dart`: pass the screen in `_moduleRoutes(<module>, screens: {...})`; detail
-   pages (`/accounts/:login`) are child routes (iOS push). Keep the web path.
+   pages (`/accounts/:login`) are child routes (iOS push). Keep the web path. A module's sub-pages share one page,
+   the module pager (`lib/shell/module_pager.dart`): the reader swipes between them or taps the tabs, and a page
+   visited stays alive (its providers keep polling), so always `go` to a sub-page, never `push` it.
 5. Actions: errors through `localizeError(e, t)`; step-up protected writes through `withStepUp(...)` /
    `showStepUpSheet(...)` (actions and targets as in `lib/ui/components/stepup_sheet.dart`); hide account actions when
    `me.readOnly` (view-only / read-only staff), and modules the broker switched off (`config.moduleOn`). Never retry a
