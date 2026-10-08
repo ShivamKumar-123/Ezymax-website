@@ -13,11 +13,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../env.dart';
+import '../../i18n/i18n.dart';
 import '../../ui/components/banner.dart';
 import '../../ui/tokens.dart';
 import '../api/api_providers.dart';
 import '../auth/auth_controller.dart';
 import '../config/app_config.dart';
+import '../format/format.dart';
 import '../prefs.dart';
 import '../realtime/support_stream.dart';
 
@@ -253,8 +255,12 @@ class NotificationsController extends Notifier<NotificationsState> {
   }
 
   void _banner(NotificationItem it) {
-    ref.read(bannerProvider).show(KBannerData(title: it.title, body: it.body.isEmpty ? null : it.body, icon: it.icon, tone: it.tone, onTap: () => open(it)));
+    final b = KBannerData(title: it.title, body: it.body.isEmpty ? null : it.body, tone: it.tone, time: _time(it.createdAt), onTap: () => open(it));
+    ref.read(bannerProvider).show(b);
   }
+
+  /// "Just now" on a fresh banner, the bell's relative time otherwise.
+  String _time(DateTime at) => timeAgo(ref.read(tProvider), LocaleFormat(ref.read(localeProvider)), at, DateTime.now());
 
   /// Tapping a notification: marks it read and opens its link (a Client Area path, or the web).
   void open(NotificationItem it) {
@@ -337,7 +343,8 @@ class NotificationsController extends Notifier<NotificationsState> {
       state = NotificationsState(items: _sorted([it, ...state.items]).take(_cap).toList(), serverUnread: state.serverUnread, loaded: state.loaded);
       _saveLocal();
     }
-    ref.read(bannerProvider).show(KBannerData(title: title, body: description, icon: it.icon, tone: it.tone, duration: const Duration(milliseconds: 2600)));
+    final b = KBannerData(title: title, body: description, tone: it.tone, time: _time(it.createdAt), duration: const Duration(milliseconds: 2600));
+    ref.read(bannerProvider).show(b);
   }
 
   void _saveLocal() {
@@ -350,10 +357,17 @@ class NotificationsController extends Notifier<NotificationsState> {
 
 final notificationsProvider = NotifierProvider<NotificationsController, NotificationsState>(NotificationsController.new);
 
-/// The banner queue drawn by KBannerHost (app root).
+/// The banner queue drawn by KBannerHost (app root), headed by the tenant's name and icon like an iOS notification.
 final bannerProvider = Provider<KBannerController>((ref) {
   final c = KBannerController();
   ref.onDispose(c.dispose);
+  void brand(AppConfig cfg) {
+    c.appName = cfg.tenantName;
+    c.brandLetter = cfg.tenantDefault ? null : cfg.tenantName.characters.first.toUpperCase();
+  }
+
+  brand(ref.read(configProvider));
+  ref.listen(configProvider, (_, cfg) => brand(cfg));
   return c;
 });
 

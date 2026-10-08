@@ -5,31 +5,43 @@ import 'package:flutter/material.dart';
 
 import '../tokens.dart';
 import '../typography.dart';
+import 'brand.dart';
 import 'frosted.dart';
 import 'haptics.dart';
-import 'surfaces.dart';
 
-/// One banner: an iOS-style notification that drops from the top of the screen.
+/// The tone dot before the time (tests).
+const Key kBannerToneDot = ValueKey('banner-tone-dot');
+
+/// One banner: an iOS notification that drops from the top of the screen.
 class KBannerData {
-  const KBannerData({required this.title, this.body, this.icon, this.tone = KTone.accent, this.onTap, this.duration = const Duration(seconds: 4), this.time});
+  const KBannerData({required this.title, this.body, this.tone = KTone.accent, this.onTap, this.duration = const Duration(seconds: 4), this.time});
   final String title;
   final String? body;
-  final IconData? icon;
+
+  /// Shown only as a small dot before the time (success mint, error coral, warning amber, info sky, fills ember);
+  /// `neutral` has no dot.
   final KTone tone;
 
   /// Opening the banner (navigates to the notification's link). The banner closes first.
   final VoidCallback? onTap;
   final Duration duration;
 
-  /// "now", "2m ago".
+  /// "Just now", "2m ago".
   final String? time;
 }
 
-/// Queue of banners: one shows at a time, the next follows when it hides (auto after `duration`, swipe up, or tap).
+/// Queue of banners, one on screen at a time. A new one replaces the current one at once (the current slides up as
+/// the new one drops) once the current has been readable for [minVisible]; otherwise it follows right after. The
+/// current one hides after its `duration`, on a swipe up, or on a tap.
 class KBannerController extends ChangeNotifier {
+  /// A burst of events: each banner stays at least this long before the next one takes its place.
+  static const Duration minVisible = Duration(milliseconds: 600);
+  static const Duration _exit = Duration(milliseconds: 240);
+  static const Duration _hapticGap = Duration(seconds: 1);
+
   final Queue<KBannerData> _queue = Queue();
   KBannerData? _current;
-  Timer? _timer;
+  Timer? _timer, _fresh, _follow, _quiet;
   bool _held = false;
 
   KBannerData? get current => _current;
@@ -38,19 +50,41 @@ class KBannerController extends ChangeNotifier {
   /// terminal theme, so engine banners match the screen under them); null = the app's theme.
   ThemeData? theme;
 
+  /// The app's name over every banner, as iOS prints it (`config.tenantName`).
+  String appName = 'Kalks';
+
+  /// A white-label broker's initial on its brand colour as the app icon; null = the Kalks launcher icon.
+  String? brandLetter;
+
   void show(KBannerData b) {
     _queue.add(b);
-    if (_current == null) _next();
+    // the fresh timer or the lifted finger brings it on otherwise
+    if (_current == null || (_fresh == null && !_held)) _next();
   }
 
   void _next() {
     _timer?.cancel();
+    _fresh?.cancel();
+    _fresh = null;
+    _follow?.cancel();
+    _follow = null;
     _current = _queue.isEmpty ? null : _queue.removeFirst();
     notifyListeners();
     if (_current != null) {
-      KHaptics.tap();
+      _tick();
       _arm();
+      _fresh = Timer(minVisible, () {
+        _fresh = null;
+        if (_queue.isNotEmpty && !_held) _next();
+      });
     }
+  }
+
+  /// A light tick on arrival, not for a run of toasts within a second.
+  void _tick() {
+    if (_quiet != null) return;
+    _quiet = Timer(_hapticGap, () => _quiet = null);
+    KHaptics.tap();
   }
 
   void _arm() {
@@ -65,21 +99,39 @@ class KBannerController extends ChangeNotifier {
   /// Keeps the banner while a finger is on it.
   void hold(bool v) {
     _held = v;
-    if (!v) _arm();
+    if (v) return;
+    if (_queue.isNotEmpty && _fresh == null) {
+      _next();
+    } else {
+      _arm();
+    }
   }
 
   void dismiss() {
     if (_current == null) return;
+    _held = false;
     _current = null;
     notifyListeners();
-    // let the exit animation run before the next one drops in
     _timer?.cancel();
-    _timer = Timer(const Duration(milliseconds: 320), _next);
+    _fresh?.cancel();
+    _fresh = null;
+    // let the exit animation run before the next one drops in
+    _follow?.cancel();
+    _follow = Timer(_exit, () {
+      _follow = null;
+      if (_queue.isNotEmpty) _next();
+    });
   }
 
   void clear() {
     _queue.clear();
     _timer?.cancel();
+    _fresh?.cancel();
+    _fresh = null;
+    _follow?.cancel();
+    _follow = null;
+    _quiet?.cancel();
+    _quiet = null;
     _current = null;
     notifyListeners();
   }
@@ -87,7 +139,22 @@ class KBannerController extends ChangeNotifier {
   @override
   void dispose() {
     _timer?.cancel();
+    _fresh?.cancel();
+    _follow?.cancel();
+    _quiet?.cancel();
     super.dispose();
+  }
+}
+
+/// iOS's notification spring: eases out past the resting point by ~6 % and settles.
+class _Spring extends Curve {
+  const _Spring();
+
+  @override
+  double transformInternal(double t) {
+    const c1 = 1.28, c3 = c1 + 1;
+    final u = t - 1;
+    return 1 + c3 * u * u * u + c1 * u * u;
   }
 }
 
@@ -111,12 +178,12 @@ class KBannerHost extends StatelessWidget {
             builder: (context, _) {
               final b = controller.current;
               return AnimatedSwitcher(
-                duration: const Duration(milliseconds: 320),
-                reverseDuration: const Duration(milliseconds: 260),
-                switchInCurve: Curves.easeOutBack,
+                duration: const Duration(milliseconds: 420),
+                reverseDuration: const Duration(milliseconds: 220),
+                switchInCurve: const _Spring(),
                 switchOutCurve: Curves.easeInCubic,
                 transitionBuilder: (child, anim) => SlideTransition(
-                  position: Tween(begin: const Offset(0, -1.4), end: Offset.zero).animate(anim),
+                  position: Tween(begin: const Offset(0, -1.2), end: Offset.zero).animate(anim),
                   child: FadeTransition(opacity: anim, child: child),
                 ),
                 layoutBuilder: (current, previous) => Stack(alignment: Alignment.topCenter, children: [...previous, ?current]),
@@ -148,34 +215,70 @@ class _Banner extends StatefulWidget {
 }
 
 class _BannerState extends State<_Banner> {
+  /// The finger's travel: up follows the finger (towards a dismissal), down rubber-bands and opens the body.
   double _dy = 0;
+  bool _dragging = false;
+  bool _expanded = false;
+
+  double get _offset => _dy <= 0 ? _dy.clamp(-240, 0) : 12 * (1 - 1 / (1 + _dy / 24));
+
+  /// Still the banner on screen (not one lifting away under a newer one).
+  bool get _live => identical(widget.controller.current, widget.data);
+
+  void _start() {
+    _dragging = true;
+    if (_live) widget.controller.hold(true);
+  }
+
+  void _move(DragUpdateDetails u) {
+    setState(() {
+      _dy += u.delta.dy;
+      if (_dy > 16) _expanded = true;
+    });
+  }
+
+  void _end(DragEndDetails e) {
+    _dragging = false;
+    if (!_live) return;
+    if (_dy < -24 || (e.primaryVelocity ?? 0) < -300) {
+      widget.controller.dismiss();
+    } else {
+      widget.controller.hold(false);
+      setState(() => _dy = 0);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final k = context.k;
     final d = widget.data;
+    final c = widget.controller;
     final top = MediaQuery.paddingOf(context).top + 6;
+    final fill = (k.dark ? const Color(0xFF1C1C1E) : Colors.white).withValues(alpha: 0.9);
+    final hairline = (k.dark ? Colors.white : Colors.black).withValues(alpha: 0.1);
+    final hasBody = d.body != null && d.body!.isNotEmpty;
+    final meta = context.text.caption.copyWith(fontSize: 11, color: k.fg3, height: 1.2);
     return Padding(
       padding: EdgeInsets.fromLTRB(8, top, 8, 0),
-      child: Transform.translate(
-        offset: Offset(0, _dy.clamp(-200, 12)),
+      child: AnimatedContainer(
+        duration: _dragging ? Duration.zero : const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        transform: Matrix4.translationValues(0, _offset, 0),
         child: GestureDetector(
-          onTapDown: (_) => widget.controller.hold(true),
-          onTapCancel: () => widget.controller.hold(false),
+          onTapDown: (_) => _live ? c.hold(true) : null,
+          onTapCancel: () => _live ? c.hold(false) : null,
           onTap: () {
-            widget.controller.hold(false);
-            widget.controller.dismiss();
+            if (!_live) return;
+            c.dismiss();
             d.onTap?.call();
           },
-          onVerticalDragStart: (_) => widget.controller.hold(true),
-          onVerticalDragUpdate: (u) => setState(() => _dy += u.delta.dy),
-          onVerticalDragEnd: (e) {
-            widget.controller.hold(false);
-            if (_dy < -24 || (e.primaryVelocity ?? 0) < -300) {
-              widget.controller.dismiss();
-            } else {
-              setState(() => _dy = 0);
-            }
+          onVerticalDragStart: (_) => _start(),
+          onVerticalDragUpdate: _move,
+          onVerticalDragEnd: _end,
+          onVerticalDragCancel: () {
+            _dragging = false;
+            if (_live) c.hold(false);
+            setState(() => _dy = 0);
           },
           child: Center(
             child: ConstrainedBox(
@@ -184,18 +287,19 @@ class _BannerState extends State<_Banner> {
                 type: MaterialType.transparency,
                 child: Semantics(
                   liveRegion: true,
-                  label: [d.title, d.body].whereType<String>().join('. '),
+                  label: [c.appName, d.title, d.body].whereType<String>().where((s) => s.isNotEmpty).join('. '),
                   child: KFrosted(
-                    color: k.sheet,
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: k.lineTop.withValues(alpha: k.dark ? 0.08 : 0.6)),
-                    shadows: k.shadowPop,
+                    color: fill,
+                    blur: 30,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: hairline, width: 0.5),
+                    shadows: const [BoxShadow(color: Color(0x2E000000), offset: Offset(0, 8), blurRadius: 24)],
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 12, 14, 12),
+                      padding: const EdgeInsetsDirectional.fromSTEB(12, 12, 14, 12),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          KIconTile(icon: d.icon ?? Icons.notifications_none_rounded, tone: d.tone, size: 38, radius: 11),
+                          _AppIcon(letter: c.brandLetter),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
@@ -204,24 +308,44 @@ class _BannerState extends State<_Banner> {
                                 Row(
                                   children: [
                                     Expanded(
-                                      child: Text(d.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.headline.copyWith(fontSize: 14.5)),
-                                    ),
-                                    if (d.time != null)
-                                      Text(
-                                        d.time!,
-                                        style: context.text.caption.copyWith(color: k.fg3, fontWeight: FontWeight.w400),
+                                      child: Text(
+                                        c.appName.toUpperCase(),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: meta.copyWith(letterSpacing: 0.4),
                                       ),
+                                    ),
+                                    if (d.tone != KTone.neutral) ...[
+                                      Container(
+                                        key: kBannerToneDot,
+                                        width: 6,
+                                        height: 6,
+                                        decoration: BoxDecoration(color: k.tile(d.tone).$2, shape: BoxShape.circle),
+                                      ),
+                                      const SizedBox(width: 5),
+                                    ],
+                                    if (d.time != null) Text(d.time!, style: meta, textDirection: TextDirection.ltr),
                                   ],
                                 ),
-                                if (d.body != null && d.body!.isNotEmpty) ...[
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    d.body!,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: context.text.footnote.copyWith(color: k.fg2, fontSize: 13),
+                                const SizedBox(height: 2),
+                                Text(
+                                  d.title,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: context.text.headline.copyWith(color: k.fg),
+                                ),
+                                if (hasBody)
+                                  AnimatedSize(
+                                    duration: const Duration(milliseconds: 220),
+                                    curve: Curves.easeOutCubic,
+                                    alignment: Alignment.topCenter,
+                                    child: Text(
+                                      d.body!,
+                                      maxLines: _expanded ? 4 : 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: context.text.callout.copyWith(color: k.fg2, height: 1.3),
+                                    ),
                                   ),
-                                ],
                               ],
                             ),
                           ),
@@ -234,6 +358,46 @@ class _BannerState extends State<_Banner> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The app's icon as iOS prints it on a banner: the launcher icon (the ember K on near-black) for Kalks, a
+/// white-label broker's initial on its brand colour (KBrandAvatar's disc, squared).
+class _AppIcon extends StatelessWidget {
+  const _AppIcon({this.letter});
+  final String? letter;
+
+  @override
+  Widget build(BuildContext context) {
+    final k = context.k;
+    final radius = BorderRadius.circular(10);
+    if (letter == null) {
+      return Container(
+        width: 38,
+        height: 38,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(color: const Color(0xFF0A0A0B), borderRadius: radius),
+        child: KLogoMark(size: 21, color: k.ember),
+      );
+    }
+    return Container(
+      width: 38,
+      height: 38,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        gradient: RadialGradient(
+          center: const Alignment(-0.4, -0.5),
+          radius: 0.9,
+          colors: [Color.lerp(k.ember, Colors.white, 0.38)!, k.ember],
+          stops: const [0, 0.62],
+        ),
+      ),
+      child: Text(
+        letter!,
+        style: context.text.headline.copyWith(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700, height: 1),
       ),
     );
   }
