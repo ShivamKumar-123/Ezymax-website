@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kalks/features/terminal/chart/chart_bridge.dart';
 import 'package:kalks/features/terminal/chart/chart_surface.dart';
+import 'package:kalks/features/terminal/chart/indicators.dart';
 import 'package:kalks/features/terminal/chart/terminal_chart.dart';
 
 void main() {
@@ -27,11 +28,34 @@ void main() {
   Map<String, dynamic> dec(String s) => jsonDecode(s) as Map<String, dynamic>;
 
   group('commands', () {
-    test('init carries the precision, the time axis and the colours', () {
-      final m = dec(ChartCmd.init(digits: 5, intraday: true, palette: palette, symbol: 'EURUSD', tf: 'M15', indicators: const ['ema50', 'sma20']));
+    test('init carries the precision, the time axis, the colours, the chart type and the indicators', () {
+      const ema = IndInstance(uid: 'a1', type: 'ema', params: {'period': 50, 'source': 'close'});
+      final m = dec(
+        ChartCmd.init(
+          digits: 5,
+          intraday: true,
+          palette: palette,
+          symbol: 'EURUSD',
+          tf: 'M15',
+          step: 900,
+          chartType: 'area',
+          indicators: [ema.toJson()],
+          texts: const {'more': '+{count} more'},
+        ),
+      );
       expect(m['symbol'], 'EURUSD');
       expect(m['tf'], 'M15');
-      expect(m['indicators'], ['ema50', 'sma20']);
+      expect(m['step'], 900);
+      expect(m['chartType'], 'area');
+      expect(m['indicators'], [
+        {
+          'uid': 'a1',
+          'type': 'ema',
+          'params': {'period': 50, 'source': 'close'},
+          'visible': true,
+        },
+      ]);
+      expect(m['texts'], {'more': '+{count} more'});
       expect(m['type'], 'init');
       expect(m['digits'], 5);
       expect(m['intraday'], isTrue);
@@ -63,6 +87,33 @@ void main() {
       ]);
     });
 
+    test('indicators and chart type', () {
+      const rsi = IndInstance(
+        uid: 'r',
+        type: 'rsi',
+        visible: false,
+        style: {'rsi': IndStyle(color: 'info', width: 2)},
+        levels: [80, 20],
+      );
+      final m = dec(ChartCmd.indicators([rsi.toJson()]));
+      expect(m['type'], 'indicators');
+      expect(m['indicators'], [
+        {
+          'uid': 'r',
+          'type': 'rsi',
+          'params': <String, Object>{},
+          'visible': false,
+          'style': {
+            'rsi': {'color': 'info', 'width': 2},
+          },
+          'levels': [80.0, 20.0],
+        },
+      ]);
+      expect(dec(ChartCmd.chartType('bars')), {'type': 'chartType', 'chartType': 'bars'});
+      // an instance survives a round trip through the workspace JSON
+      expect(IndInstance.fromJson(jsonDecode(jsonEncode(rsi.toJson()))), rsi);
+    });
+
     test('a line knows its ticket and compares by value', () {
       const a = ChartLine(id: 'pnd:49434302', kind: 'pending', price: 2628.5, label: 'BUY LIMIT 0.30');
       expect(a.ref, '49434302');
@@ -81,6 +132,8 @@ void main() {
       expect((ChartEvent.decode('{"type":"close","id":"sl:9"}') as ChartLineClosed).id, 'sl:9');
       expect((ChartEvent.decode('{"type":"older","before":1700000000}') as ChartNeedsOlder).before, 1700000000);
       expect((ChartEvent.decode('{"type":"long","price":1.0832}') as ChartLongPress).price, 1.0832);
+      expect((ChartEvent.decode('{"type":"dragstart","id":"sl:9"}') as ChartDragStarted).id, 'sl:9');
+      expect((ChartEvent.decode('{"type":"ind","uid":"k2"}') as ChartIndicatorTapped).uid, 'k2');
     });
 
     test('malformed or unknown messages are ignored', () {
@@ -97,15 +150,64 @@ void main() {
     final got = <String>[];
     c.send(ChartCmd.init(digits: 2, intraday: false, palette: palette));
     c.send(ChartCmd.quote(1, 2));
-    c.attach(got.add);
+    c.attach(got.addAll);
     expect(got.length, 2);
     expect(dec(got.first)['type'], 'init');
     c.detach();
     c.send(ChartCmd.quote(3, 4));
     final again = <String>[];
-    c.attach(again.add);
+    c.attach(again.addAll);
     // a re-attached page (rebuilt WebView) gets the init again, then what was queued
     expect(again.map((s) => dec(s)['type']), ['init', 'quote']);
+    c.dispose();
+  });
+
+  testWidgets('live updates are coalesced to one delivery per frame: the last quote, bar and lines win', (tester) async {
+    final c = ChartSurfaceController();
+    final calls = <List<String>>[];
+    c.attach(calls.add);
+    for (var i = 0; i < 10; i++) {
+      c.send(ChartCmd.quote(1.0 + i, 2.0 + i));
+      c.send(ChartCmd.bar((t: 600, o: 1, h: 2, l: 0.5, c: 1.0 + i, v: 3)));
+      c.send(ChartCmd.lines([ChartLine(id: 'sl:1', kind: 'sl', price: 1.0 + i, label: 'SL')]));
+    }
+    c.send(ChartCmd.bar((t: 660, o: 1, h: 2, l: 0.5, c: 9, v: 3)));
+    expect(calls, isEmpty);
+    await tester.pump(const Duration(milliseconds: 70));
+    expect(calls, hasLength(1));
+    final batch = calls.single.map(dec).toList();
+    expect(batch.map((m) => m['type']), ['quote', 'bar', 'lines', 'bar']);
+    expect(batch[0]['bid'], 10.0);
+    expect((batch[1]['bar'] as List)[4], 10.0);
+    expect(((batch[2]['lines'] as List).single as Map)['price'], 10.0);
+    expect((batch[3]['bar'] as List).first, 660);
+    // history, indicators and the chart type go out at once
+    c.send(ChartCmd.chartType('line'));
+    await tester.pump();
+    expect(calls, hasLength(2));
+    expect(dec(calls.last.single)['type'], 'chartType');
+    c.dispose();
+  });
+
+  testWidgets('while a chip is dragged, trade-line updates wait and the latest goes out when it is dropped', (tester) async {
+    final c = ChartSurfaceController();
+    final calls = <List<String>>[];
+    c.attach(calls.add);
+    c.holdLines = true;
+    c.send(ChartCmd.lines([const ChartLine(id: 'sl:1', kind: 'sl', price: 1, label: 'SL')]));
+    c.send(ChartCmd.quote(1, 2));
+    // while dragging, live updates go out less often (the finger's moves come first)
+    await tester.pump(const Duration(milliseconds: 70));
+    expect(calls, isEmpty);
+    await tester.pump(const Duration(milliseconds: 120));
+    expect(calls.expand((b) => b).map((s) => dec(s)['type']), ['quote']);
+    c.send(ChartCmd.lines([const ChartLine(id: 'sl:1', kind: 'sl', price: 2, label: 'SL')]));
+    c.holdLines = false;
+    await tester.pump();
+    final lines = calls.expand((b) => b).map(dec).where((m) => m['type'] == 'lines').toList();
+    expect(lines, hasLength(1));
+    expect(((lines.single['lines'] as List).single as Map)['price'], 2.0);
+    c.dispose();
   });
 
   test('chart time is broker server time (GMT+3 in US summer, GMT+2 in winter) and converts back', () {

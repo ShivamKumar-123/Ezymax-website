@@ -1,5 +1,6 @@
 // The chart on Android: assets/chart/chart.html (lightweight-charts 5.2.1, offline) in a WebView. Commands go in
-// through `window.K.recv(...)`, events come back on the `KalksChart` JavaScript channel.
+// through `window.K.recv(...)` / `window.K.batch(...)` (one call per frame), events come back on the `KalksChart`
+// JavaScript channel.
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -51,9 +52,12 @@ class _WebViewChartState extends State<_WebViewChart> {
     widget.controller.emit(e);
   }
 
-  void _run(String json) {
-    // the JSON is passed as a JS string literal (jsonEncode quotes and escapes it)
-    _web.runJavaScript('window.K && window.K.recv(${jsonEncode(json)})').catchError((Object _) {});
+  void _run(List<String> batch) {
+    // one call per batch; the JSON array is passed as a JS string literal (jsonEncode quotes and escapes it)
+    final js = batch.length == 1
+        ? 'window.K && window.K.recv(${jsonEncode(batch.first)})'
+        : 'window.K && window.K.batch(${jsonEncode('[${batch.join(',')}]')})';
+    _web.runJavaScript(js).catchError((Object _) {});
   }
 
   @override

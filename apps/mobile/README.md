@@ -162,7 +162,11 @@ on the trade API (`trade/*`, docs/MOBILE-API.md §6) and the streams in `lib/cor
   engine notifications to the bell); actions: `core/trade_actions.dart` (banners, haptics, the web's reject texts).
 - The chart: `assets/chart/chart.html` with **lightweight-charts 5.2.1 bundled offline** (from node_modules, Apache 2.0,
   licence next to it) in a WebView on Android; `chart/chart_bridge.dart` is the JSON codec; the web preview and widget
-  tests draw a native stand-in (`chart/chart_native.dart`, `TerminalChart.forceNative`).
+  tests draw a native stand-in (`chart/chart_native.dart`, `TerminalChart.forceNative`). Indicators are the web's own
+  code: `node apps/mobile/tool/build_chart_indicators.mjs` (from the repo root, after the web files change) bundles
+  `apps/terminal/lib/indicators.ts` + `components/chart/indicators/{layer,band-fill}.ts` into
+  `assets/chart/indicators.bundle.js` and writes the registry `assets/chart/indicators.json` for the menus
+  (`cfd/chart_menu.dart`: chart type, indicators list, settings, templates; saved per symbol in the workspace).
 - Previews (`KALKS_PREVIEW=true`): `preview/preview_server.dart` answers `trade/*` and plays the market-data and engine
   sockets (moving quotes, fills, pending triggers, SL / TP), so `?signedIn=1#/trader` works offline.
 - Tests: `test/terminal` (maths incl. cent / JPY, order rules, engine shapes, the stream, the chart codec, the order and

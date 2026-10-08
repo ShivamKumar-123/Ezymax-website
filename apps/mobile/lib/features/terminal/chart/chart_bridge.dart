@@ -92,10 +92,14 @@ class ChartPalette {
     required this.fg3,
     required this.label,
     required this.panel,
+    this.info = '#38bdf8',
   });
 
   final bool dark;
   final String bg, grid, line, up, down, gold, warn, ember, fg, fg2, fg3, label, panel;
+
+  /// The indicators' "info" colour token (web --k-info).
+  final String info;
 
   Map<String, Object?> toJson() => {
     'dark': dark,
@@ -112,6 +116,7 @@ class ChartPalette {
     'fg3': fg3,
     'label': label,
     'panel': panel,
+    'info': info,
   };
 }
 
@@ -122,16 +127,31 @@ List<num> _bar(ChartBar b) => [b.t, b.o, b.h, b.l, b.c, b.v];
 
 /// Messages to the page.
 abstract final class ChartCmd {
-  /// A fresh chart: price precision, whether the time axis shows hours, colours, the legend's market and timeframe, and
-  /// the overlays (`ema50`, `sma20`: the web's default chart).
+  /// A fresh chart: price precision, whether the time axis shows hours, colours, the legend's market and timeframe, the
+  /// bar length in seconds, the chart type (candles | bars | line | area), the indicator instances (web
+  /// IndicatorInstance JSON, drawn by the web's own indicator code in the page) and the legend's texts.
   static String init({
     required int digits,
     required bool intraday,
     required ChartPalette palette,
     String symbol = '',
     String tf = '',
-    List<String> indicators = const [],
-  }) => jsonEncode({'type': 'init', 'digits': digits, 'intraday': intraday, 'palette': palette.toJson(), 'symbol': symbol, 'tf': tf, 'indicators': indicators});
+    int step = 60,
+    String chartType = 'candles',
+    List<Map<String, Object?>> indicators = const [],
+    Map<String, String> texts = const {},
+  }) => jsonEncode({
+    'type': 'init',
+    'digits': digits,
+    'intraday': intraday,
+    'palette': palette.toJson(),
+    'symbol': symbol,
+    'tf': tf,
+    'step': step,
+    'chartType': chartType,
+    'indicators': indicators,
+    'texts': texts,
+  });
 
   /// The whole history (oldest first): replaces what is drawn and scrolls to the latest bar.
   static String bars(List<ChartBar> bars) => jsonEncode({'type': 'bars', 'bars': bars.map(_bar).toList()});
@@ -150,6 +170,12 @@ abstract final class ChartCmd {
 
   /// New colours (theme switch) without rebuilding the chart.
   static String palette(ChartPalette p) => jsonEncode({'type': 'palette', 'palette': p.toJson()});
+
+  /// The indicator instances (added, removed, restyled, shown / hidden): the page diffs them like the web layer.
+  static String indicators(List<Map<String, Object?>> list) => jsonEncode({'type': 'indicators', 'indicators': list});
+
+  /// Another chart type (candles | bars | line | area), keeping the data and the view.
+  static String chartType(String type) => jsonEncode({'type': 'chartType', 'chartType': type});
 }
 
 /// Events from the page.
@@ -169,6 +195,9 @@ sealed class ChartEvent {
     switch (m['type']) {
       case 'ready':
         return const ChartReady();
+      case 'dragstart':
+        final id = m['id'];
+        return id is String ? ChartDragStarted(id) : null;
       case 'drag':
         final id = m['id'], price = n(m['price']);
         return id is String && price != null ? ChartLineDragged(id, price) : null;
@@ -184,6 +213,9 @@ sealed class ChartEvent {
       case 'long':
         final price = n(m['price']);
         return price == null ? null : ChartLongPress(price);
+      case 'ind':
+        final uid = m['uid'];
+        return uid is String ? ChartIndicatorTapped(uid) : null;
     }
     return null;
   }
@@ -192,6 +224,12 @@ sealed class ChartEvent {
 /// The page is loaded and listening.
 class ChartReady extends ChartEvent {
   const ChartReady();
+}
+
+/// A trade line's chip started moving under the finger (the app holds its line updates until the drag ends).
+class ChartDragStarted extends ChartEvent {
+  const ChartDragStarted(this.id);
+  final String id;
 }
 
 /// A trade line was dragged to `price` and released.
@@ -223,4 +261,10 @@ class ChartNeedsOlder extends ChartEvent {
 class ChartLongPress extends ChartEvent {
   const ChartLongPress(this.price);
   final double price;
+}
+
+/// An indicator's legend row was tapped (show / hide, settings, remove).
+class ChartIndicatorTapped extends ChartEvent {
+  const ChartIndicatorTapped(this.uid);
+  final String uid;
 }

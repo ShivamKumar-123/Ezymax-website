@@ -2,15 +2,20 @@
 <!--
   Kalks Trader chart page for the app's WebView (Android). The same engine as the web terminal: TradingView
   Lightweight Charts 5.2.1, bundled OFFLINE next to this file (lightweight-charts.standalone.production.js, Apache 2.0,
-  LICENSE-lightweight-charts.txt). The app owns the data and sends it as JSON to window.K.recv(msg); this page draws
-  it and posts gestures back on the `KalksChart` channel (lib/features/terminal/chart/chart_bridge.dart):
-    in:  init {digits, intraday, palette, symbol, tf, indicators} · bars {bars} · older {bars, exhausted} · bar {bar}
-         · quote {bid, ask} · lines {lines: [{id, kind, price, label, side, drag, note, tone, close}]} · palette {palette}
-    out: ready · drag {id, price} · tap {id} · close {id} · older {before} · long {price}
+  LICENSE-lightweight-charts.txt), and the web terminal's own indicators (indicators.bundle.js, generated from
+  apps/terminal by tool/build_chart_indicators.mjs: the same maths, overlays, sub-windows and levels as the web).
+  The app owns the data and sends it as JSON to window.K.recv(msg) or, coalesced, window.K.batch("[msg, …]"); this page
+  draws it and posts gestures back on the `KalksChart` channel (lib/features/terminal/chart/chart_bridge.dart):
+    in:  init {digits, intraday, palette, symbol, tf, step, chartType, indicators, texts} · bars {bars}
+         · older {bars, exhausted} · bar {bar} · quote {bid, ask} · lines {lines: [{id, kind, price, label, side, drag,
+         note, tone, close}]} · palette {palette} · indicators {indicators} · chartType {chartType}
+    out: ready · dragstart {id} · drag {id, price} · tap {id} · close {id} · older {before} · long {price} · ind {uid}
   Bars are [time (server-time seconds), open, high, low, close, volume]. Like the web chart (components/chart/
-  engine.ts + chart-view.tsx): the OHLC legend with the default indicators (EMA 50, SMA 20), the account's bid / ask
-  lines, trade-line chips at the price scale (drag to move, × to close / remove, the P&L on them), and only the small
-  Kalks K in the plot's bottom-left corner (brand-watermark.ts).
+  engine.ts + chart-view.tsx): candles / bars / line / area, the OHLC legend with one row per indicator (tap: show /
+  hide, settings, remove), oscillators in their own sub-windows, the account's bid / ask lines, trade-line chips at the
+  price scale (drag to move, × to close / remove, the P&L on them), and the small Kalks K in the plot's corner.
+  A dragged chip follows the finger at frame rate: moves are applied once per animation frame, and trade-line updates
+  from the app wait until the finger lifts.
 -->
 <html>
   <head>
@@ -44,27 +49,56 @@
         pointer-events: none;
         z-index: 4;
       }
-      #legend {
+      .legend {
         position: absolute;
         left: 8px;
-        top: 6px;
         z-index: 5;
         pointer-events: none;
         font: 500 11px "GeistMono", ui-monospace, monospace;
         line-height: 16px;
         color: var(--fg3, #8b8b96);
-        max-width: calc(100% - 80px);
+        max-width: calc(100% - 84px);
       }
-      #legend b {
+      #legend {
+        top: 6px;
+      }
+      .legend b {
         font-weight: 600;
         color: var(--fg, #f5f5f7);
         margin-right: 6px;
       }
-      #legend .v {
+      .legend .v {
         margin-right: 6px;
+      }
+      .lr {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        height: 18px;
+        white-space: nowrap;
+        overflow: hidden;
+        pointer-events: auto;
+        font-size: 10.5px;
+      }
+      .lr .ll {
+        color: var(--fg2, #a1a1aa);
+      }
+      .lr.off .ll {
+        color: var(--fg3, #8b8b96);
+        text-decoration: line-through;
+      }
+      .lmore {
+        pointer-events: auto;
+        font-size: 10.5px;
+        height: 18px;
+        display: inline-flex;
+        align-items: center;
+        color: var(--fg3, #8b8b96);
       }
       .chip {
         position: absolute;
+        left: 0;
+        top: 0;
         height: 20px;
         display: flex;
         align-items: center;
@@ -74,9 +108,9 @@
         line-height: 1;
         white-space: nowrap;
         pointer-events: auto;
-        transform: translateY(-50%);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
         overflow: hidden;
+        will-change: transform;
       }
       .chip > span {
         padding: 0 5px;
@@ -99,32 +133,40 @@
         font-size: 12px;
       }
       .chip.dragging {
+        z-index: 2;
         box-shadow: 0 0 0 2px rgba(255, 90, 31, 0.45), 0 4px 14px rgba(0, 0, 0, 0.4);
       }
       #ghost {
         position: absolute;
         left: 0;
+        top: 0;
         border-top: 1px dashed rgba(160, 160, 170, 0.7);
         pointer-events: none;
         z-index: 3;
         display: none;
+        will-change: transform;
       }
     </style>
     <script src="lightweight-charts.standalone.production.js"></script>
+    <script src="indicators.bundle.js"></script>
   </head>
   <body>
     <div id="c"></div>
-    <div id="legend"></div>
+    <div id="legend" class="legend"><div id="ohlc"></div><div id="lrows"></div></div>
+    <div id="plegs"></div>
     <div id="ghost"></div>
     <div id="chips"></div>
     <script>
       (function () {
         "use strict";
         const LC = window.LightweightCharts;
+        const KI = window.KalksInd;
         const host = document.getElementById("c");
         const chipsEl = document.getElementById("chips");
         const ghost = document.getElementById("ghost");
-        const legendEl = document.getElementById("legend");
+        const ohlcEl = document.getElementById("ohlc");
+        const rowsEl = document.getElementById("lrows");
+        const plegsEl = document.getElementById("plegs");
         const post = (m) => {
           try {
             window.KalksChart.postMessage(JSON.stringify(m));
@@ -188,89 +230,211 @@
           vol = null,
           bidLine = null,
           askLine = null,
-          wm = null;
-        let pal = null,
+          wm = null,
+          layer = null;
+        let initMsg = null,
+          pal = null,
           digits = 2,
           symbol = "",
           tf = "",
+          step = 60,
+          ctype = "candles",
+          texts = {},
           data = [],
           loadingOlder = false,
           exhausted = false,
-          hover = -1;
+          hover = -1,
+          bid = 0,
+          ask = 0,
+          alive = { v: true };
         let lines = [];
-        // the default indicators of the web chart (store.tsx defaultWorkspace: EMA 50, SMA 20)
+        let pendingLines = null;
         let inds = [];
+        let legendOpen = false;
         const priceLines = new Map();
         const chips = new Map();
         let drag = null;
 
         const fmt = (p) => Number(p).toFixed(digits);
-        const volColor = (b) => (b[4] >= b[1] ? pal.up + "38" : pal.down + "38");
-        const candle = (b) => ({ time: b[0], open: b[1], high: b[2], low: b[3], close: b[4] });
+        const pow = () => Math.pow(10, digits);
+        const toBar = (b) => ({ time: b[0], open: b[1], high: b[2], low: b[3], close: b[4], volume: b[5] || 0 });
+        const volColor = (d) => (d.close >= d.open ? pal.up + "38" : pal.down + "38");
+        const volPoint = (d) => ({ time: d.time, value: d.volume, color: volColor(d) });
+        const mainPoint = (d) => (ctype === "line" || ctype === "area" ? { time: d.time, value: d.close } : { time: d.time, open: d.open, high: d.high, low: d.low, close: d.close });
         const onWarm = () => (pal.dark ? "#1a1204" : "#ffffff");
-
-        /* ---------------- indicators ---------------- */
-
-        function maValues(kind, n) {
-          const out = new Array(data.length).fill(null);
-          if (kind === "sma") {
-            let sum = 0;
-            for (let i = 0; i < data.length; i++) {
-              sum += data[i][4];
-              if (i >= n) sum -= data[i - n][4];
-              if (i >= n - 1) out[i] = sum / n;
-            }
-          } else {
-            const k = 2 / (n + 1);
-            let prev = null,
-              sum = 0;
-            for (let i = 0; i < data.length; i++) {
-              const c = data[i][4];
-              if (prev === null) {
-                sum += c;
-                if (i === n - 1) prev = sum / n;
-                else continue;
-              } else prev = c * k + prev * (1 - k);
-              out[i] = prev;
-            }
+        const sepColor = () => (pal.dark ? "rgba(255,255,255,0.07)" : "rgba(15,15,20,0.1)");
+        const pane0H = () => {
+          try {
+            return chart.panes()[0].getHeight();
+          } catch (e) {
+            return host.clientHeight - 30;
           }
-          return out;
-        }
+        };
 
-        function drawIndicators() {
-          for (const ind of inds) {
-            ind.values = maValues(ind.kind, ind.n);
-            ind.series.setData(data.map((b, i) => (ind.values[i] === null ? { time: b[0] } : { time: b[0], value: ind.values[i] })));
+        /* ---------------- frame scheduling ---------------- */
+
+        let rafId = 0,
+          wantPlace = false,
+          wantLegend = false;
+        function frame() {
+          rafId = 0;
+          if (wantPlace) {
+            wantPlace = false;
+            placeChips();
+          }
+          if (wantLegend) {
+            wantLegend = false;
+            legend();
           }
         }
+        const schedule = () => {
+          if (!rafId) rafId = requestAnimationFrame(frame);
+        };
+        const schedulePlace = () => {
+          wantPlace = true;
+          schedule();
+        };
+        const scheduleLegend = () => {
+          wantLegend = true;
+          schedule();
+        };
 
+        /* ---------------- legend ---------------- */
+
+        let legendSig = "";
+        let rowEls = new Map();
         function legend() {
-          if (!data.length) return (legendEl.innerHTML = "");
+          if (!chart || !data.length) {
+            ohlcEl.innerHTML = "";
+            rowsEl.innerHTML = "";
+            plegsEl.innerHTML = "";
+            legendSig = "";
+            return;
+          }
           const i = hover >= 0 && hover < data.length ? hover : data.length - 1;
           const b = data[i];
-          const col = b[4] >= b[1] ? pal.up : pal.down;
+          const col = b.close >= b.open ? pal.up : pal.down;
           const v = (k, x) => `<span class="v">${k} <span style="color:${col}">${fmt(x)}</span></span>`;
-          let html = `<div><b>${symbol}, ${tf}</b>${v("O", b[1])}${v("H", b[2])}${v("L", b[3])}${v("C", b[4])}</div>`;
-          for (const ind of inds) {
-            const x = ind.values ? ind.values[i] : null;
-            html += `<div><span class="v">${ind.label}</span><span style="color:${ind.color()}">${x === null || x === undefined ? "—" : fmt(x)}</span></div>`;
+          ohlcEl.innerHTML = `<b>${symbol}, ${tf}</b>${v("O", b.open)}${v("H", b.high)}${v("L", b.low)}${v("C", b.close)}`;
+          const rows = layer ? layer.legend(i) : [];
+          // main-pane rows (overlays and hidden instances) fold into "+N more" when they would cover the pane
+          const mainRows = rows.filter((r) => r.pane <= 0);
+          const subRows = rows.filter((r) => r.pane > 0);
+          const maxRows = Math.max(1, Math.floor((pane0H() - 70) / 18));
+          const folded = !legendOpen && mainRows.length > maxRows;
+          const shownMain = folded ? mainRows.slice(0, maxRows - 1) : mainRows;
+          let tops = [0];
+          if (subRows.length) {
+            const top0 = host.getBoundingClientRect().top;
+            tops = chart.panes().map((p) => {
+              const el = p.getHTMLElement && p.getHTMLElement();
+              return el ? Math.round(el.getBoundingClientRect().top - top0) : 0;
+            });
           }
-          legendEl.innerHTML = html;
+          const sig = JSON.stringify([shownMain.map((r) => [r.uid, r.label, r.visible]), subRows.map((r) => [r.uid, r.label, r.pane, tops[r.pane]]), folded, legendOpen, mainRows.length]);
+          if (sig !== legendSig) {
+            legendSig = sig;
+            rowEls = new Map();
+            rowsEl.innerHTML = "";
+            plegsEl.innerHTML = "";
+            const make = (r) => {
+              const el = document.createElement("div");
+              el.className = "lr" + (r.visible ? "" : " off");
+              el.dataset.uid = r.uid;
+              const l = document.createElement("span");
+              l.className = "ll";
+              l.textContent = r.label;
+              const vals = document.createElement("span");
+              vals.className = "lvs";
+              el.append(l, vals);
+              el.addEventListener("pointerdown", (e) => e.stopPropagation());
+              el.addEventListener("click", (e) => {
+                e.stopPropagation();
+                post({ type: "ind", uid: r.uid });
+              });
+              rowEls.set(r.uid, vals);
+              return el;
+            };
+            for (const r of shownMain) rowsEl.appendChild(make(r));
+            if (mainRows.length > maxRows || legendOpen) {
+              if (mainRows.length > maxRows) {
+                const m = document.createElement("div");
+                m.className = "lmore";
+                m.textContent = legendOpen ? texts.less || "Show less" : (texts.more || "+{count} more").replace("{count}", String(mainRows.length - shownMain.length));
+                m.addEventListener("pointerdown", (e) => e.stopPropagation());
+                m.addEventListener("click", (e) => {
+                  e.stopPropagation();
+                  legendOpen = !legendOpen;
+                  legend();
+                });
+                rowsEl.appendChild(m);
+              }
+            }
+            for (const r of subRows) {
+              if (tops[r.pane] === undefined) continue;
+              const box = document.createElement("div");
+              box.className = "legend";
+              box.style.top = tops[r.pane] + 3 + "px";
+              box.appendChild(make(r));
+              plegsEl.appendChild(box);
+            }
+          }
+          for (const r of rows) {
+            const el = rowEls.get(r.uid);
+            if (!el) continue;
+            let html = "";
+            for (const x of r.values) html += `<span style="color:${x.color}">${x.text}</span> `;
+            if (el._h !== html) {
+              el._h = html;
+              el.innerHTML = html;
+            }
+          }
+        }
+
+        /* ---------------- chart ---------------- */
+
+        function addMain() {
+          const pf = { type: "price", precision: digits, minMove: 1 / pow() };
+          if (ctype === "bars") main = chart.addSeries(LC.BarSeries, { upColor: pal.up, downColor: pal.down, thinBars: false, priceFormat: pf });
+          else if (ctype === "line") main = chart.addSeries(LC.LineSeries, { color: pal.gold, lineWidth: 2, priceFormat: pf, crosshairMarkerVisible: false });
+          else if (ctype === "area") main = chart.addSeries(LC.AreaSeries, { lineColor: pal.gold, topColor: "rgba(233,185,73,0.28)", bottomColor: "rgba(233,185,73,0.0)", lineWidth: 2, priceFormat: pf, crosshairMarkerVisible: false });
+          else main = chart.addSeries(LC.CandlestickSeries, { upColor: pal.up, downColor: pal.down, borderVisible: false, wickUpColor: pal.up, wickDownColor: pal.down, priceFormat: pf });
+          main.applyOptions({ priceLineVisible: false, lastValueVisible: false, title: "" });
+        }
+
+        function setVars() {
+          const s = document.documentElement.style;
+          s.setProperty("--bg", pal.bg);
+          s.setProperty("--fg", pal.fg);
+          s.setProperty("--fg2", pal.fg2);
+          s.setProperty("--fg3", pal.fg3);
+          // the indicator layer reads the "info" colour token from this variable (layer.ts tokenMap)
+          if (pal.info) s.setProperty("--k-info", pal.info);
         }
 
         function build(msg) {
-          if (chart) chart.remove();
+          if (chart) {
+            alive.v = false;
+            chart.remove();
+          }
+          alive = { v: true };
+          const a = alive;
+          initMsg = msg;
           priceLines.clear();
           chips.clear();
           chipsEl.innerHTML = "";
+          drag = null;
+          pendingLines = null;
+          legendSig = "";
           digits = msg.digits;
           pal = msg.palette;
           symbol = msg.symbol || "";
           tf = msg.tf || "";
+          step = msg.step || 60;
+          ctype = msg.chartType || "candles";
+          texts = msg.texts || {};
           hover = -1;
-          document.documentElement.style.setProperty("--bg", pal.bg);
-          document.documentElement.style.setProperty("--fg", pal.fg);
-          document.documentElement.style.setProperty("--fg3", pal.fg3);
+          setVars();
           chart = LC.createChart(host, {
             autoSize: true,
             layout: {
@@ -279,6 +443,7 @@
               fontFamily: "GeistMono, ui-monospace, monospace",
               fontSize: 10.5,
               attributionLogo: false,
+              panes: { separatorColor: sepColor(), separatorHoverColor: "rgba(255,90,31,0.35)", enableResize: true },
             },
             grid: { vertLines: { color: pal.grid }, horzLines: { color: pal.grid } },
             rightPriceScale: { borderVisible: true, borderColor: pal.line, scaleMargins: { top: 0.12, bottom: 0.14 }, minimumWidth: 60 },
@@ -293,67 +458,56 @@
             handleScroll: { horzTouchDrag: true, vertTouchDrag: false, pressedMouseMove: true },
             kineticScroll: { touch: true },
           });
-          const pf = { type: "price", precision: digits, minMove: 1 / Math.pow(10, digits) };
-          main = chart.addSeries(LC.CandlestickSeries, {
-            upColor: pal.up,
-            downColor: pal.down,
-            borderVisible: false,
-            wickUpColor: pal.up,
-            wickDownColor: pal.down,
-            priceFormat: pf,
-            priceLineVisible: false,
-            lastValueVisible: false,
-          });
+          addMain();
           vol = chart.addSeries(LC.HistogramSeries, { priceScaleId: "vol", priceLineVisible: false, lastValueVisible: false, priceFormat: { type: "volume" } });
           chart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.86, bottom: 0 } });
-          inds = (msg.indicators || []).map((id) => {
-            const kind = id.startsWith("ema") ? "ema" : "sma";
-            const n = parseInt(id.slice(3), 10) || 20;
-            const color = () => (kind === "ema" ? pal.gold : pal.ember);
-            const series = chart.addSeries(LC.LineSeries, {
-              color: color(),
-              lineWidth: 2,
-              priceLineVisible: false,
-              lastValueVisible: false,
-              crosshairMarkerVisible: false,
-              priceFormat: pf,
-            });
-            return { id, kind, n, label: `${kind.toUpperCase()} ${n}`, series, color, values: null };
-          });
           wm = new Watermark();
           wm.setDark(pal.dark);
           chart.panes()[0].attachPrimitive(wm);
           bidLine = main.createPriceLine({ price: 0, color: pal.fg2, lineWidth: 1, lineStyle: 1, axisLabelVisible: true, title: "", axisLabelColor: pal.fg2, axisLabelTextColor: pal.dark ? "#0a0a0d" : "#fff" });
           askLine = main.createPriceLine({ price: 0, color: pal.down, lineWidth: 1, lineStyle: 1, axisLabelVisible: true, title: "", axisLabelColor: pal.down, axisLabelTextColor: "#fff" });
+          bid = 0;
+          ask = 0;
+          data = [];
+          layer = KI
+            ? KI.createIndicatorLayer({ chart, bars: () => data, step, digits, palette: pal, alive: () => a.v, onChange: scheduleLegend })
+            : null;
+          // validated against the registry like the web workspace (unknown types dropped, params repaired)
+          inds = KI ? KI.migrateIndicators(msg.indicators || []) : [];
+          if (layer) layer.sync(inds);
           chart.timeScale().subscribeVisibleLogicalRangeChange((r) => {
-            placeChips();
+            schedulePlace();
             if (!r || exhausted || loadingOlder || !data.length || r.from > 30) return;
             loadingOlder = true;
-            post({ type: "older", before: data[0][0] });
+            post({ type: "older", before: data[0].time });
           });
           chart.subscribeCrosshairMove((p) => {
             hover = !p || p.logical === undefined || p.logical === null || !p.time ? -1 : Math.max(0, Math.min(data.length - 1, Math.round(p.logical)));
-            legend();
+            scheduleLegend();
           });
-          data = [];
           lines = [];
           renderLines();
           legend();
         }
 
+        function drawAll() {
+          main.setData(data.map(mainPoint));
+          vol.setData(data.map(volPoint));
+          if (layer) layer.reset();
+        }
+
         function setBars(bars) {
-          data = bars.slice();
+          data = bars.map(toBar);
           exhausted = false;
           loadingOlder = false;
-          main.setData(data.map(candle));
-          vol.setData(data.map((b) => ({ time: b[0], value: b[5], color: volColor(b) })));
-          drawIndicators();
-          legend();
+          drawAll();
+          scheduleLegend();
           chart.timeScale().scrollToRealTime();
           requestAnimationFrame(() => {
+            if (!chart) return;
             chart.timeScale().applyOptions({ barSpacing: 7, rightOffset: 8 });
             chart.timeScale().scrollToRealTime();
-            placeChips();
+            schedulePlace();
           });
         }
 
@@ -361,46 +515,65 @@
           loadingOlder = false;
           exhausted = !!done;
           if (!bars.length || !data.length) return;
-          const first = data[0][0];
-          const add = bars.filter((b) => b[0] < first);
+          const first = data[0].time;
+          const add = bars.filter((b) => b[0] < first).map(toBar);
           if (!add.length) {
             exhausted = true;
             return;
           }
           data = add.concat(data);
-          main.setData(data.map(candle));
-          vol.setData(data.map((b) => ({ time: b[0], value: b[5], color: volColor(b) })));
-          drawIndicators();
-          placeChips();
+          drawAll();
+          schedulePlace();
+          scheduleLegend();
         }
 
-        function upsertBar(b) {
+        function upsertBar(raw) {
           if (!data.length) return;
+          const b = toBar(raw);
           const last = data[data.length - 1];
-          if (b[0] < last[0]) return;
-          if (b[0] > last[0]) data.push(b);
+          if (b.time < last.time) return;
+          if (b.time > last.time) data.push(b);
           else data[data.length - 1] = b;
-          main.update(candle(b));
-          vol.update({ time: b[0], value: b[5], color: volColor(b) });
-          for (const ind of inds) {
-            // only the last values change: recompute the tail cheaply
-            const tail = data.slice(Math.max(0, data.length - ind.n * 4));
-            const saved = data;
-            data = tail;
-            const v = maValues(ind.kind, ind.n);
-            data = saved;
-            const x = v[v.length - 1];
-            if (!ind.values || ind.values.length !== data.length) ind.values = maValues(ind.kind, ind.n);
-            else ind.values[data.length - 1] = ind.kind === "sma" ? x : ind.values[data.length - 1] ?? x;
-            if (ind.kind === "ema" && data.length > 1 && ind.values[data.length - 2] !== null) {
-              const k = 2 / (ind.n + 1);
-              ind.values[data.length - 1] = b[4] * k + ind.values[data.length - 2] * (1 - k);
-            }
-            const y = ind.values[data.length - 1];
-            if (y !== null && y !== undefined) ind.series.update({ time: b[0], value: y });
-          }
-          if (hover < 0) legend();
-          placeChips();
+          main.update(mainPoint(b));
+          vol.update(volPoint(b));
+          if (layer) layer.update();
+          if (hover < 0) scheduleLegend();
+          schedulePlace();
+        }
+
+        function setQuote(b, a) {
+          if (!bidLine) return;
+          if (b !== bid) bidLine.applyOptions({ price: b });
+          if (a !== ask) askLine.applyOptions({ price: a });
+          bid = b;
+          ask = a;
+        }
+
+        function setIndicators(list) {
+          inds = KI ? KI.migrateIndicators(list || []) : [];
+          legendSig = "";
+          if (layer) layer.sync(inds);
+          scheduleLegend();
+        }
+
+        /** Chart type: a fresh chart (like the web), keeping the data, the lines and the view. */
+        function setChartType(t) {
+          if (!initMsg || t === ctype) return;
+          const saved = data,
+            savedLines = lines,
+            b = bid,
+            a = ask,
+            range = chart.timeScale().getVisibleLogicalRange(),
+            ex = exhausted;
+          build(Object.assign({}, initMsg, { chartType: t, indicators: inds, palette: pal }));
+          data = saved;
+          exhausted = ex;
+          drawAll();
+          if (range) chart.timeScale().setVisibleLogicalRange(range);
+          setQuote(b, a);
+          lines = savedLines;
+          renderLines();
+          legend();
         }
 
         /* ---------------- trade lines ---------------- */
@@ -421,20 +594,42 @@
           return [pal.panel, c, c];
         }
 
+        const setText = (el, s) => {
+          if (el.textContent !== s) el.textContent = s;
+        };
+
         function fillChip(c, l) {
           const [bg, fg, border] = chipColors(l);
-          const el = c.el;
-          el.style.background = bg;
-          el.style.color = fg;
-          el.style.borderColor = border;
-          c.grip.style.display = l.drag ? "flex" : "none";
-          const dragging = drag && drag.id === l.id && drag.moved;
-          c.lbl.textContent = dragging && l.kind !== "pos" ? l.label + " " + fmt(drag.price) : l.label;
           const filled = l.kind !== "pos" && l.kind !== "breakeven";
-          c.note.style.display = l.note ? "flex" : "none";
-          c.note.textContent = l.note || "";
-          c.note.style.color = filled ? fg : l.tone === "up" ? pal.up : l.tone === "down" ? pal.down : pal.fg2;
-          c.x.style.display = l.close ? "flex" : "none";
+          const noteColor = filled ? fg : l.tone === "up" ? pal.up : l.tone === "down" ? pal.down : pal.fg2;
+          const sig = [bg, fg, border, l.drag, l.note || "", noteColor, l.close].join("|");
+          if (c.sig !== sig) {
+            c.sig = sig;
+            const el = c.el;
+            el.style.background = bg;
+            el.style.color = fg;
+            el.style.borderColor = border;
+            c.grip.style.display = l.drag ? "flex" : "none";
+            c.note.style.display = l.note ? "flex" : "none";
+            c.note.textContent = l.note || "";
+            c.note.style.color = noteColor;
+            c.x.style.display = l.close ? "flex" : "none";
+            c.w = -1;
+          }
+          const dragging = drag && drag.id === l.id && drag.moved;
+          setLabel(c, dragging && l.kind !== "pos" ? l.label + " " + fmt(drag.price) : l.label);
+        }
+
+        /** The chip font is monospaced: the width changes only with the text length. */
+        function setLabel(c, s) {
+          if (c.lbl.textContent === s) return;
+          if (c.lbl.textContent.length !== s.length) c.w = -1;
+          c.lbl.textContent = s;
+        }
+
+        function lineOpts(l, price) {
+          const col = colorOf(l);
+          return { price, color: col, lineWidth: 1, lineStyle: styleOf(l), axisLabelVisible: true, title: "", axisLabelColor: col, axisLabelTextColor: l.kind === "pending" || l.kind === "alert" || l.kind === "barrier" ? onWarm() : "#fff" };
         }
 
         function renderLines() {
@@ -442,7 +637,7 @@
           const want = new Set(lines.map((l) => l.id));
           for (const [id, pl] of priceLines) {
             if (!want.has(id)) {
-              main.removePriceLine(pl);
+              main.removePriceLine(pl.line);
               priceLines.delete(id);
             }
           }
@@ -454,10 +649,14 @@
           }
           for (const l of lines) {
             const price = drag && drag.id === l.id && drag.moved ? drag.price : l.price;
-            const opts = { price, color: colorOf(l), lineWidth: 1, lineStyle: styleOf(l), axisLabelVisible: true, title: "", axisLabelColor: colorOf(l), axisLabelTextColor: l.kind === "pending" || l.kind === "alert" || l.kind === "barrier" ? onWarm() : "#fff" };
+            const opts = lineOpts(l, price);
+            const key = JSON.stringify(opts);
             const pl = priceLines.get(l.id);
-            if (pl) pl.applyOptions(opts);
-            else priceLines.set(l.id, main.createPriceLine(opts));
+            if (!pl) priceLines.set(l.id, { line: main.createPriceLine(opts), key });
+            else if (pl.key !== key) {
+              pl.line.applyOptions(opts);
+              pl.key = key;
+            }
             let c = chips.get(l.id);
             if (!c) {
               const el = document.createElement("div");
@@ -474,7 +673,7 @@
               x.className = "x";
               x.textContent = "×";
               el.append(grip, lbl, note, x);
-              c = { el, grip, lbl, note, x, l };
+              c = { el, grip, lbl, note, x, l, sig: "", w: -1, tx: NaN, ty: NaN, shown: true };
               chips.set(l.id, c);
               const cc = c;
               x.addEventListener("pointerdown", (e) => {
@@ -494,23 +693,46 @@
           placeChips();
         }
 
-        /** Chips sit at the price scale like the web's; chips of nearby prices line up side by side to the left. */
+        const show = (c, on) => {
+          if (c.shown === on) return;
+          c.shown = on;
+          c.el.style.display = on ? "flex" : "none";
+        };
+        const moveTo = (c, x, y) => {
+          if (c.tx === x && c.ty === y) return;
+          c.tx = x;
+          c.ty = y;
+          c.el.style.transform = `translate(${x}px, ${y - 11}px)`; // 22 px tall with its border: centred on the line
+        };
+
+        /** Chips sit at the price scale like the web's; chips of nearby prices line up side by side to the left. The
+         *  dragged chip follows the finger on its own. Widths are measured once per text length (no layout per frame). */
         function placeChips() {
           if (!main || !chart) return;
           const plotW = chart.timeScale().width();
+          // chips stay in the main window (a line at its very bottom keeps its chip); a chip is 22 px tall and
+          // centred on its line, so the ones near the pane's bottom edge are held above the next window
+          const maxY = pane0H() + 1;
+          const clampY = (y) => Math.min(y, pane0H() - 11);
           const shown = [];
+          let dragged = null;
           for (const c of chips.values()) {
             const l = c.l;
-            const price = drag && drag.id === l.id && drag.moved ? drag.price : l.price;
-            const y = main.priceToCoordinate(price);
-            if (y === null || y < 8 || y > host.clientHeight - 30) {
-              c.el.style.display = "none";
-              continue;
+            const isDrag = drag && drag.id === l.id && drag.moved;
+            const y = main.priceToCoordinate(isDrag ? drag.price : l.price);
+            if (y === null || y < 8 || y > maxY) {
+              if (!isDrag) {
+                show(c, false);
+                continue;
+              }
             }
-            c.el.style.display = "flex";
-            c.el.style.top = y + "px";
-            shown.push({ c, y });
+            show(c, true);
+            if (isDrag) dragged = { c, y: y === null ? drag.y : y };
+            else shown.push({ c, y });
           }
+          // reads first (widths of chips whose text changed), then writes
+          for (const s of shown) if (s.c.w < 0) s.c.w = s.c.el.offsetWidth;
+          if (dragged && dragged.c.w < 0) dragged.c.w = dragged.c.el.offsetWidth;
           shown.sort((a, b) => a.y - b.y);
           let rowY = -1000,
             right = plotW - 6;
@@ -519,11 +741,11 @@
               rowY = s.y;
               right = plotW - 6;
             }
-            const w = s.c.el.offsetWidth;
-            const left = Math.max(4, right - w);
-            s.c.el.style.left = left + "px";
+            const left = Math.max(4, right - s.c.w);
+            moveTo(s.c, Math.round(left), Math.round(clampY(s.y)));
             right = left - 4;
           }
+          if (dragged) moveTo(dragged.c, Math.round(Math.max(4, plotW - 6 - dragged.c.w)), Math.round(clampY(dragged.y)));
         }
 
         function startDrag(e, c) {
@@ -532,46 +754,81 @@
           const l = c.l;
           const el = c.el;
           const startY = e.clientY;
-          drag = { id: l.id, price: l.price, moved: false };
+          const top = host.getBoundingClientRect().top;
+          const plotW = chart.timeScale().width();
+          const maxY = pane0H() - 2;
+          drag = { id: l.id, price: l.price, moved: false, y: startY - top, raf: 0 };
+          const d0 = drag;
           if (l.drag) chart.applyOptions({ handleScroll: false, handleScale: false });
           el.classList.add("dragging");
           try {
             el.setPointerCapture(e.pointerId);
           } catch (x) {}
-          const move = (ev) => {
-            if (!l.drag || !drag) return;
-            if (Math.abs(ev.clientY - startY) > 4) drag.moved = true;
-            if (!drag.moved) return;
-            const rect = host.getBoundingClientRect();
-            const p = main.coordinateToPrice(ev.clientY - rect.top);
-            if (p === null) return;
-            drag.price = Math.round(p * Math.pow(10, digits)) / Math.pow(10, digits);
+          // one frame: the chip, its label and the ghost line follow the latest finger position
+          const paint = () => {
+            d0.raf = 0;
+            if (drag !== d0) return;
             fillChip(c, c.l);
-            const pl = priceLines.get(l.id);
-            if (pl && l.kind !== "pos") pl.applyOptions({ price: drag.price });
             if (l.kind === "pos") {
               ghost.style.display = "block";
-              ghost.style.top = ev.clientY - rect.top + "px";
-              ghost.style.width = chart.timeScale().width() + "px";
+              ghost.style.width = plotW + "px";
+              ghost.style.transform = `translateY(${Math.round(d0.y)}px)`;
             }
             placeChips();
+          };
+          const move = (ev) => {
+            if (!l.drag || drag !== d0) return;
+            if (!d0.moved) {
+              if (Math.abs(ev.clientY - startY) <= 4) return;
+              d0.moved = true;
+              post({ type: "dragstart", id: l.id });
+            }
+            const y = Math.max(2, Math.min(maxY, ev.clientY - top));
+            const p = main.coordinateToPrice(y);
+            if (p === null) return;
+            const price = Math.round(p * pow()) / pow();
+            d0.y = y;
+            if (price === d0.price && d0.raf) return;
+            d0.price = price;
+            // the price line moves with the chart's own frame; the chip with ours
+            const pl = priceLines.get(l.id);
+            if (pl && l.kind !== "pos") {
+              pl.line.applyOptions({ price });
+              pl.key = "";
+            }
+            if (!d0.raf) d0.raf = requestAnimationFrame(paint);
           };
           const up = () => {
             el.removeEventListener("pointermove", move);
             el.removeEventListener("pointerup", up);
             el.removeEventListener("pointercancel", up);
+            el.removeEventListener("lostpointercapture", up);
+            if (d0.raf) cancelAnimationFrame(d0.raf);
             el.classList.remove("dragging");
             ghost.style.display = "none";
             chart.applyOptions({ handleScroll: { horzTouchDrag: true, vertTouchDrag: false, pressedMouseMove: true }, handleScale: { axisPressedMouseMove: true, pinch: true, mouseWheel: true } });
-            const d = drag;
+            if (drag !== d0) return;
             drag = null;
-            if (d && d.moved && l.drag) post({ type: "drag", id: l.id, price: d.price });
-            else if (d && !d.moved) post({ type: "tap", id: l.id });
+            if (d0.moved && l.drag) {
+              // a stop, order or alert stays at the drop price until the app answers with its lines (a position
+              // line stays where it is: its drag sets the SL or TP)
+              if (l.kind !== "pos") {
+                c.l = Object.assign({}, c.l, { price: d0.price });
+                lines = lines.map((x) => (x.id === l.id ? c.l : x));
+              }
+              post({ type: "drag", id: l.id, price: d0.price });
+            } else if (!d0.moved) post({ type: "tap", id: l.id });
+            if (pendingLines) {
+              lines = pendingLines;
+              pendingLines = null;
+            }
             renderLines();
           };
           el.addEventListener("pointermove", move);
           el.addEventListener("pointerup", up);
           el.addEventListener("pointercancel", up);
+          // a lost capture (the system took the touch) ends the drag too: never a stuck chip
+          el.addEventListener("lostpointercapture", up);
         }
 
         /* ---------------- long press on the plot ---------------- */
@@ -588,8 +845,10 @@
             clearTimeout(lpTimer);
             lpTimer = setTimeout(() => {
               const rect = host.getBoundingClientRect();
-              const p = main ? main.coordinateToPrice(lpY - rect.top) : null;
-              if (p !== null) post({ type: "long", price: Math.round(p * Math.pow(10, digits)) / Math.pow(10, digits) });
+              const y = lpY - rect.top;
+              if (!main || y > pane0H()) return;
+              const p = main.coordinateToPrice(y);
+              if (p !== null) post({ type: "long", price: Math.round(p * pow()) / pow() });
             }, 600);
           },
           { passive: true },
@@ -604,55 +863,77 @@
 
         function setPalette(p) {
           pal = p;
-          document.documentElement.style.setProperty("--bg", pal.bg);
-          document.documentElement.style.setProperty("--fg", pal.fg);
-          document.documentElement.style.setProperty("--fg3", pal.fg3);
+          setVars();
           if (!chart) return;
           chart.applyOptions({
-            layout: { background: { type: "solid", color: pal.bg }, textColor: pal.fg3 },
+            layout: { background: { type: "solid", color: pal.bg }, textColor: pal.fg3, panes: { separatorColor: sepColor() } },
             grid: { vertLines: { color: pal.grid }, horzLines: { color: pal.grid } },
             rightPriceScale: { borderColor: pal.line },
             timeScale: { borderColor: pal.line },
             crosshair: { vertLine: { color: pal.fg3, labelBackgroundColor: pal.label }, horzLine: { color: pal.fg3, labelBackgroundColor: pal.label } },
           });
-          main.applyOptions({ upColor: pal.up, downColor: pal.down, wickUpColor: pal.up, wickDownColor: pal.down });
-          vol.setData(data.map((b) => ({ time: b[0], value: b[5], color: volColor(b) })));
-          for (const ind of inds) ind.series.applyOptions({ color: ind.color() });
+          if (ctype === "candles") main.applyOptions({ upColor: pal.up, downColor: pal.down, wickUpColor: pal.up, wickDownColor: pal.down });
+          else if (ctype === "bars") main.applyOptions({ upColor: pal.up, downColor: pal.down });
+          else if (ctype === "line") main.applyOptions({ color: pal.gold });
+          else main.applyOptions({ lineColor: pal.gold });
+          vol.setData(data.map(volPoint));
+          if (layer) layer.setPalette(pal);
           bidLine.applyOptions({ color: pal.fg2, axisLabelColor: pal.fg2, axisLabelTextColor: pal.dark ? "#0a0a0d" : "#fff" });
           askLine.applyOptions({ color: pal.down, axisLabelColor: pal.down });
           wm.setDark(pal.dark);
+          for (const c of chips.values()) c.sig = "";
           renderLines();
+          legendSig = "";
           legend();
+        }
+
+        function recv(m) {
+          switch (m.type) {
+            case "init":
+              return build(m);
+            case "bars":
+              return setBars(m.bars);
+            case "older":
+              return prepend(m.bars, m.exhausted);
+            case "bar":
+              return upsertBar(m.bar);
+            case "quote":
+              return setQuote(m.bid, m.ask);
+            case "lines":
+              // while a chip is dragged the app's lines wait: the dragged line stays under the finger
+              if (drag && drag.moved) {
+                pendingLines = m.lines || [];
+                return;
+              }
+              lines = m.lines || [];
+              return renderLines();
+            case "palette":
+              return setPalette(m.palette);
+            case "indicators":
+              return setIndicators(m.indicators);
+            case "chartType":
+              return setChartType(m.chartType);
+          }
         }
 
         window.K = {
           recv(msg) {
-            const m = typeof msg === "string" ? JSON.parse(msg) : msg;
-            switch (m.type) {
-              case "init":
-                return build(m);
-              case "bars":
-                return setBars(m.bars);
-              case "older":
-                return prepend(m.bars, m.exhausted);
-              case "bar":
-                return upsertBar(m.bar);
-              case "quote":
-                if (bidLine) {
-                  bidLine.applyOptions({ price: m.bid });
-                  askLine.applyOptions({ price: m.ask });
-                }
-                return;
-              case "lines":
-                lines = m.lines || [];
-                return renderLines();
-              case "palette":
-                return setPalette(m.palette);
-            }
+            recv(typeof msg === "string" ? JSON.parse(msg) : msg);
+          },
+          /** Several commands in one call (the app coalesces quotes, bars and lines to one call per frame). */
+          batch(msgs) {
+            const list = typeof msgs === "string" ? JSON.parse(msgs) : msgs;
+            for (const m of list) recv(m);
           },
         };
-        window.addEventListener("resize", () => placeChips());
-        setInterval(placeChips, 400);
+        window.addEventListener("resize", () => {
+          schedulePlace();
+          legendSig = "";
+          scheduleLegend();
+        });
+        setInterval(() => {
+          if (!drag) schedulePlace();
+        }, 400);
         post({ type: "ready" });
       })();
     </script>

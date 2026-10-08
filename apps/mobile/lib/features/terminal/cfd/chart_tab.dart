@@ -19,6 +19,7 @@ import '../core/trade_actions.dart';
 import '../core/trade_math.dart';
 import '../core/workspace.dart';
 import '../widgets/kit.dart';
+import 'chart_menu.dart';
 import 'order_sheet.dart';
 import 'position_sheet.dart';
 import 'symbol_search.dart';
@@ -40,48 +41,58 @@ class ChartTab extends ConsumerWidget {
             color: k.surface,
             border: Border(bottom: BorderSide(color: k.line, width: 0.6)),
           ),
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 6),
+          child: Row(
             children: [
-              KPressable(
-                minSize: 36,
-                onTap: () => showSymbolSearch(context),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: Row(
-                    children: [
-                      SymbolAvatar(symbol, size: 15),
-                      const SizedBox(width: 6),
-                      Text(symbol, style: context.text.label.copyWith(fontWeight: FontWeight.w600, fontSize: 13)),
-                    ],
-                  ),
-                ),
-              ),
-              Center(
-                child: Container(width: 0.8, height: 16, color: k.line, margin: const EdgeInsets.symmetric(horizontal: 4)),
-              ),
-              for (final tf in kTimeframes)
-                Center(
-                  child: KPressable(
-                    minSize: 34,
-                    pressedScale: 1,
-                    onTap: () {
-                      KHaptics.selection();
-                      ref.read(workspaceProvider.notifier).update((w) => w.copyWith(tf: tf));
-                    },
-                    child: Container(
-                      height: 27,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(color: ws.tf == tf ? k.emberSoft : Colors.transparent, borderRadius: BorderRadius.circular(6)),
-                      child: Text(
-                        tf,
-                        style: context.text.mono(11, weight: FontWeight.w600, color: ws.tf == tf ? k.ember : k.fg3),
+              Expanded(
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsetsDirectional.only(start: 6, end: 2),
+                  children: [
+                    KPressable(
+                      minSize: 36,
+                      onTap: () => showSymbolSearch(context),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: Row(
+                          children: [
+                            SymbolAvatar(symbol, size: 15),
+                            const SizedBox(width: 6),
+                            Text(symbol, style: context.text.label.copyWith(fontWeight: FontWeight.w600, fontSize: 13)),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
+                    Center(
+                      child: Container(width: 0.8, height: 16, color: k.line, margin: const EdgeInsets.symmetric(horizontal: 4)),
+                    ),
+                    for (final tf in kTimeframes)
+                      Center(
+                        child: KPressable(
+                          minSize: 34,
+                          pressedScale: 1,
+                          onTap: () {
+                            KHaptics.selection();
+                            ref.read(workspaceProvider.notifier).update((w) => w.copyWith(tf: tf));
+                          },
+                          child: Container(
+                            height: 27,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(color: ws.tf == tf ? k.emberSoft : Colors.transparent, borderRadius: BorderRadius.circular(6)),
+                            child: Text(
+                              tf,
+                              style: context.text.mono(11, weight: FontWeight.w600, color: ws.tf == tf ? k.ember : k.fg3),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
+              ),
+              Container(width: 0.8, height: 16, color: k.line),
+              // chart type, indicators and templates (web chart toolbar)
+              ChartMenuButton(symbol: symbol),
+              const SizedBox(width: 2),
             ],
           ),
         ),
@@ -117,6 +128,7 @@ class _Chart extends ConsumerWidget {
     final t = context.t;
     final st = ref.watch(terminalProvider);
     final alerts = ref.watch(workspaceProvider.select((w) => w.alerts));
+    final chart = ref.watch(workspaceProvider.select((w) => w.chartOf(symbol)));
     final ro = st.readOnly;
     final cent = st.account?.cent ?? false;
     final spec = ref.watch(symbolBookProvider.select((b) => b[symbol]));
@@ -164,7 +176,9 @@ class _Chart extends ConsumerWidget {
       onLineDragged: (l, price) => _commitDrag(ref, l, price),
       onLineTapped: (l) => _tapLine(context, ref, l),
       onLineClosed: (l) => _closeLine(ref, l),
-      indicators: const ['ema50', 'sma20'],
+      chartType: chart.type,
+      indicators: chart.indicators,
+      onIndicatorTapped: (uid) => unawaited(showIndicatorActions(context, ref, symbol, uid)),
       onLongPress: ro ? null : (price) => _longPress(context, ref, price),
     );
   }
@@ -179,29 +193,33 @@ class _Chart extends ConsumerWidget {
     _ => 'chart.line.buyLimit',
   };
 
-  void _commitDrag(WidgetRef ref, ChartLine l, double price) {
+  /// A dropped line (web commitLineDrag). The future says whether the server took it (the chart keeps the line at
+  /// the drop price until then).
+  Future<bool> _commitDrag(WidgetRef ref, ChartLine l, double price) async {
     final actions = ref.read(tradeActionsProvider);
     final digits = ref.read(symbolBookProvider)[symbol]?.digits ?? 5;
-    if ((price - l.price).abs() < 1 / (digits <= 0 ? 1 : _pow10(digits))) return;
+    if ((price - l.price).abs() < 1 / (digits <= 0 ? 1 : _pow10(digits))) return false;
     KHaptics.medium();
     switch (l.kind) {
       case 'sl':
-        unawaited(actions.modifyPosition(l.ref, sl: price));
+        return actions.modifyPosition(l.ref, sl: price);
       case 'tp':
-        unawaited(actions.modifyPosition(l.ref, tp: price));
+        return actions.modifyPosition(l.ref, tp: price);
       case 'pending':
-        unawaited(actions.modifyOrder(l.ref, price: price));
+        return actions.modifyOrder(l.ref, price: price);
       case 'alert':
         ref.read(workspaceProvider.notifier).updateAlert(l.ref, price: price);
+        return true;
       case 'pos':
         // dragging a position line sets its SL or TP, by the side of the current price
         final p = ref.read(terminalProvider).positions.where((x) => x.ticket == l.ref).firstOrNull;
         final q = ref.read(marketFeedProvider).quote(symbol);
-        if (p == null || q == null) return;
+        if (p == null || q == null) return false;
         final cur = p.buy ? q.bid : q.ask;
         final isSl = p.buy ? price < cur : price > cur;
-        unawaited(isSl ? actions.modifyPosition(l.ref, sl: price) : actions.modifyPosition(l.ref, tp: price));
+        return isSl ? actions.modifyPosition(l.ref, sl: price) : actions.modifyPosition(l.ref, tp: price);
     }
+    return false;
   }
 
   static double _pow10(int n) {

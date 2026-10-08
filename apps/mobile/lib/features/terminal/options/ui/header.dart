@@ -80,37 +80,41 @@ class OptionsHeader extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          Flexible(
-            child: KPressable(
-              minSize: 40,
-              semanticLabel: t('trader.opt.pickUnderlying'),
-              onTap: onPickUnderlying,
-              child: Container(
-                height: 36,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                decoration: BoxDecoration(
-                  color: k.surface2,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: k.line),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    OptAvatar(u, size: 18),
-                    const SizedBox(width: 7),
-                    Text(u, style: context.text.label.copyWith(fontSize: 14, fontWeight: FontWeight.w600)),
-                    const SizedBox(width: 7),
-                    Flexible(child: SpotPrice(u, fallback: chainSpot)),
-                    const SizedBox(width: 6),
-                    FeedChange(u),
-                    const SizedBox(width: 4),
-                    Icon(LucideIcons.chevronDown, size: 14, color: k.fg3),
-                  ],
+          // the pill takes its own width (the space left over, at most): a Spacer next to a Flexible would cap it at half
+          Expanded(
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: KPressable(
+                minSize: 40,
+                semanticLabel: t('trader.opt.pickUnderlying'),
+                onTap: onPickUnderlying,
+                child: Container(
+                  height: 36,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: k.surface2,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: k.line),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      OptAvatar(u, size: 18),
+                      const SizedBox(width: 7),
+                      Text(u, style: context.text.label.copyWith(fontSize: 14, fontWeight: FontWeight.w600)),
+                      const SizedBox(width: 7),
+                      Flexible(child: SpotPrice(u, fallback: chainSpot)),
+                      const SizedBox(width: 6),
+                      FeedChange(u),
+                      const SizedBox(width: 4),
+                      Icon(LucideIcons.chevronDown, size: 14, color: k.fg3),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-          const Spacer(),
+          const SizedBox(width: 6),
           if (book) ...[const BookBadge(), const SizedBox(width: 6)],
           const StreamDot(),
           const SizedBox(width: 4),

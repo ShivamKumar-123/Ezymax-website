@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/prefs.dart';
+import '../chart/indicators.dart';
 
 /// A local price alert (web PriceAlert): fires once when the bid crosses `price`.
 @immutable
@@ -35,6 +36,38 @@ class PriceAlert {
   }
 }
 
+/// A symbol's chart (web ChartTab type + indicators): the chart type and the indicators, saved per symbol.
+@immutable
+class ChartSettings {
+  const ChartSettings({this.type = 'candles', this.indicators = const []});
+
+  /// candles | bars | line | area
+  final String type;
+  final List<IndInstance> indicators;
+
+  ChartSettings copyWith({String? type, List<IndInstance>? indicators}) => ChartSettings(type: type ?? this.type, indicators: indicators ?? this.indicators);
+
+  Map<String, dynamic> toJson() => {
+    'type': type,
+    'indicators': [for (final i in indicators) i.toJson()],
+  };
+
+  @override
+  bool operator ==(Object other) => other is ChartSettings && other.type == type && listEquals(other.indicators, indicators);
+
+  @override
+  int get hashCode => Object.hash(type, Object.hashAll(indicators));
+
+  static ChartSettings? fromJson(Object? j) {
+    if (j is! Map) return null;
+    final type = j['type'];
+    return ChartSettings(
+      type: kChartTypes.contains(type) ? type as String : 'candles',
+      indicators: [for (final i in (j['indicators'] is List ? j['indicators'] as List : const [])) ?IndInstance.fromJson(i)],
+    );
+  }
+}
+
 /// The defaults are the web's (store.tsx defaultWorkspace): XAUUSD M15, volume 0.50, one-click off, sounds on.
 @immutable
 class Workspace {
@@ -49,6 +82,8 @@ class Workspace {
     this.tf = 'M15',
     this.alerts = const [],
     this.lastLogin,
+    this.charts = const {},
+    this.indicatorFavourites = kDefaultIndicatorFavourites,
   });
 
   final List<String> favourites;
@@ -71,6 +106,15 @@ class Workspace {
   final List<PriceAlert> alerts;
   final String? lastLogin;
 
+  /// Chart type and indicators per symbol (a symbol without its own: candles with EMA 50 and SMA 20).
+  final Map<String, ChartSettings> charts;
+
+  /// Starred indicator types of the indicators list.
+  final List<String> indicatorFavourites;
+
+  /// The chart of a symbol (the web's default chart until changed).
+  ChartSettings chartOf(String symbol) => charts[symbol] ?? ChartSettings(indicators: _defaultIndicators);
+
   Workspace copyWith({
     List<String>? favourites,
     String? segment,
@@ -83,6 +127,8 @@ class Workspace {
     String? tf,
     List<PriceAlert>? alerts,
     String? lastLogin,
+    Map<String, ChartSettings>? charts,
+    List<String>? indicatorFavourites,
   }) => Workspace(
     favourites: favourites ?? this.favourites,
     segment: segment ?? this.segment,
@@ -94,6 +140,8 @@ class Workspace {
     tf: tf ?? this.tf,
     alerts: alerts ?? this.alerts,
     lastLogin: lastLogin ?? this.lastLogin,
+    charts: charts ?? this.charts,
+    indicatorFavourites: indicatorFavourites ?? this.indicatorFavourites,
   );
 
   Map<String, dynamic> toJson() => {
@@ -107,6 +155,8 @@ class Workspace {
     'tf': tf,
     'alerts': [for (final a in alerts) a.toJson()],
     'lastLogin': lastLogin,
+    'charts': {for (final e in charts.entries) e.key: e.value.toJson()},
+    'indicatorFavourites': indicatorFavourites,
   };
 
   static Workspace fromJson(Map<String, dynamic>? j) {
@@ -115,6 +165,8 @@ class Workspace {
     final fav = j['favourites'];
     final lot = j['lot'];
     final dev = j['maxDeviation'];
+    final charts = j['charts'];
+    final indFav = j['indicatorFavourites'];
     return Workspace(
       favourites: fav is List ? fav.whereType<String>().toList() : d.favourites,
       segment: j['segment'] is String ? j['segment'] as String : d.segment,
@@ -126,9 +178,17 @@ class Workspace {
       tf: j['tf'] is String ? j['tf'] as String : d.tf,
       alerts: [for (final a in (j['alerts'] as List? ?? const [])) ?PriceAlert.fromJson(a)],
       lastLogin: j['lastLogin'] as String?,
+      charts: {
+        if (charts is Map)
+          for (final e in charts.entries) '${e.key}': ?ChartSettings.fromJson(e.value),
+      },
+      indicatorFavourites: indFav is List ? indFav.whereType<String>().toList() : d.indicatorFavourites,
     );
   }
 }
+
+/// The default chart's indicators, made once so their ids stay put until the client changes the chart.
+final List<IndInstance> _defaultIndicators = defaultIndicators();
 
 class WorkspaceController extends Notifier<Workspace> {
   static const _key = 'trader.workspace';
@@ -160,6 +220,15 @@ class WorkspaceController extends Notifier<Workspace> {
   );
 
   void removeAlert(String id) => update((w) => w.copyWith(alerts: w.alerts.where((a) => a.id != id).toList()));
+
+  /// Changes one symbol's chart (type and / or indicators); saved per symbol.
+  void updateChart(String symbol, ChartSettings Function(ChartSettings c) f) => update((w) => w.copyWith(charts: {...w.charts, symbol: f(w.chartOf(symbol))}));
+
+  void toggleIndicatorFavourite(String type) => update(
+    (w) => w.copyWith(
+      indicatorFavourites: w.indicatorFavourites.contains(type) ? w.indicatorFavourites.where((x) => x != type).toList() : [...w.indicatorFavourites, type],
+    ),
+  );
 }
 
 final workspaceProvider = NotifierProvider<WorkspaceController, Workspace>(WorkspaceController.new);

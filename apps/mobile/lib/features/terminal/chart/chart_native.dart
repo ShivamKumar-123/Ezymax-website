@@ -1,6 +1,7 @@
 // A small native candle chart that understands the chart page's commands (chart_bridge.dart): used by the web
-// preview (webview_flutter has no web implementation) and widget tests. Candles + volume, the OHLC legend with the
-// default overlays (EMA 50, SMA 20), the bid / ask lines, trade lines with their chips at the price scale (tap, ×,
+// preview (webview_flutter has no web implementation) and widget tests. Candles / bars / line / area + volume, the
+// OHLC legend with a row per indicator (tap: the indicator menu; only moving averages are drawn here), the bid / ask
+// lines, trade lines with their chips at the price scale (tap, ×,
 // vertical drag, the P&L on them), the Kalks K in the corner, horizontal pan, long press. The product chart on Android
 // is the lightweight-charts page (chart_webview.dart).
 import 'dart:convert';
@@ -31,7 +32,8 @@ class _Line {
 class _NativeChartSurfaceState extends State<NativeChartSurface> {
   List<List<double>> _bars = [];
   List<_Line> _lines = [];
-  List<String> _inds = [];
+  List<Map<String, dynamic>> _inds = [];
+  String _type = 'candles';
   String _symbol = '', _tf = '';
   double _bid = 0, _ask = 0;
   int _digits = 2;
@@ -45,7 +47,7 @@ class _NativeChartSurfaceState extends State<NativeChartSurface> {
   @override
   void initState() {
     super.initState();
-    widget.controller.attach(_recv);
+    widget.controller.attach(_recvAll);
   }
 
   @override
@@ -53,7 +55,7 @@ class _NativeChartSurfaceState extends State<NativeChartSurface> {
     super.didUpdateWidget(old);
     if (old.controller != widget.controller) {
       old.controller.detach();
-      widget.controller.attach(_recv);
+      widget.controller.attach(_recvAll);
     }
   }
 
@@ -65,15 +67,22 @@ class _NativeChartSurfaceState extends State<NativeChartSurface> {
 
   static List<double> _row(Object? b) => [for (final x in (b is List ? b : const [])) (x as num).toDouble()];
 
-  void _recv(String json) {
-    final m = (jsonDecode(json) as Map).cast<String, dynamic>();
+  void _recvAll(List<String> batch) {
+    for (final json in batch) {
+      _recv((jsonDecode(json) as Map).cast<String, dynamic>());
+    }
+    if (mounted) setState(() {});
+  }
+
+  void _recv(Map<String, dynamic> m) {
     switch (m['type']) {
       case 'init':
         _digits = (m['digits'] as num?)?.toInt() ?? 2;
         _pal = (m['palette'] as Map?)?.cast<String, dynamic>() ?? const {};
         _symbol = '${m['symbol'] ?? ''}';
         _tf = '${m['tf'] ?? ''}';
-        _inds = [for (final i in (m['indicators'] as List? ?? const [])) '$i'];
+        _inds = _instances(m['indicators']);
+        _type = '${m['chartType'] ?? 'candles'}';
         _bars = [];
         _lines = [];
         _scroll = 0;
@@ -116,9 +125,17 @@ class _NativeChartSurfaceState extends State<NativeChartSurface> {
         ];
       case 'palette':
         _pal = (m['palette'] as Map?)?.cast<String, dynamic>() ?? _pal;
+      case 'indicators':
+        _inds = _instances(m['indicators']);
+      case 'chartType':
+        _type = '${m['chartType'] ?? 'candles'}';
     }
-    if (mounted) setState(() {});
   }
+
+  static List<Map<String, dynamic>> _instances(Object? list) => [
+    for (final i in (list is List ? list : const []))
+      if (i is Map) i.cast<String, dynamic>(),
+  ];
 
   Color _c(String key, Color fallback) {
     final v = _pal[key];
@@ -139,10 +156,12 @@ class _NativeChartSurfaceState extends State<NativeChartSurface> {
     _ => l.side == 'buy' ? _c('up', k.up) : _c('down', k.down),
   };
 
-  /// Simple / exponential moving average of the closes (null until enough bars).
-  List<double?> _ma(String id) {
-    final ema = id.startsWith('ema');
-    final n = int.tryParse(id.substring(3)) ?? 20;
+  /// Simple / exponential moving average of the closes (null until enough bars). The stand-in draws only the
+  /// moving averages; the chart page draws every indicator with the web's code.
+  List<double?> _ma(Map<String, dynamic> inst) {
+    final ema = inst['type'] == 'ema';
+    final p = inst['params'];
+    final n = (p is Map && p['period'] is num ? (p['period'] as num).toInt() : 20).clamp(1, 500);
     final out = List<double?>.filled(_bars.length, null);
     if (!ema) {
       var sum = 0.0;
@@ -170,12 +189,41 @@ class _NativeChartSurfaceState extends State<NativeChartSurface> {
     return out;
   }
 
-  Color _indColor(String id, KTokens k) => id.startsWith('ema') ? _c('gold', k.gold) : _c('ember', k.ember);
+  String _uid(Map<String, dynamic> i) => '${i['uid']}';
+
+  bool _isMa(Map<String, dynamic> i) => i['visible'] != false && (i['type'] == 'sma' || i['type'] == 'ema');
+
+  /// "EMA 50": the type and the numeric params (the app's menus show the registry's labels).
+  String _label(Map<String, dynamic> i) {
+    final p = i['params'];
+    final nums = [
+      if (p is Map)
+        for (final v in p.values)
+          if (v is num) v == v.roundToDouble() ? '${v.toInt()}' : '$v',
+    ];
+    return ['${i['type']}'.toUpperCase(), nums.join(', ')].where((x) => x.isNotEmpty).join(' ');
+  }
+
+  Color _indColor(Map<String, dynamic> i, KTokens k) {
+    final st = i['style'];
+    final tok = st is Map && st['ma'] is Map ? (st['ma'] as Map)['color'] : null;
+    final t = tok is String ? tok : (i['type'] == 'ema' ? 'gold' : 'ember');
+    return switch (t) {
+      'gold' => _c('gold', k.gold),
+      'up' => _c('up', k.up),
+      'down' => _c('down', k.down),
+      'warn' => _c('warn', k.warn),
+      'info' => _c('info', k.info),
+      'fg2' => _c('fg2', k.fg2),
+      'fg3' => _c('fg3', k.fg3),
+      _ => _c('ember', k.ember),
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
     final k = context.k;
-    final mas = {for (final i in _inds) i: _ma(i)};
+    final mas = {for (final i in _inds.where(_isMa)) _uid(i): (_ma(i), _indColor(i, k))};
     return LayoutBuilder(
       builder: (context, c) {
         final geo = _Geo.of(this, c.biggest);
@@ -197,7 +245,7 @@ class _NativeChartSurfaceState extends State<NativeChartSurface> {
             children: [
               Positioned.fill(child: CustomPaint(painter: _Painter(this, geo, k, mas))),
               Positioned(left: 10, bottom: 30, child: KLogoMark(size: 21, color: (k.dark ? Colors.white : Colors.black).withValues(alpha: 0.27))),
-              Positioned(left: 8, top: 6, right: 80, child: IgnorePointer(child: _legend(k, mas))),
+              Positioned(left: 8, top: 6, right: 80, child: _legend(k, mas)),
               ..._chips(geo, k),
             ],
           ),
@@ -206,7 +254,7 @@ class _NativeChartSurfaceState extends State<NativeChartSurface> {
     );
   }
 
-  Widget _legend(KTokens k, Map<String, List<double?>> mas) {
+  Widget _legend(KTokens k, Map<String, (List<double?>, Color)> mas) {
     if (_bars.isEmpty) return const SizedBox.shrink();
     final b = _bars.last;
     final col = b[4] >= b[1] ? _c('up', k.up) : _c('down', k.down);
@@ -236,12 +284,21 @@ class _NativeChartSurfaceState extends State<NativeChartSurface> {
           ),
         ),
         for (final i in _inds)
-          Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(text: '${i.substring(0, 3).toUpperCase()} ${i.substring(3)}  ', style: st(fg3)),
-                TextSpan(text: mas[i]!.last?.toStringAsFixed(_digits) ?? '—', style: st(_indColor(i, k))),
-              ],
+          GestureDetector(
+            key: ValueKey('chart-legend-${_uid(i)}'),
+            behavior: HitTestBehavior.opaque,
+            onTap: () => widget.controller.emit(ChartIndicatorTapped(_uid(i))),
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: '${_label(i)}  ',
+                    style: st(i['visible'] == false ? fg3.withValues(alpha: 0.6) : _c('fg2', k.fg2))
+                        .copyWith(decoration: i['visible'] == false ? TextDecoration.lineThrough : null),
+                  ),
+                  if (mas[_uid(i)] case final m?) TextSpan(text: m.$1.lastOrNull?.toStringAsFixed(_digits) ?? '—', style: st(m.$2)),
+                ],
+              ),
             ),
           ),
       ],
@@ -299,7 +356,12 @@ class _NativeChartSurfaceState extends State<NativeChartSurface> {
       top: y - 10,
       child: GestureDetector(
         onTap: () => widget.controller.emit(ChartLineTapped(l.id)),
-        onVerticalDragStart: l.drag ? (_) => setState(() => _dragId = l.id) : null,
+        onVerticalDragStart: l.drag
+            ? (_) {
+                setState(() => _dragId = l.id);
+                widget.controller.emit(ChartDragStarted(l.id));
+              }
+            : null,
         onVerticalDragUpdate: l.drag
             ? (d) {
                 final g = _geo;
@@ -412,7 +474,7 @@ class _Painter extends CustomPainter {
   final _NativeChartSurfaceState s;
   final _Geo g;
   final KTokens k;
-  final Map<String, List<double?>> mas;
+  final Map<String, (List<double?>, Color)> mas;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -451,18 +513,50 @@ class _Painter extends CustomPainter {
       final col = isUp ? up : down;
       final vh = b[5] / vmax * g.plotH * 0.14;
       canvas.drawRect(Rect.fromLTWH(x - 2.5, g.plotH - vh, 5, vh), Paint()..color = col.withValues(alpha: 0.22));
+      if (s._type == 'line' || s._type == 'area') continue;
       final yo = g.y(b[1])!, yc = g.y(b[4])!, yh = g.y(b[2])!, yl = g.y(b[3])!;
       final p = Paint()
         ..color = col
         ..strokeWidth = 1;
       canvas.drawLine(Offset(x, yh), Offset(x, yl), p);
-      canvas.drawRect(Rect.fromLTRB(x - 2.5, math.min(yo, yc), x + 2.5, math.max(math.max(yo, yc), math.min(yo, yc) + 1)), p);
+      if (s._type == 'bars') {
+        canvas.drawLine(Offset(x - 2.5, yo), Offset(x, yo), p);
+        canvas.drawLine(Offset(x, yc), Offset(x + 2.5, yc), p);
+      } else {
+        canvas.drawRect(Rect.fromLTRB(x - 2.5, math.min(yo, yc), x + 2.5, math.max(math.max(yo, yc), math.min(yo, yc) + 1)), p);
+      }
+    }
+    if ((s._type == 'line' || s._type == 'area') && g.to > g.from) {
+      final path = Path();
+      for (var i = g.from; i < g.to; i++) {
+        final pt = Offset(xOf(i), g.y(s._bars[i][4])!);
+        if (i == g.from) {
+          path.moveTo(pt.dx, pt.dy);
+        } else {
+          path.lineTo(pt.dx, pt.dy);
+        }
+      }
+      final gold = s._c('gold', k.gold);
+      if (s._type == 'area') {
+        final fill = Path.from(path)
+          ..lineTo(xOf(g.to - 1), g.plotH)
+          ..lineTo(xOf(g.from), g.plotH)
+          ..close();
+        canvas.drawPath(fill, Paint()..color = gold.withValues(alpha: 0.16));
+      }
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = gold
+          ..strokeWidth = 2
+          ..style = PaintingStyle.stroke,
+      );
     }
     for (final e in mas.entries) {
       final path = Path();
       var started = false;
       for (var i = g.from; i < g.to; i++) {
-        final v = e.value[i];
+        final v = e.value.$1[i];
         if (v == null) continue;
         final pt = Offset(xOf(i), g.y(v)!);
         if (!started) {
@@ -475,7 +569,7 @@ class _Painter extends CustomPainter {
       canvas.drawPath(
         path,
         Paint()
-          ..color = s._indColor(e.key, k)
+          ..color = e.value.$2
           ..strokeWidth = 2
           ..style = PaintingStyle.stroke,
       );

@@ -4,16 +4,19 @@
 // callbacks. Charts are drawn in broker server time like MT5 (GMT+3 in US summer time, GMT+2 otherwise).
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/realtime/market_stream.dart' show Bar;
+import '../../../i18n/i18n.dart';
 import '../../../ui/ui.dart';
 import '../core/market.dart';
 import '../core/trade_math.dart';
 import '../core/workspace.dart';
 import 'chart_bridge.dart';
 import 'chart_surface.dart';
+import 'indicators.dart';
 
 /// UTC unix seconds -> chart time (server time).
 int toChartTime(int utc) => utc + serverOffsetSeconds(DateTime.fromMillisecondsSinceEpoch(utc * 1000, isUtc: true));
@@ -72,7 +75,9 @@ class TerminalChart extends ConsumerStatefulWidget {
     this.onLineTapped,
     this.onLineClosed,
     this.onLongPress,
+    this.chartType = 'candles',
     this.indicators = const [],
+    this.onIndicatorTapped,
   });
 
   /// The market (also the cache key when no source is given).
@@ -82,15 +87,24 @@ class TerminalChart extends ConsumerStatefulWidget {
   final String tf;
   final ChartSource? source;
   final List<ChartLine> lines;
-  final void Function(ChartLine line, double price)? onLineDragged;
+
+  /// A line dropped at `price`. Until a returned future completes the line stays at the drop price on the chart
+  /// (then the chart shows the lines it is given again: the new price once the server confirmed it, else the old one).
+  final FutureOr<void> Function(ChartLine line, double price)? onLineDragged;
   final void Function(ChartLine line)? onLineTapped;
 
   /// The × on a line's chip.
   final void Function(ChartLine line)? onLineClosed;
   final void Function(double price)? onLongPress;
 
-  /// Overlays drawn by the chart page: `ema50`, `sma20` (the web's default chart).
-  final List<String> indicators;
+  /// candles | bars | line | area
+  final String chartType;
+
+  /// Indicator instances drawn by the chart page (the web's own indicator code).
+  final List<IndInstance> indicators;
+
+  /// An indicator's legend row was tapped.
+  final void Function(String uid)? onIndicatorTapped;
 
   /// Widget tests and the web preview draw the native chart (no WebView there).
   static bool forceNative = false;
@@ -107,6 +121,10 @@ class _TerminalChartState extends ConsumerState<TerminalChart> {
   int _gen = 0;
   bool _dark = true;
   ChartPalette? _palette;
+
+  /// A dropped line kept at its drop price until the app's action finished: (id, price).
+  (String, double)? _held;
+  Timer? _holdTimer;
 
   ChartSource get _source {
     final s = widget.source;
@@ -143,17 +161,51 @@ class _TerminalChartState extends ConsumerState<TerminalChart> {
     final sourceChanged = (old.source?.key ?? old.symbol) != (widget.source?.key ?? widget.symbol);
     if (sourceChanged || old.tf != widget.tf) {
       _load();
-    } else if (!_sameLines(old.lines, widget.lines)) {
-      _c.send(ChartCmd.lines(widget.lines));
+      return;
     }
+    if (!listEquals(old.lines, widget.lines)) _sendLines();
+    if (old.chartType != widget.chartType) _c.send(ChartCmd.chartType(widget.chartType));
+    if (!listEquals(old.indicators, widget.indicators)) _c.send(ChartCmd.indicators(_indicatorsJson));
   }
 
-  static bool _sameLines(List<ChartLine> a, List<ChartLine> b) {
-    if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
+  List<Map<String, Object?>> get _indicatorsJson => [for (final i in widget.indicators) i.toJson()];
+
+  /// The lines to draw: the given ones, with a just-dropped line kept at its drop price.
+  void _sendLines() {
+    var h = _held;
+    // the confirmed line is at the drop price: nothing to hold any more
+    if (h != null && widget.lines.any((l) => l.id == h!.$1 && (l.price - h.$2).abs() < 1e-9)) {
+      _held = h = null;
+      _holdTimer?.cancel();
+      _holdTimer = null;
     }
-    return true;
+    final lines = h == null
+        ? widget.lines
+        : [
+            for (final l in widget.lines)
+              l.id == h.$1
+                  ? ChartLine(
+                      id: l.id,
+                      kind: l.kind,
+                      price: h.$2,
+                      label: l.label,
+                      side: l.side,
+                      draggable: l.draggable,
+                      note: l.note,
+                      tone: l.tone,
+                      closable: l.closable,
+                    )
+                  : l,
+          ];
+    _c.send(ChartCmd.lines(lines));
+  }
+
+  void _release() {
+    _holdTimer?.cancel();
+    _holdTimer = null;
+    if (_held == null) return;
+    _held = null;
+    if (mounted) _sendLines();
   }
 
   @override
@@ -162,6 +214,8 @@ class _TerminalChartState extends ConsumerState<TerminalChart> {
       u();
     }
     _unsubs.clear();
+    _holdTimer?.cancel();
+    _c.dispose();
     super.dispose();
   }
 
@@ -169,6 +223,8 @@ class _TerminalChartState extends ConsumerState<TerminalChart> {
 
   Future<void> _load() async {
     final gen = ++_gen;
+    // a fresh chart (another market, a reloaded page) has no drag in progress
+    _c.holdLines = false;
     for (final u in _unsubs) {
       u();
     }
@@ -176,6 +232,7 @@ class _TerminalChartState extends ConsumerState<TerminalChart> {
     final src = _source;
     final tf = widget.tf;
     final key = '${src.key}|$tf';
+    final t = context.t;
     _c.send(
       ChartCmd.init(
         digits: src.digits,
@@ -183,10 +240,16 @@ class _TerminalChartState extends ConsumerState<TerminalChart> {
         palette: _palette!,
         symbol: widget.symbol,
         tf: tf,
-        indicators: widget.indicators,
+        step: kTfSeconds[tf] ?? 60,
+        chartType: widget.chartType,
+        indicators: _indicatorsJson,
+        texts: {
+          'more': t('chart.legend.more', {'count': '{count}'}),
+          'less': t('chart.legend.showLess'),
+        },
       ),
     );
-    _c.send(ChartCmd.lines(widget.lines));
+    _sendLines();
     final cached = _cache[key];
     if (cached != null && cached.isNotEmpty) {
       _data = [...cached];
@@ -223,17 +286,46 @@ class _TerminalChartState extends ConsumerState<TerminalChart> {
     switch (e) {
       case ChartNeedsOlder(:final before):
         unawaited(_older(before));
+      case ChartDragStarted():
+        _c.holdLines = true;
       case ChartLineDragged(:final id, :final price):
+        _c.holdLines = false;
         final l = widget.lines.where((x) => x.id == id).firstOrNull;
-        if (l != null) widget.onLineDragged?.call(l, price);
+        if (l == null) {
+          _sendLines();
+          break;
+        }
+        _holdTimer?.cancel();
+        // a position line does not move (its drag sets the SL or TP): only stops, orders and alerts stay put
+        _held = l.kind == 'pos' ? null : (id, price);
+        _sendLines();
+        final r = widget.onLineDragged?.call(l, price);
+        if (_held == null) break;
+        // a lost answer never pins the line: the given lines win after a while at the latest
+        _holdTimer = Timer(const Duration(seconds: 12), _release);
+        if (r is Future) {
+          // refused: back at once; done: until the confirmed line arrives (or briefly, if it already did)
+          r.then((ok) {
+            if (!mounted || _held?.$1 != id) return;
+            _holdTimer?.cancel();
+            _holdTimer = ok == false ? null : Timer(const Duration(milliseconds: 1500), _release);
+            if (ok == false) _release();
+          }, onError: (Object _) => _release()).ignore();
+        } else {
+          WidgetsBinding.instance.addPostFrameCallback((_) => _release());
+        }
       case ChartLineTapped(:final id):
+        _c.holdLines = false;
         final l = widget.lines.where((x) => x.id == id).firstOrNull;
         if (l != null) widget.onLineTapped?.call(l);
       case ChartLineClosed(:final id):
+        _c.holdLines = false;
         final l = widget.lines.where((x) => x.id == id).firstOrNull;
         if (l != null) widget.onLineClosed?.call(l);
       case ChartLongPress(:final price):
         widget.onLongPress?.call(price);
+      case ChartIndicatorTapped(:final uid):
+        widget.onIndicatorTapped?.call(uid);
       case ChartReady():
         // a reloaded page: draw everything again
         unawaited(_load());

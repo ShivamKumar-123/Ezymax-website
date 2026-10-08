@@ -393,15 +393,37 @@ class _Gate extends ConsumerWidget {
         ),
       );
     }
+    // Opening the account: the web's Splash (brand mark, "Kalks Trader", the connecting line), with the real logo
+    final k = context.k;
+    final cfg = ref.watch(configProvider);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          CupertinoActivityIndicator(color: context.k.fg3),
-          const SizedBox(height: 10),
-          Text(
-            t('trader.splash.connecting', {'server': s.busyLogin != null ? '#${s.busyLogin}' : 'Kalks'}),
-            style: context.text.footnote.copyWith(color: context.k.fg3),
+          KBrandAvatar(size: 64, letter: cfg.tenantDefault ? null : cfg.tenantName.characters.first.toUpperCase()),
+          const SizedBox(height: 18),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (cfg.tenantDefault) KLogo(height: 19, color: k.fg) else Text(cfg.tenantName, style: context.text.headline.copyWith(color: k.fg)),
+              const SizedBox(width: 7),
+              Text(
+                'Trader',
+                style: context.text.headline.copyWith(color: k.fg2, fontWeight: FontWeight.w400),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CupertinoActivityIndicator(radius: 7, color: k.ember),
+              const SizedBox(width: 8),
+              Text(
+                t('trader.splash.connecting', {'server': s.busyLogin != null ? '#${s.busyLogin}' : 'Kalks'}),
+                style: context.text.footnote.copyWith(color: k.fg3, fontFamily: KFonts.mono),
+              ),
+            ],
           ),
         ],
       ),

@@ -20,6 +20,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/auth/auth_controller.dart';
+import '../../core/config/app_config.dart';
 import '../../core/format/format.dart';
 import '../../core/models/account.dart';
 import '../../core/models/trading.dart';
@@ -36,6 +37,7 @@ import 'dashboard_data.dart';
 import 'widgets/accounts_panel.dart';
 import 'widgets/balance_panel.dart';
 import 'widgets/banner_slot.dart';
+import 'widgets/hero_card.dart';
 import 'widgets/list_cards.dart';
 import 'widgets/markets_cards.dart';
 import 'widgets/more_cards.dart';
@@ -353,6 +355,8 @@ class DashboardScreen extends ConsumerWidget {
             ],
           ),
         ),
+        // 1a. the Kalks brand hero (website imagery; stock Kalks brand only)
+        if (ref.watch(configProvider).tenantDefault) ...[const SizedBox(height: 16), const DashboardHero()],
         // 1b. Ask Kalks AI
         if (!readOnly) ...[const SizedBox(height: 16), AskAi(chips: aiChips)],
         const SizedBox(height: 24),

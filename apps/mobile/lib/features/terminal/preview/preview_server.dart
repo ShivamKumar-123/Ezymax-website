@@ -241,6 +241,10 @@ class PreviewServer {
       ('GBPUSD', 'sell', 0.5, 1.27712, 1.27801, -44.5, 90),
       ('BTCUSD', 'buy', 0.05, 61980, 63120, 57.0, 140),
       ('USDJPY', 'buy', 1.0, 148.812, 149.204, 262.4, 200),
+      // older trades, so the History periods (week / month / 3 months / all) differ
+      ('EURUSD', 'sell', 0.5, 1.09120, 1.09265, -72.5, 24 * 12),
+      ('XAUUSD', 'buy', 0.1, 2588.4, 2611.9, 235.0, 24 * 45),
+      ('BTCUSD', 'sell', 0.02, 64210, 63380, 16.6, 24 * 160),
     ];
     for (final a in [pro, cent, demo]) {
       for (var i = 0; i < hist.length; i++) {
@@ -456,6 +460,22 @@ class PreviewServer {
     return (profit: profit, swap: swap, equity: a.balance + profit + swap, margin: margin, each: each);
   }
 
+  /// `trade/history?from&to&page&limit`: the account's deals in the range, newest first, paged like the API.
+  Map<String, dynamic> _history(_Account a, Map<String, String> query) {
+    final from = DateTime.tryParse(query['from'] ?? '');
+    final to = DateTime.tryParse(query['to'] ?? '');
+    final page = (int.tryParse(query['page'] ?? '') ?? 1).clamp(1, 100000);
+    final limit = (int.tryParse(query['limit'] ?? '') ?? 100).clamp(1, 500);
+    final all = a.deals.reversed.where((d) {
+      final t = DateTime.tryParse('${d['time']}');
+      if (t == null) return true;
+      return (from == null || !t.isBefore(from)) && (to == null || !t.isAfter(to));
+    }).toList();
+    final start = (page - 1) * limit;
+    final deals = start >= all.length ? const <Map<String, dynamic>>[] : all.sublist(start, (start + limit).clamp(0, all.length));
+    return {'deals': deals, 'orders': <Object>[], 'page': page, 'limit': limit, 'total': all.length};
+  }
+
   Map<String, dynamic> _state(_Account a, {int historyLimit = 200}) => {
     'account': _accountJson(a),
     'positions': a.positions,
@@ -551,7 +571,7 @@ class PreviewServer {
       case 'state':
         return (200, _state(a, historyLimit: int.tryParse(query['historyLimit'] ?? '') ?? 200));
       case 'history':
-        return (200, {'deals': a.deals.reversed.toList(), 'orders': <Object>[], 'page': 1, 'limit': 500, 'total': a.deals.length});
+        return (200, _history(a, query));
       case 'controls':
         return (200, {'tradingDisabled': false, 'closeOnly': false, 'maxLot': null});
       case 'stream-ticket':
