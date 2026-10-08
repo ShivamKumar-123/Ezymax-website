@@ -82,7 +82,7 @@ function HeadlineStat({
   value,
   label,
 }: {
-  icon: React.ComponentType<{ className?: string; size?: number }>;
+  icon: IconType;
   value: string;
   label: string;
 }) {
