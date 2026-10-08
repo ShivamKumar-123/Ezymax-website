@@ -29,6 +29,8 @@ import {
   Sparkles,
   ShoppingBag,
   Coins,
+  PanelLeftOpen,
+  PanelLeftClose,
 } from 'lucide-react';
 
 export type LeafItem = { label: string; href: string; icon: any; newTab?: boolean };
@@ -131,9 +133,28 @@ function ActivePill() {
   );
 }
 
+/**
+ * The name of a railed item, shown beside it on hover.
+ *
+ * Rendered only while the rail is collapsed — expanded, the row carries its
+ * own label and a second copy would just cover the next item.
+ */
+function RailTip({ label }: { label: string }) {
+  return (
+    <span
+      role="tooltip"
+      className="pointer-events-none absolute left-[calc(100%+10px)] top-1/2 z-[80] hidden -translate-y-1/2 translate-x-1 whitespace-nowrap rounded-lg border border-white/10 bg-[#161210] px-2.5 py-1.5 text-[12px] font-medium text-[#f3efe9] opacity-0 shadow-[0_12px_28px_-12px_rgba(0,0,0,0.9)] transition-[opacity,transform] duration-150 group-hover:translate-x-0 group-hover:opacity-100 lg:block"
+    >
+      {label}
+    </span>
+  );
+}
+
 export default function AppSidebar() {
   const pathname = usePathname();
-  const { sidebarOpen, setSidebarOpen } = useShellStore();
+  const { sidebarOpen, setSidebarOpen, railExpanded, toggleRail } = useShellStore();
+  /* The drawer is always labelled; only the desktop rail collapses. */
+  const railed = !railExpanded;
   const reduce = useReducedMotion();
 
   // Auto-expand the group whose children include the current route, but let
@@ -179,23 +200,54 @@ export default function AppSidebar() {
              the shell's flex row — no fixed, no transform. */
           'z-[70] h-full w-[260px] flex flex-col overflow-hidden',
           'fixed top-0 left-0 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
-          'lg:static lg:translate-x-0 lg:transition-none lg:shrink-0',
+          'lg:static lg:translate-x-0 lg:shrink-0 lg:transition-[width] lg:duration-300 lg:ease-[cubic-bezier(0.22,1,0.36,1)]',
+          railed ? 'lg:w-[72px]' : 'lg:w-[260px]',
           /* Dark in both themes. The rail is the brand surface, and the
              wordmark is a glow render that only reads on a dark ground. */
           'force-dark border-r border-white/10 bg-[#0b0908]',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
-        <div className="flex items-center justify-between px-4 pt-4 pb-3 gap-2">
-          <Link href="/dashboard" className="flex items-center min-w-0 group">
-            {/* Ezymex logo image (no text — the asset carries the branding).
-                Height-based sizing keeps the horizontal logo's aspect ratio. */}
+        <div
+          className={cn(
+            'flex items-center gap-2 px-4 pt-4 pb-3',
+            railed ? 'lg:flex-col lg:px-2 lg:gap-3' : 'justify-between',
+          )}
+        >
+          <Link href="/dashboard" className="flex min-w-0 items-center group">
+            {/* Railed, the wide lockup has nowhere to go, so the square cut
+                of the mark stands in for it. */}
             <img
               src="/images/ezymex-logo.png"
               alt="Ezymex"
-              className="h-9 w-auto object-contain drop-shadow-[0_0_20px_rgba(255,106,0,0.12)] transition-transform duration-300 group-hover:scale-[1.03]"
+              className={cn(
+                'h-9 w-auto object-contain drop-shadow-[0_0_20px_rgba(255,106,0,0.12)] transition-transform duration-300 group-hover:scale-[1.03]',
+                railed && 'lg:hidden',
+              )}
+            />
+            <img
+              src="/images/ezymex_icon.png"
+              alt="Ezymex"
+              className={cn(
+                'hidden h-8 w-8 object-contain drop-shadow-[0_0_10px_rgba(255,106,0,0.4)]',
+                railed && 'lg:block',
+              )}
             />
           </Link>
+
+          {/* Desktop: widen or narrow the rail. */}
+          <button
+            type="button"
+            onClick={toggleRail}
+            title={railed ? 'Expand menu' : 'Collapse menu'}
+            aria-label={railed ? 'Expand menu' : 'Collapse menu'}
+            aria-expanded={!railed}
+            className="hidden lg:grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-white/10 text-text-secondary transition-colors hover:border-[#FF6A00]/50 hover:text-[#FF6A00] active:scale-95"
+          >
+            {railed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+          </button>
+
+          {/* Mobile: close the drawer. */}
           <button
             type="button"
             onClick={() => setSidebarOpen(false)}
@@ -217,10 +269,18 @@ export default function AppSidebar() {
               <motion.div key={section.label} className="mb-1.5" variants={sectionV}>
                 <motion.div
                   variants={itemV}
-                  className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.09em] text-text-tertiary select-none"
+                  className={cn(
+                    'px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.09em] text-text-tertiary select-none',
+                    railed && 'lg:hidden',
+                  )}
                 >
                   {section.label}
                 </motion.div>
+                {/* Railed, the caption is replaced by a rule so the groups
+                    stay legible without their names. */}
+                {railed && (
+                  <div className="mx-3 my-2 hidden h-px bg-white/10 lg:block" aria-hidden />
+                )}
                 {section.items.map((entry) => {
             if (isGroup(entry)) {
               const expanded = openGroups.has(entry.key);
@@ -232,15 +292,26 @@ export default function AppSidebar() {
                 <motion.div key={entry.key} className="mb-0.5" variants={itemV}>
                   <button
                     type="button"
-                    onClick={() => toggleGroup(entry.key)}
+                    onClick={() => {
+                      // In the rail there is no room for a submenu, so the
+                      // first click widens it and reveals the children.
+                      if (railed && window.innerWidth >= 1024) {
+                        toggleRail();
+                        if (!openGroups.has(entry.key)) toggleGroup(entry.key);
+                        return;
+                      }
+                      toggleGroup(entry.key);
+                    }}
                     className={cn(
                       'group relative w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors border border-transparent',
+                      railed && 'lg:justify-center lg:px-0',
                       groupActive
                         ? 'text-text-primary'
                         : 'text-text-secondary hover:text-text-primary hover:bg-bg-hover',
                     )}
                   >
                     {showGroupPill && <ActivePill />}
+                    {railed && <RailTip label={entry.label} />}
                     <entry.icon
                       size={17}
                       strokeWidth={1.85}
@@ -251,9 +322,19 @@ export default function AppSidebar() {
                           : 'drop-shadow-[0_0_6px_rgba(255,106,0,0.35)]',
                       )}
                     />
-                    <span className="relative z-10 truncate flex-1 text-left transition-transform duration-300 group-hover:translate-x-0.5">{entry.label}</span>
+                    <span
+                      className={cn(
+                        'relative z-10 truncate flex-1 text-left transition-transform duration-300 group-hover:translate-x-0.5',
+                        railed && 'lg:hidden',
+                      )}
+                    >
+                      {entry.label}
+                    </span>
                     <motion.span
-                      className="relative z-10 shrink-0 text-text-tertiary"
+                      className={cn(
+                        'relative z-10 shrink-0 text-text-tertiary',
+                        railed && 'lg:hidden',
+                      )}
                       animate={{ rotate: expanded ? 180 : 0 }}
                       transition={{ duration: 0.3, ease: EASE }}
                     >
@@ -270,7 +351,7 @@ export default function AppSidebar() {
                         transition={{ duration: 0.28, ease: EASE }}
                         className="overflow-hidden"
                       >
-                        <div className="ml-3 border-l border-border-primary pl-1 mt-0.5 mb-1">
+                        <div className={cn('ml-3 border-l border-border-primary pl-1 mt-0.5 mb-1', railed && 'lg:hidden')}>
                           {entry.children.map((child) => {
                             const isActive = pathname === child.href || pathname.startsWith(`${child.href}/`);
                             return (
@@ -316,12 +397,14 @@ export default function AppSidebar() {
                   }}
                   className={cn(
                     'group relative flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors mb-0.5 border border-transparent',
+                    railed && 'lg:justify-center lg:px-0',
                     isActive
                       ? 'text-text-primary'
                       : 'text-text-secondary hover:text-text-primary hover:bg-bg-hover',
                   )}
                 >
                   {isActive && <ActivePill />}
+                  {railed && <RailTip label={entry.label} />}
                   <entry.icon
                     size={17}
                     strokeWidth={1.85}
@@ -332,7 +415,14 @@ export default function AppSidebar() {
                         : 'drop-shadow-[0_0_6px_rgba(255,106,0,0.35)]',
                     )}
                   />
-                  <span className="relative z-10 truncate transition-transform duration-300 group-hover:translate-x-0.5">{entry.label}</span>
+                  <span
+                    className={cn(
+                      'relative z-10 truncate transition-transform duration-300 group-hover:translate-x-0.5',
+                      railed && 'lg:hidden',
+                    )}
+                  >
+                    {entry.label}
+                  </span>
                 </Link>
               </motion.div>
             );

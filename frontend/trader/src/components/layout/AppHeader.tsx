@@ -8,7 +8,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { NotificationBell } from '@/components/NotificationListener';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import api from '@/lib/api/client';
-import { ChevronDown, Menu, Sparkles, Wallet } from 'lucide-react';
+import { ChevronDown, Menu, Search, Sparkles, Wallet } from 'lucide-react';
 
 function formatUsd(n: number) {
   return new Intl.NumberFormat('en-US', {
@@ -73,10 +73,10 @@ export default function AppHeader() {
     /* Outer wrapper — sits on #060606 page bg */
     <div className="px-2 sm:px-3 pt-2 sm:pt-3 pb-0 shrink-0">
       <header
-        className="relative h-[56px] sm:h-[65px] flex items-center justify-between gap-2 px-3 sm:px-5 rounded-2xl bg-bg-secondary border border-border-primary shadow-[0_6px_24px_-16px_rgba(0,0,0,0.55)]"
+        className="lg-surface relative flex h-[56px] items-center justify-between gap-2 px-3 sm:h-[65px] sm:px-5"
       >
-        {/* Lime hairline along the top edge — the same accent the sidebar and
-            the More menu use, so the chrome reads as one system. */}
+        {/* An accent hairline over the glass's own highlight — just enough
+            to tie the bar to the rail. */}
         <span
           aria-hidden
           className="pointer-events-none absolute inset-x-6 top-0 h-px rounded-full bg-gradient-to-r from-transparent via-[#FF6A00]/40 to-transparent"
@@ -95,8 +95,19 @@ export default function AppHeader() {
           </button>
         </div>
 
-        {/* RIGHT — outline pill, solid CTA, circular icon buttons, avatar.
-            ml-auto now that the centre nav is gone. */}
+        {/* CENTRE — search. With the nav in the rail this is the quickest
+            route to anything, and it fills the space the nav left. */}
+        <button
+          type="button"
+          onClick={() => router.push('/more')}
+          className="lg-surface-raised ml-1 hidden h-10 min-w-0 flex-1 items-center gap-2.5 px-3.5 text-left text-[13px] text-text-tertiary transition-colors hover:text-text-secondary md:flex md:max-w-sm"
+          aria-label="Search the app"
+        >
+          <Search size={15} className="shrink-0" />
+          <span className="truncate">Search</span>
+        </button>
+
+        {/* RIGHT — outline pill, solid CTA, circular icon buttons, avatar. */}
         <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
           {/* Rewards — outline pill. Label appears once there's room. */}
           <Link
