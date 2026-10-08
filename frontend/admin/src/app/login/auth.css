@@ -1,23 +1,24 @@
 /* ============================================================
    Ezymax auth — flat 50/50 split login/signup.
    Left: solid ink brand panel (faint dot-grid, orange accents).
-   Right: white form column. Deliberately anti-glass: no blur,
+   Right: raised dark form column. Deliberately anti-glass: no blur,
    no gradients-as-decoration, two flat surfaces, hard contrast.
+   Was a white column; the platform is dark throughout now.
    Space Grotesk = wordmark + headline; Inter = all form UI.
    ============================================================ */
 
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap");
 
 :root {
-  --auth-ink: #0d1220;
-  --auth-muted: #5b6478;
-  --auth-border: #dfe2ea;
-  --auth-hairline: #e6e8ee;
+  --auth-ink: #f3efe9;
+  --auth-muted: #a39e98;
+  --auth-border: rgb(255 255 255 / 0.12);
+  --auth-hairline: rgb(255 255 255 / 0.07);
   --auth-panel: #060606;
   --auth-panel-dot: #241d18;
   --auth-accent: #FF6A00;
   --auth-accent-soft: #FFB380;
-  --auth-accent-deep: #c2410c; /* legible orange-family link colour on white */
+  --auth-accent-deep: #ffb380; /* the light end of the ramp, for links on dark */
   --auth-ring: rgba(255, 106, 0, 0.28);
   --auth-font-display: "Space Grotesk", system-ui, sans-serif;
   --auth-font-ui: "Inter", system-ui, sans-serif;
@@ -26,7 +27,7 @@
 /* ── shell: full-bleed 50/50 split ── */
 .auth-wrapper {
   min-height: 100svh;
-  background: #ffffff;
+  background: #060606;
   font-family: var(--auth-font-ui);
   color: var(--auth-ink);
 }
@@ -202,7 +203,7 @@
 /* ── RIGHT: white form column ── */
 .auth-right {
   position: relative;
-  background: #ffffff;
+  background: #0e0a08;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -309,7 +310,7 @@
 
 .auth-field__input {
   width: 100%;
-  background: #ffffff;
+  background: rgb(255 255 255 / 0.03);
   border: 1px solid var(--auth-border);
   border-radius: 10px;
   padding: 11px 14px;
@@ -418,7 +419,7 @@
 }
 
 .auth-btn--outline {
-  background: #ffffff;
+  background: rgb(255 255 255 / 0.02);
   color: var(--auth-ink);
   border: 1px solid var(--auth-border);
 }
@@ -501,7 +502,7 @@
 .auth-modal {
   width: 100%;
   max-width: 380px;
-  background: #ffffff;
+  background: #121010;
   border: 1px solid var(--auth-border);
   border-radius: 14px;
   padding: 22px;

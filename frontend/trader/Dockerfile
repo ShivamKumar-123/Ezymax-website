@@ -1,9 +1,13 @@
-FROM node:20-alpine AS deps
+FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci --legacy-peer-deps
+# npm 10 on node 20 fails this install with "Exit handler never called!"
+# and still exits 0, so the build carries on with an empty node_modules and
+# only dies two stages later on "next: not found". Node 22 ships the fixed
+# npm; the guard makes any future silent failure stop here instead.
+RUN npm ci --legacy-peer-deps && test -x node_modules/.bin/next
 
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -26,7 +30,7 @@ ENV NEXT_PUBLIC_IB_PORTAL_URL=$NEXT_PUBLIC_IB_PORTAL_URL
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 RUN npm run build
 
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
