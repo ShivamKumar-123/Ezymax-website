@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button, Chip, CopyButton, Dialog, IconButton, Menu, Money, cn, type ButtonProps } from "@/components/kit";
 import { useT } from "@ezymex/i18n/react";
 import { useReadOnly } from "@/components/session";
+import { useModule, usePageOn } from "@/components/tenant-config";
 import { STATUS_LABEL, curOf, errorToast, fmtLevel, levelTone, openTerminal, serverOf, tradingApi, type EngineAccount } from "./api";
 import { DeleteAccountDialog, FlavorChip, RenameDialog, accountFlavor, copyingName } from "./archive";
 import { CloseAccountDialog } from "./closure";
@@ -115,6 +116,9 @@ export function FundDialog({ a, open, onOpenChange }: { a: Pick<EngineAccount, "
 export function FundButton({ a, size = "sm", variant = "surface" }: { a: Pick<EngineAccount, "login" | "cent" | "groupName">; size?: ButtonProps["size"]; variant?: ButtonProps["variant"] }) {
   const t = useT();
   const [open, setOpen] = React.useState(false);
+  // accounts are funded from the wallet: nothing to offer while the broker has it switched off
+  const wallet = useModule("wallet");
+  if (!wallet) return null;
   return (
     <>
       <Button size={size} variant={variant} onClick={() => setOpen(true)}>
@@ -235,13 +239,16 @@ export function AccountActions({ a, onChanged }: { a: EngineAccount; onChanged?:
 /** Ezymex Trader for a copy-trading account: the copy service trades it, the client watches P&L and manages the copy. */
 function CopyActions({ a }: { a: EngineAccount }) {
   const t = useT();
+  const copyOn = usePageOn()("/social/copy");
   return (
     <>
-      <Link href="/social/copy">
-        <Button size="sm" variant="surface">
-          <Users /> {t("accounts.copy.manage")}
-        </Button>
-      </Link>
+      {copyOn && (
+        <Link href="/social/copy">
+          <Button size="sm" variant="surface">
+            <Users /> {t("accounts.copy.manage")}
+          </Button>
+        </Link>
+      )}
       <TradeButton a={a} variant="surface" label={t("accounts.copy.watchPnl")} />
     </>
   );

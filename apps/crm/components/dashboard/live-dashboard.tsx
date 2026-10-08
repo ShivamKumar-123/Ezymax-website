@@ -46,6 +46,7 @@ import { OverviewLayout, SectionTitle } from "@/components/dashboard/home/overvi
 import { RANGE_DAYS, StatisticCard, type StatMode, type StatRange } from "@/components/dashboard/home/statistic-card";
 import type { TrendPoint } from "@/components/dashboard/home/trend-chart";
 import { AiFacts, AiLink, AskAi, type AiChip } from "@/components/ai/ask-ai";
+import { useModule, usePageOn } from "@/components/tenant-config";
 
 function greeting() {
   const h = new Date().getHours();
@@ -388,16 +389,26 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
   const t = useT();
   const f = useFormat();
   const readOnly = useReadOnly();
+  // modules the broker switched off (D112) leave no trace here: their KPIs, rows, actions and cards go, and their data
+  // isn't fetched
+  const pageOn = usePageOn();
+  const walletOn = useModule("wallet");
+  const rewardsOn = useModule("rewards");
+  const newsOn = useModule("news");
+  const calendarOn = useModule("calendar");
+  const supportOn = useModule("support");
+  // Ask Ezymex AI is answered by the support chat's bot
+  const askAiOn = useModule("ai_assistant&support");
   const acc = useAccounts(10000);
   // Archived / closed accounts live on the Accounts page's Archived tab only.
   const accounts = React.useMemo(() => acc.data?.accounts.filter((a) => !isArchived(a)) ?? null, [acc.data]);
   const totals = liveTotals(accounts ?? []);
-  const wallet = useWalletFunded();
+  const wallet = useWalletFunded(walletOn);
   const usdt = wallet?.balances.find((b) => b.currency === "USDT");
   const walletTotal = usdt ? Number(usdt.available) + Number(usdt.locked) : wallet ? 0 : null;
-  const rewards = useGrowth<Rewards>("rewards");
-  const activity = useWallet<Page<ActivityItem>>("activity?limit=5", 30000);
-  const cfg = useWallet<WalletConfig>("config");
+  const rewards = useGrowth<Rewards>(rewardsOn ? "rewards" : null);
+  const activity = useWallet<Page<ActivityItem>>(walletOn ? "activity?limit=5" : null, 30000);
+  const cfg = useWallet<WalletConfig>(walletOn ? "config" : null);
   const [hour, setHour] = React.useState<string>("welcome");
   React.useEffect(() => setHour(greeting()), []);
 
@@ -420,7 +431,9 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
   const ordered = React.useMemo(() => [...totals.live, ...totals.demo, ...(accounts ?? []).filter((a) => isPropAccount(a))], [accounts, totals.live, totals.demo]);
   const cards = React.useMemo(() => (accounts ? ordered.slice(0, 8).map((a) => toCard(a, t)) : null), [accounts, ordered, t]);
 
-  const list = steps(me, accounts, t, f).map((s) => (s.key === "wallet" ? walletStep(wallet, t) : s));
+  const list = steps(me, accounts, t, f)
+    .filter((s) => walletOn || s.key !== "wallet")
+    .map((s) => (s.key === "wallet" ? walletStep(wallet, t) : s));
   const done = list.filter((s) => s.state === "done").length;
   const checklist: ListRowItem[] = list.map((s) => {
     const chip = STATE_CHIP[s.state];
@@ -485,25 +498,33 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
     : cfg.error
       ? []
       : null;
-  const linkedRows: ListRowItem[] = [
-    { key: "trader", icon: <CandlestickChart />, tone: "accent", title: "Ezymex Trader", sub: t("dashboard.trader.chip"), action: { label: t("common.open"), href: TERMINAL_URL, external: true } },
-    { key: "copy", icon: <Copy />, tone: "pink", title: t("shell.nav.copyTrading"), sub: t("shell.nav.social"), action: { label: t("common.open"), href: "/social" } },
-    { key: "ib", icon: <Award />, tone: "amber", title: t("shell.nav.partner"), sub: t("dashboard.partner.chip"), action: { label: t("common.open"), href: "/partner" } },
-    {
-      key: "loyalty",
-      icon: <Gift />,
-      tone: "lavender",
-      title: t("shell.nav.loyalty"),
-      sub: r ? t("dashboard.home.points", { points: r.points.balance.toLocaleString("en-US") }) : t("shell.nav.rewards"),
-      ...(r ? { status: { label: r.tier.name, tone: "ember" as const } } : { action: { label: t("common.open"), href: "/rewards/loyalty" } }),
-    },
-  ];
+  // [the page a row stands for, the row]: rows of switched-off modules drop out
+  const linkedRows: ListRowItem[] = (
+    [
+      [null, { key: "trader", icon: <CandlestickChart />, tone: "accent", title: "Ezymex Trader", sub: t("dashboard.trader.chip"), action: { label: t("common.open"), href: TERMINAL_URL, external: true } }],
+      ["/social", { key: "copy", icon: <Copy />, tone: "pink", title: t("shell.nav.copyTrading"), sub: t("shell.nav.social"), action: { label: t("common.open"), href: "/social" } }],
+      ["/partner", { key: "ib", icon: <Award />, tone: "amber", title: t("shell.nav.partner"), sub: t("dashboard.partner.chip"), action: { label: t("common.open"), href: "/partner" } }],
+      [
+        "/rewards/loyalty",
+        {
+          key: "loyalty",
+          icon: <Gift />,
+          tone: "lavender",
+          title: t("shell.nav.loyalty"),
+          sub: r ? t("dashboard.home.points", { points: r.points.balance.toLocaleString("en-US") }) : t("shell.nav.rewards"),
+          ...(r ? { status: { label: r.tier.name, tone: "ember" as const } } : { action: { label: t("common.open"), href: "/rewards/loyalty" } }),
+        },
+      ],
+    ] as [string | null, ListRowItem][]
+  )
+    .filter(([page]) => !page || pageOn(page))
+    .map(([, row]) => row);
 
   // Ask Ezymex AI: suggestions answered by the real support bot; account questions also show the client's own figures
   const liveAccts = totals.live;
   const money2 = (a: EngineAccount, v: number) => `${curOf(a)}${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const aiChips: AiChip[] = [
-    { key: "deposit", label: t("dashboard.ai.chip.deposit"), extra: <AiLink href="/wallet/deposit">{t("common.deposit")}</AiLink> },
+    ...(walletOn ? [{ key: "deposit", label: t("dashboard.ai.chip.deposit"), extra: <AiLink href="/wallet/deposit">{t("common.deposit")}</AiLink> }] : []),
     {
       key: "freeMargin",
       label: t("dashboard.ai.chip.freeMargin"),
@@ -521,7 +542,7 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
     <div className="pb-16">
       <BannerSlot placement="dashboard" />
       <OverviewLayout
-        ai={readOnly ? undefined : <AskAi chips={aiChips} />}
+        ai={readOnly || !askAiOn ? undefined : <AskAi chips={aiChips} />}
         header={
           <PageHeader
             className="mb-0"
@@ -539,7 +560,8 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
           />
         }
         kpis={
-          <div className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 [&>*]:w-[78%] [&>*]:shrink-0 [&>*]:snap-start sm:[&>*]:w-auto">
+          // an odd card out (wallet or rewards switched off) takes the full row
+          <div className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 [&>*]:w-[78%] [&>*]:shrink-0 [&>*]:snap-start sm:[&>*]:w-auto sm:[&>*:last-child:nth-child(odd)]:col-span-2">
             <KpiCard
               label={t("dashboard.equity.title")}
               icon={<TrendingUp />}
@@ -558,30 +580,34 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
               href="/portfolio/analytics"
               delay={0.05}
             />
-            <KpiCard
-              label={t("dashboard.home.walletBalance")}
-              icon={<Wallet />}
-              value={walletTotal !== null ? <Money value={walletTotal} countUp={false} /> : "—"}
-              accent="var(--k-info)"
-              footer={
-                <div className="flex items-center gap-2">
-                  <CoinIcon coin="usdt" size={20} />
-                  <span className="text-[12px] font-semibold text-fg-3">USDT · TRC20 · BEP20</span>
-                </div>
-              }
-              href="/wallet"
-              delay={0.1}
-            />
-            <KpiCard
-              label={t("dashboard.home.rewards")}
-              icon={<Award />}
-              value={r ? <Money value={r.points.balance * r.pointValue} countUp={false} /> : "—"}
-              accent="var(--k-gold)"
-              chipTone="gold"
-              chip={r ? t("dashboard.home.points", { points: r.points.balance.toLocaleString("en-US") }) : t("shell.nav.loyalty")}
-              href="/rewards/loyalty"
-              delay={0.15}
-            />
+            {walletOn && (
+              <KpiCard
+                label={t("dashboard.home.walletBalance")}
+                icon={<Wallet />}
+                value={walletTotal !== null ? <Money value={walletTotal} countUp={false} /> : "—"}
+                accent="var(--k-info)"
+                footer={
+                  <div className="flex items-center gap-2">
+                    <CoinIcon coin="usdt" size={20} />
+                    <span className="text-[12px] font-semibold text-fg-3">USDT · TRC20 · BEP20</span>
+                  </div>
+                }
+                href="/wallet"
+                delay={0.1}
+              />
+            )}
+            {rewardsOn && (
+              <KpiCard
+                label={t("dashboard.home.rewards")}
+                icon={<Award />}
+                value={r ? <Money value={r.points.balance * r.pointValue} countUp={false} /> : "—"}
+                accent="var(--k-gold)"
+                chipTone="gold"
+                chip={r ? t("dashboard.home.points", { points: r.points.balance.toLocaleString("en-US") }) : t("shell.nav.loyalty")}
+                href="/rewards/loyalty"
+                delay={0.15}
+              />
+            )}
           </div>
         }
         statistic={<StatisticCard mode={mode} onMode={setMode} range={range} onRange={setRange} points={series?.points ?? (chart.loading ? null : [])} compare={series?.compare} loading={chart.loading} />}
@@ -613,8 +639,12 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
         activity={
           <ActivityTabs
             tabs={[
-              { key: "history", label: t("dashboard.home.history"), rows: historyRows, empty: t("wallet.recent.emptyText"), more: { label: t("common.viewAll"), href: "/wallet/history" } },
-              { key: "funding", label: t("dashboard.home.funding"), rows: fundingRows, empty: t("wallet.recent.emptyText") },
+              ...(walletOn
+                ? [
+                    { key: "history", label: t("dashboard.home.history"), rows: historyRows, empty: t("wallet.recent.emptyText"), more: { label: t("common.viewAll"), href: "/wallet/history" } },
+                    { key: "funding", label: t("dashboard.home.funding"), rows: fundingRows, empty: t("wallet.recent.emptyText") },
+                  ]
+                : []),
               { key: "linked", label: t("dashboard.home.linked"), rows: linkedRows, empty: "" },
             ]}
           />
@@ -625,7 +655,7 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
             loading={!accounts && !acc.error}
             chip={todayPct !== null ? <span dir="ltr">{`${todayPct >= 0 ? "+" : ""}${todayPct.toFixed(2)}%`}</span> : undefined}
             chipTone={todayPct !== null && todayPct < 0 ? "down" : "up"}
-            sub={t("dashboard.home.totalBalanceSub")}
+            sub={walletOn ? t("dashboard.home.totalBalanceSub") : t("profile.stat.liveAccounts")}
             readOnly={readOnly}
           />
         }
@@ -656,17 +686,26 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
           </FeedGuard>
         </Reveal>
       </div>
-      <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-        <Reveal delay={0.05}>
-          <LiveCalendarCard />
-        </Reveal>
-        <Reveal delay={0.1}>
-          <LiveNewsCard />
-        </Reveal>
-        <Reveal delay={0.15} className="md:col-span-2 xl:col-span-1">
-          <LiveWorldCard />
-        </Reveal>
-      </div>
+      {(newsOn || calendarOn) && (
+        // the calendar card, the news card and the news map; a lone calendar card takes the row
+        <div className={cn("mt-5 grid grid-cols-1 gap-5", newsOn && "md:grid-cols-2", newsOn && calendarOn && "xl:grid-cols-3")}>
+          {calendarOn && (
+            <Reveal delay={0.05}>
+              <LiveCalendarCard />
+            </Reveal>
+          )}
+          {newsOn && (
+            <>
+              <Reveal delay={0.1}>
+                <LiveNewsCard />
+              </Reveal>
+              <Reveal delay={0.15} className={cn(calendarOn && "md:col-span-2 xl:col-span-1")}>
+                <LiveWorldCard />
+              </Reveal>
+            </>
+          )}
+        </div>
+      )}
 
       <SectionTitle>{t("dashboard.home.moreTitle")}</SectionTitle>
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -680,9 +719,11 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
           <SessionsCard />
         </Reveal>
       </div>
-      <Reveal delay={0.05} className="mt-5 block">
-        <SupportCard />
-      </Reveal>
+      {supportOn && (
+        <Reveal delay={0.05} className="mt-5 block">
+          <SupportCard />
+        </Reveal>
+      )}
     </div>
   );
 }

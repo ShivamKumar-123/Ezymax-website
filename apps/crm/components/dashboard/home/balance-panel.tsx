@@ -1,16 +1,19 @@
 "use client";
 
 // Right column of the dashboard: total balance in large type with a change chip, the two main money actions
-// (Deposit / Withdraw, near-black) with Transfer next to them, and the quick actions row.
+// (Deposit / Withdraw, near-black) with Transfer next to them, and the quick actions row. Actions whose module the broker
+// switched off (wallet, copy trading, support…) aren't offered.
 
 import * as React from "react";
 import Link from "next/link";
 import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, Plus } from "lucide-react";
 import { Button, ChangeChip, IconTile, Money, Skeleton, cn, type ChipTone, type TileTone } from "@/components/kit";
 import { useT } from "@ezymex/i18n/react";
+import { useModule, usePageOn } from "@/components/tenant-config";
 
 export function BalancePanel({ total, chip, chipTone = "up", sub, loading, readOnly }: { total: number | null; chip?: React.ReactNode; chipTone?: ChipTone; sub?: React.ReactNode; loading?: boolean; readOnly?: boolean }) {
   const t = useT();
+  const wallet = useModule("wallet");
   return (
     <section className="text-center">
       <div className="text-[15px] font-medium text-fg-2">{t("dashboard.home.totalBalance")}</div>
@@ -23,7 +26,7 @@ export function BalancePanel({ total, chip, chipTone = "up", sub, loading, readO
         </div>
       )}
       {sub && <div className="mt-2 text-[12px] text-fg-3">{sub}</div>}
-      {!readOnly && (
+      {!readOnly && wallet && (
         <>
           <div className="mt-6 grid grid-cols-2 gap-2.5">
             <Link href="/wallet/deposit" className="block">
@@ -53,11 +56,14 @@ export type QuickAction = { key: string; label: string; href: string; icon: Reac
 /** Round pastel shortcuts (the reference's "Quick transfer" avatars), plus a dashed "+" to open an account. */
 export function QuickActions({ items, title }: { items: QuickAction[]; title: string }) {
   const t = useT();
+  const pageOn = usePageOn();
+  const shown = items.filter((q) => q.external || pageOn(q.href)).slice(0, 4);
   return (
     <section>
       <h3 className="k-display text-[17px] font-semibold tracking-[-0.01em]">{title}</h3>
-      <div className="mt-4 grid grid-cols-5 gap-2">
-        {items.slice(0, 4).map((q) => {
+      {/* one column per shortcut plus "Open account" (five at most), so a hidden one leaves no hole */}
+      <div className="mt-4 grid gap-2" style={{ gridTemplateColumns: `repeat(${shown.length + 1}, minmax(0, 1fr))` }}>
+        {shown.map((q) => {
           const body = (
             <>
               <IconTile tone={q.tone} size={52} className="!rounded-full transition-transform group-hover:-translate-y-0.5 [&_svg]:size-[21px]">

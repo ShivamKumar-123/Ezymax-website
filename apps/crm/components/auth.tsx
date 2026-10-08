@@ -4,9 +4,15 @@ import * as React from "react";
 import { ArrowRight } from "lucide-react";
 import { Button, cn, useBrand } from "@/components/kit";
 import { useT, Trans } from "@ezymex/i18n/react";
+import { useFlag } from "@/components/tenant-config";
 
 /** "Sign in with Google" is shown only once Google OAuth is configured (NEXT_PUBLIC_GOOGLE_LOGIN=1). */
 export const GOOGLE_LOGIN = process.env.NEXT_PUBLIC_GOOGLE_LOGIN === "1";
+
+/** Google sign-in on this page: configured, and not switched off by the broker (flag google_login). */
+export function useGoogleLogin(): boolean {
+  return useFlag("google_login") && GOOGLE_LOGIN;
+}
 
 /** Friendly messages for /login?google_error=... and /register?google_error=... (set by /api/auth/google/callback). Text: auth.google.error.<code>. */
 export const GOOGLE_ERRORS = new Set(["cancelled", "expired", "unverified", "conflict", "disabled", "suspended", "rate_limited", "unavailable", "failed"]);

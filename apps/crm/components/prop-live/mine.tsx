@@ -30,6 +30,7 @@ import { Button, Card, CardHeader, Chip, CopyButton, DataTable, EmptyState, Gaug
 import { TradeSymbolAvatar as SymbolAvatar, symbolLabel } from "@/components/trading/instrument";
 import type { T } from "@ezymex/i18n";
 import { Trans, useT } from "@ezymex/i18n/react";
+import { usePageOn } from "@/components/tenant-config";
 import {
   CHALLENGE_STATUS,
   bannedLabel,
@@ -190,6 +191,7 @@ function accountStateChip(t: T, c: Challenge, a: PhaseAccount) {
 
 function Overview({ c, a, v }: { c: ChallengeDetail; a: PhaseAccount; v: View }) {
   const t = useT();
+  const supportOn = usePageOn()("/support");
   const steps = planSteps(c.plan);
   const deadline = v.deadline;
   return (
@@ -270,11 +272,13 @@ function Overview({ c, a, v }: { c: ChallengeDetail; a: PhaseAccount; v: View })
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <PropTradeButton login={a.login} disabled={!tradable(c, a)} reason={t("prop.account.onlyActive")} />
-            <Link href="/support">
-              <Button size="sm" variant="surface">
-                {t("prop.mine.support")}
-              </Button>
-            </Link>
+            {supportOn && (
+              <Link href="/support">
+                <Button size="sm" variant="surface">
+                  {t("prop.mine.support")}
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </div>

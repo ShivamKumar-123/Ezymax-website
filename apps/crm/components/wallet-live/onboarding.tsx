@@ -7,8 +7,9 @@ import { tr } from "@ezymex/i18n/react";
 import type { T } from "@ezymex/i18n";
 import { fmt, useWallet, type Overview } from "./api";
 
-export function useWalletFunded() {
-  const { data } = useWallet<Overview>("overview", 30000);
+/** `on`: false when the broker switched the wallet module off (nothing is fetched, null). */
+export function useWalletFunded(on = true) {
+  const { data } = useWallet<Overview>(on ? "overview" : null, 30000);
   return data;
 }
 

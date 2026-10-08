@@ -12,6 +12,7 @@ import { Button, Card, CardHeader, Chip, Menu, PageHeader, Reveal, Segmented, Sk
 import { MoreHorizontal } from "lucide-react";
 import { tr, useT } from "@ezymex/i18n/react";
 import { AiAssistant } from "./ai-chat";
+import { useModule } from "@/components/tenant-config";
 import { SettingsEditor, SymbolPicker, VisualEditor, NumInput } from "./builder";
 import { CodeEditor, DslReference } from "./code-editor";
 import {
@@ -236,6 +237,8 @@ function DeployCard({ strategy, onDeployed }: { strategy: StrategyDetail | null;
 
 export function LiveStrategiesPage() {
   const t = useT();
+  // the AI assistant chat follows the broker's AI assistant switch (its BFF route does too, lib/modules.ts)
+  const aiOn = useModule("ai_assistant");
   const router = useRouter();
   const params = useSearchParams();
   const meta = useMeta();
@@ -548,7 +551,7 @@ export function LiveStrategiesPage() {
         </Reveal>
 
         <Reveal delay={0.1} className="order-3 grid grid-cols-1 content-start gap-5 md:grid-cols-2 lg:col-span-2 xl:col-span-1 xl:grid-cols-1">
-          <AiAssistant configured={!!meta?.ai.configured} mode={mode} symbol={spec.symbol} timeframe={spec.timeframe} current={mode === "code" ? code : { ...spec, name }} onApply={applyAi} />
+          {aiOn && <AiAssistant configured={!!meta?.ai.configured} mode={mode} symbol={spec.symbol} timeframe={spec.timeframe} current={mode === "code" ? code : { ...spec, name }} onApply={applyAi} />}
           <DeployCard strategy={dirty ? null : detail} onDeployed={() => detail && load(detail.id)} />
           {detail && detail.backtests.length > 0 && (
             <Card>

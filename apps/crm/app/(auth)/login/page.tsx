@@ -8,8 +8,9 @@ import { toast } from "sonner";
 import { Button, Field, Input } from "@/components/kit";
 import { IS_DEMO } from "@ezymex/mock/mode";
 import { useT, Trans } from "@ezymex/i18n/react";
-import { DemoEntry, DevCodeHint, FormError, GOOGLE_LOGIN, GoogleButton, useGoogleError, OrDivider, OtpInput, ResendLink } from "@/components/auth";
+import { DemoEntry, DevCodeHint, FormError, GoogleButton, useGoogleError, useGoogleLogin, OrDivider, OtpInput, ResendLink } from "@/components/auth";
 import { authPost, nextPath, type ApiError, type OtpChallenge } from "@/lib/auth-client";
+import { useFlag } from "@/components/tenant-config";
 
 export default function LoginPage() {
   const t = useT();
@@ -20,6 +21,9 @@ export default function LoginPage() {
   const [password, setPassword] = React.useState("");
   const [err, setErr] = React.useState<ApiError | null>(null);
   const googleErr = useGoogleError();
+  const google = useGoogleLogin();
+  // closed sign-ups (flag client_registration): no "Create an account" link
+  const signUpOpen = useFlag("client_registration");
   const [otp, setOtp] = React.useState<OtpChallenge | null>(null);
   const [otpKey, setOtpKey] = React.useState(0);
   const [code, setCode] = React.useState("");
@@ -66,7 +70,7 @@ export default function LoginPage() {
           <h1 className="text-3xl font-medium tracking-tight sm:text-4xl">{t("auth.login.title")}</h1>
           <p className="mt-2 text-[14.5px] text-fg-2">{t("auth.login.subtitle")}</p>
           {IS_DEMO && <DemoEntry />}
-          {GOOGLE_LOGIN && (
+          {google && (
             <>
               <div className="mt-8 space-y-4">
                 <FormError>{googleErr}</FormError>
@@ -75,7 +79,7 @@ export default function LoginPage() {
               <OrDivider />
             </>
           )}
-          <form method="post" className={GOOGLE_LOGIN ? "space-y-4" : "mt-8 space-y-4"} onSubmit={signIn} noValidate>
+          <form method="post" className={google ? "space-y-4" : "mt-8 space-y-4"} onSubmit={signIn} noValidate>
             <FormError>{formErr}</FormError>
             <Field label={t("auth.field.emailOrViewer")} error={fieldErr("email")}>
               <Input leading={<Mail />} type="text" inputMode="email" autoCapitalize="none" spellCheck={false} name="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("auth.placeholder.email")} required />
@@ -100,9 +104,11 @@ export default function LoginPage() {
               {loading ? t("auth.login.signingIn") : t("auth.login.signIn")} <ArrowRight className="rtl:-scale-x-100" />
             </Button>
           </form>
-          <p className="mt-6 text-center text-[13.5px] text-fg-3">
-            <Trans k="auth.login.newToEzymex" tags={{ link: (c) => <Link href="/register" className="font-medium text-fg hover:text-ember">{c}</Link> }} />
-          </p>
+          {signUpOpen && (
+            <p className="mt-6 text-center text-[13.5px] text-fg-3">
+              <Trans k="auth.login.newToEzymex" tags={{ link: (c) => <Link href="/register" className="font-medium text-fg hover:text-ember">{c}</Link> }} />
+            </p>
+          )}
         </motion.div>
       ) : (
         <motion.div key="otp" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useReadOnly } from "@/components/session";
+import { usePageOn } from "@/components/tenant-config";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
@@ -359,6 +360,7 @@ function Detail() {
   const router = useRouter();
   const t = useT();
   const readOnly = useReadOnly();
+  const copyOn = usePageOn()("/social/copy");
   const valid = /^\d{8}$/.test(login ?? "");
   const { data, error, loading, reload } = usePoll<AccountDetail>(valid ? `accounts/${login}` : null, 3000);
   const initial = (TAB_KEYS as readonly string[]).includes(sp.get("tab") ?? "") ? (sp.get("tab") as TabKey) : "overview";
@@ -493,11 +495,13 @@ function Detail() {
                 {a.type === "live" ? !isPropAccount(a) && <FundButton a={a} size="md" /> : <RefillButton a={a} onDone={reload} size="md" />}
                 {accountFlavor(a) === "copy" ? (
                   <>
-                    <Link href="/social/copy">
-                      <Button size="md" variant="surface">
-                        {t("accounts.copy.manage")}
-                      </Button>
-                    </Link>
+                    {copyOn && (
+                      <Link href="/social/copy">
+                        <Button size="md" variant="surface">
+                          {t("accounts.copy.manage")}
+                        </Button>
+                      </Link>
+                    )}
                     <TradeButton a={a} size="lg" variant="surface" label={t("accounts.copy.watchPnl")} />
                   </>
                 ) : (

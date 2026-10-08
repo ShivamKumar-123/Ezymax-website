@@ -38,6 +38,7 @@ import {
   type PayoutsResp,
 } from "./api";
 import { useT } from "@ezymex/i18n/react";
+import { usePageOn } from "@/components/tenant-config";
 import { CardEmpty, PageFallback, PayoutStatusChip, SkeletonGrid } from "./ui";
 
 const DAY_MS = 86400_000;
@@ -156,6 +157,7 @@ function Hero({ d }: { d: PayoutsResp }) {
 
 function WalletNote() {
   const t = useT();
+  const walletOn = usePageOn()("/wallet");
   return (
     <Card className="flex h-full flex-col">
       <CardHeader
@@ -193,13 +195,15 @@ function WalletNote() {
             </li>
           ))}
         </ol>
-        <div className="mt-auto">
-          <Link href="/wallet">
-            <Button variant="surface" size="sm" className="w-full">
-              <Wallet /> {t("partner.pay.openWallet")}
-            </Button>
-          </Link>
-        </div>
+        {walletOn && (
+          <div className="mt-auto">
+            <Link href="/wallet">
+              <Button variant="surface" size="sm" className="w-full">
+                <Wallet /> {t("partner.pay.openWallet")}
+              </Button>
+            </Link>
+          </div>
+        )}
       </div>
     </Card>
   );

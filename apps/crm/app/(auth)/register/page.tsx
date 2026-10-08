@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Button, Field, Input, Stepper, Flag, Icon3D, Illustration } from "@/components/kit";
 import { IS_DEMO } from "@ezymex/mock/mode";
 import { useT, Trans } from "@ezymex/i18n/react";
-import { DemoEntry, DevCodeHint, FormError, GOOGLE_LOGIN, GoogleButton, useGoogleError, OrDivider, OtpInput, PasswordStrength, ResendLink } from "@/components/auth";
+import { DemoEntry, DevCodeHint, FormError, GoogleButton, useGoogleError, useGoogleLogin, OrDivider, OtpInput, PasswordStrength, ResendLink } from "@/components/auth";
 import { authPost, type ApiError, type OtpChallenge } from "@/lib/auth-client";
 import { COUNTRIES, maxDob } from "@/lib/countries";
 
@@ -25,6 +25,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = React.useState(false);
   const [err, setErr] = React.useState<ApiError | null>(null);
   const googleErr = useGoogleError();
+  const google = useGoogleLogin();
   const [otp, setOtp] = React.useState<OtpChallenge | null>(null);
   const [otpKey, setOtpKey] = React.useState(0);
   const [code, setCode] = React.useState("");
@@ -77,7 +78,7 @@ export default function RegisterPage() {
             <h1 className="text-3xl font-medium tracking-tight sm:text-4xl">{t("auth.register.title")}</h1>
             <p className="mt-2 text-[14px] text-fg-2">{IS_DEMO ? t("auth.register.subtitleDemo") : t("auth.register.subtitle")}</p>
             {IS_DEMO && <DemoEntry />}
-            {GOOGLE_LOGIN && (
+            {google && (
               <>
                 <div className="mt-6 space-y-4">
                   <FormError>{googleErr}</FormError>
@@ -86,7 +87,7 @@ export default function RegisterPage() {
                 <OrDivider />
               </>
             )}
-            <form method="post" className={GOOGLE_LOGIN ? "space-y-3.5" : "mt-6 space-y-3.5"} onSubmit={submit} noValidate>
+            <form method="post" className={google ? "space-y-3.5" : "mt-6 space-y-3.5"} onSubmit={submit} noValidate>
               <FormError>{err && !err.field ? err.message : null}</FormError>
               <div className="grid grid-cols-2 gap-3">
                 <Field label={t("auth.field.firstName")} error={fieldErr("first_name")}>

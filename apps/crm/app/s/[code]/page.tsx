@@ -7,10 +7,12 @@ import { optionStrikeLabel, publicShare, type PublicShare, type ShareOption } fr
 import type { T } from "@ezymex/i18n";
 import { intlTag } from "@ezymex/i18n/locales";
 import { getT } from "@ezymex/i18n/server";
+import { tenantConfig } from "@/lib/tenant-config";
 
 // Public share card (D136): /s/<code>. No sign-in (proxy.ts lets /s/** through) and outside the (app) group, so
 // no Client Area shell or LiveGate. The card is read server-side with the internal token; the page render counts
-// a view, metadata and the image don't. The call to action is the sharer's referral link (/r/CODE, see proxy.ts).
+// a view, metadata and the image don't. The call to action is the sharer's referral link (/r/CODE, see proxy.ts); it's
+// left out while the broker has sign-ups closed (flag client_registration).
 
 export const dynamic = "force-dynamic";
 
@@ -107,7 +109,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function SharePage({ params }: Props) {
   const { code } = await params;
-  const [s, t] = await Promise.all([publicShare(code, true), getT()]);
+  const [s, t, cfg] = await Promise.all([publicShare(code, true), getT(), tenantConfig()]);
+  const signUpOpen = cfg?.flags.client_registration !== false;
   const share = s && s !== "unavailable" ? s : null;
   const d = share?.data;
   const o = share ? optionOf(share) : null;
@@ -118,9 +121,11 @@ export default async function SharePage({ params }: Props) {
       <div className="mx-auto max-w-[880px]">
         <div className="mb-8 flex items-center justify-between">
           <Logo height={22} />
-          <Link href={cta} className="text-[12.5px] text-fg-2 underline-offset-2 hover:text-fg hover:underline">
-            {t("rewards.public.openAccount")}
-          </Link>
+          {signUpOpen && (
+            <Link href={cta} className="text-[12.5px] text-fg-2 underline-offset-2 hover:text-fg hover:underline">
+              {t("rewards.public.openAccount")}
+            </Link>
+          )}
         </div>
 
         {share && d ? (
@@ -137,11 +142,13 @@ export default async function SharePage({ params }: Props) {
                 </h1>
                 <p className="mt-1 text-[14px] text-fg-2">{summaryText(share, t)}</p>
               </div>
-              <Link href={cta} className="shrink-0" data-testid="share-cta">
-                <span className="k-ember-btn inline-flex h-11 items-center gap-2 rounded-full px-6 text-sm font-medium">
-                  {t("rewards.public.openAccount")} <ArrowUpRight className="size-4" />
-                </span>
-              </Link>
+              {signUpOpen && (
+                <Link href={cta} className="shrink-0" data-testid="share-cta">
+                  <span className="k-ember-btn inline-flex h-11 items-center gap-2 rounded-full px-6 text-sm font-medium">
+                    {t("rewards.public.openAccount")} <ArrowUpRight className="size-4" />
+                  </span>
+                </Link>
+              )}
             </div>
             {o && (
               <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6" data-testid="share-option">
@@ -172,11 +179,13 @@ export default async function SharePage({ params }: Props) {
             <ImageOff className="mx-auto size-8 text-fg-3" />
             <h1 className="mt-3 text-[20px] font-medium">{s === "unavailable" ? t("rewards.public.unavailableTitle") : t("rewards.public.notFoundTitle")}</h1>
             <p className="mx-auto mt-1 max-w-md text-[13.5px] text-fg-3">{s === "unavailable" ? t("rewards.public.unavailableText") : t("rewards.public.notFoundText")}</p>
-            <Link href="/register" className="mt-5 inline-block">
-              <span className="k-ember-btn inline-flex h-10 items-center gap-2 rounded-full px-5 text-sm font-medium">
-                {t("rewards.public.openAccount")} <ArrowUpRight className="size-4" />
-              </span>
-            </Link>
+            {signUpOpen && (
+              <Link href="/register" className="mt-5 inline-block">
+                <span className="k-ember-btn inline-flex h-10 items-center gap-2 rounded-full px-5 text-sm font-medium">
+                  {t("rewards.public.openAccount")} <ArrowUpRight className="size-4" />
+                </span>
+              </Link>
+            )}
           </div>
         )}
 
