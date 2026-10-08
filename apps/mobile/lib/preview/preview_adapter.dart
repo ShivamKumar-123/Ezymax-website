@@ -1,5 +1,5 @@
-// Answers every API call from preview_data.dart (development previews and golden tests only). Sign-in accepts any
-// password and code; "wrong@example.com" answers invalid_credentials, so the error states can be seen too.
+// Answers every API call from preview_data.dart (development previews, golden tests and the in-app demo). Sign-in
+// accepts any password and code; "wrong@example.com" answers invalid_credentials, so the error states can be seen too.
 import 'dart:convert';
 import 'dart:typed_data';
 

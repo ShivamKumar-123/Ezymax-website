@@ -157,13 +157,24 @@ typedef TQuoteListener = void Function(TQuote q);
 
 /// Quotes, bars and depth for the terminal: the market-data stream plus today's opens, in the account's spread group.
 class MarketFeed {
-  MarketFeed({required this.wsUrl, required this.httpUrl, required List<String> symbols, String group = 'standard', SocketConnector? connector, Dio? http})
-    : _http = http ?? Dio(BaseOptions(connectTimeout: const Duration(seconds: 10), receiveTimeout: const Duration(seconds: 20))) {
+  MarketFeed({
+    required this.wsUrl,
+    required this.httpUrl,
+    required List<String> symbols,
+    String group = 'standard',
+    SocketConnector? connector,
+    Dio? http,
+    bool sample = false,
+  }) : _sample = Env.preview || sample,
+       _http = http ?? Dio(BaseOptions(connectTimeout: const Duration(seconds: 10), receiveTimeout: const Duration(seconds: 20))) {
     _stream = MarketStream(wsUrl: wsUrl, allSymbols: symbols, group: group, connector: connector);
     _group = group;
   }
 
   final String wsUrl, httpUrl;
+
+  /// Day snapshot and candles from the preview trade server (previews, the in-app demo) instead of the REST service.
+  final bool _sample;
   final Dio _http;
   late final MarketStream _stream;
   late String _group;
@@ -203,7 +214,7 @@ class MarketFeed {
     final g = _group;
     try {
       final Map<String, dynamic> data;
-      if (Env.preview) {
+      if (_sample) {
         data = PreviewServer.instance.quotesSnapshot(g);
       } else {
         final r = await _http.get<Object?>('$httpUrl/v1/quotes', queryParameters: {'group': g});
@@ -293,7 +304,7 @@ class MarketFeed {
 
   /// Candle history (oldest first), `to` = unix seconds inclusive. Empty when unavailable.
   Future<List<Candle>> candles(String symbol, String tf, {int limit = 1000, int? to}) async {
-    if (Env.preview) return PreviewServer.instance.candlesAs(symbol, tf, Candle.new, limit: limit, to: to);
+    if (_sample) return PreviewServer.instance.candlesAs(symbol, tf, Candle.new, limit: limit, to: to);
     try {
       final r = await _http.get<Object?>(
         '$httpUrl/v1/candles',
@@ -312,13 +323,19 @@ class MarketFeed {
   }
 }
 
-/// How the market-data socket connects (previews: the preview server; tests override it).
-final marketConnectorProvider = Provider<SocketConnector?>((ref) => Env.preview ? PreviewServer.instance.marketConnector : null);
+/// How the market-data socket connects (previews and the in-app demo: the preview server; tests override it).
+final marketConnectorProvider = Provider<SocketConnector?>((ref) => Env.preview || ref.watch(demoModeProvider) ? PreviewServer.instance.marketConnector : null);
 
 /// The terminal's market feed (one per open terminal; closed with it).
 final marketFeedProvider = Provider.autoDispose<MarketFeed>((ref) {
   final cfg = ref.watch(configProvider);
-  final feed = MarketFeed(wsUrl: cfg.marketDataWs, httpUrl: cfg.marketDataHttp, symbols: const [], connector: ref.watch(marketConnectorProvider));
+  final feed = MarketFeed(
+    wsUrl: cfg.marketDataWs,
+    httpUrl: cfg.marketDataHttp,
+    symbols: const [],
+    connector: ref.watch(marketConnectorProvider),
+    sample: ref.watch(demoModeProvider),
+  );
   ref.onDispose(feed.stop);
   return feed;
 });

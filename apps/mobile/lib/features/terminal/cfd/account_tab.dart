@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../core/api/api_providers.dart';
+import '../../../core/auth/auth_controller.dart';
 import '../../../core/notifications/notifications.dart';
 import '../../../core/theme_controller.dart';
 import '../../../features/common/pickers.dart';
@@ -149,6 +151,8 @@ class AccountTab extends ConsumerWidget {
           onPressed: acc == null
               ? null
               : () async {
+                  // the in-app demo ends with its Log out: back to the sign-in page, not just out of the sample account
+                  if (ref.read(demoModeProvider)) return ref.read(authProvider.notifier).logout();
                   final login = acc.login;
                   await ref.read(tradeSessionsProvider.notifier).logout(login);
                   ref

@@ -1,6 +1,6 @@
 // Sample data for development previews (`--dart-define=KALKS_PREVIEW=true`): web screenshots of the design system and
 // golden tests run without a server or an account. The shapes are the real API's (docs/MOBILE-API.md); the values
-// are made up. Never used in a build that ships.
+// are made up. The in-app demo ("Try the demo" on the sign-in page, demoModeProvider) runs on the same data.
 //
 // Web preview URL switches (preview builds only): ?signedIn=1 (open the Client Area as the sample client),
 // ?theme=dark|light, ?lang=<locale>.

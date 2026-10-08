@@ -5,6 +5,8 @@
 //   signedIn -> the session and the client's record
 // The session (7 days, no refresh token) lives in the Android Keystore; when the gateway says it is dead (401), the
 // app asks to sign in again. Sign-out wipes the session, every trade token and the client's cached data.
+// The in-app demo ("Try the demo") is a signed-in state too: the sample client's session on the sample-data
+// transport (demoModeProvider), ended by Log out.
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +14,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../env.dart';
 import '../../preview/preview_data.dart';
 import '../api/api_providers.dart';
+import '../config/app_config.dart';
 import '../models/user.dart';
 import '../prefs.dart';
 import 'auth_api.dart';
@@ -70,7 +73,8 @@ class AuthController extends Notifier<AuthState> {
   void _setToken(String? token) => ref.read(sessionHolderProvider).token = token;
 
   Future<void> _restore() async {
-    if (Env.preview && (previewSignedIn || previewLocked)) {
+    // the demo (a restart inside it) and signed-in previews: the sample client, no lock, no stored session needed
+    if (ref.read(demoModeProvider) || (Env.preview && (previewSignedIn || previewLocked))) {
       final s = previewSession();
       if (previewLocked) {
         state = AuthLocked(s, previewUser());
@@ -127,6 +131,27 @@ class AuthController extends Notifier<AuthState> {
     unawaited(refreshMe());
   }
 
+  /// "Try the demo" (sign-in and sign-up pages): the sample client's session on the sample-data transport, straight
+  /// into the Client Area, no email, password or code. The flag flips first, so no request leaves the phone; the
+  /// session store is seeded like a real sign-in (the widget tests do the same), the config comes from the sample data.
+  Future<void> enterDemo() async {
+    await ref.read(demoModeProvider.notifier).set(true);
+    final s = previewSession();
+    await _store.writeSession(s);
+    await _store.writeUser(previewMe);
+    _setToken(s.token);
+    state = AuthSignedIn(s, previewUser());
+    unawaited(ref.read(configProvider.notifier).refresh());
+  }
+
+  /// A sign-out ends the demo: back to the live transport and the broker's config. The sample trade server's clock
+  /// stops with its last socket (the trade sessions reset with the sign-out).
+  Future<void> _leaveDemo() async {
+    if (!ref.read(demoModeProvider)) return;
+    await ref.read(demoModeProvider.notifier).set(false);
+    unawaited(ref.read(configProvider.notifier).refresh());
+  }
+
   /// Re-reads the client's record (`me`, every 30 s in the foreground and after sign-in).
   Future<void> refreshMe() async {
     final s = state;
@@ -176,6 +201,7 @@ class AuthController extends Notifier<AuthState> {
     _setToken(null);
     await _store.clear();
     state = const AuthSignedOut(reason: 'expired');
+    await _leaveDemo();
   }
 
   /// "Sign in with password" from the lock screen.
@@ -185,15 +211,17 @@ class AuthController extends Notifier<AuthState> {
     state = const AuthSignedOut();
   }
 
-  /// Log out: tell the gateway (best effort), then wipe the session, trade tokens and the client's cached data.
+  /// Log out: tell the gateway (best effort; the demo has nothing to tell), then wipe the session, trade tokens and
+  /// the client's cached data. Signed out first, then the demo ends, so no live call ever carries the sample token.
   Future<void> logout() async {
     try {
-      if (state is AuthSignedIn) await ref.read(authApiProvider).logout();
+      if (state is AuthSignedIn && !ref.read(demoModeProvider)) await ref.read(authApiProvider).logout();
     } catch (_) {}
     _setToken(null);
     await _store.clear();
     await _prefs.clearClientData();
     state = const AuthSignedOut();
+    await _leaveDemo();
   }
 
   Future<void> setBiometric(bool on) async {

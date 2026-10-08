@@ -376,10 +376,11 @@ class LinkOpener {
 
 final linkOpenerProvider = Provider<LinkOpener>((ref) => LinkOpener());
 
-/// The support stream (bell + chat), while a client (not a view-only login) is signed in. Not in previews.
+/// The support stream (bell + chat), while a client (not a view-only login) is signed in. Not in previews or the demo.
 final supportStreamProvider = Provider<SupportStream?>((ref) {
   final key = ref.watch(authProvider.select((s) => s is AuthSignedIn && !s.me.readOnly ? '${s.me.id}' : null));
-  if (key == null || Env.preview) return null;
+  final demo = ref.watch(demoModeProvider);
+  if (key == null || Env.preview || demo) return null;
   final s = SupportStream(api: ref.read(apiProvider), streamUrl: () => ref.read(configProvider).supportStream);
   s.start();
   ref.onDispose(() => unawaited(s.dispose()));

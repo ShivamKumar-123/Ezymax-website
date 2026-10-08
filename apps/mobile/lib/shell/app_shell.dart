@@ -2,12 +2,14 @@
 // - a frosted header: brand disc (-> Dashboard), the module title, search, the bell, the Trade button (opens the
 //   full-screen Kalks Trader) and the profile menu; under it the module's pages as text tabs (SubNav);
 // - the page, scrolling under both bars (their heights reach the page as MediaQuery padding);
-// - a floating frosted bottom bar: Dashboard · Accounts · Wallet · Portfolio · More.
+// - a floating frosted bottom bar: Dashboard · Accounts · Wallet · Portfolio · More;
+// - in the in-app demo, a slim "Demo · Sample data · Exit demo" strip above the header.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../core/api/api_providers.dart';
 import '../core/auth/auth_controller.dart';
 import '../core/auth/biometrics.dart';
 import '../core/config/app_config.dart';
@@ -45,10 +47,10 @@ class _AppShellState extends ConsumerState<AppShell> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _offerBiometric());
   }
 
-  /// After the first sign-in on this phone: "Unlock faster next time?" (once).
+  /// After the first sign-in on this phone: "Unlock faster next time?" (once; not for the demo's sample client).
   Future<void> _offerBiometric() async {
     final prefs = ref.read(prefsProvider);
-    if (Env.preview || prefs.biometricAsked || prefs.biometricEnabled) return;
+    if (Env.preview || ref.read(demoModeProvider) || prefs.biometricAsked || prefs.biometricEnabled) return;
     if (!await ref.read(biometricsProvider).available() || !mounted) return;
     final t = context.t;
     final on = await showKAlert<bool>(
@@ -72,7 +74,8 @@ class _AppShellState extends ConsumerState<AppShell> {
     final nav = navFor(cfg, me);
     final module = moduleOf(nav, widget.path);
     final subs = module != null && module.sub.length > 1 ? module.sub : null;
-    final headerH = mq.padding.top + KSize.header + (subs != null ? KSize.subNav : 0);
+    final demo = ref.watch(demoModeProvider);
+    final headerH = mq.padding.top + (demo ? _DemoStrip.height : 0) + KSize.header + (subs != null ? KSize.subNav : 0);
     final barBottom = mq.padding.bottom < 12 ? 12.0 : mq.padding.bottom;
     final barH = KSize.tabBar + barBottom + 8;
 
@@ -104,7 +107,7 @@ class _AppShellState extends ConsumerState<AppShell> {
               top: 0,
               left: 0,
               right: 0,
-              child: _Header(module: module, subs: subs, path: widget.path, scrolled: _scrolled, nav: nav),
+              child: _Header(module: module, subs: subs, path: widget.path, scrolled: _scrolled, nav: nav, demo: demo),
             ),
             // the floating support chat (web SupportLauncher: every page but /support, never for view-only logins); it
             // places itself above the tab bar at the bottom end and takes touches only on its button. Filled, so it
@@ -124,12 +127,13 @@ class _AppShellState extends ConsumerState<AppShell> {
 }
 
 class _Header extends ConsumerWidget {
-  const _Header({required this.module, required this.subs, required this.path, required this.scrolled, required this.nav});
+  const _Header({required this.module, required this.subs, required this.path, required this.scrolled, required this.nav, required this.demo});
   final NavModule? module;
   final List<NavSub>? subs;
   final String path;
   final bool scrolled;
   final List<NavModule> nav;
+  final bool demo;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -144,6 +148,7 @@ class _Header extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (demo) const _DemoStrip(),
           SizedBox(
             height: KSize.header,
             child: Padding(
@@ -209,6 +214,45 @@ class _Header extends ConsumerWidget {
         border: Border(bottom: BorderSide(color: scrolled ? k.line : Colors.transparent, width: 0.6)),
       ),
       child: scrolled ? KFrosted(color: k.bg.withValues(alpha: 0.82), child: content) : content,
+    );
+  }
+}
+
+/// "Demo · Sample data · Exit demo": the strip over the header while the in-app demo runs, so the sample client is
+/// never taken for a live account. Exit = the demo's Log out (the profile menu and More do the same).
+class _DemoStrip extends ConsumerWidget {
+  const _DemoStrip();
+
+  static const double height = 28;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = context.t;
+    final k = context.k;
+    return Container(
+      height: height,
+      color: k.warnSoft,
+      padding: const EdgeInsetsDirectional.only(start: 14, end: 6),
+      child: Row(
+        children: [
+          Icon(LucideIcons.flaskConical, size: 13, color: k.warn),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              '${t('common.demo')} · ${t('app.demo.sampleData')}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.text.caption.copyWith(color: k.warn, fontWeight: FontWeight.w600),
+            ),
+          ),
+          KTextButton(
+            label: t('app.demo.exit'),
+            color: k.warn,
+            style: context.text.caption.copyWith(fontWeight: FontWeight.w700),
+            onPressed: () => ref.read(authProvider.notifier).logout(),
+          ),
+        ],
+      ),
     );
   }
 }

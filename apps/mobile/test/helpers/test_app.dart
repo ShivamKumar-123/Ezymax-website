@@ -55,8 +55,19 @@ Future<void> loadFonts() async {
 
 Messages _catalog(String code) => (jsonDecode(File('assets/i18n/$code.json').readAsStringSync()) as Map).cast<String, Object?>();
 
-/// Pumps the app. `signedIn`: a stored session of the sample client; `theme`: light | dark; `locale`: any of the 22.
-Future<ProviderContainer> pumpApp(WidgetTester tester, {bool signedIn = false, String theme = 'light', String locale = 'en', String? location}) async {
+/// Pumps the app. `signedIn`: a stored session of the sample client; `demo`: the same inside the in-app demo (the
+/// `kalks.demo` flag set, as after a restart in it); `theme`: light | dark; `locale`: any of the 22.
+/// `sampleTransport`: every call answered by the sample-data adapter (the default); false leaves the app its own
+/// choice (the live transport, pointed at a closed local port, or the sample adapter once the demo is on).
+Future<ProviderContainer> pumpApp(
+  WidgetTester tester, {
+  bool signedIn = false,
+  bool demo = false,
+  String theme = 'light',
+  String locale = 'en',
+  String? location,
+  bool sampleTransport = true,
+}) async {
   await loadFonts();
   await initializeDateFormatting();
   // a 412 x 915 pt phone at 1x (small golden files; the web-preview screenshots are 2x)
@@ -64,13 +75,13 @@ Future<ProviderContainer> pumpApp(WidgetTester tester, {bool signedIn = false, S
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
 
-  SharedPreferences.setMockInitialValues({'kalks.theme': theme, 'kalks.locale': locale, 'kalks.biometric.asked': true});
+  SharedPreferences.setMockInitialValues({'kalks.theme': theme, 'kalks.locale': locale, 'kalks.biometric.asked': true, if (demo) 'kalks.demo': true});
   final prefs = await Prefs.open();
   final en = _catalog('en');
   final bundle = I18nBundle(locale: locale, english: en, messages: locale == 'en' ? en : _catalog(locale));
   final secrets = MemorySecureStore({
-    if (signedIn) 'kalks.session': jsonEncode(previewSession().toJson()),
-    if (signedIn) 'kalks.user': jsonEncode(previewMe),
+    if (signedIn || demo) 'kalks.session': jsonEncode(previewSession().toJson()),
+    if (signedIn || demo) 'kalks.user': jsonEncode(previewMe),
     'kalks.device': 'test-device-0000000000',
   });
 
@@ -80,7 +91,10 @@ Future<ProviderContainer> pumpApp(WidgetTester tester, {bool signedIn = false, S
       i18nBootProvider.overrideWithValue(bundle),
       appInfoProvider.overrideWithValue(const AppInfo(version: '1.0.0', build: '1', osVersion: 'Android 15', model: 'Pixel 8')),
       secureStoreProvider.overrideWithValue(secrets),
-      httpAdapterProvider.overrideWithValue(PreviewAdapter(latency: Duration.zero)),
+      if (sampleTransport)
+        httpAdapterProvider.overrideWithValue(PreviewAdapter(latency: Duration.zero))
+      else
+        apiBaseProvider.overrideWithValue('http://127.0.0.1:9/api/mobile'),
       biometricsProvider.overrideWithValue(const NoBiometrics()),
     ],
   );

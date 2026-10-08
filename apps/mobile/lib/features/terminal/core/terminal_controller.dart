@@ -404,5 +404,5 @@ abstract final class KHapticsBridge {
 
 final terminalProvider = NotifierProvider<TerminalController, TerminalState>(TerminalController.new);
 
-/// How the account stream connects (previews: the preview server; tests override it).
-final engineConnectorProvider = Provider<SocketConnector?>((ref) => Env.preview ? PreviewServer.instance.engineConnector : null);
+/// How the account stream connects (previews and the in-app demo: the preview server; tests override it).
+final engineConnectorProvider = Provider<SocketConnector?>((ref) => Env.preview || ref.watch(demoModeProvider) ? PreviewServer.instance.engineConnector : null);

@@ -571,12 +571,12 @@ class OptBookView {
   final bool loaded;
 }
 
-/// Previews: the sample option book of the preview trade server's account (lib/features/terminal/options/
-/// options_preview.dart), merged into the engine state's option entries. Off in builds that ship.
-final optionsPreviewOverlayProvider = Provider<bool>((ref) => Env.preview);
+/// Previews and the in-app demo: the sample option book of the preview trade server's account (lib/features/terminal/
+/// options/options_preview.dart), merged into the engine state's option entries. Off on a live account.
+final optionsPreviewOverlayProvider = Provider<bool>((ref) => Env.preview || ref.watch(demoModeProvider));
 
-/// The options stream's socket in previews and tests (the fake socket); null = the real WebSocket.
-final optionsConnectorProvider = Provider<SocketConnector?>((ref) => Env.preview ? PreviewOptions.instance.connector : null);
+/// The options stream's socket in previews, the demo and tests (the fake socket); null = the real WebSocket.
+final optionsConnectorProvider = Provider<SocketConnector?>((ref) => Env.preview || ref.watch(demoModeProvider) ? PreviewOptions.instance.connector : null);
 
 final _previewTickProvider = StreamProvider.autoDispose<int>(
   (ref) => ref.watch(optionsPreviewOverlayProvider) ? PreviewOptions.instance.changes : const Stream.empty(),

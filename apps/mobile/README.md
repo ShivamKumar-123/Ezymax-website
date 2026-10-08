@@ -35,6 +35,11 @@ and code (`wrong@example.com` shows the error; code `000000` is wrong).
 The web target exists **only** for these previews; Android is the product. Plugins without web support (biometrics,
 secure storage) fall back quietly there.
 
+The same sample data is the app's **demo**: "Try the demo" on the sign-in / sign-up pages (Kalks only, never white-label
+brokers) switches `demoModeProvider` on (kept in prefs as `kalks.demo`, so a restart stays in the demo), seeds the
+sample client's session and opens the Dashboard in place, with a "Demo · Sample data · Exit demo" strip over the header.
+Log out (strip, profile menu, More, the terminal's Account tab) ends it and returns to the live transport.
+
 ## Regenerating generated files
 
 | Files | Command (repo root) | Source |

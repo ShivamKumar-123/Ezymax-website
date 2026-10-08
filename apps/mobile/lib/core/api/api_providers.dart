@@ -7,6 +7,7 @@ import '../../preview/preview_adapter.dart';
 import '../app_info.dart';
 import '../auth/auth_controller.dart';
 import '../auth/secure_store.dart';
+import '../prefs.dart';
 import 'api_client.dart';
 
 export 'api_client.dart';
@@ -19,8 +20,23 @@ class SessionHolder {
 
 final sessionHolderProvider = Provider<SessionHolder>((ref) => SessionHolder());
 
-/// The transport: Dio's default, the sample-data adapter in previews, a fake in tests (override).
-final httpAdapterProvider = Provider<HttpClientAdapter?>((ref) => Env.preview ? PreviewAdapter() : null);
+/// The in-app demo ("Try the demo" on the sign-in page): the app runs on the sample data of a preview build, inside
+/// the app, until Log out. Read from the preferences before the first request, so a restart lands in the demo again.
+class DemoMode extends Notifier<bool> {
+  @override
+  bool build() => ref.read(prefsProvider).demo;
+
+  Future<void> set(bool v) async {
+    state = v;
+    await ref.read(prefsProvider).setDemo(v);
+  }
+}
+
+final demoModeProvider = NotifierProvider<DemoMode, bool>(DemoMode.new);
+
+/// The transport: Dio's default, the sample-data adapter in previews and the demo, a fake in tests (override).
+/// `apiProvider` watches it, so every API client is rebuilt when the demo starts or ends.
+final httpAdapterProvider = Provider<HttpClientAdapter?>((ref) => Env.preview || ref.watch(demoModeProvider) ? PreviewAdapter() : null);
 
 /// The API base (`--dart-define=KALKS_API_BASE`; override in tests).
 final apiBaseProvider = Provider<String>((ref) => Env.apiBase);

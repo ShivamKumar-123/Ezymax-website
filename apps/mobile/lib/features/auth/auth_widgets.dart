@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/auth/auth_controller.dart';
 import '../../core/config/app_config.dart';
 import '../../i18n/i18n.dart';
 import '../../ui/ui.dart';
@@ -160,11 +160,11 @@ class PasswordStrength extends StatelessWidget {
   }
 }
 
-/// "Try the demo" (web TryDemo): Kalks' own sample-data demo, without an account. Hidden for white-label brokers.
+/// "Try the demo" (web TryDemo): Kalks' own sample-data demo, without an account. The web links to
+/// demo.kalkstrade.com; the app opens its own demo in place (AuthController.enterDemo), never the browser.
+/// Hidden for white-label brokers.
 class TryDemoCard extends ConsumerWidget {
   const TryDemoCard({super.key});
-
-  static final Uri demoUrl = Uri.parse('https://demo.kalkstrade.com');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -192,7 +192,11 @@ class TryDemoCard extends ConsumerWidget {
             variant: KButtonVariant.outline,
             expand: true,
             trailingIcon: Directionality.of(context) == TextDirection.rtl ? LucideIcons.arrowLeft : LucideIcons.arrowRight,
-            onPressed: () => launchUrl(demoUrl, mode: LaunchMode.externalApplication),
+            onPressed: () {
+              KHaptics.success();
+              ref.read(authProvider.notifier).enterDemo();
+              // the router takes the demo client to the Dashboard
+            },
           ),
         ],
       ),

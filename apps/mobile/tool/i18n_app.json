@@ -30,7 +30,9 @@
     "partner.csvRows": "Rows: {count} · columns: {cols}",
     "profile.cameraBlocked": "Camera access was blocked. Upload a photo instead, or allow the camera for Kalks in your phone's settings.",
     "dashboard.traderText": "Real-time quotes and charts for {count} instruments across forex, metals, indices, energies, crypto and stocks. Built into this app.",
-    "dashboard.heroTitle": "Trade like a sovereign."
+    "dashboard.heroTitle": "Trade like a sovereign.",
+    "demo.sampleData": "Sample data",
+    "demo.exit": "Exit demo"
   },
   "hi": {
     "unlock.title": "Kalks लॉक है",
@@ -62,7 +64,9 @@
     "partner.csvRows": "पंक्तियाँ: {count} · कॉलम: {cols}",
     "profile.cameraBlocked": "कैमरा एक्सेस ब्लॉक कर दिया गया। इसके बजाय फ़ोटो अपलोड करें, या अपने फ़ोन की सेटिंग में Kalks के लिए कैमरा की अनुमति दें।",
     "dashboard.traderText": "फ़ॉरेक्स, मेटल्स, इंडाइसेस, एनर्जी, क्रिप्टो और स्टॉक्स में {count} इंस्ट्रूमेंट के रियल-टाइम कोट्स और चार्ट। इसी ऐप में शामिल।",
-    "dashboard.heroTitle": "एक सम्राट की तरह ट्रेड करें।"
+    "dashboard.heroTitle": "एक सम्राट की तरह ट्रेड करें।",
+    "demo.sampleData": "सैंपल डेटा",
+    "demo.exit": "डेमो से बाहर निकलें"
   },
   "ar": {
     "unlock.title": "Kalks مقفل",
@@ -94,7 +98,9 @@
     "partner.csvRows": "الصفوف: {count} · الأعمدة: {cols}",
     "profile.cameraBlocked": "تم حظر الوصول إلى الكاميرا. حمّل صورة بدلًا من ذلك، أو اسمح لتطبيق Kalks باستخدام الكاميرا من إعدادات هاتفك.",
     "dashboard.traderText": "أسعار ورسوم بيانية لحظية لـ {count} أداة في الفوركس والمعادن والمؤشرات والطاقة والعملات المشفرة والأسهم. مدمجة في هذا التطبيق.",
-    "dashboard.heroTitle": "تداول كالملوك."
+    "dashboard.heroTitle": "تداول كالملوك.",
+    "demo.sampleData": "بيانات تجريبية",
+    "demo.exit": "الخروج من النسخة التجريبية"
   },
   "ur": {
     "unlock.title": "Kalks لاک ہے",
@@ -126,7 +132,9 @@
     "partner.csvRows": "قطاریں: {count} · کالم: {cols}",
     "profile.cameraBlocked": "کیمرے تک رسائی روک دی گئی۔ اس کے بجائے تصویر اپ لوڈ کریں، یا اپنے فون کی سیٹنگز میں Kalks کو کیمرے کی اجازت دیں۔",
     "dashboard.traderText": "فاریکس، دھاتوں، انڈیکسز، توانائی، کرپٹو اور اسٹاکس کے {count} انسٹرومنٹس کے لیے ریئل ٹائم کوٹس اور چارٹس۔ اسی ایپ میں شامل۔",
-    "dashboard.heroTitle": "بادشاہ کی طرح ٹریڈ کریں۔"
+    "dashboard.heroTitle": "بادشاہ کی طرح ٹریڈ کریں۔",
+    "demo.sampleData": "نمونہ ڈیٹا",
+    "demo.exit": "ڈیمو سے باہر نکلیں"
   },
   "fa": {
     "unlock.title": "Kalks قفل است",
@@ -158,7 +166,9 @@
     "partner.csvRows": "ردیف‌ها: {count} · ستون‌ها: {cols}",
     "profile.cameraBlocked": "دسترسی به دوربین مسدود شد. به جای آن عکسی بارگذاری کنید، یا در تنظیمات گوشی اجازهٔ دوربین را به Kalks بدهید.",
     "dashboard.traderText": "قیمت‌ها و نمودارهای لحظه‌ای برای {count} ابزار در فارکس، فلزات، شاخص‌ها، انرژی، رمزارز و سهام. درون همین اپلیکیشن.",
-    "dashboard.heroTitle": "مثل یک پادشاه معامله کنید."
+    "dashboard.heroTitle": "مثل یک پادشاه معامله کنید.",
+    "demo.sampleData": "داده‌های نمونه",
+    "demo.exit": "خروج از دمو"
   },
   "es": {
     "unlock.title": "Kalks está bloqueado",
@@ -190,7 +200,9 @@
     "partner.csvRows": "Filas: {count} · columnas: {cols}",
     "profile.cameraBlocked": "Se bloqueó el acceso a la cámara. Sube una foto en su lugar o permite la cámara para Kalks en los ajustes del teléfono.",
     "dashboard.traderText": "Cotizaciones y gráficos en tiempo real de {count} instrumentos de forex, metales, índices, energías, criptomonedas y acciones. Integrado en esta app.",
-    "dashboard.heroTitle": "Opera como un soberano."
+    "dashboard.heroTitle": "Opera como un soberano.",
+    "demo.sampleData": "Datos de muestra",
+    "demo.exit": "Salir de la demo"
   },
   "pt": {
     "unlock.title": "O Kalks está bloqueado",
@@ -222,7 +234,9 @@
     "partner.csvRows": "Linhas: {count} · colunas: {cols}",
     "profile.cameraBlocked": "O acesso à câmera foi bloqueado. Envie uma foto em vez disso ou permita a câmera para o Kalks nas configurações do telefone.",
     "dashboard.traderText": "Cotações e gráficos em tempo real para {count} instrumentos de forex, metais, índices, energia, cripto e ações. Integrado neste app.",
-    "dashboard.heroTitle": "Negocie como um soberano."
+    "dashboard.heroTitle": "Negocie como um soberano.",
+    "demo.sampleData": "Dados de exemplo",
+    "demo.exit": "Sair da demo"
   },
   "fr": {
     "unlock.title": "Kalks est verrouillé",
@@ -254,7 +268,9 @@
     "partner.csvRows": "Lignes : {count} · colonnes : {cols}",
     "profile.cameraBlocked": "L'accès à la caméra a été bloqué. Importez plutôt une photo, ou autorisez la caméra pour Kalks dans les réglages de votre téléphone.",
     "dashboard.traderText": "Cotations et graphiques en temps réel pour {count} instruments : forex, métaux, indices, énergies, crypto et actions. Intégré à cette application.",
-    "dashboard.heroTitle": "Tradez en souverain."
+    "dashboard.heroTitle": "Tradez en souverain.",
+    "demo.sampleData": "Données d'exemple",
+    "demo.exit": "Quitter la démo"
   },
   "de": {
     "unlock.title": "Kalks ist gesperrt",
@@ -286,7 +302,9 @@
     "partner.csvRows": "Zeilen: {count} · Spalten: {cols}",
     "profile.cameraBlocked": "Der Kamerazugriff wurde blockiert. Lade stattdessen ein Foto hoch oder erlaube Kalks die Kamera in den Einstellungen deines Telefons.",
     "dashboard.traderText": "Echtzeitkurse und Charts für {count} Instrumente aus Forex, Metallen, Indizes, Energie, Krypto und Aktien. Direkt in dieser App.",
-    "dashboard.heroTitle": "Handeln wie ein Souverän."
+    "dashboard.heroTitle": "Handeln wie ein Souverän.",
+    "demo.sampleData": "Beispieldaten",
+    "demo.exit": "Demo beenden"
   },
   "it": {
     "unlock.title": "Kalks è bloccato",
@@ -318,7 +336,9 @@
     "partner.csvRows": "Righe: {count} · colonne: {cols}",
     "profile.cameraBlocked": "L'accesso alla fotocamera è stato bloccato. Carica invece una foto oppure consenti la fotocamera a Kalks nelle impostazioni del telefono.",
     "dashboard.traderText": "Quotazioni e grafici in tempo reale per {count} strumenti tra forex, metalli, indici, energie, cripto e azioni. Integrato in questa app.",
-    "dashboard.heroTitle": "Fai trading da sovrano."
+    "dashboard.heroTitle": "Fai trading da sovrano.",
+    "demo.sampleData": "Dati di esempio",
+    "demo.exit": "Esci dalla demo"
   },
   "ru": {
     "unlock.title": "Kalks заблокирован",
@@ -350,7 +370,9 @@
     "partner.csvRows": "Строк: {count} · столбцов: {cols}",
     "profile.cameraBlocked": "Доступ к камере заблокирован. Загрузите фото или разрешите Kalks доступ к камере в настройках телефона.",
     "dashboard.traderText": "Котировки и графики в реальном времени по {count} инструментам: форекс, металлы, индексы, энергоносители, криптовалюты и акции. Встроено в это приложение.",
-    "dashboard.heroTitle": "Торгуйте по-королевски."
+    "dashboard.heroTitle": "Торгуйте по-королевски.",
+    "demo.sampleData": "Пример данных",
+    "demo.exit": "Выйти из демо"
   },
   "tr": {
     "unlock.title": "Kalks kilitli",
@@ -382,7 +404,9 @@
     "partner.csvRows": "Satır: {count} · sütun: {cols}",
     "profile.cameraBlocked": "Kamera erişimi engellendi. Bunun yerine bir fotoğraf yükleyin veya telefon ayarlarından Kalks'a kamera izni verin.",
     "dashboard.traderText": "Forex, metaller, endeksler, enerji, kripto ve hisse senetlerinde {count} enstrüman için gerçek zamanlı kotasyonlar ve grafikler. Bu uygulamada yerleşik.",
-    "dashboard.heroTitle": "Bir hükümdar gibi işlem yapın."
+    "dashboard.heroTitle": "Bir hükümdar gibi işlem yapın.",
+    "demo.sampleData": "Örnek veriler",
+    "demo.exit": "Demodan çık"
   },
   "id": {
     "unlock.title": "Kalks terkunci",
@@ -414,7 +438,9 @@
     "partner.csvRows": "Baris: {count} · kolom: {cols}",
     "profile.cameraBlocked": "Akses kamera diblokir. Unggah foto sebagai gantinya, atau izinkan kamera untuk Kalks di pengaturan ponsel Anda.",
     "dashboard.traderText": "Kuotasi dan grafik real-time untuk {count} instrumen di forex, logam, indeks, energi, kripto, dan saham. Langsung di aplikasi ini.",
-    "dashboard.heroTitle": "Trading layaknya penguasa."
+    "dashboard.heroTitle": "Trading layaknya penguasa.",
+    "demo.sampleData": "Data contoh",
+    "demo.exit": "Keluar dari demo"
   },
   "ms": {
     "unlock.title": "Kalks dikunci",
@@ -446,7 +472,9 @@
     "partner.csvRows": "Baris: {count} · lajur: {cols}",
     "profile.cameraBlocked": "Akses kamera telah disekat. Muat naik foto sebaliknya, atau benarkan kamera untuk Kalks dalam tetapan telefon anda.",
     "dashboard.traderText": "Sebut harga dan carta masa nyata untuk {count} instrumen merentasi forex, logam, indeks, tenaga, kripto dan saham. Terbina dalam aplikasi ini.",
-    "dashboard.heroTitle": "Berdagang bak seorang raja."
+    "dashboard.heroTitle": "Berdagang bak seorang raja.",
+    "demo.sampleData": "Data contoh",
+    "demo.exit": "Keluar daripada demo"
   },
   "vi": {
     "unlock.title": "Kalks đang bị khóa",
@@ -478,7 +506,9 @@
     "partner.csvRows": "Hàng: {count} · cột: {cols}",
     "profile.cameraBlocked": "Quyền truy cập máy ảnh đã bị chặn. Hãy tải ảnh lên thay thế, hoặc cho phép Kalks dùng máy ảnh trong cài đặt điện thoại.",
     "dashboard.traderText": "Báo giá và biểu đồ thời gian thực cho {count} công cụ gồm forex, kim loại, chỉ số, năng lượng, tiền mã hóa và cổ phiếu. Tích hợp sẵn trong ứng dụng này.",
-    "dashboard.heroTitle": "Giao dịch như một bậc đế vương."
+    "dashboard.heroTitle": "Giao dịch như một bậc đế vương.",
+    "demo.sampleData": "Dữ liệu mẫu",
+    "demo.exit": "Thoát bản demo"
   },
   "th": {
     "unlock.title": "Kalks ถูกล็อกอยู่",
@@ -510,7 +540,9 @@
     "partner.csvRows": "แถว: {count} · คอลัมน์: {cols}",
     "profile.cameraBlocked": "การเข้าถึงกล้องถูกบล็อก อัปโหลดรูปภาพแทน หรืออนุญาตให้ Kalks ใช้กล้องในการตั้งค่าโทรศัพท์ของคุณ",
     "dashboard.traderText": "ราคาและกราฟเรียลไทม์สำหรับ {count} ตราสาร ครอบคลุมฟอเร็กซ์ โลหะ ดัชนี พลังงาน คริปโต และหุ้น ใช้งานได้ในแอปนี้",
-    "dashboard.heroTitle": "เทรดอย่างผู้ครองบัลลังก์"
+    "dashboard.heroTitle": "เทรดอย่างผู้ครองบัลลังก์",
+    "demo.sampleData": "ข้อมูลตัวอย่าง",
+    "demo.exit": "ออกจากเดโม"
   },
   "zh": {
     "unlock.title": "Kalks 已锁定",
@@ -542,7 +574,9 @@
     "partner.csvRows": "行数：{count} · 列数：{cols}",
     "profile.cameraBlocked": "相机访问已被阻止。请改为上传照片，或在手机设置中允许 Kalks 使用相机。",
     "dashboard.traderText": "涵盖外汇、贵金属、指数、能源、加密货币和股票的 {count} 个交易品种的实时报价和图表。内置于本应用。",
-    "dashboard.heroTitle": "如王者般交易。"
+    "dashboard.heroTitle": "如王者般交易。",
+    "demo.sampleData": "示例数据",
+    "demo.exit": "退出演示"
   },
   "ja": {
     "unlock.title": "Kalks はロックされています",
@@ -574,7 +608,9 @@
     "partner.csvRows": "行: {count} · 列: {cols}",
     "profile.cameraBlocked": "カメラへのアクセスがブロックされました。代わりに写真をアップロードするか、スマートフォンの設定で Kalks にカメラを許可してください。",
     "dashboard.traderText": "FX、貴金属、株価指数、エネルギー、暗号資産、株式の{count}銘柄のリアルタイムレートとチャート。このアプリに搭載されています。",
-    "dashboard.heroTitle": "王者のようにトレードを。"
+    "dashboard.heroTitle": "王者のようにトレードを。",
+    "demo.sampleData": "サンプルデータ",
+    "demo.exit": "デモを終了"
   },
   "ko": {
     "unlock.title": "Kalks가 잠겨 있습니다",
@@ -606,7 +642,9 @@
     "partner.csvRows": "행: {count} · 열: {cols}",
     "profile.cameraBlocked": "카메라 접근이 차단되었습니다. 대신 사진을 업로드하거나 휴대폰 설정에서 Kalks의 카메라 사용을 허용하세요.",
     "dashboard.traderText": "외환, 금속, 지수, 에너지, 암호화폐, 주식 등 {count}개 종목의 실시간 시세와 차트를 제공합니다. 이 앱에 바로 내장되어 있습니다.",
-    "dashboard.heroTitle": "군주처럼 트레이딩하세요."
+    "dashboard.heroTitle": "군주처럼 트레이딩하세요.",
+    "demo.sampleData": "샘플 데이터",
+    "demo.exit": "데모 종료"
   },
   "bn": {
     "unlock.title": "Kalks লক করা আছে",
@@ -638,7 +676,9 @@
     "partner.csvRows": "সারি: {count} · কলাম: {cols}",
     "profile.cameraBlocked": "ক্যামেরা অ্যাক্সেস ব্লক করা হয়েছে। এর বদলে একটি ছবি আপলোড করুন, অথবা আপনার ফোনের সেটিংসে Kalks-কে ক্যামেরার অনুমতি দিন।",
     "dashboard.traderText": "ফরেক্স, মেটাল, সূচক, এনার্জি, ক্রিপ্টো ও স্টক মিলিয়ে {count}টি ইনস্ট্রুমেন্টের রিয়েল-টাইম কোট ও চার্ট। এই অ্যাপেই রয়েছে।",
-    "dashboard.heroTitle": "সম্রাটের মতো ট্রেড করুন।"
+    "dashboard.heroTitle": "সম্রাটের মতো ট্রেড করুন।",
+    "demo.sampleData": "নমুনা ডেটা",
+    "demo.exit": "ডেমো থেকে বের হন"
   },
   "ta": {
     "unlock.title": "Kalks பூட்டப்பட்டுள்ளது",
@@ -670,7 +710,9 @@
     "partner.csvRows": "வரிசைகள்: {count} · நெடுவரிசைகள்: {cols}",
     "profile.cameraBlocked": "கேமரா அணுகல் தடுக்கப்பட்டது. அதற்குப் பதிலாக ஒரு புகைப்படத்தைப் பதிவேற்றவும், அல்லது உங்கள் ஃபோன் அமைப்புகளில் Kalks-க்கு கேமரா அனுமதியை வழங்கவும்.",
     "dashboard.traderText": "ஃபாரெக்ஸ், உலோகங்கள், குறியீடுகள், எரிசக்தி, கிரிப்டோ மற்றும் பங்குகளில் {count} கருவிகளுக்கான நிகழ்நேர விலைகள் மற்றும் சார்ட்கள். இந்த ஆப்பிலேயே உள்ளது.",
-    "dashboard.heroTitle": "ஒரு அரசரைப் போல வர்த்தகம் செய்யுங்கள்."
+    "dashboard.heroTitle": "ஒரு அரசரைப் போல வர்த்தகம் செய்யுங்கள்.",
+    "demo.sampleData": "மாதிரி தரவு",
+    "demo.exit": "டெமோவிலிருந்து வெளியேறு"
   },
   "sw": {
     "unlock.title": "Kalks imefungwa",
@@ -702,6 +744,8 @@
     "partner.csvRows": "Safu mlalo: {count} · safu wima: {cols}",
     "profile.cameraBlocked": "Ufikiaji wa kamera umezuiwa. Pakia picha badala yake, au ruhusu kamera kwa Kalks katika mipangilio ya simu yako.",
     "dashboard.traderText": "Bei na chati za wakati halisi kwa vyombo {count} katika forex, metali, fahirisi, nishati, crypto na hisa. Imo ndani ya programu hii.",
-    "dashboard.heroTitle": "Fanya biashara kama mfalme."
+    "dashboard.heroTitle": "Fanya biashara kama mfalme.",
+    "demo.sampleData": "Data ya mfano",
+    "demo.exit": "Toka kwenye demo"
   }
 }

@@ -19,6 +19,7 @@ class Prefs {
   static const _kBiometricAsked = 'kalks.biometric.asked';
   static const _kConfig = 'kalks.config';
   static const _kHideBalances = 'kalks.hideBalances';
+  static const _kDemo = 'kalks.demo';
 
   String? get locale => _p.getString(_kLocale);
   Future<void> setLocale(String code) => _p.setString(_kLocale, code);
@@ -47,6 +48,10 @@ class Prefs {
 
   bool get hideBalances => _p.getBool(_kHideBalances) ?? false;
   Future<void> setHideBalances(bool v) => _p.setBool(_kHideBalances, v);
+
+  /// The in-app demo is open ("Try the demo" on the sign-in page): kept across restarts until Log out.
+  bool get demo => _p.getBool(_kDemo) ?? false;
+  Future<void> setDemo(bool v) => _p.setBool(_kDemo, v);
 
   /// Per-client local event log (toasts kept in the bell, like the web's event log).
   List<Map<String, dynamic>> eventLog(String userKey) {
