@@ -1,30 +1,19 @@
 "use client";
 
-// Live Options page: suitability from the gateway (/api/suitability/options) and the client's trading accounts from
-// the engine; "Start trading options" records the acceptance of the options terms and opens Ezymex Trader through
-// the usual one-time SSO link, in options mode.
+// Live Options page: suitability from the gateway (/api/suitability/options) and the client's Options accounts from
+// the engine (an account trades CFDs or options, never both); "Start trading options" records the acceptance of the
+// options terms and opens Ezymex Trader through the usual one-time SSO link, in options mode.
 
 import * as React from "react";
 import { toast } from "sonner";
 import { tr, useT } from "@ezymex/i18n/react";
 import { useReadOnly, useSession } from "@/components/session";
-import { errorToast, tradingApi, useAccounts } from "@/components/trading/api";
+import { errorToast, productOf, tradingApi, useAccounts, withOptionsMode } from "@/components/trading/api";
 import { accountFlavor } from "@/components/trading/archive";
 import { isPropAccount } from "@/components/trading/ui";
 import { TERMINAL_URL } from "@/lib/live";
 import { SuitabilityError, suitabilityApi, useSuitability, type Suitability } from "./api";
 import { OptionsPage, type OptionsController, type TradeAccount } from "./ui";
-
-/** The terminal opens straight in options mode with `?mode=options` next to the SSO token. */
-export function withOptionsMode(url: string): string {
-  try {
-    const u = new URL(url, window.location.href);
-    u.searchParams.set("mode", "options");
-    return u.toString();
-  } catch {
-    return url;
-  }
-}
 
 /** Opens Ezymex Trader signed in to `login`, in options mode. The tab opens inside the click (popup blockers), then
  *  `before` runs (e.g. recording the acceptance): false closes the tab again. */
@@ -60,7 +49,7 @@ export function LiveOptions() {
   const accounts = React.useMemo<TradeAccount[] | null>(() => {
     if (!acc) return null;
     return acc.accounts
-      .filter((a) => a.status === "active" && !isPropAccount(a) && !accountFlavor(a))
+      .filter((a) => a.status === "active" && productOf(a) === "options" && !isPropAccount(a) && !accountFlavor(a))
       .sort((a, b) => Number(!!b.isDefault) - Number(!!a.isDefault) || (a.type === b.type ? 0 : a.type === "live" ? -1 : 1) || a.login - b.login)
       .map((a) => ({ login: a.login, type: a.type, name: a.name || a.groupName }));
   }, [acc]);

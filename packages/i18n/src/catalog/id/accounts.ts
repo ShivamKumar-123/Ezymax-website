@@ -576,5 +576,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.productTitle": "Apa yang ingin Anda tradingkan?",
   "wizard.productSubtitle": "Setiap akun memperdagangkan satu produk: CFD atau opsi. Anda bisa memiliki keduanya.",
   "wizard.optionsLeverage": "Opsi tidak memakai leverage: membeli opsi berbiaya sebesar premiumnya, menjualnya memerlukan margin.",
+  "summary.stepCount": "Langkah {step} dari {total}",
+  "summary.leverageOnly": "setelah dibuka hanya leverage yang dapat diubah",
 };
 export default accounts;

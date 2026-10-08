@@ -573,5 +573,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.productTitle": "무엇을 거래하시겠어요?",
   "wizard.productSubtitle": "각 계좌는 한 가지 상품(CFD 또는 옵션)만 거래합니다. 두 종류 모두 보유할 수 있습니다.",
   "wizard.optionsLeverage": "옵션은 레버리지를 쓰지 않습니다. 옵션 매수에는 프리미엄이, 매도에는 증거금이 필요합니다.",
+  "summary.stepCount": "{step}/{total}단계",
+  "summary.leverageOnly": "개설 후에는 레버리지만 변경할 수 있습니다",
 };
 export default accounts;

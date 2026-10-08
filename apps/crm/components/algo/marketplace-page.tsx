@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, Dialog, EmptyState, EquityChart, PageHeader, Reveal, Segmented, Skeleton, Sparkline, SymbolAvatar, Tabs, Toggle, cn } from "@/components/kit";
 import { useT } from "@ezymex/i18n/react";
 import { NumInput } from "./builder";
-import { AlgoError, algoApi, algoError, fmtDateTime, fmtMoney, fmtPct, useAlgo, type Deployment, type StrategyItem, type TradingAccount } from "./api";
+import { AlgoError, algoApi, algoError, fmtDateTime, fmtMoney, fmtPct, useAlgo, useCfdAccounts, type Deployment, type StrategyItem, type TradingAccount } from "./api";
 
 /** An idempotency key for one subscribe attempt (32 hex characters). */
 const attemptKey = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join("");
@@ -509,7 +509,7 @@ export function LiveMarketplacePage() {
   const browse = useAlgo<{ items: Listing[]; subscribed: number[]; platformCutPct: number }>(`market/listings?${qs}`);
   const subs = useAlgo<{ items: { id: number; listingId: number; title: string; author: string; symbol: string; timeframe: string; mode: string; status: string; login: number | null; deploymentStatus: string | null; price: number; periodEnd: string | null; autoRenew: boolean }[] }>(tab === "subs" ? "market/subscriptions" : null);
   const mine = useAlgo<{ items: Listing[]; earned: number; platformFees: number; payments: number }>(tab === "mine" ? "market/mine" : null);
-  const accounts = useAlgo<{ items: TradingAccount[] }>("accounts");
+  const accounts = useCfdAccounts();
   const [open, setOpen] = React.useState<number | null>(null);
   const [publishing, setPublishing] = React.useState(false);
   const items = browse.data?.items ?? [];

@@ -581,5 +581,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.productTitle": "Was möchten Sie handeln?",
   "wizard.productSubtitle": "Jedes Konto handelt ein Produkt: CFDs oder Optionen. Sie können beide Kontoarten haben.",
   "wizard.optionsLeverage": "Optionen nutzen keinen Hebel: Der Kauf einer Option kostet ihre Prämie, ihr Verkauf erfordert Margin.",
+  "summary.stepCount": "Schritt {step} von {total}",
+  "summary.leverageOnly": "nach der Eröffnung ist nur der Hebel änderbar",
 };
 export default accounts;

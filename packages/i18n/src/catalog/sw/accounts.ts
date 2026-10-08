@@ -573,5 +573,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.productTitle": "Unataka kufanya biashara ya nini?",
   "wizard.productSubtitle": "Kila akaunti hufanya biashara ya bidhaa moja: CFD au options. Unaweza kuwa na aina zote mbili.",
   "wizard.optionsLeverage": "Options hazitumii leverage: kununua option hugharimu premium yake, kuiuza kunahitaji margin.",
+  "summary.stepCount": "Hatua {step} kati ya {total}",
+  "summary.leverageOnly": "baada ya kufungua ni leverage pekee inayoweza kubadilishwa",
 };
 export default accounts;

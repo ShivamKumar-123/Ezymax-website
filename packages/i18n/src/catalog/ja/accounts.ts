@@ -573,5 +573,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.productTitle": "何を取引しますか？",
   "wizard.productSubtitle": "各口座で取引できる商品は1つ（CFDまたはオプション）です。両方の口座を持てます。",
   "wizard.optionsLeverage": "オプションにレバレッジはありません。買いはプレミアムが費用となり、売りには証拠金が必要です。",
+  "summary.stepCount": "ステップ {step} / {total}",
+  "summary.leverageOnly": "開設後はレバレッジのみ変更可能",
 };
 export default accounts;

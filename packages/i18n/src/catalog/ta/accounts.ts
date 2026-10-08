@@ -573,5 +573,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.productTitle": "நீங்கள் எதை டிரேட் செய்ய விரும்புகிறீர்கள்?",
   "wizard.productSubtitle": "ஒவ்வொரு கணக்கும் ஒரே தயாரிப்பை டிரேட் செய்யும்: CFD அல்லது ஆப்ஷன்கள். இரண்டு வகைக் கணக்குகளையும் வைத்திருக்கலாம்.",
   "wizard.optionsLeverage": "ஆப்ஷன்களில் லீவரேஜ் இல்லை: ஆப்ஷனை வாங்க அதன் பிரீமியம் செலவாகும், விற்க மார்ஜின் தேவை.",
+  "summary.stepCount": "படி {step} / {total}",
+  "summary.leverageOnly": "திறந்த பிறகு லீவரேஜை மட்டுமே மாற்றலாம்",
 };
 export default accounts;

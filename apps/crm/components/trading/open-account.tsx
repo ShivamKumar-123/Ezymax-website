@@ -8,16 +8,31 @@ import { ArrowLeft, ArrowRight, Check, Copy, Info, KeyRound, Lock, RotateCw, Tri
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, EmptyState, Field, Icon3D, Input, KeyValue, PageHeader, Reveal, Skeleton, Stepper, Toggle, cn } from "@/components/kit";
 import { Trans, useT } from "@ezymex/i18n/react";
+import type { MessageKey } from "@ezymex/i18n";
 import { PasswordInput } from "@/components/accounts/security";
-import { ApiError, modeLabel, serverOf, tradingApi, useAccounts, useGroups, type AccountKind, type EngineAccount, type EngineGroup, type OpenResult } from "./api";
+import { ApiError, modeLabel, productOf, serverOf, tradingApi, useAccounts, useGroups, type AccountKind, type AccountProduct, type EngineAccount, type EngineGroup, type OpenResult } from "./api";
 import { EngineGroupCard, commissionText, groupPhoto, spreadType } from "./group-card";
 import { FundButton, PasswordRules, SecretField, TradeButton, livePasswordOk } from "./ui";
 import { useFeatures } from "@/components/tenant-config";
 
-const STEPS = ["accounts.wizard.step.account", "accounts.wizard.step.type", "accounts.wizard.step.configure", "accounts.wizard.step.confirm", "accounts.wizard.step.done"] as const;
+// An account trades one product, CFDs or options (decided by its group's `product`, never by the group code): the
+// Product step comes first while the broker offers Options accounts (tenant module `options` on and an options group
+// in the catalogue); without it the wizard starts at Live / Demo and opens CFD accounts. `?product=options|cfd`
+// presets the product and starts at Live / Demo; `?group=` jumps to Configure (an options group means options).
+type StepKey = "product" | "account" | "type" | "configure" | "confirm" | "done";
+const FLOW: StepKey[] = ["product", "account", "type", "configure", "confirm", "done"];
+const STEP_LABEL: Record<StepKey, MessageKey> = {
+  product: "accounts.wizard.step.product",
+  account: "accounts.wizard.step.account",
+  type: "accounts.wizard.step.type",
+  configure: "accounts.wizard.step.configure",
+  confirm: "accounts.wizard.step.confirm",
+  done: "accounts.wizard.step.done",
+};
 const DEMO_BALANCES = [1000, 5000, 10000, 25000, 50000, 100000];
 
 interface Cfg {
+  product: AccountProduct;
   kind: AccountKind;
   group: string;
   leverage: number;
@@ -30,9 +45,50 @@ interface Cfg {
 }
 
 // prop* groups are for prop-challenge accounts only (bought under Prop challenges), never opened here
-const offers = (g: EngineGroup, kind: AccountKind) => g.enabled && !g.code.toLowerCase().startsWith("prop") && (g.accountTypes === "both" || g.accountTypes === kind);
+const offers = (g: EngineGroup, kind: AccountKind, product: AccountProduct) =>
+  g.enabled && !g.code.toLowerCase().startsWith("prop") && (g.accountTypes === "both" || g.accountTypes === kind) && productOf(g) === product;
 const usedIn = (accounts: EngineAccount[], g: EngineGroup, kind: AccountKind) => accounts.filter((a) => a.group === g.code && a.type === kind).length;
 const money = (v: number, cent: boolean) => (cent ? `USC ${(v * 100).toLocaleString("en-US")}` : `$${v.toLocaleString("en-US")}`);
+
+/** First wizard step: CFD account or Options account (also used by the demo-build wizard). */
+export function ProductCard({ product, selected, onSelect }: { product: AccountProduct; selected: boolean; onSelect: () => void }) {
+  const t = useT();
+  const options = product === "options";
+  const points = options
+    ? [t("accounts.product.optionsPoint1"), t("accounts.product.optionsPoint2"), t("accounts.product.optionsPoint3")]
+    : [t("accounts.product.cfdPoint1"), t("accounts.product.cfdPoint2"), t("accounts.product.cfdPoint3")];
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={selected}
+      data-testid={`product-${product}`}
+      className={cn(
+        "relative flex h-full flex-col overflow-hidden rounded-[20px] border p-6 text-start transition-colors duration-200",
+        selected ? "border-ember/60 bg-surface shadow-[0_0_0_4px_color-mix(in_oklab,var(--k-ember)_12%,transparent)]" : "k-card hover:border-[var(--k-border-top)]",
+      )}
+    >
+      <div className="flex items-start justify-between">
+        <Chip tone={options ? "info" : "neutral"} className="font-semibold tracking-wider">
+          {options ? t("accounts.product.options") : t("accounts.product.cfd")}
+        </Chip>
+        <span className={cn("grid size-6 place-items-center rounded-full border transition-colors", selected ? "border-ember bg-ember text-white" : "border-line")}>{selected && <Check className="size-3.5" />}</span>
+      </div>
+      <div className="mt-4">
+        <Icon3D name={options ? "chart_increasing" : "chart_increasing_with_yen"} size={64} />
+      </div>
+      <div className="mt-4 text-[22px] font-semibold tracking-tight">{options ? t("accounts.product.optionsTitle") : t("accounts.product.cfdTitle")}</div>
+      <p className="mt-1 text-[13.5px] text-fg-2">{options ? t("accounts.product.optionsText") : t("accounts.product.cfdText")}</p>
+      <ul className="mt-4 space-y-2 text-[13px] text-fg-2">
+        {points.map((f) => (
+          <li key={f} className="flex items-center gap-2">
+            <Check className="size-3.5 shrink-0 text-ember" /> {f}
+          </li>
+        ))}
+      </ul>
+    </button>
+  );
+}
 
 function KindCard({ kind, selected, onSelect, demoGroup }: { kind: AccountKind; selected: boolean; onSelect: () => void; demoGroup?: EngineGroup }) {
   const t = useT();
@@ -78,9 +134,19 @@ function KindCard({ kind, selected, onSelect, demoGroup }: { kind: AccountKind; 
   );
 }
 
-function Summary({ cfg, g, step }: { cfg: Cfg; g: EngineGroup; step: number }) {
+/** Steps progress under the summary. The original five-step flow keeps its wording; with the Product step the count
+ *  follows the flow, and Options accounts have no leverage to change later. */
+export function stepNote(t: ReturnType<typeof useT>, step: number, total: number, options: boolean) {
+  if (total === 5) return t("accounts.summary.stepOf", { step: Math.min(step + 1, 5) });
+  const count = t("accounts.summary.stepCount", { step: Math.min(step + 1, total), total });
+  return options ? count : `${count} · ${t("accounts.summary.leverageOnly")}`;
+}
+
+function Summary({ cfg, g, step, total, showProduct }: { cfg: Cfg; g: EngineGroup; step: number; total: number; showProduct: boolean }) {
   const t = useT();
   const mode = t.dyn(`accounts.mode.${g.mode}`, modeLabel(g.mode));
+  // Options account types: no leverage (option margin ignores it) and no CFD pricing model
+  const options = productOf(g) === "options";
   return (
     <Card className="overflow-hidden">
       <div className="relative h-24 overflow-hidden">
@@ -99,19 +165,24 @@ function Summary({ cfg, g, step }: { cfg: Cfg; g: EngineGroup; step: number }) {
       <div className="px-6 pb-5">
         <KeyValue
           rows={[
+            ...(showProduct ? [[t("accounts.label.product"), options ? t("accounts.product.optionsTitle") : t("accounts.product.cfdTitle")] as [string, string]] : []),
             [t("accounts.label.server"), <span key="s" className="font-mono">{serverOf({ type: cfg.kind })}</span>],
             [t("common.currency"), g.cent ? t("accounts.currency.uscUsCents") : "USD"],
             [t("accounts.label.positionMode"), mode],
-            [t("accounts.label.leverage"), `1:${cfg.leverage.toLocaleString("en-US")}`],
-            [t("accounts.label.pricing"), spreadType(g, t)],
-            [t("accounts.label.commission"), commissionText(g, t)],
+            ...(options
+              ? []
+              : ([
+                  [t("accounts.label.leverage"), `1:${cfg.leverage.toLocaleString("en-US")}`],
+                  [t("accounts.label.pricing"), spreadType(g, t)],
+                  [t("accounts.label.commission"), commissionText(g, t)],
+                ] as [string, string][])),
             [t("accounts.label.marginCallStopOut"), `${g.marginCallPct}% / ${g.stopOutPct}%`],
             cfg.kind === "demo" ? [t("accounts.label.startBalance"), money(cfg.demoBalance, g.cent)] : [t("accounts.label.minFirstDeposit"), g.minDeposit > 0 ? `$${g.minDeposit.toLocaleString("en-US")}` : t("common.none")],
             [t("accounts.label.nickname"), cfg.nickname || <span key="n" className="text-fg-3">—</span>],
           ]}
         />
         <div className="mt-3 flex items-center gap-2 text-[12px] text-fg-3">
-          <Lock className="size-3.5 shrink-0" /> {t("accounts.summary.stepOf", { step: Math.min(step + 1, 5) })}
+          <Lock className="size-3.5 shrink-0" /> {stepNote(t, step, total, options)}
         </div>
       </div>
     </Card>
@@ -120,7 +191,9 @@ function Summary({ cfg, g, step }: { cfg: Cfg; g: EngineGroup; step: number }) {
 
 function Created({ res, cfg, g }: { res: OpenResult; cfg: Cfg; g: EngineGroup }) {
   const t = useT();
-  const a = res.account;
+  // the engine reports the product with the account (its group's); an Options account opens Ezymex Trader in options mode
+  const a = { ...res.account, product: res.account.product ?? productOf(g) };
+  const options = productOf(a) === "options";
   const c = res.credentials;
   const login = String(c.login);
   const server = serverOf(a);
@@ -146,10 +219,11 @@ function Created({ res, cfg, g }: { res: OpenResult; cfg: Cfg; g: EngineGroup })
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <Chip tone={a.type === "live" ? "ember" : "gold"}>{a.type === "live" ? t("accounts.badge.live") : t("accounts.badge.demo")}</Chip>
+            <Chip tone={options ? "info" : "neutral"}>{options ? t("accounts.product.optionsTitle") : t("accounts.product.cfdTitle")}</Chip>
             <Chip>
               {g.name} · {t.dyn(`accounts.mode.${a.mode}`, modeLabel(a.mode))}
             </Chip>
-            <Chip>1:{a.leverage.toLocaleString("en-US")}</Chip>
+            {!options && <Chip>1:{a.leverage.toLocaleString("en-US")}</Chip>}
             {a.cent && <Chip tone="gold">USC</Chip>}
           </div>
           <div className="mt-6 flex flex-wrap gap-2">
@@ -198,11 +272,19 @@ function Wizard() {
   const groups = React.useMemo(() => groupsQ.data?.groups ?? [], [groupsQ.data]);
   const accounts = accountsQ.data?.accounts ?? [];
 
+  const features = useFeatures();
   // the broker can switch new demo accounts off (Back Office › Settings › Features); the BFF refuses them too
-  const demoOn = useFeatures()?.flags.demo_accounts !== false;
-  const [step, setStep] = React.useState(0);
+  const demoOn = features?.flags.demo_accounts !== false;
+  // Options accounts while the broker has the Options module on (the BFF refuses them otherwise) and an options group
+  const optionsOn = features?.modules.options !== false && (!groupsQ.data || groups.some((x) => x.enabled && productOf(x) === "options"));
+  const flow = optionsOn ? FLOW : FLOW.slice(1);
+  const wantProduct = sp.get("product");
+  const [stepKey, setStepKey] = React.useState<StepKey>(wantProduct === "options" || wantProduct === "cfd" ? "account" : "product");
+  const key: StepKey = flow.includes(stepKey) ? stepKey : "account";
+  const step = flow.indexOf(key);
   const [dir, setDir] = React.useState(1);
   const [cfg, setCfg] = React.useState<Cfg>({
+    product: wantProduct === "options" ? "options" : "cfd",
     kind: demoOn && sp.get("type") === "demo" ? "demo" : "live",
     group: sp.get("group") ?? "",
     leverage: 0,
@@ -217,26 +299,29 @@ function Wizard() {
   const [created, setCreated] = React.useState<OpenResult | null>(null);
   const set = <K extends keyof Cfg>(k: K, v: Cfg[K]) => setCfg((c) => ({ ...c, [k]: v }));
 
-  const available = groups.filter((g) => offers(g, cfg.kind));
-  const g = groups.find((x) => x.code === cfg.group && offers(x, cfg.kind)) ?? available[0];
+  const product: AccountProduct = optionsOn ? cfg.product : "cfd";
+  const available = groups.filter((x) => offers(x, cfg.kind, product));
+  const g = groups.find((x) => x.code === cfg.group && offers(x, cfg.kind, product)) ?? available[0];
+  // Options account types have no leverage to choose: they open at the group's default
+  const optionsGroup = !!g && productOf(g) === "options";
 
-  // once groups load: honour ?group= (jump to Configure), otherwise preselect the first group
+  // once groups load: honour ?group= (jump to Configure; its product wins), otherwise preselect the first group
   const [booted, setBooted] = React.useState(false);
   React.useEffect(() => {
     if (booted || !groups.length) return;
     setBooted(true);
     const want = groups.find((x) => x.code === sp.get("group"));
-    const pick = want && offers(want, cfg.kind) ? want : groups.find((x) => offers(x, cfg.kind));
+    const pick = want && offers(want, cfg.kind, optionsOn ? productOf(want) : "cfd") ? want : groups.find((x) => offers(x, cfg.kind, product));
     if (!pick) return;
-    setCfg((c) => ({ ...c, group: pick.code, leverage: pick.defaultLeverage, demoBalance: pick.demoInitialBalance }));
-    if (want && want.code === pick.code) setStep(2);
-  }, [booted, groups, sp, cfg.kind]);
+    setCfg((c) => ({ ...c, product: productOf(pick), group: pick.code, leverage: pick.defaultLeverage, demoBalance: pick.demoInitialBalance }));
+    if (want && want.code === pick.code) setStepKey("configure");
+  }, [booted, groups, sp, cfg.kind, optionsOn, product]);
 
   const pickGroup = (x: EngineGroup) =>
     setCfg((c) => ({
       ...c,
       group: x.code,
-      leverage: x.leverages.includes(c.leverage) ? c.leverage : x.defaultLeverage,
+      leverage: productOf(x) !== "options" && x.leverages.includes(c.leverage) ? c.leverage : x.defaultLeverage,
       demoBalance: c.demoBalance || x.demoInitialBalance,
     }));
 
@@ -248,11 +333,12 @@ function Wizard() {
 
   const full = g ? usedIn(accounts, g, cfg.kind) >= g.maxAccountsPerUser : false;
   const pwOk = !cfg.ownPassword || (livePasswordOk(cfg.password) && cfg.password === cfg.confirm);
-  const canNext = step === 1 ? !!g && !full : step === 2 ? !!g && g.leverages.includes(cfg.leverage) && pwOk : step === 3 ? cfg.agree && pwOk : true;
+  const canNext = key === "type" ? !!g && !full : key === "configure" ? !!g && (optionsGroup || g.leverages.includes(cfg.leverage)) && pwOk : key === "confirm" ? cfg.agree && pwOk : true;
+  const leverage = optionsGroup && g ? g.defaultLeverage : cfg.leverage;
 
   const go = (d: number) => {
     setDir(d);
-    setStep((s) => Math.max(0, Math.min(4, s + d)));
+    setStepKey(flow[Math.max(0, Math.min(flow.length - 1, step + d))]!);
   };
 
   const create = async () => {
@@ -263,7 +349,7 @@ function Wizard() {
         body: {
           type: cfg.kind,
           group: g.code,
-          leverage: cfg.leverage,
+          leverage,
           name: cfg.nickname.trim() || undefined,
           password: cfg.ownPassword ? cfg.password : undefined,
           initialBalance: cfg.kind === "demo" ? cfg.demoBalance : undefined,
@@ -272,7 +358,9 @@ function Wizard() {
       setCreated(res);
       setCfg((c) => ({ ...c, password: "", confirm: "" }));
       go(1);
-      toast.success(t(cfg.kind === "live" ? "accounts.wizard.openedLive" : "accounts.wizard.openedDemo", { login: res.credentials.login }), { description: `${g.name} · ${t.dyn(`accounts.mode.${g.mode}`, modeLabel(g.mode))} · 1:${cfg.leverage}` });
+      toast.success(t(cfg.kind === "live" ? "accounts.wizard.openedLive" : "accounts.wizard.openedDemo", { login: res.credentials.login }), {
+        description: [g.name, t.dyn(`accounts.mode.${g.mode}`, modeLabel(g.mode)), optionsGroup ? t("accounts.product.optionsTitle") : `1:${leverage}`].join(" · "),
+      });
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : t("common.errorRetry");
       toast.error(t("accounts.wizard.openFailed"), { description: msg });
@@ -301,8 +389,19 @@ function Wizard() {
       </div>
     );
 
-  const demoRef = groups.find((x) => offers(x, "demo"));
+  const demoRef = groups.find((x) => offers(x, "demo", product));
   const balances = g ? [...new Set([...DEMO_BALANCES, g.demoInitialBalance])].sort((x, y) => x - y) : DEMO_BALANCES;
+  const done = key === "done";
+  const productName = product === "options" ? t("accounts.product.options") : t("accounts.product.cfd");
+  const review: [string, string][] = g
+    ? [
+        [t("common.account"), cfg.kind === "live" ? t("common.live") : t("common.demo")],
+        ...(optionsOn ? [[t("accounts.label.product"), productName] as [string, string]] : []),
+        [t("common.type"), g.name],
+        ...(optionsGroup ? [] : [[t("accounts.label.leverage"), `1:${cfg.leverage.toLocaleString("en-US")}`] as [string, string]]),
+        [t("accounts.label.startBalance"), cfg.kind === "demo" ? money(cfg.demoBalance, g.cent) : g.cent ? "USC 0.00" : "$0.00"],
+      ]
+    : [];
 
   return (
     <div className="pb-16">
@@ -320,7 +419,7 @@ function Wizard() {
 
       <Reveal>
         <Card className="mb-4 px-5 py-4 sm:px-6">
-          <Stepper steps={STEPS.map((k) => t(k))} current={step} />
+          <Stepper steps={flow.map((k) => t(STEP_LABEL[k]))} current={step} />
         </Card>
       </Reveal>
 
@@ -331,10 +430,20 @@ function Wizard() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-          <div className={cn(step === 4 ? "xl:col-span-12" : "xl:col-span-8")}>
+          <div className={cn(done ? "xl:col-span-12" : "xl:col-span-8")}>
             <AnimatePresence mode="wait" custom={dir}>
-              <motion.div key={step} initial={{ opacity: 0, x: dir * 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: dir * -20 }} transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}>
-                {step === 0 && (
+              <motion.div key={key} initial={{ opacity: 0, x: dir * 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: dir * -20 }} transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}>
+                {key === "product" && (
+                  <Card>
+                    <CardHeader title={t("accounts.wizard.productTitle")} subtitle={t("accounts.wizard.productSubtitle")} />
+                    <div className="grid grid-cols-1 gap-4 px-4 pb-6 pt-4 sm:grid-cols-2 sm:px-6">
+                      <ProductCard product="cfd" selected={product === "cfd"} onSelect={() => set("product", "cfd")} />
+                      <ProductCard product="options" selected={product === "options"} onSelect={() => set("product", "options")} />
+                    </div>
+                  </Card>
+                )}
+
+                {key === "account" && (
                   <Card>
                     <CardHeader title={t("accounts.wizard.chooseTitle")} subtitle={t("accounts.wizard.chooseSubtitle")} />
                     <div className="grid grid-cols-1 gap-4 px-4 pb-6 pt-4 sm:grid-cols-2 sm:px-6">
@@ -344,7 +453,7 @@ function Wizard() {
                   </Card>
                 )}
 
-                {step === 1 && (
+                {key === "type" && (
                   <Card>
                     <CardHeader title={t("accounts.wizard.pickTitle")} subtitle={t(cfg.kind === "live" ? "accounts.wizard.pickSubtitleLive" : "accounts.wizard.pickSubtitleDemo", { count: available.length })} />
                     <div className="grid grid-cols-1 gap-4 px-4 pb-6 pt-4 sm:grid-cols-2 sm:px-6 2xl:grid-cols-3">
@@ -355,37 +464,43 @@ function Wizard() {
                   </Card>
                 )}
 
-                {step === 2 && g && (
+                {key === "configure" && g && (
                   <Card>
                     <CardHeader title={t("accounts.wizard.configureTitle")} subtitle={`${g.name} · ${t.dyn(`accounts.mode.${g.mode}`, modeLabel(g.mode))} · ${cfg.kind === "live" ? t("common.live") : t("common.demo")}`} />
                     <div className="space-y-6 px-4 pb-6 pt-5 sm:px-6">
-                      <div>
-                        <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-[12.5px] font-medium text-fg-2">
-                          {t("accounts.label.leverage")}
-                          <span className="font-normal text-fg-3">{t("accounts.wizard.leverageHint")}</span>
+                      {optionsGroup ? (
+                        <div className="flex items-start gap-3 rounded-[14px] border border-line bg-surface-2 px-4 py-3 text-[13px] text-fg-2" data-testid="options-leverage-note">
+                          <Info className="mt-0.5 size-4 shrink-0 text-info" /> {t("accounts.wizard.optionsLeverage")}
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                          {g.leverages.map((l) => (
-                            <button
-                              key={l}
-                              type="button"
-                              onClick={() => set("leverage", l)}
-                              aria-pressed={cfg.leverage === l}
-                              className={cn(
-                                "k-num h-10 min-w-20 rounded-full border px-4 text-[13.5px] font-semibold transition-colors",
-                                cfg.leverage === l ? "border-ember/60 bg-ember-soft text-ember" : "border-line bg-surface-2 text-fg-2 hover:text-fg",
-                              )}
-                            >
-                              1:{l.toLocaleString("en-US")}
-                            </button>
-                          ))}
-                        </div>
-                        {cfg.leverage >= 1000 && (
-                          <div className="mt-2 flex items-center gap-2 text-[12px] text-warn">
-                            <Info className="size-3.5" /> {t("accounts.wizard.highLeverage")}
+                      ) : (
+                        <div>
+                          <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-[12.5px] font-medium text-fg-2">
+                            {t("accounts.label.leverage")}
+                            <span className="font-normal text-fg-3">{t("accounts.wizard.leverageHint")}</span>
                           </div>
-                        )}
-                      </div>
+                          <div className="flex flex-wrap gap-2">
+                            {g.leverages.map((l) => (
+                              <button
+                                key={l}
+                                type="button"
+                                onClick={() => set("leverage", l)}
+                                aria-pressed={cfg.leverage === l}
+                                className={cn(
+                                  "k-num h-10 min-w-20 rounded-full border px-4 text-[13.5px] font-semibold transition-colors",
+                                  cfg.leverage === l ? "border-ember/60 bg-ember-soft text-ember" : "border-line bg-surface-2 text-fg-2 hover:text-fg",
+                                )}
+                              >
+                                1:{l.toLocaleString("en-US")}
+                              </button>
+                            ))}
+                          </div>
+                          {cfg.leverage >= 1000 && (
+                            <div className="mt-2 flex items-center gap-2 text-[12px] text-warn">
+                              <Info className="size-3.5" /> {t("accounts.wizard.highLeverage")}
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {cfg.kind === "demo" && (
                         <div>
@@ -446,17 +561,12 @@ function Wizard() {
                   </Card>
                 )}
 
-                {step === 3 && g && (
+                {key === "confirm" && g && (
                   <Card>
                     <CardHeader title={t("accounts.wizard.reviewTitle")} subtitle={t("accounts.wizard.reviewSubtitle")} />
                     <div className="space-y-5 px-4 pb-6 pt-4 sm:px-6">
-                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                        {[
-                          [t("common.account"), cfg.kind === "live" ? t("common.live") : t("common.demo")],
-                          [t("common.type"), `${g.name}`],
-                          [t("accounts.label.leverage"), `1:${cfg.leverage.toLocaleString("en-US")}`],
-                          [t("accounts.label.startBalance"), cfg.kind === "demo" ? money(cfg.demoBalance, g.cent) : g.cent ? "USC 0.00" : "$0.00"],
-                        ].map(([k, v]) => (
+                      <div className={cn("grid grid-cols-2 gap-2", review.length > 4 ? "sm:grid-cols-3 lg:grid-cols-5" : "sm:grid-cols-4")}>
+                        {review.map(([k, v]) => (
                           <div key={k} className="k-row px-4 py-3">
                             <div className="text-[12px] text-fg-3">{k}</div>
                             <div className="k-num mt-1 truncate text-[15px] font-semibold">{v}</div>
@@ -475,6 +585,11 @@ function Wizard() {
                         <li className="flex items-start gap-2">
                           <Check className="mt-0.5 size-3.5 shrink-0 text-up" /> {t("accounts.wizard.review.fixed", { mode: t.dyn(`accounts.mode.${g.mode}`, modeLabel(g.mode)), currency: g.cent ? "USC" : "USD" })}
                         </li>
+                        {optionsGroup && (
+                          <li className="flex items-start gap-2">
+                            <Info className="mt-0.5 size-3.5 shrink-0 text-info" /> {t("accounts.product.optionsOnly")}
+                          </li>
+                        )}
                       </ul>
                       <label className="flex cursor-pointer items-start gap-3 text-[13px] text-fg-2">
                         <input type="checkbox" checked={cfg.agree} onChange={(e) => set("agree", e.target.checked)} className="mt-0.5 size-4 accent-[var(--k-ember)]" />
@@ -488,16 +603,16 @@ function Wizard() {
                   </Card>
                 )}
 
-                {step === 4 && created && g && <Created res={created} cfg={cfg} g={g} />}
+                {done && created && g && <Created res={created} cfg={cfg} g={g} />}
               </motion.div>
             </AnimatePresence>
 
-            {step < 4 && (
+            {!done && (
               <div className="mt-4 flex items-center justify-between gap-3">
                 <Button variant="ghost" onClick={() => go(-1)} disabled={step === 0 || busy}>
                   <ArrowLeft className="rtl:-scale-x-100" /> {t("common.back")}
                 </Button>
-                {step < 3 ? (
+                {key !== "confirm" ? (
                   <Button variant="ember" size="lg" onClick={() => go(1)} disabled={!canNext}>
                     {t("common.continue")} <ArrowRight className="rtl:-scale-x-100" />
                   </Button>
@@ -510,10 +625,10 @@ function Wizard() {
             )}
           </div>
 
-          {step < 4 && g && (
+          {!done && g && (
             <div className="hidden xl:col-span-4 xl:block">
               <div className="sticky top-24">
-                <Summary cfg={cfg} g={g} step={step} />
+                <Summary cfg={cfg} g={g} step={step} total={flow.length} showProduct={optionsOn} />
               </div>
             </div>
           )}

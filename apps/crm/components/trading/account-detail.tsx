@@ -7,10 +7,10 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, RotateCw, Server } from "lucide-react";
 import { Button, Card, CardHeader, Chip, CopyButton, EmptyState, Gauge, KeyValue, Money, Reveal, Skeleton, Tabs, cn } from "@/components/kit";
-import { STATUS_LABEL, curOf, fmtAmount, isArchived, fmtDate, fmtLevel, fmtPrice, levelTone, modeLabel, serverOf, serverTime, usePoll, type AccountDetail, type EngineAccount, type EnginePosition, type EngineOrder, type HistoryPage } from "./api";
+import { STATUS_LABEL, curOf, fmtAmount, isArchived, fmtDate, fmtLevel, fmtPrice, levelTone, modeLabel, productOf, serverOf, serverTime, usePoll, type AccountDetail, type EngineAccount, type EnginePosition, type EngineOrder, type HistoryPage } from "./api";
 import { DealsTable, HistoryPanel, LedgerPanel } from "./activity";
 import { CredentialsPanel, SettingsPanel } from "./manage";
-import { AccountActions, FundButton, KindBadge, RefillButton, StatusBadge, TradeButton, isPropAccount } from "./ui";
+import { AccountActions, FundButton, KindBadge, ProductBadge, RefillButton, StatusBadge, TradeButton, isPropAccount } from "./ui";
 import { FlavorChip, RestoreButton, accountFlavor, copyingName } from "./archive";
 import { ClosureBanner } from "./closure";
 import { DefaultStar, HealthCard } from "./extras";
@@ -330,9 +330,11 @@ function OverviewPanel({ a, positions, onTab }: { a: EngineAccount; positions: E
               <KeyValue
                 rows={[
                   [t("common.type"), `${a.type === "live" ? t("common.live") : t("common.demo")} · ${a.groupName}`],
+                  [t("accounts.label.product"), productOf(a) === "options" ? t("accounts.product.optionsTitle") : t("accounts.product.cfdTitle")],
                   [t("accountDetail.info.positionMode"), modeLabel(a.mode)],
                   [t("common.currency"), a.cent ? t("accountDetail.info.uscCents") : a.currency],
-                  [t("accountDetail.info.leverage"), `1:${a.leverage.toLocaleString("en-US")}`],
+                  // Options accounts don't use leverage
+                  ...(productOf(a) === "options" ? [] : [[t("accountDetail.info.leverage"), `1:${a.leverage.toLocaleString("en-US")}`] as [string, string]]),
                   [t("accountDetail.info.server"), <span key="sv" className="font-mono">{serverOf(a)}</span>],
                   [t("common.status"), <Chip key="st" size="sm" tone={st.tone}>{st.label}</Chip>],
                   [t("accountDetail.info.opened"), fmtDate(a.createdAt)],
@@ -440,6 +442,7 @@ function Detail() {
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <KindBadge type={a.type} prop={isPropAccount(a)} />
+                <ProductBadge a={a} />
                 <FlavorChip a={a} />
                 <h1 className="text-[20px] font-medium tracking-tight">
                   {a.groupName} · {modeLabel(a.mode)}
@@ -457,7 +460,7 @@ function Detail() {
                   <Server className="size-3.5 text-fg-3" />
                   <span className="font-mono">{serverOf(a)}</span>
                 </span>
-                <Chip size="sm">1:{a.leverage.toLocaleString("en-US")}</Chip>
+                {productOf(a) !== "options" && <Chip size="sm">1:{a.leverage.toLocaleString("en-US")}</Chip>}
                 <span className="text-fg-3">{a.cent ? t("accountDetail.header.centCurrency") : a.currency}</span>
                 {accountFlavor(a) === "copy" && copyingName(a) && <span className="font-medium text-fg">{t("accounts.copy.copying", { name: copyingName(a)! })}</span>}
                 {archived && (a.archivedAt ?? a.closedAt) && <span className="text-fg-3">{t(a.status === "closed" ? "accounts.archived.closedOn" : "accounts.archived.on", { date: fmtDate(a.archivedAt ?? a.closedAt) })}</span>}

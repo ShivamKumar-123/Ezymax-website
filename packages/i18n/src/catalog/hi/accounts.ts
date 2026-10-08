@@ -580,5 +580,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.productTitle": "आप क्या ट्रेड करना चाहते हैं?",
   "wizard.productSubtitle": "हर अकाउंट एक ही प्रोडक्ट ट्रेड करता है: CFD या ऑप्शंस। आप दोनों तरह के अकाउंट रख सकते हैं।",
   "wizard.optionsLeverage": "ऑप्शंस में लीवरेज नहीं होता: ऑप्शन खरीदने पर उसका प्रीमियम लगता है, बेचने के लिए मार्जिन चाहिए।",
+  "summary.stepCount": "चरण {step}/{total}",
+  "summary.leverageOnly": "खुलने के बाद केवल लीवरेज बदला जा सकता है",
 };
 export default accounts;

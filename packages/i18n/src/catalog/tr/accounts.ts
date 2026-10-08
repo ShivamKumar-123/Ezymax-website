@@ -576,5 +576,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.productTitle": "Ne ile işlem yapmak istiyorsunuz?",
   "wizard.productSubtitle": "Her hesap tek bir ürünle işlem yapar: CFD veya opsiyon. İki tür hesaba da sahip olabilirsiniz.",
   "wizard.optionsLeverage": "Opsiyonlarda kaldıraç yoktur: opsiyon almak primine mal olur, satmak teminat gerektirir.",
+  "summary.stepCount": "Adım {step}/{total}",
+  "summary.leverageOnly": "hesap açıldıktan sonra yalnızca kaldıraç değiştirilebilir",
 };
 export default accounts;

@@ -573,5 +573,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.productTitle": "Bạn muốn giao dịch gì?",
   "wizard.productSubtitle": "Mỗi tài khoản chỉ giao dịch một sản phẩm: CFD hoặc quyền chọn. Bạn có thể có cả hai loại.",
   "wizard.optionsLeverage": "Quyền chọn không dùng đòn bẩy: mua quyền chọn tốn phí quyền chọn, bán quyền chọn cần ký quỹ.",
+  "summary.stepCount": "Bước {step}/{total}",
+  "summary.leverageOnly": "sau khi mở chỉ có thể đổi đòn bẩy",
 };
 export default accounts;

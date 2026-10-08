@@ -580,5 +580,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.productTitle": "چه چیزی می‌خواهید معامله کنید؟",
   "wizard.productSubtitle": "هر حساب فقط یک محصول را معامله می‌کند: CFD یا اختیار معامله. می‌توانید هر دو نوع حساب را داشته باشید.",
   "wizard.optionsLeverage": "اختیار معامله اهرم ندارد: خرید اختیار به اندازه پریمیوم آن هزینه دارد و فروش آن به مارجین نیاز دارد.",
+  "summary.stepCount": "مرحله {step} از {total}",
+  "summary.leverageOnly": "پس از افتتاح فقط اهرم قابل تغییر است",
 };
 export default accounts;

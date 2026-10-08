@@ -16,12 +16,15 @@ import type { DealOption, InstrumentFilter, PositionOption } from "./option-deal
 /* ------------------------------------------------------------------ */
 
 export type AccountKind = "live" | "demo";
+/** What an account trades, from its group: CFDs, or Ezymex FX Options only (never both). Missing (older engine) = cfd. */
+export type AccountProduct = "cfd" | "options";
 
 export interface EngineAccount {
   login: number;
   type: AccountKind;
   group: string;
   groupName: string;
+  product?: AccountProduct;
   mode: "hedging" | "netting";
   cent: boolean;
   currency: string;
@@ -64,6 +67,8 @@ export interface EngineAccount {
 export interface EngineGroup {
   code: string;
   name: string;
+  /** Options groups don't use leverage (option margin ignores it): accounts open at `defaultLeverage`. */
+  product?: AccountProduct;
   mode: "hedging" | "netting";
   cent: boolean;
   accountTypes: "live" | "demo" | "both";
@@ -296,19 +301,42 @@ export function usePoll<T>(path: string | null, ms: number) {
 export const useAccounts = (ms = 5000) => usePoll<{ accounts: EngineAccount[] }>("accounts", ms);
 export const useGroups = () => usePoll<{ groups: EngineGroup[] }>("groups", 0);
 
+/** The product of an account or group (engine `product`, missing = cfd). Decide by this, never by the group code. */
+export const productOf = (x: { product?: string | null } | null | undefined): AccountProduct => (x?.product === "options" ? "options" : "cfd");
+
+/** Logins of the client's Options accounts. CFD-only features whose own account lists don't carry the product
+ *  (algo, MAM, copy-trading masters) leave these out of their pickers; the engine refuses them anyway.
+ *  `enabled` false skips the fetch (e.g. a closed dialog). */
+export function useOptionsLogins(enabled = true): Set<number> {
+  const { data } = usePoll<{ accounts: EngineAccount[] }>(enabled ? "accounts" : null, 0);
+  return React.useMemo(() => new Set((data?.accounts ?? []).filter((a) => productOf(a) === "options").map((a) => a.login)), [data]);
+}
+
+/** The terminal opens straight in options mode with `?mode=options` next to the SSO token. */
+export function withOptionsMode(url: string): string {
+  try {
+    const u = new URL(url, window.location.href);
+    u.searchParams.set("mode", "options");
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
 /**
- * Trade button: asks for a one-time SSO token and opens Ezymex Trader at `/?sso=<token>`.
- * The tab is opened synchronously (inside the click) so popup blockers let it through.
+ * Trade button: asks for a one-time SSO token and opens Ezymex Trader at `/?sso=<token>`, an Options account in
+ * options mode. The tab is opened synchronously (inside the click) so popup blockers let it through.
  */
-export async function openTerminal(login: number) {
+export async function openTerminal(login: number, product: AccountProduct = "cfd") {
   const w = window.open("about:blank", "_blank");
   try {
     const r = await tradingApi<{ url: string }>(`accounts/${login}/sso`, { body: {} });
+    const url = product === "options" ? withOptionsMode(r.url) : r.url;
     if (w && !w.closed) {
       w.opener = null;
-      w.location.replace(r.url);
+      w.location.replace(url);
     } else {
-      window.location.assign(r.url);
+      window.location.assign(url);
     }
   } catch (e) {
     w?.close();

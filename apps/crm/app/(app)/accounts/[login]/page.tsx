@@ -9,14 +9,15 @@ import { toast } from "sonner";
 import { Button, Card, Chip, CopyButton, EmptyState, Money, Starfield, Tabs, cn, formatNumber, useQuotes } from "@/components/kit";
 import { freeMargin, marginLevel, positionProfit } from "@ezymex/mock";
 import { accountPositions, accountTrades, findAccount, isArchived } from "@ezymex/mock/accounts-extra";
-import { AccountBadge, AccountMenu, accountTitle } from "@/components/account-row";
+import { AccountBadge, AccountMenu, accountTitle, traderHref } from "@/components/account-row";
 import { OverviewTab, PortfolioTab, curOf, multOf } from "@/components/accounts/detail-overview";
 import { ChargesTab, HistoryTab, LedgerTab, PositionsTab } from "@/components/accounts/detail-activity";
 import { CredentialsTab, SettingsTab } from "@/components/accounts/detail-manage";
 import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LiveAccountDetail } from "@/components/trading/account-detail";
+import { productOf } from "@/components/trading/api";
+import { ProductBadge } from "@/components/trading/ui";
 import { useT } from "@ezymex/i18n/react";
-import { TERMINAL_URL } from "@/lib/live";
 
 const TAB_KEYS = ["overview", "portfolio", "positions", "history", "charges", "ledger", "credentials", "settings"] as const;
 type TabKey = (typeof TAB_KEYS)[number];
@@ -90,6 +91,7 @@ function Detail() {
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <AccountBadge a={a} />
+                <ProductBadge a={a} />
                 <h1 className="text-[20px] font-medium tracking-tight">{accountTitle(a)}</h1>
                 {a.nickname && <span className="text-[14px] text-fg-3">“{a.nickname}”</span>}
                 {a.swapFree && (
@@ -108,7 +110,7 @@ function Detail() {
                   <Server className="size-3.5 text-fg-3" />
                   <span className="font-mono">{a.server}</span>
                 </span>
-                <Chip size="sm">1:{a.leverage.toLocaleString()}</Chip>
+                {productOf(a) !== "options" && <Chip size="sm">1:{a.leverage.toLocaleString()}</Chip>}
                 <span className="text-fg-3">{a.currency}</span>
               </div>
               <div className="mt-5 k-label">{t("common.equity")}</div>
@@ -155,7 +157,7 @@ function Detail() {
                   <RefreshCcw /> {t("accountDetail.header.refill")}
                 </Button>
               )}
-              <Link target="_blank" rel="noopener" href={`${TERMINAL_URL}/?account=${a.login}`}>
+              <Link target="_blank" rel="noopener" href={traderHref(a)}>
                 <Button variant="ember" size="lg" shimmer disabled={archived} onClick={() => archived && toast(t("accountDetail.toast.archived"))}>
                   <CandlestickChart /> {t("accountDetail.header.trade")}
                 </Button>

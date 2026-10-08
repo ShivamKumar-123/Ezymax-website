@@ -12,7 +12,7 @@ import { Button, Card, CardHeader, Chip, EmptyState, Menu, PageHeader, Progress,
 import { Trans, useT } from "@ezymex/i18n/react";
 import { NumInput } from "./builder";
 import { BacktestReport } from "./report";
-import { algoApi, algoError, fmtDate, fmtPct, fmtNum, useAlgo, type BacktestDetail, type BacktestRow, type StrategyItem, type TradingAccount } from "./api";
+import { algoApi, algoError, fmtDate, fmtPct, fmtNum, useAlgo, useCfdAccounts, type BacktestDetail, type BacktestRow, type StrategyItem } from "./api";
 
 const GROUPS = [
   { value: "standard", label: "developer.group.standard" },
@@ -38,7 +38,7 @@ export function LiveBacktestsPage() {
   const router = useRouter();
   const params = useSearchParams();
   const strategies = useAlgo<{ items: StrategyItem[] }>("strategies");
-  const accounts = useAlgo<{ items: TradingAccount[] }>("accounts");
+  const accounts = useCfdAccounts();
   const [runningPoll, setRunningPoll] = React.useState(3000);
   const list = useAlgo<{ items: BacktestRow[] }>("backtests?limit=30", runningPoll);
   const [strategyId, setStrategyId] = React.useState<number | null>(params.get("strategy") ? Number(params.get("strategy")) : null);

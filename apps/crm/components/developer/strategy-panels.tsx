@@ -6,6 +6,7 @@ import { ChevronDown, FlaskConical, Plus, Save, Server, ShieldAlert, Check } fro
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, Field, Icon3D, Input, Menu, Money, Sparkline, StatusChip, SymbolAvatar, Toggle, cn } from "@/components/kit";
 import { ACCOUNTS } from "@ezymex/mock";
+import { productOf } from "@/components/trading/api";
 import { LIVE_SIGNALS, MY_STRATEGIES, TEMPLATES, type StrategyRules } from "@ezymex/mock/algo";
 
 /* ------------------------------------------------------------------ */
@@ -155,7 +156,7 @@ export function DeployCard({ rules, initialRunning, initialLogin }: { rules: Str
                 <ChevronDown className="size-4 text-fg-3" />
               </button>
             }
-            items={ACCOUNTS.map((a) => ({
+            items={ACCOUNTS.filter((a) => productOf(a) !== "options").map((a) => ({
               label: (
                 <span className="flex items-center gap-2">
                   <span className="font-mono">#{a.login}</span>

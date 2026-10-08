@@ -580,5 +580,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.productTitle": "O que você quer negociar?",
   "wizard.productSubtitle": "Cada conta negocia um só produto: CFDs ou opções. Você pode ter os dois tipos.",
   "wizard.optionsLeverage": "Opções não usam alavancagem: comprar uma opção custa o prêmio, e vendê-la exige margem.",
+  "summary.stepCount": "Etapa {step} de {total}",
+  "summary.leverageOnly": "após a abertura, apenas a alavancagem pode ser alterada",
 };
 export default accounts;

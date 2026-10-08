@@ -573,5 +573,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.productTitle": "آپ کیا ٹریڈ کرنا چاہتے ہیں؟",
   "wizard.productSubtitle": "ہر اکاؤنٹ ایک ہی پروڈکٹ ٹریڈ کرتا ہے: CFD یا آپشنز۔ آپ دونوں قسم کے اکاؤنٹ رکھ سکتے ہیں۔",
   "wizard.optionsLeverage": "آپشنز میں لیوریج نہیں ہوتا: آپشن خریدنے پر اس کا پریمیم لگتا ہے، بیچنے کے لیے مارجن درکار ہے۔",
+  "summary.stepCount": "مرحلہ {step} از {total}",
+  "summary.leverageOnly": "کھولنے کے بعد صرف لیوریج تبدیل ہو سکتا ہے",
 };
 export default accounts;

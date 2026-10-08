@@ -10,7 +10,7 @@ import { Button, Card, CardHeader, Chip, CopyButton, Dialog, EmptyState, Menu, P
 import { MoreHorizontal } from "lucide-react";
 import { Trans, useT } from "@ezymex/i18n/react";
 import { NumInput } from "./builder";
-import { algoApi, algoError, ago, fmtDateTime, useAlgo, type TradingAccount } from "./api";
+import { algoApi, algoError, ago, fmtDateTime, useAlgo, useCfdAccounts, type TradingAccount } from "./api";
 
 interface Hook {
   id: number;
@@ -180,7 +180,7 @@ function StatusTone(s: string) {
 export function LiveWebhooksPage() {
   const t = useT();
   const list = useAlgo<{ items: Hook[]; events: HookEvent[]; baseUrl: string }>("webhooks", 5000);
-  const accounts = useAlgo<{ items: TradingAccount[] }>("accounts");
+  const accounts = useCfdAccounts();
   const [creating, setCreating] = React.useState(false);
   const [shown, setShown] = React.useState<string | null>(null);
   const [selected, setSelected] = React.useState<number | null>(null);

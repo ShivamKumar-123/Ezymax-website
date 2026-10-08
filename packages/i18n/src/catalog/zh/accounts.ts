@@ -573,5 +573,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.productTitle": "您想交易什么？",
   "wizard.productSubtitle": "每个账户只交易一种产品：CFD 或期权。两种账户您都可以持有。",
   "wizard.optionsLeverage": "期权不使用杠杆：买入期权的成本是权利金，卖出期权需要保证金。",
+  "summary.stepCount": "第 {step} 步，共 {total} 步",
+  "summary.leverageOnly": "开户后仅可更改杠杆",
 };
 export default accounts;

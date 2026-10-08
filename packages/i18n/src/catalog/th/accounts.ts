@@ -573,5 +573,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.productTitle": "คุณต้องการเทรดอะไร?",
   "wizard.productSubtitle": "แต่ละบัญชีเทรดได้ผลิตภัณฑ์เดียว: CFD หรือออปชัน คุณมีได้ทั้งสองประเภท",
   "wizard.optionsLeverage": "ออปชันไม่ใช้เลเวอเรจ: การซื้อออปชันมีค่าใช้จ่ายเท่ากับพรีเมียม ส่วนการขายต้องใช้มาร์จิ้น",
+  "summary.stepCount": "ขั้นตอนที่ {step} จาก {total}",
+  "summary.leverageOnly": "หลังเปิดบัญชีจะเปลี่ยนได้เฉพาะเลเวอเรจ",
 };
 export default accounts;

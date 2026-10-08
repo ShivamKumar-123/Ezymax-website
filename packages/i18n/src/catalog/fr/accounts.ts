@@ -575,5 +575,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.productTitle": "Que voulez-vous trader ?",
   "wizard.productSubtitle": "Chaque compte trade un seul produit : des CFD ou des options. Vous pouvez détenir les deux types.",
   "wizard.optionsLeverage": "Les options n'utilisent pas d'effet de levier : acheter une option coûte sa prime, en vendre une exige de la marge.",
+  "summary.stepCount": "Étape {step} sur {total}",
+  "summary.leverageOnly": "après l'ouverture, seul le levier peut être modifié",
 };
 export default accounts;

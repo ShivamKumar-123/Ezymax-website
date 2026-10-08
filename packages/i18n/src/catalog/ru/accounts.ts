@@ -613,5 +613,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.productTitle": "Чем вы хотите торговать?",
   "wizard.productSubtitle": "Каждый счёт торгует одним продуктом: CFD или опционами. Можно иметь счета обоих типов.",
   "wizard.optionsLeverage": "У опционов нет кредитного плеча: покупка опциона стоит его премию, а для продажи нужна маржа.",
+  "summary.stepCount": "Шаг {step} из {total}",
+  "summary.leverageOnly": "после открытия можно изменить только плечо",
 };
 export default accounts;

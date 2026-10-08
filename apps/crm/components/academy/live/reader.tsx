@@ -8,7 +8,7 @@ import { useT } from "@ezymex/i18n/react";
 import { LEVEL_TONE, academyApi, isElective, levelLabel, trackLabel, trackTone, useAcademy, type ChapterView, type QuizReply } from "./api";
 import { Markdown, headingsOf } from "./markdown";
 import { ChapterQuiz } from "./quiz";
-import { AcademyUnavailable, BackLink, PracticeButton, RISK_NOTE, StatusDot, TrackIcon } from "./shared";
+import { AcademyUnavailable, BackLink, OPTIONS_PHASE, PracticeButton, RISK_NOTE, StatusDot, TrackIcon } from "./shared";
 
 /** Reports how far through the article the reader has scrolled (max so far), throttled. */
 function useReadingProgress(slug: string, articleRef: React.RefObject<HTMLElement | null>, initial: number) {
@@ -202,7 +202,7 @@ function Article({ view, onQuiz }: { view: ChapterView; onQuiz: (r: QuizReply) =
                 </div>
               </div>
               <div className="shrink-0">
-                <PracticeButton size="sm" label={t("academy.practice.openDemo")} />
+                <PracticeButton size="sm" label={t("academy.practice.openDemo")} product={phase.slug === OPTIONS_PHASE ? "options" : "cfd"} />
               </div>
             </Card>
           )}

@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Button, Chip, CopyButton, Dialog, IconButton, Menu, Money, cn, type ButtonProps } from "@/components/kit";
 import { useT } from "@ezymex/i18n/react";
 import { useReadOnly } from "@/components/session";
-import { STATUS_LABEL, curOf, errorToast, fmtLevel, levelTone, openTerminal, serverOf, tradingApi, type EngineAccount } from "./api";
+import { STATUS_LABEL, curOf, errorToast, fmtLevel, levelTone, openTerminal, productOf, serverOf, tradingApi, type AccountProduct, type EngineAccount } from "./api";
 import { DeleteAccountDialog, FlavorChip, RenameDialog, accountFlavor, copyingName } from "./archive";
 import { CloseAccountDialog } from "./closure";
 import { ChangeTypeDialog, DefaultStar, DemoBalanceDialog, TransferBetweenDialog, setDefaultAccount } from "./extras";
@@ -37,6 +37,17 @@ export function KindBadge({ type, prop }: { type: "live" | "demo"; prop?: boolea
   );
 }
 
+/** CFD or Options: what the account trades (its account type decides), shown next to the LIVE / DEMO badge. */
+export function ProductBadge({ a }: { a: { product?: AccountProduct | null } }) {
+  const t = useT();
+  const options = productOf(a) === "options";
+  return (
+    <Chip tone={options ? "info" : "neutral"} size="sm" className="font-semibold tracking-wider">
+      {options ? t("accounts.product.options") : t("accounts.product.cfd")}
+    </Chip>
+  );
+}
+
 export function StatusBadge({ a }: { a: Pick<EngineAccount, "status"> }) {
   const t = useT();
   if (a.status === "active") return null;
@@ -48,8 +59,8 @@ export function StatusBadge({ a }: { a: Pick<EngineAccount, "status"> }) {
   );
 }
 
-/** Opens Ezymex Trader signed in to this account (one-time SSO token). */
-export function TradeButton({ a, size = "sm", label, ...rest }: { a: Pick<EngineAccount, "login" | "status"> } & Omit<ButtonProps, "onClick"> & { label?: string }) {
+/** Opens Ezymex Trader signed in to this account (one-time SSO token); an Options account opens in options mode. */
+export function TradeButton({ a, size = "sm", label, ...rest }: { a: Pick<EngineAccount, "login" | "status" | "product"> } & Omit<ButtonProps, "onClick"> & { label?: string }) {
   const t = useT();
   const [busy, setBusy] = React.useState(false);
   const blocked = a.status === "disabled" || a.status === "expired" || a.status === "archived" || a.status === "closed";
@@ -61,7 +72,7 @@ export function TradeButton({ a, size = "sm", label, ...rest }: { a: Pick<Engine
       title={blocked ? t("accounts.row.cantOpenTrader") : undefined}
       onClick={async () => {
         setBusy(true);
-        await openTerminal(a.login);
+        await openTerminal(a.login, productOf(a));
         setBusy(false);
       }}
       {...rest}
@@ -185,6 +196,8 @@ export function AccountActions({ a, onChanged }: { a: EngineAccount; onChanged?:
   const prop = isPropAccount(a);
   const live = a.type === "live";
   const special = prop || accountFlavor(a) !== null;
+  // Options accounts don't use leverage (option margin ignores it)
+  const options = productOf(a) === "options";
   const star = async () => {
     try {
       await setDefaultAccount(a.isDefault ? null : a.login);
@@ -205,7 +218,7 @@ export function AccountActions({ a, onChanged }: { a: EngineAccount; onChanged?:
         items={[
           { label: t("accounts.menu.details"), icon: <GaugeIcon />, href: `/accounts/${a.login}` },
           { label: a.isDefault ? t("accounts.default.unset") : t("accounts.default.makeDefault"), icon: a.isDefault ? <StarOff /> : <Star />, onSelect: () => void star() },
-          { label: t("accounts.menu.changeLeverage"), icon: <GaugeIcon />, href: `/accounts/${a.login}?tab=settings` },
+          ...(options ? [] : [{ label: t("accounts.menu.changeLeverage"), icon: <GaugeIcon />, href: `/accounts/${a.login}?tab=settings` }]),
           ...(special ? [] : [{ label: t("accounts.type.menu"), icon: <Layers />, onSelect: () => setTyping(true) }]),
           ...(live && !prop ? [{ label: t("accounts.between.menu"), icon: <ArrowLeftRight />, onSelect: () => setMoving(true) }] : []),
           ...(!live ? [{ label: t("accounts.demoBalance.menu"), icon: <Coins />, onSelect: () => setDemoBal(true) }] : []),
@@ -258,6 +271,7 @@ export function LiveAccountRow({ a, onChanged, compact }: { a: EngineAccount; on
     <div className="k-row group relative overflow-hidden p-4 transition-colors hover:border-[var(--k-border-top)] sm:p-5">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <KindBadge type={a.type} prop={isPropAccount(a)} />
+        <ProductBadge a={a} />
         <FlavorChip a={a} />
         <Link href={`/accounts/${a.login}`} className="text-[15px] font-medium text-fg hover:text-ember">
           {a.groupName} · {t.dyn(`accounts.mode.${a.mode}`, a.mode)}
@@ -286,7 +300,7 @@ export function LiveAccountRow({ a, onChanged, compact }: { a: EngineAccount; on
         )}
         <div className="ms-auto flex items-center gap-2 text-xs text-fg-3">
           <span className="hidden font-mono sm:inline">{serverOf(a)}</span>
-          <Chip size="sm">1:{a.leverage.toLocaleString("en-US")}</Chip>
+          {productOf(a) !== "options" && <Chip size="sm">1:{a.leverage.toLocaleString("en-US")}</Chip>}
         </div>
       </div>
       <div className={cn("mt-4 grid items-end gap-4", compact ? "grid-cols-2 sm:grid-cols-3 xl:grid-cols-[1fr_1fr_1fr_auto]" : "grid-cols-2 sm:grid-cols-4 xl:grid-cols-[1fr_1fr_1fr_1fr_auto]")}>

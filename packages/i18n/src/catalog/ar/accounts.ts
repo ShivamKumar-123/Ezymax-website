@@ -630,5 +630,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.productTitle": "ماذا تريد أن تتداول؟",
   "wizard.productSubtitle": "كل حساب يتداول منتجًا واحدًا: عقود الفروقات أو الخيارات. يمكنك امتلاك النوعين معًا.",
   "wizard.optionsLeverage": "لا تستخدم الخيارات رافعة مالية: شراء الخيار يكلّف علاوته، وبيعه يتطلب هامشًا.",
+  "summary.stepCount": "الخطوة {step} من {total}",
+  "summary.leverageOnly": "بعد الفتح يمكن تغيير الرافعة المالية فقط",
 };
 export default accounts;

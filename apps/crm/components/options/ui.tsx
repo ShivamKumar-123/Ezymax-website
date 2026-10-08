@@ -4,8 +4,9 @@
 // Put, limited risk when you buy) and one step before the first trade: tick "I understand how options work" and press
 // "Start trading options", which records the acceptance of the options terms and opens Ezymex Trader in options mode.
 // Verified identity and the knowledge quiz aren't needed (gateway suitability.rs); the Academy course stays as an
-// optional "Test yourself". Rendered by the live page (gateway suitability via /api/suitability) and the demo page
-// (local state) through the same OptionsController.
+// optional "Test yourself". Options trade on an Options account only (an account trades CFDs or options, never
+// both): a client without one is asked to open one first. Rendered by the live page (gateway suitability via
+// /api/suitability) and the demo page (local state) through the same OptionsController.
 
 import * as React from "react";
 import Link from "next/link";
@@ -36,7 +37,7 @@ import {
   TriangleAlert,
   Wallet,
 } from "lucide-react";
-import { Button, Card, CardHeader, Chip, Dialog, Menu, PageHeader, Reveal, Skeleton, SymbolAvatar, cn } from "@/components/kit";
+import { Button, Card, CardHeader, Chip, Dialog, Icon3D, Menu, PageHeader, Reveal, Skeleton, SymbolAvatar, cn } from "@/components/kit";
 import { INSTRUMENT_MAP } from "@ezymex/mock";
 import { IS_DEMO } from "@ezymex/mock/mode";
 import type { MessageKey } from "@ezymex/i18n";
@@ -48,6 +49,9 @@ import type { Suitability } from "./api";
  *  have the mock Academy. */
 export const OPTIONS_COURSE_HREF = IS_DEMO ? "/academy" : "/academy/phase/phase-9";
 
+/** Options trade on an Options account only: the open-account wizard, preset to the Options product. */
+const OPEN_OPTIONS_HREF = "/accounts/new?product=options";
+
 export type TradeAccount = { login: number; type: "live" | "demo"; name: string };
 
 /** What a page variant (live / demo) provides. Write methods resolve to false after showing their own toast. */
@@ -57,7 +61,7 @@ export type OptionsController = {
   reload: () => void;
   /** Records the acceptance of the options terms (`version` = the current one). */
   accept: (version: number) => Promise<boolean>;
-  /** Accounts options can be traded on; null while loading. */
+  /** The client's Options accounts (the only ones options trade on); null while loading. */
   accounts: TradeAccount[] | null;
   /** Plain Ezymex Trader link (options mode) when the accounts can't be listed: the terminal signs in by itself. */
   traderHref?: string | null;
@@ -239,15 +243,15 @@ function TraderButton({
   if (accounts.length === 0) {
     if (before) {
       return (
-        <Button variant="ember" size={size} disabled={off} onClick={() => run(async () => void ((await before()) && router.push("/accounts/new")))} className={className} data-testid={testId}>
+        <Button variant="ember" size={size} disabled={off} onClick={() => run(async () => void ((await before()) && router.push(OPEN_OPTIONS_HREF)))} className={className} data-testid={testId}>
           {ico} {text} <ArrowRight className="rtl:-scale-x-100" />
         </Button>
       );
     }
     return (
-      <Link href="/accounts/new" className={className}>
+      <Link href={OPEN_OPTIONS_HREF} className={className}>
         <Button variant="ember" size={size} className="w-full">
-          {t("options.trade.openAccount")} <ArrowRight className="rtl:-scale-x-100" />
+          {t("accounts.product.openOptions")} <ArrowRight className="rtl:-scale-x-100" />
         </Button>
       </Link>
     );
@@ -326,7 +330,7 @@ function Hero({ ctl, onStart, onHowItWorks }: { ctl: OptionsController; onStart:
               </div>
               <p className="mt-3 flex max-w-[560px] items-start gap-2 text-[13px] leading-snug text-fg-2">
                 <CircleCheck className="mt-px size-4 shrink-0 text-up" />
-                {t(ctl.accounts && ctl.accounts.length === 0 ? "options.trade.noAccount" : "options.trade.ready")}
+                {t(ctl.accounts && ctl.accounts.length === 0 ? "options.account.noneTitle" : "options.trade.ready")}
               </p>
             </>
           ) : (
@@ -444,6 +448,39 @@ function IntroCard({ ctl, data, onTerms }: { ctl: OptionsController; data: Suita
             />
           </div>
         </div>
+      </div>
+    </Card>
+  );
+}
+
+/** No Options account yet: options trade on their own account type (CFD accounts can't), so opening one comes first;
+ *  the intro and the terms follow once there is one. */
+function NoAccountCard({ readOnly }: { readOnly: boolean }) {
+  const t = useT();
+  return (
+    <Card id="get-started" className="scroll-mt-24" data-testid="options-no-account">
+      <div className="flex flex-col gap-5 px-5 py-6 sm:px-6 md:flex-row md:items-center">
+        <div className="shrink-0">
+          <Icon3D name="chart_increasing" size={64} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[18px] font-medium leading-tight tracking-tight text-fg">{t("options.account.noneTitle")}</div>
+          <p className="mt-1.5 max-w-[560px] text-[13.5px] leading-relaxed text-fg-2">{t("options.account.noneText")}</p>
+          <ul className="mt-3 space-y-1.5 text-[13px] text-fg-2">
+            {(["accounts.product.optionsPoint1", "accounts.product.optionsPoint2", "accounts.product.optionsPoint3"] as const).map((k) => (
+              <li key={k} className="flex items-center gap-2">
+                <CircleCheck className="size-3.5 shrink-0 text-up" /> {t(k)}
+              </li>
+            ))}
+          </ul>
+        </div>
+        {!readOnly && (
+          <Link href={OPEN_OPTIONS_HREF} className="w-full shrink-0 md:w-auto" data-testid="options-open-account">
+            <Button variant="ember" size="lg" className="w-full">
+              {t("accounts.product.openOptions")} <ArrowRight className="rtl:-scale-x-100" />
+            </Button>
+          </Link>
+        )}
       </div>
     </Card>
   );
@@ -620,6 +657,8 @@ export function OptionsPage({ ctl }: { ctl: OptionsController }) {
   const t = useT();
   const data = ctl.data;
   const eligible = !!data?.eligible;
+  // no Options account: the call to open one takes the intro's place (and its side column)
+  const noAccount = !!ctl.accounts && ctl.accounts.length === 0;
   const [howOpen, setHowOpen] = React.useState(false);
   const [termsOpen, setTermsOpen] = React.useState(false);
   const start = () => document.getElementById("get-started")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -648,7 +687,11 @@ export function OptionsPage({ ctl }: { ctl: OptionsController }) {
         <Reveal className="xl:col-span-3">
           <Hero ctl={ctl} onStart={start} onHowItWorks={() => setHowOpen(true)} />
         </Reveal>
-        {!eligible && (
+        {noAccount ? (
+          <Reveal delay={0.06} className="min-w-0 xl:col-span-2">
+            <NoAccountCard readOnly={ctl.readOnly} />
+          </Reveal>
+        ) : !eligible && (
           <Reveal delay={0.06} className="min-w-0 xl:col-span-2">
             {data ? (
               <IntroCard ctl={ctl} data={data} onTerms={() => setTermsOpen(true)} />
@@ -665,7 +708,7 @@ export function OptionsPage({ ctl }: { ctl: OptionsController }) {
             )}
           </Reveal>
         )}
-        <Reveal delay={0.1} className={cn("min-w-0", eligible ? "grid grid-cols-1 items-start gap-4 lg:grid-cols-2 xl:col-span-3" : "space-y-4")}>
+        <Reveal delay={0.1} className={cn("min-w-0", eligible && !noAccount ? "grid grid-cols-1 items-start gap-4 lg:grid-cols-2 xl:col-span-3" : "space-y-4")}>
           <FactsCard />
           <LearnCard />
         </Reveal>

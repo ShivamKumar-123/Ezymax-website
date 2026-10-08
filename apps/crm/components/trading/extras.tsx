@@ -4,7 +4,7 @@
 // accounts, demo balance of your choice, and the account health card.
 //
 //   POST /api/trading/prefs                          {defaultLogin}
-//   GET  /api/trading/accounts/{login}/group-options -> {groups: [{code, name, minDeposit, allowed, blocker}]}
+//   GET  /api/trading/accounts/{login}/group-options -> {groups: [{code, name, product, minDeposit, allowed, blocker}]}
 //   POST /api/trading/accounts/{login}/group         {group}
 //   POST /api/trading/accounts/{login}/demo-balance  {amount}
 //   GET  /api/trading/accounts/{login}/health        -> {score, items: [{key, status, value}]}
@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, Dialog, Field, Input, Skeleton, cn } from "@/components/kit";
 import { useT } from "@ezymex/i18n/react";
 import { StepUpDialog } from "@/components/stepup";
-import { curOf, errorToast, isArchived, toUsd, tradingApi, usePoll, useAccounts, type EngineAccount } from "./api";
+import { curOf, errorToast, isArchived, productOf, toUsd, tradingApi, usePoll, useAccounts, type AccountProduct, type EngineAccount } from "./api";
 import { isPropAccount } from "./ui";
 
 /* ------------------------------------------------------------------ */
@@ -42,7 +42,7 @@ export function DefaultStar({ a, className }: { a: Pick<EngineAccount, "isDefaul
 /* Change account type (group)                                         */
 /* ------------------------------------------------------------------ */
 
-type GroupOption = { code: string; name: string; mode: string; cent: boolean; minDeposit: number; leverages: number[]; commissionPerLot: number; swapFree: boolean; allowed: boolean; blocker: { code: string; message: string } | null };
+type GroupOption = { code: string; name: string; product?: AccountProduct; mode: string; cent: boolean; minDeposit: number; leverages: number[]; commissionPerLot: number; swapFree: boolean; allowed: boolean; blocker: { code: string; message: string } | null };
 
 export function ChangeTypeDialog({ a, open, onOpenChange, onDone }: { a: EngineAccount; open: boolean; onOpenChange: (o: boolean) => void; onDone?: () => void }) {
   const t = useT();
@@ -56,8 +56,9 @@ export function ChangeTypeDialog({ a, open, onOpenChange, onDone }: { a: EngineA
     setOpts(null);
     setErr(null);
     setPick("");
+    // an account keeps its product: only types of the same product (the engine offers and allows no others)
     tradingApi<{ groups: GroupOption[] }>(`accounts/${a.login}/group-options`)
-      .then((r) => !stop && setOpts(r.groups))
+      .then((r) => !stop && setOpts(r.groups.filter((g) => productOf(g) === productOf(a))))
       .catch((e) => !stop && setErr(e instanceof Error && e.message ? e.message : ""));
     return () => {
       stop = true;

@@ -580,5 +580,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.productTitle": "আপনি কী ট্রেড করতে চান?",
   "wizard.productSubtitle": "প্রতিটি অ্যাকাউন্ট একটি প্রোডাক্ট ট্রেড করে: CFD অথবা অপশন। আপনি দুই ধরনের অ্যাকাউন্টই রাখতে পারেন।",
   "wizard.optionsLeverage": "অপশনে লিভারেজ নেই: অপশন কিনতে প্রিমিয়াম লাগে, বিক্রি করতে মার্জিন লাগে।",
+  "summary.stepCount": "ধাপ {step}/{total}",
+  "summary.leverageOnly": "খোলার পর শুধু লিভারেজ পরিবর্তন করা যায়",
 };
 export default accounts;

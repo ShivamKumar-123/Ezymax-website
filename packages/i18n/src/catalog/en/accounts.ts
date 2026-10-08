@@ -606,5 +606,8 @@ const accounts = {
   "wizard.productTitle": "What do you want to trade?",
   "wizard.productSubtitle": "Each account trades one product, CFDs or options. You can hold both kinds.",
   "wizard.optionsLeverage": "Options don't use leverage: buying an option costs its premium, selling one needs margin.",
+  // Open-account summary with the Product step: "Step 2 of 6", then (CFD accounts only) what can change later.
+  "summary.stepCount": "Step {step} of {total}",
+  "summary.leverageOnly": "after opening only the leverage can be changed",
 };
 export default accounts;
