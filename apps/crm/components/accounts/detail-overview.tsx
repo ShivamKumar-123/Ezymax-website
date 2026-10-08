@@ -24,6 +24,7 @@ import {
   type SeriesPoint,
 } from "@/components/kit";
 import { ASSET_CLASS_LABEL, equitySeries, freeMargin, getInstrument, hashString, marginLevel, type ClosedTrade, type TradingAccount } from "@ezymex/mock";
+import { productOf } from "@/components/trading/api";
 import { PnlCalendar } from "./pnl-calendar";
 import { useFormat, useT } from "@ezymex/i18n/react";
 
@@ -160,10 +161,16 @@ export function OverviewTab({ a, openPnl, trades, onTab }: { a: TradingAccount; 
               <KeyValue
                 rows={[
                   [t("common.type"), <span key="t">{a.type === "live" ? t("common.live") : t("common.demo")} · {a.group}</span>],
+                  [t("accounts.label.product"), productOf(a) === "options" ? t("accounts.product.optionsTitle") : t("accounts.product.cfdTitle")],
                   [t("accountDetail.info.positionMode"), a.mode === "hedging" ? t("accountDetail.info.hedging") : t("accountDetail.info.netting")],
                   [t("common.currency"), a.cent ? t("accountDetail.info.uscCents") : "USD"],
-                  [t("accountDetail.info.leverage"), `1:${a.leverage.toLocaleString()}`],
-                  [t("accountDetail.header.swapFree"), a.swapFree ? <Chip key="s" size="sm" tone="info">{t("accountDetail.info.islamic")}</Chip> : t("common.no")],
+                  // Options accounts don't use leverage, nor pay swaps
+                  ...(productOf(a) === "options"
+                    ? []
+                    : ([
+                        [t("accountDetail.info.leverage"), `1:${a.leverage.toLocaleString()}`],
+                        [t("accountDetail.header.swapFree"), a.swapFree ? <Chip key="s" size="sm" tone="info">{t("accountDetail.info.islamic")}</Chip> : t("common.no")],
+                      ] as [string, React.ReactNode][])),
                   [t("accountDetail.info.server"), <span key="sv" className="font-mono">{a.server}</span>],
                   [t("accountDetail.info.opened"), f.date(a.createdAt, { day: "2-digit", month: "short", year: "numeric" })],
                 ]}

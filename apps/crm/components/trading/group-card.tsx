@@ -4,7 +4,7 @@ import { Check } from "lucide-react";
 import { Chip, cn } from "@/components/kit";
 import { useT } from "@ezymex/i18n/react";
 import type { T } from "@ezymex/i18n";
-import { modeLabel, type EngineGroup } from "./api";
+import { modeLabel, productOf, type EngineGroup } from "./api";
 
 const PHOTO: Record<string, string> = {
   standard: "finance",
@@ -16,7 +16,7 @@ const PHOTO: Record<string, string> = {
   prop: "trader",
 };
 
-export const groupPhoto = (g: Pick<EngineGroup, "code">) => `/assets/photos/${PHOTO[g.code] ?? "stock-market"}.jpg`;
+export const groupPhoto = (g: Pick<EngineGroup, "code" | "product">) => `/assets/photos/${PHOTO[g.code] ?? (productOf(g) === "options" ? "charts" : "stock-market")}.jpg`;
 
 /** Pricing model from the group's commercial terms. */
 export const spreadType = (g: Pick<EngineGroup, "commissionPerLot">, t: T) => (g.commissionPerLot > 0 ? t("accounts.pricing.rawPlusCommission") : t("accounts.pricing.allIn"));
@@ -26,6 +26,7 @@ export const commissionText = (g: Pick<EngineGroup, "commissionPerLot">, t: T) =
 export const maxLeverage = (g: Pick<EngineGroup, "leverages">) => (g.leverages.length ? Math.max(...g.leverages) : 0);
 
 export function groupFeatures(g: EngineGroup, t: T) {
+  if (productOf(g) === "options") return [t("accounts.product.optionsText"), t("accounts.product.optionsPoint1"), t("accounts.product.optionsPoint2"), t("accounts.feature.marginCall", { marginCall: g.marginCallPct, stopOut: g.stopOutPct })];
   return [
     spreadType(g, t),
     g.mode === "hedging" ? t("accounts.feature.hedging") : t("accounts.feature.netting"),
@@ -52,6 +53,8 @@ export function EngineGroupCard({
 }) {
   const t = useT();
   const full = used !== undefined && used >= g.maxAccountsPerUser;
+  // Options account types: what they trade instead of a pricing model, and no leverage (option margin ignores it)
+  const options = productOf(g) === "options";
   const Comp = onSelect ? "button" : "div";
   return (
     <Comp
@@ -85,11 +88,12 @@ export function EngineGroupCard({
         </div>
       </div>
       <div className="flex flex-1 flex-col px-4 pb-4 pt-3">
-        <p className="text-[12.5px] leading-snug text-fg-2">{spreadType(g, t)}</p>
+        <p className="text-[12.5px] leading-snug text-fg-2">{options ? t("accounts.product.optionsText") : spreadType(g, t)}</p>
         <div className="mt-3 grid grid-cols-2 gap-2">
-          <Spec label={t("accounts.label.commission")} value={commissionText(g, t)} />
+          {/* option commissions come with the option prices, not the account type */}
+          {options ? <Spec label={t("accounts.label.product")} value={t("accounts.product.options")} /> : <Spec label={t("accounts.label.commission")} value={commissionText(g, t)} />}
           <Spec label={t("accounts.label.minDeposit")} value={g.minDeposit > 0 ? `$${g.minDeposit.toLocaleString("en-US")}` : t("common.none")} />
-          <Spec label={t("accounts.label.maxLeverage")} value={`1:${maxLeverage(g).toLocaleString("en-US")}`} />
+          {options ? <Spec label={t("common.currency")} value={g.cent ? "USC" : "USD"} /> : <Spec label={t("accounts.label.maxLeverage")} value={`1:${maxLeverage(g).toLocaleString("en-US")}`} />}
           <Spec label={t("accounts.label.stopOut")} value={`${g.stopOutPct}%`} />
         </div>
         {!compact && (

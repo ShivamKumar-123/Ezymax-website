@@ -29,7 +29,7 @@ use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-use super::trade::{DealerCtx, apply_nbp, gate};
+use super::trade::{DealerCtx, apply_nbp, gate, product_gate};
 use super::{Env, Metrics, Reject, Tx, metrics};
 use crate::model::{
     Account, AccountKind, BarrierKind, BarrierTerms, Book, Deal, DealEntry, DealOption, DealReason, Expiry, LedgerTxn, OptLeg, OptRight, OptionOrder, OptionTerms, Order, OrderStatus, OrderType, Position, Posting,
@@ -38,6 +38,7 @@ use crate::model::{
 use crate::money::{D, HUNDRED, ONE, ZERO, num, r2, rdp};
 use crate::options::snapshot::{OptSnapshot, Underlying};
 use crate::options::{OptPrice, PriceError, ScenLeg, TradeState, dec, f, weekend_margin};
+use crate::rules::Product;
 use crate::state::{AccountState, Event};
 
 /// Most legs in one order (iron condor = 4; the builder allows custom strategies).
@@ -374,10 +375,15 @@ pub fn system_group(code: &str) -> bool {
         || g.starts_with("mam-")
 }
 
-/// Module switch (system groups, tenant, live / demo, underlying allow-list, group setting, underlying enabled).
-pub fn module_gate(env: &Env, st: &AccountState, snap: &OptSnapshot, underlying: &str) -> Result<(), Reject> {
+/// Module switch (system groups, the account's product, tenant, live / demo, underlying allow-list, group setting,
+/// underlying enabled). `opening`: the trade adds option exposure; a CFD account may still close (reduce) the option
+/// positions it opened before accounts traded one product.
+pub fn module_gate(env: &Env, st: &AccountState, snap: &OptSnapshot, underlying: &str, opening: bool) -> Result<(), Reject> {
     if system_group(&st.account.group) || system_group(&env.group.code) {
         return Err(rej("options_disabled", "Ezymex FX Options are not available on copy-trading, PAMM, MAM or prop accounts"));
+    }
+    if opening {
+        product_gate(env, Product::Options)?;
     }
     let live = st.account.kind == AccountKind::Live;
     let tenant = env.tenant.slug.as_str();
@@ -551,7 +557,7 @@ pub fn price_open(env: &Env, st: &AccountState, snap: &OptSnapshot, specs: &[Leg
     };
     let acc = &st.account;
     let first = &specs[0].terms;
-    push(module_gate(env, st, snap, &first.underlying));
+    push(module_gate(env, st, snap, &first.underlying, true));
     // eligibility = the client accepted the options intro (gateway suitability); live and demo alike
     if let Some(ok) = g.eligible
         && !ok

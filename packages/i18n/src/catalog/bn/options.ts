@@ -97,5 +97,9 @@ const options: NsMessages<"options"> = {
 
   // Demo build
   "demo.note": "ডেমো: এখানে কিছুই সেভ হয় না।",
+
+  // No Options account yet
+  "account.noneTitle": "অপশন ট্রেড হয় অপশন অ্যাকাউন্টে",
+  "account.noneText": "আপনার CFD অ্যাকাউন্টে অপশন ট্রেড করা যায় না। এক মিনিটে লাইভ বা ডেমো অপশন অ্যাকাউন্ট খুলুন, তারপর ট্রেডিং শুরু করুন।",
 };
 export default options;

@@ -12,8 +12,14 @@ export async function GET(req: NextRequest) {
   const r = await redeemSso(req, token);
   const data = (await r.clone().json().catch(() => ({}))) as { login?: string; error?: { code?: string } };
   const to = new URL("/", req.nextUrl);
-  if (r.status === 200 && data.login) to.searchParams.set("account", data.login);
-  else to.pathname = "/login", to.searchParams.set("error", data.error?.code ?? "sso_failed");
+  if (r.status === 200 && data.login) {
+    to.searchParams.set("account", data.login);
+    // the market the link opens: an options underlying (`u`) or a CFD symbol; the mode follows the account's product
+    for (const k of ["u", "symbol"]) {
+      const v = req.nextUrl.searchParams.get(k)?.toUpperCase();
+      if (v && /^[A-Z0-9._-]{2,20}$/.test(v)) to.searchParams.set(k, v);
+    }
+  } else to.pathname = "/login", to.searchParams.set("error", data.error?.code ?? "sso_failed");
   const res = NextResponse.redirect(to, 303);
   for (const c of r.cookies.getAll()) res.cookies.set(c);
   res.headers.set("cache-control", "no-store");

@@ -3,6 +3,7 @@
 import { tr } from "@ezymex/i18n/react";
 import type { EngineErr } from "@/lib/engine/map";
 import { CLIENT_AREA } from "@/lib/guest";
+import { productMismatchText } from "./mode";
 import type { Reason } from "./types";
 
 export const OPTION_ERROR_CODES = [
@@ -76,6 +77,8 @@ export function reasonCode(r: Reason): string {
 
 /** Translated text of a rejection code (or the server's message when the code is unknown). */
 export function optionErrorText(code: string, message?: string): string {
+  // an option order on a CFD account (the engine's `product_mismatch`): what this account trades
+  if (code === "product_mismatch") return productMismatchText();
   if ((OPTION_ERROR_CODES as readonly string[]).includes(code)) return tr.dyn(`trader.opt.err.${code}`, message ?? code);
   return message || code.replace(/_/g, " ");
 }

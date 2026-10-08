@@ -1,8 +1,9 @@
 "use client";
 
 /** Live-build helpers for the trading pages that talk to the engine outside the dealing desk (accounts, groups). */
+import { Chip } from "@ezymex/ui";
 import { sendJson } from "@/components/live/kit";
-import type { AuditEntry, DeskResult, Reason, RestTradingDesk } from "@/lib/trading-desk";
+import { PRODUCT_LABEL, type AuditEntry, type DeskResult, type Product, type Reason, type RestTradingDesk } from "@/lib/trading-desk";
 
 export const ACC_REASONS = ["ACC-01 · Client request", "ACC-02 · Compliance / KYC", "ACC-03 · Risk management", "ACC-04 · Error correction", "ACC-05 · Inactivity", "ACC-99 · Other"] as const;
 export const FIN_REASONS = ["FIN-01 · Manual deposit", "FIN-02 · Manual withdrawal", "FIN-03 · Compensation", "FIN-04 · Error correction", "FIN-05 · Bonus / promotion", "FIN-06 · Credit line", "FIN-99 · Other"] as const;
@@ -29,7 +30,7 @@ export const SETTABLE_STATUS = Object.entries(STATUS_LABEL)
   .filter(([s]) => !LIFECYCLE_STATUSES.includes(s))
   .map(([value, label]) => ({ value, label }));
 
-/** Product kind of a trading account, derived from its group code (copy / PAMM / MAM / prop / regular). */
+/** Kind of a trading account, derived from its group code (copy / PAMM / MAM / prop / regular); not its CFD / Options product. */
 export type AccountKind = "copy" | "pamm" | "mam" | "prop" | "regular";
 export function accountKind(group: string): AccountKind {
   const g = group.toLowerCase();
@@ -41,6 +42,17 @@ export function accountKind(group: string): AccountKind {
 }
 export const KIND_LABEL: Record<AccountKind, string> = { copy: "Copy", pamm: "PAMM", mam: "MAM", prop: "Prop", regular: "Regular" };
 export const KIND_TONE: Record<Exclude<AccountKind, "regular">, "info" | "gold" | "ember" | "warn"> = { copy: "info", pamm: "gold", mam: "gold", prop: "ember" };
+/** Copy, PAMM, MAM and prop groups (the engine's system groups) trade CFDs only: it refuses them as Options. */
+export const cfdOnlyGroup = (code: string) => /^(prop|(copy|pamm|mam)(-|$))/.test(code.trim().toLowerCase());
+
+/** CFD or Options account type of a group or account. */
+export function ProductChip({ product }: { product: Product }) {
+  return (
+    <Chip size="sm" tone={product === "options" ? "gold" : "neutral"}>
+      {PRODUCT_LABEL[product]}
+    </Chip>
+  );
+}
 
 /** Terminal deal view (GET /v1/accounts/{login}/history). */
 export type HistDeal = {

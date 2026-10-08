@@ -701,17 +701,24 @@ pub async fn group_options(State(st): State<AppState>, ctx: Ctx, headers: Header
     owned(&st, &ctx, login, user)?;
     let c = check(&st, login).await?;
     let mut out = Vec::new();
-    let mut groups: Vec<&crate::rules::Group> = ctx.tenant.groups.values().filter(|g| g.enabled && g.allows(c.kind.as_str()) && !is_special_group(&g.code)).collect();
+    // only account types of the account's own product: a CFD account never becomes an options account
+    let product = product_of(&ctx, &c.group);
+    let mut groups: Vec<&crate::rules::Group> = ctx.tenant.groups.values().filter(|g| g.enabled && g.allows(c.kind.as_str()) && !is_special_group(&g.code) && g.product == product).collect();
     groups.sort_by(|a, b| a.code.cmp(&b.code));
     for g in groups {
         if g.code == c.group {
             continue;
         }
         let why = group_change_blocker(&st, &ctx, &c, g);
-        out.push(json!({"code": g.code, "name": g.name, "mode": g.mode, "cent": g.cent, "minDeposit": num(g.min_deposit), "leverages": g.leverages, "commissionPerLot": num(g.commission_per_lot), "swapFree": g.swap_free,
+        out.push(json!({"code": g.code, "name": g.name, "product": g.product, "mode": g.mode, "cent": g.cent, "minDeposit": num(g.min_deposit), "leverages": g.leverages, "commissionPerLot": num(g.commission_per_lot), "swapFree": g.swap_free,
                         "allowed": why.is_none(), "blocker": why.map(|(code, m)| json!({"code": code, "message": m}))}));
     }
     Ok(Json(json!({"login": login, "group": c.group, "flat": c.positions == 0 && c.orders == 0, "groups": out})))
+}
+
+/// The product of the account's current group (CFD when the group is gone).
+fn product_of(ctx: &Ctx, group: &str) -> crate::rules::Product {
+    ctx.tenant.groups.get(group).map(|g| g.product).unwrap_or_default()
 }
 
 /// copy / PAMM / MAM / prop groups are system-managed.
@@ -723,6 +730,10 @@ fn is_special_group(code: &str) -> bool {
 fn group_change_blocker(st: &AppState, ctx: &Ctx, c: &Check, g: &crate::rules::Group) -> Option<(&'static str, String)> {
     if c.status.is_retired() {
         return Some(("account_status", format!("The account is {}", c.status.as_str())));
+    }
+    // never, whatever else is the case (funds::change_group refuses it too)
+    if g.product != product_of(ctx, &c.group) {
+        return Some(("product_mismatch", "An account can't move between CFD and Options account types".into()));
     }
     if let Some((code, m)) = c.blockers.first() {
         return Some((code, m.clone()));
@@ -764,11 +775,11 @@ pub async fn change_group(State(st): State<AppState>, ctx: Ctx, headers: HeaderM
         return Err(ApiError::Conflict { code, message });
     }
     let g2 = g.clone();
-    let op: Op = Box::new(move |tx, _| {
+    let op: Op = Box::new(move |tx, env| {
         if !tx.st.positions.is_empty() || !tx.st.orders.is_empty() || !tx.st.book.is_idle() {
             return Err(Reject::new("positions_open", "Close all trades and orders first"));
         }
-        funds::change_group(tx, &g2).map(|(from, to)| json!({"from": from, "to": to, "leverage": tx.st.account.leverage}))
+        funds::change_group(tx, env, &g2).map(|(from, to)| json!({"from": from, "to": to, "leverage": tx.st.account.leverage}))
     });
     let d = st.hub.exec(login, &format!("user:{user}"), None, "", "", None, op).await?;
     tracing::info!(login, user, to = %g.code, "account type changed by the client");

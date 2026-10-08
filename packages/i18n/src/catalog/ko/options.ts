@@ -96,5 +96,9 @@ const options: NsMessages<"options"> = {
 
   // Demo build
   "demo.note": "데모: 여기서는 아무것도 저장되지 않습니다.",
+
+  // No Options account yet
+  "account.noneTitle": "옵션은 옵션 계좌에서 거래합니다",
+  "account.noneText": "CFD 계좌로는 옵션을 거래할 수 없습니다. 1분 만에 실계좌 또는 데모 옵션 계좌를 개설하고 거래를 시작하세요.",
 };
 export default options;

@@ -97,5 +97,9 @@ const options: NsMessages<"options"> = {
 
   // Demo build
   "demo.note": "டெமோ: இங்கே எதுவும் சேமிக்கப்படாது.",
+
+  // No Options account yet
+  "account.noneTitle": "ஆப்ஷன்கள் ஆப்ஷன் கணக்கில் டிரேட் செய்யப்படும்",
+  "account.noneText": "உங்கள் CFD கணக்குகளில் ஆப்ஷன்களை டிரேட் செய்ய முடியாது. ஒரு நிமிடத்தில் லைவ் அல்லது டெமோ ஆப்ஷன் கணக்கைத் திறந்து டிரேடிங்கைத் தொடங்குங்கள்.",
 };
 export default options;

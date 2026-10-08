@@ -25,12 +25,12 @@ import {
   fmtPct,
   operand,
   useAlgo,
+  useCfdAccounts,
   useMeta,
   type Built,
   type StrategyDetail,
   type StrategyItem,
   type StrategySpec,
-  type TradingAccount,
 } from "./api";
 
 type Mode = "visual" | "code";
@@ -136,7 +136,7 @@ function Summary({ built }: { built: Built | null }) {
 
 function DeployCard({ strategy, onDeployed }: { strategy: StrategyDetail | null; onDeployed: () => void }) {
   const t = useT();
-  const accounts = useAlgo<{ items: TradingAccount[] }>("accounts");
+  const accounts = useCfdAccounts();
   const [login, setLogin] = React.useState<number | null>(null);
   const [mult, setMult] = React.useState(1);
   const [maxOpen, setMaxOpen] = React.useState(0);

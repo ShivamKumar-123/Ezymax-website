@@ -8,7 +8,7 @@ import { Avatar, Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, 
 import { Trans, useT } from "@ezymex/i18n/react";
 import { RadioCard, RangeSlider } from "@/components/social/controls";
 import { SecretField, TradeButton } from "@/components/trading/ui";
-import { fmtDate, serverTime } from "@/components/trading/api";
+import { fmtDate, serverTime, useOptionsLogins } from "@/components/trading/api";
 import {
   ApiError,
   PERIOD_LABEL,
@@ -68,8 +68,13 @@ function StateIcon({ ok }: { ok: boolean | null }) {
 function ApplyView({ me, onApplied, rejected }: { me: MasterMe; onApplied: () => void; rejected?: MasterView }) {
   const t = useT();
   const s = me.settings;
-  const cands = me.candidates;
+  // followers copy CFD trades: an Options account (options only) can't be the strategy account
+  const optionLogins = useOptionsLogins();
+  const cands = React.useMemo(() => me.candidates.filter((c) => !optionLogins.has(c.login)), [me.candidates, optionLogins]);
   const [login, setLogin] = React.useState<number | null>(rejected?.login ?? cands.find((c) => c.eligible)?.login ?? cands[0]?.login ?? null);
+  React.useEffect(() => {
+    if (login !== null && optionLogins.has(login)) setLogin(cands.find((c) => c.eligible)?.login ?? cands[0]?.login ?? null);
+  }, [login, optionLogins, cands]);
   const [program, setProgram] = React.useState<Program>(rejected?.program ?? "copy");
   const [fee, setFee] = React.useState(Math.min(s.feeMaxPct, Math.max(s.feeMinPct, rejected?.perfFeePct ?? 20)));
   const [period, setPeriod] = React.useState<FeePeriod>(rejected?.feePeriod ?? "monthly");

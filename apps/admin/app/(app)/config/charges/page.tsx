@@ -5,7 +5,7 @@ import { ArrowDownToLine, ArrowUpFromLine, Calculator, Moon, RefreshCcw, RotateC
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, Donut, Money, PageHeader, Reveal, Segmented, Toggle, cn, formatMoney, CHART_COLORS } from "@ezymex/ui";
 import { INSTRUMENTS, ASSET_CLASS_LABEL, getInstrument, type AssetClass } from "@ezymex/mock";
-import { ADMIN_GROUPS, COMMISSIONS, COMMISSION_CLASSES, FEE_RULES, type ChargeOn, type CommissionCell, type FeeRule } from "@ezymex/mock/admin-config";
+import { CFD_GROUPS, COMMISSIONS, COMMISSION_CLASSES, FEE_RULES, type ChargeOn, type CommissionCell, type FeeRule } from "@ezymex/mock/admin-config";
 import { MiniField, NumInput, Select, auditToast } from "@/components/config/kit";
 
 type Plans = typeof COMMISSIONS;
@@ -43,7 +43,7 @@ function CommissionCalc({ plans }: { plans: Plans }) {
       <CardHeader title="Commission calculator" subtitle="What the client pays on one round trip" icon={<Calculator />} />
       <div className="grid grid-cols-2 gap-3 px-6 pt-4">
         <MiniField label="Group">
-          <Select value={gid} onChange={setGid} options={ADMIN_GROUPS.map((g) => ({ value: g.id, label: g.name }))} />
+          <Select value={gid} onChange={setGid} options={CFD_GROUPS.map((g) => ({ value: g.id, label: g.name }))} />
         </MiniField>
         <MiniField label="Symbol">
           <Select value={symbol} onChange={setSymbol} options={INSTRUMENTS.map((i) => i.symbol)} />
@@ -66,7 +66,7 @@ function CommissionCalc({ plans }: { plans: Plans }) {
       <div className="mx-6 mt-4 flex-1">
         <div className="k-label mb-2">Same trade in other groups</div>
         <div className="divide-y divide-line">
-          {ADMIN_GROUPS.filter((g) => g.id !== gid).map((g) => {
+          {CFD_GROUPS.filter((g) => g.id !== gid).map((g) => {
             const o = commissionFor(plans[g.id]![inst.assetClass], symbol, lots);
             return (
               <button key={g.id} onClick={() => setGid(g.id)} className="flex w-full items-center justify-between py-2 text-[12.5px] hover:text-fg">
@@ -175,7 +175,7 @@ export default function ChargesPage() {
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
         <Reveal className="xl:col-span-8">
           <Card className="h-full">
-            <CardHeader title="Commission plans" subtitle="$ per lot (FX, metals, indices, energies) · % of notional (crypto, stocks)" action={<Chip tone="ember">{ADMIN_GROUPS.length} groups × {COMMISSION_CLASSES.length} classes</Chip>} />
+            <CardHeader title="Commission plans" subtitle="$ per lot (FX, metals, indices, energies) · % of notional (crypto, stocks)" action={<Chip tone="ember">{CFD_GROUPS.length} groups × {COMMISSION_CLASSES.length} classes</Chip>} />
             <div className="mt-4 overflow-x-auto px-4 pb-5 sm:px-6">
               <table className="w-full min-w-[820px] border-separate border-spacing-0 text-[12.5px]">
                 <thead>
@@ -190,7 +190,7 @@ export default function ChargesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {ADMIN_GROUPS.map((g) => {
+                  {CFD_GROUPS.map((g) => {
                     const row = plans[g.id]!;
                     return (
                       <tr key={g.id} className="group">

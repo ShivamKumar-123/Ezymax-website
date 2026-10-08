@@ -145,7 +145,8 @@ fn account(login: i64, user: i64, kind: AccountKind) -> Account {
         login,
         user_id: user,
         kind,
-        group: "standard".into(),
+        // the Options account type (migration 20261022120000_account_products): options trade on options accounts
+        group: "options".into(),
         mode: Mode::Hedging,
         cent: false,
         leverage: 100,

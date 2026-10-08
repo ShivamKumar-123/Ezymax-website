@@ -60,6 +60,16 @@ fn venue(st: &AppState, s: &terminal::Session) -> ApiResult<AccountKind> {
     Ok(kind)
 }
 
+/// Requests for quotes reach the engine (`options::module_gate`) only when a quote is accepted: an opening request
+/// from a CFD account is refused up front.
+fn product_gate(st: &AppState, ctx: &Ctx, s: &terminal::Session) -> ApiResult<()> {
+    let product = st.hub.meta(s.login).and_then(|m| ctx.tenant.groups.get(&m.group).map(|g| g.product)).unwrap_or_default();
+    if product != crate::rules::Product::Options {
+        return Err(ApiError::reject(crate::engine::trade::product_reject(product)));
+    }
+    Ok(())
+}
+
 fn settling_gate(st: &AppState, login: i64) -> ApiResult<()> {
     if st.hub.shared.books.is_settling(login, chrono::Utc::now().timestamp_millis()) {
         return Err(status("settling", "Your last fills are still being booked: try again in a moment"));
@@ -805,6 +815,9 @@ pub async fn rfq_open(State(st): State<AppState>, ctx: Ctx, Body(b): Body<RfqBod
     let reduce = b.reduce_only.unwrap_or(false);
     terminal::copy_guard(&st, &s, !reduce)?;
     let kind = venue(&st, &s)?;
+    if !reduce {
+        product_gate(&st, &ctx, &s)?;
+    }
     st.limiter.hit(&format!("book:{}", s.login), RATE_PER_SEC, Duration::from_secs(1)).map_err(ApiError::RateLimited)?;
     if b.qty <= ZERO {
         return Err(validation("qty", "qty must be above 0"));

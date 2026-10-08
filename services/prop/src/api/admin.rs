@@ -161,7 +161,9 @@ pub async fn plan_status(State(app): State<App>, s: Staff, Path(id): Path<String
 pub async fn engine_groups(State(app): State<App>, s: Staff) -> ApiResult<Json<Value>> {
     s.require("prop.read")?;
     let groups = app.engine.groups(&s.tenant).await?;
-    Ok(Json(json!({"groups": groups.iter().map(|g| json!({"code": g["code"], "name": g["name"], "leverages": g["leverages"], "enabled": g["enabled"], "maxAccountsPerUser": g["maxAccountsPerUser"]})).collect::<Vec<_>>()})))
+    // challenges trade CFDs: options account types are never offered for a plan (no `product` = an older engine, CFD)
+    let cfd = |g: &&Value| g["product"].as_str().unwrap_or("cfd") == "cfd";
+    Ok(Json(json!({"groups": groups.iter().filter(cfd).map(|g| json!({"code": g["code"], "name": g["name"], "leverages": g["leverages"], "enabled": g["enabled"], "maxAccountsPerUser": g["maxAccountsPerUser"]})).collect::<Vec<_>>()})))
 }
 
 /* ---------------- challenges ---------------- */

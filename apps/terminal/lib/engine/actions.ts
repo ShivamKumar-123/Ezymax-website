@@ -10,6 +10,7 @@ import { PENDING_LABEL, accCcy, accMoney, fmtPrice, fmtVol, pendingLabelKey, poi
 import type { JournalLine, OrderRequest } from "../store";
 import { engineApi, type OrderBody, type Result } from "./client";
 import { rejectReason, type EngineErr, type EngineTradingAccount } from "./map";
+import { productMismatchText } from "../options/mode";
 
 export interface EngineDeps {
   login: () => string;
@@ -50,8 +51,9 @@ export function engineActions(d: EngineDeps) {
     // the engine's own sentence adds the detail ("Stop loss must be below 83235.95")
     const detail = e.message && e.message !== reason && !/^HTTP \d+$/.test(e.message) ? e.message : "";
     // title in the reader's language (client-side mapping of the engine code); desc/detail stay as the journal/engine wrote them
-    // catalogue market on a live account: say it plainly (closing such a position stays allowed)
-    const title = e.code === "symbol_demo_only" ? tr("desk.trade.demoOnly") : tr.dyn(`order.reject.${e.code}`, reason);
+    // catalogue market on a live account: say it plainly (closing such a position stays allowed); a CFD order on an
+    // Options account: what this account trades
+    const title = e.code === "symbol_demo_only" ? tr("desk.trade.demoOnly") : e.code === "product_mismatch" ? productMismatchText() : tr.dyn(`order.reject.${e.code}`, reason);
     toast.error(title, { description: [desc, detail].filter(Boolean).join(" · ") + extra });
     d.sound("error");
   };

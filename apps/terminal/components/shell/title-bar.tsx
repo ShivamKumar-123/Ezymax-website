@@ -1,8 +1,10 @@
 "use client";
 
-// Top bar of Ezymex Trader on desktop (docs/TERMINAL-DESIGN.md §2.2): ☰ · brand · CFD | Options · search (⌘K) ·
-// account switcher with equity · Deposit / Top up demo · notifications · profile. The ☰ menu (MT5 web style) holds the
-// accounts, chart settings, one-click trading, theme, language, shortcuts and help; every command is also in ⌘K.
+// Top bar of Ezymex Trader on desktop (docs/TERMINAL-DESIGN.md §2.2): ☰ · brand · search (⌘K) · account switcher
+// with equity · Deposit / Top up demo · notifications · profile. The ☰ menu (MT5 web style) holds the accounts, chart
+// settings and one-click trading (CFD accounts), theme, language, shortcuts and help; every command is also in ⌘K.
+// CFD or Options is the account's product (its badge here), not a switch: an Options account opens the options
+// workspace.
 import * as React from "react";
 import { ArrowUpRight, ChevronDown, LogIn, LogOut, Menu, RefreshCw, Search, UserPlus, UserRound, Wallet } from "lucide-react";
 import { ME } from "@ezymex/mock";
@@ -10,6 +12,7 @@ import { Avatar, LogoMark, cn } from "@ezymex/ui";
 import { useT } from "@ezymex/i18n/react";
 import { useMetrics, useTerminal } from "@/lib/store";
 import { accCcy, accMoney } from "@/lib/trading";
+import { productOf } from "@/lib/options/mode";
 import { DropMenu } from "@/components/ui/menu";
 import { Badge, LiveMoney } from "@/components/ui/primitives";
 import { Button, IconButton, Tip } from "@/components/ui/kit";
@@ -18,13 +21,23 @@ import { CLIENT_AREA, LOGIN_URL, REGISTER_URL } from "@/lib/guest";
 import { useModule } from "@/lib/features";
 import { GuestUserMenu } from "./guest";
 import { NotificationBell } from "./notifications";
-import { ModeSwitch } from "./mode-switch";
 import { useMainMenuItems } from "./commands";
 
 export { CLIENT_AREA };
 export { PRESETS, toggleFullscreen } from "./commands";
 
-/** DEMO / LIVE (+ cent, read-only) badges of the active account. */
+/** CFD / OPTIONS: what an account trades (an Options account opens the options workspace). */
+export function ProductBadge({ account, className }: { account: { product?: string | null }; className?: string }) {
+  const t = useT();
+  const options = productOf(account) === "options";
+  return (
+    <Badge tone={options ? "info" : "neutral"} className={className}>
+      {options ? t("accounts.product.options") : t("accounts.product.cfd")}
+    </Badge>
+  );
+}
+
+/** DEMO / LIVE, CFD / OPTIONS (+ cent, read-only) badges of the active account. */
 export function AccountBadges({ className }: { className?: string }) {
   const T = useTerminal();
   const t = useT();
@@ -32,6 +45,7 @@ export function AccountBadges({ className }: { className?: string }) {
   return (
     <span className={cn("flex items-center gap-1", className)}>
       <Badge tone={a.type === "live" ? "ember" : "gold"}>{t.dyn(`trader.accountType.${a.type}`, a.type)}</Badge>
+      <ProductBadge account={a} />
       {a.cent && <Badge tone="info">{t("desk.top.badge.cent")}</Badge>}
       {T.readOnly && <Badge tone="warn">{t("desk.top.badge.readOnly")}</Badge>}
     </span>
@@ -50,6 +64,7 @@ function AccountRow({ login, active, onPick }: { login: string; active: boolean;
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5 text-[13px] text-fg">
           <span className="k-num font-mono">{a.login}</span>
+          <ProductBadge account={a} />
           {a.nickname && <span className="truncate text-[12px] text-fg-3">· {a.nickname}</span>}
         </span>
         <span className="block truncate text-[12px] text-fg-3" title={`${t.dyn(`desk.g.${a.mode}`)} ${t("desk.g.leverage")}`}>
@@ -254,7 +269,6 @@ export function TitleBar() {
           Ezymex <span className="font-normal text-fg-2">Trader</span>
         </span>
       </div>
-      <ModeSwitch />
       <Tip content={t("desk.top.search")} shortcut="⌘K" side="bottom">
         <button
           onClick={() => T.setUi({ search: true })}

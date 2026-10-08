@@ -246,6 +246,8 @@ export interface ClientAccount {
   login: string;
   type: "live" | "demo";
   group: string;
+  /** What the account trades, from its group: CFDs or options, never both. */
+  product: "cfd" | "options";
   mode: "hedging" | "netting";
   leverage: number;
   currency: "USD" | "USC";
@@ -266,14 +268,20 @@ export function clientAccounts(c: AdminClient): ClientAccount[] {
   const live: ClientAccount[] = c.logins.map((login, k) => {
     const eq = +((c.equity * split[k]!) / sum).toFixed(2);
     const margin = eq > 0 ? +(eq * r.range(0.02, 0.4)).toFixed(2) : 0;
-    const group = k === 0 ? c.group : r.pick(["Standard", "Pro", "ECN", "Cent"]);
+    const picked = k === 0 ? c.group : r.pick(["Standard", "Pro", "ECN", "Cent"]);
+    // some later accounts are Options accounts (no seeded CFD positions: those are on the first login)
+    const options = k > 0 && hashString("opt" + login) % 4 === 0;
+    const group = options ? "Options" : picked;
     const cent = group === "Cent";
+    const mode = r.bool(0.7) || options ? "hedging" : "netting";
+    const leverage = r.pick([100, 200, 500, 1000]);
     return {
       login,
       type: "live",
       group,
-      mode: r.bool(0.7) ? "hedging" : "netting",
-      leverage: r.pick([100, 200, 500, 1000]),
+      product: options ? "options" : "cfd",
+      mode,
+      leverage: options ? 100 : leverage,
       currency: cent ? "USC" : "USD",
       balance: +(eq * r.range(0.95, 1.05)).toFixed(2),
       equity: eq,
@@ -289,6 +297,7 @@ export function clientAccounts(c: AdminClient): ClientAccount[] {
     login: String(90020000 + (hashString("d" + c.id) % 9999)),
     type: "demo",
     group: "Pro",
+    product: "cfd",
     mode: "hedging",
     leverage: 500,
     currency: "USD",

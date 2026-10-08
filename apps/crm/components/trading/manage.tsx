@@ -1,14 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { Eye, Globe, Lock, Pencil, RefreshCcw, TriangleAlert, Users } from "lucide-react";
+import { Eye, Globe, Info, Lock, Pencil, RefreshCcw, TriangleAlert, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, Dialog, Field, KeyValue, Money, Reveal, cn } from "@/components/kit";
 import { PasswordInput } from "@/components/accounts/security";
 import { FormError } from "@/components/auth";
 import { STEPUP_CODES, StepUpCode, StepUpDialog, useStepUp } from "@/components/stepup";
-import { ApiError, STATUS_LABEL, curOf, errorToast, fmtDate, modeLabel, serverOf, tradingApi, type EngineAccount } from "./api";
-import { PasswordRules, SecretField, TradeButton, demoTarget, livePasswordOk, refillsLeft, useRefill } from "./ui";
+import { ApiError, STATUS_LABEL, curOf, errorToast, fmtDate, modeLabel, productOf, serverOf, tradingApi, type EngineAccount } from "./api";
+import { PasswordRules, ProductBadge, SecretField, TradeButton, demoTarget, livePasswordOk, refillsLeft, useRefill } from "./ui";
 import { Trans, useT } from "@ezymex/i18n/react";
 
 /* ------------------------------------------------------------------ */
@@ -298,6 +298,25 @@ function LeverageCard({ a, onChanged }: { a: EngineAccount; onChanged: () => voi
   );
 }
 
+/** Options accounts have no leverage to change (option margin ignores it): what the account trades instead. */
+function OptionsAccountCard({ a }: { a: EngineAccount }) {
+  const t = useT();
+  return (
+    <Card>
+      <CardHeader title={t("accounts.product.optionsTitle")} subtitle={t("accounts.product.optionsOnly")} action={<ProductBadge a={a} />} />
+      <div className="px-4 pb-6 pt-4 sm:px-6">
+        <div className="flex items-start gap-3 rounded-[14px] border border-line bg-surface-2 px-4 py-3 text-[13px] text-fg-2">
+          <Info className="mt-0.5 size-4 shrink-0 text-info" />
+          {t("accounts.wizard.optionsLeverage")}
+        </div>
+        <div className="mt-4 flex justify-end">
+          <TradeButton a={a} />
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 function DemoFundsCard({ a, onChanged }: { a: EngineAccount; onChanged: () => void }) {
   const t = useT();
   const cur = curOf(a);
@@ -336,12 +355,11 @@ function DemoFundsCard({ a, onChanged }: { a: EngineAccount; onChanged: () => vo
 export function SettingsPanel({ a, onChanged }: { a: EngineAccount; onChanged: () => void }) {
   const t = useT();
   const st = STATUS_LABEL[a.status];
+  const options = productOf(a) === "options";
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
       <div className="space-y-4 xl:col-span-7">
-        <Reveal>
-          <LeverageCard a={a} onChanged={onChanged} />
-        </Reveal>
+        <Reveal>{options ? <OptionsAccountCard a={a} /> : <LeverageCard a={a} onChanged={onChanged} />}</Reveal>
       </div>
       <div className="space-y-4 xl:col-span-5">
         {a.type === "demo" && (
@@ -357,6 +375,7 @@ export function SettingsPanel({ a, onChanged }: { a: EngineAccount; onChanged: (
                 rows={[
                   [t("accountDetail.info.login"), <span key="l" className="font-mono">{a.login}</span>],
                   [t("common.type"), `${a.type === "live" ? t("common.live") : t("common.demo")} · ${a.groupName}`],
+                  [t("accounts.label.product"), options ? t("accounts.product.optionsTitle") : t("accounts.product.cfdTitle")],
                   [t("accountDetail.info.positionMode"), modeLabel(a.mode)],
                   [t("common.currency"), a.cent ? t("accountDetail.info.uscCents") : a.currency],
                   [t("accountDetail.info.marginCallStopOut"), `${a.marginCallLevel}% / ${a.stopOutLevel}%`],

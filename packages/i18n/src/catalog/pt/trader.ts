@@ -511,7 +511,7 @@ const trader: NsMessages<"trader"> = {
 
   // Module not open yet / price server down
   "opt.soon.title": "Opções chegando em breve",
-  "opt.soon.text": "O Ezymex FX Options ainda não está liberado nesta conta. Assim que estiver, a grade de opções aparecerá aqui, na mesma conta dos seus CFDs.",
+  "opt.soon.text": "O Ezymex FX Options ainda não está liberado nesta conta. Assim que estiver, a grade de opções aparecerá aqui.",
   "opt.soon.point1": "Calls e puts sobre forex, ouro, prata e petróleo",
   "opt.soon.point2": "Vencimentos diários, semanais e mensais, com liquidação financeira em USD",
   "opt.soon.point3": "Como comprador, você nunca pode perder mais do que o prêmio que paga",

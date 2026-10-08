@@ -12,6 +12,9 @@ import { AccountBadge, AccountRow, accountTitle } from "@/components/account-row
 import { GroupCard } from "@/components/accounts/group-card";
 import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LiveAccountsPage } from "@/components/trading/accounts-page";
+import { productOf } from "@/components/trading/api";
+import { ProductBadge } from "@/components/trading/ui";
+import { useFeatures } from "@/components/tenant-config";
 import { TERMINAL_URL } from "@/lib/live";
 
 const live = ACCOUNTS.filter((a) => a.type === "live");
@@ -24,6 +27,7 @@ function ArchivedRow({ a }: { a: TradingAccount }) {
   return (
     <div className="k-row flex flex-wrap items-center gap-3 p-4 sm:p-5">
       <AccountBadge a={a} />
+      <ProductBadge a={a} />
       <div className="min-w-0">
         <Link href={`/accounts/${a.login}`} className="text-[15px] font-medium text-fg-2 hover:text-ember">
           {accountTitle(a, t)}
@@ -126,6 +130,9 @@ function PlatformCard() {
 function DemoAccountsPage() {
   const t = useT();
   const [tab, setTab] = React.useState<"live" | "demo" | "archived">("live");
+  // Options account types are offered only while the broker has the Options module on
+  const optionsOn = useFeatures()?.modules.options !== false;
+  const types = ACCOUNT_GROUPS.filter((g) => optionsOn || productOf(g) !== "options");
   const totalEquity = live.reduce((s, a) => s + accountUsd(a, "equity"), 0);
   const totalFree = live.reduce((s, a) => s + usd(a, freeMargin(a)), 0);
   const openPos = POSITIONS.filter((p) => live.some((a) => a.login === p.login)).length;
@@ -258,7 +265,7 @@ function DemoAccountsPage() {
             }
           />
           <div className="grid grid-cols-1 gap-4 px-4 pb-6 pt-4 sm:grid-cols-2 sm:px-6 xl:grid-cols-4">
-            {ACCOUNT_GROUPS.map((g) => (
+            {types.map((g) => (
               <Link key={g.id} href={`/accounts/new?group=${g.id}`} className={cn("block")}>
                 <GroupCard g={g} />
               </Link>

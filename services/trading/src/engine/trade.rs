@@ -6,7 +6,7 @@ use serde_json::json;
 use super::{Env, Reject, Tx, pnl, total_margin};
 use crate::model::{AccountKind, Book, Deal, DealEntry, DealReason, Expiry, Mode, Order, OrderStatus, OrderType, Position, RouteEvent, Side, Source, Status, Trailing, TxnKind, acct_code, house_code};
 use crate::money::{D, ZERO, r2, rdp};
-use crate::rules::{ControlMode, RouteCtx, resolve_route};
+use crate::rules::{ControlMode, Product, RouteCtx, resolve_route};
 use crate::specs::{Spec, end_of_server_day};
 use crate::state::{AccountState, Event};
 
@@ -92,6 +92,22 @@ pub fn is_opening(st: &AccountState, symbol: &str, side: Side, volume: D) -> boo
     match st.position_for(symbol) {
         Some(p) => p.side == side || volume > p.volume,
         None => true,
+    }
+}
+
+/// One product per account (`Group::product`): CFDs open only on CFD accounts (every CFD opening path calls this:
+/// client and API orders, copy / MAM mirrors and the hedger through `place_order`, dealer opens and fills) and options
+/// only on options accounts (`options::module_gate`). `gate` itself also serves option trades (with the underlying),
+/// so it can't tell. Closing is never refused: whatever an account held before it traded one product can be closed.
+pub fn product_gate(env: &Env, want: Product) -> Result<(), Reject> {
+    if env.group.product == want { Ok(()) } else { Err(product_reject(env.group.product)) }
+}
+
+/// The refusal of the product an account of `have` doesn't trade.
+pub fn product_reject(have: Product) -> Reject {
+    match have {
+        Product::Options => Reject::new("product_mismatch", "This is an Options account: CFD trading isn't available on it."),
+        Product::Cfd => Reject::new("product_mismatch", "This is a CFD account: options trade on an Options account."),
     }
 }
 
@@ -241,6 +257,9 @@ pub fn place_order(tx: &mut Tx, env: &Env, req: OrderReq) -> Result<PlaceResult,
     let dealer = req.dealer.as_ref();
     let manual = dealer.is_some() && req.kind == OrderType::Market && req.price.is_some_and(|p| p > ZERO);
     let opening = req.kind != OrderType::Market || is_opening(&tx.st, &req.symbol, req.side, req.volume);
+    if opening {
+        product_gate(env, Product::Cfd)?;
+    }
     gate(env, &tx.st, &req.symbol, opening, req.volume, dealer)?;
     if !manual {
         market_open(env, &spec)?;

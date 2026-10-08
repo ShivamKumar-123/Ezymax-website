@@ -12,7 +12,7 @@ import { Avatar, Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, 
 import { Trans, useT } from "@ezymex/i18n/react";
 import { Checkbox } from "@/components/social/controls";
 import { TradeButton } from "@/components/trading/ui";
-import { fmtDate, fmtPrice, serverTime } from "@/components/trading/api";
+import { fmtDate, fmtPrice, serverTime, useOptionsLogins } from "@/components/trading/api";
 import { PERIOD_LABEL, pct, socialApi, usd, useSocial } from "./api";
 import { BlockSkeleton, InfoBox, RiskBadge, SocialError, Tile, useNumber } from "./bits";
 import { FeesTable } from "./subscriptions";
@@ -31,7 +31,10 @@ function feesText(m: { perfFeePct: number; mgmtFeePct: number; feePeriod: Manage
 
 function ConnectDialog({ managerId, onClose, onLinked }: { managerId: number | null; onClose: () => void; onLinked: () => void }) {
   const t = useT();
-  const { data, error, reload } = useSocial<ManagerDetail>(managerId ? `mam/managers/${managerId}` : null);
+  const { data: detail, error, reload } = useSocial<ManagerDetail>(managerId ? `mam/managers/${managerId}` : null);
+  // a manager trades CFDs: Options accounts (options only) can't be linked
+  const optionLogins = useOptionsLogins(!!managerId);
+  const data = React.useMemo(() => (detail ? { ...detail, accounts: detail.accounts.filter((a) => !optionLogins.has(a.login)) } : null), [detail, optionLogins]);
   const [login, setLogin] = React.useState<number | null>(null);
   const [accept, setAccept] = React.useState(false);
   const maxLot = useNumber(null);
@@ -46,7 +49,7 @@ function ConnectDialog({ managerId, onClose, onLinked }: { managerId: number | n
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [managerId]);
   React.useEffect(() => {
-    if (data && login === null) setLogin(data.accounts.find((a) => a.eligible)?.login ?? null);
+    if (data && (login === null || !data.accounts.some((a) => a.login === login))) setLogin(data.accounts.find((a) => a.eligible)?.login ?? null);
   }, [data, login]);
 
   if (!managerId) return null;

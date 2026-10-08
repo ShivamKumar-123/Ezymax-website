@@ -1,8 +1,10 @@
 "use client";
 
 // Activity panel (the old Toolbox), docs/TERMINAL-DESIGN.md §2.2: the account health strip, then primary tabs
-// (Positions · Orders · History, or the option tabs in Options mode) with counts, the secondary tabs (Alerts · News ·
-// Calendar) and "More ▾" (Exposure, Journal, AI Trader, MAM, the other mode's tabs). Tab actions sit on the right.
+// (Positions · Orders · History, or the option tabs on an Options account) with counts, the secondary tabs (Alerts ·
+// News · Calendar) and "More ▾" (Journal, MAM; Exposure and the AI Trader on CFD accounts). The other product's tabs
+// show only while the account still holds positions or orders of it (closing them stays allowed). Tab actions sit on
+// the right.
 import * as React from "react";
 import dynamic from "next/dynamic";
 import { ArrowUp, BarChart3, ChevronDown, ChevronsDown, History, Layers, Maximize2, Minimize2, PanelBottom, PieChart, Rows2 } from "lucide-react";
@@ -42,7 +44,7 @@ const GUEST_TABS: Partial<Record<ToolboxTab, { icon: React.ReactNode; textKey: "
 
 type TabDef = { value: ToolboxTab; label: string; count?: number; tone?: "warn" };
 
-/** The tabs of the panel for the current mode: primary, secondary and the "More" group. */
+/** The tabs of the panel for the account's product: primary, secondary and the "More" group. */
 export function useActivityTabs() {
   const T = useTerminal();
   const t = useT();
@@ -50,7 +52,7 @@ export function useActivityTabs() {
   const mam = useMam();
   const mode = useTradeMode();
   const book = useOptionBook(T.guest ? null : T.account.login);
-  // the options order book: an Orders tab while it is live (in CFD mode only while book orders are working)
+  // the options order book: an Orders tab while it is live (on a CFD account only while book orders are working)
   const bookFlag = useBookFlag(T.guest ? null : T.account.login);
   // modules the broker switched off lose their tabs (a saved tab of theirs falls back below). AI Trader stays while
   // strategies still run, so they can be watched and stopped.
@@ -68,7 +70,7 @@ export function useActivityTabs() {
     ? [optPositions, ...(bookFlag.live || bookFlag.open ? [optOrders] : []), { value: "closed", label: t("desk.act.closed") }, { value: "settlements", label: t("desk.act.settlements") }]
     : [cfdPositions, cfdOrders, history];
   const secondary: TabDef[] = [
-    // CFD mode: option positions / working book orders stay in view while there are any
+    // CFD account: option positions / working book orders it still holds stay in view while there are any
     ...(!options && optCount ? [optPositions] : []),
     ...(!options && bookFlag.open ? [optOrders] : []),
     { value: "alerts", label: t("desk.act.alerts"), count: T.alerts.filter((a) => a.active).length },
@@ -77,15 +79,17 @@ export function useActivityTabs() {
     ...(calendarOn ? [{ value: "calendar" as const, label: t("desk.act.calendar") }] : []),
   ];
   const more: TabDef[] = [
-    ...(options ? [cfdPositions, cfdOrders, history] : []),
-    { value: "exposure", label: t("desk.act.exposure") },
+    // Options account: CFD positions / orders it still holds (to close them), and History (every closed trade)
+    ...(options ? [...(T.positions.length ? [cfdPositions] : []), ...(T.pendings.length ? [cfdOrders] : []), history] : []),
+    // Exposure and the AI Trader are about CFD positions: CFD accounts only
+    ...(options ? [] : [{ value: "exposure", label: t("desk.act.exposure") } satisfies TabDef]),
     { value: "journal", label: t("desk.act.journal") },
-    ...(aiOn ? [{ value: "ai" as const, label: t("desk.act.ai"), count: ai.records.filter((r) => r.status === "active").length }] : []),
+    ...(aiOn && !options ? [{ value: "ai", label: t("desk.act.ai"), count: ai.records.filter((r) => r.status === "active").length } satisfies TabDef] : []),
     // MAM master account or linked client account (live engine only)
     ...(mam?.role ? [{ value: "mam" as const, label: "MAM", count: mam.role === "manager" ? mam.accounts : undefined }] : []),
   ];
   const all = [...primary, ...secondary, ...more];
-  // a tab that isn't offered here (Settlements after switching back to CFD…) shows the first primary tab
+  // a tab that isn't offered here (Settlements on a CFD account…) shows the first primary tab
   const want = T.ws.toolboxTab === "trade" ? "positions" : T.ws.toolboxTab;
   const tab: ToolboxTab = all.some((x) => x.value === want) ? want : primary[0]!.value;
   return { primary, secondary, more, tab };
@@ -95,13 +99,8 @@ export function Toolbox({ onCollapse, onMaximize, maximized, onTop, health = tru
   const T = useTerminal();
   const t = useT();
   const { primary, secondary, more, tab } = useActivityTabs();
+  // (an Options account opens on its option tabs: lib/store.tsx moves the tab whenever the account's product changes)
   const set = (v: ToolboxTab) => T.setWs({ toolboxTab: v });
-  const mode = useTradeMode();
-  // opening straight into Options mode: show the option tabs first, as switching modes does (mode-switch.tsx)
-  React.useEffect(() => {
-    if (mode === "options" && ["positions", "pending", "trade", "history", "exposure"].includes(T.ws.toolboxTab)) set("options");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
   const inMore = more.find((x) => x.value === tab);
   const moreItems: MenuItem[] = more.map((x) => ({ label: x.count ? `${x.label} (${x.count})` : x.label, checked: x.value === tab, onSelect: () => set(x.value) }));
   const cfdTab = tab === "positions" || tab === "pending";

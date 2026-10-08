@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowUpRight, BarChart3, BookOpen, ChartSpline, Check, ChevronLeft, Landmark, Lock, RotateCw, type LucideIcon } from "lucide-react";
 import { Button, Card, EmptyState, Skeleton, cn } from "@/components/kit";
-import { useAccounts, openTerminal } from "@/components/trading/api";
+import { productOf, useAccounts, openTerminal, type AccountProduct } from "@/components/trading/api";
 import { TERMINAL_URL } from "@/lib/live";
 import { useT } from "@ezymex/i18n/react";
 import { isTrack, type AcademyError, type Track, type TrackKey } from "./api";
@@ -102,15 +102,19 @@ export function StatusDot({ state, n }: { state: "done" | "open" | "locked"; n?:
   );
 }
 
+/** The options course (content/academy/en/phase-9): its practice runs on a demo Options account. */
+export const OPTIONS_PHASE = "phase-9";
+
 /**
  * "Practise in Ezymex Trader": opens the learner's demo account in the terminal (one-time SSO), or sends them to
- * open a free demo account first.
+ * open a free demo account first. An account trades one product: the options course practises on a demo Options
+ * account (terminal in options mode), every other lesson on a demo CFD account.
  */
-export function PracticeButton({ size = "md", label: labelProp }: { size?: "sm" | "md"; label?: string }) {
+export function PracticeButton({ size = "md", label: labelProp, product = "cfd" }: { size?: "sm" | "md"; label?: string; product?: AccountProduct }) {
   const t = useT();
   const label = labelProp ?? t("academy.practice.demo");
   const { data } = useAccounts(0);
-  const demo = data?.accounts.find((a) => a.type === "demo" && a.status === "active");
+  const demo = data?.accounts.find((a) => a.type === "demo" && a.status === "active" && productOf(a) === product);
   if (!data) {
     return (
       <a href={TERMINAL_URL} target="_blank" rel="noopener">
@@ -122,7 +126,7 @@ export function PracticeButton({ size = "md", label: labelProp }: { size?: "sm" 
   }
   if (!demo) {
     return (
-      <Link href="/accounts/new?type=demo">
+      <Link href={`/accounts/new?type=demo&product=${product}`}>
         <Button variant="surface" size={size}>
           {t("academy.practice.openFreeDemo")} <ArrowUpRight className="rtl:-scale-x-100" />
         </Button>
@@ -130,7 +134,7 @@ export function PracticeButton({ size = "md", label: labelProp }: { size?: "sm" 
     );
   }
   return (
-    <Button variant="surface" size={size} onClick={() => openTerminal(demo.login)}>
+    <Button variant="surface" size={size} onClick={() => openTerminal(demo.login, product)}>
       {label} <span className="k-num text-fg-3">#{demo.login}</span> <ArrowUpRight className="rtl:-scale-x-100" />
     </Button>
   );

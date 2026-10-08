@@ -9,6 +9,11 @@ import { useT } from "@ezymex/i18n/react";
 import type { T } from "@ezymex/i18n";
 import { TERMINAL_URL } from "@/lib/live";
 import { intlTag } from "@ezymex/i18n/locales";
+import { productOf } from "@/components/trading/api";
+import { ProductBadge } from "@/components/trading/ui";
+
+/** Ezymex Trader on a (mock) account; an Options account opens in options mode. */
+export const traderHref = (a: Pick<TradingAccount, "login" | "product">) => `${TERMINAL_URL}/?account=${a.login}${productOf(a) === "options" ? "&mode=options" : ""}`;
 
 export function AccountBadge({ a }: { a: TradingAccount }) {
   const t = useT();
@@ -41,7 +46,8 @@ export function AccountMenu({ a }: { a: TradingAccount }) {
       items={[
         { label: t("accounts.menu.details"), icon: <GaugeIcon />, href: `/accounts/${a.login}` },
         { label: t("accounts.menu.rename"), icon: <Pencil />, onSelect: () => toast(t("accounts.menu.renameToast"), { description: `#${a.login}` }) },
-        { label: t("accounts.menu.changeLeverage"), icon: <GaugeIcon />, onSelect: () => toast(t("accounts.menu.leverageToast")) },
+        // Options accounts don't use leverage
+        ...(productOf(a) === "options" ? [] : [{ label: t("accounts.menu.changeLeverage"), icon: <GaugeIcon />, onSelect: () => toast(t("accounts.menu.leverageToast")) }]),
         { label: t("accounts.menu.passwords"), icon: <KeyRound />, href: `/accounts/${a.login}?tab=credentials` },
         ...(a.type === "demo" ? [{ label: t("accounts.menu.refill", { count: a.refillsLeft }), icon: <RefreshCcw />, onSelect: () => toast.success(t("accounts.refill.done"), { description: t("accounts.menu.refillDesc", { login: a.login, amount: `$${a.balance.toLocaleString()}` }) }) }] : []),
         "sep" as const,
@@ -60,6 +66,7 @@ export function AccountRow({ a, compact }: { a: TradingAccount; compact?: boolea
     <div className="k-row group relative overflow-hidden p-4 transition-colors hover:border-[var(--k-border-top)] sm:p-5">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <AccountBadge a={a} />
+        <ProductBadge a={a} />
         <Link href={`/accounts/${a.login}`} className="text-[15px] font-medium text-fg hover:text-ember">
           {accountTitle(a, t)}
         </Link>
@@ -74,7 +81,7 @@ export function AccountRow({ a, compact }: { a: TradingAccount; compact?: boolea
         )}
         <div className="ms-auto flex items-center gap-2 text-xs text-fg-3">
           <span className="hidden sm:inline">{a.server}</span>
-          <Chip size="sm">1:{a.leverage}</Chip>
+          {productOf(a) !== "options" && <Chip size="sm">1:{a.leverage}</Chip>}
         </div>
       </div>
       <div className={cn("mt-4 grid items-end gap-4", compact ? "grid-cols-2 sm:grid-cols-3 xl:grid-cols-[1fr_1fr_1fr_auto]" : "grid-cols-2 sm:grid-cols-4 xl:grid-cols-[1fr_1fr_1fr_1fr_auto]")}>
@@ -116,7 +123,7 @@ export function AccountRow({ a, compact }: { a: TradingAccount; compact?: boolea
               <RefreshCcw /> {t("accounts.row.refill")}
             </Button>
           )}
-          <Link target="_blank" rel="noopener" href={`${TERMINAL_URL}/?account=${a.login}`}>
+          <Link target="_blank" rel="noopener" href={traderHref(a)}>
             <Button size="sm" variant="ember">
               <CandlestickChart /> {t("accounts.row.trade")}
             </Button>

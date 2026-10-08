@@ -13,9 +13,12 @@ import { BookChip, DeskDialog } from "@/components/trading-desk/kit";
 import { CreateTradeDrawer } from "@/components/trading-desk/create-trade";
 import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveAccountsPage } from "@/components/trading-live/accounts";
+import { ProductChip } from "@/components/trading-live/kit";
 
 const usd = (a: AdminAccountRow, v: number) => (a.currency === "USC" ? v / 100 : v);
 const ml = (a: AdminAccountRow) => (a.margin > 0 ? (a.equity / a.margin) * 100 : Infinity);
+/** Groups an account can move to: its own product's only (an account never moves between CFD and Options). */
+const groupsOf = (a: AdminAccountRow): readonly string[] => (a.product === "options" ? ["Options"] : CLIENT_GROUPS);
 
 function MlCell({ a }: { a: AdminAccountRow }) {
   const v = ml(a);
@@ -58,12 +61,24 @@ function DemoAccountsPage() {
   const [act, setAct] = React.useState<Act>(null);
   const [lev, setLev] = React.useState("200");
   const [grp, setGrp] = React.useState<string>("Pro");
+  React.useEffect(() => {
+    if (act?.k === "group") setGrp((g) => (groupsOf(act.a).includes(g) ? g : groupsOf(act.a)[0]!));
+  }, [act]);
   const rows = accounts.filter((a) => (group === "all" || a.group === group) && (route === "all" || a.route === route) && (status === "all" || (status === "risk" ? ml(a) < 150 : status === "active" ? a.status === "active" : a.status !== "active")));
 
   const cols: Column<AdminAccountRow>[] = [
     { key: "l", header: "Login", cell: (r) => <span className="font-mono text-[12.5px] font-medium">{r.login}</span>, sort: (r) => r.login },
     { key: "c", header: "Client", cell: (r) => <MiniClient clientId={r.clientId} login={`#${r.clientId}`} /> },
-    { key: "g", header: "Group", cell: (r) => <Chip size="sm" tone={r.group === "VIP" ? "gold" : "neutral"}>{r.group}</Chip> },
+    {
+      key: "g",
+      header: "Group",
+      cell: (r) => (
+        <span className="flex items-center gap-1.5">
+          <Chip size="sm" tone={r.group === "VIP" ? "gold" : "neutral"}>{r.group}</Chip>
+          <ProductChip product={r.product} />
+        </span>
+      ),
+    },
     { key: "lev", header: "Leverage", align: "right", cell: (r) => <span className="k-num font-mono text-[12px]">1:{r.leverage}</span>, sort: (r) => r.leverage },
     { key: "b", header: "Balance", align: "right", cell: (r) => <span className="k-num font-mono text-[12.5px]">{formatMoney(usd(r, r.balance))}</span>, sort: (r) => usd(r, r.balance) },
     { key: "e", header: "Equity", align: "right", cell: (r) => <span className="k-num font-mono text-[12.5px]">{formatMoney(usd(r, r.equity))}</span>, sort: (r) => usd(r, r.equity) },
@@ -86,10 +101,15 @@ function DemoAccountsPage() {
               { label: "Change group", icon: <Layers />, onSelect: () => setAct({ k: "group", a: r }) },
               { label: "Reset password", icon: <KeyRound />, onSelect: () => setAct({ k: "password", a: r }) },
               "sep",
-              { label: "Create trade", icon: <CandlestickChart />, onSelect: () => setAct({ k: "trade", a: r }) },
+              // dealer trades and A/B routes are CFD only (options are always B-book)
+              ...(r.product === "options" ? [] : [{ label: "Create trade", icon: <CandlestickChart />, onSelect: () => setAct({ k: "trade", a: r }) }]),
               { label: "Open positions", icon: <List />, href: `/trading?login=${r.login}` },
-              { label: quickOf(r.login) === "A" ? "Remove A-book route" : "Route new trades to A", icon: <ArrowLeftRight />, onSelect: () => setAct({ k: "route", a: r, book: quickOf(r.login) === "A" ? null : "A" }) },
-              { label: quickOf(r.login) === "B" ? "Remove B-book route" : "Route new trades to B", icon: <ArrowLeftRight />, onSelect: () => setAct({ k: "route", a: r, book: quickOf(r.login) === "B" ? null : "B" }) },
+              ...(r.product === "options"
+                ? []
+                : [
+                    { label: quickOf(r.login) === "A" ? "Remove A-book route" : "Route new trades to A", icon: <ArrowLeftRight />, onSelect: () => setAct({ k: "route", a: r, book: quickOf(r.login) === "A" ? null : "A" }) },
+                    { label: quickOf(r.login) === "B" ? "Remove B-book route" : "Route new trades to B", icon: <ArrowLeftRight />, onSelect: () => setAct({ k: "route", a: r, book: quickOf(r.login) === "B" ? null : "B" }) },
+                  ]),
               "sep",
               { label: ctlOf(r.login)?.closeOnly ? "Lift close-only" : "Set close-only", icon: <CirclePause />, onSelect: () => setAct({ k: "closeOnly", a: r }) },
               { label: r.status === "disabled" ? "Enable trading" : "Disable trading", icon: <Ban />, danger: r.status !== "disabled", onSelect: () => setAct({ k: "disable", a: r }) },
@@ -132,7 +152,7 @@ function DemoAccountsPage() {
             searchPlaceholder="Login, client…"
             toolbar={
               <div className="flex flex-wrap gap-2">
-                <Segmented size="sm" value={group} onChange={setGroup} options={[{ value: "all", label: "All groups" }, ...TRADING_GROUPS.slice(0, 5).map((g) => ({ value: g, label: g }))]} />
+                <Segmented size="sm" value={group} onChange={setGroup} options={[{ value: "all", label: "All groups" }, ...[...TRADING_GROUPS.slice(0, 5), "Options"].map((g) => ({ value: g, label: g }))]} />
                 <Segmented size="sm" value={route} onChange={setRoute} options={[{ value: "all", label: "A + B" }, { value: "A", label: "A" }, { value: "B", label: "B" }]} />
                 <Segmented size="sm" value={status} onChange={setStatus} options={[{ value: "all", label: "Any status" }, { value: "active", label: "Active" }, { value: "disabled", label: "Disabled" }, { value: "risk", label: "ML < 150%" }]} />
               </div>
@@ -145,8 +165,8 @@ function DemoAccountsPage() {
           <ReasonDialog open={act?.k === "leverage"} onOpenChange={(o) => !o && setAct(null)} title={`Change leverage · ${a.login}`} description={`Current 1:${a.leverage}. Margin on open positions is recalculated immediately.`} codes={["LEV-01 · Client request", "LEV-02 · Regulatory cap", "LEV-03 · Risk reduction", "LEV-04 · News / weekend policy"]} confirmLabel={`Set 1:${lev}`} successMessage={`Leverage set to 1:${lev}`} onConfirm={() => upd({ leverage: Number(lev) })}>
             <Segmented size="sm" value={lev} onChange={setLev} options={["50", "100", "200", "500", "1000"] as const} />
           </ReasonDialog>
-          <ReasonDialog open={act?.k === "group"} onOpenChange={(o) => !o && setAct(null)} title={`Change group · ${a.login}`} description={`Current: ${a.group}`} codes={REASON_CODES.group} confirmLabel={`Move to ${grp}`} successMessage={`${a.login} moved to ${grp}`} onConfirm={() => upd({ group: grp })}>
-            <Segmented size="sm" value={grp} onChange={setGrp} options={CLIENT_GROUPS} />
+          <ReasonDialog open={act?.k === "group"} onOpenChange={(o) => !o && setAct(null)} title={`Change group · ${a.login}`} description={`Current: ${a.group} (${a.product === "options" ? "Options" : "CFD"}). Accounts never move between CFD and Options account types.`} codes={REASON_CODES.group} confirmLabel={`Move to ${grp}`} successMessage={`${a.login} moved to ${grp}`} onConfirm={() => upd({ group: grp })}>
+            <Segmented size="sm" value={grp} onChange={setGrp} options={groupsOf(a)} />
           </ReasonDialog>
           <DeskDialog open={act?.k === "disable"} onOpenChange={(o) => !o && setAct(null)} title={`${a.status !== "disabled" ? "Disable" : "Enable"} trading · ${a.login}`} description={a.status !== "disabled" ? "New trades and pending orders are rejected; the dealer can still close positions." : "Account can open new positions again."} confirmLabel={a.status !== "disabled" ? "Disable trading" : "Enable trading"} confirmVariant={a.status !== "disabled" ? "sell" : "buy"} onConfirm={(r) => api.setAccountControl(a.login, { tradingDisabled: a.status !== "disabled" }, r)} success={a.status !== "disabled" ? "Trading disabled" : "Trading enabled"} />
           <DeskDialog open={act?.k === "closeOnly"} onOpenChange={(o) => !o && setAct(null)} title={`${ctlOf(a.login)?.closeOnly ? "Lift close-only" : "Set close-only"} · ${a.login}`} description="Close-only accounts can reduce risk but cannot open new positions." confirmLabel={ctlOf(a.login)?.closeOnly ? "Lift close-only" : "Set close-only"} onConfirm={(r) => api.setAccountControl(a.login, { closeOnly: !ctlOf(a.login)?.closeOnly }, r)} success="Account control applied" />

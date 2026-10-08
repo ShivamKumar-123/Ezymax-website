@@ -45,11 +45,41 @@ pub struct Group {
     pub demo_refills_per_day: u32,
     pub demo_expiry_days: u32,
     pub enabled: bool,
+    /// What the group's accounts trade: CFDs or Ezymex FX Options, never both. Absent (older rows, audit JSON) = CFD.
+    #[serde(default)]
+    pub product: Product,
 }
 
 impl Group {
     pub fn allows(&self, kind: &str) -> bool {
         self.account_types == "both" || self.account_types == kind
+    }
+}
+
+/// The product of an account type (`groups.product`). An account trades one product: CFD orders are refused on an
+/// options account (`trade::product_gate`) and option orders on a CFD account (`options::module_gate`).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Product {
+    #[default]
+    Cfd,
+    Options,
+}
+
+impl Product {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Product::Cfd => "cfd",
+            Product::Options => "options",
+        }
+    }
+
+    pub fn parse(s: &str) -> Option<Self> {
+        match s {
+            "cfd" => Some(Product::Cfd),
+            "options" => Some(Product::Options),
+            _ => None,
+        }
     }
 }
 

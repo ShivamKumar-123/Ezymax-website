@@ -8,7 +8,7 @@ import { tr, useT } from "@ezymex/i18n/react";
 import { toast } from "@/lib/notify";
 import { TerminalProvider, engineSession, guestSession, readActive, readSession, savedCharts, useTerminal, writeActive, writeSession, type Session } from "@/lib/store";
 import { prefetchHistory } from "@/components/chart/engine";
-import { GUEST_MODE } from "@/lib/guest";
+import { CLIENT_AREA, GUEST_MODE } from "@/lib/guest";
 import { engineApi } from "@/lib/engine/client";
 import type { SessionInfo } from "@/lib/engine/types";
 import { LoginDialog } from "./dialogs/login-dialog";
@@ -24,7 +24,7 @@ import { ShareLayer } from "./share/share-dialogs";
 import { ConfirmLayer } from "./dialogs/confirm";
 import { ControlsBanner } from "./shell/controls-banner";
 import { CopyBanner } from "./shell/copy-banner";
-import { applyLinkMode } from "@/lib/options/mode";
+import { accountForLink, linkProduct, productOf, rememberLinkUnderlying, useTradeMode, type TradeMode } from "@/lib/options/mode";
 
 function useIsMobile() {
   const [m, setM] = React.useState(() => typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches);
@@ -60,11 +60,25 @@ export function Splash({ text }: { text?: string }) {
 }
 
 /**
+ * A link asked for the other product than the account it would open on (`?mode=options` on a CFD account, a CFD
+ * market on an Options account): the terminal opened the client's account of that product, or there is none.
+ */
+type LinkNote = { switched: string; product: TradeMode } | { missing: TradeMode };
+
+/** The account a link opens on: `chosen`, or one of the product the link asks for when `chosen` trades the other. */
+function followLink<A extends { login: string; type: string; product?: string | null }>(accounts: A[], chosen: A | undefined, want: TradeMode | null): { pick: A | undefined; note: LinkNote | null } {
+  if (!want || !chosen || productOf(chosen) === want) return { pick: chosen, note: null };
+  const other = accountForLink(accounts, chosen, want);
+  return other ? { pick: other, note: { switched: other.login, product: want } } : { pick: chosen, note: { missing: want } };
+}
+
+/**
  * Live builds pick the session from the trading engine: `?sso=<token>` (Client Area Trade button) is
  * redeemed by the BFF first; then every login this browser holds (HttpOnly cookie) is listed and the
  * active one is `?account=`, else the last one shown, else the newest. No login → guest chart mode.
+ * A link for the other product (`want`) opens one of this browser's logins of that product instead, if any.
  */
-async function liveEntry(sp: URLSearchParams): Promise<{ session: Session; sessions: SessionInfo[] }> {
+async function liveEntry(sp: URLSearchParams, want: TradeMode | null): Promise<{ session: Session; sessions: SessionInfo[]; note: LinkNote | null }> {
   const sso = sp.get("sso");
   let prefer = sp.get("account");
   let via: Session["via"] = "login";
@@ -80,28 +94,39 @@ async function liveEntry(sp: URLSearchParams): Promise<{ session: Session; sessi
   const list = await engineApi.sessions();
   const sessions = list.ok ? list.data.sessions : [];
   if (!list.ok) toast.error(tr("trader.toast.serverUnavailable"), { description: tr("trader.toast.serverUnavailableHint") });
-  const pick = sessions.find((x) => x.login === prefer) ?? sessions.find((x) => x.login === readActive()) ?? sessions[0];
-  if (!pick) {
+  const chosen = sessions.find((x) => x.login === prefer) ?? sessions.find((x) => x.login === readActive()) ?? sessions[0];
+  if (!chosen) {
     if (prefer && !sso) window.location.replace(`/login?login=${encodeURIComponent(prefer)}`);
-    return { session: guestSession(), sessions: [] };
+    return { session: guestSession(), sessions: [], note: null };
   }
+  const views = sessions.map((x) => ({ x, login: x.login, type: x.account?.type ?? "", product: x.account?.product }));
+  const link = followLink(views, views.find((v) => v.x === chosen), want);
+  const pick = link.pick?.x ?? chosen;
   writeActive(pick.login);
-  return { session: engineSession(pick, via), sessions };
+  return { session: engineSession(pick, via), sessions, note: link.note };
 }
 
 /**
  * Entry. Live builds: see liveEntry(). Demo builds: SSO via `?account=` (from the Client Area), else a
  * saved session, else /login.
- * `?symbol=` opens that symbol in the active chart; `?side=buy|sell` opens a prefilled order.
+ * `?symbol=` opens that symbol in the active chart; `?side=buy|sell` opens a prefilled order. The account's product
+ * decides CFD or Options: `?mode=options|cfd` (and a CFD `?symbol=` on an Options account) moves to the client's
+ * account of that product when there is one, never forces the mode (lib/options/mode.ts).
  */
 export function Terminal() {
   const sp = useSearchParams();
   const router = useRouter();
   const [session, setSession] = React.useState<Session | null>(null);
   const [sessions, setSessions] = React.useState<SessionInfo[]>([]);
+  const [note, setNote] = React.useState<LinkNote | null>(null);
   // read before liveEntry() / the demo SSO wipe the query string (`?sso=…&mode=options` from the Client Area's
-  // Options page, `?mode=options&u=EURUSD` from the public option chain)
-  const [intent] = React.useState(() => ({ symbol: sp.get("symbol")?.toUpperCase() ?? null, side: sp.get("side"), mode: sp.get("mode"), u: sp.get("u") }));
+  // Options page, `?mode=options&u=EURUSD` from the public option chain). The mode never overrides the account's
+  // product: it picks the client's account of that product (followLink); the underlying waits for the options workspace.
+  const [intent] = React.useState(() => {
+    const link = { symbol: sp.get("symbol")?.toUpperCase() ?? null, side: sp.get("side"), mode: sp.get("mode") };
+    rememberLinkUnderlying(sp.get("u"));
+    return { ...link, want: linkProduct(link) };
+  });
 
   React.useEffect(() => {
     const acc = sp.get("account");
@@ -112,7 +137,7 @@ export function Terminal() {
       feed.markHydrated();
       // chart history doesn't depend on the session: request the saved layout's charts now, not after sign-in
       for (const c of savedCharts()) prefetchHistory(c.symbol, c.tf);
-      void liveEntry(new URLSearchParams(sp.toString())).then(async (r) => {
+      void liveEntry(new URLSearchParams(sp.toString()), intent.want).then(async (r) => {
         if (!alive) return;
         if (window.location.search) window.history.replaceState(null, "", "/");
         const g = r.sessions.find((x) => x.login === r.session.login)?.account?.spreadGroup;
@@ -121,6 +146,7 @@ export function Terminal() {
         if (!alive) return;
         startMarket();
         setSessions(r.sessions);
+        setNote(r.note);
         setSession(r.session);
       });
       return () => {
@@ -141,6 +167,12 @@ export function Terminal() {
         return;
       }
     }
+    // a link for the other product: the client's sample account of that product
+    const link = followLink(ACCOUNTS, ACCOUNTS.find((x) => x.login === s!.login), intent.want);
+    if (link.pick && link.pick.login !== s.login) {
+      s = { ...s, login: link.pick.login, server: link.pick.server, investor: false, at: Date.now() };
+      writeSession(s);
+    }
     if (sp.toString()) window.history.replaceState(null, "", "/");
     // live prices (with this account group's spread) before the terminal mounts
     const feed = priceFeed();
@@ -151,6 +183,7 @@ export function Terminal() {
     void feed.ready.then(() => {
       if (!alive) return;
       startMarket();
+      setNote(link.note);
       setSession(s);
     });
     return () => {
@@ -161,21 +194,26 @@ export function Terminal() {
 
   if (!session) return <Splash />;
   return (
-    <TerminalProvider initialSession={session} engineSessions={sessions} onLogout={(to) => (GUEST_MODE ? window.location.replace(to ?? "/login?logout=1") : router.replace("/login?logout=1"))}>
-      <Shell intent={intent} />
+    <TerminalProvider initialSession={session} engineSessions={sessions} guestMode={intent.want} onLogout={(to) => (GUEST_MODE ? window.location.replace(to ?? "/login?logout=1") : router.replace("/login?logout=1"))}>
+      <Shell intent={intent} note={note} />
     </TerminalProvider>
   );
 }
 
-function Shell({ intent }: { intent: { symbol: string | null; side: string | null; mode: string | null; u: string | null } }) {
+function Shell({ intent, note }: { intent: { symbol: string | null; side: string | null }; note: LinkNote | null }) {
   const T = useTerminal();
   const mobile = useIsMobile();
+  const mode = useTradeMode();
   useHotkeys();
   React.useEffect(() => {
-    // CFD | Options from the link; Options opens with its toolbox tab in front
-    if (applyLinkMode(intent.mode, intent.u) && intent.mode?.toLowerCase() === "options" && ["positions", "pending", "trade", "history", "exposure"].includes(T.ws.toolboxTab)) T.setWs({ toolboxTab: "options" });
+    // the link asked for the other product: which account the terminal opened on, or that the client has none (the
+    // Client Area's open-account wizard starts with the product)
+    if (note && "switched" in note) toast.success(tr(note.product === "options" ? "accounts.product.switchedOptions" : "accounts.product.switchedCfd", { login: note.switched }));
+    else if (note?.missing === "options") toast(tr("accounts.product.noOptionsAccount"), { duration: 10_000, action: { label: tr("accounts.product.openOptions"), onClick: () => window.open(`${CLIENT_AREA}/accounts/new?product=options`, "_blank", "noopener") } });
+    else if (note?.missing === "cfd") toast(tr("accounts.product.optionsOnly"), { id: "product-options-only" });
+    // a CFD market: its chart, and for `?side=` the order form (on an Options account the store explains instead)
     const sym = intent.symbol && INSTRUMENT_MAP[intent.symbol] ? intent.symbol : null;
-    if (sym) T.openSymbol(sym);
+    if (sym && mode === "cfd") T.openSymbol(sym);
     if (intent.side === "buy" || intent.side === "sell") T.openNewOrder({ symbol: sym ?? T.activeSymbol, side: intent.side, type: "market" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

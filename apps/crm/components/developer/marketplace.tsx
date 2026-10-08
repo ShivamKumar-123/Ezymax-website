@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { BadgeCheck, Check, Info, Star, Users, Wallet } from "lucide-react";
 import { Avatar, Button, Chip, Dialog, Flag, Money, Segmented, Sparkline, SpotlightCard, SymbolAvatar, cn, formatNumber } from "@/components/kit";
 import { ACCOUNTS, WALLET } from "@ezymex/mock";
+import { productOf } from "@/components/trading/api";
 import { MARKETPLACE_TERMS, type MarketStrategy } from "@ezymex/mock/developer";
 
 export function PriceTag({ price, size = "md" }: { price: number; size?: "sm" | "md" }) {
@@ -133,7 +134,8 @@ export function StrategyCard({ s, onSubscribe, subscribed }: { s: MarketStrategy
 
 export function SubscribeDialog({ s, onOpenChange, onDone }: { s: MarketStrategy | null; onOpenChange: (o: boolean) => void; onDone: (id: string) => void }) {
   const live = ACCOUNTS.filter((a) => a.type === "live" && !a.cent);
-  const all = ACCOUNTS.filter((a) => !a.cent);
+  // strategies trade CFDs: Options accounts (options only) are left out
+  const all = ACCOUNTS.filter((a) => !a.cent && productOf(a) !== "options");
   const [login, setLogin] = React.useState(live[0]!.login);
   const [mode, setMode] = React.useState<"multiplier" | "allocation">("multiplier");
   const [mult, setMult] = React.useState(1);

@@ -6,6 +6,8 @@ export interface EngAccount {
   group: string;
   groupName: string;
   spreadGroup?: string;
+  /** what the account trades (its group decides): CFDs or Ezymex FX Options, never both. Older servers: absent = cfd */
+  product?: "cfd" | "options";
   mode: "hedging" | "netting";
   cent: boolean;
   currency: "USD" | "USC";

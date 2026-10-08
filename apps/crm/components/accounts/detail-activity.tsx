@@ -30,7 +30,7 @@ import { accountLedger, spreadCost, type LedgerEntry } from "@ezymex/mock/accoun
 import { curOf, multOf } from "./detail-overview";
 import { Trans, useT } from "@ezymex/i18n/react";
 import type { MessageKey } from "@ezymex/i18n";
-import { TERMINAL_URL } from "@/lib/live";
+import { traderHref } from "@/components/account-row";
 
 const signed = (v: number, cur: string) => `${v > 0 ? "+" : v < 0 ? "-" : ""}${cur}${formatNumber(Math.abs(v))}`;
 
@@ -57,7 +57,7 @@ export function PositionsTab({ a, positions, onClose }: { a: TradingAccount; pos
           title={t("accountDetail.positions.noneTitle")}
           text={t("accountDetail.positions.noneText")}
           action={
-            <Link target="_blank" rel="noopener" href={`${TERMINAL_URL}/?account=${a.login}`}>
+            <Link target="_blank" rel="noopener" href={traderHref(a)}>
               <Button variant="ember">
                 <CandlestickChart /> {t("accountDetail.positions.openTerminal")}
               </Button>

@@ -6,11 +6,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, FlaskConical, Layers, Plus, RotateCw, ShieldCheck, TrendingUp } from "lucide-react";
 import { Button, Card, CardHeader, Chip, EmptyState, KpiCard, Money, PageHeader, Reveal, Segmented, Skeleton } from "@/components/kit";
 import { useT } from "@ezymex/i18n/react";
-import { isArchived, toUsd, useAccounts, useGroups, type EngineAccount } from "./api";
+import { isArchived, productOf, toUsd, useAccounts, useGroups, type EngineAccount } from "./api";
 import { ArchivedAccountRow } from "./archive";
 import { EngineGroupCard } from "./group-card";
 import { LiveAccountRow, isPropAccount, refillsLeft } from "./ui";
 import { useReadOnly } from "@/components/session";
+import { useFeatures } from "@/components/tenant-config";
 
 export function AccountsError({ onRetry, message }: { onRetry: () => void; message?: string }) {
   const tt = useT();
@@ -80,6 +81,9 @@ function Inner() {
   const list = active === "live" ? t.live : active === "demo" ? t.demo : t.archived;
   const refills = t.demo.reduce((s, a) => s + refillsLeft(a), 0);
   const readOnly = useReadOnly();
+  // Options account types are offered only while the broker has the Options module on
+  const optionsOn = useFeatures()?.modules.options !== false;
+  const types = (groups.data?.groups ?? []).filter((g) => optionsOn || productOf(g) !== "options");
 
   return (
     <div className="pb-16">
@@ -191,7 +195,7 @@ function Inner() {
         </Reveal>
       </div>
 
-      {!readOnly && groups.data && groups.data.groups.length > 0 && (
+      {!readOnly && types.length > 0 && (
         <Reveal delay={0.1} className="mt-4 block">
           <Card>
             <CardHeader
@@ -206,7 +210,7 @@ function Inner() {
               }
             />
             <div className="grid grid-cols-1 gap-4 px-4 pb-6 pt-4 sm:grid-cols-2 sm:px-6 xl:grid-cols-4">
-              {groups.data.groups.map((g) => (
+              {types.map((g) => (
                 <Link key={g.code} href={`/accounts/new?group=${encodeURIComponent(g.code)}`} className="block">
                   <EngineGroupCard g={g} compact />
                 </Link>

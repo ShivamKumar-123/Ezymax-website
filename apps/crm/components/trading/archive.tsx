@@ -18,7 +18,7 @@ import { useT } from "@ezymex/i18n/react";
 import { useReadOnly } from "@/components/session";
 import { StepUpDialog } from "@/components/stepup";
 import { curOf, errorToast, fmtDate, tradingApi, type EngineAccount } from "./api";
-import { KindBadge, StatusBadge, isPropAccount } from "./ui";
+import { KindBadge, ProductBadge, StatusBadge, isPropAccount } from "./ui";
 
 /* ------------------------------------------------------------------ */
 /* COPY / PAMM / MAM (by engine group code)                             */
@@ -356,6 +356,7 @@ export function ArchivedAccountRow({ a, onChanged }: { a: EngineAccount; onChang
     <div className="k-row p-4 sm:p-5">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <KindBadge type={a.type} prop={isPropAccount(a)} />
+        <ProductBadge a={a} />
         <FlavorChip a={a} />
         <Link href={`/accounts/${a.login}`} className="text-[15px] font-medium text-fg-2 hover:text-ember">
           {a.groupName}

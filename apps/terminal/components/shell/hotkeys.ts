@@ -6,8 +6,12 @@ import { chartRegistry } from "@/components/chart/engine";
 import { openActivity, showSide, toggleFullChart, toggleFullscreen, toggleOneClick } from "./commands";
 import { openIndicatorList } from "@/components/chart/indicators/state";
 import { deleteSelectedDrawing, redoDrawings, undoDrawings } from "@/components/chart/drawings";
+import { getTradeMode } from "@/lib/options/mode";
 
-/** Global terminal keyboard shortcuts (MT5-compatible where possible). */
+/**
+ * Global terminal keyboard shortcuts (MT5-compatible where possible). On an Options account the CFD chart's keys
+ * (indicators, chart grid, crosshair, zoom) do nothing, and F9 / Ctrl+D / F10 say the account trades options only.
+ */
 export function useHotkeys() {
   const T = useTerminal();
   const ref = React.useRef(T);
@@ -18,12 +22,13 @@ export function useHotkeys() {
       const el = e.target as HTMLElement | null;
       const typing = !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable);
       const mod = e.metaKey || e.ctrlKey;
+      const cfd = getTradeMode() === "cfd";
       if (mod && e.key.toLowerCase() === "k") {
         e.preventDefault();
         t.setUi({ search: !t.ui.search });
         return;
       }
-      if (mod && e.key.toLowerCase() === "i") {
+      if (mod && e.key.toLowerCase() === "i" && cfd) {
         e.preventDefault();
         openIndicatorList(t.activeTab.id); // MT5: Ctrl+I = indicators list
         return;
@@ -48,7 +53,7 @@ export function useHotkeys() {
         toggleFullscreen();
         return;
       }
-      if (e.altKey && /^Digit[1-4]$/.test(e.code)) {
+      if (e.altKey && /^Digit[1-4]$/.test(e.code) && cfd) {
         e.preventDefault();
         const n = e.code.slice(5);
         const l: Layout = n === "1" ? "1" : n === "2" ? "2h" : n === "3" ? "2v" : "4";
@@ -78,7 +83,7 @@ export function useHotkeys() {
         t.openNewOrder();
         return;
       }
-      if (mod && e.key.toLowerCase() === "f") {
+      if (mod && e.key.toLowerCase() === "f" && cfd) {
         e.preventDefault();
         t.setDrawTool(t.drawTool === "crosshair" ? "cursor" : "crosshair");
         return;
@@ -110,6 +115,7 @@ export function useHotkeys() {
         deleteSelectedDrawing(t);
         return;
       }
+      if (!cfd) return;
       if (e.key === "+" || e.key === "=") chartRegistry.get(t.ws.activeId)?.zoom(1);
       if (e.key === "-" || e.key === "_") chartRegistry.get(t.ws.activeId)?.zoom(-1);
     };

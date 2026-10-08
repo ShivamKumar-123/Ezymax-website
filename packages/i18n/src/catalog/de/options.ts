@@ -96,5 +96,9 @@ const options: NsMessages<"options"> = {
 
   // Demo build
   "demo.note": "Demo: Hier wird nichts gespeichert.",
+
+  // No Options account yet
+  "account.noneTitle": "Optionen werden auf einem Optionskonto gehandelt",
+  "account.noneText": "Mit Ihren CFD-Konten können Sie keine Optionen handeln. Eröffnen Sie in einer Minute ein Live- oder Demo-Optionskonto und legen Sie los.",
 };
 export default options;

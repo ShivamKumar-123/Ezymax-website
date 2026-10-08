@@ -46,6 +46,9 @@ function Palette() {
   const input = React.useRef<HTMLInputElement>(null);
   const close = React.useCallback(() => T.setUi({ search: false }), [T]);
   const commands = useCommands();
+  // an Options account has no CFD chart or order form to open a market in: actions only (the options workspace
+  // picks its underlying in its own column)
+  const cfd = useTradeMode() === "cfd";
   React.useEffect(() => {
     setTimeout(() => input.current?.focus(), 10);
   }, []);
@@ -54,7 +57,7 @@ function Palette() {
   const needle = q.toLowerCase();
   // live accounts and guests: only markets that trade live (lib/scope.ts)
   const scope = useMarketScope();
-  const markets = scope.list.filter((i) => inSegment(i, cls, T.ws.favourites) && (!needle || i.symbol.toLowerCase().includes(needle) || i.name.toLowerCase().includes(needle))).sort((a, b) => (needle ? Number(!a.symbol.toLowerCase().startsWith(needle)) - Number(!b.symbol.toLowerCase().startsWith(needle)) : 0));
+  const markets = !cfd ? [] : scope.list.filter((i) => inSegment(i, cls, T.ws.favourites) && (!needle || i.symbol.toLowerCase().includes(needle) || i.name.toLowerCase().includes(needle))).sort((a, b) => (needle ? Number(!a.symbol.toLowerCase().startsWith(needle)) - Number(!b.symbol.toLowerCase().startsWith(needle)) : 0));
   const actions = words.length
     ? commands.filter((c) => {
         const hay = `${c.label} ${c.keywords ?? ""}`.toLowerCase();
@@ -121,27 +124,37 @@ function Palette() {
           <input ref={input} value={q} onChange={(e) => (setQ(e.target.value), setIdx(0))} placeholder={t("desk.cmd.placeholder")} className="h-full flex-1 bg-transparent text-[14px] outline-none placeholder:text-fg-3" aria-label={t("desk.top.search")} />
           <Kbd>Esc</Kbd>
         </div>
-        <div className="shrink-0 border-b border-line px-3 py-2">
-          <SegmentChips instruments={scope.list} value={cls} onChange={(s) => (setCls(s), setIdx(0))} favourites={T.ws.favourites} size="md" label={t("order.search.segment")} />
-        </div>
+        {cfd && (
+          <div className="shrink-0 border-b border-line px-3 py-2">
+            <SegmentChips instruments={scope.list} value={cls} onChange={(s) => (setCls(s), setIdx(0))} favourites={T.ws.favourites} size="md" label={t("order.search.segment")} />
+          </div>
+        )}
         <div className="t-scroll min-h-0 flex-1 overflow-y-auto p-1.5">
           {section(first[0] as string, first[1] as Row[])}
           {section(second[0] as string, second[1] as Row[])}
-          {!rows.length && <div className="p-8 text-center text-[13px] text-fg-3">{q ? t("desk.cmd.noMatch", { q }) : cls === "favourites" ? t("order.search.noFavourites") : t("order.search.emptySegment")}</div>}
+          {!rows.length && <div className="p-8 text-center text-[13px] text-fg-3">{q || !cfd ? t("desk.cmd.noMatch", { q }) : cls === "favourites" ? t("order.search.noFavourites") : t("order.search.emptySegment")}</div>}
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 border-t border-line bg-panel-2 px-4 py-2.5 text-[12px] text-fg-3">
           <span className="flex items-center gap-1.5">
             <Kbd>↑↓</Kbd> {t("order.search.navigate")}
           </span>
-          <span className="flex items-center gap-1.5">
-            <Kbd>↵</Kbd> {t("order.search.openInChart")} · {t("desk.cmd.run")}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Kbd>Alt ↵</Kbd> {t("order.search.newChart")}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Kbd>⇧ ↵</Kbd> {t("order.search.newOrder")}
-          </span>
+          {cfd ? (
+            <>
+              <span className="flex items-center gap-1.5">
+                <Kbd>↵</Kbd> {t("order.search.openInChart")} · {t("desk.cmd.run")}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Kbd>Alt ↵</Kbd> {t("order.search.newChart")}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Kbd>⇧ ↵</Kbd> {t("order.search.newOrder")}
+              </span>
+            </>
+          ) : (
+            <span className="flex items-center gap-1.5">
+              <Kbd>↵</Kbd> {t("desk.cmd.run")}
+            </span>
+          )}
         </div>
       </div>
     </div>,
@@ -246,13 +259,18 @@ export const SHORTCUTS: { group: MessageKey; items: readonly (readonly [string, 
   },
 ];
 
+/** Keys of the CFD order form, one-click trading and the CFD chart: not listed on an Options account (shell/hotkeys.ts). */
+const CFD_KEYS = new Set(["F9", "F10", "Ctrl + D", "Ctrl + I", "Ctrl + F", "Alt + 1 … 4", "+ / −", "Delete"]);
+
 export function ShortcutsDialog() {
   const T = useTerminal();
   const t = useT();
+  const cfd = useTradeMode() === "cfd";
+  const groups = cfd ? SHORTCUTS : SHORTCUTS.map((g) => ({ ...g, items: g.items.filter(([k]) => !CFD_KEYS.has(k)) })).filter((g) => g.items.length > 0);
   return (
     <TDialog open={T.ui.shortcuts} onClose={() => T.setUi({ shortcuts: false })} width={640} icon={<Keyboard />} title={t("order.shortcuts.title")}>
       <div className="grid gap-x-6 gap-y-4 p-4 sm:grid-cols-2">
-        {SHORTCUTS.map((g) => (
+        {groups.map((g) => (
           <section key={g.group}>
             <h3 className="mb-1 px-1 text-[12.5px] font-semibold text-fg-2">{t(g.group)}</h3>
             {g.items.map(([k, v]) => (
@@ -349,6 +367,8 @@ export function OptionsDialog() {
   };
   const a = T.account;
   const ro = T.readOnly || T.guest;
+  // one-click trading, the default lot and the max deviation are about CFD orders: not on an Options account
+  const cfd = useTradeMode() === "cfd";
   return (
     <TDialog
       open={T.ui.options}
@@ -364,21 +384,25 @@ export function OptionsDialog() {
     >
       <div className="divide-y divide-line text-[13px]">
         <OptSection title={t("desk.set.trading")}>
-          <OptRow label={t("desk.set.oneClick")} hint={T.ws.oneClick ? t("desk.set.oneClickHint") : t("desk.set.oneClickOffHint")}>
-            <Switch checked={T.ws.oneClick && !ro} disabled={ro} onChange={() => toggleOneClick(T)} label={t("desk.set.oneClick")} />
-          </OptRow>
-          <OptRow label={t("desk.set.defaultLot")} hint={t("desk.set.defaultLotHint")}>
-            <Stepper size="md" value={lot} onChange={commitLot} step={0.01} min={0.01} decimals={2} ariaLabel={t("desk.set.defaultLot")} className="w-[150px]" />
-          </OptRow>
-          <OptRow label={t("desk.set.maxDeviation")} hint={t("desk.set.maxDeviationHint")}>
-            <TSelect
-              ariaLabel={t("desk.set.maxDeviation")}
-              value={T.ws.maxDeviation === null ? "any" : String(T.ws.maxDeviation)}
-              onChange={(v) => T.setWs({ maxDeviation: v === "any" ? null : Number(v) })}
-              options={MAX_DEVIATIONS.map((d) => ({ value: d === null ? "any" : String(d), label: d === null ? t("trader.menu.anyPrice") : t("trader.menu.points", { count: d }) }))}
-              className="w-[150px]"
-            />
-          </OptRow>
+          {cfd && (
+            <>
+              <OptRow label={t("desk.set.oneClick")} hint={T.ws.oneClick ? t("desk.set.oneClickHint") : t("desk.set.oneClickOffHint")}>
+                <Switch checked={T.ws.oneClick && !ro} disabled={ro} onChange={() => toggleOneClick(T)} label={t("desk.set.oneClick")} />
+              </OptRow>
+              <OptRow label={t("desk.set.defaultLot")} hint={t("desk.set.defaultLotHint")}>
+                <Stepper size="md" value={lot} onChange={commitLot} step={0.01} min={0.01} decimals={2} ariaLabel={t("desk.set.defaultLot")} className="w-[150px]" />
+              </OptRow>
+              <OptRow label={t("desk.set.maxDeviation")} hint={t("desk.set.maxDeviationHint")}>
+                <TSelect
+                  ariaLabel={t("desk.set.maxDeviation")}
+                  value={T.ws.maxDeviation === null ? "any" : String(T.ws.maxDeviation)}
+                  onChange={(v) => T.setWs({ maxDeviation: v === "any" ? null : Number(v) })}
+                  options={MAX_DEVIATIONS.map((d) => ({ value: d === null ? "any" : String(d), label: d === null ? t("trader.menu.anyPrice") : t("trader.menu.points", { count: d }) }))}
+                  className="w-[150px]"
+                />
+              </OptRow>
+            </>
+          )}
           <OptRow label={t("desk.set.sounds")} hint={t("desk.set.soundsHint")}>
             <Switch checked={T.ws.sound} onChange={(v) => T.setWs({ sound: v })} label={t("desk.set.sounds")} />
           </OptRow>

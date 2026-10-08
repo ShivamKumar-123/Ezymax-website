@@ -523,7 +523,7 @@ const trader = {
 
   // Module not open yet / price server down
   "opt.soon.title": "Options launching soon",
-  "opt.soon.text": "Ezymex FX Options isn't open on this account yet. As soon as it is, the option chain appears here, on the same account as your CFDs.",
+  "opt.soon.text": "Ezymex FX Options isn't open on this account yet. As soon as it is, the option chain appears here.",
   "opt.soon.point1": "Calls and puts on forex, gold, silver and oil",
   "opt.soon.point2": "Daily, weekly and monthly expiries, cash-settled in USD",
   "opt.soon.point3": "As a buyer you can never lose more than the premium you pay",

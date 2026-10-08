@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { ACCOUNTS } from "@ezymex/mock";
 import { useT } from "@ezymex/i18n/react";
 import { TERMINAL_URL } from "@/lib/live";
+import { productOf } from "@/components/trading/api";
 import type { Suitability } from "./api";
 import { demoSuitability } from "./demo";
 import { OptionsPage, type OptionsController, type TradeAccount } from "./ui";
@@ -16,8 +17,9 @@ export function DemoOptions() {
   const t = useT();
   const [data, setData] = React.useState<Suitability>(() => demoSuitability());
 
+  // options trade on Options accounts only
   const accounts = React.useMemo<TradeAccount[]>(
-    () => ACCOUNTS.filter((a) => !a.cent).map((a) => ({ login: Number(a.login), type: a.type, name: a.nickname ?? `${a.group} · ${a.mode === "netting" ? "Netting" : "Hedging"}` })),
+    () => ACCOUNTS.filter((a) => productOf(a) === "options").map((a) => ({ login: Number(a.login), type: a.type, name: a.nickname ?? `${a.group} · ${a.mode === "netting" ? "Netting" : "Hedging"}` })),
     [],
   );
 

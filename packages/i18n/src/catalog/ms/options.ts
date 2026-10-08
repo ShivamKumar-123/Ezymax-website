@@ -96,5 +96,9 @@ const options: NsMessages<"options"> = {
 
   // Demo build
   "demo.note": "Demo: tiada apa-apa di sini disimpan.",
+
+  // No Options account yet
+  "account.noneTitle": "Opsyen didagangkan dalam akaun opsyen",
+  "account.noneText": "Akaun CFD anda tidak boleh mendagangkan opsyen. Buka akaun opsyen sebenar atau demo dalam seminit, kemudian mula berdagang.",
 };
 export default options;

@@ -4,9 +4,9 @@
 // ("EURUSD Call 1.1275 · Bought ×2"), whether it is winning or losing (P&L in money and % of the premium), what was paid
 // and what it is worth now, the expiry with its countdown, and in plain words what happens at expiry (where it pays,
 // and what it would pay at today's price). Close is one tap (the button shows what you get or pay); Close part, Show
-// on the chart and the details (ticket, open time, prices per contract, breakeven, commission, Greeks) are next to
-// it. Strategies (combos) are one card with their legs, closed all together. Working option orders follow, and the
-// footer shows the shared account (CFDs and options use one account: same equity and margin).
+// on the chart (Options accounts) and the details (ticket, open time, prices per contract, breakeven, commission,
+// Greeks) are next to it. Strategies (combos) are one card with their legs, closed all together. Working option orders
+// follow. Options trade on an Options account; a CFD account lists (and closes) only option positions it still holds.
 //
 // Numbers match the engine: P&L is the position's value at the mark (model mid; inside the best bid / offer on the
 // order book) against the premium it was opened at, commission excluded, exactly like the engine's `profit`, which
@@ -30,7 +30,7 @@ import { usdPerUnitOfQuote } from "@/lib/options/normalize";
 import { errText, rfqErrorText, rfqRequotable } from "@/lib/options/errors";
 import { detectTemplate } from "@/lib/options/math";
 import { breakevenOf, expiryCash } from "@/lib/options/plain";
-import { setTradeMode } from "@/lib/options/mode";
+import { useTradeMode } from "@/lib/options/mode";
 import { opt, quoteOf, useBookLive, useOpt, useOptionsAttach, useSeriesQuote } from "@/lib/options-store";
 import type { OptOrder, OptPosition, OptionQuote } from "@/lib/options/types";
 import { OptAvatar, OptionsGate, useNow } from "./bits";
@@ -329,6 +329,8 @@ const PositionCard = React.memo(function PositionCard({ p, readOnly, report, loc
   const spot = useSpot(p.option.underlying);
   const [open, setOpen] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
+  // the options workspace (chart, chain) shows on an Options account; a CFD account only lists and closes what it holds
+  const workspace = useTradeMode() === "options";
   React.useEffect(() => {
     report?.(p.ticket, v);
   });
@@ -386,9 +388,11 @@ const PositionCard = React.memo(function PositionCard({ p, readOnly, report, loc
         <div data-area="d" className="flex items-center gap-1.5 px-3 pb-2.5 pt-2.5">
           {!readOnly && <CloseButton v={v} side={p.side} busy={busy} onClick={() => close()} title={bookLive && !p.option.barrier ? t("trader.opt.pos.closeBook") : undefined} />}
           {!readOnly && <PartialClose p={p} onClose={(n) => close(n)} />}
-          <button onClick={() => (opt.showSeries(p.option.series) || opt.selectUnderlying(u), opt.focus(p.ticket), setTradeMode("options"))} title={t("trader.opt.pos.showOnChart")} aria-label={t("trader.opt.pos.showOnChart")} className="grid size-8 shrink-0 place-items-center rounded-[8px] border border-line text-fg-3 hover:bg-surface-3 hover:text-fg">
-            <Crosshair className="size-3.5" />
-          </button>
+          {workspace && (
+            <button onClick={() => (opt.showSeries(p.option.series) || opt.selectUnderlying(u), opt.focus(p.ticket))} title={t("trader.opt.pos.showOnChart")} aria-label={t("trader.opt.pos.showOnChart")} className="grid size-8 shrink-0 place-items-center rounded-[8px] border border-line text-fg-3 hover:bg-surface-3 hover:text-fg">
+              <Crosshair className="size-3.5" />
+            </button>
+          )}
           <button onClick={() => setOpen((x) => !x)} aria-expanded={open} className="ms-auto flex h-8 shrink-0 items-center gap-1 rounded-[8px] px-2 text-[11.5px] text-fg-3 hover:bg-surface-3 hover:text-fg">
             {t("trader.opt.plain.details")}
             <ChevronDown className={cn("size-3.5 transition-transform", open && "rotate-180")} />
@@ -557,6 +561,8 @@ export function OptionPositionsList({ onOpenChain, report, className, mobile }: 
   const { locale } = useLocale();
   const login = T.guest ? null : T.account.login;
   const book = useOptionBook(login);
+  // "Get started" opens the options workspace's Quick trade: on an Options account (a CFD account trades no options)
+  const workspace = useTradeMode() === "options";
   const vals = React.useRef(new Map<string, PosLive>());
   const [, bump] = React.useReducer((x: number) => x + 1, 0);
   React.useEffect(() => {
@@ -590,9 +596,11 @@ export function OptionPositionsList({ onOpenChain, report, className, mobile }: 
           </div>
           <div className="text-[13.5px] font-semibold text-fg">{book.loaded || !T.engine ? t("trader.opt.pos.emptyTitle") : t("trader.opt.pos.loading")}</div>
           <p className="mt-1 text-[12px] leading-relaxed text-fg-3">{t("trader.opt.pos.emptyText")}</p>
-          <button onClick={() => (onOpenChain ? onOpenChain() : (setTradeMode("options"), opt.setPrefs({ panel: "simple" })))} className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-[10px] bg-ember px-4 text-[12.5px] font-semibold text-white hover:brightness-110">
-            {t("trader.opt.guide.start")}
-          </button>
+          {(onOpenChain || workspace) && (
+            <button onClick={() => (onOpenChain ? onOpenChain() : opt.setPrefs({ panel: "simple" }))} className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-[10px] bg-ember px-4 text-[12.5px] font-semibold text-white hover:brightness-110">
+              {t("trader.opt.guide.start")}
+            </button>
+          )}
         </div>
       </div>
     );
@@ -695,7 +703,6 @@ function PositionsBody() {
             </span>
           </span>
           <span className="text-fg-3">{t("trader.opt.pos.count", { count: book.positions.length })}</span>
-          <span className="hidden truncate text-fg-3 lg:inline">· {t("trader.opt.pos.sharedAccount")}</span>
           <span className="ms-auto">
             <GreeksButton totals={total} />
           </span>

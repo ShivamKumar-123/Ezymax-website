@@ -3,11 +3,12 @@
 
 use super::dealing::{self, BookMove};
 use super::funds::{self, AdjustKind, Direction};
-use super::testkit::{Harness, Kit, d, t};
+use super::testkit::{Harness, Kit, d, group, t};
 use super::trade::{self, BulkFilter, CloseReq, DealerCtx, OrderReq, PlaceResult, PositionPatch};
 use super::{metrics, risk};
 use crate::model::{AccountKind, Book, DealReason, Expiry, OrderType, Side, Status};
 use crate::money::{D, r2};
+use crate::rules::Product;
 use crate::state::Event;
 
 fn buy(sym: &str, v: &str) -> OrderReq {
@@ -726,6 +727,39 @@ fn live_account_kind() {
     let kit = Kit::new();
     let h = Harness::live(&kit, "hedge", "0");
     assert_eq!(h.st.account.kind, AccountKind::Live);
+}
+
+#[test]
+fn options_accounts_open_no_cfds_and_group_changes_stay_within_the_product() {
+    let mut kit = Kit::new();
+    kit.quote("EURUSD", "1.09990", "1.10010");
+    let mut pro = group("options-pro", crate::model::Mode::Hedging, false);
+    pro.product = Product::Options;
+    kit.tenant.groups.insert("options-pro".into(), pro);
+    // an options account: no CFD opens of any kind (market, pending, dealer)
+    let mut o = Harness::live(&kit, "options", "10000");
+    let dealer = DealerCtx { staff: "Dealer".into(), reason_code: "DLR-01".into(), force: true };
+    for req in [buy("EURUSD", "0.1"), OrderReq { kind: OrderType::Limit, price: Some(d("1.09")), ..buy("EURUSD", "0.1") }, OrderReq { dealer: Some(dealer), ..sell("EURUSD", "0.1") }] {
+        let e = o.run(&kit, |tx, env| trade::place_order(tx, env, req)).unwrap_err();
+        assert_eq!(e.code, "product_mismatch");
+        assert_eq!(e.message, "This is an Options account: CFD trading isn't available on it.");
+    }
+    assert!(o.st.positions.is_empty() && o.st.orders.is_empty());
+    // group changes (client and staff both run funds::change_group) stay within the product
+    let mut c = Harness::live(&kit, "hedge", "10000");
+    let options = kit.tenant.groups["options"].clone();
+    assert_eq!(c.run(&kit, |tx, env| funds::change_group(tx, env, &options)).unwrap_err().code, "product_mismatch");
+    let hedge = kit.tenant.groups["hedge"].clone();
+    assert_eq!(o.run(&kit, |tx, env| funds::change_group(tx, env, &hedge)).unwrap_err().code, "product_mismatch");
+    let ecn = kit.tenant.groups["ecn"].clone();
+    c.run(&kit, |tx, env| funds::change_group(tx, env, &ecn)).unwrap();
+    let pro = kit.tenant.groups["options-pro"].clone();
+    o.run(&kit, |tx, env| funds::change_group(tx, env, &pro)).unwrap();
+    assert_eq!((c.st.account.group.as_str(), o.st.account.group.as_str()), ("ecn", "options-pro"));
+    // CFDs still trade on the CFD account
+    place(&mut c, &kit, buy("EURUSD", "0.1"));
+    c.assert_replay();
+    o.assert_replay();
 }
 
 /* ------------------------------------------------------------------ */

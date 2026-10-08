@@ -23,7 +23,7 @@ use crate::engine::funds::{self, AdjustKind};
 use crate::engine::trade::{self, OrderReq, PlaceResult};
 use crate::model::{AccountKind, Side, Source};
 use crate::money::{D, ZERO, from_f64, num};
-use crate::rules::TenantConfig;
+use crate::rules::{Product, TenantConfig};
 use crate::shard::Op;
 
 /// The tenant's hedge account, opened on first use.
@@ -32,9 +32,11 @@ pub async fn hedge_account(st: &AppState, t: &TenantConfig) -> anyhow::Result<i6
         return Ok(l);
     }
     let cfg = &st.cfg;
-    let pick = |code: &str| t.groups.get(code).filter(|g| g.enabled && g.allows("live") && !g.cent).map(|g| g.code.clone());
+    // a live USD CFD group: the hedge trades CFDs (an options account would refuse them)
+    let usable = |g: &crate::rules::Group| g.enabled && g.allows("live") && !g.cent && g.product == Product::Cfd;
+    let pick = |code: &str| t.groups.get(code).filter(|g| usable(g)).map(|g| g.code.clone());
     let group = pick(&cfg.options_hedge_group)
-        .or_else(|| t.groups.values().filter(|g| g.enabled && g.allows("live") && !g.cent && g.mode == crate::model::Mode::Netting && !g.code.starts_with("prop") && !matches!(g.code.as_str(), "copy" | "copy-netting" | "pamm" | "mam")).map(|g| g.code.clone()).min())
+        .or_else(|| t.groups.values().filter(|g| usable(g) && g.mode == crate::model::Mode::Netting && !g.code.starts_with("prop") && !matches!(g.code.as_str(), "copy" | "copy-netting" | "pamm" | "mam")).map(|g| g.code.clone()).min())
         .or_else(|| pick("standard"))
         .ok_or_else(|| anyhow::anyhow!("no live USD group for the hedge account"))?;
     let (login, _, _) = st.social.open_account(t.tenant_id, cfg.options_hedge_user, &group, "Options delta hedge (house)").await.map_err(|e| anyhow::anyhow!("{e:?}"))?;

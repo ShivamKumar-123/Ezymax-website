@@ -477,7 +477,8 @@ function QuickRoutes() {
       <CardHeader title="Quick routes" subtitle="New trades only · by group or account" icon={<RouteIcon />} />
       <div className="space-y-4 px-6 pb-6 pt-4">
         <div className="space-y-1.5">
-          {groupOptions().map(({ value: g, label }) => {
+          {/* CFD account types only: options are always B-book */}
+          {groupOptions("cfd").map(({ value: g, label }) => {
             const b = groupBook(g);
             return (
               <div key={g} className="flex items-center gap-2 text-[12.5px]">
@@ -493,7 +494,7 @@ function QuickRoutes() {
           })}
         </div>
         <div className="border-t border-line pt-4">
-          <AccountPicker value={login} onChange={setLogin} />
+          <AccountPicker value={login} onChange={setLogin} product="cfd" />
           <div className="mt-2 flex gap-2">
             {(["A", "B"] as const).map((b) => (
               <Button key={b} size="xs" variant="surface" disabled={!login || !canDeal} onClick={() => login && setPending({ scope: { login }, book: b, label: `${login}: route new trades to ${b}-book` })}>

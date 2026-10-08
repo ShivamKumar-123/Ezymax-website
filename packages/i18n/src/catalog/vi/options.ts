@@ -96,5 +96,9 @@ const options: NsMessages<"options"> = {
 
   // Demo build
   "demo.note": "Demo: không có gì ở đây được lưu lại.",
+
+  // No Options account yet
+  "account.noneTitle": "Quyền chọn được giao dịch trên tài khoản quyền chọn",
+  "account.noneText": "Tài khoản CFD của bạn không giao dịch được quyền chọn. Mở tài khoản quyền chọn thực hoặc demo trong một phút rồi bắt đầu giao dịch.",
 };
 export default options;

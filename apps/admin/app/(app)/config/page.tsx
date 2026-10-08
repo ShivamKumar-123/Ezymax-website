@@ -10,6 +10,7 @@ import { GroupEditor, ROUTE_LABEL, CHARGE_LABEL, blankGroup } from "@/components
 import { auditToast, useReason } from "@/components/config/kit";
 import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveGroupsPage } from "@/components/trading-live/groups";
+import { ProductChip } from "@/components/trading-live/kit";
 
 const ROUTE_TONE: Record<AdminGroup["route"], ChipTone> = { A: "info", B: "neutral", auto: "ember" };
 const ACCENT: Record<AdminGroup["tone"], string> = {
@@ -65,6 +66,7 @@ function GroupCard({ g, onEdit, onDuplicate, onArchive }: { g: AdminGroup; onEdi
         />
       </div>
       <div className="mt-3 flex flex-wrap gap-1.5 px-5">
+        <ProductChip product={g.product} />
         <Chip size="sm" tone="neutral">{g.mode === "hedging" ? "Hedging" : "Netting"}</Chip>
         <Chip size="sm" tone={ROUTE_TONE[g.route]}>
           <RouteIcon className="size-3" /> {ROUTE_LABEL[g.route]}
@@ -120,6 +122,7 @@ function GroupCard({ g, onEdit, onDuplicate, onArchive }: { g: AdminGroup; onEdi
 
 function CompareTable({ groups, onEdit }: { groups: AdminGroup[]; onEdit: (g: AdminGroup) => void }) {
   const rows: [string, (g: AdminGroup) => React.ReactNode][] = [
+    ["Product", (g) => <ProductChip key="p" product={g.product} />],
     ["Account mode", (g) => (g.mode === "hedging" ? "Hedging" : "Netting")],
     ["Currency", (g) => g.currency],
     ["Leverage options", (g) => g.leverage.map((l) => `1:${l}`).join(" · ")],

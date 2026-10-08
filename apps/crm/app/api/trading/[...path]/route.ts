@@ -13,9 +13,10 @@ import { dealCommission, dealPremiumsUsd, isOptionTrade, matchesInstrument, opti
 // that user id in X-Ezymex-User-Id and returns 404 for accounts the user doesn't own. A user id sent by the
 // browser is never used. CSRF: cookies are SameSite=Lax, POSTs must be JSON with a same-origin Origin.
 //
-//   GET  groups                              open-account groups and their specs
-//   GET  accounts                            the client's accounts (live metrics)
-//   POST accounts                            {type, group, leverage?, name?, password?, initialBalance?}
+//   GET  groups                              open-account groups and their specs (with `product`: cfd | options)
+//   GET  accounts                            the client's accounts (live metrics, `product` from the group)
+//   POST accounts                            {type, group, leverage?, name?, password?, initialBalance?}: an options
+//                                            group only while the broker's Options module is on
 //   GET  accounts/{login}                    {account, positions[], orders[]}
 //   GET  accounts/{login}/history?from&to&page&limit[&instrument=option|cfd]
 //                                            instrument: only Ezymex FX Options deals (or only CFD deals); the BFF pages
@@ -64,6 +65,15 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}(T[\d:.]+(Z|[+-]\d{2}:\d{2})?)?$/;
 /** Engine groups reserved for prop-challenge accounts (same rule as the prop service and the wallet). */
 const isPropGroup = (code: unknown) => typeof code === "string" && code.toLowerCase().startsWith("prop");
 
+/** The broker's group catalogue (engine /v1/groups) is the same for all its clients: shared briefly per broker. */
+const catalogue = (user: GatewayUser, req: NextRequest) => groupsCache.get(user.tenant?.slug ?? "", () => engine<{ groups?: Obj[] }>("/v1/groups", { user, req }), (x) => x.status === 200);
+
+/** Whether a group trades options (its `product`, never its code); false when unknown (the engine decides then). */
+async function isOptionsGroup(user: GatewayUser, req: NextRequest, code: string) {
+  const r = await catalogue(user, req);
+  return r.status === 200 && (r.data.groups ?? []).some((g) => g.code === code && g.product === "options");
+}
+
 function error(status: number, code: string, message: string) {
   return NextResponse.json({ error: { code, message } }, { status, headers: NO_STORE });
 }
@@ -106,8 +116,7 @@ export async function GET(req: NextRequest, { params }: Ctx) {
   if (user instanceof NextResponse) return user;
 
   if (path.length === 1 && path[0] === "groups") {
-    // the broker's group catalogue is the same for all its clients: shared briefly per broker
-    const r = await groupsCache.get(user.tenant?.slug ?? "", () => engine<{ groups?: Obj[] }>("/v1/groups", { user, req }), (x) => x.status === 200);
+    const r = await catalogue(user, req);
     if (r.status !== 200) return reply(r.status, r.data);
     // spread group / route are dealing details; the client sees the commercial terms only
     // prop* groups hold prop-challenge accounts only (opened by the prop service; the wallet refuses transfers to them)
@@ -193,8 +202,11 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     if (type !== "live" && type !== "demo") return error(422, "validation", "Choose a live or demo account.");
     if (typeof body.group !== "string" || !/^[a-z0-9_-]{1,40}$/i.test(body.group)) return error(422, "validation", "Choose an account type.");
     if (isPropGroup(body.group)) return error(422, "validation", "Prop accounts are opened by buying a prop challenge.");
-    // Back Office › Settings › Features: "Demo accounts" off stops new demo accounts (existing ones keep working)
-    if (type === "demo" && (await tenantConfig())?.flags.demo_accounts === false) return error(403, "feature_disabled", "Demo accounts aren't available right now.");
+    // Back Office › Settings › Features: "Demo accounts" off stops new demo accounts (existing ones keep working);
+    // likewise the Options module off stops new Options accounts
+    const features = await tenantConfig();
+    if (type === "demo" && features?.flags.demo_accounts === false) return error(403, "feature_disabled", "Demo accounts aren't available right now.");
+    if (features?.modules.options === false && (await isOptionsGroup(user, req, body.group))) return error(403, "feature_disabled", "Options accounts aren't available right now.");
     const open: Obj = { type, group: body.group };
     if (body.leverage !== undefined) {
       if (!Number.isInteger(body.leverage)) return error(422, "validation", "Invalid leverage.");

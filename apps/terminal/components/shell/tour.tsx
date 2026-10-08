@@ -3,7 +3,8 @@
 // First-run tours (docs/TERMINAL-DESIGN.md §2.5), five short steps each on the real screen. CFD: find a market (the
 // Instruments column) → Sell / Buy on the chart → the order form → positions below → the ☰ menu. Options: the
 // underlying → Quick trade → the option chain → positions and settlement → the plain-language glossary. Each runs once
-// per browser on desktop (never for read-only sessions); ☰ › Take the tour starts the one for the current mode.
+// per browser on desktop (never for read-only sessions): the Options one the first time an Options account opens;
+// ☰ › Take the tour starts the one for the active account's product.
 // Esc or "Skip tour" ends it.
 import * as React from "react";
 import { createPortal } from "react-dom";
@@ -54,8 +55,9 @@ function markSeen(mode: TradeMode) {
 
 export function Tour() {
   const T = useTerminal();
+  // CFD or options: the active account's product
   const mode = useTradeMode();
-  // first visit of each mode: start once the workspace has settled
+  // first visit of each workspace: start once it has settled
   React.useEffect(() => {
     if (T.readOnly || seen(mode)) return;
     const id = setTimeout(() => T.setUi({ tour: true }), mode === "options" ? 2200 : 1200);

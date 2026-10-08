@@ -511,7 +511,7 @@ const trader: NsMessages<"trader"> = {
 
   // Module not open yet / price server down
   "opt.soon.title": "Opsiyonlar yakında",
-  "opt.soon.text": "Ezymex FX Options bu hesapta henüz açık değil. Açılır açılmaz opsiyon zinciri burada, CFD'lerinizle aynı hesapta görünecek.",
+  "opt.soon.text": "Ezymex FX Options bu hesapta henüz açık değil. Açılır açılmaz opsiyon zinciri burada görünecek.",
   "opt.soon.point1": "Forex, altın, gümüş ve petrol üzerine call ve put'lar",
   "opt.soon.point2": "Günlük, haftalık ve aylık vadeler, USD ile nakdi uzlaşı",
   "opt.soon.point3": "Alıcı olarak ödediğiniz primden fazlasını asla kaybedemezsiniz",

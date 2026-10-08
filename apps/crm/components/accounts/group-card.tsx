@@ -6,6 +6,7 @@ import { cn } from "@/components/kit";
 import { useT } from "@ezymex/i18n/react";
 import type { MessageKey } from "@ezymex/i18n";
 import type { ACCOUNT_GROUPS } from "@ezymex/mock";
+import { productOf } from "@/components/trading/api";
 
 export type AccountGroup = (typeof ACCOUNT_GROUPS)[number];
 
@@ -14,10 +15,13 @@ export const GROUP_FEATURES: Record<string, MessageKey[]> = {
   pro: ["accounts.mockFeature.pro.0", "accounts.mockFeature.pro.1", "accounts.mockFeature.pro.2"],
   ecn: ["accounts.mockFeature.ecn.0", "accounts.mockFeature.ecn.1", "accounts.mockFeature.ecn.2"],
   cent: ["accounts.mockFeature.cent.0", "accounts.mockFeature.cent.1", "accounts.mockFeature.cent.2"],
+  options: ["accounts.product.optionsPoint1", "accounts.product.optionsPoint2", "accounts.product.optionsPoint3"],
 };
 
 export function GroupCard({ g, selected, onSelect, compact }: { g: AccountGroup; selected?: boolean; onSelect?: () => void; compact?: boolean }) {
   const t = useT();
+  // Options account types: what they trade instead of spreads and leverage (option margin ignores it)
+  const options = productOf(g) === "options";
   const Comp = onSelect ? "button" : "div";
   return (
     <Comp
@@ -40,8 +44,7 @@ export function GroupCard({ g, selected, onSelect, compact }: { g: AccountGroup;
         <div className="absolute bottom-3 start-4 end-4 flex items-end justify-between">
           <div>
             <div className="text-[20px] font-semibold tracking-tight text-white">{g.name}</div>
-            {g.cent && <div className="text-[11px] font-medium uppercase tracking-wider text-gold">{t("accounts.groupCard.uscCent")}</div>}
-          </div>
+            {g.cent && <div className="text-[11px] font-medium uppercase tracking-wider text-gold">{t("accounts.groupCard.uscCent")}</div>}          </div>
           {selected && (
             <span className="grid size-7 place-items-center rounded-full bg-ember text-white shadow-[0_0_20px_color-mix(in_oklab,var(--k-ember)_70%,transparent)]">
               <Check className="size-4" />
@@ -52,10 +55,21 @@ export function GroupCard({ g, selected, onSelect, compact }: { g: AccountGroup;
       <div className="flex flex-1 flex-col px-4 pb-4 pt-3">
         <p className="text-[12.5px] leading-snug text-fg-2">{g.tagline}</p>
         <div className="mt-3 grid grid-cols-2 gap-2">
-          <Spec label={t("accounts.label.spreadFrom")} value={t("accounts.unit.pips", { value: g.spreadFrom })} />
-          <Spec label={t("accounts.label.commission")} value={g.commission === "None" ? t("common.none") : t("accounts.unit.perLotCompact", { amount: "$3.5" })} />
-          <Spec label={t("accounts.label.minDeposit")} value={`$${g.minDeposit}`} />
-          <Spec label={t("accounts.label.maxLeverage")} value={`1:${Math.max(...g.leverage).toLocaleString()}`} />
+          {options ? (
+            <>
+              <Spec label={t("accounts.label.product")} value={t("accounts.product.options")} />
+              <Spec label={t("accounts.label.commission")} value={`${g.commission.split(" /")[0]} ${t("accounts.opt.perContract")}`} />
+              <Spec label={t("accounts.label.minDeposit")} value={`$${g.minDeposit}`} />
+              <Spec label={t("accounts.label.positionMode")} value={t("accounts.mode.hedging")} />
+            </>
+          ) : (
+            <>
+              <Spec label={t("accounts.label.spreadFrom")} value={t("accounts.unit.pips", { value: g.spreadFrom })} />
+              <Spec label={t("accounts.label.commission")} value={g.commission === "None" ? t("common.none") : t("accounts.unit.perLotCompact", { amount: "$3.5" })} />
+              <Spec label={t("accounts.label.minDeposit")} value={`$${g.minDeposit}`} />
+              <Spec label={t("accounts.label.maxLeverage")} value={`1:${Math.max(...g.leverage).toLocaleString()}`} />
+            </>
+          )}
         </div>
         {!compact && (
           <ul className="mt-3 space-y-1.5">

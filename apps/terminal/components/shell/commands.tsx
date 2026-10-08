@@ -2,7 +2,8 @@
 
 /*
  * Every action the old MT5 menu bar offered, in one registry: the command palette (⌘K) lists them, the Settings menu
- * and the chart's Layout menu build their items from the same helpers. docs/TERMINAL-DESIGN.md §2.2.
+ * and the chart's Layout menu build their items from the same helpers. docs/TERMINAL-DESIGN.md §2.2. An Options
+ * account trades options only, so the CFD actions (new order, one-click trading, the CFD chart) aren't offered on it.
  */
 import * as React from "react";
 import { useTheme } from "next-themes";
@@ -54,8 +55,7 @@ import { guestNotice, openRegister, CLIENT_AREA } from "@/lib/guest";
 import type { MenuItem } from "@/components/ui/menu";
 import { askConfirm } from "@/components/dialogs/confirm";
 import { useModule, usePageOn } from "@/lib/features";
-import { useSwitchMode } from "./mode-switch";
-import { useTradeMode } from "@/lib/options/mode";
+import { getTradeMode, productOf, useTradeMode } from "@/lib/options/mode";
 
 export function toggleFullscreen() {
   try {
@@ -84,6 +84,9 @@ export const LAYOUTS: { id: Layout; label: MessageKey; hint: string; icon: React
 export const MAX_DEVIATIONS = [null, 0, 3, 5, 10, 20, 50, 100] as const;
 
 type Terminal = ReturnType<typeof useTerminal>;
+
+/** "CFD" / "Options": what an account trades, for the account lists of the menus and the palette. */
+const productLabel =(t: ReturnType<typeof useT>, a: { product?: string | null }) => (productOf(a) === "options" ? t("accounts.product.options") : t("accounts.product.cfd"));
 
 export function applyPreset(T: Terminal, p: (typeof PRESETS)[number]) {
   T.setWs((w) => ({ ...p.patch(w), profile: p.profile }));
@@ -145,6 +148,8 @@ export function toggleFullChart(T: Terminal, v?: boolean) {
 export function toggleOneClick(T: Terminal) {
   if (T.readOnly) return;
   if (T.guest) return void guestNotice(tr("trader.oneClick.name"));
+  // one-click trading places CFD orders: not on an Options account
+  if (getTradeMode() === "options") return void toast(tr("accounts.product.optionsOnly"), { id: "product-options-only" });
   const v = !T.ws.oneClick;
   T.setWs({ oneClick: v });
   toast(v ? tr("trader.oneClick.enabled") : tr("trader.oneClick.disabled"), { description: v ? tr("desk.op.oneClickOn") : tr("desk.op.oneClickOff") });
@@ -188,6 +193,7 @@ export function useMainMenuItems(): MenuItem[] {
   const { resolvedTheme, setTheme } = useTheme();
   const layout = useLayoutItems();
   const pageOn = usePageOn();
+  const options = useTradeMode() === "options";
   const tab = T.activeTab;
   const ro = T.readOnly || T.guest;
   const accounts: MenuItem[] = T.guest
@@ -196,7 +202,8 @@ export function useMainMenuItems(): MenuItem[] {
         { label: t("trader.guest.openAccount"), icon: <UserPlus />, onSelect: openRegister },
       ]
     : [
-        ...T.accounts.map((a) => ({ label: `${a.login}${a.nickname ? ` · ${a.nickname}` : ""}`, hint: t.dyn(`trader.accountType.${a.type}`, a.type), checked: a.login === T.account.login, onSelect: () => a.login !== T.account.login && T.switchAccount(a.login) }) as MenuItem),
+        // hint: LIVE / DEMO and what the account trades (an Options account opens the options workspace)
+        ...T.accounts.map((a) => ({ label: `${a.login}${a.nickname ? ` · ${a.nickname}` : ""}`, hint: `${t.dyn(`trader.accountType.${a.type}`, a.type)} · ${productLabel(t, a)}`, checked: a.login === T.account.login, onSelect: () => a.login !== T.account.login && T.switchAccount(a.login) }) as MenuItem),
         "sep",
         ...(T.engine ? [{ label: t("desk.acc.logInAnother"), icon: <LogIn />, onSelect: () => T.openLogin() } as MenuItem] : []),
         { label: t("desk.acc.openNew"), icon: <UserPlus />, onSelect: () => window.open(`${CLIENT_AREA}/accounts`, "_blank") },
@@ -215,13 +222,15 @@ export function useMainMenuItems(): MenuItem[] {
   return [
     { header: T.guest ? t("desk.menu.guest") : `${T.account.login} · ${T.account.server}` },
     { label: t("desk.menu.accounts"), icon: <Wallet />, items: accounts },
-    { label: t("desk.menu.chart"), icon: <BarChart2 />, items: chart },
-    { label: t("desk.set.oneClick"), icon: <Zap />, hint: "F10", checked: T.ws.oneClick && !ro, disabled: ro, onSelect: () => toggleOneClick(T) },
+    // an Options account has no CFD chart (the options workspace draws its own): only the layout and panels
+    options ? { label: t("desk.ch.layout"), icon: <LayoutTemplate />, items: layout } : { label: t("desk.menu.chart"), icon: <BarChart2 />, items: chart },
+    ...(options ? [] : [{ label: t("desk.set.oneClick"), icon: <Zap />, hint: "F10", checked: T.ws.oneClick && !ro, disabled: ro, onSelect: () => toggleOneClick(T) } as MenuItem]),
     "sep",
     { label: resolvedTheme === "light" ? t("desk.menu.darkTheme") : t("desk.menu.lightTheme"), icon: resolvedTheme === "light" ? <Moon /> : <Sun />, onSelect: () => setTheme(resolvedTheme === "light" ? "dark" : "light") },
     { label: t("desk.set.language"), icon: <Languages />, hint: lang.info.name, items: LOCALES.map((l) => ({ label: l.name, icon: <Flag country={l.flag} className="size-3.5" />, hint: l.code === "en" ? undefined : l.english, checked: lang.locale === l.code, onSelect: () => void lang.setLocale(l.code) })) },
     { label: t("desk.set.sounds"), icon: <Volume2 />, checked: T.ws.sound, onSelect: () => (T.setWs({ sound: !T.ws.sound }), toast(T.ws.sound ? t("trader.toast.soundsOff") : t("trader.toast.soundsOn"))) },
-    ...(T.guest
+    // slippage of CFD market orders
+    ...(T.guest || options
       ? []
       : ([
           {
@@ -261,8 +270,8 @@ export function useCommands(): Command[] {
   const t = useT();
   const lang = useLocale();
   const { resolvedTheme, setTheme } = useTheme();
-  const switchMode = useSwitchMode();
-  const mode = useTradeMode();
+  // CFD or options: the active account's product (lib/options/mode.ts), not a choice
+  const options = useTradeMode() === "options";
   // what the broker switched off: its toolbox tabs and Client Area links aren't offered
   const pageOn = usePageOn();
   const tabOn: Partial<Record<ToolboxTab, boolean>> = { news: useModule("news"), calendar: useModule("calendar"), ai: useModule("ai_assistant") };
@@ -274,10 +283,12 @@ export function useCommands(): Command[] {
   const c: Command[] = [];
   const add = (x: Command) => c.push(x);
 
-  // trading
-  add({ id: "new-order", group: "trade", label: t("trader.newOrder"), hint: "F9", icon: <ShoppingCart />, keywords: "new order buy sell trade ticket", disabled: T.readOnly, run: () => T.openNewOrder() });
-  add({ id: "one-click", group: "trade", label: t("desk.set.oneClick"), hint: "F10", icon: <Zap />, keywords: "one click instant", checked: T.ws.oneClick && !ro, disabled: ro, run: () => toggleOneClick(T) });
-  if (!T.guest && !T.readOnly) {
+  // trading (CFD orders: not on an Options account, which still closes the CFD positions it holds)
+  if (!options) {
+    add({ id: "new-order", group: "trade", label: t("trader.newOrder"), hint: "F9", icon: <ShoppingCart />, keywords: "new order buy sell trade ticket", disabled: T.readOnly, run: () => T.openNewOrder() });
+    add({ id: "one-click", group: "trade", label: t("desk.set.oneClick"), hint: "F10", icon: <Zap />, keywords: "one click instant", checked: T.ws.oneClick && !ro, disabled: ro, run: () => toggleOneClick(T) });
+  }
+  if (!T.guest && !T.readOnly && (!options || T.positions.length > 0 || T.pendings.length > 0)) {
     const bulk = (label: string, all: boolean, run: () => void) => () => askConfirm({ title: `${label}?`, text: all ? t("desk.cf.closeAllText", { count: T.positions.length }) : t("desk.cf.closeSomeText"), confirmLabel: label, run });
     add({ id: "close-all", group: "trade", label: t("toolbox.bulk.closeAll"), icon: <X />, keywords: "close all positions bulk", disabled: !T.positions.length, run: bulk(t("toolbox.bulk.closeAll"), true, () => T.bulkClose("all")) });
     add({ id: "close-profit", group: "trade", label: t("toolbox.bulk.closeProfitable"), keywords: "close profitable winners", disabled: !T.positions.length, run: bulk(t("toolbox.bulk.closeProfitable"), false, () => T.bulkClose("profit")) });
@@ -317,23 +328,22 @@ export function useCommands(): Command[] {
   add({ id: "save-tpl", group: "chart", label: t("trader.menu.saveTemplate"), keywords: "template save", run: () => openSaveTemplate(tab.id) });
 
   // view
-  add({ id: "mode-cfd", group: "view", label: `${t("trader.opt.mode.label")}: ${t("trader.opt.mode.cfd")}`, keywords: "cfd mode", checked: mode === "cfd", run: () => switchMode("cfd") });
-  add({ id: "mode-opt", group: "view", label: `${t("trader.opt.mode.label")}: ${t("trader.opt.mode.options")}`, keywords: "options mode fx options", checked: mode === "options", run: () => switchMode("options") });
-  add({ id: "p-watch", group: "view", label: mode === "options" ? t("trader.opt.inst.title") : t("desk.side.instruments"), hint: "Ctrl+M", keywords: "market watch instruments symbols panel toggle view", checked: T.ws.panels.watch && T.ws.side === "instruments", run: () => showSide(T, "instruments", true) });
+  add({ id: "p-watch", group: "view", label: options ? t("trader.opt.inst.title") : t("desk.side.instruments"), hint: "Ctrl+M", keywords: "market watch instruments symbols panel toggle view", checked: T.ws.panels.watch && T.ws.side === "instruments", run: () => showSide(T, "instruments", true) });
   add({ id: "p-book", group: "view", label: t("desk.ob.title"), hint: "Ctrl+B", keywords: "order book depth dom ladder", checked: T.ws.panels.watch && T.ws.side === "book", run: () => showSide(T, "book", true) });
   add({ id: "p-box", group: "view", label: t("desk.panel.activity"), hint: "Ctrl+T", keywords: "toolbox positions orders panel scroll", run: () => openActivity(T, T.ws.toolboxTab) });
-  if (mode !== "options") add({ id: "p-nav", group: "view", label: t("desk.panel.navigator"), keywords: "navigator scripts strategies", checked: T.ws.panels.watch && T.ws.side === "navigator", run: () => showSide(T, "navigator", true) });
+  if (!options) add({ id: "p-nav", group: "view", label: t("desk.panel.navigator"), keywords: "navigator scripts strategies", checked: T.ws.panels.watch && T.ws.side === "navigator", run: () => showSide(T, "navigator", true) });
   add({ id: "full-chart", group: "view", label: t("desk.ch.fullChart"), hint: "Shift+F", icon: <Maximize2 />, keywords: "full chart maximise chart hide panels", checked: T.ui.fullChart, run: () => toggleFullChart(T) });
   for (const p of PRESETS) add({ id: `preset-${p.id}`, group: "view", label: `${t("desk.set.presets")}: ${t(p.nameKey)}`, hint: t(p.hintKey), keywords: `layout preset profile ${p.name}`, run: () => applyPreset(T, p) });
-  for (const [k, label] of [
+  // Exposure and the AI Trader are about CFD positions (toolbox.tsx offers them on CFD accounts only)
+  const tabs: [ToolboxTab, string][] = [
     ["history", t("toolbox.tab.history")],
-    ["exposure", t("toolbox.tab.exposure")],
+    ...(options ? [] : [["exposure", t("toolbox.tab.exposure")] as [ToolboxTab, string]]),
     ["news", t("toolbox.tab.news")],
     ["calendar", t("toolbox.tab.calendar")],
     ["journal", t("toolbox.tab.journal")],
-    ["ai", t("toolbox.tab.ai")],
-  ] as const)
-    if (tabOn[k] !== false) add({ id: `tab-${k}`, group: "view", label, keywords: `${k} tab toolbox`, run: () => openActivity(T, k) });
+    ...(options ? [] : [["ai", t("toolbox.tab.ai")] as [ToolboxTab, string]]),
+  ];
+  for (const [k, label] of tabs) if (tabOn[k] !== false) add({ id: `tab-${k}`, group: "view", label, keywords: `${k} tab toolbox`, run: () => openActivity(T, k) });
   add({ id: "dark", group: "view", label: `${t("desk.set.theme")}: ${t("desk.set.dark")}`, icon: <Moon />, keywords: "dark theme night", checked: resolvedTheme !== "light", run: () => setTheme("dark") });
   add({ id: "light", group: "view", label: `${t("desk.set.theme")}: ${t("desk.set.light")}`, icon: <Sun />, keywords: "light theme day", checked: resolvedTheme === "light", run: () => setTheme("light") });
   for (const l of LOCALES) add({ id: `lang-${l.code}`, group: "view", label: `${t("desk.set.language")}: ${l.name}`, icon: <Flag country={l.flag} className="size-3.5" />, keywords: `language ${l.english} ${l.code}`, checked: lang.locale === l.code, run: () => void lang.setLocale(l.code) });
@@ -346,8 +356,9 @@ export function useCommands(): Command[] {
     add({ id: "login", group: "account", label: t("trader.guest.logInToTrade"), icon: <LogIn />, keywords: "log in login sign in", run: () => T.openLogin() });
     add({ id: "register", group: "account", label: t("trader.guest.openAccount"), icon: <UserPlus />, keywords: "register open account sign up", run: openRegister });
   } else {
+    // "options" / "cfd" finds the account of that product
     for (const a of T.accounts)
-      if (a.login !== T.account.login) add({ id: `acc-${a.login}`, group: "account", label: `${t("trader.account.switch")}: ${a.login}`, keywords: `account switch ${a.type} ${a.group} ${a.nickname ?? ""}`, run: () => T.switchAccount(a.login) });
+      if (a.login !== T.account.login) add({ id: `acc-${a.login}`, group: "account", label: `${t("trader.account.switch")}: ${a.login} · ${productLabel(t, a)}`, keywords: `account switch ${a.type} ${productOf(a)} ${a.group} ${a.nickname ?? ""}`, run: () => T.switchAccount(a.login) });
     if (T.engine) add({ id: "login-another", group: "account", label: t("desk.acc.logInAnother"), icon: <LogIn />, keywords: "log in login another account", run: () => T.openLogin() });
     add({ id: "open-acc", group: "account", label: t("desk.acc.openNew"), icon: <UserPlus />, keywords: "open new account register", run: () => window.open(`${CLIENT_AREA}/accounts`, "_blank") });
     if (T.account.type === "demo") add({ id: "refill", group: "account", label: t("trader.menu.refillDemo", { count: T.refillsLeft }), icon: <RefreshCw />, keywords: "refill top up demo balance reset", run: () => T.refillDemo() });
@@ -364,7 +375,8 @@ export function useCommands(): Command[] {
   if (pageOn("/academy")) add({ id: "topics", group: "help", label: t("desk.help.topics"), keywords: "help academy topics learn", run: () => window.open(`${CLIENT_AREA}/academy`, "_blank") });
   if (pageOn("/support")) add({ id: "support", group: "help", label: t("desk.help.support"), keywords: "support contact chat", run: () => window.open(`${CLIENT_AREA}/support`, "_blank") });
   add({ id: "about", group: "help", label: t("desk.help.about"), keywords: "about version", run: () => T.setUi({ about: true }) });
-  return c;
+  // the chart commands act on the CFD chart workspace, which an Options account doesn't show
+  return options ? c.filter((x) => x.group !== "chart") : c;
 }
 
 export const COMMAND_GROUPS: Command["group"][] = ["trade", "chart", "view", "account", "help"];

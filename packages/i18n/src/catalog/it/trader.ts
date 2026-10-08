@@ -509,7 +509,7 @@ const trader: NsMessages<"trader"> = {
 
   // Module not open yet / price server down
   "opt.soon.title": "Le opzioni arrivano presto",
-  "opt.soon.text": "Ezymex FX Options non è ancora attivo su questo conto. Appena lo sarà, la catena di opzioni comparirà qui, sullo stesso conto dei tuoi CFD.",
+  "opt.soon.text": "Ezymex FX Options non è ancora attivo su questo conto. Appena lo sarà, la catena di opzioni comparirà qui.",
   "opt.soon.point1": "Call e put su forex, oro, argento e petrolio",
   "opt.soon.point2": "Scadenze giornaliere, settimanali e mensili, regolate in contanti in USD",
   "opt.soon.point3": "Come acquirente non puoi mai perdere più del premio che paghi",

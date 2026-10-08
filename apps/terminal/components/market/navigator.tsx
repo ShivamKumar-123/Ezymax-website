@@ -10,6 +10,7 @@ import { INDICATOR_CATEGORIES, INDICATOR_LIST } from "@/lib/indicators";
 import { addIndicator } from "@/components/chart/indicators/state";
 import { PanelHeader } from "@/components/ui/panel";
 import { Badge } from "@/components/ui/primitives";
+import { ProductBadge } from "@/components/shell/title-bar";
 import { openRegister, openSignIn } from "@/lib/guest";
 import { useT } from "@ezymex/i18n/react";
 
@@ -73,6 +74,7 @@ export function Navigator() {
                 {t.dyn(`market.nav.accountType.${a.type}`, a.type)}
               </Badge>
               <span className="font-mono">{a.login}</span>
+              <ProductBadge account={a} className="h-[15px] px-1 text-[8.5px]" />
               <span className="truncate text-fg-3">
                 {a.group}
                 {a.cent ? " · USC" : ""}

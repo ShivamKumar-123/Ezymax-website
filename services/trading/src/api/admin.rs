@@ -15,7 +15,7 @@ use crate::engine::funds::{self, AdjustKind};
 use crate::model::{Book, Mode, Status};
 use crate::money::{D, de_dec, num, r2};
 use crate::persist::{self, AuditRow};
-use crate::rules::Group;
+use crate::rules::{Group, Product};
 use crate::shard::{ExecError, Op};
 use crate::views;
 
@@ -449,8 +449,8 @@ pub async fn group(State(st): State<AppState>, s: StaffCtx, Path(login): Path<i6
     s.require(ROLES_DEALING)?;
     check_reason(&b.reason)?;
     let g = s.ctx.tenant.groups.get(&b.group).cloned().ok_or(ApiError::Validation { field: "group", message: "Unknown group".into() })?;
-    let op: Op = Box::new(move |tx, _| {
-        let (from, to) = funds::change_group(tx, &g)?;
+    let op: Op = Box::new(move |tx, env| {
+        let (from, to) = funds::change_group(tx, env, &g)?;
         tx.audit.push(draft("account.group", json!({"group": from}), json!({"group": to, "leverage": tx.st.account.leverage}), vec![]));
         Ok(json!({"group": to}))
     });
@@ -546,6 +546,9 @@ fn validate_group(g: &Group) -> ApiResult<()> {
     if g.spread_group.trim().is_empty() {
         return bad("spreadGroup", "spreadGroup is required (market-data spread group)");
     }
+    if g.product == Product::Options && crate::engine::options::system_group(&g.code) {
+        return bad("product", "copy, PAMM, MAM and prop groups trade CFDs");
+    }
     Ok(())
 }
 
@@ -555,12 +558,12 @@ async fn save_group(st: &AppState, s: &StaffCtx, g: &Group, r: &Reason, insert: 
     let mut tx = st.pool.begin().await?;
     let q = if insert {
         "INSERT INTO groups (tenant_id, code, name, mode, cent, account_types, leverages, default_leverage, margin_call_pct, stop_out_pct, hedged_margin_pct, min_deposit,
-                             swap_free, commission_per_lot, route, spread_group, max_accounts_per_user, demo_initial_balance, demo_refills_per_day, demo_expiry_days, enabled)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21) ON CONFLICT DO NOTHING"
+                             swap_free, commission_per_lot, route, spread_group, max_accounts_per_user, demo_initial_balance, demo_refills_per_day, demo_expiry_days, enabled, product)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22) ON CONFLICT DO NOTHING"
     } else {
         "UPDATE groups SET name=$3, mode=$4, cent=$5, account_types=$6, leverages=$7, default_leverage=$8, margin_call_pct=$9, stop_out_pct=$10, hedged_margin_pct=$11,
             min_deposit=$12, swap_free=$13, commission_per_lot=$14, route=$15, spread_group=$16, max_accounts_per_user=$17, demo_initial_balance=$18,
-            demo_refills_per_day=$19, demo_expiry_days=$20, enabled=$21, updated_at=now() WHERE tenant_id=$1 AND code=$2"
+            demo_refills_per_day=$19, demo_expiry_days=$20, enabled=$21, product=$22, updated_at=now() WHERE tenant_id=$1 AND code=$2"
     };
     let n = sqlx::query(q)
         .bind(t)
@@ -584,6 +587,7 @@ async fn save_group(st: &AppState, s: &StaffCtx, g: &Group, r: &Reason, insert: 
         .bind(g.demo_refills_per_day as i32)
         .bind(g.demo_expiry_days as i32)
         .bind(g.enabled)
+        .bind(g.product.as_str())
         .execute(&mut *tx)
         .await?
         .rows_affected();
@@ -624,8 +628,9 @@ pub async fn create_group(State(st): State<AppState>, s: StaffCtx, Body(b): Body
     save_group(&st, &s, &b.group, &b.reason, true).await
 }
 
-/// Updates a group. Mode and cent flag are fixed once the group has accounts (they are copied into each
-/// account's ledger currency / position model); other settings apply to the group's accounts at once.
+/// Updates a group. Mode, cent flag and product are fixed once the group has accounts (they are copied into each
+/// account's ledger currency / position model, or decide what it trades); other settings apply to the group's
+/// accounts at once.
 pub async fn update_group(State(st): State<AppState>, s: StaffCtx, Path(code): Path<String>, Body(mut b): Body<GroupWrite>) -> ApiResult<Json<Value>> {
     s.require(ROLES_CONFIG)?;
     check_reason(&b.reason)?;
@@ -636,6 +641,10 @@ pub async fn update_group(State(st): State<AppState>, s: StaffCtx, Path(code): P
     let used: i64 = sqlx::query_scalar("SELECT count(*) FROM accounts WHERE tenant_id = $1 AND group_code = $2").bind(s.ctx.tenant.tenant_id).bind(&code).fetch_one(&st.pool).await?;
     if used > 0 && (cur.mode != b.group.mode || cur.cent != b.group.cent) {
         return Err(ApiError::Validation { field: "mode", message: "Mode and cent cannot change while the group has accounts".into() });
+    }
+    // an account never changes product (its positions, history and terminal are of one product)
+    if used > 0 && cur.product != b.group.product {
+        return Err(ApiError::Validation { field: "product", message: "Product cannot change while the group has accounts".into() });
     }
     let _ = Arc::strong_count(&s.ctx.tenant);
     save_group(&st, &s, &b.group, &b.reason, false).await

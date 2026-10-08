@@ -97,5 +97,9 @@ const options: NsMessages<"options"> = {
 
   // Demo build
   "demo.note": "دمو: هیچ چیزی در اینجا ذخیره نمی‌شود.",
+
+  // No Options account yet
+  "account.noneTitle": "اختیار معامله روی حساب اختیار معامله انجام می‌شود",
+  "account.noneText": "با حساب‌های CFD نمی‌توانید اختیار معامله کنید. در یک دقیقه یک حساب اختیار معامله واقعی یا دمو باز کنید و معامله را شروع کنید.",
 };
 export default options;

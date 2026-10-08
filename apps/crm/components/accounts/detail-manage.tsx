@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Archive, Download, Eye, Globe, KeyRound, Lock, Monitor, Moon, Pencil, RefreshCcw, Smartphone, TriangleAlert } from "lucide-react";
+import { Archive, CandlestickChart, Download, Eye, Globe, Info, KeyRound, Lock, Monitor, Moon, Pencil, RefreshCcw, Smartphone, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, Dialog, Field, Icon3D, Input, KeyValue, Money, Reveal, Toggle, cn } from "@/components/kit";
 import { ACCOUNT_GROUPS, type TradingAccount } from "@ezymex/mock";
@@ -10,7 +10,9 @@ import { DEMO_RULES } from "@ezymex/mock/accounts-extra";
 import { CredentialField, EmailOtp, PasswordInput, PasswordStrength, isPasswordValid } from "./security";
 import { curOf } from "./detail-overview";
 import { Trans, useFormat, useT } from "@ezymex/i18n/react";
-import { TERMINAL_URL } from "@/lib/live";
+import { traderHref } from "@/components/account-row";
+import { productOf } from "@/components/trading/api";
+import { ProductBadge } from "@/components/trading/ui";
 
 /* ------------------------------------------------------------------ */
 /* Change password dialog                                              */
@@ -135,7 +137,7 @@ export function CredentialsTab({ a }: { a: TradingAccount }) {
           <CardHeader title={t("accountDetail.platforms.title")} subtitle={t("accountDetail.platforms.subtitle")} />
           <div className="space-y-2 px-4 pb-6 pt-4 sm:px-6">
             {[
-              { icon: <Globe />, name: "Ezymex WebTerminal", sub: t("accountDetail.platforms.webSub"), action: <Link target="_blank" rel="noopener" href={`${TERMINAL_URL}/?account=${a.login}`}><Button size="sm" variant="ember">{t("accountDetail.platforms.launch")}</Button></Link> },
+              { icon: <Globe />, name: "Ezymex WebTerminal", sub: t("accountDetail.platforms.webSub"), action: <Link target="_blank" rel="noopener" href={traderHref(a)}><Button size="sm" variant="ember">{t("accountDetail.platforms.launch")}</Button></Link> },
               { icon: <Monitor />, name: "MetaTrader 5 · Windows / macOS", sub: "ezymex5setup · 24.1 MB", action: <Button size="sm" variant="surface" onClick={() => toast.success(t("accountDetail.platforms.downloadStarted"), { description: "ezymex5setup.exe" })}><Download /> {t("accountDetail.platforms.get")}</Button> },
               { icon: <Smartphone />, name: "MetaTrader 5 · iOS / Android", sub: t("accountDetail.platforms.mobileSub", { server: a.server }), action: <Button size="sm" variant="surface" onClick={() => toast(t("accountDetail.platforms.storeLinksSent"))}>{t("accountDetail.platforms.sendLink")}</Button> },
             ].map((p) => (
@@ -183,7 +185,9 @@ function useCountdown(to?: string) {
 export function SettingsTab({ a, openPositions, onRename }: { a: TradingAccount; openPositions: number; onRename: (n: string) => void }) {
   const t = useT();
   const f = useFormat();
-  const g = ACCOUNT_GROUPS.find((x) => x.name === a.group)!;
+  // account types of the account's own product only (an Options account never becomes a CFD account, nor back)
+  const options = productOf(a) === "options";
+  const g = ACCOUNT_GROUPS.find((x) => x.name === a.group && productOf(x) === productOf(a)) ?? ACCOUNT_GROUPS.find((x) => productOf(x) === productOf(a))!;
   const [lev, setLev] = React.useState(a.leverage);
   const [savedLev, setSavedLev] = React.useState(a.leverage);
   const [name, setName] = React.useState(a.nickname ?? "");
@@ -198,51 +202,73 @@ export function SettingsTab({ a, openPositions, onRename }: { a: TradingAccount;
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
       <div className="space-y-4 xl:col-span-7">
-        <Reveal>
-          <Card>
-            <CardHeader title={t("accountDetail.leverage.title")} subtitle={t("accountDetail.leverage.allowed", { group: g.name, list: g.leverage.map((l) => `1:${l}`).join(" · ") })} action={<Chip tone="ember">{t("accountDetail.leverage.current", { value: `1:${savedLev.toLocaleString()}` })}</Chip>} />
-            <div className="px-4 pb-6 pt-4 sm:px-6">
-              {locked && (
-                <div className="mb-4 flex items-start gap-3 rounded-[14px] border border-warn/25 bg-warn-soft px-4 py-3 text-[13px]">
-                  <Lock className="mt-0.5 size-4 shrink-0 text-warn" />
-                  <div>
-                    <div className="font-medium text-warn">{t("accountDetail.leverage.lockedTitle")}</div>
-                    <div className="mt-0.5 text-fg-2">
-                      {t("accountDetail.leverage.lockedText", { count: openPositions })}
+        {options ? (
+          // Options accounts have no leverage to change (option margin ignores it): what the account trades instead
+          <Reveal>
+            <Card>
+              <CardHeader title={t("accounts.product.optionsTitle")} subtitle={t("accounts.product.optionsOnly")} action={<ProductBadge a={a} />} />
+              <div className="px-4 pb-6 pt-4 sm:px-6">
+                <div className="flex items-start gap-3 rounded-[14px] border border-line bg-surface-2 px-4 py-3 text-[13px] text-fg-2">
+                  <Info className="mt-0.5 size-4 shrink-0 text-info" />
+                  {t("accounts.wizard.optionsLeverage")}
+                </div>
+                <div className="mt-4 flex justify-end">
+                  <Link target="_blank" rel="noopener" href={traderHref(a)}>
+                    <Button size="sm" variant="ember">
+                      <CandlestickChart /> {t("accounts.row.trade")}
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </Card>
+          </Reveal>
+        ) : (
+          <Reveal>
+            <Card>
+              <CardHeader title={t("accountDetail.leverage.title")} subtitle={t("accountDetail.leverage.allowed", { group: g.name, list: g.leverage.map((l) => `1:${l}`).join(" · ") })} action={<Chip tone="ember">{t("accountDetail.leverage.current", { value: `1:${savedLev.toLocaleString()}` })}</Chip>} />
+              <div className="px-4 pb-6 pt-4 sm:px-6">
+                {locked && (
+                  <div className="mb-4 flex items-start gap-3 rounded-[14px] border border-warn/25 bg-warn-soft px-4 py-3 text-[13px]">
+                    <Lock className="mt-0.5 size-4 shrink-0 text-warn" />
+                    <div>
+                      <div className="font-medium text-warn">{t("accountDetail.leverage.lockedTitle")}</div>
+                      <div className="mt-0.5 text-fg-2">
+                        {t("accountDetail.leverage.lockedText", { count: openPositions })}
+                      </div>
                     </div>
                   </div>
+                )}
+                <div className={cn("flex flex-wrap gap-2", locked && "pointer-events-none opacity-45")}>
+                  {g.leverage.map((l) => (
+                    <button
+                      key={l}
+                      type="button"
+                      disabled={locked}
+                      onClick={() => setLev(l)}
+                      className={cn("k-num h-10 min-w-20 rounded-full border px-4 text-[13.5px] font-semibold transition-all", lev === l ? "border-ember/60 bg-ember-soft text-ember" : "border-line bg-surface-2 text-fg-2 hover:text-fg")}
+                    >
+                      1:{l.toLocaleString()}
+                    </button>
+                  ))}
                 </div>
-              )}
-              <div className={cn("flex flex-wrap gap-2", locked && "pointer-events-none opacity-45")}>
-                {g.leverage.map((l) => (
-                  <button
-                    key={l}
-                    type="button"
-                    disabled={locked}
-                    onClick={() => setLev(l)}
-                    className={cn("k-num h-10 min-w-20 rounded-full border px-4 text-[13.5px] font-semibold transition-all", lev === l ? "border-ember/60 bg-ember-soft text-ember" : "border-line bg-surface-2 text-fg-2 hover:text-fg")}
+                <div className="mt-4 flex items-center justify-between gap-3">
+                  <span className="text-[12.5px] text-fg-3"><Trans k="accountDetail.leverage.marginRequired" vars={{ amount: `$${Math.round(108456 / lev).toLocaleString()}` }} tags={{ v: (c) => <span className="k-num text-fg-2">{c}</span> }} /></span>
+                  <Button
+                    size="sm"
+                    variant="ember"
+                    disabled={locked || lev === savedLev}
+                    onClick={() => {
+                      setSavedLev(lev);
+                      toast.success(t("accountDetail.leverage.updated"), { description: t("accountDetail.leverage.nowDesc", { login: a.login, value: `1:${lev.toLocaleString()}` }) });
+                    }}
                   >
-                    1:{l.toLocaleString()}
-                  </button>
-                ))}
+                    {t("common.apply")}
+                  </Button>
+                </div>
               </div>
-              <div className="mt-4 flex items-center justify-between gap-3">
-                <span className="text-[12.5px] text-fg-3"><Trans k="accountDetail.leverage.marginRequired" vars={{ amount: `$${Math.round(108456 / lev).toLocaleString()}` }} tags={{ v: (c) => <span className="k-num text-fg-2">{c}</span> }} /></span>
-                <Button
-                  size="sm"
-                  variant="ember"
-                  disabled={locked || lev === savedLev}
-                  onClick={() => {
-                    setSavedLev(lev);
-                    toast.success(t("accountDetail.leverage.updated"), { description: t("accountDetail.leverage.nowDesc", { login: a.login, value: `1:${lev.toLocaleString()}` }) });
-                  }}
-                >
-                  {t("common.apply")}
-                </Button>
-              </div>
-            </div>
-          </Card>
-        </Reveal>
+            </Card>
+          </Reveal>
+        )}
 
         <Reveal delay={0.05}>
           <Card>
@@ -264,28 +290,31 @@ export function SettingsTab({ a, openPositions, onRename }: { a: TradingAccount;
           </Card>
         </Reveal>
 
-        <Reveal delay={0.1}>
-          <Card>
-            <CardHeader title={t("accountDetail.swapFree.title")} subtitle={t("accountDetail.swapFree.subtitle")} />
-            <div className="flex items-center gap-4 px-4 pb-6 pt-4 sm:px-6">
-              <span className="grid size-10 shrink-0 place-items-center rounded-full border border-line bg-surface-3 text-gold">
-                <Moon className="size-4" />
-              </span>
-              <div className="flex-1 text-[13px] text-fg-2">
-                {a.swapFree ? t("accountDetail.swapFree.isOn") : swapReq ? t("accountDetail.swapFree.requested") : t("accountDetail.swapFree.needsReview")}
+        {/* options have no swaps */}
+        {!options && (
+          <Reveal delay={0.1}>
+            <Card>
+              <CardHeader title={t("accountDetail.swapFree.title")} subtitle={t("accountDetail.swapFree.subtitle")} />
+              <div className="flex items-center gap-4 px-4 pb-6 pt-4 sm:px-6">
+                <span className="grid size-10 shrink-0 place-items-center rounded-full border border-line bg-surface-3 text-gold">
+                  <Moon className="size-4" />
+                </span>
+                <div className="flex-1 text-[13px] text-fg-2">
+                  {a.swapFree ? t("accountDetail.swapFree.isOn") : swapReq ? t("accountDetail.swapFree.requested") : t("accountDetail.swapFree.needsReview")}
+                </div>
+                <Toggle
+                  checked={a.swapFree || swapReq}
+                  onChange={(v) => {
+                    if (a.swapFree) return toast(t("accountDetail.swapFree.contactSupport"));
+                    setSwapReq(v);
+                    toast[v ? "success" : "info"](v ? t("accountDetail.swapFree.requestSubmitted") : t("accountDetail.swapFree.requestWithdrawn"));
+                  }}
+                  label={t("accountDetail.header.swapFree")}
+                />
               </div>
-              <Toggle
-                checked={a.swapFree || swapReq}
-                onChange={(v) => {
-                  if (a.swapFree) return toast(t("accountDetail.swapFree.contactSupport"));
-                  setSwapReq(v);
-                  toast[v ? "success" : "info"](v ? t("accountDetail.swapFree.requestSubmitted") : t("accountDetail.swapFree.requestWithdrawn"));
-                }}
-                label={t("accountDetail.header.swapFree")}
-              />
-            </div>
-          </Card>
-        </Reveal>
+            </Card>
+          </Reveal>
+        )}
       </div>
 
       <div className="space-y-4 xl:col-span-5">

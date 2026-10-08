@@ -335,12 +335,13 @@ function seed(now: number): State {
     updatedAt: at(ago),
     updatedBy: by,
   });
+  // only Options account types (groups of product "options") trade options: the "options" group is the one clients open
   const groups = [
     g("*", "*", {}, 21 * DAY, "seed"),
-    g("pro", "*", { volSpread: 0.0025, minSpreadUsd: 0.3, commissionPerContract: 0.15, takerFeePerContract: 0.15 }, 6 * DAY, "m.ivanova@ezymex.com #3"),
-    g("standard", "XAUUSD", { volSpread: 0.006, minSpreadUsd: 1, weekendMarginPct: 40 }, 3 * DAY, "m.ivanova@ezymex.com #3"),
-    g("vip", "*", { volSpread: 0.002, commissionPerContract: 0.1, commissionCapPct: 6, maxContractsPerClient: 500, makerFeePerContract: -0.08, takerFeePerContract: 0.1 }, 8 * DAY, "owner@ezymex.com #1"),
-    g("cent", "*", { enabled: false, maxContractsPerClient: 20 }, 10 * DAY, "m.ivanova@ezymex.com #3"),
+    g("options", "*", { volSpread: 0.0035, minSpreadUsd: 0.4, commissionPerContract: 0.2, takerFeePerContract: 0.2 }, 6 * DAY, "m.ivanova@ezymex.com #3"),
+    g("options", "EURUSD", { volSpread: 0.0025, minSpreadUsd: 0.3, commissionPerContract: 0.15, maxContractsPerClient: 500, makerFeePerContract: -0.08, takerFeePerContract: 0.15 }, 8 * DAY, "owner@ezymex.com #1"),
+    g("options", "XAUUSD", { volSpread: 0.006, minSpreadUsd: 1, weekendMarginPct: 40 }, 3 * DAY, "m.ivanova@ezymex.com #3"),
+    g("options", "UKOIL", { volSpread: 0.008, maxContractsPerClient: 20 }, 10 * DAY, "m.ivanova@ezymex.com #3"),
   ];
 
   // expiries: the last few days (fixed), today's cut (TWAP running), and the listed cycle
@@ -453,7 +454,7 @@ function seed(now: number): State {
   add("ezymex", "m.ivanova@ezymex.com #3", "surface.publish", "EURUSD", "VOL-02 · Weekly re-mark to broker quotes", 2 * DAY + 3 * HOUR, { version: 2, blendWeight: 0.7 }, { version: 3, blendWeight: 0.7 });
   add("ezymex", "m.ivanova@ezymex.com #3", "surface.publish", "XAUUSD", "VOL-02 · Weekly re-mark to broker quotes", 2 * DAY + 2 * HOUR, { version: 2 }, { version: 3 });
   add("ezymex", "s.okafor@ezymex.com #7", "rate.update", "USD", "RTE-01 · FOMC cut 25 bp", 15 * DAY - 2 * HOUR, { rate: 0.03875 }, { rate: 0.03625 });
-  add("ezymex", "m.ivanova@ezymex.com #3", "group.upsert", "standard/XAUUSD", "FEE-02 · Gold weekend gap risk", 3 * DAY, null, { volSpread: 0.006, weekendMarginPct: 40 });
+  add("ezymex", "m.ivanova@ezymex.com #3", "group.upsert", "options/XAUUSD", "FEE-02 · Gold weekend gap risk", 3 * DAY, null, { volSpread: 0.006, weekendMarginPct: 40 });
   add("ezymex", "j.mensah@ezymex.com #5", "limit.upsert", "20931", "LIM-03 · Toxic flow: sells 0DTE wings minutes before the cut", 20 * HOUR, null, { closeOnly: true, maxContracts: 40 });
   add("ezymex", "owner@ezymex.com #1", "tenant.update", "apex-fx", "BRK-01 · Broker onboarding: demo first", 4 * DAY, { enabledDemo: false }, { enabledDemo: true, enabledLive: false, underlyings: ["EURUSD", "GBPUSD", "USDJPY", "XAUUSD"] });
   add("ezymex", "m.ivanova@ezymex.com #3", "holiday.disable", "USD:2026-12-24", "HOL-02 · Early close only, not a bank holiday", 6 * DAY);

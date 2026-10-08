@@ -17,6 +17,8 @@ export type MarkupType = "fixed" | "pct";
 export interface AdminGroup {
   id: string;
   name: string;
+  /** What its accounts trade: CFDs or options, never both; fixed once the group has accounts. */
+  product: "cfd" | "options";
   tagline: string;
   mode: "hedging" | "netting";
   cent: boolean;
@@ -49,7 +51,7 @@ export interface AdminGroup {
 
 export const ADMIN_GROUPS: AdminGroup[] = [
   {
-    id: "standard", name: "Standard", tagline: "Zero commission, all-in spreads", mode: "hedging", cent: false, currency: "USD", server: "Ezymex-Live01",
+    id: "standard", name: "Standard", product: "cfd", tagline: "Zero commission, all-in spreads", mode: "hedging", cent: false, currency: "USD", server: "Ezymex-Live01",
     leverage: [50, 100, 200, 500, 1000], defaultLeverage: 500, marginCall: 100, stopOut: 50, hedgedMargin: 50, minDeposit: 10,
     swapFree: false, islamicFee: { enabled: false, perLot: 0, graceDays: 0, basis: "per-lot-night" }, route: "B",
     autoRule: { aBookAboveLots: 20, toxicityScore: 70, profitableDays: 10 }, commission: { perLot: 0, chargeOn: "round" },
@@ -57,7 +59,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     volume30d: 412_880, status: "active", tone: "neutral", updatedBy: "Priya Nair", updatedAt: "2026-09-21T09:14:00Z",
   },
   {
-    id: "pro", name: "Pro", tagline: "Tight raw-feel spreads for active traders", mode: "hedging", cent: false, currency: "USD", server: "Ezymex-Live01",
+    id: "pro", name: "Pro", product: "cfd", tagline: "Tight raw-feel spreads for active traders", mode: "hedging", cent: false, currency: "USD", server: "Ezymex-Live01",
     leverage: [50, 100, 200, 500], defaultLeverage: 200, marginCall: 100, stopOut: 50, hedgedMargin: 50, minDeposit: 200,
     swapFree: false, islamicFee: { enabled: false, perLot: 0, graceDays: 0, basis: "per-lot-night" }, route: "auto",
     autoRule: { aBookAboveLots: 10, toxicityScore: 60, profitableDays: 7 }, commission: { perLot: 0, chargeOn: "round" },
@@ -65,7 +67,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     volume30d: 604_210, status: "active", tone: "ember", updatedBy: "James Carter", updatedAt: "2026-09-23T15:40:00Z",
   },
   {
-    id: "ecn", name: "ECN", tagline: "Raw spreads from 0.0 + $3.5/lot/side", mode: "netting", cent: false, currency: "USD", server: "Ezymex-Live02",
+    id: "ecn", name: "ECN", product: "cfd", tagline: "Raw spreads from 0.0 + $3.5/lot/side", mode: "netting", cent: false, currency: "USD", server: "Ezymex-Live02",
     leverage: [50, 100, 200, 500], defaultLeverage: 100, marginCall: 120, stopOut: 60, hedgedMargin: 0, minDeposit: 500,
     swapFree: false, islamicFee: { enabled: false, perLot: 0, graceDays: 0, basis: "per-lot-night" }, route: "A",
     autoRule: { aBookAboveLots: 0, toxicityScore: 0, profitableDays: 0 }, commission: { perLot: 7, chargeOn: "round" },
@@ -73,7 +75,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     volume30d: 382_450, status: "active", tone: "info", updatedBy: "Priya Nair", updatedAt: "2026-09-12T11:02:00Z",
   },
   {
-    id: "cent", name: "Cent", tagline: "Trade in cents — test strategies live", mode: "hedging", cent: true, currency: "USC", server: "Ezymex-Live02",
+    id: "cent", name: "Cent", product: "cfd", tagline: "Trade in cents — test strategies live", mode: "hedging", cent: true, currency: "USC", server: "Ezymex-Live02",
     leverage: [100, 500, 1000, 2000], defaultLeverage: 1000, marginCall: 60, stopOut: 20, hedgedMargin: 50, minDeposit: 10,
     swapFree: false, islamicFee: { enabled: false, perLot: 0, graceDays: 0, basis: "per-lot-night" }, route: "B",
     autoRule: { aBookAboveLots: 50, toxicityScore: 80, profitableDays: 14 }, commission: { perLot: 0, chargeOn: "round" },
@@ -81,7 +83,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     volume30d: 96_140, status: "active", tone: "gold", updatedBy: "Omar Haddad", updatedAt: "2026-09-02T08:30:00Z",
   },
   {
-    id: "vip", name: "VIP", tagline: "Invite-only · priority execution & desk", mode: "netting", cent: false, currency: "USD", server: "Ezymex-Live01",
+    id: "vip", name: "VIP", product: "cfd", tagline: "Invite-only · priority execution & desk", mode: "netting", cent: false, currency: "USD", server: "Ezymex-Live01",
     leverage: [50, 100, 200], defaultLeverage: 100, marginCall: 130, stopOut: 80, hedgedMargin: 25, minDeposit: 50000,
     swapFree: false, islamicFee: { enabled: false, perLot: 0, graceDays: 0, basis: "per-lot-night" }, route: "A",
     autoRule: { aBookAboveLots: 0, toxicityScore: 0, profitableDays: 0 }, commission: { perLot: 4, chargeOn: "round" },
@@ -89,14 +91,27 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     volume30d: 288_900, status: "active", tone: "gold", updatedBy: "James Carter", updatedAt: "2026-09-19T13:22:00Z",
   },
   {
-    id: "islamic", name: "Islamic", tagline: "Swap-free with transparent admin fee", mode: "hedging", cent: false, currency: "USD", server: "Ezymex-Live01",
+    id: "islamic", name: "Islamic", product: "cfd", tagline: "Swap-free with transparent admin fee", mode: "hedging", cent: false, currency: "USD", server: "Ezymex-Live01",
     leverage: [50, 100, 200, 500], defaultLeverage: 200, marginCall: 100, stopOut: 50, hedgedMargin: 50, minDeposit: 50,
     swapFree: true, islamicFee: { enabled: true, perLot: 5, graceDays: 3, basis: "per-lot-night" }, route: "auto",
     autoRule: { aBookAboveLots: 15, toxicityScore: 65, profitableDays: 10 }, commission: { perLot: 0, chargeOn: "round" },
     markup: { type: "fixed", value: 1.1, floor: 0.7 }, maxPositions: 500, maxLot: 50, clients: 4602, accounts: 5388, equity: 9_880_210, aBookShare: 22,
     volume30d: 121_600, status: "active", tone: "up", updatedBy: "Fatima Al-Sayed", updatedAt: "2026-09-18T10:05:00Z",
   },
+  {
+    // the Options account type: Standard's risk levels and deposits, one nominal leverage (option margin doesn't use
+    // it), no CFD commission or markup (option fees are set in Options › Spreads, fees & limits)
+    id: "options", name: "Options", product: "options", tagline: "FX, gold and oil options — calls, puts and spreads", mode: "hedging", cent: false, currency: "USD", server: "Ezymex-Live01",
+    leverage: [100], defaultLeverage: 100, marginCall: 100, stopOut: 50, hedgedMargin: 50, minDeposit: 10,
+    swapFree: false, islamicFee: { enabled: false, perLot: 0, graceDays: 0, basis: "per-lot-night" }, route: "B",
+    autoRule: { aBookAboveLots: 0, toxicityScore: 0, profitableDays: 0 }, commission: { perLot: 0, chargeOn: "round" },
+    markup: { type: "fixed", value: 0, floor: 0 }, maxPositions: 500, maxLot: 50, clients: 1186, accounts: 1342, equity: 2_412_800, aBookShare: 0,
+    volume30d: 18_640, status: "active", tone: "gold", updatedBy: "Priya Nair", updatedAt: "2026-09-22T08:40:00Z",
+  },
 ];
+
+/** Groups that trade CFDs: the spread, commission and swap settings below apply to these only. */
+export const CFD_GROUPS = ADMIN_GROUPS.filter((g) => g.product === "cfd");
 
 export const ALL_LEVERAGES = [10, 25, 30, 50, 100, 200, 300, 400, 500, 1000, 2000, 3000];
 
@@ -191,13 +206,13 @@ export interface MarkupCell {
   value: number;
 }
 
-/** markup[symbol][groupId] */
+/** markup[symbol][groupId], CFD groups only */
 export const SPREAD_MARKUPS: Record<string, Record<string, MarkupCell>> = Object.fromEntries(
   INSTRUMENTS.map((i) => {
     const r = seeded(hashString("mk" + i.symbol));
     const base = i.assetClass === "forex" ? 1 : i.assetClass === "metals" ? 1.8 : i.assetClass === "indices" ? 1.2 : i.assetClass === "energies" ? 1.5 : i.assetClass === "crypto" ? 0 : 0;
     const cells: Record<string, MarkupCell> = {};
-    for (const g of ADMIN_GROUPS) {
+    for (const g of CFD_GROUPS) {
       const mult = g.id === "standard" ? 1 : g.id === "pro" ? 0.3 : g.id === "ecn" ? 0 : g.id === "cent" ? 1.2 : g.id === "vip" ? 0.1 : 1.1;
       if (i.assetClass === "crypto" || i.assetClass === "stocks") cells[g.id] = { type: "pct", value: g.id === "ecn" ? 0 : Math.round(r.range(35, 90) * (g.id === "vip" ? 0.3 : g.id === "pro" ? 0.5 : 1)) };
       else cells[g.id] = { type: "fixed", value: +(base * mult * r.range(0.9, 1.15)).toFixed(1) };
@@ -226,7 +241,7 @@ export interface CommissionCell {
 }
 
 export const COMMISSIONS: Record<string, Record<AssetClass, CommissionCell>> = Object.fromEntries(
-  ADMIN_GROUPS.map((g) => {
+  CFD_GROUPS.map((g) => {
     const row = {} as Record<AssetClass, CommissionCell>;
     for (const c of COMMISSION_CLASSES) {
       const pct = c === "stocks";
@@ -446,7 +461,7 @@ export const DEMO_RULES = {
   deleteAfterDays: 90,
   maxPerClient: 5,
   leverages: [100, 200, 500, 1000],
-  groups: ["standard", "pro", "ecn", "cent"],
+  groups: ["standard", "pro", "ecn", "cent", "options"],
   nudgeToLive: true,
   server: "Ezymex-Demo",
 };

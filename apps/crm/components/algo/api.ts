@@ -6,6 +6,7 @@ import * as React from "react";
 import { toast } from "sonner";
 import { tr } from "@ezymex/i18n/react";
 import { readCached, writeCached } from "@ezymex/ui/swr-cache";
+import { productOf, usePoll, type AccountProduct, type EngineAccount } from "@/components/trading/api";
 
 /* ------------------------------------------------------------------ */
 /* Strategy spec (visual builder)                                      */
@@ -301,6 +302,8 @@ export interface TradingAccount {
   type: "live" | "demo";
   group: string;
   groupName: string;
+  /** When the service passes the engine's account product through (missing = cfd). */
+  product?: AccountProduct;
   mode: string;
   currency: string;
   balance: number;
@@ -437,6 +440,21 @@ export function useAlgo<T>(path: string | null, ms = 0) {
     };
   }, [path, ms, tick]);
   return { data, error, loading: data === null && error === null, reload, setData };
+}
+
+/** The client's accounts for strategies, webhooks and backtests: CFD accounts only. An Options account trades options
+ *  only (the engine refuses CFD orders on it), so it's left out wherever the service's list doesn't say. */
+export function useCfdAccounts() {
+  const q = useAlgo<{ items: TradingAccount[] }>("accounts");
+  // the engine's list says which accounts are Options accounts; the pickers wait for it (or its failure)
+  const engine = usePoll<{ accounts: EngineAccount[] }>("accounts", 0);
+  const settled = engine.data !== null || engine.error !== null;
+  const data = React.useMemo(() => {
+    if (!q.data || !settled) return null;
+    const options = new Set((engine.data?.accounts ?? []).filter((a) => productOf(a) === "options").map((a) => a.login));
+    return { ...q.data, items: q.data.items.filter((a) => productOf(a) !== "options" && !options.has(a.login)) };
+  }, [q.data, settled, engine.data]);
+  return { ...q, data, loading: data === null && q.error === null };
 }
 
 /** Catalogue shared by the builder pages (fetched once per page load). */

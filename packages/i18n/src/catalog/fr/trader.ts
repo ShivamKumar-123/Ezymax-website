@@ -509,7 +509,7 @@ const trader: NsMessages<"trader"> = {
 
   // Module not open yet / price server down
   "opt.soon.title": "Les options arrivent bientôt",
-  "opt.soon.text": "Ezymex FX Options n'est pas encore ouvert sur ce compte. Dès qu'il le sera, la chaîne d'options apparaîtra ici, sur le même compte que vos CFD.",
+  "opt.soon.text": "Ezymex FX Options n'est pas encore ouvert sur ce compte. Dès qu'il le sera, la chaîne d'options apparaîtra ici.",
   "opt.soon.point1": "Calls et puts sur le forex, l'or, l'argent et le pétrole",
   "opt.soon.point2": "Échéances quotidiennes, hebdomadaires et mensuelles, réglées en espèces en USD",
   "opt.soon.point3": "En tant qu'acheteur, vous ne pouvez jamais perdre plus que la prime payée",

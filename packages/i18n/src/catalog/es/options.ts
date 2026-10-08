@@ -96,5 +96,9 @@ const options: NsMessages<"options"> = {
 
   // Demo build
   "demo.note": "Demo: aquí no se guarda nada.",
+
+  // No Options account yet
+  "account.noneTitle": "Las opciones se operan en una cuenta de opciones",
+  "account.noneText": "Sus cuentas de CFD no pueden operar opciones. Abra una cuenta de opciones real o demo en un minuto y empiece a operar.",
 };
 export default options;
