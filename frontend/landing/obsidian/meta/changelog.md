@@ -8,6 +8,41 @@ updated: 2026-08-01
 Chronological log of notable changes to the project. Newest first.
 This is a human-curated log — not a mirror of `git log`.
 
+## 2026-10-08 — The landing app is replaced by the setupzero codebase
+
+- **Design transplanted whole.** setupzero.com's dark black-and-orange site
+  becomes the Ezymax site: its routes, components, templates and `globals.css`
+  replace `src/views/`, `src/data/mocks/`, the vendored spring engine, the
+  Lenis scroll layer and the eight previous marketing/legal routes. Both
+  projects were Next 16 / React 19 / Tailwind v4 CSS-first, so the move was
+  mechanical. See ADR-0016.
+- **Routes re-axed** from vendor-shaped to trader-shaped: `/solutions` →
+  `/markets` (4 asset classes), `/products` → `/platform` (9 capabilities),
+  `/liquidity` → `/protection`, `/services` → `/earn`. `/pricing`, `/blog` and
+  `/careers` dropped — no honest content existed for any of them. The five
+  retired URLs redirect (307, not 308, so a target can still be repointed).
+- **Every word rewritten** for a retail CFD broker, and three false claims from
+  the previous Ezymax copy removed: the smart-contract custody model (not
+  deployed), leverage as 1:200/1:500 (the engine runs 1:100), and trades being
+  routed to liquidity providers (the backend is a b-book engine).
+- **`content/facts.ts`** replaces a `placeholders.ts` headed "TODO: confirm
+  before launch". Every number carries a source comment; the ones with no
+  source are listed as absent, with the reason.
+- **Waitlist replaces the demo funnel.** Every "Book a Free Demo" is now the
+  invite gate. `/api/lead`, which only wrote to the server log, was not
+  imported — `/api/contact` takes all five form types.
+- **Dependencies:** +`motion` 14, `three` 0.186 with R3F/drei/postprocessing,
+  `lucide-react`, `clsx`, `tailwind-merge`, MDX. −`@react-spring/web`,
+  `spring-text-engine`, `lenis`, `threejs-components`,
+  `resize-observer-polyfill`. Next 16.2.0 → 16.3.8. **Docker base node 20 → 22**
+  (drei pulls in `camera-controls`, which requires node ≥ 22 and fails the
+  install rather than warning).
+- **eslint overrides deleted** — `no-explicit-any`, `no-unused-vars`,
+  `prefer-const` and five more had been switched off, so the project's own
+  "no `any`" rule had never been enforced by anything.
+- **Nine vault notes removed**, `tech-stack` and `folder-structure` rewritten,
+  `AGENTS.md` rewritten for the stack that is actually here.
+
 ## 2026-08-01 (evening) — Hero typewriter + subline crawl + split comparison
 
 - **Landing wired into the ezymex trader platform (2026-08-03)** — new
