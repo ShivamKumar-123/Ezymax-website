@@ -2,7 +2,7 @@ import { getInstrument, priceFeed, type AssetClass } from "@ezymex/mock";
 import { IS_DEMO } from "@ezymex/mock/mode";
 import { ADMIN_ACCOUNTS, ADMIN_POSITIONS, TRADING_GROUPS, type AdminAccountRow, type RoutingRule } from "@ezymex/mock/admin-trading";
 import { getClient } from "@ezymex/mock/admin-clients";
-import { liveAccount, liveClientName, liveGroups, liveSymbol, type LiveAccount } from "./directory";
+import { liveAccount, liveClientName, liveGroups, liveSymbol, productOf, type LiveAccount, type Product } from "./directory";
 import type { Book, DeskPosition, DeskState, Side } from "./types";
 
 /*
@@ -160,6 +160,7 @@ function liveRow(a: LiveAccount): AdminAccountRow {
     login: a.login,
     clientId: a.userId,
     group: a.group,
+    product: a.product,
     type: a.type,
     leverage: a.leverage,
     currency: a.currency,
@@ -188,10 +189,13 @@ export function clientName(clientId: string, login?: string): string {
   return IS_DEMO ? getClient(clientId).name : liveClientName(clientId, login);
 }
 
-/** Group filter options: mock groups in demo, the engine's groups (code → name) live. */
-export function groupOptions(): { value: string; label: string }[] {
+/** Group filter options: mock groups in demo (all CFD), the engine's groups (code → name) live; `product` keeps
+ *  one product's groups (routing and symbol controls act on CFD trades only). */
+export function groupOptions(product?: Product): { value: string; label: string }[] {
   if (IS_DEMO) return TRADING_GROUPS.map((g) => ({ value: g, label: g }));
-  return liveGroups().map((g) => ({ value: g.code, label: g.name }));
+  return liveGroups()
+    .filter((g) => !product || productOf(g) === product)
+    .map((g) => ({ value: g.code, label: g.name }));
 }
 
 /** Group display name (live: engine group name from its code). */

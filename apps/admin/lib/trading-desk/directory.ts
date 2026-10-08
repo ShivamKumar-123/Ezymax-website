@@ -16,6 +16,12 @@ export interface LiveControls {
   markupPips: number;
 }
 
+/** What an account type (group) trades: CFDs or Ezymex FX Options, never both. An account carries its group's. */
+export type Product = "cfd" | "options";
+export const PRODUCT_LABEL: Record<Product, string> = { cfd: "CFD", options: "Options" };
+/** Product of a group or account; older engines don't send it, and every group before options accounts is CFD. */
+export const productOf = (x: { product?: string | null } | null | undefined): Product => (x?.product === "options" ? "options" : "cfd");
+
 /** Engine account view (GET /v1/admin/accounts), logins and user ids as strings. */
 export interface LiveAccount {
   login: string;
@@ -23,6 +29,7 @@ export interface LiveAccount {
   type: "live" | "demo";
   group: string;
   groupName: string;
+  product: Product;
   mode: "hedging" | "netting";
   cent: boolean;
   currency: "USD" | "USC";
@@ -73,6 +80,8 @@ export interface LiveGroup {
   demoRefillsPerDay: number;
   demoExpiryDays: number;
   enabled: boolean;
+  /** Missing from older engines (= cfd); fixed once the group has accounts. */
+  product?: Product;
   accounts?: number;
 }
 
@@ -138,8 +147,8 @@ export function useLiveDirectory() {
 
 /* ---------------- loading ---------------- */
 
-type RawAccount = Omit<LiveAccount, "login" | "userId"> & { login: number | string; userId: number | string };
-export const normAccount = (a: RawAccount): LiveAccount => ({ ...a, login: String(a.login), userId: String(a.userId) });
+type RawAccount = Omit<LiveAccount, "login" | "userId" | "product"> & { login: number | string; userId: number | string; product?: Product };
+export const normAccount = (a: RawAccount): LiveAccount => ({ ...a, login: String(a.login), userId: String(a.userId), product: productOf(a) });
 
 async function get<T>(url: string): Promise<T | null> {
   try {

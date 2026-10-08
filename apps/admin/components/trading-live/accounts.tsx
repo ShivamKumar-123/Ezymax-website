@@ -19,6 +19,7 @@ import {
   groupLabel,
   liveClientEmail,
   normAccount,
+  productOf,
   serverStamp,
   toUsdOf,
   upsertAccounts,
@@ -31,7 +32,7 @@ import {
   type LiveAccount,
 } from "@/lib/trading-desk";
 import { AdjustDialog } from "@/components/clients/adjust-dialog";
-import { ACC_ARCHIVE_REASONS, ACC_REASONS, ACC_RESTORE_REASONS, FIN_REASONS, KIND_LABEL, KIND_TONE, LEDGER_KIND, LIFECYCLE_STATUSES, SETTABLE_STATUS, STATUS_LABEL, STATUS_TONE, accountKind, money2, signed2, tradingWrite, type AccountKind, type History, type Ledger } from "./kit";
+import { ACC_ARCHIVE_REASONS, ACC_REASONS, ACC_RESTORE_REASONS, FIN_REASONS, KIND_LABEL, KIND_TONE, LEDGER_KIND, LIFECYCLE_STATUSES, ProductChip, SETTABLE_STATUS, STATUS_LABEL, STATUS_TONE, accountKind, money2, signed2, tradingWrite, type AccountKind, type History, type Ledger } from "./kit";
 
 const PER = 50;
 const KIND_SCAN = 500; // engine maximum page size
@@ -63,7 +64,7 @@ export function StatusChip({ status }: { status: string }) {
   );
 }
 
-/** Product chip (Copy / PAMM / MAM / Prop) from the group code; nothing for regular accounts. */
+/** Kind chip (Copy / PAMM / MAM / Prop) from the group code; nothing for regular accounts. The CFD / Options product is ProductChip. */
 export function KindChip({ group }: { group: string }) {
   const k = accountKind(group);
   if (k === "regular") return null;
@@ -132,7 +133,18 @@ export function LiveAccountsPage() {
       ),
     },
     { key: "c", header: "Client", cell: (r) => <MiniClient clientId={r.userId} login={`#${r.userId}`} /> },
-    { key: "g", header: "Group", cell: (r) => <span className="whitespace-nowrap text-[12.5px]">{r.groupName}<span className="block text-[10.5px] text-fg-3">{r.mode}{r.cent ? " · cent" : ""}</span></span> },
+    {
+      key: "g",
+      header: "Group",
+      cell: (r) => (
+        <span className="block whitespace-nowrap text-[12.5px]">
+          <span className="flex items-center gap-1.5">
+            {r.groupName} <ProductChip product={r.product} />
+          </span>
+          <span className="block text-[10.5px] text-fg-3">{r.mode}{r.cent ? " · cent" : ""}</span>
+        </span>
+      ),
+    },
     { key: "lev", header: "Leverage", align: "right", cell: (r) => <span className="k-num font-mono text-[12px]">1:{r.leverage}</span> },
     { key: "b", header: "Balance", align: "right", cell: (r) => <span className="k-num whitespace-nowrap font-mono text-[12.5px]">{money2(r.balance, r.currency)}</span> },
     { key: "e", header: "Equity", align: "right", cell: (r) => <span className="k-num whitespace-nowrap font-mono text-[12.5px]">{money2(r.equity, r.currency)}</span> },
@@ -247,6 +259,7 @@ function AccountMenu({ a, onOpen, onAct }: { a: LiveAccount; onOpen?: () => void
   const canDeal = useCan("dealing.write");
   const canClose = useCan("accounts.close");
   const superAdmin = isSuper(useStaff().role);
+  const cfd = a.product !== "options";
   const items = [
     ...(onOpen ? [{ label: "Open account", icon: <UserRound />, onSelect: onOpen }] : []),
     ...(canFunds || canCredit ? [{ label: "Balance & credit", icon: <Coins />, onSelect: () => onAct({ k: "adjust", a }) }] : []),
@@ -265,10 +278,15 @@ function AccountMenu({ a, onOpen, onAct }: { a: LiveAccount; onOpen?: () => void
     ...(canDeal && !retired(a)
       ? [
           "sep" as const,
-          { label: "Create trade", icon: <CandlestickChart />, onSelect: () => onAct({ k: "trade", a }) },
+          // dealer trades and A/B routes are CFD only: the engine refuses CFDs on an options account, and options are always B-book
+          ...(cfd ? [{ label: "Create trade", icon: <CandlestickChart />, onSelect: () => onAct({ k: "trade", a }) }] : []),
           { label: "Dealer controls", icon: <Ban />, onSelect: () => onAct({ k: "controls", a }) },
-          { label: `Route new trades to ${a.route === "A" ? "B" : "A"}-book`, icon: <ArrowLeftRight />, onSelect: () => onAct({ k: "route", a, book: a.route === "A" ? "B" : "A" }) },
-          { label: "Follow routing rules", icon: <ArrowLeftRight />, onSelect: () => onAct({ k: "route", a, book: null }) },
+          ...(cfd
+            ? [
+                { label: `Route new trades to ${a.route === "A" ? "B" : "A"}-book`, icon: <ArrowLeftRight />, onSelect: () => onAct({ k: "route", a, book: a.route === "A" ? "B" : "A" }) },
+                { label: "Follow routing rules", icon: <ArrowLeftRight />, onSelect: () => onAct({ k: "route", a, book: null }) },
+              ]
+            : []),
         ]
       : []),
     "sep" as const,
@@ -326,6 +344,7 @@ export function AccountDrawer({ login, onClose, onAct }: { login: string | null;
           Account <span className="font-mono">{login}</span>
           {a && <StatusChip status={a.status} />}
           {a?.type === "demo" && <Chip size="sm" tone="info">Demo</Chip>}
+          {a && <ProductChip product={a.product} />}
           {a && <KindChip group={a.group} />}
         </span>
       }
@@ -350,6 +369,7 @@ export function AccountDrawer({ login, onClose, onAct }: { login: string | null;
           </div>
           <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 rounded-[14px] border border-line bg-surface-2/60 px-4 py-3 text-[12.5px] sm:grid-cols-3">
             <Info k="Group" v={`${a.groupName} (${a.group})`} />
+            <Info k="Product" v={a.product === "options" ? "Options only" : "CFDs only"} />
             <Info k="Mode" v={`${a.mode}${a.cent ? " · cent (USC)" : ""}`} />
             <Info k="Leverage" v={`1:${a.leverage}`} />
             <Info k="New trades" v={<BookChip book={a.route} />} />
@@ -457,9 +477,11 @@ function AccountButtons({ a, onAct }: { a: LiveAccount; onAct: (x: Act) => void 
           <Button size="sm" variant="surface" onClick={() => onAct({ k: "controls", a })}>
             <Ban /> Controls
           </Button>
-          <Button size="sm" variant="ember" onClick={() => onAct({ k: "trade", a })}>
-            <CandlestickChart /> Create trade
-          </Button>
+          {a.product !== "options" && (
+            <Button size="sm" variant="ember" onClick={() => onAct({ k: "trade", a })}>
+              <CandlestickChart /> Create trade
+            </Button>
+          )}
         </>
       )}
     </div>
@@ -607,7 +629,8 @@ export function AccountActions({ act, onClose, onDone }: { act: Act; onClose: ()
   const n = Number(amount.replace(/,/g, "")) || 0;
   const signedAmt = fType === "deposit" ? n : fType === "withdrawal" ? -n : dirn === "add" ? n : -n;
   const target = dir.groups.find((g) => g.code === grp);
-  const groupsFor = dir.groups.filter((g) => g.enabled && (g.accountTypes === "both" || g.accountTypes === a.type) && g.cent === a.cent);
+  // an account never moves between CFD and Options account types (the engine refuses with product_mismatch)
+  const groupsFor = dir.groups.filter((g) => g.enabled && (g.accountTypes === "both" || g.accountTypes === a.type) && g.cent === a.cent && productOf(g) === a.product);
   const levList = dir.groups.find((g) => g.code === a.group)?.leverages ?? a.leverages;
   const delayOn = state.tenant.execDelayEnabled;
   const after = fType === "credit" ? a.credit + signedAmt : fType === "bonus" ? a.bonus + signedAmt : a.balance + signedAmt;
@@ -722,7 +745,7 @@ export function AccountActions({ act, onClose, onDone }: { act: Act; onClose: ()
         open={act?.k === "group"}
         onOpenChange={close}
         title={`Change group · ${a.login}`}
-        description={`Now ${a.groupName}. Netting ↔ hedging only while the account is flat; cent ↔ standard never.`}
+        description={`Now ${a.groupName}. Netting ↔ hedging only while the account is flat; cent ↔ standard and CFD ↔ Options never.`}
         codes={ACC_REASONS}
         confirmLabel={target ? `Move to ${target.name}` : "Move"}
         disabled={grp === a.group ? "Choose another group" : target && target.mode !== a.mode && a.positions > 0 ? "Close the positions first (mode change)" : false}
@@ -737,6 +760,7 @@ export function AccountActions({ act, onClose, onDone }: { act: Act; onClose: ()
             </button>
           ))}
         </div>
+        {!groupsFor.some((g) => g.code !== a.group) && <p className="text-[12px] text-fg-3">No other enabled {a.product === "options" ? "Options" : "CFD"} account type fits this account.</p>}
       </DeskDialog>
 
       <DeskDialog

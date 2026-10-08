@@ -8,7 +8,7 @@ import { INSTRUMENTS, getInstrument } from "@ezymex/mock";
 import { ADMIN_ACCOUNTS } from "@ezymex/mock/admin-trading";
 import { getClient } from "@ezymex/mock/admin-clients";
 import { IS_DEMO } from "@ezymex/mock/mode";
-import { DESK_REASONS, liveClientEmail, liveClientName, noteRequired, toUsdOf, useLiveDirectory, type Book, type DeskResult, type Reason } from "@/lib/trading-desk";
+import { DESK_REASONS, liveClientEmail, liveClientName, noteRequired, toUsdOf, useLiveDirectory, type Book, type DeskResult, type Product, type Reason } from "@/lib/trading-desk";
 
 /* ------------------------------------------------------------------ */
 /* Reason code + note (D117)                                           */
@@ -296,7 +296,7 @@ const ACCOUNT_INDEX = ADMIN_ACCOUNTS.map((a) => {
   return { a, c, hay: `${a.login} ${c.name} ${c.id} ${c.email}`.toLowerCase() };
 });
 
-type PickRow = { a: { login: string; group: string; leverage: number; currency: string; status: string; equity: number; type?: string }; c: { name: string; photo?: string }; hay: string };
+type PickRow = { a: { login: string; group: string; product: Product; leverage: number; currency: string; status: string; equity: number; type?: string }; c: { name: string; photo?: string }; hay: string };
 
 /** Live builds: accounts from the trading engine (live directory). */
 function useLiveAccountIndex(): PickRow[] {
@@ -306,7 +306,7 @@ function useLiveAccountIndex(): PickRow[] {
       [...dir.accounts.values()].map((a) => {
         const name = liveClientName(a.userId, a.login);
         return {
-          a: { login: a.login, group: a.groupName || a.group, leverage: a.leverage, currency: a.currency, status: a.status === "active" ? "active" : a.status.replace("_", "-"), equity: a.equity, type: a.type },
+          a: { login: a.login, group: a.groupName || a.group, product: a.product, leverage: a.leverage, currency: a.currency, status: a.status === "active" ? "active" : a.status.replace("_", "-"), equity: a.equity, type: a.type },
           c: { name },
           hay: `${a.login} ${name} ${a.userId} ${liveClientEmail(a.userId)} ${a.name}`.toLowerCase(),
         };
@@ -315,11 +315,13 @@ function useLiveAccountIndex(): PickRow[] {
   );
 }
 
-export function AccountPicker({ value, onChange }: { value: string | null; onChange: (login: string) => void }) {
+/** `product` lists only accounts of that product (dealer trades and routes are CFD: options accounts can't take them). */
+export function AccountPicker({ value, onChange, product }: { value: string | null; onChange: (login: string) => void; product?: Product }) {
   const [q, setQ] = React.useState("");
   const [open, setOpen] = React.useState(false);
   const live = useLiveAccountIndex();
-  const index: PickRow[] = IS_DEMO ? ACCOUNT_INDEX : live;
+  const all: PickRow[] = IS_DEMO ? ACCOUNT_INDEX : live;
+  const index = React.useMemo(() => (product ? all.filter((x) => x.a.product === product) : all), [all, product]);
   const list = React.useMemo(() => {
     const s = q.trim().toLowerCase();
     return (s ? index.filter((x) => x.hay.includes(s)) : index).slice(0, 7);

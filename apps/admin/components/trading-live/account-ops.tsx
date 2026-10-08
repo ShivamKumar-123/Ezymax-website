@@ -16,7 +16,7 @@ import { Button, Dialog, Field, Input, Menu, Toggle, cn } from "@ezymex/ui";
 import { qs, sendJson, useApi } from "@/components/live/kit";
 import { useCan } from "@/components/staff-session";
 import { DeskDialog, MetaTile } from "@/components/trading-desk/kit";
-import type { LiveAccount } from "@/lib/trading-desk";
+import { PRODUCT_LABEL, productOf, type LiveAccount } from "@/lib/trading-desk";
 import { STATUS_LABEL, money2, tradingWrite } from "./kit";
 
 export const CLOSE_REASONS = ["CLS-01 · Client request (phone / email)", "CLS-02 · Duplicate account", "CLS-03 · Compliance / AML", "CLS-04 · Deceased / legal", "CLS-05 · Broker decision", "CLS-99 · Other"] as const;
@@ -135,7 +135,7 @@ export function BulkMenu({ onPick }: { onPick: (k: BulkKind) => void }) {
   );
 }
 
-type Row = { login: number; userId: number; type: string; group: string; groupName: string; status: string; currency: string; balance: number; credit: number; bonus: number; equity: number; leverage: number; positions: number; orders: number; createdAt: string; dormantSince?: string | null; lastActivityAt?: string | null; name?: string };
+type Row = { login: number; userId: number; type: string; group: string; groupName: string; product?: string; status: string; currency: string; balance: number; credit: number; bonus: number; equity: number; leverage: number; positions: number; orders: number; createdAt: string; dormantSince?: string | null; lastActivityAt?: string | null; name?: string };
 type Filters = Record<string, string | number | boolean | undefined>;
 
 /** Every account matching the filters (engine pages of 500, at most 10 000). */
@@ -192,8 +192,8 @@ export function BulkDialog({ kind, filters, onClose, onDone }: { kind: BulkKind 
 
   React.useEffect(() => {
     if (kind !== "export" || !rows) return;
-    const head = ["Login", "Client ID", "Type", "Group", "Status", "Currency", "Balance", "Credit", "Bonus", "Equity", "Leverage", "Positions", "Orders", "Opened (UTC)", "Last activity (UTC)", "Dormant since (UTC)"];
-    const csv = [head.join(","), ...rows.map((r) => [r.login, r.userId, r.type, r.groupName || r.group, STATUS_LABEL[r.status] ?? r.status, r.currency, r.balance, r.credit, r.bonus, r.equity, r.leverage, r.positions, r.orders, r.createdAt, r.lastActivityAt ?? "", r.dormantSince ?? ""].map(cell).join(","))].join("\r\n");
+    const head = ["Login", "Client ID", "Type", "Group", "Product", "Status", "Currency", "Balance", "Credit", "Bonus", "Equity", "Leverage", "Positions", "Orders", "Opened (UTC)", "Last activity (UTC)", "Dormant since (UTC)"];
+    const csv = [head.join(","), ...rows.map((r) => [r.login, r.userId, r.type, r.groupName || r.group, PRODUCT_LABEL[productOf(r)], STATUS_LABEL[r.status] ?? r.status, r.currency, r.balance, r.credit, r.bonus, r.equity, r.leverage, r.positions, r.orders, r.createdAt, r.lastActivityAt ?? "", r.dormantSince ?? ""].map(cell).join(","))].join("\r\n");
     const url = URL.createObjectURL(new Blob(["﻿" + csv + "\r\n"], { type: "text/csv;charset=utf-8" }));
     const link = document.createElement("a");
     link.href = url;

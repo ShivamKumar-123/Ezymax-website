@@ -12,7 +12,7 @@ export const CHARGE_LABEL: Record<ChargeOn, string> = { open: "On open", close: 
 
 export function blankGroup(): AdminGroup {
   return {
-    id: "new", name: "New group", tagline: "", mode: "hedging", cent: false, currency: "USD", server: "Ezymex-Live01",
+    id: "new", name: "New group", product: "cfd", tagline: "", mode: "hedging", cent: false, currency: "USD", server: "Ezymex-Live01",
     leverage: [50, 100, 200, 500], defaultLeverage: 200, marginCall: 100, stopOut: 50, hedgedMargin: 50, minDeposit: 100,
     swapFree: false, islamicFee: { enabled: false, perLot: 0, graceDays: 0, basis: "per-lot-night" }, route: "B",
     autoRule: { aBookAboveLots: 10, toxicityScore: 70, profitableDays: 10 }, commission: { perLot: 0, chargeOn: "round" },
@@ -42,6 +42,8 @@ export function GroupEditor({ group, open, onOpenChange, onSave }: { group: Admi
   const changes = diffCount(group, g);
   const soInvalid = g.stopOut >= g.marginCall;
   const isNew = group.id === "new";
+  // an account never changes product, so a group's product is fixed once it has accounts
+  const productLocked = !isNew && group.accounts > 0;
 
   return (
     <Dialog
@@ -92,6 +94,18 @@ export function GroupEditor({ group, open, onOpenChange, onSave }: { group: Admi
           <SettingRow label="Published" hint="Visible and selectable in the Client Area">
             <Toggle checked={g.status === "active"} onChange={(v) => set("status", v ? "active" : "draft")} />
           </SettingRow>
+        </Section>
+
+        <Section title="Product" hint={productLocked ? "Fixed while the group has accounts." : "Its accounts trade CFDs or options, never both."}>
+          <Segmented
+            value={g.product}
+            onChange={(v) => !productLocked && set("product", v)}
+            options={[
+              { value: "cfd", label: "CFD" },
+              { value: "options", label: "Options" },
+            ]}
+            className={cn(productLocked && "pointer-events-none opacity-60")}
+          />
         </Section>
 
         <Section title="Account mode" hint="Mode is fixed per account after opening.">

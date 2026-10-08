@@ -8,7 +8,7 @@ import { Info, RotateCcw, Save, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, Dialog, PageHeader, Reveal, Segmented, SymbolAvatar, cn, formatNumber } from "@ezymex/ui";
 import { INSTRUMENTS, ASSET_CLASS_LABEL, type AssetClass, type Instrument } from "@ezymex/mock";
-import { ADMIN_GROUPS, SPREAD_FLOORS, SPREAD_MARKUPS, pipSize, type MarkupCell } from "@ezymex/mock/admin-config";
+import { CFD_GROUPS, SPREAD_FLOORS, SPREAD_MARKUPS, pipSize, type MarkupCell } from "@ezymex/mock/admin-config";
 import { ChipList, MiniField, MiniStat, NumInput, Select, auditToast } from "@/components/config/kit";
 
 type Matrix = Record<string, Record<string, MarkupCell>>;
@@ -100,7 +100,7 @@ function BulkDialog({ open, onOpenChange, onApply }: { open: boolean; onOpenChan
           <Select value={cls} onChange={setCls} options={[{ value: "all", label: "All symbols" }, ...(Object.keys(ASSET_CLASS_LABEL) as AssetClass[]).map((c) => ({ value: c, label: ASSET_CLASS_LABEL[c] }))]} />
         </MiniField>
         <MiniField label="Groups">
-          <ChipList values={groups} onChange={setGroups} options={ADMIN_GROUPS.map((g) => g.id)} format={(id) => ADMIN_GROUPS.find((g) => g.id === id)!.name} />
+          <ChipList values={groups} onChange={setGroups} options={CFD_GROUPS.map((g) => g.id)} format={(id) => CFD_GROUPS.find((g) => g.id === id)!.name} />
         </MiniField>
         <div className="grid grid-cols-[auto_1fr] items-end gap-3">
           <Segmented size="sm" value={op} onChange={setOp} options={[{ value: "add", label: "Add" }, { value: "set", label: "Set to" }, { value: "mult", label: "Multiply" }]} />
@@ -120,7 +120,7 @@ function DemoSpreadsPage() {
   const [bulk, setBulk] = React.useState(false);
   const raw = useRawSpreads();
 
-  const dirtyCells = INSTRUMENTS.reduce((n, i) => n + ADMIN_GROUPS.filter((g) => JSON.stringify(m[i.symbol]![g.id]) !== JSON.stringify(saved[i.symbol]![g.id])).length + (floors[i.symbol] !== savedFloors[i.symbol] ? 1 : 0), 0);
+  const dirtyCells = INSTRUMENTS.reduce((n, i) => n + CFD_GROUPS.filter((g) => JSON.stringify(m[i.symbol]![g.id]) !== JSON.stringify(saved[i.symbol]![g.id])).length + (floors[i.symbol] !== savedFloors[i.symbol] ? 1 : 0), 0);
   const rows = INSTRUMENTS.filter((i) => cls === "all" || i.assetClass === cls);
   const setCell = (sym: string, gid: string, c: MarkupCell) => setM((p) => ({ ...p, [sym]: { ...p[sym]!, [gid]: c } }));
 
@@ -193,7 +193,7 @@ function DemoSpreadsPage() {
                       <span className="size-1.5 animate-pulse rounded-full bg-up" /> Raw feed
                     </span>
                   </th>
-                  {ADMIN_GROUPS.map((g) => (
+                  {CFD_GROUPS.map((g) => (
                     <th key={g.id} className="border-y border-line bg-surface-2 px-2 py-3 text-left font-medium">
                       <span className="text-fg-2">{g.name}</span>
                       <span className="ml-1 normal-case tracking-normal text-fg-3">{g.route === "A" ? "A" : g.route === "B" ? "B" : "Auto"}</span>
@@ -221,7 +221,7 @@ function DemoSpreadsPage() {
                         </span>
                         <span className="ml-1 text-[10.5px] text-fg-3">{usesPrice(i) ? "" : "pips"}</span>
                       </td>
-                      {ADMIN_GROUPS.map((g) => {
+                      {CFD_GROUPS.map((g) => {
                         const cell = m[i.symbol]![g.id]!;
                         const dirty = JSON.stringify(cell) !== JSON.stringify(saved[i.symbol]![g.id]);
                         const eff = effective(r.v, cell, floors[i.symbol]!);

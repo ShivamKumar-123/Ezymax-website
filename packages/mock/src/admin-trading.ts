@@ -147,6 +147,8 @@ export interface AdminAccountRow {
   login: string;
   clientId: string;
   group: string;
+  /** CFD or Options account (from its group): an account trades one product. */
+  product: "cfd" | "options";
   type: "live" | "demo";
   leverage: number;
   currency: "USD" | "USC";
@@ -168,6 +170,7 @@ export const ADMIN_ACCOUNTS: AdminAccountRow[] = CLIENTS.filter((c) => c.logins.
       login: a.login,
       clientId: c.id,
       group: a.group,
+      product: a.product,
       type: a.type,
       leverage: a.leverage,
       currency: a.currency,

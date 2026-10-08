@@ -20,6 +20,7 @@ import { BadgePercent, BookOpen, Calculator, Coins, Pencil, Plus, RefreshCw, Sca
 import { Button, Card, CardHeader, Chip, DataTable, Field, KpiCard, PageHeader, Reveal, Toggle, cn, formatNumber, type Column } from "@ezymex/ui";
 import { IS_DEMO } from "@ezymex/mock/mode";
 import { ErrorState, TableSkeleton, ago, useApi, useNow, when } from "@/components/live/kit";
+import { productOf, type LiveGroup } from "@/lib/trading-desk/directory";
 import type { GroupSettings, Underlying } from "./types";
 import { NumInput, ReadOnlyHint, REASONS, ReasonDialog, Select, UnderlyingCell, optSend, parseNum, platformBlock, useOpt, useOptPerms, usd, volPts } from "./kit";
 
@@ -80,13 +81,12 @@ export function PricingPage() {
   const now = useNow();
   const { data, error, reload } = useOpt<{ groups: GroupSettings[]; default: GroupSettings }>("/api/options/groups", { refreshMs: 60_000 });
   const unders = useOpt<{ underlyings: Underlying[] }>("/api/options/underlyings");
-  // account groups of this broker (trading engine) for the picker; demo builds use the standard set
-  const tg = useApi<{ groups: { code: string; name: string }[] }>(IS_DEMO ? null : "/api/trading/admin/groups");
-  const groupCodes = React.useMemo(() => {
-    const fromEngine = (tg.data?.groups ?? []).map((g) => g.code);
-    const fromRows = (data?.groups ?? []).map((g) => g.groupCode).filter((c) => c !== "*");
-    return Array.from(new Set([...(IS_DEMO ? ["standard", "pro", "ecn", "vip", "cent"] : []), ...fromEngine, ...fromRows])).sort();
-  }, [tg.data, data]);
+  // the broker's Options account types for the pickers: groups of product "options" on the trading engine (only options
+  // accounts trade options; a group without a product is CFD); demo builds use the seeded "options" group
+  const tg = useApi<{ groups: Pick<LiveGroup, "code" | "name" | "product">[] }>(IS_DEMO ? null : "/api/trading/admin/groups");
+  const groupCodes = React.useMemo(() => (IS_DEMO ? ["options"] : (tg.data?.groups ?? []).filter((g) => productOf(g) === "options").map((g) => g.code).sort()), [tg.data]);
+  // rows of CFD account types (set before Options accounts) price nobody: flagged in the table
+  const cfdCodes = React.useMemo(() => new Set((tg.data?.groups ?? []).filter((g) => productOf(g) === "cfd").map((g) => g.code)), [tg.data]);
   const symbols = (unders.data?.underlyings ?? []).filter((u) => u.enabled).map((u) => u.symbol);
   const [edit, setEdit] = React.useState<{ g: GroupSettings | null; isNew: boolean } | null>(null);
   const [del, setDel] = React.useState<GroupSettings | null>(null);
@@ -104,6 +104,11 @@ export function PricingPage() {
             <span className={cn("font-mono text-[12.5px] font-medium", g.groupCode === "*" && "text-ember")}>{g.groupCode === "*" ? "All groups" : g.groupCode}</span>
             <span className="text-fg-3">·</span>
             <span className="font-mono text-[12.5px]">{g.symbol === "*" ? "all underlyings" : g.symbol}</span>
+            {cfdCodes.has(g.groupCode) && (
+              <Chip size="sm" tone="warn">
+                CFD group: unused
+              </Chip>
+            )}
           </span>
           {g.groupCode === "*" && g.symbol === "*" && <span className="text-[10.5px] text-fg-3">broker default</span>}
         </span>
@@ -165,7 +170,7 @@ export function PricingPage() {
     <div className="pb-10">
       <PageHeader
         title="Spreads, fees & limits"
-        subtitle="Your pricing per account group and underlying. The most specific row wins: group + underlying, then group, then underlying, then your default."
+        subtitle="Your pricing per Options account group and underlying. The most specific row wins: group + underlying, then group, then underlying, then your default."
         actions={
           <>
             <Button variant="surface" size="lg" onClick={reload}>
@@ -375,8 +380,8 @@ function GroupEditor({ edit, base, groups, symbols, existing, onClose, onSaved }
       success="Pricing saved"
     >
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Account group">
-          <Select value={group} onChange={setGroup} label="Account group" disabled={!edit.isNew} options={[{ value: "*", label: "All groups" }, ...groups.map((g) => ({ value: g, label: g }))]} />
+        <Field label="Account group" hint="Options account types">
+          <Select value={group} onChange={setGroup} label="Account group" disabled={!edit.isNew} options={[{ value: "*", label: "All groups" }, ...Array.from(new Set([...groups, ...(edit.g && edit.g.groupCode !== "*" ? [edit.g.groupCode] : [])])).map((g) => ({ value: g, label: g }))]} />
         </Field>
         <Field label="Underlying">
           <Select value={sym} onChange={setSym} label="Underlying" disabled={!edit.isNew} options={[{ value: "*", label: "All underlyings" }, ...symbols.map((s) => ({ value: s, label: s }))]} />

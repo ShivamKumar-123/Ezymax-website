@@ -98,7 +98,7 @@ export function CreateTradeDrawer({ open, onOpenChange, initialLogin, initialSym
     ctl && ctl.execDelayMs > 0 && type === "market" && !manual && (state.tenant.execDelayEnabled ? `Execution delay ${Math.min(ctl.execDelayMs, state.tenant.execDelayCapMs)} ms applies (tenant policy on)` : null),
     metrics && need > metrics.freeMargin && "Required margin exceeds free margin",
   ].filter(Boolean) as string[];
-  const blocking = !login ? "Select an account" : volErr ? volErr : type !== "market" && !(parseNum(price)! > 0) ? "Enter the order price" : type === "market" && manual && !(parseNum(price)! > 0) ? "Enter the manual price" : type === "market" && manual && !r.note.trim() ? "Manual price needs a note" : r.error;
+  const blocking = !login ? "Select an account" : acc?.product === "options" ? "Options account: dealer trades are CFDs" : volErr ? volErr : type !== "market" && !(parseNum(price)! > 0) ? "Enter the order price" : type === "market" && manual && !(parseNum(price)! > 0) ? "Enter the manual price" : type === "market" && manual && !r.note.trim() ? "Manual price needs a note" : r.error;
 
   const submit = async () => {
     if (!login) return;
@@ -155,7 +155,7 @@ export function CreateTradeDrawer({ open, onOpenChange, initialLogin, initialSym
       }
     >
       <div className="space-y-5">
-        <AccountPicker value={login} onChange={setLogin} />
+        <AccountPicker value={login} onChange={setLogin} product="cfd" />
         {acc && client && metrics && (
           <div className="grid grid-cols-4 gap-2">
             <MetaTile label="Balance" value={money(metrics.balance, 0)} />
