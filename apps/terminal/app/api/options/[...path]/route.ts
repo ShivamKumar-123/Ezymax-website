@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { csrf, error, reply, soft } from "@/lib/engine/server";
 import { actingAccount, options, optionsStreamUrl, publicBook, publicChain, tenantOf } from "@/lib/options/server";
+import { moduleOn } from "@/lib/tenant-brand";
 
 // Ezymex FX Options BFF (read side). Browser -> /api/options/<route> (same origin; `X-Ezymex-Login` names the acting
 // account, whose engine session is in the HttpOnly cookie) -> services/options /v1/options/… with the internal
@@ -22,7 +23,10 @@ import { actingAccount, options, optionsStreamUrl, publicBook, publicChain, tena
 //   GET  public/stats/{u}                 open interest and volume per strike of an underlying
 //
 // The service answers 404 `options_disabled` while the module is off for this broker / account kind: the terminal
-// shows "Options launching soon".
+// shows "Options launching soon". The same answer, before the service is asked, while the broker has FX Options
+// switched off in the Back Office (module `options`, lib/modules.ts): every options client already takes it quietly
+// (lib/options/api.ts isLaunchingSoon), where a 403 would read as an error and retry. The terminal doesn't mount the
+// options UI then anyway (components/options/bits.tsx OptionsGate).
 
 type Ctx = { params: Promise<{ path: string[] }> };
 
@@ -72,6 +76,7 @@ const relay = (r: { status: number; data: unknown }) => reply(r.status, r.data);
 async function handle(req: NextRequest, { params }: Ctx, method: "GET" | "POST") {
   const path = (await params).path;
   const [a, b, c] = path;
+  if (!(await moduleOn(req, "options"))) return error(404, "options_disabled", "Options aren't offered on your account right now.");
 
   // ---- public (guests, the SEO chain page)
   if (a === "public") {

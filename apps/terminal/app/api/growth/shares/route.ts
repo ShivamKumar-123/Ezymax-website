@@ -7,11 +7,12 @@
  *
  * Who: the owner of the engine session in this browser's cookie. Investor (read-only) logins and staff sessions opened
  * as the client can't create cards: a card is public and carries the owner's referral code. The growth service checks
- * again that the account belongs to that client and that the deal is a closing deal of it.
+ * again that the account belongs to that client and that the deal is a closing deal of it. Not while the broker has trade
+ * sharing switched off (flag trade_sharing, as the gateway's own share links): 403 feature_disabled.
  */
 import type { NextRequest } from "next/server";
 import { csrf, engine, error, readSessions, reply, sessionFor } from "@/lib/engine/server";
-import { tenantBrand } from "@/lib/tenant-brand";
+import { flagOn, tenantBrand } from "@/lib/tenant-brand";
 import { hostOf } from "@/lib/tenant-host";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +33,7 @@ async function tenantOf(req: NextRequest): Promise<string> {
 export async function POST(req: NextRequest) {
   const blocked = csrf(req);
   if (blocked) return blocked;
+  if (!(await flagOn(req, "trade_sharing"))) return error(403, "feature_disabled", "Trade sharing isn't available right now.");
   const body = (await req.json().catch(() => null)) as { dealId?: unknown; showAmounts?: unknown } | null;
   const dealId = Number(body?.dealId);
   if (!body || !Number.isSafeInteger(dealId) || dealId <= 0) return error(422, "validation", "Choose a closed trade to share.");

@@ -6,7 +6,8 @@ import { getI18n } from "@ezymex/i18n/server";
 // subpath imports: a server layout importing the "@ezymex/ui" barrel ships every client module of it on every page
 import { BrandProvider } from "@ezymex/ui/brand";
 import { brandCss, isCustomBrand } from "@ezymex/ui/brand-vars";
-import { tenantBrand } from "@/lib/tenant-brand";
+import { tenantBrand, tenantFeatures } from "@/lib/tenant-brand";
+import { FeaturesProvider } from "@/lib/features";
 import { TerminalProviders } from "./providers";
 import "./globals.css";
 
@@ -36,15 +37,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // quotes, candles and the stream come from the market-data origin: start its DNS + TCP + TLS handshake while the
   // page loads instead of after hydration (the browser fetches it without credentials, hence "anonymous")
   if (MARKET_DATA_ORIGIN) preconnect(MARKET_DATA_ORIGIN, { crossOrigin: "anonymous" });
-  // same language cookie as the Client Area (ezymex_locale), else the browser's Accept-Language
-  const [{ locale, dir, messages }, brand] = await Promise.all([getI18n(), tenantBrand()]);
+  // same language cookie as the Client Area (ezymex_locale), else the browser's Accept-Language; the brand and the
+  // broker's module switches come from one cached gateway call
+  const [{ locale, dir, messages }, brand, features] = await Promise.all([getI18n(), tenantBrand(), tenantFeatures()]);
   const css = brandCss(brand);
   return (
     <html lang={locale} dir={dir} suppressHydrationWarning className={`${GeistSans.variable} ${GeistMono.variable}`}>
       <body className="overflow-hidden">
         {css && <style dangerouslySetInnerHTML={{ __html: css }} />}
         <BrandProvider brand={brand}>
-          <TerminalProviders locale={locale} messages={messages}>{children}</TerminalProviders>
+          <FeaturesProvider value={features}>
+            <TerminalProviders locale={locale} messages={messages}>{children}</TerminalProviders>
+          </FeaturesProvider>
         </BrandProvider>
       </body>
     </html>

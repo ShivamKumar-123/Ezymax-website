@@ -6,11 +6,14 @@
 // (localhost), so the public demo showcase cannot spend AI credits.
 //
 // The budget lives in this server process's memory (one Node process per deployment); a restart resets it.
+//
+// Before all that, the broker must offer the AI assistant (module `ai_assistant`, lib/modules.ts): aiModuleOff.
 
 import type { NextRequest } from "next/server";
 import { IS_DEMO } from "@ezymex/mock";
 import { engine, readSessions, sameOrigin, sessionFor } from "@/lib/engine/server";
 import { clientIp } from "@/lib/gateway";
+import { moduleOn } from "@/lib/tenant-brand";
 
 export const AI_PER_MINUTE = 10;
 export const AI_PER_DAY = 200;
@@ -78,6 +81,16 @@ function overBudget(user: string): Response | null {
   if (calls.size > 20_000) calls.clear();
   calls.set(user, day);
   return null;
+}
+
+/**
+ * The 403 `module_disabled` of an AI route while the broker of the request's host has switched off what it needs
+ * (`expr`: "ai_assistant", "options&ai_assistant"), or null. `configured: false` sends the terminal to what it does
+ * without an API key (AI Trader's local parser, the built-in option explanation): no error, no toast.
+ */
+export async function aiModuleOff(req: NextRequest, expr: string): Promise<Response | null> {
+  if (await moduleOn(req, expr)) return null;
+  return Response.json({ configured: false, error: "This feature isn't available on your account.", code: "module_disabled" }, { status: 403, headers: { "cache-control": "no-store" } });
 }
 
 /**

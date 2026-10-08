@@ -5,13 +5,14 @@
  * language, in the reader's language. Follows app/api/ai-trader/route.ts: the key is read from the server
  * environment only; without ANTHROPIC_API_KEY it answers { configured: false } and the terminal shows its built-in
  * explanation. Same-origin only, small bodies, a signed-in terminal session and a per-user budget (lib/ai-guard.ts:
- * 401 "signin", 429 "rate_minute" / "rate_day"), and Claude is told to use only the numbers given.
+ * 401 "signin", 429 "rate_minute" / "rate_day"), and Claude is told to use only the numbers given. While the broker has
+ * FX Options or the AI assistant switched off both methods answer 403 { configured: false, code: "module_disabled" }.
  */
 import Anthropic from "@anthropic-ai/sdk";
 import type { NextRequest } from "next/server";
 import { LOCALES } from "@ezymex/i18n/locales";
 import { sameOrigin } from "@/lib/engine/server";
-import { aiGate } from "@/lib/ai-guard";
+import { aiGate, aiModuleOff } from "@/lib/ai-guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,8 +30,8 @@ Rules:
 - 110 to 170 words, short paragraphs, no headings, no markdown, no emoji. Write it in the requested language; keep symbols, numbers and the currency code as given.`;
 
 /** GET: whether Claude is configured (never exposes the key). */
-export function GET() {
-  return Response.json({ configured: !!process.env.ANTHROPIC_API_KEY, model: MODEL });
+export async function GET(req: NextRequest) {
+  return (await aiModuleOff(req, "options&ai_assistant")) ?? Response.json({ configured: !!process.env.ANTHROPIC_API_KEY, model: MODEL });
 }
 
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
@@ -42,6 +43,8 @@ function bad(status: number, error: string) {
 
 export async function POST(req: NextRequest) {
   if (!sameOrigin(req)) return bad(403, "Cross-site request blocked.");
+  const off = await aiModuleOff(req, "options&ai_assistant");
+  if (off) return off;
   const raw = await req.text();
   if (raw.length > 8000) return bad(413, "Request too large.");
   let body: { locale?: unknown; strategy?: Record<string, unknown> };

@@ -5,12 +5,13 @@
  * validated server-side. Without ANTHROPIC_API_KEY it answers { configured: false } and the terminal
  * falls back to its local parser. The key is read from the server environment only.
  * Each call costs money: it needs a signed-in terminal session and stays within the per-user budget
- * (lib/ai-guard.ts: 401 "signin", 429 "rate_minute" / "rate_day").
+ * (lib/ai-guard.ts: 401 "signin", 429 "rate_minute" / "rate_day"). While the broker has the AI assistant switched off
+ * both methods answer 403 { configured: false, code: "module_disabled" }.
  */
 import Anthropic from "@anthropic-ai/sdk";
 import type { NextRequest } from "next/server";
 import { INSTRUMENTS } from "@ezymex/mock";
-import { aiGate } from "@/lib/ai-guard";
+import { aiGate, aiModuleOff } from "@/lib/ai-guard";
 import { PARSE_RESULT_JSON_SCHEMA, validateSpec, type ParseResult } from "@/lib/ai-trader/schema";
 import { TIMEFRAMES } from "@/lib/trading";
 
@@ -42,8 +43,8 @@ Rules for you:
 - Never add conditions, limits or indicators the trader did not ask for.`;
 
 /** GET: whether Claude is configured (never exposes the key). */
-export function GET() {
-  return Response.json({ configured: !!process.env.ANTHROPIC_API_KEY, model: MODEL });
+export async function GET(req: NextRequest) {
+  return (await aiModuleOff(req, "ai_assistant")) ?? Response.json({ configured: !!process.env.ANTHROPIC_API_KEY, model: MODEL });
 }
 
 function bad(status: number, error: string) {
@@ -51,6 +52,8 @@ function bad(status: number, error: string) {
 }
 
 export async function POST(req: NextRequest) {
+  const off = await aiModuleOff(req, "ai_assistant");
+  if (off) return off;
   let body: { prompt?: unknown; symbol?: unknown; timeframe?: unknown };
   try {
     body = await req.json();

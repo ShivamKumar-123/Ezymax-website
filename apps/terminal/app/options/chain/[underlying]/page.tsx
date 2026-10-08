@@ -4,12 +4,15 @@ import { notFound } from "next/navigation";
 import { INSTRUMENT_MAP, IS_LIVE } from "@ezymex/mock";
 import { OPTION_SPEC, OPTION_UNDERLYINGS, mockChain, mockExpiries, type OptionChain } from "@ezymex/mock/options";
 import { publicChain } from "@/lib/options/server";
+import { modulesOn } from "@/lib/modules";
+import { tenantFeatures } from "@/lib/tenant-brand";
 import { PublicChainView } from "@/components/options/public-chain";
 
 // Public option chain (guest view, plan O29): trade.<domain>/options/chain/EURUSD. Server-rendered for search
 // engines from the options service's public chain (`/v1/public/options/chain/{u}`, 1 s cache), then live in the
 // browser (public stream / polling). Read-only: trading needs a signed-in account. While the public chain is
-// switched off for Ezymex the page explains that options are launching soon.
+// switched off for Ezymex the page explains that options are launching soon. A broker that switched FX Options off in
+// the Back Office (module `options`) has no chain page: 404.
 
 export const dynamic = "force-dynamic";
 
@@ -29,9 +32,11 @@ function symbolOf(raw: string): string | null {
   return OPTION_SPEC[u] ? u : null;
 }
 
+const optionsOn = async () => modulesOn((await tenantFeatures())?.modules, "options");
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const u = symbolOf((await params).underlying);
-  if (!u) return { title: "Option chain not found", robots: { index: false, follow: false } };
+  if (!u || !(await optionsOn())) return { title: "Option chain not found", robots: { index: false, follow: false } };
   const name = NAMES[u] ?? u;
   const title = `${name} options chain: calls, puts, IV and Greeks`;
   const description = `Live ${name} option chain on Ezymex FX Options: calls and puts for daily, weekly and monthly expiries with bid and ask in USD per contract, implied volatility, delta, probability in the money and breakeven. European, cash-settled in USD.`;
@@ -48,7 +53,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function PublicChainPage({ params, searchParams }: Props) {
   const u = symbolOf((await params).underlying);
-  if (!u) notFound();
+  if (!u || !(await optionsOn())) notFound();
   const sp = await searchParams;
   const expiry = sp.expiry && /^\d{4}-\d{2}-\d{2}$/.test(sp.expiry) ? sp.expiry : null;
   let initial: (OptionChain & { expiries?: { date: string; kinds: OptionChain["kinds"]; cutAt: string }[] }) | null = null;

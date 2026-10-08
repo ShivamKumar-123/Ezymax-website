@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { Memo } from "@/lib/memo";
+import { moduleOn } from "@/lib/tenant-brand";
 
 // Ezymex Trader news + economic calendar BFF (read-only). Browser -> /api/news/<route> (same origin) ->
 // services/news /v1/… with the internal token (never sent to the browser). Headlines and the calendar are
@@ -7,6 +8,9 @@ import { Memo } from "@/lib/memo";
 //
 //   GET feed?symbol&currency&country&category&q&before&limit&minImportance · feed/{id}
 //   GET calendar?from&to&currency&impact · calendar/next?impact · calendar/{id}
+//
+// Headlines follow the broker's News module, the calendar its Calendar module (lib/modules.ts; as the Client Area's
+// /api/news BFF): switched off, 403 module_disabled (the toolbox doesn't offer those tabs then).
 
 type Ctx = { params: Promise<{ path: string[] }> };
 
@@ -45,6 +49,9 @@ async function forward(path: string) {
 
 export async function GET(req: NextRequest, { params }: Ctx) {
   const [a, b, ...rest] = (await params).path;
+  if (!(await moduleOn(req, a === "calendar" ? "calendar" : "news"))) {
+    return NextResponse.json({ error: { code: "module_disabled", message: "This feature isn't available on your account." } }, { status: 403, headers: { "cache-control": "no-store" } });
+  }
   if (rest.length) return NextResponse.json({ error: { code: "not_found", message: "Not found." } }, { status: 404 });
   if (a === "feed" && !b) return forward(`/v1/news${query(req, ["symbol", "currency", "country", "category", "q", "before", "limit", "minImportance"])}`);
   if (a === "feed" && b && ID.test(b)) return forward(`/v1/news/${b}`);
