@@ -12,7 +12,7 @@ export function Footer() {
       <div className="container-x py-16 md:py-20">
         <div className="grid gap-12 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div className="max-w-sm">
-            <Link href="/" className="inline-flex text-ink" aria-label="SetupZero home">
+            <Link href="/" className="inline-flex text-ink" aria-label="Ezymax home">
               <Logo className="h-7" />
             </Link>
             <p className="mt-4 font-display text-lg font-medium text-ink">{site.tagline}</p>

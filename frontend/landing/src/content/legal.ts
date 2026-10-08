@@ -1,105 +1,552 @@
-import type { LegalDoc } from "./schema";
+import type { LegalBlock, LegalDoc } from "./schema";
 
-const reviewNote =
-  "Draft for review. This text is a placeholder structure and must be reviewed and approved by legal counsel under UAE law before launch.";
+/**
+ * Privacy Policy, Terms of Service and Risk Disclosure.
+ *
+ * Carried over from the platform's own legal copy — these are real documents,
+ * not the four-document placeholder set the site template shipped (whose
+ * intro read "Draft for review... must be reviewed and approved by legal
+ * counsel"). The template's fourth document, a "Disclaimer" stating the
+ * company is not a broker and does not hold client funds, is not here: it was
+ * written for a technology vendor and is the opposite of what Ezymax does.
+ *
+ * Two corrections were applied on the way across, both because the documents
+ * disagreed with the code:
+ *
+ *  - Maximum leverage read 1:500. The risk-engine config is 1:100, and a
+ *    wrong number in a risk disclosure is the worst place to have one.
+ *  - Section 10 said trades are "executed through Ezymax's liquidity
+ *    providers". The backend is a b-book engine: Ezymax is the counterparty.
+ *    That is a conflict of interest, and the document now says so.
+ *
+ * TODO: the contact block below pairs a US phone number with a Glasgow
+ * serviced-office address. Both are inherited and neither is confirmed.
+ * Replace with the real registered entity before launch.
+ */
 
-export const legalDocs: LegalDoc[] = [
-  {
-    slug: "privacy-policy",
-    title: "Privacy Policy",
-    updated: "2026-10-07",
-    intro: reviewNote,
-    sections: [
-      {
-        heading: "What we collect",
-        paragraphs: [
-          "When you contact us, book a demo, subscribe to our newsletter or apply for a role, we collect the details you provide, such as your name, company, email address, phone number and message.",
-          "We also collect standard technical information when you visit this website, including IP address, browser type, pages visited and referring URLs, through server logs and analytics tools.",
-        ],
-      },
-      {
-        heading: "How we use it",
-        paragraphs: [
-          "To respond to enquiries, prepare proposals and quotes, deliver services under a contract, send newsletter content you have asked for, and improve this website.",
-          "We do not sell personal data. We share it only with service providers who help us operate the website and our business, and where required by law.",
-        ],
-      },
-      {
-        heading: "Your rights",
-        paragraphs: [
-          "You can ask us to access, correct or delete the personal data we hold about you, or to stop sending you marketing communications, by contacting us through the Contact page.",
-        ],
-      },
-    ],
-  },
-  {
-    slug: "terms-of-use",
-    title: "Terms of Use",
-    updated: "2026-10-07",
-    intro: reviewNote,
-    sections: [
-      {
-        heading: "Use of this website",
-        paragraphs: [
-          "This website is operated by SetupZero. By using it you agree to these terms. Content is provided for general information about our technology products and services and does not form part of any contract.",
-        ],
-      },
-      {
-        heading: "No financial services",
-        paragraphs: [
-          "SetupZero is a technology provider. Nothing on this website is investment advice, a solicitation to trade, or an offer of financial services. Liquidity and financial services referred to on this website are provided by independent, licensed third parties.",
-        ],
-      },
-      {
-        heading: "Intellectual property",
-        paragraphs: [
-          "All trademarks, logos, text, design and software on this website belong to SetupZero or its licensors and may not be reproduced without written permission.",
-        ],
-      },
-    ],
-  },
-  {
-    slug: "cookie-policy",
-    title: "Cookie Policy",
-    updated: "2026-10-07",
-    intro: reviewNote,
-    sections: [
-      {
-        heading: "What cookies we use",
-        paragraphs: [
-          "Strictly necessary cookies that make the website work, and analytics cookies that help us understand how visitors use the site so we can improve it.",
-        ],
-      },
-      {
-        heading: "Managing cookies",
-        paragraphs: [
-          "You can control or delete cookies through your browser settings. Blocking some cookies may affect how parts of the website work.",
-        ],
-      },
-    ],
-  },
-  {
-    slug: "disclaimer",
-    title: "Disclaimer",
-    updated: "2026-10-07",
-    intro: reviewNote,
-    sections: [
-      {
-        heading: "Technology provider only",
-        paragraphs: [
-          "SetupZero provides technology solutions only. SetupZero is not a broker, does not provide investment advice and does not hold client funds.",
-          "Liquidity and financial services are provided by independent, licensed third parties. SetupZero does not act as a counterparty to trades.",
-        ],
-      },
-      {
-        heading: "Licensing",
-        paragraphs: [
-          "Clients are responsible for obtaining any licences required in their jurisdiction. SetupZero can introduce clients to legal partners but does not provide legal or licensing advice.",
-        ],
-      },
-    ],
-  },
-];
+const CONTACT_PHONE = "+1 (908) 228-0305";
+const CONTACT_ADDRESS =
+  "Office 9364hn, 3 Fitzroy Place, Glasgow City Centre, UK, G3 7RH";
+
+const contact = (team: string, email: string): LegalBlock => ({
+  kind: "contact",
+  team,
+  email,
+  phone: CONTACT_PHONE,
+  address: CONTACT_ADDRESS,
+});
+
+// ── Privacy Policy ────────────────────────────────────────────────
+export const privacyDoc: LegalDoc = {
+  slug: "privacy-policy",
+  title: "Privacy Policy",
+  intro:
+    "How Ezymax collects, uses, and safeguards your information when you visit our website and use our trading platform.",
+  updated: "Last updated: March 2026",
+  sections: [
+    {
+      heading: "1. Introduction",
+      blocks: [
+        {
+          kind: "text",
+          text: 'Ezymax ("we," "us," "our," or "Company") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our trading platform.',
+        },
+      ],
+    },
+    {
+      heading: "2. Information We Collect",
+      blocks: [
+        { kind: "text", text: "We collect information you provide directly, including:" },
+        {
+          kind: "list",
+          items: [
+            "Full name, email address, and phone number",
+            "Date of birth and identification documents",
+            "Address and residency information",
+            "Banking and payment information",
+            "Trading preferences and account settings",
+          ],
+        },
+        { kind: "text", text: "When you use our platform, we automatically collect:" },
+        {
+          kind: "list",
+          items: [
+            "IP address and device information",
+            "Browser type and operating system",
+            "Pages visited and time spent on pages",
+            "Trading activity and transaction history",
+            "Cookies and similar tracking technologies",
+          ],
+        },
+      ],
+    },
+    {
+      heading: "3. How We Use Your Information",
+      blocks: [
+        { kind: "text", text: "We use the information we collect for the following purposes:" },
+        {
+          kind: "list",
+          items: [
+            "To provide, maintain, and improve our trading platform",
+            "To process your deposits, withdrawals, and trades",
+            "To verify your identity and comply with KYC/AML regulations",
+            "To communicate with you about your account and services",
+            "To send promotional emails and marketing communications",
+            "To detect and prevent fraud and unauthorized access",
+            "To comply with legal obligations and regulatory requirements",
+            "To analyze platform usage and improve user experience",
+          ],
+        },
+      ],
+    },
+    {
+      heading: "4. Data Security",
+      blocks: [
+        {
+          kind: "text",
+          text: "We implement industry-standard security measures to protect your personal information, including:",
+        },
+        {
+          kind: "list",
+          items: [
+            "SSL/TLS encryption for all data in transit",
+            "AES-256 encryption for sensitive data at rest",
+            "Regular security audits and penetration testing",
+            "Segregated client funds in separate bank accounts",
+            "Multi-factor authentication for account access",
+            "Restricted access to personal information by authorized personnel only",
+          ],
+        },
+        {
+          kind: "text",
+          text: "However, no method of transmission over the Internet is 100% secure. While we strive to protect your information, we cannot guarantee absolute security.",
+        },
+      ],
+    },
+    {
+      heading: "5. Information Sharing",
+      blocks: [
+        { kind: "text", text: "We may share your information with:" },
+        {
+          kind: "list",
+          items: [
+            "Payment processors and financial institutions",
+            "Regulatory authorities and government agencies",
+            "Third-party service providers (hosting, analytics, customer support)",
+            "Legal advisors and compliance consultants",
+            "Fraud prevention and identity verification services",
+          ],
+        },
+        {
+          kind: "text",
+          text: "We do not sell your personal information to third parties for marketing purposes.",
+        },
+      ],
+    },
+    {
+      heading: "6. Your Rights",
+      blocks: [
+        { kind: "text", text: "You have the right to:" },
+        {
+          kind: "list",
+          items: [
+            "Access your personal information",
+            "Correct inaccurate or incomplete information",
+            "Request deletion of your information (subject to legal requirements)",
+            "Opt-out of marketing communications",
+            "Request a copy of your data in a portable format",
+            "Lodge a complaint with regulatory authorities",
+          ],
+        },
+      ],
+    },
+    {
+      heading: "7. Cookies and Tracking",
+      blocks: [
+        {
+          kind: "text",
+          text: "We use cookies and similar technologies to enhance your experience. You can control cookie settings through your browser preferences. Disabling cookies may affect platform functionality.",
+        },
+      ],
+    },
+    {
+      heading: "8. Data Retention",
+      blocks: [
+        {
+          kind: "text",
+          text: "We retain your personal information for as long as necessary to provide our services and comply with legal obligations. Trading records are retained for a minimum of 7 years as required by financial regulations.",
+        },
+      ],
+    },
+    {
+      heading: "9. Contact Us",
+      blocks: [
+        {
+          kind: "text",
+          text: "If you have questions about this Privacy Policy or our privacy practices, please contact us:",
+        },
+        contact("Privacy Team", "privacy@ezymex.com"),
+      ],
+    },
+  ],
+};
+
+// ── Terms of Service ──────────────────────────────────────────────
+export const termsDoc: LegalDoc = {
+  slug: "terms-of-service",
+  title: "Terms of Service",
+  intro:
+    "The agreement governing your access to and use of the Ezymax website, trading platform, and related services.",
+  updated: "Last updated: March 2026",
+  sections: [
+    {
+      heading: "1. Acceptance of Terms",
+      blocks: [
+        {
+          kind: "text",
+          text: 'By accessing or using the Ezymax website, trading platform, or any related services (collectively, the "Services"), you agree to be bound by these Terms of Service. If you do not agree to these terms, you must not use the Services.',
+        },
+      ],
+    },
+    {
+      heading: "2. Eligibility",
+      blocks: [
+        { kind: "text", text: "To open an account and use the Services, you must:" },
+        {
+          kind: "list",
+          items: [
+            "Be at least 18 years of age (or the age of majority in your jurisdiction)",
+            "Have the legal capacity to enter into a binding agreement",
+            "Not be a resident of any jurisdiction where use of the Services is prohibited",
+            "Not be subject to any sanctions or listed on any restricted-persons register",
+          ],
+        },
+      ],
+    },
+    {
+      heading: "3. Account Registration",
+      blocks: [
+        {
+          kind: "text",
+          text: "You agree to provide accurate, current, and complete information during registration and to keep it up to date. You are responsible for maintaining the confidentiality of your login credentials and for all activity that occurs under your account. Notify us immediately of any unauthorized access.",
+        },
+      ],
+    },
+    {
+      heading: "4. The Services",
+      blocks: [
+        {
+          kind: "text",
+          text: "Ezymax provides an online platform for trading foreign exchange, cryptocurrencies, and other leveraged instruments. We may add, modify, suspend, or discontinue any part of the Services at any time. We do not provide investment, tax, or legal advice; nothing on the platform constitutes a recommendation to trade.",
+        },
+      ],
+    },
+    {
+      heading: "5. Risk Acknowledgment",
+      blocks: [
+        {
+          kind: "callout",
+          title: "Trading involves substantial risk",
+          text: "Leveraged trading can result in losses that exceed your deposit. You confirm that you have read and understood our Risk Disclosure and that you trade at your own risk.",
+        },
+      ],
+    },
+    {
+      heading: "6. Deposits and Withdrawals",
+      blocks: [
+        {
+          kind: "text",
+          text: "Deposits and withdrawals are processed in accordance with our funding policies and applicable KYC/AML requirements. We may request additional verification before processing a withdrawal. Client funds are held in segregated accounts separate from company operating funds.",
+        },
+      ],
+    },
+    {
+      heading: "7. Fees and Charges",
+      blocks: [
+        { kind: "text", text: "Your use of the Services may be subject to:" },
+        {
+          kind: "list",
+          items: [
+            "Spreads and commissions on trades",
+            "Overnight financing (swap) charges on open positions",
+            "Deposit and withdrawal processing fees where applicable",
+            "Inactivity fees on dormant accounts",
+          ],
+        },
+        {
+          kind: "text",
+          text: "Applicable fees are disclosed on the platform and may be updated from time to time.",
+        },
+      ],
+    },
+    {
+      heading: "8. Prohibited Conduct",
+      blocks: [
+        { kind: "text", text: "You agree not to:" },
+        {
+          kind: "list",
+          items: [
+            "Use the Services for any unlawful purpose, including money laundering or fraud",
+            "Engage in market manipulation, arbitrage abuse, or latency exploitation",
+            "Access the Services through automated means without our written consent",
+            "Attempt to interfere with, compromise, or reverse-engineer the platform",
+            "Provide false information or open accounts on behalf of third parties",
+          ],
+        },
+      ],
+    },
+    {
+      heading: "9. Intellectual Property",
+      blocks: [
+        {
+          kind: "text",
+          text: "All content, trademarks, software, and materials on the platform are the property of Ezymax or its licensors and are protected by intellectual-property laws. You may not copy, reproduce, or distribute any part of the Services without prior written permission.",
+        },
+      ],
+    },
+    {
+      heading: "10. Limitation of Liability",
+      blocks: [
+        {
+          kind: "text",
+          text: "To the maximum extent permitted by law, Ezymax shall not be liable for any indirect, incidental, or consequential losses, including trading losses, arising from your use of the Services, technical failures, or market conditions. Our aggregate liability shall not exceed the fees you paid to us in the preceding twelve months.",
+        },
+      ],
+    },
+    {
+      heading: "11. Termination",
+      blocks: [
+        {
+          kind: "text",
+          text: "We may suspend or terminate your account at our discretion, including for breach of these Terms, suspected fraud, or regulatory requirements. You may close your account at any time, subject to the settlement of open positions and outstanding obligations.",
+        },
+      ],
+    },
+    {
+      heading: "12. Amendments and Governing Law",
+      blocks: [
+        {
+          kind: "text",
+          text: "We may amend these Terms from time to time; continued use of the Services after changes take effect constitutes acceptance. These Terms are governed by the laws of the jurisdiction in which Ezymax is established, without regard to conflict-of-law principles.",
+        },
+      ],
+    },
+    {
+      heading: "13. Contact Us",
+      blocks: [
+        {
+          kind: "text",
+          text: "For questions about these Terms of Service, please contact:",
+        },
+        contact("Legal Team", "legal@ezymex.com"),
+      ],
+    },
+  ],
+};
+
+// ── Risk Disclosure ───────────────────────────────────────────────
+export const riskDoc: LegalDoc = {
+  slug: "risk-disclosure",
+  title: "Risk Disclosure",
+  intro:
+    "Trading leveraged instruments carries a high level of risk. Please read this disclosure carefully before opening an account.",
+  updated: "Last updated: March 2026",
+  sections: [
+    {
+      heading: "Important Risk Warning",
+      blocks: [
+        {
+          kind: "callout",
+          title: "You may lose your invested capital",
+          text: "Trading foreign exchange, cryptocurrencies, and other leveraged instruments carries a high level of risk and may not be suitable for all investors. You may lose some or all of your invested capital. Past performance is not indicative of future results.",
+        },
+      ],
+    },
+    {
+      heading: "1. Leverage Risk",
+      blocks: [
+        {
+          kind: "text",
+          text: "Ezymax offers leverage up to 1:100 on certain instruments. Leverage amplifies both gains and losses. A small adverse price movement can result in substantial losses or even the complete loss of your deposit.",
+        },
+        {
+          kind: "callout",
+          title: "Example",
+          text: "With 1:100 leverage, a 1% adverse price movement results in a 100% loss of your margin.",
+        },
+      ],
+    },
+    {
+      heading: "2. Market Risk",
+      blocks: [
+        { kind: "text", text: "Financial markets are volatile and unpredictable. Prices can move rapidly due to:" },
+        {
+          kind: "list",
+          items: [
+            "Economic data releases and central bank announcements",
+            "Geopolitical events and political instability",
+            "Market sentiment shifts and investor behavior",
+            "Supply and demand imbalances",
+            "Regulatory changes and policy decisions",
+            "Cryptocurrency volatility and technological changes",
+          ],
+        },
+      ],
+    },
+    {
+      heading: "3. Liquidity Risk",
+      blocks: [
+        {
+          kind: "text",
+          text: "While major currency pairs are highly liquid, some instruments may have limited liquidity. During periods of low liquidity, you may experience:",
+        },
+        {
+          kind: "list",
+          items: [
+            "Wider bid-ask spreads",
+            "Slippage on order execution",
+            "Difficulty closing positions at desired prices",
+            "Increased trading costs",
+          ],
+        },
+      ],
+    },
+    {
+      heading: "4. Counterparty Risk",
+      blocks: [
+        {
+          kind: "text",
+          text: "Ezymax acts as the counterparty to your trades. This means your profit is our loss and your loss is our gain, which is a conflict of interest you should understand before trading. If the Company were to fail financially, your funds may be at risk.",
+        },
+      ],
+    },
+    {
+      heading: "5. Technology Risk",
+      blocks: [
+        { kind: "text", text: "Trading platforms are subject to technical failures, including:" },
+        {
+          kind: "list",
+          items: [
+            "Server outages and connectivity issues",
+            "Platform bugs and software errors",
+            "Cyber attacks and security breaches",
+            "Internet connection failures on your end",
+            "Mobile app crashes and malfunctions",
+          ],
+        },
+        {
+          kind: "text",
+          text: "While we maintain redundant systems and backups, we cannot guarantee 100% uptime. Trading during periods of technical difficulty may result in losses.",
+        },
+      ],
+    },
+    {
+      heading: "6. Cryptocurrency Risk",
+      blocks: [
+        { kind: "text", text: "Cryptocurrency trading carries additional risks:" },
+        {
+          kind: "list",
+          items: [
+            "Extreme price volatility (50%+ daily moves are possible)",
+            "Regulatory uncertainty and potential bans",
+            "Wallet and exchange security risks",
+            "Blockchain network congestion and delays",
+            "Limited historical data and price discovery",
+            "Potential for total loss of investment",
+          ],
+        },
+      ],
+    },
+    {
+      heading: "7. Operational Risk",
+      blocks: [
+        { kind: "text", text: "Risks related to our operations include:" },
+        {
+          kind: "list",
+          items: [
+            "Human error in order processing",
+            "System failures and data loss",
+            "Fraud and unauthorized access",
+            "Regulatory enforcement actions",
+            "Changes in business operations",
+          ],
+        },
+      ],
+    },
+    {
+      heading: "8. Regulatory Risk",
+      blocks: [
+        { kind: "text", text: "Financial regulations are subject to change. Changes in regulations could:" },
+        {
+          kind: "list",
+          items: [
+            "Restrict trading in certain instruments",
+            "Reduce maximum leverage available",
+            "Increase trading costs through new fees",
+            "Require account closure for certain jurisdictions",
+            "Affect platform availability in your country",
+          ],
+        },
+      ],
+    },
+    {
+      heading: "9. Negative Balance Protection",
+      blocks: [
+        {
+          kind: "text",
+          text: "While Ezymax offers negative balance protection, meaning your account cannot go below zero, this protection may not apply in all circumstances, including:",
+        },
+        {
+          kind: "list",
+          items: [
+            "Extreme market gaps and flash crashes",
+            "System failures during market volatility",
+            "Violations of our terms of service",
+          ],
+        },
+      ],
+    },
+    {
+      heading: "10. Risk Management Best Practices",
+      blocks: [
+        { kind: "text", text: "To manage trading risks:" },
+        {
+          kind: "list",
+          items: [
+            "Only trade with capital you can afford to lose",
+            "Use stop-loss orders to limit potential losses",
+            "Diversify your portfolio across multiple instruments",
+            "Avoid over-leveraging your account",
+            "Keep up with economic news and market developments",
+            "Develop and follow a trading plan",
+            "Avoid emotional decision-making",
+            "Start with a demo account to practice",
+            "Educate yourself about markets and trading",
+          ],
+        },
+      ],
+    },
+    {
+      heading: "11. Acknowledgment",
+      blocks: [
+        {
+          kind: "text",
+          text: "By opening an account with Ezymax, you acknowledge that you have read and understood this Risk Disclosure, and you accept all risks associated with trading on our platform. You confirm that you are trading at your own risk and that Ezymax is not responsible for any losses incurred.",
+        },
+      ],
+    },
+    {
+      heading: "12. Contact Information",
+      blocks: [
+        { kind: "text", text: "For questions about risk management or this disclosure, please contact:" },
+        contact("Risk Management Team", "risk@ezymex.com"),
+      ],
+    },
+  ],
+};
+
+
+export const legalDocs: LegalDoc[] = [privacyDoc, termsDoc, riskDoc];
 
 export function getLegalDoc(slug: string) {
   return legalDocs.find((d) => d.slug === slug);

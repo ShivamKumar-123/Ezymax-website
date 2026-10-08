@@ -1,19 +1,19 @@
 import type { Metadata } from "next";
+
+import { Hero } from "@/components/sections/home/Hero";
+import { HowItWorks } from "@/components/sections/home/HowItWorks";
+import { MarketsOverview } from "@/components/sections/home/MarketsOverview";
+import { PlatformGrid } from "@/components/sections/home/PlatformGrid";
+import { TrustBar } from "@/components/sections/home/TrustBar";
+import { WhyEzymax } from "@/components/sections/home/WhyEzymax";
+import { CTABand } from "@/components/sections/shared/CTABand";
 import { finalCta } from "@/content/home";
 import { site } from "@/content/site";
-import { Hero } from "@/components/sections/home/Hero";
-import { TrustBar } from "@/components/sections/home/TrustBar";
-import { SolutionsOverview } from "@/components/sections/home/SolutionsOverview";
-import { ProductsGrid } from "@/components/sections/home/ProductsGrid";
-import { HowItWorks } from "@/components/sections/home/HowItWorks";
-import { WhySetupZero } from "@/components/sections/home/WhySetupZero";
-import { Testimonials } from "@/components/sections/home/Testimonials";
-import { CTABand } from "@/components/sections/shared/CTABand";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
   openGraph: {
-    title: `${site.name} | Brokerage Technology Partner`,
+    title: `${site.name} | ${site.tagline}`,
     description: site.positioning,
     url: "/",
     siteName: site.name,
@@ -22,16 +22,21 @@ export const metadata: Metadata = {
   },
 };
 
+/**
+ * The testimonials section that used to sit between WhyEzymax and the closing
+ * CTA is gone. All three quotes were marked `placeholder: true` and rendered a
+ * visible "pending" badge; this is a pre-launch, invite-only platform with no
+ * client to quote, so the honest version of that section is no section.
+ */
 export default function HomePage() {
   return (
     <>
       <Hero />
       <TrustBar />
-      <SolutionsOverview />
-      <ProductsGrid />
+      <MarketsOverview />
+      <PlatformGrid />
       <HowItWorks />
-      <WhySetupZero />
-      <Testimonials />
+      <WhyEzymax />
       <CTABand block={finalCta} />
     </>
   );

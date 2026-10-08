@@ -1,213 +1,215 @@
-import type { CtaBlock, Feature, HeroBlock, Stat, Step, Testimonial } from "./schema";
-import { placeholders } from "./placeholders";
+import { facts } from "./facts";
+import type { CtaBlock, Feature, HeroBlock, Stat, Step } from "./schema";
+
+/**
+ * Home page copy.
+ *
+ * Two sections changed meaning rather than wording, and both for the same
+ * reason — the originals were placeholders that could not be honestly filled:
+ *
+ *  - `trustBar` held four invented counts (brokerages launched, active
+ *    traders, uptime, countries). It now carries the platform's published
+ *    rules, every one of them read from server config. See facts.ts.
+ *  - `testimonials` is gone. All three entries were marked `placeholder: true`
+ *    and rendered a visible "pending" badge; Ezymax is pre-launch and
+ *    invite-only, so there is no client to quote.
+ */
 
 export const homeHero: HeroBlock = {
-  eyebrow: "Brokerage technology partner",
-  headline: "Launch Your Brokerage From Zero. Fully Set Up.",
-  highlight: "From Zero.",
-  sub: "White-label trading platforms, Forex CRM, prop firm technology and liquidity connectivity, all from one technology partner. Go live in weeks, not months.",
+  eyebrow: "Invite-only CFD trading",
+  /** `Hero.tsx` renders these two lines around the typewriter. */
+  headline: "Trade CFDs on",
+  highlight: "",
+  sub: "Forex, indices, commodities and crypto, with every cost itemised on the ticket before you confirm and the same published margin rules for every account.",
   ctas: [
-    { label: "Book a Free Demo", action: "demo" },
-    { label: "Explore Solutions", href: "/solutions", variant: "outline" },
+    { label: "Join Waitlist", action: "waitlist" },
+    { label: "How it works", href: "#how-it-works", variant: "outline" },
   ],
-  badges: ["CFD White Label", "Prop Firm Tech", "Forex & Options", "Crypto", "24/7 Support"],
+  badges: [...facts.markets, "Invite only"],
 };
 
-/** "From Zero." typed in the languages of the markets SetupZero serves. */
-export const heroTypewriter = [
-  "From Zero.",
-  "من الصفر.",
-  "शून्य से.",
-  "从零开始。",
-  "Desde Cero.",
-  "С Нуля.",
-  "Do Zero.",
-  "Sıfırdan.",
-];
+/**
+ * The hero typewriter cycles the markets, in English.
+ *
+ * It used to cycle "From Zero." through Arabic, Hindi, Chinese, Spanish,
+ * Russian, Portuguese and Turkish. On an unlicensed, un-geoblocked CFD site
+ * that reads as active solicitation into jurisdictions this platform's own
+ * terms exclude from onboarding, which is a different thing from a nice
+ * animation.
+ */
+export const heroTypewriter = ["Forex.", "Indices.", "Commodities.", "Crypto."];
 
+/** The closing line of the hero headline, after the typewriter. */
+export const heroHeadlineTail = "Invite only.";
+
+/**
+ * The two glass cards floating over the hero scene. They used to read "25+
+ * brokerages launched" and "99.9% uptime target", neither of which anything
+ * measured. Published platform rules are the only honest thing to put here.
+ */
 export const heroFloatingStats: Stat[] = [
-  { value: placeholders.brokeragesLaunched, label: "Brokerages launched" },
-  { value: placeholders.uptimeTarget, label: "Platform uptime target" },
+  { value: facts.defaultLeverage, label: "Default leverage" },
+  { value: facts.stopOutLevel, label: "Stop-out level" },
 ];
 
 export const trustBar = {
-  line: `Trusted by brokers, prop firms and fintechs across ${placeholders.countries} countries.`,
+  line: "Margin call, stop-out and position limits are published and identical for every account — not negotiated per client.",
   stats: [
-    { value: placeholders.brokeragesLaunched, label: "Brokerages launched" },
-    { value: placeholders.activeTraders, label: "Active traders on our technology" },
-    { value: placeholders.uptimeTarget, label: "Platform uptime target" },
-    { value: "24/7", label: "Multilingual technical support" },
+    { value: facts.defaultLeverage, label: "Default leverage" },
+    { value: facts.marginCallLevel, label: "Margin call level" },
+    { value: facts.stopOutLevel, label: "Stop-out level" },
+    { value: facts.maxOpenPositions, label: "Max open positions" },
   ] as Stat[],
 };
 
-export const solutionsOverview = {
-  eyebrow: "Solutions",
-  heading: "One Partner. Every Brokerage Model.",
-  highlight: "Every Brokerage Model.",
+export const marketsOverview = {
+  eyebrow: "Markets",
+  heading: "Trade the Markets You Already Watch",
+  highlight: "You Already Watch",
   intro:
-    "Whether you are starting a new brokerage or upgrading an existing one, SetupZero gives you the technology to launch and scale on your own terms.",
+    "Forex, indices, commodities and crypto, all as CFDs from one account balance. Every instrument settles the same way and shows its costs the same way.",
 };
 
-export const productsSection = {
-  eyebrow: "Products",
-  heading: "Everything You Need to Run a Brokerage",
-  highlight: "Run a Brokerage",
-  button: { label: "View All Products", href: "/products" },
+export const platformSection = {
+  eyebrow: "Platform",
+  heading: "Everything the Account Does",
+  highlight: "the Account Does",
+  intro:
+    "One account, whether you trade in the browser or through MetaTrader 5 — plus the things built around it: copy trading, funded accounts, optional loss cover, staking and the partner programme.",
+  button: { label: "View the platform", href: "/platform" },
   items: [
     {
-      title: "Trading Platform",
-      body: "Web, desktop and mobile trading with advanced charts and one-click execution.",
+      title: "Web platform",
+      body: "Charting, order tickets and your balance on one screen, nothing to install.",
+      href: "/platform/web-platform",
       icon: "monitor",
-      href: "/products/trading-platform",
     },
     {
-      title: "Forex CRM",
-      body: "Manage leads, clients, KYC, deposits and sales teams in one dashboard.",
+      title: "MetaTrader 5",
+      body: "Connect MT5 and keep your indicators, templates and expert advisors.",
+      href: "/platform/mt5",
+      icon: "chart",
+    },
+    {
+      title: "Copy trading",
+      body: "Copy at your own size, with a drawdown cap that stops it automatically.",
+      href: "/platform/copy-trading",
       icon: "users",
-      href: "/products/forex-crm",
     },
     {
-      title: "Trader's Room",
-      body: "A branded client portal for onboarding, funding, withdrawals and account management.",
-      icon: "door",
-      href: "/products/traders-room",
+      title: "Funded accounts",
+      body: "A rules-based evaluation, then published limits and a published split.",
+      href: "/platform/funded-accounts",
+      icon: "trophy",
     },
     {
-      title: "Liquidity Bridge",
-      body: "Connect your platform to multiple liquidity providers with smart order routing.",
-      icon: "network",
-      href: "/products/liquidity-bridge",
-    },
-    {
-      title: "Risk Management",
-      body: "Real-time exposure monitoring, A/B book tools and automated alerts.",
+      title: "Shield cover",
+      body: "Optional cover for a share of your losses across a day, week or month.",
+      href: "/platform/shield-cover",
       icon: "shield",
-      href: "/products/risk-management",
     },
     {
-      title: "Copy Trading, PAMM & MAM",
-      body: "Let clients follow strategies and let money managers trade at scale.",
-      icon: "repeat",
-      href: "/products/copy-trading-pamm-mam",
+      title: "Risk tools",
+      body: "Cost previews, attachable exits, margin alerts and copy drawdown caps.",
+      href: "/platform/risk-tools",
+      icon: "gauge",
     },
     {
-      title: "IB & Affiliate Module",
-      body: "Multi-level commissions, rebates and partner reporting.",
-      icon: "handshake",
-      href: "/products/ib-affiliate-module",
+      title: "Staking",
+      body: "Put an unallocated balance to work at a rate shown before you commit.",
+      href: "/platform/staking",
+      icon: "database",
     },
     {
-      title: "Payment Integrations",
-      body: "Cards, bank transfers, local methods and crypto payments.",
-      icon: "creditcard",
-      href: "/products/payment-integrations",
-    },
-  ] as (Feature & { href: string })[],
-};
-
-export const howItWorks = {
-  eyebrow: "How it works",
-  heading: "From Idea to Live Brokerage in 4 Steps",
-  highlight: "4 Steps",
-  steps: [
-    {
-      step: "01",
-      title: "Consultation",
-      body: "We understand your business model, target markets and budget.",
-    },
-    {
-      step: "02",
-      title: "Setup & Branding",
-      body: "We configure the platform, CRM and client portal with your brand.",
-    },
-    {
-      step: "03",
-      title: "Integration & Testing",
-      body: "We connect liquidity, payments and KYC, then test everything end to end.",
-    },
-    {
-      step: "04",
-      title: "Go Live & Grow",
-      body: "You launch, and our team supports you 24/7 as you scale.",
-    },
-  ] as Step[],
-};
-
-export const whySetupZero = {
-  eyebrow: "Why SetupZero",
-  heading: "Why Brokers Choose SetupZero",
-  highlight: "Choose SetupZero",
-  items: [
-    {
-      title: "Faster launch",
-      body: "Ready-made modules cut setup time from months to weeks.",
-      icon: "rocket",
-    },
-    {
-      title: "One vendor, full stack",
-      body: "Platform, CRM, risk, liquidity connectivity and payments under one contract.",
-      icon: "layers",
-    },
-    {
-      title: "Fully customisable",
-      body: "Your brand, your rules, your workflows.",
-      icon: "paintbrush",
-    },
-    {
-      title: "Transparent pricing",
-      body: "Clear packages with no hidden fees.",
-      icon: "percent",
-    },
-    {
-      title: "Scalable infrastructure",
-      body: "Built to handle growth from your first hundred clients to hundreds of thousands.",
-      icon: "server",
-    },
-    {
-      title: "Real human support",
-      body: "A dedicated account manager and 24/7 technical team.",
-      icon: "headphones",
+      title: "XP and rewards",
+      body: "Terms that improve with how you trade, not with how much you deposit.",
+      href: "/platform/rewards",
+      icon: "award",
     },
   ] as Feature[],
 };
 
-export const testimonials = {
-  eyebrow: "Testimonials",
-  heading: "What Our Clients Say",
-  highlight: "Our Clients",
+export const howItWorks = {
+  eyebrow: "How it works",
+  heading: "From Request to First Trade in 5 Steps",
+  highlight: "5 Steps",
+  sub: "Access is reviewed rather than instant, so the first step is an application, not a deposit.",
+  steps: [
+    {
+      step: "01",
+      title: "Request access",
+      body: "Join the waitlist with your name, email and phone. We email you when a place opens.",
+    },
+    {
+      step: "02",
+      title: "Verify your identity",
+      body: "Standard KYC. Identity and address documents, reviewed before the account is funded.",
+    },
+    {
+      step: "03",
+      title: "Fund the account",
+      body: "Deposit to your account balance. The amount available to trade is shown immediately.",
+    },
+    {
+      step: "04",
+      title: "Trade",
+      body: `Open positions with the full cost on the ticket. Margin call at ${facts.marginCallLevel}, stop-out at ${facts.stopOutLevel}.`,
+    },
+    {
+      step: "05",
+      title: "Withdraw",
+      body: "Request a withdrawal of your free balance. Withdrawals are reviewed before they are released.",
+    },
+  ] as Step[],
+};
+
+export const whyEzymax = {
+  eyebrow: "Why Ezymax",
+  heading: "Why Traders Choose Ezymax",
+  highlight: "Choose Ezymax",
   items: [
     {
-      quote:
-        "Client quote pending approval. This slot is reserved for a real testimonial once the client has signed off.",
-      name: "Client name",
-      role: "Role",
-      company: "Company",
-      placeholder: true,
+      title: "Access is reviewed",
+      body: "Invite-only, by application. A smaller book of traders who were actually screened.",
+      icon: "lock",
     },
     {
-      quote:
-        "Client quote pending approval. This slot is reserved for a real testimonial once the client has signed off.",
-      name: "Client name",
-      role: "Role",
-      company: "Company",
-      placeholder: true,
+      title: "Costs before you confirm",
+      body: "Spread, swap, commission and margin are itemised on the ticket, not published in a document you have to go and find.",
+      icon: "percent",
     },
     {
-      quote:
-        "Client quote pending approval. This slot is reserved for a real testimonial once the client has signed off.",
-      name: "Client name",
-      role: "Role",
-      company: "Company",
-      placeholder: true,
+      title: "Risk levels are published",
+      body: `Margin call at ${facts.marginCallLevel} and stop-out at ${facts.stopOutLevel}, the same for every account. No per-client arrangements.`,
+      icon: "gauge",
     },
-  ] as Testimonial[],
+    {
+      title: "Loss cover you can buy",
+      body: "Shield covers a share of what you lose over a day, a week or a month, up to a stated cap, for a premium shown upfront.",
+      icon: "shield",
+    },
+    {
+      title: "Terms you earn",
+      body: "Spreads, swaps and commission improve with XP, which comes from consistency and risk control. Deposit size is not an input.",
+      icon: "award",
+    },
+    {
+      title: "Copy with a hard cap",
+      body: "Set a maximum drawdown per trader you copy; copying stops by itself when it is reached.",
+      icon: "users",
+    },
+  ] as Feature[],
 };
 
 export const finalCta: CtaBlock = {
-  heading: "Ready to Build Your Brokerage?",
-  sub: "Talk to our team and get a tailored setup plan and quote within 24 hours.",
+  heading: "Trade CFDs on an invite-only platform",
+  sub: "Access is reviewed. Join the waitlist and we will email you when a place opens.",
   ctas: [
-    { label: "Book a Free Demo", action: "demo" },
-    { label: "Talk to Sales", href: "/contact", variant: "outline" },
+    { label: "Join Waitlist", action: "waitlist" },
+    {
+      label: "Read the risk disclosure",
+      href: "/legal/risk-disclosure",
+      variant: "outline",
+    },
   ],
 };

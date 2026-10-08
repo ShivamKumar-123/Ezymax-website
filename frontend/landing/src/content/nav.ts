@@ -1,5 +1,5 @@
-import { solutions } from "./solutions";
-import { products } from "./products";
+import { markets } from "./markets";
+import { platformProducts } from "./platform";
 
 export type NavLink = {
   label: string;
@@ -15,64 +15,90 @@ export type NavGroup = {
 };
 
 export const companyLinks: NavLink[] = [
-  { label: "About", href: "/about", blurb: "Who we are and why we started SetupZero.", icon: "building" },
-  { label: "Careers", href: "/careers", blurb: "Join a fast-growing fintech team.", icon: "briefcase" },
-  { label: "Partners", href: "/partners", blurb: "Referral, technology and reseller programs.", icon: "handshake" },
-  { label: "Blog", href: "/blog", blurb: "Insights for brokers and prop firms.", icon: "filetext" },
-  { label: "FAQ", href: "/faq", blurb: "Answers to the questions we hear most.", icon: "message" },
-  { label: "Contact", href: "/contact", blurb: "Talk to sales or support.", icon: "mail" },
+  {
+    label: "About",
+    href: "/about",
+    blurb: "What Ezymax is and how it works.",
+    icon: "building",
+  },
+  {
+    label: "Partners",
+    href: "/partners",
+    blurb: "Earn rebates on traders you introduce.",
+    icon: "handshake",
+  },
+  {
+    label: "FAQ",
+    href: "/faq",
+    blurb: "Access, margin, cover and withdrawals.",
+    icon: "message",
+  },
+  {
+    label: "Contact",
+    href: "/contact",
+    blurb: "Reach support.",
+    icon: "mail",
+  },
 ];
 
+/**
+ * Six slots, same shape as the design was built for. The axis changed: a
+ * vendor's Solutions / Products / Liquidity / Pricing / Services became a
+ * trader's Markets / Platform / Protection / Earn.
+ *
+ * Pricing is deliberately absent. Ezymax publishes no retail spread or
+ * commission schedule anywhere in the backend, so a pricing page could only
+ * be filled with invented numbers. The one real price list it has — the
+ * Shield plans — lives on /protection.
+ */
 export const mainNav: NavGroup[] = [
   {
-    label: "Solutions",
-    href: "/solutions",
-    links: solutions.map((s) => ({
-      label: s.nav.label,
-      href: `/solutions/${s.slug}`,
-      blurb: s.nav.blurb,
-      icon: s.nav.icon,
+    label: "Markets",
+    href: "/markets",
+    links: markets.map((m) => ({
+      label: m.nav.label,
+      href: `/markets/${m.slug}`,
+      blurb: m.nav.blurb,
+      icon: m.nav.icon,
     })),
   },
   {
-    label: "Products",
-    href: "/products",
-    links: products.map((p) => ({
+    label: "Platform",
+    href: "/platform",
+    links: platformProducts.map((p) => ({
       label: p.nav.label,
-      href: `/products/${p.slug}`,
+      href: `/platform/${p.slug}`,
       blurb: p.nav.blurb,
       icon: p.nav.icon,
     })),
   },
-  { label: "Liquidity", href: "/liquidity", links: [] },
-  { label: "Pricing", href: "/pricing", links: [] },
-  { label: "Services", href: "/services", links: [] },
+  { label: "Protection", href: "/protection", links: [] },
+  { label: "Earn", href: "/earn", links: [] },
   { label: "Company", links: companyLinks },
 ];
 
 export const footerColumns: { heading: string; links: NavLink[] }[] = [
   {
-    heading: "Solutions",
-    links: solutions.map((s) => ({ label: s.nav.label, href: `/solutions/${s.slug}` })),
+    heading: "Markets",
+    links: markets.map((m) => ({
+      label: m.nav.label,
+      href: `/markets/${m.slug}`,
+    })),
   },
   {
-    heading: "Products",
-    links: products
-      .filter((p) => p.slug !== "payment-integrations")
-      .map((p) => ({
-        label: p.slug === "ib-affiliate-module" ? "IB Module" : p.nav.label,
-        href: `/products/${p.slug}`,
-      })),
+    heading: "Platform",
+    links: platformProducts.map((p) => ({
+      label: p.nav.label,
+      href: `/platform/${p.slug}`,
+    })),
   },
   {
     heading: "Company",
     links: [
-      { label: "About Us", href: "/about" },
-      { label: "Pricing", href: "/pricing" },
-      { label: "Support & Services", href: "/services" },
+      { label: "About", href: "/about" },
+      { label: "Protection", href: "/protection" },
+      { label: "Earn", href: "/earn" },
       { label: "Partners", href: "/partners" },
-      { label: "Careers", href: "/careers" },
-      { label: "Blog", href: "/blog" },
       { label: "FAQ", href: "/faq" },
       { label: "Contact", href: "/contact" },
     ],
@@ -81,7 +107,6 @@ export const footerColumns: { heading: string; links: NavLink[] }[] = [
 
 export const legalLinks: NavLink[] = [
   { label: "Privacy Policy", href: "/legal/privacy-policy" },
-  { label: "Terms of Use", href: "/legal/terms-of-use" },
-  { label: "Cookie Policy", href: "/legal/cookie-policy" },
-  { label: "Disclaimer", href: "/legal/disclaimer" },
+  { label: "Terms of Service", href: "/legal/terms-of-service" },
+  { label: "Risk Disclosure", href: "/legal/risk-disclosure" },
 ];

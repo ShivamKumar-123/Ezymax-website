@@ -1,56 +1,66 @@
+import { facts } from "./facts";
 import type { FaqItem } from "./schema";
-import { placeholders } from "./placeholders";
 
 export const faqPage = {
   eyebrow: "FAQ",
   headline: "Frequently Asked Questions",
   highlight: "Questions",
-  sub: "Straight answers about what SetupZero does, how long launches take and what you get after go-live.",
+  sub: "Access, costs, margin, cover and withdrawals — including the parts most platforms leave out.",
 };
 
+/**
+ * Every answer here is checkable against the platform or says plainly that
+ * something is not the case. The set this replaced answered questions about
+ * launch timelines and support SLAs for a software vendor, with timings drawn
+ * from a placeholders file.
+ */
 export const faqs: FaqItem[] = [
   {
-    q: "What does SetupZero do?",
-    a: "We provide the technology to launch and run a brokerage or prop firm: trading platform, CRM, client portal, liquidity connectivity, risk tools, payments and 24/7 support.",
+    q: "What is Ezymax?",
+    a: "A CFD trading platform covering forex, indices, commodities and crypto. You can trade in the browser or through MetaTrader 5, copy other traders, buy optional loss cover, stake an unallocated balance, and earn rebates by introducing traders.",
   },
   {
-    q: "How long does it take to launch?",
-    a: `A standard white-label setup can go live in about ${placeholders.launchTimelineWeeks} weeks. Custom projects depend on scope.`,
+    q: "Why can't I just sign up?",
+    a: "Access is by invitation. Join the waitlist with your name and email and we will contact you when a place opens. There is no deposit or payment involved in applying.",
   },
   {
-    q: "Do I need a licence to start a brokerage?",
-    a: "In most jurisdictions, yes. Licensing rules differ by country. We are a technology provider, not a licensing firm, but we can introduce you to trusted legal partners.",
+    q: "Is Ezymax regulated?",
+    a: "No. Ezymax does not hold a licence from any financial regulator. That means the protections that come with a regulated broker — statutory compensation schemes, an ombudsman, regulated client-money rules — do not apply here. Read the risk disclosure before you deposit anything.",
   },
   {
-    q: "Can I use my own brand?",
-    a: "Yes. Platform, client portal, mobile apps and emails all carry your brand, logo and colours.",
+    q: "Who is on the other side of my trade?",
+    a: "Ezymax is. Orders are executed against the platform rather than passed to an external market, so your profit is the platform's loss and the reverse. That is a conflict of interest and you should factor it into how much you trade and with whom.",
   },
   {
-    q: "Can I switch from my current provider?",
-    a: "Yes. Our migration team moves your clients, accounts and history with minimal downtime.",
+    q: "What leverage is available?",
+    a: `The default is ${facts.defaultLeverage}, set per position. Leverage multiplies losses exactly as it multiplies gains — at ${facts.defaultLeverage}, a 1% move against you costs 100% of the margin behind that position.`,
   },
   {
-    q: "Do you provide liquidity?",
-    a: "We connect you to third-party liquidity providers through our bridge technology. Liquidity is supplied by those licensed providers.",
+    q: "What happens if a position moves against me?",
+    a: `You get a margin call at ${facts.marginCallLevel} margin level, and positions begin closing automatically at ${facts.stopOutLevel}. These levels are published and identical for every account. They are a backstop, not a guarantee — a fast market can gap through them.`,
   },
   {
-    q: "Can I buy only one product, like the CRM or prop firm module?",
-    a: "Yes. Every module is available standalone and can integrate with your existing systems.",
+    q: "How many positions can I hold?",
+    a: `Up to ${facts.maxOpenPositions} open positions per account.`,
   },
   {
-    q: "What payment methods can I offer clients?",
-    a: "Cards, bank wires, local payment methods, e-wallets and crypto, depending on your jurisdiction and payment partners.",
+    q: "What does it cost to trade?",
+    a: "Spread, swap and commission, all itemised on the order ticket before you confirm, along with the margin the position will use. There is no separate schedule to reconcile against.",
   },
   {
-    q: "Is my data secure?",
-    a: "We use encrypted connections, role-based access, regular backups and monitored servers.",
+    q: "What is Shield and does it mean I can't lose?",
+    a: "Shield is optional cover you buy for a day, a week or a month. It refunds a share of your losses over that window — 20% to 50% depending on the plan — up to a maximum payout between $200 and $15,000. It reduces part of a loss. It does not remove risk, and losses above the cap are entirely yours.",
   },
   {
-    q: "What support do you offer after launch?",
-    a: "24/7 technical support, with a dedicated account manager on higher packages.",
+    q: "How do deposits and withdrawals work?",
+    a: "Deposits credit your account balance. Withdrawals are requested from your free balance and are reviewed before release, which can include additional identity verification. Timings depend on the method and the review.",
   },
   {
-    q: "How much does it cost?",
-    a: "See our Pricing page or contact us for a custom quote.",
+    q: "Does copying a trader make it safer?",
+    a: "No. Copying moves the decision, not the risk. Set an allocation and a maximum drawdown per trader you copy — copying stops automatically when the cap is hit — and treat a published track record as history, not a forecast.",
+  },
+  {
+    q: "How do I improve my terms?",
+    a: "XP, which rises with consistent trading, controlled risk and completed education. Tighter spreads, lower commission, reduced swaps, higher Shield tiers and better staking rates follow it. Deposit size is not an input.",
   },
 ];

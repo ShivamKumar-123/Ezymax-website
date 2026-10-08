@@ -2,8 +2,7 @@ import { Inter, Manrope, Silkscreen, Space_Mono } from "next/font/google";
 
 import "./globals.css";
 
-import { DemoModal } from "@/components/forms/DemoModal";
-import { DemoProvider } from "@/components/forms/demo-context";
+import { WaitlistModal } from "@/components/forms/WaitlistModal";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { Preloader } from "@/components/layout/Preloader";
@@ -67,18 +66,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             __html: JSON.stringify(getSiteStructuredData()),
           }}
         />
-        <DemoProvider>
-          <Preloader />
-          <Header />
-          {/* z-[1] puts the page above the body's ambient gradients; the
-              hero's absolutely-positioned glows rely on this stacking
-              context, and the footer needs the same one to sit above them. */}
-          <main className="relative z-[1] flex-1">{children}</main>
-          <div className="relative z-[1]">
-            <Footer />
-          </div>
-          <DemoModal />
-        </DemoProvider>
+        <Preloader />
+        <Header />
+        {/* z-[1] puts the page above the body's ambient gradients; the hero's
+            absolutely-positioned glows rely on this stacking context, and the
+            footer needs the same one to sit above them. */}
+        <main className="relative z-[1] flex-1">{children}</main>
+        <div className="relative z-[1]">
+          <Footer />
+        </div>
+        <WaitlistModal />
       </body>
     </html>
   );

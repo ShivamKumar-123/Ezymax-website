@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import { cn } from "@/lib/cn";
-import { useDemo } from "@/components/forms/demo-context";
+import { useWaitlist } from "@/lib/waitlist-store";
 import type { ButtonVariant, Cta } from "@/content/schema";
 
 const variantClasses: Record<ButtonVariant, string> = {
@@ -33,12 +33,12 @@ type BaseProps = {
 type ButtonProps = BaseProps &
   (
     | { href: string; action?: never; onClick?: never; type?: never; disabled?: never }
-    | { action: "demo"; href?: never; onClick?: never; type?: never; disabled?: never }
+    | { action: "waitlist"; href?: never; onClick?: never; type?: never; disabled?: never }
     | ({ href?: never; action?: never } & Omit<ComponentPropsWithoutRef<"button">, "className" | "children">)
   );
 
 export function Button({ variant = "primary", size = "md", icon, className, children, ...rest }: ButtonProps) {
-  const demo = useDemo();
+  const openWaitlist = useWaitlist((s) => s.setOpen);
   const classes = cn(
     "inline-flex items-center justify-center gap-2 rounded-full font-medium whitespace-nowrap transition-all duration-300 ease-out-expo",
     variantClasses[variant],
@@ -52,9 +52,9 @@ export function Button({ variant = "primary", size = "md", icon, className, chil
     </>
   );
 
-  if ("action" in rest && rest.action === "demo") {
+  if ("action" in rest && rest.action === "waitlist") {
     return (
-      <button type="button" className={classes} onClick={() => demo.open(String(children))}>
+      <button type="button" className={classes} onClick={() => openWaitlist(true)}>
         {content}
       </button>
     );
@@ -87,9 +87,9 @@ export function CtaButton({
   icon?: boolean;
 }) {
   const variant = cta.variant ?? "primary";
-  if (cta.action === "demo") {
+  if (cta.action === "waitlist") {
     return (
-      <Button action="demo" variant={variant} size={size} className={className} icon={icon}>
+      <Button action="waitlist" variant={variant} size={size} className={className} icon={icon}>
         {cta.label}
       </Button>
     );

@@ -1,54 +1,77 @@
-import type { Feature, Stat } from "./schema";
-import { placeholders } from "./placeholders";
+import { facts } from "./facts";
+import type { CtaBlock, Feature } from "./schema";
 
+/**
+ * /about.
+ *
+ * Three things the template had here are gone rather than rewritten, because
+ * there was nothing true to put in them:
+ *
+ *  - A founding story and "numbers" (projects delivered, years in business,
+ *    team size). Every figure came from a placeholders file marked "TODO:
+ *    confirm before launch".
+ *  - A team section whose own note read "Photos, names and roles ... will be
+ *    added here", above four anonymous entries.
+ *  - A Dubai headquarters.
+ *
+ * What is left describes how the platform works, which is the part that can
+ * be checked against the code.
+ */
 export const aboutPage = {
-  eyebrow: "About SetupZero",
-  headline: "We Build the Technology. You Build the Brokerage.",
-  highlight: "You Build the Brokerage.",
-  sub: "SetupZero brings platform, CRM, risk, liquidity connectivity and support under one roof, so founders can focus on clients and growth.",
-  storyHeading: "Our story",
+  eyebrow: "About Ezymax",
+  headline: "A Trading Platform That Publishes Its Rules",
+  highlight: "Publishes Its Rules",
+  sub: "Ezymax is an invite-only CFD platform covering forex, indices, commodities and crypto. The margin rules, the costs and the conflicts are stated upfront rather than discovered later.",
+
+  storyHeading: "What Ezymax is",
   story: [
-    `SetupZero was founded by a team with 5 years of hands-on experience in brokerage technology, trading infrastructure and fintech support. Before SetupZero, our team delivered platform setups, CRM integrations and technical support to brokers across ${placeholders.regionsBefore} under the SetupFX brand.`,
-    "We saw the same problem again and again: launching a brokerage meant juggling five or six vendors, long timelines and costs that kept growing. SetupZero brings everything under one roof, so founders can focus on clients and growth instead of technology headaches.",
-    "Headquartered in Dubai, we serve brokers, prop firms and fintech companies across the Middle East, Asia, Africa, Europe and Latin America.",
+    "Ezymax is a CFD trading platform. You deposit, you trade forex, indices, commodities and crypto on leverage, and you withdraw. There is a copy-trading system, an optional loss-cover product, staking for an unallocated balance, and a partner programme that pays on introduced traders' activity.",
+    "Access is by application rather than instant sign-up. That is a deliberate constraint, not a growth tactic: a smaller book of traders who were actually screened is easier to run honestly than a large one that was not.",
   ],
+
   mission: {
-    heading: "Mission",
-    body: "To make launching and running a brokerage simple, fast and affordable for every ambitious founder.",
+    heading: "What we publish",
+    body: `Margin call at ${facts.marginCallLevel}, stop-out at ${facts.stopOutLevel}, default leverage ${facts.defaultLeverage}, up to ${facts.maxOpenPositions} open positions. The same numbers for every account, with no per-client arrangements.`,
   },
   vision: {
-    heading: "Vision",
-    body: "To become the most trusted end-to-end technology partner for the global trading industry.",
+    heading: "What we are not",
+    body: "Ezymax is not licensed or regulated by any financial authority, and holds no investment licence. It is the counterparty to your trades, which is a conflict of interest. Both facts are in the risk disclosure, and neither is buried.",
   },
-  valuesHeading: "Our values",
+
+  valuesHeading: "How we work",
   values: [
-    { title: "Client first", body: "Your success is how we measure ours.", icon: "heart" },
-    { title: "Transparency", body: "Clear pricing, clear timelines, clear communication.", icon: "eye" },
-    { title: "Reliability", body: "Stable systems and support that answers when you need it.", icon: "shield" },
-    { title: "Innovation", body: "We keep improving our products as the market changes.", icon: "lightbulb" },
-    { title: "Ownership", body: "We treat every client project as our own.", icon: "target" },
+    {
+      title: "Costs before the trade",
+      body: "Spread, swap, commission and margin on the ticket, before you confirm — not in a schedule you have to go and find.",
+      icon: "percent",
+    },
+    {
+      title: "One set of rules",
+      body: "Published margin and stop-out levels, identical for every account.",
+      icon: "scale",
+    },
+    {
+      title: "Terms you earn",
+      body: "Better spreads come from consistency and risk control, not from deposit size.",
+      icon: "award",
+    },
+    {
+      title: "Conflicts stated",
+      body: "We are the counterparty. That is written down rather than implied away.",
+      icon: "eye",
+    },
   ] as Feature[],
-  numbersHeading: "Numbers",
-  numbers: [
-    { value: placeholders.experienceYears, label: "Years of industry experience" },
-    { value: placeholders.projectsDelivered, label: "Projects delivered" },
-    { value: placeholders.teamMembers, label: "Team members" },
-    { value: placeholders.countries, label: "Countries with clients" },
-  ] as Stat[],
-  teamHeading: "The People Behind SetupZero",
-  teamNote: "Photos, names and roles for founders and key leaders will be added here.",
-  team: [
-    { name: "Founder", role: "Chief Executive Officer" },
-    { name: "Co-founder", role: "Chief Technology Officer" },
-    { name: "Leader", role: "Head of Client Success" },
-    { name: "Leader", role: "Head of Trading Infrastructure" },
-  ],
+
   cta: {
-    heading: "Want to work with us?",
-    sub: "Book a demo or explore careers.",
+    heading: "Request access to Ezymax",
+    sub: "Access is reviewed. Join the waitlist and we will email you when a place opens.",
     ctas: [
-      { label: "Book a Free Demo", action: "demo" as const },
-      { label: "Explore Careers", href: "/careers", variant: "outline" as const },
+      { label: "Join Waitlist", action: "waitlist" },
+      {
+        label: "Read the risk disclosure",
+        href: "/legal/risk-disclosure",
+        variant: "outline",
+      },
     ],
-  },
+  } as CtaBlock,
 };

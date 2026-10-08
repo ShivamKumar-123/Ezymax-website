@@ -17,8 +17,10 @@ export function TrustBar() {
                 </span>
                 <div>
                   <p className="font-display text-2xl font-medium leading-snug text-ink md:text-3xl">
-                    We&apos;re a results-driven technology partner{" "}
-                    <span className="text-muted">for brokers, prop firms and fintechs.</span>
+                    The rules are the same for everyone{" "}
+                    <span className="text-muted">
+                      — published, not negotiated per client.
+                    </span>
                   </p>
                   <p className="mt-3 text-sm text-muted">{trustBar.line}</p>
                 </div>

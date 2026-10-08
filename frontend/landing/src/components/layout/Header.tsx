@@ -64,7 +64,7 @@ export function Header() {
         }}
       >
         <div className="container-x flex h-[72px] items-center justify-between gap-4">
-          <Link href="/" className="relative z-10 flex items-center text-ink" aria-label="SetupZero home">
+          <Link href="/" className="relative z-10 flex items-center text-ink" aria-label="Ezymax home">
             <Logo className="h-[22px] md:h-6" />
           </Link>
 
@@ -129,8 +129,8 @@ export function Header() {
           </nav>
 
           <div className="relative z-10 flex items-center gap-3">
-            <Button action="demo" size="sm" className="hidden sm:inline-flex">
-              Book a Free Demo
+            <Button action="waitlist" size="sm" className="hidden sm:inline-flex">
+              Join Waitlist
             </Button>
             <button
               type="button"
@@ -199,7 +199,7 @@ export function Header() {
                         href={open.href ?? "/about"}
                         className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-orange-300 hover:text-orange-200"
                       >
-                        {open.href ? `View all ${open.label.toLowerCase()}` : "About SetupZero"}
+                        {open.href ? `View all ${open.label.toLowerCase()}` : "About Ezymax"}
                         <ArrowUpRight className="size-4" />
                       </Link>
                     </div>
@@ -226,11 +226,11 @@ export function Header() {
                 <MobileGroup key={group.label} group={group} pathname={pathname} />
               ))}
               <div className="mt-6 flex flex-col gap-3">
-                <Button action="demo" size="lg">
-                  Book a Free Demo
+                <Button action="waitlist" size="lg">
+                  Join Waitlist
                 </Button>
                 <Button href="/contact" variant="outline" size="lg">
-                  Talk to Sales
+                  Contact support
                 </Button>
               </div>
             </div>

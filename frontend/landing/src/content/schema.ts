@@ -9,8 +9,12 @@ export type Cta = {
   label: string;
   /** Link target. Omit when `action` is set. */
   href?: string;
-  /** "demo" opens the Book a Free Demo modal. */
-  action?: "demo";
+  /**
+   * "waitlist" opens the access form. The site is invite-only, so this is the
+   * primary conversion everywhere — it replaced a "demo" action that opened a
+   * sales enquiry form, which is a different product's funnel.
+   */
+  action?: "waitlist";
   variant?: ButtonVariant;
 };
 
@@ -18,6 +22,8 @@ export type Feature = {
   title: string;
   body?: string;
   icon?: IconName;
+  /** Set when the feature tile should link somewhere. */
+  href?: string;
 };
 
 export type Stat = {
@@ -63,10 +69,11 @@ export type NavItem = {
   icon: IconName;
 };
 
-export type SolutionPage = {
+/** One tradable asset class: /markets/[slug]. */
+export type MarketPage = {
   slug: string;
   nav: NavItem;
-  /** Short card copy used on the home page and the solutions index. */
+  /** Short card copy used on the home page and the markets index. */
   summary: string;
   hero: HeroBlock;
   featuresHeading: string;
@@ -80,7 +87,8 @@ export type SolutionPage = {
   seo: Seo;
 };
 
-export type ProductPage = {
+/** One platform capability: /platform/[slug]. */
+export type PlatformPage = {
   slug: string;
   nav: NavItem;
   summary: string;
@@ -90,20 +98,18 @@ export type ProductPage = {
   seo: Seo;
 };
 
-export type PricingTierName = "Starter" | "Growth" | "Enterprise";
-
-export type PricingTier = {
-  name: PricingTierName;
-  bestFor: string;
-  setupFee: string;
-  monthlyFee: string;
-  cta: Cta;
-  highlighted?: boolean;
-};
-
-export type PricingRow = {
-  label: string;
-  values: [string | boolean, string | boolean, string | boolean];
+/**
+ * A plain data table — used for the Shield plan grid, which is a real price
+ * list read from the backend's plan table.
+ *
+ * This replaces a Starter/Growth/Enterprise pricing model that belonged to a
+ * B2B vendor. Ezymax does not publish retail spreads or commissions anywhere
+ * in the backend, so there is nothing honest to put in a tiered pricing page;
+ * the one real price list it has is this one.
+ */
+export type PlanTable = {
+  columns: readonly string[];
+  rows: readonly (readonly string[])[];
 };
 
 export type FaqItem = {
@@ -111,21 +117,29 @@ export type FaqItem = {
   a: string;
 };
 
-export type Testimonial = {
-  quote: string;
-  name: string;
-  role: string;
-  company: string;
-  placeholder?: boolean;
-};
+/**
+ * Legal documents are a block union rather than flat paragraphs.
+ *
+ * A `callout` — "You may lose your invested capital" — has to stay visually
+ * separated from the prose around it. Flattening these into `paragraphs[]`
+ * buries the warnings in body text, which is the one thing a risk disclosure
+ * must not do.
+ */
+export type LegalBlock =
+  | { kind: "text"; text: string }
+  | { kind: "list"; items: string[] }
+  | { kind: "callout"; title: string; text: string }
+  | {
+      kind: "contact";
+      team: string;
+      email: string;
+      phone: string;
+      address: string;
+    };
 
-export type ArticleMeta = {
-  slug: string;
-  title: string;
-  category: string;
-  excerpt: string;
-  date: string;
-  readingTime: string;
+export type LegalSection = {
+  heading: string;
+  blocks: LegalBlock[];
 };
 
 export type LegalDoc = {
@@ -133,5 +147,5 @@ export type LegalDoc = {
   title: string;
   updated: string;
   intro: string;
-  sections: TextSection[];
+  sections: LegalSection[];
 };

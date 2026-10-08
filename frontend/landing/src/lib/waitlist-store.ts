@@ -18,6 +18,9 @@ interface WaitlistState {
   hydrated: boolean;
   email: string | null;
   status: WaitlistStatus;
+  /** Whether the access form is showing. Every "Join Waitlist" CTA sets this. */
+  open: boolean;
+  setOpen: (open: boolean) => void;
   hydrate: () => Promise<void>;
   submit: (input: { full_name: string; email: string; phone?: string }) => Promise<WaitlistStatus>;
   refresh: (email?: string) => Promise<void>;
@@ -28,6 +31,9 @@ export const useWaitlist = create<WaitlistState>((set, get) => ({
   hydrated: false,
   email: null,
   status: "none",
+  open: false,
+
+  setOpen: (open) => set({ open }),
 
   hydrate: async () => {
     if (get().hydrated) return;

@@ -7,7 +7,7 @@ export function HowItWorks() {
       eyebrow={howItWorks.eyebrow}
       heading={howItWorks.heading}
       highlight={howItWorks.highlight}
-      sub="A clear path from first call to go-live, with our team on hand at every step."
+      sub={howItWorks.sub}
       steps={howItWorks.steps}
       className="py-20 md:py-28"
     />

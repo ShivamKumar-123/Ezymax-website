@@ -9,7 +9,8 @@ import { Reveal } from "@/components/ui/Reveal";
 
 export const metadata: Metadata = pageMetadata({
   title: "FAQ",
-  description: "Answers about what SetupZero does, launch timelines, licensing, branding, migration, liquidity, payments, security and support.",
+  description:
+    "Answers about access, leverage, margin levels, costs, Shield cover, withdrawals and who is on the other side of your trade.",
   path: "/faq",
 });
 

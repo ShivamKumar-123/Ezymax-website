@@ -1,5 +1,10 @@
 import { ArrowDown } from "lucide-react";
-import { heroFloatingStats, heroTypewriter, homeHero } from "@/content/home";
+import {
+  heroFloatingStats,
+  heroHeadlineTail,
+  heroTypewriter,
+  homeHero,
+} from "@/content/home";
 import { Badge } from "@/components/ui/Badge";
 import { CtaButton } from "@/components/ui/Button";
 import { Reveal } from "@/components/ui/Reveal";
@@ -27,11 +32,11 @@ export function Hero() {
           </Reveal>
           <Reveal delay={0.06}>
             <h1 className="mt-6 font-display text-[44px] font-semibold leading-[1] text-ink sm:text-6xl md:text-7xl lg:text-[84px]">
-              <span className="block">Launch Your Brokerage</span>
+              <span className="block">{homeHero.headline}</span>
               <span className="block min-h-[1em] highlight">
                 <Typewriter phrases={heroTypewriter} />
               </span>
-              <span className="block">Fully Set Up.</span>
+              <span className="block">{heroHeadlineTail}</span>
             </h1>
           </Reveal>
           <Reveal delay={0.14}>
