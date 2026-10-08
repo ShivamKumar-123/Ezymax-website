@@ -94,6 +94,13 @@ api.kalkstrade.com {
 # Website (deployed separately from the website repo on :3010)
 kalkstrade.com {
 	import common
+	# The Android app (APK) and other downloads: static files uploaded to the server, outside git
+	handle_path /download/* {
+		root * /srv/kalks/downloads
+		header Content-Type application/vnd.android.package-archive
+		header Content-Disposition "attachment"
+		file_server
+	}
 	reverse_proxy 127.0.0.1:3010
 }
 
