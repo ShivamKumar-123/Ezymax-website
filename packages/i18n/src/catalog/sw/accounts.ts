@@ -262,6 +262,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.review.minDeposit": "Uwekaji wa kwanza wa angalau {amount} unahitajika kwa aina hii ya akaunti.",
   "wizard.review.fixed": "Hali ya nafasi ({mode}) na sarafu ({currency}) haziwezi kubadilishwa baada ya kufungua.",
   "wizard.agreeLive": "Ninaelewa kuwa CFD ni bidhaa changamano na zina hatari kubwa ya kupoteza pesa haraka kutokana na leverage.",
+  "wizard.agreeLiveOptions": "Ninaelewa kuwa options ni bidhaa changamano: option iliyonunuliwa inaweza kupoteza premium yake yote, na option iliyouzwa inaweza kupoteza zaidi ya premium iliyopokelewa.",
   "wizard.agreeDemo": "Ninaelewa kuwa matokeo ya demo hutumia fedha za mtandaoni na hayahakikishi matokeo halisi.",
   "wizard.opening": "Inafungua akaunti…",
   "wizard.openLive": "Fungua akaunti halisi",

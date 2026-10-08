@@ -1,7 +1,8 @@
 // Rejected trade requests in the reader's language (web: apps/terminal/lib/engine/map.ts rejectReason + actions.ts
 // fail): a catalogue market on a live account says so plainly (`symbol_demo_only` -> desk.trade.demoOnly), engine codes
-// map to `order.reject.<code>` (Market closed, Not enough money, No prices for stale_price…), the engine's own sentence
-// is the detail ("Stop loss must be below 83235.95").
+// map to `order.reject.<code>` (Market closed, Not enough money, No prices for stale_price…), a CFD request on an
+// Options account says what the account trades (`product_mismatch` -> accounts.product.optionsOnly), the engine's own
+// sentence is the detail ("Stop loss must be below 83235.95").
 import '../../../core/api/api_error.dart';
 import '../../../i18n/t.dart';
 
@@ -47,6 +48,7 @@ const Map<String, String> rejectReasons = {
   'copy_managed': 'Copied position',
   'copy_account': 'Copy account',
   'pamm_account': 'PAMM fund account',
+  'product_mismatch': 'CFD trading is disabled (Options account)',
 };
 
 /// A rejection as the terminal shows it: a short title and the detail under it.
@@ -60,7 +62,8 @@ class TradeRejection {
 }
 
 /// The title of a rejected request (web actions.ts fail): `symbol_demo_only` -> "Live trading for this market isn't
-/// enabled yet"; `symbol_unavailable` -> "This market isn't available on your account"; others `order.reject.<code>`.
+/// enabled yet"; `symbol_unavailable` -> "This market isn't available on your account"; `product_mismatch` (a CFD
+/// request on an Options account) -> "This is an Options account: …"; others `order.reject.<code>`.
 TradeRejection tradeRejection(ApiException e, T t) {
   final code = e.code == 'network' ? 'unavailable' : e.code;
   final reason = rejectReasons[code] ?? (e.message.isNotEmpty ? e.message : code.replaceAll('_', ' '));
@@ -69,6 +72,8 @@ TradeRejection tradeRejection(ApiException e, T t) {
     title = t('desk.trade.demoOnly');
   } else if (code == 'symbol_unavailable' || code == 'symbol_not_found') {
     title = t('desk.trade.unavailable');
+  } else if (code == 'product_mismatch') {
+    title = t('accounts.product.optionsOnly');
   } else {
     title = t.dyn('order.reject.$code', fallback: reason);
   }

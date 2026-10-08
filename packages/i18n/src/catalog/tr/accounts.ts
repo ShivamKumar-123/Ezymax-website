@@ -264,6 +264,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.review.minDeposit": "Bu hesap türü için en az {amount} tutarında ilk yatırım gerekir.",
   "wizard.review.fixed": "Pozisyon modu ({mode}) ve para birimi ({currency}) hesap açıldıktan sonra değiştirilemez.",
   "wizard.agreeLive": "CFD'lerin karmaşık araçlar olduğunu ve kaldıraç nedeniyle hızla para kaybetme riskinin yüksek olduğunu anlıyorum.",
+  "wizard.agreeLiveOptions": "Opsiyonların karmaşık araçlar olduğunu anlıyorum: alınan bir opsiyon priminin tamamını kaybedebilir, satılan bir opsiyon ise alınan primden fazlasını kaybedebilir.",
   "wizard.agreeDemo": "Demo sonuçlarının sanal fonlarla elde edildiğini ve gerçek sonuçları garanti etmediğini anlıyorum.",
   "wizard.opening": "Hesap açılıyor…",
   "wizard.openLive": "Gerçek hesap aç",

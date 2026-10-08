@@ -2,8 +2,9 @@
 // Shapes are the real API's (the web's /api/trading/... routes: apps/crm/app/api/trading/[...path]/route.ts and the
 // engine's account views); values are made up. Return null for paths this file doesn't answer.
 //
-// `trading/accounts` is a superset of the shared sample (lib/preview/preview_data.dart): the same three accounts and
-// figures, plus the default star, demo terms, one pending order and an archived account. Changes made in the preview
+// `trading/accounts` is a superset of the shared sample (lib/preview/preview_data.dart): the same accounts (three CFD
+// ones and a demo Options one) and figures, plus the default star, demo terms, one pending order and an archived
+// account. `trading/groups` has an Options account type next to the CFD ones. Changes made in the preview
 // (rename, default, leverage, archive / restore, closure requests, new accounts) are kept until the app restarts
 // (`resetPreviewAccounts()` in tests). Step-up protected writes answer 403 stepup_required without `stepup_token`.
 import '../preview_data.dart' as shared;
@@ -323,9 +324,11 @@ Map<String, dynamic> _group(
   double commission = 0,
   int max = 5,
   bool swapFree = false,
+  String product = 'cfd',
 }) => {
   'code': code,
   'name': name,
+  'product': product,
   'mode': mode,
   'cent': cent,
   'accountTypes': types,
@@ -362,6 +365,8 @@ final List<Map<String, dynamic>> _groups = [
     commission: 3,
     max: 2,
   ),
+  // Options accounts trade options only; they don't use leverage (the group's default is sent)
+  _group('options', 'Options', leverages: [100], defaultLeverage: 100, marginCall: 100, stopOut: 50, max: 2, product: 'options'),
 ];
 
 /* ------------------------------------------------------------------ answers */
@@ -554,7 +559,9 @@ List<Map<String, dynamic>> _groupOptions(Map<String, dynamic> a) {
       if (g['code'] != a['group'] && (g['accountTypes'] == 'both' || g['accountTypes'] == a['type']))
         () {
           Map<String, String>? blocker;
-          if (g['cent'] != cent) {
+          if (g['product'] != (a['product'] ?? 'cfd')) {
+            blocker = {'code': 'product_mismatch', 'message': "An account can't move between CFD and Options account types"};
+          } else if (g['cent'] != cent) {
             blocker = {'code': 'cent_mismatch', 'message': "Cent and standard accounts can't switch between each other."};
           } else if (busy) {
             blocker = {'code': 'positions_open', 'message': 'Close all trades and orders first.'};
@@ -564,6 +571,7 @@ List<Map<String, dynamic>> _groupOptions(Map<String, dynamic> a) {
           return {
             'code': g['code'],
             'name': g['name'],
+            'product': g['product'],
             'mode': g['mode'],
             'cent': g['cent'],
             'minDeposit': g['minDeposit'],
@@ -601,6 +609,7 @@ List<Map<String, dynamic>> _groupOptions(Map<String, dynamic> a) {
     'type': type,
     'group': g['code'],
     'groupName': g['name'],
+    'product': g['product'],
     'mode': g['mode'],
     'cent': g['cent'],
     'currency': g['cent'] == true ? 'USC' : 'USD',

@@ -1,10 +1,13 @@
 // Dashboard › Markets / News / Calendar and the Options page on the sample-data API: the web's sections in order and
 // the main flows (instrument sheet + favourites, story sheet + reading list, event detail + reminder, accepting the
-// options terms).
+// options terms, and without an Options account the call to open one).
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ezymex/core/models/account.dart';
+import 'package:ezymex/data/client_data.dart';
+import 'package:ezymex/features/accounts/open_account_screen.dart';
 import 'package:ezymex/features/calendar/calendar_screen.dart';
 import 'package:ezymex/features/markets/markets_feed.dart';
 import 'package:ezymex/features/markets/markets_screen.dart';
@@ -12,6 +15,7 @@ import 'package:ezymex/features/news/news_screen.dart';
 import 'package:ezymex/features/options_intro/options_screen.dart';
 import 'package:ezymex/features/terminal/preview/preview_server.dart';
 import 'package:ezymex/preview/c2/options.dart';
+import 'package:ezymex/preview/preview_data.dart';
 import 'package:ezymex/router/router.dart';
 
 import '../helpers/test_app.dart';
@@ -152,5 +156,37 @@ void main() {
     await unmount(tester);
     await tester.pump(const Duration(minutes: 5));
     FlutterError.onError = original;
+  });
+
+  test('options trade on Options accounts only', () {
+    final all = [for (final a in previewAccounts['accounts'] as List) EngineAccount.fromJson((a as Map).cast<String, dynamic>())];
+    expect([for (final a in optionsAccounts(all)) a.login], [20031150]);
+    expect(optionsAccounts(all.where((a) => !a.isOptions).toList()), isEmpty);
+  });
+
+  testWidgets('options without an Options account: the call to open one, preset to Options', (tester) async {
+    resetPreviewOptions();
+    final cfdOnly = [
+      for (final a in previewAccounts['accounts'] as List)
+        if ((a as Map)['product'] != 'options') EngineAccount.fromJson(a.cast<String, dynamic>()),
+    ];
+    final c = await pumpApp(tester, signedIn: true, overrides: [accountsProvider.overrideWith((ref) async => cfdOnly)]);
+    c.read(routerProvider).go('/options');
+    await settle(tester);
+    expect(find.byType(OptionsScreen), findsOneWidget);
+    final page = _page<OptionsScreen>();
+    // the intro and its terms wait for an Options account
+    await _scrollTo(tester, find.text('Options trade on an Options account'), page);
+    expect(find.text('I understand how options work'), findsNothing);
+    await _scrollTo(tester, find.text('Open an Options account'), page);
+    await tester.tap(find.text('Open an Options account').last);
+    await settle(tester);
+    final at = c.read(routerProvider).routerDelegate.currentConfiguration;
+    expect(at.uri.path, '/accounts/new');
+    expect(at.uri.queryParameters['product'], 'options');
+    expect(find.byType(OpenAccountScreen), findsOneWidget);
+    // the wizard starts at Live / Demo with the Options product chosen
+    expect(find.text('Choose an account'), findsWidgets);
+    await unmount(tester);
   });
 }

@@ -262,6 +262,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.review.minDeposit": "Loại tài khoản này yêu cầu khoản nạp đầu tiên tối thiểu {amount}.",
   "wizard.review.fixed": "Không thể thay đổi chế độ vị thế ({mode}) và tiền tệ ({currency}) sau khi mở.",
   "wizard.agreeLive": "Tôi hiểu rằng CFD là công cụ phức tạp và có rủi ro cao mất tiền nhanh chóng do đòn bẩy.",
+  "wizard.agreeLiveOptions": "Tôi hiểu rằng quyền chọn là công cụ phức tạp: quyền chọn đã mua có thể mất toàn bộ phí quyền chọn, còn quyền chọn đã bán có thể lỗ nhiều hơn phí đã nhận.",
   "wizard.agreeDemo": "Tôi hiểu rằng kết quả demo dùng tiền ảo và không đảm bảo kết quả trên tài khoản thực.",
   "wizard.opening": "Đang mở tài khoản…",
   "wizard.openLive": "Mở tài khoản thực",

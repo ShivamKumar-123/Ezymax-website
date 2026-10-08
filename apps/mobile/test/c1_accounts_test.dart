@@ -1,14 +1,16 @@
 // Accounts (agent C1): the web's account rules (refills, flavours, passwords, the transfer and demo-balance limits,
-// the ⋯ menu per account state) and the pages on the sample API: My accounts (Live / Demo / Archived), the account
-// detail, the Open account wizard, and the money move between accounts behind its emailed code (sent once, with
-// the step-up token and a request id).
+// the ⋯ menu per account state, CFD or Options) and the pages on the sample API: My accounts (Live / Demo / Archived),
+// the account detail, the Open account wizard (Product step, ?product=, options groups without leverage), and the
+// money move between accounts behind its emailed code (sent once, with the step-up token and a request id).
 import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:ezymex/core/config/app_config.dart';
 import 'package:ezymex/core/models/account.dart';
+import 'package:ezymex/core/models/trading.dart';
 import 'package:ezymex/features/accounts/account_actions.dart';
 import 'package:ezymex/features/accounts/account_detail_screen.dart';
 import 'package:ezymex/features/accounts/accounts_data.dart';
@@ -122,6 +124,48 @@ void main() {
       expect(newIdempotencyKey(), isNot(newIdempotencyKey()));
     });
 
+    test('CFD or Options: the product of accounts and groups (missing on older servers: CFD)', () {
+      expect(_account({}).product, 'cfd');
+      expect(_account({}).isOptions, isFalse);
+      expect(_account({'product': 'options'}).isOptions, isTrue);
+      expect(_account({'product': 'futures'}).product, 'cfd');
+      EngineGroup group(Map<String, dynamic> over) => EngineGroup.fromJson({
+        'code': 'standard',
+        'name': 'Standard',
+        'accountTypes': 'both',
+        'leverages': [50, 100],
+        'defaultLeverage': 100,
+        ...over,
+      });
+      final cfd = group({});
+      // decided by `product`, never by the code (the broker can add options groups)
+      final options = group({
+        'code': 'opt-pro',
+        'name': 'Options Pro',
+        'product': 'options',
+        'leverages': [100],
+      });
+      expect(cfd.isOptions, isFalse);
+      expect(options.isOptions, isTrue);
+      expect(groupOffers(options, AccountKind.live), isTrue);
+      expect(groupOffers(options, AccountKind.live, product: 'options'), isTrue);
+      expect(groupOffers(options, AccountKind.live, product: 'cfd'), isFalse);
+      expect(groupOffers(cfd, AccountKind.demo, product: 'options'), isFalse);
+      expect(optionsOffered([cfd]), isFalse);
+      expect(optionsOffered([cfd, options]), isTrue);
+      expect(
+        optionsOffered([
+          cfd,
+          group({'code': 'opt-off', 'product': 'options', 'enabled': false}),
+        ]),
+        isFalse,
+      );
+      // an Options account has no leverage to change, and moves between Options account types only
+      expect(accountMenuItems(_account({'product': 'options'})), isNot(contains(AccountMenuItem.leverage)));
+      expect(GroupOption.fromJson({'code': 'options', 'product': 'options'}).product, 'options');
+      expect(GroupOption.fromJson({'code': 'pro'}).product, 'cfd');
+    });
+
     test('demo balance of your choice: 100 to 1,000,000', () {
       expect(demoBalanceOk('100'), isTrue);
       expect(demoBalanceOk('1000000'), isTrue);
@@ -179,10 +223,15 @@ void main() {
       expect(find.textContaining('10051123'), findsWidgets);
       expect(find.textContaining('20017734'), findsNothing);
 
-      await _reveal(tester, find.byType(AccountsScreen), find.text('Demo 1'));
-      await tester.tap(find.text('Demo 1'));
+      // each row says what the account trades
+      expect(find.text('CFD'), findsWidgets);
+
+      await _reveal(tester, find.byType(AccountsScreen), find.text('Demo 2'));
+      await tester.tap(find.text('Demo 2'));
       await _calm(tester);
       expect(find.textContaining('20017734'), findsWidgets);
+      expect(find.textContaining('20031150'), findsWidgets);
+      expect(find.text('Options'), findsWidgets);
       expect(find.textContaining('10042817'), findsNothing);
 
       await _reveal(tester, find.byType(AccountsScreen), find.text('Archived 1'));
@@ -262,11 +311,18 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('Open account wizard: demo, a type, the review, then the new login', timeout: const Timeout(Duration(minutes: 2)), (tester) async {
+    testWidgets('Open account wizard: CFD, demo, a type, the review, then the new login', timeout: const Timeout(Duration(minutes: 2)), (tester) async {
       final c = await pumpApp(tester, signedIn: true);
       c.read(routerProvider).go('/accounts/new?type=demo');
       await settle(tester);
       expect(find.byType(OpenAccountScreen), findsOneWidget);
+      // the product first (the broker offers an Options account type): CFD account is preselected
+      expect(find.text('What do you want to trade?'), findsWidgets);
+      expect(find.text('CFD account'), findsOneWidget);
+      expect(find.text('Options account'), findsOneWidget);
+      await _reveal(tester, find.byType(OpenAccountScreen), find.text('Continue'));
+      await tester.tap(find.text('Continue').last);
+      await _calm(tester);
       expect(find.text('Choose an account'), findsWidgets);
 
       // walk the steps: Continue, picking the first type when asked
@@ -290,7 +346,66 @@ void main() {
       await _reveal(tester, find.byType(OpenAccountScreen), find.text('Open demo account'));
       await tester.tap(find.text('Open demo account').last);
       await _calm(tester);
-      expect(previewAccountCalls.where((x) => x.method == 'POST' && x.path == 'trading/accounts'), hasLength(1));
+      final sent = previewAccountCalls.where((x) => x.method == 'POST' && x.path == 'trading/accounts').toList();
+      expect(sent, hasLength(1));
+      expect(sent.single.body['group'], isNot('options'));
+      await unmount(tester);
+    });
+
+    testWidgets(
+      'Open account wizard: ?product=options starts at Live / Demo; no leverage picker, the default is sent',
+      timeout: const Timeout(Duration(minutes: 2)),
+      (tester) async {
+        final c = await pumpApp(tester, signedIn: true);
+        c.read(routerProvider).go('/accounts/new?product=options&type=demo');
+        await settle(tester);
+        expect(find.text('What do you want to trade?'), findsNothing);
+        expect(find.text('Choose an account'), findsWidgets);
+        for (var i = 0; i < 4 && find.text('Configure your account').evaluate().isEmpty; i++) {
+          await _reveal(tester, find.byType(OpenAccountScreen), find.text('Continue'));
+          await tester.tap(find.text('Continue').last);
+          await _calm(tester);
+        }
+        // Configure: the options note instead of the leverage pills
+        expect(find.text('Configure your account'), findsWidgets);
+        expect(find.textContaining("Options don't use leverage"), findsOneWidget);
+        expect(find.text('1:100'), findsNothing);
+        await _reveal(tester, find.byType(OpenAccountScreen), find.text('Continue'));
+        await tester.tap(find.text('Continue').last);
+        await _calm(tester);
+        expect(find.text('Review and confirm'), findsWidgets);
+        await _reveal(tester, find.byType(OpenAccountScreen), find.textContaining('I understand that demo results use virtual funds'));
+        await tester.tap(find.textContaining('I understand that demo results use virtual funds'));
+        await tester.pump();
+        await _reveal(tester, find.byType(OpenAccountScreen), find.text('Open demo account'));
+        await tester.tap(find.text('Open demo account').last);
+        await _calm(tester);
+        final sent = previewAccountCalls.where((x) => x.method == 'POST' && x.path == 'trading/accounts').toList();
+        expect(sent, hasLength(1));
+        expect(sent.single.body['group'], 'options');
+        expect(sent.single.body['type'], 'demo');
+        expect(sent.single.body['leverage'], 100);
+        await unmount(tester);
+      },
+    );
+
+    testWidgets('Open account wizard: without the options module there is no Product step', timeout: const Timeout(Duration(minutes: 2)), (tester) async {
+      final config = AppConfig.fromJson({
+        ...sample.previewConfig,
+        'modules': {...(sample.previewConfig['modules'] as Map), 'options': false},
+      });
+      final c = await pumpApp(tester, signedIn: true, config: config);
+      c.read(routerProvider).go('/accounts/new?product=options');
+      await settle(tester);
+      expect(find.text('What do you want to trade?'), findsNothing);
+      expect(find.text('Choose an account'), findsWidgets);
+      await _reveal(tester, find.byType(OpenAccountScreen), find.text('Continue'));
+      await tester.tap(find.text('Continue').last);
+      await _calm(tester);
+      // the CFD account types only
+      expect(find.text('Pick an account type'), findsWidgets);
+      expect(find.byWidgetPredicate((w) => w.runtimeType.toString() == 'EngineGroupCard'), findsWidgets);
+      expect(find.text('Options'), findsNothing);
       await unmount(tester);
     });
   });

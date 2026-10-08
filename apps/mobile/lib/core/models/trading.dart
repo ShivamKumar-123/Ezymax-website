@@ -38,10 +38,14 @@ class EngineGroup {
     required this.enabled,
     this.hedgedMarginPct = 0,
     this.spreadGroup = '',
+    this.product = 'cfd',
     this.raw = const {},
   });
 
   final String code, name;
+
+  /// What its accounts trade: cfd | options. Decide by this, never by the code (the broker can add options groups).
+  final String product;
 
   /// hedging | netting
   final String mode;
@@ -58,6 +62,9 @@ class EngineGroup {
   final Map<String, dynamic> raw;
 
   bool offers(AccountKind kind) => accountTypes == 'both' || accountTypes == kind.name;
+
+  /// Options groups don't use leverage (option margin ignores it): the account gets the default one.
+  bool get isOptions => product == 'options';
 
   static EngineGroup fromJson(Map<String, dynamic> j) => EngineGroup(
     code: _s(j['code']),
@@ -79,6 +86,7 @@ class EngineGroup {
     demoRefillsPerDay: _i(j['demoRefillsPerDay']),
     demoExpiryDays: _i(j['demoExpiryDays']),
     enabled: j['enabled'] != false,
+    product: EngineAccount.productOf(j['product']),
     raw: j,
   );
 }

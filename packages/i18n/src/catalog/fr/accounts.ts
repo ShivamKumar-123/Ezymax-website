@@ -263,6 +263,7 @@ const accounts: NsMessages<"accounts"> = {
   "wizard.review.minDeposit": "Un premier dépôt d'au moins {amount} s'applique à ce type de compte.",
   "wizard.review.fixed": "Le mode de position ({mode}) et la devise ({currency}) ne peuvent pas être modifiés après l'ouverture.",
   "wizard.agreeLive": "Je comprends que les CFD sont des instruments complexes qui comportent un risque élevé de perte rapide en capital en raison de l'effet de levier.",
+  "wizard.agreeLiveOptions": "Je comprends que les options sont des instruments complexes : une option achetée peut perdre toute sa prime, et une option vendue peut perdre plus que la prime encaissée.",
   "wizard.agreeDemo": "Je comprends que les résultats démo reposent sur des fonds virtuels et ne garantissent pas les résultats en réel.",
   "wizard.opening": "Ouverture du compte…",
   "wizard.openLive": "Ouvrir un compte réel",

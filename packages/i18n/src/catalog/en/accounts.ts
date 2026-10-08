@@ -267,6 +267,7 @@ const accounts = {
   "wizard.review.minDeposit": "A first deposit of at least {amount} applies to this account type.",
   "wizard.review.fixed": "Position mode ({mode}) and currency ({currency}) can't be changed after opening.",
   "wizard.agreeLive": "I understand that CFDs are complex instruments and carry a high risk of losing money rapidly due to leverage.",
+  "wizard.agreeLiveOptions": "I understand that options are complex instruments: a bought option can lose its whole premium, and a sold option can lose more than the premium received.",
   "wizard.agreeDemo": "I understand that demo results use virtual funds and don't guarantee live results.",
   "wizard.opening": "Opening account…",
   "wizard.openLive": "Open live account",

@@ -54,8 +54,10 @@ const Set<String> _rfqErrorCodes = {'quote_expired', 'price_moved', 'rfq_expired
 /// The app's network errors read like the web's "unavailable".
 String optCode(ApiException e) => e.code == 'network' || e.status == 0 ? 'unavailable' : e.code;
 
-/// Translated text of a rejection code (or the server's message when the code is unknown).
+/// Translated text of a rejection code (or the server's message when the code is unknown). `product_mismatch`: an
+/// option order on a CFD account (options trade on an Options account).
 String optionErrorText(T t, String code, [String? message]) {
+  if (code == 'product_mismatch') return t('accounts.product.cfdOnly');
   if (optionErrorCodes.contains(code)) return t.dyn('trader.opt.err.$code', fallback: message ?? code);
   return (message != null && message.isNotEmpty) ? message : code.replaceAll('_', ' ');
 }

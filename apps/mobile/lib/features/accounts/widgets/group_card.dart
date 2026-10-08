@@ -1,5 +1,6 @@
 // An account type (engine group) as a card with its photo and commercial terms (web components/trading/group-card.tsx
-// EngineGroupCard): the Account types list and the open-account wizard's Type step.
+// EngineGroupCard): the Account types list and the open-account wizard's Type step. Options groups show their product
+// where CFD groups show the maximum leverage.
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -162,7 +163,10 @@ class EngineGroupCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _Spec(label: t('accounts.label.maxLeverage'), value: levLabel(maxLeverage(g))),
+                // options groups don't use leverage: what the account trades instead
+                child: g.isOptions
+                    ? _Spec(label: t('accounts.label.product'), value: t('accounts.product.options'))
+                    : _Spec(label: t('accounts.label.maxLeverage'), value: levLabel(maxLeverage(g))),
               ),
               const SizedBox(width: 8),
               Expanded(

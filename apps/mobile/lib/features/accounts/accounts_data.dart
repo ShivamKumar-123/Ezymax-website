@@ -214,8 +214,9 @@ bool demoBalanceOk(String amount) {
 enum AccountMenuItem { details, defaultStar, leverage, changeType, moveBetween, demoBalance, passwords, statements, historyZip, rename, delete, close, restore }
 
 /// What the ⋯ menu offers for this account, in the web's order. Live / demo / prop / copy-PAMM-MAM follow
-/// AccountActions; archived and closed accounts get the Archived row's actions (statements, the history ZIP and, for
-/// an archived one, Restore); a view-only or read-only staff session gets nothing that changes the account.
+/// AccountActions; an Options account has no leverage to change (option margin ignores it); archived and closed
+/// accounts get the Archived row's actions (statements, the history ZIP and, for an archived one, Restore); a
+/// view-only or read-only staff session gets nothing that changes the account.
 List<AccountMenuItem> accountMenuItems(EngineAccount a, {bool readOnly = false}) {
   if (a.archived) {
     return [AccountMenuItem.details, AccountMenuItem.statements, AccountMenuItem.historyZip, if (!readOnly && a.status == 'archived') AccountMenuItem.restore];
@@ -225,7 +226,7 @@ List<AccountMenuItem> accountMenuItems(EngineAccount a, {bool readOnly = false})
   return [
     AccountMenuItem.details,
     AccountMenuItem.defaultStar,
-    AccountMenuItem.leverage,
+    if (!a.isOptions) AccountMenuItem.leverage,
     if (!special) AccountMenuItem.changeType,
     if (a.live && !a.prop) AccountMenuItem.moveBetween,
     if (!a.live) AccountMenuItem.demoBalance,
@@ -377,11 +378,15 @@ class GroupOption {
     required this.commissionPerLot,
     required this.allowed,
     required this.blocker,
+    this.product = 'cfd',
   });
   final String code, name, mode;
   final double minDeposit, commissionPerLot;
   final bool allowed;
   final Blocker? blocker;
+
+  /// cfd | options: an account never moves between the two (the engine's `product_mismatch`).
+  final String product;
 
   static GroupOption fromJson(Map<String, dynamic> j) {
     final b = _map(j['blocker']);
@@ -393,6 +398,7 @@ class GroupOption {
       commissionPerLot: _d(j['commissionPerLot']),
       allowed: j['allowed'] == true,
       blocker: b == null ? null : Blocker('${b['code'] ?? ''}', '${b['message'] ?? ''}'),
+      product: EngineAccount.productOf(j['product']),
     );
   }
 }

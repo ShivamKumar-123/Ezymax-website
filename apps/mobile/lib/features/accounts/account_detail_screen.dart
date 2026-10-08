@@ -251,6 +251,7 @@ class _HeaderCard extends ConsumerWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               KindBadge(account: a),
+              AccountProductBadge(account: a),
               FlavorChip(account: a),
               Text(
                 '${a.groupName} · ${t.dyn('accounts.mode.${a.mode}', fallback: modeLabel(a.mode))}',
@@ -276,7 +277,7 @@ class _HeaderCard extends ConsumerWidget {
                   Text(a.server, style: context.text.mono(13, color: k.fg2)),
                 ],
               ),
-              KChip(label: levLabel(a.leverage), small: true),
+              if (!a.isOptions) KChip(label: levLabel(a.leverage), small: true),
               Text(a.cent ? t('accountDetail.header.centCurrency') : a.currency, style: context.text.label.copyWith(color: k.fg3)),
               if (copying != null)
                 Text(

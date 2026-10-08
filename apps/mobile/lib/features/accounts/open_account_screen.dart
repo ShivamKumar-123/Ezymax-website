@@ -1,11 +1,15 @@
 // Accounts › Open account. Port of the phone web page /accounts/new (apps/crm/components/trading/open-account.tsx
-// LiveOpenAccount), the five-step wizard in its phone layout (the desktop's sticky summary is hidden on phones):
-//   0 Account: Live or Demo (?type=demo; demo only while the broker allows demo accounts)
-//   1 Type: the broker's groups for that kind, with the per-type account limit
-//   2 Configure: leverage, demo starting balance, nickname, currency, own trading password (rules + generate)
-//   3 Confirm: summary tiles, what happens, the risk acknowledgement
-//   4 Done: the credentials (shown once: copy all, show / hide), Trade, Fund, View account
-// `?group=<code>` preselects a type and jumps to Configure. `GET trading/groups` and `GET trading/accounts` once;
+// LiveOpenAccount), the six-step wizard in its phone layout (the desktop's sticky summary is hidden on phones):
+//   0 Product: a CFD account or an Options account (each account trades one product; only while the options module
+//     is on and the broker offers an options group, else every account is a CFD one)
+//   1 Account: Live or Demo (?type=demo; demo only while the broker allows demo accounts)
+//   2 Type: the broker's groups of that product for that kind, with the per-type account limit
+//   3 Configure: leverage (options groups: no picker, the group's default is sent), demo starting balance, nickname,
+//     currency, own trading password (rules + generate)
+//   4 Confirm: summary tiles, what happens, the risk acknowledgement
+//   5 Done: the credentials (shown once: copy all, show / hide), Trade, Fund, View account
+// `?product=options|cfd` preselects the product and starts at Account; `?group=<code>` preselects a type (and so its
+// product) and jumps to Configure. `GET trading/groups` and `GET trading/accounts` once;
 // `POST trading/accounts {type, group, leverage, name?, password?, initialBalance?}` opens it.
 import 'dart:async';
 
@@ -29,6 +33,7 @@ import 'widgets/account_bits.dart';
 import 'widgets/group_card.dart';
 
 const List<String> kWizardSteps = [
+  'accounts.wizard.step.product',
   'accounts.wizard.step.account',
   'accounts.wizard.step.type',
   'accounts.wizard.step.configure',
@@ -37,8 +42,14 @@ const List<String> kWizardSteps = [
 ];
 const List<int> kDemoBalances = [1000, 5000, 10000, 25000, 50000, 100000];
 
-/// Groups the wizard offers for a kind: enabled, not prop, and open to that kind (web `offers`).
-bool groupOffers(EngineGroup g, AccountKind kind) => g.enabled && !g.code.toLowerCase().startsWith('prop') && g.offers(kind);
+/// Groups the wizard offers for a kind: enabled, not prop, open to that kind (web `offers`) and, when given, of that
+/// product (cfd | options).
+bool groupOffers(EngineGroup g, AccountKind kind, {String? product}) =>
+    g.enabled && !g.code.toLowerCase().startsWith('prop') && g.offers(kind) && (product == null || g.product == product);
+
+/// The broker offers an Options account (live or demo): the wizard asks for the product first.
+bool optionsOffered(List<EngineGroup> groups) =>
+    groups.any((g) => groupOffers(g, AccountKind.live, product: 'options') || groupOffers(g, AccountKind.demo, product: 'options'));
 
 /// Accounts of this kind the client already holds in the group (web usedIn).
 int groupUsed(List<EngineAccount> accounts, EngineGroup g, AccountKind kind) => accounts.where((a) => a.group == g.code && a.type == kind).length;
@@ -49,7 +60,8 @@ String wizardMoney(num v, bool cent) => cent ? 'USC ${Fmt.number(v * 100, 0)}' :
 class OpenAccountScreen extends ConsumerStatefulWidget {
   const OpenAccountScreen({super.key, this.query = const {}});
 
-  /// The route's query parameters (the web page's search params: `type` = live | demo, `group` = a group code).
+  /// The route's query parameters (the web page's search params: `product` = cfd | options, `type` = live | demo,
+  /// `group` = a group code).
   final Map<String, String> query;
 
   @override
@@ -58,7 +70,15 @@ class OpenAccountScreen extends ConsumerStatefulWidget {
 
 class _OpenAccountScreenState extends ConsumerState<OpenAccountScreen> {
   final _scroll = ScrollController();
-  int _step = 0;
+
+  /// The Product step is offered: the options module is on (off again once the groups show no options group).
+  late bool _productOn = ref.read(configProvider).moduleOn('options');
+
+  /// cfd | options.
+  late String _product = _productOn && widget.query['product'] == 'options' ? 'options' : 'cfd';
+
+  /// 0 Product … 5 Done (kWizardSteps); without the Product step the wizard starts at 1 Account.
+  late int _step = _productOn && !widget.query.containsKey('product') ? 0 : 1;
   late AccountKind _kind = widget.query['type'] == 'demo' && _demoOn ? AccountKind.demo : AccountKind.live;
   late String _group = widget.query['group'] ?? '';
   int _leverage = 0;
@@ -77,28 +97,37 @@ class _OpenAccountScreenState extends ConsumerState<OpenAccountScreen> {
     super.dispose();
   }
 
+  int get _first => _productOn ? 0 : 1;
+
   void _go(int d) {
-    setState(() => _step = (_step + d).clamp(0, 4));
+    setState(() => _step = (_step + d).clamp(_first, 5));
     if (_scroll.hasClients) unawaited(_scroll.animateTo(0, duration: const Duration(milliseconds: 260), curve: Curves.easeOutCubic));
   }
 
   void _pickGroup(EngineGroup g) => setState(() {
     _group = g.code;
-    _leverage = g.leverages.contains(_leverage) ? _leverage : g.defaultLeverage;
+    _leverage = !g.isOptions && g.leverages.contains(_leverage) ? _leverage : g.defaultLeverage;
     if (_demoBalance == 0) _demoBalance = g.demoInitialBalance;
   });
 
-  /// Once groups load: honour ?group= (jump to Configure), otherwise preselect the first group (web boot effect).
+  /// Once groups load: honour ?group= (its product, jump to Configure), otherwise preselect the first group of the
+  /// product (web boot effect). No options group on offer: no Product step, every account is a CFD one.
   void _boot(List<EngineGroup> groups) {
     if (_booted || groups.isEmpty) return;
     _booted = true;
-    final want = groups.where((x) => x.code == widget.query['group']).firstOrNull;
-    final pick = want != null && groupOffers(want, _kind) ? want : groups.where((x) => groupOffers(x, _kind)).firstOrNull;
+    if (_productOn && !optionsOffered(groups)) {
+      _productOn = false;
+      _product = 'cfd';
+      if (_step == 0) _step = 1;
+    }
+    final want = groups.where((x) => x.code == widget.query['group'] && groupOffers(x, _kind) && (_productOn || !x.isOptions)).firstOrNull;
+    if (want != null) _product = want.product;
+    final pick = want ?? groups.where((x) => groupOffers(x, _kind, product: _product)).firstOrNull;
     if (pick == null) return;
     _group = pick.code;
     _leverage = pick.defaultLeverage;
     _demoBalance = pick.demoInitialBalance;
-    if (want != null && want.code == pick.code) _step = 2;
+    if (want != null) _step = 3;
   }
 
   Future<void> _create(EngineGroup g) async {
@@ -113,7 +142,8 @@ class _OpenAccountScreenState extends ConsumerState<OpenAccountScreen> {
             body: {
               'type': _kind.name,
               'group': g.code,
-              'leverage': _leverage,
+              // options groups don't use leverage: the group's default
+              'leverage': g.isOptions ? g.defaultLeverage : _leverage,
               if (name.isNotEmpty) 'name': name,
               if (_ownPassword) 'password': _password,
               if (_kind == AccountKind.demo) 'initialBalance': _demoBalance % 1 == 0 ? _demoBalance.toInt() : _demoBalance,
@@ -132,7 +162,9 @@ class _OpenAccountScreenState extends ConsumerState<OpenAccountScreen> {
         context,
         NotificationKind.success,
         t(_kind == AccountKind.live ? 'accounts.wizard.openedLive' : 'accounts.wizard.openedDemo', {'login': res.login}),
-        description: '${g.name} · ${t.dyn('accounts.mode.${g.mode}', fallback: modeLabel(g.mode))} · 1:$_leverage',
+        description: g.isOptions
+            ? '${g.name} · ${t('accounts.product.options')}'
+            : '${g.name} · ${t.dyn('accounts.mode.${g.mode}', fallback: modeLabel(g.mode))} · 1:$_leverage',
       );
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -192,19 +224,19 @@ class _OpenAccountScreenState extends ConsumerState<OpenAccountScreen> {
 
     final groups = groupsQ.value ?? const <EngineGroup>[];
     _boot(groups);
-    final available = groups.where((g) => groupOffers(g, _kind)).toList();
-    final g = groups.where((x) => x.code == _group && groupOffers(x, _kind)).firstOrNull ?? available.firstOrNull;
+    final available = groups.where((g) => groupOffers(g, _kind, product: _product)).toList();
+    final g = groups.where((x) => x.code == _group && groupOffers(x, _kind, product: _product)).firstOrNull ?? available.firstOrNull;
     if (_booted && g != null && g.code != _group) {
-      // keep the chosen group valid for the chosen account kind
+      // keep the chosen group valid for the chosen product and account kind
       _group = g.code;
-      _leverage = g.leverages.contains(_leverage) ? _leverage : g.defaultLeverage;
+      _leverage = !g.isOptions && g.leverages.contains(_leverage) ? _leverage : g.defaultLeverage;
     }
     final full = g != null && groupUsed(accounts, g, _kind) >= g.maxAccountsPerUser;
     final pwOk = !_ownPassword || (livePasswordOk(_password) && _password == _confirm);
     final canNext = switch (_step) {
-      1 => g != null && !full,
-      2 => g != null && g.leverages.contains(_leverage) && pwOk,
-      3 => _agree && pwOk,
+      2 => g != null && !full,
+      3 => g != null && (g.isOptions || g.leverages.contains(_leverage)) && pwOk,
+      4 => _agree && pwOk,
       _ => true,
     };
 
@@ -213,11 +245,12 @@ class _OpenAccountScreenState extends ConsumerState<OpenAccountScreen> {
       body = const KSkeleton(height: 420, radius: 24);
     } else {
       body = switch (_step) {
-        0 => _kindStep(groups, demoOn),
-        1 => _typeStep(available, accounts, g),
-        2 when g != null => _configureStep(g),
-        3 when g != null => _reviewStep(g),
-        4 when _created != null && g != null => _CreatedCard(res: _created!, ownPassword: _ownPassword, g: g),
+        0 => _productStep(),
+        1 => _kindStep(groups, demoOn),
+        2 => _typeStep(available, accounts, g),
+        3 when g != null => _configureStep(g),
+        4 when g != null => _reviewStep(g),
+        5 when _created != null && g != null => _CreatedCard(res: _created!, ownPassword: _ownPassword, g: g),
         _ => const SizedBox.shrink(),
       };
     }
@@ -228,14 +261,14 @@ class _OpenAccountScreenState extends ConsumerState<OpenAccountScreen> {
         ...header,
         KCard(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-          child: KStepIndicator(steps: [for (var i = 0; i < kWizardSteps.length; i++) i == _step ? t(kWizardSteps[i]) : ''], current: _step),
+          child: KStepIndicator(steps: [for (var i = _first; i < kWizardSteps.length; i++) i == _step ? t(kWizardSteps[i]) : ''], current: _step - _first),
         ),
         const SizedBox(height: 16),
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 220),
           child: KeyedSubtree(key: ValueKey(_step), child: body),
         ),
-        if (_step < 4 && groupsQ.hasValue) ...[
+        if (_step < 5 && groupsQ.hasValue) ...[
           const SizedBox(height: 16),
           Row(
             children: [
@@ -243,10 +276,10 @@ class _OpenAccountScreenState extends ConsumerState<OpenAccountScreen> {
                 label: t('common.back'),
                 icon: rtl ? LucideIcons.arrowRight : LucideIcons.arrowLeft,
                 variant: KButtonVariant.ghost,
-                onPressed: _step == 0 || _busy ? null : () => _go(-1),
+                onPressed: _step == _first || _busy ? null : () => _go(-1),
               ),
               const Spacer(),
-              if (_step < 3)
+              if (_step < 4)
                 KButton(
                   label: t('common.continue'),
                   trailingIcon: rtl ? LucideIcons.arrowLeft : LucideIcons.arrowRight,
@@ -272,9 +305,24 @@ class _OpenAccountScreenState extends ConsumerState<OpenAccountScreen> {
 
   /* ---------------------------------------------------------------- steps */
 
+  Widget _productStep() {
+    final t = context.t;
+    return _StepCard(
+      title: t('accounts.wizard.productTitle'),
+      subtitle: t('accounts.wizard.productSubtitle'),
+      child: Column(
+        children: [
+          _ProductCard(product: 'cfd', selected: _product == 'cfd', onSelect: () => setState(() => _product = 'cfd')),
+          const SizedBox(height: 14),
+          _ProductCard(product: 'options', selected: _product == 'options', onSelect: () => setState(() => _product = 'options')),
+        ],
+      ),
+    );
+  }
+
   Widget _kindStep(List<EngineGroup> groups, bool demoOn) {
     final t = context.t;
-    final demoRef = groups.where((x) => groupOffers(x, AccountKind.demo)).firstOrNull;
+    final demoRef = groups.where((x) => groupOffers(x, AccountKind.demo, product: _product)).firstOrNull;
     return _StepCard(
       title: t('accounts.wizard.chooseTitle'),
       subtitle: t('accounts.wizard.chooseSubtitle'),
@@ -323,11 +371,29 @@ class _OpenAccountScreenState extends ConsumerState<OpenAccountScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(t('accounts.label.leverage'), style: context.text.label.copyWith(color: k.fg2)),
-          const SizedBox(height: 2),
-          Text(t('accounts.wizard.leverageHint'), style: context.text.footnote.copyWith(color: k.fg3)),
-          const SizedBox(height: 10),
-          LeveragePills(values: g.leverages, selected: _leverage, onSelect: (l) => setState(() => _leverage = l)),
-          if (_leverage >= 1000) ...[
+          if (g.isOptions) ...[
+            // options don't use leverage: no picker, the group's default is sent
+            const SizedBox(height: 6),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 1),
+                  child: Icon(LucideIcons.info, size: 14, color: k.fg3),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(t('accounts.wizard.optionsLeverage'), style: context.text.footnote.copyWith(color: k.fg2)),
+                ),
+              ],
+            ),
+          ] else ...[
+            const SizedBox(height: 2),
+            Text(t('accounts.wizard.leverageHint'), style: context.text.footnote.copyWith(color: k.fg3)),
+            const SizedBox(height: 10),
+            LeveragePills(values: g.leverages, selected: _leverage, onSelect: (l) => setState(() => _leverage = l)),
+          ],
+          if (!g.isOptions && _leverage >= 1000) ...[
             const SizedBox(height: 8),
             Row(
               children: [
@@ -472,10 +538,13 @@ class _OpenAccountScreenState extends ConsumerState<OpenAccountScreen> {
             children: [
               StatTile(label: t('common.account'), child: Text(_kind == AccountKind.live ? t('common.live') : t('common.demo'))),
               StatTile(label: t('common.type'), child: Text(g.name)),
-              StatTile(
-                label: t('accounts.label.leverage'),
-                child: Text(levLabel(_leverage), textDirection: TextDirection.ltr),
-              ),
+              if (g.isOptions)
+                StatTile(label: t('accounts.label.product'), child: Text(t('accounts.product.options')))
+              else
+                StatTile(
+                  label: t('accounts.label.leverage'),
+                  child: Text(levLabel(_leverage), textDirection: TextDirection.ltr),
+                ),
               StatTile(
                 label: t('accounts.label.startBalance'),
                 child: Text(start, textDirection: TextDirection.ltr),
@@ -495,7 +564,9 @@ class _OpenAccountScreenState extends ConsumerState<OpenAccountScreen> {
             value: _agree,
             onChanged: (v) => setState(() => _agree = v),
             child: Text(
-              _kind == AccountKind.live ? t('accounts.wizard.agreeLive') : t('accounts.wizard.agreeDemo'),
+              _kind == AccountKind.live
+                  ? t(g.isOptions ? 'accounts.wizard.agreeLiveOptions' : 'accounts.wizard.agreeLive')
+                  : t('accounts.wizard.agreeDemo'),
               style: context.text.callout.copyWith(color: k.fg2),
             ),
           ),
@@ -566,6 +637,89 @@ class _StepCard extends StatelessWidget {
       ],
     ),
   );
+}
+
+/// CFD / Options choice card (the Product step; laid out like the Live / Demo card).
+class _ProductCard extends StatelessWidget {
+  const _ProductCard({required this.product, required this.selected, required this.onSelect});
+
+  /// cfd | options
+  final String product;
+  final bool selected;
+  final VoidCallback onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.t;
+    final k = context.k;
+    final options = product == 'options';
+    final tone = options ? k.info : k.ember;
+    final title = options ? t('accounts.product.optionsTitle') : t('accounts.product.cfdTitle');
+    final points = options
+        ? [t('accounts.product.optionsPoint1'), t('accounts.product.optionsPoint2'), t('accounts.product.optionsPoint3')]
+        : [t('accounts.product.cfdPoint1'), t('accounts.product.cfdPoint2'), t('accounts.product.cfdPoint3')];
+    return KPressable(
+      onTap: onSelect,
+      pressedScale: 0.99,
+      semanticLabel: title,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: selected ? k.surface : k.cardBg,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: selected ? tone.withValues(alpha: 0.6) : k.cardBorder),
+          boxShadow: selected ? [BoxShadow(color: tone.withValues(alpha: 0.12), spreadRadius: 4)] : k.shadowCard,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                ProductBadge(product: product, small: false),
+                const Spacer(),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: selected ? tone : null,
+                    border: Border.all(color: selected ? tone : k.line),
+                  ),
+                  child: selected ? const Icon(LucideIcons.check, size: 14, color: Colors.white) : null,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            KIconTile(icon: options ? LucideIcons.chartSpline : LucideIcons.candlestickChart, tone: options ? KTone.sky : KTone.accent, size: 56),
+            const SizedBox(height: 16),
+            Text(title, style: context.text.title1.copyWith(fontSize: 21)),
+            const SizedBox(height: 4),
+            Text(options ? t('accounts.product.optionsText') : t('accounts.product.cfdText'), style: context.text.callout.copyWith(color: k.fg2)),
+            const SizedBox(height: 14),
+            for (final p in points)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 7),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Icon(LucideIcons.check, size: 14, color: tone),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(p, style: context.text.footnote.copyWith(color: k.fg2, fontSize: 13)),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 /// Live / Demo choice card (web KindCard; the 3D emoji become an icon tile).
@@ -715,7 +869,7 @@ class _CreatedCard extends StatelessWidget {
             children: [
               KChip(label: a.live ? t('accounts.badge.live') : t('accounts.badge.demo'), tone: a.live ? KChipTone.ember : KChipTone.gold),
               KChip(label: '${g.name} · ${t.dyn('accounts.mode.${a.mode}', fallback: modeLabel(a.mode))}'),
-              KChip(label: levLabel(a.leverage)),
+              if (a.isOptions || g.isOptions) const ProductBadge(product: 'options', small: false) else KChip(label: levLabel(a.leverage)),
               if (a.cent) const KChip(label: 'USC', tone: KChipTone.gold),
             ],
           ),

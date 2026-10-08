@@ -152,6 +152,7 @@ class TAccount {
     required this.maxLot,
     required this.refillsLeft,
     required this.demoInitial,
+    this.product = 'cfd',
   });
 
   final String login;
@@ -179,9 +180,13 @@ class TAccount {
   final int? refillsLeft;
   final double? demoInitial;
 
+  /// cfd | options: the one product the account trades, and so the terminal's mode on it.
+  final String product;
+
   bool get live => type == 'live';
   bool get demo => type == 'demo';
   bool get hedging => mode == 'hedging';
+  bool get isOptions => product == 'options';
 
   /// "Ezymex-Live" / "Ezymex-Demo" (web serverName).
   String get server => demo ? 'Ezymex-Demo' : 'Ezymex-Live';
@@ -221,6 +226,7 @@ class TAccount {
       maxLot: _dn(controls['maxLot']),
       refillsLeft: demo == null ? null : (_i(demo['refillsPerDay']) - _i(demo['refillsUsedToday'])).clamp(0, 1 << 20),
       demoInitial: demo == null ? null : _dn(demo['initialBalance']),
+      product: a['product'] == 'options' ? 'options' : 'cfd',
     );
   }
 }
