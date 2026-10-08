@@ -6,7 +6,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
-/// One trade line on the chart (web TLine): an open position, its SL / TP, a pending order, a price alert.
+/// One trade line on the chart (web TLine): an open position, a pending order, their SL / TP, a price alert.
 @immutable
 class ChartLine {
   const ChartLine({
@@ -19,9 +19,13 @@ class ChartLine {
     this.note,
     this.tone,
     this.closable = false,
+    this.addSl = false,
+    this.addTp = false,
+    this.stops,
   });
 
-  /// `pos:TICKET`, `sl:TICKET`, `tp:TICKET`, `pnd:TICKET` or `alr:ID`.
+  /// `pos:TICKET`, `sl:TICKET`, `tp:TICKET`, `pnd:TICKET`, `osl:TICKET` / `otp:TICKET` (a pending order's SL / TP) or
+  /// `alr:ID`.
   final String id;
 
   /// pos | sl | tp | pending | alert, and for options: strike | breakeven | barrier
@@ -29,7 +33,7 @@ class ChartLine {
   final double price;
   final String label;
 
-  /// buy | sell (positions and orders)
+  /// buy | sell (positions and orders, and their SL / TP)
   final String? side;
   final bool draggable;
 
@@ -42,8 +46,34 @@ class ChartLine {
   /// The chip has × (close the position, remove the stop, cancel the order, delete the alert).
   final bool closable;
 
+  /// The chip has the S / T handle (a position or order without a stop loss / take profit): dragged off the line, it
+  /// sets one at the drop price ([ChartStopDragged]).
+  final bool addSl, addTp;
+
+  /// How a stop of this trade is checked and valued while it is dragged (the S / T handles of a position or order
+  /// line, and its SL / TP lines); null: no stops.
+  final ChartStops? stops;
+
   /// The ticket / alert id after the prefix.
   String get ref => id.contains(':') ? id.substring(id.indexOf(':') + 1) : id;
+
+  /// The id of the stop line `which` (sl | tp) of this position or pending order.
+  String stopId(String which) => kind == 'pending' ? 'o$which:$ref' : '$which:$ref';
+
+  ChartLine copyWith({double? price, String? note, bool? draggable, bool? closable, bool? addSl, bool? addTp}) => ChartLine(
+    id: id,
+    kind: kind,
+    price: price ?? this.price,
+    label: label,
+    side: side,
+    draggable: draggable ?? this.draggable,
+    note: note ?? this.note,
+    tone: tone,
+    closable: closable ?? this.closable,
+    addSl: addSl ?? this.addSl,
+    addTp: addTp ?? this.addTp,
+    stops: stops,
+  );
 
   Map<String, Object?> toJson() => {
     'id': id,
@@ -55,6 +85,9 @@ class ChartLine {
     'note': note,
     'tone': tone,
     'close': closable,
+    'addSl': addSl,
+    'addTp': addTp,
+    'stops': stops?.toJson(),
   };
 
   @override
@@ -68,10 +101,84 @@ class ChartLine {
       other.draggable == draggable &&
       other.note == note &&
       other.tone == tone &&
-      other.closable == closable;
+      other.closable == closable &&
+      other.addSl == addSl &&
+      other.addTp == addTp &&
+      other.stops == stops;
 
   @override
-  int get hashCode => Object.hash(id, kind, price, label, side, draggable, note, tone, closable);
+  int get hashCode => Object.hash(id, kind, price, label, side, draggable, note, tone, closable, addSl, addTp, stops);
+}
+
+/// What the chart needs to check a stop of a trade and show the money at it while it is dragged, with no round trip
+/// to the app (the contract maths of trade_math.dart as a line through the entry, web profitAt):
+///   money(price) = (price − open) × k ÷ (inv ? price : 1) + c      (account currency: USD, USC on cent accounts)
+/// A stop must stay beyond the reference by at least `gap` (engine check_sltp): below it for the SL of a buy and the
+/// TP of a sell, above it for the TP of a buy and the SL of a sell. The reference is the live bid (buy) / ask (sell)
+/// for a position, the entry for a pending order (`order`). The chart page has the same check (chart.html).
+@immutable
+class ChartStops {
+  const ChartStops({required this.open, required this.k, this.c = 0, this.inv = false, this.order = false, this.gap = 0});
+
+  /// The JSON sent to the page (the native chart reads it back); null when malformed.
+  static ChartStops? fromJson(Object? j) {
+    if (j is! Map) return null;
+    final open = j['open'], k = j['k'], c = j['c'], gap = j['gap'];
+    if (open is! num || k is! num) return null;
+    return ChartStops(
+      open: open.toDouble(),
+      k: k.toDouble(),
+      c: c is num ? c.toDouble() : 0,
+      inv: j['inv'] == true,
+      order: j['order'] == true,
+      gap: gap is num ? gap.toDouble() : 0,
+    );
+  }
+
+  /// The position's open price / the order's entry price.
+  final double open;
+
+  /// Account money per 1.0 of price above `open`, signed by side: lots × contract size × quote → USD (× 100 on a cent
+  /// account), negative for a sell.
+  final double k;
+
+  /// The fixed part: a position's swap − commission (account money).
+  final double c;
+
+  /// A USD-base symbol (USDJPY …): its quote currency converts at 1 / price.
+  final bool inv;
+
+  /// A pending order: its stops are checked against `open`, not the live bid / ask.
+  final bool order;
+
+  /// The least distance of a stop from the reference (the symbol's stops level × point).
+  final double gap;
+
+  /// The money (account currency) if the trade closes at `price`.
+  double moneyAt(double price) => (price - open) * k / (inv && price > 0 ? price : 1) + c;
+
+  /// Null when a stop `which` (sl | tp) of a `side` trade may go to `price`, else why not: `key` names the text
+  /// (chart.line.bad.slBelow | slAbove | tpAbove | tpBelow) and `limit` is the price it must be below / above. Without
+  /// a quote yet the server decides.
+  ({String key, double limit})? problem(String which, String side, double price, {required double bid, required double ask}) {
+    final buy = side == 'buy';
+    final r = order ? open : (buy ? bid : ask);
+    if (!(r > 0)) return null;
+    final below = (which == 'sl') == buy;
+    final limit = below ? r - gap : r + gap;
+    final eps = 1e-9 * (r > 1 ? r : 1);
+    final bad = price <= 0 || (below ? price > limit + eps || price >= r - eps : price < limit - eps || price <= r + eps);
+    return bad ? (key: '$which${below ? 'Below' : 'Above'}', limit: limit) : null;
+  }
+
+  Map<String, Object?> toJson() => {'open': open, 'k': k, 'c': c, 'inv': inv, 'order': order, 'gap': gap};
+
+  @override
+  bool operator ==(Object other) =>
+      other is ChartStops && other.open == open && other.k == k && other.c == c && other.inv == inv && other.order == order && other.gap == gap;
+
+  @override
+  int get hashCode => Object.hash(open, k, c, inv, order, gap);
 }
 
 /// The chart's colours (web readPalette): CSS colour strings.
@@ -93,6 +200,7 @@ class ChartPalette {
     required this.label,
     required this.panel,
     this.info = '#38bdf8',
+    this.buy = '#4a7bff',
   });
 
   final bool dark;
@@ -100,6 +208,10 @@ class ChartPalette {
 
   /// The indicators' "info" colour token (web --k-info).
   final String info;
+
+  /// Buy position lines and chips, rising candles and volume (web --t-buy, blue). Sell / falling stay `down`; TP
+  /// lines and P&L stay `up` / `down`.
+  final String buy;
 
   Map<String, Object?> toJson() => {
     'dark': dark,
@@ -117,6 +229,7 @@ class ChartPalette {
     'label': label,
     'panel': panel,
     'info': info,
+    'buy': buy,
   };
 }
 
@@ -198,6 +311,9 @@ sealed class ChartEvent {
       case 'dragstart':
         final id = m['id'];
         return id is String ? ChartDragStarted(id) : null;
+      case 'dragend':
+        final id = m['id'];
+        return id is String ? ChartDragEnded(id) : null;
       case 'drag':
         final id = m['id'], price = n(m['price']);
         return id is String && price != null ? ChartLineDragged(id, price) : null;
@@ -216,6 +332,9 @@ sealed class ChartEvent {
       case 'ind':
         final uid = m['uid'];
         return uid is String ? ChartIndicatorTapped(uid) : null;
+      case 'stop':
+        final id = m['id'], which = m['which'], price = n(m['price']);
+        return id is String && which is String && (which == 'sl' || which == 'tp') && price != null ? ChartStopDragged(id, which, price) : null;
     }
     return null;
   }
@@ -232,10 +351,25 @@ class ChartDragStarted extends ChartEvent {
   final String id;
 }
 
+/// A dragged trade line was released where it may not go (a stop on the wrong side of the price): nothing to commit,
+/// the held line updates go through again.
+class ChartDragEnded extends ChartEvent {
+  const ChartDragEnded(this.id);
+  final String id;
+}
+
 /// A trade line was dragged to `price` and released.
 class ChartLineDragged extends ChartEvent {
   const ChartLineDragged(this.id, this.price);
   final String id;
+  final double price;
+}
+
+/// The S / T handle of a position or order line (`id`) was dragged to `price` and released: set its stop loss
+/// (`which` = sl) / take profit (tp) there. The chart checked the side of the price before.
+class ChartStopDragged extends ChartEvent {
+  const ChartStopDragged(this.id, this.which, this.price);
+  final String id, which;
   final double price;
 }
 

@@ -24,6 +24,22 @@ void main() {
     });
   });
 
+  group('profit slope (the stop projection on the chart)', () {
+    test('a line through the open price: profitAt at any close', () {
+      final s = profitSlope(eurusd, side: 'buy', lots: 0.5);
+      expect(s.inverse, isFalse);
+      expect(s.perPrice, closeTo(50000, 1e-9));
+      expect((1.0790 - 1.0845) * s.perPrice, closeTo(profitAt(eurusd, side: 'buy', lots: 0.5, open: 1.0845, close: 1.0790), 1e-9));
+      expect(profitSlope(eurusd, side: 'sell', lots: 0.5).perPrice, closeTo(-50000, 1e-9));
+    });
+
+    test('a USD-base pair converts at the close', () {
+      final j = profitSlope(usdjpy, side: 'sell', lots: 1);
+      expect(j.inverse, isTrue);
+      expect((149 - 150) * j.perPrice / 149, closeTo(profitAt(usdjpy, side: 'sell', lots: 1, open: 150, close: 149), 1e-9));
+    });
+  });
+
   group('pip value', () {
     test('EURUSD: 10 USD a pip for one lot', () {
       expect(pipValuePerLot(eurusd, 1.0845), closeTo(10, 1e-9));

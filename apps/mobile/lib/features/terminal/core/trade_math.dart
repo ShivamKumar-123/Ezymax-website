@@ -44,6 +44,16 @@ double profitAt(SymbolSpec s, {required String side, required double lots, requi
   return diff * lots * s.contractSize * usdPerQuote(s.profitCurrency, symbol: s.symbol, price: close, bidOf: bidOf);
 }
 
+/// [profitAt] as a line through the open price, for the chart's live stop projection: profit(close) = (close − open) ×
+/// perPrice ÷ (inverse ? close : 1). `perPrice` is the USD per 1.0 of price, signed by side (negative for a sell);
+/// `inverse` for a USD-base symbol (USDJPY …), whose quote currency converts to USD at 1 / close.
+({double perPrice, bool inverse}) profitSlope(SymbolSpec s, {required String side, required double lots, BidOf? bidOf}) {
+  final c = s.profitCurrency.toUpperCase();
+  final inverse = c != 'USD' && c != 'USC' && c.isNotEmpty && s.symbol.toUpperCase() == 'USD$c';
+  final rate = inverse ? 1.0 : usdPerQuote(s.profitCurrency, symbol: s.symbol, price: 0, bidOf: bidOf);
+  return (perPrice: (side == 'buy' ? 1 : -1) * lots * s.contractSize * rate, inverse: inverse);
+}
+
 /// Floating P&L (USD) of a position at the current bid / ask, swap and commission included (web profitUsd).
 double positionProfit(SymbolSpec s, TPosition p, double bid, double ask, {BidOf? bidOf}) {
   final close = p.buy ? bid : ask;

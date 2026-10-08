@@ -1,7 +1,8 @@
 // One chart window (web: components/chart/engine.ts + chart-view.tsx): candle history from market data (cached per
 // symbol / timeframe so switching draws at once, then the tail is refreshed), the forming bar from the stream, the
 // account's bid / ask lines, and the trade lines (positions, SL / TP, pending orders, alerts) with drag / tap
-// callbacks. Charts are drawn in broker server time like MT5 (GMT+3 in US summer time, GMT+2 otherwise).
+// callbacks and the S / T handles that set a stop loss / take profit. Charts are drawn in broker server time like MT5
+// (GMT+3 in US summer time, GMT+2 otherwise).
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -72,6 +73,7 @@ class TerminalChart extends ConsumerStatefulWidget {
     this.source,
     this.lines = const [],
     this.onLineDragged,
+    this.onStopDragged,
     this.onLineTapped,
     this.onLineClosed,
     this.onLongPress,
@@ -91,6 +93,11 @@ class TerminalChart extends ConsumerStatefulWidget {
   /// A line dropped at `price`. Until a returned future completes the line stays at the drop price on the chart
   /// (then the chart shows the lines it is given again: the new price once the server confirmed it, else the old one).
   final FutureOr<void> Function(ChartLine line, double price)? onLineDragged;
+
+  /// The S / T handle of a position or order line dropped at `price` (on the right side of the price, the chart
+  /// checked it): set its stop loss (`which` = sl) / take profit (tp). Until a returned future completes the new stop
+  /// line is drawn at the drop price, like a dropped line.
+  final FutureOr<void> Function(ChartLine line, String which, double price)? onStopDragged;
   final void Function(ChartLine line)? onLineTapped;
 
   /// The × on a line's chip.
@@ -122,8 +129,9 @@ class _TerminalChartState extends ConsumerState<TerminalChart> {
   bool _dark = true;
   ChartPalette? _palette;
 
-  /// A dropped line kept at its drop price until the app's action finished: (id, price).
-  (String, double)? _held;
+  /// A dropped line kept at its drop price until the app's action finished: a moved line, or the new SL / TP set with
+  /// the S / T handle of the `owner` line (whose handle is hidden meanwhile).
+  ({ChartLine line, String? owner})? _held;
   Timer? _holdTimer;
 
   ChartSource get _source {
@@ -170,34 +178,62 @@ class _TerminalChartState extends ConsumerState<TerminalChart> {
 
   List<Map<String, Object?>> get _indicatorsJson => [for (final i in widget.indicators) i.toJson()];
 
-  /// The lines to draw: the given ones, with a just-dropped line kept at its drop price.
+  /// The lines to draw: the given ones, with a just-dropped line kept at its drop price (a new stop line added).
   void _sendLines() {
     var h = _held;
     // the confirmed line is at the drop price: nothing to hold any more
-    if (h != null && widget.lines.any((l) => l.id == h!.$1 && (l.price - h.$2).abs() < 1e-9)) {
+    if (h != null && widget.lines.any((l) => l.id == h!.line.id && (l.price - h.line.price).abs() < 1e-9)) {
       _held = h = null;
       _holdTimer?.cancel();
       _holdTimer = null;
     }
-    final lines = h == null
-        ? widget.lines
-        : [
-            for (final l in widget.lines)
-              l.id == h.$1
-                  ? ChartLine(
-                      id: l.id,
-                      kind: l.kind,
-                      price: h.$2,
-                      label: l.label,
-                      side: l.side,
-                      draggable: l.draggable,
-                      note: l.note,
-                      tone: l.tone,
-                      closable: l.closable,
-                    )
-                  : l,
-          ];
+    if (h == null) {
+      _c.send(ChartCmd.lines(widget.lines));
+      return;
+    }
+    final held = h.line, owner = h.owner;
+    final which = held.kind;
+    final lines = [
+      for (final l in widget.lines)
+        if (l.id == held.id)
+          l.copyWith(price: held.price, note: _stopNote(l, held.price))
+        else if (l.id == owner)
+          l.copyWith(addSl: which == 'sl' ? false : null, addTp: which == 'tp' ? false : null)
+        else
+          l,
+      // a new stop: drawn while its position or order is there
+      if (owner != null && !widget.lines.any((l) => l.id == held.id) && widget.lines.any((l) => l.id == owner)) held,
+    ];
     _c.send(ChartCmd.lines(lines));
+  }
+
+  /// The money at a stop line moved to `price` (other lines keep their note).
+  static String? _stopNote(ChartLine l, double price) {
+    final s = l.stops;
+    if (s == null || (l.kind != 'sl' && l.kind != 'tp')) return l.note;
+    return accMoney(false, s.moneyAt(price), signed: true);
+  }
+
+  /// Shows `held` until `act`'s answer: a refusal puts the lines back at once, a success keeps it until the confirmed
+  /// line arrives (or briefly, if it already did); a lost answer never pins it (12 s at most).
+  void _hold(({ChartLine line, String? owner}) held, FutureOr<void> Function()? act) {
+    _holdTimer?.cancel();
+    _held = held;
+    _sendLines();
+    final r = act?.call();
+    if (_held == null) return;
+    final id = held.line.id;
+    _holdTimer = Timer(const Duration(seconds: 12), _release);
+    if (r is Future) {
+      r.then((ok) {
+        if (!mounted || _held?.line.id != id) return;
+        _holdTimer?.cancel();
+        _holdTimer = ok == false ? null : Timer(const Duration(milliseconds: 1500), _release);
+        if (ok == false) _release();
+      }, onError: (Object _) => _release()).ignore();
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _release());
+    }
   }
 
   void _release() {
@@ -246,6 +282,15 @@ class _TerminalChartState extends ConsumerState<TerminalChart> {
         texts: {
           'more': t('chart.legend.more', {'count': '{count}'}),
           'less': t('chart.legend.showLess'),
+          // the S / T handles of a position or order chip, and why a stop may not go where it is dragged
+          'posTip': t('chart.line.posTip'),
+          'dragSl': t('chart.line.dragSl'),
+          'dragTp': t('chart.line.dragTp'),
+          'slBelow': t('chart.line.bad.slBelow', {'price': '{price}'}),
+          'slAbove': t('chart.line.bad.slAbove', {'price': '{price}'}),
+          'tpAbove': t('chart.line.bad.tpAbove', {'price': '{price}'}),
+          'tpBelow': t('chart.line.bad.tpBelow', {'price': '{price}'}),
+          'notSent': t('chart.line.bad.notSent'),
         },
       ),
     );
@@ -288,6 +333,9 @@ class _TerminalChartState extends ConsumerState<TerminalChart> {
         unawaited(_older(before));
       case ChartDragStarted():
         _c.holdLines = true;
+      case ChartDragEnded():
+        // dropped where it may not go: the page put it back, nothing was sent
+        _c.holdLines = false;
       case ChartLineDragged(:final id, :final price):
         _c.holdLines = false;
         final l = widget.lines.where((x) => x.id == id).firstOrNull;
@@ -295,25 +343,23 @@ class _TerminalChartState extends ConsumerState<TerminalChart> {
           _sendLines();
           break;
         }
-        _holdTimer?.cancel();
-        // a position line does not move (its drag sets the SL or TP): only stops, orders and alerts stay put
-        _held = l.kind == 'pos' ? null : (id, price);
-        _sendLines();
-        final r = widget.onLineDragged?.call(l, price);
-        if (_held == null) break;
-        // a lost answer never pins the line: the given lines win after a while at the latest
-        _holdTimer = Timer(const Duration(seconds: 12), _release);
-        if (r is Future) {
-          // refused: back at once; done: until the confirmed line arrives (or briefly, if it already did)
-          r.then((ok) {
-            if (!mounted || _held?.$1 != id) return;
-            _holdTimer?.cancel();
-            _holdTimer = ok == false ? null : Timer(const Duration(milliseconds: 1500), _release);
-            if (ok == false) _release();
-          }, onError: (Object _) => _release()).ignore();
-        } else {
-          WidgetsBinding.instance.addPostFrameCallback((_) => _release());
-        }
+        final cb = widget.onLineDragged;
+        _hold((line: l.copyWith(price: price), owner: null), cb == null ? null : () => cb(l, price));
+      case ChartStopDragged(:final id, :final which, :final price):
+        final l = widget.lines.where((x) => x.id == id).firstOrNull;
+        final cb = widget.onStopDragged;
+        if (l == null || cb == null) break;
+        // the new stop line at the drop price until the server answers (its chip without × or drag meanwhile)
+        final stop = ChartLine(
+          id: l.stopId(which),
+          kind: which,
+          price: price,
+          label: which.toUpperCase(),
+          side: l.side,
+          note: l.stops == null ? null : accMoney(false, l.stops!.moneyAt(price), signed: true),
+          stops: l.stops,
+        );
+        _hold((line: stop, owner: id), () => cb(l, which, price));
       case ChartLineTapped(:final id):
         _c.holdLines = false;
         final l = widget.lines.where((x) => x.id == id).firstOrNull;

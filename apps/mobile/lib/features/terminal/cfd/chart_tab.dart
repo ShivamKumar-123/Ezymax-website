@@ -12,7 +12,6 @@ import '../chart/chart_bridge.dart';
 import '../chart/terminal_chart.dart';
 import '../core/market.dart';
 import '../core/market_hours.dart';
-import '../core/models.dart';
 import '../core/order.dart';
 import '../core/terminal_controller.dart';
 import '../core/trade_actions.dart';
@@ -118,7 +117,8 @@ class ChartTab extends ConsumerWidget {
   }
 }
 
-/// The chart with the account's trade lines (web useTradeLines + commitLineDrag).
+/// The chart with the account's trade lines (web useTradeLines + commitLineDrag). A position or order line does not
+/// move: its S / T handles set a stop loss / take profit (MT5, TradingView); its SL / TP lines move and have ×.
 class _Chart extends ConsumerWidget {
   const _Chart({required this.symbol, required this.tf});
   final String symbol, tf;
@@ -135,28 +135,62 @@ class _Chart extends ConsumerWidget {
     final bidOf = ref.read(marketFeedProvider).bidOf;
     // the money on a chip (web chart-view: the position's P&L, the result at its SL / TP)
     String money(double usd) => accMoney(cent, usd, signed: true);
-    String? atStop(TPosition p, double price) =>
-        spec == null ? null : money(profitAt(spec, side: p.side, lots: p.volume, open: p.openPrice, close: price, bidOf: bidOf) + p.swap - p.commission);
     String tone(double v) => v >= 0 ? 'up' : 'down';
+    // how the chart checks and values a stop of a trade while it is dragged (account money: USC on cent accounts)
+    ChartStops? stopsOf(String side, double lots, double open, {double fixed = 0, bool order = false}) {
+      if (spec == null) return null;
+      final s = profitSlope(spec, side: side, lots: lots, bidOf: bidOf);
+      final f = cent ? 100.0 : 1.0;
+      return ChartStops(open: open, k: s.perPrice * f, c: fixed * f, inv: s.inverse, order: order, gap: spec.stopsLevelPoints * spec.point);
+    }
+
+    String? atStop(ChartStops? s, double price) => s == null ? null : accMoney(false, s.moneyAt(price), signed: true);
+    final positions = st.positions.where((p) => p.symbol == symbol).toList();
+    final orders = st.orders.where((o) => o.symbol == symbol).toList();
+    final posStops = {for (final p in positions) p.ticket: stopsOf(p.side, p.volume, p.openPrice, fixed: p.swap - p.commission)};
+    // an order's stops are checked against its entry (the limit price of a stop-limit), like the engine
+    final orderStops = {for (final o in orders) o.ticket: stopsOf(o.side, o.volume, o.stopLimit ?? o.price, order: true)};
     final lines = <ChartLine>[
-      for (final p in st.positions.where((p) => p.symbol == symbol)) ...[
+      for (final p in positions) ...[
         ChartLine(
           id: 'pos:${p.ticket}',
           kind: 'pos',
           price: p.openPrice,
           side: p.side,
           label: t(p.buy ? 'chart.line.buy' : 'chart.line.sell', {'lot': fmtVol(p.volume)}),
-          draggable: !ro,
           note: money(st.profitOf(p)),
           tone: tone(st.profitOf(p)),
           closable: !ro,
+          addSl: !ro && p.sl == null,
+          addTp: !ro && p.tp == null,
+          stops: posStops[p.ticket],
         ),
         if (p.sl != null)
-          ChartLine(id: 'sl:${p.ticket}', kind: 'sl', price: p.sl!, side: p.side, label: 'SL', draggable: !ro, note: atStop(p, p.sl!), closable: !ro),
+          ChartLine(
+            id: 'sl:${p.ticket}',
+            kind: 'sl',
+            price: p.sl!,
+            side: p.side,
+            label: 'SL',
+            draggable: !ro,
+            note: atStop(posStops[p.ticket], p.sl!),
+            closable: !ro,
+            stops: posStops[p.ticket],
+          ),
         if (p.tp != null)
-          ChartLine(id: 'tp:${p.ticket}', kind: 'tp', price: p.tp!, side: p.side, label: 'TP', draggable: !ro, note: atStop(p, p.tp!), closable: !ro),
+          ChartLine(
+            id: 'tp:${p.ticket}',
+            kind: 'tp',
+            price: p.tp!,
+            side: p.side,
+            label: 'TP',
+            draggable: !ro,
+            note: atStop(posStops[p.ticket], p.tp!),
+            closable: !ro,
+            stops: posStops[p.ticket],
+          ),
       ],
-      for (final o in st.orders.where((o) => o.symbol == symbol))
+      for (final o in orders) ...[
         ChartLine(
           id: 'pnd:${o.ticket}',
           kind: 'pending',
@@ -165,7 +199,35 @@ class _Chart extends ConsumerWidget {
           label: t(_pendingLine(o.side, o.type), {'lot': fmtVol(o.volume)}),
           draggable: !ro,
           closable: !ro,
+          addSl: !ro && o.sl == null,
+          addTp: !ro && o.tp == null,
+          stops: orderStops[o.ticket],
         ),
+        if (o.sl != null)
+          ChartLine(
+            id: 'osl:${o.ticket}',
+            kind: 'sl',
+            price: o.sl!,
+            side: o.side,
+            label: 'SL',
+            draggable: !ro,
+            note: atStop(orderStops[o.ticket], o.sl!),
+            closable: !ro,
+            stops: orderStops[o.ticket],
+          ),
+        if (o.tp != null)
+          ChartLine(
+            id: 'otp:${o.ticket}',
+            kind: 'tp',
+            price: o.tp!,
+            side: o.side,
+            label: 'TP',
+            draggable: !ro,
+            note: atStop(orderStops[o.ticket], o.tp!),
+            closable: !ro,
+            stops: orderStops[o.ticket],
+          ),
+      ],
       for (final a in alerts.where((a) => a.symbol == symbol && a.active))
         ChartLine(id: 'alr:${a.id}', kind: 'alert', price: a.price, label: t('chart.line.alert'), draggable: true, closable: true),
     ];
@@ -174,6 +236,7 @@ class _Chart extends ConsumerWidget {
       tf: tf,
       lines: lines,
       onLineDragged: (l, price) => _commitDrag(ref, l, price),
+      onStopDragged: (l, which, price) => _commitStop(ref, l, which, price),
       onLineTapped: (l) => _tapLine(context, ref, l),
       onLineClosed: (l) => _closeLine(ref, l),
       chartType: chart.type,
@@ -193,6 +256,9 @@ class _Chart extends ConsumerWidget {
     _ => 'chart.line.buyLimit',
   };
 
+  /// The SL / TP line of a pending order (`osl:` / `otp:`), not of a position.
+  static bool _ofOrder(ChartLine l) => l.id.startsWith('osl:') || l.id.startsWith('otp:');
+
   /// A dropped line (web commitLineDrag). The future says whether the server took it (the chart keeps the line at
   /// the drop price until then).
   Future<bool> _commitDrag(WidgetRef ref, ChartLine l, double price) async {
@@ -202,24 +268,25 @@ class _Chart extends ConsumerWidget {
     KHaptics.medium();
     switch (l.kind) {
       case 'sl':
-        return actions.modifyPosition(l.ref, sl: price);
+        return _ofOrder(l) ? actions.modifyOrder(l.ref, sl: price) : actions.modifyPosition(l.ref, sl: price);
       case 'tp':
-        return actions.modifyPosition(l.ref, tp: price);
+        return _ofOrder(l) ? actions.modifyOrder(l.ref, tp: price) : actions.modifyPosition(l.ref, tp: price);
       case 'pending':
         return actions.modifyOrder(l.ref, price: price);
       case 'alert':
         ref.read(workspaceProvider.notifier).updateAlert(l.ref, price: price);
         return true;
-      case 'pos':
-        // dragging a position line sets its SL or TP, by the side of the current price
-        final p = ref.read(terminalProvider).positions.where((x) => x.ticket == l.ref).firstOrNull;
-        final q = ref.read(marketFeedProvider).quote(symbol);
-        if (p == null || q == null) return false;
-        final cur = p.buy ? q.bid : q.ask;
-        final isSl = p.buy ? price < cur : price > cur;
-        return isSl ? actions.modifyPosition(l.ref, sl: price) : actions.modifyPosition(l.ref, tp: price);
     }
     return false;
+  }
+
+  /// The S / T handle of a position or order dropped at `price` (the chart checked its side): its new stop loss /
+  /// take profit. The future says whether the server took it (the chart shows the new line until then).
+  Future<bool> _commitStop(WidgetRef ref, ChartLine l, String which, double price) {
+    final actions = ref.read(tradeActionsProvider);
+    KHaptics.medium();
+    final sl = which == 'sl' ? price : null, tp = which == 'tp' ? price : null;
+    return l.kind == 'pending' ? actions.modifyOrder(l.ref, sl: sl, tp: tp) : actions.modifyPosition(l.ref, sl: sl, tp: tp);
   }
 
   static double _pow10(int n) {
@@ -238,9 +305,9 @@ class _Chart extends ConsumerWidget {
       case 'pos':
         unawaited(actions.closePosition(l.ref));
       case 'sl':
-        unawaited(actions.modifyPosition(l.ref, clearSl: true));
+        unawaited(_ofOrder(l) ? actions.modifyOrder(l.ref, clearSl: true) : actions.modifyPosition(l.ref, clearSl: true));
       case 'tp':
-        unawaited(actions.modifyPosition(l.ref, clearTp: true));
+        unawaited(_ofOrder(l) ? actions.modifyOrder(l.ref, clearTp: true) : actions.modifyPosition(l.ref, clearTp: true));
       case 'pending':
         unawaited(actions.cancelOrder(l.ref));
       case 'alert':
@@ -250,6 +317,8 @@ class _Chart extends ConsumerWidget {
 
   void _tapLine(BuildContext context, WidgetRef ref, ChartLine l) {
     switch (l.kind) {
+      case 'sl' || 'tp' when _ofOrder(l):
+        if (!ref.read(terminalProvider).readOnly) unawaited(showPendingSheet(context, l.ref));
       case 'pos':
       case 'sl':
       case 'tp':
