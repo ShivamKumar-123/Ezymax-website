@@ -23,6 +23,7 @@ import {
   profitUsd,
   roundPrice,
   serverTime,
+  serverZone,
   type ChartType,
   type Expiry,
   type OrderType,
@@ -95,8 +96,13 @@ export interface Anchor {
 }
 export type Drawing =
   | { id: string; kind: "hline"; price: number }
-  | { id: string; kind: "trend" | "rect" | "fib"; a: Anchor; b: Anchor };
-export type DrawTool = "cursor" | "crosshair" | "hline" | "trend" | "fib" | "rect" | "text" | "ruler";
+  | { id: string; kind: "trend" | "rect" | "fib"; a: Anchor; b: Anchor }
+  /** freehand stroke (brush tool) */
+  | { id: string; kind: "brush"; pts: Anchor[] }
+  /** a note at a point (text tool) */
+  | { id: string; kind: "text"; a: Anchor; text: string };
+/** Left-rail tools. "ruler" measures without saving anything. */
+export type DrawTool = "cursor" | "crosshair" | "hline" | "trend" | "fib" | "rect" | "brush" | "text" | "ruler";
 
 export interface ChartTab {
   id: string;
@@ -214,7 +220,7 @@ interface Core {
 /* Defaults & persistence                                              */
 /* ------------------------------------------------------------------ */
 
-const WS_KEY = "ezymex.terminal.workspace";
+export const WS_KEY = "ezymex.terminal.workspace";
 export const SESSION_KEY = "ezymex.terminal.session";
 export const SAVED_KEY = "ezymex.terminal.saved";
 
@@ -626,14 +632,14 @@ export function TerminalProvider({ initialSession, engineSessions, children, onL
       return () => void off();
     }
     if (engine) {
-      log("Terminal", `Ezymex Trader started · ${navigator.platform || "Web"}, ${INSTRUMENTS.length - priceFeed().unavailable.size} symbols, GMT+3 server time`);
+      log("Terminal", `Ezymex Trader started · ${navigator.platform || "Web"}, ${INSTRUMENTS.length - priceFeed().unavailable.size} symbols, ${serverZone()} server time`);
       return;
     }
     const a = accountOf(initialSession.login);
     const n = coreRef.current.positions.filter((p) => p.login === a.login).length;
     const o = coreRef.current.pendings.filter((p) => p.login === a.login).length;
     log("Terminal", "Ezymex Trader x64 build 5120 started for Ezymex Global Markets Ltd");
-    log("Terminal", `${navigator.platform || "Web"}, ${navigator.hardwareConcurrency ?? 8} cores, ${INSTRUMENTS.length} symbols, GMT+3 server time`);
+    log("Terminal", `${navigator.platform || "Web"}, ${navigator.hardwareConcurrency ?? 8} cores, ${INSTRUMENTS.length} symbols, ${serverZone()} server time`);
     log("Network", `'${a.login}': authorized on ${a.server} through Access Point EU Frankfurt (ping 38.2 ms)${initialSession.investor ? ", investor mode (read-only)" : ""}`);
     log("Network", `'${a.login}': terminal synchronized with Ezymex Global: ${n} positions, ${o} orders, ${INSTRUMENTS.length} symbols, 0 spreads`);
     log("Trade", `'${a.login}': ${a.mode} account, leverage 1:${a.leverage}, ${accCcy(a)}`);

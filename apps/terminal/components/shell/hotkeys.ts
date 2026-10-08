@@ -5,6 +5,7 @@ import { useTerminal, type Layout } from "@/lib/store";
 import { chartRegistry } from "@/components/chart/engine";
 import { openActivity, showSide, toggleFullChart, toggleFullscreen, toggleOneClick } from "./commands";
 import { openIndicatorList } from "@/components/chart/indicators/state";
+import { deleteSelectedDrawing, redoDrawings, undoDrawings } from "@/components/chart/drawings";
 
 /** Global terminal keyboard shortcuts (MT5-compatible where possible). */
 export function useHotkeys() {
@@ -83,6 +84,13 @@ export function useHotkeys() {
         return;
       }
       if (typing) return;
+      // drawings: Ctrl/⌘+Z undoes, Ctrl/⌘+Shift+Z or Ctrl+Y redoes (text fields keep their own undo above)
+      if (mod && !e.altKey && (e.key.toLowerCase() === "z" || e.key.toLowerCase() === "y")) {
+        e.preventDefault();
+        if (e.key.toLowerCase() === "y" || e.shiftKey) redoDrawings(t);
+        else undoDrawings(t);
+        return;
+      }
       if (e.key === "F" && e.shiftKey && !mod && !e.altKey) {
         e.preventDefault();
         toggleFullChart(t);
@@ -99,7 +107,7 @@ export function useHotkeys() {
       }
       if ((e.key === "Delete" || e.key === "Backspace") && t.selectedDrawing) {
         e.preventDefault();
-        t.deleteSelectedDrawing();
+        deleteSelectedDrawing(t);
         return;
       }
       if (e.key === "+" || e.key === "=") chartRegistry.get(t.ws.activeId)?.zoom(1);

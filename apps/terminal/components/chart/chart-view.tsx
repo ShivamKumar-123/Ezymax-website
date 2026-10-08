@@ -2,19 +2,20 @@
 
 import * as React from "react";
 import { useTheme } from "next-themes";
-import { LineStyle, type IPriceLine } from "lightweight-charts";
+import { LineStyle, type IPriceLine, type UTCTimestamp } from "lightweight-charts";
 import { toast } from "@/lib/notify";
-import { ArrowDownRight, ArrowUpRight, Bell, Camera, CandlestickChart, ChevronUp, Crosshair, GripVertical, Layers, Minus, Plus, ShoppingCart, SlidersHorizontal, X, Zap } from "lucide-react";
-import { getInstrument, isMarketOpen, priceFeed } from "@ezymex/mock";
-import { PriceText, cn, useQuote } from "@ezymex/ui";
+import { ArrowDownRight, ArrowUpRight, Bell, Camera, CandlestickChart, Crosshair, GripVertical, Layers, Minus, Plus, ShoppingCart, SlidersHorizontal, X } from "lucide-react";
+import { getInstrument, priceFeed } from "@ezymex/mock";
+import { cn, useQuote } from "@ezymex/ui";
 import { usePositionProfit, useTerminal, type Anchor, type ChartTab, type Drawing } from "@/lib/store";
-import { CHART_TYPES, TIMEFRAMES, accMoney, fmtPrice, fmtVol, profitAt, roundPrice, type TPosition } from "@/lib/trading";
+import { CHART_TYPES, TF_SECONDS, TIMEFRAMES, accMoney, fmtPrice, fmtVol, profitAt, roundPrice, type PendingOrder, type TPosition } from "@/lib/trading";
 import { useContextMenu, type MenuItem } from "@/components/ui/menu";
 import { INDICATOR_CATEGORIES, INDICATOR_LIST } from "@/lib/indicators";
-import { chartRegistry, useChartEngine, type LegendData } from "./engine";
+import { chartRegistry, pendingRanges, useChartEngine, type ChartHandle, type LegendData } from "./engine";
 import { IndicatorLegendRow } from "./indicators/legend";
 import { addIndicator, openIndicatorList, openIndicatorSettings, removeIndicator, toggleIndicator } from "./indicators/state";
-import { useMarketOpen } from "@/lib/market-hours";
+import { OneClickPanel } from "./one-click";
+import { clearDrawings, drawPrefs, editDrawings, setDrawPrefs, useDrawPrefs } from "./drawings";
 import { openRegister } from "@/lib/guest";
 import { useT } from "@ezymex/i18n/react";
 import type { MessageKey } from "@ezymex/i18n";
@@ -33,11 +34,18 @@ export interface TLine {
   label: string;
   draggable: boolean;
   closable?: boolean;
+  /** SL / TP lines: whose stop it is, an open position's or a pending order's */
+  owner?: "pos" | "pnd";
+  /** position / order chips: the S and T handles, shown while that stop isn't set (drag one out to set it) */
+  stops?: { sl: boolean; tp: boolean };
 }
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 
-/** Position / SL / TP / pending / alert lines for one symbol. */
+/**
+ * Position / SL / TP / pending / alert lines for one symbol. A position line doesn't move: its SL and TP come out of the
+ * S and T handles on its chip (MT5 / TradingView style). Pending orders move, have S / T too and show their SL / TP.
+ */
 export function useTradeLines(symbol: string): TLine[] {
   const T = useTerminal();
   const positions = T.positions.filter((p) => p.symbol === symbol);
@@ -48,17 +56,19 @@ export function useTradeLines(symbol: string): TLine[] {
   return React.useMemo(() => {
     const out: TLine[] = [];
     for (const p of positions) {
-      out.push({ id: `pos:${p.ticket}`, kind: "pos", price: p.openPrice, ref: p.ticket, side: p.side, label: t(p.side === "buy" ? "chart.line.buy" : "chart.line.sell", { lot: fmtVol(p.volume) }), draggable: !ro, closable: !ro });
-      if (p.sl !== undefined) out.push({ id: `sl:${p.ticket}`, kind: "sl", price: p.sl, ref: p.ticket, side: p.side, label: "SL", draggable: !ro, closable: !ro });
-      if (p.tp !== undefined) out.push({ id: `tp:${p.ticket}`, kind: "tp", price: p.tp, ref: p.ticket, side: p.side, label: "TP", draggable: !ro, closable: !ro });
+      out.push({ id: `pos:${p.ticket}`, kind: "pos", price: p.openPrice, ref: p.ticket, side: p.side, label: t(p.side === "buy" ? "chart.line.buy" : "chart.line.sell", { lot: fmtVol(p.volume) }), draggable: false, closable: !ro, stops: ro ? undefined : { sl: p.sl === undefined, tp: p.tp === undefined } });
+      if (p.sl !== undefined) out.push({ id: `sl:${p.ticket}`, kind: "sl", price: p.sl, ref: p.ticket, side: p.side, owner: "pos", label: "SL", draggable: !ro, closable: !ro });
+      if (p.tp !== undefined) out.push({ id: `tp:${p.ticket}`, kind: "tp", price: p.tp, ref: p.ticket, side: p.side, owner: "pos", label: "TP", draggable: !ro, closable: !ro });
     }
     for (const o of pendings) {
-      out.push({ id: `pnd:${o.ticket}`, kind: "pending", price: o.price, ref: o.ticket, side: o.side, label: t(PENDING_LABEL[`${o.side}:${o.type}`] ?? "chart.line.buyLimit", { lot: fmtVol(o.volume) }), draggable: !ro, closable: !ro });
+      out.push({ id: `pnd:${o.ticket}`, kind: "pending", price: o.price, ref: o.ticket, side: o.side, label: t(PENDING_LABEL[`${o.side}:${o.type}`] ?? "chart.line.buyLimit", { lot: fmtVol(o.volume) }), draggable: !ro, closable: !ro, stops: ro ? undefined : { sl: o.sl === undefined, tp: o.tp === undefined } });
+      if (o.sl !== undefined) out.push({ id: `psl:${o.ticket}`, kind: "sl", price: o.sl, ref: o.ticket, side: o.side, owner: "pnd", label: "SL", draggable: !ro, closable: !ro });
+      if (o.tp !== undefined) out.push({ id: `ptp:${o.ticket}`, kind: "tp", price: o.tp, ref: o.ticket, side: o.side, owner: "pnd", label: "TP", draggable: !ro, closable: !ro });
     }
     for (const a of alerts) out.push({ id: `alr:${a.id}`, kind: "alert", price: a.price, ref: a.id, label: t("chart.line.alert"), draggable: true, closable: true });
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(positions.map((p) => [p.ticket, p.openPrice, p.sl, p.tp, p.volume, p.side])), JSON.stringify(pendings.map((p) => [p.ticket, p.price, p.volume])), JSON.stringify(alerts.map((a) => [a.id, a.price])), ro, t]);
+  }, [JSON.stringify(positions.map((p) => [p.ticket, p.openPrice, p.sl, p.tp, p.volume, p.side])), JSON.stringify(pendings.map((p) => [p.ticket, p.price, p.volume, p.side, p.type, p.sl, p.tp])), JSON.stringify(alerts.map((a) => [a.id, a.price])), ro, t]);
 }
 
 const PENDING_LABEL: Record<string, MessageKey> = {
@@ -70,32 +80,68 @@ const PENDING_LABEL: Record<string, MessageKey> = {
   "sell:stop-limit": "chart.line.sellStopLimit",
 };
 
-/** Commit a dragged trade line to the store (SL/TP/pending/alert; dragging a position sets SL or TP by direction). */
-export function commitLineDrag(T: ReturnType<typeof useTerminal>, symbol: string, line: TLine, price: number) {
-  const inst = getInstrument(symbol);
-  if (Math.abs(price - line.price) < 1 / 10 ** inst.digits) return;
-  if (line.kind === "sl") T.modifyPosition(line.ref, { sl: price });
-  else if (line.kind === "tp") T.modifyPosition(line.ref, { tp: price });
-  else if (line.kind === "pending") T.modifyPending(line.ref, { price });
-  else if (line.kind === "alert") T.updateAlert(line.ref, { price });
-  else {
-    const p = T.positions.find((x) => x.ticket === line.ref);
-    const q = priceFeed().snapshot(symbol);
-    if (!p || !q) return;
-    const cur = p.side === "buy" ? q.bid : q.ask;
-    const isSl = p.side === "buy" ? price < cur : price > cur;
-    T.modifyPosition(line.ref, isSl ? { sl: price } : { tp: price });
+/**
+ * Which side of the price a stop must sit on: a buy's stop loss below and its take profit above, a sell's the other way
+ * round (the trade server rejects anything else). `ref` is the price it is checked against (see stopRef). Returns the
+ * message key of the problem, or null when the stop is fine.
+ */
+export function stopProblem(which: "sl" | "tp", side: "buy" | "sell", ref: number, price: number): MessageKey | null {
+  const below = (which === "sl") === (side === "buy");
+  if (below) return price < ref ? null : which === "sl" ? "chart.line.bad.slBelow" : "chart.line.bad.tpBelow";
+  return price > ref ? null : which === "sl" ? "chart.line.bad.slAbove" : "chart.line.bad.tpAbove";
+}
+
+/** The price an SL / TP is checked against: an open position's closing price now (Bid for a buy, Ask for a sell), a
+ *  pending order's own price. */
+function stopRef(l: TLine, q: { bid: number; ask: number }, pendings: PendingOrder[]): number | null {
+  if (l.owner === "pnd") return pendings.find((o) => o.ticket === l.ref)?.price ?? null;
+  return l.side === "buy" ? q.bid : q.ask;
+}
+
+/** Money at `price` for an SL / TP line: the position's P&L there (with its swap and commission so far), or a pending
+ *  order's, counted from the order price. */
+function stopMoney(l: TLine, price: number, positions: TPosition[], pendings: PendingOrder[]): number | null {
+  if (l.owner === "pnd") {
+    const o = pendings.find((x) => x.ticket === l.ref);
+    return o ? profitAt({ symbol: o.symbol, side: o.side, volume: o.volume, openPrice: o.price }, price) : null;
+  }
+  const p = positions.find((x) => x.ticket === l.ref);
+  return p ? profitAt(p, price) + p.swap - p.commission : null;
+}
+
+/* ------------------------------------------------------------------ */
+/* Drawings                                                            */
+/* ------------------------------------------------------------------ */
+
+/** A drawing in progress (the ruler's last measurement stays on screen, `done`, until the next click on the chart). */
+type Draft = { kind: "trend" | "rect" | "fib" | "ruler"; a: Anchor; b: Anchor; clickMode?: boolean; done?: boolean } | { kind: "brush"; pts: Anchor[] };
+type Shape = Drawing | ({ id: string } & Draft);
+
+/** A drawing moved by `dl` bars and `dp` in price. */
+function shiftDrawing(d: Drawing, dl: number, dp: number, round: (p: number) => number): Drawing {
+  const s = (a: Anchor) => ({ l: a.l + dl, p: a.p + dp });
+  switch (d.kind) {
+    case "hline":
+      return { ...d, price: round(d.price + dp) };
+    case "brush":
+      return { ...d, pts: d.pts.map(s) };
+    case "text":
+      return { ...d, a: s(d.a) };
+    default:
+      return { ...d, a: s(d.a), b: s(d.b) };
   }
 }
 
-/** Close / remove action behind the × on a trade line chip. */
-export function removeLine(T: ReturnType<typeof useTerminal>, l: TLine) {
-  if (l.kind === "pos") T.closePosition(l.ref);
-  else if (l.kind === "sl") T.modifyPosition(l.ref, { sl: null });
-  else if (l.kind === "tp") T.modifyPosition(l.ref, { tp: null });
-  else if (l.kind === "pending") T.cancelPending(l.ref);
-  else if (l.kind === "alert") T.removeAlert(l.ref);
+/** "3d 4h", "2h 15m", "45m": a time span for the ruler. */
+function fmtSpan(sec: number) {
+  const m = Math.round(Math.abs(sec) / 60);
+  const d = Math.floor(m / 1440);
+  const h = Math.floor((m % 1440) / 60);
+  const mm = m % 60;
+  return d ? `${d}d${h ? ` ${h}h` : ""}` : h ? `${h}h${mm ? ` ${mm}m` : ""}` : `${mm}m`;
 }
+
+/* ------------------------------------------------------------------ */
 
 export interface ChartViewProps {
   tab: ChartTab;
@@ -105,6 +151,16 @@ export interface ChartViewProps {
   hideOneClick?: boolean;
   /** draw the accent frame of the active chart (default: when active); off with a single chart on screen */
   highlight?: boolean;
+}
+
+interface LineDrag {
+  id: string;
+  price: number;
+  /** an SL / TP being dragged out of a chip's S or T handle: the line it becomes when dropped */
+  create?: TLine;
+  /** pointer start and whether it really moved (a click on S / T without a drag sets nothing) */
+  y0?: number;
+  moved?: boolean;
 }
 
 export function ChartView({ tab, active, onActivate, compact, hideOneClick, highlight = active }: ChartViewProps) {
@@ -125,19 +181,21 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
     [legendStore],
   );
   const [legendOpen, setLegendOpen] = React.useState(false);
-  // No quote subscription here: a tick must not re-render the chart overlays. Leaf components (QuoteTag,
-  // OneClickPanel, PositionChipPnl) subscribe themselves; handlers read the current quote when they run.
+  // No quote subscription here: a tick must not re-render the chart overlays. Leaf components (OneClickPanel,
+  // PositionChipPnl, StopDragTag) subscribe themselves; handlers read the current quote when they run.
   const quoteNow = () => priceFeed().quote(tab.symbol);
   const inst = getInstrument(tab.symbol);
   const acc = T.account;
   const tool = active ? T.drawTool : "cursor";
+  const drawing = tool === "hline" || tool === "trend" || tool === "rect" || tool === "fib" || tool === "brush" || tool === "text" || tool === "ruler";
+  const prefs = useDrawPrefs();
   const engine = useChartEngine(el, {
     symbol: tab.symbol,
     tf: tab.tf,
     type: tab.type,
     indicators: tab.indicators,
     theme: resolvedTheme,
-    crosshair: tool === "crosshair" || tool === "hline" || tool === "trend" || tool === "rect" || tool === "fib",
+    crosshair: tool === "crosshair" || drawing,
     onLegend,
   });
   const cm = useContextMenu(236);
@@ -145,7 +203,7 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
   /* ---------------- registry for toolbar actions ---------------- */
   React.useEffect(() => {
     if (!engine) return;
-    chartRegistry.set(tab.id, {
+    const handle: ChartHandle = {
       zoom: (d) => {
         if (!engine.alive.current) return;
         const ts = engine.chart.timeScale();
@@ -170,8 +228,28 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
         });
         toast.success(t("chart.screenshot.saved"), { description: `${tab.symbol}, ${tab.tf} · ${canvas.width}×${canvas.height} PNG` });
       },
-    });
+      setRange: (seconds) => {
+        if (!engine.alive.current) return;
+        const data = engine.bars.current;
+        if (!data.length) return;
+        // calendar time back from the latest bar (weekends included, as a date range should); older bars than the
+        // history holds just start the view at the first bar (live builds then page in older history)
+        const to = data[data.length - 1]!.time;
+        const from = Math.max(data[0]!.time, to - seconds);
+        engine.chart.priceScale("right").applyOptions({ autoScale: true });
+        engine.chart.timeScale().setVisibleRange({ from: from as UTCTimestamp, to: to as UTCTimestamp });
+      },
+    };
+    chartRegistry.set(tab.id, handle);
+    // a range preset that switched the timeframe: apply it once this (rebuilt) chart has its first view
+    let raf = 0;
+    const pending = pendingRanges.get(tab.id);
+    if (pending !== undefined && engine.tf === tab.tf) {
+      pendingRanges.delete(tab.id);
+      raf = requestAnimationFrame(() => (raf = requestAnimationFrame(() => handle.setRange(pending))));
+    }
     return () => {
+      cancelAnimationFrame(raf);
       chartRegistry.delete(tab.id);
     };
   }, [engine, tab.id, tab.symbol, tab.tf, t]);
@@ -179,13 +257,18 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
   /* ---------------- lines from store ---------------- */
   const ro = T.readOnly;
   const tradeLines = useTradeLines(tab.symbol);
-  // a position line dropped to create an SL / TP: the new line shows at once, not when the trade server answers
+  // an SL / TP dropped from a chip's S / T: the new line shows at once, not when the trade server answers
   const [fresh, setFresh] = React.useState<TLine | null>(null);
-  const lines = React.useMemo(() => (fresh && !tradeLines.some((l) => l.id === fresh.id) ? [...tradeLines, fresh] : tradeLines), [tradeLines, fresh]);
-
-  const [drag, setDrag] = React.useState<{ id: string; price: number } | null>(null);
+  const [drag, setDrag] = React.useState<LineDrag | null>(null);
   const dragRef = React.useRef(drag);
   dragRef.current = drag;
+  const dragCreate = drag?.create ?? null;
+  const lines = React.useMemo(() => {
+    let out = tradeLines;
+    for (const x of [fresh, dragCreate]) if (x && !out.some((l) => l.id === x.id)) out = [...out, x];
+    return out;
+  }, [tradeLines, fresh, dragCreate]);
+
   // a dropped SL / TP / pending line stays where it was dropped until the trade server has answered
   const [hold, setHold] = React.useState<{ id: string; price: number } | null>(null);
   const holdRef = React.useRef(hold);
@@ -194,6 +277,18 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
     setHold({ id, price });
     void p.finally(() => setHold((h) => (h?.id === id && h.price === price ? null : h)));
   };
+
+  /** Why an SL / TP at `price` would be rejected (translated), or null. */
+  const badStop = (l: TLine, price: number) => {
+    if ((l.kind !== "sl" && l.kind !== "tp") || !l.side) return null;
+    const ref = stopRef(l, quoteNow(), T.pendings);
+    const k = ref === null ? null : stopProblem(l.kind, l.side, ref, price);
+    return k ? t(k, { price: fmtPrice(tab.symbol, ref!) }) : null;
+  };
+  const dragLine = drag ? lines.find((l) => l.id === drag.id) ?? null : null;
+  const dragStop = dragLine && (dragLine.kind === "sl" || dragLine.kind === "tp") ? dragLine : null;
+  const dragBad = drag && dragStop ? badStop(dragStop, drag.price) : null;
+
   const priceLines = React.useRef<{ owner: unknown; map: Map<string, IPriceLine> }>({ owner: null, map: new Map() });
 
   // sync price lines (axis labels + lines drawn by the chart)
@@ -202,10 +297,11 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
     if (priceLines.current.owner !== engine.chart) priceLines.current = { owner: engine.chart, map: new Map() }; // same chart survives theme recolours
     const c = engine.palette;
     const map = priceLines.current.map;
-    const colorOf = (l: TLine) => (l.kind === "sl" ? c.down : l.kind === "tp" ? c.up : l.kind === "pending" ? c.gold : l.kind === "alert" ? c.warn : l.side === "buy" ? c.up : c.down);
+    // BUY blue, SELL red; SL red, TP green, pending gold, alerts amber; a stop dragged to the wrong side goes grey
+    const colorOf = (l: TLine) => (dragBad && l.id === dragRef.current?.id ? c.fg3 : l.kind === "sl" ? c.down : l.kind === "tp" ? c.up : l.kind === "pending" ? c.gold : l.kind === "alert" ? c.warn : l.side === "buy" ? c.buy : c.down);
     const want = new Map<string, { price: number; color: string; style: LineStyle; width: 1 | 2; title: string }>();
     for (const l of lines) want.set(l.id, { price: l.price, color: colorOf(l), style: l.kind === "pos" ? LineStyle.Solid : l.kind === "alert" ? LineStyle.SparseDotted : LineStyle.Dashed, width: 1, title: "" });
-    for (const d of tab.drawings) if (d.kind === "hline") want.set(`hl:${d.id}`, { price: d.price, color: T.selectedDrawing === d.id ? c.ember : c.fg2, style: LineStyle.Solid, width: 1, title: "" });
+    if (!prefs.hidden) for (const d of tab.drawings) if (d.kind === "hline") want.set(`hl:${d.id}`, { price: d.price, color: T.selectedDrawing === d.id ? c.ember : c.fg2, style: LineStyle.Solid, width: 1, title: "" });
     for (const [id, pl] of map) {
       if (!want.has(id)) {
         try {
@@ -223,7 +319,7 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
       if (ex) ex.applyOptions(opts);
       else map.set(id, engine.main.createPriceLine(opts));
     }
-  }, [engine, lines, tab.drawings, T.selectedDrawing, drag, hold]);
+  }, [engine, lines, tab.drawings, T.selectedDrawing, drag, hold, dragBad, prefs.hidden]);
 
   /* ---------------- geometry loop for HTML overlays ---------------- */
   const [geo, setGeo] = React.useState<{ ys: Record<string, number | null>; psw: number; w: number; h: number; dr: Record<string, number[] | null>; pt: number[] }>({ ys: {}, psw: 68, w: 0, h: 0, dr: {}, pt: [] });
@@ -231,9 +327,15 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
   linesRef.current = lines;
   const drawingsRef = React.useRef(tab.drawings);
   drawingsRef.current = tab.drawings;
-  const [draft, setDraft] = React.useState<{ kind: "trend" | "rect" | "fib"; a: Anchor; b: Anchor; clickMode?: boolean } | null>(null);
+  const hiddenRef = React.useRef(prefs.hidden);
+  hiddenRef.current = prefs.hidden;
+  const [draft, setDraft] = React.useState<Draft | null>(null);
   const draftRef = React.useRef(draft);
   draftRef.current = draft;
+  // a drawing being moved (selected, then dragged): its offset in bars and price, applied on release
+  const [move, setMove] = React.useState<{ id: string; a0: Anchor; x0: number; y0: number; moved: boolean; dl: number; dp: number } | null>(null);
+  const moveRef = React.useRef(move);
+  moveRef.current = move;
   React.useEffect(() => {
     if (!engine) return;
     let raf = 0;
@@ -271,19 +373,26 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
       for (const l of linesRef.current) ys[l.id] = engine.main.priceToCoordinate(d?.id === l.id ? d.price : hd?.id === l.id ? hd.price : l.price);
       const ts = engine.chart.timeScale();
       const dr: Record<string, number[] | null> = {};
-      const all: (Drawing | { id: string; kind: "trend" | "rect" | "fib"; a: Anchor; b: Anchor })[] = [...drawingsRef.current];
+      const all: Shape[] = hiddenRef.current ? [] : [...drawingsRef.current];
       if (draftRef.current) all.push({ id: "__draft", ...draftRef.current });
+      const mv = moveRef.current;
       for (const x of all) {
+        const dl = mv?.id === x.id ? mv.dl : 0;
+        const dp = mv?.id === x.id ? mv.dp : 0;
+        const pts: Anchor[] = x.kind === "hline" ? [] : x.kind === "brush" ? x.pts : x.kind === "text" ? [x.a] : [x.a, x.b];
         if (x.kind === "hline") {
-          const y = engine.main.priceToCoordinate(d?.id === `hl:${x.id}` ? d.price : x.price);
+          const y = engine.main.priceToCoordinate((d?.id === `hl:${x.id}` ? d.price : x.price) + dp);
           dr[x.id] = y === null ? null : [y];
-        } else {
-          const x1 = ts.logicalToCoordinate(x.a.l as never);
-          const x2 = ts.logicalToCoordinate(x.b.l as never);
-          const y1 = engine.main.priceToCoordinate(x.a.p);
-          const y2 = engine.main.priceToCoordinate(x.b.p);
-          dr[x.id] = x1 === null || x2 === null || y1 === null || y2 === null ? null : [x1, y1, x2, y2];
+          continue;
         }
+        const g: number[] = [];
+        for (const a of pts) {
+          const px = ts.logicalToCoordinate((a.l + dl) as never);
+          const py = engine.main.priceToCoordinate(a.p + dp);
+          if (px === null || py === null) break;
+          g.push(px, py);
+        }
+        dr[x.id] = g.length === pts.length * 2 ? g : null;
       }
       const psw = engine.chart.priceScale("right").width();
       const pane0 = engine.chart.panes()[0];
@@ -296,7 +405,7 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
       for (const k in dr) {
         sig.push(k);
         const g = dr[k];
-        if (g) sig.push(...g);
+        if (g) sig.push(g.length, ...g);
         else sig.push(null);
       }
       let same = sig.length === prev.length;
@@ -328,6 +437,16 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
     const p = engine.main.coordinateToPrice(localY(clientY));
     return l === null || p === null ? null : { l, p };
   };
+  /** Magnet on: the point jumps to the bar under it and the nearest of its open, high, low and close. */
+  const snap = (a: Anchor): Anchor => {
+    if (!drawPrefs().magnet || !engine) return a;
+    const i = Math.round(a.l);
+    const bar = engine.bars.current[i];
+    if (!bar) return a;
+    let best = bar.open;
+    for (const v of [bar.high, bar.low, bar.close]) if (Math.abs(v - a.p) < Math.abs(best - a.p)) best = v;
+    return { l: i, p: best };
+  };
 
   const hitLine = (clientY: number) => {
     const y = localY(clientY);
@@ -339,13 +458,15 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
       const d = Math.abs(ly - y);
       if (d < 5 && (!best || d < best.d)) best = { id: l.id, d };
     }
-    for (const d of tab.drawings) {
-      if (d.kind !== "hline") continue;
-      const ly = geo.dr[d.id]?.[0];
-      if (ly == null) continue;
-      const dd = Math.abs(ly - y);
-      if (dd < 5 && (!best || dd < best.d)) best = { id: `hl:${d.id}`, d: dd };
-    }
+    // horizontal lines move by dragging them too, unless drawings are locked or hidden
+    if (!prefs.locked && !prefs.hidden)
+      for (const d of tab.drawings) {
+        if (d.kind !== "hline") continue;
+        const ly = geo.dr[d.id]?.[0];
+        if (ly == null) continue;
+        const dd = Math.abs(ly - y);
+        if (dd < 5 && (!best || dd < best.d)) best = { id: `hl:${d.id}`, d: dd };
+      }
     return best?.id ?? null;
   };
 
@@ -361,98 +482,201 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
     if (hl) T.selectDrawing(hl.id);
   };
 
+  /** Drag an SL / TP out of a position's or order's S / T handle: a new line follows the pointer from the chip's price. */
+  const startStop = (l: TLine, which: "sl" | "tp", clientY: number) => {
+    if (!engine || !l.side) return;
+    const owner = l.kind === "pos" ? "pos" : "pnd";
+    const id = `${owner === "pos" ? "" : "p"}${which}:${l.ref}`;
+    const create: TLine = { id, kind: which, price: l.price, ref: l.ref, side: l.side, owner, label: which === "sl" ? "SL" : "TP", draggable: false, closable: false };
+    engine.chart.applyOptions({ handleScroll: false, handleScale: false });
+    setDrag({ id, price: l.price, create, y0: clientY, moved: false });
+  };
+
   React.useEffect(() => {
     if (!drag || !engine) return;
     const move = (e: PointerEvent) => {
       const p = engine.main.coordinateToPrice(localY(e.clientY));
-      if (p !== null) setDrag((d) => (d ? { ...d, price: roundPrice(tab.symbol, p) } : d));
+      if (p !== null) setDrag((d) => (d ? { ...d, price: roundPrice(tab.symbol, p), moved: d.moved || Math.abs(e.clientY - (d.y0 ?? e.clientY)) > 3 } : d));
     };
-    const up = () => {
+    const end = (commit: boolean) => () => {
       const d = dragRef.current;
       engine.chart.applyOptions({ handleScroll: true, handleScale: true });
       setDrag(null);
-      if (!d) return;
-      commitDrag(d.id, d.price);
+      if (d && commit) commitDrag(d);
     };
+    const up = end(true);
+    const cancel = end(false);
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up, { once: true });
+    window.addEventListener("pointercancel", cancel, { once: true });
     return () => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", cancel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drag?.id, engine]);
 
-  const commitDrag = (id: string, price: number) => {
+  const commitDrag = (d: LineDrag) => {
+    const { id, price } = d;
     const [kind, ref] = id.split(":") as [string, string];
     if (kind === "hl") {
-      T.updateTab(tab.id, (t) => ({ drawings: t.drawings.map((d) => (d.id === ref && d.kind === "hline" ? { ...d, price } : d)) }));
+      editDrawings(T, tab.id, (ds) => ds.map((x) => (x.id === ref && x.kind === "hline" ? { ...x, price } : x)));
       return;
     }
-    const l = linesRef.current.find((x) => x.id === id);
+    const l = d.create ?? linesRef.current.find((x) => x.id === id);
     if (!l) return;
-    if (Math.abs(price - l.price) < 1 / 10 ** inst.digits) return;
-    if (kind === "sl") settle(id, price, T.modifyPosition(ref, { sl: price }));
-    else if (kind === "tp") settle(id, price, T.modifyPosition(ref, { tp: price }));
-    else if (kind === "pnd") settle(id, price, T.modifyPending(ref, { price }));
-    else if (kind === "alr") T.updateAlert(ref, { price });
-    else if (kind === "pos") {
-      const p = T.positions.find((x) => x.ticket === ref);
-      if (!p) return;
-      const q = quoteNow();
-      const cur = p.side === "buy" ? q.bid : q.ask;
-      const isSl = p.side === "buy" ? price < cur : price > cur;
-      const id = `${isSl ? "sl" : "tp"}:${ref}`;
-      setFresh({ id, kind: isSl ? "sl" : "tp", price, ref, side: p.side, label: isSl ? "SL" : "TP", draggable: false, closable: false });
-      settle(id, price, T.modifyPosition(ref, isSl ? { sl: price } : { tp: price }).finally(() => setFresh((f) => (f?.id === id ? null : f))));
+    if (d.create && !d.moved) {
+      // a click on S / T: say how it works instead of setting a stop at the entry price
+      toast(t(l.kind === "sl" ? "chart.line.dragSl" : "chart.line.dragTp"), { id: "stop-hint" });
+      return;
     }
+    if (!d.create && Math.abs(price - l.price) < 1 / 10 ** inst.digits) return;
+    if (l.kind === "sl" || l.kind === "tp") {
+      // the wrong side of the price: the trade server would reject it, so nothing is sent
+      const bad = badStop(l, price);
+      if (bad) return void toast.warning(bad, { description: t("chart.line.bad.notSent"), id: "stop-bad" });
+      const patch = l.kind === "sl" ? { sl: price } : { tp: price };
+      const req = l.owner === "pnd" ? T.modifyPending(l.ref, patch) : T.modifyPosition(l.ref, patch);
+      if (!d.create) return settle(id, price, req);
+      setFresh({ ...l, price });
+      settle(id, price, req.finally(() => setFresh((f) => (f?.id === id ? null : f))));
+    } else if (l.kind === "pending") settle(id, price, T.modifyPending(l.ref, { price }));
+    else if (l.kind === "alert") T.updateAlert(l.ref, { price });
   };
 
+  /** × on a chip: close the position, remove the stop, cancel the order, delete the alert. */
+  const removeLine = (l: TLine) => {
+    if (l.kind === "pos") T.closePosition(l.ref);
+    else if (l.kind === "sl" || l.kind === "tp") {
+      const patch = l.kind === "sl" ? { sl: null } : { tp: null };
+      if (l.owner === "pnd") T.modifyPending(l.ref, patch);
+      else T.modifyPosition(l.ref, patch);
+    } else if (l.kind === "pending") T.cancelPending(l.ref);
+    else if (l.kind === "alert") T.removeAlert(l.ref);
+  };
+
+  /* ---------------- moving a drawing ---------------- */
+  React.useEffect(() => {
+    if (!move?.id || !engine) return;
+    const mv = (e: PointerEvent) => {
+      const a = anchorAt(e.clientX, e.clientY);
+      if (a) setMove((m) => (m ? { ...m, moved: m.moved || Math.hypot(e.clientX - m.x0, e.clientY - m.y0) > 3, dl: a.l - m.a0.l, dp: a.p - m.a0.p } : m));
+    };
+    const up = () => {
+      const m = moveRef.current;
+      setMove(null);
+      if (m?.moved) editDrawings(T, tab.id, (ds) => ds.map((x) => (x.id === m.id ? shiftDrawing(x, m.dl, m.dp, (p) => roundPrice(tab.symbol, p)) : x)));
+    };
+    window.addEventListener("pointermove", mv);
+    window.addEventListener("pointerup", up, { once: true });
+    window.addEventListener("pointercancel", up, { once: true });
+    return () => {
+      window.removeEventListener("pointermove", mv);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [move?.id, engine]);
+
   /* ---------------- drawing tools ---------------- */
-  const drawing = tool === "hline" || tool === "trend" || tool === "rect" || tool === "fib";
+  const addDrawing = (d: Drawing) => {
+    editDrawings(T, tab.id, (ds) => [...ds, d]);
+    T.setDrawTool("cursor");
+    T.selectDrawing(d.id);
+  };
+  // the text tool's input, at a point of the chart (a new note, or `id` when editing one)
+  const [textEdit, setTextEdit] = React.useState<{ a: Anchor; id?: string; value: string } | null>(null);
+  const textRef = React.useRef(textEdit);
+  textRef.current = textEdit;
+  const commitText = () => {
+    const e = textRef.current;
+    if (!e) return;
+    textRef.current = null;
+    setTextEdit(null);
+    const text = e.value.trim();
+    if (e.id) editDrawings(T, tab.id, (ds) => (text ? ds.map((d) => (d.id === e.id && d.kind === "text" ? (d.text === text ? d : { ...d, text }) : d)) : ds.filter((d) => d.id !== e.id)));
+    else if (text) addDrawing({ id: uid(), kind: "text", a: e.a, text });
+    if (T.drawTool === "text") T.setDrawTool("cursor");
+  };
+  const brushLast = React.useRef<{ x: number; y: number } | null>(null);
   const onDrawDown = (e: React.PointerEvent) => {
     if (!drawing) return;
     e.stopPropagation();
     e.preventDefault();
-    const a = anchorAt(e.clientX, e.clientY);
-    if (!a) return;
+    const raw = anchorAt(e.clientX, e.clientY);
+    if (!raw) return;
+    (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
+    if (tool === "brush") {
+      brushLast.current = { x: e.clientX, y: e.clientY };
+      setDraft({ kind: "brush", pts: [raw] });
+      return;
+    }
+    const a = snap(raw);
     if (tool === "hline") {
-      const id = uid();
-      T.updateTab(tab.id, (t) => ({ drawings: [...t.drawings, { id, kind: "hline", price: roundPrice(tab.symbol, a.p) }] }));
-      T.setDrawTool("cursor");
-      T.selectDrawing(id);
-      toast.success(t("chart.draw.hlineAdded"), { description: t("chart.draw.hlineAddedText", { symbol: tab.symbol, price: fmtPrice(tab.symbol, a.p) }) });
+      const price = roundPrice(tab.symbol, a.p);
+      addDrawing({ id: uid(), kind: "hline", price });
+      toast.success(t("chart.draw.hlineAdded"), { description: t("chart.draw.hlineAddedText", { symbol: tab.symbol, price: fmtPrice(tab.symbol, price) }) });
       return;
     }
-    if (draft?.clickMode) {
-      commitDraft({ ...draft, b: a });
+    if (tool === "text") {
+      if (textRef.current) return commitText();
+      setTextEdit({ a, value: "" });
       return;
     }
-    setDraft({ kind: tool as "trend" | "rect" | "fib", a, b: a });
+    if (draft && draft.kind !== "brush" && draft.clickMode) {
+      finishDraft({ ...draft, b: a });
+      return;
+    }
+    if (tool === "trend" || tool === "rect" || tool === "fib" || tool === "ruler") setDraft({ kind: tool, a, b: a });
   };
   const onDrawMove = (e: React.PointerEvent) => {
-    if (!draft) return;
-    const b = anchorAt(e.clientX, e.clientY);
-    if (b) setDraft((d) => (d ? { ...d, b } : d));
+    const d = draftRef.current;
+    if (!d || (d.kind === "ruler" && d.done)) return;
+    const raw = anchorAt(e.clientX, e.clientY);
+    if (!raw) return;
+    if (d.kind === "brush") {
+      // a point every few pixels keeps strokes smooth and small
+      const last = brushLast.current;
+      if (last && Math.hypot(e.clientX - last.x, e.clientY - last.y) < 3) return;
+      brushLast.current = { x: e.clientX, y: e.clientY };
+      setDraft((x) => (x && x.kind === "brush" ? { ...x, pts: [...x.pts, raw] } : x));
+      return;
+    }
+    const b = snap(raw);
+    setDraft((x) => (x && x.kind !== "brush" ? { ...x, b } : x));
   };
   const onDrawUp = () => {
     const d = draftRef.current;
-    if (!d || d.clickMode) return;
+    if (!d) return;
+    if (d.kind === "brush") {
+      setDraft(null);
+      if (d.pts.length > 1) addDrawing({ id: uid(), kind: "brush", pts: d.pts });
+      return;
+    }
+    if (d.clickMode || d.done) return;
     const g = geo.dr["__draft"];
     const moved = g ? Math.hypot(g[2]! - g[0]!, g[3]! - g[1]!) > 6 : false;
-    if (moved) commitDraft(d);
+    if (moved) finishDraft(d);
     else setDraft({ ...d, clickMode: true });
   };
-  const commitDraft = (d: { kind: "trend" | "rect" | "fib"; a: Anchor; b: Anchor }) => {
-    const id = uid();
-    T.updateTab(tab.id, (t) => ({ drawings: [...t.drawings, { id, kind: d.kind, a: d.a, b: d.b }] }));
+  const finishDraft = (d: Extract<Draft, { a: Anchor }>) => {
+    if (d.kind === "ruler") {
+      // a measurement isn't saved: it stays on screen until the next click on the chart
+      setDraft({ ...d, clickMode: false, done: true });
+      T.setDrawTool("cursor");
+      return;
+    }
     setDraft(null);
-    T.setDrawTool("cursor");
-    T.selectDrawing(id);
+    addDrawing({ id: uid(), kind: d.kind, a: d.a, b: d.b });
   };
   React.useEffect(() => {
-    if (!drawing) setDraft(null);
-  }, [drawing]);
+    if (!drawing) setDraft((d) => (d && d.kind === "ruler" && d.done ? d : null));
+    if (tool !== "text") commitText();
+    // drawing again shows the drawings again
+    if (drawing && drawPrefs().hidden) setDrawPrefs({ hidden: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drawing, tool]);
 
   /* ---------------- context menu ---------------- */
   const onContext = (e: React.MouseEvent) => {
@@ -493,12 +717,13 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
           icon: <Minus />,
           onSelect: () => {
             const id = uid();
-            T.updateTab(tab.id, (t) => ({ drawings: [...t.drawings, { id, kind: "hline", price: p }] }));
+            editDrawings(T, tab.id, (ds) => [...ds, { id, kind: "hline", price: p }]);
+            if (drawPrefs().hidden) setDrawPrefs({ hidden: false });
             T.selectDrawing(id);
           },
         },
         "sep",
-        { label: t("chart.menu.timeframes"), icon: <CandlestickChart />, items: TIMEFRAMES.map((tf) => ({ label: tf, checked: tab.tf === tf, onSelect: () => T.updateTab(tab.id, { tf, drawings: [] }) })) },
+        { label: t("chart.menu.timeframes"), icon: <CandlestickChart />, items: TIMEFRAMES.map((tf) => ({ label: tf, checked: tab.tf === tf, onSelect: () => T.updateTab(tab.id, { tf, drawings: tab.tf === tf ? tab.drawings : [] }) })) },
         { label: t("chart.menu.chartType"), icon: <Layers />, items: CHART_TYPES.map((ct) => ({ label: t(`trader.chartType.${ct}`), checked: tab.type === ct, onSelect: () => T.updateTab(tab.id, { type: ct }) })) },
         {
           label: t("chart.menu.indicators"),
@@ -519,7 +744,7 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
         { label: t("chart.menu.zoomIn"), icon: <Plus />, hint: "+", onSelect: () => chartRegistry.get(tab.id)?.zoom(1) },
         { label: t("chart.menu.zoomOut"), icon: <Minus />, hint: "−", onSelect: () => chartRegistry.get(tab.id)?.zoom(-1) },
         { label: t("chart.menu.saveAsPicture"), icon: <Camera />, onSelect: () => chartRegistry.get(tab.id)?.screenshot() },
-        { label: t("chart.menu.deleteAllObjects"), danger: true, icon: <X />, disabled: !tab.drawings.length, onSelect: () => T.updateTab(tab.id, { drawings: [] }) },
+        { label: t("chart.menu.deleteAllObjects"), danger: true, icon: <X />, disabled: !tab.drawings.length, onSelect: () => clearDrawings(T, tab.id) },
       ],
       <span>
         {tab.symbol}, {tab.tf} · <span className="text-fg-2">{ps}</span>
@@ -528,8 +753,6 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
   };
 
   /* ---------------- render ---------------- */
-  const dragLine = drag ? lines.find((l) => l.id === drag.id) : null;
-  const dragPos = dragLine && (dragLine.kind === "pos" || dragLine.kind === "sl" || dragLine.kind === "tp") ? T.positions.find((p) => p.ticket === dragLine.ref) : null;
   const chipRight = geo.psw + 6;
   const allMainRows = shape.main;
   // keep the overlay legend inside the main pane: extra rows fold into "+N more"
@@ -541,15 +764,28 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
     const x = tab.indicators.find((i) => i.uid === uid);
     if (x && a === "toggle") toggleIndicator(T, tab.id, x);
   };
+  const shapeById = (id: string): Shape | null => (id === "__draft" ? (draft ? { id, ...draft } : null) : tab.drawings.find((x) => x.id === id) ?? null);
+  const hint: MessageKey | null = !drawing
+    ? null
+    : tool === "hline"
+    ? "chart.draw.hline"
+    : draft && draft.kind !== "brush" && draft.clickMode
+    ? "chart.draw.secondPoint"
+    : ({ fib: "chart.draw.fib", rect: "chart.draw.rect", trend: "chart.draw.trend", brush: "chart.draw.brush", text: "chart.draw.text", ruler: "chart.draw.ruler" } as const)[tool];
+  const textAt = textEdit && engine ? { x: engine.chart.timeScale().logicalToCoordinate(textEdit.a.l as never), y: engine.main.priceToCoordinate(textEdit.a.p) } : null;
 
   return (
     <div
       ref={wrap}
       onPointerDown={onActivate}
       onContextMenu={onContext}
-      className={cn("relative h-full min-h-0 w-full select-none overflow-hidden rounded-[8px] border bg-[var(--t-chart-bg)]", highlight ? "border-ember/70 shadow-[0_0_0_1px_rgba(255,90,31,0.25)]" : "border-line", (hover || drag) && "cursor-ns-resize")}
+      className={cn("relative h-full min-h-0 w-full select-none overflow-hidden rounded-[8px] border bg-[var(--t-chart-bg)]", highlight ? "border-ember/70 shadow-[0_0_0_1px_color-mix(in_oklab,var(--k-ember)_25%,transparent)]" : "border-line", (hover || (drag && !drag.create)) && "cursor-ns-resize")}
       onPointerDownCapture={(e) => {
+        // the ruler's last measurement goes away with the next click on the chart
+        if (!drawing && draftRef.current?.kind === "ruler") setDraft(null);
         if (drawing || e.button !== 0) return;
+        // chips handle their own pointer (S / T handles, ×, dragging the chip): never steal it for the line under them
+        if ((e.target as Element).closest("[data-line-chip],[data-stop-handle]")) return;
         const id = hitLine(e.clientY);
         if (!id) {
           if (T.selectedDrawing && !(e.target as Element).closest("[data-drawing]")) T.selectDrawing(null);
@@ -570,22 +806,73 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
       <svg className="pointer-events-none absolute inset-0 z-[2] h-full w-full overflow-hidden" style={{ width: geo.w, height: geo.h || "100%" }}>
         {Object.entries(geo.dr).map(([id, g]) => {
           if (!g) return null;
-          const d = id === "__draft" ? (draft ? { id, kind: draft.kind } : null) : tab.drawings.find((x) => x.id === id);
+          const d = shapeById(id);
           if (!d) return null;
           const sel = T.selectedDrawing === id;
           const col = sel ? "var(--k-ember)" : "var(--k-gold)";
           const selectProps = {
             "data-drawing": id,
-            style: { pointerEvents: drawing ? "none" : "stroke", cursor: "pointer" } as React.CSSProperties,
+            style: { pointerEvents: drawing ? "none" : "stroke", cursor: prefs.locked ? "pointer" : "move" } as React.CSSProperties,
             onPointerDown: (e: React.PointerEvent) => {
               e.stopPropagation();
               T.selectDrawing(id);
+              if (e.button !== 0 || prefs.locked || d.kind === "hline") return;
+              const a0 = anchorAt(e.clientX, e.clientY);
+              if (a0) setMove({ id, a0, x0: e.clientX, y0: e.clientY, moved: false, dl: 0, dp: 0 });
             },
           };
+          // areas (rectangle, Fibonacci, text) select anywhere inside, lines on their stroke
+          const areaProps = { ...selectProps, style: { ...selectProps.style, pointerEvents: drawing ? "none" : "all" } as React.CSSProperties };
           if (d.kind === "hline") {
             return <line key={id} x1={0} x2={geo.w - geo.psw} y1={g[0]} y2={g[0]} stroke="transparent" strokeWidth={10} {...selectProps} />;
           }
+          if (d.kind === "brush") {
+            const points = g.reduce<string[]>((s, v, i) => (i % 2 ? (s[s.length - 1] += `,${v}`, s) : [...s, String(v)]), []).join(" ");
+            return (
+              <g key={id}>
+                <polyline points={points} fill="none" stroke={col} strokeWidth={sel ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round" />
+                <polyline points={points} fill="none" stroke="transparent" strokeWidth={10} {...selectProps} />
+              </g>
+            );
+          }
+          if (d.kind === "text") {
+            const [x, y] = g as [number, number];
+            const w = Math.max(16, d.text.length * 7.2 + 8);
+            return (
+              <g key={id}>
+                {sel && <rect x={x - 4} y={y - 15} width={w} height={21} rx={4} fill="none" stroke={col} strokeDasharray="3 2" />}
+                <text x={x} y={y} fontSize={12.5} fill={col} stroke="var(--t-chart-bg)" strokeWidth={3} style={{ paintOrder: "stroke" }} fontFamily="var(--font-geist-sans)" fontWeight={500}>
+                  {d.text}
+                </text>
+                <rect x={x - 4} y={y - 15} width={w} height={21} fill="transparent" {...areaProps} onDoubleClick={() => !prefs.locked && setTextEdit({ a: d.a, id, value: d.text })} />
+              </g>
+            );
+          }
           const [x1, y1, x2, y2] = g as [number, number, number, number];
+          if (d.kind === "ruler") {
+            const dp = d.b.p - d.a.p;
+            const bars = Math.round(d.b.l - d.a.l);
+            const up = dp >= 0;
+            const c = up ? "var(--t-buy)" : "var(--k-down)";
+            const l1 = `${up ? "+" : "−"}${fmtPrice(tab.symbol, Math.abs(dp))} (${up ? "+" : "−"}${Math.abs((dp / d.a.p) * 100).toFixed(2)}%)`;
+            const l2 = `${t("chart.ruler.bars", { count: Math.abs(bars) })}, ${fmtSpan(bars * TF_SECONDS[tab.tf])}`;
+            const bw = Math.max(l1.length, l2.length) * 6.4 + 14;
+            const bx = Math.min(Math.max(4, (x1 + x2) / 2 - bw / 2), geo.w - geo.psw - bw - 4);
+            const by = up ? Math.max(4, Math.min(y1, y2) - 40) : Math.min((geo.h || 400) - 40, Math.max(y1, y2) + 6);
+            return (
+              <g key={id}>
+                <rect x={Math.min(x1, x2)} y={Math.min(y1, y2)} width={Math.abs(x2 - x1)} height={Math.abs(y2 - y1)} fill={c} fillOpacity={0.14} stroke={c} strokeOpacity={0.6} />
+                <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={c} strokeWidth={1} strokeDasharray="3 3" />
+                <rect x={bx} y={by} width={bw} height={34} rx={5} fill={c} />
+                <text x={bx + bw / 2} y={by + 14} textAnchor="middle" fontSize={10.5} fill="#fff" fontFamily="var(--font-geist-mono)">
+                  {l1}
+                </text>
+                <text x={bx + bw / 2} y={by + 27} textAnchor="middle" fontSize={10.5} fill="#fff" fillOpacity={0.9} fontFamily="var(--font-geist-mono)">
+                  {l2}
+                </text>
+              </g>
+            );
+          }
           if (d.kind === "trend")
             return (
               <g key={id}>
@@ -597,16 +884,16 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
           if (d.kind === "rect")
             return (
               <g key={id}>
-                <rect x={Math.min(x1, x2)} y={Math.min(y1, y2)} width={Math.abs(x2 - x1)} height={Math.abs(y2 - y1)} fill={sel ? "rgba(255,90,31,0.10)" : "rgba(233,185,73,0.08)"} stroke={col} strokeWidth={1} />
-                <rect x={Math.min(x1, x2)} y={Math.min(y1, y2)} width={Math.abs(x2 - x1)} height={Math.abs(y2 - y1)} fill="transparent" stroke="transparent" strokeWidth={8} {...selectProps} style={{ ...selectProps.style, pointerEvents: drawing ? "none" : "all" }} />
+                <rect x={Math.min(x1, x2)} y={Math.min(y1, y2)} width={Math.abs(x2 - x1)} height={Math.abs(y2 - y1)} fill={col} fillOpacity={sel ? 0.1 : 0.08} stroke={col} strokeWidth={1} />
+                <rect x={Math.min(x1, x2)} y={Math.min(y1, y2)} width={Math.abs(x2 - x1)} height={Math.abs(y2 - y1)} fill="transparent" stroke="transparent" strokeWidth={8} {...areaProps} />
               </g>
             );
           // fibonacci retracement
           const levels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
           const xa = Math.min(x1, x2);
           const xb = Math.max(x1, x2, xa + 40);
-          const pa = id === "__draft" ? draft!.a.p : (d as unknown as { a: Anchor }).a.p;
-          const pb = id === "__draft" ? draft!.b.p : (d as unknown as { b: Anchor }).b.p;
+          const pa = d.a.p;
+          const pb = d.b.p;
           return (
             <g key={id}>
               <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={col} strokeDasharray="3 3" strokeWidth={1} />
@@ -621,7 +908,7 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
                   </g>
                 );
               })}
-              <rect x={xa} y={Math.min(y1, y2)} width={xb - xa} height={Math.abs(y2 - y1)} fill="transparent" {...selectProps} style={{ ...selectProps.style, pointerEvents: drawing ? "none" : "all" }} />
+              <rect x={xa} y={Math.min(y1, y2)} width={xb - xa} height={Math.abs(y2 - y1)} fill="transparent" {...areaProps} />
             </g>
           );
         })}
@@ -629,7 +916,31 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
 
       {/* drawing capture layer */}
       {drawing && active && (
-        <div className="absolute inset-0 z-[3] cursor-crosshair" style={{ right: geo.psw }} onPointerDown={onDrawDown} onPointerMove={onDrawMove} onPointerUp={onDrawUp} />
+        <div className="absolute inset-0 z-[3] cursor-crosshair touch-none" style={{ right: geo.psw }} onPointerDown={onDrawDown} onPointerMove={onDrawMove} onPointerUp={onDrawUp} />
+      )}
+
+      {/* the text tool's input */}
+      {textEdit && textAt && textAt.x !== null && textAt.y !== null && (
+        <input
+          autoFocus
+          value={textEdit.value}
+          placeholder={t("chart.draw.textPlaceholder")}
+          aria-label={t("chart.tool.text")}
+          onChange={(e) => setTextEdit((x) => (x ? { ...x, value: e.target.value } : x))}
+          onKeyDown={(e) => {
+            e.stopPropagation();
+            if (e.key === "Enter") commitText();
+            if (e.key === "Escape") {
+              textRef.current = null;
+              setTextEdit(null);
+              T.setDrawTool("cursor");
+            }
+          }}
+          onBlur={commitText}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="absolute z-[7] h-6 w-[200px] -translate-y-[17px] rounded-[5px] border border-ember/60 bg-panel-2 px-1.5 text-[12.5px] text-fg shadow-[var(--t-shadow-pop)] outline-none"
+          style={{ left: textAt.x - 6, top: textAt.y }}
+        />
       )}
 
       {/* trade line chips */}
@@ -638,83 +949,94 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
           // chips closer than a chip's height (two positions opened at the same price, SL next to a pending
           // order…) share one row, side by side from the price scale leftwards, instead of covering each other
           <div key={row.lines[0]!.id} className="absolute flex -translate-y-1/2 flex-row-reverse items-center gap-1" style={{ top: row.y, right: chipRight }}>
-        {row.lines.map((l) => {
-          const isDrag = drag?.id === l.id;
-          const price = isDrag ? drag.price : hold?.id === l.id ? hold.price : l.price;
-          let pnlText = "";
-          let pnl = 0;
-          const livePos = l.kind === "pos" ? T.positions.find((x) => x.ticket === l.ref) : undefined;
-          if (l.kind === "sl" || l.kind === "tp") {
-            const p = T.positions.find((x) => x.ticket === l.ref);
-            if (p) {
-              pnl = profitAt(p, price) + p.swap - p.commission;
-              pnlText = accMoney(acc, pnl, { signed: true });
-            }
-          }
-          const tone =
-            l.kind === "sl" ? "border-down/60 bg-down text-white" : l.kind === "tp" ? "border-up/60 bg-up text-white" : l.kind === "pending" ? "border-gold/60 bg-[color-mix(in_oklab,var(--k-gold)_88%,black)] text-[#1a1204]" : l.kind === "alert" ? "border-warn/60 bg-warn text-[#1a1204]" : l.side === "buy" ? "border-up/60 bg-panel-2 text-up" : "border-down/60 bg-panel-2 text-down";
-          return (
-            <div
-              key={l.id}
-              className={cn("pointer-events-auto flex h-[18px] shrink-0 items-center overflow-hidden rounded-[4px] border font-mono text-[10.5px] font-medium leading-none shadow-[0_2px_8px_rgba(0,0,0,0.35)]", tone, l.draggable && "cursor-ns-resize")}
-              style={row.lines.length > 1 ? { transform: `translateY(${(geo.ys[l.id] ?? row.y) - row.y}px)` } : undefined}
-              onPointerDown={(e) => {
-                if (!l.draggable || e.button !== 0) return;
-                e.stopPropagation();
-                e.preventDefault();
-                onActivate();
-                startDrag(l.id);
-              }}
-              onDoubleClick={() => l.kind === "pos" && T.setUi({ positionDialog: l.ref })}
-              title={l.kind === "pos" ? t("chart.line.posTitle") : l.draggable ? t("chart.line.dragTitle") : undefined}
-            >
-              {l.draggable && <GripVertical className="ms-0.5 size-3 shrink-0 opacity-70" aria-hidden />}
-              <span className={l.draggable ? "pe-1.5 ps-0.5" : "px-1.5"}>
-                {l.label}
-                {isDrag && l.kind !== "pos" && <span className="ml-1 opacity-80">{fmtPrice(tab.symbol, price)}</span>}
-              </span>
-              {livePos && <PositionChipPnl p={livePos} />}
-              {pnlText && <span className="k-num border-l border-white/25 px-1.5">{pnlText}</span>}
-              {l.closable && (
-                <button
-                  aria-label={t("chart.line.remove", { label: l.label })}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={(e) => {
+            {row.lines.map((l) => {
+              const isDrag = drag?.id === l.id;
+              const price = isDrag ? drag.price : hold?.id === l.id ? hold.price : l.price;
+              const money = l.kind === "sl" || l.kind === "tp" ? stopMoney(l, price, T.positions, T.pendings) : null;
+              const bad = isDrag && !!dragBad;
+              const livePos = l.kind === "pos" ? T.positions.find((x) => x.ticket === l.ref) : undefined;
+              const tone = bad
+                ? "border-line-top bg-surface-3 text-fg-2"
+                : l.kind === "sl"
+                ? "border-down/60 bg-down text-white"
+                : l.kind === "tp"
+                ? "border-up/60 bg-up text-white"
+                : l.kind === "pending"
+                ? "border-gold/60 bg-[color-mix(in_oklab,var(--k-gold)_88%,black)] text-[#1a1204]"
+                : l.kind === "alert"
+                ? "border-warn/60 bg-warn text-[#1a1204]"
+                : l.side === "buy"
+                ? "border-buy/60 bg-panel-2 text-buy"
+                : "border-down/60 bg-panel-2 text-down";
+              const handles = (["sl", "tp"] as const).filter((w) => l.stops?.[w]);
+              return (
+                <div
+                  key={l.id}
+                  data-line-chip
+                  className={cn("pointer-events-auto flex h-[18px] shrink-0 items-center overflow-hidden rounded-[4px] border font-mono text-[10.5px] font-medium leading-none shadow-[0_2px_8px_rgba(0,0,0,0.35)]", tone, l.draggable && "cursor-ns-resize")}
+                  style={row.lines.length > 1 ? { transform: `translateY(${(geo.ys[l.id] ?? row.y) - row.y}px)` } : undefined}
+                  onPointerDown={(e) => {
+                    if (!l.draggable || e.button !== 0) return;
                     e.stopPropagation();
-                    if (l.kind === "pos") T.closePosition(l.ref);
-                    else if (l.kind === "sl") T.modifyPosition(l.ref, { sl: null });
-                    else if (l.kind === "tp") T.modifyPosition(l.ref, { tp: null });
-                    else if (l.kind === "pending") T.cancelPending(l.ref);
-                    else if (l.kind === "alert") T.removeAlert(l.ref);
+                    e.preventDefault();
+                    onActivate();
+                    startDrag(l.id);
                   }}
-                  className="grid h-full w-4 place-items-center border-l border-current/25 hover:bg-black/20"
+                  onDoubleClick={() => (l.kind === "pos" ? T.setUi({ positionDialog: l.ref }) : l.kind === "pending" && !ro ? T.setUi({ pendingDialog: l.ref }) : undefined)}
+                  title={bad ? dragBad! : l.kind === "pos" ? (ro ? undefined : t("chart.line.posTip")) : l.kind === "pending" && !ro ? t("chart.line.pendingTip") : l.draggable ? t("chart.line.dragTitle") : undefined}
                 >
-                  <X className="size-2.5" />
-                </button>
-              )}
-            </div>
-          );
-        })}
+                  {l.draggable && <GripVertical className="ms-0.5 size-3 shrink-0 opacity-70" aria-hidden />}
+                  <span className={l.draggable ? "pe-1.5 ps-0.5" : "px-1.5"}>
+                    {l.label}
+                    {isDrag && l.kind !== "pos" && <span className="ml-1 opacity-80">{fmtPrice(tab.symbol, price)}</span>}
+                  </span>
+                  {livePos && <PositionChipPnl p={livePos} />}
+                  {money !== null && <span className="k-num border-l border-current/25 px-1.5">{accMoney(acc, money, { signed: true })}</span>}
+                  {handles.length > 0 && (
+                    <span className="flex h-full items-center gap-[3px] border-l border-current/25 px-[3px]">
+                      {handles.map((w) => (
+                        <button
+                          key={w}
+                          type="button"
+                          data-stop-handle={w}
+                          aria-label={t(w === "sl" ? "chart.line.dragSl" : "chart.line.dragTp")}
+                          title={t(w === "sl" ? "chart.line.dragSl" : "chart.line.dragTp")}
+                          onPointerDown={(e) => {
+                            if (e.button !== 0) return;
+                            e.stopPropagation();
+                            e.preventDefault();
+                            onActivate();
+                            startStop(l, w, e.clientY);
+                          }}
+                          onDoubleClick={(e) => e.stopPropagation()}
+                          className={cn("grid size-[13px] cursor-ns-resize touch-none place-items-center rounded-[3px] font-sans text-[9px] font-bold leading-none text-white transition-[filter] hover:brightness-125", w === "sl" ? "bg-down" : "bg-up")}
+                        >
+                          {w === "sl" ? "S" : "T"}
+                        </button>
+                      ))}
+                    </span>
+                  )}
+                  {l.closable && (
+                    <button
+                      aria-label={t("chart.line.remove", { label: l.label })}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeLine(l);
+                      }}
+                      className="grid h-full w-4 place-items-center border-l border-current/25 hover:bg-black/20"
+                    >
+                      <X className="size-2.5" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         ))}
-        {/* ghost while dragging a position line → projected SL/TP */}
-        {drag && dragLine?.kind === "pos" && dragPos && geo.ys[drag.id] != null && (
-          (() => {
-            const q = quoteNow();
-            const cur = dragPos.side === "buy" ? q.bid : q.ask;
-            const isSl = dragPos.side === "buy" ? drag.price < cur : drag.price > cur;
-            const pr = profitAt(dragPos, drag.price);
-            return (
-              <div className={cn("absolute left-3 flex h-[18px] -translate-y-1/2 items-center gap-1.5 rounded-[4px] px-1.5 font-mono text-[10.5px] text-white", isSl ? "bg-down" : "bg-up")} style={{ top: geo.ys[drag.id]! }}>
-                {isSl ? "SL" : "TP"} {fmtPrice(tab.symbol, drag.price)} · {accMoney(acc, pr, { signed: true })}
-              </div>
-            );
-          })()
-        )}
+        {/* while an SL / TP is dragged: the price, the money there, and why it can't go there */}
+        {drag && dragStop && geo.ys[drag.id] != null && <StopDragTag line={dragStop} price={drag.price} symbol={tab.symbol} top={geo.ys[drag.id]!} />}
       </div>
-      {drag && dragLine?.kind === "pos" && engine && (
-        <div className="pointer-events-none absolute inset-x-0 z-[3] border-t border-dashed border-fg-2/70" style={{ top: engine.main.priceToCoordinate(drag.price) ?? -10, right: geo.psw }} />
-      )}
 
       {/* legend */}
       <div className="pointer-events-none absolute left-2 top-1.5 z-[5] max-w-[calc(100%-90px)]">
@@ -758,12 +1080,8 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
         <OneClickPanel symbol={tab.symbol} compact={compact} top={24 + (mainRows.length ? (mainRows.length + (allMainRows.length > maxRows ? 1 : 0)) * 16 + 2 : 0)} />
       )}
 
-      {/* bid/ask tag */}
-
-      {drawing && active && (
-        <div className="pointer-events-none absolute left-1/2 top-2 z-[6] -translate-x-1/2 rounded-[5px] border border-ember/40 bg-panel-2/95 px-2 py-0.5 text-[10.5px] text-fg-2">
-          {tool === "hline" ? t("chart.draw.hline") : draft?.clickMode ? t("chart.draw.secondPoint") : t(tool === "fib" ? "chart.draw.fib" : tool === "rect" ? "chart.draw.rect" : "chart.draw.trend")}
-        </div>
+      {hint && active && (
+        <div className="pointer-events-none absolute left-1/2 top-2 z-[6] -translate-x-1/2 rounded-[5px] border border-ember/40 bg-panel-2/95 px-2 py-0.5 text-[10.5px] text-fg-2">{t(hint)}</div>
       )}
       {cm.node}
     </div>
@@ -837,7 +1155,8 @@ function LegendOhlc({ store, digits, compact }: { store: LegendStore; digits: nu
       {(["o", "h", "l", "c"] as const).map((k) => (
         <span key={k} className="k-num">
           {k.toUpperCase()}
-          <span className={cn("ml-1", up ? "text-up" : "text-down")}>{legend[k].toFixed(digits)}</span>
+          {/* the candle's colours: rising blue, falling red */}
+          <span className={cn("ml-1", up ? "text-buy" : "text-down")}>{legend[k].toFixed(digits)}</span>
         </span>
       ))}
       {!compact && <span className={cn("k-num", legend.chg >= 0 ? "text-up" : "text-down")}>{legend.chg >= 0 ? "+" : ""}{legend.chg.toFixed(2)}%</span>}
@@ -857,87 +1176,27 @@ function PositionChipPnl({ p }: { p: TPosition }) {
   return <span className={cn("k-num border-l border-line px-1.5", pnl >= 0 ? "bg-up/15 text-up" : "bg-down/15 text-down")}>{accMoney(T.account, pnl, { signed: true })}</span>;
 }
 
-/* ------------------------------------------------------------------ */
-
-export function OneClickPanel({ symbol, compact, top, left }: { symbol: string; compact?: boolean; top: number; left?: number }) {
+/**
+ * The tag beside an SL / TP being dragged: "SL 1.08420 · −12.40", in the stop's colour, or grey with the reason when
+ * the stop is on the wrong side of the price (checked against the live quote, so it follows the market while held).
+ */
+function StopDragTag({ line, price, symbol, top }: { line: TLine; price: number; symbol: string; top: number }) {
   const T = useTerminal();
   const t = useT();
-  const { bid, ask, dir, delayed } = useQuote(symbol);
-  const spread = Math.round((ask - bid) * 10 ** getInstrument(symbol).digits);
-  // a delayed snapshot (not streaming yet): prices shown, Sell / Buy off with the reason
-  const blocked = delayed ? t("desk.side.delayedTip") : null;
-  const [lot, setLot] = React.useState(String(T.ws.lot.toFixed(2)));
-  React.useEffect(() => {
-    setLot(T.ws.lot.toFixed(2));
-  }, [T.ws.lot]);
-  const vol = Math.max(0.01, parseFloat(lot) || 0.01);
-  const open = useMarketOpen(symbol);
-  const go = (side: "buy" | "sell") => {
-    if (!open || blocked) return;
-    if (T.guest) return void T.quickTrade(symbol, side, vol); // explains: no trading account yet
-    if (T.ws.oneClick) T.quickTrade(symbol, side, vol);
-    else T.openNewOrder({ symbol, side, type: "market" });
-  };
-  const commitLot = () => {
-    const v = Math.max(0.01, Math.round(vol * 100) / 100);
-    T.setWs({ lot: v });
-    setLot(v.toFixed(2));
-  };
-  const step = (d: number) => {
-    const inc = vol >= 10 ? 1 : vol >= 1 ? 0.1 : 0.01;
-    const v = Math.max(0.01, +(vol + d * inc).toFixed(2));
-    setLot(v.toFixed(2));
-    T.setWs({ lot: v });
-  };
-  const [collapsed, setCollapsed] = React.useState(false);
-  if (collapsed)
-    return (
-      <button
-        className="absolute left-2 z-[6] flex h-8 items-center gap-1.5 rounded-[8px] border border-line-top bg-panel-2/95 px-2.5 text-[12px] font-semibold text-fg-2 shadow-[0_6px_20px_-8px_rgba(0,0,0,0.6)] hover:text-fg"
-        style={{ top, left }}
-        onPointerDown={(e) => e.stopPropagation()}
-        onClick={() => setCollapsed(false)}
-        aria-label={t("chart.oneClick.show")}
-      >
-        <span className="size-1.5 rounded-full bg-up" />
-        <span className="size-1.5 rounded-full bg-down" />
-        {t("chart.oneClick.collapsed")}
-      </button>
-    );
+  const q = useQuote(symbol);
+  const ref = stopRef(line, q, T.pendings);
+  const bad = ref === null || !line.side || (line.kind !== "sl" && line.kind !== "tp") ? null : stopProblem(line.kind, line.side, ref, price);
+  const money = stopMoney(line, price, T.positions, T.pendings);
   return (
-    <div data-tour="oneclick" className="absolute left-2 z-[6] flex items-stretch overflow-hidden rounded-[9px] border border-line-top bg-panel-2 shadow-[0_6px_20px_-8px_rgba(0,0,0,0.6)]" style={{ top, left }} onPointerDown={(e) => e.stopPropagation()} onContextMenu={(e) => e.stopPropagation()}>
-      <button onClick={() => go("sell")} disabled={!open || !!blocked} title={blocked ?? (open ? (T.guest ? t("trader.guest.title") : undefined) : t("chart.oneClick.marketClosed"))} className={cn("group flex flex-col items-start bg-down/12 px-2 py-1 text-left transition-colors hover:bg-down/25 disabled:cursor-not-allowed disabled:bg-surface-2 disabled:opacity-60", compact ? "min-w-[74px]" : "min-w-[92px]")} aria-label={t(open ? "chart.oneClick.sellAria" : "chart.oneClick.sellClosedAria", { symbol })}>
-        <span className="flex items-center gap-1 text-[11px] font-semibold text-down">{T.ws.oneClick && !T.guest && <Zap className="size-3 fill-current" aria-hidden />}{t("common.sell")}</span>
-        <PriceText symbol={symbol} value={bid} dir={dir} className={compact ? "text-[12px]" : "text-[14px]"} />
-      </button>
-      <div className="flex w-[84px] flex-col items-center justify-center border-x border-line bg-panel px-0.5">
-        <div className="flex w-full items-center">
-        <button onClick={() => step(-1)} className="grid size-5 shrink-0 place-items-center rounded text-[13px] leading-none text-fg-3 hover:bg-surface-3 hover:text-fg" aria-label={t("chart.oneClick.decrease")}>−</button>
-        <input
-          aria-label={t("chart.oneClick.lot")}
-          value={lot}
-          onChange={(e) => setLot(e.target.value.replace(/[^0-9.]/g, ""))}
-          onBlur={commitLot}
-          onKeyDown={(e) => e.key === "Enter" && (e.currentTarget as HTMLInputElement).blur()}
-          onWheel={(e) => {
-            const v = Math.max(0.01, +(vol + (e.deltaY < 0 ? 0.01 : -0.01)).toFixed(2));
-            setLot(v.toFixed(2));
-            T.setWs({ lot: v });
-          }}
-          className="k-num w-full min-w-0 bg-transparent text-center font-mono text-[12px] font-medium text-fg outline-none"
-        />
-        <button onClick={() => step(1)} className="grid size-5 shrink-0 place-items-center rounded text-[13px] leading-none text-fg-3 hover:bg-surface-3 hover:text-fg" aria-label={t("chart.oneClick.increase")}>+</button>
-        </div>
-        {!open ? <span className="whitespace-nowrap text-[10px] font-semibold text-warn">{t("chart.oneClick.marketClosed")}</span> : delayed ? <span className="whitespace-nowrap text-[10px] font-semibold text-warn">{t("desk.side.delayed")}</span> : <span className="font-mono text-[10.5px] text-fg-3">{spread}</span>}
-      </div>
-      <button onClick={() => go("buy")} disabled={!open || !!blocked} title={blocked ?? (open ? (T.guest ? t("trader.guest.title") : undefined) : t("chart.oneClick.marketClosed"))} className={cn("flex flex-col items-end bg-up/12 px-2 py-1 text-right transition-colors hover:bg-up/25 disabled:cursor-not-allowed disabled:bg-surface-2 disabled:opacity-60", compact ? "min-w-[74px]" : "min-w-[92px]")} aria-label={t(open ? "chart.oneClick.buyAria" : "chart.oneClick.buyClosedAria", { symbol })}>
-        <span className="flex items-center gap-1 text-[11px] font-semibold text-up">{t("common.buy")}{T.ws.oneClick && !T.guest && <Zap className="size-3 fill-current" aria-hidden />}</span>
-        <PriceText symbol={symbol} value={ask} dir={dir} className={cn("justify-end", compact ? "text-[12px]" : "text-[14px]")} />
-      </button>
-      <button onClick={() => setCollapsed(true)} className="grid w-6 place-items-center border-l border-line bg-panel text-fg-3 hover:text-fg" aria-label={t("chart.oneClick.hide")} title={t("chart.oneClick.hideShort")}>
-        <ChevronUp className="size-3.5" />
-      </button>
+    <div
+      role="status"
+      className={cn("pointer-events-none absolute left-3 flex h-5 -translate-y-1/2 items-center gap-1.5 whitespace-nowrap rounded-[5px] px-1.5 font-mono text-[10.5px] shadow-[0_2px_8px_rgba(0,0,0,0.35)]", bad ? "border border-line-top bg-surface-3 text-fg-2" : line.kind === "sl" ? "bg-down text-white" : "bg-up text-white")}
+      style={{ top }}
+    >
+      <span className="font-semibold">{line.label}</span>
+      <span>{fmtPrice(symbol, price)}</span>
+      {money !== null && <span className="k-num">· {accMoney(T.account, money, { signed: true })}</span>}
+      {bad && <span className="font-sans font-medium text-warn">· {t(bad, { price: fmtPrice(symbol, ref!) })}</span>}
     </div>
   );
 }
-

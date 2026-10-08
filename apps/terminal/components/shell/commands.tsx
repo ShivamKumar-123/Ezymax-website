@@ -26,11 +26,14 @@ import {
   LogOut,
   Moon,
   RefreshCw,
+  Redo2,
   Rows2,
+  Save,
   Settings2,
   ShoppingCart,
   Square,
   Sun,
+  Undo2,
   UserPlus,
   Wallet,
   Volume2,
@@ -42,10 +45,11 @@ import { tr, useLocale, useT } from "@ezymex/i18n/react";
 import { LOCALES } from "@ezymex/i18n/locales";
 import type { MessageKey } from "@ezymex/i18n";
 import { toast } from "@/lib/notify";
-import { useTerminal, type Layout, type SideTab, type ToolboxTab, type Workspace } from "@/lib/store";
+import { WS_KEY, useTerminal, type Layout, type SideTab, type ToolboxTab, type Workspace } from "@/lib/store";
 import { CHART_TYPES, TIMEFRAMES } from "@/lib/trading";
 import { chartRegistry } from "@/components/chart/engine";
 import { openIndicatorList, openSaveTemplate } from "@/components/chart/indicators/state";
+import { clearDrawings, redoDrawings, setDrawPrefs, undoDrawings, useDrawPrefs, useDrawingHistory } from "@/components/chart/drawings";
 import { guestNotice, openRegister, CLIENT_AREA } from "@/lib/guest";
 import type { MenuItem } from "@/components/ui/menu";
 import { askConfirm } from "@/components/dialogs/confirm";
@@ -119,6 +123,17 @@ export function setPositionsLayout(T: Terminal, v: "page" | "split") {
 export function showSide(T: Terminal, tab: SideTab, toggle = false) {
   if (toggle && T.ws.panels.watch && T.ws.side === tab) return T.togglePanel("watch", false);
   T.setWs((w) => ({ side: tab, panels: { ...w.panels, watch: true } }));
+}
+
+/** Save the layout now (charts, indicators, drawings, panels): the chart toolbar's Save. The workspace also saves
+ *  itself on every change; this is the explicit action traders look for. */
+export function saveLayout(T: Terminal) {
+  try {
+    localStorage.setItem(WS_KEY, JSON.stringify(T.ws));
+    toast.success(tr("chart.toolbar.layoutSaved"), { description: tr("chart.toolbar.layoutSavedText") });
+  } catch {
+    /* storage blocked: the workspace lives for this session only */
+  }
 }
 
 /** "Full chart": the chart covers the window; an edge arrow slides the instruments back in. */
@@ -249,6 +264,8 @@ export function useCommands(): Command[] {
   const tab = T.activeTab;
   const reg = () => chartRegistry.get(tab.id);
   const ro = T.readOnly || T.guest;
+  const prefs = useDrawPrefs();
+  const history = useDrawingHistory(tab);
   const c: Command[] = [];
   const add = (x: Command) => c.push(x);
 
@@ -278,7 +295,16 @@ export function useCommands(): Command[] {
   add({ id: "trend", group: "chart", label: t("trader.menu.trendLine"), keywords: "draw object insert trend", run: () => T.setDrawTool("trend") });
   add({ id: "fib", group: "chart", label: t("trader.menu.fibonacci"), keywords: "draw object insert fibonacci", run: () => T.setDrawTool("fib") });
   add({ id: "rect", group: "chart", label: t("trader.menu.rectangle"), keywords: "draw object insert rectangle box", run: () => T.setDrawTool("rect") });
-  add({ id: "del-objects", group: "chart", label: t("trader.menu.deleteAllObjects"), keywords: "delete drawings objects clear", disabled: !tab.drawings.length, run: () => (T.updateTab(tab.id, { drawings: [] }), T.selectDrawing(null)) });
+  add({ id: "brush", group: "chart", label: t("chart.tool.brush"), keywords: "draw object brush freehand pen pencil", run: () => T.setDrawTool("brush") });
+  add({ id: "text", group: "chart", label: t("chart.tool.text"), keywords: "draw object text note label", run: () => T.setDrawTool("text") });
+  add({ id: "ruler", group: "chart", label: t("chart.tool.ruler"), keywords: "ruler measure distance range", run: () => T.setDrawTool("ruler") });
+  add({ id: "magnet", group: "chart", label: t("chart.tool.magnet"), keywords: "magnet snap ohlc drawings", checked: prefs.magnet, run: () => setDrawPrefs({ magnet: !prefs.magnet }) });
+  add({ id: "lock-drawings", group: "chart", label: t(prefs.locked ? "chart.tool.unlock" : "chart.tool.lock"), keywords: "lock unlock drawings objects", checked: prefs.locked, run: () => setDrawPrefs({ locked: !prefs.locked }) });
+  add({ id: "hide-drawings", group: "chart", label: t(prefs.hidden ? "chart.tool.show" : "chart.tool.hide"), keywords: "hide show drawings objects", checked: prefs.hidden, run: () => setDrawPrefs({ hidden: !prefs.hidden }) });
+  add({ id: "draw-undo", group: "chart", label: t("chart.toolbar.undo"), hint: "Ctrl+Z", icon: <Undo2 />, keywords: "undo drawing back", disabled: !history.canUndo, run: () => undoDrawings(T, tab.id) });
+  add({ id: "draw-redo", group: "chart", label: t("chart.toolbar.redo"), hint: "Ctrl+Shift+Z", icon: <Redo2 />, keywords: "redo drawing again", disabled: !history.canRedo, run: () => redoDrawings(T, tab.id) });
+  add({ id: "del-objects", group: "chart", label: t("trader.menu.deleteAllObjects"), keywords: "delete drawings objects clear", disabled: !tab.drawings.length, run: () => void clearDrawings(T, tab.id) });
+  add({ id: "save-layout", group: "chart", label: t("chart.toolbar.saveLayout"), icon: <Save />, keywords: "save layout workspace profile", run: () => saveLayout(T) });
   add({ id: "zoom-in", group: "chart", label: t("trader.menu.zoomIn"), hint: "+", keywords: "zoom in", run: () => reg()?.zoom(1) });
   add({ id: "zoom-out", group: "chart", label: t("trader.menu.zoomOut"), hint: "−", keywords: "zoom out", run: () => reg()?.zoom(-1) });
   add({ id: "fit", group: "chart", label: t("desk.ch.fit"), keywords: "reset view fit", run: () => reg()?.fit() });

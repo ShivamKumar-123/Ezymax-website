@@ -223,6 +223,8 @@ export const SHORTCUTS: { group: MessageKey; items: readonly (readonly [string, 
       ["Alt + 1 … 4", "order.shortcuts.layout"],
       ["+ / −", "order.shortcuts.zoom"],
       ["Delete", "order.shortcuts.deleteDrawing"],
+      ["Ctrl / ⌘ + Z", "chart.toolbar.undo"],
+      ["Ctrl / ⌘ + Shift + Z", "chart.toolbar.redo"],
     ],
   },
   {
