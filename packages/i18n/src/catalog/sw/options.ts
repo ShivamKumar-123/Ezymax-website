@@ -97,5 +97,9 @@ const options: NsMessages<"options"> = {
 
   // Demo build
   "demo.note": "Demo: hakuna kinachohifadhiwa hapa.",
+
+  // No Options account yet
+  "account.noneTitle": "Options hufanyiwa biashara kwenye akaunti ya options",
+  "account.noneText": "Akaunti zako za CFD haziwezi kufanya biashara ya options. Fungua akaunti ya options halisi au ya demo kwa dakika moja, kisha anza biashara.",
 };
 export default options;

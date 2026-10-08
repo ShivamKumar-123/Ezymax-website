@@ -97,5 +97,9 @@ const options: NsMessages<"options"> = {
 
   // Demo build
   "demo.note": "نسخة تجريبية: لا يُحفظ أي شيء هنا.",
+
+  // No Options account yet
+  "account.noneTitle": "تُتداول الخيارات على حساب الخيارات",
+  "account.noneText": "لا يمكن تداول الخيارات على حسابات CFD. افتح حساب خيارات حقيقيًا أو تجريبيًا في دقيقة، ثم ابدأ التداول.",
 };
 export default options;

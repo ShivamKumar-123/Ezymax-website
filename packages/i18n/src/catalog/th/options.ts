@@ -96,5 +96,9 @@ const options: NsMessages<"options"> = {
 
   // Demo build
   "demo.note": "โหมดสาธิต: ไม่มีการบันทึกข้อมูลใดๆ ในหน้านี้",
+
+  // No Options account yet
+  "account.noneTitle": "ออปชันเทรดบนบัญชีออปชัน",
+  "account.noneText": "บัญชี CFD ของคุณเทรดออปชันไม่ได้ เปิดบัญชีออปชันจริงหรือเดโมได้ในหนึ่งนาที แล้วเริ่มเทรดได้เลย",
 };
 export default options;

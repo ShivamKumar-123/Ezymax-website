@@ -99,5 +99,9 @@ const options = {
 
   // Demo build
   "demo.note": "Demo: nothing here is saved.",
+
+  // No Options account yet: options trade on their own account type (the button is accounts.product.openOptions)
+  "account.noneTitle": "Options trade on an Options account",
+  "account.noneText": "Your CFD accounts can't trade options. Open a live or demo Options account in a minute, then start trading.",
 };
 export default options;

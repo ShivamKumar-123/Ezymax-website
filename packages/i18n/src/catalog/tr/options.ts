@@ -96,5 +96,9 @@ const options: NsMessages<"options"> = {
 
   // Demo build
   "demo.note": "Demo: burada hiçbir şey kaydedilmez.",
+
+  // No Options account yet
+  "account.noneTitle": "Opsiyonlar opsiyon hesabında işlem görür",
+  "account.noneText": "CFD hesaplarınızla opsiyon işlemi yapılamaz. Bir dakikada gerçek veya demo opsiyon hesabı açın ve işleme başlayın.",
 };
 export default options;

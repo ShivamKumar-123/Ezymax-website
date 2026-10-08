@@ -97,5 +97,9 @@ const options: NsMessages<"options"> = {
 
   // Demo build
   "demo.note": "ڈیمو: یہاں کچھ بھی محفوظ نہیں ہوتا۔",
+
+  // No Options account yet
+  "account.noneTitle": "آپشنز کی ٹریڈنگ آپشنز اکاؤنٹ پر ہوتی ہے",
+  "account.noneText": "آپ کے CFD اکاؤنٹس پر آپشنز ٹریڈ نہیں ہو سکتے۔ ایک منٹ میں لائیو یا ڈیمو آپشنز اکاؤنٹ کھولیں، پھر ٹریڈنگ شروع کریں۔",
 };
 export default options;

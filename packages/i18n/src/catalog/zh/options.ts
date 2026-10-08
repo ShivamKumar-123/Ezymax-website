@@ -96,5 +96,9 @@ const options: NsMessages<"options"> = {
 
   // Demo build
   "demo.note": "演示版：此处的任何内容都不会被保存。",
+
+  // No Options account yet
+  "account.noneTitle": "期权需在期权账户中交易",
+  "account.noneText": "您的 CFD 账户无法交易期权。一分钟即可开立真实或模拟期权账户，然后开始交易。",
 };
 export default options;

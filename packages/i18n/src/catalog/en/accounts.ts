@@ -580,5 +580,31 @@ const accounts = {
   "ledgerKind.option_premium": "Option premium",
   "ledgerKind.option_settlement": "Option settlement",
   "ledgerKind.option_rebate": "Maker rebate",
+
+  // Products: an account trades CFDs or Ezymex FX Options, never both (its account type decides). Badges, the
+  // open-account wizard's first step and the messages when a link or button asks for the other product.
+  "label.product": "Product",
+  "product.cfd": "CFD",
+  "product.options": "Options",
+  "product.cfdTitle": "CFD account",
+  "product.optionsTitle": "Options account",
+  "product.cfdText": "Trade forex, metals, indices, energies, stocks and crypto as CFDs.",
+  "product.optionsText": "Buy or sell options on forex, gold, silver and oil.",
+  "product.cfdPoint1": "Hundreds of markets in one account",
+  "product.cfdPoint2": "Leverage, stop loss and take profit",
+  "product.cfdPoint3": "Charts, one-click trading and copy trading",
+  "product.optionsPoint1": "Calls, puts, spreads and barrier options",
+  "product.optionsPoint2": "Daily, weekly and monthly expiries",
+  "product.optionsPoint3": "Opens Ezymex Trader straight in options mode",
+  "product.cfdOnly": "This is a CFD account: options trade on an Options account.",
+  "product.optionsOnly": "This is an Options account: CFD trading isn't available on it.",
+  "product.noOptionsAccount": "You don't have an Options account yet. Open one in the Client Area.",
+  "product.switchedOptions": "Switched to your Options account {login}",
+  "product.switchedCfd": "Switched to your CFD account {login}",
+  "product.openOptions": "Open an Options account",
+  "wizard.step.product": "Product",
+  "wizard.productTitle": "What do you want to trade?",
+  "wizard.productSubtitle": "Each account trades one product, CFDs or options. You can hold both kinds.",
+  "wizard.optionsLeverage": "Options don't use leverage: buying an option costs its premium, selling one needs margin.",
 };
 export default accounts;

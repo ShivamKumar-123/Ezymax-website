@@ -96,5 +96,9 @@ const options: NsMessages<"options"> = {
 
   // Demo build
   "demo.note": "Демо: здесь ничего не сохраняется.",
+
+  // No Options account yet
+  "account.noneTitle": "Опционами торгуют на опционном счёте",
+  "account.noneText": "На счетах CFD нельзя торговать опционами. Откройте реальный или демо опционный счёт за минуту и начните торговать.",
 };
 export default options;
