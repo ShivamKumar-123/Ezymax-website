@@ -482,13 +482,11 @@ class _NativeChartSurfaceState extends State<NativeChartSurface> {
         height: 20,
         padding: const EdgeInsets.symmetric(horizontal: 7),
         alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: which == 'sl' ? _c('down', k.down) : _c('up', k.up),
-          border: Border(left: BorderSide(color: Colors.white.withValues(alpha: 0.3))),
-        ),
+        // TradingView style: TP / SL as text in their colour, not filled buttons
+        decoration: BoxDecoration(border: Border(left: BorderSide(color: Colors.white.withValues(alpha: 0.3)))),
         child: Text(
-          which == 'sl' ? 'S' : 'T',
-          style: const TextStyle(fontFamily: KFonts.mono, fontSize: 10.5, fontWeight: FontWeight.w600, color: Colors.white, height: 1),
+          which == 'sl' ? 'SL' : 'TP',
+          style: TextStyle(fontFamily: KFonts.mono, fontSize: 10.5, fontWeight: FontWeight.w700, color: which == 'sl' ? _c('down', k.down) : _c('up', k.up), height: 1),
         ),
       ),
     );
@@ -575,8 +573,8 @@ class _NativeChartSurfaceState extends State<NativeChartSurface> {
                   child: Text(note, style: st(noteColor)),
                 ),
               ],
-              if (l.addSl) _handle(l, 'sl', k),
               if (l.addTp) _handle(l, 'tp', k),
+              if (l.addSl) _handle(l, 'sl', k),
               if (l.close) ...[
                 sep,
                 GestureDetector(

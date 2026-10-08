@@ -182,7 +182,8 @@ void main() {
     }
     final s = find.byKey(const ValueKey('chart-stop-sl-pos:1'));
     expect(s, findsOneWidget);
-    expect(find.text('SL'), findsNothing);
+    // no SL line yet: the only "SL" is the handle on the position chip
+    expect(find.text('SL'), findsOneWidget);
     final g = await tester.startGesture(tester.getCenter(s));
     await g.moveBy(const Offset(0, 20));
     await g.moveBy(const Offset(0, 20));
@@ -191,7 +192,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 80));
     expect(got.single.$1, 'pos:1');
     expect(got.single.$2, 'sl');
-    // the SL line at the drop price, with the money there; the chip has no S meanwhile
+    // the SL line at the drop price, with the money there; the chip has no SL handle meanwhile
     expect(find.text('SL'), findsOneWidget);
     expect(s, findsNothing);
     expect(find.byKey(const ValueKey('chart-stop-tp-pos:1')), findsOneWidget);
@@ -200,7 +201,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 80));
     await tester.pump(const Duration(milliseconds: 80));
-    expect(find.text('SL'), findsNothing);
+    // the SL line is gone and the handle is back
+    expect(find.text('SL'), findsOneWidget);
     expect(s, findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(seconds: 13));

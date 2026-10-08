@@ -149,8 +149,8 @@ const chart = {
   "line.sellStopLimit": "SELL STOP LMT {lot}",
   "line.alert": "ALERT",
   // S and T are the stop loss / take profit handles on a position or order chip (keep the letters S and T)
-  "line.posTip": "Drag S or T to set a stop loss or take profit · double-click to modify",
-  "line.pendingTip": "Drag to move the order · drag S or T to set a stop loss or take profit",
+  "line.posTip": "Drag SL or TP to set a stop loss or take profit · double-click to modify",
+  "line.pendingTip": "Drag to move the order · drag SL or TP to set a stop loss or take profit",
   "line.dragSl": "Drag to set a stop loss",
   "line.dragTp": "Drag to set a take profit",
   // a stop dragged to the wrong side of the price; {price} = the nearest allowed price (the current price for a position,

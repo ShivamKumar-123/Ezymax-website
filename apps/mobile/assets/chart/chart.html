@@ -14,9 +14,9 @@
   Bars are [time (server-time seconds), open, high, low, close, volume]. Like the web chart (components/chart/
   engine.ts + chart-view.tsx): candles / bars / line / area (rising blue, falling red), the OHLC legend with one row per
   indicator (tap: show / hide, settings, remove), oscillators in their own sub-windows, the account's bid / ask lines,
-  trade-line chips at the price scale (drag to move, × to close / remove, the P&L on them, S / T to set a stop), and
+  trade-line chips at the price scale (drag to move, × to close / remove, the P&L on them, TP / SL to set a stop), and
   the small Ezymex K in the plot's corner.
-  Stops (MT5, TradingView): a position or order line does not move; `addSl` / `addTp` put the S / T handles on its chip.
+  Stops (MT5, TradingView): a position or order line does not move; `addSl` / `addTp` put the TP / SL handles on its chip.
   Dragged off the line, a handle draws a ghost stop line with its price and the money there; released, it posts
   stop {id, which: "sl" | "tp", price}. A line's `stops` {open, k, c, inv, order, gap} (chart_bridge.dart ChartStops)
   values and checks a stop here, without the app: money(p) = (p − open) × k ÷ (inv ? p : 1) + c, and a stop must stay
@@ -112,9 +112,9 @@
         height: 20px;
         display: flex;
         align-items: center;
-        border-radius: 5px;
+        border-radius: 3px;
         border: 1px solid transparent;
-        font: 500 10.5px "GeistMono", ui-monospace, monospace;
+        font: 600 10.5px "GeistMono", ui-monospace, monospace;
         line-height: 1;
         white-space: nowrap;
         pointer-events: auto;
@@ -142,11 +142,11 @@
         padding: 0 6px;
         font-size: 12px;
       }
-      /* the S / T handles: drag off the line to set a stop loss / take profit */
+      /* the TP / SL handles (TradingView style): drag off the line to set a take profit / stop loss */
       .chip .st {
         padding: 0 7px;
-        font-weight: 600;
-        color: #fff;
+        font-weight: 700;
+        background: transparent;
         border-left: 1px solid rgba(127, 127, 127, 0.35);
       }
       .chip .st.on {
@@ -659,7 +659,7 @@
           return [pal.panel, c, c];
         }
 
-        /** The line of a moved chip drag (a moved line); not an S / T drag, which leaves its line where it is. */
+        /** The line of a moved chip drag (a moved line); not a TP / SL drag, which leaves its line where it is. */
         const dragOf = (id) => !!(drag && drag.id === id && drag.moved && !drag.stop);
 
         /* ---------------- stops: money and side (chart_bridge.dart ChartStops) ---------------- */
@@ -732,7 +732,7 @@
           const noteColor = filled ? fg : l.tone === "up" ? pal.up : l.tone === "down" ? pal.down : pal.fg2;
           // a dragged stop shows the money at the finger
           const note = dragging && l.stops && (l.kind === "sl" || l.kind === "tp") ? fmtMoney(stopMoney(l.stops, drag.price)) : l.note || "";
-          const sig = [bg, fg, border, l.drag, !!note, noteColor, l.close, !!l.addSl, !!l.addTp].join("|");
+          const sig = [bg, fg, border, l.kind, l.drag, !!note, noteColor, l.close, !!l.addSl, !!l.addTp].join("|");
           if (c.sig !== sig) {
             c.sig = sig;
             const el = c.el;
@@ -743,10 +743,13 @@
             c.grip.style.display = l.drag ? "flex" : "none";
             c.note.style.display = note ? "flex" : "none";
             c.note.style.color = noteColor;
+            // a position's side + lot sit in a solid tag of its colour (TradingView style)
+            c.lbl.style.background = l.kind === "pos" ? border : "";
+            c.lbl.style.color = l.kind === "pos" ? "#fff" : "";
             c.sb.style.display = l.addSl ? "flex" : "none";
-            c.sb.style.background = pal.down;
+            c.sb.style.color = pal.down;
             c.tb.style.display = l.addTp ? "flex" : "none";
-            c.tb.style.background = pal.up;
+            c.tb.style.color = pal.up;
             c.x.style.display = l.close ? "flex" : "none";
             c.w = -1;
           }
@@ -808,20 +811,20 @@
               note.className = "note";
               const sb = document.createElement("span");
               sb.className = "st";
-              sb.textContent = "S";
+              sb.textContent = "SL";
               sb.title = texts.dragSl || "";
               const tb = document.createElement("span");
               tb.className = "st";
-              tb.textContent = "T";
+              tb.textContent = "TP";
               tb.title = texts.dragTp || "";
               const x = document.createElement("span");
               x.className = "x";
               x.textContent = "×";
-              el.append(grip, lbl, note, sb, tb, x);
+              el.append(grip, lbl, note, tb, sb, x);
               c = { el, grip, lbl, note, sb, tb, x, l, sig: "", w: -1, tx: NaN, ty: NaN, shown: true };
               chips.set(l.id, c);
               const cc = c;
-              // S / T: their own drag (a stop off the line), never the chip's
+              // TP / SL: their own drag (a stop off the line), never the chip's
               sb.addEventListener("pointerdown", (e) => startStop(e, cc, "sl"));
               tb.addEventListener("pointerdown", (e) => startStop(e, cc, "tp"));
               x.addEventListener("pointerdown", (e) => {
@@ -994,7 +997,7 @@
           el.addEventListener("lostpointercapture", up);
         }
 
-        /** The S / T handle of a position or order chip: a ghost stop line follows the finger from the trade's line
+        /** The TP / SL handle of a position or order chip: a ghost stop line follows the finger from the trade's line
          *  with its price and the money there (grey with the reason on the wrong side of the price); released, it
          *  posts stop {id, which, price}, or nothing on the wrong side. The trade's line and chip stay put. */
         function startStop(e, c, which) {
@@ -1048,7 +1051,7 @@
             if (drag !== d0) return;
             drag = null;
             if (!d0.moved) {
-              // a tap on S / T: the hint stays a moment
+              // a tap on TP / SL: the hint stays a moment
               hideGhost(1600);
             } else {
               // checked again at the drop: the price may have moved since the last frame

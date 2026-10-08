@@ -4,7 +4,7 @@ import * as React from "react";
 import { useTheme } from "next-themes";
 import { LineStyle, type IPriceLine, type UTCTimestamp } from "lightweight-charts";
 import { toast } from "@/lib/notify";
-import { ArrowDownRight, ArrowUpRight, Bell, Camera, CandlestickChart, Crosshair, GripVertical, Layers, Minus, Plus, ShoppingCart, SlidersHorizontal, X } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Bell, Camera, CandlestickChart, Crosshair, Layers, Minus, Plus, ShoppingCart, SlidersHorizontal, X } from "lucide-react";
 import { getInstrument, instrumentSpec, priceFeed } from "@ezymex/mock";
 import { cn, useQuote } from "@ezymex/ui";
 import { usePositionProfit, useTerminal, type Anchor, type ChartTab, type Drawing } from "@/lib/store";
@@ -966,25 +966,36 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
               const money = l.kind === "sl" || l.kind === "tp" ? stopMoney(l, price, T.positions, T.pendings) : null;
               const bad = isDrag && !!dragBad;
               const livePos = l.kind === "pos" ? T.positions.find((x) => x.ticket === l.ref) : undefined;
-              const tone = bad
-                ? "border-line-top bg-surface-3 text-fg-2"
-                : l.kind === "sl"
-                ? "border-down/60 bg-down text-white"
+              // TradingView-style label: one box framed in the line's colour, a solid tag (side + lot, SL, TP, order type)
+              // then the money, the TP / SL handles and ×
+              const frame = bad
+                ? "border-line-top"
+                : l.kind === "sl" || (l.kind === "pos" && l.side === "sell")
+                ? "border-down"
                 : l.kind === "tp"
-                ? "border-up/60 bg-up text-white"
+                ? "border-up"
                 : l.kind === "pending"
-                ? "border-gold/60 bg-[color-mix(in_oklab,var(--k-gold)_88%,black)] text-[#1a1204]"
+                ? "border-gold"
                 : l.kind === "alert"
-                ? "border-warn/60 bg-warn text-[#1a1204]"
-                : l.side === "buy"
-                ? "border-buy/60 bg-panel-2 text-buy"
-                : "border-down/60 bg-panel-2 text-down";
-              const handles = (["sl", "tp"] as const).filter((w) => l.stops?.[w]);
+                ? "border-warn"
+                : "border-buy";
+              const tag = bad
+                ? "bg-surface-3 text-fg-2"
+                : l.kind === "sl" || (l.kind === "pos" && l.side === "sell")
+                ? "bg-down text-white"
+                : l.kind === "tp"
+                ? "bg-up text-white"
+                : l.kind === "pending"
+                ? "bg-[color-mix(in_oklab,var(--k-gold)_88%,black)] text-[#1a1204]"
+                : l.kind === "alert"
+                ? "bg-warn text-[#1a1204]"
+                : "bg-buy text-white";
+              const handles = (["tp", "sl"] as const).filter((w) => l.stops?.[w]);
               return (
                 <div
                   key={l.id}
                   data-line-chip
-                  className={cn("pointer-events-auto flex h-[18px] shrink-0 items-center overflow-hidden rounded-[4px] border font-mono text-[10.5px] font-medium leading-none shadow-[0_2px_8px_rgba(0,0,0,0.35)]", tone, l.draggable && "cursor-ns-resize")}
+                  className={cn("pointer-events-auto flex h-5 shrink-0 items-stretch overflow-hidden rounded-[3px] border bg-panel-2 font-sans text-[11px] font-semibold leading-none text-fg shadow-[0_2px_8px_rgba(0,0,0,0.35)]", frame, l.draggable && "cursor-ns-resize")}
                   style={row.lines.length > 1 ? { transform: `translateY(${(geo.ys[l.id] ?? row.y) - row.y}px)` } : undefined}
                   onPointerDown={(e) => {
                     if (!l.draggable || e.button !== 0) return;
@@ -996,15 +1007,14 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
                   onDoubleClick={() => (l.kind === "pos" ? T.setUi({ positionDialog: l.ref }) : l.kind === "pending" && !ro ? T.setUi({ pendingDialog: l.ref }) : undefined)}
                   title={bad ? dragBad! : l.kind === "pos" ? (ro ? undefined : t("chart.line.posTip")) : l.kind === "pending" && !ro ? t("chart.line.pendingTip") : l.draggable ? t("chart.line.dragTitle") : undefined}
                 >
-                  {l.draggable && <GripVertical className="ms-0.5 size-3 shrink-0 opacity-70" aria-hidden />}
-                  <span className={l.draggable ? "pe-1.5 ps-0.5" : "px-1.5"}>
+                  <span className={cn("flex items-center px-1.5", tag)}>
                     {l.label}
-                    {isDrag && l.kind !== "pos" && <span className="ml-1 opacity-80">{fmtPrice(tab.symbol, price)}</span>}
+                    {isDrag && l.kind !== "pos" && <span className="k-num ml-1 opacity-80">{fmtPrice(tab.symbol, price)}</span>}
                   </span>
                   {livePos && <PositionChipPnl p={livePos} />}
-                  {money !== null && <span className="k-num border-l border-current/25 px-1.5">{accMoney(acc, money, { signed: true })}</span>}
+                  {money !== null && <span className="k-num flex items-center px-1.5">{accMoney(acc, money, { signed: true })}</span>}
                   {handles.length > 0 && (
-                    <span className="flex h-full items-center gap-[3px] border-l border-current/25 px-[3px]">
+                    <span className="flex items-stretch">
                       {handles.map((w) => (
                         <button
                           key={w}
@@ -1020,9 +1030,9 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
                             startStop(l, w, e.clientY);
                           }}
                           onDoubleClick={(e) => e.stopPropagation()}
-                          className={cn("grid size-[13px] cursor-ns-resize touch-none place-items-center rounded-[3px] font-sans text-[9px] font-bold leading-none text-white transition-[filter] hover:brightness-125", w === "sl" ? "bg-down" : "bg-up")}
+                          className={cn("flex cursor-ns-resize touch-none items-center border-l border-line px-1.5 text-[10.5px] font-bold leading-none transition-colors", w === "sl" ? "text-down hover:bg-down hover:text-white" : "text-up hover:bg-up hover:text-white")}
                         >
-                          {w === "sl" ? "S" : "T"}
+                          {w === "sl" ? "SL" : "TP"}
                         </button>
                       ))}
                     </span>
@@ -1035,7 +1045,7 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
                         e.stopPropagation();
                         removeLine(l);
                       }}
-                      className="grid h-full w-4 place-items-center border-l border-current/25 hover:bg-black/20"
+                      className="grid h-full w-5 place-items-center border-l border-line text-fg-3 transition-colors hover:bg-down hover:text-white"
                     >
                       <X className="size-2.5" />
                     </button>
@@ -1184,7 +1194,7 @@ function LiveLegendRow({ store, uid, ...actions }: { store: LegendStore; uid: st
 function PositionChipPnl({ p }: { p: TPosition }) {
   const T = useTerminal();
   const pnl = usePositionProfit(p);
-  return <span className={cn("k-num border-l border-line px-1.5", pnl >= 0 ? "bg-up/15 text-up" : "bg-down/15 text-down")}>{accMoney(T.account, pnl, { signed: true })}</span>;
+  return <span className={cn("k-num flex items-center px-1.5", pnl >= 0 ? "text-up" : "text-down")}>{accMoney(T.account, pnl, { signed: true })}</span>;
 }
 
 /**
