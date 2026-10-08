@@ -931,3 +931,14 @@ html[data-page="accounts"] div:has(> header.h-\[65px\]) {
 .theme-light .text-emerald-500 {
   color: #15803d !important;
 }
+
+/* The wordmark is a light-on-dark lockup. In light mode it sits on a near
+   white surface and all but disappears, so it gets a dark chip behind it --
+   the same approach admin uses for its sidebar. */
+html.light .brand-logo,
+[data-theme='light'] .brand-logo,
+.theme-light .brand-logo {
+  background: #0b0d0f;
+  border-radius: 8px;
+  padding: 4px 9px;
+}

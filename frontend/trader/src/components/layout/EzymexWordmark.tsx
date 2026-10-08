@@ -52,7 +52,7 @@ export function EzymexWordmark({
       <img
         src="/images/ezymex-logo.png"
         alt="Ezymex"
-        className="h-9 w-auto object-contain drop-shadow-[0_0_20px_rgba(255,106,0,0.12)]"
+        className="brand-logo h-9 w-auto object-contain drop-shadow-[0_0_20px_rgba(255,106,0,0.12)]"
       />
     </span>
   );

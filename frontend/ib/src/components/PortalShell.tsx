@@ -64,6 +64,13 @@ export default function PortalShell({ children }: { children: React.ReactNode })
           >
             <Menu size={16} />
           </button>
+          {/* The sidebar is off-canvas here, so without this the phone
+              header carries no brand at all. */}
+          <img
+            src="/logo.png"
+            alt="Ezymex"
+            className="brand-logo h-6 w-auto object-contain lg:hidden"
+          />
           <div className="flex flex-1 items-center justify-end gap-3">
             <ThemeToggle />
             {name && (

@@ -24,16 +24,13 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     <nav className="flex h-full flex-col gap-1.5 p-3">
       {/* Brand */}
       <div className="mb-3 flex items-center gap-2.5 px-2 pt-2">
-        <img
-          src="/ezymex_icon.png"
-          alt=""
-          className="h-8 w-8 shrink-0 object-contain drop-shadow-[0_0_10px_rgba(255,106,0,0.45)]"
-        />
         <div className="min-w-0">
-          <span className="block text-base font-bold leading-none tracking-tight">
-            <span className="text-accent">EZY</span><span className="text-text-primary">MAX</span>
-          </span>
-          <p className="mt-1 text-[9px] font-semibold uppercase tracking-[0.22em] text-text-tertiary">IB Portal</p>
+          <img
+            src="/logo.png"
+            alt="Ezymex"
+            className="brand-logo h-7 w-auto object-contain"
+          />
+          <p className="mt-1.5 text-[9px] font-semibold uppercase tracking-[0.22em] text-text-tertiary">IB Portal</p>
         </div>
       </div>
 

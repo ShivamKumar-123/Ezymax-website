@@ -86,8 +86,7 @@ export default function IBPortalLoginPage() {
         >
           <div className="pointer-events-none absolute right-0 top-1/3 h-72 w-72 translate-x-1/3 rounded-full bg-[#FF6A00]/15 blur-[100px]" aria-hidden />
           <div className="relative flex items-center gap-2.5">
-            <img src="/ezymex_icon.png" alt="" className="h-10 w-10 object-contain drop-shadow-[0_0_16px_rgba(255,106,0,0.5)]" />
-            <span className="text-lg font-bold tracking-tight"><span className="text-[#FF6A00]">EZY</span>MAX</span>
+            <img src="/logo.png" alt="Ezymex" className="h-7 w-auto object-contain" />
           </div>
 
           <div className="relative">
@@ -116,8 +115,7 @@ export default function IBPortalLoginPage() {
         {/* ── Right form ── */}
         <div className="relative p-8 sm:p-10">
           <div className="mb-6 flex items-center gap-2.5 lg:hidden">
-            <img src="/ezymex_icon.png" alt="" className="h-9 w-9 object-contain drop-shadow-[0_0_14px_rgba(255,106,0,0.45)]" />
-            <span className="text-lg font-bold tracking-tight"><span className="text-[#FF6A00]">EZY</span>MAX</span>
+            <img src="/logo.png" alt="Ezymex" className="h-6 w-auto object-contain" />
           </div>
 
           <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>

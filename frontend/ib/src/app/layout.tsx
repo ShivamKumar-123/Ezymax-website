@@ -5,6 +5,12 @@ import { Toaster } from 'react-hot-toast';
 export const metadata: Metadata = {
   title: 'Ezymex — IB Partner Portal',
   description: 'Introducing Broker partner portal',
+  // Declared explicitly, as trader and admin do. This used to rely on the
+  // app/icon.png file convention alone, with an 808 KB source behind it.
+  icons: {
+    icon: [{ url: '/ezymex_icon.png', type: 'image/png' }],
+    apple: [{ url: '/ezymex_icon.png' }],
+  },
 };
 
 export const viewport: Viewport = {

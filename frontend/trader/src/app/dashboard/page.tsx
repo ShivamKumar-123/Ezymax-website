@@ -29,6 +29,8 @@ import { MetricStrip } from '@/components/dashboard/MetricStrip';
 import { MarginRingCard } from '@/components/dashboard/MarginRingCard';
 import { SetupChecklist, type SetupStep } from '@/components/dashboard/SetupChecklist';
 import { BalanceCard } from '@/components/dashboard/BalanceCard';
+import { MoneyFlowCard } from '@/components/dashboard/MoneyFlowCard';
+import { RecentActivityCard, type ActivityRow } from '@/components/dashboard/RecentActivityCard';
 import api from '@/lib/api/client';
 import { useAuthStore } from '@/stores/authStore';
 import { TOUR_TARGETS } from '@/components/Onboarding/tourTargets';
@@ -344,6 +346,47 @@ function BrokerHome() {
     };
   }, [refreshAccounts, refreshMoverTicks]);
 
+  // Wallet figures for the two ledger cards. Kept separate from the
+  // account poll: these change on deposits and withdrawals, not on ticks.
+  const [wallet, setWallet] = useState<{ in: number; out: number }>({ in: 0, out: 0 });
+  const [activity, setActivity] = useState<ActivityRow[]>([]);
+  const [walletLoading, setWalletLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const [sum, led] = await Promise.all([
+          api.get<{ total_deposited?: number; total_withdrawn?: number }>('/wallet/summary'),
+          api.get<{ items?: Array<{ id: string; type: string; description?: string; amount: number; created_at: string | null; status: string }> }>('/wallet/transactions'),
+        ]);
+        if (!alive) return;
+        setWallet({
+          in: Number(sum?.total_deposited) || 0,
+          out: Number(sum?.total_withdrawn) || 0,
+        });
+        setActivity(
+          (led?.items ?? []).slice(0, 4).map((r) => ({
+            id: r.id,
+            type: r.type,
+            description: r.description,
+            amount: Number(r.amount) || 0,
+            createdAt: r.created_at,
+            status: r.status,
+          })),
+        );
+      } catch {
+        // A wallet hiccup must not take the dashboard down; the cards
+        // render their own empty state.
+      } finally {
+        if (alive) setWalletLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   const activeAccount = useMemo(
     () => accounts.find((a) => a.id === activeId) || accounts[0] || null,
     [accounts, activeId],
@@ -492,15 +535,27 @@ function BrokerHome() {
           onWithdraw={() => router.push('/wallet?action=withdraw')}
           fmt={fmtUsd}
         />
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-1">
-          <MarginRingCard
-            marginLevel={marginLevel}
-            marginUsed={marginUsed}
-            freeMargin={freeMargin}
-            fmt={fmtUsd}
-          />
-          <SetupChecklist steps={setupSteps} />
-        </div>
+        <MarginRingCard
+          marginLevel={marginLevel}
+          marginUsed={marginUsed}
+          freeMargin={freeMargin}
+          fmt={fmtUsd}
+        />
+      </div>
+
+      {/* ── Second band: the ledger, the split, and what is left to set up ── */}
+      <div
+        className="dash-rise grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)]"
+        style={{ animationDelay: '110ms' }}
+      >
+        <RecentActivityCard rows={activity} loading={walletLoading} fmt={fmtUsd} />
+        <MoneyFlowCard
+          deposited={wallet.in}
+          withdrawn={wallet.out}
+          fmt={fmtUsd}
+          loading={walletLoading}
+        />
+        <SetupChecklist steps={setupSteps} />
       </div>
 
       {/* ── Rank ladder (shown directly, not behind the badge popup) ── */}

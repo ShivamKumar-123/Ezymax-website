@@ -80,8 +80,7 @@ export default function LoginPage() {
           <div className="auth-right">
             <form className="auth-form" onSubmit={handleSubmit} noValidate>
               <div className="flex flex-col items-center gap-2 mb-1">
-                <img src="/ezymex_icon.png" alt="Ezymex" className="w-20 h-20 object-contain drop-shadow-[0_2px_10px_rgba(255,106,0,0.35)]" />
-                <span className="admin-wordmark">EZY<span className="admin-wordmark__accent">MAX</span></span>
+                <img src="/logo.png" alt="Ezymex" className="h-10 w-auto object-contain" />
               </div>
               <div>
                 <h2 className="auth-form__title">Ezymex Admin</h2>

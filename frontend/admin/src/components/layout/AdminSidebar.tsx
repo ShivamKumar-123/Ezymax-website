@@ -138,7 +138,7 @@ export default function AdminSidebar() {
           // light/gold mark a dark backing in light mode so it stays legible.
           <Link href="/" className="flex items-center min-w-0">
             <span className="admin-logo-chip">
-              <img src="/logo.png" alt="Ezymex" className="h-9 w-auto object-contain" />
+              <img src="/logo.png" alt="Ezymex" className="h-8 w-auto object-contain" />
             </span>
           </Link>
         )}

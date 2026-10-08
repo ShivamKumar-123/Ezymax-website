@@ -79,11 +79,9 @@ export default function SharedTradePage() {
     >
       {/* Header logo */}
       <div className="flex items-center gap-2 mb-8">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2L3 6V12C3 17.5 6.8 22.3 12 23C17.2 22.3 21 17.5 21 12V6L12 2Z" stroke="white" strokeWidth="1.6" fill="none" />
-          <path d="M9 12L11 14L15 10" stroke="#10b981" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        <span className="text-white text-sm font-bold tracking-[0.25em]">EZYMEX</span>
+        {/* The shared card is a public page, so it carries the real mark
+            rather than a generic shield and the name set in letter-spacing. */}
+        <img src="/images/ezymex-logo.png" alt="Ezymex" className="h-6 w-auto object-contain" />
       </div>
 
       {loading ? (

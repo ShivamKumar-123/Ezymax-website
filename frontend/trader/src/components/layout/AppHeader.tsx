@@ -99,12 +99,12 @@ export default function AppHeader() {
           <Link
             href="/dashboard"
             aria-label="Ezymex — dashboard"
-            className="hidden select-none items-center transition-opacity hover:opacity-80 sm:inline-flex"
+            className="inline-flex select-none items-center transition-opacity hover:opacity-80"
           >
             <img
               src="/images/ezymex-logo.png"
               alt="Ezymex"
-              className="h-6 w-auto object-contain"
+              className="brand-logo h-7 w-auto object-contain"
             />
           </Link>
           {/* Hairline separates the brand from the nav capsule */}

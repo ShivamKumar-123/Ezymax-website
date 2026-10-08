@@ -13,7 +13,7 @@ export function Footer() {
         <div className="grid gap-12 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div className="max-w-sm">
             <Link href="/" className="inline-flex text-ink" aria-label="Ezymex home">
-              <Logo className="h-7" />
+              <Logo className="h-8" />
             </Link>
             <p className="mt-4 font-display text-lg font-medium text-ink">{site.tagline}</p>
             <p className="mt-4 text-sm leading-relaxed text-muted">{site.description}</p>
