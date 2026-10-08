@@ -8,7 +8,6 @@ import { useAuthStore } from '@/stores/authStore';
 import { NotificationBell } from '@/components/NotificationListener';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import api from '@/lib/api/client';
-import AppTopNav from './AppTopNav';
 import { ChevronDown, Menu, Sparkles, Wallet } from 'lucide-react';
 
 function formatUsd(n: number) {
@@ -82,40 +81,23 @@ export default function AppHeader() {
           aria-hidden
           className="pointer-events-none absolute inset-x-6 top-0 h-px rounded-full bg-gradient-to-r from-transparent via-[#FF6A00]/40 to-transparent"
         />
-        {/* LEFT — brand lockup. The wordmark is the brand here: the old
-            asset carried its own emblem, so the name used to be set as text
-            beside it to avoid showing the mark twice. The current lockup is
-            letters only, so the image can carry it. */}
+        {/* LEFT — the menu toggle only. The brand and the navigation both
+            live in the sidebar now, which is persistent from lg up. */}
         <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
           <button
             type="button"
             onClick={toggleSidebar}
             title="Menu"
-            className="group grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[#FF6A00]/25 bg-[#FF6A00]/[0.06] transition-all hover:border-[#FF6A00]/50 hover:bg-[#FF6A00]/10 hover:shadow-[0_0_18px_-6px_rgba(255,106,0,0.9)] active:scale-95"
+            className="group grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[#FF6A00]/25 bg-[#FF6A00]/[0.06] transition-all hover:border-[#FF6A00]/50 hover:bg-[#FF6A00]/10 active:scale-95 lg:hidden"
             aria-label="Toggle menu"
           >
             <Menu className="h-5 w-5 text-[#FF6A00] transition-transform duration-200 group-hover:scale-110" />
           </button>
-          <Link
-            href="/dashboard"
-            aria-label="Ezymex — dashboard"
-            className="inline-flex select-none items-center transition-opacity hover:opacity-80"
-          >
-            <img
-              src="/images/ezymex-logo.png"
-              alt="Ezymex"
-              className="brand-logo h-7 w-auto object-contain"
-            />
-          </Link>
-          {/* Hairline separates the brand from the nav capsule */}
-          <span aria-hidden className="hidden h-6 w-px bg-border-primary lg:block" />
         </div>
 
-        {/* CENTER — full categorised nav, inline on the same line (lg+) */}
-        <AppTopNav />
-
-        {/* RIGHT — outline pill, solid CTA, circular icon buttons, avatar */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
+        {/* RIGHT — outline pill, solid CTA, circular icon buttons, avatar.
+            ml-auto now that the centre nav is gone. */}
+        <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
           {/* Rewards — outline pill. Label appears once there's room. */}
           <Link
             href="/earn/tasks"

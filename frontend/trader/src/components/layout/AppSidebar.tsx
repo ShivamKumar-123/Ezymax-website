@@ -174,9 +174,15 @@ export default function AppSidebar() {
 
       <aside
         className={cn(
-          /* z-[70] above MobileBottomNav (z-[60]) so drawer links receive taps on small screens */
-          'fixed top-0 left-0 z-[70] h-full w-[260px] flex flex-col overflow-hidden transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] lg:hidden',
-          'bg-bg-base border-r border-border-primary',
+          /* Below lg: an off-canvas drawer, z-[70] above MobileBottomNav
+             (z-[60]) so its links receive taps. From lg: a static column in
+             the shell's flex row — no fixed, no transform. */
+          'z-[70] h-full w-[260px] flex flex-col overflow-hidden',
+          'fixed top-0 left-0 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
+          'lg:static lg:translate-x-0 lg:transition-none lg:shrink-0',
+          /* Dark in both themes. The rail is the brand surface, and the
+             wordmark is a glow render that only reads on a dark ground. */
+          'border-r border-white/10 bg-[#0b0908] text-[#f3efe9]',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
@@ -187,7 +193,7 @@ export default function AppSidebar() {
             <img
               src="/images/ezymex-logo.png"
               alt="Ezymex"
-              className="brand-logo h-9 w-auto object-contain drop-shadow-[0_0_20px_rgba(255,106,0,0.12)] transition-transform duration-300 group-hover:scale-[1.03]"
+              className="h-9 w-auto object-contain drop-shadow-[0_0_20px_rgba(255,106,0,0.12)] transition-transform duration-300 group-hover:scale-[1.03]"
             />
           </Link>
           <button

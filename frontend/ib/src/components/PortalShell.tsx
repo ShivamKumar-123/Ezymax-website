@@ -69,7 +69,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
           <img
             src="/logo.png"
             alt="Ezymex"
-            className="brand-logo h-6 w-auto object-contain lg:hidden"
+            className="h-6 w-auto object-contain lg:hidden"
           />
           <div className="flex flex-1 items-center justify-end gap-3">
             <ThemeToggle />
