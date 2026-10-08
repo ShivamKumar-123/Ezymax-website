@@ -8,7 +8,7 @@ import { BRAND_NAME, BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 
 export const metadata: Metadata = {
   title: 'Privacy policy',
-  description: 'What personal data Kalks collects, why, and how it is protected.',
+  description: 'What personal data Ezymex collects, why, and how it is protected.',
   alternates: { canonical: '/privacy' },
 };
 

@@ -6,10 +6,10 @@ const __dirname = path.dirname(__filename);
 
 const isDev = process.env.NODE_ENV !== 'production';
 
-/* The website is marketing only. Accounts, sign-in and every signed-in page live in the Kalks Client Area;
-   trading lives in Kalks Trader. Query strings (?ref=CODE, utm_*) are kept on every redirect. */
-const CRM_URL = (process.env.NEXT_PUBLIC_CRM_URL || 'https://app.kalkstrade.com').replace(/\/$/, '');
-const TRADER_URL = (process.env.NEXT_PUBLIC_TRADER_URL || 'https://trade.kalkstrade.com').replace(/\/$/, '');
+/* The website is marketing only. Accounts, sign-in and every signed-in page live in the Ezymex Client Area;
+   trading lives in Ezymex Trader. Query strings (?ref=CODE, utm_*) are kept on every redirect. */
+const CRM_URL = (process.env.NEXT_PUBLIC_CRM_URL || 'https://app.ezymex.com').replace(/\/$/, '');
+const TRADER_URL = (process.env.NEXT_PUBLIC_TRADER_URL || 'https://trade.ezymex.com').replace(/\/$/, '');
 
 /* Vercel builds Next.js natively and does not consume a standalone bundle. Keep it for Docker / self-hosting. */
 const isVercel = Boolean(process.env.VERCEL);
@@ -44,7 +44,7 @@ const nextConfig = {
   },
   async redirects() {
     return [
-      /* Sign-in and registration: the Kalks Client Area. */
+      /* Sign-in and registration: the Ezymex Client Area. */
       to('/auth/login', `${CRM_URL}/login`),
       to('/auth/register', `${CRM_URL}/register`),
       to('/auth/reset-password', `${CRM_URL}/forgot`),

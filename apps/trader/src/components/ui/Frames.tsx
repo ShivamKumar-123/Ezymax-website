@@ -9,7 +9,7 @@ import { cn } from '@/lib/cn';
 export function BrowserFrame({
   src,
   alt,
-  url = 'trade.kalkstrade.com',
+  url = 'trade.ezymex.com',
   width = 1600,
   height = 950,
   priority = false,

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { KalksLogo } from '@/components/brand/Logo';
+import { EzymexLogo } from '@/components/brand/Logo';
 import { FOOTER_COLUMNS, LEGAL_LINKS } from '@/content/site';
 import { RISK_WARNING, OPTIONS_RISK } from '@/content/facts';
 import { BRAND_COPYRIGHT, BRAND_SUPPORT_EMAIL } from '@/lib/brand';
@@ -25,7 +25,7 @@ export default function Footer() {
         <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-[30%] bg-[radial-gradient(60%_80%_at_50%_100%,rgba(200,10,20,0.16),transparent_70%)]" />
         <div className="container-site flex min-h-[inherit] flex-col justify-start gap-8 py-20 lg:flex-row lg:items-center lg:justify-between lg:gap-10 lg:py-24">
           <div className="flex max-w-[30rem] flex-col gap-6">
-            <p className="kicker kicker-crimson">Kalks</p>
+            <p className="kicker kicker-crimson">Ezymex</p>
             <h2 id="closing-title" className="t-display">
               Make your
               <br />
@@ -37,7 +37,7 @@ export default function Footer() {
             <div className="flex flex-wrap gap-3 lg:justify-end">
               <Button href={REGISTER_HREF}>Open account</Button>
               <Button href={TRADER_URL} variant="outline" arrow={false}>
-                Kalks Trader
+                Ezymex Trader
               </Button>
             </div>
           </div>
@@ -47,9 +47,9 @@ export default function Footer() {
       <div className="container-site relative border-t border-white/[0.08] pb-10 pt-20 lg:pt-24">
         <div className="grid gap-14 lg:grid-cols-[1.1fr_2fr]">
           <div className="flex flex-col gap-6">
-            <KalksLogo className="h-7 w-auto self-start text-fg" />
+            <EzymexLogo className="h-7 w-auto self-start text-fg" />
             <p className="max-w-sm text-[0.95rem] leading-relaxed text-fg-2">
-              A global multi-asset trading platform: Kalks FX Options, CFDs on forex, metals, energies, indices and crypto,
+              A global multi-asset trading platform: Ezymex FX Options, CFDs on forex, metals, energies, indices and crypto,
               prop challenges, copy trading and PAMM, on one account.
             </p>
             <div className="flex flex-wrap gap-3">
@@ -57,7 +57,7 @@ export default function Footer() {
                 Open account
               </Button>
               <Button href={TRADER_URL} size="sm" variant="outline" arrow={false}>
-                Kalks Trader
+                Ezymex Trader
               </Button>
             </div>
             <a href={`mailto:${BRAND_SUPPORT_EMAIL}`} className="prose-link self-start text-sm">
@@ -93,7 +93,7 @@ export default function Footer() {
           <div>
             <h2 className="mb-2 text-sm font-semibold text-fg">Restricted regions</h2>
             <p className="text-[0.8rem] leading-relaxed text-fg-3">
-              Kalks does not provide services to citizens or residents of the USA, Cuba, Iraq, Myanmar, North Korea and Sudan.
+              Ezymex does not provide services to citizens or residents of the USA, Cuba, Iraq, Myanmar, North Korea and Sudan.
               Our services are not intended for distribution to, or use by, any person in any country or jurisdiction where
               such distribution or use would be contrary to local law or regulation.{' '}
               <Link href="/restricted-countries" className="prose-link">
@@ -118,13 +118,13 @@ export default function Footer() {
               Client Area
             </a>
             <a href={TRADER_URL} className="transition-colors hover:text-fg">
-              Kalks Trader
+              Ezymex Trader
             </a>
           </p>
         </div>
       </div>
       <div aria-hidden className="pointer-events-none relative -mb-[3.2vw] select-none px-[var(--gutter)]">
-        <KalksLogo className="h-auto w-full text-white/[0.035]" title="" />
+        <EzymexLogo className="h-auto w-full text-white/[0.035]" title="" />
       </div>
     </footer>
   );

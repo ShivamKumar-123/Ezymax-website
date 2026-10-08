@@ -10,14 +10,14 @@ import { INSTRUMENTS, OPTIONS } from '@/content/facts';
 import { REGISTER_HREF } from '@/lib/crm';
 
 export const metadata: Metadata = {
-  title: 'About Kalks',
+  title: 'About Ezymex',
   description:
-    'Kalks is a global multi-asset trading platform: Kalks FX Options, CFDs on 1,389 instruments, prop challenges, copy trading and PAMM, built on our own technology and translated into 22 languages.',
+    'Ezymex is a global multi-asset trading platform: Ezymex FX Options, CFDs on 1,389 instruments, prop challenges, copy trading and PAMM, built on our own technology and translated into 22 languages.',
   alternates: { canonical: '/about' },
 };
 
 const PRODUCTS = [
-  { Icon: LineChart, t: 'Kalks FX Options', d: `Option chains on ${OPTIONS.fxPairs - 1} FX pairs, gold, silver and oil, with daily, weekly and monthly expiries.`, href: '/options' },
+  { Icon: LineChart, t: 'Ezymex FX Options', d: `Option chains on ${OPTIONS.fxPairs - 1} FX pairs, gold, silver and oil, with daily, weekly and monthly expiries.`, href: '/options' },
   { Icon: CandlestickChart, t: 'CFDs', d: `${INSTRUMENTS.total.toLocaleString('en-US')} instruments across forex, metals, energies, indices and crypto, with stocks coming soon.`, href: '/markets' },
   { Icon: ShieldCheck, t: 'Prop challenges', d: 'Classic 2-Step, Rapid 1-Step and Instant Funding, with rules checked live on the server.', href: '/prop' },
   { Icon: Users, t: 'Copy trading, PAMM, MAM', d: 'Follow verified masters with your own limits, invest in managed funds, or become a master.', href: '/copy-trading' },
@@ -36,11 +36,11 @@ const PRINCIPLES = [
   },
   {
     t: 'Built in-house',
-    d: 'Kalks runs on its own technology: the trading engine, the market-data service and its candles, the option pricing, Kalks Trader and the Client Area are all ours.',
+    d: 'Ezymex runs on its own technology: the trading engine, the market-data service and its candles, the option pricing, Ezymex Trader and the Client Area are all ours.',
   },
   {
     t: 'Made for every market',
-    d: 'Kalks Trader and the Client Area are translated into 22 languages, right-to-left included, and run in any modern browser on desktop and phone.',
+    d: 'Ezymex Trader and the Client Area are translated into 22 languages, right-to-left included, and run in any modern browser on desktop and phone.',
   },
 ];
 
@@ -48,9 +48,9 @@ export default function AboutPage() {
   return (
     <>
       <PageHero
-        kicker="About Kalks"
+        kicker="About Ezymex"
         lines={['A trading platform', <span key="b" className="text-fg-3">built for every market.</span>]}
-        lead="Kalks brings forex options, CFDs, prop challenges, copy trading and a partner programme together on one account, on technology we build ourselves."
+        lead="Ezymex brings forex options, CFDs, prop challenges, copy trading and a partner programme together on one account, on technology we build ourselves."
         actions={
           <>
             <Button href={REGISTER_HREF}>Open account</Button>
@@ -65,7 +65,7 @@ export default function AboutPage() {
               name="/images/brand/hero-crimson"
               widths={[1672, 960]}
               height={941}
-              alt="Kalks: a woman in a long black coat between two black great danes, in front of giant black Kalks letters on a glowing red wall"
+              alt="Ezymex: a woman in a long black coat between two black great danes, in front of giant black Ezymex letters on a glowing red wall"
               sizes="(min-width: 1024px) 640px, 92vw"
               priority
             />
@@ -119,7 +119,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <CtaBand lines={['Trade with', 'Kalks.']} lead="Open an account in a minute, start on demo, and fund with USDT when you are ready." />
+      <CtaBand lines={['Trade with', 'Ezymex.']} lead="Open an account in a minute, start on demo, and fund with USDT when you are ready." />
     </>
   );
 }

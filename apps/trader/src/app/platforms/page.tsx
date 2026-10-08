@@ -9,9 +9,9 @@ import { ANDROID_APP, TRADER } from '@/content/facts';
 import { CRM_URL, REGISTER_HREF, TRADER_URL } from '@/lib/crm';
 
 export const metadata: Metadata = {
-  title: 'Platforms: Kalks Trader web terminal, Client Area and mobile',
+  title: 'Platforms: Ezymex Trader web terminal, Client Area and mobile',
   description:
-    'Kalks Trader is an MT5-style web terminal for CFDs and options: a big chart, 35 indicators, one-click trading, a depth ladder and full chart mode. The Client Area runs everything around it. Now also as an Android app.',
+    'Ezymex Trader is an MT5-style web terminal for CFDs and options: a big chart, 35 indicators, one-click trading, a depth ladder and full chart mode. The Client Area runs everything around it. Now also as an Android app.',
   alternates: { canonical: '/platforms' },
 };
 
@@ -42,12 +42,12 @@ export default function PlatformsPage() {
     <>
       <PageHero
         kicker="Platforms"
-        lines={['Kalks Trader.', <span key="b" className="text-fg-3">Nothing to install.</span>]}
+        lines={['Ezymex Trader.', <span key="b" className="text-fg-3">Nothing to install.</span>]}
         lead="An MT5-style web terminal for CFDs and options with a big, clean chart. The Client Area handles everything around your trading. Both run in any modern browser, on desktop and phone."
         actions={
           <>
             <Button href={TRADER_URL}>
-              Open Kalks Trader
+              Open Ezymex Trader
             </Button>
             <Button href={REGISTER_HREF} variant="outline" arrow={false}>
               Create an account
@@ -57,7 +57,7 @@ export default function PlatformsPage() {
         visual={
           <BrowserFrame
             src="/images/product/trader-cfd.webp"
-            alt="Kalks Trader: XAUUSD chart with moving averages, stop loss and take profit lines, and the instruments list"
+            alt="Ezymex Trader: XAUUSD chart with moving averages, stop loss and take profit lines, and the instruments list"
             priority
             tilt
             sizes="(min-width: 1024px) 680px, 92vw"
@@ -69,7 +69,7 @@ export default function PlatformsPage() {
         <div className="container-site">
           <SectionHead
             id="trader-title"
-            kicker="Kalks Trader"
+            kicker="Ezymex Trader"
             lines={['Built like the', 'terminals pros use.']}
             lead="The layout traders know from MT5 and the big exchanges: the chart first, the watchlist on the side, positions below. Designed to be fast, compact and calm."
           />
@@ -84,10 +84,10 @@ export default function PlatformsPage() {
           </div>
           <div className="mt-16 grid gap-8 lg:grid-cols-2">
             <Reveal>
-              <BrowserFrame src="/images/product/trader-fullchart.webp" alt="Kalks Trader in full chart mode" caption="Full chart mode" />
+              <BrowserFrame src="/images/product/trader-fullchart.webp" alt="Ezymex Trader in full chart mode" caption="Full chart mode" />
             </Reveal>
             <Reveal delay={0.08}>
-              <BrowserFrame src="/images/product/focus-depth.webp" width={2248} height={1600} alt="Kalks Trader with the depth ladder beside the chart" caption="Depth ladder beside the chart" />
+              <BrowserFrame src="/images/product/focus-depth.webp" width={2248} height={1600} alt="Ezymex Trader with the depth ladder beside the chart" caption="Depth ladder beside the chart" />
             </Reveal>
           </div>
         </div>
@@ -119,8 +119,8 @@ export default function PlatformsPage() {
           <Reveal>
             <BrowserFrame
               src="/images/product/focus-client.webp"
-              alt="Kalks Client Area overview: equity, P&L, wallet, accounts and quick actions"
-              url="app.kalkstrade.com"
+              alt="Ezymex Client Area overview: equity, P&L, wallet, accounts and quick actions"
+              url="app.ezymex.com"
               width={2940}
               height={1040}
               tilt
@@ -143,15 +143,15 @@ export default function PlatformsPage() {
                 <SectionHead
                   id="mob-title"
                   className="mt-6"
-                  lines={['Kalks on Android.']}
-                  lead="The Client Area, Kalks Trader and Kalks FX Options in one app, in all 22 languages, with biometric sign-in. Download the APK below; the Play Store listing follows."
+                  lines={['Ezymex on Android.']}
+                  lead="The Client Area, Ezymex Trader and Ezymex FX Options in one app, in all 22 languages, with biometric sign-in. Download the APK below; the Play Store listing follows."
                 />
                 <div className="mt-8 flex flex-wrap gap-3" data-reveal>
                   <Button href={ANDROID_APP.href} arrow={false}>
                     Download for Android
                   </Button>
                   <Button href={TRADER_URL} variant="outline">
-                    Open Kalks Trader
+                    Open Ezymex Trader
                   </Button>
                 </div>
                 <p className="mt-4 max-w-md text-[13px] leading-relaxed text-fg-3" data-reveal>
@@ -164,7 +164,7 @@ export default function PlatformsPage() {
                 </p>
               </div>
               <Reveal>
-                <PhoneFrame src="/images/product/phone-dashboard.webp" alt="The Kalks Client Area on a phone" />
+                <PhoneFrame src="/images/product/phone-dashboard.webp" alt="The Ezymex Client Area on a phone" />
               </Reveal>
             </div>
           </div>
@@ -191,7 +191,7 @@ export default function PlatformsPage() {
         </div>
       </section>
 
-      <CtaBand lines={['See it for', 'yourself.']} lead="Open a free demo account and trade on live prices in Kalks Trader, in your browser, in a minute." />
+      <CtaBand lines={['See it for', 'yourself.']} lead="Open a free demo account and trade on live prices in Ezymex Trader, in your browser, in a minute." />
     </>
   );
 }

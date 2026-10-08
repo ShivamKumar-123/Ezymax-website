@@ -8,7 +8,7 @@ import { CRM_URL } from '@/lib/crm';
 
 export const metadata: Metadata = {
   title: 'Help & contact',
-  description: 'Reach Kalks support by email or through the support chat in the Client Area, and find answers on accounts, funding, trading and partners.',
+  description: 'Reach Ezymex support by email or through the support chat in the Client Area, and find answers on accounts, funding, trading and partners.',
   alternates: { canonical: '/contact' },
 };
 
@@ -16,7 +16,7 @@ const TOPICS = [
   { t: 'Accounts and verification', d: 'Account types, demo accounts, leverage and identity checks.', href: '/faq#accounts' },
   { t: 'Deposits and withdrawals', d: 'USDT on BNB Chain and TRON, limits, fees and timing.', href: '/faq#funding' },
   { t: 'Trading conditions', d: 'Spreads, commissions, margin and the markets you can trade.', href: '/faq#trading' },
-  { t: 'Kalks FX Options', d: 'How the chain works, costs, settlement and risk.', href: '/faq#options' },
+  { t: 'Ezymex FX Options', d: 'How the chain works, costs, settlement and risk.', href: '/faq#options' },
   { t: 'Prop challenges', d: 'Plans, rules, payouts and certificates.', href: '/faq#prop' },
   { t: 'Partners', d: 'Partner links, levels, commission and payouts.', href: '/faq#partners' },
 ];
@@ -67,11 +67,11 @@ export default function ContactPage() {
             <dl className="mt-3 flex flex-col gap-2 text-sm">
               <div>
                 <dt className="text-fg-3">Legal entity</dt>
-                <dd className="text-fg-2">[to be provided by Kalks]</dd>
+                <dd className="text-fg-2">[to be provided by Ezymex]</dd>
               </div>
               <div>
                 <dt className="text-fg-3">Registered address</dt>
-                <dd className="text-fg-2">[to be provided by Kalks]</dd>
+                <dd className="text-fg-2">[to be provided by Ezymex]</dd>
               </div>
             </dl>
           </Reveal>

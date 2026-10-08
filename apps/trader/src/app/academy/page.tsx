@@ -9,9 +9,9 @@ import { REGISTER_HREF } from '@/lib/crm';
 import { cn } from '@/lib/cn';
 
 export const metadata: Metadata = {
-  title: 'Kalks Academy: 118 lessons in 9 phases',
+  title: 'Ezymex Academy: 118 lessons in 9 phases',
   description:
-    'Learn to trade with Kalks Academy: 118 lessons from markets and instruments to macro regimes and FX options, a quiz after every lesson, phase exams and verifiable certificates.',
+    'Learn to trade with Ezymex Academy: 118 lessons from markets and instruments to macro regimes and FX options, a quiz after every lesson, phase exams and verifiable certificates.',
   alternates: { canonical: '/academy' },
 };
 
@@ -26,7 +26,7 @@ export default function AcademyPage() {
   return (
     <>
       <PageHero
-        kicker="Kalks Academy"
+        kicker="Ezymex Academy"
         lines={['Learn it properly.', <span key="b" className="text-fg-3">Then trade it.</span>]}
         lead="118 lessons in 9 phases, from how markets work to macro regimes and FX options. A quiz after every lesson, an exam for every phase, and certificates anyone can verify."
         art="study"
@@ -68,7 +68,7 @@ export default function AcademyPage() {
             id="phases-title"
             kicker="The path"
             lines={['Nine phases,', 'one direction.']}
-            lead="Phases 1 to 8 each have a fundamental and a technical track. Phase 9 is an elective on Kalks FX Options. Pass a phase exam with 70% to earn its certificate."
+            lead="Phases 1 to 8 each have a fundamental and a technical track. Phase 9 is an elective on Ezymex FX Options. Pass a phase exam with 70% to earn its certificate."
           />
           <ol className="mt-12 flex flex-col">
             {ACADEMY.list.map((p, i) => (

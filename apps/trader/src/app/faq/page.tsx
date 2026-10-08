@@ -9,7 +9,7 @@ import { BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 export const metadata: Metadata = {
   title: 'FAQ',
   description:
-    'Answers about Kalks accounts, USDT deposits and withdrawals, trading conditions, Kalks FX Options, prop challenges, copy trading, partners and the platform.',
+    'Answers about Ezymex accounts, USDT deposits and withdrawals, trading conditions, Ezymex FX Options, prop challenges, copy trading, partners and the platform.',
   alternates: { canonical: '/faq' },
 };
 
@@ -46,7 +46,7 @@ const GROUPS: Group[] = [
     items: [
       {
         q: 'How do I deposit?',
-        a: `Deposit ${FUNDING.methods} to your Kalks wallet, from MetaMask or TronLink or by sending to your deposit address. The minimum is ${FUNDING.minDeposit}, and deposits are ${FUNDING.creditTime}. USDT is credited 1:1 as US dollars.`,
+        a: `Deposit ${FUNDING.methods} to your Ezymex wallet, from MetaMask or TronLink or by sending to your deposit address. The minimum is ${FUNDING.minDeposit}, and deposits are ${FUNDING.creditTime}. USDT is credited 1:1 as US dollars.`,
       },
       {
         q: 'How do I withdraw?',
@@ -58,7 +58,7 @@ const GROUPS: Group[] = [
       },
       {
         q: 'Can I deposit by card or bank transfer?',
-        a: 'Not at the moment. Kalks accepts USDT on BNB Chain (BEP20) and TRON (TRC20).',
+        a: 'Not at the moment. Ezymex accepts USDT on BNB Chain (BEP20) and TRON (TRC20).',
       },
     ],
   },
@@ -68,7 +68,7 @@ const GROUPS: Group[] = [
     items: [
       {
         q: 'What can I trade?',
-        a: 'CFDs on 1,389 instruments: forex, metals, energies, indices and crypto (24/7), with 1,100 US, Hong Kong and Tokyo stocks on demo now and coming to live accounts soon. Kalks FX Options add calls and puts on forex, gold, silver and oil.',
+        a: 'CFDs on 1,389 instruments: forex, metals, energies, indices and crypto (24/7), with 1,100 US, Hong Kong and Tokyo stocks on demo now and coming to live accounts soon. Ezymex FX Options add calls and puts on forex, gold, silver and oil.',
       },
       {
         q: 'What is the maximum leverage?',
@@ -80,16 +80,16 @@ const GROUPS: Group[] = [
       },
       {
         q: 'Do you charge overnight financing?',
-        a: 'Positions held overnight are charged or credited financing, shown in Kalks Trader for each instrument before you trade. Crypto is charged every night, weekends included.',
+        a: 'Positions held overnight are charged or credited financing, shown in Ezymex Trader for each instrument before you trade. Crypto is charged every night, weekends included.',
       },
     ],
   },
   {
     id: 'options',
-    title: 'Kalks FX Options',
+    title: 'Ezymex FX Options',
     items: [
       {
-        q: 'What are Kalks FX Options?',
+        q: 'What are Ezymex FX Options?',
         a: `Calls and puts on ${OPTIONS.fxPairs - 1} FX pairs, gold, silver, WTI and Brent, with daily, weekly and monthly expiries. They are European style and settled in cash in US dollars, in the same account as your CFDs.`,
       },
       {
@@ -116,7 +116,7 @@ const GROUPS: Group[] = [
       },
       {
         q: 'How much of the profit do I keep?',
-        a: 'From 80% on Classic and Rapid and 70% on Instant Funding, rising to 90% with the scaling plan. Payouts go to your Kalks wallet and need a verified identity.',
+        a: 'From 80% on Classic and Rapid and 70% on Instant Funding, rising to 90% with the scaling plan. Payouts go to your Ezymex wallet and need a verified identity.',
       },
       {
         q: 'Is the capital real?',
@@ -148,7 +148,7 @@ const GROUPS: Group[] = [
     items: [
       {
         q: 'How do I become a partner?',
-        a: 'Every Kalks client is a partner from sign-up. Your partner link, code and dashboard are in the Client Area; there is no separate application.',
+        a: 'Every Ezymex client is a partner from sign-up. Your partner link, code and dashboard are in the Client Area; there is no separate application.',
       },
       {
         q: 'How am I paid?',
@@ -162,7 +162,7 @@ const GROUPS: Group[] = [
     items: [
       {
         q: 'Do I need to install anything?',
-        a: 'No. Kalks Trader and the Client Area run in any modern browser on desktop and phone.',
+        a: 'No. Ezymex Trader and the Client Area run in any modern browser on desktop and phone.',
       },
       {
         q: 'Is there a mobile app?',
@@ -170,7 +170,7 @@ const GROUPS: Group[] = [
       },
       {
         q: 'Which languages are available?',
-        a: 'Kalks Trader and the Client Area are translated into 22 languages, including Arabic, Urdu and Persian (right to left), Hindi, Bengali, Tamil, Chinese, Japanese, Korean and the main European languages.',
+        a: 'Ezymex Trader and the Client Area are translated into 22 languages, including Arabic, Urdu and Persian (right to left), Hindi, Bengali, Tamil, Chinese, Japanese, Korean and the main European languages.',
       },
     ],
   },

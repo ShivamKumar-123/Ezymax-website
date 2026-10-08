@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Grades Kalks' own artwork (the previous site's black-and-white + red images) to the ember look and writes WebP
+ * Grades Ezymex' own artwork (the previous site's black-and-white + red images) to the ember look and writes WebP
  * files to public/images/art/. Red light becomes ember orange (#ff5a1f), blacks are pushed down to sit on the
  * site's #07070a background.   node scripts/grade-art.mjs
  */

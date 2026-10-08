@@ -88,7 +88,7 @@ function RobotStage() {
             sizes={SIZES}
             width={robot.native}
             height={robot.height}
-            alt="Kalks: a black robot helmet in profile with a glowing red eye and visor, in front of a huge glowing red circle and flowing red and black waves"
+            alt="Ezymex: a black robot helmet in profile with a glowing red eye and visor, in front of a huge glowing red circle and flowing red and black waves"
             fetchPriority="high"
             decoding="async"
           />

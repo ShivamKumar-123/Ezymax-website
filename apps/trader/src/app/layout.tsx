@@ -16,7 +16,7 @@ const pixel = Doto({ subsets: ['latin'], weight: ['800', '900'], variable: '--fo
 
 const TITLE = `${BRAND_NAME}: forex options, CFDs and prop trading on one account`;
 const DESCRIPTION =
-  'Kalks is a global multi-asset trading platform: Kalks FX Options with real option chains on forex, gold and oil, 1,389 CFD instruments, prop challenges, copy trading and PAMM, in 22 languages.';
+  'Ezymex is a global multi-asset trading platform: Ezymex FX Options with real option chains on forex, gold and oil, 1,389 CFD instruments, prop challenges, copy trading and PAMM, in 22 languages.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -49,7 +49,7 @@ const ORG_LD = {
   '@type': 'Organization',
   name: BRAND_NAME,
   url: SITE_URL,
-  logo: `${SITE_URL}/brand/kalks-mark.svg`,
+  logo: `${SITE_URL}/brand/ezymex-mark.svg`,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -61,7 +61,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: REVEAL_BOOT }} />
-        <link rel="preconnect" href="https://api.kalkstrade.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://api.ezymex.com" crossOrigin="anonymous" />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ORG_LD) }} />
       </head>
       <body suppressHydrationWarning>

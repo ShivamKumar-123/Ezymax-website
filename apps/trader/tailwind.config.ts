@@ -1,7 +1,7 @@
 import type { Config } from 'tailwindcss';
 
 /**
- * Kalks website design tokens. Colours mirror the platform tokens in the Kalks repo
+ * Ezymex website design tokens. Colours mirror the platform tokens in the Ezymex repo
  * (packages/ui/src/styles.css): bg #07070a, ember #ff5a1f → #ff8a3d. The website is dark only.
  */
 const config: Config = {

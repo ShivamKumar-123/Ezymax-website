@@ -1,5 +1,5 @@
 /**
- * Every number on the website comes from here, and every value here comes from the Kalks platform repo
+ * Every number on the website comes from here, and every value here comes from the Ezymex platform repo
  * (paths relative to that repo). Most values are seeded defaults that Back Office staff can change, so
  * re-check them against production before a campaign. Never add a number without a source.
  */
@@ -251,7 +251,7 @@ export const ACADEMY = {
     { n: 6, title: 'Sentiment, positioning and systems', level: 'Advanced', lessons: 14 },
     { n: 7, title: "Asset classes and the trader's mind", level: 'Advanced', lessons: 13 },
     { n: 8, title: 'Macro regimes and professional trading', level: 'Professional', lessons: 14 },
-    { n: 9, title: 'Kalks FX Options', level: 'Intermediate', lessons: 8 },
+    { n: 9, title: 'Ezymex FX Options', level: 'Intermediate', lessons: 8 },
   ],
 } as const;
 
@@ -271,7 +271,7 @@ export const LANGUAGES = [
   'Türkçe', 'Bahasa Indonesia', 'Bahasa Melayu', 'Tiếng Việt', 'ไทย', '简体中文', '日本語', '한국어', 'বাংলা', 'தமிழ்', 'Kiswahili',
 ] as const;
 
-/** Kalks Trader (apps/terminal): chart types, timeframes, indicators, order types */
+/** Ezymex Trader (apps/terminal): chart types, timeframes, indicators, order types */
 export const TRADER = {
   chartTypes: 4,
   timeframes: ['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1', 'W1', 'MN'],
@@ -293,13 +293,13 @@ export const RISK_WARNING =
 export const OPTIONS_RISK =
   'Buying an option can lose 100% of the premium paid. Selling an option can lose more than the premium received and uses margin.';
 
-/** The Android app on the website (served by Caddy from /srv/kalks/downloads on the server). Update on each release. */
+/** The Android app on the website (served by nginx from /srv/ezymex/downloads on the server). Update on each release. */
 export const ANDROID_APP = {
   version: '1.0.0',
   build: 2,
-  href: '/download/kalks-android.apk',
-  hrefUniversal: '/download/kalks-android-universal.apk',
-  sizeMb: 44,
-  sha256: '8798ed34393c2f8e9ce8ed5f702d7721c11753f57427f41b49432959ac8fe135',
+  href: '/download/ezymex-android.apk',
+  hrefUniversal: '/download/ezymex-android.apk',
+  sizeMb: 100,
+  sha256: '2dddce0883247366a30578334eabf383871c53797047e656d8d4db2a0b8fc58d',
   minAndroid: 'Android 7.0',
 };

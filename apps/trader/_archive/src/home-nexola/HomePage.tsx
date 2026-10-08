@@ -12,7 +12,7 @@ const ACC_LINKS: Record<string, string> = { '01': LINKS.webPlatform, '02': LINKS
 
 /**
  * Homepage. Layout and motion follow the reference design exactly; every
- * text block carries Kalks content from the website content specification.
+ * text block carries Ezymex content from the website content specification.
  * Placeholders marked IMAGE / VIDEO are reserved for the real artwork.
  */
 export default function HomePage() {
@@ -220,7 +220,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ============================== 9: WHY KALKS ============================== */}
+      {/* ============================== 9: WHY EZYMEX ============================== */}
       <section className="testimonials" id="why" data-theme="light">
         <div className="container">
           <div className="tw-grid g4" data-stagger>

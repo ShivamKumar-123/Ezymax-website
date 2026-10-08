@@ -1,5 +1,5 @@
 /**
- * Live market news for the homepage ticker, from the platform's own news service (services/news in the Kalks repo):
+ * Live market news for the homepage ticker, from the platform's own news service (services/news in the Ezymex repo):
  * headlines it aggregates from official sources (central-bank feeds and others) and the economic calendar it reads
  * from ForexFactory's public weekly export. The service is internal: only this server talks to it, with
  * NEWS_INTERNAL_TOKEN; the browser gets the sanitised list below and nothing else.
@@ -157,7 +157,7 @@ export function relativeTime(iso: string, now = Date.now()): string {
 /** Server only. Never throws: an unreachable or unconfigured service gives {ok: false, items: []}. */
 export async function getMarketNews(calendarUrl: string): Promise<MarketNews> {
   const base = (process.env.NEWS_URL || 'http://127.0.0.1:8103').replace(/\/+$/, '');
-  const headers = { 'x-kalks-internal': process.env.NEWS_INTERNAL_TOKEN || '', 'x-kalks-tenant': 'kalks' };
+  const headers = { 'x-ezymex-internal': process.env.NEWS_INTERNAL_TOKEN || '', 'x-ezymex-tenant': 'ezymex' };
   const now = new Date();
   const to = new Date(now.getTime() + 4 * 86_400_000);
   const get = async (path: string) => {

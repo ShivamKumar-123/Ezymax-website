@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * The founder's images (public/images/brand/kalksmodel*.jpg and src-*.jpg, copies of the originals) as optimised
+ * The founder's images (public/images/brand/ezymexmodel*.jpg and src-*.jpg, copies of the originals) as optimised
  * WebP / AVIF.
  * They are low-resolution sources, so nothing is upscaled: a native file plus a smaller one for 1× screens.
  *   node scripts/brand-models.mjs
@@ -13,10 +13,10 @@ const dir = resolve(dirname(fileURLToPath(import.meta.url)), '../public/images/b
 
 const JOBS = [
   // Glyph-painted man (673×1200, black background): colours kept natural, a whisper of warmth.
-  { src: 'kalksmodel2.jpg', out: 'model-glyph', widths: [673, 448], prep: (s) => s.modulate({ saturation: 1.03 }).linear(1.03, -1) },
+  { src: 'ezymexmodel2.jpg', out: 'model-glyph', widths: [673, 448], prep: (s) => s.modulate({ saturation: 1.03 }).linear(1.03, -1) },
   // Orange circuit figure (736×1104): the dark floor strip at the bottom (rows 1086+) is cropped off so the
   // orange background can continue into the band around it.
-  { src: 'kalksmodel.jpg', out: 'model-orange', widths: [736, 490], prep: (s) => s.extract({ left: 0, top: 0, width: 736, height: 1086 }) },
+  { src: 'ezymexmodel.jpg', out: 'model-orange', widths: [736, 490], prep: (s) => s.extract({ left: 0, top: 0, width: 736, height: 1086 }) },
   // Carved crimson portal (736×1308): the homepage hero.
   { src: 'src-hero-portal.jpg', out: 'hero-portal', widths: [736, 490], prep: (s) => s },
   // Red light beam on black (736×1308): the footer's closing band.

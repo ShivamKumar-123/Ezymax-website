@@ -88,7 +88,7 @@ export function HorizontalShowcase({ slides, intro }: { slides: ShowcaseSlide[];
   // so leaving the page removes the wrapper instead of the moved section (that threw "removeChild: not a child").
   return (
     <div>
-      <section ref={section} className="sc relative overflow-hidden py-24" aria-roledescription="carousel" aria-label="Kalks platform tour">
+      <section ref={section} className="sc relative overflow-hidden py-24" aria-roledescription="carousel" aria-label="Ezymex platform tour">
         <div className="container-site sc-intro">{intro}</div>
         <div ref={track} onScroll={onScroll} className="sc-track no-scrollbar">
           {slides.map((s, i) => (

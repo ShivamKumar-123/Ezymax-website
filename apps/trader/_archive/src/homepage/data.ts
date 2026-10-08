@@ -4,7 +4,7 @@ import { CRM_LOGIN, CRM_REGISTER } from '@/lib/crm';
  * only the brand name is ours. Links map onto the routes that already
  * exist in this app.
  */
-export const BRAND = 'Kalks';
+export const BRAND = 'Ezymex';
 
 export interface NavLink {
   label: string;

@@ -1,8 +1,8 @@
-# KALKS website
+# EZYMEX website
 
-The public KALKS website: landing pages, platforms, markets, education and company pages. It is a Next.js app in `apps/trader` and runs on **port 3010**.
+The public EZYMEX website: landing pages, platforms, markets, education and company pages. It is a Next.js app in `apps/trader` and runs on **port 3010**.
 
-The website has no accounts of its own. Every **Log in**, **Sign up** and **Open account** button takes the visitor to the Kalks Client Area:
+The website has no accounts of its own. Every **Log in**, **Sign up** and **Open account** button takes the visitor to the Ezymex Client Area:
 
 | Website link | Goes to |
 |---|---|

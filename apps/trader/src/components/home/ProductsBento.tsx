@@ -63,14 +63,14 @@ export function ProductsBento() {
       <div className="container-site">
         <SectionHead
           id="products-title"
-          kicker="Everything Kalks does"
+          kicker="Everything Ezymex does"
           lines={['Six ways to trade.', 'One account.']}
           lead="Options and CFDs share one trading account and one margin. Prop, copy trading, PAMM and partner earnings live beside them in the Client Area, funded from a single USDT wallet."
         />
         <div className="mt-14 grid gap-4 lg:mt-20 lg:grid-cols-12 lg:gap-5">
           {/* Options */}
           <Tile href="/options" tone="ember" className="lg:col-span-7 lg:row-span-2 lg:min-h-[640px]">
-            <TileHead tone="ember" kicker="New · Kalks FX Options" title={<>Option chains<br />on forex, gold and oil.</>} />
+            <TileHead tone="ember" kicker="New · Ezymex FX Options" title={<>Option chains<br />on forex, gold and oil.</>} />
             <p className="mt-5 max-w-md text-[0.98rem] leading-relaxed text-black/75">
               Calls and puts with daily, weekly and monthly expiries. Quick trade in three taps, a strategy builder for
               straddles, spreads and iron condors, and a plain-language card that says what happens before you confirm.
@@ -79,7 +79,7 @@ export function ProductsBento() {
               <div className="relative ml-auto w-full translate-y-6 overflow-hidden rounded-[18px] border border-black/20 shadow-[0_30px_60px_-20px_rgba(0,0,0,0.6)] transition-transform duration-700 group-hover:translate-y-3 lg:absolute lg:-right-16 lg:bottom-[-90px] lg:w-[118%] lg:translate-y-0 lg:[transform:perspective(1600px)_rotateX(10deg)_rotateZ(-3deg)] lg:group-hover:[transform:perspective(1600px)_rotateX(6deg)_rotateZ(-2deg)]">
                 <Image
                   src="/images/product/options-chain.webp"
-                  alt="Kalks FX Options chain for EURUSD in Kalks Trader, calls on the left and puts on the right of each strike"
+                  alt="Ezymex FX Options chain for EURUSD in Ezymex Trader, calls on the left and puts on the right of each strike"
                   width={1600}
                   height={950}
                   sizes="(min-width: 1024px) 760px, 92vw"
@@ -95,7 +95,7 @@ export function ProductsBento() {
             <div className="mt-auto pt-10">
               <p className="t-pixel text-[4.6rem] text-fg sm:text-[5.6rem]">1,389</p>
               <p className="mt-2 text-sm text-fg-2">
-                instruments on Kalks Trader. {INSTRUMENTS.liveMarkets} live for real money today; US, Hong Kong and Tokyo stocks
+                instruments on Ezymex Trader. {INSTRUMENTS.liveMarkets} live for real money today; US, Hong Kong and Tokyo stocks
                 coming soon.
               </p>
               <div className="mt-5 flex flex-wrap gap-2">
@@ -155,13 +155,13 @@ export function ProductsBento() {
             </div>
           </Link>
 
-          {/* Kalks Trader */}
+          {/* Ezymex Trader */}
           <Tile href="/platforms" className="lg:col-span-5" delay={0.08}>
-            <TileHead kicker="Kalks Trader" title="A terminal that gets out of the way." />
+            <TileHead kicker="Ezymex Trader" title="A terminal that gets out of the way." />
             <div className="relative mt-8 -mb-14 overflow-hidden rounded-t-[16px] border border-white/10 border-b-0 shadow-[0_-20px_60px_-30px_rgba(255,90,31,0.5)] transition-transform duration-700 group-hover:-translate-y-2 sm:-mb-16">
               <Image
                 src="/images/product/trader-cfd.webp"
-                alt="Kalks Trader web terminal with an XAUUSD chart, one-click buy and sell, and the instruments list"
+                alt="Ezymex Trader web terminal with an XAUUSD chart, one-click buy and sell, and the instruments list"
                 width={1600}
                 height={950}
                 sizes="(min-width: 1024px) 560px, 92vw"

@@ -13,7 +13,7 @@ import { cn } from '@/lib/cn';
 export const metadata: Metadata = {
   title: 'Prop challenges: Classic 2-Step, Rapid 1-Step and Instant Funding',
   description:
-    'Kalks prop challenges: simulated accounts from $5k to $200k, fees from $49, profit split from 70–80% scaling to 90%, payouts every two weeks, rules checked live on the server.',
+    'Ezymex prop challenges: simulated accounts from $5k to $200k, fees from $49, profit split from 70–80% scaling to 90%, payouts every two weeks, rules checked live on the server.',
   alternates: { canonical: '/prop' },
 };
 
@@ -29,7 +29,7 @@ const STEPS = [
 const FAQ = [
   {
     q: 'Is the capital real?',
-    a: 'Challenge and funded accounts trade simulated funds. Your profit split on a funded account is paid in real money to your Kalks wallet, on the payout schedule of your plan.',
+    a: 'Challenge and funded accounts trade simulated funds. Your profit split on a funded account is paid in real money to your Ezymex wallet, on the payout schedule of your plan.',
   },
   {
     q: 'When does the trading day reset?',
@@ -166,7 +166,7 @@ export default function PropPage() {
               </tbody>
             </table>
           </div>
-          <p className="mt-4 text-xs text-fg-3">Fees are paid once, in USDT from your Kalks wallet. Instant Funding is available up to $100k.</p>
+          <p className="mt-4 text-xs text-fg-3">Fees are paid once, in USDT from your Ezymex wallet. Instant Funding is available up to $100k.</p>
         </div>
       </section>
 

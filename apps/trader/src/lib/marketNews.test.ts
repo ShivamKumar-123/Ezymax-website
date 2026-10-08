@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { impactLabel, relativeTime, sanitiseMarketNews } from './marketNews';
 
 const NOW = Date.parse('2026-10-08T12:00:00Z');
-const CAL = 'https://app.kalkstrade.com/calendar';
+const CAL = 'https://app.ezymex.com/calendar';
 
 const story = (over: Record<string, unknown> = {}) => ({
   id: 1,

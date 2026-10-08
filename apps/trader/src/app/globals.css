@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Kalks website. Dark only: near-black ink, one ember accent, warm rim light.
-   Tokens follow the platform (packages/ui/src/styles.css in the Kalks repo).
+   Ezymex website. Dark only: near-black ink, one ember accent, warm rim light.
+   Tokens follow the platform (packages/ui/src/styles.css in the Ezymex repo).
    ───────────────────────────────────────────────────────────────────────────── */
 
 :root {

@@ -7,7 +7,7 @@ type Variant = 'ember' | 'outline' | 'light';
 
 /**
  * Pill button as a link. `arrow` adds the round ↗ chip.
- * External links (Client Area, Kalks Trader) open in the same tab: they are part of one journey.
+ * External links (Client Area, Ezymex Trader) open in the same tab: they are part of one journey.
  */
 export function Button({
   href,

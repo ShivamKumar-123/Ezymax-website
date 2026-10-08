@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { SITE_URL } from '@/lib/brand';
 
-/** Public pages, served at /sitemap.xml with canonical https://kalkstrade.com URLs. */
+/** Public pages, served at /sitemap.xml with canonical https://ezymex.com URLs. */
 const PAGES: { path: string; priority: number; freq: MetadataRoute.Sitemap[number]['changeFrequency'] }[] = [
   { path: '/', priority: 1, freq: 'weekly' },
   { path: '/options', priority: 0.9, freq: 'weekly' },

@@ -6,7 +6,7 @@ import { REGISTER_HREF } from '@/lib/crm';
 import { OPTIONS } from '@/content/facts';
 
 /**
- * Kalks FX Options flagship band. Full-bleed orange that continues the model image's own background
+ * Ezymex FX Options flagship band. Full-bleed orange that continues the model image's own background
  * (#f09b00 at the top, fading to #d18000 at the floor), so the figure stands in the band with no visible box.
  */
 const BAND_BG =
@@ -19,7 +19,7 @@ export function OptionsBand() {
         <div className="relative z-10 flex flex-col justify-center gap-7 pb-6 pt-20 lg:py-24">
           <p className="flex items-center gap-3 text-[0.75rem] font-semibold uppercase tracking-[0.16em] text-black/70" data-reveal>
             <span className="h-px w-7 bg-[#140904]" />
-            Kalks FX Options
+            Ezymex FX Options
           </p>
           <Headline id="band-title" lines={['Options on forex,', 'made simple.']} className="t-display max-w-[13ch]" />
           <p className="max-w-[34rem] text-[1.08rem] leading-relaxed text-black/75" data-reveal>

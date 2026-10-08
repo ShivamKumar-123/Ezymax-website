@@ -17,7 +17,7 @@ export function OptionsTeaser() {
   const steps = [
     { n: '01', t: 'Up or down?', d: 'Pick a market and a direction. Up buys a call, down buys a put.' },
     { n: '02', t: 'By when?', d: 'Today, tomorrow, Friday or later: daily, weekly and monthly expiries.' },
-    { n: '03', t: 'How far?', d: 'Choose a strike. Kalks shows the chance the model gives each one.' },
+    { n: '03', t: 'How far?', d: 'Choose a strike. Ezymex shows the chance the model gives each one.' },
   ];
   return (
     <section className="section relative overflow-hidden" aria-labelledby="quick-title">
@@ -26,7 +26,7 @@ export function OptionsTeaser() {
         <div>
           <SectionHead
             id="quick-title"
-            kicker="Kalks FX Options · Quick trade"
+            kicker="Ezymex FX Options · Quick trade"
             lines={['An option', 'in three taps.']}
             lead="You never need to read an option chain to place an option trade. Quick trade asks three questions, then a What happens card spells out the cost, the most you can lose and when it settles, before you confirm."
           />
@@ -42,13 +42,13 @@ export function OptionsTeaser() {
             ))}
           </ol>
           <div className="mt-6 flex flex-wrap gap-3" data-reveal>
-            <Button href="/options">How Kalks FX Options work</Button>
+            <Button href="/options">How Ezymex FX Options work</Button>
           </div>
         </div>
         <Reveal className="relative mx-auto w-full max-w-[460px]">
           <BrowserFrame
             src="/images/product/focus-quick.webp"
-            alt="Kalks FX Options quick trade ticket: pick a market, choose up or down, then choose when"
+            alt="Ezymex FX Options quick trade ticket: pick a market, choose up or down, then choose when"
             width={896}
             height={1208}
             sizes="(min-width: 1024px) 460px, 88vw"
@@ -63,8 +63,8 @@ export function OptionsTeaser() {
   );
 }
 
-/* ── Why Kalks ───────────────────────────────────────────────────────────── */
-export function WhyKalks() {
+/* ── Why Ezymex ───────────────────────────────────────────────────────────── */
+export function WhyEzymex() {
   const items = [
     {
       t: 'One account for CFDs and options',
@@ -89,7 +89,7 @@ export function WhyKalks() {
         <div className="lg:sticky lg:top-28 lg:self-start">
           <SectionHead
             id="why-title"
-            kicker="Why Kalks"
+            kicker="Why Ezymex"
             lines={['Built like', 'an exchange.', <span key="x" className="text-fg-3">Explained like</span>, <span key="y" className="text-fg-3">a friend.</span>]}
           />
           <Reveal className="mt-10">
@@ -124,13 +124,13 @@ export function WhyKalks() {
 /* ── Pixel stats band ────────────────────────────────────────────────────── */
 export function StatsBand() {
   const stats = [
-    { v: 1389, label: 'Instruments on Kalks Trader' },
+    { v: 1389, label: 'Instruments on Ezymex Trader' },
     { v: OPTIONS.underlyingsLive.length, label: 'Markets with an option chain' },
     { v: 22, label: 'Languages, right to left included' },
     { v: 1000, prefix: '1:', label: 'Maximum leverage (Standard, Cent)', group: false },
   ];
   return (
-    <section className="section pt-0" aria-label="Kalks in numbers">
+    <section className="section pt-0" aria-label="Ezymex in numbers">
       <div className="container-site">
         <div className="relative overflow-hidden rounded-[36px] border border-white/[0.08] bg-[linear-gradient(180deg,#120d0b_0%,#0b0a0c_100%)] px-6 py-12 sm:px-12 sm:py-16 lg:px-16 lg:py-20">
           <div aria-hidden className="glow-ember right-[-10%] top-[-50%] h-[90%] w-[55%] opacity-35" />
@@ -140,7 +140,7 @@ export function StatsBand() {
                 <Globe2 size={20} aria-hidden />
               </span>
               <p className="max-w-[15rem] text-sm leading-relaxed text-fg-2">
-                One platform for traders everywhere: Kalks Trader, the Client Area and Kalks FX Options.
+                One platform for traders everywhere: Ezymex Trader, the Client Area and Ezymex FX Options.
               </p>
             </div>
             <Headline
@@ -245,16 +245,16 @@ const SLIDES: ShowcaseSlide[] = [
     src: '/images/product/focus-chart.webp',
     w: 2472,
     h: 1568,
-    url: 'trade.kalkstrade.com',
+    url: 'trade.ezymex.com',
     t: 'A big, clean chart',
     d: '4 chart types, 9 timeframes, 35 indicators and drawing tools. Drag your stop loss, take profit and alerts on the chart.',
-    alt: 'Kalks Trader chart on XAUUSD with moving averages and stop loss, take profit, alert and pending order lines',
+    alt: 'Ezymex Trader chart on XAUUSD with moving averages and stop loss, take profit, alert and pending order lines',
   },
   {
     src: '/images/product/focus-chain.webp',
     w: 2472,
     h: 916,
-    url: 'trade.kalkstrade.com · Options',
+    url: 'trade.ezymex.com · Options',
     t: 'The option chain',
     d: 'Calls and puts around every strike, with the breakeven and the model’s chance shown beside each price.',
     alt: 'EURUSD option chain around the at-the-money strike: calls left, puts right, breakeven and chance columns',
@@ -263,7 +263,7 @@ const SLIDES: ShowcaseSlide[] = [
     src: '/images/product/focus-analytics.webp',
     w: 2200,
     h: 1088,
-    url: 'trade.kalkstrade.com · Analytics',
+    url: 'trade.ezymex.com · Analytics',
     t: 'Analytics that explain',
     d: 'Volatility smile, term structure, open interest and the put/call ratio for every underlying.',
     alt: 'Options analytics: volatility smile, term structure, open interest by strike and the put/call ratio',
@@ -272,19 +272,19 @@ const SLIDES: ShowcaseSlide[] = [
     src: '/images/product/focus-depth.webp',
     w: 2248,
     h: 1600,
-    url: 'trade.kalkstrade.com',
+    url: 'trade.ezymex.com',
     t: 'Depth beside the chart',
     d: 'A depth ladder next to the chart, with one-click trading on and off, and a full chart mode.',
-    alt: 'Kalks Trader chart with the depth of market ladder beside it',
+    alt: 'Ezymex Trader chart with the depth of market ladder beside it',
   },
   {
     src: '/images/product/focus-client.webp',
     w: 2940,
     h: 1040,
-    url: 'app.kalkstrade.com',
+    url: 'app.ezymex.com',
     t: 'The Client Area',
     d: 'Accounts, wallet, copy trading, PAMM, prop, partner earnings and the academy in one place. Illustrative data.',
-    alt: 'Kalks Client Area overview with equity, P&L, wallet, accounts and total balance (illustrative data)',
+    alt: 'Ezymex Client Area overview with equity, P&L, wallet, accounts and total balance (illustrative data)',
   },
 ];
 
@@ -301,7 +301,7 @@ export function PlatformShowcase() {
             <Headline lines={['One terminal. Every market.']} className="t-h2 sc-title text-balance" />
           </div>
           <p className="t-lead max-w-md" data-reveal>
-            Kalks Trader runs in the browser, on desktop and phone. Nothing to install, nothing to update.
+            Ezymex Trader runs in the browser, on desktop and phone. Nothing to install, nothing to update.
           </p>
         </div>
       }
@@ -320,7 +320,7 @@ export function GlobalBand() {
           </p>
           <Headline id="global-title" lines={['A global platform,', 'in your language.']} className="t-display max-w-[13ch]" />
           <p className="t-lead max-w-xl text-fg" data-reveal>
-            Kalks Trader and the Client Area are translated into 22 languages, from Arabic, Urdu and Persian (right to left)
+            Ezymex Trader and the Client Area are translated into 22 languages, from Arabic, Urdu and Persian (right to left)
             to Hindi, Bengali, Tamil, Bahasa, Thai, Vietnamese, Chinese, Japanese, Korean, Swahili and the main European
             languages.
           </p>

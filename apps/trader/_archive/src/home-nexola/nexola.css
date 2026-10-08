@@ -557,7 +557,7 @@ html.lenis, html.lenis body { height: auto; }
   .nx .roll > span { transition: none; }
 }
 
-/* Brand logo images (Kalks marks) ---------------------------------------- */
+/* Brand logo images (Ezymex marks) ---------------------------------------- */
 /* Header: black mark by default, white mark once the header floats over a
    dark section (.on-dark is toggled from init.ts). */
 .nx .header .logo { display: inline-flex; align-items: center; }

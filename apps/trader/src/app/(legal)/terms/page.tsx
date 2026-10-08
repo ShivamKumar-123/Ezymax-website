@@ -8,7 +8,7 @@ import { BRAND_NAME, BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 
 export const metadata: Metadata = {
   title: 'Terms & conditions',
-  description: 'The terms that govern your use of Kalks services.',
+  description: 'The terms that govern your use of Ezymex services.',
   alternates: { canonical: '/terms' },
 };
 

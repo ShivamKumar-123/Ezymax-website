@@ -1,7 +1,7 @@
 import { BRAND_NAME, BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 
 /** Brand strings shared by the homepage and the four menu pages. */
-// Prose form of the brand name: 'KALKS' from the environment becomes 'Kalks' in copy.
+// Prose form of the brand name: 'EZYMEX' from the environment becomes 'Ezymex' in copy.
 export const BRAND = BRAND_NAME === BRAND_NAME.toUpperCase() && BRAND_NAME.length > 1 ? BRAND_NAME[0] + BRAND_NAME.slice(1).toLowerCase() : BRAND_NAME;
 export const MAIL = BRAND_SUPPORT_EMAIL;
 export const PHONE = '+44 7737 119978';

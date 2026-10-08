@@ -4,11 +4,11 @@ import { useEffect } from 'react';
 import { CRM_URL } from '@/lib/crm';
 
 /**
- * First-touch campaign attribution (Kalks D144). The first website visit with utm_* / ref tags is remembered
+ * First-touch campaign attribution (Ezymex D144). The first website visit with utm_* / ref tags is remembered
  * for 30 days, and every link into the Client Area (sign-up, sign-in, open account) carries those tags, so the
  * Client Area stores them on the new client. Links that already have utm_* are left alone.
  */
-const KEY = 'kalks_campaign';
+const KEY = 'ezymex_campaign';
 const TAGS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'ref', 'c'] as const;
 const TTL = 30 * 24 * 3600 * 1000;
 

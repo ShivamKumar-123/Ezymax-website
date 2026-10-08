@@ -1,8 +1,8 @@
 {
-  "name": "kalks-monorepo",
+  "name": "ezymex-monorepo",
   "version": "0.1.0",
   "private": true,
-  "description": "KALKS website (apps/trader). Log in / sign up hand off to the Kalks Client Area.",
+  "description": "EZYMEX website (apps/trader). Log in / sign up hand off to the Ezymex Client Area.",
   "scripts": {
     "dev": "npm --prefix apps/trader run dev",
     "build": "npm --prefix apps/trader run build",

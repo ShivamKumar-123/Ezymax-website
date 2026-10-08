@@ -84,7 +84,7 @@ export function middleware(req: NextRequest) {
       !req.cookies.get(ACCESS_COOKIE)?.value &&
       !req.cookies.get(REFRESH_COOKIE)?.value
     ) {
-      // Signed-out visitors sign in on the Kalks Client Area (it owns accounts).
+      // Signed-out visitors sign in on the Ezymex Client Area (it owns accounts).
       return NextResponse.redirect(CRM_LOGIN);
     }
   }

@@ -212,7 +212,7 @@ export function MarketsTable() {
         )}
       </div>
       <p className="mt-4 text-xs text-fg-3">
-        Bid and ask from the Kalks public market-data feed; day change is the mid price against the day’s open. Symbols that
+        Bid and ask from the Ezymex public market-data feed; day change is the mid price against the day’s open. Symbols that
         are not streaming show their latest snapshot. The spread on your account depends on its type.
       </p>
     </div>

@@ -8,7 +8,7 @@ import { BRAND_NAME, BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 
 export const metadata: Metadata = {
   title: 'Risk disclosure',
-  description: 'The risks of leveraged trading on Kalks, explained in full.',
+  description: 'The risks of leveraged trading on Ezymex, explained in full.',
   alternates: { canonical: '/risk' },
 };
 

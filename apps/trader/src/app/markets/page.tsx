@@ -161,7 +161,7 @@ export default function MarketsPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             {[
               ['Spreads', 'Typical spreads are measured on the live stream, per instrument. Your account type adds its stated markup, or none with a commission.'],
-              ['Overnight financing', 'Shown in its real unit in Kalks Trader: a yearly percentage for most markets, points for the original 28. Crypto is charged every night.'],
+              ['Overnight financing', 'Shown in its real unit in Ezymex Trader: a yearly percentage for most markets, points for the original 28. Crypto is charged every night.'],
               ['Contract sizes', 'Set per instrument and shown in the order ticket before you trade. Crypto and index contracts are sized so one lot is worth about 1,000 to 10,000 USD.'],
               ['Protection', 'Margin call at 100% and stop out at 50% (Cent: 60% and 20%). Negative balance protection resets a negative balance to zero.'],
             ].map(([t, d], i) => (

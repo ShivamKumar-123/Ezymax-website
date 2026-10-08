@@ -8,7 +8,7 @@ import { BRAND_NAME, BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 
 export const metadata: Metadata = {
   title: 'Restricted countries',
-  description: 'Jurisdictions where Kalks services are not offered.',
+  description: 'Jurisdictions where Ezymex services are not offered.',
   alternates: { canonical: '/restricted-countries' },
 };
 

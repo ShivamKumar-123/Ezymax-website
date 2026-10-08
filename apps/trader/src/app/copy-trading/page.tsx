@@ -65,7 +65,7 @@ const FAQ = [
   },
   {
     q: 'Can I become a master?',
-    a: 'Yes, from the Client Area. Meet the requirements, set your fee and strategy description, and apply. Kalks keeps 20% of the performance fees you earn.',
+    a: 'Yes, from the Client Area. Meet the requirements, set your fee and strategy description, and apply. Ezymex keeps 20% of the performance fees you earn.',
   },
 ];
 

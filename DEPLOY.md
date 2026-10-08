@@ -1,7 +1,7 @@
-# Deploying the Kalks website
+# Deploying the Ezymex website
 
 The site that gets deployed is **`apps/trader`**, the only app in this repo.
-Set `NEXT_PUBLIC_CRM_URL` to the live Kalks Client Area so Log in / Sign up
+Set `NEXT_PUBLIC_CRM_URL` to the live Ezymex Client Area so Log in / Sign up
 go there.
 
 ## Why this repo needs deployment config at all

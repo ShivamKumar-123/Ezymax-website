@@ -64,7 +64,7 @@ export function LanguagePicker({ className }: { className?: string }) {
             </button>
           ))}
           <p className="col-span-2 px-3.5 pb-1.5 pt-2 text-[11px] leading-relaxed text-fg-3">
-            Website translated automatically. Kalks Trader and the Client Area are fully translated into all 22 languages.
+            Website translated automatically. Ezymex Trader and the Client Area are fully translated into all 22 languages.
           </p>
         </div>
       )}

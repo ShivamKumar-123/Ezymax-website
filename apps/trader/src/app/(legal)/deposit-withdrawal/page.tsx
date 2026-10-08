@@ -11,7 +11,7 @@ import { BRAND_NAME, BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 
 export const metadata: Metadata = {
   title: 'Deposit & withdrawal policy',
-  description: 'The rules for funding and withdrawing from your Kalks account.',
+  description: 'The rules for funding and withdrawing from your Ezymex account.',
   alternates: { canonical: '/deposit-withdrawal' },
 };
 

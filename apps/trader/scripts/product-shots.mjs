@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Converts founder-approved platform screenshots into the website's product imagery (public/images/product/*.webp).
- * The Kalks Trader header shows a user photo in the top-right corner; it is blurred out.
+ * The Ezymex Trader header shows a user photo in the top-right corner; it is blurred out.
  *
  *   node scripts/product-shots.mjs <redesign/final dir> <crm-redesign/after dir>
  */

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, ArrowUpRight } from 'lucide-react';
-import { KalksLogo } from '@/components/brand/Logo';
+import { EzymexLogo } from '@/components/brand/Logo';
 import { NAV_MORE, NAV_PRIMARY } from '@/content/site';
 import { LOGIN_HREF, REGISTER_HREF } from '@/lib/crm';
 import { LanguagePicker, LanguageSelect } from '@/components/chrome/LanguagePicker';
@@ -86,8 +86,8 @@ export default function Nav() {
           )}
         />
         <div className="container-site relative flex h-[76px] items-center justify-between gap-4 lg:h-[88px]">
-          <Link href="/" aria-label="Kalks home" className="relative z-[2] flex-none text-fg">
-            <KalksLogo className="h-[22px] w-auto lg:h-[26px]" title="Kalks" />
+          <Link href="/" aria-label="Ezymex home" className="relative z-[2] flex-none text-fg">
+            <EzymexLogo className="h-[22px] w-auto lg:h-[26px]" title="Ezymex" />
           </Link>
 
           {/* Desktop pill */}

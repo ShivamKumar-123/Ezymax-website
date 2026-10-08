@@ -14,7 +14,7 @@ import { cn } from '@/lib/cn';
 export const metadata: Metadata = {
   title: 'Account types: Standard, Pro, ECN, Cent, VIP and demo',
   description:
-    'Compare Kalks trading accounts: minimum deposit from $10, leverage up to 1:1000, all-in spreads or raw spreads with commission, hedging or netting, and free demo accounts.',
+    'Compare Ezymex trading accounts: minimum deposit from $10, leverage up to 1:1000, all-in spreads or raw spreads with commission, hedging or netting, and free demo accounts.',
   alternates: { canonical: '/accounts' },
 };
 
@@ -28,15 +28,15 @@ const ROWS: [string, (a: (typeof ACCOUNTS)[number]) => string][] = [
   ['Margin call / stop out', (a) => `${a.marginCall} / ${a.stopOut}`],
   ['Position mode', (a) => a.mode],
   ['Negative balance protection', () => 'Yes'],
-  ['Kalks FX Options', () => 'Yes, same account'],
+  ['Ezymex FX Options', () => 'Yes, same account'],
   ['Best for', (a) => a.bestFor],
 ];
 
 const STEPS = [
-  { t: 'Sign up', d: 'Create your Kalks profile in the Client Area with your email. It takes a minute.' },
+  { t: 'Sign up', d: 'Create your Ezymex profile in the Client Area with your email. It takes a minute.' },
   { t: 'Open an account', d: 'Choose live or demo, the account type and your leverage. Your login is issued instantly.' },
   { t: 'Fund your wallet', d: `Deposit ${FUNDING.methods}. Credited ${FUNDING.creditTime}.` },
-  { t: 'Trade', d: 'Move funds to your account, instantly and free, then trade CFDs and options in Kalks Trader.' },
+  { t: 'Trade', d: 'Move funds to your account, instantly and free, then trade CFDs and options in Ezymex Trader.' },
 ];
 
 const FAQ = [
@@ -72,7 +72,7 @@ export default function AccountsPage() {
       <PageHero
         kicker="Account types"
         lines={['Five live accounts.', <span key="b" className="text-fg-3">Free demo.</span>]}
-        lead="Standard, Pro, ECN, Cent and VIP: choose all-in pricing or raw spreads with a commission, hedging or netting, dollars or cents. Every account trades CFDs and Kalks FX Options."
+        lead="Standard, Pro, ECN, Cent and VIP: choose all-in pricing or raw spreads with a commission, hedging or netting, dollars or cents. Every account trades CFDs and Ezymex FX Options."
         actions={
           <>
             <Button href={REGISTER_HREF}>Open account</Button>
@@ -84,8 +84,8 @@ export default function AccountsPage() {
         visual={
           <BrowserFrame
             src="/images/product/focus-open-account.webp"
-            alt="Opening a trading account in the Kalks Client Area: live or demo, with the account’s terms on the right"
-            url="app.kalkstrade.com"
+            alt="Opening a trading account in the Ezymex Client Area: live or demo, with the account’s terms on the right"
+            url="app.ezymex.com"
             width={2772}
             height={1280}
             priority
@@ -239,7 +239,7 @@ export default function AccountsPage() {
                 id="fund-title"
                 kicker="Funding"
                 lines={['Deposit USDT.', 'Trade in a minute.']}
-                lead="Your Kalks wallet takes USDT on BNB Chain (BEP20) and TRON (TRC20), verified on-chain. Pay from MetaMask or TronLink, or send to your deposit address. USDT is credited 1:1 as US dollars."
+                lead="Your Ezymex wallet takes USDT on BNB Chain (BEP20) and TRON (TRC20), verified on-chain. Pay from MetaMask or TronLink, or send to your deposit address. USDT is credited 1:1 as US dollars."
               />
               <dl className="grid grid-cols-2 gap-x-6 gap-y-10 self-end">
                 {[

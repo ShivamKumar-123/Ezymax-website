@@ -11,24 +11,24 @@ import { REGISTER_HREF } from '@/lib/crm';
 export const metadata: Metadata = {
   title: 'White-label brokerage and API & algo trading',
   description:
-    'Launch your own brokerage on the Kalks platform with your brand and domains, or automate trading with webhooks, a REST API, a visual strategy builder and backtests.',
+    'Launch your own brokerage on the Ezymex platform with your brand and domains, or automate trading with webhooks, a REST API, a visual strategy builder and backtests.',
   alternates: { canonical: '/white-label' },
 };
 
 const WL = [
-  ['Your brand', 'Your name, logo, colours and support email across the website, Client Area, Kalks Trader and every email.'],
+  ['Your brand', 'Your name, logo, colours and support email across the website, Client Area, Ezymex Trader and every email.'],
   ['Your domains', 'Your own addresses for the website, the Client Area, the trading terminal and your Back Office.'],
   ['Your product mix', 'Switch modules on per broker: options, prop, copy trading, PAMM and MAM, partners, academy, rewards.'],
   ['Your data, isolated', 'Each broker’s clients, accounts and money are separated at the database level.'],
   ['Your back office', 'Clients, KYC, deposits and withdrawals, dealing, risk, partners and content, with staff roles.'],
-  ['The whole platform', 'The same trading engine, option pricing, market data and 22 languages that run Kalks.'],
+  ['The whole platform', 'The same trading engine, option pricing, market data and 22 languages that run Ezymex.'],
 ];
 
 const API = [
-  ['Webhook alerts', `Send alerts from your charting tool to a Kalks webhook URL. Each webhook can route to up to ${ALGO.webhookRoutes} accounts, each with its own size.`],
+  ['Webhook alerts', `Send alerts from your charting tool to a Ezymex webhook URL. Each webhook can route to up to ${ALGO.webhookRoutes} accounts, each with its own size.`],
   ['REST API', 'API keys with read and trade scopes, never withdrawals. Bearer or HMAC signing, and an IP allow-list required for live trading keys.'],
   ['Visual strategy builder', 'Build rules with blocks, switch to code, or describe a strategy in plain words and let the assistant draft it.'],
-  ['Backtests', `Test a strategy on history on our servers, with ${ALGO.indicatorSeries} indicator series that match Kalks Trader.`],
+  ['Backtests', `Test a strategy on history on our servers, with ${ALGO.indicatorSeries} indicator series that match Ezymex Trader.`],
   ['24/7 deployments', 'Run strategies on our servers on demo or live accounts, with kill switches when you need to stop at once.'],
   ['Marketplace', 'Publish a strategy for others to run, or start from one that someone else built.'],
 ];
@@ -40,7 +40,7 @@ export default function WhiteLabelPage() {
       <PageHero
         kicker="For business"
         lines={['Your brokerage.', <span key="b" className="text-fg-3">Our platform.</span>]}
-        lead="Launch a broker on the Kalks platform under your own brand and domains, with forex options, CFDs, prop, copy trading and partners built in. Or plug your own systems into ours with the API."
+        lead="Launch a broker on the Ezymex platform under your own brand and domains, with forex options, CFDs, prop, copy trading and partners built in. Or plug your own systems into ours with the API."
         actions={
           <>
             <Button href={mailto}>Talk to us</Button>
@@ -52,7 +52,7 @@ export default function WhiteLabelPage() {
         visual={
           <BrowserFrame
             src="/images/product/focus-whitelabel.webp"
-            alt="The Kalks Client Area rebranded in a blue white-label theme"
+            alt="The Ezymex Client Area rebranded in a blue white-label theme"
             url="app.yourbrand.com"
             width={2940}
             height={1040}
@@ -69,7 +69,7 @@ export default function WhiteLabelPage() {
           <SectionHead
             id="wl-title"
             kicker="White-label"
-            lines={['Everything Kalks runs,', 'under your name.']}
+            lines={['Everything Ezymex runs,', 'under your name.']}
             lead="Each broker on the platform gets its own website, Client Area, trading terminal and Back Office. Commercial terms combine a setup fee, a monthly licence and a revenue share; ask us for details."
           />
           <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -91,13 +91,13 @@ export default function WhiteLabelPage() {
               id="api-title"
               kicker="API & algo trading"
               lines={['Automate', 'your trading.']}
-              lead="Everything runs on Kalks servers, around the clock, on demo or live accounts. Algo trading covers CFDs; options stay manual for now."
+              lead="Everything runs on Ezymex servers, around the clock, on demo or live accounts. Algo trading covers CFDs; options stay manual for now."
             />
             <Reveal className="mt-10">
               <BrowserFrame
                 src="/images/product/focus-developer.webp"
-                alt="The strategy builder in the Kalks Client Area: rules as blocks, a strategy assistant and deployment"
-                url="app.kalkstrade.com · Developer"
+                alt="The strategy builder in the Ezymex Client Area: rules as blocks, a strategy assistant and deployment"
+                url="app.ezymex.com · Developer"
                 width={2860}
                 height={1200}
                 caption="Illustrative data"
@@ -115,7 +115,7 @@ export default function WhiteLabelPage() {
               </Reveal>
             ))}
             <Reveal className="mt-4 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 text-sm text-fg-2">
-              Base URL <span className="num text-fg">api.kalkstrade.com/algo/public/v1</span> with an OpenAPI description. Rate
+              Base URL <span className="num text-fg">api.ezymex.com/algo/public/v1</span> with an OpenAPI description. Rate
               limit {ALGO.rateLimit}.
             </Reveal>
           </dl>
@@ -123,7 +123,7 @@ export default function WhiteLabelPage() {
       </section>
 
       <CtaBand
-        lines={['Build on', 'Kalks.']}
+        lines={['Build on', 'Ezymex.']}
         lead="Brokers: tell us about your business and we will walk you through the platform. Builders: open an account and create an API key in the Client Area."
         primary={{ label: 'Talk to us', href: mailto }}
         secondary={{ label: 'Create an account', href: REGISTER_HREF }}

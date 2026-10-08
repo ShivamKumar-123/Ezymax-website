@@ -5,7 +5,7 @@ import { Art, type ArtName } from '@/components/ui/Art';
 import photos from '@/content/photos.json';
 
 /**
- * An optional stock-photo slot (apps/trader/IMAGES-MANIFEST.md). Kalks' own artwork comes first; stock photos are
+ * An optional stock-photo slot (apps/trader/IMAGES-MANIFEST.md). Ezymex' own artwork comes first; stock photos are
  * only used in these few places, and only once `node scripts/fetch-photos.mjs` has downloaded and graded them
  * (it records each one in src/content/photos.json). Until then the slot shows the own-art fallback below.
  */

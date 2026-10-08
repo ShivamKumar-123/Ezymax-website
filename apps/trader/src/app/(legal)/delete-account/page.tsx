@@ -8,7 +8,7 @@ import { BRAND_NAME, BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 
 export const metadata: Metadata = {
   title: 'Delete your account',
-  description: 'How to request permanent deletion of your Kalks account and personal data.',
+  description: 'How to request permanent deletion of your Ezymex account and personal data.',
   alternates: { canonical: '/delete-account' },
 };
 

@@ -12,7 +12,7 @@ import { cn } from '@/lib/cn';
 export const metadata: Metadata = {
   title: 'Partners (IB): earn on every lot your network trades',
   description:
-    'Every Kalks client is a partner from sign-up. Per-lot commission on three tiers of referrals, CPA rewards, five partner levels from Bronze to Diamond, weekly payouts in USDT.',
+    'Every Ezymex client is a partner from sign-up. Per-lot commission on three tiers of referrals, CPA rewards, five partner levels from Bronze to Diamond, weekly payouts in USDT.',
   alternates: { canonical: '/partners' },
 };
 
@@ -26,7 +26,7 @@ const HOW = [
 const FAQ = [
   {
     q: 'Who can become a partner?',
-    a: 'Every Kalks client. Your partner dashboard, link and code are in the Client Area from day one; there is no separate application.',
+    a: 'Every Ezymex client. Your partner dashboard, link and code are in the Client Area from day one; there is no separate application.',
   },
   {
     q: 'What counts towards commission?',
@@ -52,7 +52,7 @@ export default function PartnersPage() {
       <PageHero
         kicker="Partners (IB)"
         lines={['Earn on every lot', <span key="b" className="text-fg-3">your network trades.</span>]}
-        lead="Every Kalks client is a partner from sign-up. Share your link, earn per-lot commission on three tiers of referrals, and get paid every week in USDT."
+        lead="Every Ezymex client is a partner from sign-up. Share your link, earn per-lot commission on three tiers of referrals, and get paid every week in USDT."
         actions={
           <>
             <Button href={REGISTER_HREF}>Become a partner</Button>
@@ -64,8 +64,8 @@ export default function PartnersPage() {
         visual={
           <BrowserFrame
             src="/images/product/focus-partner.webp"
-            alt="Partner dashboard in the Kalks Client Area with level progress, referral link and earnings"
-            url="app.kalkstrade.com · Partner"
+            alt="Partner dashboard in the Ezymex Client Area with level progress, referral link and earnings"
+            url="app.ezymex.com · Partner"
             width={2772}
             height={1120}
             priority
@@ -139,7 +139,7 @@ export default function PartnersPage() {
           {[
             ['Three tiers deep', `Earn on clients referred by your clients: ${IB.tierShares} of the per-lot rate.`],
             ['Campaign links', 'One link per channel, with clicks, sign-ups and first deposits tracked for each.'],
-            ['White-label ready', 'Bringing a whole business? Run your own brand on the Kalks platform.'],
+            ['White-label ready', 'Bringing a whole business? Run your own brand on the Ezymex platform.'],
           ].map(([t, d], i) => (
             <Reveal key={t} delay={i * 0.06} className="card p-7">
               <h3 id={i === 0 ? 'pt-title' : undefined} className="t-h3">

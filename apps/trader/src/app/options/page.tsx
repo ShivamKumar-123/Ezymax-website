@@ -17,7 +17,7 @@ import { getQuotes } from '@/lib/quotes';
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: 'Kalks FX Options: the first forex options platform',
+  title: 'Ezymex FX Options: the first forex options platform',
   description:
     'Buy or sell calls and puts on 9 FX pairs, gold, silver and oil with daily, weekly and monthly expiries. Quick trade in three taps, a strategy builder and plain-language risk, in the same account as your CFDs.',
   alternates: { canonical: '/options' },
@@ -83,7 +83,7 @@ const EXAMPLES = [
 const FAQ = [
   {
     q: 'What is an FX option?',
-    a: 'A contract that gives you the right, but not the obligation, to gain from a currency pair (or gold, silver or oil) finishing above or below a price, called the strike, at a set expiry. A call pays if the market finishes above the strike; a put pays if it finishes below. Kalks FX Options are European style: they settle at expiry, and you can close them at any time before.',
+    a: 'A contract that gives you the right, but not the obligation, to gain from a currency pair (or gold, silver or oil) finishing above or below a price, called the strike, at a set expiry. A call pays if the market finishes above the strike; a put pays if it finishes below. Ezymex FX Options are European style: they settle at expiry, and you can close them at any time before.',
   },
   {
     q: 'Can I lose more than I pay?',
@@ -91,7 +91,7 @@ const FAQ = [
   },
   {
     q: 'Do I need a separate account?',
-    a: 'No. Options sit in the same Kalks trading account as your CFDs, with one balance and cross-margin. Switch between CFD and Options at the top of Kalks Trader. Prop, copy, PAMM and MAM accounts cannot trade options.',
+    a: 'No. Options sit in the same Ezymex trading account as your CFDs, with one balance and cross-margin. Switch between CFD and Options at the top of Ezymex Trader. Prop, copy, PAMM and MAM accounts cannot trade options.',
   },
   {
     q: 'How do options settle?',
@@ -116,7 +116,7 @@ export default async function OptionsPage() {
   return (
     <>
       <PageHero
-        kicker="Kalks FX Options · New"
+        kicker="Ezymex FX Options · New"
         lines={['The first forex', <span key="o" className="text-ember-grad">options platform.</span>]}
         lead="Buy or sell calls and puts on 9 FX pairs, gold, silver and oil, with daily, weekly and monthly expiries. Settled in cash in US dollars, in the same account as your CFDs."
         actions={
@@ -129,13 +129,13 @@ export default async function OptionsPage() {
             </Button>
           </>
         }
-        footer={<p className="text-sm text-fg-3">Inside Kalks Trader. Start on a free demo account.</p>}
+        footer={<p className="text-sm text-fg-3">Inside Ezymex Trader. Start on a free demo account.</p>}
         visual={
           <div className="relative">
             <BrowserFrame
               src="/images/product/focus-chain-explained.webp"
-              alt="Kalks FX Options chain for EURUSD: expiries along the top, calls left, puts right, strikes in the middle"
-              url="trade.kalkstrade.com · Options"
+              alt="Ezymex FX Options chain for EURUSD: expiries along the top, calls left, puts right, strikes in the middle"
+              url="trade.ezymex.com · Options"
               width={2472}
               height={1268}
               priority
@@ -169,7 +169,7 @@ export default async function OptionsPage() {
       />
 
       {/* Numbers */}
-      <section className="pb-8 pt-16 lg:pt-24" aria-label="Kalks FX Options in numbers">
+      <section className="pb-8 pt-16 lg:pt-24" aria-label="Ezymex FX Options in numbers">
         <div className="container-site">
           <dl className="grid grid-cols-2 gap-x-6 gap-y-10 border-y border-white/[0.08] py-10 lg:grid-cols-4">
             {[
@@ -245,7 +245,7 @@ export default async function OptionsPage() {
             <BrowserFrame
               src="/images/product/focus-quick.webp"
               alt="Quick trade ticket: pick a market, then choose up or down, then when"
-              url="trade.kalkstrade.com · Quick trade"
+              url="trade.ezymex.com · Quick trade"
               width={896}
               height={1208}
               className="mx-auto max-w-[440px]"
@@ -257,7 +257,7 @@ export default async function OptionsPage() {
               id="qt-title"
               kicker="Quick trade"
               lines={['Up or down.', 'By when.', 'How far.']}
-              lead="Quick trade turns a view into an option without the jargon. Choose a market and a direction, pick a date, then pick how far you think it will go. Kalks shows the chance the model gives each choice, the cost, and the most you can lose."
+              lead="Quick trade turns a view into an option without the jargon. Choose a market and a direction, pick a date, then pick how far you think it will go. Ezymex shows the chance the model gives each choice, the cost, and the most you can lose."
             />
             <ul className="mt-10 grid gap-3 sm:grid-cols-2">
               {[
@@ -353,7 +353,7 @@ export default async function OptionsPage() {
                   <span className="chip chip-ember">Rolling out</span>
                 </div>
                 <p className="t-body mt-2">
-                  Built into the chain: clients trade with each other and the Kalks market maker quotes both sides under the
+                  Built into the chain: clients trade with each other and the Ezymex market maker quotes both sides under the
                   same rules. Limit, post-only, IOC and FOK orders, market orders inside a price band, reduce-only and stop
                   orders. The Book tab already shows depth and trades for every option.
                 </p>
@@ -398,7 +398,7 @@ export default async function OptionsPage() {
             <BrowserFrame
               src="/images/product/focus-analytics.webp"
               alt="Options analytics for EURUSD: volatility smile, term structure, open interest by strike and the put/call ratio"
-              url="trade.kalkstrade.com · Analytics"
+              url="trade.ezymex.com · Analytics"
               width={2200}
               height={1088}
               sizes="(min-width: 1360px) 1300px, 94vw"
@@ -441,7 +441,7 @@ export default async function OptionsPage() {
 
       <CtaBand
         lines={['Make the call.', 'Try it on demo.']}
-        lead="Open a free demo account, switch Kalks Trader to Options, and place your first trade with virtual funds on live prices."
+        lead="Open a free demo account, switch Ezymex Trader to Options, and place your first trade with virtual funds on live prices."
         options
         art="phone-light"
       />

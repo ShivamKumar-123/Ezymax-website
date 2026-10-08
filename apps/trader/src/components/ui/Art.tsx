@@ -3,7 +3,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 
 /**
- * Kalks' own artwork, graded to the ember look by scripts/grade-art.mjs (sources in public/images/home and
+ * Ezymex' own artwork, graded to the ember look by scripts/grade-art.mjs (sources in public/images/home and
  * public/images). These are the site's primary images; stock photos only fill the few optional slots.
  */
 export const ART = {

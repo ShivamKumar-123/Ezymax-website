@@ -15,7 +15,7 @@ export const NAV_MORE: NavLink[] = [
   { label: 'Partners (IB)', href: '/partners', note: 'Earn on every lot your network trades' },
   { label: 'Academy', href: '/academy', note: '118 lessons, 9 phases' },
   { label: 'White-label & API', href: '/white-label', note: 'For brokers and builders' },
-  { label: 'About Kalks', href: '/about' },
+  { label: 'About Ezymex', href: '/about' },
   { label: 'Help & contact', href: '/contact' },
 ];
 
@@ -23,7 +23,7 @@ export const FOOTER_COLUMNS: { title: string; links: NavLink[] }[] = [
   {
     title: 'Trade',
     links: [
-      { label: 'Kalks FX Options', href: '/options' },
+      { label: 'Ezymex FX Options', href: '/options' },
       { label: 'Markets', href: '/markets' },
       { label: 'Forex', href: '/markets?class=forex' },
       { label: 'Metals & energies', href: '/markets?class=metals' },
@@ -44,7 +44,7 @@ export const FOOTER_COLUMNS: { title: string; links: NavLink[] }[] = [
   {
     title: 'Platforms',
     links: [
-      { label: 'Kalks Trader', href: '/platforms#trader' },
+      { label: 'Ezymex Trader', href: '/platforms#trader' },
       { label: 'Client Area', href: '/platforms#client-area' },
       { label: 'Mobile app', href: '/platforms#mobile' },
       { label: 'API & algo trading', href: '/white-label#api' },
@@ -75,7 +75,7 @@ export const LEGAL_LINKS: NavLink[] = [
 
 /** Homepage hero copy (founder, 2026-10-08). */
 export const HERO = {
-  eyebrow: 'Kalks FX Options · the first forex options platform',
+  eyebrow: 'Ezymex FX Options · the first forex options platform',
   headline: ['Trade like', 'a sovereign.'] as const,
   subline: 'Options on forex, gold and oil. 1,389 CFDs. Instant funding. One kingdom.',
   cta: 'Enter the kingdom',
