@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Ezymax Shield — aggregate period-plan insurance panel.
+ * Ezymex Shield — aggregate period-plan insurance panel.
  *
  * Separate product from the per-trade micro-insurance. The user buys ONE plan
  * (Daily / Weekly / Monthly) at a tier; it covers a share of their *cumulative*

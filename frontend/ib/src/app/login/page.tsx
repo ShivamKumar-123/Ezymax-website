@@ -110,7 +110,7 @@ export default function IBPortalLoginPage() {
             </ul>
           </div>
 
-          <p className="relative text-xs text-white/40">Ezymax — Introducing Broker Program</p>
+          <p className="relative text-xs text-white/40">Ezymex — Introducing Broker Program</p>
         </div>
 
         {/* ── Right form ── */}
@@ -121,7 +121,7 @@ export default function IBPortalLoginPage() {
           </div>
 
           <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
-          <p className="mt-1.5 text-sm text-white/55">Sign in with your Ezymax trader email &amp; password.</p>
+          <p className="mt-1.5 text-sm text-white/55">Sign in with your Ezymex trader email &amp; password.</p>
 
           <div className="mt-5 inline-flex items-center gap-2 rounded-lg border border-[#FF6A00]/25 bg-[#FF6A00]/[0.07] px-3 py-2 text-xs font-semibold text-[#FF6A00]">
             <ShieldCheck size={13} /> Same login as your trading account
@@ -193,7 +193,7 @@ export default function IBPortalLoginPage() {
           </form>
 
           <p className="mt-5 text-center text-xs leading-relaxed text-white/45">
-            No separate login — use your Ezymax trader email &amp; password.
+            No separate login — use your Ezymex trader email &amp; password.
             <br className="hidden sm:block" /> Refer one trader to unlock your partner portal.
           </p>
         </div>

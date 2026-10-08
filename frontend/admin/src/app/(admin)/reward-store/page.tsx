@@ -254,7 +254,7 @@ export default function AdminRewardStorePage() {
         </table>
       </div>
       <p className="text-[11px] text-text-tertiary">
-        AC price = Ezymax Coins a trader spends. <span className="font-bold text-text-secondary">Min PS</span> only
+        AC price = Ezymex Coins a trader spends. <span className="font-bold text-text-secondary">Min PS</span> only
         applies to <span style={{ color: CAT_COLOR.lifestyle }}>lifestyle</span> items (Power-Score gate). Turn
         <b> Active</b> off to hide an item from the store. Edits are live after <b>Save changes</b>.
       </p>

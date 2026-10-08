@@ -2,7 +2,7 @@ import { facts } from "./facts";
 import type { MarketPage } from "./schema";
 
 /**
- * The four asset classes Ezymax quotes, one page each: /markets/[slug].
+ * The four asset classes Ezymex quotes, one page each: /markets/[slug].
  *
  * This replaced five "solutions" that a technology vendor sold to brokers.
  * The shape is the same; nothing else is.
@@ -71,7 +71,7 @@ export const markets: MarketPage[] = [
     },
     note: "CFDs are leveraged products. Losses can exceed your initial deposit.",
     cta: {
-      heading: "Trade forex on Ezymax",
+      heading: "Trade forex on Ezymex",
       sub: "Access is by invitation. Join the waitlist and we will email you when a place opens.",
       ctas: [
         { label: "Join Waitlist", action: "waitlist" },
@@ -85,7 +85,7 @@ export const markets: MarketPage[] = [
     seo: {
       title: "Forex CFDs",
       description:
-        "Trade forex CFDs on Ezymax — majors, minors and exotics, with live spreads shown on the order ticket and published margin call and stop-out levels.",
+        "Trade forex CFDs on Ezymex — majors, minors and exotics, with live spreads shown on the order ticket and published margin call and stop-out levels.",
     },
   },
 
@@ -141,7 +141,7 @@ export const markets: MarketPage[] = [
     },
     note: "CFDs are leveraged products. Losses can exceed your initial deposit.",
     cta: {
-      heading: "Trade indices on Ezymax",
+      heading: "Trade indices on Ezymex",
       sub: "Access is by invitation. Join the waitlist and we will email you when a place opens.",
       ctas: [
         { label: "Join Waitlist", action: "waitlist" },
@@ -155,7 +155,7 @@ export const markets: MarketPage[] = [
     seo: {
       title: "Index CFDs",
       description:
-        "Trade index CFDs on Ezymax — US, European and Asian benchmarks with fixed contract sizes and the overnight swap shown before you confirm.",
+        "Trade index CFDs on Ezymex — US, European and Asian benchmarks with fixed contract sizes and the overnight swap shown before you confirm.",
     },
   },
 
@@ -211,7 +211,7 @@ export const markets: MarketPage[] = [
     },
     note: "CFDs are leveraged products. Losses can exceed your initial deposit.",
     cta: {
-      heading: "Trade commodities on Ezymax",
+      heading: "Trade commodities on Ezymex",
       sub: "Access is by invitation. Join the waitlist and we will email you when a place opens.",
       ctas: [
         { label: "Join Waitlist", action: "waitlist" },
@@ -225,7 +225,7 @@ export const markets: MarketPage[] = [
     seo: {
       title: "Commodity CFDs",
       description:
-        "Trade commodity CFDs on Ezymax — gold, silver and oil, long or short, with spread, swap and commission itemised before you confirm.",
+        "Trade commodity CFDs on Ezymex — gold, silver and oil, long or short, with spread, swap and commission itemised before you confirm.",
     },
   },
 
@@ -281,7 +281,7 @@ export const markets: MarketPage[] = [
     },
     note: "CFDs are leveraged products. Losses can exceed your initial deposit.",
     cta: {
-      heading: "Trade crypto on Ezymax",
+      heading: "Trade crypto on Ezymex",
       sub: "Access is by invitation. Join the waitlist and we will email you when a place opens.",
       ctas: [
         { label: "Join Waitlist", action: "waitlist" },
@@ -295,7 +295,7 @@ export const markets: MarketPage[] = [
     seo: {
       title: "Crypto CFDs",
       description:
-        "Trade crypto CFDs on Ezymax — BTC, ETH and major pairs around the clock, settled from the same account balance as your other positions.",
+        "Trade crypto CFDs on Ezymex — BTC, ETH and major pairs around the clock, settled from the same account balance as your other positions.",
     },
   },
 ];

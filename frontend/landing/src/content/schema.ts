@@ -103,7 +103,7 @@ export type PlatformPage = {
  * list read from the backend's plan table.
  *
  * This replaces a Starter/Growth/Enterprise pricing model that belonged to a
- * B2B vendor. Ezymax does not publish retail spreads or commissions anywhere
+ * B2B vendor. Ezymex does not publish retail spreads or commissions anywhere
  * in the backend, so there is nothing honest to put in a tiered pricing page;
  * the one real price list it has is this one.
  */

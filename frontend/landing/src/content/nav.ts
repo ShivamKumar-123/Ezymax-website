@@ -18,7 +18,7 @@ export const companyLinks: NavLink[] = [
   {
     label: "About",
     href: "/about",
-    blurb: "What Ezymax is and how it works.",
+    blurb: "What Ezymex is and how it works.",
     icon: "building",
   },
   {
@@ -46,7 +46,7 @@ export const companyLinks: NavLink[] = [
  * vendor's Solutions / Products / Liquidity / Pricing / Services became a
  * trader's Markets / Platform / Protection / Earn.
  *
- * Pricing is deliberately absent. Ezymax publishes no retail spread or
+ * Pricing is deliberately absent. Ezymex publishes no retail spread or
  * commission schedule anywhere in the backend, so a pricing page could only
  * be filled with invented numbers. The one real price list it has — the
  * Shield plans — lives on /protection.

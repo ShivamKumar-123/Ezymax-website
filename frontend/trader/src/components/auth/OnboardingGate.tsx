@@ -97,7 +97,7 @@ export default function OnboardingGate() {
           </h2>
           <p className="text-xs text-text-secondary mt-1 leading-relaxed">
             {decision === 'wallet'
-              ? "Every Ezymax account must have a verified wallet linked. We'll use it for withdrawals, so make sure you control it."
+              ? "Every Ezymex account must have a verified wallet linked. We'll use it for withdrawals, so make sure you control it."
               : "We need a verified email on file before you can use the platform. Enter the address you want to use and we'll send you a one-time code."}
           </p>
         </header>

@@ -64,7 +64,7 @@ export function Header() {
         }}
       >
         <div className="container-x flex h-[72px] items-center justify-between gap-4">
-          <Link href="/" className="relative z-10 flex items-center text-ink" aria-label="Ezymax home">
+          <Link href="/" className="relative z-10 flex items-center text-ink" aria-label="Ezymex home">
             <Logo className="h-[26px] md:h-7" priority />
           </Link>
 
@@ -199,7 +199,7 @@ export function Header() {
                         href={open.href ?? "/about"}
                         className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-orange-300 hover:text-orange-200"
                       >
-                        {open.href ? `View all ${open.label.toLowerCase()}` : "About Ezymax"}
+                        {open.href ? `View all ${open.label.toLowerCase()}` : "About Ezymex"}
                         <ArrowUpRight className="size-4" />
                       </Link>
                     </div>

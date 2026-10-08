@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const doc = getLegalDoc(slug);
   if (!doc) return {};
-  return { ...pageMetadata({ title: doc.title, description: `${doc.title} for Ezymax.`, path: `/legal/${slug}` }), robots: { index: false } };
+  return { ...pageMetadata({ title: doc.title, description: `${doc.title} for Ezymex.`, path: `/legal/${slug}` }), robots: { index: false } };
 }
 
 export default async function LegalPage({ params }: Props) {

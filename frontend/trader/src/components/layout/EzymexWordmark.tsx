@@ -35,14 +35,14 @@ export function EzymexWordmark({
             it reads clearly against the dark rail. */}
         <img
           src="/images/ezymex_icon.png"
-          alt="Ezymax"
+          alt="Ezymex"
           className="w-9 h-9 object-contain drop-shadow-[0_0_7px_rgba(255,106,0,0.45)]"
         />
       </Link>
     );
   }
 
-  // Logo image only — no "Ezymax" text (the logo asset already carries the
+  // Logo image only — no "Ezymex" text (the logo asset already carries the
   // branding). Shown larger, height-based so the horizontal logo keeps its
   // aspect ratio. `textClassName` is accepted but unused now, kept so
   // existing callers don't need to change.
@@ -51,7 +51,7 @@ export function EzymexWordmark({
     <span className={cn('inline-flex items-center select-none', className)}>
       <img
         src="/images/ezymex-logo.png"
-        alt="Ezymax"
+        alt="Ezymex"
         className="h-9 w-auto object-contain drop-shadow-[0_0_20px_rgba(255,106,0,0.12)]"
       />
     </span>

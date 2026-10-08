@@ -5,7 +5,7 @@ import { HowItWorks } from "@/components/sections/home/HowItWorks";
 import { MarketsOverview } from "@/components/sections/home/MarketsOverview";
 import { PlatformGrid } from "@/components/sections/home/PlatformGrid";
 import { TrustBar } from "@/components/sections/home/TrustBar";
-import { WhyEzymax } from "@/components/sections/home/WhyEzymax";
+import { WhyEzymex } from "@/components/sections/home/WhyEzymex";
 import { CTABand } from "@/components/sections/shared/CTABand";
 import { finalCta } from "@/content/home";
 import { site } from "@/content/site";
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 };
 
 /**
- * The testimonials section that used to sit between WhyEzymax and the closing
+ * The testimonials section that used to sit between WhyEzymex and the closing
  * CTA is gone. All three quotes were marked `placeholder: true` and rendered a
  * visible "pending" badge; this is a pre-launch, invite-only platform with no
  * client to quote, so the honest version of that section is no section.
@@ -36,7 +36,7 @@ export default function HomePage() {
       <MarketsOverview />
       <PlatformGrid />
       <HowItWorks />
-      <WhyEzymax />
+      <WhyEzymex />
       <CTABand block={finalCta} />
     </>
   );

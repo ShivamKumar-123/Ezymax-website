@@ -601,7 +601,7 @@ html {
 @keyframes flashRed { 0% { background-color: rgba(239,68,68,0.2); } 100% { background-color: transparent; } }
 
 /* react-hot-toast — library defaults are washed-out white squares; reskin
- * to the Ezymax dark surface with proper padding, gap, and typography so
+ * to the Ezymex dark surface with proper padding, gap, and typography so
  * single-line errors don't wrap mid-word and the icon doesn't crash into
  * the text. */
 .ezymex-hot-toast {

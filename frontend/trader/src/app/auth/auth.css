@@ -1,5 +1,5 @@
 /* ============================================================
-   Ezymax auth — flat 50/50 split login/signup.
+   Ezymex auth — flat 50/50 split login/signup.
    Left: solid ink brand panel (faint dot-grid, orange accents).
    Right: raised dark form column. Deliberately anti-glass: no blur,
    no gradients-as-decoration, two flat surfaces, hard contrast.
@@ -425,7 +425,11 @@
 }
 
 .auth-btn--outline:hover:not(:disabled) {
-  background: #f7f8fa;
+  /* Lift within the dark scheme. This was #f7f8fa -- a near-white hover from
+     when the form column was white, which on the dark panel turned the whole
+     button white and took the label with it. */
+  background: rgb(255 255 255 / 0.07);
+  border-color: var(--auth-accent);
 }
 
 /* footnotes */

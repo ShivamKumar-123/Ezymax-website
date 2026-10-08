@@ -1,17 +1,17 @@
-import { whyEzymax } from "@/content/home";
+import { whyEzymex } from "@/content/home";
 import { images } from "@/content/images";
 import { getIcon } from "@/lib/icons";
 import { Picture } from "@/components/ui/Picture";
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
-export function WhyEzymax() {
+export function WhyEzymex() {
   return (
     <section className="relative overflow-hidden py-20 md:py-28">
       <div className="container-x relative grid gap-12 lg:grid-cols-[0.9fr_1.5fr]">
         <Reveal>
           <div className="lg:sticky lg:top-32">
-            <SectionHeading eyebrow={whyEzymax.eyebrow} heading={whyEzymax.heading} highlight={whyEzymax.highlight} />
+            <SectionHeading eyebrow={whyEzymex.eyebrow} heading={whyEzymex.heading} highlight={whyEzymex.highlight} />
             <p className="mt-6 max-w-sm text-lg leading-relaxed text-muted">
               The things below are either published rules or mechanics you can
               switch on. None of them is a promise about how a trade will go.
@@ -23,7 +23,7 @@ export function WhyEzymax() {
         </Reveal>
         <Reveal>
         <div className="grid gap-px overflow-hidden rounded-card border border-line bg-line sm:grid-cols-2">
-          {whyEzymax.items.map((item) => {
+          {whyEzymex.items.map((item) => {
             const Icon = getIcon(item.icon);
             return (
               <div key={item.title} className="bg-bg">

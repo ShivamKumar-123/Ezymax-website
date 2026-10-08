@@ -6,11 +6,11 @@ import type { CtaBlock, Feature, FaqItem, PlanTable } from "./schema";
  *
  * This slot used to be /liquidity, a page explaining how a vendor connects
  * brokers to liquidity providers. It closed with "SetupZero does not act as a
- * counterparty to trades", which is the exact inverse of how Ezymax works:
- * the backend is a b-book engine and Ezymax takes the other side. The page is
+ * counterparty to trades", which is the exact inverse of how Ezymex works:
+ * the backend is a b-book engine and Ezymex takes the other side. The page is
  * now the one subject that had no slot and genuinely needed one.
  *
- * One claim from the previous Ezymax copy is deliberately not here: that the
+ * One claim from the previous Ezymex copy is deliberately not here: that the
  * insurance pool "sits on-chain and its balance is publicly visible". No
  * on-chain component is deployed or configured, so there is no balance anyone
  * can go and inspect.

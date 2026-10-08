@@ -343,7 +343,7 @@ function BrokerHome() {
 
   return (
     <div className="space-y-4 pb-8 max-w-6xl mx-auto w-full">
-      {/* ── Ezymax TV banner — the commercial, full width, slides in R→L ── */}
+      {/* ── Ezymex TV banner — the commercial, full width, slides in R→L ── */}
       <TvCard />
 
       {/* ── Greeting bar ── */}

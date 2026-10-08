@@ -7,9 +7,9 @@ import type { MetadataRoute } from 'next';
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Ezymax — Trading Platform',
-    short_name: 'Ezymax',
-    description: 'Ezymax — professional forex and CFD trading platform',
+    name: 'Ezymex — Trading Platform',
+    short_name: 'Ezymex',
+    description: 'Ezymex — professional forex and CFD trading platform',
     start_url: '/dashboard',
     scope: '/',
     display: 'standalone',

@@ -2,13 +2,6 @@ import { publicEnv } from "@/env";
 
 /**
  * Brand identity and the one-line statements the whole site reads from.
- *
- * A note on the name, because it looks like a typo and is not: the brand is
- * **Ezymax**, the registered domain is **ezymex.com**. Only the domain exists
- * as a purchased asset, so every URL and every mailbox uses `ezymex.com` while
- * everything a reader sees says Ezymax. `alternateName` below tells search
- * engines the two refer to one thing. Do not "correct" an address to
- * `@ezymax.com` — that domain is not owned and the mail would bounce.
  */
 
 const url = publicEnv.NEXT_PUBLIC_SITE_URL ?? "https://ezymex.com";
@@ -16,19 +9,17 @@ const url = publicEnv.NEXT_PUBLIC_SITE_URL ?? "https://ezymex.com";
 const tradeUrl = publicEnv.NEXT_PUBLIC_TRADE_URL ?? "http://localhost:3001";
 
 export const site = {
-  name: "Ezymax",
-  /** For JSON-LD: the two spellings refer to one entity. */
-  alternateName: "Ezymex",
+  name: "Ezymex",
   domain: "ezymex.com",
   url,
 
   tagline: "Invite-only CFD trading.",
 
   positioning:
-    "Ezymax is a CFD trading platform for forex, indices, commodities and crypto. Access is by invitation: join the waitlist and we will email you when a place opens.",
+    "Ezymex is a CFD trading platform for forex, indices, commodities and crypto. Access is by invitation: join the waitlist and we will email you when a place opens.",
 
   description:
-    "Ezymax is an invite-only CFD trading platform covering forex, indices, commodities and crypto, with published margin rules, optional loss cover and a partner rebate programme.",
+    "Ezymex is an invite-only CFD trading platform covering forex, indices, commodities and crypto, with published margin rules, optional loss cover and a partner rebate programme.",
 
   email: "support@ezymex.com",
 
@@ -50,7 +41,7 @@ export const site = {
    * client funds").
    */
   disclaimer:
-    "CFDs are complex instruments and carry a high risk of losing money rapidly due to leverage. You should consider whether you understand how CFDs work and whether you can afford to take the high risk of losing your money. Past performance is not a guide to future results. Ezymax is not available in every jurisdiction and does not provide investment advice.",
+    "CFDs are complex instruments and carry a high risk of losing money rapidly due to leverage. You should consider whether you understand how CFDs work and whether you can afford to take the high risk of losing your money. Past performance is not a guide to future results. Ezymex is not available in every jurisdiction and does not provide investment advice.",
 
   /**
    * Baked at build time, so a redeploy keeps it current. Every deploy refreshes

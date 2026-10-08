@@ -101,7 +101,7 @@ export async function downloadTradeStatementPdf(
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('Ezymax', margin, 7);
+  doc.text('Ezymex', margin, 7);
 
   doc.setTextColor(30, 30, 30);
   doc.setFontSize(16);
@@ -226,7 +226,7 @@ export async function downloadTradeStatementPdf(
         doc.internal.pageSize.getHeight() - 6,
       );
       doc.text(
-        'Ezymax — for information only. Not tax or legal advice.',
+        'Ezymex — for information only. Not tax or legal advice.',
         margin,
         doc.internal.pageSize.getHeight() - 6,
       );

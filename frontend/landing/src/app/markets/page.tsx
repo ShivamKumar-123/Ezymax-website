@@ -12,7 +12,7 @@ import { pageMetadata } from "@/lib/seo";
 export const metadata: Metadata = pageMetadata({
   title: "Markets",
   description:
-    "Trade forex, indices, commodities and crypto as CFDs on Ezymax, with costs itemised on the ticket and published margin call and stop-out levels.",
+    "Trade forex, indices, commodities and crypto as CFDs on Ezymex, with costs itemised on the ticket and published margin call and stop-out levels.",
   path: "/markets",
 });
 

@@ -15,7 +15,7 @@ import { pageMetadata } from "@/lib/seo";
 export const metadata: Metadata = pageMetadata({
   title: "About",
   description:
-    "Ezymax is an invite-only CFD trading platform covering forex, indices, commodities and crypto, with published margin rules and stated conflicts of interest.",
+    "Ezymex is an invite-only CFD trading platform covering forex, indices, commodities and crypto, with published margin rules and stated conflicts of interest.",
   path: "/about",
 });
 

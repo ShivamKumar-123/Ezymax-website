@@ -769,7 +769,7 @@ function AdvancedChartInner({ onRequestFullscreen }: { onRequestFullscreen?: () 
       {/* The library renders its own iframe into this container. */}
       <div ref={containerRef} className="absolute inset-0" />
 
-      {/* Ezymax logo watermark — faint, centered, non-interactive. Sits over
+      {/* Ezymex logo watermark — faint, centered, non-interactive. Sits over
           the chart canvas but under the SL/TP overlay (DOM order). */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
         <img

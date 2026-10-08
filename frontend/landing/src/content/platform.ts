@@ -57,7 +57,7 @@ export const platformProducts: PlatformPage[] = [
     seo: {
       title: "Web Trading Platform",
       description:
-        "Trade CFDs from the browser on Ezymax, with spread, swap, commission and margin itemised on every order ticket before you confirm.",
+        "Trade CFDs from the browser on Ezymex, with spread, swap, commission and margin itemised on every order ticket before you confirm.",
     },
   },
 
@@ -92,7 +92,7 @@ export const platformProducts: PlatformPage[] = [
       "The same margin call and stop-out levels apply",
     ],
     cta: {
-      heading: "Connect MT5 to Ezymax",
+      heading: "Connect MT5 to Ezymex",
       sub: "Access is by invitation. Join the waitlist and we will email you when a place opens.",
       ctas: [
         { label: "Join Waitlist", action: "waitlist" },
@@ -106,7 +106,7 @@ export const platformProducts: PlatformPage[] = [
     seo: {
       title: "MetaTrader 5 Access",
       description:
-        "Connect MetaTrader 5 to your Ezymax account and keep your existing indicators, templates and expert advisors.",
+        "Connect MetaTrader 5 to your Ezymex account and keep your existing indicators, templates and expert advisors.",
     },
   },
 
@@ -138,7 +138,7 @@ export const platformProducts: PlatformPage[] = [
       "Copying does not reduce risk, and past performance does not predict future results",
     ],
     cta: {
-      heading: "Copy a trader on Ezymax",
+      heading: "Copy a trader on Ezymex",
       sub: "Access is by invitation. Join the waitlist and we will email you when a place opens.",
       ctas: [
         { label: "Join Waitlist", action: "waitlist" },
@@ -152,7 +152,7 @@ export const platformProducts: PlatformPage[] = [
     seo: {
       title: "Copy Trading",
       description:
-        "Copy traders on Ezymax at your own size, with a maximum drawdown cap that stops copying automatically when it is reached.",
+        "Copy traders on Ezymex at your own size, with a maximum drawdown cap that stops copying automatically when it is reached.",
     },
   },
 
@@ -197,7 +197,7 @@ export const platformProducts: PlatformPage[] = [
     seo: {
       title: "Funded Accounts",
       description:
-        "Pass a rules-based evaluation and trade an Ezymax funded account with defined drawdown limits and a published profit split.",
+        "Pass a rules-based evaluation and trade an Ezymex funded account with defined drawdown limits and a published profit split.",
     },
   },
 
@@ -239,7 +239,7 @@ export const platformProducts: PlatformPage[] = [
     seo: {
       title: "Shield Cover",
       description:
-        "Ezymax Shield covers a share of your losses across a day, a week or a month, up to a stated maximum payout, for a single premium shown before you confirm.",
+        "Ezymex Shield covers a share of your losses across a day, a week or a month, up to a stated maximum payout, for a single premium shown before you confirm.",
     },
   },
 
@@ -285,7 +285,7 @@ export const platformProducts: PlatformPage[] = [
     seo: {
       title: "Risk Tools",
       description:
-        "Ezymax risk tools: full cost previews on every ticket, attachable stop loss and take profit, margin alerts and copy drawdown caps.",
+        "Ezymex risk tools: full cost previews on every ticket, attachable stop loss and take profit, margin alerts and copy drawdown caps.",
     },
   },
 
@@ -316,7 +316,7 @@ export const platformProducts: PlatformPage[] = [
       "Staking is not a guaranteed return and carries its own risk",
     ],
     cta: {
-      heading: "Stake on Ezymax",
+      heading: "Stake on Ezymex",
       sub: "Access is by invitation. Join the waitlist and we will email you when a place opens.",
       ctas: [
         { label: "Join Waitlist", action: "waitlist" },
@@ -330,7 +330,7 @@ export const platformProducts: PlatformPage[] = [
     seo: {
       title: "Staking",
       description:
-        "Stake an unallocated Ezymax balance for a flexible or fixed term, at a reward rate shown before you commit.",
+        "Stake an unallocated Ezymex balance for a flexible or fixed term, at a reward rate shown before you commit.",
     },
   },
 
@@ -372,7 +372,7 @@ export const platformProducts: PlatformPage[] = [
     seo: {
       title: "XP and Rewards",
       description:
-        "Ezymax improves your spreads, swaps and commission as your XP rises. XP comes from how you trade, not how much you deposit.",
+        "Ezymex improves your spreads, swaps and commission as your XP rises. XP comes from how you trade, not how much you deposit.",
     },
   },
 
@@ -403,7 +403,7 @@ export const platformProducts: PlatformPage[] = [
       "No multi-level structure and no downline quotas",
     ],
     cta: {
-      heading: "Partner with Ezymax",
+      heading: "Partner with Ezymex",
       sub: "See the rebate tiers and what the programme pays on.",
       ctas: [
         { label: "See the programme", href: "/partners" },
@@ -413,7 +413,7 @@ export const platformProducts: PlatformPage[] = [
     seo: {
       title: "Partner Programme",
       description:
-        "The Ezymax IB programme pays rebates on the real trading activity of traders you introduce, with partner reporting and a management dashboard.",
+        "The Ezymex IB programme pays rebates on the real trading activity of traders you introduce, with partner reporting and a management dashboard.",
     },
   },
 ];

@@ -18,14 +18,14 @@ import type { CtaBlock, Feature } from "./schema";
  * be checked against the code.
  */
 export const aboutPage = {
-  eyebrow: "About Ezymax",
+  eyebrow: "About Ezymex",
   headline: "A Trading Platform That Publishes Its Rules",
   highlight: "Publishes Its Rules",
-  sub: "Ezymax is an invite-only CFD platform covering forex, indices, commodities and crypto. The margin rules, the costs and the conflicts are stated upfront rather than discovered later.",
+  sub: "Ezymex is an invite-only CFD platform covering forex, indices, commodities and crypto. The margin rules, the costs and the conflicts are stated upfront rather than discovered later.",
 
-  storyHeading: "What Ezymax is",
+  storyHeading: "What Ezymex is",
   story: [
-    "Ezymax is a CFD trading platform. You deposit, you trade forex, indices, commodities and crypto on leverage, and you withdraw. There is a copy-trading system, an optional loss-cover product, staking for an unallocated balance, and a partner programme that pays on introduced traders' activity.",
+    "Ezymex is a CFD trading platform. You deposit, you trade forex, indices, commodities and crypto on leverage, and you withdraw. There is a copy-trading system, an optional loss-cover product, staking for an unallocated balance, and a partner programme that pays on introduced traders' activity.",
     "Access is by application rather than instant sign-up. That is a deliberate constraint, not a growth tactic: a smaller book of traders who were actually screened is easier to run honestly than a large one that was not.",
   ],
 
@@ -35,7 +35,7 @@ export const aboutPage = {
   },
   vision: {
     heading: "What we are not",
-    body: "Ezymax is not licensed or regulated by any financial authority, and holds no investment licence. It is the counterparty to your trades, which is a conflict of interest. Both facts are in the risk disclosure, and neither is buried.",
+    body: "Ezymex is not licensed or regulated by any financial authority, and holds no investment licence. It is the counterparty to your trades, which is a conflict of interest. Both facts are in the risk disclosure, and neither is buried.",
   },
 
   valuesHeading: "How we work",
@@ -63,7 +63,7 @@ export const aboutPage = {
   ] as Feature[],
 
   cta: {
-    heading: "Request access to Ezymax",
+    heading: "Request access to Ezymex",
     sub: "Access is reviewed. Join the waitlist and we will email you when a place opens.",
     ctas: [
       { label: "Join Waitlist", action: "waitlist" },

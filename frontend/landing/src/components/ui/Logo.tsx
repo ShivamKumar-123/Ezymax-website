@@ -4,7 +4,7 @@ import { site } from "@/content/site";
 import { cn } from "@/lib/cn";
 
 /**
- * The Ezymax wordmark.
+ * The Ezymex wordmark.
  *
  * The mark is a chrome-and-orange 3D lockup, which happens to sit in the same
  * palette as the page it renders on — so one cut serves everywhere and there

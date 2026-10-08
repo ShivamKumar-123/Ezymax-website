@@ -11,7 +11,7 @@ import type { CtaBlock, Feature, HeroBlock, Stat, Step } from "./schema";
  *    traders, uptime, countries). It now carries the platform's published
  *    rules, every one of them read from server config. See facts.ts.
  *  - `testimonials` is gone. All three entries were marked `placeholder: true`
- *    and rendered a visible "pending" badge; Ezymax is pre-launch and
+ *    and rendered a visible "pending" badge; Ezymex is pre-launch and
  *    invite-only, so there is no client to quote.
  */
 
@@ -163,10 +163,10 @@ export const howItWorks = {
   ] as Step[],
 };
 
-export const whyEzymax = {
-  eyebrow: "Why Ezymax",
-  heading: "Why Traders Choose Ezymax",
-  highlight: "Choose Ezymax",
+export const whyEzymex = {
+  eyebrow: "Why Ezymex",
+  heading: "Why Traders Choose Ezymex",
+  highlight: "Choose Ezymex",
   items: [
     {
       title: "Access is reviewed",

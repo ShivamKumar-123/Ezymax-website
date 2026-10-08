@@ -14,7 +14,7 @@ import { Reveal } from "@/components/ui/Reveal";
 export const metadata: Metadata = pageMetadata({
   title: "Contact",
   description:
-    "Contact Ezymax support about access, your account or the platform.",
+    "Contact Ezymex support about access, your account or the platform.",
   path: "/contact",
 });
 

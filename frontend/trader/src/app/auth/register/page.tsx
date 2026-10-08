@@ -198,7 +198,7 @@ function RegisterContent() {
             <div className="auth-left__mandala" aria-hidden="true" />
             <div className="auth-left__content">
               <motion.a className="auth-brand" href="/" {...fadeUp(0.15)}>
-                <img src="/images/ezymex-logo.png" alt="Ezymax" />
+                <img src="/images/ezymex-logo.png" alt="Ezymex" />
               </motion.a>
 
               <div>

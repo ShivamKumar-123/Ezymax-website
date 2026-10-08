@@ -23,16 +23,16 @@ export const metadata: Metadata = {
   // Makes the relative share image below resolve to an absolute URL, which
   // every social scraper requires.
   metadataBase: new URL('https://trade.ezymex.com'),
-  title: 'Ezymax',
-  description: 'Ezymax — professional forex and CFD trading platform',
-  applicationName: 'Ezymax',
+  title: 'Ezymex',
+  description: 'Ezymex — professional forex and CFD trading platform',
+  applicationName: 'Ezymex',
   manifest: '/manifest.webmanifest',
   // Without these, a shared link showed whatever image the scraper found first
   // on the page.
   openGraph: {
     type: 'website',
-    siteName: 'Ezymax',
-    title: 'Ezymax — CFD trading with published rules',
+    siteName: 'Ezymex',
+    title: 'Ezymex — CFD trading with published rules',
     description: SHARE_DESCRIPTION,
     url: '/',
     images: [{ url: '/open-graph.png', width: 1200, height: 630 }],
@@ -40,14 +40,14 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Ezymax — CFD trading with published rules',
+    title: 'Ezymex — CFD trading with published rules',
     description: SHARE_DESCRIPTION,
     images: ['/open-graph.png'],
   },
   // Drives iOS "Add to Home Screen": standalone launch, app title, status bar.
   appleWebApp: {
     capable: true,
-    title: 'Ezymax',
+    title: 'Ezymex',
     // 'default' = the iOS status bar keeps its own space (does NOT overlay
     // content), so no page's top is ever hidden under the notch/clock.
     statusBarStyle: 'default',

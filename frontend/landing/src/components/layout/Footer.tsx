@@ -12,7 +12,7 @@ export function Footer() {
       <div className="container-x py-16 md:py-20">
         <div className="grid gap-12 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div className="max-w-sm">
-            <Link href="/" className="inline-flex text-ink" aria-label="Ezymax home">
+            <Link href="/" className="inline-flex text-ink" aria-label="Ezymex home">
               <Logo className="h-7" />
             </Link>
             <p className="mt-4 font-display text-lg font-medium text-ink">{site.tagline}</p>
@@ -59,13 +59,9 @@ export function Footer() {
         <div className="mt-12 border-t border-line pt-8">
           <p className="max-w-4xl text-xs leading-relaxed text-dim">{site.disclaimer}</p>
           <div className="mt-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            {/* The brand and the domain are spelled differently on purpose
-                (see content/site.ts), so the footer says it once rather than
-                leaving every visitor to wonder which is the typo. No legal
-                entity is named until the real one is confirmed. */}
+            {/* No legal entity is named until the real one is confirmed. */}
             <p className="text-xs text-dim">
-              © {site.copyrightYear} {site.name}. All rights reserved. {site.name}{" "}
-              operates at {site.domain}.
+              © {site.copyrightYear} {site.name}. All rights reserved.
             </p>
             <ul className="flex flex-wrap gap-x-5 gap-y-2">
               {legalLinks.map((l) => (

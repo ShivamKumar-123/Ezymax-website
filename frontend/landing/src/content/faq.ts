@@ -16,7 +16,7 @@ export const faqPage = {
  */
 export const faqs: FaqItem[] = [
   {
-    q: "What is Ezymax?",
+    q: "What is Ezymex?",
     a: "A CFD trading platform covering forex, indices, commodities and crypto. You can trade in the browser or through MetaTrader 5, copy other traders, buy optional loss cover, stake an unallocated balance, and earn rebates by introducing traders.",
   },
   {
@@ -24,12 +24,12 @@ export const faqs: FaqItem[] = [
     a: "Access is by invitation. Join the waitlist with your name and email and we will contact you when a place opens. There is no deposit or payment involved in applying.",
   },
   {
-    q: "Is Ezymax regulated?",
-    a: "No. Ezymax does not hold a licence from any financial regulator. That means the protections that come with a regulated broker — statutory compensation schemes, an ombudsman, regulated client-money rules — do not apply here. Read the risk disclosure before you deposit anything.",
+    q: "Is Ezymex regulated?",
+    a: "No. Ezymex does not hold a licence from any financial regulator. That means the protections that come with a regulated broker — statutory compensation schemes, an ombudsman, regulated client-money rules — do not apply here. Read the risk disclosure before you deposit anything.",
   },
   {
     q: "Who is on the other side of my trade?",
-    a: "Ezymax is. Orders are executed against the platform rather than passed to an external market, so your profit is the platform's loss and the reverse. That is a conflict of interest and you should factor it into how much you trade and with whom.",
+    a: "Ezymex is. Orders are executed against the platform rather than passed to an external market, so your profit is the platform's loss and the reverse. That is a conflict of interest and you should factor it into how much you trade and with whom.",
   },
   {
     q: "What leverage is available?",

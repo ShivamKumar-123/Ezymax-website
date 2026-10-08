@@ -13,7 +13,7 @@ import { site } from "@/content/site";
  * layout. The two nodes are linked by `@id` so crawlers treat them as related.
  *
  * Three things are deliberately absent. `legalName` and `address`, because the
- * company entity behind Ezymax has not been confirmed and a wrong one in
+ * company entity behind Ezymex has not been confirmed and a wrong one in
  * structured data is a wrong one republished everywhere. And `sameAs`, because
  * the only social links available were bare domains — `sameAs: ["https://x.com/"]`
  * asserts that this organisation *is* x.com. Add each back when it is real.
@@ -26,9 +26,6 @@ export function getSiteStructuredData() {
         "@type": "Organization",
         "@id": `${site.url}/#organization`,
         name: site.name,
-        // The brand and the domain are spelled differently; this tells
-        // crawlers the two names are one entity rather than a typo.
-        alternateName: site.alternateName,
         url: site.url,
         logo: `${site.url}/android-icon-192x192.png`,
         description: site.description,

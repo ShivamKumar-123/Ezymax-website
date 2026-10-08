@@ -15,7 +15,7 @@ import { pageMetadata } from "@/lib/seo";
 export const metadata: Metadata = pageMetadata({
   title: "Partners",
   description:
-    "Earn rebates on the closed lots of traders you introduce to Ezymax, with partner reporting and an IB management dashboard.",
+    "Earn rebates on the closed lots of traders you introduce to Ezymex, with partner reporting and an IB management dashboard.",
   path: "/partners",
 });
 

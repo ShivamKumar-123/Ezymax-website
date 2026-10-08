@@ -173,7 +173,7 @@ export default function ProfileCompleteGate() {
         date_of_birth: form.date_of_birth,
       });
       await refreshUser();
-      toast.success('Profile completed — welcome to Ezymax');
+      toast.success('Profile completed — welcome to Ezymex');
     } catch (err: any) {
       const msg = err?.response?.data?.detail || err?.message || 'Could not save profile';
       toast.error(typeof msg === 'string' ? msg : 'Could not save profile');

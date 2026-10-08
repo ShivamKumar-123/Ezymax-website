@@ -6,7 +6,7 @@ import type { CtaBlock, Feature, PlanTable } from "./schema";
  * This slot used to be /services: 24/7 support contracts, dedicated account
  * managers and a "first response within 15 minutes" SLA that nobody had
  * agreed to. None of it maps to a retail platform, so the page is now the
- * other subject Ezymax has and the template had no room for.
+ * other subject Ezymex has and the template had no room for.
  */
 
 export const earnPage = {
@@ -72,7 +72,7 @@ export const earnPage = {
     "Levels — Bronze from 0 XP, Silver from 1,000, Gold from 5,000, Platinum from 15,000, Black from 40,000. Thresholds are published in-app and levels do not reset.",
 
   cta: {
-    heading: "Start earning on Ezymax",
+    heading: "Start earning on Ezymex",
     sub: "Access is by invitation. Join the waitlist and we will email you when a place opens.",
     ctas: [
       { label: "Join Waitlist", action: "waitlist" },

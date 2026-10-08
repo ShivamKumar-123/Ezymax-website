@@ -4,7 +4,7 @@ import { site } from "./site";
  * /contact.
  *
  * One channel, not three. The template split sales, support and partnerships
- * for a company with a sales team; Ezymax has a support mailbox. The Dubai
+ * for a company with a sales team; Ezymex has a support mailbox. The Dubai
  * headquarters line is gone — it belonged to the other company, and no
  * confirmed address has replaced it.
  */

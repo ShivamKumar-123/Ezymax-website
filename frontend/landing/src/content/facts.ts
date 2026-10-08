@@ -3,7 +3,7 @@
  *
  * This replaces a `placeholders.ts` that was headed "TODO: confirm before
  * launch" and fed invented counts — brokerages launched, active traders, an
- * uptime target, countries served — into six content files. Ezymax takes
+ * uptime target, countries served — into six content files. Ezymex takes
  * deposits and is not licensed anywhere, so a made-up figure here is not a
  * placeholder, it is a false statement to a prospective client.
  *
@@ -57,7 +57,7 @@ export const facts = {
  * - spreads and commissions ... not published anywhere in the backend; an
  *                               honest fees page needs real figures first
  * - testimonials .............. there are no clients to quote yet
- * - regulatory licences ....... Ezymax holds none. Earlier revisions of this
+ * - regulatory licences ....... Ezymex holds none. Earlier revisions of this
  *                               site carried a fabricated FCA number, a
  *                               fabricated CySEC number and a street address
  *                               to match. They were removed. Do not add

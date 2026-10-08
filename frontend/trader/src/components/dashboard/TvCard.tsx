@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Volume2, VolumeX } from 'lucide-react';
 
 /**
- * Full-width commercial banner at the top of the dashboard: the Ezymax film
+ * Full-width commercial banner at the top of the dashboard: the Ezymex film
  * (the landing hero's former loop) slides in from the RIGHT to its resting
  * place, playing muted on repeat, with a pulsing channel badge and a sound
  * toggle.
@@ -30,7 +30,7 @@ export default function TvCard() {
         loop
         playsInline
         preload="metadata"
-        aria-label="Ezymax commercial"
+        aria-label="Ezymex commercial"
         className="block h-36 w-full object-cover sm:h-48 lg:h-56"
       />
 
@@ -45,11 +45,11 @@ export default function TvCard() {
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#FF6A00] opacity-75" />
           <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#FF6A00]" />
         </span>
-        Ezymax TV
+        Ezymex TV
       </span>
 
       <p className="absolute bottom-3 left-3 max-w-[60%] text-xs font-medium text-white/90 sm:text-sm">
-        Trade the markets at full speed — the Ezymax film.
+        Trade the markets at full speed — the Ezymex film.
       </p>
 
       <button

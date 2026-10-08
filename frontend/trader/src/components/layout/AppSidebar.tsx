@@ -77,7 +77,7 @@ export const SECTIONS: NavSection[] = [
         ],
       },
       { label: 'Affiliates', href: '/business', icon: Users },
-      { label: 'Ezymax Academy', href: '/academy', icon: GraduationCap },
+      { label: 'Ezymex Academy', href: '/academy', icon: GraduationCap },
       { label: 'Economic News', href: '/news', icon: Newspaper },
     ],
   },
@@ -182,11 +182,11 @@ export default function AppSidebar() {
       >
         <div className="flex items-center justify-between px-4 pt-4 pb-3 gap-2">
           <Link href="/dashboard" className="flex items-center min-w-0 group">
-            {/* Ezymax logo image (no text — the asset carries the branding).
+            {/* Ezymex logo image (no text — the asset carries the branding).
                 Height-based sizing keeps the horizontal logo's aspect ratio. */}
             <img
               src="/images/ezymex-logo.png"
-              alt="Ezymax"
+              alt="Ezymex"
               className="h-9 w-auto object-contain drop-shadow-[0_0_20px_rgba(255,106,0,0.12)] transition-transform duration-300 group-hover:scale-[1.03]"
             />
           </Link>

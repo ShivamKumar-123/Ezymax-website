@@ -273,7 +273,7 @@ export default function AdminSpinWheelPage() {
         <span className="font-bold text-text-secondary">Weight</span> sets each slot&apos;s draw chance —
         <span className="font-bold"> Win %</span> = weight ÷ total active weight (recomputes live as you edit).
         <span style={{ color: KIND_COLOR.ac }}> ac</span>/<span style={{ color: KIND_COLOR.cashback }}>cashback</span> credit
-        Ezymax Coins, <span style={{ color: KIND_COLOR.xp }}>xp</span> credits XP, <span style={{ color: KIND_COLOR.nothing }}>nothing</span> = no reward.
+        Ezymex Coins, <span style={{ color: KIND_COLOR.xp }}>xp</span> credits XP, <span style={{ color: KIND_COLOR.nothing }}>nothing</span> = no reward.
         Turn <b>Active</b> off to remove a slot from the wheel. Edits are live after <b>Save changes</b>.
       </p>
 

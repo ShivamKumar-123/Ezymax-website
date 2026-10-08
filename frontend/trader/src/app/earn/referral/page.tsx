@@ -76,7 +76,7 @@ export default function ReferralPage() {
               <div className="flex items-center justify-between mt-3">
                 <span className="text-xs text-text-tertiary">Code: <span className="font-mono font-bold text-text-secondary">{data.code}</span></span>
                 {typeof navigator !== 'undefined' && 'share' in navigator && (
-                  <button type="button" onClick={() => navigator.share?.({ url: link, title: 'Join me on Ezymax' })}
+                  <button type="button" onClick={() => navigator.share?.({ url: link, title: 'Join me on Ezymex' })}
                     className="inline-flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary">
                     <Share2 size={13} /> Share
                   </button>

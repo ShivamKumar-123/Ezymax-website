@@ -1,4 +1,4 @@
-# Agent Guide — Ezymax landing
+# Agent Guide — Ezymex landing
 
 ## This is NOT the Next.js you know
 
@@ -8,15 +8,12 @@ docs before writing routing or framework code.**
 
 ## What this app is
 
-The public marketing site for **Ezymax**, an invite-only CFD trading platform. It
+The public marketing site for **Ezymex**, an invite-only CFD trading platform. It
 funnels to one place: the waitlist, which posts through `/api/waitlist` to the
 backend gateway. Everything else is content.
 
-The brand is **Ezymax**; the domain is **ezymex.com**. That is not a typo — only
-the domain was ever registered. URLs and e-mail addresses use `ezymex.com`,
-visible copy says Ezymax, and `content/site.ts` is the only place either is
-written down. Never "correct" an address to `@ezymax.com`; that domain is not
-owned and the mail bounces.
+The brand is **Ezymex** and the domain is **ezymex.com**. `content/site.ts` is
+the only place either is written down.
 
 This codebase began as a different site (setupzero.com, a vendor selling
 brokerage software). Any remaining `SetupZero` / `setupzero` string outside an
@@ -24,7 +21,7 @@ explanatory comment is a bug.
 
 ## Hard rules (never violate)
 
-1. **Nothing the code cannot support.** Ezymax takes deposits and holds no
+1. **Nothing the code cannot support.** Ezymex takes deposits and holds no
    licence, so a wrong claim here is not a typo. Every number the site states
    about itself lives in `src/content/facts.ts` with a `source:` comment
    pointing at the config or table it was read from. If a figure has no source,

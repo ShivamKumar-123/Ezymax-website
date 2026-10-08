@@ -105,7 +105,7 @@ export function WaitlistModal() {
       open={open}
       onClose={close}
       title="Request access"
-      description="Ezymax is invite-only. Tell us who you are and we will email you when a place opens."
+      description="Ezymex is invite-only. Tell us who you are and we will email you when a place opens."
     >
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         <div>

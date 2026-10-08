@@ -4,7 +4,7 @@ import type { Feature, PlanTable } from "./schema";
  * /partners — the IB programme.
  *
  * The template had three B2B programme types (referral, technology,
- * reseller) for a company selling software. Ezymax has one programme: you
+ * reseller) for a company selling software. Ezymex has one programme: you
  * introduce traders and earn on the lots they close.
  */
 export const partnersPage = {

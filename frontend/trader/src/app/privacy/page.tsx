@@ -1,5 +1,5 @@
 
-export const metadata = { title: 'Privacy Policy — Ezymax' }
+export const metadata = { title: 'Privacy Policy — Ezymex' }
 
 export default function PrivacyPage() {
   return (
@@ -16,7 +16,7 @@ export default function PrivacyPage() {
         <div className="max-w-4xl mx-auto px-6 lg:px-8 space-y-10">
 
           <Section title="1. Introduction">
-            Ezymax ("we," "us," "our," or "Company") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our trading platform.
+            Ezymex ("we," "us," "our," or "Company") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our trading platform.
           </Section>
 
           <Section title="2. Information We Collect">
@@ -141,7 +141,7 @@ function List({ items }: { items: string[] }) {
 function ContactBox({ team, email }: { team: string; email: string }) {
   return (
     <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 mt-4 text-sm space-y-1">
-      <p className="font-semibold text-gray-900">Ezymax {team}</p>
+      <p className="font-semibold text-gray-900">Ezymex {team}</p>
       <p className="text-gray-500">Email: {email}</p>
       <p className="text-gray-500">Phone: +1 (908) 228-0305</p>
       <p className="text-gray-500">Address: Office 9364hn, 3 Fitzroy Place, Glasgow City Centre, UK, G3 7RH</p>

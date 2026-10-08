@@ -5,7 +5,7 @@
  *
  * The user picks a chain (USDT-ERC20 / USDT-BEP20 / USDT-TRC20), enters
  * a USD amount, and signs the transfer in their own wallet (MetaMask
- * / TronLink / etc.) — funds go directly to Ezymax's per-chain admin
+ * / TronLink / etc.) — funds go directly to Ezymex's per-chain admin
  * deposit address. The backend's chain_verifier_engine watches the
  * tx hash and credits the user's main wallet once confirmations hit.
  *
@@ -294,7 +294,7 @@ export default function OnchainDepositFlow({
         <div className="rounded-xl border border-[#FF6A00]/20 bg-[#FF6A00]/5 px-4 py-3">
           <p className="text-xs text-text-secondary leading-relaxed">
             You'll send <span className="text-text-primary font-semibold">USDT</span>{' '}
-            on {chosen.short} from your own wallet to Ezymax's deposit
+            on {chosen.short} from your own wallet to Ezymex's deposit
             address. Your balance is credited automatically once the
             transfer reaches {(network === 'eth' ? 12 : network === 'bsc' ? 15 : 19)}{' '}
             confirmations.

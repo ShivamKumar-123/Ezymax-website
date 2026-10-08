@@ -13,7 +13,7 @@ import { pageMetadata } from "@/lib/seo";
 export const metadata: Metadata = pageMetadata({
   title: "Protection",
   description:
-    "Ezymax Shield covers a share of your losses over a day, a week or a month, up to a stated cap, alongside cost previews, attachable exits and margin alerts.",
+    "Ezymex Shield covers a share of your losses over a day, a week or a month, up to a stated cap, alongside cost previews, attachable exits and margin alerts.",
   path: "/protection",
 });
 

@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from 'react-hot-toast';
 
 export const metadata: Metadata = {
-  title: 'Ezymax — IB Partner Portal',
+  title: 'Ezymex — IB Partner Portal',
   description: 'Introducing Broker partner portal',
 };
 
