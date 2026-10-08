@@ -2,6 +2,7 @@
 export 'color_mix.dart';
 export 'components/backdrop.dart';
 export 'components/banner.dart';
+export 'components/blocks.dart';
 export 'components/brand.dart';
 export 'components/buttons.dart';
 export 'components/codes.dart';

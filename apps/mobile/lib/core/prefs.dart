@@ -61,6 +61,11 @@ class Prefs {
 
   Future<void> setEventLog(String userKey, List<Map<String, dynamic>> events) => _p.setString('kalks.events.$userKey', jsonEncode(events));
 
+  /// A feature's own settings as one JSON object under `kalks.<key>` (Kalks Trader's workspace: favourites, one-click
+  /// trading, volume…).
+  Map<String, dynamic>? featureJson(String key) => _json('kalks.$key');
+  Future<void> setFeatureJson(String key, Map<String, dynamic> v) => _p.setString('kalks.$key', jsonEncode(v));
+
   Map<String, dynamic>? _json(String key) {
     final raw = _p.getString(key);
     if (raw == null) return null;

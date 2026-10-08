@@ -18,14 +18,44 @@ import '../core/auth/auth_controller.dart';
 import '../core/config/app_config.dart';
 import '../core/notifications/notifications.dart';
 import '../env.dart';
+import '../features/academy/academy_routes.dart';
+import '../features/accounts/account_detail_screen.dart';
+import '../features/accounts/accounts_screen.dart';
+import '../features/accounts/open_account_screen.dart';
 import '../features/auth/forgot_screen.dart';
 import '../features/auth/login_screen.dart';
 import '../features/auth/register_screen.dart';
 import '../features/auth/unlock_screen.dart';
+import '../features/calendar/calendar_routes.dart';
 import '../features/common/stub_screen.dart';
 import '../features/common/system_screens.dart';
 import '../features/dashboard/dashboard_screen.dart';
-import '../features/trader/trader_screen.dart';
+import '../features/developer/developer_routes.dart';
+import '../features/markets/markets_routes.dart';
+import '../features/news/news_routes.dart';
+import '../features/options_intro/options_routes.dart';
+import '../features/partner/partner_routes.dart';
+import '../features/portfolio/analytics_screen.dart';
+import '../features/portfolio/ledger_screen.dart';
+import '../features/portfolio/portfolio_screen.dart';
+import '../features/portfolio/statements_screen.dart';
+import '../features/portfolio/trade_history_screen.dart';
+import '../features/profile/notification_prefs_screen.dart';
+import '../features/profile/preferences_screen.dart';
+import '../features/profile/profile_screen.dart';
+import '../features/profile/security_screen.dart';
+import '../features/profile/verification_screen.dart';
+import '../features/profile/viewers_screen.dart';
+import '../features/prop/prop_routes.dart';
+import '../features/rewards/rewards_routes.dart';
+import '../features/social/social_routes.dart';
+import '../features/support/support_screen.dart';
+import '../features/terminal/terminal_screen.dart';
+import '../features/wallet/deposit_screen.dart';
+import '../features/wallet/transfer_screen.dart';
+import '../features/wallet/wallet_history_screen.dart';
+import '../features/wallet/wallet_screen.dart';
+import '../features/wallet/withdraw_screen.dart';
 import '../preview/gallery_screen.dart';
 import '../shell/app_shell.dart';
 import '../shell/more_screen.dart';
@@ -61,6 +91,45 @@ List<RouteBase> _moduleRoutes(String key, {Map<String, Widget Function(GoRouterS
     ...extra,
   ];
 }
+
+/// Agent C2's pages (Markets, News, Calendar, Options, Copy & PAMM, Partner, Prop, Rewards, Academy, Developer), by
+/// web path, and their detail pages (iOS push).
+final Map<String, Widget Function(GoRouterState)> _c2Screens = {
+  ...marketsScreens,
+  ...newsScreens,
+  ...calendarScreens,
+  ...optionsScreens,
+  ...socialScreens,
+  ...partnerScreens,
+  ...propScreens,
+  ...rewardsScreens,
+  ...academyScreens,
+  ...developerScreens,
+};
+final List<RouteBase> _c2Routes = [...socialRoutes, ...partnerRoutes, ...propRoutes, ...rewardsRoutes, ...academyRoutes, ...developerRoutes, ...optionsRoutes];
+
+/// Agent C1's pages (Accounts, Wallet, Portfolio, Profile & Security, Support), by web path.
+final Map<String, Widget Function(GoRouterState)> _c1Screens = {
+  '/accounts': (s) => AccountsScreen(query: s.uri.queryParameters),
+  '/accounts/new': (s) => OpenAccountScreen(query: s.uri.queryParameters),
+  '/wallet': (s) => WalletScreen(query: s.uri.queryParameters),
+  '/wallet/deposit': (s) => DepositScreen(query: s.uri.queryParameters),
+  '/wallet/withdraw': (s) => WithdrawScreen(query: s.uri.queryParameters),
+  '/wallet/transfer': (s) => TransferScreen(query: s.uri.queryParameters),
+  '/wallet/history': (s) => WalletHistoryScreen(query: s.uri.queryParameters),
+  '/portfolio': (s) => PortfolioScreen(query: s.uri.queryParameters),
+  '/portfolio/analytics': (s) => AnalyticsScreen(query: s.uri.queryParameters),
+  '/portfolio/history': (s) => TradeHistoryScreen(query: s.uri.queryParameters),
+  '/portfolio/ledger': (s) => LedgerScreen(query: s.uri.queryParameters),
+  '/portfolio/statements': (s) => StatementsScreen(query: s.uri.queryParameters),
+  '/profile': (s) => ProfileScreen(query: s.uri.queryParameters),
+  '/profile/security': (s) => SecurityScreen(query: s.uri.queryParameters),
+  '/profile/verification': (s) => VerificationScreen(query: s.uri.queryParameters),
+  '/profile/viewers': (s) => ViewersScreen(query: s.uri.queryParameters),
+  '/profile/notifications': (s) => NotificationPrefsScreen(query: s.uri.queryParameters),
+  '/profile/preferences': (s) => PreferencesScreen(query: s.uri.queryParameters),
+  '/support': (s) => SupportScreen(query: s.uri.queryParameters),
+};
 
 /// Path and query of a location (deep links arrive with a scheme and host).
 String _loc(Uri uri) => '${uri.path.isEmpty ? '/' : uri.path}${uri.hasQuery ? '?${uri.query}' : ''}';
@@ -145,26 +214,33 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (c, s) => CupertinoFullscreenPage(
           key: s.pageKey,
-          child: TraderScreen(login: s.uri.queryParameters['login']),
+          child: TerminalScreen.fromQuery(s.uri.queryParameters),
         ),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => AppShell(shell: shell, path: state.uri.path),
         branches: [
-          StatefulShellBranch(routes: _moduleRoutes('dashboard', screens: {'/': (_) => const DashboardScreen()})),
+          StatefulShellBranch(
+            routes: _moduleRoutes(
+              'dashboard',
+              screens: {'/': (_) => const DashboardScreen(), ..._c2Screens},
+              extra: [...marketsRoutes, ...newsRoutes, ...calendarRoutes],
+            ),
+          ),
           StatefulShellBranch(
             routes: _moduleRoutes(
               'accounts',
+              screens: _c1Screens,
               extra: [
                 GoRoute(
                   path: '/accounts/:login',
-                  builder: (c, s) => StubScreen(path: '/accounts/${s.pathParameters['login']}'),
+                  builder: (c, s) => AccountDetailScreen(login: s.pathParameters['login']!, query: s.uri.queryParameters),
                 ),
               ],
             ),
           ),
-          StatefulShellBranch(routes: _moduleRoutes('wallet')),
-          StatefulShellBranch(routes: _moduleRoutes('portfolio')),
+          StatefulShellBranch(routes: _moduleRoutes('wallet', screens: _c1Screens)),
+          StatefulShellBranch(routes: _moduleRoutes('portfolio', screens: _c1Screens)),
           StatefulShellBranch(
             routes: [
               GoRoute(path: '/more', pageBuilder: (c, s) => _tab(const MoreScreen(), s)),
@@ -175,7 +251,8 @@ final routerProvider = Provider<GoRouter>((ref) {
                   builder: (c, s) => GalleryScreen(open: s.uri.queryParameters['open']),
                 ),
               for (final m in kNav)
-                if (branchOf(m.key) == 4) ..._moduleRoutes(m.key),
+                if (branchOf(m.key) == 4) ..._moduleRoutes(m.key, screens: {..._c1Screens, ..._c2Screens}),
+              ..._c2Routes,
               // gated in live builds (apps/crm/lib/live.ts), kept reachable for links
               GoRoute(
                 path: '/academy/coach',

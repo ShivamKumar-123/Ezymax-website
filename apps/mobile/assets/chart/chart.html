@@ -1,0 +1,660 @@
+<!doctype html>
+<!--
+  Kalks Trader chart page for the app's WebView (Android). The same engine as the web terminal: TradingView
+  Lightweight Charts 5.2.1, bundled OFFLINE next to this file (lightweight-charts.standalone.production.js, Apache 2.0,
+  LICENSE-lightweight-charts.txt). The app owns the data and sends it as JSON to window.K.recv(msg); this page draws
+  it and posts gestures back on the `KalksChart` channel (lib/features/terminal/chart/chart_bridge.dart):
+    in:  init {digits, intraday, palette, symbol, tf, indicators} · bars {bars} · older {bars, exhausted} · bar {bar}
+         · quote {bid, ask} · lines {lines: [{id, kind, price, label, side, drag, note, tone, close}]} · palette {palette}
+    out: ready · drag {id, price} · tap {id} · close {id} · older {before} · long {price}
+  Bars are [time (server-time seconds), open, high, low, close, volume]. Like the web chart (components/chart/
+  engine.ts + chart-view.tsx): the OHLC legend with the default indicators (EMA 50, SMA 20), the account's bid / ask
+  lines, trade-line chips at the price scale (drag to move, × to close / remove, the P&L on them), and only the small
+  Kalks K in the plot's bottom-left corner (brand-watermark.ts).
+-->
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <style>
+      @font-face {
+        font-family: "GeistMono";
+        src: url("../fonts/GeistMono-Medium.ttf") format("truetype");
+        font-weight: 500;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+        background: var(--bg, #0a0a0d);
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: none;
+      }
+      #c {
+        position: absolute;
+        inset: 0;
+      }
+      #chips {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 4;
+      }
+      #legend {
+        position: absolute;
+        left: 8px;
+        top: 6px;
+        z-index: 5;
+        pointer-events: none;
+        font: 500 11px "GeistMono", ui-monospace, monospace;
+        line-height: 16px;
+        color: var(--fg3, #8b8b96);
+        max-width: calc(100% - 80px);
+      }
+      #legend b {
+        font-weight: 600;
+        color: var(--fg, #f5f5f7);
+        margin-right: 6px;
+      }
+      #legend .v {
+        margin-right: 6px;
+      }
+      .chip {
+        position: absolute;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        border-radius: 5px;
+        border: 1px solid transparent;
+        font: 500 10.5px "GeistMono", ui-monospace, monospace;
+        line-height: 1;
+        white-space: nowrap;
+        pointer-events: auto;
+        transform: translateY(-50%);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+        overflow: hidden;
+      }
+      .chip > span {
+        padding: 0 5px;
+        height: 100%;
+        display: flex;
+        align-items: center;
+      }
+      .chip .grip {
+        opacity: 0.7;
+        font-size: 9px;
+        letter-spacing: -1px;
+        padding: 0 1px 0 4px;
+      }
+      .chip .note {
+        border-left: 1px solid rgba(127, 127, 127, 0.35);
+      }
+      .chip .x {
+        border-left: 1px solid rgba(127, 127, 127, 0.35);
+        padding: 0 6px;
+        font-size: 12px;
+      }
+      .chip.dragging {
+        box-shadow: 0 0 0 2px rgba(255, 90, 31, 0.45), 0 4px 14px rgba(0, 0, 0, 0.4);
+      }
+      #ghost {
+        position: absolute;
+        left: 0;
+        border-top: 1px dashed rgba(160, 160, 170, 0.7);
+        pointer-events: none;
+        z-index: 3;
+        display: none;
+      }
+    </style>
+    <script src="lightweight-charts.standalone.production.js"></script>
+  </head>
+  <body>
+    <div id="c"></div>
+    <div id="legend"></div>
+    <div id="ghost"></div>
+    <div id="chips"></div>
+    <script>
+      (function () {
+        "use strict";
+        const LC = window.LightweightCharts;
+        const host = document.getElementById("c");
+        const chipsEl = document.getElementById("chips");
+        const ghost = document.getElementById("ghost");
+        const legendEl = document.getElementById("legend");
+        const post = (m) => {
+          try {
+            window.KalksChart.postMessage(JSON.stringify(m));
+          } catch (e) {
+            /* no channel (opened in a browser) */
+          }
+        };
+
+        // Kalks mark (assets/brand/kalks-mark.svg), viewBox 653 x 541
+        const MARK_D =
+          "M 403.113 2.545 C 382.191 7.084, 370.755 13.650, 346.500 35.052 C 338.250 42.332, 320.925 57.415, 308 68.571 C 295.075 79.727, 271.225 100.410, 255 114.535 C 238.775 128.659, 217.888 146.794, 208.584 154.835 C 184.119 175.980, 178.518 183.282, 173.512 200.554 L 171 209.224 171 273.457 C 171 343.176, 170.712 339.361, 176.125 341.269 C 179.126 342.326, 187.413 337.402, 223.546 313.086 C 299.928 261.683, 352.834 224.527, 423.005 173 C 436.861 162.825, 455.241 149.385, 463.849 143.133 C 472.457 136.882, 484.450 128.070, 490.500 123.551 C 496.550 119.032, 506.225 111.857, 512 107.606 C 525.694 97.526, 590.533 48.622, 602.811 39.112 C 608.057 35.049, 617.783 27.637, 624.425 22.642 C 631.066 17.647, 640.031 10.734, 644.346 7.280 L 652.192 1 530.846 1.079 C 431.400 1.145, 408.347 1.409, 403.113 2.545 M 135.134 63.542 C 106.181 79.766, 63.818 105.655, 49.568 115.834 C 39.269 123.191, 23.932 137.825, 18.510 145.470 C 12.674 153.699, 7.552 164.207, 4.257 174.712 L 1.500 183.500 1.232 338.325 L 0.963 493.151 5.232 490.175 C 7.579 488.539, 21.875 478.983, 37 468.941 C 102.832 425.232, 131.171 400.632, 140.735 378.892 C 146.852 364.986, 146.500 375.277, 146.500 210.500 L 146.500 60.500 144 60.238 C 142.583 60.089, 138.744 61.520, 135.134 63.542 M 320 284.624 C 300.125 288.511, 288.493 295.042, 231.500 334.316 C 199.923 356.077, 192.902 361.250, 193.199 362.540 C 193.731 364.854, 322.089 498.457, 338.940 514.237 C 351.464 525.965, 366.500 534.233, 382.107 537.974 C 390.252 539.927, 393.740 539.986, 500.250 539.993 C 560.612 539.997, 610 539.747, 610 539.437 C 610 538.507, 567.999 494.055, 509.045 432.590 C 478.495 400.739, 447.695 368.564, 440.599 361.090 C 415.222 334.357, 386.390 305.726, 380 300.913 C 366.069 290.420, 351.004 285.163, 333 284.514 C 327.225 284.306, 321.375 284.355, 320 284.624";
+        let markPath = null;
+        class Watermark {
+          constructor() {
+            this.dark = true;
+            this.request = null;
+            const self = this;
+            this.views = [
+              {
+                zOrder: () => "bottom",
+                renderer: () => ({
+                  draw() {},
+                  drawBackground(target) {
+                    target.useMediaCoordinateSpace(({ context: ctx, mediaSize }) => {
+                      const w = mediaSize.width,
+                        h = mediaSize.height;
+                      if (w < 120 || h < 80) return;
+                      const mh = h < 220 ? 14 : 18,
+                        mw = (mh * 653) / 541,
+                        pad = 10;
+                      markPath = markPath || new Path2D(MARK_D);
+                      ctx.save();
+                      ctx.translate(pad, h - pad - mh);
+                      ctx.scale(mw / 653, mh / 541);
+                      ctx.fillStyle = self.dark ? "rgba(255,255,255,0.28)" : "rgba(15,15,20,0.26)";
+                      ctx.fill(markPath, "evenodd");
+                      ctx.restore();
+                    });
+                  },
+                }),
+              },
+            ];
+          }
+          attached(p) {
+            this.request = p.requestUpdate;
+          }
+          detached() {
+            this.request = null;
+          }
+          paneViews() {
+            return this.views;
+          }
+          setDark(d) {
+            this.dark = d;
+            if (this.request) this.request();
+          }
+        }
+
+        let chart = null,
+          main = null,
+          vol = null,
+          bidLine = null,
+          askLine = null,
+          wm = null;
+        let pal = null,
+          digits = 2,
+          symbol = "",
+          tf = "",
+          data = [],
+          loadingOlder = false,
+          exhausted = false,
+          hover = -1;
+        let lines = [];
+        // the default indicators of the web chart (store.tsx defaultWorkspace: EMA 50, SMA 20)
+        let inds = [];
+        const priceLines = new Map();
+        const chips = new Map();
+        let drag = null;
+
+        const fmt = (p) => Number(p).toFixed(digits);
+        const volColor = (b) => (b[4] >= b[1] ? pal.up + "38" : pal.down + "38");
+        const candle = (b) => ({ time: b[0], open: b[1], high: b[2], low: b[3], close: b[4] });
+        const onWarm = () => (pal.dark ? "#1a1204" : "#ffffff");
+
+        /* ---------------- indicators ---------------- */
+
+        function maValues(kind, n) {
+          const out = new Array(data.length).fill(null);
+          if (kind === "sma") {
+            let sum = 0;
+            for (let i = 0; i < data.length; i++) {
+              sum += data[i][4];
+              if (i >= n) sum -= data[i - n][4];
+              if (i >= n - 1) out[i] = sum / n;
+            }
+          } else {
+            const k = 2 / (n + 1);
+            let prev = null,
+              sum = 0;
+            for (let i = 0; i < data.length; i++) {
+              const c = data[i][4];
+              if (prev === null) {
+                sum += c;
+                if (i === n - 1) prev = sum / n;
+                else continue;
+              } else prev = c * k + prev * (1 - k);
+              out[i] = prev;
+            }
+          }
+          return out;
+        }
+
+        function drawIndicators() {
+          for (const ind of inds) {
+            ind.values = maValues(ind.kind, ind.n);
+            ind.series.setData(data.map((b, i) => (ind.values[i] === null ? { time: b[0] } : { time: b[0], value: ind.values[i] })));
+          }
+        }
+
+        function legend() {
+          if (!data.length) return (legendEl.innerHTML = "");
+          const i = hover >= 0 && hover < data.length ? hover : data.length - 1;
+          const b = data[i];
+          const col = b[4] >= b[1] ? pal.up : pal.down;
+          const v = (k, x) => `<span class="v">${k} <span style="color:${col}">${fmt(x)}</span></span>`;
+          let html = `<div><b>${symbol}, ${tf}</b>${v("O", b[1])}${v("H", b[2])}${v("L", b[3])}${v("C", b[4])}</div>`;
+          for (const ind of inds) {
+            const x = ind.values ? ind.values[i] : null;
+            html += `<div><span class="v">${ind.label}</span><span style="color:${ind.color()}">${x === null || x === undefined ? "—" : fmt(x)}</span></div>`;
+          }
+          legendEl.innerHTML = html;
+        }
+
+        function build(msg) {
+          if (chart) chart.remove();
+          priceLines.clear();
+          chips.clear();
+          chipsEl.innerHTML = "";
+          digits = msg.digits;
+          pal = msg.palette;
+          symbol = msg.symbol || "";
+          tf = msg.tf || "";
+          hover = -1;
+          document.documentElement.style.setProperty("--bg", pal.bg);
+          document.documentElement.style.setProperty("--fg", pal.fg);
+          document.documentElement.style.setProperty("--fg3", pal.fg3);
+          chart = LC.createChart(host, {
+            autoSize: true,
+            layout: {
+              background: { type: "solid", color: pal.bg },
+              textColor: pal.fg3,
+              fontFamily: "GeistMono, ui-monospace, monospace",
+              fontSize: 10.5,
+              attributionLogo: false,
+            },
+            grid: { vertLines: { color: pal.grid }, horzLines: { color: pal.grid } },
+            rightPriceScale: { borderVisible: true, borderColor: pal.line, scaleMargins: { top: 0.12, bottom: 0.14 }, minimumWidth: 60 },
+            timeScale: { borderVisible: true, borderColor: pal.line, timeVisible: msg.intraday, secondsVisible: false, rightOffset: 8, barSpacing: 7, minBarSpacing: 1.5 },
+            crosshair: {
+              mode: 0,
+              vertLine: { color: pal.fg3, width: 1, style: 2, labelBackgroundColor: pal.label },
+              horzLine: { color: pal.fg3, width: 1, style: 2, labelBackgroundColor: pal.label },
+            },
+            localization: { priceFormatter: fmt },
+            handleScale: { axisPressedMouseMove: true, pinch: true, mouseWheel: true },
+            handleScroll: { horzTouchDrag: true, vertTouchDrag: false, pressedMouseMove: true },
+            kineticScroll: { touch: true },
+          });
+          const pf = { type: "price", precision: digits, minMove: 1 / Math.pow(10, digits) };
+          main = chart.addSeries(LC.CandlestickSeries, {
+            upColor: pal.up,
+            downColor: pal.down,
+            borderVisible: false,
+            wickUpColor: pal.up,
+            wickDownColor: pal.down,
+            priceFormat: pf,
+            priceLineVisible: false,
+            lastValueVisible: false,
+          });
+          vol = chart.addSeries(LC.HistogramSeries, { priceScaleId: "vol", priceLineVisible: false, lastValueVisible: false, priceFormat: { type: "volume" } });
+          chart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.86, bottom: 0 } });
+          inds = (msg.indicators || []).map((id) => {
+            const kind = id.startsWith("ema") ? "ema" : "sma";
+            const n = parseInt(id.slice(3), 10) || 20;
+            const color = () => (kind === "ema" ? pal.gold : pal.ember);
+            const series = chart.addSeries(LC.LineSeries, {
+              color: color(),
+              lineWidth: 2,
+              priceLineVisible: false,
+              lastValueVisible: false,
+              crosshairMarkerVisible: false,
+              priceFormat: pf,
+            });
+            return { id, kind, n, label: `${kind.toUpperCase()} ${n}`, series, color, values: null };
+          });
+          wm = new Watermark();
+          wm.setDark(pal.dark);
+          chart.panes()[0].attachPrimitive(wm);
+          bidLine = main.createPriceLine({ price: 0, color: pal.fg2, lineWidth: 1, lineStyle: 1, axisLabelVisible: true, title: "", axisLabelColor: pal.fg2, axisLabelTextColor: pal.dark ? "#0a0a0d" : "#fff" });
+          askLine = main.createPriceLine({ price: 0, color: pal.down, lineWidth: 1, lineStyle: 1, axisLabelVisible: true, title: "", axisLabelColor: pal.down, axisLabelTextColor: "#fff" });
+          chart.timeScale().subscribeVisibleLogicalRangeChange((r) => {
+            placeChips();
+            if (!r || exhausted || loadingOlder || !data.length || r.from > 30) return;
+            loadingOlder = true;
+            post({ type: "older", before: data[0][0] });
+          });
+          chart.subscribeCrosshairMove((p) => {
+            hover = !p || p.logical === undefined || p.logical === null || !p.time ? -1 : Math.max(0, Math.min(data.length - 1, Math.round(p.logical)));
+            legend();
+          });
+          data = [];
+          lines = [];
+          renderLines();
+          legend();
+        }
+
+        function setBars(bars) {
+          data = bars.slice();
+          exhausted = false;
+          loadingOlder = false;
+          main.setData(data.map(candle));
+          vol.setData(data.map((b) => ({ time: b[0], value: b[5], color: volColor(b) })));
+          drawIndicators();
+          legend();
+          chart.timeScale().scrollToRealTime();
+          requestAnimationFrame(() => {
+            chart.timeScale().applyOptions({ barSpacing: 7, rightOffset: 8 });
+            chart.timeScale().scrollToRealTime();
+            placeChips();
+          });
+        }
+
+        function prepend(bars, done) {
+          loadingOlder = false;
+          exhausted = !!done;
+          if (!bars.length || !data.length) return;
+          const first = data[0][0];
+          const add = bars.filter((b) => b[0] < first);
+          if (!add.length) {
+            exhausted = true;
+            return;
+          }
+          data = add.concat(data);
+          main.setData(data.map(candle));
+          vol.setData(data.map((b) => ({ time: b[0], value: b[5], color: volColor(b) })));
+          drawIndicators();
+          placeChips();
+        }
+
+        function upsertBar(b) {
+          if (!data.length) return;
+          const last = data[data.length - 1];
+          if (b[0] < last[0]) return;
+          if (b[0] > last[0]) data.push(b);
+          else data[data.length - 1] = b;
+          main.update(candle(b));
+          vol.update({ time: b[0], value: b[5], color: volColor(b) });
+          for (const ind of inds) {
+            // only the last values change: recompute the tail cheaply
+            const tail = data.slice(Math.max(0, data.length - ind.n * 4));
+            const saved = data;
+            data = tail;
+            const v = maValues(ind.kind, ind.n);
+            data = saved;
+            const x = v[v.length - 1];
+            if (!ind.values || ind.values.length !== data.length) ind.values = maValues(ind.kind, ind.n);
+            else ind.values[data.length - 1] = ind.kind === "sma" ? x : ind.values[data.length - 1] ?? x;
+            if (ind.kind === "ema" && data.length > 1 && ind.values[data.length - 2] !== null) {
+              const k = 2 / (ind.n + 1);
+              ind.values[data.length - 1] = b[4] * k + ind.values[data.length - 2] * (1 - k);
+            }
+            const y = ind.values[data.length - 1];
+            if (y !== null && y !== undefined) ind.series.update({ time: b[0], value: y });
+          }
+          if (hover < 0) legend();
+          placeChips();
+        }
+
+        /* ---------------- trade lines ---------------- */
+
+        const colorOf = (l) =>
+          l.kind === "sl" ? pal.down : l.kind === "tp" ? pal.up : l.kind === "pending" ? pal.gold : l.kind === "alert" || l.kind === "barrier" ? pal.warn : l.kind === "strike" ? pal.ember : l.kind === "breakeven" ? pal.fg2 : l.side === "buy" ? pal.up : pal.down;
+        // 0 solid · 1 dotted · 2 dashed · 4 sparse dotted (lightweight-charts LineStyle)
+        const styleOf = (l) => (l.kind === "pos" ? 0 : l.kind === "alert" ? 4 : l.kind === "breakeven" ? 1 : 2);
+
+        function chipColors(l) {
+          if (l.kind === "sl") return [pal.down, "#fff", pal.down];
+          if (l.kind === "tp") return [pal.up, "#fff", pal.up];
+          if (l.kind === "pending") return [pal.gold, onWarm(), pal.gold];
+          if (l.kind === "alert" || l.kind === "barrier") return [pal.warn, onWarm(), pal.warn];
+          if (l.kind === "strike") return [pal.ember, "#fff", pal.ember];
+          if (l.kind === "breakeven") return [pal.panel, pal.fg2, pal.fg3];
+          const c = l.side === "buy" ? pal.up : pal.down;
+          return [pal.panel, c, c];
+        }
+
+        function fillChip(c, l) {
+          const [bg, fg, border] = chipColors(l);
+          const el = c.el;
+          el.style.background = bg;
+          el.style.color = fg;
+          el.style.borderColor = border;
+          c.grip.style.display = l.drag ? "flex" : "none";
+          const dragging = drag && drag.id === l.id && drag.moved;
+          c.lbl.textContent = dragging && l.kind !== "pos" ? l.label + " " + fmt(drag.price) : l.label;
+          const filled = l.kind !== "pos" && l.kind !== "breakeven";
+          c.note.style.display = l.note ? "flex" : "none";
+          c.note.textContent = l.note || "";
+          c.note.style.color = filled ? fg : l.tone === "up" ? pal.up : l.tone === "down" ? pal.down : pal.fg2;
+          c.x.style.display = l.close ? "flex" : "none";
+        }
+
+        function renderLines() {
+          if (!main) return;
+          const want = new Set(lines.map((l) => l.id));
+          for (const [id, pl] of priceLines) {
+            if (!want.has(id)) {
+              main.removePriceLine(pl);
+              priceLines.delete(id);
+            }
+          }
+          for (const [id, c] of chips) {
+            if (!want.has(id) && !(drag && drag.id === id)) {
+              c.el.remove();
+              chips.delete(id);
+            }
+          }
+          for (const l of lines) {
+            const price = drag && drag.id === l.id && drag.moved ? drag.price : l.price;
+            const opts = { price, color: colorOf(l), lineWidth: 1, lineStyle: styleOf(l), axisLabelVisible: true, title: "", axisLabelColor: colorOf(l), axisLabelTextColor: l.kind === "pending" || l.kind === "alert" || l.kind === "barrier" ? onWarm() : "#fff" };
+            const pl = priceLines.get(l.id);
+            if (pl) pl.applyOptions(opts);
+            else priceLines.set(l.id, main.createPriceLine(opts));
+            let c = chips.get(l.id);
+            if (!c) {
+              const el = document.createElement("div");
+              el.className = "chip";
+              el.dataset.id = l.id;
+              const grip = document.createElement("span");
+              grip.className = "grip";
+              grip.textContent = "⋮⋮";
+              const lbl = document.createElement("span");
+              lbl.className = "lbl";
+              const note = document.createElement("span");
+              note.className = "note";
+              const x = document.createElement("span");
+              x.className = "x";
+              x.textContent = "×";
+              el.append(grip, lbl, note, x);
+              c = { el, grip, lbl, note, x, l };
+              chips.set(l.id, c);
+              const cc = c;
+              x.addEventListener("pointerdown", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              });
+              x.addEventListener("click", (e) => {
+                e.stopPropagation();
+                post({ type: "close", id: cc.l.id });
+              });
+              el.addEventListener("pointerdown", (e) => startDrag(e, cc));
+              chipsEl.appendChild(el);
+            }
+            c.l = l;
+            fillChip(c, l);
+          }
+          placeChips();
+        }
+
+        /** Chips sit at the price scale like the web's; chips of nearby prices line up side by side to the left. */
+        function placeChips() {
+          if (!main || !chart) return;
+          const plotW = chart.timeScale().width();
+          const shown = [];
+          for (const c of chips.values()) {
+            const l = c.l;
+            const price = drag && drag.id === l.id && drag.moved ? drag.price : l.price;
+            const y = main.priceToCoordinate(price);
+            if (y === null || y < 8 || y > host.clientHeight - 30) {
+              c.el.style.display = "none";
+              continue;
+            }
+            c.el.style.display = "flex";
+            c.el.style.top = y + "px";
+            shown.push({ c, y });
+          }
+          shown.sort((a, b) => a.y - b.y);
+          let rowY = -1000,
+            right = plotW - 6;
+          for (const s of shown) {
+            if (s.y - rowY >= 21) {
+              rowY = s.y;
+              right = plotW - 6;
+            }
+            const w = s.c.el.offsetWidth;
+            const left = Math.max(4, right - w);
+            s.c.el.style.left = left + "px";
+            right = left - 4;
+          }
+        }
+
+        function startDrag(e, c) {
+          e.preventDefault();
+          e.stopPropagation();
+          const l = c.l;
+          const el = c.el;
+          const startY = e.clientY;
+          drag = { id: l.id, price: l.price, moved: false };
+          if (l.drag) chart.applyOptions({ handleScroll: false, handleScale: false });
+          el.classList.add("dragging");
+          try {
+            el.setPointerCapture(e.pointerId);
+          } catch (x) {}
+          const move = (ev) => {
+            if (!l.drag || !drag) return;
+            if (Math.abs(ev.clientY - startY) > 4) drag.moved = true;
+            if (!drag.moved) return;
+            const rect = host.getBoundingClientRect();
+            const p = main.coordinateToPrice(ev.clientY - rect.top);
+            if (p === null) return;
+            drag.price = Math.round(p * Math.pow(10, digits)) / Math.pow(10, digits);
+            fillChip(c, c.l);
+            const pl = priceLines.get(l.id);
+            if (pl && l.kind !== "pos") pl.applyOptions({ price: drag.price });
+            if (l.kind === "pos") {
+              ghost.style.display = "block";
+              ghost.style.top = ev.clientY - rect.top + "px";
+              ghost.style.width = chart.timeScale().width() + "px";
+            }
+            placeChips();
+          };
+          const up = () => {
+            el.removeEventListener("pointermove", move);
+            el.removeEventListener("pointerup", up);
+            el.removeEventListener("pointercancel", up);
+            el.classList.remove("dragging");
+            ghost.style.display = "none";
+            chart.applyOptions({ handleScroll: { horzTouchDrag: true, vertTouchDrag: false, pressedMouseMove: true }, handleScale: { axisPressedMouseMove: true, pinch: true, mouseWheel: true } });
+            const d = drag;
+            drag = null;
+            if (d && d.moved && l.drag) post({ type: "drag", id: l.id, price: d.price });
+            else if (d && !d.moved) post({ type: "tap", id: l.id });
+            renderLines();
+          };
+          el.addEventListener("pointermove", move);
+          el.addEventListener("pointerup", up);
+          el.addEventListener("pointercancel", up);
+        }
+
+        /* ---------------- long press on the plot ---------------- */
+
+        let lpTimer = null,
+          lpX = 0,
+          lpY = 0;
+        host.addEventListener(
+          "touchstart",
+          (e) => {
+            if (e.touches.length !== 1 || drag) return;
+            lpX = e.touches[0].clientX;
+            lpY = e.touches[0].clientY;
+            clearTimeout(lpTimer);
+            lpTimer = setTimeout(() => {
+              const rect = host.getBoundingClientRect();
+              const p = main ? main.coordinateToPrice(lpY - rect.top) : null;
+              if (p !== null) post({ type: "long", price: Math.round(p * Math.pow(10, digits)) / Math.pow(10, digits) });
+            }, 600);
+          },
+          { passive: true },
+        );
+        const cancelLp = (e) => {
+          if (e && e.touches && e.touches.length && Math.hypot(e.touches[0].clientX - lpX, e.touches[0].clientY - lpY) < 8) return;
+          clearTimeout(lpTimer);
+        };
+        host.addEventListener("touchmove", cancelLp, { passive: true });
+        host.addEventListener("touchend", () => clearTimeout(lpTimer), { passive: true });
+        host.addEventListener("touchcancel", () => clearTimeout(lpTimer), { passive: true });
+
+        function setPalette(p) {
+          pal = p;
+          document.documentElement.style.setProperty("--bg", pal.bg);
+          document.documentElement.style.setProperty("--fg", pal.fg);
+          document.documentElement.style.setProperty("--fg3", pal.fg3);
+          if (!chart) return;
+          chart.applyOptions({
+            layout: { background: { type: "solid", color: pal.bg }, textColor: pal.fg3 },
+            grid: { vertLines: { color: pal.grid }, horzLines: { color: pal.grid } },
+            rightPriceScale: { borderColor: pal.line },
+            timeScale: { borderColor: pal.line },
+            crosshair: { vertLine: { color: pal.fg3, labelBackgroundColor: pal.label }, horzLine: { color: pal.fg3, labelBackgroundColor: pal.label } },
+          });
+          main.applyOptions({ upColor: pal.up, downColor: pal.down, wickUpColor: pal.up, wickDownColor: pal.down });
+          vol.setData(data.map((b) => ({ time: b[0], value: b[5], color: volColor(b) })));
+          for (const ind of inds) ind.series.applyOptions({ color: ind.color() });
+          bidLine.applyOptions({ color: pal.fg2, axisLabelColor: pal.fg2, axisLabelTextColor: pal.dark ? "#0a0a0d" : "#fff" });
+          askLine.applyOptions({ color: pal.down, axisLabelColor: pal.down });
+          wm.setDark(pal.dark);
+          renderLines();
+          legend();
+        }
+
+        window.K = {
+          recv(msg) {
+            const m = typeof msg === "string" ? JSON.parse(msg) : msg;
+            switch (m.type) {
+              case "init":
+                return build(m);
+              case "bars":
+                return setBars(m.bars);
+              case "older":
+                return prepend(m.bars, m.exhausted);
+              case "bar":
+                return upsertBar(m.bar);
+              case "quote":
+                if (bidLine) {
+                  bidLine.applyOptions({ price: m.bid });
+                  askLine.applyOptions({ price: m.ask });
+                }
+                return;
+              case "lines":
+                lines = m.lines || [];
+                return renderLines();
+              case "palette":
+                return setPalette(m.palette);
+            }
+          },
+        };
+        window.addEventListener("resize", () => placeChips());
+        setInterval(placeChips, 400);
+        post({ type: "ready" });
+      })();
+    </script>
+  </body>
+</html>

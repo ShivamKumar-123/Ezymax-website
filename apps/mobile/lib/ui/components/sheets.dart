@@ -115,6 +115,8 @@ Future<V?> showKActionSheet<V>(BuildContext context, {String? title, String? mes
   return showModalBottomSheet<V>(
     context: context,
     useRootNavigator: true,
+    // long menus (an account's ⋯ menu has a dozen actions) may use most of the screen and scroll, like iOS
+    isScrollControlled: true,
     backgroundColor: Colors.transparent,
     barrierColor: k.scrim,
     elevation: 0,
@@ -191,13 +193,24 @@ Future<V?> showKActionSheet<V>(BuildContext context, {String? title, String? mes
       return SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              group(rows),
-              const SizedBox(height: 8),
-              group([button(t('common.cancel'), bold: true, onTap: () => Navigator.of(ctx).pop())]),
-            ],
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(ctx).height * 0.88),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: KFrosted(
+                    color: k.sheet,
+                    borderRadius: BorderRadius.circular(16),
+                    child: SingleChildScrollView(
+                      child: Column(mainAxisSize: MainAxisSize.min, children: rows),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                group([button(t('common.cancel'), bold: true, onTap: () => Navigator.of(ctx).pop())]),
+              ],
+            ),
           ),
         ),
       );
@@ -210,75 +223,17 @@ Future<V?> showKActionSheet<V>(BuildContext context, {String? title, String? mes
 Future<V?> showKAlert<V>(BuildContext context, {required String title, String? message, Widget? content, required List<KAction<V>> actions}) {
   KHaptics.medium();
   final k = context.k;
+  // the alert takes the look of the screen it opens from (Kalks Trader's theme), like sheets do
+  final themes = InheritedTheme.capture(from: context, to: Navigator.of(context, rootNavigator: true).context);
   return showGeneralDialog<V>(
     context: context,
     barrierColor: k.scrim,
     transitionDuration: const Duration(milliseconds: 220),
-    pageBuilder: (ctx, _, _) {
-      final k = ctx.k;
-      final stacked = actions.length > 2;
-      Widget btn(KAction<V> a) => KPressable(
-        pressedScale: 1,
-        onTap: () {
-          Navigator.of(ctx).pop(a.value);
-          a.onTap?.call();
-        },
-        child: SizedBox(
-          height: 46,
-          child: Center(
-            child: Text(
-              a.label,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: ctx.text.body.copyWith(fontSize: 16, fontWeight: a.primary ? FontWeight.w600 : FontWeight.w500, color: a.destructive ? k.down : k.ember),
-            ),
-          ),
-        ),
-      );
-      final buttons = <Widget>[];
-      for (var i = 0; i < actions.length; i++) {
-        if (i > 0) buttons.add(stacked ? Container(height: 0.6, color: k.line) : Container(width: 0.6, height: 46, color: k.line));
-        buttons.add(stacked ? btn(actions[i]) : Expanded(child: btn(actions[i])));
-      }
-      return Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 290),
-          child: Material(
-            type: MaterialType.transparency,
-            child: KFrosted(
-              color: k.sheet,
-              borderRadius: BorderRadius.circular(18),
-              shadows: k.shadowPop,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 20, 18, 16),
-                    child: Column(
-                      children: [
-                        Text(title, textAlign: TextAlign.center, style: ctx.text.headline.copyWith(fontSize: 16.5)),
-                        if (message != null) ...[
-                          const SizedBox(height: 6),
-                          Text(
-                            message,
-                            textAlign: TextAlign.center,
-                            style: ctx.text.footnote.copyWith(color: k.fg2, fontSize: 13),
-                          ),
-                        ],
-                        if (content != null) ...[const SizedBox(height: 12), content],
-                      ],
-                    ),
-                  ),
-                  Container(height: 0.6, color: k.line),
-                  if (stacked) ...buttons else Row(children: buttons),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    },
+    pageBuilder: (outer, _, _) => themes.wrap(
+      Builder(
+        builder: (ctx) => _alertBody<V>(ctx, title: title, message: message, content: content, actions: actions),
+      ),
+    ),
     transitionBuilder: (ctx, anim, _, child) {
       final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
       return FadeTransition(
@@ -286,5 +241,71 @@ Future<V?> showKAlert<V>(BuildContext context, {required String title, String? m
         child: ScaleTransition(scale: Tween(begin: 1.08, end: 1.0).animate(curved), child: child),
       );
     },
+  );
+}
+
+Widget _alertBody<V>(BuildContext ctx, {required String title, String? message, Widget? content, required List<KAction<V>> actions}) {
+  final k = ctx.k;
+  final stacked = actions.length > 2;
+  Widget btn(KAction<V> a) => KPressable(
+    pressedScale: 1,
+    onTap: () {
+      Navigator.of(ctx).pop(a.value);
+      a.onTap?.call();
+    },
+    child: SizedBox(
+      height: 46,
+      child: Center(
+        child: Text(
+          a.label,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: ctx.text.body.copyWith(fontSize: 16, fontWeight: a.primary ? FontWeight.w600 : FontWeight.w500, color: a.destructive ? k.down : k.ember),
+        ),
+      ),
+    ),
+  );
+  final buttons = <Widget>[];
+  for (var i = 0; i < actions.length; i++) {
+    if (i > 0) buttons.add(stacked ? Container(height: 0.6, color: k.line) : Container(width: 0.6, height: 46, color: k.line));
+    buttons.add(stacked ? btn(actions[i]) : Expanded(child: btn(actions[i])));
+  }
+  return Center(
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 290),
+      child: Material(
+        type: MaterialType.transparency,
+        child: KFrosted(
+          color: k.sheet,
+          borderRadius: BorderRadius.circular(18),
+          shadows: k.shadowPop,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 20, 18, 16),
+                child: Column(
+                  children: [
+                    Text(title, textAlign: TextAlign.center, style: ctx.text.headline.copyWith(fontSize: 16.5)),
+                    if (message != null) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        message,
+                        textAlign: TextAlign.center,
+                        style: ctx.text.footnote.copyWith(color: k.fg2, fontSize: 13),
+                      ),
+                    ],
+                    if (content != null) ...[const SizedBox(height: 12), content],
+                  ],
+                ),
+              ),
+              Container(height: 0.6, color: k.line),
+              if (stacked) ...buttons else Row(children: buttons),
+            ],
+          ),
+        ),
+      ),
+    ),
   );
 }

@@ -37,16 +37,19 @@ class KListSection extends StatelessWidget {
                 style: context.text.caption.copyWith(color: k.fg3, letterSpacing: 0.4, fontWeight: FontWeight.w600),
               ),
             ),
-          Container(
-            decoration: BoxDecoration(
-              color: k.cardBg,
-              borderRadius: BorderRadius.circular(k.rowRadius + 2),
-              border: Border.all(color: k.cardBorder),
-              boxShadow: k.shadowCard,
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(k.rowRadius + 2),
-              child: Column(mainAxisSize: MainAxisSize.min, children: rows),
+          KOuterShadow(
+            shadows: k.shadowCard,
+            borderRadius: BorderRadius.circular(k.rowRadius + 2),
+            child: Container(
+              decoration: BoxDecoration(
+                color: k.cardBg,
+                borderRadius: BorderRadius.circular(k.rowRadius + 2),
+                border: Border.all(color: k.cardBorder),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(k.rowRadius + 2),
+                child: Column(mainAxisSize: MainAxisSize.min, children: rows),
+              ),
             ),
           ),
           if (footer != null)

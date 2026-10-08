@@ -78,6 +78,10 @@
             <action android:name="android.intent.action.SENDTO"/>
             <data android:scheme="mailto"/>
         </intent>
+        <!-- image_picker: the system camera for KYC document and selfie photos -->
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE"/>
+        </intent>
         <package android:name="io.metamask"/>
         <package android:name="com.tronlinkpro.wallet"/>
     </queries>

@@ -15,6 +15,7 @@ import '../core/models/user.dart';
 import '../core/notifications/notifications.dart';
 import '../core/prefs.dart';
 import '../env.dart';
+import '../features/support/launcher.dart';
 import '../i18n/i18n.dart';
 import '../ui/ui.dart';
 import 'menus.dart';
@@ -105,6 +106,10 @@ class _AppShellState extends ConsumerState<AppShell> {
               right: 0,
               child: _Header(module: module, subs: subs, path: widget.path, scrolled: _scrolled, nav: nav),
             ),
+            // the floating support chat (web SupportLauncher: every page but /support, never for view-only logins); it
+            // places itself above the tab bar at the bottom end and takes touches only on its button. Filled, so it
+            // never sizes the stack (it is an empty box on /support).
+            if (me != null && me.viewer == null) Positioned.fill(child: SupportLauncher(path: widget.path)),
             Positioned(
               left: 12,
               right: 12,

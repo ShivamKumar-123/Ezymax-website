@@ -70,9 +70,14 @@ void main() {
       final page = find.descendant(of: find.byType(DashboardScreen), matching: find.byType(Scrollable)).first;
       var lastY = double.negativeInfinity;
       for (final s in ['Total balance', 'Total equity', 'Your accounts', 'Quick actions', 'Notifications']) {
-        await tester.scrollUntilVisible(find.text(s), 200, scrollable: page);
+        // jump down (no fling) until the section is built and on screen, then measure after a frame
+        final pos = tester.state<ScrollableState>(page).position;
+        for (var i = 0; i < 40 && find.text(s).hitTestable().evaluate().isEmpty; i++) {
+          pos.jumpTo((pos.pixels + 200).clamp(0, pos.maxScrollExtent).toDouble());
+          await tester.pump(const Duration(milliseconds: 50));
+        }
         final box = tester.getTopLeft(find.text(s).first);
-        final scrolled = Scrollable.of(tester.element(find.text(s).first)).position.pixels;
+        final scrolled = tester.state<ScrollableState>(page).position.pixels;
         expect(box.dy + scrolled, greaterThan(lastY), reason: s);
         lastY = box.dy + scrolled;
       }

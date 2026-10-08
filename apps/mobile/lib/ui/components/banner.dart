@@ -34,6 +34,10 @@ class KBannerController extends ChangeNotifier {
 
   KBannerData? get current => _current;
 
+  /// The look of the banners while a differently themed full-screen route is open (Kalks Trader sets its dark
+  /// terminal theme, so engine banners match the screen under them); null = the app's theme.
+  ThemeData? theme;
+
   void show(KBannerData b) {
     _queue.add(b);
     if (_current == null) _next();
@@ -116,7 +120,15 @@ class KBannerHost extends StatelessWidget {
                   child: FadeTransition(opacity: anim, child: child),
                 ),
                 layoutBuilder: (current, previous) => Stack(alignment: Alignment.topCenter, children: [...previous, ?current]),
-                child: b == null ? const SizedBox.shrink(key: ValueKey('none')) : _Banner(key: ObjectKey(b), data: b, controller: controller),
+                child: b == null
+                    ? const SizedBox.shrink(key: ValueKey('none'))
+                    : (controller.theme == null
+                          ? _Banner(key: ObjectKey(b), data: b, controller: controller)
+                          : Theme(
+                              key: ObjectKey(b),
+                              data: controller.theme!,
+                              child: _Banner(data: b, controller: controller),
+                            )),
               );
             },
           ),

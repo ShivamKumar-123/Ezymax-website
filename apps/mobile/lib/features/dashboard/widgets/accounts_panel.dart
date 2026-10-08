@@ -23,8 +23,7 @@ class AccountsPanel extends StatefulWidget {
     required this.onToggleHidden,
     this.extraCount = 0,
     this.readOnly = false,
-    this.onTrade,
-    this.onMenu,
+    this.actions,
   });
 
   /// Live first, then demo, then prop; at most 8 (web).
@@ -36,8 +35,9 @@ class AccountsPanel extends StatefulWidget {
   final VoidCallback onToggleHidden;
   final int extraCount;
   final bool readOnly;
-  final void Function(EngineAccount a)? onTrade;
-  final void Function(EngineAccount a)? onMenu;
+
+  /// The selected account's actions under its details (web `actions`: Trade, Fund / Refill, ⋯); null hides them.
+  final Widget Function(EngineAccount a)? actions;
 
   @override
   State<AccountsPanel> createState() => _AccountsPanelState();
@@ -209,38 +209,7 @@ class _AccountsPanelState extends State<AccountsPanel> {
             padding: const EdgeInsets.all(18),
             child: _InfoGrid(a: a, hidden: widget.hidden),
           ),
-          if (!widget.readOnly) ...[
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: KButton(
-                    label: t('accounts.row.trade'),
-                    icon: LucideIcons.candlestickChart,
-                    expand: true,
-                    onPressed: a.tradeBlocked ? null : () => widget.onTrade?.call(a),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                if (a.live && !a.prop)
-                  KButton(
-                    label: t('accounts.fund.button'),
-                    icon: LucideIcons.arrowDownToLine,
-                    variant: KButtonVariant.surface,
-                    onPressed: () => context.go('/wallet/transfer'),
-                  )
-                else if (!a.live)
-                  KButton(
-                    label: t('accounts.row.refill'),
-                    icon: LucideIcons.refreshCcw,
-                    variant: KButtonVariant.surface,
-                    onPressed: () => context.go('/accounts/${a.login}'),
-                  ),
-                const SizedBox(width: 4),
-                KIconButton(icon: LucideIcons.ellipsis, filled: true, semanticLabel: t('common.more'), onPressed: () => widget.onMenu?.call(a)),
-              ],
-            ),
-          ],
+          if (widget.actions != null) ...[const SizedBox(height: 12), widget.actions!(a)],
         ],
       ],
     );

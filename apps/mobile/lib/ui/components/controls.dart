@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import '../tokens.dart';
 import '../typography.dart';
@@ -164,11 +165,25 @@ class _KSubNavState extends State<KSubNav> {
     _reveal();
   }
 
+  final _scroll = ScrollController();
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  /// Centres the current tab in this row only (Scrollable.ensureVisible would also scroll the page around a sub-nav
+  /// that sits inside a page, e.g. the dashboard's activity tabs, every time it is built).
   void _reveal() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || widget.current < 0 || widget.current >= _keys.length) return;
-      final ctx = _keys[widget.current].currentContext;
-      if (ctx != null) Scrollable.ensureVisible(ctx, alignment: 0.5, duration: const Duration(milliseconds: 260), curve: Curves.easeOutCubic);
+      if (!mounted || widget.current < 0 || widget.current >= _keys.length || !_scroll.hasClients) return;
+      final box = _keys[widget.current].currentContext?.findRenderObject();
+      final viewport = box == null ? null : RenderAbstractViewport.maybeOf(box);
+      if (box == null || viewport == null) return;
+      final p = _scroll.position;
+      final target = viewport.getOffsetToReveal(box, 0.5).offset.clamp(p.minScrollExtent, p.maxScrollExtent);
+      if ((target - p.pixels).abs() > 0.5) _scroll.animateTo(target, duration: const Duration(milliseconds: 260), curve: Curves.easeOutCubic);
     });
   }
 
@@ -181,6 +196,7 @@ class _KSubNavState extends State<KSubNav> {
     return SizedBox(
       height: KSize.subNav,
       child: ListView.builder(
+        controller: _scroll,
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 8),
         itemCount: widget.labels.length,

@@ -85,6 +85,9 @@ class ApiClient {
   Future<T> patch<T>(String path, {Object? body, String? tradeToken, String? stepupToken, CancelToken? cancel}) =>
       _send<T>('PATCH', path, body: body ?? const <String, Object?>{}, tradeToken: tradeToken, stepupToken: stepupToken, cancel: cancel);
 
+  Future<T> put<T>(String path, {Object? body, String? stepupToken, CancelToken? cancel}) =>
+      _send<T>('PUT', path, body: body ?? const <String, Object?>{}, stepupToken: stepupToken, cancel: cancel);
+
   Future<T> delete<T>(String path, {Object? body, String? tradeToken, CancelToken? cancel}) =>
       _send<T>('DELETE', path, body: body, tradeToken: tradeToken, cancel: cancel);
 

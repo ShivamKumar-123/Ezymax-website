@@ -5,6 +5,9 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 
+import '../features/terminal/preview/preview_server.dart';
+import 'c1/preview_c1.dart';
+import 'c2/c2_preview.dart';
 import 'preview_data.dart';
 
 class PreviewAdapter implements HttpClientAdapter {
@@ -16,7 +19,13 @@ class PreviewAdapter implements HttpClientAdapter {
     await Future<void>.delayed(latency);
     final path = o.uri.path.replaceFirst(RegExp(r'^.*/api/mobile/'), '').replaceFirst(RegExp(r'^/'), '');
     final body = o.data is Map ? (o.data as Map).cast<String, dynamic>() : const <String, dynamic>{};
-    final (int status, Object data) = _answer(o.method, path, body);
+    // agent C1's pages answer first (they may extend the shared answers above with more fields)
+    final (int status, Object data) =
+        previewC1(o.method, path, body, o.uri.queryParameters) ??
+        previewC2(o.method, path, body, o.uri.queryParameters) ??
+        // Kalks Trader: the preview trade server (agent D, lib/features/terminal/preview)
+        PreviewServer.instance.answer(o.method, path, o.uri.queryParameters, body, o.headers['X-Kalks-Trade'] as String?) ??
+        _answer(o.method, path, body);
     return ResponseBody.fromString(
       jsonEncode(data),
       status,

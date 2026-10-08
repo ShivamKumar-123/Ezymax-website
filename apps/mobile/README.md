@@ -60,7 +60,9 @@ lib/
   features/                  screens, one folder per web module
     auth/                    login, register, forgot, unlock (+ auth_widgets)
     dashboard/               the reference screen and its section widgets
-    trader/                  Kalks Trader placeholder (terminal agent)
+    terminal/                Kalks Trader (see "Kalks Trader" below): core/ (sessions, the account stream, orders,
+                             contract maths, market feed), cfd/ (the five tabs and the sheets), chart/ (the chart page
+                             bridge), options/ (Kalks FX Options mode), preview/ (the preview trade server)
     common/                  stub_screen (route stubs), system screens (maintenance, update), pickers (language)
   data/client_data.dart      shared Client Area data providers (accounts, wallet, rewards, equity curve)
   core/
@@ -141,8 +143,27 @@ The web is the source of truth: **same sections, same order, same buttons, same 
   Ask Kalks AI, Statistics, the activity tabs, Getting started, the Markets cards and More for you (marked in
   `dashboard_screen.dart`); the account ⋯ menu, Fund dialog and demo refill go through the Accounts work.
 - **Agent C2** (Markets / News / Calendar, Copy & PAMM, Partner, Prop, Rewards, Academy, Developer, Options intro).
-- **Agent D** (Kalks Trader CFD + Options): `features/trader/trader_screen.dart` has the final frame and tab names.
+- **Agent D** (Kalks Trader CFD + Options): built in `features/terminal/` (see "Kalks Trader").
 - Push notifications, Google sign-in and refresh tokens are not part of this app version (docs/MOBILE-API.md).
 - Not verified on a device yet: the Android SDK wasn't installed when the foundation was built, so no APK was built.
   The first `flutter build apk` will tell whether Gradle needs anything (AGP 9.1, Kotlin 2.4, appcompat for
   local_auth's BiometricPrompt theme).
+
+## Kalks Trader (`lib/features/terminal`)
+
+The web terminal's PHONE layout (`apps/terminal/components/mobile/mobile-terminal.tsx`, `components/options/mobile.tsx`)
+on the trade API (`trade/*`, docs/MOBILE-API.md §6) and the streams in `lib/core/realtime`:
+
+- `/trader?login=` opens `TerminalScreen`: header back · CFD | Options · account pill (switcher) · bell; CFD bottom bar
+  Watchlist · Chart · Trade · History · Account; Options has its own (Markets · Chart · Chain · Trade · Positions).
+  Like the web's mobile terminal the body stays left-to-right in Arabic, Urdu and Persian (sheets follow the language).
+- Sessions: `core/sessions.dart` (`trade/sessions` for own accounts, `trade/login` MT5-style, `sessions/check`, trade
+  tokens in the Keystore); the account on screen: `core/terminal_controller.dart` (`trade/state` + the engine stream,
+  engine notifications to the bell); actions: `core/trade_actions.dart` (banners, haptics, the web's reject texts).
+- The chart: `assets/chart/chart.html` with **lightweight-charts 5.2.1 bundled offline** (from node_modules, Apache 2.0,
+  licence next to it) in a WebView on Android; `chart/chart_bridge.dart` is the JSON codec; the web preview and widget
+  tests draw a native stand-in (`chart/chart_native.dart`, `TerminalChart.forceNative`).
+- Previews (`KALKS_PREVIEW=true`): `preview/preview_server.dart` answers `trade/*` and plays the market-data and engine
+  sockets (moving quotes, fills, pending triggers, SL / TP), so `?signedIn=1#/trader` works offline.
+- Tests: `test/terminal` (maths incl. cent / JPY, order rules, engine shapes, the stream, the chart codec, the order and
+  position sheets).

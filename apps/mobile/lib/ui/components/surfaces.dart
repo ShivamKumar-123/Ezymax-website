@@ -25,7 +25,6 @@ class KCard extends StatelessWidget {
         color: hot ? null : (color ?? k.cardBg),
         borderRadius: r,
         border: Border.all(color: hot ? Color.lerp(k.cardBorder, k.ember, 0.22)! : k.cardBorder),
-        boxShadow: k.shadowCard,
         gradient: hot
             ? RadialGradient(
                 center: const AlignmentDirectional(1, -1).resolve(Directionality.of(context)),
@@ -46,8 +45,47 @@ class KCard extends StatelessWidget {
         child: card,
       );
     }
+    // the shadow only outside the card, like CSS box-shadow (under the ~92 % fill it would show as an inner panel)
+    card = KOuterShadow(shadows: k.shadowCard, borderRadius: r, child: card);
     return onTap == null ? card : KPressable(onTap: onTap, pressedOpacity: 0.85, child: card);
   }
+}
+
+/// Paints box shadows only outside the rounded shape, as CSS box-shadow does. Flutter's BoxShadow fills the whole
+/// box, which shows through the translucent card fills (frosted cards, grouped lists) as a faint inner rectangle.
+class KOuterShadow extends StatelessWidget {
+  const KOuterShadow({super.key, required this.shadows, required this.borderRadius, required this.child});
+  final List<BoxShadow> shadows;
+  final BorderRadius borderRadius;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => shadows.isEmpty ? child : CustomPaint(painter: _OuterShadowPainter(shadows, borderRadius), child: child);
+}
+
+class _OuterShadowPainter extends CustomPainter {
+  _OuterShadowPainter(this.shadows, this.radius);
+  final List<BoxShadow> shadows;
+  final BorderRadius radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final box = radius.toRRect(Offset.zero & size);
+    var reach = 0.0;
+    for (final s in shadows) {
+      reach = [reach, s.blurRadius * 2 + s.spreadRadius.abs() + s.offset.distance].reduce((a, b) => a > b ? a : b);
+    }
+    final outside = Path.combine(PathOperation.difference, Path()..addRect(box.outerRect.inflate(reach + 2)), Path()..addRRect(box));
+    canvas.save();
+    canvas.clipPath(outside);
+    for (final s in shadows) {
+      canvas.drawRRect(box.shift(s.offset).inflate(s.spreadRadius), s.toPaint());
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_OuterShadowPainter old) => old.shadows != shadows || old.radius != radius;
 }
 
 /// Pastel icon tile (web .k-tile / IconTile): a rounded square (or circle) in a tone with its icon.

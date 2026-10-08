@@ -1,0 +1,808 @@
+// Accounts › Open account. Port of the phone web page /accounts/new (apps/crm/components/trading/open-account.tsx
+// LiveOpenAccount), the five-step wizard in its phone layout (the desktop's sticky summary is hidden on phones):
+//   0 Account: Live or Demo (?type=demo; demo only while the broker allows demo accounts)
+//   1 Type: the broker's groups for that kind, with the per-type account limit
+//   2 Configure: leverage, demo starting balance, nickname, currency, own trading password (rules + generate)
+//   3 Confirm: summary tiles, what happens, the risk acknowledgement
+//   4 Done: the credentials (shown once: copy all, show / hide), Trade, Fund, View account
+// `?group=<code>` preselects a type and jumps to Configure. `GET trading/groups` and `GET trading/accounts` once;
+// `POST trading/accounts {type, group, leverage, name?, password?, initialBalance?}` opens it.
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+
+import '../../core/api/api_providers.dart';
+import '../../core/config/app_config.dart';
+import '../../core/format/format.dart';
+import '../../core/models/account.dart';
+import '../../core/models/trading.dart';
+import '../../core/notifications/notifications.dart';
+import '../../i18n/i18n.dart';
+import '../../ui/ui.dart';
+import 'account_actions.dart';
+import 'accounts_data.dart';
+import 'widgets/account_bits.dart';
+import 'widgets/group_card.dart';
+
+const List<String> kWizardSteps = [
+  'accounts.wizard.step.account',
+  'accounts.wizard.step.type',
+  'accounts.wizard.step.configure',
+  'accounts.wizard.step.confirm',
+  'accounts.wizard.step.done',
+];
+const List<int> kDemoBalances = [1000, 5000, 10000, 25000, 50000, 100000];
+
+/// Groups the wizard offers for a kind: enabled, not prop, and open to that kind (web `offers`).
+bool groupOffers(EngineGroup g, AccountKind kind) => g.enabled && !g.code.toLowerCase().startsWith('prop') && g.offers(kind);
+
+/// Accounts of this kind the client already holds in the group (web usedIn).
+int groupUsed(List<EngineAccount> accounts, EngineGroup g, AccountKind kind) => accounts.where((a) => a.group == g.code && a.type == kind).length;
+
+/// "$10,000" / "USC 1,000,000" (web money: a cent group shows the amount in cents).
+String wizardMoney(num v, bool cent) => cent ? 'USC ${Fmt.number(v * 100, 0)}' : '\$${Fmt.number(v, 0)}';
+
+class OpenAccountScreen extends ConsumerStatefulWidget {
+  const OpenAccountScreen({super.key, this.query = const {}});
+
+  /// The route's query parameters (the web page's search params: `type` = live | demo, `group` = a group code).
+  final Map<String, String> query;
+
+  @override
+  ConsumerState<OpenAccountScreen> createState() => _OpenAccountScreenState();
+}
+
+class _OpenAccountScreenState extends ConsumerState<OpenAccountScreen> {
+  final _scroll = ScrollController();
+  int _step = 0;
+  late AccountKind _kind = widget.query['type'] == 'demo' && _demoOn ? AccountKind.demo : AccountKind.live;
+  late String _group = widget.query['group'] ?? '';
+  int _leverage = 0;
+  final _nickname = TextEditingController();
+  double _demoBalance = 10000;
+  bool _ownPassword = false, _agree = false, _busy = false, _booted = false;
+  String _password = '', _confirm = '';
+  OpenResult? _created;
+
+  bool get _demoOn => ref.read(configProvider).flag('demo_accounts', fallback: true);
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    _nickname.dispose();
+    super.dispose();
+  }
+
+  void _go(int d) {
+    setState(() => _step = (_step + d).clamp(0, 4));
+    if (_scroll.hasClients) unawaited(_scroll.animateTo(0, duration: const Duration(milliseconds: 260), curve: Curves.easeOutCubic));
+  }
+
+  void _pickGroup(EngineGroup g) => setState(() {
+    _group = g.code;
+    _leverage = g.leverages.contains(_leverage) ? _leverage : g.defaultLeverage;
+    if (_demoBalance == 0) _demoBalance = g.demoInitialBalance;
+  });
+
+  /// Once groups load: honour ?group= (jump to Configure), otherwise preselect the first group (web boot effect).
+  void _boot(List<EngineGroup> groups) {
+    if (_booted || groups.isEmpty) return;
+    _booted = true;
+    final want = groups.where((x) => x.code == widget.query['group']).firstOrNull;
+    final pick = want != null && groupOffers(want, _kind) ? want : groups.where((x) => groupOffers(x, _kind)).firstOrNull;
+    if (pick == null) return;
+    _group = pick.code;
+    _leverage = pick.defaultLeverage;
+    _demoBalance = pick.demoInitialBalance;
+    if (want != null && want.code == pick.code) _step = 2;
+  }
+
+  Future<void> _create(EngineGroup g) async {
+    final t = context.t;
+    setState(() => _busy = true);
+    final name = _nickname.text.trim();
+    try {
+      final j = await ref
+          .read(apiProvider)
+          .post<Map<String, dynamic>>(
+            'trading/accounts',
+            body: {
+              'type': _kind.name,
+              'group': g.code,
+              'leverage': _leverage,
+              if (name.isNotEmpty) 'name': name,
+              if (_ownPassword) 'password': _password,
+              if (_kind == AccountKind.demo) 'initialBalance': _demoBalance % 1 == 0 ? _demoBalance.toInt() : _demoBalance,
+            },
+          );
+      if (!mounted) return;
+      final res = OpenResult.fromJson(j);
+      setState(() {
+        _created = res;
+        _password = '';
+        _confirm = '';
+      });
+      _go(1);
+      refreshAccountData(ProviderScope.containerOf(context, listen: false));
+      accountToast(
+        context,
+        NotificationKind.success,
+        t(_kind == AccountKind.live ? 'accounts.wizard.openedLive' : 'accounts.wizard.openedDemo', {'login': res.login}),
+        description: '${g.name} · ${t.dyn('accounts.mode.${g.mode}', fallback: modeLabel(g.mode))} · 1:$_leverage',
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      accountToast(context, NotificationKind.error, t('accounts.wizard.openFailed'), description: localizeError(e, t));
+      if (e.field == 'password' || e.field == 'investorPassword') _go(-1);
+    } catch (_) {
+      if (mounted) accountToast(context, NotificationKind.error, t('accounts.wizard.openFailed'), description: t('common.errorRetry'));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.t;
+    final groupsQ = ref.watch(groupsProvider);
+    final accounts = ref.watch(accountsOnceProvider).value ?? const <EngineAccount>[];
+    final demoOn = ref.watch(configProvider).flag('demo_accounts', fallback: true);
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    final header = [
+      KPageHeader(title: t('accounts.wizard.title'), subtitle: Text(t('accounts.wizard.subtitle'))),
+      const SizedBox(height: 14),
+      Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: KButton(
+          label: t('accounts.list.myAccounts'),
+          icon: rtl ? LucideIcons.arrowRight : LucideIcons.arrowLeft,
+          variant: KButtonVariant.surface,
+          onPressed: () => context.go('/accounts'),
+        ),
+      ),
+      const SizedBox(height: 18),
+    ];
+
+    if (groupsQ.hasError && !groupsQ.hasValue) {
+      return KPageScroll(
+        controller: _scroll,
+        children: [
+          KPageHeader(title: t('accounts.wizard.title')),
+          const SizedBox(height: 18),
+          KCard(
+            child: KEmptyState(
+              art: KIllustrationName.connectionLost,
+              title: t('accounts.wizard.unavailableTitle'),
+              text: t('accounts.wizard.unavailableText'),
+              action: KButton(
+                label: t('common.retry'),
+                icon: LucideIcons.rotateCw,
+                variant: KButtonVariant.surface,
+                onPressed: () => ref.invalidate(groupsProvider),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    final groups = groupsQ.value ?? const <EngineGroup>[];
+    _boot(groups);
+    final available = groups.where((g) => groupOffers(g, _kind)).toList();
+    final g = groups.where((x) => x.code == _group && groupOffers(x, _kind)).firstOrNull ?? available.firstOrNull;
+    if (_booted && g != null && g.code != _group) {
+      // keep the chosen group valid for the chosen account kind
+      _group = g.code;
+      _leverage = g.leverages.contains(_leverage) ? _leverage : g.defaultLeverage;
+    }
+    final full = g != null && groupUsed(accounts, g, _kind) >= g.maxAccountsPerUser;
+    final pwOk = !_ownPassword || (livePasswordOk(_password) && _password == _confirm);
+    final canNext = switch (_step) {
+      1 => g != null && !full,
+      2 => g != null && g.leverages.contains(_leverage) && pwOk,
+      3 => _agree && pwOk,
+      _ => true,
+    };
+
+    Widget body;
+    if (!groupsQ.hasValue) {
+      body = const KSkeleton(height: 420, radius: 24);
+    } else {
+      body = switch (_step) {
+        0 => _kindStep(groups, demoOn),
+        1 => _typeStep(available, accounts, g),
+        2 when g != null => _configureStep(g),
+        3 when g != null => _reviewStep(g),
+        4 when _created != null && g != null => _CreatedCard(res: _created!, ownPassword: _ownPassword, g: g),
+        _ => const SizedBox.shrink(),
+      };
+    }
+
+    return KPageScroll(
+      controller: _scroll,
+      children: [
+        ...header,
+        KCard(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          child: KStepIndicator(steps: [for (var i = 0; i < kWizardSteps.length; i++) i == _step ? t(kWizardSteps[i]) : ''], current: _step),
+        ),
+        const SizedBox(height: 16),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 220),
+          child: KeyedSubtree(key: ValueKey(_step), child: body),
+        ),
+        if (_step < 4 && groupsQ.hasValue) ...[
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              KButton(
+                label: t('common.back'),
+                icon: rtl ? LucideIcons.arrowRight : LucideIcons.arrowLeft,
+                variant: KButtonVariant.ghost,
+                onPressed: _step == 0 || _busy ? null : () => _go(-1),
+              ),
+              const Spacer(),
+              if (_step < 3)
+                KButton(
+                  label: t('common.continue'),
+                  trailingIcon: rtl ? LucideIcons.arrowLeft : LucideIcons.arrowRight,
+                  size: KButtonSize.lg,
+                  onPressed: canNext ? () => _go(1) : null,
+                )
+              else
+                Flexible(
+                  child: KButton(
+                    label: _busy ? t('accounts.wizard.opening') : (_kind == AccountKind.live ? t('accounts.wizard.openLive') : t('accounts.wizard.openDemo')),
+                    trailingIcon: _busy ? null : LucideIcons.check,
+                    size: KButtonSize.lg,
+                    loading: _busy,
+                    onPressed: canNext && !_busy && g != null ? () => _create(g) : null,
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  /* ---------------------------------------------------------------- steps */
+
+  Widget _kindStep(List<EngineGroup> groups, bool demoOn) {
+    final t = context.t;
+    final demoRef = groups.where((x) => groupOffers(x, AccountKind.demo)).firstOrNull;
+    return _StepCard(
+      title: t('accounts.wizard.chooseTitle'),
+      subtitle: t('accounts.wizard.chooseSubtitle'),
+      child: Column(
+        children: [
+          _KindCard(kind: AccountKind.live, selected: _kind == AccountKind.live, onSelect: () => setState(() => _kind = AccountKind.live)),
+          if (demoOn) ...[
+            const SizedBox(height: 14),
+            _KindCard(
+              kind: AccountKind.demo,
+              selected: _kind == AccountKind.demo,
+              demoGroup: demoRef,
+              onSelect: () => setState(() => _kind = AccountKind.demo),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _typeStep(List<EngineGroup> available, List<EngineAccount> accounts, EngineGroup? g) {
+    final t = context.t;
+    return _StepCard(
+      title: t('accounts.wizard.pickTitle'),
+      subtitle: t(_kind == AccountKind.live ? 'accounts.wizard.pickSubtitleLive' : 'accounts.wizard.pickSubtitleDemo', {'count': available.length}),
+      child: Column(
+        children: [
+          for (final x in available) ...[
+            EngineGroupCard(group: x, kind: _kind.name, used: groupUsed(accounts, x, _kind), selected: g?.code == x.code, onSelect: () => _pickGroup(x)),
+            const SizedBox(height: 14),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _configureStep(EngineGroup g) {
+    final t = context.t;
+    final k = context.k;
+    final mode = t.dyn('accounts.mode.${g.mode}', fallback: modeLabel(g.mode));
+    final balances = {...kDemoBalances.map((b) => b.toDouble()), g.demoInitialBalance}.toList()..sort();
+    return _StepCard(
+      title: t('accounts.wizard.configureTitle'),
+      subtitle: '${g.name} · $mode · ${_kind == AccountKind.live ? t('common.live') : t('common.demo')}',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(t('accounts.label.leverage'), style: context.text.label.copyWith(color: k.fg2)),
+          const SizedBox(height: 2),
+          Text(t('accounts.wizard.leverageHint'), style: context.text.footnote.copyWith(color: k.fg3)),
+          const SizedBox(height: 10),
+          LeveragePills(values: g.leverages, selected: _leverage, onSelect: (l) => setState(() => _leverage = l)),
+          if (_leverage >= 1000) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(LucideIcons.info, size: 14, color: k.warn),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(t('accounts.wizard.highLeverage'), style: context.text.footnote.copyWith(color: k.warn)),
+                ),
+              ],
+            ),
+          ],
+          if (_kind == AccountKind.demo) ...[
+            const SizedBox(height: 22),
+            Text(t('accounts.wizard.startingBalance'), style: context.text.label.copyWith(color: k.fg2)),
+            const SizedBox(height: 10),
+            TileGrid(
+              children: [
+                for (final b in balances)
+                  ChoiceBox(
+                    selected: _demoBalance == b,
+                    tone: k.gold,
+                    onTap: () => setState(() => _demoBalance = b),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          wizardMoney(b, g.cent),
+                          textDirection: TextDirection.ltr,
+                          style: context.text.figure.copyWith(fontSize: 16.5, color: _demoBalance == b ? k.gold : k.fg),
+                        ),
+                        Text(
+                          t('accounts.wizard.virtualFunds'),
+                          style: context.text.caption.copyWith(color: k.fg3, fontWeight: FontWeight.w400),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              t('accounts.wizard.refillNote', {'count': g.demoRefillsPerDay, 'days': g.demoExpiryDays}),
+              style: context.text.footnote.copyWith(color: k.fg3),
+            ),
+          ],
+          const SizedBox(height: 22),
+          KTextField(
+            label: t('accounts.label.nickname'),
+            hint: Text(t('accounts.wizard.nicknameHint'), style: context.text.footnote.copyWith(color: k.fg3)),
+            controller: _nickname,
+            placeholder: t('accounts.wizard.nicknamePlaceholder'),
+            inputFormatters: [LengthLimitingTextInputFormatter(32)],
+          ),
+          const SizedBox(height: 14),
+          _ReadOnlyField(
+            label: t('accounts.label.accountCurrency'),
+            icon: LucideIcons.wallet,
+            value: g.cent ? t('accounts.currency.uscLong') : t('accounts.currency.usdLong'),
+          ),
+          const SizedBox(height: 18),
+          RowBox(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: k.surface3,
+                      border: Border.all(color: k.line),
+                    ),
+                    child: Icon(LucideIcons.keyRound, size: 16, color: k.fg2),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          t('accounts.wizard.ownPassword'),
+                          style: context.text.label.copyWith(color: k.fg, fontSize: 14, fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(t('accounts.wizard.ownPasswordHint'), style: context.text.footnote.copyWith(color: k.fg3)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  KSwitch(value: _ownPassword, semanticLabel: t('accounts.wizard.ownPasswordToggle'), onChanged: (v) => setState(() => _ownPassword = v)),
+                ],
+              ),
+              if (_ownPassword) ...[
+                const SizedBox(height: 16),
+                PasswordInput(label: t('accounts.label.tradingPassword'), value: _password, generate: true, onChanged: (v) => setState(() => _password = v)),
+                const SizedBox(height: 10),
+                PasswordRules(password: _password),
+                const SizedBox(height: 12),
+                PasswordInput(
+                  label: t('accounts.label.confirmPassword'),
+                  value: _confirm,
+                  placeholder: t('accounts.wizard.repeatPassword'),
+                  error: _confirm.isNotEmpty && _confirm != _password ? t('accounts.wizard.passwordsMismatch') : null,
+                  onChanged: (v) => setState(() => _confirm = v),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _reviewStep(EngineGroup g) {
+    final t = context.t;
+    final k = context.k;
+    final mode = t.dyn('accounts.mode.${g.mode}', fallback: modeLabel(g.mode));
+    Widget point(String text) => Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(LucideIcons.check, size: 14, color: k.up),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(text, style: context.text.callout.copyWith(color: k.fg2)),
+          ),
+        ],
+      ),
+    );
+    final start = _kind == AccountKind.demo ? wizardMoney(_demoBalance, g.cent) : (g.cent ? 'USC 0.00' : r'$0.00');
+    return _StepCard(
+      title: t('accounts.wizard.reviewTitle'),
+      subtitle: t('accounts.wizard.reviewSubtitle'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TileGrid(
+            children: [
+              StatTile(label: t('common.account'), child: Text(_kind == AccountKind.live ? t('common.live') : t('common.demo'))),
+              StatTile(label: t('common.type'), child: Text(g.name)),
+              StatTile(
+                label: t('accounts.label.leverage'),
+                child: Text(levLabel(_leverage), textDirection: TextDirection.ltr),
+              ),
+              StatTile(
+                label: t('accounts.label.startBalance'),
+                child: Text(start, textDirection: TextDirection.ltr),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          point(_ownPassword ? t('accounts.wizard.review.ownPassword') : t('accounts.wizard.review.generated')),
+          if (_kind == AccountKind.live)
+            point(
+              '${t('accounts.wizard.review.zeroBalance')} ${g.minDeposit > 0 ? t('accounts.wizard.review.minDeposit', {'amount': '\$${Fmt.number(g.minDeposit, 0)}'}) : ''}'
+                  .trim(),
+            ),
+          point(t('accounts.wizard.review.fixed', {'mode': mode, 'currency': g.cent ? 'USC' : 'USD'})),
+          const SizedBox(height: 8),
+          KCheckRow(
+            value: _agree,
+            onChanged: (v) => setState(() => _agree = v),
+            child: Text(
+              _kind == AccountKind.live ? t('accounts.wizard.agreeLive') : t('accounts.wizard.agreeDemo'),
+              style: context.text.callout.copyWith(color: k.fg2),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A read-only input (web Input readOnly, faded): the account currency.
+class _ReadOnlyField extends StatelessWidget {
+  const _ReadOnlyField({required this.label, required this.icon, required this.value});
+  final String label;
+  final IconData icon;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final k = context.k;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Text(label, style: context.text.label.copyWith(color: k.fg2)),
+        ),
+        Opacity(
+          opacity: 0.8,
+          child: Container(
+            height: KSize.field,
+            padding: const EdgeInsets.symmetric(horizontal: 13),
+            decoration: BoxDecoration(
+              color: k.surface2,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: k.line),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, size: 17, color: k.fg3),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.body.copyWith(fontSize: 14.5)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// A wizard step's card (web Card + CardHeader).
+class _StepCard extends StatelessWidget {
+  const _StepCard({required this.title, required this.subtitle, required this.child});
+  final String title, subtitle;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => KCard(
+    padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        KCardHeader(title: title, subtitle: subtitle),
+        const SizedBox(height: 18),
+        child,
+      ],
+    ),
+  );
+}
+
+/// Live / Demo choice card (web KindCard; the 3D emoji become an icon tile).
+class _KindCard extends StatelessWidget {
+  const _KindCard({required this.kind, required this.selected, required this.onSelect, this.demoGroup});
+  final AccountKind kind;
+  final bool selected;
+  final VoidCallback onSelect;
+  final EngineGroup? demoGroup;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.t;
+    final k = context.k;
+    final live = kind == AccountKind.live;
+    final tone = live ? k.ember : k.gold;
+    final points = live
+        ? [t('accounts.kind.live.point1'), t('accounts.kind.live.point2'), t('accounts.kind.live.point3')]
+        : [
+            t('accounts.kind.demo.virtualFunds', {'amount': demoGroup != null ? '\$${Fmt.number(demoGroup!.demoInitialBalance, 0)}' : r'$10,000'}),
+            t('accounts.kind.demo.refill', {'count': demoGroup?.demoRefillsPerDay ?? 3}),
+            t('accounts.kind.demo.expires', {'days': demoGroup?.demoExpiryDays ?? 10}),
+          ];
+    return KPressable(
+      onTap: onSelect,
+      pressedScale: 0.99,
+      semanticLabel: live ? t('accounts.kind.liveTitle') : t('accounts.kind.demoTitle'),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: selected ? k.surface : k.cardBg,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: selected ? tone.withValues(alpha: 0.6) : k.cardBorder),
+          boxShadow: selected ? [BoxShadow(color: tone.withValues(alpha: 0.12), spreadRadius: 4)] : k.shadowCard,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                KChip(label: live ? t('accounts.badge.live') : t('accounts.badge.demo'), tone: live ? KChipTone.ember : KChipTone.gold),
+                const Spacer(),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: selected ? tone : null,
+                    border: Border.all(color: selected ? tone : k.line),
+                  ),
+                  child: selected ? Icon(LucideIcons.check, size: 14, color: live ? Colors.white : Colors.black) : null,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            KIconTile(icon: live ? LucideIcons.handCoins : LucideIcons.rocket, tone: live ? KTone.accent : KTone.amber, size: 56),
+            const SizedBox(height: 16),
+            Text(live ? t('accounts.kind.liveTitle') : t('accounts.kind.demoTitle'), style: context.text.title1.copyWith(fontSize: 21)),
+            const SizedBox(height: 4),
+            Text(live ? t('accounts.kind.liveText') : t('accounts.kind.demoText'), style: context.text.callout.copyWith(color: k.fg2)),
+            const SizedBox(height: 14),
+            for (final p in points)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 7),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Icon(LucideIcons.check, size: 14, color: tone),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(p, style: context.text.footnote.copyWith(color: k.fg2, fontSize: 13)),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The done step: the new account and its credentials, shown once (web Created).
+class _CreatedCard extends StatelessWidget {
+  const _CreatedCard({required this.res, required this.ownPassword, required this.g});
+  final OpenResult res;
+  final bool ownPassword;
+  final EngineGroup g;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.t;
+    final k = context.k;
+    final a = res.account;
+    final login = '${res.login}';
+    final server = a.server;
+    final text = a.live
+        ? t('accounts.created.liveText')
+        : '${t('accounts.created.demoText', {'amount': '${a.cent ? 'USC ' : r'$'}${Fmt.number(a.balance)}'})}${a.demo != null ? ' ${t('accounts.created.demoExpires', {'days': a.demo!['expiryDays'] ?? 0})}' : ''}';
+    Future<void> copyAll() async {
+      final all = [
+        '${t('accounts.label.login')}: $login',
+        '${t('accounts.label.server')}: $server',
+        if (res.password != null) '${t('accounts.label.tradingPassword')}: ${res.password}',
+        if (res.investorPassword != null) '${t('accounts.label.investorPassword')}: ${res.investorPassword}',
+      ].join('\n');
+      try {
+        await Clipboard.setData(ClipboardData(text: all));
+        KHaptics.success();
+        if (context.mounted) accountToast(context, NotificationKind.success, t('accounts.created.copied'), description: t('accounts.created.copiedDesc'));
+      } catch (_) {
+        if (context.mounted) accountToast(context, NotificationKind.error, t('accounts.created.copyFailed'));
+      }
+    }
+
+    return KCard(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: k.upSoft,
+                border: Border.all(color: k.up.withValues(alpha: 0.3)),
+              ),
+              child: Icon(LucideIcons.check, size: 28, color: k.up),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text(t('accounts.created.title'), style: context.text.largeTitle.copyWith(fontSize: 25)),
+          const SizedBox(height: 8),
+          Text(text, style: context.text.body.copyWith(color: k.fg2)),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              KChip(label: a.live ? t('accounts.badge.live') : t('accounts.badge.demo'), tone: a.live ? KChipTone.ember : KChipTone.gold),
+              KChip(label: '${g.name} · ${t.dyn('accounts.mode.${a.mode}', fallback: modeLabel(a.mode))}'),
+              KChip(label: levLabel(a.leverage)),
+              if (a.cent) const KChip(label: 'USC', tone: KChipTone.gold),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Wrap(
+            spacing: 8,
+            runSpacing: 10,
+            children: [
+              TradeButton(account: a, size: KButtonSize.lg, label: t('accounts.created.openInTrader')),
+              if (a.live) FundButton(account: a, size: KButtonSize.lg),
+              KButton(
+                label: t('accounts.created.viewAccount'),
+                variant: KButtonVariant.surface,
+                size: KButtonSize.lg,
+                onPressed: () => context.push('/accounts/${a.login}'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 22),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: k.surface2.withValues(alpha: 0.6),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: k.line),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Icon(LucideIcons.keyRound, size: 16, color: k.fg3),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(t('accounts.created.credentials'), style: context.text.headline)),
+                    KButton(
+                      label: t('accounts.created.copyAll'),
+                      icon: LucideIcons.copy,
+                      variant: KButtonVariant.surface,
+                      size: KButtonSize.sm,
+                      onPressed: copyAll,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                SecretField(label: t('accounts.label.login'), value: login),
+                const SizedBox(height: 12),
+                SecretField(label: t('accounts.label.server'), value: server, hint: 'GMT+3 / GMT+2'),
+                if (res.password != null) ...[
+                  const SizedBox(height: 12),
+                  SecretField(label: t('accounts.label.tradingPassword'), value: res.password!, secret: true, hint: t('accounts.hint.fullAccess')),
+                ],
+                if (res.investorPassword != null) ...[
+                  const SizedBox(height: 12),
+                  SecretField(label: t('accounts.label.investorPassword'), value: res.investorPassword!, secret: true, hint: t('accounts.hint.readOnly')),
+                ],
+                const SizedBox(height: 14),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: k.warnSoft,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: k.warn.withValues(alpha: 0.25)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(LucideIcons.triangleAlert, size: 16, color: k.warn),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: KRichText(
+                          t('accounts.created.onceWarning'),
+                          style: context.text.footnote.copyWith(color: k.fg2),
+                          tags: const {'b': KTag()},
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (ownPassword) ...[
+                  const SizedBox(height: 10),
+                  Text(t('accounts.created.ownPasswordNote'), style: context.text.footnote.copyWith(color: k.fg3)),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

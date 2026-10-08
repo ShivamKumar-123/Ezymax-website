@@ -20,7 +20,16 @@
     "offline": "You're offline",
     "trader.placeholder": "The trading terminal opens here.",
     "version": "Version {version}",
-    "markRead": "Mark as read"
+    "markRead": "Mark as read",
+    "wallet.openTronLink": "Open in TronLink",
+    "wallet.tronlinkApp": "This opens the deposit inside the TronLink app.",
+    "wallet.walletAppMissing": "{wallet} isn't installed on this phone. Install it, or send manually below.",
+    "dashboard.feed.connecting": "Connecting to live prices…",
+    "dashboard.feed.connectingText": "Quotes appear as soon as the feed is connected.",
+    "partner.csvSaved": "{file} exported",
+    "partner.csvRows": "Rows: {count} · columns: {cols}",
+    "profile.cameraBlocked": "Camera access was blocked. Upload a photo instead, or allow the camera for Kalks in your phone's settings.",
+    "dashboard.traderText": "Real-time quotes and charts for {count} instruments across forex, metals, indices, energies, crypto and stocks. Built into this app."
   },
   "hi": {
     "unlock.title": "Kalks लॉक है",
@@ -42,7 +51,16 @@
     "offline": "आप ऑफ़लाइन हैं",
     "trader.placeholder": "ट्रेडिंग टर्मिनल यहाँ खुलता है।",
     "version": "वर्शन {version}",
-    "markRead": "पढ़ा हुआ मार्क करें"
+    "markRead": "पढ़ा हुआ मार्क करें",
+    "wallet.openTronLink": "TronLink में खोलें",
+    "wallet.tronlinkApp": "यह डिपॉज़िट को TronLink ऐप के अंदर खोलता है।",
+    "wallet.walletAppMissing": "{wallet} इस फ़ोन पर इंस्टॉल नहीं है। इसे इंस्टॉल करें, या नीचे मैन्युअल रूप से भेजें।",
+    "dashboard.feed.connecting": "लाइव कीमतों से कनेक्ट हो रहा है…",
+    "dashboard.feed.connectingText": "फ़ीड कनेक्ट होते ही कोट्स दिखाई देंगे।",
+    "partner.csvSaved": "{file} एक्सपोर्ट हो गई",
+    "partner.csvRows": "पंक्तियाँ: {count} · कॉलम: {cols}",
+    "profile.cameraBlocked": "कैमरा एक्सेस ब्लॉक कर दिया गया। इसके बजाय फ़ोटो अपलोड करें, या अपने फ़ोन की सेटिंग में Kalks के लिए कैमरा की अनुमति दें।",
+    "dashboard.traderText": "फ़ॉरेक्स, मेटल्स, इंडाइसेस, एनर्जी, क्रिप्टो और स्टॉक्स में {count} इंस्ट्रूमेंट के रियल-टाइम कोट्स और चार्ट। इसी ऐप में शामिल।"
   },
   "ar": {
     "unlock.title": "Kalks مقفل",
@@ -64,7 +82,16 @@
     "offline": "أنت غير متصل",
     "trader.placeholder": "تُفتح منصة التداول هنا.",
     "version": "الإصدار {version}",
-    "markRead": "وضع علامة كمقروء"
+    "markRead": "وضع علامة كمقروء",
+    "wallet.openTronLink": "فتح في TronLink",
+    "wallet.tronlinkApp": "يفتح هذا الإيداع داخل تطبيق TronLink.",
+    "wallet.walletAppMissing": "{wallet} غير مثبّت على هذا الهاتف. ثبّته، أو أرسل يدويًا أدناه.",
+    "dashboard.feed.connecting": "جارٍ الاتصال بالأسعار المباشرة…",
+    "dashboard.feed.connectingText": "تظهر الأسعار فور اتصال موجز الأسعار.",
+    "partner.csvSaved": "تم تصدير {file}",
+    "partner.csvRows": "الصفوف: {count} · الأعمدة: {cols}",
+    "profile.cameraBlocked": "تم حظر الوصول إلى الكاميرا. حمّل صورة بدلًا من ذلك، أو اسمح لتطبيق Kalks باستخدام الكاميرا من إعدادات هاتفك.",
+    "dashboard.traderText": "أسعار ورسوم بيانية لحظية لـ {count} أداة في الفوركس والمعادن والمؤشرات والطاقة والعملات المشفرة والأسهم. مدمجة في هذا التطبيق."
   },
   "ur": {
     "unlock.title": "Kalks لاک ہے",
@@ -86,7 +113,16 @@
     "offline": "آپ آف لائن ہیں",
     "trader.placeholder": "ٹریڈنگ ٹرمینل یہاں کھلتا ہے۔",
     "version": "ورژن {version}",
-    "markRead": "پڑھا ہوا نشان زد کریں"
+    "markRead": "پڑھا ہوا نشان زد کریں",
+    "wallet.openTronLink": "TronLink میں کھولیں",
+    "wallet.tronlinkApp": "یہ ڈپازٹ کو TronLink ایپ کے اندر کھولتا ہے۔",
+    "wallet.walletAppMissing": "{wallet} اس فون پر انسٹال نہیں ہے۔ اسے انسٹال کریں، یا نیچے دستی طور پر بھیجیں۔",
+    "dashboard.feed.connecting": "لائیو قیمتوں سے رابطہ ہو رہا ہے…",
+    "dashboard.feed.connectingText": "فیڈ جڑتے ہی قیمتیں ظاہر ہوں گی۔",
+    "partner.csvSaved": "{file} ایکسپورٹ ہو گئی",
+    "partner.csvRows": "قطاریں: {count} · کالم: {cols}",
+    "profile.cameraBlocked": "کیمرے تک رسائی روک دی گئی۔ اس کے بجائے تصویر اپ لوڈ کریں، یا اپنے فون کی سیٹنگز میں Kalks کو کیمرے کی اجازت دیں۔",
+    "dashboard.traderText": "فاریکس، دھاتوں، انڈیکسز، توانائی، کرپٹو اور اسٹاکس کے {count} انسٹرومنٹس کے لیے ریئل ٹائم کوٹس اور چارٹس۔ اسی ایپ میں شامل۔"
   },
   "fa": {
     "unlock.title": "Kalks قفل است",
@@ -108,7 +144,16 @@
     "offline": "شما آفلاین هستید",
     "trader.placeholder": "پایانهٔ معاملاتی اینجا باز می‌شود.",
     "version": "نسخهٔ {version}",
-    "markRead": "علامت‌گذاری به‌عنوان خوانده‌شده"
+    "markRead": "علامت‌گذاری به‌عنوان خوانده‌شده",
+    "wallet.openTronLink": "باز کردن در TronLink",
+    "wallet.tronlinkApp": "این کار واریز را داخل اپلیکیشن TronLink باز می‌کند.",
+    "wallet.walletAppMissing": "{wallet} روی این گوشی نصب نیست. آن را نصب کنید یا در پایین به‌صورت دستی ارسال کنید.",
+    "dashboard.feed.connecting": "در حال اتصال به قیمت‌های زنده…",
+    "dashboard.feed.connectingText": "به محض اتصال فید، قیمت‌ها نمایش داده می‌شوند.",
+    "partner.csvSaved": "{file} صادر شد",
+    "partner.csvRows": "ردیف‌ها: {count} · ستون‌ها: {cols}",
+    "profile.cameraBlocked": "دسترسی به دوربین مسدود شد. به جای آن عکسی بارگذاری کنید، یا در تنظیمات گوشی اجازهٔ دوربین را به Kalks بدهید.",
+    "dashboard.traderText": "قیمت‌ها و نمودارهای لحظه‌ای برای {count} ابزار در فارکس، فلزات، شاخص‌ها، انرژی، رمزارز و سهام. درون همین اپلیکیشن."
   },
   "es": {
     "unlock.title": "Kalks está bloqueado",
@@ -130,7 +175,16 @@
     "offline": "Sin conexión",
     "trader.placeholder": "Aquí se abre la terminal de trading.",
     "version": "Versión {version}",
-    "markRead": "Marcar como leída"
+    "markRead": "Marcar como leída",
+    "wallet.openTronLink": "Abrir en TronLink",
+    "wallet.tronlinkApp": "Esto abre el depósito dentro de la app TronLink.",
+    "wallet.walletAppMissing": "{wallet} no está instalado en este teléfono. Instálalo o envía manualmente abajo.",
+    "dashboard.feed.connecting": "Conectando con los precios en vivo…",
+    "dashboard.feed.connectingText": "Las cotizaciones aparecerán en cuanto se conecte el feed.",
+    "partner.csvSaved": "{file} exportado",
+    "partner.csvRows": "Filas: {count} · columnas: {cols}",
+    "profile.cameraBlocked": "Se bloqueó el acceso a la cámara. Sube una foto en su lugar o permite la cámara para Kalks en los ajustes del teléfono.",
+    "dashboard.traderText": "Cotizaciones y gráficos en tiempo real de {count} instrumentos de forex, metales, índices, energías, criptomonedas y acciones. Integrado en esta app."
   },
   "pt": {
     "unlock.title": "O Kalks está bloqueado",
@@ -152,7 +206,16 @@
     "offline": "Você está offline",
     "trader.placeholder": "O terminal de negociação abre aqui.",
     "version": "Versão {version}",
-    "markRead": "Marcar como lida"
+    "markRead": "Marcar como lida",
+    "wallet.openTronLink": "Abrir no TronLink",
+    "wallet.tronlinkApp": "Isso abre o depósito dentro do app TronLink.",
+    "wallet.walletAppMissing": "O {wallet} não está instalado neste telefone. Instale-o ou envie manualmente abaixo.",
+    "dashboard.feed.connecting": "Conectando aos preços ao vivo…",
+    "dashboard.feed.connectingText": "As cotações aparecem assim que o feed for conectado.",
+    "partner.csvSaved": "{file} exportado",
+    "partner.csvRows": "Linhas: {count} · colunas: {cols}",
+    "profile.cameraBlocked": "O acesso à câmera foi bloqueado. Envie uma foto em vez disso ou permita a câmera para o Kalks nas configurações do telefone.",
+    "dashboard.traderText": "Cotações e gráficos em tempo real para {count} instrumentos de forex, metais, índices, energia, cripto e ações. Integrado neste app."
   },
   "fr": {
     "unlock.title": "Kalks est verrouillé",
@@ -174,7 +237,16 @@
     "offline": "Vous êtes hors ligne",
     "trader.placeholder": "Le terminal de trading s'ouvre ici.",
     "version": "Version {version}",
-    "markRead": "Marquer comme lu"
+    "markRead": "Marquer comme lu",
+    "wallet.openTronLink": "Ouvrir dans TronLink",
+    "wallet.tronlinkApp": "Cela ouvre le dépôt dans l'application TronLink.",
+    "wallet.walletAppMissing": "{wallet} n'est pas installé sur ce téléphone. Installez-le ou envoyez manuellement ci-dessous.",
+    "dashboard.feed.connecting": "Connexion aux prix en direct…",
+    "dashboard.feed.connectingText": "Les cotations s'affichent dès que le flux est connecté.",
+    "partner.csvSaved": "{file} exporté",
+    "partner.csvRows": "Lignes : {count} · colonnes : {cols}",
+    "profile.cameraBlocked": "L'accès à la caméra a été bloqué. Importez plutôt une photo, ou autorisez la caméra pour Kalks dans les réglages de votre téléphone.",
+    "dashboard.traderText": "Cotations et graphiques en temps réel pour {count} instruments : forex, métaux, indices, énergies, crypto et actions. Intégré à cette application."
   },
   "de": {
     "unlock.title": "Kalks ist gesperrt",
@@ -196,7 +268,16 @@
     "offline": "Du bist offline",
     "trader.placeholder": "Hier öffnet sich das Trading-Terminal.",
     "version": "Version {version}",
-    "markRead": "Als gelesen markieren"
+    "markRead": "Als gelesen markieren",
+    "wallet.openTronLink": "In TronLink öffnen",
+    "wallet.tronlinkApp": "Damit wird die Einzahlung in der TronLink-App geöffnet.",
+    "wallet.walletAppMissing": "{wallet} ist auf diesem Telefon nicht installiert. Installieren Sie es oder senden Sie unten manuell.",
+    "dashboard.feed.connecting": "Verbindung zu Live-Kursen wird hergestellt…",
+    "dashboard.feed.connectingText": "Die Kurse erscheinen, sobald der Feed verbunden ist.",
+    "partner.csvSaved": "{file} exportiert",
+    "partner.csvRows": "Zeilen: {count} · Spalten: {cols}",
+    "profile.cameraBlocked": "Der Kamerazugriff wurde blockiert. Lade stattdessen ein Foto hoch oder erlaube Kalks die Kamera in den Einstellungen deines Telefons.",
+    "dashboard.traderText": "Echtzeitkurse und Charts für {count} Instrumente aus Forex, Metallen, Indizes, Energie, Krypto und Aktien. Direkt in dieser App."
   },
   "it": {
     "unlock.title": "Kalks è bloccato",
@@ -218,7 +299,16 @@
     "offline": "Sei offline",
     "trader.placeholder": "Qui si apre il terminale di trading.",
     "version": "Versione {version}",
-    "markRead": "Segna come letto"
+    "markRead": "Segna come letto",
+    "wallet.openTronLink": "Apri in TronLink",
+    "wallet.tronlinkApp": "Così il deposito si apre nell'app TronLink.",
+    "wallet.walletAppMissing": "{wallet} non è installato su questo telefono. Installalo o invia manualmente qui sotto.",
+    "dashboard.feed.connecting": "Connessione ai prezzi in tempo reale…",
+    "dashboard.feed.connectingText": "Le quotazioni compaiono non appena il feed è connesso.",
+    "partner.csvSaved": "{file} esportato",
+    "partner.csvRows": "Righe: {count} · colonne: {cols}",
+    "profile.cameraBlocked": "L'accesso alla fotocamera è stato bloccato. Carica invece una foto oppure consenti la fotocamera a Kalks nelle impostazioni del telefono.",
+    "dashboard.traderText": "Quotazioni e grafici in tempo reale per {count} strumenti tra forex, metalli, indici, energie, cripto e azioni. Integrato in questa app."
   },
   "ru": {
     "unlock.title": "Kalks заблокирован",
@@ -240,7 +330,16 @@
     "offline": "Нет подключения",
     "trader.placeholder": "Здесь открывается торговый терминал.",
     "version": "Версия {version}",
-    "markRead": "Отметить как прочитанное"
+    "markRead": "Отметить как прочитанное",
+    "wallet.openTronLink": "Открыть в TronLink",
+    "wallet.tronlinkApp": "Депозит откроется в приложении TronLink.",
+    "wallet.walletAppMissing": "{wallet} не установлен на этом телефоне. Установите его или отправьте вручную ниже.",
+    "dashboard.feed.connecting": "Подключение к живым котировкам…",
+    "dashboard.feed.connectingText": "Котировки появятся, как только поток подключится.",
+    "partner.csvSaved": "Файл {file} экспортирован",
+    "partner.csvRows": "Строк: {count} · столбцов: {cols}",
+    "profile.cameraBlocked": "Доступ к камере заблокирован. Загрузите фото или разрешите Kalks доступ к камере в настройках телефона.",
+    "dashboard.traderText": "Котировки и графики в реальном времени по {count} инструментам: форекс, металлы, индексы, энергоносители, криптовалюты и акции. Встроено в это приложение."
   },
   "tr": {
     "unlock.title": "Kalks kilitli",
@@ -262,7 +361,16 @@
     "offline": "Çevrimdışısınız",
     "trader.placeholder": "İşlem terminali burada açılır.",
     "version": "Sürüm {version}",
-    "markRead": "Okundu olarak işaretle"
+    "markRead": "Okundu olarak işaretle",
+    "wallet.openTronLink": "TronLink'te aç",
+    "wallet.tronlinkApp": "Bu, yatırımı TronLink uygulamasının içinde açar.",
+    "wallet.walletAppMissing": "{wallet} bu telefonda yüklü değil. Yükleyin veya aşağıdan manuel olarak gönderin.",
+    "dashboard.feed.connecting": "Canlı fiyatlara bağlanılıyor…",
+    "dashboard.feed.connectingText": "Akış bağlanır bağlanmaz fiyatlar görünür.",
+    "partner.csvSaved": "{file} dışa aktarıldı",
+    "partner.csvRows": "Satır: {count} · sütun: {cols}",
+    "profile.cameraBlocked": "Kamera erişimi engellendi. Bunun yerine bir fotoğraf yükleyin veya telefon ayarlarından Kalks'a kamera izni verin.",
+    "dashboard.traderText": "Forex, metaller, endeksler, enerji, kripto ve hisse senetlerinde {count} enstrüman için gerçek zamanlı kotasyonlar ve grafikler. Bu uygulamada yerleşik."
   },
   "id": {
     "unlock.title": "Kalks terkunci",
@@ -284,7 +392,16 @@
     "offline": "Anda sedang offline",
     "trader.placeholder": "Terminal trading terbuka di sini.",
     "version": "Versi {version}",
-    "markRead": "Tandai sudah dibaca"
+    "markRead": "Tandai sudah dibaca",
+    "wallet.openTronLink": "Buka di TronLink",
+    "wallet.tronlinkApp": "Ini membuka deposit di dalam aplikasi TronLink.",
+    "wallet.walletAppMissing": "{wallet} belum terpasang di ponsel ini. Pasang aplikasinya, atau kirim secara manual di bawah.",
+    "dashboard.feed.connecting": "Menghubungkan ke harga langsung…",
+    "dashboard.feed.connectingText": "Kuotasi muncul begitu feed terhubung.",
+    "partner.csvSaved": "{file} berhasil diekspor",
+    "partner.csvRows": "Baris: {count} · kolom: {cols}",
+    "profile.cameraBlocked": "Akses kamera diblokir. Unggah foto sebagai gantinya, atau izinkan kamera untuk Kalks di pengaturan ponsel Anda.",
+    "dashboard.traderText": "Kuotasi dan grafik real-time untuk {count} instrumen di forex, logam, indeks, energi, kripto, dan saham. Langsung di aplikasi ini."
   },
   "ms": {
     "unlock.title": "Kalks dikunci",
@@ -306,7 +423,16 @@
     "offline": "Anda di luar talian",
     "trader.placeholder": "Terminal dagangan dibuka di sini.",
     "version": "Versi {version}",
-    "markRead": "Tandakan sebagai dibaca"
+    "markRead": "Tandakan sebagai dibaca",
+    "wallet.openTronLink": "Buka dalam TronLink",
+    "wallet.tronlinkApp": "Ini membuka deposit di dalam aplikasi TronLink.",
+    "wallet.walletAppMissing": "{wallet} tidak dipasang pada telefon ini. Pasangkannya, atau hantar secara manual di bawah.",
+    "dashboard.feed.connecting": "Menyambung ke harga langsung…",
+    "dashboard.feed.connectingText": "Sebut harga muncul sebaik sahaja suapan disambungkan.",
+    "partner.csvSaved": "{file} telah dieksport",
+    "partner.csvRows": "Baris: {count} · lajur: {cols}",
+    "profile.cameraBlocked": "Akses kamera telah disekat. Muat naik foto sebaliknya, atau benarkan kamera untuk Kalks dalam tetapan telefon anda.",
+    "dashboard.traderText": "Sebut harga dan carta masa nyata untuk {count} instrumen merentasi forex, logam, indeks, tenaga, kripto dan saham. Terbina dalam aplikasi ini."
   },
   "vi": {
     "unlock.title": "Kalks đang bị khóa",
@@ -328,7 +454,16 @@
     "offline": "Bạn đang ngoại tuyến",
     "trader.placeholder": "Thiết bị đầu cuối giao dịch mở tại đây.",
     "version": "Phiên bản {version}",
-    "markRead": "Đánh dấu đã đọc"
+    "markRead": "Đánh dấu đã đọc",
+    "wallet.openTronLink": "Mở trong TronLink",
+    "wallet.tronlinkApp": "Thao tác này mở khoản nạp bên trong ứng dụng TronLink.",
+    "wallet.walletAppMissing": "{wallet} chưa được cài trên điện thoại này. Hãy cài đặt, hoặc gửi thủ công bên dưới.",
+    "dashboard.feed.connecting": "Đang kết nối giá trực tiếp…",
+    "dashboard.feed.connectingText": "Báo giá sẽ hiển thị ngay khi nguồn dữ liệu được kết nối.",
+    "partner.csvSaved": "Đã xuất {file}",
+    "partner.csvRows": "Hàng: {count} · cột: {cols}",
+    "profile.cameraBlocked": "Quyền truy cập máy ảnh đã bị chặn. Hãy tải ảnh lên thay thế, hoặc cho phép Kalks dùng máy ảnh trong cài đặt điện thoại.",
+    "dashboard.traderText": "Báo giá và biểu đồ thời gian thực cho {count} công cụ gồm forex, kim loại, chỉ số, năng lượng, tiền mã hóa và cổ phiếu. Tích hợp sẵn trong ứng dụng này."
   },
   "th": {
     "unlock.title": "Kalks ถูกล็อกอยู่",
@@ -350,7 +485,16 @@
     "offline": "คุณออฟไลน์อยู่",
     "trader.placeholder": "เทอร์มินัลการเทรดจะเปิดที่นี่",
     "version": "เวอร์ชัน {version}",
-    "markRead": "ทำเครื่องหมายว่าอ่านแล้ว"
+    "markRead": "ทำเครื่องหมายว่าอ่านแล้ว",
+    "wallet.openTronLink": "เปิดใน TronLink",
+    "wallet.tronlinkApp": "การดำเนินการนี้จะเปิดรายการฝากเงินในแอป TronLink",
+    "wallet.walletAppMissing": "ไม่ได้ติดตั้ง {wallet} บนโทรศัพท์เครื่องนี้ ติดตั้งแอป หรือส่งด้วยตนเองด้านล่าง",
+    "dashboard.feed.connecting": "กำลังเชื่อมต่อราคาสด…",
+    "dashboard.feed.connectingText": "ราคาจะแสดงทันทีที่ฟีดเชื่อมต่อแล้ว",
+    "partner.csvSaved": "ส่งออก {file} แล้ว",
+    "partner.csvRows": "แถว: {count} · คอลัมน์: {cols}",
+    "profile.cameraBlocked": "การเข้าถึงกล้องถูกบล็อก อัปโหลดรูปภาพแทน หรืออนุญาตให้ Kalks ใช้กล้องในการตั้งค่าโทรศัพท์ของคุณ",
+    "dashboard.traderText": "ราคาและกราฟเรียลไทม์สำหรับ {count} ตราสาร ครอบคลุมฟอเร็กซ์ โลหะ ดัชนี พลังงาน คริปโต และหุ้น ใช้งานได้ในแอปนี้"
   },
   "zh": {
     "unlock.title": "Kalks 已锁定",
@@ -372,7 +516,16 @@
     "offline": "您已离线",
     "trader.placeholder": "交易终端在此打开。",
     "version": "版本 {version}",
-    "markRead": "标记为已读"
+    "markRead": "标记为已读",
+    "wallet.openTronLink": "在 TronLink 中打开",
+    "wallet.tronlinkApp": "这会在 TronLink 应用内打开此笔充值。",
+    "wallet.walletAppMissing": "此手机未安装 {wallet}。请安装，或在下方手动转账。",
+    "dashboard.feed.connecting": "正在连接实时价格…",
+    "dashboard.feed.connectingText": "数据源连接后即显示报价。",
+    "partner.csvSaved": "已导出 {file}",
+    "partner.csvRows": "行数：{count} · 列数：{cols}",
+    "profile.cameraBlocked": "相机访问已被阻止。请改为上传照片，或在手机设置中允许 Kalks 使用相机。",
+    "dashboard.traderText": "涵盖外汇、贵金属、指数、能源、加密货币和股票的 {count} 个交易品种的实时报价和图表。内置于本应用。"
   },
   "ja": {
     "unlock.title": "Kalks はロックされています",
@@ -394,7 +547,16 @@
     "offline": "オフラインです",
     "trader.placeholder": "取引ターミナルはここで開きます。",
     "version": "バージョン {version}",
-    "markRead": "既読にする"
+    "markRead": "既読にする",
+    "wallet.openTronLink": "TronLinkで開く",
+    "wallet.tronlinkApp": "TronLinkアプリ内でこの入金を開きます。",
+    "wallet.walletAppMissing": "このスマートフォンに{wallet}がインストールされていません。インストールするか、下から手動で送金してください。",
+    "dashboard.feed.connecting": "リアルタイム価格に接続しています…",
+    "dashboard.feed.connectingText": "フィードに接続され次第、レートが表示されます。",
+    "partner.csvSaved": "{file} を書き出しました",
+    "partner.csvRows": "行: {count} · 列: {cols}",
+    "profile.cameraBlocked": "カメラへのアクセスがブロックされました。代わりに写真をアップロードするか、スマートフォンの設定で Kalks にカメラを許可してください。",
+    "dashboard.traderText": "FX、貴金属、株価指数、エネルギー、暗号資産、株式の{count}銘柄のリアルタイムレートとチャート。このアプリに搭載されています。"
   },
   "ko": {
     "unlock.title": "Kalks가 잠겨 있습니다",
@@ -416,7 +578,16 @@
     "offline": "오프라인 상태입니다",
     "trader.placeholder": "트레이딩 터미널이 여기에서 열립니다.",
     "version": "버전 {version}",
-    "markRead": "읽음으로 표시"
+    "markRead": "읽음으로 표시",
+    "wallet.openTronLink": "TronLink에서 열기",
+    "wallet.tronlinkApp": "TronLink 앱 안에서 이 입금을 엽니다.",
+    "wallet.walletAppMissing": "이 휴대폰에 {wallet}이(가) 설치되어 있지 않습니다. 설치하거나 아래에서 직접 보내세요.",
+    "dashboard.feed.connecting": "실시간 시세에 연결하는 중…",
+    "dashboard.feed.connectingText": "피드가 연결되면 바로 시세가 표시됩니다.",
+    "partner.csvSaved": "{file} 내보내기 완료",
+    "partner.csvRows": "행: {count} · 열: {cols}",
+    "profile.cameraBlocked": "카메라 접근이 차단되었습니다. 대신 사진을 업로드하거나 휴대폰 설정에서 Kalks의 카메라 사용을 허용하세요.",
+    "dashboard.traderText": "외환, 금속, 지수, 에너지, 암호화폐, 주식 등 {count}개 종목의 실시간 시세와 차트를 제공합니다. 이 앱에 바로 내장되어 있습니다."
   },
   "bn": {
     "unlock.title": "Kalks লক করা আছে",
@@ -438,7 +609,16 @@
     "offline": "আপনি অফলাইনে আছেন",
     "trader.placeholder": "ট্রেডিং টার্মিনাল এখানে খোলে।",
     "version": "সংস্করণ {version}",
-    "markRead": "পঠিত হিসেবে চিহ্নিত করুন"
+    "markRead": "পঠিত হিসেবে চিহ্নিত করুন",
+    "wallet.openTronLink": "TronLink-এ খুলুন",
+    "wallet.tronlinkApp": "এটি TronLink অ্যাপের ভেতরে ডিপোজিটটি খোলে।",
+    "wallet.walletAppMissing": "এই ফোনে {wallet} ইনস্টল করা নেই। এটি ইনস্টল করুন, অথবা নিচে ম্যানুয়ালি পাঠান।",
+    "dashboard.feed.connecting": "লাইভ দামের সাথে সংযোগ করা হচ্ছে…",
+    "dashboard.feed.connectingText": "ফিড সংযুক্ত হলেই কোট দেখা যাবে।",
+    "partner.csvSaved": "{file} এক্সপোর্ট হয়েছে",
+    "partner.csvRows": "সারি: {count} · কলাম: {cols}",
+    "profile.cameraBlocked": "ক্যামেরা অ্যাক্সেস ব্লক করা হয়েছে। এর বদলে একটি ছবি আপলোড করুন, অথবা আপনার ফোনের সেটিংসে Kalks-কে ক্যামেরার অনুমতি দিন।",
+    "dashboard.traderText": "ফরেক্স, মেটাল, সূচক, এনার্জি, ক্রিপ্টো ও স্টক মিলিয়ে {count}টি ইনস্ট্রুমেন্টের রিয়েল-টাইম কোট ও চার্ট। এই অ্যাপেই রয়েছে।"
   },
   "ta": {
     "unlock.title": "Kalks பூட்டப்பட்டுள்ளது",
@@ -460,7 +640,16 @@
     "offline": "நீங்கள் ஆஃப்லைனில் உள்ளீர்கள்",
     "trader.placeholder": "டிரேடிங் டெர்மினல் இங்கே திறக்கும்.",
     "version": "பதிப்பு {version}",
-    "markRead": "படித்ததாகக் குறி"
+    "markRead": "படித்ததாகக் குறி",
+    "wallet.openTronLink": "TronLink-இல் திற",
+    "wallet.tronlinkApp": "இது டெபாசிட்டை TronLink செயலிக்குள் திறக்கும்.",
+    "wallet.walletAppMissing": "இந்த ஃபோனில் {wallet} நிறுவப்படவில்லை. அதை நிறுவுங்கள், அல்லது கீழே கைமுறையாக அனுப்புங்கள்.",
+    "dashboard.feed.connecting": "நேரடி விலைகளுடன் இணைக்கிறது…",
+    "dashboard.feed.connectingText": "ஃபீட் இணைந்தவுடன் விலைகள் தோன்றும்.",
+    "partner.csvSaved": "{file} ஏற்றுமதி செய்யப்பட்டது",
+    "partner.csvRows": "வரிசைகள்: {count} · நெடுவரிசைகள்: {cols}",
+    "profile.cameraBlocked": "கேமரா அணுகல் தடுக்கப்பட்டது. அதற்குப் பதிலாக ஒரு புகைப்படத்தைப் பதிவேற்றவும், அல்லது உங்கள் ஃபோன் அமைப்புகளில் Kalks-க்கு கேமரா அனுமதியை வழங்கவும்.",
+    "dashboard.traderText": "ஃபாரெக்ஸ், உலோகங்கள், குறியீடுகள், எரிசக்தி, கிரிப்டோ மற்றும் பங்குகளில் {count} கருவிகளுக்கான நிகழ்நேர விலைகள் மற்றும் சார்ட்கள். இந்த ஆப்பிலேயே உள்ளது."
   },
   "sw": {
     "unlock.title": "Kalks imefungwa",
@@ -482,6 +671,15 @@
     "offline": "Uko nje ya mtandao",
     "trader.placeholder": "Kituo cha biashara hufunguka hapa.",
     "version": "Toleo {version}",
-    "markRead": "Weka kama imesomwa"
+    "markRead": "Weka kama imesomwa",
+    "wallet.openTronLink": "Fungua kwenye TronLink",
+    "wallet.tronlinkApp": "Hii hufungua amana ndani ya programu ya TronLink.",
+    "wallet.walletAppMissing": "{wallet} haijasakinishwa kwenye simu hii. Isakinishe, au tuma mwenyewe hapa chini.",
+    "dashboard.feed.connecting": "Inaunganisha na bei za moja kwa moja…",
+    "dashboard.feed.connectingText": "Bei zitaonekana mara tu mlisho utakapounganishwa.",
+    "partner.csvSaved": "{file} imehamishwa",
+    "partner.csvRows": "Safu mlalo: {count} · safu wima: {cols}",
+    "profile.cameraBlocked": "Ufikiaji wa kamera umezuiwa. Pakia picha badala yake, au ruhusu kamera kwa Kalks katika mipangilio ya simu yako.",
+    "dashboard.traderText": "Bei na chati za wakati halisi kwa vyombo {count} katika forex, metali, fahirisi, nishati, crypto na hisa. Imo ndani ya programu hii."
   }
 }
