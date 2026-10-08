@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { CheckCircle2, Loader2 } from "lucide-react";
+import { apiFetch } from "@/lib/api-client";
 import { cn } from "@/lib/cn";
 import type { LeadType } from "@/lib/lead-schema";
 import { Button } from "@/components/ui/Button";
@@ -40,12 +41,10 @@ export function LeadForm({ type, fields, submitLabel, successTitle, successBody,
     setError(null);
     const data = Object.fromEntries(new FormData(e.currentTarget).entries());
     try {
-      const res = await fetch("/api/lead", {
+      await apiFetch("/api/contact", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...data, type, source }),
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
       setStatus("success");
     } catch (err) {
       setStatus("error");

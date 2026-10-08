@@ -3,6 +3,8 @@
 import { useState, type FormEvent } from "react";
 import { ArrowRight, Check, Loader2 } from "lucide-react";
 
+import { apiFetch } from "@/lib/api-client";
+
 export function NewsletterForm() {
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
 
@@ -11,12 +13,10 @@ export function NewsletterForm() {
     setStatus("submitting");
     const data = Object.fromEntries(new FormData(e.currentTarget).entries());
     try {
-      const res = await fetch("/api/lead", {
+      await apiFetch("/api/contact", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...data, type: "newsletter" }),
       });
-      if (!res.ok) throw new Error("failed");
       setStatus("success");
     } catch {
       setStatus("error");
