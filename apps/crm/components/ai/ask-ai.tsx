@@ -296,7 +296,7 @@ function Sheet({ open, onClose, label, tall, children }: { open: boolean; onClos
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-50 md:hidden">
-          <motion.div className="absolute inset-0 bg-[color-mix(in_oklab,#2a1d3a_32%,transparent)] backdrop-blur-[6px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
+          <motion.div className="absolute inset-0 bg-[color-mix(in_oklab,#2a1d3a_58%,transparent)] backdrop-blur-[18px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
           <motion.div
             role="dialog"
             aria-modal="true"
