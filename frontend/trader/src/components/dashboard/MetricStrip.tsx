@@ -35,16 +35,13 @@ export function MetricStrip({ items }: { items: MetricStripItem[] }) {
           >
             <p className="mb-1.5 text-[11px] text-text-tertiary">{item.label}</p>
             <div
-              className="flex h-9 items-center justify-center rounded-full px-3 text-xs font-semibold tabular-nums"
+              className="lg-chip flex h-9 items-center justify-center px-3 text-xs font-semibold tabular-nums"
               style={
                 item.tone === 'accent'
                   ? { background: '#FF6A00', color: '#0a0705' }
                   : item.tone === 'solid'
-                    ? { background: 'var(--bg-active)', color: 'var(--text-primary)' }
-                    : {
-                        border: '1px solid var(--border-primary)',
-                        color: 'var(--text-secondary)',
-                      }
+                    ? { color: 'var(--text-primary)' }
+                    : { color: 'var(--text-secondary)' }
               }
             >
               {item.value}

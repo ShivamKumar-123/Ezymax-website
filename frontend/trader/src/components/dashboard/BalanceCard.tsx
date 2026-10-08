@@ -45,7 +45,7 @@ export function BalanceCard({
   return (
     <div className="flex h-full flex-col gap-3">
       <div
-        className="relative flex-1 overflow-hidden rounded-2xl p-5"
+        className="lg-sheen relative flex-1 overflow-hidden rounded-[24px] p-5"
         style={{
           background:
             'linear-gradient(135deg, #2a1206 0%, #140a04 45%, #0b0705 100%)',
@@ -120,19 +120,16 @@ export function BalanceCard({
         <button
           type="button"
           onClick={onDeposit}
-          className="flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold transition-transform active:scale-[0.98]"
-          style={{ background: '#FF6A00', color: '#0a0705' }}
+          className="flex items-center justify-center gap-2 py-3 text-sm font-semibold transition-transform active:scale-[0.98]"
+          style={{ background: '#FF6A00', color: '#0a0705', borderRadius: 14 }}
         >
           <ArrowDownToLine size={16} /> Deposit
         </button>
         <button
           type="button"
           onClick={onWithdraw}
-          className="flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-text-primary transition-colors"
-          style={{
-            background: 'var(--bg-card-nested)',
-            border: '1px solid var(--border-primary)',
-          }}
+          className="lg-surface-raised flex items-center justify-center gap-2 py-3 text-sm font-semibold text-text-primary transition-colors"
+          style={{ borderRadius: 14 }}
         >
           <ArrowUpFromLine size={16} /> Withdraw
         </button>

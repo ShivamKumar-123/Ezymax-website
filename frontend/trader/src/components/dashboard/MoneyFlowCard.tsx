@@ -29,11 +29,7 @@ export function MoneyFlowCard({
 
   return (
     <div
-      className="flex h-full flex-col rounded-2xl border p-5"
-      style={{
-        background: 'var(--bg-card)',
-        borderColor: 'var(--border-primary)',
-      }}
+      className="flex h-full flex-col lg-surface p-5"
     >
       <p className="text-sm font-semibold text-text-primary">
         Deposits &amp; withdrawals

@@ -46,11 +46,7 @@ export function MarginRingCard({
 
   return (
     <div
-      className="flex h-full flex-col rounded-2xl border p-5"
-      style={{
-        background: 'var(--bg-card)',
-        borderColor: 'var(--border-primary)',
-      }}
+      className="flex h-full flex-col lg-surface p-5"
     >
       <div className="mb-1 flex items-start justify-between">
         <p className="text-sm font-semibold text-text-primary">Margin level</p>
@@ -94,13 +90,13 @@ export function MarginRingCard({
       </div>
 
       <dl className="grid grid-cols-2 gap-2 text-[11px]">
-        <div className="rounded-lg px-3 py-2" style={{ background: 'var(--bg-card-nested)' }}>
+        <div className="lg-surface-raised px-3 py-2">
           <dt className="text-text-tertiary">Used</dt>
           <dd className="mt-0.5 font-semibold tabular-nums text-text-primary">
             {fmt(marginUsed)}
           </dd>
         </div>
-        <div className="rounded-lg px-3 py-2" style={{ background: 'var(--bg-card-nested)' }}>
+        <div className="lg-surface-raised px-3 py-2">
           <dt className="text-text-tertiary">Free</dt>
           <dd className="mt-0.5 font-semibold tabular-nums text-text-primary">
             {fmt(freeMargin)}

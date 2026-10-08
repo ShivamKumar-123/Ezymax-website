@@ -26,8 +26,7 @@ export function SetupChecklist({ steps }: { steps: SetupStep[] }) {
 
   return (
     <div
-      className="flex h-full flex-col rounded-2xl p-5"
-      style={{ background: '#0b0908', border: '1px solid var(--border-primary)' }}
+      className="lg-surface flex h-full flex-col p-5"
     >
       <div className="mb-4 flex items-center justify-between">
         <p className="text-sm font-semibold text-text-primary">Account setup</p>
@@ -49,7 +48,7 @@ export function SetupChecklist({ steps }: { steps: SetupStep[] }) {
                 style={
                   step.done
                     ? { background: '#FF6A00', color: '#0a0705' }
-                    : { border: '1px solid var(--border-secondary)' }
+                    : { border: '1px solid rgb(255 255 255 / 0.14)' }
                 }
               >
                 {step.done ? <Check size={14} strokeWidth={3} /> : null}

@@ -57,11 +57,7 @@ export function RecentActivityCard({
 
   return (
     <div
-      className="flex h-full flex-col rounded-2xl border p-5"
-      style={{
-        background: 'var(--bg-card)',
-        borderColor: 'var(--border-primary)',
-      }}
+      className="flex h-full flex-col lg-surface p-5"
     >
       <div className="mb-3 flex items-center justify-between">
         <p className="text-sm font-semibold text-text-primary">
@@ -81,8 +77,8 @@ export function RecentActivityCard({
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="h-12 animate-pulse rounded-xl"
-              style={{ background: 'var(--bg-card-nested)' }}
+              className="lg-surface-raised h-12 animate-pulse"
+              
             />
           ))}
         </div>
