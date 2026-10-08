@@ -45,7 +45,7 @@ export function BalanceCard({
   return (
     <div className="flex h-full flex-col gap-3">
       <div
-        className="lg-sheen relative flex-1 overflow-hidden rounded-[24px] p-5"
+        className="force-dark lg-sheen relative flex-1 overflow-hidden rounded-[24px] p-5"
         style={{
           background:
             'linear-gradient(135deg, #2a1206 0%, #140a04 45%, #0b0705 100%)',

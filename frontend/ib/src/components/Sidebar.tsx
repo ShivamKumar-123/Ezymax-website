@@ -24,7 +24,7 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   // dark ground, and the reference layout keeps its rail dark against a
   // light page too.
   return (
-    <nav className="flex h-full flex-col gap-1.5 bg-[#0b0908] p-3 text-[#f3efe9]">
+    <nav className="force-dark flex h-full flex-col gap-1.5 bg-[#0b0908] p-3">
       {/* Brand */}
       <div className="mb-3 flex items-center gap-2.5 px-2 pt-2">
         <div className="min-w-0">

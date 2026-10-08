@@ -1169,3 +1169,27 @@ html.light .lg-chip,
     background-color: var(--bg-card);
   }
 }
+
+/* ───────────────────────────────────────────────────────────────────────
+   A surface that is dark regardless of theme — the nav rail and the
+   account card.
+
+   Marking the container dark is not enough on its own: everything inside
+   it still reads --text-primary, --border-primary and friends, which in
+   light mode resolve to near-black on near-black. Re-point those tokens
+   inside the subtree so children come out right without each one needing
+   to know it is sitting on a dark ground.
+   ─────────────────────────────────────────────────────────────────────── */
+.force-dark {
+  --text-primary: #f3efe9;
+  --text-secondary: #b4aba3;
+  --text-tertiary: #8b827a;
+  --text-inverse: #0b0908;
+  --border-primary: rgb(255 255 255 / 0.10);
+  --border-secondary: rgb(255 255 255 / 0.14);
+  --bg-hover: rgb(255 255 255 / 0.06);
+  --bg-active: rgb(255 255 255 / 0.10);
+  --bg-card: #121010;
+  --bg-card-nested: rgb(255 255 255 / 0.05);
+  color: var(--text-primary);
+}

@@ -182,7 +182,7 @@ export default function AppSidebar() {
           'lg:static lg:translate-x-0 lg:transition-none lg:shrink-0',
           /* Dark in both themes. The rail is the brand surface, and the
              wordmark is a glow render that only reads on a dark ground. */
-          'border-r border-white/10 bg-[#0b0908] text-[#f3efe9]',
+          'force-dark border-r border-white/10 bg-[#0b0908]',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >

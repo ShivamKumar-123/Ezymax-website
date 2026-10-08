@@ -932,3 +932,16 @@ html[data-page="accounts"] div:has(> header.h-\[65px\]) {
   color: #15803d !important;
 }
 
+
+/* Dark-regardless-of-theme surface — see the trader app for the rationale:
+   marking a container dark leaves its children reading light-mode tokens. */
+.force-dark {
+  --text-primary: #f3efe9;
+  --text-secondary: #b4aba3;
+  --text-tertiary: #8b827a;
+  --border-primary: rgb(255 255 255 / 0.10);
+  --border-secondary: rgb(255 255 255 / 0.14);
+  --bg-hover: rgb(255 255 255 / 0.06);
+  --bg-active: rgb(255 255 255 / 0.10);
+  color: var(--text-primary);
+}
