@@ -2,11 +2,11 @@
 #
 # Deploy Ezymex to the production host.
 #
-# Run on the server, from /opt/ezymex. CI calls it over SSH; a human can call
-# it by hand the same way. Decides what to touch from what actually changed
-# between the deployed commit and the one being deployed, because rebuilding
-# four Next.js images to ship a backend one-liner costs twenty minutes for
-# nothing.
+# Run on the server, from /opt/ezymex-v2. CI calls it over SSH; a human can
+# call it by hand the same way. Decides what to touch from what actually
+# changed between the deployed commit and the one being deployed, because
+# rebuilding four Next.js images to ship a backend one-liner costs twenty
+# minutes for nothing.
 #
 #   ./deploy/deploy.sh                 # deploy origin/main
 #   ./deploy/deploy.sh <ref>           # deploy a specific commit/tag
@@ -14,8 +14,15 @@
 #
 set -Eeuo pipefail
 
-REPO_DIR="${REPO_DIR:-/opt/ezymex}"
-COMPOSE="docker compose -f docker-compose.yml -f docker-compose.prod.yml"
+REPO_DIR="${REPO_DIR:-/opt/ezymex-v2}"
+
+# -p is not optional. Without it Compose names the project after the directory
+# -- "ezymex-v2" -- which resolves to a DIFFERENT set of containers and, worse,
+# a different set of volumes: it would bring up an empty ezymex-v2_pg_data
+# beside the live ezymexv2_pg_data and silently deploy against a blank
+# database. The running stack is "ezymexv2"; this must match it exactly.
+COMPOSE_PROJECT="${COMPOSE_PROJECT:-ezymexv2}"
+COMPOSE="docker compose -p $COMPOSE_PROJECT -f docker-compose.yml -f docker-compose.prod.yml"
 TARGET_REF="${1:-origin/main}"
 HEALTH_URL="${HEALTH_URL:-https://api.ezymex.com/api/v1/auth/platform-status}"
 
