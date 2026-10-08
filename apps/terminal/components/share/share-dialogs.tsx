@@ -6,6 +6,7 @@ import { Copy, ExternalLink, Link2, Loader2, Share2, Trash2, X } from "lucide-re
 import { getInstrument } from "@ezymex/mock";
 import { SymbolAvatar, cn } from "@ezymex/ui";
 import { useTerminal } from "@/lib/store";
+import { useFlag } from "@/lib/features";
 import { useT } from "@ezymex/i18n/react";
 import { PENDING_LABEL, fmtServer, fmtVol } from "@/lib/trading";
 import { buildSnapshot, shareApi, shareLinks, shareUi, shareUrl, snapshotSig, useShareLinks, useShareSync, useShareUi, type ShareLink, type ShareTrade } from "@/lib/share";
@@ -50,13 +51,16 @@ function AccountShareLayer() {
   );
 }
 
-/** Toolbox header controls for the Trade / History tabs. */
+/** Toolbox header controls for the Trade / History tabs. While the broker has trade sharing switched off (flag
+ *  trade_sharing) there are no new links: only the links button stays, while there are links to manage or revoke. */
 export function ShareControls() {
   const ui = useShareUi();
   const T = useTerminal();
   const t = useT();
+  const sharing = useFlag("trade_sharing");
   const n = useShareLinks(T.account.login).filter((l) => (l.status ?? "active") === "active").length;
-  if (ui.selecting)
+  if (!sharing && !n) return null;
+  if (ui.selecting && sharing)
     return (
       <div className="flex items-center gap-1.5">
         <span className="px-1 text-[12.5px] text-fg-2">{t("desk.share.selected", { count: ui.selected.length })}</span>
@@ -74,9 +78,11 @@ export function ShareControls() {
     );
   return (
     <div className="flex items-center gap-1">
-      <button onClick={() => shareUi.set({ selecting: true, selected: [] })} className="flex h-7 items-center gap-1.5 rounded-[7px] border border-line px-2.5 text-[12.5px] font-medium text-fg-2 hover:bg-surface-3 hover:text-fg" title={t("desk.share.pickTip")}>
-        <Share2 className="size-3.5" /> {t("desk.share.share")}
-      </button>
+      {sharing && (
+        <button onClick={() => shareUi.set({ selecting: true, selected: [] })} className="flex h-7 items-center gap-1.5 rounded-[7px] border border-line px-2.5 text-[12.5px] font-medium text-fg-2 hover:bg-surface-3 hover:text-fg" title={t("desk.share.pickTip")}>
+          <Share2 className="size-3.5" /> {t("desk.share.share")}
+        </button>
+      )}
       <button onClick={() => shareUi.set({ dialog: "links" })} aria-label={t("desk.share.links")} title={t("desk.share.links")} className="flex h-7 min-w-7 items-center justify-center gap-1 rounded-[7px] px-1.5 text-[12.5px] text-fg-2 hover:bg-surface-3 hover:text-fg">
         <Link2 className="size-3.5" />
         {n > 0 && <span className="k-num font-mono">{n}</span>}

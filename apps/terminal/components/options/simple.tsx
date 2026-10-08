@@ -14,6 +14,7 @@ import { cn } from "@ezymex/ui";
 import { useLocale, useT } from "@ezymex/i18n/react";
 import { toast } from "@/lib/notify";
 import { useTerminal } from "@/lib/store";
+import { useModule } from "@/lib/features";
 import { GuestActions } from "@/components/shell/guest";
 import { aiDeniedText, aiHeaders } from "@/lib/ai-client";
 import { LOGIN_URL } from "@/lib/guest";
@@ -430,11 +431,13 @@ export function SimpleMode({ className, onDone }: { className?: string; onDone?:
   );
 }
 
-/** "Explain it to me": Claude explains the idea in the reader's language (a built-in explanation without it). */
+/** "Explain it to me": Claude explains the idea in the reader's language (a built-in explanation without it, and while
+ *  the broker has the AI assistant switched off: then nothing is sent, and guests needn't sign in for it). */
 function ExplainIdea({ chain, target, contracts, view, total, premium, usdU }: { chain: OptionChain; target: Target; contracts: number; view: View; total: number; premium: number; usdU: number }) {
   const t = useT();
   const T = useTerminal();
   const { locale } = useLocale();
+  const aiOn = useModule("ai_assistant");
   const [explain, setExplain] = React.useState<{ busy: boolean; text?: string; ai?: boolean; error?: string } | null>(null);
   React.useEffect(() => {
     setExplain(null);
@@ -444,6 +447,7 @@ function ExplainIdea({ chain, target, contracts, view, total, premium, usdU }: {
   const u = chain.underlying;
   const plain = t(view === "up" ? "trader.opt.simple.plainCall" : "trader.opt.simple.plainPut", { cost: usd(total), u, be: px(be, chain.digits), date: expiryLabel(chain.expiry, locale), time: chain.cut.time });
   const ask = async () => {
+    if (!aiOn) return setExplain({ busy: false, text: `${plain} ${t("trader.opt.simple.basicMore")}`, ai: false });
     setExplain({ busy: true });
     const body = {
       locale,
@@ -478,15 +482,15 @@ function ExplainIdea({ chain, target, contracts, view, total, premium, usdU }: {
   };
   return (
     <div>
-      {!explain && T.guest && (
+      {!explain && T.guest && aiOn && (
         // AI explanations need a signed-in session (lib/ai-guard.ts)
         <a href={LOGIN_URL} className="flex h-8 w-full items-center justify-center gap-1.5 rounded-[8px] border border-line text-[12.5px] font-medium text-fg-2 transition-colors hover:border-ember/40 hover:text-fg">
           <Sparkles className="size-3.5 text-ember" /> {t("desk.ai.signin")}
         </a>
       )}
-      {!explain && !T.guest && (
+      {!explain && (!T.guest || !aiOn) && (
         <button onClick={() => void ask()} className="flex h-8 w-full items-center justify-center gap-1.5 rounded-[8px] border border-line text-[12.5px] font-medium text-fg-2 transition-colors hover:border-ember/40 hover:text-fg">
-          <Sparkles className="size-3.5 text-ember" /> {t("trader.opt.guide.explain")}
+          {aiOn ? <Sparkles className="size-3.5 text-ember" /> : <MessageSquareText className="size-3.5 text-fg-3" />} {t("trader.opt.guide.explain")}
         </button>
       )}
       {explain && (

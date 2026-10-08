@@ -24,6 +24,7 @@ import { useT } from "@ezymex/i18n/react";
 import { useTradeMode } from "@/lib/options/mode";
 import { useOptionBook } from "@/lib/options/book";
 import { useBookFlag } from "@/lib/options/book-flag";
+import { useModule } from "@/lib/features";
 
 // Ezymex FX Options tabs: their own chunk (loaded when the tab first shows)
 const OptionsPositionsTab = dynamic(() => import("@/components/options/positions-tab").then((m) => m.OptionsPositionsTab), { ssr: false });
@@ -51,6 +52,11 @@ export function useActivityTabs() {
   const book = useOptionBook(T.guest ? null : T.account.login);
   // the options order book: an Orders tab while it is live (in CFD mode only while book orders are working)
   const bookFlag = useBookFlag(T.guest ? null : T.account.login);
+  // modules the broker switched off lose their tabs (a saved tab of theirs falls back below). AI Trader stays while
+  // strategies still run, so they can be watched and stopped.
+  const newsOn = useModule("news");
+  const calendarOn = useModule("calendar");
+  const aiOn = useModule("ai_assistant") || ai.records.some((r) => r.status === "active" || r.status === "paused");
   const optCount = book.positions.length + book.orders.length;
   const options = mode === "options";
   const cfdPositions: TabDef = { value: "positions", label: options ? t("desk.act.cfdPositions") : t("desk.act.positions"), count: T.positions.length };
@@ -67,14 +73,14 @@ export function useActivityTabs() {
     ...(!options && bookFlag.open ? [optOrders] : []),
     { value: "alerts", label: t("desk.act.alerts"), count: T.alerts.filter((a) => a.active).length },
     // live builds: real headlines and calendar (services/news); demo builds: sample content
-    { value: "news", label: t("desk.act.news"), count: T.live ? undefined : 3 },
-    { value: "calendar", label: t("desk.act.calendar") },
+    ...(newsOn ? [{ value: "news" as const, label: t("desk.act.news"), count: T.live ? undefined : 3 }] : []),
+    ...(calendarOn ? [{ value: "calendar" as const, label: t("desk.act.calendar") }] : []),
   ];
   const more: TabDef[] = [
     ...(options ? [cfdPositions, cfdOrders, history] : []),
     { value: "exposure", label: t("desk.act.exposure") },
     { value: "journal", label: t("desk.act.journal") },
-    { value: "ai", label: t("desk.act.ai"), count: ai.records.filter((r) => r.status === "active").length },
+    ...(aiOn ? [{ value: "ai" as const, label: t("desk.act.ai"), count: ai.records.filter((r) => r.status === "active").length }] : []),
     // MAM master account or linked client account (live engine only)
     ...(mam?.role ? [{ value: "mam" as const, label: "MAM", count: mam.role === "manager" ? mam.accounts : undefined }] : []),
   ];

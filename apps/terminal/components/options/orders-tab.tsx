@@ -20,7 +20,7 @@ import { errText, optionErrorText } from "@/lib/options/errors";
 import { toTick } from "@/lib/options/normalize";
 import { useBookLive, useOpt, useOptionsAttach } from "@/lib/options-store";
 import type { BookFill, BookOrder } from "@/lib/options/types";
-import { OptAvatar, Seg, SideTag } from "./bits";
+import { OptAvatar, OptionsGate, Seg, SideTag } from "./bits";
 import { OrderStatusChip, qty, useSeriesUnits, useTypeLabel } from "./book-bits";
 import { expiryLabel, px, usd } from "./format";
 
@@ -257,6 +257,14 @@ function FillRow({ f }: { f: BookFill }) {
 }
 
 export function OrdersTab() {
+  return (
+    <OptionsGate compact>
+      <OrdersBody />
+    </OptionsGate>
+  );
+}
+
+function OrdersBody() {
   const T = useTerminal();
   const t = useT();
   useOptionsAttach({ login: T.account.login, guest: T.guest, engine: T.engine, readOnly: T.readOnly });

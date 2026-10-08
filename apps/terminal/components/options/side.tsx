@@ -5,10 +5,19 @@
 import * as React from "react";
 import { useTerminal } from "@/lib/store";
 import { useOptionsAttach } from "@/lib/options-store";
+import { OptionsGate } from "./bits";
 import { InstrumentList } from "./instruments";
 import { OptionsBookBody, useOptionsTradesLabel } from "./book-card";
 
 export function OptionsSide({ tab }: { tab: "instruments" | "book" | "ticks" }) {
+  return (
+    <OptionsGate compact>
+      <SideBody tab={tab} />
+    </OptionsGate>
+  );
+}
+
+function SideBody({ tab }: { tab: "instruments" | "book" | "ticks" }) {
   const T = useTerminal();
   useOptionsAttach({ login: T.account.login, guest: T.guest, engine: T.engine, readOnly: T.readOnly });
   if (tab === "instruments") return <InstrumentList />;

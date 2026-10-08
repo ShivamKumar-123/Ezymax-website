@@ -16,6 +16,7 @@ import { cn } from "@ezymex/ui";
 import { useLocale, useT } from "@ezymex/i18n/react";
 import { toast } from "@/lib/notify";
 import { useTerminal } from "@/lib/store";
+import { useModule } from "@/lib/features";
 import { PanelTabs } from "@/components/ui/panel";
 import { Button, HelpTip, IconButton, Segmented, Stat, Tip } from "@/components/ui/kit";
 import { TDialog } from "@/components/ui/primitives";
@@ -28,7 +29,7 @@ import { engineUsd } from "@/lib/options/api";
 import { COL_PRESETS, OPTION_TFS, getOpt, opt, underlyingOf, useBookLive, useOpt, useOptionsAttach, type ChainView, type SidePanel } from "@/lib/options-store";
 import { atmIndex } from "@/lib/options/math";
 import { AnalyticsPane } from "./analytics";
-import { OptAvatar, OptionsUnavailable, RightTag, Seg, StateBadge } from "./bits";
+import { OptAvatar, OptionsGate, OptionsUnavailable, RightTag, Seg, StateBadge } from "./bits";
 import { BookBadge } from "./book-bits";
 import { BookPane } from "./depth";
 import { MmRulesLink } from "./mm-rules";
@@ -333,6 +334,14 @@ function Half({ label, children }: { label: React.ReactNode; children: React.Rea
 }
 
 export function OptionsMain() {
+  return (
+    <OptionsGate>
+      <OptionsDesk />
+    </OptionsGate>
+  );
+}
+
+function OptionsDesk() {
   const T = useAttach();
   useOptionEvents(T.guest ? null : T.account.login, !!T.account.cent);
   const t = useT();
@@ -512,6 +521,11 @@ export function openOptionsTicket(panel?: SidePanel) {
  * itself whenever the ticket gets a new selection: a price clicked in the chain, a level in the book, "Send to ticket".
  */
 export function OptionsTicketPopup() {
+  // nothing to order while the broker has FX Options switched off (OptionsMain says why)
+  return useModule("options") ? <TicketPopup /> : null;
+}
+
+function TicketPopup() {
   const t = useT();
   useAttach();
   const open = React.useSyncExternalStore(

@@ -15,6 +15,7 @@ import { Badge, LiveMoney } from "@/components/ui/primitives";
 import { Button, IconButton, Tip } from "@/components/ui/kit";
 import { Kbd } from "@/components/dialogs/kbd";
 import { CLIENT_AREA, LOGIN_URL, REGISTER_URL } from "@/lib/guest";
+import { useModule } from "@/lib/features";
 import { GuestUserMenu } from "./guest";
 import { NotificationBell } from "./notifications";
 import { ModeSwitch } from "./mode-switch";
@@ -69,6 +70,7 @@ function AccountSwitcher() {
   const T = useTerminal();
   const t = useT();
   const m = useMetrics();
+  const walletOn = useModule("wallet");
   const a = T.account;
   return (
     <DropMenu
@@ -120,11 +122,11 @@ function AccountSwitcher() {
               <Button variant="secondary" onClick={() => (T.refillDemo(), close())} className="justify-start">
                 <RefreshCw /> {t("trader.account.refillDemo", { count: T.refillsLeft })}
               </Button>
-            ) : (
+            ) : walletOn ? (
               <Button variant="secondary" onClick={() => (window.open(`${CLIENT_AREA}/wallet`, "_blank"), close())} className="justify-start">
                 <Wallet /> {t("desk.top.deposit")}
               </Button>
-            )}
+            ) : null}
             <Button variant="secondary" onClick={() => (window.open(`${CLIENT_AREA}/accounts`, "_blank"), close())} className="justify-start">
               <UserPlus /> {t("desk.acc.openNew")}
             </Button>
@@ -148,16 +150,19 @@ function AccountSwitcher() {
   );
 }
 
-/** The one filled button of the bar: Deposit (live) or Top up demo (demo). */
+/** The one filled button of the bar: Deposit (live; not while the broker has the wallet switched off) or Top up demo
+ *  (demo). */
 function FundButton() {
   const T = useTerminal();
   const t = useT();
+  const walletOn = useModule("wallet");
   if (T.account.type === "demo")
     return (
       <Button variant="primary" size="lg" tip={t("desk.top.topUpDemoHint", { count: T.refillsLeft })} onClick={() => T.refillDemo()}>
         <RefreshCw /> <span className="hidden min-[1200px]:inline">{t("desk.top.topUpDemo")}</span>
       </Button>
     );
+  if (!walletOn) return null;
   return (
     <Tip content={t("desk.top.depositHint")}>
       <a href={`${CLIENT_AREA}/wallet`} target="_blank" rel="noreferrer" className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-[8px] bg-accent-strong px-3 text-[13px] font-semibold text-white transition hover:brightness-110 [&_svg]:size-4">

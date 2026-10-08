@@ -17,7 +17,7 @@ import type { EngineErr } from "@/lib/engine/map";
 import { engineUsd, optionsApi, isLaunchingSoon } from "@/lib/options/api";
 import { errText } from "@/lib/options/errors";
 import type { Settlement } from "@/lib/options/types";
-import { OptAvatar, OptionsUnavailable } from "./bits";
+import { OptAvatar, OptionsGate, OptionsUnavailable } from "./bits";
 import { Explain } from "./explain";
 import { expiryLabel, iso, money, moneySigned, px } from "./format";
 
@@ -89,6 +89,14 @@ function Row({ x, locale }: { x: Settlement; locale: string }) {
 }
 
 export function SettlementsTab() {
+  return (
+    <OptionsGate compact>
+      <SettlementsBody />
+    </OptionsGate>
+  );
+}
+
+function SettlementsBody() {
   const T = useTerminal();
   const t = useT();
   const { locale } = useLocale();

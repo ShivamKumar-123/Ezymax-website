@@ -10,6 +10,7 @@ import * as React from "react";
 import { Briefcase } from "lucide-react";
 import { cn } from "@ezymex/ui";
 import { useTerminal } from "@/lib/store";
+import { useModule } from "@/lib/features";
 import { engineApi, type MamInfo } from "@/lib/engine/client";
 import { fmtServer } from "@/lib/trading";
 import { Td, Th } from "@/components/ui/panel";
@@ -20,10 +21,12 @@ const lots = (v: number | null | undefined) => (typeof v === "number" ? v.toFixe
 const usd = (v: number | null | undefined) => (typeof v === "number" ? `$${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—");
 const note = (r: string | null) => (!r ? "" : r === "below_min_lot" ? "below min lot" : r === "no_equity" ? "no equity" : r.replace(/_/g, " "));
 
-/** MAM role of the live account (polled; null while unknown or outside the engine). */
+/** MAM role of the live account (polled; null while unknown, outside the engine, or while the broker has copy trading
+ *  switched off: the Client Area files MAM under it too, /social/mam). */
 export function useMam(symbol?: string, volume?: number): MamInfo | null {
   const T = useTerminal();
-  const login = T.engine && T.live && !T.guest ? T.account.login : null;
+  const on = useModule("copy_trading");
+  const login = on && T.engine && T.live && !T.guest ? T.account.login : null;
   const [info, setInfo] = React.useState<MamInfo | null>(null);
   React.useEffect(() => {
     if (!login) {

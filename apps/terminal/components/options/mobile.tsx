@@ -26,7 +26,7 @@ import type { BookOrder } from "@/lib/options/types";
 import { BookBadge, OrderStatusChip, qty as qtyText, useSeriesUnits, useTypeLabel } from "./book-bits";
 import { BookPane } from "./depth";
 import { ClosedList } from "./closed-tab";
-import { Flash, OptAvatar, OptionsUnavailable, Seg } from "./bits";
+import { Flash, OptAvatar, OptionsGate, OptionsUnavailable, Seg } from "./bits";
 import { StrategyBuilder } from "./builder";
 import { ColumnsMenu, OptionChainTable, useChainCols } from "./chain";
 import { useOptionEvents, StreamDot } from "./desktop";
@@ -45,6 +45,14 @@ import { OptionTicket } from "./ticket";
 type MTab = "instruments" | "chart" | "chain" | "trade" | "positions";
 
 export function OptionsMobile() {
+  return (
+    <OptionsGate>
+      <MobileDesk />
+    </OptionsGate>
+  );
+}
+
+function MobileDesk() {
   const T = useTerminal();
   const t = useT();
   useOptionsAttach({ login: T.account.login, guest: T.guest, engine: T.engine, readOnly: T.readOnly });

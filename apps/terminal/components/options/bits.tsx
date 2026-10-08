@@ -1,13 +1,16 @@
 "use client";
 
 // Small shared pieces of the options workspace: avatars for every underlying (NZDUSD has no CFD instrument), state and
-// expiry-kind badges, a call/put tag, the flashing number cell, the "launching soon" and error panels.
+// expiry-kind badges, a call/put tag, the flashing number cell, the "launching soon", error and "switched off" panels.
 import * as React from "react";
-import { ArrowUpRight, BookOpen, Clock3, Hourglass, RefreshCw, TriangleAlert } from "lucide-react";
+import { ArrowUpRight, BookOpen, ChevronDown, Clock3, Hourglass, Layers, RefreshCw, TriangleAlert } from "lucide-react";
 import { INSTRUMENT_MAP } from "@ezymex/mock";
 import { OPTION_SPEC } from "@ezymex/mock/options";
 import { SymbolAvatar, cn, useTickGlow } from "@ezymex/ui";
 import { useT } from "@ezymex/i18n/react";
+import { useTerminal } from "@/lib/store";
+import { useModule } from "@/lib/features";
+import { DropMenu } from "@/components/ui/menu";
 import { ONBOARDING_URL, needsOnboarding, optionErrorText } from "@/lib/options/errors";
 import type { ExpiryKind, OptionRight, OptionTradeState, Side } from "@/lib/options/types";
 
@@ -128,6 +131,44 @@ export function OptionsUnavailable({ kind, onRetry, compact }: { kind: "soon" | 
           <button onClick={onRetry} className="mx-auto mt-4 inline-flex h-7 items-center gap-1.5 rounded-[7px] border border-line px-3 text-[12px] font-medium text-fg-2 transition-colors hover:border-fg-3/50 hover:text-fg">
             <RefreshCw className="size-3.5" /> {t("trader.opt.soon.retry")}
           </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The options UI, or "Options trading isn't available" while the broker has FX Options switched off (module `options`,
+ * lib/modules.ts). Wraps every place the options UI mounts (workspace, side column, toolbox tabs, phone layout), so none
+ * of them loads options data then. `compact`: a panel inside the toolbox or the side column.
+ */
+export function OptionsGate({ compact, children }: { compact?: boolean; children: React.ReactNode }) {
+  return useModule("options") ? <>{children}</> : <OptionsOff compact={compact} />;
+}
+
+function OptionsOff({ compact }: { compact?: boolean }) {
+  const t = useT();
+  const T = useTerminal();
+  // the full panel offers the other trading accounts: an options account has nothing to trade here, a CFD one has
+  const others = compact || T.guest ? [] : T.accounts.filter((a) => a.login !== T.account.login);
+  return (
+    <div className={cn("grid h-full place-items-center text-center", compact ? "p-4" : "p-8")}>
+      <div className="max-w-[420px]">
+        <div className="mx-auto mb-3 grid size-11 place-items-center rounded-full border border-line bg-panel-2 text-fg-3 [&>svg]:size-5">
+          <Layers />
+        </div>
+        <div className="text-[14px] font-semibold text-fg">{t("features.options.offTitle")}</div>
+        <p className="mt-1.5 text-[12.5px] leading-relaxed text-fg-3">{t("features.options.offText")}</p>
+        {others.length > 0 && (
+          <DropMenu
+            width={280}
+            items={others.map((a) => ({ label: `${a.login}${a.nickname ? ` · ${a.nickname}` : ""}`, hint: t.dyn(`trader.accountType.${a.type}`, a.type), onSelect: () => T.switchAccount(a.login) }))}
+            trigger={({ toggle, open }) => (
+              <button onClick={toggle} aria-expanded={open} aria-haspopup="menu" className="mx-auto mt-4 inline-flex h-7 items-center gap-1.5 rounded-[7px] border border-line px-3 text-[12px] font-medium text-fg-2 transition-colors hover:border-fg-3/50 hover:text-fg">
+                {t("trader.account.switch")} <ChevronDown className={cn("size-3.5 text-fg-3 transition-transform", open && "rotate-180")} />
+              </button>
+            )}
+          />
         )}
       </div>
     </div>

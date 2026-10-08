@@ -4,19 +4,22 @@
  * Slim banner when the active account is a copy-trading follower account: trades are managed by the master,
  * the client watches P&L here and manages copying in the Client Area (/social/copy). Nothing is blocked.
  * Shown when the account's group is `copy` / `copy-*` (or the engine's role says so), or after the engine
- * rejected a request with `copy_account`.
+ * rejected a request with `copy_account`. Not while the broker has copy trading switched off (its Client Area pages are
+ * gone then too).
  */
 import * as React from "react";
 import { Copy, ExternalLink } from "lucide-react";
 import { useT } from "@ezymex/i18n/react";
 import { useTerminal } from "@/lib/store";
 import { CLIENT_AREA } from "@/lib/guest";
+import { useModule } from "@/lib/features";
 import { COPY_ACCOUNT_EVENT, copyMasterName, type EngineTradingAccount } from "@/lib/engine/map";
 
 export function CopyBanner() {
   const T = useTerminal();
   const t = useT();
-  const login = T.live && !T.guest ? T.session.login : null;
+  const on = useModule("copy_trading");
+  const login = on && T.live && !T.guest ? T.session.login : null;
   const acc = T.account as Partial<EngineTradingAccount>;
   const [flagged, setFlagged] = React.useState<string | null>(null);
 

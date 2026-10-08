@@ -10,6 +10,7 @@ import { cn } from "@ezymex/ui";
 import { useT } from "@ezymex/i18n/react";
 import { toast } from "@/lib/notify";
 import { useTerminal } from "@/lib/store";
+import { useFlag } from "@/lib/features";
 import type { OptClosed } from "@/lib/options/book";
 import { MiniSwitch, TButton, TDialog, TIcon } from "@/components/ui/primitives";
 
@@ -32,12 +33,14 @@ function socialLinks(url: string, text: string) {
   ];
 }
 
-/** Share icon for a closed option trade. Hidden for guests, demo builds without the engine and investor logins. */
+/** Share icon for a closed option trade. Hidden for guests, demo builds without the engine, investor logins and while
+ *  the broker has trade sharing switched off (flag trade_sharing). */
 export function OptionShareButton({ o, className }: { o: OptClosed; className?: string }) {
   const T = useTerminal();
   const t = useT();
+  const sharing = useFlag("trade_sharing");
   const [open, setOpen] = React.useState(false);
-  if (T.guest || !T.engine || T.readOnly) return null;
+  if (T.guest || !T.engine || T.readOnly || !sharing) return null;
   return (
     <>
       <TIcon

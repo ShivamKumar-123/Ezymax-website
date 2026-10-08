@@ -16,7 +16,7 @@ import { fmtServer } from "@/lib/trading";
 import { Pnl } from "@/components/ui/primitives";
 import { loadOptionHistory, useOptionBook, type OptClosed } from "@/lib/options/book";
 import { useOptionsAttach } from "@/lib/options-store";
-import { OptAvatar } from "./bits";
+import { OptAvatar, OptionsGate } from "./bits";
 import { OptionShareButton } from "@/components/share/option-share";
 import { expiryLabel, iso, money, moneySigned, pctSigned, strikeOf } from "./format";
 import { useSettledText } from "./settlements-tab";
@@ -136,6 +136,14 @@ function useHistory(days: number) {
 }
 
 export function ClosedTab() {
+  return (
+    <OptionsGate compact>
+      <ClosedBody />
+    </OptionsGate>
+  );
+}
+
+function ClosedBody() {
   const T = useTerminal();
   const t = useT();
   const { locale } = useLocale();

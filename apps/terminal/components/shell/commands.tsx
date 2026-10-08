@@ -49,6 +49,7 @@ import { openIndicatorList, openSaveTemplate } from "@/components/chart/indicato
 import { guestNotice, openRegister, CLIENT_AREA } from "@/lib/guest";
 import type { MenuItem } from "@/components/ui/menu";
 import { askConfirm } from "@/components/dialogs/confirm";
+import { useModule, usePageOn } from "@/lib/features";
 import { useSwitchMode } from "./mode-switch";
 import { useTradeMode } from "@/lib/options/mode";
 
@@ -171,6 +172,7 @@ export function useMainMenuItems(): MenuItem[] {
   const lang = useLocale();
   const { resolvedTheme, setTheme } = useTheme();
   const layout = useLayoutItems();
+  const pageOn = usePageOn();
   const tab = T.activeTab;
   const ro = T.readOnly || T.guest;
   const accounts: MenuItem[] = T.guest
@@ -219,8 +221,8 @@ export function useMainMenuItems(): MenuItem[] {
     { label: t("desk.set.shortcuts"), icon: <Keyboard />, hint: "F1", onSelect: () => T.setUi({ shortcuts: true }) },
     { label: t("desk.help.glossary"), icon: <BookOpen />, onSelect: () => T.setUi({ glossary: true }) },
     { label: t("desk.help.tour"), icon: <CircleHelp />, onSelect: () => T.setUi({ tour: true }) },
-    { label: t("desk.help.topics"), icon: <ArrowUpRight />, onSelect: () => window.open(`${CLIENT_AREA}/academy`, "_blank") },
-    { label: t("desk.help.support"), icon: <ArrowUpRight />, onSelect: () => window.open(`${CLIENT_AREA}/support`, "_blank") },
+    ...(pageOn("/academy") ? [{ label: t("desk.help.topics"), icon: <ArrowUpRight />, onSelect: () => window.open(`${CLIENT_AREA}/academy`, "_blank") }] : []),
+    ...(pageOn("/support") ? [{ label: t("desk.help.support"), icon: <ArrowUpRight />, onSelect: () => window.open(`${CLIENT_AREA}/support`, "_blank") }] : []),
     { label: t("desk.help.about"), onSelect: () => T.setUi({ about: true }) },
   ];
 }
@@ -246,6 +248,9 @@ export function useCommands(): Command[] {
   const { resolvedTheme, setTheme } = useTheme();
   const switchMode = useSwitchMode();
   const mode = useTradeMode();
+  // what the broker switched off: its toolbox tabs and Client Area links aren't offered
+  const pageOn = usePageOn();
+  const tabOn: Partial<Record<ToolboxTab, boolean>> = { news: useModule("news"), calendar: useModule("calendar"), ai: useModule("ai_assistant") };
   const tab = T.activeTab;
   const reg = () => chartRegistry.get(tab.id);
   const ro = T.readOnly || T.guest;
@@ -302,7 +307,7 @@ export function useCommands(): Command[] {
     ["journal", t("toolbox.tab.journal")],
     ["ai", t("toolbox.tab.ai")],
   ] as const)
-    add({ id: `tab-${k}`, group: "view", label, keywords: `${k} tab toolbox`, run: () => openActivity(T, k) });
+    if (tabOn[k] !== false) add({ id: `tab-${k}`, group: "view", label, keywords: `${k} tab toolbox`, run: () => openActivity(T, k) });
   add({ id: "dark", group: "view", label: `${t("desk.set.theme")}: ${t("desk.set.dark")}`, icon: <Moon />, keywords: "dark theme night", checked: resolvedTheme !== "light", run: () => setTheme("dark") });
   add({ id: "light", group: "view", label: `${t("desk.set.theme")}: ${t("desk.set.light")}`, icon: <Sun />, keywords: "light theme day", checked: resolvedTheme === "light", run: () => setTheme("light") });
   for (const l of LOCALES) add({ id: `lang-${l.code}`, group: "view", label: `${t("desk.set.language")}: ${l.name}`, icon: <Flag country={l.flag} className="size-3.5" />, keywords: `language ${l.english} ${l.code}`, checked: lang.locale === l.code, run: () => void lang.setLocale(l.code) });
@@ -320,7 +325,7 @@ export function useCommands(): Command[] {
     if (T.engine) add({ id: "login-another", group: "account", label: t("desk.acc.logInAnother"), icon: <LogIn />, keywords: "log in login another account", run: () => T.openLogin() });
     add({ id: "open-acc", group: "account", label: t("desk.acc.openNew"), icon: <UserPlus />, keywords: "open new account register", run: () => window.open(`${CLIENT_AREA}/accounts`, "_blank") });
     if (T.account.type === "demo") add({ id: "refill", group: "account", label: t("trader.menu.refillDemo", { count: T.refillsLeft }), icon: <RefreshCw />, keywords: "refill top up demo balance reset", run: () => T.refillDemo() });
-    else add({ id: "deposit", group: "account", label: t("desk.top.deposit"), icon: <Wallet />, keywords: "deposit fund wallet money", run: () => window.open(`${CLIENT_AREA}/wallet`, "_blank") });
+    else if (pageOn("/wallet")) add({ id: "deposit", group: "account", label: t("desk.top.deposit"), icon: <Wallet />, keywords: "deposit fund wallet money", run: () => window.open(`${CLIENT_AREA}/wallet`, "_blank") });
     add({ id: "client-area", group: "account", label: t("trader.clientArea"), icon: <ArrowUpRight />, keywords: "client area portal", run: () => window.open(CLIENT_AREA, "_blank") });
     add({ id: "profile", group: "account", label: t("trader.account.profileSecurity"), keywords: "profile security password", run: () => window.open(`${CLIENT_AREA}/profile`, "_blank") });
     add({ id: "logout", group: "account", label: t("trader.menu.logOut"), icon: <LogOut />, keywords: "log out logout sign out exit", run: () => T.logout() });
@@ -330,8 +335,8 @@ export function useCommands(): Command[] {
   add({ id: "tour", group: "help", label: t("desk.help.tour"), icon: <CircleHelp />, keywords: "tour welcome onboarding help", run: () => T.setUi({ tour: true }) });
   add({ id: "glossary", group: "help", label: t("desk.help.glossary"), icon: <BookOpen />, keywords: "glossary terms margin pip lot explain", run: () => T.setUi({ glossary: true }) });
   add({ id: "keys", group: "help", label: t("desk.set.shortcuts"), hint: "F1", icon: <Keyboard />, keywords: "keyboard shortcuts hotkeys keys", run: () => T.setUi({ shortcuts: true }) });
-  add({ id: "topics", group: "help", label: t("desk.help.topics"), keywords: "help academy topics learn", run: () => window.open(`${CLIENT_AREA}/academy`, "_blank") });
-  add({ id: "support", group: "help", label: t("desk.help.support"), keywords: "support contact chat", run: () => window.open(`${CLIENT_AREA}/support`, "_blank") });
+  if (pageOn("/academy")) add({ id: "topics", group: "help", label: t("desk.help.topics"), keywords: "help academy topics learn", run: () => window.open(`${CLIENT_AREA}/academy`, "_blank") });
+  if (pageOn("/support")) add({ id: "support", group: "help", label: t("desk.help.support"), keywords: "support contact chat", run: () => window.open(`${CLIENT_AREA}/support`, "_blank") });
   add({ id: "about", group: "help", label: t("desk.help.about"), keywords: "about version", run: () => T.setUi({ about: true }) });
   return c;
 }

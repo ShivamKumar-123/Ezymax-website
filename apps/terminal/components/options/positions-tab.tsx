@@ -33,7 +33,7 @@ import { breakevenOf, expiryCash } from "@/lib/options/plain";
 import { setTradeMode } from "@/lib/options/mode";
 import { opt, quoteOf, useBookLive, useOpt, useOptionsAttach, useSeriesQuote } from "@/lib/options-store";
 import type { OptOrder, OptPosition, OptionQuote } from "@/lib/options/types";
-import { OptAvatar, useNow } from "./bits";
+import { OptAvatar, OptionsGate, useNow } from "./bits";
 import { EzymexQuotedTag } from "./book-bits";
 import { Explain } from "./explain";
 import { countdown, cutWhen, expiryLabel, greek, iso, money, moneySigned, nyCut, pct, pctSigned, px, strikeOf, usd, usdSigned } from "./format";
@@ -659,6 +659,14 @@ function GreeksButton({ totals }: { totals: ReturnType<typeof sum> }) {
 }
 
 export function OptionsPositionsTab() {
+  return (
+    <OptionsGate compact>
+      <PositionsBody />
+    </OptionsGate>
+  );
+}
+
+function PositionsBody() {
   const T = useTerminal();
   const t = useT();
   useOptionsAttach({ login: T.account.login, guest: T.guest, engine: T.engine, readOnly: T.readOnly });
