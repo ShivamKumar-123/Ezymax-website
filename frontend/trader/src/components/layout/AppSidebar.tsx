@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence, LayoutGroup, useReducedMotion } from 'framer-motion';
@@ -140,13 +141,65 @@ function ActivePill() {
  * own label and a second copy would just cover the next item.
  */
 function RailTip({ label }: { label: string }) {
+  const anchorRef = useRef<HTMLSpanElement>(null);
+  const [at, setAt] = useState<{ top: number; left: number } | null>(null);
+  const [shown, setShown] = useState(false);
+
+  useEffect(() => {
+    const row = anchorRef.current?.parentElement;
+    if (!row) return;
+
+    const show = () => {
+      // Below lg the drawer is full width and already labelled.
+      if (window.innerWidth < 1024) return;
+      const r = row.getBoundingClientRect();
+      setAt({ top: r.top + r.height / 2, left: r.right + 10 });
+    };
+    const hide = () => setAt(null);
+
+    row.addEventListener('mouseenter', show);
+    row.addEventListener('mouseleave', hide);
+    row.addEventListener('focus', show);
+    row.addEventListener('blur', hide);
+    // A stale tooltip left floating over the page is worse than none.
+    window.addEventListener('scroll', hide, true);
+    return () => {
+      row.removeEventListener('mouseenter', show);
+      row.removeEventListener('mouseleave', hide);
+      row.removeEventListener('focus', show);
+      row.removeEventListener('blur', hide);
+      window.removeEventListener('scroll', hide, true);
+    };
+  }, []);
+
+  // Mount at rest, then transition in on the next frame.
+  useEffect(() => {
+    if (!at) {
+      setShown(false);
+      return;
+    }
+    const id = requestAnimationFrame(() => setShown(true));
+    return () => cancelAnimationFrame(id);
+  }, [at]);
+
   return (
-    <span
-      role="tooltip"
-      className="pointer-events-none absolute left-[calc(100%+10px)] top-1/2 z-[80] hidden -translate-y-1/2 translate-x-1 whitespace-nowrap rounded-lg border border-white/10 bg-[#161210] px-2.5 py-1.5 text-[12px] font-medium text-[#f3efe9] opacity-0 shadow-[0_12px_28px_-12px_rgba(0,0,0,0.9)] transition-[opacity,transform] duration-150 group-hover:translate-x-0 group-hover:opacity-100 lg:block"
-    >
-      {label}
-    </span>
+    <>
+      <span ref={anchorRef} className="hidden" aria-hidden />
+      {at !== null &&
+        createPortal(
+          <span
+            role="tooltip"
+            style={{ top: at.top, left: at.left }}
+            className={cn(
+              'pointer-events-none fixed z-[200] -translate-y-1/2 whitespace-nowrap rounded-lg border border-white/10 bg-[#161210] px-2.5 py-1.5 text-[12px] font-medium text-[#f3efe9] shadow-[0_12px_28px_-12px_rgba(0,0,0,0.9)] transition-[opacity,transform] duration-150',
+              shown ? 'translate-x-0 opacity-100' : '-translate-x-1 opacity-0',
+            )}
+          >
+            {label}
+          </span>,
+          document.body,
+        )}
+    </>
   );
 }
 

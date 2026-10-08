@@ -670,8 +670,11 @@ function PortfolioHero({
       style={PREMIUM_CARD_STYLE}
     >
       <AccentBar />
-      {/* Top bar: account picker + actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 sm:p-5">
+      {/* Top bar: account picker, then actions.
+          Never side by side: this card sits in a bento column, so the row is
+          ~490px wide however wide the window is, and the four buttons wrapped
+          back over the picker. Stacked, they fit on one line. */}
+      <div className="flex flex-col items-start gap-3 p-4 sm:p-5">
         <div className="relative">
           <button
             type="button"
