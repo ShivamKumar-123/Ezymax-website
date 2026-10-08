@@ -5,10 +5,10 @@ import { useTheme } from "next-themes";
 import { LineStyle, type IPriceLine, type UTCTimestamp } from "lightweight-charts";
 import { toast } from "@/lib/notify";
 import { ArrowDownRight, ArrowUpRight, Bell, Camera, CandlestickChart, Crosshair, GripVertical, Layers, Minus, Plus, ShoppingCart, SlidersHorizontal, X } from "lucide-react";
-import { getInstrument, priceFeed } from "@ezymex/mock";
+import { getInstrument, instrumentSpec, priceFeed } from "@ezymex/mock";
 import { cn, useQuote } from "@ezymex/ui";
 import { usePositionProfit, useTerminal, type Anchor, type ChartTab, type Drawing } from "@/lib/store";
-import { CHART_TYPES, TF_SECONDS, TIMEFRAMES, accMoney, fmtPrice, fmtVol, profitAt, roundPrice, type PendingOrder, type TPosition } from "@/lib/trading";
+import { CHART_TYPES, TF_SECONDS, TIMEFRAMES, accMoney, fmtPrice, fmtVol, pointSize, profitAt, roundPrice, type PendingOrder, type TPosition } from "@/lib/trading";
 import { useContextMenu, type MenuItem } from "@/components/ui/menu";
 import { INDICATOR_CATEGORIES, INDICATOR_LIST } from "@/lib/indicators";
 import { chartRegistry, pendingRanges, useChartEngine, type ChartHandle, type LegendData } from "./engine";
@@ -81,22 +81,31 @@ const PENDING_LABEL: Record<string, MessageKey> = {
 };
 
 /**
- * Which side of the price a stop must sit on: a buy's stop loss below and its take profit above, a sell's the other way
- * round (the trade server rejects anything else). `ref` is the price it is checked against (see stopRef). Returns the
- * message key of the problem, or null when the stop is fine.
+ * Which side of the price a stop must sit on, the trade engine's check_sltp: a buy's stop loss below and its take profit
+ * above, a sell's the other way round, at least `gap` (the symbol's stops level) away. `ref` is the price it is checked
+ * against (see stopRef). Returns the message key and the nearest allowed price, or null when the stop is fine.
  */
-export function stopProblem(which: "sl" | "tp", side: "buy" | "sell", ref: number, price: number): MessageKey | null {
-  const below = (which === "sl") === (side === "buy");
-  if (below) return price < ref ? null : which === "sl" ? "chart.line.bad.slBelow" : "chart.line.bad.tpBelow";
-  return price > ref ? null : which === "sl" ? "chart.line.bad.slAbove" : "chart.line.bad.tpAbove";
+export function stopProblem(which: "sl" | "tp", side: "buy" | "sell", ref: number, price: number, gap = 0): { key: MessageKey; at: number } | null {
+  if ((which === "sl") === (side === "buy")) {
+    const at = ref - gap;
+    return price <= at && price < ref ? null : { key: which === "sl" ? "chart.line.bad.slBelow" : "chart.line.bad.tpBelow", at };
+  }
+  const at = ref + gap;
+  return price >= at && price > ref ? null : { key: which === "sl" ? "chart.line.bad.slAbove" : "chart.line.bad.tpAbove", at };
 }
 
 /** The price an SL / TP is checked against: an open position's closing price now (Bid for a buy, Ask for a sell), a
- *  pending order's own price. */
+ *  pending order's entry (its stop-limit price, else its price). */
 function stopRef(l: TLine, q: { bid: number; ask: number }, pendings: PendingOrder[]): number | null {
-  if (l.owner === "pnd") return pendings.find((o) => o.ticket === l.ref)?.price ?? null;
+  if (l.owner === "pnd") {
+    const o = pendings.find((x) => x.ticket === l.ref);
+    return o ? o.stopLimit ?? o.price : null;
+  }
   return l.side === "buy" ? q.bid : q.ask;
 }
+
+/** The symbol's minimum stop distance (stops level, in price). */
+const stopGap = (symbol: string) => (instrumentSpec(symbol)?.stopsLevelPoints ?? 0) * pointSize(symbol);
 
 /** Money at `price` for an SL / TP line: the position's P&L there (with its swap and commission so far), or a pending
  *  order's, counted from the order price. */
@@ -282,8 +291,8 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
   const badStop = (l: TLine, price: number) => {
     if ((l.kind !== "sl" && l.kind !== "tp") || !l.side) return null;
     const ref = stopRef(l, quoteNow(), T.pendings);
-    const k = ref === null ? null : stopProblem(l.kind, l.side, ref, price);
-    return k ? t(k, { price: fmtPrice(tab.symbol, ref!) }) : null;
+    const bad = ref === null ? null : stopProblem(l.kind, l.side, ref, price, stopGap(tab.symbol));
+    return bad ? t(bad.key, { price: fmtPrice(tab.symbol, bad.at) }) : null;
   };
   const dragLine = drag ? lines.find((l) => l.id === drag.id) ?? null : null;
   const dragStop = dragLine && (dragLine.kind === "sl" || dragLine.kind === "tp") ? dragLine : null;
@@ -786,6 +795,8 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
         if (drawing || e.button !== 0) return;
         // chips handle their own pointer (S / T handles, ×, dragging the chip): never steal it for the line under them
         if ((e.target as Element).closest("[data-line-chip],[data-stop-handle]")) return;
+        // a drawing under the pointer is the more precise target: it selects / moves rather than the trade line near it
+        if ((e.target as Element).closest("[data-drawing]:not([data-hline])")) return;
         const id = hitLine(e.clientY);
         if (!id) {
           if (T.selectedDrawing && !(e.target as Element).closest("[data-drawing]")) T.selectDrawing(null);
@@ -824,7 +835,7 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
           // areas (rectangle, Fibonacci, text) select anywhere inside, lines on their stroke
           const areaProps = { ...selectProps, style: { ...selectProps.style, pointerEvents: drawing ? "none" : "all" } as React.CSSProperties };
           if (d.kind === "hline") {
-            return <line key={id} x1={0} x2={geo.w - geo.psw} y1={g[0]} y2={g[0]} stroke="transparent" strokeWidth={10} {...selectProps} />;
+            return <line key={id} data-hline x1={0} x2={geo.w - geo.psw} y1={g[0]} y2={g[0]} stroke="transparent" strokeWidth={10} {...selectProps} />;
           }
           if (d.kind === "brush") {
             const points = g.reduce<string[]>((s, v, i) => (i % 2 ? (s[s.length - 1] += `,${v}`, s) : [...s, String(v)]), []).join(" ");
@@ -1185,7 +1196,7 @@ function StopDragTag({ line, price, symbol, top }: { line: TLine; price: number;
   const t = useT();
   const q = useQuote(symbol);
   const ref = stopRef(line, q, T.pendings);
-  const bad = ref === null || !line.side || (line.kind !== "sl" && line.kind !== "tp") ? null : stopProblem(line.kind, line.side, ref, price);
+  const bad = ref === null || !line.side || (line.kind !== "sl" && line.kind !== "tp") ? null : stopProblem(line.kind, line.side, ref, price, stopGap(symbol));
   const money = stopMoney(line, price, T.positions, T.pendings);
   return (
     <div
@@ -1196,7 +1207,7 @@ function StopDragTag({ line, price, symbol, top }: { line: TLine; price: number;
       <span className="font-semibold">{line.label}</span>
       <span>{fmtPrice(symbol, price)}</span>
       {money !== null && <span className="k-num">· {accMoney(T.account, money, { signed: true })}</span>}
-      {bad && <span className="font-sans font-medium text-warn">· {t(bad, { price: fmtPrice(symbol, ref!) })}</span>}
+      {bad && <span className="font-sans font-medium text-warn">· {t(bad.key, { price: fmtPrice(symbol, bad.at) })}</span>}
     </div>
   );
 }

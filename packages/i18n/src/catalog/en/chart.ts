@@ -153,7 +153,8 @@ const chart = {
   "line.pendingTip": "Drag to move the order · drag S or T to set a stop loss or take profit",
   "line.dragSl": "Drag to set a stop loss",
   "line.dragTp": "Drag to set a take profit",
-  // a stop dragged to the wrong side of the price; {price} = the current price (positions) or the order price
+  // a stop dragged to the wrong side of the price; {price} = the nearest allowed price (the current price for a position,
+  // the order price for a pending order, and the symbol's minimum stop distance)
   "line.bad.slBelow": "Stop loss must be below {price}",
   "line.bad.slAbove": "Stop loss must be above {price}",
   "line.bad.tpAbove": "Take profit must be above {price}",

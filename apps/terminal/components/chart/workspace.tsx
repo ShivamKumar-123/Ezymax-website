@@ -101,8 +101,10 @@ function ChartTabs() {
     const el = scroller.current;
     const tab = el?.querySelector<HTMLElement>('[aria-selected="true"]');
     if (!el || !tab) return;
-    if (tab.offsetLeft < el.scrollLeft) el.scrollLeft = tab.offsetLeft - 8;
-    else if (tab.offsetLeft + tab.offsetWidth > el.scrollLeft + el.clientWidth) el.scrollLeft = tab.offsetLeft + tab.offsetWidth - el.clientWidth + 8;
+    const r = tab.getBoundingClientRect();
+    const box = el.getBoundingClientRect();
+    if (r.left < box.left) el.scrollLeft -= box.left - r.left + 8;
+    else if (r.right > box.right) el.scrollLeft += r.right - box.right + 8;
   }, [T.ws.activeId, T.ws.tabs.length]);
   const fade = edge.left && edge.right ? "[mask-image:linear-gradient(to_right,transparent,#000_24px,#000_calc(100%-24px),transparent)]" : edge.right ? "[mask-image:linear-gradient(to_right,#000_calc(100%-24px),transparent)]" : edge.left ? "[mask-image:linear-gradient(to_right,transparent,#000_24px)]" : "";
   return (
@@ -143,7 +145,7 @@ function ChartTabs() {
                   e.stopPropagation();
                   T.closeTab(ct.id);
                 }}
-                className={cn("grid size-5 place-items-center rounded-[5px] text-fg-3 hover:bg-panel hover:text-fg", on ? "opacity-100" : "w-0 opacity-0 focus-visible:w-5 focus-visible:opacity-100 group-hover:w-5 group-hover:opacity-100")}
+                className={cn("grid size-5 place-items-center overflow-hidden rounded-[5px] text-fg-3 hover:bg-panel hover:text-fg", on ? "opacity-100" : "w-0 opacity-0 focus-visible:w-5 focus-visible:opacity-100 group-hover:w-5 group-hover:opacity-100")}
               >
                 <X className="size-3" />
               </button>
