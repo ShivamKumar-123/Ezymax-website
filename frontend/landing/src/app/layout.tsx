@@ -1,90 +1,58 @@
-import type { Metadata, Viewport } from "next";
-import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import type { Metadata } from "next";
+import { Inter, Manrope, Silkscreen, Space_Mono } from "next/font/google";
+import "./globals.css";
+import { site } from "@/content/site";
+import { DemoProvider } from "@/components/forms/demo-context";
+import { DemoModal } from "@/components/forms/DemoModal";
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
+import { Preloader } from "@/components/layout/Preloader";
 
-import {
-  generateMetadata,
-  generateViewport,
-} from "@/utils/seo/generate-page-metadata";
-import { getSiteStructuredData } from "@/utils/seo/structured-data";
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
+const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope", display: "swap" });
+const silkscreen = Silkscreen({ subsets: ["latin"], weight: ["400", "700"], variable: "--font-silkscreen", display: "swap" });
+const spaceMono = Space_Mono({ subsets: ["latin"], weight: ["400", "700"], variable: "--font-space-mono", display: "swap" });
 
-import { LazyCookie } from "@/components/common/Cookie";
-import { Header } from "@/components/common/chrome/header";
-import { NavMenu } from "@/components/common/chrome/nav-menu";
-import { RequestModal } from "@/components/common/chrome/request-modal";
-import { WaitlistModal } from "@/components/common/chrome/waitlist-modal";
-import { WaitlistAutoOpen } from "@/components/common/waitlist-auto-open";
-import { SiteFooter } from "@/components/common/chrome/site-footer";
-import { AdaptiveGrid } from "@/components/common/grid";
-import { ReducedMotion } from "@/components/common/reduced-motion";
-import { TubesCursor } from "@/components/common/tubes-cursor";
-import { ScrollLayout } from "@/layouts/scroll-layout";
+export const metadata: Metadata = {
+  metadataBase: new URL(site.url),
+  title: {
+    default: `${site.name} | Brokerage Technology Partner`,
+    template: `%s | ${site.name}`,
+  },
+  description: site.positioning,
+  applicationName: site.name,
+  openGraph: { siteName: site.name, type: "website", locale: "en_US" },
+  twitter: { card: "summary_large_image" },
+  robots: { index: true, follow: true },
+};
 
-import { navPages } from "@/data/mocks/nav-pages";
-import {
-  footerContent,
-  headerCta,
-  modalContent,
-  navGroups,
-  navLabels,
-} from "@/data/mocks/site";
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: site.name,
+  legalName: site.legalName,
+  url: site.url,
+  logo: `${site.url}/brand/setupzero-wordmark-white.svg`,
+  description: site.description,
+  slogan: site.tagline,
+  address: { "@type": "PostalAddress", addressLocality: "Dubai", addressCountry: "AE" },
+  sameAs: site.socials.map((s) => s.href),
+};
 
-import "@/app/globals.css";
-
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-export const metadata: Metadata = generateMetadata();
-export const viewport: Viewport = generateViewport();
-
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en">
-      <body
-        className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} font-sans`}
-      >
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(getSiteStructuredData()),
-          }}
-        />
-        <ScrollLayout>
-          <AdaptiveGrid />
-          <ReducedMotion />
-          <LazyCookie />
-          <TubesCursor />
-          <a
-            href="#main"
-            className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-60 focus:rounded-control focus:bg-ink focus:px-4 focus:py-2 focus:text-sm focus:text-white"
-          >
-            Skip to content
-          </a>
+    <html lang="en" data-scroll-behavior="smooth" className={`${inter.variable} ${manrope.variable} ${silkscreen.variable} ${spaceMono.variable} h-full antialiased`}>
+      <body className="flex min-h-full flex-col">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }} />
+        <DemoProvider>
+          <Preloader />
           <Header />
-          {children}
-          <SiteFooter content={footerContent} />
-          <NavMenu
-            groups={navGroups}
-            cta={headerCta}
-            labels={navLabels}
-            pages={navPages}
-          />
-          <RequestModal content={modalContent} />
-          <WaitlistModal />
-          <WaitlistAutoOpen />
-        </ScrollLayout>
+          <main className="relative z-[1] flex-1">{children}</main>
+          <div className="relative z-[1]">
+            <Footer />
+          </div>
+          <DemoModal />
+        </DemoProvider>
       </body>
     </html>
   );
