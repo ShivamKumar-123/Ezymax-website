@@ -65,6 +65,7 @@ class KTokens extends ThemeExtension<KTokens> {
     required this.scrim,
     required this.buyFill,
     required this.sellFill,
+    required this.buy,
     required this.shadowCard,
     required this.shadowPop,
     required this.tiles,
@@ -98,6 +99,10 @@ class KTokens extends ThemeExtension<KTokens> {
 
   /// Buy / Sell fills with white text (terminal, 5:1 contrast).
   final Color buyFill, sellFill;
+
+  /// The chart's buy colour (web --t-buy, TradingView style): buy position lines and chips, rising candles and volume.
+  /// Not a brand colour, so tenants never replace it; P&L stays up / down (green / red).
+  final Color buy;
 
   final List<BoxShadow> shadowCard, shadowPop;
   final Map<KTone, (Color bg, Color fg)> tiles;
@@ -163,6 +168,7 @@ class KTokens extends ThemeExtension<KTokens> {
       scrim: _rgba(42, 29, 58, 0.28),
       buyFill: const Color(0xFF15803D),
       sellFill: const Color(0xFFDC2626),
+      buy: const Color(0xFF1F5AF0),
       shadowCard: [
         BoxShadow(color: _rgba(48, 28, 64, 0.035), offset: const Offset(0, 1), blurRadius: 2),
         BoxShadow(color: mixOklab(ember, _rgba(60, 34, 84, 0.34), 0.24), offset: const Offset(0, 18), blurRadius: 46, spreadRadius: -24),
@@ -227,6 +233,7 @@ class KTokens extends ThemeExtension<KTokens> {
       scrim: _rgba(0, 0, 0, 0.55),
       buyFill: const Color(0xFF15803D),
       sellFill: const Color(0xFFDC2626),
+      buy: const Color(0xFF4A7BFF),
       shadowCard: [BoxShadow(color: _rgba(0, 0, 0, 0.75), offset: const Offset(0, 24), blurRadius: 60, spreadRadius: -32)],
       shadowPop: [
         BoxShadow(color: _rgba(0, 0, 0, 0.3), offset: const Offset(0, 2), blurRadius: 6),
@@ -290,6 +297,7 @@ class KTokens extends ThemeExtension<KTokens> {
       scrim: _rgba(0, 0, 0, 0.6),
       buyFill: const Color(0xFF15803D),
       sellFill: const Color(0xFFDC2626),
+      buy: const Color(0xFF4A7BFF),
       shadowCard: [BoxShadow(color: _rgba(0, 0, 0, 0.7), offset: const Offset(0, 12), blurRadius: 32, spreadRadius: -18)],
       shadowPop: [
         BoxShadow(color: _rgba(0, 0, 0, 0.55), offset: const Offset(0, 18), blurRadius: 48, spreadRadius: -12),
@@ -351,6 +359,7 @@ class KTokens extends ThemeExtension<KTokens> {
       scrim: _rgba(15, 15, 20, 0.3),
       buyFill: const Color(0xFF15803D),
       sellFill: const Color(0xFFDC2626),
+      buy: const Color(0xFF1F5AF0),
       shadowCard: [BoxShadow(color: _rgba(20, 20, 30, 0.25), offset: const Offset(0, 10), blurRadius: 28, spreadRadius: -18)],
       shadowPop: [
         BoxShadow(color: _rgba(15, 15, 20, 0.22), offset: const Offset(0, 18), blurRadius: 48, spreadRadius: -14),

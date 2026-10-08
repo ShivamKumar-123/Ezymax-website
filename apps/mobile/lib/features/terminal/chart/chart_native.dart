@@ -1,15 +1,17 @@
 // A small native candle chart that understands the chart page's commands (chart_bridge.dart): used by the web
-// preview (webview_flutter has no web implementation) and widget tests. Candles / bars / line / area + volume, the
-// OHLC legend with a row per indicator (tap: the indicator menu; only moving averages are drawn here), the bid / ask
-// lines, trade lines with their chips at the price scale (tap, ×,
-// vertical drag, the P&L on them), the Ezymex K in the corner, horizontal pan, long press. The product chart on Android
-// is the lightweight-charts page (chart_webview.dart).
+// preview (webview_flutter has no web implementation) and widget tests. Candles / bars / line / area + volume (rising
+// blue, falling red), the OHLC legend with a row per indicator (tap: the indicator menu; only moving averages are drawn
+// here), the bid / ask lines, trade lines with their chips at the price scale (tap, ×, vertical drag, the P&L on them,
+// the S / T handles that drag out a stop, checked against the price like the page), the Ezymex K in the corner,
+// horizontal pan, long press. The product chart on Android is the lightweight-charts page (chart_webview.dart).
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
 import '../../../ui/ui.dart';
+import '../core/trade_math.dart';
 import 'chart_bridge.dart';
 import 'chart_surface.dart';
 
@@ -22,12 +24,16 @@ class NativeChartSurface extends StatefulWidget {
 }
 
 class _Line {
-  _Line(this.id, this.kind, this.price, this.label, this.side, this.drag, this.note, this.tone, this.close);
+  _Line(this.id, this.kind, this.price, this.label, this.side, this.drag, this.note, this.tone, this.close, this.addSl, this.addTp, this.stops);
   final String id, kind, label;
   final double price;
   final String? side, note, tone;
-  final bool drag, close;
+  final bool drag, close, addSl, addTp;
+  final ChartStops? stops;
 }
+
+/// The ghost stop: a dashed line at `price` (when `line`) and its label; tone sl | tp | bad (grey).
+typedef _Ghost = ({double price, String tone, String text, bool line});
 
 class _NativeChartSurfaceState extends State<NativeChartSurface> {
   List<List<double>> _bars = [];
@@ -38,10 +44,17 @@ class _NativeChartSurfaceState extends State<NativeChartSurface> {
   double _bid = 0, _ask = 0;
   int _digits = 2;
   Map<String, dynamic> _pal = const {};
+  Map<String, dynamic> _texts = const {};
   double _scroll = 0; // bars scrolled back from the latest
   bool _exhausted = false, _loadingOlder = false;
   String? _dragId;
   double? _dragPrice;
+  // the S / T handle being dragged: the trade line's id, sl | tp, and the price under the finger
+  (String, String)? _stop;
+  double? _stopPrice;
+  // a message kept a moment (a refused drop, the hint of a tapped handle)
+  _Ghost? _flash;
+  Timer? _flashTimer;
   _Geo? _geo;
 
   @override
@@ -61,6 +74,7 @@ class _NativeChartSurfaceState extends State<NativeChartSurface> {
 
   @override
   void dispose() {
+    _flashTimer?.cancel();
     widget.controller.detach();
     super.dispose();
   }
@@ -79,6 +93,7 @@ class _NativeChartSurfaceState extends State<NativeChartSurface> {
       case 'init':
         _digits = (m['digits'] as num?)?.toInt() ?? 2;
         _pal = (m['palette'] as Map?)?.cast<String, dynamic>() ?? const {};
+        _texts = (m['texts'] as Map?)?.cast<String, dynamic>() ?? const {};
         _symbol = '${m['symbol'] ?? ''}';
         _tf = '${m['tf'] ?? ''}';
         _inds = _instances(m['indicators']);
@@ -121,6 +136,9 @@ class _NativeChartSurfaceState extends State<NativeChartSurface> {
                 l['note'] as String?,
                 l['tone'] as String?,
                 l['close'] == true,
+                l['addSl'] == true,
+                l['addTp'] == true,
+                ChartStops.fromJson(l['stops']),
               ),
         ];
       case 'palette':
@@ -146,6 +164,7 @@ class _NativeChartSurfaceState extends State<NativeChartSurface> {
     return fallback;
   }
 
+  // buy positions blue, sell red; SL red, TP green, orders gold
   Color _lineColor(_Line l, KTokens k) => switch (l.kind) {
     'sl' => _c('down', k.down),
     'tp' => _c('up', k.up),
@@ -153,7 +172,58 @@ class _NativeChartSurfaceState extends State<NativeChartSurface> {
     'alert' || 'barrier' => _c('warn', k.warn),
     'strike' => _c('ember', k.ember),
     'breakeven' => _c('fg2', k.fg2),
-    _ => l.side == 'buy' ? _c('up', k.up) : _c('down', k.down),
+    _ => l.side == 'buy' ? _c('buy', k.buy) : _c('down', k.down),
+  };
+
+  /* ---------------- stops (chart_bridge.dart ChartStops, like the page) ---------------- */
+
+  ({String key, double limit})? _problem(_Line l, String which, double price) =>
+      l.stops?.problem(which, l.side ?? 'buy', price, bid: _bid, ask: _ask);
+
+  String _badText(({String key, double limit}) b) => '${_texts[b.key] ?? b.key}'.replaceAll('{price}', b.limit.toStringAsFixed(_digits));
+
+  String get _notSent => '${_texts['notSent'] ?? 'Nothing was sent to the server.'}';
+
+  /// The problem of a SL / TP line dragged to where the finger is (null: fine, or not a stop).
+  ({String key, double limit})? _lineProblem(_Line l) {
+    final p = _dragId == l.id ? _dragPrice : null;
+    return p == null || (l.kind != 'sl' && l.kind != 'tp') ? null : _problem(l, l.kind, p);
+  }
+
+  /// What the ghost shows now: the dragged S / T stop, a SL / TP line on the wrong side, or a message kept a moment.
+  _Ghost? get _ghost {
+    final st = _stop, sp = _stopPrice;
+    if (st != null && sp != null) {
+      final l = _lines.where((x) => x.id == st.$1).firstOrNull;
+      if (l != null) {
+        final bad = _problem(l, st.$2, sp);
+        final money = l.stops == null ? '' : ' · ${accMoney(false, l.stops!.moneyAt(sp), signed: true)}';
+        return (
+          price: sp,
+          tone: bad == null ? st.$2 : 'bad',
+          text: bad == null ? '${st.$2.toUpperCase()} ${sp.toStringAsFixed(_digits)}$money' : _badText(bad),
+          line: true,
+        );
+      }
+    }
+    final dragged = _lines.where((x) => x.id == _dragId).firstOrNull;
+    final bad = dragged == null ? null : _lineProblem(dragged);
+    if (bad != null) return (price: _dragPrice!, tone: 'bad', text: _badText(bad), line: false);
+    return _flash;
+  }
+
+  void _flashFor(_Ghost g, Duration d) {
+    _flashTimer?.cancel();
+    setState(() => _flash = g);
+    _flashTimer = Timer(d, () {
+      if (mounted) setState(() => _flash = null);
+    });
+  }
+
+  Color _ghostColor(String tone, KTokens k) => switch (tone) {
+    'sl' => _c('down', k.down),
+    'tp' => _c('up', k.up),
+    _ => _c('fg3', k.fg3),
   };
 
   /// Simple / exponential moving average of the closes (null until enough bars). The stand-in draws only the
@@ -247,6 +317,7 @@ class _NativeChartSurfaceState extends State<NativeChartSurface> {
               Positioned(left: 10, bottom: 30, child: KLogoMark(size: 21, color: (k.dark ? Colors.white : Colors.black).withValues(alpha: 0.27))),
               Positioned(left: 8, top: 6, right: 80, child: _legend(k, mas)),
               ..._chips(geo, k),
+              ?_ghostLabel(geo, k),
             ],
           ),
         );
@@ -254,10 +325,34 @@ class _NativeChartSurfaceState extends State<NativeChartSurface> {
     );
   }
 
+  /// The ghost stop's label at the left of the plot: above its line, or below it near the top.
+  Widget? _ghostLabel(_Geo geo, KTokens k) {
+    final g = _ghost;
+    final y = g == null ? null : geo.y(g.price);
+    if (g == null || y == null) return null;
+    final label = Container(
+      key: const ValueKey('chart-ghost'),
+      constraints: BoxConstraints(maxWidth: math.max(80, geo.plotW - 16)),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: g.tone == 'bad' ? _c('label', k.fg3) : _ghostColor(g.tone, k),
+        borderRadius: BorderRadius.circular(5),
+        boxShadow: const [BoxShadow(color: Color(0x59000000), blurRadius: 8, offset: Offset(0, 2))],
+      ),
+      child: Text(
+        g.text,
+        style: const TextStyle(fontFamily: KFonts.mono, fontSize: 10.5, fontWeight: FontWeight.w500, color: Colors.white, height: 1.35),
+      ),
+    );
+    return y > 40
+        ? Positioned(left: 8, top: y - 4, child: FractionalTranslation(translation: const Offset(0, -1), child: label))
+        : Positioned(left: 8, top: y + 4, child: label);
+  }
+
   Widget _legend(KTokens k, Map<String, (List<double?>, Color)> mas) {
     if (_bars.isEmpty) return const SizedBox.shrink();
     final b = _bars.last;
-    final col = b[4] >= b[1] ? _c('up', k.up) : _c('down', k.down);
+    final col = b[4] >= b[1] ? _c('buy', k.buy) : _c('down', k.down);
     final fg3 = _c('fg3', k.fg3);
     TextStyle st(Color c, {FontWeight w = FontWeight.w500}) => TextStyle(fontFamily: KFonts.mono, fontSize: 11, height: 1.45, fontWeight: w, color: c);
     InlineSpan v(String key, double x) => TextSpan(
@@ -338,17 +433,78 @@ class _NativeChartSurfaceState extends State<NativeChartSurface> {
       chars = l.note!.length;
       w += chars * 6.4 + 11;
     }
+    if (l.addSl) w += 21;
+    if (l.addTp) w += 21;
     if (l.close) w += 21;
     return w;
   }
 
+  /// The S / T handle of a position or order chip: dragged off the line it draws a ghost stop (price · money, grey
+  /// with the reason on the wrong side of the price) and sets the stop where it is dropped, or sends nothing there.
+  Widget _handle(_Line l, String which, KTokens k) {
+    void flash(_Ghost g) => _flashFor(g, const Duration(milliseconds: 2400));
+    return GestureDetector(
+      key: ValueKey('chart-stop-$which-${l.id}'),
+      behavior: HitTestBehavior.opaque,
+      // a tap shows what the handle does
+      onTap: () => _flashFor((
+        price: l.price,
+        tone: which,
+        text: '${_texts[which == 'sl' ? 'dragSl' : 'dragTp'] ?? (which == 'sl' ? 'Drag to set a stop loss' : 'Drag to set a take profit')}',
+        line: true,
+      ), const Duration(milliseconds: 1600)),
+      onVerticalDragStart: (_) => setState(() {
+        _flash = null;
+        _stop = (l.id, which);
+        _stopPrice = l.price;
+      }),
+      onVerticalDragUpdate: (d) {
+        final g = _geo;
+        if (g == null) return;
+        final p = g.priceAt(g.y(_stopPrice ?? l.price)! + d.delta.dy);
+        if (p != null) setState(() => _stopPrice = double.parse(p.toStringAsFixed(_digits)));
+      },
+      onVerticalDragEnd: (_) {
+        final p = _stopPrice;
+        setState(() {
+          _stop = null;
+          _stopPrice = null;
+        });
+        if (p == null) return;
+        final bad = _problem(l, which, p);
+        if (bad != null) {
+          flash((price: p, tone: 'bad', text: '${_badText(bad)} · $_notSent', line: true));
+        } else {
+          widget.controller.emit(ChartStopDragged(l.id, which, p));
+        }
+      },
+      child: Container(
+        height: 20,
+        padding: const EdgeInsets.symmetric(horizontal: 7),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: which == 'sl' ? _c('down', k.down) : _c('up', k.up),
+          border: Border(left: BorderSide(color: Colors.white.withValues(alpha: 0.3))),
+        ),
+        child: Text(
+          which == 'sl' ? 'S' : 'T',
+          style: const TextStyle(fontFamily: KFonts.mono, fontSize: 10.5, fontWeight: FontWeight.w600, color: Colors.white, height: 1),
+        ),
+      ),
+    );
+  }
+
   Widget _chip(_Line l, double y, double left, KTokens k) {
     final price = _dragId == l.id ? (_dragPrice ?? l.price) : l.price;
-    final col = _lineColor(l, k);
+    // a SL / TP dragged to the wrong side of the price turns grey
+    final bad = _lineProblem(l) != null;
+    final col = bad ? _c('fg3', k.fg3) : _lineColor(l, k);
     final filled = l.kind != 'pos' && l.kind != 'breakeven';
-    final warm = l.kind == 'pending' || l.kind == 'alert' || l.kind == 'barrier';
+    final warm = !bad && (l.kind == 'pending' || l.kind == 'alert' || l.kind == 'barrier');
     final fg = warm ? (k.dark ? const Color(0xFF1A1204) : Colors.white) : (filled ? Colors.white : col);
     final noteColor = filled ? fg : (l.tone == 'up' ? _c('up', k.up) : (l.tone == 'down' ? _c('down', k.down) : _c('fg2', k.fg2)));
+    // a dragged stop shows the money at the finger
+    final note = _dragId == l.id && l.stops != null && (l.kind == 'sl' || l.kind == 'tp') ? accMoney(false, l.stops!.moneyAt(price), signed: true) : l.note;
     final sep = Container(width: 1, height: 20, color: fg.withValues(alpha: 0.3));
     TextStyle st(Color c) => TextStyle(fontFamily: KFonts.mono, fontSize: 10.5, fontWeight: FontWeight.w500, color: c, height: 1);
     return Positioned(
@@ -358,7 +514,10 @@ class _NativeChartSurfaceState extends State<NativeChartSurface> {
         onTap: () => widget.controller.emit(ChartLineTapped(l.id)),
         onVerticalDragStart: l.drag
             ? (_) {
-                setState(() => _dragId = l.id);
+                setState(() {
+                  _flash = null;
+                  _dragId = l.id;
+                });
                 widget.controller.emit(ChartDragStarted(l.id));
               }
             : null,
@@ -373,11 +532,20 @@ class _NativeChartSurfaceState extends State<NativeChartSurface> {
         onVerticalDragEnd: l.drag
             ? (_) {
                 final p = _dragPrice;
+                final problem = p == null || (l.kind != 'sl' && l.kind != 'tp') ? null : _problem(l, l.kind, p);
                 setState(() {
                   _dragId = null;
                   _dragPrice = null;
                 });
-                if (p != null) widget.controller.emit(ChartLineDragged(l.id, p));
+                if (p != null && problem == null) {
+                  widget.controller.emit(ChartLineDragged(l.id, p));
+                } else {
+                  // the wrong side of the price (or no move): back where it was, nothing sent
+                  if (p != null && problem != null) {
+                    _flashFor((price: p, tone: 'bad', text: '${_badText(problem)} · $_notSent', line: false), const Duration(milliseconds: 2400));
+                  }
+                  widget.controller.emit(ChartDragEnded(l.id));
+                }
               }
             : null,
         child: Container(
@@ -400,13 +568,15 @@ class _NativeChartSurfaceState extends State<NativeChartSurface> {
                 padding: const EdgeInsets.symmetric(horizontal: 5),
                 child: Text('${l.label}${_dragId == l.id && l.kind != 'pos' ? ' ${price.toStringAsFixed(_digits)}' : ''}', style: st(fg)),
               ),
-              if (l.note != null) ...[
+              if (note != null) ...[
                 sep,
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 5),
-                  child: Text(l.note!, style: st(noteColor)),
+                  child: Text(note, style: st(noteColor)),
                 ),
               ],
+              if (l.addSl) _handle(l, 'sl', k),
+              if (l.addTp) _handle(l, 'tp', k),
               if (l.close) ...[
                 sep,
                 GestureDetector(
@@ -481,7 +651,8 @@ class _Painter extends CustomPainter {
     final bg = s._c('bg', k.dark ? const Color(0xFF0A0A0D) : Colors.white);
     final grid = s._c('grid', k.line);
     final line = s._c('line', k.line);
-    final up = s._c('up', k.up), down = s._c('down', k.down), fg2 = s._c('fg2', k.fg2), fg3 = s._c('fg3', k.fg3);
+    // rising blue (web --t-buy), falling red
+    final up = s._c('buy', k.buy), down = s._c('down', k.down), fg2 = s._c('fg2', k.fg2), fg3 = s._c('fg3', k.fg3);
     canvas.drawRect(Offset.zero & size, Paint()..color = bg);
     final gp = Paint()
       ..color = grid
@@ -618,8 +789,12 @@ class _Painter extends CustomPainter {
       final price = s._dragId == l.id ? (s._dragPrice ?? l.price) : l.price;
       final c = s._lineColor(l, k);
       final warm = l.kind == 'pending' || l.kind == 'alert' || l.kind == 'barrier';
-      hline(price, c, dashed: l.kind != 'pos', text: warm && k.dark ? const Color(0xFF1A1204) : Colors.white);
+      final bad = s._lineProblem(l) != null;
+      hline(price, bad ? fg3 : c, dashed: l.kind != 'pos', text: warm && k.dark && !bad ? const Color(0xFF1A1204) : Colors.white);
     }
+    // the ghost stop of a dragged S / T handle
+    final ghost = s._ghost;
+    if (ghost != null && ghost.line) hline(ghost.price, s._ghostColor(ghost.tone, k), label: false);
     if (s._bid > 0) {
       hline(s._bid, fg2, text: k.dark ? const Color(0xFF0A0A0D) : Colors.white);
       hline(s._ask, down);

@@ -112,6 +112,8 @@ function useHistory(symbol: string, tf: Timeframe): History | null {
 export interface Palette {
   up: string;
   down: string;
+  /** buy / rising candles (--t-buy, blue); sell / falling stay `down` */
+  buy: string;
   gold: string;
   ember: string;
   warn: string;
@@ -125,6 +127,15 @@ export interface Palette {
   dark: boolean;
 }
 
+/** A palette colour (#rgb / #rrggbb, or any CSS colour) at `a` opacity: brand colours are replaceable per broker, so
+ *  translucent variants are mixed from the token, never hard-coded. */
+export function alpha(color: string, a: number): string {
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color.trim());
+  if (!hex) return `color-mix(in srgb, ${color} ${Math.round(a * 100)}%, transparent)`;
+  const h = hex[1]!.length === 3 ? hex[1]!.replace(/./g, (x) => x + x) : hex[1]!;
+  return `rgba(${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)},${a})`;
+}
+
 function readVar(el: Element, name: string, fallback: string) {
   const v = getComputedStyle(el).getPropertyValue(name).trim();
   return v || fallback;
@@ -135,13 +146,14 @@ export function readPalette(el: Element): Palette {
   return {
     up: readVar(el, "--k-up", "#22c55e"),
     down: readVar(el, "--k-down", "#f04438"),
+    buy: readVar(el, "--t-buy", dark ? "#4a7bff" : "#1f5af0"),
     gold: readVar(el, "--k-gold", "#e9b949"),
     ember: readVar(el, "--k-ember", "#ff5a1f"),
     warn: readVar(el, "--k-warn", "#f59e0b"),
     fg: readVar(el, "--k-fg", "#f5f5f7"),
     fg2: readVar(el, "--k-fg-2", "#a1a1aa"),
     fg3: readVar(el, "--k-fg-3", "#63636e"),
-    grid: readVar(el, "--t-grid", "rgba(255,255,255,0.035)"),
+    grid: readVar(el, "--t-grid", dark ? "rgba(255,255,255,0.065)" : "rgba(15,15,20,0.08)"),
     bg: readVar(el, "--t-chart-bg", "#0a0a0d"),
     label: dark ? "#26262e" : "#55555f",
     mono: readVar(document.body, "--font-geist-mono", "ui-monospace").replace(/"/g, "'") + ", ui-monospace, monospace",
@@ -180,6 +192,8 @@ export interface LegendData {
 
 export interface Engine {
   chart: IChartApi;
+  /** the timeframe this chart was built for (a timeframe change rebuilds it) */
+  tf: Timeframe;
   main: ISeriesApi<SeriesType>;
   bars: React.RefObject<Candle[]>;
   askLine: IPriceLine;
@@ -221,11 +235,11 @@ export function useChartEngine(
         fontFamily: c.mono,
         fontSize: 10.5,
         attributionLogo: false,
-        panes: { separatorColor: c.dark ? "rgba(255,255,255,0.07)" : "rgba(15,15,20,0.1)", separatorHoverColor: "rgba(255,90,31,0.35)", enableResize: true },
+        panes: { separatorColor: c.dark ? "rgba(255,255,255,0.07)" : "rgba(15,15,20,0.1)", separatorHoverColor: alpha(c.ember, 0.35), enableResize: true },
       },
       grid: { vertLines: { color: c.grid }, horzLines: { color: c.grid } },
       rightPriceScale: { borderVisible: true, borderColor: c.dark ? "rgba(255,255,255,0.07)" : "rgba(15,15,20,0.1)", scaleMargins: { top: 0.12, bottom: 0.14 }, minimumWidth: 68 },
-      timeScale: { borderVisible: true, borderColor: c.dark ? "rgba(255,255,255,0.07)" : "rgba(15,15,20,0.1)", timeVisible: step < 86400, secondsVisible: false, rightOffset: 12, barSpacing: 7, minBarSpacing: 1.5 },
+      timeScale: { borderVisible: true, borderColor: c.dark ? "rgba(255,255,255,0.07)" : "rgba(15,15,20,0.1)", timeVisible: step < 86400, secondsVisible: false, rightOffset: 12, barSpacing: 7, minBarSpacing: 0.5 },
       crosshair: {
         mode: CrosshairMode.Normal,
         vertLine: { color: c.fg3, width: 1, style: LineStyle.Dashed, labelBackgroundColor: c.label },
@@ -236,8 +250,9 @@ export function useChartEngine(
 
     const pf = { type: "price" as const, precision: inst.digits, minMove: 1 / 10 ** inst.digits };
     let main: ISeriesApi<SeriesType>;
-    if (type === "candles") main = chart.addSeries(CandlestickSeries, { upColor: c.up, downColor: c.down, borderVisible: false, wickUpColor: c.up, wickDownColor: c.down, priceFormat: pf });
-    else if (type === "bars") main = chart.addSeries(BarSeries, { upColor: c.up, downColor: c.down, thinBars: false, priceFormat: pf });
+    // rising bars in the buy colour (blue), falling in red, as on TradingView; P&L elsewhere keeps green / red
+    if (type === "candles") main = chart.addSeries(CandlestickSeries, { upColor: c.buy, downColor: c.down, borderVisible: false, wickUpColor: c.buy, wickDownColor: c.down, priceFormat: pf });
+    else if (type === "bars") main = chart.addSeries(BarSeries, { upColor: c.buy, downColor: c.down, thinBars: false, priceFormat: pf });
     else if (type === "line") main = chart.addSeries(LineSeries, { color: c.gold, lineWidth: 2, priceFormat: pf });
     else main = chart.addSeries(AreaSeries, { lineColor: c.gold, topColor: "rgba(233,185,73,0.28)", bottomColor: "rgba(233,185,73,0.0)", lineWidth: 2, priceFormat: pf });
     // candles are built from the raw last trade price (the market's price, same for every account); the axis
@@ -255,7 +270,7 @@ export function useChartEngine(
     const data = history === "sim" ? buildHistory(symbol, tf) : history.map((d) => ({ ...d }));
     const bars = { current: data } as React.RefObject<Candle[]>;
     const alive = { current: true };
-    const volColor = (d: Candle) => (d.close >= d.open ? `${c.up}38` : `${c.down}38`); // reads the live palette `c`
+    const volColor = (d: Candle) => alpha(d.close >= d.open ? c.buy : c.down, 0.22); // reads the live palette `c`
     const mainPoint = (d: Candle) => (type === "line" || type === "area" ? { time: t(d.time), value: d.close } : { time: t(d.time), open: d.open, high: d.high, low: d.low, close: d.close });
     main.setData(data.map(mainPoint));
     vol.setData(data.map((d) => ({ time: t(d.time), value: d.volume, color: volColor(d) })));
@@ -416,14 +431,14 @@ export function useChartEngine(
       c = readPalette(host);
       const line = c.dark ? "rgba(255,255,255,0.07)" : "rgba(15,15,20,0.1)";
       chart.applyOptions({
-        layout: { background: { type: ColorType.Solid, color: c.bg }, textColor: c.fg3, panes: { separatorColor: line } },
+        layout: { background: { type: ColorType.Solid, color: c.bg }, textColor: c.fg3, panes: { separatorColor: line, separatorHoverColor: alpha(c.ember, 0.35) } },
         grid: { vertLines: { color: c.grid }, horzLines: { color: c.grid } },
         rightPriceScale: { borderColor: line },
         timeScale: { borderColor: line },
         crosshair: { vertLine: { color: c.fg3, labelBackgroundColor: c.label }, horzLine: { color: c.fg3, labelBackgroundColor: c.label } },
       });
-      if (type === "candles") main.applyOptions({ upColor: c.up, downColor: c.down, wickUpColor: c.up, wickDownColor: c.down } as never);
-      else if (type === "bars") main.applyOptions({ upColor: c.up, downColor: c.down } as never);
+      if (type === "candles") main.applyOptions({ upColor: c.buy, downColor: c.down, wickUpColor: c.buy, wickDownColor: c.down } as never);
+      else if (type === "bars") main.applyOptions({ upColor: c.buy, downColor: c.down } as never);
       else if (type === "line") main.applyOptions({ color: c.gold } as never);
       else main.applyOptions({ lineColor: c.gold } as never);
       main.applyOptions({ priceLineColor: c.fg2 });
@@ -442,7 +457,7 @@ export function useChartEngine(
     });
     themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
 
-    setEngine({ chart, main, bars, askLine, palette: c, alive, indicators });
+    setEngine({ chart, tf, main, bars, askLine, palette: c, alive, indicators });
     return () => {
       alive.current = false;
       themeObs.disconnect();
@@ -477,10 +492,18 @@ export function useChartEngine(
   return engine;
 }
 
-/** Imperative handles to each mounted chart, used by the toolbar (zoom, screenshot…). */
+/** Imperative handles to each mounted chart, used by the toolbar (zoom, screenshot, date range…). */
 export interface ChartHandle {
   zoom: (dir: 1 | -1) => void;
   fit: () => void;
   screenshot: () => void;
+  /** show the last `seconds` of history (date range presets under the chart), in the chart's current timeframe */
+  setRange: (seconds: number) => void;
 }
 export const chartRegistry = new Map<string, ChartHandle>();
+
+/**
+ * A date range waiting for a chart (by tab id): a range preset that also switches the timeframe rebuilds the chart,
+ * so the range is applied by the new chart once its history is drawn.
+ */
+export const pendingRanges = new Map<string, number>();

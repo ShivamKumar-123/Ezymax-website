@@ -145,11 +145,12 @@ String _hex(Color c) {
 
 String _rgba(Color c) => 'rgba(${(c.r * 255).round()},${(c.g * 255).round()},${(c.b * 255).round()},${c.a.toStringAsFixed(3)})';
 
-/// The chart colours of the terminal theme (web --t-chart-bg, --t-grid, --k-*).
+/// The chart colours of the terminal theme (web --t-chart-bg, --t-grid, --t-buy, --k-*).
 ChartPalette chartPalette(KTokens k) => ChartPalette(
   dark: k.dark,
   bg: k.dark ? '#0a0a0d' : '#ffffff',
-  grid: k.dark ? 'rgba(255,255,255,0.035)' : 'rgba(15,15,20,0.055)',
+  // visible but quiet, like the web chart
+  grid: k.dark ? 'rgba(255,255,255,0.065)' : 'rgba(15,15,20,0.08)',
   line: k.dark ? 'rgba(255,255,255,0.07)' : 'rgba(15,15,20,0.1)',
   up: _hex(k.up),
   down: _hex(k.down),
@@ -162,4 +163,5 @@ ChartPalette chartPalette(KTokens k) => ChartPalette(
   label: k.dark ? '#26262e' : '#55555f',
   panel: _rgba(k.surface2.withValues(alpha: 1)),
   info: _hex(k.info),
+  buy: _hex(k.buy),
 );

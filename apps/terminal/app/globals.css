@@ -13,10 +13,14 @@
   --t-page: #050507;
   --t-panel: #0e0e12;
   --t-panel-2: #15151a;
-  --t-grid: rgba(255, 255, 255, 0.035);
+  --t-grid: rgba(255, 255, 255, 0.065);
   --t-chart-bg: #0a0a0d;
   /* tertiary text: 5.8:1 on the panel (the Ezymex default #63636e is 3.3:1) */
   --k-fg-3: #8b8b96;
+  /* the chart's buy colour (TradingView style: buy / rising candles blue, sell / falling red): position lines and
+     chips, rising candles and volume, the chart's Buy prices. Not a brand colour, so tenants never replace it.
+     Text at 4.9:1 on panel-2. P&L everywhere stays up / down (green / red). */
+  --t-buy: #4a7bff;
   /* Buy / Sell button fills: white text at 5.0:1 / 4.8:1 */
   --t-buy-fill: #15803d;
   --t-sell-fill: #dc2626;
@@ -29,8 +33,9 @@
   --t-page: #e7e5e1;
   --t-panel: #ffffff;
   --t-panel-2: #f5f3f0;
-  --t-grid: rgba(15, 15, 20, 0.055);
+  --t-grid: rgba(15, 15, 20, 0.08);
   --t-chart-bg: #ffffff;
+  --t-buy: #1f5af0;
   --k-fg-3: #6b6b75;
   --k-up: #15803d;
   --k-warn: #b45309;
@@ -47,6 +52,7 @@
   --color-page: var(--t-page);
   --color-panel: var(--t-panel);
   --color-panel-2: var(--t-panel-2);
+  --color-buy: var(--t-buy);
   --color-buy-fill: var(--t-buy-fill);
   --color-sell-fill: var(--t-sell-fill);
   --color-accent-strong: var(--t-accent-strong);

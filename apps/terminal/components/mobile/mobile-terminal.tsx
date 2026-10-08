@@ -215,7 +215,7 @@ function MChart() {
             <Stepper ariaLabel={t("trader.mobile.volume")} value={vol} onChange={setVol} step={0.01} min={0.01} decimals={2} className="h-8" />
             <div className={cn("text-center font-mono text-[9.5px]", marketOpen ? "text-fg-3" : "text-warn")}>{!marketOpen ? t("trader.mobile.marketClosed") : T.guest ? t("trader.mobile.needsAccount") : T.ws.oneClick ? t("trader.mobile.oneClick") : t("trader.mobile.confirm")}</div>
           </div>
-          <button onClick={() => trade("buy")} disabled={!marketOpen} title={T.guest ? t("trader.guest.title") : undefined} className={cn("rounded-[8px] bg-up px-2 py-1.5 text-right text-white disabled:bg-surface-3 disabled:text-fg-3 [&:disabled_span]:!text-fg-3", T.guest && "border border-up/40 bg-up/15 text-up")}>
+          <button onClick={() => trade("buy")} disabled={!marketOpen} title={T.guest ? t("trader.guest.title") : undefined} className={cn("rounded-[8px] bg-[color-mix(in_oklab,var(--t-buy)_84%,black)] px-2 py-1.5 text-right text-white disabled:bg-surface-3 disabled:text-fg-3 [&:disabled_span]:!text-fg-3", T.guest && "border border-buy/40 bg-buy/15 text-buy")}>
             <div className="text-[9.5px] font-semibold uppercase tracking-[0.1em] opacity-85">{t("common.buy")}</div>
             <PriceText symbol={tab.symbol} value={q.ask} dir={q.dir} className={cn("justify-end text-[15px]", !T.guest && "[&_span]:!text-white")} />
           </button>

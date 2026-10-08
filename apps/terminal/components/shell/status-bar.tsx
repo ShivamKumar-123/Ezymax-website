@@ -11,7 +11,7 @@ import { cn, useFeedMode } from "@ezymex/ui";
 import { useT } from "@ezymex/i18n/react";
 import { useTerminal } from "@/lib/store";
 import { useQps } from "@/lib/market";
-import { serverTime } from "@/lib/trading";
+import { serverTime, serverZone } from "@/lib/trading";
 import { useStreamStatus } from "@/lib/engine/live";
 import { CountBadge, Tip } from "@/components/ui/kit";
 import { AccountHealth } from "./account-health";
@@ -40,6 +40,8 @@ function Connection() {
   const ping = lat.n && lat.p95 >= 0 && lat.p95 < 60_000 ? lat.p95 : null;
   const ok = mode === "live" && (ping === null || ping < 150);
   const st = serverTime();
+  // the server's real offset (UTC+3 in US summer time, UTC+2 otherwise), the same clock the charts' time axis uses
+  const zone = serverZone();
   return (
     <div className="flex shrink-0 items-center gap-2 text-[12px] text-fg-3">
       <Tip content={`${T.account.server} · ${t("desk.st.latencyTip", { qps })}`} side="top">
@@ -50,9 +52,9 @@ function Connection() {
         </div>
       </Tip>
       {T.engine && <TradeServerCell />}
-      <span className="hidden items-center gap-1.5 whitespace-nowrap min-[1180px]:flex" title={t("trader.status.serverTime")}>
+      <span className="hidden items-center gap-1.5 whitespace-nowrap min-[1180px]:flex" title={t("chart.clock.tip", { zone })}>
         <span className="k-num font-mono text-fg-2">{st.time}</span>
-        GMT+3
+        <span dir="ltr">{zone}</span>
       </span>
     </div>
   );

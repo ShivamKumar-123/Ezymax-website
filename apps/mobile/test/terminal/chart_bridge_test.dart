@@ -60,6 +60,8 @@ void main() {
       expect(m['digits'], 5);
       expect(m['intraday'], isTrue);
       expect((m['palette'] as Map)['up'], '#22c55e');
+      // rising candles and buy positions are blue (web --t-buy)
+      expect((m['palette'] as Map)['buy'], '#4a7bff');
       expect((m['palette'] as Map)['dark'], isTrue);
     });
 
@@ -83,8 +85,39 @@ void main() {
         ]),
       );
       expect(m['lines'], [
-        {'id': 'sl:7', 'kind': 'sl', 'price': 1.08, 'label': 'SL', 'side': 'buy', 'drag': true, 'note': '-12.40', 'tone': 'down', 'close': true},
+        {
+          'id': 'sl:7',
+          'kind': 'sl',
+          'price': 1.08,
+          'label': 'SL',
+          'side': 'buy',
+          'drag': true,
+          'note': '-12.40',
+          'tone': 'down',
+          'close': true,
+          'addSl': false,
+          'addTp': false,
+          'stops': null,
+        },
       ]);
+    });
+
+    test('a position line carries its S / T handles and the stop maths', () {
+      const stops = ChartStops(open: 1.0832, k: 10000, c: -1.2, gap: 0.0001);
+      final m = dec(
+        ChartCmd.lines(const [
+          ChartLine(id: 'pos:7', kind: 'pos', price: 1.0832, label: 'BUY 0.10', side: 'buy', note: '+4.20', tone: 'up', closable: true, addTp: true, stops: stops),
+        ]),
+      );
+      final l = (m['lines'] as List).single as Map;
+      expect(l['drag'], isFalse);
+      expect(l['addSl'], isFalse);
+      expect(l['addTp'], isTrue);
+      expect(l['stops'], {'open': 1.0832, 'k': 10000.0, 'c': -1.2, 'inv': false, 'order': false, 'gap': 0.0001});
+      // the native chart reads it back
+      expect(ChartStops.fromJson(l['stops']), stops);
+      expect(ChartStops.fromJson({'open': 1}), isNull);
+      expect(ChartStops.fromJson('x'), isNull);
     });
 
     test('indicators and chart type', () {
@@ -119,6 +152,57 @@ void main() {
       expect(a.ref, '49434302');
       expect(a, const ChartLine(id: 'pnd:49434302', kind: 'pending', price: 2628.5, label: 'BUY LIMIT 0.30'));
       expect(a == const ChartLine(id: 'pnd:49434302', kind: 'pending', price: 2629, label: 'BUY LIMIT 0.30'), isFalse);
+      expect(a == const ChartLine(id: 'pnd:49434302', kind: 'pending', price: 2628.5, label: 'BUY LIMIT 0.30', addSl: true), isFalse);
+      // the ids of the stop lines a handle sets: a position's sl: / tp:, an order's osl: / otp:
+      expect(a.stopId('sl'), 'osl:49434302');
+      expect(const ChartLine(id: 'pos:9', kind: 'pos', price: 1, label: 'BUY').stopId('tp'), 'tp:9');
+      final moved = a.copyWith(price: 2630, addTp: true);
+      expect(moved.price, 2630);
+      expect(moved.addTp, isTrue);
+      expect(moved.label, a.label);
+    });
+  });
+
+  group('stops', () {
+    // 1.00 lot of EURUSD: 100,000 USD per 1.0 of price
+    const buy = ChartStops(open: 1.0800, k: 100000, c: -3);
+    const sell = ChartStops(open: 1.0800, k: -100000);
+
+    test('the money at a stop: the P&L there, swap and commission included', () {
+      expect(buy.moneyAt(1.0780), closeTo(-203, 1e-6));
+      expect(buy.moneyAt(1.0850), closeTo(497, 1e-6));
+      expect(sell.moneyAt(1.0780), closeTo(200, 1e-6));
+      // USDJPY: the JPY result converted at the closing price
+      const jpy = ChartStops(open: 150, k: 100000, inv: true);
+      expect(jpy.moneyAt(151), closeTo(100000 / 151, 1e-6));
+    });
+
+    test('a position: SL below / TP above the bid for a buy, SL above / TP below the ask for a sell', () {
+      ({String key, double limit})? p(ChartStops s, String which, String side, double price) => s.problem(which, side, price, bid: 1.0845, ask: 1.0847);
+      expect(p(buy, 'sl', 'buy', 1.0840), isNull);
+      expect(p(buy, 'sl', 'buy', 1.0845), (key: 'slBelow', limit: 1.0845));
+      expect(p(buy, 'sl', 'buy', 1.0850)?.key, 'slBelow');
+      expect(p(buy, 'tp', 'buy', 1.0850), isNull);
+      expect(p(buy, 'tp', 'buy', 1.0844)?.key, 'tpAbove');
+      expect(p(sell, 'sl', 'sell', 1.0850), isNull);
+      expect(p(sell, 'sl', 'sell', 1.0846), (key: 'slAbove', limit: 1.0847));
+      expect(p(sell, 'tp', 'sell', 1.0840), isNull);
+      expect(p(sell, 'tp', 'sell', 1.0847)?.key, 'tpBelow');
+      // a price of zero or below never goes
+      expect(p(sell, 'tp', 'sell', 0)?.key, 'tpBelow');
+      // no quote yet: the server decides
+      expect(buy.problem('sl', 'buy', 2, bid: 0, ask: 0), isNull);
+    });
+
+    test("the stops level keeps a stop that far from the price; an order's stops are checked against its entry", () {
+      const gap = ChartStops(open: 1.08, k: 100000, gap: 0.0005);
+      expect(gap.problem('sl', 'buy', 1.0840, bid: 1.0845, ask: 1.0847), isNull);
+      expect(gap.problem('sl', 'buy', 1.0841, bid: 1.0845, ask: 1.0847)?.limit, closeTo(1.0840, 1e-12));
+      const order = ChartStops(open: 1.0800, k: 100000, order: true);
+      // a buy limit at 1.0800 (the market above it): its SL below 1.0800, its TP above, whatever the bid
+      expect(order.problem('sl', 'buy', 1.0790, bid: 1.0845, ask: 1.0847), isNull);
+      expect(order.problem('sl', 'buy', 1.0810, bid: 1.0845, ask: 1.0847), (key: 'slBelow', limit: 1.08));
+      expect(order.problem('tp', 'buy', 1.0820, bid: 1.0845, ask: 1.0847), isNull);
     });
   });
 
@@ -134,6 +218,16 @@ void main() {
       expect((ChartEvent.decode('{"type":"long","price":1.0832}') as ChartLongPress).price, 1.0832);
       expect((ChartEvent.decode('{"type":"dragstart","id":"sl:9"}') as ChartDragStarted).id, 'sl:9');
       expect((ChartEvent.decode('{"type":"ind","uid":"k2"}') as ChartIndicatorTapped).uid, 'k2');
+      expect((ChartEvent.decode('{"type":"dragend","id":"sl:9"}') as ChartDragEnded).id, 'sl:9');
+    });
+
+    test('a stop dragged out of an S / T handle', () {
+      final s = ChartEvent.decode('{"type":"stop","id":"pos:9","which":"sl","price":1.0812}') as ChartStopDragged;
+      expect(s.id, 'pos:9');
+      expect(s.which, 'sl');
+      expect(s.price, 1.0812);
+      final t = ChartEvent.decode('{"type":"stop","id":"pnd:4","which":"tp","price":2690}') as ChartStopDragged;
+      expect((t.id, t.which, t.price), ('pnd:4', 'tp', 2690.0));
     });
 
     test('malformed or unknown messages are ignored', () {
@@ -142,6 +236,10 @@ void main() {
       expect(ChartEvent.decode('{"type":"drag","id":"x"}'), isNull);
       expect(ChartEvent.decode('{"type":"drag","id":3,"price":1}'), isNull);
       expect(ChartEvent.decode('{"type":"nope"}'), isNull);
+      expect(ChartEvent.decode('{"type":"stop","id":"pos:9","which":"be","price":1}'), isNull);
+      expect(ChartEvent.decode('{"type":"stop","id":"pos:9","which":"sl"}'), isNull);
+      expect(ChartEvent.decode('{"type":"stop","which":"tp","price":1}'), isNull);
+      expect(ChartEvent.decode('{"type":"dragend"}'), isNull);
     });
   });
 
