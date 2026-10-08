@@ -9,7 +9,7 @@ import { NotificationBell } from '@/components/NotificationListener';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import api from '@/lib/api/client';
 import AppTopNav from './AppTopNav';
-import { ChevronDown, Sparkles, Wallet } from 'lucide-react';
+import { ChevronDown, Menu, Sparkles, Wallet } from 'lucide-react';
 
 function formatUsd(n: number) {
   return new Intl.NumberFormat('en-US', {
@@ -82,10 +82,10 @@ export default function AppHeader() {
           aria-hidden
           className="pointer-events-none absolute inset-x-6 top-0 h-px rounded-full bg-gradient-to-r from-transparent via-[#FF6A00]/40 to-transparent"
         />
-        {/* LEFT — brand lockup: the mandala mark still toggles the sidebar (no
-            hamburger), and the wordmark beside it links home. The name is set
-            as text rather than using ezymex-logo.png, whose lockup already
-            contains the mandala and would show the mark twice. */}
+        {/* LEFT — brand lockup. The wordmark is the brand here: the old
+            asset carried its own emblem, so the name used to be set as text
+            beside it to avoid showing the mark twice. The current lockup is
+            letters only, so the image can carry it. */}
         <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
           <button
             type="button"
@@ -94,19 +94,18 @@ export default function AppHeader() {
             className="group grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[#FF6A00]/25 bg-[#FF6A00]/[0.06] transition-all hover:border-[#FF6A00]/50 hover:bg-[#FF6A00]/10 hover:shadow-[0_0_18px_-6px_rgba(255,106,0,0.9)] active:scale-95"
             aria-label="Toggle menu"
           >
-            <img
-              src="/images/ezymex_icon.png"
-              alt="Ezymex"
-              className="h-7 w-7 object-contain transition-transform duration-200 group-hover:scale-110"
-            />
+            <Menu className="h-5 w-5 text-[#FF6A00] transition-transform duration-200 group-hover:scale-110" />
           </button>
           <Link
             href="/dashboard"
             aria-label="Ezymex — dashboard"
-            className="hidden select-none items-baseline gap-px text-[19px] font-extrabold leading-none tracking-[-0.02em] text-text-primary transition-opacity hover:opacity-80 sm:inline-flex"
+            className="hidden select-none items-center transition-opacity hover:opacity-80 sm:inline-flex"
           >
-            Ezymex
-            <span aria-hidden className="ml-1 h-1.5 w-1.5 self-center rounded-full bg-[#FF6A00]" />
+            <img
+              src="/images/ezymex-logo.png"
+              alt="Ezymex"
+              className="h-6 w-auto object-contain"
+            />
           </Link>
           {/* Hairline separates the brand from the nav capsule */}
           <span aria-hidden className="hidden h-6 w-px bg-border-primary lg:block" />

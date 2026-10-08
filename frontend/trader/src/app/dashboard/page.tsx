@@ -20,7 +20,6 @@ import {
   Wallet as WalletIcon, Coins, BarChart3, Users, Zap, Gem,
 } from 'lucide-react';
 import DashboardShell from '@/components/layout/DashboardShell';
-import TvCard from '@/components/dashboard/TvCard';
 import LevelProgressModal from '@/components/dashboard/LevelProgressModal';
 import FxaDetailsModal from '@/components/dashboard/FxaDetailsModal';
 import XpDetailsModal from '@/components/dashboard/XpDetailsModal';
@@ -29,6 +28,7 @@ import LevelLadderCard, { type LevelBenefits } from '@/components/dashboard/Leve
 import { MetricStrip } from '@/components/dashboard/MetricStrip';
 import { MarginRingCard } from '@/components/dashboard/MarginRingCard';
 import { SetupChecklist, type SetupStep } from '@/components/dashboard/SetupChecklist';
+import { BalanceCard } from '@/components/dashboard/BalanceCard';
 import api from '@/lib/api/client';
 import { useAuthStore } from '@/stores/authStore';
 import { TOUR_TARGETS } from '@/components/Onboarding/tourTargets';
@@ -401,9 +401,6 @@ function BrokerHome() {
 
   return (
     <div className="space-y-4 pb-8 max-w-6xl mx-auto w-full">
-      {/* ── Ezymex TV banner — the commercial, full width, slides in R→L ── */}
-      <TvCard />
-
       {/* ── Greeting + metric strip + headline numbers ── */}
       <div className="dash-rise" style={{ animationDelay: '0ms' }}>
         <div className="flex flex-wrap items-start justify-between gap-6">
@@ -464,7 +461,7 @@ function BrokerHome() {
 
       {/* ── Bento band: the chart beside the ring and the checklist ── */}
       <div
-        className="dash-rise grid grid-cols-1 gap-3 sm:gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
+        className="dash-rise grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1fr)]"
         style={{ animationDelay: '70ms' }}
       >
         <PortfolioHero
@@ -484,6 +481,16 @@ function BrokerHome() {
           onDeposit={() => router.push('/wallet')}
           onWithdraw={() => router.push('/wallet?action=withdraw')}
           onDetails={() => router.push('/accounts')}
+        />
+        <BalanceCard
+          accountNumber={activeAccount?.account_number ?? ''}
+          holder={[user?.first_name, user?.last_name].filter(Boolean).join(' ')}
+          balance={activeAccount?.balance ?? totalBalance}
+          equity={activeAccount?.equity ?? totalEquity}
+          isDemo={activeAccount?.is_demo ?? false}
+          onDeposit={() => router.push('/wallet')}
+          onWithdraw={() => router.push('/wallet?action=withdraw')}
+          fmt={fmtUsd}
         />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-1">
           <MarginRingCard

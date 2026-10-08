@@ -129,7 +129,7 @@ export default function AdminSidebar() {
       <div className="flex items-center h-14 px-3 border-b border-border-primary/40">
         {collapsed ? (
           <span className="admin-logo-chip mx-auto">
-            <img src="/logo.png" alt="Ezymex" className="w-8 h-8 object-contain" />
+            <img src="/ezymex_icon.png" alt="Ezymex" className="w-8 h-8 object-contain" />
           </span>
         ) : (
           // Logo image only — no separate "Ezymex" text (the logo asset
