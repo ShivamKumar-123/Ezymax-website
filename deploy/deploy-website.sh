@@ -5,6 +5,10 @@ cd ~/kalks-website
 git pull --ff-only
 npm ci --no-audit --no-fund
 cd apps/trader
+# the live market-news ticker reads the platform's news service server-side (same internal token as the apps)
+f=.env.production.local; touch "$f"
+grep -q '^NEWS_URL=' "$f" || printf 'NEWS_URL=http://127.0.0.1:8103\n' >> "$f"
+grep -q '^NEWS_INTERNAL_TOKEN=' "$f" || printf 'NEWS_INTERNAL_TOKEN=%s\n' "$(grep '^NEWS_INTERNAL_TOKEN=' ~/kalks/.env.local | cut -d= -f2-)" >> "$f"
 npm ci --no-audit --no-fund
 NODE_OPTIONS=--max-old-space-size=6144 npm run build
 sudo cp ~/kalks/deploy/systemd/kalks-website.service /etc/systemd/system/
