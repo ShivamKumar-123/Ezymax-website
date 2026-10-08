@@ -28,6 +28,42 @@ const chart = {
   "toolbar.zoomOut": "Zoom out (−)",
   "toolbar.resetView": "Reset view",
   "toolbar.screenshot": "Screenshot",
+  "toolbar.symbolSearch": "Symbol search",
+  "toolbar.moreTimeframes": "More timeframes",
+  "toolbar.undo": "Undo drawing change",
+  "toolbar.redo": "Redo drawing change",
+  "toolbar.nothingToUndo": "Nothing to undo",
+  "toolbar.nothingToRedo": "Nothing to redo",
+  "toolbar.saveLayout": "Save layout",
+  "toolbar.layoutSaved": "Layout saved",
+  "toolbar.layoutSavedText": "Charts, indicators and drawings are kept in this browser. Changes are also saved automatically.",
+  // the Sell | spread | Buy pair in the chart toolbar; {lot} = volume in lots
+  "toolbar.quoteTipOn": "One-click trading is on: a click sends a market order for {lot} lot",
+  "toolbar.quoteTipOff": "Opens the order form with this side chosen",
+  "toolbar.spread": "Spread in points",
+
+  // Timeframe names (tooltips, the "more timeframes" menu). The short labels 1m, 1h, D, W, M stay as they are.
+  "tf.M1": "1 minute",
+  "tf.M5": "5 minutes",
+  "tf.M15": "15 minutes",
+  "tf.M30": "30 minutes",
+  "tf.H1": "1 hour",
+  "tf.H4": "4 hours",
+  "tf.D1": "1 day",
+  "tf.W1": "1 week",
+  "tf.MN": "1 month",
+
+  // Date range presets under the chart (the short labels 1d, 5d, 1m, 3m, 6m, 1y, 5y stay as they are)
+  "range.label": "Date range",
+  "range.1d": "1 day in 1-minute bars",
+  "range.5d": "5 days in 5-minute bars",
+  "range.1m": "1 month in 30-minute bars",
+  "range.3m": "3 months in 1-hour bars",
+  "range.6m": "6 months in 4-hour bars",
+  "range.1y": "1 year in daily bars",
+  "range.5y": "5 years in weekly bars",
+  // the clock under the chart; {zone} = the server's offset from UTC, such as UTC+3 (keep as is)
+  "clock.tip": "Server time ({zone}). The chart's time axis uses it too.",
 
   // Built-in chart templates (indicator names in brackets stay as they are)
   "template.b-default": "Default",
@@ -48,6 +84,14 @@ const chart = {
   "tool.rect": "Rectangle",
   "tool.text": "Text",
   "tool.ruler": "Ruler",
+  "tool.brush": "Brush",
+  "tool.magnet": "Magnet: snap points to open, high, low and close",
+  "tool.lock": "Lock all drawings",
+  "tool.unlock": "Unlock drawings",
+  "tool.hide": "Hide all drawings",
+  "tool.show": "Show drawings",
+  "tool.locked": "Drawings are locked",
+  "tool.lockedText": "Unlock them in the left toolbar to move or delete them.",
   // {tool} = a drawing tool name
   "tool.coming": "{tool} is coming",
   "tool.comingText": "Available in the next Ezymex Trader build.",
@@ -61,6 +105,12 @@ const chart = {
   "draw.trend": "Drag to draw a trend line · Esc cancels",
   "draw.rect": "Drag to draw a rectangle · Esc cancels",
   "draw.fib": "Drag to draw Fibonacci retracement · Esc cancels",
+  "draw.brush": "Drag to draw · Esc cancels",
+  "draw.text": "Click where the text goes",
+  "draw.textPlaceholder": "Type, then Enter",
+  "draw.ruler": "Drag to measure · Esc ends",
+  // ruler readout: the number of bars between the two points
+  "ruler.bars": { one: "{count} bar", other: "{count} bars" },
   "draw.hlineAdded": "Horizontal line added",
   "draw.hlineAddedText": "{symbol} at {price} · Delete removes it",
 
@@ -98,7 +148,17 @@ const chart = {
   "line.buyStopLimit": "BUY STOP LMT {lot}",
   "line.sellStopLimit": "SELL STOP LMT {lot}",
   "line.alert": "ALERT",
-  "line.posTitle": "Drag to set SL/TP · double-click to modify",
+  // S and T are the stop loss / take profit handles on a position or order chip (keep the letters S and T)
+  "line.posTip": "Drag S or T to set a stop loss or take profit · double-click to modify",
+  "line.pendingTip": "Drag to move the order · drag S or T to set a stop loss or take profit",
+  "line.dragSl": "Drag to set a stop loss",
+  "line.dragTp": "Drag to set a take profit",
+  // a stop dragged to the wrong side of the price; {price} = the current price (positions) or the order price
+  "line.bad.slBelow": "Stop loss must be below {price}",
+  "line.bad.slAbove": "Stop loss must be above {price}",
+  "line.bad.tpAbove": "Take profit must be above {price}",
+  "line.bad.tpBelow": "Take profit must be below {price}",
+  "line.bad.notSent": "Nothing was sent to the server.",
   "line.dragTitle": "Drag to move",
   "line.remove": "Remove {label}",
 
