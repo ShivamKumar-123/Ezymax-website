@@ -461,6 +461,29 @@
           addMain();
           vol = chart.addSeries(LC.HistogramSeries, { priceScaleId: "vol", priceLineVisible: false, lastValueVisible: false, priceFormat: { type: "volume" } });
           chart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.86, bottom: 0 } });
+          // Squeeze / spread the prices by dragging the price axis with a finger (MT5): lightweight-charts only scales
+          // the axis on a vertical touch drag while handleScroll.vertTouchDrag is on (its PriceAxisWidget treats the
+          // drag as page scroll otherwise), and that option would also let a vertical drag on the plot pan the prices.
+          // So it is on only from a touch that starts on an axis until the finger lifts. A double tap resets the scale.
+          if (!host.dataset.axisTouch) {
+            host.dataset.axisTouch = "1";
+            host.addEventListener(
+              "touchstart",
+              (e) => {
+                const t = e.touches[0];
+                if (!t || !chart || e.touches.length !== 1) return;
+                if (t.clientX - host.getBoundingClientRect().left >= chart.timeScale().width()) {
+                  chart.applyOptions({ handleScroll: { vertTouchDrag: true } });
+                }
+              },
+              { capture: true, passive: true },
+            );
+            const axisTouchEnd = () => {
+              if (chart && !drag) chart.applyOptions({ handleScroll: { vertTouchDrag: false } });
+            };
+            window.addEventListener("touchend", axisTouchEnd, { capture: true, passive: true });
+            window.addEventListener("touchcancel", axisTouchEnd, { capture: true, passive: true });
+          }
           wm = new Watermark();
           wm.setDark(pal.dark);
           chart.panes()[0].attachPrimitive(wm);
