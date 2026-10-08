@@ -4,7 +4,7 @@
 // its flags (scrolls sideways, "Open charts" lists them all when they don't fit) and + New chart. Row 2, the toolbar:
 // symbol search · timeframe favourites 1m 30m 1h 4h D (+ the current one) and the rest in a menu · chart type ·
 // indicators · templates · layout · undo / redo · New order · zoom | save layout · alert · picture · full chart · full
-// screen · Sell | spread | Buy. Left: the drawing rail (tools, magnet, lock, hide, delete all). Under the charts: date
+// screen. Left: the drawing rail (tools, magnet, lock, hide, delete all). Under the charts: date
 // range presets 5y … 1d and the server clock. The plot itself carries only the legend, the Buy / Sell box and the K mark.
 import * as React from "react";
 import { toast } from "@/lib/notify";
@@ -20,7 +20,6 @@ import { CountBadge, IconButton, Tip } from "@/components/ui/kit";
 import { useLayoutItems, openActivity, saveLayout, toggleFullChart, toggleFullscreen } from "@/components/shell/commands";
 import { ChartView } from "./chart-view";
 import { chartRegistry, pendingRanges } from "./engine";
-import { QuotePair } from "./one-click";
 import { clearDrawings, redoDrawings, setDrawPrefs, undoDrawings, useDrawPrefs, useDrawingHistory } from "./drawings";
 import { BUILTIN_TEMPLATES, applyTemplate, deleteTemplate, openIndicatorList, openSaveTemplate, templateMatches, useUserTemplates } from "./indicators/state";
 
@@ -311,7 +310,7 @@ function ChartBar() {
       <Tip content={t("trader.newOrder")} shortcut="F9" side="bottom">
         <button onClick={() => T.openNewOrder({ symbol: tab.symbol })} disabled={T.readOnly} data-tour="new-order" className="flex h-7 shrink-0 items-center gap-1.5 rounded-[7px] border border-line px-2 text-[12.5px] font-semibold text-fg transition-colors hover:border-ember/50 hover:bg-ember-soft/40 disabled:opacity-45 [&>svg]:size-3.5">
           <ShoppingCart className="text-accent-text" />
-          <span className="hidden @[1180px]:inline">{t("trader.newOrder")}</span>
+          <span className="hidden @[700px]:inline">{t("trader.newOrder")}</span>
         </button>
       </Tip>
       <IconButton label={t("desk.ch.zoomIn")} shortcut="+" onClick={() => reg()?.zoom(1)} className="hidden @[760px]:inline-grid">
@@ -339,11 +338,6 @@ function ChartBar() {
         <IconButton label={t("desk.set.fullScreen")} shortcut="F11" onClick={toggleFullscreen}>
           <FullscreenIcon />
         </IconButton>
-        {!T.readOnly && (
-          <span className="ms-1 hidden @[880px]:flex">
-            <QuotePair symbol={tab.symbol} />
-          </span>
-        )}
       </div>
     </div>
   );

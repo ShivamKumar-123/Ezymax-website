@@ -233,13 +233,13 @@ export function makeTab(symbol: string, tf: Timeframe = "H1", indicators: Indica
   return { id: uid(), symbol, tf, type: "candles", indicators, drawings: [] };
 }
 
+/** The indicators the first charts used to open with (layouts before uiVersion 4); clean charts are the default now. */
+const OLD_DEFAULT_INDICATORS: Record<string, string[]> = { XAUUSD: ["ema50", "sma20"], EURUSD: ["bb"], NAS100: ["rsi"], BTCUSD: ["macd"] };
+const indicatorKey = (list: IndicatorInstance[]) => JSON.stringify(list.map((i) => [i.type, i.params]));
+
 export function defaultWorkspace(): Workspace {
-  const tabs = [
-    makeTab("XAUUSD", "M15", migrateIndicators(["ema50", "sma20"])),
-    makeTab("EURUSD", "H1", migrateIndicators(["bb"])),
-    makeTab("NAS100", "M5", migrateIndicators(["rsi"])),
-    makeTab("BTCUSD", "H4", migrateIndicators(["macd"])),
-  ];
+  // charts open clean: no indicators until the trader adds them
+  const tabs = [makeTab("XAUUSD", "M15"), makeTab("EURUSD", "H1"), makeTab("NAS100", "M5"), makeTab("BTCUSD", "H4")];
   return {
     layout: "1",
     tabs,
@@ -263,7 +263,7 @@ export function defaultWorkspace(): Workspace {
     maxDeviation: null,
     lot: 0.5,
     profile: "Default",
-    uiVersion: 3,
+    uiVersion: 4,
   };
 }
 
@@ -312,6 +312,14 @@ function readWorkspace(): Workspace {
       w.side = w.panels.navigator ? "navigator" : "instruments";
       w.optPanel = false;
       w.uiVersion = 3;
+    }
+    if ((w.uiVersion ?? 1) < 4) {
+      // the first charts no longer come with indicators: drop the old defaults where the trader left them untouched
+      w.tabs = w.tabs.map((t) => {
+        const old = OLD_DEFAULT_INDICATORS[t.symbol];
+        return old && indicatorKey(t.indicators) === indicatorKey(migrateIndicators(old)) ? { ...t, indicators: [] } : t;
+      });
+      w.uiVersion = 4;
     }
     if (!["instruments", "book", "ticks", "navigator"].includes(w.side)) w.side = "instruments";
     if (w.posLayout !== "split") w.posLayout = "page";

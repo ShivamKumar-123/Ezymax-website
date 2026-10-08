@@ -21,7 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-// light pastel is the Client Area's default theme (dark stays one tap away in the theme switch)
+// dark is the Client Area's default theme (light stays one tap away in the theme switch)
 export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: dark)", color: "#0b0a0f" },
@@ -54,7 +54,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         {css && <style dangerouslySetInnerHTML={{ __html: css }} />}
         <BrandProvider brand={brand}>
-          <Providers defaultTheme="light" i18n={{ locale, messages }}>{children}</Providers>
+          <Providers defaultTheme="dark" i18n={{ locale, messages }}>{children}</Providers>
         </BrandProvider>
       </body>
     </html>

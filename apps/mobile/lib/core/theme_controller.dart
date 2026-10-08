@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../preview/preview_data.dart';
 import 'prefs.dart';
 
-/// The Client Area theme (light by default, like the web) and Ezymex Trader's (dark by default).
+/// The Client Area theme and Ezymex Trader's (both dark by default, like the web).
 class ThemeController extends Notifier<ThemeMode> {
   @override
   ThemeMode build() {

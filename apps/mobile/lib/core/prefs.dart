@@ -25,7 +25,7 @@ class Prefs {
   Future<void> setLocale(String code) => _p.setString(_kLocale, code);
 
   /// Client Area theme: light by default, like the web (`light` | `dark` | `system`).
-  ThemeMode get themeMode => _mode(_p.getString(_kTheme), ThemeMode.light);
+  ThemeMode get themeMode => _mode(_p.getString(_kTheme), ThemeMode.dark);
   Future<void> setThemeMode(ThemeMode m) => _p.setString(_kTheme, m.name);
 
   /// Ezymex Trader theme: dark by default, like the web terminal.
