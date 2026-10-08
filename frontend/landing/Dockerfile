@@ -4,14 +4,19 @@
 # NEXT_PUBLIC_TRADE_URL link into the trader platform's auth pages.
 #
 # NOTE: this app uses yarn (yarn.lock), unlike the npm-based trader/ib
-# Dockerfiles. node:20-alpine ships yarn 1.x, so no corepack needed.
+# Dockerfiles. node:22-alpine ships yarn 1.x, so no corepack needed.
+#
+# 22, not 20: @react-three/drei pulls in camera-controls, which declares
+# `engines.node >= 22`, and yarn refuses the install outright rather than
+# warning. This only shows up in Docker -- a developer on a newer local node
+# will not see it.
 
-FROM node:20-alpine AS deps
+FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json yarn.lock ./
 RUN yarn install --frozen-lockfile
 
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -34,7 +39,7 @@ ENV NODE_OPTIONS="--max-old-space-size=4096"
 # so this stage needs network access.
 RUN yarn build
 
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1

@@ -1,87 +1,69 @@
----
-tags: [architecture, stable]
-updated: 2026-05-21
----
+# Tech stack
 
-# Tech Stack
+The landing app for **Ezymax**, an invite-only CFD trading platform.
 
-Every dependency in `package.json`, what it does, and why it is here.
-Package name: `next16-claude-starter` · version `0.1.0` · private.
+## Framework
 
-## Core framework
-
-| Package | Version | Role |
-|---------|---------|------|
-| `next` | `16.2.0` | App Router framework. ⚠️ See warning below. |
-| `react` / `react-dom` | `19.2.4` | UI runtime |
-| `typescript` | `^5` | Type system — `any` is banned |
-
-> [!warning] This is not the Next.js you may know
-> `AGENTS.md` warns: APIs, conventions, and file structure may differ from older
-> Next.js knowledge. Always check [[routing]] before writing routing code, and
-> heed deprecation notices.
+| | |
+|---|---|
+| Next.js | 16.3.8, App Router, Turbopack |
+| React | 19.2.8 |
+| TypeScript | 5, strict |
+| Package manager | **yarn 1** (`--frozen-lockfile` in Docker) |
+| Output | `standalone` — required by the Dockerfile's runner stage |
 
 ## Styling
 
-| Package | Version | Role |
-|---------|---------|------|
-| `tailwindcss` | `^4` | Utility CSS — **no `tailwind.config.js`** |
-| `@tailwindcss/postcss` | `^4` | PostCSS integration |
+**Tailwind v4, CSS-first.** There is no `tailwind.config` file: every token,
+utility and keyframe lives in `src/app/globals.css` under `@theme`,
+`@theme inline` and `@utility`. PostCSS runs `@tailwindcss/postcss` and
+nothing else.
 
-Tailwind v4 is configured entirely in `src/app/globals.css` via `@theme inline`.
-See [[design-system]].
+Palette is a near-black ground (`bg #060606`) with an ember accent
+(`orange-500 #ff6a00`) and glassmorphic panels. Dark only — there is no light
+mode and no `dark:` variants.
 
-## Animation (the heart of the starter)
+Four `next/font/google` families, mapped onto `--font-sans` / `--font-display`
+/ `--font-pixel` / `--font-mono`: Inter, Manrope, Silkscreen, Space Mono. They
+are fetched at **build** time, so the Docker builder stage needs network
+access.
 
-| Package | Version | Role |
-|---------|---------|------|
-| `@react-spring/web` | `^10.0.3` | Spring physics — drives **all** motion |
-| `spring-text-engine` | `^0.1.5` | Scroll-aware spring text animation |
+## Motion and 3D
 
-No `framer-motion`, no CSS transitions/keyframes. See [[animation-system]] and
-[[text-engine]]. ADR: [[decisions-log]] ADR-0002.
+| | |
+|---|---|
+| `motion` v14 | import path is `motion/react`, **not** `framer-motion` |
+| `three` 0.186 | + `@react-three/fiber` 9, `@react-three/drei` 10, `@react-three/postprocessing` 3 |
 
-## Scroll & state
+The hero WebGL scene is triple-gated (desktop width, no
+`prefers-reduced-motion`, working WebGL context) with a pure-CSS fallback, and
+pauses its frameloop off-screen.
 
-| Package | Version | Role |
-|---------|---------|------|
-| `lenis` | `^1.3.19` | Smooth scrolling |
-| `zustand` | `^5.0.12` | Lightweight global state (scroll store) |
-| `resize-observer-polyfill` | `^1.5.1` | ResizeObserver fallback for animation hooks |
-| `zod` | `^4.4.3` | Schema validation — env (`src/env.ts`) + API payloads. See [[api-architecture]] |
+## Other direct dependencies
 
-See [[smooth-scroll]] and [[data-flow]].
+`zustand` (the waitlist store), `zod` (API validation), `lucide-react` (icons),
+`clsx` + `tailwind-merge` (via `lib/cn.ts`), `@next/mdx` + `@mdx-js/*`.
 
-## Misc
+## What is NOT here
 
-No miscellaneous runtime dependencies. Cookie consent is an in-house component
-(`src/components/common/Cookie/`) built on Zustand + `@react-spring/web` — the
-former `react-cookie-consent` package was removed. See [[components/common]].
+This app was rebuilt in October 2026 from a different codebase. The previous
+stack is gone, and so is its documentation — see ADR-0010 in
+[[decisions-log]]. If you have a memory of any of the following, it no longer
+applies:
 
-## Tooling
+- `@react-spring/web` and the vendored spring engine under
+  `src/components/animation/springs/`
+- `spring-text-engine` and `TextEngine`
+- `lenis` smooth scroll and `ScrollLayout`
+- `threejs-components` / `TubesCursor`
+- the `src/views/` architecture and the `src/data/mocks/` copy layer
+- the adaptive-grid `html { font-size: <vw> }` rem ladder
+- the three-tier `--raw-*` → semantic → `@theme` token convention
 
-| Package | Role |
-|---------|------|
-| `eslint` `^9` + `eslint-config-next` | Linting — run `yarn lint` before commits |
-| `@types/*` | Type definitions for node/react |
+## Build gotchas
 
-## Scripts
-
-```bash
-yarn dev      # next dev — local development
-yarn build    # next build — production build
-yarn start    # next start — serve production build
-yarn lint     # eslint
-```
-
-Package manager: **Yarn** (`yarn.lock` is committed).
-
-## Not yet in the stack
-
-Auth, database/ORM, payments, i18n, data-fetching libraries. The original starter
-spec listed these as "add as needed" placeholders. Document them here when adopted,
-and add an ADR to [[decisions-log]].
-
-## Related
-
-[[system-overview]] · [[folder-structure]]
+- `tsc --noEmit` fails on a fresh clone: `LayoutProps<"/">` is generated into
+  `.next/types` **by `next build`**. Use `yarn build` as the typecheck gate.
+- `next start` does not work with `output: "standalone"`. Run
+  `node .next/standalone/server.js` after copying `.next/static` and `public`
+  in beside it — which is what the Dockerfile's runner stage does.
