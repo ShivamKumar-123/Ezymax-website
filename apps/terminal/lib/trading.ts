@@ -1,4 +1,4 @@
-import { INSTRUMENTS, getInstrument, instrumentSpec, priceFeed, type Instrument, type Position, type TradingAccount } from "@ezymex/mock";
+import { INSTRUMENTS, getInstrument, instrumentSpec, priceFeed, serverOffset, type Instrument, type Position, type TradingAccount } from "@ezymex/mock";
 import type { T as Translate } from "@ezymex/i18n";
 
 /* ------------------------------------------------------------------ */
@@ -266,15 +266,20 @@ export function swapSummary(t: Translate, symbol: string): string {
   return t("desk.sw.summary", { long: swapRateText(t, s.swapLong, s.swapUnit), short: swapRateText(t, s.swapShort, s.swapUnit), when });
 }
 
-/** Server time is GMT+3. */
+/** Broker server time (MT5 style, the day starts at New York close): UTC+3 while US daylight saving is on, UTC+2
+ *  otherwise (serverOffset in @ezymex/mock, the same offset the charts' time axis uses). */
 export function serverTime(d = new Date()) {
-  const t = new Date(d.getTime() + 3 * 3600 * 1000);
+  const t = new Date(d.getTime() + serverOffset(Math.floor(d.getTime() / 1000)) * 1000);
   const p = (n: number, l = 2) => String(n).padStart(l, "0");
   return {
     date: `${t.getUTCFullYear()}.${p(t.getUTCMonth() + 1)}.${p(t.getUTCDate())}`,
     time: `${p(t.getUTCHours())}:${p(t.getUTCMinutes())}:${p(t.getUTCSeconds())}`,
     ms: p(t.getUTCMilliseconds(), 3),
   };
+}
+/** The server's zone label at `d`: "UTC+3" (US summer time) or "UTC+2". */
+export function serverZone(d = new Date()) {
+  return `UTC+${serverOffset(Math.floor(d.getTime() / 1000)) / 3600}`;
 }
 export function fmtServer(iso: string | number, withSeconds = true) {
   const s = serverTime(new Date(iso));

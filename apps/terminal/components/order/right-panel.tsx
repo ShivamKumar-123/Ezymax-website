@@ -7,7 +7,7 @@ import { Clock, Info, Layers3 } from "lucide-react";
 import { getInstrument } from "@ezymex/mock";
 import { PriceText, SymbolAvatar, cn, useQuote } from "@ezymex/ui";
 import { getRange, getTicks, useMarketClock } from "@/lib/market";
-import { contractSpec, fmtPrice, pipSize, swapRateText } from "@/lib/trading";
+import { contractSpec, fmtPrice, pipSize, serverZone, swapRateText } from "@/lib/trading";
 import { KV } from "@/components/ui/primitives";
 import { useT } from "@ezymex/i18n/react";
 
@@ -74,7 +74,7 @@ export function SymbolInfo({ symbol }: { symbol: string }) {
         <KV k={t("order.info.swapShort")} v={<span className={spec.swapShort >= 0 ? "text-up" : "text-down"}>{swapRateText(t, spec.swapShort, spec.swapUnit)}</span>} />
         <KV k={t("order.info.tripleSwap")} v={spec.swapEveryNight || !spec.tripleSwap ? t("desk.sw.everyNight") : t.dyn(`order.info.tripleSwapDay.${spec.tripleSwap}`, spec.tripleSwap)} />
         <KV k={t("order.info.tradingSession")} v={<span className="whitespace-normal text-[11px]" dir="ltr">{spec.sessions}</span>} />
-        <KV k={t("order.info.serverTime")} v={<span dir="ltr">GMT+3</span>} />
+        <KV k={t("order.info.serverTime")} v={<span dir="ltr">{serverZone()}</span>} />
       </Section>
     </div>
   );
