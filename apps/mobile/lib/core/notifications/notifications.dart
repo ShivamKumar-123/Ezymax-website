@@ -132,6 +132,7 @@ class NotificationItem {
           'ib': KTone.amber,
           'copy': KTone.pink,
           'prop': KTone.amber,
+          'staking': KTone.mint,
           'support': KTone.lavender,
           'marketing': KTone.pink,
         }[category] ??
@@ -158,6 +159,7 @@ class NotificationItem {
           'ib': LucideIcons.coins,
           'copy': LucideIcons.users,
           'prop': LucideIcons.trophy,
+          'staking': LucideIcons.piggyBank,
           'support': LucideIcons.lifeBuoy,
           'marketing': LucideIcons.megaphone,
         }[category] ??

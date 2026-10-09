@@ -52,6 +52,7 @@ import '../features/profile/viewers_screen.dart';
 import '../features/prop/prop_routes.dart';
 import '../features/rewards/rewards_routes.dart';
 import '../features/social/social_routes.dart';
+import '../features/staking/staking_routes.dart';
 import '../features/support/support_screen.dart';
 import '../features/terminal/terminal_screen.dart';
 import '../features/wallet/deposit_screen.dart';
@@ -277,8 +278,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                   builder: (c, s) => GalleryScreen(open: s.uri.queryParameters['open']),
                 ),
               for (final m in kNav)
-                if (branchOf(m.key) == 4) ..._moduleRoutes(m.key, screens: {..._c1Screens, ..._c2Screens}),
+                if (branchOf(m.key) == 4) ..._moduleRoutes(m.key, screens: {..._c1Screens, ..._c2Screens, ...stakingScreens}),
               ..._c2Routes,
+              ...stakingRoutes,
               // gated in live builds (apps/crm/lib/live.ts), kept reachable for links
               GoRoute(
                 path: '/academy/coach',

@@ -132,6 +132,18 @@ const List<NavModule> kNav = [
     ],
   ),
   NavModule(
+    key: 'staking',
+    labelKey: 'staking.nav.title',
+    icon: LucideIcons.piggyBank,
+    href: '/staking',
+    section: 'grow',
+    sub: [
+      NavSub('/staking', 'staking.nav.plans', LucideIcons.piggyBank),
+      NavSub('/staking/portfolio', 'staking.nav.portfolio', LucideIcons.chartPie),
+      NavSub('/staking/history', 'staking.nav.history', LucideIcons.history),
+    ],
+  ),
+  NavModule(
     key: 'rewards',
     labelKey: 'shell.nav.rewards',
     icon: LucideIcons.gift,
@@ -202,6 +214,7 @@ const List<(String, String)> _pageModules = [
   ('/social/investments', 'pamm'),
   ('/social', 'copy_trading'),
   ('/prop', 'prop'),
+  ('/staking', 'staking'),
   ('/partner', 'ib'),
   ('/developer/strategies', 'algo'),
   ('/developer/deployments', 'algo'),

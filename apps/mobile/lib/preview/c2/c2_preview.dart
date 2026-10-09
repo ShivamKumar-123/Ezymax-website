@@ -10,6 +10,7 @@ import 'partner.dart';
 import 'prop.dart';
 import 'rewards.dart';
 import 'social.dart';
+import 'staking.dart';
 
 typedef PreviewAnswer = (int, Object)? Function(String method, String path, Map<String, dynamic> body, Map<String, String> query);
 
@@ -24,6 +25,7 @@ const List<PreviewAnswer> _modules = [
   previewRewards,
   previewAcademy,
   previewDeveloper,
+  previewStaking,
 ];
 
 /// The sample answer for `method path`, or null when no C2 module owns it.
