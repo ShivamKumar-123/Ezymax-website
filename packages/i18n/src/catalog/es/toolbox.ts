@@ -182,5 +182,10 @@ const toolbox: NsMessages<"toolbox"> = {
   "journal.lines": { one: "{count} línea", many: "{count} líneas", other: "{count} líneas" },
   "journal.clear": "Borrar",
   "journal.empty": "El diario está vacío",
+  "group.show": "Mostrar cada operación",
+  "group.hide": "Agrupar operaciones",
+  "group.closeAll": "Cerrar todas",
+  "group.closeTitle": "¿Cerrar todas las posiciones de {symbol}?",
+  "group.avgTip": "Precio medio de apertura, ponderado por volumen",
 };
 export default toolbox;

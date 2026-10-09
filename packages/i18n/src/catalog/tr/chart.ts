@@ -245,5 +245,8 @@ const chart: NsMessages<"chart"> = {
   "tpl.name": "Şablon adı",
   "tpl.exists": "Bu adda bir şablon var ve değiştirilecek.",
   "tpl.saves": { one: "Grafik türünü ({type}) ve {count} göstergeyi ayarlarıyla birlikte kaydeder", other: "Grafik türünü ({type}) ve {count} göstergeyi ayarlarıyla birlikte kaydeder" },
+  "line.groupTip": "Her işlemi görmek için tıklayın",
+  "line.groupHide": "Bu işlemleri grupla",
+  "line.groupClose": "Tüm {label} kapatılsın mı?",
 };
 export default chart;

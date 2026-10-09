@@ -248,5 +248,8 @@ const chart: NsMessages<"chart"> = {
     one: "نوع نمودار ({type}) و {count} اندیکاتور را با تنظیماتشان ذخیره می‌کند",
     other: "نوع نمودار ({type}) و {count} اندیکاتور را با تنظیماتشان ذخیره می‌کند",
   },
+  "line.groupTip": "برای دیدن هر معامله کلیک کنید",
+  "line.groupHide": "گروه‌بندی این معاملات",
+  "line.groupClose": "همه {label} بسته شوند؟",
 };
 export default chart;

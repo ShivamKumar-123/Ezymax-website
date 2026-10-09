@@ -265,5 +265,8 @@ const chart: NsMessages<"chart"> = {
     many: "Сохраняет тип графика ({type}) и {count} индикаторов с настройками",
     other: "Сохраняет тип графика ({type}) и {count} индикатора с настройками",
   },
+  "line.groupTip": "Нажмите, чтобы увидеть каждую сделку",
+  "line.groupHide": "Сгруппировать эти сделки",
+  "line.groupClose": "Закрыть все {label}?",
 };
 export default chart;

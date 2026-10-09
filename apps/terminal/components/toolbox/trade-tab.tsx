@@ -3,13 +3,14 @@
 // Positions and Orders tabs of the activity panel (docs/TERMINAL-DESIGN.md §2.4 Tables): one row per trade with the
 // market, side, volume, open → current price, inline-editable stop loss / take profit, a big P&L and a visible Close
 // button. Everything else (partial close, breakeven, close by, share, copy ticket…) is in the ⋯ menu, which is the
-// same as the right-click menu.
+// same as the right-click menu. Several trades on one symbol share a group row, "EURUSD (3)", with their totals; a
+// click on it shows the trades one by one (the chart groups and opens them the same way).
 import * as React from "react";
 import { toast } from "@/lib/notify";
-import { ArrowLeftRight, Check, Crosshair, Edit3, Layers, MoreHorizontal, Plus, Scissors, Share2, ShoppingCart, X, XCircle } from "lucide-react";
+import { ArrowLeftRight, Check, ChevronRight, Crosshair, Edit3, Layers, ListCollapse, ListTree, MoreHorizontal, Plus, Scissors, Share2, ShoppingCart, X, XCircle } from "lucide-react";
 import { getInstrument, priceFeed } from "@ezymex/mock";
 import { SymbolAvatar, cn, useQuote } from "@ezymex/ui";
-import { usePositionProfit, useTerminal } from "@/lib/store";
+import { useGroupOpen, usePositionProfit, usePositionsProfit, useTerminal } from "@/lib/store";
 import { PENDING_LABEL, SOURCE_LABEL, accMoney, fmtPrice, fmtServer, fmtVol, pipSize, profitAt, type PendingOrder, type TPosition, swapSummary } from "@/lib/trading";
 import { Td, Th } from "@/components/ui/panel";
 import { Pnl, Stepper } from "@/components/ui/primitives";
@@ -132,21 +133,26 @@ export function PositionsTab() {
             </tr>
           </thead>
           <tbody>
-            {T.positions.map((p) => (
-              <PositionRow
-                key={p.ticket}
-                p={p}
-                picking={picking}
-                selected={sel === p.ticket}
-                onSelect={() => setSel(p.ticket)}
-                onOpen={() => !T.readOnly && T.setUi({ positionDialog: p.ticket })}
-                onMenu={(e) => {
-                  setSel(p.ticket);
-                  if (T.readOnly) return e.preventDefault?.();
-                  cm.open(e, posMenu(p), title(p));
-                }}
-              />
-            ))}
+            {bySymbol(T.positions).map(([symbol, ps]) => {
+              const row = (p: TPosition, nested?: boolean) => (
+                <PositionRow
+                  key={p.ticket}
+                  p={p}
+                  nested={nested}
+                  picking={picking}
+                  selected={sel === p.ticket}
+                  onSelect={() => setSel(p.ticket)}
+                  onOpen={() => !T.readOnly && T.setUi({ positionDialog: p.ticket })}
+                  onMenu={(e) => {
+                    setSel(p.ticket);
+                    if (T.readOnly) return e.preventDefault?.();
+                    cm.open(e, posMenu(p), title(p));
+                  }}
+                />
+              );
+              if (ps.length === 1) return row(ps[0]!);
+              return <PositionGroup key={`grp:${symbol}`} symbol={symbol} positions={ps} picking={picking} row={row} onMenu={(e, items) => (T.readOnly ? e.preventDefault?.() : cm.open(e, items, `${symbol} (${ps.length})`))} />;
+            })}
           </tbody>
         </table>
       </div>
@@ -155,7 +161,124 @@ export function PositionsTab() {
   );
 }
 
-const PositionRow = React.memo(function PositionRow({ p, picking, selected, onSelect, onOpen, onMenu }: { p: TPosition; picking?: boolean; selected: boolean; onSelect: () => void; onOpen: () => void; onMenu: (e: React.MouseEvent | { clientX: number; clientY: number; preventDefault?: () => void }) => void }) {
+/** Open positions by symbol, in the order each symbol first appears. */
+export function bySymbol(ps: TPosition[]): [string, TPosition[]][] {
+  const m = new Map<string, TPosition[]>();
+  for (const p of ps) m.set(p.symbol, [...(m.get(p.symbol) ?? []), p]);
+  return [...m];
+}
+
+/** Volume-weighted average open price of trades on one side. */
+export const avgOpen = (ps: TPosition[]) => ps.reduce((s, p) => s + p.openPrice * p.volume, 0) / (ps.reduce((s, p) => s + p.volume, 0) || 1);
+
+type MenuEvent = React.MouseEvent | { clientX: number; clientY: number; preventDefault?: () => void };
+
+/** The group row of a symbol with several open trades (totals, Close all), then its trades when opened. Picking trades
+ *  to share shows them one by one. */
+function PositionGroup({ symbol, positions, picking, row, onMenu }: { symbol: string; positions: TPosition[]; picking?: boolean; row: (p: TPosition, nested?: boolean) => React.ReactNode; onMenu: (e: MenuEvent, items: MenuItem[]) => void }) {
+  const T = useTerminal();
+  const t = useT();
+  const [open, toggle] = useGroupOpen(symbol);
+  const shown = open || !!picking;
+  const q = useQuote(symbol);
+  const a = T.account;
+  const pr = usePositionsProfit(positions);
+  const digits = getInstrument(symbol).digits;
+  const buys = positions.filter((p) => p.side === "buy");
+  const sells = positions.filter((p) => p.side === "sell");
+  const vol = (ps: TPosition[]) => fmtVol(ps.reduce((s, p) => s + p.volume, 0));
+  const one = !buys.length || !sells.length ? positions[0]!.side : null;
+  const cur = one === "buy" ? q.bid : q.ask;
+  const avg = avgOpen(positions);
+  const closeAll = () => askConfirm({ title: t("toolbox.group.closeTitle", { symbol }), text: tr("desk.cf.closeSomeText"), confirmLabel: `${t("toolbox.group.closeAll")} (${positions.length})`, run: () => T.bulkClose("symbol", symbol) });
+  const menu: MenuItem[] = [
+    { label: shown ? t("toolbox.group.hide") : t("toolbox.group.show"), icon: shown ? <ListCollapse /> : <ListTree />, disabled: !!picking, onSelect: toggle },
+    { label: `${t("toolbox.group.closeAll")} (${positions.length})`, icon: <XCircle />, danger: true, onSelect: closeAll },
+    "sep",
+    { label: t("toolbox.menu.showOnChart"), icon: <Crosshair />, onSelect: () => T.openSymbol(symbol) },
+  ];
+  return (
+    <>
+      <tr onClick={picking ? undefined : toggle} onContextMenu={(e) => onMenu(e, menu)} className="group cursor-pointer bg-surface-2/40 hover:bg-surface-2/80" aria-expanded={shown}>
+        {picking && <Td className="w-8 ps-3" />}
+        <Td className={cn(!picking && "ps-3")}>
+          <span className="flex items-center gap-2">
+            <ChevronRight className={cn("size-3.5 shrink-0 text-fg-3 transition-transform rtl:-scale-x-100", shown && "rotate-90 rtl:scale-x-100")} />
+            <SymbolAvatar symbol={symbol} size={16} />
+            <span className="text-[13px] font-semibold text-fg">{symbol}</span>
+            <span className="rounded-full bg-surface-3 px-1.5 font-mono text-[11px] font-semibold text-fg-2" title={shown ? t("toolbox.group.hide") : t("toolbox.group.show")}>
+              ({positions.length})
+            </span>
+          </span>
+        </Td>
+        <Td />
+        <Td>
+          <span className="flex items-center gap-1">
+            {buys.length > 0 && <SideChip side="buy" />}
+            {sells.length > 0 && <SideChip side="sell" />}
+          </span>
+        </Td>
+        <Td right mono>
+          {one ? (
+            vol(positions)
+          ) : (
+            <span dir="ltr" className="whitespace-nowrap">
+              <span className="text-up">{vol(buys)}</span>
+              <span className="mx-1 text-fg-3">·</span>
+              <span className="text-down">{vol(sells)}</span>
+            </span>
+          )}
+        </Td>
+        <Td right mono>
+          {one && (
+            <span dir="ltr" className="whitespace-nowrap" title={t("toolbox.group.avgTip")}>
+              <span className="text-fg-2">≈{avg.toFixed(digits)}</span>
+              <span className="mx-1 text-fg-3">→</span>
+              <span className={(one === "buy" ? cur - avg : avg - cur) >= 0 ? "text-up" : "text-down"}>{cur.toFixed(digits)}</span>
+            </span>
+          )}
+        </Td>
+        <Td />
+        <Td />
+        <Td right mono className="text-fg-2">
+          <span dir="ltr">{accMoney(a, positions.reduce((s, p) => s + p.swap, 0))}</span>
+        </Td>
+        <Td right mono className="text-fg-2">
+          <span dir="ltr">{accMoney(a, -positions.reduce((s, p) => s + p.commission, 0))}</span>
+        </Td>
+        <Td right className="text-[13px] font-semibold">
+          <span dir="ltr">
+            <Pnl value={pr} text={accMoney(a, pr, { signed: true })} format={(v) => accMoney(a, v, { signed: true })} arrow />
+          </span>
+        </Td>
+        <Td className="pe-2">
+          {!T.readOnly && (
+            <span className="flex items-center justify-end gap-1">
+              <Button size="sm" variant="secondary" onClick={(e) => (e.stopPropagation(), closeAll())} className="hover:border-down/40 hover:bg-down-soft hover:text-down">
+                <X /> {t("toolbox.group.closeAll")} ({positions.length})
+              </Button>
+              <IconButton
+                size="sm"
+                label={t("desk.pos.more")}
+                tipSide="left"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const r = e.currentTarget.getBoundingClientRect();
+                  onMenu({ clientX: r.right, clientY: r.bottom + 4 }, menu);
+                }}
+              >
+                <MoreHorizontal />
+              </IconButton>
+            </span>
+          )}
+        </Td>
+      </tr>
+      {shown && positions.map((p) => row(p, true))}
+    </>
+  );
+}
+
+const PositionRow = React.memo(function PositionRow({ p, nested, picking, selected, onSelect, onOpen, onMenu }: { p: TPosition; nested?: boolean; picking?: boolean; selected: boolean; onSelect: () => void; onOpen: () => void; onMenu: (e: MenuEvent) => void }) {
   const T = useTerminal();
   const t = useT();
   const q = useQuote(p.symbol);
@@ -171,7 +294,7 @@ const PositionRow = React.memo(function PositionRow({ p, picking, selected, onSe
           <PickBox ticket={p.ticket} />
         </Td>
       )}
-      <Td className={cn(!picking && "ps-3", selected && "shadow-[inset_2px_0_0_var(--k-ember)]")}>
+      <Td className={cn(!picking && (nested ? "ps-8" : "ps-3"), selected && "shadow-[inset_2px_0_0_var(--k-ember)]")}>
         <button type="button" onClick={(e) => (e.stopPropagation(), T.openSymbol(p.symbol))} className="flex items-center gap-2 text-start" title={t("toolbox.menu.showOnChart")}>
           <SymbolAvatar symbol={p.symbol} size={16} />
           <span className="text-[13px] font-semibold text-fg">{p.symbol}</span>

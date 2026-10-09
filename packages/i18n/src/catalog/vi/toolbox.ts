@@ -182,5 +182,10 @@ const toolbox: NsMessages<"toolbox"> = {
   "journal.lines": { other: "{count} dòng" },
   "journal.clear": "Xóa",
   "journal.empty": "Nhật ký trống",
+  "group.show": "Hiện từng giao dịch",
+  "group.hide": "Gộp giao dịch",
+  "group.closeAll": "Đóng tất cả",
+  "group.closeTitle": "Đóng tất cả vị thế {symbol}?",
+  "group.avgTip": "Giá mở trung bình theo khối lượng",
 };
 export default toolbox;

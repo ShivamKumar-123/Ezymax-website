@@ -273,5 +273,8 @@ const chart: NsMessages<"chart"> = {
     many: "يحفظ نوع الرسم ({type}) و{count} مؤشرًا مع إعداداتها",
     other: "يحفظ نوع الرسم ({type}) و{count} مؤشر مع إعداداتها",
   },
+  "line.groupTip": "انقر لعرض كل صفقة",
+  "line.groupHide": "تجميع هذه الصفقات",
+  "line.groupClose": "إغلاق كل {label}؟",
 };
 export default chart;

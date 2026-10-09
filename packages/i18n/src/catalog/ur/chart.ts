@@ -248,5 +248,8 @@ const chart: NsMessages<"chart"> = {
     one: "چارٹ کی قسم ({type}) اور {count} انڈیکیٹر اس کی سیٹنگز سمیت محفوظ کرتا ہے",
     other: "چارٹ کی قسم ({type}) اور {count} انڈیکیٹرز ان کی سیٹنگز سمیت محفوظ کرتا ہے",
   },
+  "line.groupTip": "ہر ٹریڈ دیکھنے کے لیے کلک کریں",
+  "line.groupHide": "ان ٹریڈز کو گروپ کریں",
+  "line.groupClose": "تمام {label} بند کریں؟",
 };
 export default chart;

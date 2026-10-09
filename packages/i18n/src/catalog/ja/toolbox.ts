@@ -182,5 +182,10 @@ const toolbox: NsMessages<"toolbox"> = {
   "journal.lines": { other: "{count}行" },
   "journal.clear": "クリア",
   "journal.empty": "操作履歴は空です",
+  "group.show": "各取引を表示",
+  "group.hide": "取引をまとめる",
+  "group.closeAll": "すべて決済",
+  "group.closeTitle": "{symbol} のポジションをすべて決済しますか？",
+  "group.avgTip": "数量加重平均の建値",
 };
 export default toolbox;

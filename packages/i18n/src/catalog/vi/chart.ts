@@ -245,5 +245,8 @@ const chart: NsMessages<"chart"> = {
   "tpl.name": "Tên mẫu",
   "tpl.exists": "Đã có mẫu trùng tên và sẽ bị thay thế.",
   "tpl.saves": { other: "Lưu loại biểu đồ ({type}) và {count} chỉ báo cùng cài đặt của chúng" },
+  "line.groupTip": "Nhấp để xem từng giao dịch",
+  "line.groupHide": "Gộp các giao dịch này",
+  "line.groupClose": "Đóng tất cả {label}?",
 };
 export default chart;

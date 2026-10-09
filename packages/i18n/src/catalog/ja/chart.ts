@@ -245,5 +245,8 @@ const chart: NsMessages<"chart"> = {
   "tpl.name": "テンプレート名",
   "tpl.exists": "この名前のテンプレートは既に存在するため、置き換えられます。",
   "tpl.saves": { other: "チャートの種類（{type}）と{count}個のインディケータを設定ごと保存します" },
+  "line.groupTip": "クリックで各取引を表示",
+  "line.groupHide": "これらの取引をまとめる",
+  "line.groupClose": "{label} をすべて決済しますか？",
 };
 export default chart;

@@ -182,5 +182,10 @@ const toolbox: NsMessages<"toolbox"> = {
   "journal.lines": { other: "{count}줄" },
   "journal.clear": "지우기",
   "journal.empty": "저널이 비어 있습니다",
+  "group.show": "각 거래 보기",
+  "group.hide": "거래 묶기",
+  "group.closeAll": "모두 청산",
+  "group.closeTitle": "{symbol} 포지션을 모두 청산할까요?",
+  "group.avgTip": "거래량 가중 평균 진입가",
 };
 export default toolbox;

@@ -6,13 +6,14 @@
 // pointer handling, price lines) and the TradingView chart through TradeOverlay below, which sits over the library's
 // frame and gets the plot's geometry from a ChartCoords adapter.
 import * as React from "react";
-import { X } from "lucide-react";
+import { ListCollapse, X } from "lucide-react";
 import { toast } from "@/lib/notify";
 import { getInstrument, instrumentSpec, priceFeed } from "@ezymex/mock";
 import { cn, useQuote } from "@ezymex/ui";
 import { useT } from "@ezymex/i18n/react";
 import type { MessageKey } from "@ezymex/i18n";
-import { usePositionProfit, useTerminal } from "@/lib/store";
+import { useGroupOpen, usePositionProfit, usePositionsProfit, useTerminal } from "@/lib/store";
+import { askConfirm } from "@/components/dialogs/confirm";
 import { accMoney, fmtPrice, fmtVol, pointSize, profitAt, roundPrice, type PendingOrder, type TPosition } from "@/lib/trading";
 import { OneClickPanel } from "./one-click";
 import type { Palette } from "./engine";
@@ -35,6 +36,10 @@ export interface TLine {
   owner?: "pos" | "pnd";
   /** position / order chips: the S and T handles, shown while that stop isn't set (drag one out to set it) */
   stops?: { sl: boolean; tp: boolean };
+  /** several trades on one side shown as one line at their average price, "BUY 0.30 (3)": a click shows each */
+  group?: string[];
+  /** a trade of a side shown one by one: its chip can group that side again */
+  grouped?: boolean;
 }
 
 const PENDING_LABEL: Record<string, MessageKey> = {
@@ -49,18 +54,32 @@ const PENDING_LABEL: Record<string, MessageKey> = {
 /**
  * Position / SL / TP / pending / alert lines for one symbol. A position line doesn't move: its SL and TP come out of the
  * S and T handles on its chip (MT5 / TradingView style). Pending orders move, have S / T too and show their SL / TP.
+ * Several trades on one side are one line at their volume-weighted price until the symbol's group is opened (here or in
+ * the positions table); their SL / TP lines show once it is.
  */
 export function useTradeLines(symbol: string): TLine[] {
   const T = useTerminal();
   const positions = T.positions.filter((p) => p.symbol === symbol);
+  const [open] = useGroupOpen(symbol);
   const pendings = T.pendings.filter((p) => p.symbol === symbol);
   const alerts = T.alerts.filter((a) => a.symbol === symbol && a.active);
   const ro = T.readOnly;
   const t = useT();
   return React.useMemo(() => {
     const out: TLine[] = [];
+    const sideCount = (side: string) => positions.filter((p) => p.side === side).length;
+    if (!open && positions.length > 1)
+      for (const side of ["buy", "sell"] as const) {
+        const ps = positions.filter((p) => p.side === side);
+        if (ps.length < 2) continue;
+        const volume = ps.reduce((s, p) => s + p.volume, 0);
+        const price = roundPrice(symbol, ps.reduce((s, p) => s + p.openPrice * p.volume, 0) / volume);
+        out.push({ id: `grp:${side}`, kind: "pos", price, ref: `${symbol}:${side}`, side, label: `${t(side === "buy" ? "chart.line.buy" : "chart.line.sell", { lot: fmtVol(volume) })} (${ps.length})`, draggable: false, closable: !ro, group: ps.map((p) => p.ticket) });
+      }
     for (const p of positions) {
-      out.push({ id: `pos:${p.ticket}`, kind: "pos", price: p.openPrice, ref: p.ticket, side: p.side, label: t(p.side === "buy" ? "chart.line.buy" : "chart.line.sell", { lot: fmtVol(p.volume) }), draggable: false, closable: !ro, stops: ro ? undefined : { sl: p.sl === undefined, tp: p.tp === undefined } });
+      const many = sideCount(p.side) > 1;
+      if (many && !open) continue;
+      out.push({ id: `pos:${p.ticket}`, kind: "pos", price: p.openPrice, ref: p.ticket, side: p.side, label: t(p.side === "buy" ? "chart.line.buy" : "chart.line.sell", { lot: fmtVol(p.volume) }), draggable: false, closable: !ro, stops: ro ? undefined : { sl: p.sl === undefined, tp: p.tp === undefined }, grouped: many });
       if (p.sl !== undefined) out.push({ id: `sl:${p.ticket}`, kind: "sl", price: p.sl, ref: p.ticket, side: p.side, owner: "pos", label: "SL", draggable: !ro, closable: !ro });
       if (p.tp !== undefined) out.push({ id: `tp:${p.ticket}`, kind: "tp", price: p.tp, ref: p.ticket, side: p.side, owner: "pos", label: "TP", draggable: !ro, closable: !ro });
     }
@@ -72,7 +91,7 @@ export function useTradeLines(symbol: string): TLine[] {
     for (const a of alerts) out.push({ id: `alr:${a.id}`, kind: "alert", price: a.price, ref: a.id, label: t("chart.line.alert"), draggable: true, closable: true });
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(positions.map((p) => [p.ticket, p.openPrice, p.sl, p.tp, p.volume, p.side])), JSON.stringify(pendings.map((p) => [p.ticket, p.price, p.volume, p.side, p.type, p.sl, p.tp])), JSON.stringify(alerts.map((a) => [a.id, a.price])), ro, t]);
+  }, [JSON.stringify(positions.map((p) => [p.ticket, p.openPrice, p.sl, p.tp, p.volume, p.side])), JSON.stringify(pendings.map((p) => [p.ticket, p.price, p.volume, p.side, p.type, p.sl, p.tp])), JSON.stringify(alerts.map((a) => [a.id, a.price])), ro, t, open, symbol]);
 }
 
 /**
@@ -211,9 +230,12 @@ export function useTradeLineState(symbol: string) {
     return true;
   };
 
-  /** × on a chip: close the position, remove the stop, cancel the order, delete the alert. */
+  /** × on a chip: close the position (a group's trades after a confirmation), remove the stop, cancel the order,
+   *  delete the alert. */
   const removeLine = (l: TLine) => {
-    if (l.kind === "pos") T.closePosition(l.ref);
+    const group = l.group;
+    if (group) askConfirm({ title: t("chart.line.groupClose", { label: l.label }), text: t("desk.cf.closeSomeText"), confirmLabel: `${t("toolbox.group.closeAll")} (${group.length})`, run: () => group.forEach((ticket) => T.closePosition(ticket)) });
+    else if (l.kind === "pos") T.closePosition(l.ref);
     else if (l.kind === "sl" || l.kind === "tp") {
       const patch = l.kind === "sl" ? { sl: null } : { tp: null };
       if (l.owner === "pnd") T.modifyPending(l.ref, patch);
@@ -277,6 +299,7 @@ export function TradeChips({ symbol, lines, ys, top, bottom, right, tagLeft, dra
   const T = useTerminal();
   const t = useT();
   const ro = T.readOnly;
+  const [, toggleGroup] = useGroupOpen(symbol);
   return (
     <>
       {chipRows(lines, ys, top, bottom).map((row) => (
@@ -288,7 +311,7 @@ export function TradeChips({ symbol, lines, ys, top, bottom, right, tagLeft, dra
             const price = isDrag ? drag.price : hold?.id === l.id ? hold.price : l.price;
             const money = l.kind === "sl" || l.kind === "tp" ? stopMoney(l, price, T.positions, T.pendings) : null;
             const bad = isDrag && !!dragBad;
-            const livePos = l.kind === "pos" ? T.positions.find((x) => x.ticket === l.ref) : undefined;
+            const livePos = l.kind === "pos" && !l.group ? T.positions.find((x) => x.ticket === l.ref) : undefined;
             // TradingView-style label: one box framed in the line's colour, a solid tag (side + lot, SL, TP, order type)
             // then the money, the TP / SL handles and ×
             const frame = bad
@@ -318,7 +341,8 @@ export function TradeChips({ symbol, lines, ys, top, bottom, right, tagLeft, dra
               <div
                 key={l.id}
                 data-line-chip
-                className={cn("pointer-events-auto flex h-5 shrink-0 items-stretch overflow-hidden rounded-[3px] border bg-panel-2 font-sans text-[11px] font-semibold leading-none text-fg shadow-[0_2px_8px_rgba(0,0,0,0.35)]", frame, l.draggable && "cursor-ns-resize touch-none")}
+                className={cn("pointer-events-auto flex h-5 shrink-0 items-stretch overflow-hidden rounded-[3px] border bg-panel-2 font-sans text-[11px] font-semibold leading-none text-fg shadow-[0_2px_8px_rgba(0,0,0,0.35)]", frame, l.draggable && "cursor-ns-resize touch-none", l.group && "cursor-pointer")}
+                onClick={l.group ? toggleGroup : undefined}
                 style={row.lines.length > 1 ? { transform: `translateY(${(ys[l.id] ?? row.y) - row.y}px)` } : undefined}
                 onPointerDown={(e) => {
                   if (!l.draggable || e.button !== 0) return;
@@ -326,14 +350,15 @@ export function TradeChips({ symbol, lines, ys, top, bottom, right, tagLeft, dra
                   e.preventDefault();
                   onLineDown(l, e);
                 }}
-                onDoubleClick={() => (l.kind === "pos" ? T.setUi({ positionDialog: l.ref }) : l.kind === "pending" && !ro ? T.setUi({ pendingDialog: l.ref }) : undefined)}
-                title={bad ? dragBad! : l.kind === "pos" ? (ro ? undefined : t("chart.line.posTip")) : l.kind === "pending" && !ro ? t("chart.line.pendingTip") : l.draggable ? t("chart.line.dragTitle") : undefined}
+                onDoubleClick={() => (l.group ? undefined : l.kind === "pos" ? T.setUi({ positionDialog: l.ref }) : l.kind === "pending" && !ro ? T.setUi({ pendingDialog: l.ref }) : undefined)}
+                title={bad ? dragBad! : l.group ? t("chart.line.groupTip") : l.kind === "pos" ? (ro ? undefined : t("chart.line.posTip")) : l.kind === "pending" && !ro ? t("chart.line.pendingTip") : l.draggable ? t("chart.line.dragTitle") : undefined}
               >
                 <span className={cn("flex items-center px-1.5", tag)}>
                   {l.label}
                   {isDrag && l.kind !== "pos" && <span className="k-num ml-1 opacity-80">{fmtPrice(symbol, price)}</span>}
                 </span>
                 {livePos && <PositionChipPnl p={livePos} />}
+                {l.group && <GroupChipPnl tickets={l.group} />}
                 {money !== null && <span className="k-num flex items-center px-1.5">{accMoney(T.account, money, { signed: true })}</span>}
                 {handles.length > 0 && (
                   <span className="flex items-stretch">
@@ -357,6 +382,21 @@ export function TradeChips({ symbol, lines, ys, top, bottom, right, tagLeft, dra
                       </button>
                     ))}
                   </span>
+                )}
+                {l.grouped && (
+                  <button
+                    type="button"
+                    aria-label={t("chart.line.groupHide")}
+                    title={t("chart.line.groupHide")}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleGroup();
+                    }}
+                    className="grid h-full w-5 place-items-center border-l border-line text-fg-3 transition-colors hover:bg-surface-3 hover:text-fg"
+                  >
+                    <ListCollapse className="size-3" />
+                  </button>
                 )}
                 {l.closable && (
                   <button
@@ -386,6 +426,13 @@ export function TradeChips({ symbol, lines, ys, top, bottom, right, tagLeft, dra
 function PositionChipPnl({ p }: { p: TPosition }) {
   const T = useTerminal();
   const pnl = usePositionProfit(p);
+  return <span className={cn("k-num flex items-center px-1.5", pnl >= 0 ? "text-up" : "text-down")}>{accMoney(T.account, pnl, { signed: true })}</span>;
+}
+
+/** Floating P&L of a group line's trades together. */
+function GroupChipPnl({ tickets }: { tickets: string[] }) {
+  const T = useTerminal();
+  const pnl = usePositionsProfit(T.positions.filter((p) => tickets.includes(p.ticket)));
   return <span className={cn("k-num flex items-center px-1.5", pnl >= 0 ? "text-up" : "text-down")}>{accMoney(T.account, pnl, { signed: true })}</span>;
 }
 

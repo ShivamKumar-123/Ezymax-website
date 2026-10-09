@@ -245,5 +245,8 @@ const chart: NsMessages<"chart"> = {
   "tpl.name": "Nama template",
   "tpl.exists": "Template dengan nama ini sudah ada dan akan diganti.",
   "tpl.saves": { other: "Menyimpan jenis grafik ({type}) dan {count} indikator beserta pengaturannya" },
+  "line.groupTip": "Klik untuk menampilkan setiap trade",
+  "line.groupHide": "Kelompokkan trade ini",
+  "line.groupClose": "Tutup semua {label}?",
 };
 export default chart;

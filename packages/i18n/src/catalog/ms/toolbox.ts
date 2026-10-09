@@ -182,5 +182,10 @@ const toolbox: NsMessages<"toolbox"> = {
   "journal.lines": { other: "{count} baris" },
   "journal.clear": "Kosongkan",
   "journal.empty": "Jurnal kosong",
+  "group.show": "Tunjukkan setiap dagangan",
+  "group.hide": "Kumpulkan dagangan",
+  "group.closeAll": "Tutup semua",
+  "group.closeTitle": "Tutup semua posisi {symbol}?",
+  "group.avgTip": "Harga buka purata, berwajaran volum",
 };
 export default toolbox;

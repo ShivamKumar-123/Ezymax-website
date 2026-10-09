@@ -182,5 +182,10 @@ const toolbox: NsMessages<"toolbox"> = {
   "journal.lines": { one: "{count} خط", other: "{count} خط" },
   "journal.clear": "پاک کردن",
   "journal.empty": "ژورنال خالی است",
+  "group.show": "نمایش هر معامله",
+  "group.hide": "گروه‌بندی معاملات",
+  "group.closeAll": "بستن همه",
+  "group.closeTitle": "همه پوزیشن‌های {symbol} بسته شوند؟",
+  "group.avgTip": "میانگین قیمت باز شدن، وزن‌دهی‌شده با حجم",
 };
 export default toolbox;

@@ -182,5 +182,10 @@ const toolbox: NsMessages<"toolbox"> = {
   "journal.lines": { one: "{count} வரி", other: "{count} வரிகள்" },
   "journal.clear": "அழி",
   "journal.empty": "ஜர்னல் காலியாக உள்ளது",
+  "group.show": "ஒவ்வொரு டிரேடையும் காட்டு",
+  "group.hide": "டிரேட்களைக் குழுவாக்கு",
+  "group.closeAll": "அனைத்தையும் மூடு",
+  "group.closeTitle": "{symbol} பொசிஷன்கள் அனைத்தையும் மூடவா?",
+  "group.avgTip": "வால்யூம் எடையிட்ட சராசரி திறப்பு விலை",
 };
 export default toolbox;

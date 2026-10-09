@@ -192,5 +192,10 @@ const toolbox: NsMessages<"toolbox"> = {
   },
   "journal.clear": "Очистить",
   "journal.empty": "Журнал пуст",
+  "group.show": "Показать каждую сделку",
+  "group.hide": "Сгруппировать сделки",
+  "group.closeAll": "Закрыть все",
+  "group.closeTitle": "Закрыть все позиции {symbol}?",
+  "group.avgTip": "Средняя цена открытия, взвешенная по объёму",
 };
 export default toolbox;

@@ -245,5 +245,8 @@ const chart: NsMessages<"chart"> = {
   "tpl.name": "템플릿 이름",
   "tpl.exists": "같은 이름의 템플릿이 있으며 대체됩니다.",
   "tpl.saves": { other: "차트 유형({type})과 지표 {count}개를 설정과 함께 저장합니다" },
+  "line.groupTip": "클릭하면 각 거래를 볼 수 있습니다",
+  "line.groupHide": "이 거래 묶기",
+  "line.groupClose": "{label} 모두 청산할까요?",
 };
 export default chart;

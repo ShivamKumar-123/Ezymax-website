@@ -248,5 +248,8 @@ const chart: NsMessages<"chart"> = {
     one: "Salva o tipo de gráfico ({type}) e {count} indicador com suas configurações",
     other: "Salva o tipo de gráfico ({type}) e {count} indicadores com suas configurações",
   },
+  "line.groupTip": "Clique para ver cada operação",
+  "line.groupHide": "Agrupar estas operações",
+  "line.groupClose": "Fechar todas as {label}?",
 };
 export default chart;

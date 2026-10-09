@@ -248,5 +248,8 @@ const chart: NsMessages<"chart"> = {
     one: "Enregistre le type de graphique ({type}) et {count} indicateur avec ses paramètres",
     other: "Enregistre le type de graphique ({type}) et {count} indicateurs avec leurs paramètres",
   },
+  "line.groupTip": "Cliquez pour afficher chaque trade",
+  "line.groupHide": "Regrouper ces trades",
+  "line.groupClose": "Fermer tous les {label} ?",
 };
 export default chart;

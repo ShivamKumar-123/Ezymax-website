@@ -182,5 +182,10 @@ const toolbox: NsMessages<"toolbox"> = {
   "journal.lines": { one: "{count} लाइन", other: "{count} लाइनें" },
   "journal.clear": "साफ़ करें",
   "journal.empty": "जर्नल खाली है",
+  "group.show": "हर ट्रेड दिखाएँ",
+  "group.hide": "ट्रेड समूह में दिखाएँ",
+  "group.closeAll": "सभी बंद करें",
+  "group.closeTitle": "{symbol} की सभी पोज़िशन बंद करें?",
+  "group.avgTip": "वॉल्यूम-भारित औसत ओपन प्राइस",
 };
 export default toolbox;

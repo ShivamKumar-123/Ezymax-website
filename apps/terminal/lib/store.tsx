@@ -456,6 +456,9 @@ interface UiState {
   fullChart: boolean;
   /** Help › Trading terms explained */
   glossary: boolean;
+  /** symbols whose trades are shown one by one: in the positions table and on the chart (several trades on one symbol
+   *  are grouped by default) */
+  openGroups: string[];
 }
 
 interface Ctx {
@@ -565,6 +568,32 @@ export function usePositionProfit(p: TPosition): number {
   return q ? profitUsd(p, q.bid, q.ask) : 0;
 }
 
+/** Floating profit (USD) of several positions of one account together, as usePositionProfit counts each. */
+export function usePositionsProfit(ps: TPosition[]): number {
+  const t = useTerminal();
+  const qs = useQuotes(t.engine ? [] : [...new Set(ps.map((p) => p.symbol))]);
+  const live = useLiveEquity(t.engine ? ps[0]?.login : null);
+  let sum = 0;
+  for (const p of ps) {
+    const lp = live?.positions.get(p.ticket);
+    if (lp) sum += lp.profit;
+    else if (t.engine) sum += (p as TPosition & { profit?: number }).profit ?? 0;
+    else {
+      const q = qs[p.symbol];
+      if (q) sum += profitUsd(p, q.bid, q.ask);
+    }
+  }
+  return sum;
+}
+
+/** Whether a symbol's trades are shown one by one (see UiState.openGroups), and the toggle. */
+export function useGroupOpen(symbol: string): [boolean, () => void] {
+  const t = useTerminal();
+  const open = t.ui.openGroups.includes(symbol);
+  const toggle = React.useCallback(() => t.setUi({ openGroups: open ? t.ui.openGroups.filter((s) => s !== symbol) : [...t.ui.openGroups, symbol] }), [t, open, symbol]);
+  return [open, toggle];
+}
+
 /* ------------------------------------------------------------------ */
 /* Provider                                                            */
 /* ------------------------------------------------------------------ */
@@ -589,7 +618,7 @@ export function TerminalProvider({ initialSession, engineSessions, guestMode, ch
   wsRef.current = ws;
   const sessionRef = React.useRef(session);
   sessionRef.current = session;
-  const [ui, setUiState] = React.useState<UiState>({ newOrder: null, positionDialog: null, pendingDialog: null, search: false, shortcuts: false, spec: null, about: false, options: false, alertDialog: null, loginDialog: false, tour: false, glossary: false, fullChart: false });
+  const [ui, setUiState] = React.useState<UiState>({ newOrder: null, positionDialog: null, pendingDialog: null, search: false, shortcuts: false, spec: null, about: false, options: false, alertDialog: null, loginDialog: false, tour: false, glossary: false, fullChart: false, openGroups: [] });
   const [drawTool, setDrawTool] = React.useState<DrawTool>("cursor");
   const [selectedDrawing, selectDrawing] = React.useState<string | null>(null);
   const jid = React.useRef(0);

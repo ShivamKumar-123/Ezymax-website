@@ -202,6 +202,10 @@ export const SEED_POSITIONS_EXTRA: TPosition[] = [
   { ticket: "49434418", login: "90022871", symbol: "BTCUSD", side: "sell", volume: 0.25, openPrice: 63620, sl: 64600, swap: -2.1, commission: 0, openTime: "2026-09-24T12:05:31Z", source: "strategy" },
   { ticket: "49434421", login: "90022871", symbol: "GBPUSD", side: "buy", volume: 1.5, openPrice: 1.27702, tp: 1.2845, swap: 0.8, commission: 0, openTime: "2026-09-23T16:22:08Z", source: "manual" },
   { ticket: "49434433", login: "80413001", symbol: "EURUSD", side: "buy", volume: 0.2, openPrice: 1.08391, sl: 1.0812, swap: -0.3, commission: 0, openTime: "2026-09-24T10:12:48Z", source: "manual" },
+  // several trades on one symbol (grouped as "XAUUSD (3)" in the positions table and on the chart)
+  { ticket: "49434452", login: "80412337", symbol: "XAUUSD", side: "buy", volume: 0.3, openPrice: 2652.4, sl: 2636, swap: -1.1, commission: 0, openTime: "2026-09-24T15:20:08Z", source: "manual" },
+  { ticket: "49434467", login: "80412337", symbol: "XAUUSD", side: "buy", volume: 0.2, openPrice: 2658.05, tp: 2695, swap: -0.4, commission: 0, openTime: "2026-09-25T08:41:51Z", source: "manual" },
+  { ticket: "49434471", login: "80412337", symbol: "EURUSD", side: "buy", volume: 0.5, openPrice: 1.08455, sl: 1.0818, tp: 1.0898, swap: -0.2, commission: 0, openTime: "2026-09-25T09:05:33Z", source: "manual" },
   { ticket: "49434440", login: "90022904", symbol: "USDJPY", side: "buy", volume: 0.5, openPrice: 149.118, sl: 148.4, tp: 150.2, swap: 1.2, commission: 3.5, openTime: "2026-09-24T06:31:02Z", source: "api" },
 ];
 

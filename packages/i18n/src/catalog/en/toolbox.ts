@@ -181,5 +181,10 @@ const toolbox = {
   "journal.lines": { one: "{count} line", other: "{count} lines" },
   "journal.clear": "Clear",
   "journal.empty": "Journal is empty",
+  "group.show": "Show each trade",
+  "group.hide": "Group trades",
+  "group.closeAll": "Close all",
+  "group.closeTitle": "Close all {symbol} positions?",
+  "group.avgTip": "Average open price, weighted by volume",
 };
 export default toolbox;

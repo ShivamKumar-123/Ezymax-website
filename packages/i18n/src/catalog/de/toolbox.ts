@@ -182,5 +182,10 @@ const toolbox: NsMessages<"toolbox"> = {
   "journal.lines": { one: "{count} Zeile", other: "{count} Zeilen" },
   "journal.clear": "Leeren",
   "journal.empty": "Journal ist leer",
+  "group.show": "Jeden Trade anzeigen",
+  "group.hide": "Trades gruppieren",
+  "group.closeAll": "Alle schließen",
+  "group.closeTitle": "Alle {symbol}-Positionen schließen?",
+  "group.avgTip": "Durchschnittlicher Eröffnungskurs, nach Volumen gewichtet",
 };
 export default toolbox;

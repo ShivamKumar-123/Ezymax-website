@@ -196,5 +196,10 @@ const toolbox: NsMessages<"toolbox"> = {
   },
   "journal.clear": "مسح",
   "journal.empty": "الدفتر فارغ",
+  "group.show": "عرض كل صفقة",
+  "group.hide": "تجميع الصفقات",
+  "group.closeAll": "إغلاق الكل",
+  "group.closeTitle": "إغلاق كل صفقات {symbol}؟",
+  "group.avgTip": "متوسط سعر الفتح مرجّحًا بالحجم",
 };
 export default toolbox;

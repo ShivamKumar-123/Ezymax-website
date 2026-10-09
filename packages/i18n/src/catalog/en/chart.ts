@@ -256,6 +256,9 @@ const chart = {
   "tpl.exists": "A template with this name exists and will be replaced.",
   // {type} = chart type name
   "tpl.saves": { one: "Saves the chart type ({type}) and {count} indicator with their settings", other: "Saves the chart type ({type}) and {count} indicators with their settings" },
+  "line.groupTip": "Click to show each trade",
+  "line.groupHide": "Group these trades",
+  "line.groupClose": "Close all {label}?",
 };
 
 export default chart;

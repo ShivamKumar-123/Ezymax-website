@@ -245,5 +245,8 @@ const chart: NsMessages<"chart"> = {
   "tpl.name": "模板名称",
   "tpl.exists": "已存在同名模板，将被替换。",
   "tpl.saves": { other: "保存图表类型（{type}）及 {count} 个指标和其设置" },
+  "line.groupTip": "点击查看每笔交易",
+  "line.groupHide": "合并这些交易",
+  "line.groupClose": "平掉所有 {label}？",
 };
 export default chart;

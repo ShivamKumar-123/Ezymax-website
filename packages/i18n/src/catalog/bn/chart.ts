@@ -245,5 +245,8 @@ const chart: NsMessages<"chart"> = {
   "tpl.name": "টেমপ্লেটের নাম",
   "tpl.exists": "এই নামে একটি টেমপ্লেট আছে এবং সেটি প্রতিস্থাপিত হবে।",
   "tpl.saves": { one: "চার্টের ধরন ({type}) ও {count}টি ইন্ডিকেটর তার সেটিংসসহ সংরক্ষণ করে", other: "চার্টের ধরন ({type}) ও {count}টি ইন্ডিকেটর তাদের সেটিংসসহ সংরক্ষণ করে" },
+  "line.groupTip": "প্রতিটি ট্রেড দেখতে ক্লিক করুন",
+  "line.groupHide": "এই ট্রেডগুলো একসাথে দেখান",
+  "line.groupClose": "সব {label} বন্ধ করবেন?",
 };
 export default chart;

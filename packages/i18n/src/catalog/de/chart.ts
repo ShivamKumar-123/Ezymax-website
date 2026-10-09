@@ -248,5 +248,8 @@ const chart: NsMessages<"chart"> = {
     one: "Speichert den Charttyp ({type}) und {count} Indikator mit seinen Einstellungen",
     other: "Speichert den Charttyp ({type}) und {count} Indikatoren mit ihren Einstellungen",
   },
+  "line.groupTip": "Klicken, um jeden Trade anzuzeigen",
+  "line.groupHide": "Diese Trades gruppieren",
+  "line.groupClose": "Alle {label} schließen?",
 };
 export default chart;

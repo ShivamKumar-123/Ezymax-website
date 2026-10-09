@@ -182,5 +182,10 @@ const toolbox: NsMessages<"toolbox"> = {
   "journal.lines": { other: "{count} 行" },
   "journal.clear": "清除",
   "journal.empty": "日志为空",
+  "group.show": "显示每笔交易",
+  "group.hide": "合并交易",
+  "group.closeAll": "全部平仓",
+  "group.closeTitle": "平掉所有 {symbol} 持仓？",
+  "group.avgTip": "按成交量加权的平均开仓价",
 };
 export default toolbox;

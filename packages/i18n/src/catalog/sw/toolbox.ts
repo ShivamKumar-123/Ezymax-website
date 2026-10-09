@@ -182,5 +182,10 @@ const toolbox: NsMessages<"toolbox"> = {
   "journal.lines": { one: "Mstari {count}", other: "Mistari {count}" },
   "journal.clear": "Futa",
   "journal.empty": "Jarida ni tupu",
+  "group.show": "Onyesha kila biashara",
+  "group.hide": "Panga biashara pamoja",
+  "group.closeAll": "Funga zote",
+  "group.closeTitle": "Funga nafasi zote za {symbol}?",
+  "group.avgTip": "Wastani wa bei ya kufungua, kwa uzito wa kiasi",
 };
 export default toolbox;

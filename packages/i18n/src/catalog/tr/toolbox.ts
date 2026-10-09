@@ -182,5 +182,10 @@ const toolbox: NsMessages<"toolbox"> = {
   "journal.lines": { other: "{count} satır" },
   "journal.clear": "Temizle",
   "journal.empty": "Günlük boş",
+  "group.show": "Her işlemi göster",
+  "group.hide": "İşlemleri grupla",
+  "group.closeAll": "Tümünü kapat",
+  "group.closeTitle": "Tüm {symbol} pozisyonları kapatılsın mı?",
+  "group.avgTip": "Hacme göre ağırlıklı ortalama açılış fiyatı",
 };
 export default toolbox;

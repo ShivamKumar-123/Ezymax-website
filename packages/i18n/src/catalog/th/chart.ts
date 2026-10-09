@@ -245,5 +245,8 @@ const chart: NsMessages<"chart"> = {
   "tpl.name": "ชื่อเทมเพลต",
   "tpl.exists": "มีเทมเพลตชื่อนี้อยู่แล้วและจะถูกแทนที่",
   "tpl.saves": { other: "บันทึกประเภทกราฟ ({type}) และอินดิเคเตอร์ {count} รายการพร้อมการตั้งค่า" },
+  "line.groupTip": "คลิกเพื่อดูแต่ละเทรด",
+  "line.groupHide": "รวมกลุ่มเทรดเหล่านี้",
+  "line.groupClose": "ปิด {label} ทั้งหมดหรือไม่?",
 };
 export default chart;

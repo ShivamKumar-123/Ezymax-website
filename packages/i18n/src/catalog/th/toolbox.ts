@@ -182,5 +182,10 @@ const toolbox: NsMessages<"toolbox"> = {
   "journal.lines": { other: "{count} บรรทัด" },
   "journal.clear": "ล้าง",
   "journal.empty": "บันทึกว่างเปล่า",
+  "group.show": "แสดงแต่ละเทรด",
+  "group.hide": "รวมกลุ่มเทรด",
+  "group.closeAll": "ปิดทั้งหมด",
+  "group.closeTitle": "ปิดสถานะ {symbol} ทั้งหมดหรือไม่?",
+  "group.avgTip": "ราคาเปิดเฉลี่ยถ่วงน้ำหนักตามปริมาณ",
 };
 export default toolbox;

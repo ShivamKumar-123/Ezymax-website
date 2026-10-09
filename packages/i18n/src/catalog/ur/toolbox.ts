@@ -182,5 +182,10 @@ const toolbox: NsMessages<"toolbox"> = {
   "journal.lines": { one: "{count} لائن", other: "{count} لائنیں" },
   "journal.clear": "صاف کریں",
   "journal.empty": "جرنل خالی ہے",
+  "group.show": "ہر ٹریڈ دکھائیں",
+  "group.hide": "ٹریڈز کو گروپ کریں",
+  "group.closeAll": "سب بند کریں",
+  "group.closeTitle": "{symbol} کی تمام پوزیشنز بند کریں؟",
+  "group.avgTip": "حجم کے لحاظ سے اوسط اوپن قیمت",
 };
 export default toolbox;

@@ -4,11 +4,14 @@ import * as React from "react";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { toast } from "@/lib/notify";
-import { ArrowUpRight, BarChart2, CandlestickChart, ChevronDown, History, Languages, List, LogOut, Moon, RefreshCw, Search, Sun, UserRound, Wallet, X, Zap } from "lucide-react";
+import { ArrowUpRight, BarChart2, CandlestickChart, ChevronDown, ChevronRight, History, Languages, List, LogOut, Moon, RefreshCw, Search, Sun, UserRound, Wallet, X, Zap } from "lucide-react";
 import { INSTRUMENTS, getInstrument } from "@ezymex/mock";
 import { useMarketScope } from "@/lib/scope";
 import { LogoMark, PriceText, SymbolAvatar, cn, useQuote } from "@ezymex/ui";
-import { useMetrics, usePositionProfit, useTerminal } from "@/lib/store";
+import { useGroupOpen, useMetrics, usePositionProfit, usePositionsProfit, useTerminal } from "@/lib/store";
+import { askConfirm } from "@/components/dialogs/confirm";
+import { avgOpen, bySymbol } from "@/components/toolbox/trade-tab";
+import type { TPosition } from "@/lib/trading";
 import { useT } from "@ezymex/i18n/react";
 import { LanguageMenu } from "@/components/shell/language-menu";
 import { useMarketOpen } from "@/lib/market-hours";
@@ -290,9 +293,7 @@ function MTrade() {
           </button>
         )}
       </div>
-      {T.positions.map((p) => (
-        <MPosition key={p.ticket} ticket={p.ticket} />
-      ))}
+      {bySymbol(T.positions).map(([symbol, ps]) => (ps.length === 1 ? <MPosition key={ps[0]!.ticket} ticket={ps[0]!.ticket} /> : <MPositionGroup key={`grp:${symbol}`} symbol={symbol} positions={ps} />))}
       {!T.positions.length && <div className="px-3 py-4 text-center text-[12px] text-fg-3">{t("trader.mobile.noPositions")}</div>}
       <div className="px-3 pb-1 pt-3 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-fg-3">{t("trader.mobile.pendingOrders", { count: T.pendings.length })}</div>
       {T.pendings.map((o) => (
@@ -317,14 +318,66 @@ function MTrade() {
   );
 }
 
-function MPosition({ ticket }: { ticket: string }) {
+/** Several trades on one symbol: "EURUSD (3)" with their total P&L; a tap shows the trades one by one. */
+function MPositionGroup({ symbol, positions }: { symbol: string; positions: TPosition[] }) {
+  const T = useTerminal();
+  const t = useT();
+  const [open, toggle] = useGroupOpen(symbol);
+  const q = useQuote(symbol);
+  const pr = usePositionsProfit(positions);
+  const vol = (side: "buy" | "sell") => positions.filter((p) => p.side === side).reduce((s, p) => s + p.volume, 0);
+  const buy = vol("buy");
+  const sell = vol("sell");
+  const one = !buy || !sell ? positions[0]!.side : null;
+  return (
+    <>
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={toggle}
+        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), toggle())}
+        aria-expanded={open}
+        className="flex w-full cursor-pointer items-center gap-2.5 border-b border-line/60 bg-surface-2/40 px-3 py-2 text-start"
+      >
+        <ChevronRight className={cn("size-3.5 shrink-0 text-fg-3 transition-transform rtl:-scale-x-100", open && "rotate-90 rtl:scale-x-100")} />
+        <SymbolAvatar symbol={symbol} size={20} />
+        <div className="min-w-0 flex-1">
+          <div className="text-[12.5px] font-medium">
+            {symbol} <span className="font-mono text-fg-2">({positions.length})</span>{" "}
+            {buy > 0 && <span className="text-up">{t.dyn("trader.side.buy", "buy")} <span className="font-mono">{fmtVol(buy)}</span></span>}
+            {buy > 0 && sell > 0 && <span className="text-fg-3"> · </span>}
+            {sell > 0 && <span className="text-down">{t.dyn("trader.side.sell", "sell")} <span className="font-mono">{fmtVol(sell)}</span></span>}
+          </div>
+          <div className="font-mono text-[10.5px] text-fg-3">{one ? `≈${fmtPrice(symbol, avgOpen(positions))} → ${fmtPrice(symbol, one === "buy" ? q.bid : q.ask)}` : open ? t("toolbox.group.hide") : t("toolbox.group.show")}</div>
+        </div>
+        <Pnl value={pr} text={accMoney(T.account, pr, { signed: true })} format={(v) => accMoney(T.account, v, { signed: true })} arrow className="text-[13px] font-semibold" />
+        {!T.readOnly && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              askConfirm({ title: t("toolbox.group.closeTitle", { symbol }), text: t("desk.cf.closeSomeText"), confirmLabel: `${t("toolbox.group.closeAll")} (${positions.length})`, run: () => T.bulkClose("symbol", symbol) });
+            }}
+            className="grid size-7 place-items-center rounded-[6px] border border-line text-fg-3"
+            aria-label={`${t("toolbox.group.closeAll")} (${positions.length})`}
+          >
+            <X className="size-3.5" />
+          </button>
+        )}
+      </div>
+      {open && positions.map((p) => <MPosition key={p.ticket} ticket={p.ticket} nested />)}
+    </>
+  );
+}
+
+function MPosition({ ticket, nested }: { ticket: string; nested?: boolean }) {
   const T = useTerminal();
   const t = useT();
   const p = T.positions.find((x) => x.ticket === ticket)!;
   const q = useQuote(p.symbol);
   const pr = usePositionProfit(p);
   return (
-    <div className="flex items-center gap-2.5 border-b border-line/60 px-3 py-2" onClick={() => !T.readOnly && T.setUi({ positionDialog: p.ticket })}>
+    <div className={cn("flex items-center gap-2.5 border-b border-line/60 py-2 pe-3", nested ? "ps-9" : "ps-3")} onClick={() => !T.readOnly && T.setUi({ positionDialog: p.ticket })}>
       <SymbolAvatar symbol={p.symbol} size={20} />
       <div className="min-w-0 flex-1">
         <div className="text-[12.5px] font-medium">

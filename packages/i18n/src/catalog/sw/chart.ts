@@ -245,5 +245,8 @@ const chart: NsMessages<"chart"> = {
   "tpl.name": "Jina la kiolezo",
   "tpl.exists": "Kiolezo chenye jina hili kipo na kitabadilishwa.",
   "tpl.saves": { one: "Huhifadhi aina ya chati ({type}) na kiashiria {count} pamoja na mipangilio yake", other: "Huhifadhi aina ya chati ({type}) na viashiria {count} pamoja na mipangilio yake" },
+  "line.groupTip": "Bofya kuona kila biashara",
+  "line.groupHide": "Panga biashara hizi pamoja",
+  "line.groupClose": "Funga zote {label}?",
 };
 export default chart;
