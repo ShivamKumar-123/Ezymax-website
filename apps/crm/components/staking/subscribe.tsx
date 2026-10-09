@@ -12,7 +12,7 @@ import { Button, Dialog, Field, Input, cn } from "@/components/kit";
 import { useT } from "@ezymex/i18n/react";
 import { IS_DEMO } from "@ezymex/mock/mode";
 import { useWallet, type Overview } from "@/components/wallet-live/api";
-import { maturityFrom, newKey, stakingApi, type Plan, type PositionDetail } from "./api";
+import { StakingError, maturityFrom, newKey, stakingApi, type Plan, type PositionDetail } from "./api";
 import { ErrorNote, RiskNote, Rows, useStakingFormat } from "./ui";
 
 const DEMO_BALANCE = 18_240.55;
@@ -56,6 +56,8 @@ export function SubscribeDialog({ plan, open, onOpenChange, onDone }: { plan: Pl
   const money = (v: number) => fx.amount(v, plan.currency);
   const fieldError = !amount ? null : !Number.isFinite(value) || value <= 0 ? t("staking.subscribe.enterAmount") : value < plan.minAmount ? t("staking.subscribe.belowMin", { min: money(plan.minAmount) }) : max !== null && value > max ? t("staking.subscribe.aboveMax", { max: money(max) }) : null;
   const short = balance !== null && value > 0 && value > balance;
+  // an unconfirmed attempt is retried with the same key and amount, so the amount is held until it settles
+  const held = err instanceof StakingError && (err.code === "payment_pending" || err.code === "network" || err.status >= 500);
   const ready = !!amount && !fieldError && terms && risk && !busy && !short;
 
   const submit = async () => {
@@ -73,6 +75,8 @@ export function SubscribeDialog({ plan, open, onOpenChange, onDone }: { plan: Pl
       toast.success(t("staking.subscribe.success"), { description: `${plan.name} · ${money(r.position.principal)}` });
       onDone?.();
     } catch (e) {
+      // a refused payment closes that attempt (nothing charged): the next try is a new subscription
+      if (e instanceof StakingError && ["insufficient_funds", "payment_failed", "idempotency_conflict"].includes(e.code)) key.current = newKey();
       setErr(e);
     } finally {
       setBusy(false);
@@ -137,14 +141,14 @@ export function SubscribeDialog({ plan, open, onOpenChange, onDone }: { plan: Pl
             inputMode="decimal"
             autoFocus
             value={amount}
-            disabled={busy}
+            disabled={busy || held}
             onChange={(e) => setAmount(clean(e.target.value))}
             placeholder={String(plan.minAmount)}
             inputClassName="k-num"
             trailing={
               <span className="flex items-center gap-2">
                 <span className="text-[12px] text-fg-3">{plan.currency}</span>
-                {balance !== null && balance > 0 && (
+                {balance !== null && balance > 0 && !held && (
                   <button
                     type="button"
                     className="rounded-full border border-line px-2 py-0.5 text-[11px] font-medium text-fg-2 hover:text-fg"
