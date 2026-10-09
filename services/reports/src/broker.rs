@@ -171,7 +171,7 @@ impl Rev {
     }
 }
 
-async fn ib_cost(app: &App, tenant: &str, from: DateTime<Utc>, to: DateTime<Utc>) -> ApiResult<Vec<(DateTime<Utc>, f64, Option<i64>, Option<String>)>> {
+pub async fn ib_cost(app: &App, tenant: &str, from: DateTime<Utc>, to: DateTime<Utc>) -> ApiResult<Vec<(DateTime<Utc>, f64, Option<i64>, Option<String>)>> {
     let rows = sqlx::query("SELECT created_at, amount, login, symbol FROM ib_commissions WHERE tenant = $1 AND created_at >= $2 AND created_at < $3 AND status NOT IN ('rejected','void')")
         .bind(tenant)
         .bind(from)
@@ -181,7 +181,7 @@ async fn ib_cost(app: &App, tenant: &str, from: DateTime<Utc>, to: DateTime<Utc>
     Ok(rows.iter().map(|r| (r.get("created_at"), f(r.get("amount")), r.get("login"), r.get("symbol"))).collect())
 }
 
-async fn names(app: &App, tenant: &str) -> ApiResult<HashMap<i64, (String, String, String)>> {
+pub async fn names(app: &App, tenant: &str) -> ApiResult<HashMap<i64, (String, String, String)>> {
     let rows = sqlx::query("SELECT user_id, trim(first_name || ' ' || last_name) AS n, email, country FROM clients WHERE tenant = $1").bind(tenant).fetch_all(&app.pool).await?;
     Ok(rows.iter().map(|r| (r.get("user_id"), (r.get("n"), r.get("email"), r.get("country")))).collect())
 }

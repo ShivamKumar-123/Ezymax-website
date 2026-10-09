@@ -1,6 +1,7 @@
 //! HTTP API. Every route except `GET /health` needs `X-Ezymex-Internal: $REPORTS_INTERNAL_TOKEN`.
 //! Client routes need `X-Ezymex-User-Id` (set by the Client Area BFF from the session); staff routes need the staff
-//! identity headers plus `X-Ezymex-Staff-Perms` (the caller's `reports.*` permissions from the gateway session).
+//! identity headers plus `X-Ezymex-Staff-Perms` (the caller's `reports.*` permissions from the gateway session, plus
+//! `marketing.read` / `dealing.read` where a route accepts them).
 
 use axum::Router;
 use axum::body::Body;
@@ -38,6 +39,10 @@ pub fn router(app: App) -> Router {
         .route("/v1/admin/cohorts", get(admin::cohorts))
         .route("/v1/admin/activity", get(admin::activity))
         .route("/v1/admin/partners", get(admin::partners))
+        .route("/v1/admin/traders", get(admin::traders))
+        .route("/v1/admin/risk", get(admin::risk))
+        .route("/v1/admin/scenarios", post(admin::scenarios))
+        .route("/v1/admin/settings/capital", get(admin::capital).put(admin::set_capital))
         .route("/v1/admin/export/{report}", get(admin::export))
         .route("/v1/admin/accounts/{login}/statement", get(admin::statement))
         .route("/v1/admin/accounts/{login}/analytics", get(admin::account_analytics))
@@ -130,6 +135,11 @@ impl StaffCtx {
     pub fn require(&self, perm: &str) -> ApiResult<()> {
         if self.perms.iter().any(|p| p == perm) { Ok(()) } else { Err(ApiError::Forbidden("Your role doesn't allow this.".into())) }
     }
+
+    /// Any one of the permissions.
+    pub fn require_any(&self, perms: &[&str]) -> ApiResult<()> {
+        if perms.iter().any(|p| self.perms.iter().any(|x| x == p)) { Ok(()) } else { Err(ApiError::Forbidden("Your role doesn't allow this.".into())) }
+    }
 }
 
 impl FromRequestParts<App> for StaffCtx {
@@ -142,7 +152,7 @@ impl FromRequestParts<App> for StaffCtx {
             return Err(ApiError::BadRequest("Invalid staff headers.".into()));
         }
         let name = header(&parts.headers, "x-ezymex-staff-name").map(|n| percent_decode(&n)).unwrap_or_else(|| format!("Staff {id}"));
-        let perms = header(&parts.headers, "x-ezymex-staff-perms").map(|p| p.split(',').map(|x| x.trim().to_string()).filter(|x| x.starts_with("reports.") || x == "marketing.read").collect()).unwrap_or_default();
+        let perms = header(&parts.headers, "x-ezymex-staff-perms").map(|p| p.split(',').map(|x| x.trim().to_string()).filter(|x| x.starts_with("reports.") || x == "marketing.read" || x == "dealing.read").collect()).unwrap_or_default();
         Ok(StaffCtx { tenant, actor: Actor { id: format!("staff:{id}"), name: name.chars().take(120).collect(), role }, perms })
     }
 }
@@ -159,18 +169,25 @@ pub struct RangeQ {
     pub deals: Option<String>,
     pub large: Option<f64>,
     pub limit: Option<i64>,
+    /// trader analytics: day | week | month, and filters
+    pub period: Option<String>,
+    pub group: Option<String>,
+    pub country: Option<String>,
+    pub book: Option<String>,
+}
+
+/// An optional `from` / `to` query value (YYYY-MM-DD = start of that server day, or RFC 3339).
+pub fn when(v: &Option<String>, field: &'static str) -> ApiResult<Option<DateTime<Utc>>> {
+    match v.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+        None => Ok(None),
+        Some(s) => time::parse_time(s).map(Some).ok_or(ApiError::Validation { field, message: format!("Invalid {field} date.") }),
+    }
 }
 
 /// `from` / `to` (YYYY-MM-DD = start of that server day, or RFC 3339); `to` is exclusive. Default: last 30 days.
 pub fn range(q: &RangeQ, default_days: i64) -> ApiResult<(DateTime<Utc>, DateTime<Utc>)> {
-    let parse = |v: &Option<String>, field: &'static str| -> ApiResult<Option<DateTime<Utc>>> {
-        match v.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
-            None => Ok(None),
-            Some(s) => time::parse_time(s).map(Some).ok_or(ApiError::Validation { field, message: format!("Invalid {field} date.") }),
-        }
-    };
-    let to = parse(&q.to, "to")?.unwrap_or_else(Utc::now);
-    let from = parse(&q.from, "from")?.unwrap_or(to - Duration::days(default_days));
+    let to = when(&q.to, "to")?.unwrap_or_else(Utc::now);
+    let from = when(&q.from, "from")?.unwrap_or(to - Duration::days(default_days));
     if from >= to {
         return Err(ApiError::Validation { field: "from", message: "The start must be before the end.".into() });
     }

@@ -1,5 +1,6 @@
 //! Back Office routes (staff headers + `X-Ezymex-Staff-Perms`). `reports.read` opens every report; downloads
-//! (exports, client statements) and scheduled-report changes need `reports.export`.
+//! (exports, client statements), scheduled-report changes and the broker capital setting need `reports.export`;
+//! what-if scenarios accept `reports.read` or `dealing.read`.
 
 use axum::Json;
 use axum::extract::{Path, Query, State};
@@ -7,17 +8,19 @@ use axum::response::Response;
 use serde_json::{Value, json};
 use sqlx::Row;
 
-use super::{RangeQ, StaffCtx, file, range};
+use super::{RangeQ, StaffCtx, file, range, when};
 use crate::broker;
 use crate::client;
 use crate::db;
 use crate::error::{ApiError, ApiResult};
 use crate::export;
+use crate::risk;
 use crate::schedules::{self, ScheduleIn};
 use crate::state::App;
 use crate::statement;
 use crate::sync;
 use crate::time;
+use crate::traders::{self, Filters, Gran};
 
 pub async fn status(State(app): State<App>, s: StaffCtx) -> ApiResult<Json<Value>> {
     s.require("reports.read")?;
@@ -73,12 +76,58 @@ pub async fn partners(State(app): State<App>, s: StaffCtx, Query(q): Query<Range
     Ok(Json(broker::partners(&app, &s.tenant, from, to).await?.0))
 }
 
+/// Trader analytics query: range, granularity and filters.
+fn traders_args(q: &RangeQ) -> ApiResult<(chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, Gran, Filters)> {
+    let (from, to, g) = traders::range(when(&q.from, "from")?, when(&q.to, "to")?, Gran::parse(q.period.as_deref())?)?;
+    let mut flt = Filters { group: q.group.clone(), country: q.country.clone(), book: q.book.clone() };
+    flt.validate()?;
+    Ok((from, to, g, flt))
+}
+
+/// Profitable vs losing traders (`period` = day | week | month; `group`, `country`, `book` filters).
+pub async fn traders(State(app): State<App>, s: StaffCtx, Query(q): Query<RangeQ>) -> ApiResult<Json<Value>> {
+    s.require("reports.read")?;
+    let (from, to, g, flt) = traders_args(&q)?;
+    Ok(Json(traders::report(&app, &s.tenant, from, to, g, &flt).await?.0))
+}
+
+/// Live broker risk: exposure, B-book floating, concentration, margin levels, credit, capital strength.
+pub async fn risk(State(app): State<App>, s: StaffCtx) -> ApiResult<Json<Value>> {
+    s.require("reports.read")?;
+    Ok(Json(risk::report(&app, &s.tenant).await?.0))
+}
+
+/// What-if price shocks on every open position (preset or custom).
+pub async fn scenarios(State(app): State<App>, s: StaffCtx, Json(body): Json<risk::ScenarioIn>) -> ApiResult<Json<Value>> {
+    s.require_any(&["reports.read", "dealing.read"])?;
+    Ok(Json(risk::scenario(&app, &s.tenant, body).await?))
+}
+
+pub async fn capital(State(app): State<App>, s: StaffCtx) -> ApiResult<Json<Value>> {
+    s.require("reports.read")?;
+    Ok(Json(json!({"capital": risk::capital(&app, &s.tenant).await?})))
+}
+
+/// Sets the broker capital (USD) with a reason. Audited.
+pub async fn set_capital(State(app): State<App>, s: StaffCtx, Json(body): Json<risk::CapitalIn>) -> ApiResult<Json<Value>> {
+    s.require("reports.export")?;
+    Ok(Json(json!({"capital": risk::set_capital(&app, &s.tenant, &s.actor, body).await?})))
+}
+
 /// Any report (or regulatory export) as CSV / XLSX. Audited.
 pub async fn export(State(app): State<App>, s: StaffCtx, Path(report): Path<String>, Query(q): Query<RangeQ>) -> ApiResult<Response> {
     s.require("reports.export")?;
-    let (from, to) = range(&q, 30)?;
+    let (from, to) = if report == "traders" {
+        let (f, t, _, _) = traders_args(&q)?;
+        (f, t)
+    } else {
+        range(&q, 30)?
+    };
     let (tables, _) = if report == "aml" {
         (broker::aml(&app, &s.tenant, from, to, q.large.unwrap_or(10_000.0).max(0.0)).await?, None)
+    } else if report == "traders" {
+        let (_, _, g, flt) = traders_args(&q)?;
+        (traders::report(&app, &s.tenant, from, to, g, &flt).await?.1, None)
     } else {
         schedules::report_tables(&app, &s.tenant, &report, from, to).await?
     };

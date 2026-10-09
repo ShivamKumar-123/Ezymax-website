@@ -1,8 +1,8 @@
 # reports
 
-The Ezymex statements, analytics and reports service: branded PDF account statements with CSV / Excel exports (D48, D50), client analytics (D91), broker reports (D120) and cohorts, LTV, funnel and scheduled reports (D145). It is a Rust service (axum 0.8, sqlx 0.9, PostgreSQL) on `127.0.0.1:8102`.
+The Ezymex statements, analytics and reports service: branded PDF account statements with CSV / Excel exports (D48, D50), client analytics (D91), broker reports (D120), cohorts, LTV, funnel and scheduled reports (D145), and broker analytics: profitable vs losing traders, live broker risk and exposure, capital strength and what-if price scenarios. It is a Rust service (axum 0.8, sqlx 0.9, PostgreSQL) on `127.0.0.1:8102`.
 
-It never writes to another service. It mirrors what it needs into its own database `ezymex_reports` through the documented APIs of the trading engine, wallet, gateway and IB service, and computes everything from that mirror.
+It never writes to another service. It mirrors what it needs into its own database `ezymex_reports` through the documented APIs of the trading engine, wallet, gateway and IB service, and computes everything from that mirror. Broker risk and scenarios read the engine's open positions and account metrics live on every request.
 
 - [Run locally](#run-locally)
 - [How it works](#how-it-works)
@@ -41,7 +41,11 @@ It creates and migrates `ezymex_reports` on first start and reads `REPORTS_*` pl
  IB       /v1/ib/admin/commissions ─────┘ partner cost lines
                          │ every REPORTS_SYNC_SECS (30 s); wallet / IB every 5th pass
                          ▼
- ezymex_reports: clients, accounts, deals, ledger, snapshots, wallet_*, ib_commissions, schedules, audit_log
+ ezymex_reports: clients, accounts, deals, ledger, snapshots, wallet_*, ib_commissions, schedules, settings, audit_log
+
+ live, per request (Broker risk, scenarios, traders' floating P&L):
+ engine   /v1/admin/accounts?type=live ── balance, credit, bonus, equity, margin, margin level, margin call / stop-out levels
+          /v1/dealing/positions ──────── open positions: side, volume, open / current price, profit, swap, route A/B, option Greeks
 ```
 
 - **Snapshots.** Each pass upserts today's row per account (`snapshots`, server day) from the engine's live balance and equity, so the last write of a day is its end-of-day value. The first sync of an account backfills past days from its ledger (`source = backfill`: equity = balance + credit + bonus, since past floating P&L is unknown). Days without a row carry the previous day forward.
@@ -75,6 +79,29 @@ Server time is GMT+3 during US DST and GMT+2 otherwise (MT5 convention). Periods
 - Cohorts: sign-up month; retention = share of the cohort with a live deal in month k; LTV = cumulative net deposits and broker revenue per client.
 - AML list: single movements ≥ `large` (default 10 000), withdrawals within 72 h of a similar deposit with < 1 lot traded, open IB fraud flags.
 
+**Trader analytics (`/v1/admin/traders`; live accounts, prop groups excluded, USD).**
+- Population: clients with at least one closed trade (exit deal) in the period. Realised net per trade = profit + swap − commission share (as in client analytics); lots = closed volume (cent accounts 0.01 per lot, option contracts are not lots); notional = lots × contract size × close price in USD.
+- Segments on the period's realised net: **profitable** > +5 USD, **losing** < −5 USD, **break-even** within ±5 USD. Each segment: clients, % of clients, realised net, floating, lots, % of volume (lots), trades, broker revenue.
+- Per client and per account: realised net, **floating** (live price P&L + swap of the open positions from the engine; the mirror's last value when the engine does not answer, `floatingSource`), trades, wins, losses, win rate, profit factor, average and median holding time, lots, notional, **return %** = realised net ÷ (equity at the end of the day before the period + money moved into the accounts during it; `null` without a base), book (`A`, `B` or `mixed` by A-book share of lots), broker revenue (B-book + swap + commission + A-book markup of the client's deals).
+- Periods: `period=day|week|month` buckets the time series (server days, ISO weeks from Monday, calendar months): traders, profitable, losing, break-even (each client classified on its own net in that bucket), client net, broker net revenue (after IB cost), trades, lots. Default range: the last 30 days / 12 weeks / 12 months; without `period` the span picks it (≤ 31 days → day, ≤ 120 → week, else month); at most 400 buckets.
+- Distribution of realised net per client: below −10K, −10K…−1K, −1K…−100, −100…−5, break-even, 5…100, 100…1K, 1K…10K, above 10K (a bound belongs to the bucket nearer zero).
+- Flags: **consistent** = profitable in at least ⅔ (and at least 3) of the last M periods of the range (M = up to 6, needs M ≥ 3); **scalper** = median holding time < 2 minutes over ≥ 5 trades; **high win rate** = ≥ 80 % over ≥ 10 trades; **large size** = average trade notional ≥ 25 × equity (live equity, else the return base).
+- Routing hint: `A` for a profitable client with a persistent edge (consistent, scalper, or high win rate with profit factor ≥ 1.5 or no losses), `review` for a profitable client trading large against equity without such an edge, `B` otherwise; `reasons[]` explains it. Top winners / losers: the 10 largest realised nets on each side.
+
+**Broker risk (`/v1/admin/risk`; live snapshot from the engine, live accounts, prop groups excluded, USD).**
+- Position notional = volume × contract size × current price × USD per quote unit (USD-based pairs such as USDJPY: volume × contract size). The USD per quote unit is the engine's own, implied by the position's floating price P&L when that is at least 1 USD and within 0.5–2× of the table rate; otherwise the instrument specs (market-data rates for catalogue currencies). Cent accounts: amounts in USC ÷ 100, volumes as booked (the engine values a cent lot like a standard lot in USD).
+- Exposure per symbol and asset class: long / short / net lots, long / short / net / gross USD notional, B-book net notional and B-book share of the gross, client floating and broker B-book floating, positions, accounts. Options are listed apart (delta-equivalent notional).
+- B-book floating = −(client floating P&L incl. swap) of B-book positions. Concentration: the top 10 accounts' share of the gross notional and of the absolute B-book floating, the largest symbol's share.
+- Margin levels (accounts with margin): ≥ 200 %, 100–200 %, 50–100 % (near stop-out), < 50 %. At risk: margin level ≤ max(150 %, the group's margin call level), with the further loss that triggers the stop-out (equity − stop-out % × margin).
+- Credit and negative balances: credit + bonus in client accounts, credit in use (credit absorbing losses because equity < credit + bonus), negative balances and negative equity.
+- **Capital strength**: broker capital (the `broker_capital` setting) ÷ the worst preset scenario loss = coverage; strong ≥ 2×, adequate ≥ 1×, weak < 1×; `unset` without a capital figure; strong (no ratio) when no preset loses money.
+
+**Scenarios (`/v1/admin/scenarios`).** Instantaneous price gaps on every open position of the live accounts.
+- Shocks: `{scope: symbol | assetClass | all, target, pct}` (−90 … +200 %); a symbol shock wins over its asset class, which wins over `all`. Presets: `pm1`, `pm3`, `pm5` run +N % and −N % on every symbol and keep the worse direction for the broker (both legs are returned); `flash` = crypto −20 %, stocks −10 %, indices −7 %, energies −8 %, metals −4 %, forex −2 % (base vs quote).
+- Revaluation: CFDs exactly at the shocked price (USD-based pairs convert at the shocked price); options with the delta-gamma approximation on the underlying (Δ = (delta × ΔS + ½ gamma × ΔS²) × contract size). Margin scales with each account's CFD notional.
+- Per account: new equity, margin and margin level; **stop-out** when the new margin level is at or below the group's stop-out level (or equity ≤ 0 with margin), margin call when at or below the margin call level; negative balance = −new equity when below zero; **uncollectible** = client losses beyond the client's own money (equity − credit − bonus), i.e. credit and bonus consumed then negative equity written off by negative balance protection.
+- Broker impact = B-book P&L (−client P&L on B-book positions) − the change in uncollectible losses (on every book: an A-book loss the client cannot pay is still owed to the liquidity provider). Totals: client P&L (A / B), B-book P&L, uncollectible, broker impact, stop-outs, margin calls, negative balance (total and new), credit used, equity before / after, capital after the shock and its % of capital, coverage.
+
 ## API
 
 Every route except `GET /health` needs `X-Ezymex-Internal: $REPORTS_INTERNAL_TOKEN`. Tenant: `X-Ezymex-Tenant` (default `ezymex`, must be listed in `REPORTS_TENANTS`). JSON camelCase; money as JSON numbers. Errors: `{"error": {"code", "message", "field"?}}`. Query `from` / `to` accept `YYYY-MM-DD` (server day start) or RFC 3339; `to` is exclusive.
@@ -100,8 +127,13 @@ Every route except `GET /health` needs `X-Ezymex-Internal: $REPORTS_INTERNAL_TOK
 | `GET /v1/admin/cohorts?months=12` | reports.read | `{cohorts:[{cohort, clients, funded, retention[], ltv[]}], totals}` |
 | `GET /v1/admin/activity?from&to` | reports.read | `{totals, daily[], byGroup[], topAccounts[]}` |
 | `GET /v1/admin/partners?from&to` | reports.read | IB lines by kind, top IBs, IB / social / prop overviews |
+| `GET /v1/admin/traders?from&to&period=day\|week\|month&group&country&book=A\|B` | reports.read | `{period, filters, options:{groups, countries}, floatingSource, definitions, totals:{traders, profitable, losing, breakEven, *Pct, clientNet, clientFloating, brokerRevenue, bbook, ibCost, trades, lots, notional, winRate, profitFactor, avgHoldSecs, medianHoldSecs, flagged, hints}, segments[], series[{start, end, traders, profitable, losing, breakEven, clientNet, brokerRevenue, trades, lots}], distribution[], topWinners[], topLosers[], clients[{userId, name, country, logins, accounts[], net, floating, total, returnPct, trades, winRate, profitFactor, avgHoldSecs, medianHoldSecs, lots, notional, book, bookAPct, brokerRevenue, segment, consistency, flags, sizeToEquity, routeHint, reasons}]}` |
+| `GET /v1/admin/risk` | reports.read | live: `{asOf, totals, bySymbol[], byClass[], options, concentration:{top10GrossPct, top10FloatingPct, topSymbolPct, topAccounts[]}, marginLevels:{buckets[]}, atRisk[], credit, capital:{amount, reason, updatedBy, updatedAt, status, coverage, worst, capitalAfterWorst, presets[]}}`; 502 `engine_unavailable` when the engine does not answer |
+| `POST /v1/admin/scenarios` | reports.read or dealing.read | body `{preset: "pm1"\|"pm3"\|"pm5"\|"flash"}` or `{shocks: [{scope, target, pct}]}` (1–50), optional `top` (accounts listed, default 50, max 500) → `{preset, label, direction, shocks, legs[], totals, bySymbol[], accounts[{login, userId, name, group, clientPnl, brokerImpact, equityBefore, equityAfter, marginLevelBefore, marginLevelAfter, stopOut, marginCall, negativeBalance, creditUsed}]}` |
+| `GET /v1/admin/settings/capital` | reports.read | `{capital: {amount, currency, reason, updatedBy, updatedAt}}` |
+| `PUT /v1/admin/settings/capital` | reports.export | body `{amount (USD, 0 … 10¹²), reason (≥ 3 characters)}`. Audited (`settings.capital`: before, after, reason) |
 | `GET /v1/admin/accounts/{login}/analytics?from&to` | reports.read | client analytics of one account (client 360) |
-| `GET /v1/admin/export/{report}?from&to&format=csv\|xlsx` | reports.export | `report` = `pnl`, `deposits`, `funnel`, `cohorts`, `activity`, `partners`, `transactions`, `clients`, `trades`, `aml` (`&large=`). Audited |
+| `GET /v1/admin/export/{report}?from&to&format=csv\|xlsx` | reports.export | `report` = `pnl`, `deposits`, `funnel`, `cohorts`, `activity`, `partners`, `transactions`, `clients`, `trades`, `aml` (`&large=`), `traders` (`&period&group&country&book`: segments, periods, clients with flags, distribution), `risk` (live snapshot: summary, by symbol, by asset class, margin levels, accounts at risk, scenarios, concentration). Audited |
 | `GET /v1/admin/accounts/{login}/statement?from&to&format` | reports.export | any client's statement. Audited |
 | `GET /v1/admin/schedules` | reports.read | `{items, runs (last 50), reports, email}` |
 | `POST /v1/admin/schedules`, `PUT /v1/admin/schedules/{id}` | reports.export | `{name, report, format: xlsx\|csv, frequency: daily\|weekly\|monthly, weekday 1–7, monthDay 1–28, hour 0–23 (server time), recipients[1–20], enabled}` |
@@ -111,14 +143,14 @@ Every route except `GET /health` needs `X-Ezymex-Internal: $REPORTS_INTERNAL_TOK
 
 ## Permissions
 
-The gateway RBAC already defines `reports.read` ("View reports") and `reports.export` ("Export reports"). Presets: platform owner / super admin / admin (all), finance (read + export), risk manager, compliance, sales, partner manager, marketing (read). The Back Office BFF (`apps/admin/app/api/reports`) checks the permission from the verified staff session and forwards the `reports.*` list in `X-Ezymex-Staff-Perms`; the service checks it again. Downloads and schedule changes need `reports.export`.
+The gateway RBAC already defines `reports.read` ("View reports") and `reports.export` ("Export reports"). Presets: platform owner / super admin / admin (all), finance (read + export), risk manager, compliance, sales, partner manager, marketing (read). The Back Office BFF (`apps/admin/app/api/reports`) checks the permission from the verified staff session and forwards the `reports.*` list in `X-Ezymex-Staff-Perms`; the service checks it again. Downloads, schedule changes and the broker capital setting need `reports.export`. What-if scenarios also accept the dealing desk's `dealing.read` ("View positions, orders, routing"), which the BFF forwards for that route only.
 
 ## How the apps integrate
 
 | App | Integration |
 |---|---|
 | **Client Area** | `/api/reports/*` (`apps/crm/app/api/reports/[...path]/route.ts`) resolves the user from the session and calls the client routes. Pages: Portfolio → Analytics (`/portfolio/analytics`), Statements (`/portfolio/statements`: PDF / CSV / Excel for any period, monthly list), the account page's Analytics tab |
-| **Back Office** | `/api/reports/*` → staff routes. Analytics → Broker P&L, Deposits & FTD, Funnel, Cohorts & LTV, Accounts & activity, Partners, Regulatory exports, Scheduled reports |
+| **Back Office** | `/api/reports/*` → staff routes. Analytics → Broker P&L, Traders (profitable vs losing, flags, routing hints), Broker risk (exposure, margin levels, capital strength, scenario builder), Deposits & FTD, Funnel, Cohorts & LTV, Accounts & activity, Partners, Regulatory exports, Scheduled reports (every report type, `traders` and `risk` included) |
 
 ## Environment
 
@@ -148,6 +180,9 @@ Production runs `deploy/systemd/ezymex-reports.service`; `deploy/deploy.sh` buil
 - **Options in files and the mirror**: the CSV / XLSX "Options summary" and "Options" tables and the PDF Options section (content streams decompressed and checked); `option_premium` / `option_settlement` are not money flows; broker revenue books option commission on every trade with no lots. `tests/options.rs` (throw-away `ezymex_reports_test_<pid>` database, skipped without PostgreSQL): the deal mirror keeps the `option` object, the statement, the monthly result (realised) and the P&L / activity reports end to end.
 - **Files**: CSV quoting and formula-injection guard, XLSX container, PDF structure (every xref offset points at its object), Helvetica metrics and truncation, the logo paths.
 - **Time and schedules**: DST offsets and server-day starts, next run times and report periods, recipient validation.
+- **Traders** (`traders.rs`): day / week / month buckets in server time and default ranges, break-even band and distribution bounds, flags (consistency window, scalping median, high win rate with profit factor, large size vs equity) and routing hints, segments / series / top lists / per-account rows of a hand-built period, filter validation.
+- **Risk and scenarios** (`risk.rs`): engine account and position views (cent accounts, the engine's implied conversion vs the table, USD-based pairs, option delta-gamma), shock precedence and validation, revaluation with stop-outs, margin calls, credit used, uncollectible losses and broker impact by book, the worse preset leg, capital strength and margin-level bounds, exposure / concentration / at-risk / capital in the report, scenario request validation.
+- `tests/broker_analytics.rs` (throw-away database, skipped without PostgreSQL, plus a fake engine on a local port): traders end to end (prop excluded, live floating, consistency flag, country filter), the capital setting (reason required, audited), the live risk report and a custom scenario with a stop-out and a written-off negative balance.
 
 ## Known gaps
 
@@ -156,3 +191,5 @@ Production runs `deploy/systemd/ezymex-reports.service`; `deploy/deploy.sh` buil
 - **Spread estimates.** Current markups and base spreads are applied to past deals; crosses convert to USD at fixed approximate rates.
 - **Engine feed.** Like the IB service, deals are pulled per account on version change; an ordered engine deal feed would make the mirror cheaper at scale.
 - **Wallet fees** appear in client analytics (all accounts) but not in a single account's statement, since they are charged on the wallet.
+- **Scenarios** are first-order: instantaneous gaps with no slippage or partial stop-outs, margin scaled with notional (not recomputed per group rule), options by delta-gamma, crosses converted at the current rate, no correlation model between symbols beyond the preset or custom shocks.
+- **Traders**: clients with only open positions (no close in the period) are not in the population; their exposure is on Broker risk.

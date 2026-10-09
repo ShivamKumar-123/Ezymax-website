@@ -25,13 +25,16 @@ pub const REPORTS: &[(&str, &str)] = &[
     ("clients", "Client list (regulatory)"),
     ("trades", "Deals (regulatory)"),
     ("aml", "AML review list"),
+    ("traders", "Profitable and losing traders"),
+    ("risk", "Broker risk and exposure (live snapshot)"),
 ];
 
 pub fn report_label(k: &str) -> Option<&'static str> {
     REPORTS.iter().find(|(x, _)| *x == k).map(|(_, l)| *l)
 }
 
-/// Tables of a report for [from, to) (cohorts ignore the period: last 12 months).
+/// Tables of a report for [from, to) (cohorts ignore the period: last 12 months; risk is a live snapshot; traders
+/// use days up to a month, weeks up to 4 months, months beyond).
 pub async fn report_tables(app: &App, tenant: &str, report: &str, from: DateTime<Utc>, to: DateTime<Utc>) -> ApiResult<(Vec<Table>, Option<Value>)> {
     Ok(match report {
         "pnl" => {
@@ -59,6 +62,15 @@ pub async fn report_tables(app: &App, tenant: &str, report: &str, from: DateTime
         "clients" => (broker::client_list(app, tenant).await?, None),
         "trades" => (broker::trades_export(app, tenant, from, to).await?, None),
         "aml" => (broker::aml(app, tenant, from, to, 10_000.0).await?, None),
+        "traders" => {
+            let (j, t) = crate::traders::report(app, tenant, from, to, crate::traders::Gran::auto(from, to), &crate::traders::Filters::default()).await?;
+            (t, Some(j["totals"].clone()))
+        }
+        // a snapshot of the open positions when the report runs (the period is not used)
+        "risk" => {
+            let (j, t) = crate::risk::report(app, tenant).await?;
+            (t, Some(j["totals"].clone()))
+        }
         _ => return Err(ApiError::Validation { field: "report", message: "Unknown report.".into() }),
     })
 }
