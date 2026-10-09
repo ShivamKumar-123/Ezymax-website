@@ -8,6 +8,8 @@ import { cn } from "@ezymex/ui";
 import { useTerminal } from "@/lib/store";
 import { INDICATOR_CATEGORIES, INDICATOR_LIST } from "@/lib/indicators";
 import { addIndicator } from "@/components/chart/indicators/state";
+import { chartRegistry } from "@/components/chart/engine";
+import { useTvStatus } from "@/lib/tv/loader";
 import { PanelHeader } from "@/components/ui/panel";
 import { Badge } from "@/components/ui/primitives";
 import { ProductBadge } from "@/components/shell/title-bar";
@@ -49,6 +51,7 @@ export function Navigator() {
   const T = useTerminal();
   const t = useT();
   const tab = T.activeTab;
+  const tv = useTvStatus() !== "missing";
   return (
     <div className="flex h-full min-h-0 flex-col">
       <PanelHeader icon={<Compass />} title={t("market.nav.title")} />
@@ -87,9 +90,11 @@ export function Navigator() {
             <div key={cat}>
               <div className="pb-0.5 ps-7 pt-1 text-[9.5px] font-semibold uppercase tracking-[0.08em] text-fg-3">{t.dyn(`market.nav.category.${cat.replace(/\s+/g, "").replace(/^./, (c) => c.toLowerCase())}`, cat)}</div>
               {INDICATOR_LIST.filter((d) => d.category === cat).map((d) => {
-                const n = tab.indicators.filter((x) => x.type === d.type).length;
+                // TradingView charts: the library's study of the same name goes on the chart (its count isn't ours)
+                const n = tv ? 0 : tab.indicators.filter((x) => x.type === d.type).length;
+                const add = () => (tv ? chartRegistry.get(tab.id)?.tv?.addStudy(d.type) : addIndicator(T, tab.id, d.type));
                 return (
-                  <Leaf key={d.type} active={n > 0} title={t("market.nav.indicatorTitle", { description: d.description, symbol: tab.symbol, tf: tab.tf })} onDoubleClick={() => addIndicator(T, tab.id, d.type)} onEnter={() => addIndicator(T, tab.id, d.type)}>
+                  <Leaf key={d.type} active={n > 0} title={t("market.nav.indicatorTitle", { description: d.description, symbol: tab.symbol, tf: tab.tf })} onDoubleClick={add} onEnter={add}>
                     <span className={cn("size-1.5 shrink-0 rounded-full", n ? "bg-ember" : "bg-fg-3/50")} />
                     <span className="min-w-0 flex-1 truncate">{d.name}</span>
                     {n > 0 && <span className="k-num font-mono text-[10px] text-ember">{n}</span>}

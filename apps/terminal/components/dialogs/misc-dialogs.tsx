@@ -13,6 +13,7 @@ import { useMarketScope } from "@/lib/scope";
 import { LogoMark, PriceText, SymbolAvatar, cn, useQuote } from "@ezymex/ui";
 import { useTradeMode } from "@/lib/options/mode";
 import { useTerminal } from "@/lib/store";
+import { useTvStatus } from "@/lib/tv/loader";
 import { Kbd } from "./kbd";
 import { Stepper, TDialog, TSelect } from "@/components/ui/primitives";
 import { Button, Segmented, Switch } from "@/components/ui/kit";
@@ -266,7 +267,10 @@ export function ShortcutsDialog() {
   const T = useTerminal();
   const t = useT();
   const cfd = useTradeMode() === "cfd";
-  const groups = cfd ? SHORTCUTS : SHORTCUTS.map((g) => ({ ...g, items: g.items.filter(([k]) => !CFD_KEYS.has(k)) })).filter((g) => g.items.length > 0);
+  // TradingView charts have no crosshair switch (the crosshair is their pointer); their own keys are in their help
+  const tv = useTvStatus() !== "missing";
+  const drop = (k: string) => (!cfd && CFD_KEYS.has(k)) || (tv && k === "Ctrl + F");
+  const groups = SHORTCUTS.map((g) => ({ ...g, items: g.items.filter(([k]) => !drop(k)) })).filter((g) => g.items.length > 0);
   return (
     <TDialog open={T.ui.shortcuts} onClose={() => T.setUi({ shortcuts: false })} width={640} icon={<Keyboard />} title={t("order.shortcuts.title")}>
       <div className="grid gap-x-6 gap-y-4 p-4 sm:grid-cols-2">

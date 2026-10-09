@@ -38,6 +38,27 @@ const STEPS: Record<TradeMode, Step[]> = {
   ],
 };
 
+/** A step's target in the page, or inside a TradingView chart's frame (same origin: New order sits in its header),
+ *  with its rect in page coordinates. */
+function findTarget(name: string): { el: Element; rect: DOMRect } | null {
+  const sel = `[data-tour="${name}"]`;
+  const el = document.querySelector(sel);
+  if (el) return { el, rect: el.getBoundingClientRect() };
+  for (const f of Array.from(document.querySelectorAll<HTMLIFrameElement>("[data-tv-chart] iframe"))) {
+    let inner: Element | null = null;
+    try {
+      inner = f.contentDocument?.querySelector(sel) ?? null;
+    } catch {
+      continue;
+    }
+    if (!inner) continue;
+    const fr = f.getBoundingClientRect();
+    const r = inner.getBoundingClientRect();
+    return { el: f, rect: new DOMRect(fr.left + r.left, fr.top + r.top, r.width, r.height) };
+  }
+  return null;
+}
+
 function seen(mode: TradeMode) {
   try {
     return !!localStorage.getItem(DONE_KEY[mode]);
@@ -88,12 +109,9 @@ function TourLayer({ onEnd, steps: all }: { onEnd: () => void; steps: Step[] }) 
   // open the step's panel, then measure its target (and keep measuring: panels resize, prices re-layout)
   React.useEffect(() => {
     step.open?.(T);
-    const measure = () => {
-      const el = document.querySelector(`[data-tour="${step.target}"]`);
-      setRect(el ? el.getBoundingClientRect() : null);
-    };
+    const measure = () => setRect(findTarget(step.target)?.rect ?? null);
     const id = setTimeout(() => {
-      document.querySelector(`[data-tour="${step.target}"]`)?.scrollIntoView({ block: "nearest" });
+      findTarget(step.target)?.el.scrollIntoView({ block: "nearest" });
       measure();
     }, 120);
     const loop = setInterval(measure, 400);

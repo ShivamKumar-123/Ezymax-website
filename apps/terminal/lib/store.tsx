@@ -35,6 +35,8 @@ import {
 import { beep } from "./sound";
 import { aiTrader } from "./ai-trader/runtime";
 import { migrateIndicators, type IndicatorInstance } from "./indicators";
+import { tvCharts } from "./tv/loader";
+import { forgetAllTvState, forgetTvState } from "./tv/storage";
 import { GUEST_ACCOUNT, GUEST_LOGIN, guestNotice } from "./guest";
 import { engineApi } from "./engine/client";
 import { engineActions } from "./engine/actions";
@@ -263,7 +265,7 @@ export function defaultWorkspace(): Workspace {
     maxDeviation: null,
     lot: 0.5,
     profile: "Default",
-    uiVersion: 4,
+    uiVersion: 5,
   };
 }
 
@@ -320,6 +322,12 @@ function readWorkspace(): Workspace {
         return old && indicatorKey(t.indicators) === indicatorKey(migrateIndicators(old)) ? { ...t, indicators: [] } : t;
       });
       w.uiVersion = 4;
+    }
+    if ((w.uiVersion ?? 1) < 5) {
+      // TradingView charts (Part 7): a tab keeps its symbol and timeframe here; its indicators, drawings and chart type
+      // live in the library's own layout (lib/tv/storage.ts, ezymex.terminal.tv.<tab id>), which starts clean. The
+      // tab's `indicators` / `drawings` stay for our own chart, used when the library isn't installed.
+      w.uiVersion = 5;
     }
     if (!["instruments", "book", "ticks", "navigator"].includes(w.side)) w.side = "instruments";
     if (w.posLayout !== "split") w.posLayout = "page";
@@ -1525,6 +1533,7 @@ export function TerminalProvider({ initialSession, engineSessions, guestMode, ch
         return w;
       }
       const tabs = w.tabs.filter((t) => t.id !== id);
+      forgetTvState(id); // its TradingView layout goes with it
       let slots = w.slots.filter((s) => s !== id);
       let layout = w.layout;
       const free = tabs.find((t) => !slots.includes(t.id));
@@ -1552,7 +1561,8 @@ export function TerminalProvider({ initialSession, engineSessions, guestMode, ch
   const openSymbol = React.useCallback((symbol: string, newTab = false) => {
     if (newTab) return addTab(symbol);
     symbol = allowedSymbol(symbol);
-    setWsState((w) => ({ ...w, tabs: w.tabs.map((t) => (t.id === w.activeId ? { ...t, symbol, drawings: t.symbol === symbol ? t.drawings : [] } : t)) }));
+    // our chart's drawings belong to one market; TradingView keeps its own per symbol, so nothing is cleared there
+    setWsState((w) => ({ ...w, tabs: w.tabs.map((t) => (t.id === w.activeId ? { ...t, symbol, drawings: t.symbol === symbol || tvCharts() ? t.drawings : [] } : t)) }));
   }, [addTab]);
 
   const togglePanel = React.useCallback((k: keyof Workspace["panels"], v?: boolean) => {
@@ -1568,6 +1578,7 @@ export function TerminalProvider({ initialSession, engineSessions, guestMode, ch
 
   const resetWorkspace = React.useCallback(() => {
     setWsState(() => defaultWorkspace());
+    forgetAllTvState();
     try {
       for (const k of Object.keys(localStorage)) if (k.startsWith("react-resizable-panels:ezymex")) localStorage.removeItem(k);
     } catch {

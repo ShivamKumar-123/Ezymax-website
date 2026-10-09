@@ -15,6 +15,8 @@ import { useMarketOpen } from "@/lib/market-hours";
 import { PENDING_LABEL, TIMEFRAMES, accCcy, accMoney, fmtPrice, fmtServer, fmtVol, marginState } from "@/lib/trading";
 import { Badge, LiveMoney, MiniSwitch, Pnl, Stepper, TDialog } from "@/components/ui/primitives";
 import { ChartView } from "@/components/chart/chart-view";
+import { TvChart } from "@/components/chart/tv-chart";
+import { useTvStatus } from "@/lib/tv/loader";
 import { CLIENT_AREA, ProductBadge } from "@/components/shell/title-bar";
 import { GuestActions, GuestNotice } from "@/components/shell/guest";
 import { SegmentChips, inSegment } from "@/components/market/segments";
@@ -204,21 +206,24 @@ function MChart() {
     if (T.ws.oneClick) T.quickTrade(tab.symbol, side, v);
     else T.openNewOrder({ symbol: tab.symbol, side, type: "market" });
   };
+  // TradingView (when installed): its header carries the resolutions, chart type and indicators; the strip keeps the market
+  const tv = useTvStatus() !== "missing";
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-9 shrink-0 items-center gap-1 overflow-x-auto border-b border-line px-2 [scrollbar-width:none]">
         <button onClick={() => T.setUi({ search: true })} className="flex h-7 shrink-0 items-center gap-1.5 rounded-[6px] px-2 text-[12.5px] font-semibold">
           <SymbolAvatar symbol={tab.symbol} size={14} /> {tab.symbol}
         </button>
-        <span className="h-4 w-px shrink-0 bg-line" />
-        {TIMEFRAMES.map((tf) => (
-          <button key={tf} onClick={() => T.updateTab(tab.id, { tf })} className={cn("h-7 shrink-0 rounded-[5px] px-2 font-mono text-[11px]", tab.tf === tf ? "bg-ember-soft text-ember" : "text-fg-3")}>
-            {tf}
-          </button>
-        ))}
+        {!tv && <span className="h-4 w-px shrink-0 bg-line" />}
+        {!tv &&
+          TIMEFRAMES.map((tf) => (
+            <button key={tf} onClick={() => T.updateTab(tab.id, { tf })} className={cn("h-7 shrink-0 rounded-[5px] px-2 font-mono text-[11px]", tab.tf === tf ? "bg-ember-soft text-ember" : "text-fg-3")}>
+              {tf}
+            </button>
+          ))}
       </div>
       <div className="min-h-0 flex-1 p-1">
-        <ChartView tab={tab} active={false} onActivate={() => {}} compact hideOneClick />
+        {tv ? <TvChart tab={tab} active={false} onActivate={() => {}} variant="phone" hideOneClick /> : <ChartView tab={tab} active={false} onActivate={() => {}} compact hideOneClick />}
       </div>
       {!T.readOnly && (
         <div className="grid shrink-0 grid-cols-[1fr_110px_1fr] gap-1.5 border-t border-line bg-panel p-2">

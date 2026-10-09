@@ -46,9 +46,10 @@ import { tr, useLocale, useT } from "@ezymex/i18n/react";
 import { LOCALES } from "@ezymex/i18n/locales";
 import type { MessageKey } from "@ezymex/i18n";
 import { toast } from "@/lib/notify";
-import { WS_KEY, useTerminal, type Layout, type SideTab, type ToolboxTab, type Workspace } from "@/lib/store";
+import { WS_KEY, useTerminal, type DrawTool, type Layout, type SideTab, type ToolboxTab, type Workspace } from "@/lib/store";
 import { CHART_TYPES, TIMEFRAMES } from "@/lib/trading";
 import { chartRegistry } from "@/components/chart/engine";
+import { useTvStatus } from "@/lib/tv/loader";
 import { openIndicatorList, openSaveTemplate } from "@/components/chart/indicators/state";
 import { clearDrawings, redoDrawings, setDrawPrefs, undoDrawings, useDrawPrefs, useDrawingHistory } from "@/components/chart/drawings";
 import { guestNotice, openRegister, CLIENT_AREA } from "@/lib/guest";
@@ -196,6 +197,9 @@ export function useMainMenuItems(): MenuItem[] {
   const options = useTradeMode() === "options";
   const tab = T.activeTab;
   const ro = T.readOnly || T.guest;
+  // TradingView charts: chart type and indicators are the library's (its templates live in its header)
+  const tv = useTvStatus() !== "missing";
+  const tvh = () => chartRegistry.get(tab.id)?.tv;
   const accounts: MenuItem[] = T.guest
     ? [
         { label: t("trader.guest.logInToTrade"), icon: <LogIn />, onSelect: () => T.openLogin() },
@@ -211,10 +215,10 @@ export function useMainMenuItems(): MenuItem[] {
       ];
   const chart: MenuItem[] = [
     { header: t("desk.ch.type") },
-    ...CHART_TYPES.map((ct) => ({ label: t(`trader.chartType.${ct}`), checked: tab.type === ct, onSelect: () => T.updateTab(tab.id, { type: ct }) }) as MenuItem),
+    ...CHART_TYPES.map((ct) => ({ label: t(`trader.chartType.${ct}`), checked: !tv && tab.type === ct, onSelect: () => (tv ? tvh()?.chartType(ct) : T.updateTab(tab.id, { type: ct })) }) as MenuItem),
     "sep",
-    { label: t("trader.menu.indicatorsList"), hint: "Ctrl+I", icon: <BarChart2 />, onSelect: () => openIndicatorList(tab.id) },
-    { label: t("trader.menu.saveTemplate"), onSelect: () => openSaveTemplate(tab.id) },
+    { label: t("trader.menu.indicatorsList"), hint: "Ctrl+I", icon: <BarChart2 />, onSelect: () => (tv ? tvh()?.indicators() : openIndicatorList(tab.id)) },
+    ...(tv ? [] : [{ label: t("trader.menu.saveTemplate"), onSelect: () => openSaveTemplate(tab.id) } as MenuItem]),
     { label: t("trader.menu.saveAsPicture"), icon: <Camera />, onSelect: () => chartRegistry.get(tab.id)?.screenshot() },
     "sep",
     ...layout,
@@ -280,6 +284,10 @@ export function useCommands(): Command[] {
   const ro = T.readOnly || T.guest;
   const prefs = useDrawPrefs();
   const history = useDrawingHistory(tab);
+  // TradingView charts: the chart commands drive the library (its tools, indicators, undo); our drawing state is unused
+  const tv = useTvStatus() !== "missing";
+  const tvh = () => reg()?.tv;
+  const draw = (tool: DrawTool, tvTool: string) => () => (tv ? tvh()?.tool(tvTool) : T.setDrawTool(tool));
   const c: Command[] = [];
   const add = (x: Command) => c.push(x);
 
@@ -300,32 +308,32 @@ export function useCommands(): Command[] {
   add({ id: "settings", group: "trade", label: t("desk.set.all"), icon: <Settings2 />, keywords: "settings options preferences max deviation slippage default lot sound tools", run: () => T.setUi({ options: true }) });
 
   // chart
-  add({ id: "indicators", group: "chart", label: t("trader.menu.indicatorsList"), hint: "Ctrl+I", icon: <BarChart2 />, keywords: "indicators insert rsi macd ema", run: () => openIndicatorList(tab.id) });
+  add({ id: "indicators", group: "chart", label: t("trader.menu.indicatorsList"), hint: "Ctrl+I", icon: <BarChart2 />, keywords: "indicators insert rsi macd ema", run: () => (tv ? tvh()?.indicators() : openIndicatorList(tab.id)) });
   add({ id: "new-tab", group: "chart", label: t("trader.menu.newChartTab"), keywords: "new chart tab file", run: () => T.addTab() });
   add({ id: "close-tab", group: "chart", label: t("trader.menu.closeChart"), keywords: "close chart tab file", disabled: T.ws.tabs.length <= 1, run: () => T.closeTab(tab.id) });
-  for (const tf of TIMEFRAMES) add({ id: `tf-${tf}`, group: "chart", label: `${t("trader.menu.timeframes")}: ${tf}`, keywords: `timeframe ${tf}`, checked: tab.tf === tf, run: () => T.updateTab(tab.id, { tf, drawings: tab.tf === tf ? tab.drawings : [] }) });
-  for (const ct of CHART_TYPES) add({ id: `type-${ct}`, group: "chart", label: `${t("desk.ch.type")}: ${t(`trader.chartType.${ct}`)}`, keywords: `chart type ${ct}`, checked: tab.type === ct, run: () => T.updateTab(tab.id, { type: ct }) });
+  for (const tf of TIMEFRAMES) add({ id: `tf-${tf}`, group: "chart", label: `${t("trader.menu.timeframes")}: ${tf}`, keywords: `timeframe ${tf}`, checked: tab.tf === tf, run: () => T.updateTab(tab.id, tv ? { tf } : { tf, drawings: tab.tf === tf ? tab.drawings : [] }) });
+  for (const ct of CHART_TYPES) add({ id: `type-${ct}`, group: "chart", label: `${t("desk.ch.type")}: ${t(`trader.chartType.${ct}`)}`, keywords: `chart type ${ct}`, checked: !tv && tab.type === ct, run: () => (tv ? tvh()?.chartType(ct) : T.updateTab(tab.id, { type: ct })) });
   for (const l of LAYOUTS) add({ id: `layout-${l.id}`, group: "chart", label: `${t("desk.ch.layout")}: ${t(l.label)}`, hint: l.hint, icon: l.icon, keywords: "layout grid charts split", checked: T.ws.layout === l.id, run: () => T.setLayout(l.id) });
-  add({ id: "crosshair", group: "chart", label: t("chart.toolbar.crosshair"), hint: "Ctrl+F", keywords: "crosshair cursor", run: () => T.setDrawTool(T.drawTool === "crosshair" ? "cursor" : "crosshair") });
-  add({ id: "hline", group: "chart", label: t("trader.menu.horizontalLine"), keywords: "draw object insert line", run: () => T.setDrawTool("hline") });
-  add({ id: "trend", group: "chart", label: t("trader.menu.trendLine"), keywords: "draw object insert trend", run: () => T.setDrawTool("trend") });
-  add({ id: "fib", group: "chart", label: t("trader.menu.fibonacci"), keywords: "draw object insert fibonacci", run: () => T.setDrawTool("fib") });
-  add({ id: "rect", group: "chart", label: t("trader.menu.rectangle"), keywords: "draw object insert rectangle box", run: () => T.setDrawTool("rect") });
-  add({ id: "brush", group: "chart", label: t("chart.tool.brush"), keywords: "draw object brush freehand pen pencil", run: () => T.setDrawTool("brush") });
-  add({ id: "text", group: "chart", label: t("chart.tool.text"), keywords: "draw object text note label", run: () => T.setDrawTool("text") });
-  add({ id: "ruler", group: "chart", label: t("chart.tool.ruler"), keywords: "ruler measure distance range", run: () => T.setDrawTool("ruler") });
-  add({ id: "magnet", group: "chart", label: t("chart.tool.magnet"), keywords: "magnet snap ohlc drawings", checked: prefs.magnet, run: () => setDrawPrefs({ magnet: !prefs.magnet }) });
-  add({ id: "lock-drawings", group: "chart", label: t(prefs.locked ? "chart.tool.unlock" : "chart.tool.lock"), keywords: "lock unlock drawings objects", checked: prefs.locked, run: () => setDrawPrefs({ locked: !prefs.locked }) });
-  add({ id: "hide-drawings", group: "chart", label: t(prefs.hidden ? "chart.tool.show" : "chart.tool.hide"), keywords: "hide show drawings objects", checked: prefs.hidden, run: () => setDrawPrefs({ hidden: !prefs.hidden }) });
-  add({ id: "draw-undo", group: "chart", label: t("chart.toolbar.undo"), hint: "Ctrl+Z", icon: <Undo2 />, keywords: "undo drawing back", disabled: !history.canUndo, run: () => undoDrawings(T, tab.id) });
-  add({ id: "draw-redo", group: "chart", label: t("chart.toolbar.redo"), hint: "Ctrl+Shift+Z", icon: <Redo2 />, keywords: "redo drawing again", disabled: !history.canRedo, run: () => redoDrawings(T, tab.id) });
-  add({ id: "del-objects", group: "chart", label: t("trader.menu.deleteAllObjects"), keywords: "delete drawings objects clear", disabled: !tab.drawings.length, run: () => void clearDrawings(T, tab.id) });
+  if (!tv) add({ id: "crosshair", group: "chart", label: t("chart.toolbar.crosshair"), hint: "Ctrl+F", keywords: "crosshair cursor", run: () => T.setDrawTool(T.drawTool === "crosshair" ? "cursor" : "crosshair") });
+  add({ id: "hline", group: "chart", label: t("trader.menu.horizontalLine"), keywords: "draw object insert line", run: draw("hline", "horizontal_line") });
+  add({ id: "trend", group: "chart", label: t("trader.menu.trendLine"), keywords: "draw object insert trend", run: draw("trend", "trend_line") });
+  add({ id: "fib", group: "chart", label: t("trader.menu.fibonacci"), keywords: "draw object insert fibonacci", run: draw("fib", "fib_retracement") });
+  add({ id: "rect", group: "chart", label: t("trader.menu.rectangle"), keywords: "draw object insert rectangle box", run: draw("rect", "rectangle") });
+  add({ id: "brush", group: "chart", label: t("chart.tool.brush"), keywords: "draw object brush freehand pen pencil", run: draw("brush", "brush") });
+  add({ id: "text", group: "chart", label: t("chart.tool.text"), keywords: "draw object text note label", run: draw("text", "text") });
+  add({ id: "ruler", group: "chart", label: t("chart.tool.ruler"), keywords: "ruler measure distance range", run: draw("ruler", "measure") });
+  add({ id: "magnet", group: "chart", label: t("chart.tool.magnet"), keywords: "magnet snap ohlc drawings", checked: !tv && prefs.magnet, run: () => (tv ? tvh()?.toggle("magnet") : setDrawPrefs({ magnet: !prefs.magnet })) });
+  add({ id: "lock-drawings", group: "chart", label: t(!tv && prefs.locked ? "chart.tool.unlock" : "chart.tool.lock"), keywords: "lock unlock drawings objects", checked: !tv && prefs.locked, run: () => (tv ? tvh()?.toggle("lock") : setDrawPrefs({ locked: !prefs.locked })) });
+  add({ id: "hide-drawings", group: "chart", label: t(!tv && prefs.hidden ? "chart.tool.show" : "chart.tool.hide"), keywords: "hide show drawings objects", checked: !tv && prefs.hidden, run: () => (tv ? tvh()?.toggle("hide") : setDrawPrefs({ hidden: !prefs.hidden })) });
+  add({ id: "draw-undo", group: "chart", label: t("chart.toolbar.undo"), hint: "Ctrl+Z", icon: <Undo2 />, keywords: "undo drawing back", disabled: !tv && !history.canUndo, run: () => (tv ? tvh()?.undo() : undoDrawings(T, tab.id)) });
+  add({ id: "draw-redo", group: "chart", label: t("chart.toolbar.redo"), hint: "Ctrl+Shift+Z", icon: <Redo2 />, keywords: "redo drawing again", disabled: !tv && !history.canRedo, run: () => (tv ? tvh()?.redo() : redoDrawings(T, tab.id)) });
+  add({ id: "del-objects", group: "chart", label: t("trader.menu.deleteAllObjects"), keywords: "delete drawings objects clear", disabled: !tv && !tab.drawings.length, run: () => (tv ? tvh()?.removeDrawings() : void clearDrawings(T, tab.id)) });
   add({ id: "save-layout", group: "chart", label: t("chart.toolbar.saveLayout"), icon: <Save />, keywords: "save layout workspace profile", run: () => saveLayout(T) });
   add({ id: "zoom-in", group: "chart", label: t("trader.menu.zoomIn"), hint: "+", keywords: "zoom in", run: () => reg()?.zoom(1) });
   add({ id: "zoom-out", group: "chart", label: t("trader.menu.zoomOut"), hint: "−", keywords: "zoom out", run: () => reg()?.zoom(-1) });
   add({ id: "fit", group: "chart", label: t("desk.ch.fit"), keywords: "reset view fit", run: () => reg()?.fit() });
   add({ id: "shot", group: "chart", label: t("trader.menu.saveAsPicture"), icon: <Camera />, keywords: "screenshot picture image save", run: () => reg()?.screenshot() });
-  add({ id: "save-tpl", group: "chart", label: t("trader.menu.saveTemplate"), keywords: "template save", run: () => openSaveTemplate(tab.id) });
+  if (!tv) add({ id: "save-tpl", group: "chart", label: t("trader.menu.saveTemplate"), keywords: "template save", run: () => openSaveTemplate(tab.id) });
 
   // view
   add({ id: "p-watch", group: "view", label: options ? t("trader.opt.inst.title") : t("desk.side.instruments"), hint: "Ctrl+M", keywords: "market watch instruments symbols panel toggle view", checked: T.ws.panels.watch && T.ws.side === "instruments", run: () => showSide(T, "instruments", true) });

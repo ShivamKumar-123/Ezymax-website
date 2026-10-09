@@ -29,6 +29,7 @@ import { SideColumn } from "./side-column";
 import { Tour } from "./tour";
 import { ACTIVITY_ID, scrollToChart, showSide } from "./commands";
 import { useTradeMode } from "@/lib/options/mode";
+import { useTvStatus } from "@/lib/tv/loader";
 
 // Options workspace: its own chunk, downloaded the first time an Options account opens (CFD accounts never load it).
 const OptionsMain = dynamic(() => import("@/components/options/desktop").then((m) => m.OptionsMain), { ssr: false, loading: () => <div className="h-full animate-pulse rounded-[14px] border border-line bg-panel" /> });
@@ -82,6 +83,7 @@ export function DesktopTerminal() {
     return () => window.removeEventListener("keydown", k, true);
   }, [peek]);
   const vw = useViewportWidth();
+  const tv = useTvStatus() !== "missing";
   const center = React.useRef<HTMLDivElement>(null);
   // the column: ~320 px, resizable between ~280 and ~440
   const pct = (px: number) => Math.min(45, Math.max(10, (px / Math.max(vw - 16, 1)) * 100));
@@ -119,8 +121,9 @@ export function DesktopTerminal() {
               {!open && !full && <EdgeTab label={t("desk.side.show")} shortcut="Ctrl+M" onClick={() => showSide(T, T.ws.side === "navigator" && options ? "instruments" : T.ws.side)} />}
               {full && !peek && <EdgeTab label={t("desk.side.show")} onClick={() => setPeek(true)} className="absolute end-1 top-1/2 z-[5] -translate-y-1/2 shadow-[var(--t-shadow-pop)]" />}
               {full && peek && (
-                // below the chart's toolbar row (it keeps Exit full chart reachable), opaque over the live chart
-                <div className="t-pop absolute bottom-0 end-0 top-[46px] z-[5] w-[344px] rounded-[14px] bg-panel shadow-[var(--t-shadow-pop)]">
+                // below the chart's toolbar row (it keeps Exit full chart reachable; on TradingView charts that is in
+                // the library's header, under the tabs), opaque over the live chart
+                <div className={cn("t-pop absolute bottom-0 end-0 z-[5] w-[344px] rounded-[14px] bg-panel shadow-[var(--t-shadow-pop)]", tv && !options ? "top-[86px]" : "top-[46px]")}>
                   <SideColumn options={options} onClose={() => setPeek(false)} />
                 </div>
               )}

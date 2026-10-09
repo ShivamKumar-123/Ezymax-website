@@ -481,6 +481,24 @@ export interface ChartHandle {
   screenshot: () => void;
   /** show the last `seconds` of history (date range presets under the chart), in the chart's current timeframe */
   setRange: (seconds: number) => void;
+  /** TradingView charts (tv-chart.tsx): commands and keys go to the library's own dialogs and tools */
+  tv?: TvChartActions;
+}
+
+/** What the terminal's commands, keys and Navigator ask of a TradingView chart. */
+export interface TvChartActions {
+  indicators: () => void;
+  undo: () => void;
+  redo: () => void;
+  /** a drawing tool of the library ("trend_line", "horizontal_line", "fib_retracement", "rectangle", "brush", "text",
+   *  "measure", "cursor"…) */
+  tool: (name: string) => void;
+  removeDrawings: () => void;
+  toggle: (what: "magnet" | "lock" | "hide") => void;
+  /** add one of our indicator types as the library's study (its dialog when there's no match) */
+  addStudy: (type: string) => void;
+  chartType: (type: ChartType) => void;
+  settings: () => void;
 }
 export const chartRegistry = new Map<string, ChartHandle>();
 
