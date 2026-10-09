@@ -8,6 +8,7 @@ import { tr, useT } from "@ezymex/i18n/react";
 import { toast } from "@/lib/notify";
 import { TerminalProvider, engineSession, guestSession, readActive, readSession, savedCharts, useTerminal, writeActive, writeSession, type Session } from "@/lib/store";
 import { prefetchHistory } from "@/components/chart/engine";
+import { tvCharts } from "@/lib/tv/loader";
 import { CLIENT_AREA, GUEST_MODE } from "@/lib/guest";
 import { engineApi } from "@/lib/engine/client";
 import type { SessionInfo } from "@/lib/engine/types";
@@ -136,7 +137,8 @@ export function Terminal() {
       const feed = priceFeed();
       feed.markHydrated();
       // chart history doesn't depend on the session: request the saved layout's charts now, not after sign-in
-      for (const c of savedCharts()) prefetchHistory(c.symbol, c.tf);
+      // (our own chart's cache; TradingView charts load through their datafeed)
+      if (!tvCharts()) for (const c of savedCharts()) prefetchHistory(c.symbol, c.tf);
       void liveEntry(new URLSearchParams(sp.toString()), intent.want).then(async (r) => {
         if (!alive) return;
         if (window.location.search) window.history.replaceState(null, "", "/");

@@ -32,7 +32,7 @@ export function useQuickTrade(symbol: string, volume: () => number) {
 }
 
 /** The floating Sell · lot · Buy box under the chart legend (collapsible to a small pill). */
-export function OneClickPanel({ symbol, compact, top, left }: { symbol: string; compact?: boolean; top: number; left?: number }) {
+export function OneClickPanel({ symbol, compact, top, left, className }: { symbol: string; compact?: boolean; top: number; left?: number; className?: string }) {
   const T = useTerminal();
   const t = useT();
   const [lot, setLot] = React.useState(String(T.ws.lot.toFixed(2)));
@@ -56,7 +56,7 @@ export function OneClickPanel({ symbol, compact, top, left }: { symbol: string; 
   if (collapsed)
     return (
       <button
-        className="absolute left-2 z-[6] flex h-8 items-center gap-1.5 rounded-[8px] border border-line-top bg-panel-2/95 px-2.5 text-[12px] font-semibold text-fg-2 shadow-[0_6px_20px_-8px_rgba(0,0,0,0.6)] hover:text-fg"
+        className={cn("absolute left-2 z-[6] flex h-8 items-center gap-1.5 rounded-[8px] border border-line-top bg-panel-2/95 px-2.5 text-[12px] font-semibold text-fg-2 shadow-[0_6px_20px_-8px_rgba(0,0,0,0.6)] hover:text-fg", className)}
         style={{ top, left }}
         onPointerDown={(e) => e.stopPropagation()}
         onClick={() => setCollapsed(false)}
@@ -68,7 +68,7 @@ export function OneClickPanel({ symbol, compact, top, left }: { symbol: string; 
       </button>
     );
   return (
-    <div data-tour="oneclick" className="absolute left-2 z-[6] flex items-stretch overflow-hidden rounded-[9px] border border-line-top bg-panel-2 shadow-[0_6px_20px_-8px_rgba(0,0,0,0.6)]" style={{ top, left }} onPointerDown={(e) => e.stopPropagation()} onContextMenu={(e) => e.stopPropagation()}>
+    <div data-tour="oneclick" className={cn("absolute left-2 z-[6] flex items-stretch overflow-hidden rounded-[9px] border border-line-top bg-panel-2 shadow-[0_6px_20px_-8px_rgba(0,0,0,0.6)]", className)} style={{ top, left }} onPointerDown={(e) => e.stopPropagation()} onContextMenu={(e) => e.stopPropagation()}>
       <button onClick={() => q.go("sell")} disabled={!q.open || !!q.blocked} title={q.note} className={cn("group flex flex-col items-start bg-down/12 px-2 py-1 text-left transition-colors hover:bg-down/25 disabled:cursor-not-allowed disabled:bg-surface-2 disabled:opacity-60", compact ? "min-w-[74px]" : "min-w-[92px]")} aria-label={t(q.open ? "chart.oneClick.sellAria" : "chart.oneClick.sellClosedAria", { symbol })}>
         <span className="flex items-center gap-1 text-[11px] font-semibold text-down">{q.instant && <Zap className="size-3 fill-current" aria-hidden />}{t("common.sell")}</span>
         <PriceText symbol={symbol} value={q.bid} dir={q.dir} className={compact ? "text-[12px]" : "text-[14px]"} />

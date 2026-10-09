@@ -6,6 +6,8 @@
 // indicators · templates · layout · undo / redo · New order · zoom | save layout · alert · picture · full chart · full
 // screen. Left: the drawing rail (tools, magnet, lock, hide, delete all). Under the charts: date
 // range presets 5y … 1d and the server clock. The plot itself carries only the legend, the Buy / Sell box and the K mark.
+// With TradingView Advanced Charts installed (tv-chart.tsx, Part 7) the library's header, drawing toolbar and bottom bar
+// replace rows 2, the rail and the presets; New order and the layout menu move into its header.
 import * as React from "react";
 import { toast } from "@/lib/notify";
 import { AreaChart, BarChart3, Bell, Brush, Camera, CandlestickChart, ChevronDown, CirclePlus, Crosshair, Expand, Eye, EyeOff, FileStack, LayoutPanelLeft, LineChart, Lock, LockOpen, Magnet, Maximize2, Minimize2, Minus, MousePointer2, Plus, Redo2, Ruler, Save, Scan, ShoppingCart, Shrink, Spline, Square, Trash2, TrendingUp, Type, Undo2, X, ZoomIn, ZoomOut } from "lucide-react";
@@ -19,6 +21,8 @@ import { DropMenu } from "@/components/ui/menu";
 import { CountBadge, IconButton, Tip } from "@/components/ui/kit";
 import { useLayoutItems, openActivity, saveLayout, toggleFullChart, toggleFullscreen } from "@/components/shell/commands";
 import { ChartView } from "./chart-view";
+import { TvChart } from "./tv-chart";
+import { useTvStatus } from "@/lib/tv/loader";
 import { chartRegistry, pendingRanges } from "./engine";
 import { clearDrawings, redoDrawings, setDrawPrefs, undoDrawings, useDrawPrefs, useDrawingHistory } from "./drawings";
 import { BUILTIN_TEMPLATES, applyTemplate, deleteTemplate, openIndicatorList, openSaveTemplate, templateMatches, useUserTemplates } from "./indicators/state";
@@ -47,19 +51,23 @@ export function ChartWorkspace() {
   const slots = T.ws.slots.map((id) => T.ws.tabs.find((t) => t.id === id)!).filter(Boolean);
   const layout = T.ws.layout;
   const grid = layout === "1" ? "grid-cols-1 grid-rows-1" : layout === "2h" ? "grid-cols-2 grid-rows-1" : layout === "2v" ? "grid-cols-1 grid-rows-2" : "grid-cols-2 grid-rows-2";
+  // TradingView charts (when the licensed library is installed) bring their own toolbars, drawing rail and date
+  // ranges: the card keeps only its row of tabs. A slot's widget lives on while its tab, symbol or timeframe change.
+  const tv = useTvStatus() !== "missing";
   return (
     <section data-tour="chart" className="t-glass flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-[14px] border border-line">
       <ChartTabs />
-      <ChartBar />
+      {!tv && <ChartBar />}
       <div className="flex min-h-0 flex-1">
-        <DrawingBar />
-        <div className={cn("grid min-h-0 min-w-0 flex-1 gap-1.5 pb-1.5 pe-1.5", grid)}>
-          {slots.map((tab) => (
-            <ChartView key={tab.id} tab={tab} active={tab.id === T.ws.activeId && slots.length > 0} highlight={tab.id === T.ws.activeId && slots.length > 1} onActivate={() => T.ws.activeId !== tab.id && T.activateTab(tab.id)} compact={layout === "4"} />
-          ))}
+        {!tv && <DrawingBar />}
+        <div className={cn("grid min-h-0 min-w-0 flex-1 gap-1.5 pb-1.5 pe-1.5", tv && "ps-1.5 pt-1.5", grid)}>
+          {slots.map((tab, i) => {
+            const props = { tab, active: tab.id === T.ws.activeId && slots.length > 0, highlight: tab.id === T.ws.activeId && slots.length > 1, onActivate: () => T.ws.activeId !== tab.id && T.activateTab(tab.id), compact: layout === "4" };
+            return tv ? <TvChart key={`slot-${i}`} {...props} /> : <ChartView key={tab.id} {...props} />;
+          })}
         </div>
       </div>
-      <RangeBar />
+      {!tv && <RangeBar />}
     </section>
   );
 }

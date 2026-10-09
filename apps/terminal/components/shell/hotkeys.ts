@@ -11,6 +11,8 @@ import { getTradeMode } from "@/lib/options/mode";
 /**
  * Global terminal keyboard shortcuts (MT5-compatible where possible). On an Options account the CFD chart's keys
  * (indicators, chart grid, crosshair, zoom) do nothing, and F9 / Ctrl+D / F10 say the account trades options only.
+ * TradingView charts (chart/tv-chart.tsx) take the chart keys themselves: indicators, undo / redo and zoom go to the
+ * library; with the focus inside a chart the library forwards the terminal's keys here.
  */
 export function useHotkeys() {
   const T = useTerminal();
@@ -23,6 +25,7 @@ export function useHotkeys() {
       const typing = !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable);
       const mod = e.metaKey || e.ctrlKey;
       const cfd = getTradeMode() === "cfd";
+      const tv = chartRegistry.get(t.ws.activeId)?.tv;
       if (mod && e.key.toLowerCase() === "k") {
         e.preventDefault();
         t.setUi({ search: !t.ui.search });
@@ -30,7 +33,8 @@ export function useHotkeys() {
       }
       if (mod && e.key.toLowerCase() === "i" && cfd) {
         e.preventDefault();
-        openIndicatorList(t.activeTab.id); // MT5: Ctrl+I = indicators list
+        if (tv) tv.indicators();
+        else openIndicatorList(t.activeTab.id); // MT5: Ctrl+I = indicators list
         return;
       }
       if (e.key === "F9") {
@@ -83,7 +87,7 @@ export function useHotkeys() {
         t.openNewOrder();
         return;
       }
-      if (mod && e.key.toLowerCase() === "f" && cfd) {
+      if (mod && e.key.toLowerCase() === "f" && cfd && !tv) {
         e.preventDefault();
         t.setDrawTool(t.drawTool === "crosshair" ? "cursor" : "crosshair");
         return;
@@ -92,7 +96,9 @@ export function useHotkeys() {
       // drawings: Ctrl/⌘+Z undoes, Ctrl/⌘+Shift+Z or Ctrl+Y redoes (text fields keep their own undo above)
       if (mod && !e.altKey && (e.key.toLowerCase() === "z" || e.key.toLowerCase() === "y")) {
         e.preventDefault();
-        if (e.key.toLowerCase() === "y" || e.shiftKey) redoDrawings(t);
+        const redo = e.key.toLowerCase() === "y" || e.shiftKey;
+        if (tv) (redo ? tv.redo : tv.undo)();
+        else if (redo) redoDrawings(t);
         else undoDrawings(t);
         return;
       }

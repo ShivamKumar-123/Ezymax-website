@@ -1,0 +1,63 @@
+/* Ezymex inside the TradingView Advanced Charts frame (custom_css_url; components/chart/tv-chart.tsx). The colours are
+   set at run time from the terminal's tokens (--tv-color-*, --ezx-*: lib/tv/style.ts), for the theme and the broker. */
+
+/* our buttons in the library's header: New order, alerts, layout, Full chart */
+.ezx-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  margin: 2px 0;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ezx-text, #a1a1aa);
+  font: 500 14px/1 -apple-system, BlinkMacSystemFont, "Trebuchet MS", Roboto, Ubuntu, sans-serif;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+.ezx-btn:hover {
+  background: var(--ezx-hover, rgba(255, 255, 255, 0.08));
+  color: var(--ezx-text-hover, #f5f5f7);
+}
+.ezx-btn svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ezx-btn[data-tone="accent"] {
+  margin: 4px 2px;
+  height: 30px;
+  border: 1px solid var(--ezx-line, rgba(255, 255, 255, 0.14));
+  color: var(--ezx-text-hover, #f5f5f7);
+  font-weight: 600;
+}
+.ezx-btn[data-tone="accent"] svg {
+  color: var(--ezx-accent, #ff5a1f);
+}
+.ezx-btn[aria-pressed="true"] {
+  color: var(--tv-color-toolbar-button-text-active, #4a7bff);
+}
+.ezx-btn[data-off="true"] {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* narrow charts (several on screen): New order shows its icon only */
+@media (max-width: 760px) {
+  .ezx-btn[data-tone="accent"] span {
+    display: none;
+  }
+}
+
+/* room under the symbol line of the legend for our Sell · lot · Buy box (0 when it isn't shown) */
+[class*="legendMainSourceWrapper-"] {
+  margin-bottom: var(--ezx-legend-gap, 0px);
+}
