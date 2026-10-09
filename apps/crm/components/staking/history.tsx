@@ -31,9 +31,10 @@ function Row({ item }: { item: HistoryItem }) {
       <span className={cn("grid size-9 shrink-0 place-items-center rounded-full border border-line bg-surface-2 [&_svg]:size-4", k.tone)}>{k.icon}</span>
       <div className="min-w-0 flex-1">
         <div className="truncate text-[13.5px] font-medium">
-          {t.dyn(`staking.history.kind.${item.kind}`, item.kind)} · <span className="text-fg-2">{item.planName}</span>
+          {t.dyn(`staking.history.kind.${item.kind}`, item.kind)} <span className="hidden text-fg-2 sm:inline">· {item.planName}</span>
         </div>
         <div className="truncate text-[11.5px] text-fg-3">
+          <span className="sm:hidden">{item.planName} · </span>
           {fx.dateTime(item.at)} · {detail}
         </div>
       </div>
