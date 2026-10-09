@@ -12,6 +12,8 @@ import { DEPOSIT_FAQ, DEPOSIT_NETWORKS, INCOMING_DEPOSIT } from "@ezymex/mock/wa
 import { AddressBox, AddressQr, tronscan } from "@/components/wallet/wallet-ui";
 import { IS_DEMO } from "@ezymex/mock/mode";
 import { LiveDepositPage } from "@/components/wallet-live/deposit-page";
+import { useManualMethods } from "@/components/wallet-live/manual/api";
+import { DepositChooser, ManualDepositPanel, ManualHowItWorks, type Via } from "@/components/wallet-live/manual";
 
 const CHAIN: Record<string, string> = { TRC20: "trx", ERC20: "eth", BEP20: "bnb" };
 
@@ -201,19 +203,53 @@ function Faq() {
 function DemoDepositPage() {
   const t = useT();
   const net = DEPOSIT_NETWORKS[0]!;
+  // bank / UPI and crypto methods verified by the broker (mock data, requests kept in memory)
+  const manual = useManualMethods();
+  const methods = manual.data?.methods ?? [];
+  const [via, setVia] = React.useState<Via>("usdt");
+  React.useEffect(() => {
+    // after hydration (the server renders the USDT showcase): ?via=bank|crypto opens that tab
+    const v = new URLSearchParams(window.location.search).get("via");
+    if (v === "bank" || v === "crypto") setVia(v);
+  }, []);
+  const choose = (v: Via) => {
+    setVia(v);
+    window.history.replaceState(window.history.state, "", v === "usdt" ? "/wallet/deposit" : `/wallet/deposit?via=${v}`);
+  };
+  const header = (
+    <PageHeader
+      title={t("payments.page.title")}
+      subtitle={via === "usdt" ? t("wallet.demo.depositSubtitle") : t("payments.page.subtitle")}
+      actions={
+        <Link href="/wallet">
+          <Button variant="surface">
+            <ArrowLeft className="rtl:-scale-x-100" /> {t("wallet.wallet")}
+          </Button>
+        </Link>
+      }
+    />
+  );
+  const chooser = <DepositChooser value={via} onChange={choose} usdt bank={methods.some((m) => m.kind === "bank")} crypto={methods.some((m) => m.kind === "crypto")} />;
+  if (via !== "usdt") {
+    return (
+      <div className="pb-16">
+        {header}
+        {chooser}
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+          <div className="xl:col-span-8">
+            <ManualDepositPanel kind={via} methods={methods} maxPending={5} />
+          </div>
+          <div className="xl:col-span-4">
+            <ManualHowItWorks />
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="pb-16">
-      <PageHeader
-        title={t("wallet.depositUsdt")}
-        subtitle={t("wallet.demo.depositSubtitle")}
-        actions={
-          <Link href="/wallet">
-            <Button variant="surface">
-              <ArrowLeft className="rtl:-scale-x-100" /> {t("wallet.wallet")}
-            </Button>
-          </Link>
-        }
-      />
+      {header}
+      {chooser}
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
         <div className="space-y-4 xl:col-span-4">

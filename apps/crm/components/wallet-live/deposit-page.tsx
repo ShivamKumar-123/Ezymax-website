@@ -11,6 +11,8 @@ import { Trans, useT } from "@ezymex/i18n/react";
 import { CHAIN_LABEL, WalletError, fmt, useWallet, walletApi, type Chain, type Deposit, type Intent, type WalletConfig } from "./api";
 import { PayError, hasMetaMask, hasTronLink, isMobile, metamaskDeepLink, payWithMetaMask, payWithTronLink } from "./pay";
 import { Confirmations, DEPOSIT_STATUS, HashLink, InlineError, StatusTag, Tile, WalletUnavailable, cleanAmount } from "./ui";
+import { useManualMethods } from "./manual/api";
+import { DepositChooser, ManualDepositPanel, ManualHowItWorks, type Via } from "./manual";
 
 type IntentView = { intent: Intent; deposit: Deposit | null };
 
@@ -372,14 +374,34 @@ function Inner() {
   const cfg = useWallet<WalletConfig>("config");
   const valid = !!intentId && /^dep_[0-9a-f]{24}$/.test(intentId);
   const view = useWallet<IntentView>(valid ? `deposits/intents/${intentId}` : null, 5000);
+  // bank / UPI and crypto methods the broker verifies by hand (?via=bank|crypto keeps the choice in the URL)
+  const manual = useManualMethods();
+  const methods = manual.data?.methods ?? [];
+  const hasBank = methods.some((m) => m.kind === "bank");
+  const hasCrypto = methods.some((m) => m.kind === "crypto");
+  const hasManual = hasBank || hasCrypto;
+  const autoOn = !!cfg.data?.chains.some((c) => c.deposits_enabled);
+  const [picked, setPicked] = React.useState<Via | null>(() => {
+    const v = sp.get("via");
+    return v === "usdt" || v === "bank" || v === "crypto" ? v : null;
+  });
+  const offered = (v: Via | null) => v === "usdt" || (v === "bank" && hasBank) || (v === "crypto" && hasCrypto);
+  const via: Via = valid ? "usdt" : offered(picked) ? picked! : autoOn || !hasManual ? "usdt" : hasBank ? "bank" : "crypto";
   const setIntent = (id: string | null) => {
     setIntentId(id);
     window.history.replaceState(window.history.state, "", id ? `/wallet/deposit?intent=${id}` : "/wallet/deposit");
   };
+  const choose = (v: Via) => {
+    setPicked(v);
+    setIntentId(null);
+    window.history.replaceState(window.history.state, "", v === "usdt" ? "/wallet/deposit" : `/wallet/deposit?via=${v}`);
+  };
+  const manualLoading = !manual.data && !manual.error;
 
   let main: React.ReactNode;
-  if (cfg.error && !cfg.data) main = <WalletUnavailable onRetry={cfg.reload} />;
-  else if (!cfg.data || (valid && !view.data && !view.error)) main = <Skeleton className="h-[420px] w-full rounded-[20px]" />;
+  if (via !== "usdt") main = <ManualDepositPanel kind={via} methods={methods} maxPending={manual.data?.max_pending ?? 5} initialMethod={Number(sp.get("method")) || null} />;
+  else if (cfg.error && !cfg.data) main = <WalletUnavailable onRetry={cfg.reload} />;
+  else if (!cfg.data || (valid && !view.data && !view.error) || (!autoOn && manualLoading)) main = <Skeleton className="h-[420px] w-full rounded-[20px]" />;
   else if (valid && view.error) main = <WalletUnavailable onRetry={view.reload} message={view.error.status === 404 ? t("wallet.deposit.notFound") : undefined} />;
   else if (valid && view.data?.deposit) main = <Tracker view={view.data} onNew={() => setIntent(null)} />;
   else if (valid && view.data) main = <PayPanel view={view.data} onSubmitted={view.reload} />;
@@ -388,8 +410,8 @@ function Inner() {
   return (
     <div className="pb-16">
       <PageHeader
-        title={t("wallet.depositUsdt")}
-        subtitle={t("wallet.deposit.subtitle")}
+        title={hasManual ? t("payments.page.title") : t("wallet.depositUsdt")}
+        subtitle={hasManual ? t("payments.page.subtitle") : t("wallet.deposit.subtitle")}
         actions={
           <Link href="/wallet">
             <Button variant="surface">
@@ -398,9 +420,10 @@ function Inner() {
           </Link>
         }
       />
+      {!valid && <DepositChooser value={via} onChange={choose} usdt={autoOn} bank={hasBank} crypto={hasCrypto} />}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
         <div className="xl:col-span-8">{main}</div>
-        <div className="xl:col-span-4">{cfg.data && <HowItWorks cfg={cfg.data} />}</div>
+        <div className="xl:col-span-4">{via === "usdt" ? cfg.data && <HowItWorks cfg={cfg.data} /> : <ManualHowItWorks />}</div>
       </div>
     </div>
   );

@@ -52,6 +52,9 @@ export const KIND_LABEL: Record<string, MessageKey> = {
   adjustment_out: "wallet.kind.adjustment",
   manual_deposit: "wallet.txType.deposit",
   manual_withdrawal: "wallet.txType.withdrawal",
+  // bank / UPI and crypto deposit requests approved by the broker (Wallet → Deposit → Bank / UPI, Crypto)
+  bank_deposit: "payments.kind.bankDeposit",
+  crypto_deposit: "payments.kind.cryptoDeposit",
   refund: "wallet.kind.refund",
 };
 

@@ -48,7 +48,14 @@ function stub(name, handle) {
       body = undefined;
     }
     calls.push({ svc: name, method: req.method, path: req.url, headers: req.headers, body, raw });
-    const [status, data] = await handle(req, body);
+    const out = await handle(req, body);
+    if (!Array.isArray(out)) {
+      // a non-JSON answer (images): {status, headers, bytes}
+      res.writeHead(out.status, out.headers);
+      res.end(out.bytes);
+      return;
+    }
+    const [status, data] = out;
     res.writeHead(status, { "content-type": "application/json" });
     res.end(JSON.stringify(data));
   });
@@ -88,6 +95,12 @@ before(async () => {
     if (url.pathname === "/v1/withdrawals/quote") return [200, { quote: { amount: "10", fee: "1", net_amount: "9" } }];
     if (url.pathname === "/v1/withdrawals") return [200, { withdrawal: { id: 1, status: "pending" } }];
     if (url.pathname.endsWith("/overview")) return [200, { balances: [{ currency: "USDT", available: "25" }] }];
+    // manual payments (bank / UPI / crypto deposit requests)
+    if (url.pathname === "/v1/manual/methods") return [200, { methods: [{ id: 3, kind: "bank", name: "HDFC · UPI", currency: "INR", rate: "88" }], max_pending: 5 }];
+    if (url.pathname === "/v1/manual/deposits") return req.method === "POST" ? [200, { deposit: { id: 7, status: "pending" } }] : [200, { items: [], total: 0, pending: 0, max_pending: 5 }];
+    if (url.pathname === "/v1/manual/deposits/7/cancel") return [200, { deposit: { id: 7, status: "cancelled" } }];
+    if (url.pathname === "/v1/manual/proofs") return [200, { media: { id: "a".repeat(24), url: `/api/wallet/manual/media/${"a".repeat(24)}` } }];
+    if (url.pathname === `/v1/manual/media/${"b".repeat(24)}`) return { status: 200, headers: { "content-type": "image/png", "cache-control": "private, max-age=31536000, immutable", etag: '"abc"' }, bytes: Buffer.from([0x89, 0x50, 0x4e, 0x47, 9, 9]) };
     return [404, { error: { code: "not_found", message: "stub" } }];
   });
   supportSvc = await stub("support", (req) => {
@@ -280,6 +293,60 @@ test("uploads pass the rewrite: KYC multipart documents and support attachments 
   const up = calls.findLast((c) => c.path === "/v1/support/me/attachments");
   assert.deepEqual([...up.raw], [...bytes]);
   assert.equal(up.headers["x-ezymex-user-id"], "42");
+});
+
+test("manual payments through the rewrite: methods, requests (the user from the session only), screenshots and images", async () => {
+  const m = await load();
+  const methods = await viaProxy(m, "/api/mobile/wallet/manual/methods", { headers: auth(TOKENS.user) }, m.wallet.GET, { path: ["manual", "methods"] });
+  assert.equal(methods.target, `${INTERNAL}/api/wallet/manual/methods`);
+  assert.equal(methods.res.status, 200);
+  assert.equal((await methods.res.json()).methods[0].currency, "INR");
+  assert.equal(calls.findLast((c) => c.svc === "wallet").path, "/v1/manual/methods");
+
+  // a request: user id and request-id namespace come from the BFF, never from the body
+  const body = { user_id: 999, method_id: 3, amount: "10000", reference: " 412345678901 ", idempotency_key: "k-12345678" };
+  const sent = await viaProxy(m, "/api/mobile/wallet/manual/deposits", { method: "POST", headers: { ...json, ...auth(TOKENS.user) }, body: JSON.stringify(body) }, m.wallet.POST, { path: ["manual", "deposits"] });
+  assert.equal(sent.res.status, 200, JSON.stringify(await sent.res.clone().json()));
+  const up = calls.findLast((c) => c.path === "/v1/manual/deposits");
+  assert.deepEqual(up.body, { user_id: 42, method_id: 3, amount: "10000", reference: "412345678901", proof_media_id: null, note: null, idempotency_key: "crm:k-12345678" });
+  for (const [bad, field] of [[{ ...body, amount: "1e5" }, "amount"], [{ ...body, method_id: "3" }, "method_id"], [{ ...body, reference: "12" }, "reference"], [{ ...body, proof_media_id: "../x" }, "proof_media_id"], [{ ...body, idempotency_key: "short" }, "idempotency_key"]]) {
+    const before = calls.length;
+    const r = await viaProxy(m, "/api/mobile/wallet/manual/deposits", { method: "POST", headers: { ...json, ...auth(TOKENS.user) }, body: JSON.stringify(bad) }, m.wallet.POST, { path: ["manual", "deposits"] });
+    assert.equal(r.res.status, 422, field);
+    assert.equal((await r.res.json()).error.field, field);
+    assert.ok(!calls.slice(before).some((c) => c.svc === "wallet"), `${field}: refused before the wallet`);
+  }
+  const cancel = await viaProxy(m, "/api/mobile/wallet/manual/deposits/7/cancel", { method: "POST", headers: { ...json, ...auth(TOKENS.user) }, body: JSON.stringify({ user_id: 999 }) }, m.wallet.POST, { path: ["manual", "deposits", "7", "cancel"] });
+  assert.equal(cancel.res.status, 200);
+  assert.deepEqual(calls.findLast((c) => c.path === "/v1/manual/deposits/7/cancel").body, { user_id: 42 });
+
+  // payment screenshot: multipart from the app, raw bytes to the wallet with the session's user id
+  const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
+  const form = new FormData();
+  form.set("file", new File([png], "receipt.png", { type: "image/png" }));
+  const proof = await viaProxy(m, "/api/mobile/wallet/manual/proofs", { method: "POST", headers: auth(TOKENS.user), body: form }, m.wallet.POST, { path: ["manual", "proofs"] });
+  assert.equal(proof.res.status, 200, JSON.stringify(await proof.res.clone().json()));
+  const stored = calls.findLast((c) => c.path.startsWith("/v1/manual/proofs"));
+  assert.equal(stored.path, "/v1/manual/proofs?user_id=42");
+  assert.equal(stored.headers["content-type"], "application/octet-stream");
+  assert.deepEqual([...stored.raw], [...png]);
+  const text = await viaProxy(m, "/api/mobile/wallet/manual/proofs", { method: "POST", headers: { ...auth(TOKENS.user), "content-type": "text/plain" }, body: "hello" }, m.wallet.POST, { path: ["manual", "proofs"] });
+  assert.equal(text.res.status, 415);
+
+  // images: bytes with the wallet's private cache header; malformed ids never reach the wallet
+  const img = await viaProxy(m, `/api/mobile/wallet/manual/media/${"b".repeat(24)}`, { headers: auth(TOKENS.user) }, m.wallet.GET, { path: ["manual", "media", "b".repeat(24)] });
+  assert.equal(img.res.status, 200);
+  assert.equal(img.res.headers.get("content-type"), "image/png");
+  assert.equal(img.res.headers.get("cache-control"), "private, max-age=31536000, immutable");
+  assert.equal(img.res.headers.get("x-content-type-options"), "nosniff");
+  assert.deepEqual([...new Uint8Array(await img.res.arrayBuffer())], [0x89, 0x50, 0x4e, 0x47, 9, 9]);
+  assert.equal(calls.findLast((c) => c.path.startsWith("/v1/manual/media/")).path, `/v1/manual/media/${"b".repeat(24)}?user_id=42`);
+  const bad = await viaProxy(m, "/api/mobile/wallet/manual/media/xyz", { headers: auth(TOKENS.user) }, m.wallet.GET, { path: ["manual", "media", "xyz"] });
+  assert.equal(bad.res.status, 404);
+
+  // the browser route keeps its same-origin rule for uploads
+  const cross = new m.NextRequest(`${BASE}/api/wallet/manual/proofs`, { method: "POST", headers: { host: "app.ezymex.com", cookie: `ezymex_session=${TOKENS.user}`, origin: "https://evil.example", "content-type": "image/png" }, body: png });
+  assert.equal((await m.wallet.POST(cross, { params: Promise.resolve({ path: ["manual", "proofs"] }) })).status, 403);
 });
 
 test("the support / notifications stream ticket works through the rewrite; config names the stream", async () => {
