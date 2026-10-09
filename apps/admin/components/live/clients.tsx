@@ -285,9 +285,17 @@ export function LiveClients() {
                 onRowClick={setOpen}
                 empty={
                   filtered ? (
-                    <EmptyState title="No clients match" text="Try a different search or clear the filters." illustration="magnifying_glass_tilted_left" />
+                    <EmptyState
+                      title="No clients match"
+                      text={!showHidden && hiddenCount ? "Try a different search, clear the filters or turn on “Show hidden”." : "Try a different search or clear the filters."}
+                      illustration="magnifying_glass_tilted_left"
+                    />
                   ) : (
-                    <EmptyState title="No clients yet" text="Clients appear here as soon as they register in the Client Area." illustration="busts_in_silhouette" />
+                    <EmptyState
+                      title="No clients yet"
+                      text={hiddenCount ? `Every client is hidden or deleted (${hiddenCount}). Turn on “Show hidden” to see them.` : "Clients appear here as soon as they register in the Client Area."}
+                      illustration="busts_in_silhouette"
+                    />
                   )
                 }
               />
