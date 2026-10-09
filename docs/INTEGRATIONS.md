@@ -37,7 +37,15 @@ It mirrors **Back Office → Settings → Integrations** (`/settings/integration
 
 **At launch: 9 of 13 configured, all 6 required integrations ready.**
 
-Charts are not a third-party integration: the Ezymex Trader terminal, Client Area and Back Office use Ezymex' own in-house chart, fed by the Ezymex market-data service (`services/market-data`). No chart licence is needed.
+Charts: the Client Area, the Back Office and the options charts use Ezymex' own in-house chart, fed by the Ezymex market-data service (`services/market-data`). The Ezymex Trader terminal draws its CFD charts (desktop and phone browser) with **TradingView Advanced Charts v31** when the library is installed, still fed by the same service (see below); without it, it keeps the in-house chart.
+
+### TradingView Advanced Charts (licensed library)
+- **Licence:** the library is licensed to the owner and **must never be committed**: the GitHub repository is public. `.gitignore` excludes `/charting_library-master/` and `apps/terminal/public/charting_library/`. Before every commit that touches the chart, check `git status` shows neither.
+- **Local development:** unpack the package next to the code as `charting_library-master/` (it holds `charting_library/`, `datafeeds/`, the typings and demos), or point `TV_LIBRARY_DIR` at it. `pnpm install` (postinstall) and `pnpm dev` run `scripts/sync-assets.mjs`, which copies `charting_library/` into `apps/terminal/public/charting_library/`, served from the terminal's own origin (same-origin frame). The build records whether it is there (`next.config.ts` → `EZYMEX_TV_LIBRARY`); the terminal's TypeScript never imports the library's typings (`apps/terminal/lib/tv/types.ts` declares the part it uses).
+- **Server:** upload the package once: `scp -r charting_library-master root@<vps>:/srv/ezymex-src/` (readable by the `ezymex` user). `deploy/deploy.sh` exports `TV_LIBRARY_DIR=/srv/ezymex-src/charting_library-master` before `pnpm install` when that folder exists. A new library version: replace the folder and deploy.
+- **Without the library** (a fresh clone, a server without the upload, or the script failing to load) the terminal shows its own chart with its own toolbars; nothing else changes.
+- **Attribution:** the TradingView logo on the chart stays visible (licence terms).
+- **Caching:** `/charting_library/bundles/*` (content-hashed names) is cached for a year; `charting_library.standalone.js` revalidates.
 
 ---
 

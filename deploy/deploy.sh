@@ -11,6 +11,9 @@ if [ -z "${EZYMEX_DEPLOY_PULLED:-}" ]; then
   git pull --ff-only
   EZYMEX_DEPLOY_PULLED=1 exec "$0" "$@"
 fi
+# TradingView Advanced Charts (licensed, never in git): uploaded once to /srv/ezymex-src; the postinstall step copies it
+# into the terminal (scripts/sync-assets.mjs). Without it the terminal keeps its own chart.
+if [ -d /srv/ezymex-src/charting_library-master ]; then export TV_LIBRARY_DIR=/srv/ezymex-src/charting_library-master; fi
 pnpm install --frozen-lockfile
 cargo build --release -p market-data -p gateway -p trading -p prop -p ib
 cargo build --release -p academy

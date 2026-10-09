@@ -14,6 +14,11 @@ next-env.d.ts
 # generated per app by scripts/sync-assets.mjs
 apps/*/public/assets/
 
+# TradingView Advanced Charts: licensed, never committed (this repository is public). The package sits next to the
+# code (on the server /srv/ezymex-src/charting_library-master) and scripts/sync-assets.mjs copies it into the terminal.
+/charting_library-master/
+apps/terminal/public/charting_library/
+
 # OS / editor / logs / archives
 .DS_Store
 *.log
