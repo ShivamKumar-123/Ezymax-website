@@ -231,7 +231,7 @@ export const Input = React.forwardRef<
 export function Field({ label, hint, error, children, className }: { label: string; hint?: React.ReactNode; error?: string; children: React.ReactNode; className?: string }) {
   return (
     <div role="group" aria-label={label} className={cn("flex flex-col gap-1.5", className)}>
-      <span className="flex items-center justify-between text-[12.5px] font-medium text-fg-2">
+      <span className="flex flex-wrap items-center justify-between gap-x-3 text-[12.5px] font-medium text-fg-2">
         {label}
         {hint && <span className="text-fg-3 font-normal">{hint}</span>}
       </span>

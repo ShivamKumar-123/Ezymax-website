@@ -101,6 +101,24 @@ function PositionDrawer({ id, onClose }: { id: number | null; onClose: () => voi
   );
 }
 
+/** Monthly returns as capsules: each month keeps room for its label, so a long history scrolls sideways on a phone,
+ * opened at the latest month. The scroller clips, so the padding leaves room for the value tip above the tallest
+ * month and beside the first and last one. */
+function MonthlyBars({ data, format }: { data: { label: string; value: number }[]; format: (v: number) => string }) {
+  const scroller = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    const el = scroller.current;
+    if (el) el.scrollLeft = getComputedStyle(el).direction === "rtl" ? -el.scrollWidth : el.scrollWidth;
+  }, [data.length]);
+  return (
+    <div ref={scroller} className="-mx-4 overflow-x-auto sm:-mx-6">
+      <div className="px-8 pt-8 sm:px-10" style={{ minWidth: data.length * 56 + 64 }}>
+        <CapsuleBars height={200} data={data} format={format} />
+      </div>
+    </div>
+  );
+}
+
 export function StakingPortfolio() {
   const t = useT();
   const fx = useStakingFormat();
@@ -213,9 +231,7 @@ export function StakingPortfolio() {
             ) : data.monthly.length === 0 ? (
               <p className="py-10 text-center text-[13px] text-fg-3">{t("staking.monthly.empty")}</p>
             ) : (
-              <div className="overflow-x-auto">
-                <CapsuleBars height={200} className="min-w-[360px]" data={data.monthly.map((m) => ({ label: fx.month(m.period), value: m.amount }))} format={(v) => money(v)} />
-              </div>
+              <MonthlyBars data={data.monthly.map((m) => ({ label: fx.month(m.period), value: m.amount }))} format={(v) => money(v)} />
             )}
           </div>
         </Card>

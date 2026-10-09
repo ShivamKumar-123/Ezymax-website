@@ -164,7 +164,7 @@ export function CapsuleBars({
         return (
           <div key={d.label} className="relative flex h-full flex-1 flex-col items-center justify-end" onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}>
             {on && (
-              <motion.div layoutId="capsule-tip" className="absolute z-10 -translate-y-full rounded-full border border-line bg-surface-2 px-3 py-1 font-mono text-xs text-fg shadow-lg" style={{ bottom: `${(d.value / max) * 82 + 6}%` }}>
+              <motion.div layoutId="capsule-tip" className="absolute z-10 -translate-y-full whitespace-nowrap rounded-full border border-line bg-surface-2 px-3 py-1 font-mono text-xs text-fg shadow-lg" style={{ bottom: `${(d.value / max) * 82 + 6}%` }}>
                 {format(d.value)}
               </motion.div>
             )}

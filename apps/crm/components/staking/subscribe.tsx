@@ -126,7 +126,7 @@ export function SubscribeDialog({ plan, open, onOpenChange, onDone }: { plan: Pl
             {t("common.cancel")}
           </Button>
           <Button variant="ember" disabled={!ready} onClick={submit} data-testid="staking-subscribe">
-            {busy ? <Loader2 className="animate-spin" /> : <Wallet />} {err ? t("staking.subscribe.retry") : t("staking.subscribe.confirm", { amount: value > 0 ? money(value) : plan.currency })}
+            {busy ? <Loader2 className="animate-spin" /> : <Wallet />} {err ? t("staking.subscribe.retry") : value > 0 ? t("staking.subscribe.confirm", { amount: money(value) }) : t("staking.plan.subscribe")}
           </Button>
         </>
       }
