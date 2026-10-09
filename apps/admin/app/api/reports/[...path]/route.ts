@@ -2,24 +2,32 @@ import { NextResponse, type NextRequest } from "next/server";
 import { apiError, mutationAllowed, requireStaff } from "@/lib/bff";
 import { reportsConfigured, reportsFetch } from "@/lib/reports";
 import { reportsAllows, type ReportsPerm } from "@/lib/reports-perms";
+import { tradingAllows } from "@/lib/trading-perms";
 
 // Reports BFF: browser -> /api/reports/<path> (same origin, staff cookie) -> reports service /v1/admin/<path>.
 // The staff session is verified with the gateway on every call and the route's permission checked here
 // (lib/reports-perms.ts); the service gets the staff identity and the caller's reports.* permissions and checks
 // them again. File routes (export, statement) are streamed through with their content type and file name.
+// What-if scenarios are also open to the dealing desk's dealing.read, forwarded for that route only.
 
 type Method = "GET" | "POST" | "PUT" | "DELETE";
-type Route = { method: Method; re: RegExp; perm: ReportsPerm; file?: boolean; query?: readonly string[] };
+type Route = { method: Method; re: RegExp; perm: ReportsPerm; alt?: "dealing.read"; file?: boolean; query?: readonly string[] };
 
 const RANGE = ["from", "to"] as const;
-const REPORT = "(pnl|deposits|funnel|cohorts|activity|partners|transactions|clients|trades|aml)";
+const TRADERS = ["period", "group", "country", "book"] as const;
+const REPORT = "(pnl|deposits|funnel|cohorts|activity|partners|transactions|clients|trades|aml|traders|risk)";
 const ROUTES: Route[] = [
   { method: "GET", re: /^(status|schedules)$/, perm: "reports.read" },
   { method: "GET", re: /^audit$/, perm: "reports.read", query: ["limit"] },
   { method: "GET", re: /^(pnl|deposits|funnel|activity|partners)$/, perm: "reports.read", query: RANGE },
   { method: "GET", re: /^cohorts$/, perm: "reports.read", query: ["months"] },
+  { method: "GET", re: /^traders$/, perm: "reports.read", query: [...RANGE, ...TRADERS] },
+  { method: "GET", re: /^risk$/, perm: "reports.read" },
+  { method: "POST", re: /^scenarios$/, perm: "reports.read", alt: "dealing.read" },
+  { method: "GET", re: /^settings\/capital$/, perm: "reports.read" },
+  { method: "PUT", re: /^settings\/capital$/, perm: "reports.export" },
   { method: "GET", re: /^accounts\/\d{8}\/analytics$/, perm: "reports.read", query: RANGE },
-  { method: "GET", re: new RegExp(`^export/${REPORT}$`), perm: "reports.export", file: true, query: [...RANGE, "format", "large"] },
+  { method: "GET", re: new RegExp(`^export/${REPORT}$`), perm: "reports.export", file: true, query: [...RANGE, "format", "large", ...TRADERS] },
   { method: "GET", re: /^accounts\/\d{8}\/statement$/, perm: "reports.export", file: true, query: [...RANGE, "format", "open", "charges", "deals"] },
   { method: "POST", re: /^sync$/, perm: "reports.read" },
   { method: "POST", re: /^schedules$/, perm: "reports.export" },
@@ -39,6 +47,10 @@ const VALID: Record<string, (v: string) => boolean> = {
   open: (v) => v === "0" || v === "1",
   charges: (v) => v === "0" || v === "1",
   deals: (v) => v === "0" || v === "1",
+  period: (v) => ["day", "week", "month"].includes(v),
+  group: (v) => /^[A-Za-z0-9_.-]{1,64}$/.test(v),
+  country: (v) => /^[A-Za-z]{2}$/.test(v),
+  book: (v) => v === "A" || v === "B",
 };
 
 async function handle(req: NextRequest, parts: string[], method: Method) {
@@ -56,7 +68,8 @@ async function handle(req: NextRequest, parts: string[], method: Method) {
   }
   const who = await requireStaff(req);
   if (who instanceof NextResponse) return who;
-  if (!reportsAllows(who.staff, route.perm)) return apiError(403, "forbidden", "Your role doesn't allow this.");
+  const viaAlt = route.alt !== undefined && !reportsAllows(who.staff, route.perm) && tradingAllows(who.staff, route.alt);
+  if (!reportsAllows(who.staff, route.perm) && !viaAlt) return apiError(403, "forbidden", "Your role doesn't allow this.");
 
   const q = new URLSearchParams();
   for (const k of route.query ?? []) {
@@ -66,7 +79,7 @@ async function handle(req: NextRequest, parts: string[], method: Method) {
     q.set(k, v);
   }
   const target = `/v1/admin/${path}${q.size ? `?${q}` : ""}`;
-  const res = await reportsFetch(target, { method, body: method === "DELETE" || method === "GET" ? undefined : body, staff: who.staff });
+  const res = await reportsFetch(target, { method, body: method === "DELETE" || method === "GET" ? undefined : body, staff: who.staff, perms: viaAlt && route.alt ? [route.alt] : undefined });
   if (!res) return apiError(503, "unavailable", "Reports are unavailable right now. Please try again shortly.");
   if (route.file && res.ok && req.nextUrl.searchParams.get("format") !== "json") {
     const headers = new Headers({ "cache-control": "no-store", "x-content-type-options": "nosniff" });

@@ -28,6 +28,9 @@ export const PAGE_PERMS: Record<string, readonly string[]> = {
   "/support": ["support.read"],
   "/content": ["content.read"],
   "/analytics": ["reports.read"],
+  // live trader analytics and broker risk / scenarios (reports service)
+  "/analytics/traders": ["reports.read"],
+  "/analytics/risk": ["reports.read"],
   "/security": ["audit.read"],
   "/security/users": ["audit.read"],
   "/security/sessions": ["sessions.read"],

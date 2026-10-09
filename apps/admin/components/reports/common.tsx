@@ -92,10 +92,12 @@ export function download(url: string, label: string) {
   toast.success("Export started", { description: label });
 }
 
-/** Schedule shortcut + CSV / Excel export of a report for the period (needs reports.export). */
-export function ExportMenu({ report, name, from, to }: { report: string; name: string; from: string; to: string }) {
+/** Schedule shortcut + CSV / Excel export of a report for the period (needs reports.export). `query` adds report
+ *  parameters (e.g. the traders period and filters). */
+export function ExportMenu({ report, name, from, to, query }: { report: string; name: string; from: string; to: string; query?: Record<string, string> }) {
   const canExport = useCan("reports.export");
-  const url = (f: "csv" | "xlsx") => `/api/reports/export/${report}?from=${from}&to=${to}&format=${f}`;
+  const extra = new URLSearchParams(Object.entries(query ?? {}).filter(([, v]) => v !== "")).toString();
+  const url = (f: "csv" | "xlsx") => `/api/reports/export/${report}?from=${from}&to=${to}&format=${f}${extra ? `&${extra}` : ""}`;
   return (
     <>
       <Link href="/analytics/scheduled">

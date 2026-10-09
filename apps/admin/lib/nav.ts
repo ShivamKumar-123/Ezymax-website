@@ -256,6 +256,8 @@ export const ADMIN_NAV: NavModule[] = [
     section: "insight",
     sub: [
       { href: "/analytics", label: "Broker P&L" },
+      { href: "/analytics/traders", label: "Traders" },
+      { href: "/analytics/risk", label: "Broker risk" },
       { href: "/analytics/funnel", label: "Funnel" },
       { href: "/analytics/cohorts", label: "Cohorts & LTV" },
       { href: "/analytics/deposits", label: "Deposits & FTDs" },
