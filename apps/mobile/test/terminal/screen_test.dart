@@ -2,10 +2,6 @@
 // buttons) opens the account, the market's chart and the order sheet with that side. The account's product decides
 // CFD or Options (no switch in the header): `mode=options` on a CFD account, or a CFD market on an Options account,
 // moves to the client's account of that product.
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 import 'package:ezymex/core/models/account.dart';
 import 'package:ezymex/features/terminal/chart/terminal_chart.dart';
 import 'package:ezymex/features/terminal/core/market.dart';
@@ -14,6 +10,10 @@ import 'package:ezymex/features/terminal/core/workspace.dart';
 import 'package:ezymex/features/terminal/terminal_screen.dart';
 import 'package:ezymex/i18n/i18n.dart';
 import 'package:ezymex/ui/ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 import 'harness.dart';
 

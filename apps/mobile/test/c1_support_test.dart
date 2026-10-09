@@ -10,9 +10,6 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/app.dart';
 import 'package:ezymex/core/api/api_providers.dart';
 import 'package:ezymex/core/notifications/notifications.dart';
@@ -28,6 +25,9 @@ import 'package:ezymex/preview/c1/preview_support.dart';
 import 'package:ezymex/preview/preview_adapter.dart';
 import 'package:ezymex/router/router.dart';
 import 'package:ezymex/ui/ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'helpers/test_app.dart';

@@ -1,8 +1,8 @@
 import 'dart:async';
 
+import 'package:ezymex/router/router.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ezymex/router/router.dart';
 
 import '../helpers/test_app.dart';
 

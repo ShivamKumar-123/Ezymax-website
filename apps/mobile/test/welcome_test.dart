@@ -1,8 +1,6 @@
 // The signed-out welcome page (/login): the headline, the two pills and the demo link; "Log in" opens the sign-in
 // sheet, a sign-in from it lands on the Dashboard (or on ?next=); a dead session opens the sheet with its notice; a
 // white-label broker gets the flat page with its name, without the picture or the demo.
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/core/auth/auth_controller.dart';
 import 'package:ezymex/core/config/app_config.dart';
 import 'package:ezymex/features/auth/login_screen.dart';
@@ -12,6 +10,8 @@ import 'package:ezymex/features/dashboard/dashboard_screen.dart';
 import 'package:ezymex/features/wallet/wallet_screen.dart';
 import 'package:ezymex/router/router.dart';
 import 'package:ezymex/ui/ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import 'helpers/test_app.dart';
 

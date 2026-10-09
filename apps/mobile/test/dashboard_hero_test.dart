@@ -1,8 +1,6 @@
 // The Dashboard's opening picture and sheet (dashboard_hero.dart + the shell's floating controls): the picture and
 // the round controls at the top, the greeting and the sections in the sheet, the module's pages as pills, the frosted
 // header once the sheet is up, and the plain header for a white-label broker.
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/core/config/app_config.dart';
 import 'package:ezymex/features/dashboard/dashboard_hero.dart';
 import 'package:ezymex/features/dashboard/dashboard_screen.dart';
@@ -10,6 +8,8 @@ import 'package:ezymex/features/updates/widgets/hero_carousel.dart';
 import 'package:ezymex/router/router.dart';
 import 'package:ezymex/shell/app_shell.dart';
 import 'package:ezymex/ui/ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import 'helpers/test_app.dart';
 

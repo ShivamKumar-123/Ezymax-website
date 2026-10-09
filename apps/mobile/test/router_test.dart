@@ -1,11 +1,11 @@
 // Where a location may go: sign-in state, biometric lock, maintenance, forced update, view-only logins, deep links.
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/core/auth/auth_controller.dart';
 import 'package:ezymex/core/auth/secure_store.dart';
 import 'package:ezymex/core/config/app_config.dart';
 import 'package:ezymex/core/models/user.dart';
 import 'package:ezymex/router/router.dart';
 import 'package:ezymex/shell/nav.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   final session = Session(token: 'x' * 40, expiresAt: DateTime.now().add(const Duration(days: 7)));

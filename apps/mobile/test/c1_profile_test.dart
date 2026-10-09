@@ -18,9 +18,6 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/core/api/api_providers.dart';
 import 'package:ezymex/core/theme_controller.dart';
 import 'package:ezymex/features/profile/kyc/kyc_checks.dart';
@@ -35,6 +32,9 @@ import 'package:ezymex/preview/c1/preview_profile.dart';
 import 'package:ezymex/preview/preview_adapter.dart';
 import 'package:ezymex/router/router.dart';
 import 'package:ezymex/ui/ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import 'helpers/test_app.dart';
 

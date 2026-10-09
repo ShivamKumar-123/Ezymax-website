@@ -3,9 +3,9 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/i18n/locales.dart';
 import 'package:ezymex/i18n/t.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 Messages _catalog(String code) => (jsonDecode(File('assets/i18n/$code.json').readAsStringSync()) as Map).cast<String, Object?>();
 

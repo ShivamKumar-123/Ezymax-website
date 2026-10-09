@@ -5,15 +5,15 @@
 // Run: flutter test test_shots/c1_support_shots_test.dart --update-goldens
 import 'dart:async';
 
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/app.dart';
 import 'package:ezymex/features/support/launcher.dart';
 import 'package:ezymex/features/support/support_data.dart';
 import 'package:ezymex/preview/c1/preview_support.dart';
 import 'package:ezymex/router/router.dart';
 import 'package:ezymex/ui/ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../test/helpers/test_app.dart';

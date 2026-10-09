@@ -2,9 +2,6 @@
 // chain), the bottom bar shows Markets · Chart · Chain · Trade · Positions, and Quick trade buys an option: Up → the
 // strike → contracts → "What happens" → confirm, the order reaches the preview server, the trader sees "Done" and the
 // position count in the bottom bar.
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/core/notifications/notifications.dart';
 import 'package:ezymex/features/terminal/chart/terminal_chart.dart';
 import 'package:ezymex/features/terminal/core/market.dart';
@@ -16,6 +13,9 @@ import 'package:ezymex/features/terminal/options/options_terminal.dart';
 import 'package:ezymex/features/terminal/widgets/kit.dart';
 import 'package:ezymex/i18n/i18n.dart';
 import 'package:ezymex/ui/ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import 'opt_harness.dart';
 

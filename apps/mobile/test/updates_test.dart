@@ -1,9 +1,6 @@
 // Brand promotions (lib/features/updates): the model and its images, event times, and on the sample API the
 // dashboard's hero carousel, Events & updates, the updates list and an event's page; all gone when the broker
 // switches brand promotions off.
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:intl/date_symbol_data_local.dart';
 import 'package:ezymex/core/config/app_config.dart';
 import 'package:ezymex/features/common/system_screens.dart';
 import 'package:ezymex/features/dashboard/dashboard_screen.dart';
@@ -13,6 +10,9 @@ import 'package:ezymex/features/updates/updates_screen.dart';
 import 'package:ezymex/features/updates/widgets/hero_carousel.dart';
 import 'package:ezymex/preview/preview_data.dart';
 import 'package:ezymex/router/router.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'helpers/test_app.dart';
 

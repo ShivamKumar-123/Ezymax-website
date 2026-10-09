@@ -1,8 +1,8 @@
+import 'package:ezymex/core/format/format.dart';
+import 'package:ezymex/ui/color_mix.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:ezymex/core/format/format.dart';
-import 'package:ezymex/ui/color_mix.dart';
 
 void main() {
   setUpAll(() async => initializeDateFormatting());

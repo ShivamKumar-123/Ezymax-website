@@ -3,8 +3,6 @@
 // options terms, and without an Options account the call to open one).
 import 'dart:async';
 
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/core/models/account.dart';
 import 'package:ezymex/data/client_data.dart';
 import 'package:ezymex/features/accounts/open_account_screen.dart';
@@ -17,6 +15,8 @@ import 'package:ezymex/features/terminal/preview/preview_server.dart';
 import 'package:ezymex/preview/c2/options.dart';
 import 'package:ezymex/preview/preview_data.dart';
 import 'package:ezymex/router/router.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers/test_app.dart';
 

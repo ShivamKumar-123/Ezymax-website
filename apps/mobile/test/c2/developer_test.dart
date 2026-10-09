@@ -3,8 +3,6 @@
 // and the account kill switch, and running a backtest to its report.
 import 'dart:async';
 
-import 'package:flutter/widgets.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/features/developer/backtests_screen.dart';
 import 'package:ezymex/features/developer/deployments_screen.dart';
 import 'package:ezymex/features/developer/keys_screen.dart';
@@ -12,6 +10,8 @@ import 'package:ezymex/features/developer/webhooks_screen.dart';
 import 'package:ezymex/preview/c2/developer.dart';
 import 'package:ezymex/router/router.dart';
 import 'package:ezymex/ui/ui.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers/test_app.dart';
 

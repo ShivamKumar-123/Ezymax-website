@@ -3,8 +3,6 @@
 // challenge), payouts (request the eligible payout) and certificates.
 import 'dart:async';
 
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/features/prop/certificates_screen.dart';
 import 'package:ezymex/features/prop/mine_screen.dart';
 import 'package:ezymex/features/prop/payouts_screen.dart';
@@ -13,6 +11,8 @@ import 'package:ezymex/features/prop/store_screen.dart';
 import 'package:ezymex/features/prop/widgets/mine_sections.dart';
 import 'package:ezymex/router/router.dart';
 import 'package:ezymex/ui/ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers/test_app.dart';
 

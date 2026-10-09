@@ -1,9 +1,9 @@
 // The account on screen over the engine stream (web store.tsx engine mode): the terminal opens the client's own
 // account (`trade/sessions`), loads `trade/state`, then every frame keeps it current. Option entries stay apart for
 // the options mode; engine notifications become banners in the bell; resync / ended reconnect with a fresh ticket.
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/features/terminal/core/sessions.dart';
 import 'package:ezymex/features/terminal/core/terminal_controller.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import 'fixtures.dart';
 import 'harness.dart';

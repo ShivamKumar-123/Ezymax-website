@@ -1,8 +1,5 @@
 // Dashboard (agent C1): the web's rules for the statistics series, the getting-started steps, the market clock, the
 // movers, the calendar rows and the news map; and the page itself on the sample API, in the web's phone order.
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:intl/date_symbol_data_local.dart';
 import 'package:ezymex/core/config/app_config.dart';
 import 'package:ezymex/core/format/format.dart';
 import 'package:ezymex/core/models/account.dart';
@@ -21,6 +18,9 @@ import 'package:ezymex/features/support/ask_ai.dart';
 import 'package:ezymex/i18n/i18n.dart';
 import 'package:ezymex/preview/preview_data.dart';
 import 'package:ezymex/router/router.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'helpers/test_app.dart';
 

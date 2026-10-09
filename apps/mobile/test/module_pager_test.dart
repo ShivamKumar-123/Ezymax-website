@@ -2,9 +2,6 @@
 // URL following, pages visited keep their scroll, the Dashboard's picture page hands over to the frosted header as it
 // slides out and takes the hero back as it returns, the same right to left, and a deep link opens the pager on its
 // page.
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/features/dashboard/dashboard_hero.dart';
 import 'package:ezymex/features/dashboard/dashboard_screen.dart';
 import 'package:ezymex/features/markets/markets_screen.dart';
@@ -20,6 +17,9 @@ import 'package:ezymex/shell/app_shell.dart';
 import 'package:ezymex/shell/chrome.dart';
 import 'package:ezymex/shell/module_pager.dart';
 import 'package:ezymex/ui/ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import 'helpers/test_app.dart';
 

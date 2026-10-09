@@ -2,10 +2,10 @@
 // sample-data API, opens a page signed in, and writes a 412 x 915 PNG. Run with --update-goldens:
 //   flutter test test_shots/<module>_shots_test.dart --update-goldens
 // The PNGs land in the session scratchpad (c1/shots/<name>.png); view them to compare with the phone web.
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/app.dart';
 import 'package:ezymex/router/router.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import '../test/helpers/test_app.dart';
 

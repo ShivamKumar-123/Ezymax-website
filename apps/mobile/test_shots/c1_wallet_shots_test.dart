@@ -1,9 +1,9 @@
 // Screenshots of the Wallet pages (light, dark, Arabic, plus scrolled views and the key states / sheets):
 //   flutter test test_shots/c1_wallet_shots_test.dart --update-goldens
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/preview/c1/preview_wallet.dart';
 import 'package:ezymex/ui/ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../test/helpers/test_app.dart';

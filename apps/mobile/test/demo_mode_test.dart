@@ -1,7 +1,6 @@
 // The in-app demo: "Try the demo" on the sign-in page opens the Dashboard as the sample client on the sample-data
 // transport (never the browser, never the network); Log out ends it and clears the flag. The app keeps its own
 // transport choice here (sampleTransport: false), so the switch itself is under test.
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/core/api/api_providers.dart';
 import 'package:ezymex/core/auth/auth_controller.dart';
 import 'package:ezymex/core/auth/secure_store.dart';
@@ -10,6 +9,7 @@ import 'package:ezymex/features/auth/login_screen.dart';
 import 'package:ezymex/features/dashboard/dashboard_screen.dart';
 import 'package:ezymex/preview/preview_adapter.dart';
 import 'package:ezymex/ui/ui.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import 'helpers/test_app.dart';
 

@@ -4,12 +4,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/misc.dart' show Override;
-import 'package:flutter_test/flutter_test.dart';
-import 'package:intl/date_symbol_data_local.dart';
 import 'package:ezymex/app.dart';
 import 'package:ezymex/core/api/api_providers.dart';
 import 'package:ezymex/core/app_info.dart';
@@ -20,6 +14,12 @@ import 'package:ezymex/core/prefs.dart';
 import 'package:ezymex/i18n/i18n.dart';
 import 'package:ezymex/preview/preview_adapter.dart';
 import 'package:ezymex/preview/preview_data.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 bool _fontsLoaded = false;

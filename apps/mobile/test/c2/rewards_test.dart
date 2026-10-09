@@ -3,8 +3,6 @@
 // enrol, a bonus claim and a promo code.
 import 'dart:async';
 
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/features/rewards/cashback_screen.dart';
 import 'package:ezymex/features/rewards/contest_detail_screen.dart';
 import 'package:ezymex/features/rewards/contests_screen.dart';
@@ -12,6 +10,8 @@ import 'package:ezymex/features/rewards/loyalty_screen.dart';
 import 'package:ezymex/features/rewards/promotions_screen.dart';
 import 'package:ezymex/preview/c2/rewards.dart';
 import 'package:ezymex/router/router.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers/test_app.dart';
 

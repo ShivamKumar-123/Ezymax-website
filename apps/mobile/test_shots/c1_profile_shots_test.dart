@@ -4,13 +4,13 @@
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/app.dart';
 import 'package:ezymex/features/profile/kyc/kyc_upload.dart';
 import 'package:ezymex/preview/c1/preview_profile.dart';
 import 'package:ezymex/router/router.dart';
 import 'package:ezymex/ui/ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import '../test/helpers/test_app.dart';
 import 'shots.dart';

@@ -1,8 +1,5 @@
 // History periods (web toolbox History): Today from server midnight, the period's range from trade/history merged with
 // the live deals, the web's totals, and the period chips on the History tab.
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/features/terminal/cfd/history_tab.dart';
 import 'package:ezymex/features/terminal/core/history.dart';
 import 'package:ezymex/features/terminal/core/market.dart';
@@ -11,6 +8,9 @@ import 'package:ezymex/features/terminal/core/sessions.dart';
 import 'package:ezymex/features/terminal/core/terminal_controller.dart';
 import 'package:ezymex/i18n/i18n.dart';
 import 'package:ezymex/ui/ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import 'harness.dart';
 

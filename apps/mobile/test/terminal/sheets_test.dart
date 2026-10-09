@@ -1,9 +1,5 @@
 // The order sheet (web order form) and the position sheet (web PositionDialog) on the preview trade server, with
 // fixed quotes and the trade actions recorded instead of sent.
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/features/terminal/cfd/order_sheet.dart';
 import 'package:ezymex/features/terminal/cfd/position_sheet.dart';
 import 'package:ezymex/features/terminal/core/market.dart';
@@ -13,6 +9,10 @@ import 'package:ezymex/features/terminal/core/terminal_controller.dart';
 import 'package:ezymex/features/terminal/core/trade_actions.dart';
 import 'package:ezymex/i18n/i18n.dart';
 import 'package:ezymex/ui/ui.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import 'harness.dart';
 

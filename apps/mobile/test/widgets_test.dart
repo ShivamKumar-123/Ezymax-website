@@ -1,12 +1,12 @@
 // The shell and sign-in, end to end on the sample-data API: structure, navigation, the sign-in + code flow, and
 // golden images in light, dark and Arabic (right to left).
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/app.dart';
 import 'package:ezymex/core/auth/auth_controller.dart';
 import 'package:ezymex/features/dashboard/dashboard_screen.dart';
 import 'package:ezymex/shell/more_screen.dart';
 import 'package:ezymex/ui/ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import 'helpers/test_app.dart';
 

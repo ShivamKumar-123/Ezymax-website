@@ -1,10 +1,10 @@
 // The iOS-style banner (KBannerHost / KBannerController): the app name, title, body, time and tone dot; a swipe up
 // dismisses, a short drag snaps back, a pull down opens the body; a tap opens and closes; a newer banner replaces the
 // current one with no gap (after it has been readable); auto-hide; the terminal's own theme; one haptic tick per second.
+import 'package:ezymex/ui/ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ezymex/ui/ui.dart';
 
 const _body = 'BUY 0.50 XAUUSD at 2,654.80';
 

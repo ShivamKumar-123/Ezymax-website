@@ -3,8 +3,6 @@
 // manager's dashboard with a per-account percent).
 import 'dart:async';
 
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/features/social/copy_screen.dart';
 import 'package:ezymex/features/social/discover_screen.dart';
 import 'package:ezymex/features/social/investments_screen.dart';
@@ -15,6 +13,8 @@ import 'package:ezymex/features/social/pamm_screen.dart';
 import 'package:ezymex/preview/c2/social.dart';
 import 'package:ezymex/router/router.dart';
 import 'package:ezymex/ui/ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers/test_app.dart';
 

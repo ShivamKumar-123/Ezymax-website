@@ -1,11 +1,11 @@
 // The message codec between the app and the chart page (assets/chart/chart.html): commands in, gestures out.
 import 'dart:convert';
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/features/terminal/chart/chart_bridge.dart';
 import 'package:ezymex/features/terminal/chart/chart_surface.dart';
 import 'package:ezymex/features/terminal/chart/indicators.dart';
 import 'package:ezymex/features/terminal/chart/terminal_chart.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   const palette = ChartPalette(

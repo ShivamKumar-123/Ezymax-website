@@ -3,8 +3,6 @@
 // no payout request, so the page shows the accruing balance, the schedule, the history and a batch's details).
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/features/partner/partner_commissions_screen.dart';
 import 'package:ezymex/features/partner/partner_dashboard_screen.dart';
 import 'package:ezymex/features/partner/partner_links_screen.dart';
@@ -12,6 +10,8 @@ import 'package:ezymex/features/partner/partner_payouts_screen.dart';
 import 'package:ezymex/preview/c2/partner.dart';
 import 'package:ezymex/router/router.dart';
 import 'package:ezymex/ui/ui.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers/test_app.dart';
 

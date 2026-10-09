@@ -1,7 +1,7 @@
 // The signed-out welcome page (light / dark / Arabic) and the sign-in sheet open over it. Run:
 //   flutter test test_shots/welcome_shots_test.dart --update-goldens --dart-define=EZYMEX_PREVIEW=true
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/app.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import '../test/helpers/test_app.dart';
 import 'shots.dart';

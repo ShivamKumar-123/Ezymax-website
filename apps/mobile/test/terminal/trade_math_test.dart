@@ -1,10 +1,10 @@
 // Contract maths of Ezymex Trader: the engine's formulas (symbol_margin, pnl), USD internally and USC on cent accounts,
 // JPY-quoted pairs converted through USDJPY, market hours and server time.
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/features/terminal/core/market_hours.dart';
 import 'package:ezymex/features/terminal/core/models.dart';
 import 'package:ezymex/features/terminal/core/trade_math.dart';
 import 'package:ezymex/i18n/t.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import 'fixtures.dart';
 

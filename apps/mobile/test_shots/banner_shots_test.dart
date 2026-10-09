@@ -1,9 +1,9 @@
 // The iOS-style banner over the Dashboard: an engine fill and an error toast, light and dark. Run:
 //   flutter test test_shots/banner_shots_test.dart --update-goldens --dart-define=EZYMEX_PREVIEW=true
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/app.dart';
 import 'package:ezymex/core/notifications/notifications.dart';
 import 'package:ezymex/router/router.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import '../test/helpers/test_app.dart';
 import 'shots.dart';

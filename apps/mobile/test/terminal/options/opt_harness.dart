@@ -5,9 +5,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:ezymex/core/api/api_providers.dart';
 import 'package:ezymex/core/app_info.dart';
 import 'package:ezymex/core/auth/secure_store.dart';
@@ -19,6 +16,9 @@ import 'package:ezymex/features/terminal/options/core/store.dart';
 import 'package:ezymex/features/terminal/options/options_preview.dart';
 import 'package:ezymex/i18n/i18n.dart';
 import 'package:ezymex/preview/preview_adapter.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 

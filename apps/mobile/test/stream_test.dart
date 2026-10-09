@@ -5,11 +5,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 
-import 'package:fake_async/fake_async.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/core/realtime/backoff.dart';
 import 'package:ezymex/core/realtime/market_stream.dart';
 import 'package:ezymex/core/realtime/socket.dart';
+import 'package:fake_async/fake_async.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 class FakeSink implements WebSocketSink {

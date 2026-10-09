@@ -1,11 +1,11 @@
 // The engine's shapes as the terminal reads them (web map.ts): accounts (cent accounts / 100), positions, pending
 // orders (a triggered stop-limit is a limit), closed trades from deals (commission share of the entry), equity frames,
 // option entries kept apart; and the rejection texts (symbol_demo_only, stale_price, market_closed…).
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/core/api/api_error.dart';
 import 'package:ezymex/features/terminal/core/models.dart';
 import 'package:ezymex/features/terminal/core/trade_errors.dart';
 import 'package:ezymex/i18n/t.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import 'fixtures.dart';
 

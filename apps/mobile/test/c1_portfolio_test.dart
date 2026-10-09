@@ -5,10 +5,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:intl/date_symbol_data_local.dart';
 import 'package:ezymex/core/api/api_providers.dart';
 import 'package:ezymex/core/files.dart';
 import 'package:ezymex/core/models/account.dart';
@@ -29,6 +25,10 @@ import 'package:ezymex/preview/c1/preview_portfolio.dart';
 import 'package:ezymex/preview/preview_data.dart';
 import 'package:ezymex/router/router.dart';
 import 'package:ezymex/ui/ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'helpers/test_app.dart';
 

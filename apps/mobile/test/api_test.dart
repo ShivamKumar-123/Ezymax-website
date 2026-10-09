@@ -4,10 +4,10 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/core/api/api_client.dart';
 import 'package:ezymex/core/api/api_error.dart';
 import 'package:ezymex/i18n/t.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 /// Records the request and answers with a fixed status and body.
 class FakeAdapter implements HttpClientAdapter {
