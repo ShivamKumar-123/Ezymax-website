@@ -774,6 +774,7 @@ dependencies = [
  "getrandom 0.4.3",
  "hmac",
  "lettre",
+ "reqwest",
  "ring",
  "serde",
  "serde_json",

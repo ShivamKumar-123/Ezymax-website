@@ -10,6 +10,7 @@ import { RevokeDialog, sessionColumns } from "./sessions";
 import { ClientSecurityCard } from "./client-security";
 import { ClientKycCard } from "@/components/kyc/client-kyc-card";
 import { ClientBalanceCard } from "@/components/clients/balance-card";
+import { ClientStateChips } from "@/components/clients/manage";
 import type { ClientDetail, Session, SessionsPage } from "./types";
 
 /** UTM source / medium / campaign, landing page, referrer and marketing-email consent. */
@@ -64,9 +65,10 @@ export function ClientHeader({ d }: { d: ClientDetail }) {
           <Mono>ID {u.id}</Mono>
         </div>
         <div className="mt-2 flex flex-wrap gap-1.5">
+          <ClientStateChips hidden={u.hidden} deleted={u.deleted} />
           <EmailChip verified={u.email_verified} />
           <KycChip status={u.kyc_status} />
-          {u.status !== "active" && (
+          {u.status !== "active" && !u.deleted && (
             <Chip size="sm" tone="down" dot>
               {u.status === "blocked" ? "Blocked" : "Closed"}
             </Chip>
@@ -127,9 +129,9 @@ export function ClientDetailView({ id, compact = false }: { id: number; compact?
         rows={[
           ["Client ID", <Mono key="id">{u.id}</Mono>],
           ["Email", <span key="e" className="inline-flex items-center gap-1"><Mail className="size-3.5 text-fg-3" />{u.email}</span>],
-          ["Phone", <span key="p" className="inline-flex items-center gap-1"><Phone className="size-3.5 text-fg-3" /><Mono>{u.phone_dial} {u.phone}</Mono><CopyButton value={`${u.phone_dial}${u.phone}`} label="Phone" /></span>],
+          ["Phone", u.deleted ? <span key="p" className="text-fg-3">Erased</span> : <span key="p" className="inline-flex items-center gap-1"><Phone className="size-3.5 text-fg-3" /><Mono>{u.phone_dial} {u.phone}</Mono><CopyButton value={`${u.phone_dial}${u.phone}`} label="Phone" /></span>],
           ["Country", <span key="c" className="inline-flex items-center gap-2"><Flag country={u.country} className="size-4" />{countryName(u.country)}</span>],
-          ["Date of birth", `${day(u.date_of_birth)} · ${age(u.date_of_birth)} years`],
+          ["Date of birth", u.deleted ? <span key="d" className="text-fg-3">Erased</span> : `${day(u.date_of_birth)} · ${age(u.date_of_birth)} years`],
           ["Registered", when(u.created_at)],
           ["Terms accepted", when(u.terms_accepted_at)],
           ["Email verified", u.email_verified_at ? when(u.email_verified_at) : <span key="v" className="text-warn">Not yet</span>],

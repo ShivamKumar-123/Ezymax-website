@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowUpRight, Ban, Download, LogIn, MailCheck, RefreshCw, Search, UserPlus, Users } from "lucide-react";
+import { ArrowUpRight, Ban, Download, EyeOff, LogIn, MailCheck, RefreshCw, Search, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Button, Card, DataTable, Dialog, EmptyState, Field, Flag, PageHeader, Reveal, Segmented, buttonVariants, type Column } from "@ezymex/ui";
 import { useCan } from "@/components/staff-session";
@@ -11,6 +11,7 @@ import { Check } from "@/components/command/kit";
 import { TextArea } from "@/components/config/kit";
 import { OnlineNow, PRESENCE_POLL_MS, PresenceCell } from "@/components/clients/presence";
 import { RestrictionChips } from "@/components/clients/restrictions-card";
+import { ClientManageMenu, ClientStateChips, type ManageResult } from "@/components/clients/manage";
 import { ClientDetailView } from "./client-detail";
 import { EmailChip, ErrorState, KycChip, Mono, Pager, TableSkeleton, ago, countryName, day, downloadCsv, qs, sendJson, useApi, useDebounced, useNow, when } from "./kit";
 import type { Client, Stats, UsersPage } from "./types";
@@ -34,18 +35,23 @@ export function LiveClients() {
   const [presence, setPresence] = React.useState<Presence>((params.get("presence") as Presence) || "all");
   const [restricted, setRestricted] = React.useState(params.get("restricted") === "true");
   const [sort, setSort] = React.useState<Sort>((params.get("sort") as Sort) || "new");
+  // hidden (test / spam) and deleted clients are left out unless switched on (gateway client_lifecycle.rs)
+  const [showHidden, setShowHidden] = React.useState(params.get("hidden") === "include");
   const [sel, setSel] = React.useState<Set<number>>(new Set());
   const [bulk, setBulk] = React.useState<"set" | "lift" | null>(null);
   const dq = useDebounced(q.trim(), 300);
   const canBlock = useCan("clients.block");
+  const canHide = useCan("clients.write");
+  const canDelete = useCan("clients.delete");
+  const hidden = showHidden ? "include" : null;
 
-  React.useEffect(() => setPage(1), [dq, kyc, verified, presence, restricted, sort]);
+  React.useEffect(() => setPage(1), [dq, kyc, verified, presence, restricted, sort, showHidden]);
   React.useEffect(() => {
-    router.replace(`/clients${qs({ q: dq, kyc, verified, presence, restricted: restricted ? "true" : null, sort: sort === "online" ? "online" : null })}`, { scroll: false });
-  }, [dq, kyc, verified, presence, restricted, sort, router]);
+    router.replace(`/clients${qs({ q: dq, kyc, verified, presence, restricted: restricted ? "true" : null, sort: sort === "online" ? "online" : null, hidden })}`, { scroll: false });
+  }, [dq, kyc, verified, presence, restricted, sort, hidden, router]);
 
   // presence changes by the minute: the page refreshes every 15 s (one query for the whole page)
-  const listUrl = `/api/admin/users${qs({ q: dq, kyc, verified, presence, restricted: restricted ? "true" : null, sort: sort === "online" ? "online" : null, page, per_page: PER })}`;
+  const listUrl = `/api/admin/users${qs({ q: dq, kyc, verified, presence, restricted: restricted ? "true" : null, sort: sort === "online" ? "online" : null, hidden, page, per_page: PER })}`;
   const { data, error, loading, reload } = useApi<UsersPage>(listUrl, { refreshMs: PRESENCE_POLL_MS });
   // dim the table while a new filter / page loads, not on the silent 15 s refresh
   const shownUrl = React.useRef(listUrl);
@@ -58,7 +64,7 @@ export function LiveClients() {
   async function exportAll() {
     const rows: Client[] = [];
     for (let p = 1; p <= 50; p++) {
-      const r = await fetch(`/api/admin/users${qs({ q: dq, kyc, verified, page: p, per_page: 200, export: true })}`, { cache: "no-store" });
+      const r = await fetch(`/api/admin/users${qs({ q: dq, kyc, verified, hidden, page: p, per_page: 200, export: true })}`, { cache: "no-store" });
       if (!r.ok) return toast.error("Export failed", { description: "Couldn't load clients. Try again." });
       const d = (await r.json()) as UsersPage;
       rows.push(...d.items);
@@ -102,6 +108,7 @@ export function LiveClients() {
           <span className="min-w-0">
             <span className="flex min-w-0 items-center gap-2">
               <span className="truncate font-medium">{u.name}</span>
+              <ClientStateChips hidden={u.hidden} deleted={u.deleted} />
               <RestrictionChips kinds={u.restrictions} max={1} />
             </span>
             <span className="block truncate text-[12px] text-fg-3">{u.email}</span>
@@ -133,9 +140,20 @@ export function LiveClients() {
     { key: "ref", header: "Referral", className: "whitespace-nowrap", cell: (u) => (u.referred_by ? <Link href={`/clients/${u.referred_by}`} onClick={(e) => e.stopPropagation()} className="text-[12.5px] text-ember hover:underline">Referred · #{u.referred_by}</Link> : <span className="text-[12.5px] text-fg-3">Direct</span>), hideOn: "xl" },
     { key: "login", header: "Last sign-in", className: "whitespace-nowrap", cell: (u) => <span className="text-fg-2" title={when(u.last_login_at)}>{ago(u.last_login_at, now)}</span>, hideOn: "lg" },
     { key: "created", header: "Registered", align: "right", className: "whitespace-nowrap", cell: (u) => <span className="text-fg-2" title={when(u.created_at)}>{day(u.created_at)}</span> },
+    ...(canHide || canDelete
+      ? [{ key: "manage", header: <span className="sr-only">Manage</span>, align: "right", className: "w-[52px]", cell: (u: Client) => <ClientManageMenu client={u} onChanged={changed} /> } as Column<Client>]
+      : []),
   ];
 
-  const filtered = !!dq || kyc !== "all" || verified !== "all" || presence !== "all" || restricted;
+  // hide / unhide / delete from a row or the drawer: the list and the counts follow
+  function changed(_r: ManageResult) {
+    setOpen(null);
+    reload();
+    stats.reload();
+  }
+
+  const filtered = !!dq || kyc !== "all" || verified !== "all" || presence !== "all" || restricted || showHidden;
+  const hiddenCount = (data?.counts?.hidden ?? 0) + (data?.counts?.deleted ?? 0);
 
   return (
     <div className="pb-10">
@@ -212,6 +230,16 @@ export function LiveClients() {
             <Button size="xs" variant={restricted ? "ember" : "surface"} onClick={() => setRestricted((v) => !v)} aria-pressed={restricted} data-testid="filter-restricted">
               <Ban /> Restricted{stats.data?.clients.restricted ? ` · ${stats.data.clients.restricted}` : ""}
             </Button>
+            <Button
+              size="xs"
+              variant={showHidden ? "ember" : "surface"}
+              onClick={() => setShowHidden((v) => !v)}
+              aria-pressed={showHidden}
+              title="Test and spam clients staff hid, and deleted clients"
+              data-testid="filter-hidden"
+            >
+              <EyeOff /> Show hidden{hiddenCount ? ` · ${hiddenCount}` : ""}
+            </Button>
             {filtered && (
               <Button
                 size="xs"
@@ -222,6 +250,7 @@ export function LiveClients() {
                   setVerified("all");
                   setPresence("all");
                   setRestricted(false);
+                  setShowHidden(false);
                 }}
               >
                 Clear filters
@@ -256,9 +285,17 @@ export function LiveClients() {
                 onRowClick={setOpen}
                 empty={
                   filtered ? (
-                    <EmptyState title="No clients match" text="Try a different search or clear the filters." illustration="magnifying_glass_tilted_left" />
+                    <EmptyState
+                      title="No clients match"
+                      text={!showHidden && hiddenCount ? "Try a different search, clear the filters or turn on “Show hidden”." : "Try a different search or clear the filters."}
+                      illustration="magnifying_glass_tilted_left"
+                    />
                   ) : (
-                    <EmptyState title="No clients yet" text="Clients appear here as soon as they register in the Client Area." illustration="busts_in_silhouette" />
+                    <EmptyState
+                      title="No clients yet"
+                      text={hiddenCount ? `Every client is hidden or deleted (${hiddenCount}). Turn on “Show hidden” to see them.` : "Clients appear here as soon as they register in the Client Area."}
+                      illustration="busts_in_silhouette"
+                    />
                   )
                 }
               />
@@ -288,9 +325,12 @@ export function LiveClients() {
         description={open ? `Client #${open.id} · registered ${day(open.created_at)}` : undefined}
         footer={
           open ? (
-            <Link href={`/clients/${open.id}`} className={buttonVariants({ variant: "ember", size: "sm" })}>
-              Open full profile <ArrowUpRight />
-            </Link>
+            <>
+              <ClientManageMenu client={open} onChanged={changed} />
+              <Link href={`/clients/${open.id}`} className={buttonVariants({ variant: "ember", size: "sm" })}>
+                Open full profile <ArrowUpRight />
+              </Link>
+            </>
           ) : undefined
         }
       >

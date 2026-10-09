@@ -1,7 +1,7 @@
 // Shapes returned by the gateway admin API (services/gateway/src/admin.rs) via /api/admin/*.
 
 export type Stats = {
-  clients: { total: number; email_verified: number; kyc_verified: number; kyc_pending: number; registered_today: number; registered_7d: number; registered_30d: number; online?: number; away?: number; restricted?: number };
+  clients: { total: number; email_verified: number; kyc_verified: number; kyc_pending: number; registered_today: number; registered_7d: number; registered_30d: number; online?: number; away?: number; restricted?: number; hidden?: number; deleted?: number };
   sessions: { clients: number; staff: number };
   staff: { active: number };
   security: { logins_24h: number; failed_logins_24h: number; audit_events_24h: number };
@@ -37,10 +37,17 @@ export type Client = {
   apps?: string[];
   /** Active restriction kinds (login, trading, close_only, deposits, withdrawals, transfers, ib, social, freeze). */
   restrictions?: string[];
+  /** Hidden from the Back Office lists (test / spam account; gateway client_lifecycle.rs). The client is not affected. */
+  hidden?: boolean;
+  hidden_at?: string | null;
+  /** Deleted with history: personal data erased, account closed, financial records kept. */
+  deleted?: boolean;
+  deleted_at?: string | null;
 };
 
 export type Paged<T> = { items: T[]; total: number; page: number; per_page: number };
-export type UsersPage = Paged<Client>;
+/** `counts`: what the "Show hidden" switch adds (hidden clients, deleted clients). */
+export type UsersPage = Paged<Client> & { counts?: { hidden: number; deleted: number } };
 
 export type AuditEvent = {
   id: number;
@@ -55,7 +62,17 @@ export type AuditEvent = {
 export type AuditPage = Paged<AuditEvent> & { actions: string[] };
 
 export type ClientDetail = {
-  user: Client & { terms_accepted_at: string | null; failed_logins: number; updated_at: string | null; referred_code_raw: string | null };
+  user: Client & {
+    terms_accepted_at: string | null;
+    failed_logins: number;
+    updated_at: string | null;
+    referred_code_raw: string | null;
+    /** Who hid / deleted the client (staff name) and why. */
+    hidden_reason?: string | null;
+    hidden_by?: string | null;
+    deleted_reason?: string | null;
+    deleted_by?: string | null;
+  };
   referrer: { id: number; email: string; name: string; referral_code: string } | null;
   referrals: { total: number; items: { id: number; email: string; name: string; kyc_status: string; email_verified: boolean; created_at: string }[] };
   sessions: { active: number; total: number };

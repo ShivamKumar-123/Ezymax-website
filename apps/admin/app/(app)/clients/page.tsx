@@ -6,7 +6,7 @@ import { LiveClients } from "@/components/live/clients";
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
-import { ChevronDown, Layers, Mail, Tag, UserPlus, Users, UserCheck, Wallet, Sparkles, Plus } from "lucide-react";
+import { ChevronDown, EyeOff, Layers, Mail, Tag, UserPlus, Users, UserCheck, Wallet, Sparkles, Plus } from "lucide-react";
 import { toast } from "sonner";
 import {
   Avatar,
@@ -31,6 +31,7 @@ import {
 } from "@ezymex/ui";
 import { ADMIN_NOW, CLIENTS, CLIENT_GROUPS, CLIENT_TAGS, REASON_CODES, SALES_AGENTS, staff, timeAgo, type AdminClient } from "@ezymex/mock/admin-clients";
 import { Check, ClientCell, KycChip, ReasonDialog, RiskScore } from "@/components/command/kit";
+import { ClientManageMenu, ClientStateChips, type ManageResult } from "@/components/clients/manage";
 
 type Filter = "all" | "verified" | "pending" | "funded" | "inactive";
 
@@ -157,7 +158,25 @@ function DemoUsersPage() {
   const [filter, setFilter] = React.useState<Filter>("all");
   const [sel, setSel] = React.useState<Set<string>>(new Set());
   const [bulk, setBulk] = React.useState<Bulk>(null);
-  const rows = React.useMemo(() => CLIENTS.filter(FILTERS[filter]), [filter]);
+  // client management (components/clients/manage.tsx), demo: hidden / deleted only in this tab
+  const [hidden, setHidden] = React.useState<Set<string>>(new Set());
+  const [deleted, setDeleted] = React.useState<Map<string, "deleted" | "purged">>(new Map());
+  const [showHidden, setShowHidden] = React.useState(false);
+  const managed = (id: string, r: ManageResult) => {
+    if (r === "hidden" || r === "unhidden")
+      setHidden((s) => {
+        const n = new Set(s);
+        if (r === "hidden") n.add(id);
+        else n.delete(id);
+        return n;
+      });
+    else setDeleted((m) => new Map(m).set(id, r));
+  };
+  const rows = React.useMemo(
+    () => CLIENTS.filter(FILTERS[filter]).filter((c) => deleted.get(c.id) !== "purged" && (showHidden || (!hidden.has(c.id) && !deleted.has(c.id)))),
+    [filter, hidden, deleted, showHidden],
+  );
+  const hiddenCount = hidden.size + [...deleted.values()].filter((v) => v === "deleted").length;
   const allSel = rows.length > 0 && rows.every((r) => sel.has(r.id));
   const someSel = !allSel && rows.some((r) => sel.has(r.id));
   const toggle = (id: string) =>
@@ -181,7 +200,17 @@ function DemoUsersPage() {
       width: "44px",
       cell: (r) => <Check checked={sel.has(r.id)} onChange={() => toggle(r.id)} />,
     },
-    { key: "name", header: "Client", cell: (r) => <ClientCell client={r} sub={<span className="font-mono">#{r.id}</span>} />, sort: (r) => r.name },
+    {
+      key: "name",
+      header: "Client",
+      cell: (r) => (
+        <span className="flex items-center gap-2">
+          <ClientCell client={r} sub={<span className="font-mono">#{r.id}</span>} />
+          <ClientStateChips hidden={hidden.has(r.id)} deleted={deleted.has(r.id)} />
+        </span>
+      ),
+      sort: (r) => r.name,
+    },
     { key: "email", header: "Email", hideOn: "lg", cell: (r) => <span className="text-[12.5px] text-fg-2">{r.email}</span> },
     { key: "kyc", header: "KYC", cell: (r) => <KycChip status={r.kyc} size="sm" />, sort: (r) => r.kyc },
     { key: "acc", header: "Accts", align: "right", cell: (r) => <span className="k-num">{r.accounts}</span>, sort: (r) => r.accounts },
@@ -224,6 +253,13 @@ function DemoUsersPage() {
       ),
     },
     { key: "login", header: "Last login", align: "right", cell: (r) => <span className={cn("text-[12px]", ADMIN_NOW - Date.parse(r.lastLogin) < 3_600_000 ? "text-up" : "text-fg-3")}>{timeAgo(r.lastLogin)}</span>, sort: (r) => -Date.parse(r.lastLogin) },
+    {
+      key: "manage",
+      header: <span className="sr-only">Manage</span>,
+      align: "right",
+      width: "52px",
+      cell: (r) => <ClientManageMenu client={{ id: r.id, name: r.name, email: r.email, hidden: hidden.has(r.id), deleted: deleted.has(r.id) }} onChanged={(res) => managed(r.id, res)} />,
+    },
   ];
 
   return (
@@ -271,6 +307,9 @@ function DemoUsersPage() {
                     ),
                   }))}
                 />
+                <Button size="sm" variant={showHidden ? "ember" : "surface"} onClick={() => setShowHidden((v) => !v)} aria-pressed={showHidden}>
+                  <EyeOff /> Show hidden{hiddenCount ? ` · ${hiddenCount}` : ""}
+                </Button>
                 <AnimatePresence>
                   {sel.size > 0 && (
                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="flex items-center gap-2">

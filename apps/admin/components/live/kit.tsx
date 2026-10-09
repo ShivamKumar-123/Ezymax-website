@@ -162,7 +162,7 @@ export function device(ua: string | null | undefined) {
 
 /** Tone for an audit action. */
 export function actionTone(action: string): ChipTone {
-  if (/failed|locked|rejected|blocked/.test(action)) return "down";
+  if (/failed|locked|rejected|blocked|deleted/.test(action)) return "down";
   if (/revoked|reset|logout/.test(action)) return "warn";
   if (/login|verified|register|seeded|approved/.test(action)) return "up";
   if (/more_info/.test(action)) return "warn";
@@ -236,6 +236,9 @@ export function actionLabel(action: string) {
     "client.impersonation_action": "Staff action as client",
     "client.impersonation_write_refused": "Staff change refused (read-only)",
     "client.impersonation_page_view": "Staff opened a page as client",
+    "client.hidden": "Client hidden from the Back Office lists",
+    "client.unhidden": "Client shown in the Back Office lists again",
+    "client.deleted": "Client deleted",
   };
   return map[action] ?? action;
 }

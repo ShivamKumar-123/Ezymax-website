@@ -1270,14 +1270,22 @@ pub fn sla(submitted_at: Option<DateTime<Utc>>, now: DateTime<Utc>) -> Value {
 /// `gateway kyc-erase-user <user_id>`: deletes a client's KYC files from disk and their KYC rows (account
 /// erasure, test clean-up). The audit log is append-only and keeps its entries.
 pub async fn erase_user(pool: &sqlx::PgPool, user_id: i64) -> anyhow::Result<usize> {
-    let rows = sqlx::query("SELECT d.tenant_id, d.file_ref FROM kyc_documents d WHERE d.user_id = $1").bind(user_id).fetch_all(pool).await?;
-    let s = settings();
-    let mut n = 0;
-    for r in &rows {
-        let (tenant, fref): (i64, String) = (r.get("tenant_id"), r.get("file_ref"));
-        store::remove(&s.dir, tenant, &fref)?;
-        n += 1;
-    }
+    let n = remove_files(&user_files(pool, user_id).await?)?;
     sqlx::query("DELETE FROM kyc_cases WHERE user_id = $1").bind(user_id).execute(pool).await?;
     Ok(n)
+}
+
+/// The client's stored KYC files as (tenant id, file ref). Client deletion (client_lifecycle.rs) reads them before
+/// its transaction removes the rows, and removes the files once it committed.
+pub async fn user_files(pool: &sqlx::PgPool, user_id: i64) -> anyhow::Result<Vec<(i64, String)>> {
+    Ok(sqlx::query_as("SELECT tenant_id, file_ref FROM kyc_documents WHERE user_id = $1").bind(user_id).fetch_all(pool).await?)
+}
+
+/// Deletes stored KYC files from disk (a file already gone counts as removed). Returns how many were removed.
+pub fn remove_files(files: &[(i64, String)]) -> anyhow::Result<usize> {
+    let s = settings();
+    for (tenant, fref) in files {
+        store::remove(&s.dir, *tenant, fref)?;
+    }
+    Ok(files.len())
 }

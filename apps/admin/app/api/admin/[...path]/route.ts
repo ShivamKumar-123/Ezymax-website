@@ -13,11 +13,15 @@ const PATHS: Record<Method, RegExp[]> = {
     /^stats$/, /^users$/, new RegExp(`^users/${ID}$`), /^audit$/, /^staff$/, new RegExp(`^staff/${ID}$`), /^sessions$/,
     /^roles$/, /^permissions$/, /^security\/ip$/, /^settings\/maintenance$/, /^settings\/features$/,
     new RegExp(`^users/${ID}/security$`), /^requests$/, /^settings\/sessions$/,
+    // client management (gateway client_lifecycle.rs): the delete preflight check
+    new RegExp(`^users/${ID}/delete-check$`),
   ],
   POST: [
     new RegExp(`^sessions/${ID}/revoke$`), /^staff\/invite$/, new RegExp(`^staff/${ID}/(resend-invite|disable|enable|reset-2fa|sign-out)$`),
     /^roles$/, new RegExp(`^roles/${ID}/reset$`), /^security\/ip$/,
     new RegExp(`^users/${ID}/sessions/revoke-all$`), new RegExp(`^users/${ID}/viewers/${ID}/revoke$`), new RegExp(`^requests/${ID}$`),
+    // hide / unhide (clients.write) and delete (clients.delete), each with a reason
+    new RegExp(`^users/${ID}/(hide|unhide|delete)$`),
   ],
   PATCH: [new RegExp(`^staff/${ID}$`), new RegExp(`^roles/${ID}$`)],
   PUT: [/^security\/ip\/settings$/, /^settings\/maintenance$/, /^settings\/features\/[a-z][a-z0-9_]{1,47}$/, /^settings\/sessions$/],
