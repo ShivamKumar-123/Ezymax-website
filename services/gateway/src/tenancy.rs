@@ -49,6 +49,8 @@ pub const BUILTIN_FEATURES: &[FeatureDef] = &[
     FeatureDef { key: "calendar", kind: "module", name: "Economic calendar", description: "Economic events, event reminders and high-impact alerts.", default_enabled: true },
     FeatureDef { key: "ai_assistant", kind: "module", name: "AI assistant", description: "Ask AI on the dashboard, the AI Trader, the academy's AI Coach and the AI strategy assistant.", default_enabled: true },
     FeatureDef { key: "support", kind: "module", name: "Support chat", description: "Live chat with the support team and the help bot. Notifications are not affected.", default_enabled: true },
+    // the dashboard's hero carousel and Events & updates (growth service); the card banners stay on either way
+    FeatureDef { key: "promotions", kind: "module", name: "Brand promotions", description: "Hero banners, events and brand posts on the client dashboard (web and app).", default_enabled: true },
     FeatureDef { key: "client_registration", kind: "flag", name: "New client sign-ups", description: "Visitors can open an account. Off: existing clients can still sign in.", default_enabled: true },
     FeatureDef { key: "google_login", kind: "flag", name: "Continue with Google", description: "Clients can sign in and sign up with Google.", default_enabled: true },
     FeatureDef { key: "trade_sharing", kind: "flag", name: "Trade share links", description: "Clients can publish read-only links to their trades.", default_enabled: true },
@@ -330,7 +332,7 @@ mod tests {
             assert!(!f.name.is_empty() && f.description.ends_with('.'), "texts of {}", f.key);
         }
         // every module the Client Area, Ezymex Trader and the mobile app switch (apps/crm/lib/modules.ts); all on by default
-        for k in ["copy_trading", "pamm", "prop", "ib", "algo", "api", "academy", "wallet", "rewards", "options", "news", "calendar", "ai_assistant", "support"] {
+        for k in ["copy_trading", "pamm", "prop", "ib", "algo", "api", "academy", "wallet", "rewards", "options", "news", "calendar", "ai_assistant", "support", "promotions"] {
             let f = BUILTIN_FEATURES.iter().find(|f| f.key == k).unwrap_or_else(|| panic!("missing module {k}"));
             assert!(f.kind == "module" && f.default_enabled, "{k}");
         }
