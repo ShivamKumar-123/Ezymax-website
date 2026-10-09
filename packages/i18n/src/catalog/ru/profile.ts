@@ -244,6 +244,8 @@ const profile: NsMessages<"profile"> = {
   "notifications.cat.wallet.hint": "Зачисление пополнений, одобрение, отклонение или выплата выводов",
   "notifications.cat.support": "Ответы поддержки",
   "notifications.cat.support.hint": "Ответы нашей службы поддержки",
+  "notifications.cat.staking": "Стейкинг (Earn)",
+  "notifications.cat.staking.hint": "Подтверждённые вложения, зачисленный ежемесячный доход и возврат основной суммы по окончании срока",
 
   // Preferences page
   "prefs.title": "Настройки",

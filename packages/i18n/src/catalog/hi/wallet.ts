@@ -60,6 +60,9 @@ const wallet: NsMessages<"wallet"> = {
   "kind.copyFee": "कॉपी ट्रेडिंग फ़ीस",
   // MAM = multi-account manager; keep abbreviation
   "kind.mamFee": "MAM फ़ीस",
+  "kind.stakingSubscribe": "स्टेकिंग सब्सक्रिप्शन",
+  "kind.stakingReward": "स्टेकिंग रिटर्न",
+  "kind.stakingRedeem": "स्टेकिंग मूलधन वापसी",
   "kind.adjustment": "बैलेंस एडजस्टमेंट",
   "kind.refund": "रिफ़ंड",
 

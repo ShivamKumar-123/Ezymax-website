@@ -57,6 +57,9 @@ const wallet: NsMessages<"wallet"> = {
   "kind.pammRedeem": "PAMM রিডেম্পশন",
   "kind.copyFee": "কপি ট্রেডিং ফি",
   "kind.mamFee": "MAM ফি",
+  "kind.stakingSubscribe": "স্টেকিং সাবস্ক্রিপশন",
+  "kind.stakingReward": "স্টেকিং রিটার্ন",
+  "kind.stakingRedeem": "স্টেকিং মূলধন ফেরত",
   "kind.adjustment": "ব্যালেন্স সমন্বয়",
   "kind.refund": "রিফান্ড",
 

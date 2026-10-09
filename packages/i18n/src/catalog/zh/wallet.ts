@@ -57,6 +57,9 @@ const wallet: NsMessages<"wallet"> = {
   "kind.pammRedeem": "PAMM 赎回",
   "kind.copyFee": "跟单交易费用",
   "kind.mamFee": "MAM 费用",
+  "kind.stakingSubscribe": "质押申购",
+  "kind.stakingReward": "质押收益",
+  "kind.stakingRedeem": "质押本金返还",
   "kind.adjustment": "余额调整",
   "kind.refund": "退款",
 

@@ -224,6 +224,8 @@ const profile: NsMessages<"profile"> = {
   "notifications.cat.wallet.hint": "入金到账，出金已批准、被拒绝或已支付",
   "notifications.cat.support": "客服回复",
   "notifications.cat.support.hint": "来自我们客服团队的回复",
+  "notifications.cat.staking": "质押（理财）",
+  "notifications.cat.staking.hint": "申购确认、月度收益到账及到期本金返还",
 
   // Preferences page
   "prefs.title": "偏好设置",

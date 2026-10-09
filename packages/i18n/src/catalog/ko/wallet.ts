@@ -56,6 +56,9 @@ const wallet: NsMessages<"wallet"> = {
   "kind.pammRedeem": "PAMM 환매",
   "kind.copyFee": "카피 트레이딩 수수료",
   "kind.mamFee": "MAM 수수료",
+  "kind.stakingSubscribe": "스테이킹 가입",
+  "kind.stakingReward": "스테이킹 수익",
+  "kind.stakingRedeem": "스테이킹 원금 반환",
   "kind.adjustment": "잔고 조정",
   "kind.refund": "환불",
 

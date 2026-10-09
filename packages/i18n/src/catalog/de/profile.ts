@@ -229,6 +229,8 @@ const profile: NsMessages<"profile"> = {
   "notifications.cat.wallet.hint": "Gutgeschriebene Einzahlungen, genehmigte, abgelehnte oder ausgezahlte Auszahlungen",
   "notifications.cat.support": "Support-Antworten",
   "notifications.cat.support.hint": "Antworten unseres Support-Teams",
+  "notifications.cat.staking": "Staking (Earn)",
+  "notifications.cat.staking.hint": "Bestätigte Anlagen, gutgeschriebene Monatsrenditen und bei Fälligkeit zurückgezahltes Kapital",
 
   // Preferences page
   "prefs.title": "Einstellungen",

@@ -56,6 +56,9 @@ const wallet: NsMessages<"wallet"> = {
   "kind.pammRedeem": "PAMMの償還",
   "kind.copyFee": "コピートレード手数料",
   "kind.mamFee": "MAM手数料",
+  "kind.stakingSubscribe": "ステーキング申し込み",
+  "kind.stakingReward": "ステーキング収益",
+  "kind.stakingRedeem": "ステーキング元本返還",
   "kind.adjustment": "残高調整",
   "kind.refund": "返金",
 

@@ -57,6 +57,9 @@ const wallet: NsMessages<"wallet"> = {
   "kind.pammRedeem": "การไถ่ถอน PAMM",
   "kind.copyFee": "ค่าธรรมเนียม Copy Trading",
   "kind.mamFee": "ค่าธรรมเนียม MAM",
+  "kind.stakingSubscribe": "สมัคร Staking",
+  "kind.stakingReward": "ผลตอบแทน Staking",
+  "kind.stakingRedeem": "คืนเงินต้น Staking",
   "kind.adjustment": "การปรับยอดคงเหลือ",
   "kind.refund": "คืนเงิน",
 

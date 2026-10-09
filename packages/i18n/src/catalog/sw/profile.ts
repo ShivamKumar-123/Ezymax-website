@@ -225,6 +225,8 @@ const profile: NsMessages<"profile"> = {
   "notifications.cat.wallet.hint": "Pesa zilizowekwa, maombi ya kutoa pesa yaliyoidhinishwa, kukataliwa au kulipwa",
   "notifications.cat.support": "Majibu ya msaada",
   "notifications.cat.support.hint": "Majibu kutoka kwa timu yetu ya msaada",
+  "notifications.cat.staking": "Staking (Earn)",
+  "notifications.cat.staking.hint": "Uwekezaji uliothibitishwa, mapato ya kila mwezi yaliyowekwa na mtaji uliorudishwa wakati wa kukomaa",
 
   // Preferences page
   "prefs.title": "Mapendeleo",

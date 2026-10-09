@@ -229,6 +229,8 @@ const profile: NsMessages<"profile"> = {
   "notifications.cat.wallet.hint": "واریزهای ثبت‌شده، برداشت‌های تأییدشده، ردشده یا پرداخت‌شده",
   "notifications.cat.support": "پاسخ‌های پشتیبانی",
   "notifications.cat.support.hint": "پاسخ‌های تیم پشتیبانی ما",
+  "notifications.cat.staking": "استیکینگ (کسب سود)",
+  "notifications.cat.staking.hint": "تأیید مشارکت‌ها، واریز سودهای ماهانه و بازگشت اصل سرمایه در سررسید",
 
   // Preferences page
   "prefs.title": "تنظیمات",

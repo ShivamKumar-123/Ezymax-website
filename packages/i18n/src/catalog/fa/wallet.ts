@@ -60,6 +60,9 @@ const wallet: NsMessages<"wallet"> = {
   "kind.copyFee": "کارمزد کپی ترید",
   // MAM = multi-account manager; keep abbreviation
   "kind.mamFee": "کارمزد MAM",
+  "kind.stakingSubscribe": "مشارکت در استیکینگ",
+  "kind.stakingReward": "سود استیکینگ",
+  "kind.stakingRedeem": "بازگشت اصل سرمایه استیکینگ",
   "kind.adjustment": "اصلاح موجودی",
   "kind.refund": "بازپرداخت",
 
