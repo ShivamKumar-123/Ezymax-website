@@ -295,11 +295,11 @@ export const OPTIONS_RISK =
 
 /** The Android app on the website (served by nginx from /srv/ezymex/downloads on the server). Update on each release. */
 export const ANDROID_APP = {
-  version: '1.0.2',
-  build: 4,
+  version: '1.0.3',
+  build: 5,
   href: '/download/ezymex-android.apk',
   hrefUniversal: '/download/ezymex-android.apk',
   sizeMb: 100,
-  sha256: '669130f07f97d8cb98b89ca27673e8827c187f33be8cb738e840d52cafc92e8d',
+  sha256: 'a79e5295cc6f929c536582a5dabe4325e9d5a2e96d4de997dcea396ba9724454',
   minAndroid: 'Android 7.0',
 };
