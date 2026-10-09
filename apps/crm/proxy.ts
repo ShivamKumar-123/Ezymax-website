@@ -52,16 +52,29 @@ export async function proxy(req: NextRequest) {
   return captureAttribution(req, await routes(req));
 }
 
+/**
+ * A rewrite target on this same server. Behind the edge, `X-Forwarded-Proto: https` makes req.url read https:// while
+ * the app itself serves plain http on 127.0.0.1, and Next sends a rewrite to any other origin out as a proxied fetch
+ * (which fails: EPROTO, a 500). So the target keeps the request's host with the server's own http protocol.
+ */
+function sameServer(req: NextRequest, pathname: string, search = ""): URL {
+  const url = req.nextUrl.clone();
+  url.pathname = pathname;
+  url.search = search;
+  url.protocol = "http:";
+  return url;
+}
+
 /** Maintenance mode and modules switched off for the broker; null = go ahead. */
 async function brokerGate(req: NextRequest, pathname: string, api: boolean): Promise<NextResponse | null> {
   const cfg = await tenantConfig(hostOf(req.headers) ?? "");
   if (cfg?.maintenance.active && pathname !== "/api/auth/logout") {
     if (api) return NextResponse.json({ error: { code: "maintenance", message: "The Client Area is under maintenance. Please try again shortly." } }, { status: 503, headers: { "retry-after": "60" } });
-    return NextResponse.rewrite(new URL("/maintenance", req.url));
+    return NextResponse.rewrite(sameServer(req, "/maintenance"));
   }
   if (cfg && moduleOff(cfg.modules, pathname)) {
     if (api) return NextResponse.json({ error: { code: "module_disabled", message: "This feature isn't available on your account." } }, { status: 403 });
-    return NextResponse.rewrite(new URL("/unavailable", req.url));
+    return NextResponse.rewrite(sameServer(req, "/unavailable"));
   }
   // sign-ups closed (flag client_registration, D146): the sign-up pages send visitors to sign-in (the gateway refuses
   // the sign-up itself too)
@@ -96,7 +109,7 @@ async function mobileApi(req: NextRequest): Promise<NextResponse> {
     if (held) return held;
   }
   const headers = mobileRequestHeaders(req.headers, token, route);
-  if (route.kind === "rewrite") return NextResponse.rewrite(new URL(route.target + req.nextUrl.search, req.url), { request: { headers } });
+  if (route.kind === "rewrite") return NextResponse.rewrite(sameServer(req, route.target, req.nextUrl.search), { request: { headers } });
   return NextResponse.next({ request: { headers } });
 }
 
