@@ -131,14 +131,28 @@ export type Tone = "ember" | "gold" | "neutral" | "up";
 export type Kyc = "unverified" | "pending" | "verified" | "rejected";
 export type AccountType = "live" | "demo" | "none";
 
+/** banner = the banner slots; event = a dated event (time range, place or link); post = a brand post. */
+export type BannerKind = "banner" | "event" | "post";
+/** card = the banner slot / the updates list; hero = the dashboard's full-width carousel. */
+export type BannerLayout = "card" | "hero";
+
 export type BannerInput = {
+  kind: BannerKind;
+  layout: BannerLayout;
   title: string;
   body: string;
+  /** Markdown shown on the event / post page. */
+  content: string;
   ctaLabel: string | null;
   ctaUrl: string | null;
+  /** An image URL (/path or https://); an uploaded image (`imageMediaId`) wins. */
   imageUrl: string | null;
+  imageMediaId: string | null;
   tone: Tone;
   placement: Placement;
+  eventStartsAt: string | null;
+  eventEndsAt: string | null;
+  location: string | null;
   countries: string[];
   kyc: Kyc[];
   accountTypes: AccountType[];
@@ -152,7 +166,33 @@ export type BannerInput = {
 
 export type Banner = BannerInput & { id: number; startsAt: string; endsAt: string | null; impressions: number; clicks: number; dismissals: number; ctr: number };
 
-export type BannerView = { id: number; title: string; body: string; ctaLabel: string | null; ctaUrl: string | null; imageUrl: string | null; tone: Tone; placement: Placement; dismissible: boolean };
+/** What a client gets (preview). `imageUrl` of an upload is the Client Area's path: show `imageSrc()` here. */
+export type BannerView = {
+  id: number;
+  kind: BannerKind;
+  layout: BannerLayout;
+  title: string;
+  body: string;
+  ctaLabel: string | null;
+  ctaUrl: string | null;
+  imageUrl: string | null;
+  imageMediaId: string | null;
+  tone: Tone;
+  placement: Placement;
+  dismissible: boolean;
+  eventStartsAt: string | null;
+  eventEndsAt: string | null;
+  location: string | null;
+};
+
+/** An uploaded image (growth service `POST /media`). */
+export type Media = { id: string; url: string; mime: string; size: number; sha256: string; createdAt: string };
+
+/** The image of a banner as the Back Office loads it: an upload through this BFF, else its URL. */
+export const imageSrc = (b: { imageMediaId?: string | null; imageUrl?: string | null }) => (b.imageMediaId ? M(`media/${b.imageMediaId}`) : b.imageUrl || null);
+
+/** Largest image upload (the growth service enforces it too). */
+export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 /* ------------------------------------------------------------------ */
 /* Contests                                                             */
@@ -332,8 +372,25 @@ function expired() {
   window.location.assign(`/api/auth/expired?next=${encodeURIComponent(next)}`);
 }
 
-/** POST / PUT / PATCH JSON to /api/marketing/<path>. Service validation errors come back as {code, message, field}. */
-export async function mkSend<T = unknown>(path: string, body: object, method: "POST" | "PUT" | "PATCH" = "POST"): Promise<WriteResult<T>> {
+/** Uploads an image (raw body) to /api/marketing/media: PNG, JPG or WEBP up to 5 MB, the type is checked by the service. */
+export async function mkUpload(file: File): Promise<WriteResult<{ media: Media }>> {
+  try {
+    const r = await fetch(M("media"), { method: "POST", headers: { "content-type": file.type || "application/octet-stream", "x-file-name": encodeURIComponent(file.name) }, body: file, credentials: "same-origin" });
+    const data = await r.json().catch(() => ({}));
+    if (r.status === 401) {
+      expired();
+      return { ok: false, error: { code: "unauthorized", message: "Your session has ended." } };
+    }
+    if (r.ok) return { ok: true, data: data as { media: Media } };
+    const e = (data as { error?: ApiErr })?.error;
+    return { ok: false, error: e && e.message ? e : { code: String(r.status), message: r.status === 413 ? "Images can be up to 5 MB." : "The upload failed." } };
+  } catch {
+    return { ok: false, error: { code: "network", message: "Can't reach the Back Office server." } };
+  }
+}
+
+/** POST / PUT / PATCH / DELETE JSON to /api/marketing/<path>. Service validation errors come back as {code, message, field}. */
+export async function mkSend<T = unknown>(path: string, body: object, method: "POST" | "PUT" | "PATCH" | "DELETE" = "POST"): Promise<WriteResult<T>> {
   try {
     const r = await fetch(M(path), { method, headers: { "content-type": "application/json" }, body: JSON.stringify(body), credentials: "same-origin" });
     const data = await r.json().catch(() => ({}));
@@ -374,6 +431,15 @@ export const FIELD_LABEL: Record<string, string> = {
   priority: "Priority",
   ctaUrl: "CTA link",
   imageUrl: "Image URL",
+  imageMediaId: "Image",
+  image: "Image",
+  kind: "Type",
+  layout: "Layout",
+  content: "Body",
+  eventStartsAt: "Event starts",
+  eventEndsAt: "Event ends",
+  location: "Location",
+  file: "Image",
   startsAt: "Starts",
   endsAt: "Ends",
   startingBalance: "Starting balance",
