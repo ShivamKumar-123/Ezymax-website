@@ -51,6 +51,8 @@ pub const BUILTIN_FEATURES: &[FeatureDef] = &[
     FeatureDef { key: "support", kind: "module", name: "Support chat", description: "Live chat with the support team and the help bot. Notifications are not affected.", default_enabled: true },
     // the dashboard's hero carousel and Events & updates (growth service); the card banners stay on either way
     FeatureDef { key: "promotions", kind: "module", name: "Brand promotions", description: "Hero banners, events and brand posts on the client dashboard (web and app).", default_enabled: true },
+    // off until the broker has plans, rates and its disclosures ready (services/staking)
+    FeatureDef { key: "staking", kind: "module", name: "Staking (Earn)", description: "Plans that lock wallet funds for a term and pay monthly returns set by the broker.", default_enabled: false },
     FeatureDef { key: "client_registration", kind: "flag", name: "New client sign-ups", description: "Visitors can open an account. Off: existing clients can still sign in.", default_enabled: true },
     FeatureDef { key: "google_login", kind: "flag", name: "Continue with Google", description: "Clients can sign in and sign up with Google.", default_enabled: true },
     FeatureDef { key: "trade_sharing", kind: "flag", name: "Trade share links", description: "Clients can publish read-only links to their trades.", default_enabled: true },
@@ -336,5 +338,8 @@ mod tests {
             let f = BUILTIN_FEATURES.iter().find(|f| f.key == k).unwrap_or_else(|| panic!("missing module {k}"));
             assert!(f.kind == "module" && f.default_enabled, "{k}");
         }
+        // staking is a module too, but each broker switches it on itself
+        let staking = BUILTIN_FEATURES.iter().find(|f| f.key == "staking").expect("staking module");
+        assert!(staking.kind == "module" && !staking.default_enabled);
     }
 }

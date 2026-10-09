@@ -41,3 +41,4 @@ run ezymex-market-data "Price feed" http://127.0.0.1:8081/health "d.get('ok') an
 run ezymex-gateway     "Sign-in service" http://127.0.0.1:8080/health "d.get('status')=='ok' and d.get('db')"
 run ezymex-trading     "Trading engine" http://127.0.0.1:8090/health "d.get('status')=='ok' and d.get('feedConnected')"
 run ezymex-options     "Options service" http://127.0.0.1:8104/health "d.get('status')=='ok' and d.get('db')"
+run ezymex-staking     "Staking service" http://127.0.0.1:8105/health "d.get('status')=='ok' and d.get('db')"

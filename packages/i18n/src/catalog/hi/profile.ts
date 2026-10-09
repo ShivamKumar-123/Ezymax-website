@@ -229,6 +229,8 @@ const profile: NsMessages<"profile"> = {
   "notifications.cat.wallet.hint": "जमा क्रेडिट हुआ, निकासी स्वीकृत, अस्वीकृत या भुगतान हुई",
   "notifications.cat.support": "सहायता टीम के जवाब",
   "notifications.cat.support.hint": "हमारी सहायता टीम के जवाब",
+  "notifications.cat.staking": "स्टेकिंग (कमाई)",
+  "notifications.cat.staking.hint": "सब्सक्रिप्शन की पुष्टि, मासिक रिटर्न क्रेडिट और मैच्योरिटी पर मूलधन की वापसी",
 
   // Preferences page
   "prefs.title": "प्राथमिकताएँ",

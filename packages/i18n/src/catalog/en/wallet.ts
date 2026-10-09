@@ -59,6 +59,9 @@ const wallet = {
   "kind.copyFee": "Copy trading fee",
   // MAM = multi-account manager; keep abbreviation
   "kind.mamFee": "MAM fee",
+  "kind.stakingSubscribe": "Staking subscription",
+  "kind.stakingReward": "Staking return",
+  "kind.stakingRedeem": "Staking principal back",
   "kind.adjustment": "Balance adjustment",
   "kind.refund": "Refund",
 

@@ -224,6 +224,8 @@ const profile: NsMessages<"profile"> = {
   "notifications.cat.wallet.hint": "เงินฝากเข้าบัญชีแล้ว การถอนเงินได้รับอนุมัติ ถูกปฏิเสธ หรือจ่ายแล้ว",
   "notifications.cat.support": "การตอบกลับจากฝ่ายสนับสนุน",
   "notifications.cat.support.hint": "การตอบกลับจากทีมสนับสนุนของเรา",
+  "notifications.cat.staking": "Staking (Earn)",
+  "notifications.cat.staking.hint": "การยืนยันการสมัคร ผลตอบแทนรายเดือนที่เข้าวอลเล็ต และเงินต้นที่คืนเมื่อครบกำหนด",
 
   // Preferences page
   "prefs.title": "การตั้งค่า",

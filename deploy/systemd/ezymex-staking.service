@@ -1,0 +1,25 @@
+[Unit]
+Description=Ezymex staking (Earn): plans, monthly settlements, maturities (:8105)
+After=network-online.target postgresql.service ezymex-gateway.service ezymex-wallet.service ezymex-support.service
+Wants=network-online.target
+
+[Service]
+User=ezymex
+WorkingDirectory=/home/ezymex/ezymex/services/staking
+EnvironmentFile=/home/ezymex/ezymex/.env.local
+Environment=RUST_LOG=info
+Environment=STAKING_ENV=production
+Environment=STAKING_BIND=127.0.0.1:8105
+# defaults; .env.local (EnvironmentFile) overrides them when it sets them
+Environment=GATEWAY_URL=http://127.0.0.1:8080
+Environment=WALLET_URL=http://127.0.0.1:8095
+Environment=NOTIFY_URL=http://127.0.0.1:8100
+ExecStart=/home/ezymex/ezymex/target/release/staking
+Restart=always
+RestartSec=3
+KillSignal=SIGINT
+TimeoutStopSec=20
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

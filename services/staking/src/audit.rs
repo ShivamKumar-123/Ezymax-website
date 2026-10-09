@@ -1,0 +1,43 @@
+//! Append-only audit log (UPDATE / DELETE rejected by trigger).
+
+use serde_json::Value;
+
+pub struct Actor {
+    /// `staff:<id>`, `user:<id>` or `system`
+    pub id: String,
+    pub name: Option<String>,
+}
+
+impl Actor {
+    /// "Name (staff:1)" for display columns.
+    pub fn label(&self) -> String {
+        match &self.name {
+            Some(n) => format!("{n} ({})", self.id),
+            None => self.id.clone(),
+        }
+    }
+
+    pub fn system() -> Self {
+        Actor { id: "system".into(), name: Some("Staking service".into()) }
+    }
+
+    pub fn user(id: i64, name: &str) -> Self {
+        Actor { id: format!("user:{id}"), name: (!name.is_empty()).then(|| name.to_string()) }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+pub async fn record<'e, E: sqlx::PgExecutor<'e>>(ex: E, tenant: &str, actor: &Actor, action: &str, target: Option<String>, before: Option<Value>, after: Option<Value>, reason: Option<&str>) -> anyhow::Result<()> {
+    sqlx::query("INSERT INTO audit_log (tenant, actor, actor_name, action, target, before, after, reason) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)")
+        .bind(tenant)
+        .bind(&actor.id)
+        .bind(&actor.name)
+        .bind(action)
+        .bind(target)
+        .bind(before.map(sqlx::types::Json))
+        .bind(after.map(sqlx::types::Json))
+        .bind(reason)
+        .execute(ex)
+        .await?;
+    Ok(())
+}

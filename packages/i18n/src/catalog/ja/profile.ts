@@ -227,6 +227,8 @@ const profile: NsMessages<"profile"> = {
   "notifications.cat.wallet.hint": "入金の反映、出金の承認・却下・支払い",
   "notifications.cat.support": "サポートからの返信",
   "notifications.cat.support.hint": "サポートチームからの返信",
+  "notifications.cat.staking": "ステーキング（Earn）",
+  "notifications.cat.staking.hint": "申し込みの確定、毎月の収益の反映、満期時の元本返還",
 
   // Preferences page
   "prefs.title": "設定",

@@ -120,6 +120,11 @@ test("options, news, calendar, support and the AI assistant have their pages and
   assert.equal(cfg.moduleOff({ ai_assistant: false }, "/api/algo/ai/strategy"), true);
   assert.equal(cfg.moduleOff({ ai_assistant: false }, "/api/algo/strategies"), false);
   assert.equal(cfg.modulesOn(null, "options"), true);
+  // staking (off by default at the gateway): its pages, BFF and the mobile rewrite policy path
+  assert.equal(cfg.moduleFor("/staking/portfolio"), "staking");
+  assert.equal(cfg.moduleFor("/api/staking/positions"), "staking");
+  assert.equal(cfg.moduleOff({ staking: false }, "/staking"), true);
+  assert.equal(cfg.moduleOff({ staking: true }, "/api/staking/plans"), false);
 });
 
 test("switched-off modules close their pages and BFF calls; notifications keep working", async () => {

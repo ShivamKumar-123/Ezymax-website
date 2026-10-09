@@ -57,6 +57,9 @@ const wallet: NsMessages<"wallet"> = {
   "kind.pammRedeem": "Rachat PAMM",
   "kind.copyFee": "Frais de copy trading",
   "kind.mamFee": "Frais MAM",
+  "kind.stakingSubscribe": "Souscription au staking",
+  "kind.stakingReward": "Rendement du staking",
+  "kind.stakingRedeem": "Capital du staking restitué",
   "kind.adjustment": "Ajustement du solde",
   "kind.refund": "Remboursement",
 

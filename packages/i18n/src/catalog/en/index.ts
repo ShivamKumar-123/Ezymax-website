@@ -27,7 +27,8 @@ import options from "./options";
 import desk from "./desk";
 import features from "./features";
 import updates from "./updates";
+import staking from "./staking";
 
 /** English: the source language and the fallback for every missing translation. */
-export const en = { common, shell, auth, dashboard, accounts, accountDetail, wallet, profile, kyc, trader, order, toolbox, market, partner, social, prop, security, rewards, developer, academy, support, news, portfolio, chart, aiTrader, options, desk, features, updates };
+export const en = { common, shell, auth, dashboard, accounts, accountDetail, wallet, profile, kyc, trader, order, toolbox, market, partner, social, prop, security, rewards, developer, academy, support, news, portfolio, chart, aiTrader, options, desk, features, updates, staking };
 export type EnCatalog = typeof en;

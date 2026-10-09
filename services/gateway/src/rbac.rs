@@ -41,6 +41,7 @@ pub const MODULES: &[ModuleDef] = &[
     ModuleDef { key: "partners", label: "IB programme", description: "Partners, plans, commissions, payout batches" },
     ModuleDef { key: "social", label: "Copy trading & PAMM", description: "Masters, funds, applications, fee payouts" },
     ModuleDef { key: "prop", label: "Prop firm", description: "Plans, challenges, funded traders, payouts" },
+    ModuleDef { key: "staking", label: "Staking (Earn)", description: "Plans, monthly rates, settlements, positions" },
     ModuleDef { key: "algo", label: "Algo & API", description: "Strategies, deployments, API keys, marketplace" },
     ModuleDef { key: "options", label: "FX Options", description: "Options risk desk, series, vol surfaces, dealer controls, settlements" },
     ModuleDef { key: "content", label: "Content & Academy", description: "Academy, news, legal, templates" },
@@ -95,6 +96,10 @@ pub const PERMS: &[PermDef] = &[
     PermDef { key: "prop.read", module: "prop", action: "view", label: "View prop firm" },
     PermDef { key: "prop.write", module: "prop", action: "edit", label: "Plans, pass / fail, news, certificates" },
     PermDef { key: "prop.approve", module: "prop", action: "approve", label: "Approve prop payouts" },
+    PermDef { key: "staking.read", module: "staking", action: "view", label: "View staking plans, positions and settlements" },
+    PermDef { key: "staking.write", module: "staking", action: "edit", label: "Edit plans, set monthly rates, create settlements" },
+    PermDef { key: "staking.approve", module: "staking", action: "approve", label: "Approve, reject and retry settlements (not your own)" },
+    PermDef { key: "staking.export", module: "staking", action: "export", label: "Export staking positions" },
     PermDef { key: "algo.read", module: "algo", action: "view", label: "View strategies, deployments, keys" },
     PermDef { key: "algo.write", module: "algo", action: "edit", label: "Kill switches, moderation, revoke keys" },
     PermDef { key: "algo.settings", module: "algo", action: "approve", label: "Platform kill switch and ALGO settings" },
@@ -230,7 +235,7 @@ pub fn preset_perms(key: &str) -> Option<Vec<&'static str>> {
         "finance" => vec![
             "stats.read", "clients.read", "dealing.read", "accounts.read", "finance.read", "finance.write", "finance.adjust", "finance.credit",
             "finance.approve", "finance.adjust_approve", "finance.export", "partners.read", "partners.approve", "social.read", "prop.read", "prop.approve", "algo.read", "content.read",
-            "marketing.read", "marketing.approve", "reports.read", "reports.export",
+            "marketing.read", "marketing.approve", "reports.read", "reports.export", "staking.read", "staking.approve",
         ],
         "compliance" => vec![
             "stats.read", "clients.read", "clients.export", "clients.restrict", "clients.block", "clients.impersonate", "kyc.read", "kyc.review", "audit.read", "audit.export", "sessions.read", "spreads.read",
@@ -268,7 +273,8 @@ pub fn effective(kind: &str, key: &str, customised: bool, stored: &[String]) -> 
     }
 }
 
-/// Permissions that downstream services check by role name.
+/// Permissions that downstream services check by role name. (`staking.*` is not one: the staking service only trusts
+/// the exact keys the admin BFF forwards, so a staking-only role never maps to a broader legacy role.)
 fn service_relevant(k: &str) -> bool {
     // options.* reach the trading engine (option book, void, settlement re-run)
     ["dealing.", "accounts.", "finance.", "groups.", "partners.", "social.", "prop.", "algo.", "content.", "spreads.", "marketing.", "options."].iter().any(|p| k.starts_with(p))
@@ -449,7 +455,7 @@ mod tests {
             "finance.credit", "finance.adjust_approve", "finance.adjust_force", "finance.read", "finance.write", "finance.approve", "finance.settings", "partners.read", "partners.write", "partners.approve",
             "social.read", "social.write", "social.approve", "prop.read", "prop.write", "prop.approve", "algo.read", "algo.write", "algo.settings",
             "content.read", "content.write", "support.read", "support.write", "notifications.write", "marketing.read", "marketing.write",
-            "options.read", "options.config", "options.dealing", "options.settle", "clients.write", "clients.delete",
+            "options.read", "options.config", "options.dealing", "options.settle", "clients.write", "clients.delete", "staking.read", "staking.write", "staking.approve", "staking.export",
         ] {
             assert!(perm(k).is_some(), "missing {k}");
         }
@@ -485,6 +491,28 @@ mod tests {
             assert!(!has(r, "clients.delete") && !has(r, "clients.write"), "{r}");
         }
         assert_eq!(normalize(&["clients.delete"]).unwrap(), vec!["clients.delete", "clients.read"]);
+    }
+
+    #[test]
+    fn staking_permissions() {
+        let has = |r: &str, k: &str| preset_perms(r).unwrap().contains(&k);
+        let all = ["staking.read", "staking.write", "staking.approve", "staking.export"];
+        for r in ["platform_owner", "super_admin", "admin"] {
+            for k in all {
+                assert!(has(r, k), "{r} {k}");
+            }
+        }
+        // Finance reviews and approves settlements; plans, rates and new settlements stay with administrators
+        assert!(has("finance", "staking.read") && has("finance", "staking.approve"));
+        assert!(!has("finance", "staking.write") && !has("finance", "staking.export"));
+        for r in ["dealer", "risk_manager", "compliance", "support", "sales", "partner_manager", "marketing", "viewer", "options_risk"] {
+            assert!(!all.iter().any(|k| has(r, k)), "{r}");
+        }
+        assert_eq!(normalize(&["staking.approve"]).unwrap(), vec!["staking.approve", "staking.read"]);
+        // staking keys never lift the legacy role sent to the other services
+        let s = |v: &[&str]| v.iter().map(|x| x.to_string()).collect::<Vec<_>>();
+        assert_eq!(service_role("c-earn", &s(&["staking.read", "staking.approve"])), "viewer");
+        assert_eq!(service_role("finance", &s(&preset_perms("finance").unwrap())), "finance");
     }
 
     #[test]

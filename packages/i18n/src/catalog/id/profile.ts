@@ -229,6 +229,8 @@ const profile: NsMessages<"profile"> = {
   "notifications.cat.wallet.hint": "Deposit dikreditkan, penarikan disetujui, ditolak, atau dibayarkan",
   "notifications.cat.support": "Balasan dukungan",
   "notifications.cat.support.hint": "Balasan dari tim dukungan kami",
+  "notifications.cat.staking": "Staking (Earn)",
+  "notifications.cat.staking.hint": "Langganan dikonfirmasi, imbal hasil bulanan dikreditkan, dan dana pokok dikembalikan saat jatuh tempo",
 
   // Preferences page
   "prefs.title": "Preferensi",

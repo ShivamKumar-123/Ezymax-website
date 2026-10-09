@@ -224,6 +224,8 @@ const profile: NsMessages<"profile"> = {
   "notifications.cat.wallet.hint": "입금 반영, 출금 승인·거부·지급",
   "notifications.cat.support": "고객 지원 답변",
   "notifications.cat.support.hint": "고객 지원팀의 답변",
+  "notifications.cat.staking": "스테이킹 (Earn)",
+  "notifications.cat.staking.hint": "가입 확인, 월 수익 지급 및 만기 시 원금 반환",
 
   // 환경 설정 페이지
   "prefs.title": "환경 설정",

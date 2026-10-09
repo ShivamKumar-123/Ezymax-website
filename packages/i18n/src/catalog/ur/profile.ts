@@ -227,6 +227,8 @@ const profile: NsMessages<"profile"> = {
   "notifications.cat.wallet.hint": "ڈپازٹ جمع ہونے پر، رقم نکالنے کی درخواست منظور، مسترد یا ادا ہونے پر",
   "notifications.cat.support": "سپورٹ کے جوابات",
   "notifications.cat.support.hint": "ہماری سپورٹ ٹیم کے جوابات",
+  "notifications.cat.staking": "اسٹیکنگ (آمدنی)",
+  "notifications.cat.staking.hint": "سبسکرپشن کی تصدیق، ماہانہ منافع کی وصولی اور میچورٹی پر اصل رقم کی واپسی",
 
   // Preferences page
   "prefs.title": "ترجیحات",

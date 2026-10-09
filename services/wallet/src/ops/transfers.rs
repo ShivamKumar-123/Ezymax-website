@@ -11,7 +11,7 @@ use crate::ledger::{self, Leg, NewTxn, PostError};
 use crate::money::{D, WALLET_DP, check_amount, s};
 use crate::state::AppState;
 
-pub const KINDS: &[&str] = &["commission", "ib_payout", "prop_purchase", "prop_payout", "pamm_invest", "pamm_redeem", "copy_fee", "mam_fee", "adjustment", "refund"];
+pub const KINDS: &[&str] = &["commission", "ib_payout", "prop_purchase", "prop_payout", "pamm_invest", "pamm_redeem", "copy_fee", "mam_fee", "staking_subscribe", "staking_reward", "staking_redeem", "adjustment", "refund"];
 pub const CURRENCIES: &[&str] = &["USDT"];
 
 pub fn kind_label(kind: &str) -> &'static str {
@@ -24,6 +24,9 @@ pub fn kind_label(kind: &str) -> &'static str {
         "pamm_redeem" => "PAMM redemption",
         "copy_fee" => "Copy trading fee",
         "mam_fee" => "MAM fee",
+        "staking_subscribe" => "Staking subscription",
+        "staking_reward" => "Staking return",
+        "staking_redeem" => "Staking principal",
         "adjustment" => "Balance adjustment",
         "refund" => "Refund",
         "deposit" | "manual_deposit" => "Deposit",

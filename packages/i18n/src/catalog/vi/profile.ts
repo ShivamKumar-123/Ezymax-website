@@ -224,6 +224,8 @@ const profile: NsMessages<"profile"> = {
   "notifications.cat.wallet.hint": "Tiền nạp đã ghi có, lệnh rút được duyệt, bị từ chối hoặc đã chi trả",
   "notifications.cat.support": "Phản hồi hỗ trợ",
   "notifications.cat.support.hint": "Phản hồi từ đội ngũ hỗ trợ của chúng tôi",
+  "notifications.cat.staking": "Staking (Earn)",
+  "notifications.cat.staking.hint": "Xác nhận đăng ký, ghi có lợi nhuận hằng tháng và hoàn trả tiền gốc khi đáo hạn",
 
   // Preferences page
   "prefs.title": "Tùy chọn",

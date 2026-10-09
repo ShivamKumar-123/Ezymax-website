@@ -226,6 +226,8 @@ const profile: NsMessages<"profile"> = {
   "notifications.cat.wallet.hint": "Dépôts crédités, retraits approuvés, refusés ou payés",
   "notifications.cat.support": "Réponses de l'assistance",
   "notifications.cat.support.hint": "Réponses de notre équipe d'assistance",
+  "notifications.cat.staking": "Staking (rendements)",
+  "notifications.cat.staking.hint": "Souscriptions confirmées, rendements mensuels crédités et capital restitué à l'échéance",
 
   // Preferences page
   "prefs.title": "Préférences",

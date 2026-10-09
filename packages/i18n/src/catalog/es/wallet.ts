@@ -60,6 +60,9 @@ const wallet: NsMessages<"wallet"> = {
   "kind.copyFee": "Comisión de copy trading",
   // MAM = gestor multicuenta; se mantiene la abreviatura
   "kind.mamFee": "Comisión MAM",
+  "kind.stakingSubscribe": "Suscripción de staking",
+  "kind.stakingReward": "Rendimiento de staking",
+  "kind.stakingRedeem": "Devolución de capital de staking",
   "kind.adjustment": "Ajuste de saldo",
   "kind.refund": "Reembolso",
 

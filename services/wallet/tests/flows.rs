@@ -167,6 +167,17 @@ async fn transfer_contract_is_idempotent_and_balanced() {
     let (s, v) = t.post("/v1/wallets/transfers", json!({"idempotency_key": "prop:buy:2", "user_id": 42, "currency": "USDT", "amount": 40, "direction": "debit", "kind": "prop_purchase"})).await;
     assert_eq!(s, 200, "{v}");
     assert_eq!(t.balance(42).await, ("60.25".into(), "0".into()));
+    // staking (another client): principal out, monthly return and principal back in
+    for (key, amount, direction, kind) in [
+        ("staking:seed:77", "100", "credit", "refund"),
+        ("staking:subscribe:1", "50", "debit", "staking_subscribe"),
+        ("staking:reward:ezymex:2026-09:1", "0.75", "credit", "staking_reward"),
+        ("staking:principal:1", "50", "credit", "staking_redeem"),
+    ] {
+        let (s, v) = t.post("/v1/wallets/transfers", json!({"idempotency_key": key, "user_id": 77, "currency": "USDT", "amount": amount, "direction": direction, "kind": kind})).await;
+        assert_eq!(s, 200, "{kind} {v}");
+    }
+    assert_eq!(t.balance(77).await, ("100.75".into(), "0".into()));
     // validation
     for bad in [
         json!({"idempotency_key": "x1", "user_id": 42, "currency": "EUR", "amount": "1", "direction": "credit", "kind": "refund"}),

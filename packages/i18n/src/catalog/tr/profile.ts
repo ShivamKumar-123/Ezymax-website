@@ -226,6 +226,8 @@ const profile: NsMessages<"profile"> = {
   "notifications.cat.wallet.hint": "Hesaba geçen yatırımlar; onaylanan, reddedilen veya ödenen çekimler",
   "notifications.cat.support": "Destek yanıtları",
   "notifications.cat.support.hint": "Destek ekibimizden gelen yanıtlar",
+  "notifications.cat.staking": "Staking (Earn)",
+  "notifications.cat.staking.hint": "Onaylanan katılımlar, yatırılan aylık getiriler ve vade sonunda iade edilen anapara",
 
   // Preferences page
   "prefs.title": "Tercihler",

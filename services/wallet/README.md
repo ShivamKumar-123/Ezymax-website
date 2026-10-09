@@ -49,7 +49,7 @@ USDT is always listed, with zeros when the user has never had funds. `available`
 | `currency` | `"USDT"` | |
 | `amount` | decimal string (a JSON number is accepted) | > 0, at most 6 decimals |
 | `direction` | `"credit"` \| `"debit"` | credit adds to the user's available balance, debit takes from it |
-| `kind` | `commission` \| `ib_payout` \| `prop_purchase` \| `prop_payout` \| `pamm_invest` \| `pamm_redeem` \| `copy_fee` \| `adjustment` \| `refund` | |
+| `kind` | `commission` \| `ib_payout` \| `prop_purchase` \| `prop_payout` \| `pamm_invest` \| `pamm_redeem` \| `copy_fee` \| `mam_fee` \| `staking_subscribe` \| `staking_reward` \| `staking_redeem` \| `adjustment` \| `refund` | `staking_*`: services/staking (principal debit, monthly return, principal back at maturity) |
 | `ref` | string ≤ 128, optional | Your own reference (payout id, challenge id, fund id) |
 | `note` | string ≤ 500, optional | Shown on the client's wallet history |
 

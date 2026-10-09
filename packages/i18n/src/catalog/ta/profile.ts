@@ -224,6 +224,8 @@ const profile: NsMessages<"profile"> = {
   "notifications.cat.wallet.hint": "டெபாசிட்கள் வரவு வைக்கப்பட்டவை, பணம் எடுத்தல் அங்கீகரிக்கப்பட்டவை, நிராகரிக்கப்பட்டவை அல்லது செலுத்தப்பட்டவை",
   "notifications.cat.support": "உதவிக் குழு பதில்கள்",
   "notifications.cat.support.hint": "எங்கள் உதவிக் குழுவின் பதில்கள்",
+  "notifications.cat.staking": "ஸ்டேக்கிங் (Earn)",
+  "notifications.cat.staking.hint": "உறுதிசெய்யப்பட்ட முதலீடுகள், வரவு வைக்கப்பட்ட மாதாந்திர வருமானம் மற்றும் முதிர்வின்போது திருப்பி அளிக்கப்பட்ட அசல்",
 
   // Preferences page
   "prefs.title": "விருப்பங்கள்",

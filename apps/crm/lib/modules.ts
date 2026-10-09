@@ -24,6 +24,9 @@ export const MODULE_PATHS: readonly (readonly [string, string])[] = [
   ["/api/social", "copy_trading"],
   ["/prop", "prop"],
   ["/api/prop", "prop"],
+  // Staking (Earn): off by default; the broker switches it on (gateway catalogue)
+  ["/staking", "staking"],
+  ["/api/staking", "staking"],
   ["/partner", "ib"],
   ["/api/partner", "ib"],
   ["/developer/strategies", "algo"],

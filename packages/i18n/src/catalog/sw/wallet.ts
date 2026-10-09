@@ -57,6 +57,9 @@ const wallet: NsMessages<"wallet"> = {
   "kind.pammRedeem": "Ukombozi wa PAMM",
   "kind.copyFee": "Ada ya copy trading",
   "kind.mamFee": "Ada ya MAM",
+  "kind.stakingSubscribe": "Uwekezaji wa staking",
+  "kind.stakingReward": "Mapato ya staking",
+  "kind.stakingRedeem": "Mtaji wa staking umerudishwa",
   "kind.adjustment": "Marekebisho ya salio",
   "kind.refund": "Kurejeshewa pesa",
 

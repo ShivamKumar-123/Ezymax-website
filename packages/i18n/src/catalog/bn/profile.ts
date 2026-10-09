@@ -229,6 +229,8 @@ const profile: NsMessages<"profile"> = {
   "notifications.cat.wallet.hint": "জমা ক্রেডিট হলে, উত্তোলন অনুমোদিত, প্রত্যাখ্যাত বা পরিশোধিত হলে",
   "notifications.cat.support": "সাপোর্টের উত্তর",
   "notifications.cat.support.hint": "আমাদের সাপোর্ট টিমের উত্তর",
+  "notifications.cat.staking": "স্টেকিং (Earn)",
+  "notifications.cat.staking.hint": "সাবস্ক্রিপশন নিশ্চিতকরণ, মাসিক রিটার্ন জমা এবং মেয়াদপূর্তিতে মূলধন ফেরত",
 
   // Preferences page
   "prefs.title": "পছন্দসমূহ",

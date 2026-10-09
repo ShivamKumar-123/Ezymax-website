@@ -257,6 +257,8 @@ const profile: NsMessages<"profile"> = {
   "notifications.cat.wallet.hint": "إيداعات مضافة، وعمليات سحب تمت الموافقة عليها أو رُفضت أو دُفعت",
   "notifications.cat.support": "ردود الدعم",
   "notifications.cat.support.hint": "الردود من فريق الدعم لدينا",
+  "notifications.cat.staking": "التخزين (العوائد)",
+  "notifications.cat.staking.hint": "تأكيد الاشتراكات، وإضافة العوائد الشهرية، وإعادة رأس المال عند الاستحقاق",
 
   // Preferences page
   "prefs.title": "التفضيلات",

@@ -17,6 +17,7 @@ import {
   Globe2,
   Settings,
   Sigma,
+  PiggyBank,
 } from "lucide-react";
 import type { NavModule } from "@ezymex/ui";
 
@@ -198,6 +199,21 @@ export const ADMIN_NAV: NavModule[] = [
       { href: "/prop/violations", label: "Violations" },
       { href: "/prop/certificates", label: "Certificates" },
       { href: "/prop/news", label: "News calendar" },
+    ],
+  },
+  {
+    key: "staking",
+    label: "Staking",
+    icon: PiggyBank,
+    href: "/staking",
+    section: "money",
+    sub: [
+      { href: "/staking", label: "Overview" },
+      { href: "/staking/plans", label: "Plans" },
+      { href: "/staking/rates", label: "Monthly rates" },
+      { href: "/staking/settlements", label: "Settlements" },
+      { href: "/staking/positions", label: "Positions" },
+      { href: "/staking/audit", label: "Audit" },
     ],
   },
   {
