@@ -7,6 +7,7 @@ import * as React from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { ChevronLeft, ChevronRight, Eye, EyeOff, Plus } from "lucide-react";
+import { setBalancesHidden, useBalancesHidden } from "./hide-balances";
 import { Button, CopyButton, LogoMark, Skeleton, cn, formatMoney } from "@/components/kit";
 import { useT } from "@ezymex/i18n/react";
 
@@ -110,7 +111,7 @@ export function AccountsPanel({
   const t = useT();
   const [i, setI] = React.useState(0);
   const [dir, setDir] = React.useState(1);
-  const [hidden, setHidden] = React.useState(false);
+  const hidden = useBalancesHidden();
   const list = accounts ?? [];
   const idx = Math.min(i, Math.max(0, list.length - 1));
   const a = list[idx];
@@ -243,7 +244,7 @@ export function AccountsPanel({
         <>
           <div className="mt-7 flex items-center justify-between gap-3">
             <h3 className="k-display text-[17px] font-semibold tracking-[-0.01em]">{t("dashboard.home.accountInfo")}</h3>
-            <button type="button" onClick={() => setHidden((h) => !h)} aria-pressed={hidden} aria-label={hidden ? t("dashboard.home.showBalances") : t("dashboard.home.hideBalances")} className="grid size-10 place-items-center rounded-full text-fg-3 hover:bg-surface-3 hover:text-fg">
+            <button type="button" onClick={() => setBalancesHidden(!hidden)} aria-pressed={hidden} aria-label={hidden ? t("dashboard.home.showBalances") : t("dashboard.home.hideBalances")} className="grid size-10 place-items-center rounded-full text-fg-3 hover:bg-surface-3 hover:text-fg">
               {hidden ? <Eye className="size-[18px]" /> : <EyeOff className="size-[18px]" />}
             </button>
           </div>

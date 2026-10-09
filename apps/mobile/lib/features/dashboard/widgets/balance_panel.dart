@@ -45,7 +45,7 @@ class BalancePanel extends StatelessWidget {
                   ),
           ),
         ),
-        if (changePct != null) ...[
+        if (changePct != null && !hidden) ...[
           const SizedBox(height: 14),
           KChangeChip('${changePct! >= 0 ? '+' : ''}${changePct!.toStringAsFixed(2)}%', up: changePct! >= 0),
         ],

@@ -426,8 +426,22 @@ class DashboardScreen extends ConsumerWidget {
         children: [
           // 0. targeted banner
           const DashboardBannerSlot(),
-          // 1. header: the greeting as the title, the name in bold
-          _Greeting(template: t.dyn('dashboard.greeting.${_greeting(DateTime.now())}'), name: me.firstName, verified: me.kycStatus == KycStatus.verified),
+          // 1. header: the greeting as the title, the name in bold; the eye hides every amount on the dashboard
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _Greeting(template: t.dyn('dashboard.greeting.${_greeting(DateTime.now())}'), name: me.firstName, verified: me.kycStatus == KycStatus.verified),
+              ),
+              KIconButton(
+                key: const ValueKey('dashboard-hide-balances'),
+                icon: hidden ? LucideIcons.eye : LucideIcons.eyeOff,
+                size: 38,
+                semanticLabel: hidden ? t('dashboard.home.showBalances') : t('dashboard.home.hideBalances'),
+                onPressed: ref.read(hideBalancesProvider.notifier).toggle,
+              ),
+            ],
+          ),
           // 1b. Ask Ezymex AI (the AI assistant, answered over the support chat: both modules)
           if (!readOnly && modulesOn(config, 'ai_assistant&support')) ...[const SizedBox(height: 16), AskAi(chips: aiChips)],
           const SizedBox(height: 24),
@@ -469,7 +483,7 @@ class DashboardScreen extends ConsumerWidget {
                   value: accounts == null
                       ? const Text('—')
                       : KMoney(today ?? totals.profit, signed: true, tone: KMoneyTone.auto, style: context.text.moneyL, hidden: hidden),
-                  chip: todayPct == null
+                  chip: todayPct == null || hidden
                       ? null
                       : KChip(
                           label: t('dashboard.home.todayPct', {'pct': '${todayPct >= 0 ? '+' : ''}${todayPct.toStringAsFixed(2)}'}),
@@ -505,7 +519,7 @@ class DashboardScreen extends ConsumerWidget {
                     icon: LucideIcons.award,
                     value: rewards == null ? const Text('—') : KMoney(rewards.points * rewards.pointValue, style: context.text.moneyL, hidden: hidden),
                     chip: KChip(
-                      label: rewards == null ? t('shell.nav.loyalty') : t('dashboard.home.points', {'points': Fmt.number(rewards.points, 0)}),
+                      label: rewards == null || hidden ? t('shell.nav.loyalty') : t('dashboard.home.points', {'points': Fmt.number(rewards.points, 0)}),
                       tone: KChipTone.gold,
                     ),
                     onTap: () => context.go('/rewards/loyalty'),

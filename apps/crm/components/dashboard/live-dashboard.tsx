@@ -40,6 +40,7 @@ import { LiveCalendarCard, LiveNewsCard, LiveWorldCard } from "@/components/news
 import { Trans, useFormat, useT } from "@ezymex/i18n/react";
 import { AccountsPanel, type CardAccount } from "@/components/dashboard/home/accounts-panel";
 import { BalancePanel, QuickActions } from "@/components/dashboard/home/balance-panel";
+import { HideBalancesButton, MASK, useBalancesHidden } from "@/components/dashboard/home/hide-balances";
 import { ActivityTabs, ChecklistCard, type ListRowItem } from "@/components/dashboard/home/list-cards";
 import { NotificationsPanel, type Prompt } from "@/components/dashboard/home/notifications-panel";
 import { OverviewLayout, SectionTitle } from "@/components/dashboard/home/overview";
@@ -414,6 +415,8 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
 
   // Statistics card
   const [mode, setMode] = React.useState<StatMode>("equity");
+  // the client's "Hide balances" choice (header eye): every amount on the dashboard shows as ••••••
+  const hidden = useBalancesHidden();
   const [range, setRange] = React.useState<StatRange>("month");
   const n = RANGE_DAYS[range];
   const chart = useCurve(2 * n);
@@ -547,6 +550,7 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
           <PageHeader
             className="mb-0"
             title={t("shell.nav.overview")}
+            actions={<HideBalancesButton />}
             subtitle={
               <span className="inline-flex flex-wrap items-center gap-2">
                 {t.dyn(`dashboard.greeting.${hour}`, undefined, { name: me.first_name })}
@@ -565,7 +569,7 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
             <KpiCard
               label={t("dashboard.equity.title")}
               icon={<TrendingUp />}
-              value={accounts ? <Money value={totals.equity} countUp={false} /> : "—"}
+              value={!accounts ? "—" : hidden ? MASK : <Money value={totals.equity} countUp={false} />}
               chip={hasLive ? t("dashboard.home.accountsChip", { live: totals.live.length, positions: totals.positions }) : t("dashboard.accounts.openLive.title")}
               chipTone="neutral"
               href="/accounts"
@@ -573,8 +577,8 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
             <KpiCard
               label={today !== null ? t("dashboard.home.todayPnl") : t("dashboard.home.floating")}
               icon={<LineChart />}
-              value={accounts ? <Money value={today ?? totals.profit} signed tone="auto" countUp={false} /> : "—"}
-              chip={todayPct !== null ? t("dashboard.home.todayPct", { pct: `${todayPct >= 0 ? "+" : ""}${todayPct.toFixed(2)}` }) : undefined}
+              value={!accounts ? "—" : hidden ? MASK : <Money value={today ?? totals.profit} signed tone="auto" countUp={false} />}
+              chip={todayPct !== null && !hidden ? t("dashboard.home.todayPct", { pct: `${todayPct >= 0 ? "+" : ""}${todayPct.toFixed(2)}` }) : undefined}
               chipTone={(today ?? totals.profit) >= 0 ? "up" : "down"}
               accent={(today ?? totals.profit) >= 0 ? "var(--k-up)" : "var(--k-down)"}
               href="/portfolio/analytics"
@@ -584,7 +588,7 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
               <KpiCard
                 label={t("dashboard.home.walletBalance")}
                 icon={<Wallet />}
-                value={walletTotal !== null ? <Money value={walletTotal} countUp={false} /> : "—"}
+                value={walletTotal === null ? "—" : hidden ? MASK : <Money value={walletTotal} countUp={false} />}
                 accent="var(--k-info)"
                 footer={
                   <div className="flex items-center gap-2">
@@ -600,10 +604,10 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
               <KpiCard
                 label={t("dashboard.home.rewards")}
                 icon={<Award />}
-                value={r ? <Money value={r.points.balance * r.pointValue} countUp={false} /> : "—"}
+                value={!r ? "—" : hidden ? MASK : <Money value={r.points.balance * r.pointValue} countUp={false} />}
                 accent="var(--k-gold)"
                 chipTone="gold"
-                chip={r ? t("dashboard.home.points", { points: r.points.balance.toLocaleString("en-US") }) : t("shell.nav.loyalty")}
+                chip={r && !hidden ? t("dashboard.home.points", { points: r.points.balance.toLocaleString("en-US") }) : t("shell.nav.loyalty")}
                 href="/rewards/loyalty"
                 delay={0.15}
               />

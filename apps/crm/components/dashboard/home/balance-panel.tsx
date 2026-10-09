@@ -10,17 +10,19 @@ import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, Plus } from "lucide-r
 import { Button, ChangeChip, IconTile, Money, Skeleton, cn, type ChipTone, type TileTone } from "@/components/kit";
 import { useT } from "@ezymex/i18n/react";
 import { useModule, usePageOn } from "@/components/tenant-config";
+import { MASK, useBalancesHidden } from "./hide-balances";
 
 export function BalancePanel({ total, chip, chipTone = "up", sub, loading, readOnly }: { total: number | null; chip?: React.ReactNode; chipTone?: ChipTone; sub?: React.ReactNode; loading?: boolean; readOnly?: boolean }) {
   const t = useT();
   const wallet = useModule("wallet");
+  const hidden = useBalancesHidden();
   return (
     <section className="text-center">
       <div className="text-[15px] font-medium text-fg-2">{t("dashboard.home.totalBalance")}</div>
       <div className="k-display mt-3 text-[36px] font-bold leading-none tracking-[-0.03em] text-fg sm:text-[40px]">
-        {total === null ? loading ? <Skeleton className="mx-auto h-10 w-56 rounded-xl" /> : "—" : <Money value={total} />}
+        {total === null ? loading ? <Skeleton className="mx-auto h-10 w-56 rounded-xl" /> : "—" : hidden ? MASK : <Money value={total} />}
       </div>
-      {chip && (
+      {chip && !hidden && (
         <div className="mt-4 flex justify-center">
           <ChangeChip tone={chipTone}>{chip}</ChangeChip>
         </div>
