@@ -63,6 +63,7 @@ pub const PERMS: &[PermDef] = &[
     PermDef { key: "clients.block", module: "clients", action: "approve", label: "Block and unblock client sign-in" },
     PermDef { key: "clients.impersonate", module: "clients", action: "create", label: "Open the Client Area as the client (read-only)" },
     PermDef { key: "clients.impersonate_full", module: "clients", action: "approve", label: "Full-access staff sessions as the client (Super Admin only)" },
+    PermDef { key: "clients.delete", module: "clients", action: "approve", label: "Delete clients (permanently, or erase personal data and close)" },
     PermDef { key: "kyc.read", module: "kyc", action: "view", label: "View KYC cases and documents" },
     PermDef { key: "kyc.review", module: "kyc", action: "approve", label: "Approve / reject KYC" },
     PermDef { key: "dealing.read", module: "dealing", action: "view", label: "View positions, orders, routing" },
@@ -448,7 +449,7 @@ mod tests {
             "finance.credit", "finance.adjust_approve", "finance.adjust_force", "finance.read", "finance.write", "finance.approve", "finance.settings", "partners.read", "partners.write", "partners.approve",
             "social.read", "social.write", "social.approve", "prop.read", "prop.write", "prop.approve", "algo.read", "algo.write", "algo.settings",
             "content.read", "content.write", "support.read", "support.write", "notifications.write", "marketing.read", "marketing.write",
-            "options.read", "options.config", "options.dealing", "options.settle",
+            "options.read", "options.config", "options.dealing", "options.settle", "clients.write", "clients.delete",
         ] {
             assert!(perm(k).is_some(), "missing {k}");
         }
@@ -476,6 +477,14 @@ mod tests {
             assert!(has(r, "accounts.close") && has(r, "accounts.close.approve"), "{r}");
         }
         assert!(!has("dealer", "accounts.close.approve") && !has("support", "accounts.close") && !has("finance", "accounts.close"));
+        // client management (client_lifecycle.rs): hiding is clients.write, deleting clients.delete; both admin-level only
+        for r in ["platform_owner", "super_admin", "admin"] {
+            assert!(has(r, "clients.write") && has(r, "clients.delete"), "{r}");
+        }
+        for r in ["dealer", "risk_manager", "finance", "compliance", "support", "sales", "partner_manager", "marketing", "viewer", "options_risk"] {
+            assert!(!has(r, "clients.delete") && !has(r, "clients.write"), "{r}");
+        }
+        assert_eq!(normalize(&["clients.delete"]).unwrap(), vec!["clients.delete", "clients.read"]);
     }
 
     #[test]

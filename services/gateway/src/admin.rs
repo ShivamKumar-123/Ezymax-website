@@ -242,6 +242,11 @@ fn user_row(r: &PgRow) -> Value {
         "presence": crate::client_controls::presence(ts(r, "last_active_at"), Utc::now()).as_str(),
         "apps": r.try_get::<Option<Vec<String>>, _>("apps").ok().flatten().unwrap_or_default(),
         "restrictions": r.try_get::<Option<Vec<String>>, _>("restrictions").ok().flatten().unwrap_or_default(),
+        // client management (client_lifecycle.rs): hidden from the lists, deleted with history (anonymised)
+        "hidden": ts(r, "hidden_at").is_some(),
+        "hidden_at": ts(r, "hidden_at"),
+        "deleted": ts(r, "deleted_at").is_some(),
+        "deleted_at": ts(r, "deleted_at"),
     })
 }
 
@@ -271,24 +276,27 @@ fn live_sql(sql: &str, n: usize) -> String {
 
 pub async fn stats(State(st): State<AppState>, ctx: Ctx) -> ApiResult<Json<Value>> {
     let me = require(&st, &ctx, Perm::StatsRead).await?;
+    // client counts leave out hidden (test / spam) and deleted clients, like the client list (client_lifecycle.rs)
     let r = sqlx::query(sqlx::AssertSqlSafe(live_sql(
         "SELECT
-            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house) AS clients_total,
-            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house AND email_verified_at IS NOT NULL) AS email_verified,
-            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house AND kyc_status = 'verified') AS kyc_verified,
-            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house AND kyc_status = 'pending') AS kyc_pending,
-            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house AND (created_at AT TIME ZONE $2)::date = (now() AT TIME ZONE $2)::date) AS registered_today,
-            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house AND created_at > now() - interval '7 days') AS registered_7d,
-            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house AND created_at > now() - interval '30 days') AS registered_30d,
+            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house AND hidden_at IS NULL AND deleted_at IS NULL) AS clients_total,
+            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house AND hidden_at IS NULL AND deleted_at IS NULL AND email_verified_at IS NOT NULL) AS email_verified,
+            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house AND hidden_at IS NULL AND deleted_at IS NULL AND kyc_status = 'verified') AS kyc_verified,
+            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house AND hidden_at IS NULL AND deleted_at IS NULL AND kyc_status = 'pending') AS kyc_pending,
+            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house AND hidden_at IS NULL AND deleted_at IS NULL AND (created_at AT TIME ZONE $2)::date = (now() AT TIME ZONE $2)::date) AS registered_today,
+            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house AND hidden_at IS NULL AND deleted_at IS NULL AND created_at > now() - interval '7 days') AS registered_7d,
+            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house AND hidden_at IS NULL AND deleted_at IS NULL AND created_at > now() - interval '30 days') AS registered_30d,
             (SELECT count(*) FROM sessions se WHERE se.tenant_id = $1 AND se.subject_kind = 'user' AND {LIVE}) AS sessions_user,
             (SELECT count(*) FROM sessions se WHERE se.tenant_id = $1 AND se.subject_kind = 'staff' AND {LIVE}) AS sessions_staff,
             (SELECT count(*) FROM staff WHERE tenant_id = $1 AND status = 'active') AS staff_active,
             (SELECT count(*) FROM audit_log WHERE tenant_id = $1 AND action = 'user.login' AND created_at > now() - interval '24 hours') AS logins_24h,
             (SELECT count(*) FROM audit_log WHERE tenant_id = $1 AND action IN ('user.login_failed', 'staff.login_failed', 'user.locked', 'staff.locked') AND created_at > now() - interval '24 hours') AS failed_logins_24h,
             (SELECT count(*) FROM audit_log WHERE tenant_id = $1 AND created_at > now() - interval '24 hours') AS audit_24h,
-            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house AND last_active_at > now() - interval '2 minutes') AS online_now,
-            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house AND last_active_at <= now() - interval '2 minutes' AND last_active_at > now() - interval '15 minutes') AS away_now,
-            (SELECT count(DISTINCT user_id) FROM client_restrictions WHERE tenant_id = $1 AND lifted_at IS NULL AND (expires_at IS NULL OR expires_at > now())) AS restricted",
+            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house AND hidden_at IS NULL AND deleted_at IS NULL AND last_active_at > now() - interval '2 minutes') AS online_now,
+            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house AND hidden_at IS NULL AND deleted_at IS NULL AND last_active_at <= now() - interval '2 minutes' AND last_active_at > now() - interval '15 minutes') AS away_now,
+            (SELECT count(DISTINCT user_id) FROM client_restrictions WHERE tenant_id = $1 AND lifted_at IS NULL AND (expires_at IS NULL OR expires_at > now())) AS restricted,
+            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house AND hidden_at IS NOT NULL AND deleted_at IS NULL) AS hidden_total,
+            (SELECT count(*) FROM users WHERE tenant_id = $1 AND NOT is_house AND deleted_at IS NOT NULL) AS deleted_total",
         3,
     )))
     .bind(me.tenant_id)
@@ -303,7 +311,7 @@ pub async fn stats(State(st): State<AppState>, ctx: Ctx) -> ApiResult<Json<Value
     let series = sqlx::query(
         "SELECT d::date AS day, count(u.id) AS n
          FROM generate_series((now() AT TIME ZONE $2)::date - 13, (now() AT TIME ZONE $2)::date, interval '1 day') d
-         LEFT JOIN users u ON u.tenant_id = $1 AND (u.created_at AT TIME ZONE $2)::date = d::date
+         LEFT JOIN users u ON u.tenant_id = $1 AND u.hidden_at IS NULL AND u.deleted_at IS NULL AND (u.created_at AT TIME ZONE $2)::date = d::date
          GROUP BY d ORDER BY d",
     )
     .bind(me.tenant_id)
@@ -326,6 +334,8 @@ pub async fn stats(State(st): State<AppState>, ctx: Ctx) -> ApiResult<Json<Value
             "online": n("online_now"),
             "away": n("away_now"),
             "restricted": n("restricted"),
+            "hidden": n("hidden_total"),
+            "deleted": n("deleted_total"),
         },
         "sessions": { "clients": n("sessions_user"), "staff": n("sessions_staff") },
         "staff": { "active": n("staff_active") },
@@ -353,6 +363,8 @@ pub struct UsersQuery {
     pub restricted: Option<String>,
     /// `online`: most recently active first (default: newest registration first).
     pub sort: Option<String>,
+    /// Hidden and deleted clients (client_lifecycle.rs): `exclude` (default), `include` or `only`.
+    pub hidden: Option<String>,
 }
 
 /// Page size cap for the client list: browsing reads at most 100 rows a page; exports (`clients.export`) 200.
@@ -362,6 +374,7 @@ pub fn users_page_cap(export: bool) -> i64 {
 
 const USER_COLS: &str = "u.id, u.email, u.first_name, u.last_name, u.phone_dial, u.phone, u.country, u.date_of_birth, u.referral_code,
      u.referred_by, u.kyc_status, u.status, u.email_verified_at, u.locked_until, u.last_login_at, u.created_at, u.last_active_at,
+     u.hidden_at, u.deleted_at,
      (SELECT array_agg(cr.kind ORDER BY cr.kind) FROM client_restrictions cr
        WHERE cr.user_id = u.id AND cr.lifted_at IS NULL AND (cr.expires_at IS NULL OR cr.expires_at > now())) AS restrictions,
      CASE WHEN u.last_active_at > now() - interval '15 minutes' THEN array_remove(ARRAY[
@@ -410,6 +423,10 @@ pub async fn users(State(st): State<AppState>, ctx: Ctx, q: Result<Query<UsersQu
         _ => return Err(ApiError::BadRequest("restricted must be true or false.")),
     };
     let by_activity = clean(&q.sort) == Some("online");
+    let hidden = clean(&q.hidden).unwrap_or("exclude");
+    if !matches!(hidden, "exclude" | "include" | "only") {
+        return Err(ApiError::BadRequest("hidden must be exclude, include or only."));
+    }
 
     let sql = live_sql(&format!(
         "SELECT {USER_COLS},
@@ -429,6 +446,9 @@ pub async fn users(State(st): State<AppState>, ctx: Ctx, q: Result<Query<UsersQu
                  ELSE u.last_active_at IS NULL OR u.last_active_at <= now() - make_interval(secs => $13) END)
            AND ($10::bool IS NULL OR EXISTS (SELECT 1 FROM client_restrictions cr WHERE cr.user_id = u.id AND cr.lifted_at IS NULL
                                               AND (cr.expires_at IS NULL OR cr.expires_at > now())) = $10)
+           AND CASE $16 WHEN 'include' THEN true
+                        WHEN 'only' THEN u.hidden_at IS NOT NULL OR u.deleted_at IS NOT NULL
+                        ELSE u.hidden_at IS NULL AND u.deleted_at IS NULL END
          ORDER BY CASE WHEN $11 THEN u.last_active_at END DESC NULLS LAST, u.created_at DESC, u.id DESC
          LIMIT $7 OFFSET $8"
     ), 14);
@@ -450,15 +470,30 @@ pub async fn users(State(st): State<AppState>, ctx: Ctx, q: Result<Query<UsersQu
         .bind(crate::client_controls::AWAY_SECS as f64)
         .bind(idle_secs(Kind::Staff))
         .bind(idle_secs(Kind::User))
+        .bind(hidden)
         .fetch_all(&mut *tx)
         .await?;
+    // what the "Show hidden" switch would add
+    let counts = sqlx::query(
+        "SELECT count(*) FILTER (WHERE deleted_at IS NULL) AS hidden, count(*) FILTER (WHERE deleted_at IS NOT NULL) AS deleted
+         FROM users WHERE tenant_id = $1 AND NOT is_house AND (hidden_at IS NOT NULL OR deleted_at IS NOT NULL)",
+    )
+    .bind(me.tenant_id)
+    .fetch_one(&mut *tx)
+    .await?;
     tx.commit().await?;
     let total = rows.first().map(|r| r.get::<i64, _>("total")).unwrap_or(0);
     if export && page == 1 {
-        let meta = json!({"q": term, "kyc": kyc, "verified": verified, "status": status, "rows": total});
+        let meta = json!({"q": term, "kyc": kyc, "verified": verified, "status": status, "hidden": hidden, "rows": total});
         audit::record(&st.pool, &ctx, Entry { tenant_id: me.tenant_id, actor_kind: "staff", actor_id: Some(me.id), action: "clients.exported", target: None, meta }).await;
     }
-    Ok(Json(json!({ "items": rows.iter().map(user_row).collect::<Vec<_>>(), "total": total, "page": page, "per_page": per })))
+    Ok(Json(json!({
+        "items": rows.iter().map(user_row).collect::<Vec<_>>(),
+        "total": total,
+        "page": page,
+        "per_page": per,
+        "counts": { "hidden": counts.get::<i64, _>("hidden"), "deleted": counts.get::<i64, _>("deleted") },
+    })))
 }
 
 // ---------- GET /v1/admin/users/{id} ----------
@@ -507,6 +542,17 @@ pub async fn user_detail(State(st): State<AppState>, ctx: Ctx, Path(id): Path<i6
     };
     let code_raw: Option<String> = sqlx::query_scalar("SELECT referred_code_raw FROM users WHERE id = $1").bind(id).fetch_one(&mut *tx).await?;
     user["referred_code_raw"] = json!(code_raw);
+    // hidden / deleted: by whom and why (client_lifecycle.rs)
+    let m = sqlx::query(
+        "SELECT u.hidden_reason, hs.name AS hidden_by, u.deleted_reason, ds.name AS deleted_by
+         FROM users u LEFT JOIN staff hs ON hs.id = u.hidden_by LEFT JOIN staff ds ON ds.id = u.deleted_by WHERE u.id = $1",
+    )
+    .bind(id)
+    .fetch_one(&mut *tx)
+    .await?;
+    for k in ["hidden_reason", "hidden_by", "deleted_reason", "deleted_by"] {
+        user[k] = json!(m.get::<Option<String>, _>(k));
+    }
 
     let referrals = sqlx::query(
         "SELECT id, email, first_name, last_name, kyc_status, email_verified_at IS NOT NULL AS verified, created_at

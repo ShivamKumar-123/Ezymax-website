@@ -510,7 +510,8 @@ pub async fn heartbeat(State(st): State<AppState>, ctx: Ctx) -> ApiResult<Json<V
 
 // ---------- Back Office: presence ----------
 
-/// `GET /v1/admin/presence`: clients online now and away (last 15 minutes), with the apps they are in.
+/// `GET /v1/admin/presence`: clients online now and away (last 15 minutes), with the apps they are in. Hidden
+/// (test / spam) clients are left out, like in the client list (client_lifecycle.rs).
 pub async fn presence_list(State(st): State<AppState>, ctx: Ctx) -> ApiResult<Json<Value>> {
     let me = require_key(&st, &ctx, "clients.read").await?;
     let mut tx = crate::domains::tenant_tx(&st.pool, me.tenant_id).await?;
@@ -529,7 +530,7 @@ pub async fn presence_list(State(st): State<AppState>, ctx: Ctx) -> ApiResult<Js
              SELECT min(p.since) OVER () AS since, p.ip, p.country, p.login FROM client_presence p
               WHERE p.user_id = u.id AND p.ended_at IS NULL AND p.last_active > now() - make_interval(secs => $3)
               ORDER BY p.last_active DESC LIMIT 1) tr ON true
-         WHERE u.tenant_id = $1 AND NOT u.is_house AND u.last_active_at > now() - make_interval(secs => $2)
+         WHERE u.tenant_id = $1 AND NOT u.is_house AND u.hidden_at IS NULL AND u.deleted_at IS NULL AND u.last_active_at > now() - make_interval(secs => $2)
          ORDER BY u.last_active_at DESC LIMIT 300",
     )
     .bind(me.tenant_id)

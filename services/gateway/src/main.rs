@@ -8,6 +8,7 @@ mod admin;
 mod audit;
 mod client_auth;
 mod client_controls;
+mod client_lifecycle;
 mod client_security;
 mod config;
 mod crypto;
@@ -228,6 +229,11 @@ fn router(st: AppState) -> Router {
         .route("/v1/admin/stats", get(admin::stats))
         .route("/v1/admin/users", get(admin::users))
         .route("/v1/admin/users/{id}", get(admin::user_detail))
+        // client management: hide / unhide, delete check, delete (client_lifecycle.rs)
+        .route("/v1/admin/users/{id}/hide", post(client_lifecycle::hide))
+        .route("/v1/admin/users/{id}/unhide", post(client_lifecycle::unhide))
+        .route("/v1/admin/users/{id}/delete-check", get(client_lifecycle::delete_check))
+        .route("/v1/admin/users/{id}/delete", post(client_lifecycle::delete))
         .route("/v1/admin/audit", get(admin::audit_log))
         .route("/v1/admin/audit/record", post(admin::record))
         .route("/v1/admin/staff", get(admin::staff_list))

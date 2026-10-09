@@ -9,6 +9,11 @@
 //! (new IPs / devices). Identity and device signals for self-referral checks are sent as keyed hashes only:
 //! `identity` = HMAC of (first name, last name, date of birth) and of the full phone number, `devices` = the
 //! stored device hashes, `ips` = sign-up and session IPs (last 20).
+//!
+//! Client management (client_lifecycle.rs): `hidden` = a test / spam client staff hid from the Back Office lists
+//! (mirrors may leave it out of analytics); `deleted` = a deleted client, sent with placeholder data and no
+//! signals so the mirror scrubs its copy. `purged` = deleted without any financial activity: the gateway row is
+//! gone (a `deleted_users` tombstone feeds it), so a mirror may drop the client altogether.
 
 use axum::Json;
 use axum::extract::rejection::QueryRejection;
@@ -21,7 +26,7 @@ use sqlx::Row;
 use crate::error::{ApiError, ApiResult};
 use crate::state::AppState;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Default)]
 pub struct ReferralUsersQ {
     since: Option<String>,
     after_id: Option<i64>,
@@ -57,9 +62,17 @@ pub async fn referral_users(State(st): State<AppState>, q: Result<Query<Referral
                             (SELECT a.ip FROM audit_log a WHERE a.actor_kind = 'user' AND a.actor_id = u.id AND a.action = 'user.register' AND a.ip IS NOT NULL LIMIT 1)
                          ) x) AS ips,
                    ARRAY(SELECT d.device_hash FROM trusted_devices d WHERE d.subject_kind = 'user' AND d.subject_id = u.id
-                         ORDER BY d.last_seen_at DESC LIMIT 20) AS devices
+                         ORDER BY d.last_seen_at DESC LIMIT 20) AS devices,
+                   u.hidden_at IS NOT NULL AS hidden, u.deleted_at IS NOT NULL AS deleted, false AS purged
             FROM users u JOIN tenants t ON t.id = u.tenant_id
             WHERE NOT u.is_house
+            UNION ALL
+            -- purged clients: placeholder data from the tombstone, changed_at = when they were deleted
+            SELECT d.id, t.slug, 'deleted-' || d.id || '@deleted.invalid', 'Deleted', 'Client', ''::text, NULL::date, '', d.referral_code,
+                   NULL::bigint, NULL::text, NULL::text, 'unverified', 'closed', false, d.created_at, NULL::timestamptz, NULL::timestamptz,
+                   NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, false, NULL::timestamptz,
+                   d.deleted_at, '{}'::text[], '{}'::bytea[], false, true, true
+            FROM deleted_users d JOIN tenants t ON t.id = d.tenant_id
          ) z
          WHERE (z.changed_at, z.id) > ($1, $2)
          ORDER BY z.changed_at, z.id
@@ -76,10 +89,19 @@ pub async fn referral_users(State(st): State<AppState>, q: Result<Query<Referral
         .map(|r| {
             let first: String = r.get("first_name");
             let last: String = r.get("last_name");
-            let dob: NaiveDate = r.get("date_of_birth");
+            let deleted: bool = r.get("deleted");
+            let dob: Option<NaiveDate> = r.get("date_of_birth");
             let phone: String = r.get("phone");
-            let ident = format!("{}|{}|{}", first.trim().to_lowercase(), last.trim().to_lowercase(), dob);
-            let devices: Vec<Vec<u8>> = r.get("devices");
+            // a deleted client sends no identity or device signals (its placeholders would all look alike)
+            let identity = match dob.filter(|_| !deleted) {
+                Some(dob) => {
+                    let ident = format!("{}|{}|{}", first.trim().to_lowercase(), last.trim().to_lowercase(), dob);
+                    vec![hex(&st.keys.hash("ib-identity", &ident)), hex(&st.keys.hash("ib-phone", &phone))]
+                }
+                None => vec![],
+            };
+            let devices: Vec<Vec<u8>> = if deleted { vec![] } else { r.get("devices") };
+            let ips: Vec<String> = if deleted { vec![] } else { r.get("ips") };
             json!({
                 "id": r.get::<i64, _>("id"),
                 "tenant": r.get::<String, _>("tenant"),
@@ -98,7 +120,7 @@ pub async fn referral_users(State(st): State<AppState>, q: Result<Query<Referral
                 "email_verified_at": r.get::<Option<DateTime<Utc>>, _>("email_verified_at"),
                 "kyc_verified_at": r.get::<Option<DateTime<Utc>>, _>("kyc_verified_at"),
                 "last_login_at": r.get::<Option<DateTime<Utc>>, _>("last_login_at"),
-                "birthday": r.get::<Option<String>, _>("birthday"),
+                "birthday": if deleted { None } else { r.get::<Option<String>, _>("birthday") },
                 "utm_source": r.get::<Option<String>, _>("utm_source"),
                 "utm_medium": r.get::<Option<String>, _>("utm_medium"),
                 "utm_campaign": r.get::<Option<String>, _>("utm_campaign"),
@@ -108,9 +130,12 @@ pub async fn referral_users(State(st): State<AppState>, q: Result<Query<Referral
                 "referrer": r.get::<Option<String>, _>("first_referrer"),
                 "marketing_consent": r.get::<bool, _>("marketing_consent"),
                 "changed_at": r.get::<DateTime<Utc>, _>("changed_at"),
-                "identity": [hex(&st.keys.hash("ib-identity", &ident)), hex(&st.keys.hash("ib-phone", &phone))],
-                "ips": r.get::<Vec<String>, _>("ips"),
+                "identity": identity,
+                "ips": ips,
                 "devices": devices.iter().map(|d| hex(d)).collect::<Vec<_>>(),
+                "hidden": r.get::<bool, _>("hidden"),
+                "deleted": deleted,
+                "purged": r.get::<bool, _>("purged"),
             })
         })
         .collect();
