@@ -261,10 +261,12 @@ pub fn decide(t: &Target, wallet: &Result<WalletFacts, String>, trading: &Result
                 blockers.push(("wallet_balance", format!("The wallet holds {} (available {}, locked {}). Bring it to zero first.", b.currency, b.available, b.locked)));
             }
             if w.pending_deposits > 0 {
-                blockers.push(("pending_deposit", format!("{} still being processed. Credit or reject them first.", plural(w.pending_deposits as i64, "deposit is", "deposits are"))));
+                let it = if w.pending_deposits == 1 { "it" } else { "them" };
+                blockers.push(("pending_deposit", format!("{} still being processed. Credit or reject {it} first.", plural(w.pending_deposits as i64, "deposit is", "deposits are"))));
             }
             if w.open_withdrawals > 0 {
-                blockers.push(("open_withdrawal", format!("{} still open. Complete, reject or cancel them first.", plural(w.open_withdrawals as i64, "withdrawal is", "withdrawals are"))));
+                let it = if w.open_withdrawals == 1 { "it" } else { "them" };
+                blockers.push(("open_withdrawal", format!("{} still open. Complete, reject or cancel {it} first.", plural(w.open_withdrawals as i64, "withdrawal is", "withdrawals are"))));
             }
             if w.ledger_entries > 0 {
                 history.push(format!("Wallet: {}", plural(w.ledger_entries, "transaction", "transactions")));
@@ -475,7 +477,7 @@ pub async fn delete_with<F: Finance>(st: &AppState, ctx: &Ctx, me: &Staff, id: i
             "UPDATE users SET email = 'deleted-' || id || '@deleted.invalid', first_name = 'Deleted', last_name = 'Client', phone_dial = '', phone = '',
                     date_of_birth = DATE '1900-01-01', password_hash = '!deleted-no-login', google_sub = NULL, google_linked_at = NULL, avatar_url = NULL,
                     utm_term = NULL, utm_content = NULL, landing_page = NULL, first_referrer = NULL, marketing_consent = false,
-                    marketing_unsubscribed_at = COALESCE(marketing_unsubscribed_at, now()), status = 'closed', failed_logins = 0, locked_until = NULL,
+                    marketing_unsubscribed_at = COALESCE(marketing_unsubscribed_at, now()), status = 'closed', failed_logins = 0, locked_until = NULL, last_active_at = NULL,
                     deleted_at = now(), deleted_by = $2, deleted_reason = $3, updated_at = now()
              WHERE id = $1",
         )

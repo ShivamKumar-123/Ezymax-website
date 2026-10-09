@@ -389,7 +389,7 @@ async fn anonymize_keeps_the_record_and_erases_the_person() {
     let referee = user(&db, "anon.referee@example.com").await;
     sqlx::query("UPDATE users SET referred_by = $1 WHERE id = $2").bind(uid).bind(referee).execute(&st.pool).await.unwrap();
     // verified identity: name and date of birth are locked (D92) except for this erasure
-    sqlx::query("UPDATE users SET kyc_status = 'verified', identity_locked_at = now(), google_sub = 'g-123' WHERE id = $1").bind(uid).execute(&st.pool).await.unwrap();
+    sqlx::query("UPDATE users SET kyc_status = 'verified', identity_locked_at = now(), google_sub = 'g-123', last_active_at = now() WHERE id = $1").bind(uid).execute(&st.pool).await.unwrap();
     let file = kyc_document(&db, uid).await;
     viewer(&db, uid).await;
     let client_tok = identity::create_session(st, &ctx(None), Kind::User, 1, uid).await.unwrap().token;
@@ -439,7 +439,7 @@ async fn anonymize_keeps_the_record_and_erases_the_person() {
     let v = list(&db, &admin_tok, Some("only")).await;
     assert_eq!((ids(&v), v["items"][0]["deleted"].as_bool(), v["counts"]["deleted"].as_i64()), (vec![uid], Some(true), Some(1)));
     let Json(d) = crate::admin::user_detail(State(st.clone()), ctx(Some(&admin_tok)), Path(uid)).await.unwrap();
-    assert_eq!(d["user"]["deleted_by"], "Staff super_admin");
+    assert_eq!((d["user"]["deleted_by"].as_str(), d["user"]["presence"].as_str()), (Some("Staff super_admin"), Some("offline")));
     assert_eq!(code(&check_route(st, &admin, uid, &fake).await.unwrap_err()), "already_deleted");
     assert_eq!(code(&hide(State(st.clone()), ctx(Some(&admin_tok)), Path(uid), Ok(Json(ReasonReq { reason: "Tidy up".into() }))).await.unwrap_err()), "already_deleted");
     // mirrors: placeholder data, no signals, still the same id
