@@ -5,8 +5,8 @@ import { LiveClientPage } from "@/components/live/client-page";
 
 import * as React from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { ArrowLeft, Ban, Calendar, Eye, Layers, Mail, MoreHorizontal, Phone, Scale, ShieldAlert, Clock } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { ArrowLeft, Ban, Calendar, Eye, EyeOff, Layers, Mail, MoreHorizontal, Phone, Scale, ShieldAlert, Clock, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   Avatar,
@@ -31,12 +31,14 @@ import { CLIENT_GROUPS, REASON_CODES, getClient, serverTime, staff, timeAgo } fr
 import { KycChip, ReasonDialog, RiskScore } from "@/components/command/kit";
 import { AdjustmentDialog } from "@/components/command/adjustment-dialog";
 import { AccountsTab, AuditTab, IbTab, KycTab, LoginsTab, OverviewTab, TradesTab, TransactionsTab } from "@/components/clients/profile-tabs";
+import { ClientStateChips, DeleteDialog, HideDialog, type ManageResult } from "@/components/clients/manage";
 
 type Tab = "overview" | "accounts" | "trades" | "transactions" | "kyc" | "ib" | "logins" | "audit";
 type Act = "impersonate" | "adjust" | "group" | "block" | "email" | null;
 
 function DemoClientProfilePage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const c = getClient(params.id);
   const agent = staff(c.agentId);
   const [tab, setTab] = React.useState<Tab>("overview");
@@ -44,7 +46,15 @@ function DemoClientProfilePage() {
   const [group, setGroup] = React.useState(c.group);
   const [nextGroup, setNextGroup] = React.useState<string>(c.group === "Pro" ? "VIP" : "Pro");
   const [blocked, setBlocked] = React.useState(c.tradingDisabled);
+  // client management (components/clients/manage.tsx), demo: nothing is changed on a server
+  const [manage, setManage] = React.useState<"hide" | "delete" | null>(null);
+  const [state, setState] = React.useState<{ hidden: boolean; deleted: boolean }>({ hidden: false, deleted: false });
   const close = (o: boolean) => !o && setAct(null);
+  const managed = (r: ManageResult) => {
+    setManage(null);
+    if (r === "purged") return router.push("/clients");
+    setState((s) => ({ hidden: r === "hidden" ? true : r === "unhidden" ? false : s.hidden, deleted: r === "deleted" || s.deleted }));
+  };
 
   return (
     <div className="pb-10">
@@ -75,6 +85,7 @@ function DemoClientProfilePage() {
                       <Ban className="size-3" /> Trading disabled
                     </Chip>
                   )}
+                  <ClientStateChips hidden={state.hidden} deleted={state.deleted} />
                 </div>
                 <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] text-fg-2">
                   <span className="flex items-center gap-1 font-mono">
@@ -157,8 +168,10 @@ function DemoClientProfilePage() {
                 { label: "Reset password", onSelect: () => toast.success("Password reset link sent", { description: c.email }) },
                 { label: "Reset 2FA", onSelect: () => toast.success("2FA reset — client must re-enrol") },
                 { label: "Open AML case", icon: <ShieldAlert />, href: "/clients/aml" },
+                ...(state.deleted ? [] : [{ label: state.hidden ? "Unhide client" : "Hide client", icon: state.hidden ? <Eye /> : <EyeOff />, onSelect: () => setManage("hide") }]),
                 "sep",
                 { label: "Close account", danger: true, onSelect: () => toast.error("Close account requires Compliance approval") },
+                ...(state.deleted ? [] : [{ label: "Delete client…", icon: <Trash2 />, danger: true, onSelect: () => setManage("delete") }]),
               ]}
               trigger={
                 <button className="grid size-8 place-items-center rounded-full border border-line text-fg-2 hover:bg-surface-3" aria-label="More actions">
@@ -222,6 +235,8 @@ function DemoClientProfilePage() {
         </div>
       </ReasonDialog>
       <AdjustmentDialog open={act === "adjust"} onOpenChange={close} client={c} />
+      {manage === "hide" && <HideDialog client={{ id: c.id, name: c.name, email: c.email, hidden: state.hidden }} onClose={() => setManage(null)} onDone={managed} />}
+      {manage === "delete" && <DeleteDialog client={{ id: c.id, name: c.name, email: c.email }} onClose={() => setManage(null)} onDone={managed} />}
       <ReasonDialog
         open={act === "group"}
         onOpenChange={close}
