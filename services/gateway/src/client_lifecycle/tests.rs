@@ -138,21 +138,23 @@ fn modes_round_trip() {
 
 /// The wallet and the engine as a test wants them; records the archive calls.
 struct Fake {
-    wallet: Result<WalletFacts, String>,
+    wallet: Mutex<Result<WalletFacts, String>>,
     trading: Result<TradingFacts, String>,
     refuse_archive: Option<i64>,
+    /// A deposit lands in the wallet while the accounts are being archived.
+    deposit_on_archive: bool,
     archived: Mutex<Vec<(i64, String, String)>>,
 }
 
 impl Fake {
     fn new(wallet: WalletFacts, trading: TradingFacts) -> Self {
-        Fake { wallet: Ok(wallet), trading: Ok(trading), refuse_archive: None, archived: Mutex::new(vec![]) }
+        Fake { wallet: Mutex::new(Ok(wallet)), trading: Ok(trading), refuse_archive: None, deposit_on_archive: false, archived: Mutex::new(vec![]) }
     }
 }
 
 impl Finance for Fake {
     async fn wallet(&self, _: &str, _: i64) -> Result<WalletFacts, String> {
-        self.wallet.clone()
+        self.wallet.lock().unwrap().clone()
     }
     async fn trading(&self, _: &str, _: i64) -> Result<TradingFacts, String> {
         self.trading.clone()
@@ -162,6 +164,11 @@ impl Finance for Fake {
             return Err("Close all positions and cancel all orders before archiving (HTTP 422)".into());
         }
         assert_eq!(tenant, "ezymex");
+        if self.deposit_on_archive
+            && let Ok(w) = self.wallet.lock().unwrap().as_mut()
+        {
+            w.ledger_entries += 1;
+        }
         self.archived.lock().unwrap().push((a.login, staff.role.clone(), note.to_string()));
         Ok(())
     }
@@ -489,6 +496,28 @@ async fn money_blocks_and_failures_leave_the_client_untouched() {
     assert!(v["error"]["message"].as_str().unwrap().starts_with("Couldn't archive trading account #50000101"));
     let (email, status): (String, String) = sqlx::query_as("SELECT email, status FROM users WHERE id = $1").bind(uid).fetch_one(&st.pool).await.unwrap();
     assert_eq!((email.as_str(), status.as_str()), ("keep.me@example.com", "active"));
+
+    // a first deposit lands while the accounts are being archived: the purge stops with the new verdict
+    let mut racing = Fake::new(wallet(0), trading(vec![account(10_000_102, true)]));
+    racing.deposit_on_archive = true;
+    let (s, Json(v)) = delete_with(st, &ctx(None), &admin, uid, req("Closing a test account", "keep.me@example.com", "purge"), &racing).await.unwrap();
+    assert_eq!((s, v["error"]["code"].as_str(), v["error"]["check"]["mode"].as_str()), (StatusCode::CONFLICT, Some("mode_changed"), Some("anonymize")));
+    assert_eq!(db.count("SELECT count(*) FROM users WHERE id = $1 AND deleted_at IS NULL", uid).await, 1);
     assert!(audit_meta(&db, "client.deleted", uid).await.is_none());
+
+    // another broker's admin never sees the client
+    let t2: i64 = sqlx::query_scalar("INSERT INTO tenants (slug, name) VALUES ('other-broker', 'Other Broker') RETURNING id").fetch_one(&st.pool).await.unwrap();
+    crate::rbac::seed_tenant_roles(&st.pool, t2).await.unwrap();
+    let other: i64 = sqlx::query_scalar("INSERT INTO staff (tenant_id, email, password_hash, name, role, role_id) VALUES ($1, 'admin@other.test', 'x', 'Other admin', 'admin', (SELECT id FROM roles WHERE tenant_id = $1 AND key = 'admin')) RETURNING id")
+        .bind(t2)
+        .fetch_one(&st.pool)
+        .await
+        .unwrap();
+    let other_tok = identity::create_session(st, &ctx(None), Kind::Staff, t2, other).await.unwrap().token;
+    let other = crate::admin::current(st, &ctx(Some(&other_tok))).await.unwrap();
+    assert_eq!(code(&check_route(st, &other, uid, &Fake::new(wallet(0), trading(vec![]))).await.unwrap_err()), "not_found");
+    let r = delete_with(st, &ctx(None), &other, uid, req("Not ours", "keep.me@example.com", "purge"), &Fake::new(wallet(0), trading(vec![]))).await;
+    assert_eq!(code(&r.unwrap_err()), "not_found");
+    assert_eq!(code(&hide(State(st.clone()), ctx(Some(&other_tok)), Path(uid), Ok(Json(ReasonReq { reason: "Not ours".into() }))).await.unwrap_err()), "not_found");
     db.drop_db().await;
 }

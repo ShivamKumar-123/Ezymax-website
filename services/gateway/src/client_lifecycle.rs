@@ -26,7 +26,8 @@
 //!
 //! In both modes the client's trading accounts are archived first, as this staff member (engine staff archive,
 //! reason `ARC-06`; demo accounts are emptied first; flat prop accounts are left to the prop service), so the
-//! terminal refuses them too; if one can't be archived nothing is deleted. Financial history (engine, wallet,
+//! terminal refuses them too; if one can't be archived nothing is deleted, and the check runs once more after
+//! the archive so money that arrived meanwhile stops the delete. Financial history (engine, wallet,
 //! IB, reports) and the gateway audit log are kept as AML record-keeping requires; the wallet keeps its zero-balance
 //! rows.
 //!
@@ -429,6 +430,14 @@ pub async fn delete_with<F: Finance>(st: &AppState, ctx: &Ctx, me: &Staff, id: i
             return Ok(refusal(StatusCode::BAD_GATEWAY, "archive_failed", msg, json!({ "archived": archived })));
         }
         archived.push(a.login);
+    }
+    // money or trades that arrived while the accounts were archived stop the delete
+    if !archived.is_empty() {
+        let again = check_with(&t, f).await;
+        if again.mode != c.mode {
+            let msg = "The client's activity changed while their accounts were archived. Nothing was deleted; the accounts stay archived. Review and confirm again.".to_string();
+            return Ok(refusal(StatusCode::CONFLICT, "mode_changed", msg, json!({ "check": again.json(&t), "archived": archived })));
+        }
     }
 
     // 2. the gateway rows, in one tenant-scoped transaction; KYC files go once it committed

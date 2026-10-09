@@ -121,8 +121,22 @@ fn message(v: &Value, fallback: &str) -> String {
     v.pointer("/error/message").and_then(Value::as_str).map(str::to_string).unwrap_or_else(|| fallback.to_string())
 }
 
-fn n(v: &Value) -> f64 {
-    v.as_f64().or_else(|| v.as_str().and_then(|s| s.parse().ok())).unwrap_or(0.0)
+// An answer missing a field the verdict depends on is an error, never a zero: the check fails closed.
+fn odd(key: &str) -> String {
+    format!("unexpected answer ({key} missing)")
+}
+
+fn num(v: &Value, key: &str) -> Result<f64, String> {
+    let x = &v[key];
+    x.as_f64().or_else(|| x.as_str().and_then(|s| s.parse().ok())).ok_or_else(|| odd(key))
+}
+
+fn int(v: &Value, key: &str) -> Result<i64, String> {
+    v[key].as_i64().ok_or_else(|| odd(key))
+}
+
+fn list<'a>(v: &'a Value, key: &str) -> Result<&'a Vec<Value>, String> {
+    v[key].as_array().ok_or_else(|| odd(key))
 }
 
 impl Http {
@@ -147,65 +161,58 @@ impl Finance for Http {
     async fn wallet(&self, tenant: &str, user_id: i64) -> Result<WalletFacts, String> {
         let o = self.get(true, tenant, &format!("/v1/wallets/{user_id}/overview"), None).await?;
         let l = self.get(true, tenant, &format!("/v1/wallets/{user_id}/ledger?limit=1"), None).await?;
+        // amounts stay the wallet's decimal strings; anything else reads as money (decide: nonzero)
         let s = |v: &Value| v.as_str().map(str::to_string).unwrap_or_else(|| v.to_string());
         Ok(WalletFacts {
-            balances: o["balances"]
-                .as_array()
-                .map(|a| a.iter().map(|b| Balance { currency: s(&b["currency"]), available: s(&b["available"]), locked: s(&b["locked"]) }).collect())
-                .unwrap_or_default(),
-            pending_deposits: o["pending_deposits"].as_array().map_or(0, Vec::len),
-            open_withdrawals: o["open_withdrawals"].as_array().map_or(0, Vec::len),
-            ledger_entries: l["total"].as_i64().unwrap_or(0),
+            balances: list(&o, "balances")?.iter().map(|b| Balance { currency: s(&b["currency"]), available: s(&b["available"]), locked: s(&b["locked"]) }).collect(),
+            pending_deposits: list(&o, "pending_deposits")?.len(),
+            open_withdrawals: list(&o, "open_withdrawals")?.len(),
+            ledger_entries: int(&l, "total")?,
         })
     }
 
     async fn trading(&self, tenant: &str, user_id: i64) -> Result<TradingFacts, String> {
         let v = self.get(false, tenant, &format!("/v1/accounts?user_id={user_id}"), Some(user_id)).await?;
         let mut accounts = Vec::new();
-        for a in v["accounts"].as_array().cloned().unwrap_or_default() {
-            let login = a["login"].as_i64().unwrap_or(0);
+        for a in list(&v, "accounts")? {
+            let login = int(a, "login")?;
             let mut acc = Account {
                 login,
-                live: a["type"] == "live",
-                status: a["status"].as_str().unwrap_or("").to_string(),
+                live: a["type"].as_str().ok_or_else(|| odd("type"))? == "live",
+                status: a["status"].as_str().ok_or_else(|| odd("status"))?.to_string(),
                 group: a["group"].as_str().unwrap_or("").to_string(),
                 currency: a["currency"].as_str().unwrap_or("USD").to_string(),
-                balance: n(&a["balance"]),
-                equity: n(&a["equity"]),
-                credit: n(&a["credit"]),
-                bonus: n(&a["bonus"]),
-                positions: a["positions"].as_i64().unwrap_or(0),
-                orders: a["orders"].as_i64().unwrap_or(0),
+                balance: num(a, "balance")?,
+                equity: num(a, "equity")?,
+                credit: num(a, "credit")?,
+                bonus: num(a, "bonus")?,
+                positions: int(a, "positions")?,
+                orders: int(a, "orders")?,
                 ..Default::default()
             };
             if !acc.retired() {
                 let c = self.get(false, tenant, &format!("/v1/accounts/{login}/archive-check?user_id={user_id}"), Some(user_id)).await?;
-                acc.engine_blockers = c["blockers"]
-                    .as_array()
-                    .map(|b| b.iter().map(|x| (x["code"].as_str().unwrap_or("").to_string(), x["message"].as_str().unwrap_or("").to_string())).collect())
-                    .unwrap_or_default();
+                acc.engine_blockers = list(&c, "blockers")?.iter().map(|x| (x["code"].as_str().unwrap_or("").to_string(), x["message"].as_str().unwrap_or("").to_string())).collect();
             }
             if acc.live {
                 let h = self.get(false, tenant, &format!("/v1/accounts/{login}/history?user_id={user_id}&limit=1"), Some(user_id)).await?;
                 let l = self.get(false, tenant, &format!("/v1/accounts/{login}/ledger?user_id={user_id}&limit=1"), Some(user_id)).await?;
-                acc.deals = h["total"].as_i64().unwrap_or(0);
-                acc.ledger_entries = l["total"].as_i64().unwrap_or(0);
+                acc.deals = int(&h, "total")?;
+                acc.ledger_entries = int(&l, "total")?;
             }
             accounts.push(acc);
         }
         let inv = self.get(false, tenant, "/v1/social/investments", Some(user_id)).await?;
-        let investments = inv["items"]
-            .as_array()
-            .map(|a| {
-                a.iter()
-                    .map(|i| Investment {
-                        fund: i["fund"]["name"].as_str().unwrap_or("a PAMM fund").to_string(),
-                        value: n(&i["value"]),
-                        pending_requests: i["pending"].as_array().map_or(0, Vec::len),
-                    })
-                    .collect()
+        let investments = list(&inv, "items")?
+            .iter()
+            .map(|i| {
+                Ok(Investment {
+                    fund: i["fund"]["name"].as_str().unwrap_or("a PAMM fund").to_string(),
+                    value: num(i, "value")?,
+                    pending_requests: i["pending"].as_array().map_or(0, Vec::len),
+                })
             })
-            .unwrap_or_default();
+            .collect::<Result<Vec<_>, String>>()?;
         Ok(TradingFacts { accounts, investments })
     }
 
@@ -228,5 +235,90 @@ impl Finance for Http {
         let status = r.status().as_u16();
         let v: Value = r.json().await.unwrap_or(Value::Null);
         if status == 200 { Ok(()) } else { Err(format!("{} (HTTP {status})", message(&v, "refused").trim_end_matches('.'))) }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    //! The HTTP client against a local stand-in that answers with the wallet's and the engine's shapes.
+    use super::*;
+    use axum::extract::{Path, Query};
+    use axum::http::{HeaderMap, StatusCode};
+    use axum::routing::{get, post};
+    use axum::{Json, Router};
+    use std::collections::HashMap;
+
+    async fn serve(app: Router) -> String {
+        let l = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = l.local_addr().unwrap();
+        tokio::spawn(async move { axum::serve(l, app).await.unwrap() });
+        format!("http://{addr}")
+    }
+
+    fn client(base: &str) -> Http {
+        Http { http: reqwest::Client::new(), wallet_url: base.into(), wallet_token: "w".into(), trading_url: base.into(), trading_token: "t".into() }
+    }
+
+    fn stand_in() -> Router {
+        Router::new()
+            .route("/v1/wallets/{id}/overview", get(|| async { Json(json!({ "balances": [{ "currency": "USDT", "available": "0", "locked": "12.500000" }], "pending_deposits": [], "open_withdrawals": [{ "id": 9 }] })) }))
+            .route("/v1/wallets/{id}/ledger", get(|| async { Json(json!({ "items": [], "page": 1, "limit": 1, "total": 4 })) }))
+            .route(
+                "/v1/accounts",
+                get(|h: HeaderMap, Query(q): Query<HashMap<String, String>>| async move {
+                    assert_eq!((h["x-ezymex-internal"].to_str().unwrap(), h["x-ezymex-tenant"].to_str().unwrap()), ("t", "ezymex"));
+                    assert_eq!(q["user_id"], "42");
+                    Json(json!({ "accounts": [
+                        { "login": 10000042, "type": "live", "status": "active", "group": "standard", "currency": "USD", "balance": 0, "equity": 0, "credit": 0, "bonus": 0, "positions": 0, "orders": 0 },
+                        { "login": 50000042, "type": "demo", "status": "archived", "group": "standard", "currency": "USD", "balance": 10000, "equity": 10000, "credit": 0, "bonus": 0, "positions": 0, "orders": 0 },
+                    ] }))
+                }),
+            )
+            .route("/v1/accounts/{login}/archive-check", get(|| async { Json(json!({ "canArchive": false, "blockers": [{ "code": "copy_subscription", "message": "Stop copying first." }] })) }))
+            .route("/v1/accounts/{login}/history", get(|| async { Json(json!({ "deals": [], "orders": [], "total": 3 })) }))
+            .route("/v1/accounts/{login}/ledger", get(|| async { Json(json!({ "items": [], "total": 2 })) }))
+            .route("/v1/social/investments", get(|| async { Json(json!({ "items": [{ "fundId": 2, "fund": { "name": "Gold Swing" }, "value": 997.9, "pending": [] }], "requests": [] })) }))
+            .route(
+                "/v1/admin/accounts/{login}/archive",
+                post(|Path(login): Path<i64>, h: HeaderMap, Json(b): Json<Value>| async move {
+                    assert_eq!((h["x-ezymex-staff-role"].to_str().unwrap(), h["x-ezymex-staff-name"].to_str().unwrap()), ("admin", "Jos%C3%A9%20Ruiz"));
+                    assert_eq!((b["reasonCode"].as_str().unwrap().starts_with("ARC-06"), b["empty"].as_bool()), (true, Some(false)));
+                    if login == 1 {
+                        return (StatusCode::UNPROCESSABLE_ENTITY, Json(json!({ "error": { "code": "not_empty", "message": "Close all positions first." } })));
+                    }
+                    (StatusCode::OK, Json(json!({ "data": { "status": "archived" } })))
+                }),
+            )
+    }
+
+    #[tokio::test]
+    async fn reads_the_wallet_and_the_engine() {
+        let f = client(&serve(stand_in()).await);
+        let w = f.wallet("ezymex", 42).await.unwrap();
+        assert_eq!((w.balances[0].locked.as_str(), w.open_withdrawals, w.pending_deposits, w.ledger_entries), ("12.500000", 1, 0, 4));
+        let t = f.trading("ezymex", 42).await.unwrap();
+        let (live, demo) = (&t.accounts[0], &t.accounts[1]);
+        assert_eq!((live.login, live.live, live.deals, live.ledger_entries), (10_000_042, true, 3, 2));
+        assert_eq!(live.engine_blockers, vec![("copy_subscription".to_string(), "Stop copying first.".to_string())]);
+        // an archived account is not asked again; demo history doesn't matter
+        assert!(demo.retired() && demo.engine_blockers.is_empty() && demo.deals == 0);
+        assert_eq!((t.investments[0].fund.as_str(), t.investments[0].value), ("Gold Swing", 997.9));
+
+        let staff = EngineStaff { id: 7, name: "José Ruiz".into(), role: "admin".into() };
+        f.archive("ezymex", &staff, live, "Client #42 deleted").await.unwrap();
+        let refused = f.archive("ezymex", &staff, &Account { login: 1, live: true, ..Default::default() }, "x").await.unwrap_err();
+        assert_eq!(refused, "Close all positions first (HTTP 422)");
+    }
+
+    #[tokio::test]
+    async fn odd_or_missing_answers_fail_closed() {
+        let odd = Router::new()
+            .route("/v1/wallets/{id}/overview", get(|| async { Json(json!({ "balances": [] })) }))
+            .route("/v1/wallets/{id}/ledger", get(|| async { Json(json!({ "items": [] })) }))
+            .route("/v1/accounts", get(|| async { (StatusCode::FORBIDDEN, Json(json!({ "error": { "code": "forbidden", "message": "Missing internal token." } }))) }));
+        let f = client(&serve(odd).await);
+        assert_eq!(f.wallet("ezymex", 1).await.unwrap_err(), "unexpected answer (pending_deposits missing)");
+        assert_eq!(f.trading("ezymex", 1).await.unwrap_err(), "Missing internal token (HTTP 403)");
+        assert_eq!(client("http://127.0.0.1:9").wallet("ezymex", 1).await.unwrap_err(), "not reachable");
     }
 }
