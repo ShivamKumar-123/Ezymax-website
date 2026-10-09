@@ -57,6 +57,7 @@ sudo systemctl enable ezymex-growth >/dev/null && sudo systemctl restart ezymex-
 sudo systemctl enable ezymex-reports >/dev/null && sudo systemctl restart ezymex-reports
 sudo systemctl enable ezymex-news >/dev/null && sudo systemctl restart ezymex-news
 sudo systemctl enable ezymex-options >/dev/null && sudo systemctl restart ezymex-options
+sudo systemctl enable ezymex-staking >/dev/null && sudo systemctl restart ezymex-staking
 sudo systemctl reload "$EDGE" || echo "$EDGE reload timed out (long-lived connections); config is validated, continuing"
 sleep 5
 for u in 127.0.0.1:8081/health 127.0.0.1:8080/health 127.0.0.1:8090/health 127.0.0.1:8096/health 127.0.0.1:8097/health 127.0.0.1:3000/login 127.0.0.1:3001/login 127.0.0.1:3002/login; do
@@ -70,3 +71,4 @@ printf "%-26s %s\n" 127.0.0.1:8101/health "$(curl -s -o /dev/null -w '%{http_cod
 printf "%-26s %s\n" 127.0.0.1:8102/health "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8102/health)"
 printf "%-26s %s\n" 127.0.0.1:8103/health "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8103/health)"
 printf "%-26s %s\n" 127.0.0.1:8104/health "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8104/health)"
+printf "%-26s %s\n" 127.0.0.1:8105/health "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8105/health)"

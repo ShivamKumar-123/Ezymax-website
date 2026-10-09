@@ -21,6 +21,7 @@ cargo build --release -p growth
 cargo build --release -p reports
 cargo build --release -p news
 cargo build --release -p options
+cargo build --release -p staking
 
 # trading engine secrets are generated on the server on first deploy (never committed, never printed)
 touch .env.local
@@ -35,7 +36,7 @@ fi
 grep -q '^SESSION_SECRET=' .env.local || printf 'SESSION_SECRET=%s\n' "$(openssl rand -hex 32)" >> .env.local
 grep -q '^GATEWAY_INTERNAL_TOKEN=' .env.local || printf 'GATEWAY_INTERNAL_TOKEN=%s\n' "$(openssl rand -hex 32)" >> .env.local
 grep -q '^MARKET_DATA_ADMIN_TOKEN=' .env.local || printf 'MARKET_DATA_ADMIN_TOKEN=%s\n' "$(openssl rand -hex 32)" >> .env.local
-for v in GATEWAY_ENV TRADING_ENV IB_ENV PROP_ENV ACADEMY_ENV ALGO_ENV WALLET_ENV SUPPORT_ENV GROWTH_ENV REPORTS_ENV NEWS_ENV OPTIONS_ENV; do
+for v in GATEWAY_ENV TRADING_ENV IB_ENV PROP_ENV ACADEMY_ENV ALGO_ENV WALLET_ENV SUPPORT_ENV GROWTH_ENV REPORTS_ENV NEWS_ENV OPTIONS_ENV STAKING_ENV; do
   grep -q "^$v=" .env.local || printf '%s=production\n' "$v" >> .env.local
 done
 # the three apps' BFFs reach the gateway and the trading engine with the same tokens; the Back Office edits spreads
@@ -88,22 +89,6 @@ for app in apps/crm apps/admin; do
   f="$app/.env.production.local"; touch "$f"
   grep -q '^PROP_URL=' "$f" || printf 'PROP_URL=http://127.0.0.1:8097\n' >> "$f"
   grep -q '^PROP_INTERNAL_TOKEN=' "$f" || printf 'PROP_INTERNAL_TOKEN=%s\n' "$(grep '^PROP_INTERNAL_TOKEN=' .env.local | cut -d= -f2-)" >> "$f"
-done
-# ALGO service secrets: internal token and API-key HMAC master generated once (never printed), database
-# ezymex_algo. The AI assistant's Claude key is read from .env.claude (copied from the terminal's env if missing).
-grep -q '^ALGO_INTERNAL_TOKEN=' .env.local || printf 'ALGO_INTERNAL_TOKEN=%s\n' "$(openssl rand -hex 32)" >> .env.local
-grep -q '^ALGO_KEY_SECRET=' .env.local || printf 'ALGO_KEY_SECRET=%s\n' "$(openssl rand -hex 32)" >> .env.local
-if ! grep -q '^ALGO_DATABASE_URL=' .env.local && grep -q '^GATEWAY_DATABASE_URL=' .env.local; then
-  printf 'ALGO_DATABASE_URL=%s\n' "$(grep '^GATEWAY_DATABASE_URL=' .env.local | cut -d= -f2- | sed -E 's#/[^/?]+([?].*)?$#/ezymex_algo\1#')" >> .env.local
-fi
-if ! grep -q '^ANTHROPIC_API_KEY=' .env.claude 2>/dev/null && grep -q '^ANTHROPIC_API_KEY=' apps/terminal/.env.production.local 2>/dev/null; then
-  (umask 077; grep '^ANTHROPIC_API_KEY=' apps/terminal/.env.production.local > .env.claude)
-fi
-# the Client Area and Back Office BFFs reach the ALGO service with the same token
-for app in apps/crm apps/admin; do
-  f="$app/.env.production.local"; touch "$f"
-  grep -q '^ALGO_URL=' "$f" || printf 'ALGO_URL=http://127.0.0.1:8099\n' >> "$f"
-  grep -q '^ALGO_INTERNAL_TOKEN=' "$f" || printf 'ALGO_INTERNAL_TOKEN=%s\n' "$(grep '^ALGO_INTERNAL_TOKEN=' .env.local | cut -d= -f2-)" >> "$f"
 done
 # ALGO service secrets: internal token and API-key HMAC master generated once (never printed), database
 # ezymex_algo. The AI assistant's Claude key is read from .env.claude (copied from the terminal's env if missing).
@@ -205,6 +190,19 @@ for app in apps/crm apps/admin apps/terminal; do
   f="$app/.env.production.local"; touch "$f"
   grep -q '^OPTIONS_URL=' "$f" || printf 'OPTIONS_URL=http://127.0.0.1:8104\n' >> "$f"
   grep -q '^OPTIONS_INTERNAL_TOKEN=' "$f" || printf 'OPTIONS_INTERNAL_TOKEN=%s\n' "$(grep '^OPTIONS_INTERNAL_TOKEN=' .env.local | cut -d= -f2-)" >> "$f"
+done
+# staking (Earn) service: internal token generated once (never printed), database ezymex_staking next to the gateway's.
+# It reaches the gateway (KYC, restrictions), the wallet (debits and credits) and the support service (notifications)
+# with their tokens from .env.local and the local URLs of its unit (deploy/systemd/ezymex-staking.service). The Client
+# Area and Back Office BFFs use the same token. The module stays OFF per broker until switched on in the Back Office.
+grep -q '^STAKING_INTERNAL_TOKEN=' .env.local || printf 'STAKING_INTERNAL_TOKEN=%s\n' "$(openssl rand -hex 32)" >> .env.local
+if ! grep -q '^STAKING_DATABASE_URL=' .env.local && grep -q '^GATEWAY_DATABASE_URL=' .env.local; then
+  printf 'STAKING_DATABASE_URL=%s\n' "$(grep '^GATEWAY_DATABASE_URL=' .env.local | cut -d= -f2- | sed -E 's#/[^/?]+([?].*)?$#/ezymex_staking\1#')" >> .env.local
+fi
+for app in apps/crm apps/admin; do
+  f="$app/.env.production.local"; touch "$f"
+  grep -q '^STAKING_URL=' "$f" || printf 'STAKING_URL=http://127.0.0.1:8105\n' >> "$f"
+  grep -q '^STAKING_INTERNAL_TOKEN=' "$f" || printf 'STAKING_INTERNAL_TOKEN=%s\n' "$(grep '^STAKING_INTERNAL_TOKEN=' .env.local | cut -d= -f2-)" >> "$f"
 done
 # the apps' public URLs, inlined at build time: market-data at the public edge (live quotes in the browser), Ezymex
 # Trader (Trade links and sign-in hand-off), the Client Area (links back from the Trader and the Back Office) and the

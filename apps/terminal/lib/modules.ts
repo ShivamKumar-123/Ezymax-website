@@ -29,6 +29,7 @@ const CLIENT_AREA_PAGES: readonly (readonly [string, string])[] = [
   ["/social/investments", "pamm"],
   ["/social", "copy_trading"],
   ["/prop", "prop"],
+  ["/staking", "staking"],
   ["/partner", "ib"],
   ["/developer/strategies", "algo"],
   ["/developer/deployments", "algo"],

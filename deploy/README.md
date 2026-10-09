@@ -15,6 +15,7 @@ One Ubuntu VPS runs everything. Only Caddy (ports 80/443) and SSH are reachable 
 | (internal only) | IB / referral programme (referral tree, commissions, payout batches → wallet; reached only by the app BFFs) | 8096 |
 | (internal only) | prop firm service (rule evaluator, challenges, payouts; reached only by the app BFFs) | 8097 |
 | (internal only) | Ezymex FX Options (reference data, listings, TWAP fixings, chain REST + WS, engine snapshot; `/options/stream` on trade. and `/v1/public/options/*` on api. are its only public routes; module OFF per broker until switched on) | 8104 |
+| (internal only) | staking / Earn (plans, monthly rates and settlements, maturities → wallet; reached only by the app BFFs; module OFF per broker until switched on) | 8105 |
 | (internal only) | PostgreSQL | 5432 |
 
 - `deploy.sh` pulls `main`, builds, installs the units in `systemd/` and the edge config, restarts, and checks health.
