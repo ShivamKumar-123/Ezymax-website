@@ -21,6 +21,7 @@ async fn main() -> anyhow::Result<()> {
     if cfg.internal_token.is_empty() {
         tracing::warn!("GROWTH_INTERNAL_TOKEN is empty: any local process can call the growth service (dev only)");
     }
+    growth::media::ensure_dir(&cfg.storage_dir).await?;
     let pool = db::connect(&cfg.database_url).await?;
     db::seed(&pool, "ezymex").await?;
     let st = AppState::new(pool, cfg);

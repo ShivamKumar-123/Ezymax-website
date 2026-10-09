@@ -7,6 +7,7 @@ use crate::clients;
 use crate::contests::{self, CONTEST_SELECT};
 use crate::error::{ApiError, ApiResult};
 use crate::loyalty;
+use crate::media;
 use crate::money::{D, ZERO, num};
 use crate::profiles::{self, Profile};
 use crate::promos;
@@ -14,10 +15,11 @@ use crate::shares::{self, ShareReq};
 use crate::state::AppState;
 use axum::Json;
 use axum::extract::{Path, Query, State};
-use chrono::{Duration, Utc};
+use chrono::{DateTime, Duration, Utc};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use sqlx::Row;
+use sqlx::postgres::PgRow;
 
 /// Refreshes the profile from the BFF's hints and returns it.
 async fn profile(st: &AppState, u: &UserCtx) -> ApiResult<Profile> {
@@ -203,25 +205,51 @@ pub async fn join(State(st): State<AppState>, u: UserCtx, Path(id): Path<i64>, b
     Ok(Json(contests::join(&st, &u.tenant, u.user_id, id, body.and_then(|b| b.0.login), &p).await?))
 }
 
-// ---------------------------------------------------------------- banners (D121)
+// ---------------------------------------------------------------- banners, events and brand posts (D121)
 
-pub fn banner_view(r: &sqlx::postgres::PgRow) -> Value {
+/// The image a client loads: an uploaded image (served by the Client Area BFF) or the banner's image URL.
+fn image_of(r: &PgRow) -> Option<String> {
+    match r.get::<Option<String>, _>("image_media_id") {
+        Some(id) => Some(media::public_url(&id)),
+        None => r.get("image_url"),
+    }
+}
+
+/// `upcoming` / `live` / `ended` for an event (its end, or its start when it has none), None for anything else.
+pub fn event_state(kind: &str, starts: Option<DateTime<Utc>>, ends: Option<DateTime<Utc>>, now: DateTime<Utc>) -> Option<&'static str> {
+    let start = starts.filter(|_| kind == "event")?;
+    let end = ends.unwrap_or(start);
+    Some(if now < start { "upcoming" } else if now <= end { "live" } else { "ended" })
+}
+
+pub fn banner_view(r: &PgRow) -> Value {
+    let kind: String = r.get("kind");
+    let starts: Option<DateTime<Utc>> = r.get("event_starts_at");
+    let ends: Option<DateTime<Utc>> = r.get("event_ends_at");
     json!({
         "id": r.get::<i64, _>("id"),
+        "kind": kind,
+        "layout": r.get::<String, _>("layout"),
         "title": r.get::<String, _>("title"),
         "body": r.get::<String, _>("body"),
         "ctaLabel": r.get::<Option<String>, _>("cta_label"),
         "ctaUrl": r.get::<Option<String>, _>("cta_url"),
-        "imageUrl": r.get::<Option<String>, _>("image_url"),
+        "imageUrl": image_of(r),
+        "imageMediaId": r.get::<Option<String>, _>("image_media_id"),
         "tone": r.get::<String, _>("tone"),
         "placement": r.get::<String, _>("placement"),
         "dismissible": r.get::<bool, _>("dismissible"),
+        "eventStartsAt": starts,
+        "eventEndsAt": ends,
+        "eventState": event_state(&kind, starts, ends, Utc::now()),
+        "location": r.get::<Option<String>, _>("location"),
+        "publishedAt": r.get::<DateTime<Utc>, _>("starts_at"),
     })
 }
 
 /// Whether a banner targets this segment. `account_types`: the client's account kinds (`none` when empty);
 /// None = unknown (engine unavailable): account-type targeted banners are skipped.
-pub fn banner_matches(r: &sqlx::postgres::PgRow, seg: &Segment, account_types: Option<&[String]>) -> bool {
+pub fn banner_matches(r: &PgRow, seg: &Segment, account_types: Option<&[String]>) -> bool {
     let countries: Vec<String> = r.get("countries");
     if !countries.is_empty() && !countries.iter().any(|c| c.eq_ignore_ascii_case(&seg.country)) {
         return false;
@@ -245,7 +273,33 @@ pub fn banner_matches(r: &sqlx::postgres::PgRow, seg: &Segment, account_types: O
     true
 }
 
-pub const BANNER_LIVE: &str = "SELECT * FROM banners WHERE tenant = $1 AND active AND starts_at <= now() AND (ends_at IS NULL OR ends_at > now()) AND ($2::text IS NULL OR placement = $2) ORDER BY priority DESC, id DESC";
+/// Banner slots: the targeted banners of a placement, plus events and posts featured in the hero (layout `hero`).
+pub const BANNER_LIVE: &str = "SELECT * FROM banners WHERE tenant = $1 AND active AND deleted_at IS NULL AND starts_at <= now() AND (ends_at IS NULL OR ends_at > now())
+     AND ($2::text IS NULL OR placement = $2) AND (kind = 'banner' OR layout = 'hero') ORDER BY priority DESC, id DESC";
+/// Events & updates: live events and brand posts (targeting is applied after).
+pub const POSTS_LIVE: &str = "SELECT * FROM banners WHERE tenant = $1 AND kind IN ('event', 'post') AND active AND deleted_at IS NULL AND starts_at <= now() AND (ends_at IS NULL OR ends_at > now())
+     ORDER BY id DESC LIMIT 500";
+
+/// The client's account kinds for account-type targeting (`none` without an account); Some(empty) when no row
+/// targets account types, None when the engine is unavailable.
+async fn account_types(st: &AppState, u: &UserCtx, rows: &[PgRow]) -> Option<Vec<String>> {
+    if rows.iter().all(|r| r.get::<Vec<String>, _>("account_types").is_empty()) {
+        return Some(vec![]);
+    }
+    match clients::accounts_of(st, &u.tenant, u.user_id, None).await {
+        Ok(accs) => {
+            let mut t: Vec<String> = accs.iter().map(|a| a.kind.clone()).collect();
+            if t.is_empty() {
+                t.push("none".into());
+            }
+            Some(t)
+        }
+        Err(e) => {
+            tracing::debug!(error = %e, "accounts unavailable for banner targeting");
+            None
+        }
+    }
+}
 
 #[derive(Deserialize)]
 pub struct BannerQ {
@@ -260,26 +314,65 @@ pub async fn banners(State(st): State<AppState>, u: UserCtx, Query(q): Query<Ban
         return Ok(Json(json!({"items": []})));
     }
     let dismissed: Vec<i64> = sqlx::query_scalar("SELECT DISTINCT banner_id FROM banner_events WHERE user_id = $1 AND kind = 'dismiss'").bind(u.user_id).fetch_all(&st.pool).await?;
-    let types: Option<Vec<String>> = if rows.iter().any(|r| !r.get::<Vec<String>, _>("account_types").is_empty()) {
-        match clients::accounts_of(&st, &u.tenant, u.user_id, None).await {
-            Ok(accs) => {
-                let mut t: Vec<String> = accs.iter().map(|a| a.kind.clone()).collect();
-                if t.is_empty() {
-                    t.push("none".into());
-                }
-                Some(t)
-            }
-            Err(e) => {
-                tracing::debug!(error = %e, "accounts unavailable for banner targeting");
-                None
-            }
-        }
-    } else {
-        Some(vec![])
-    };
+    let types = account_types(&st, &u, &rows).await;
     let seg = p.segment();
     let items: Vec<Value> = rows.iter().filter(|r| !dismissed.contains(&r.get::<i64, _>("id"))).filter(|r| banner_matches(r, &seg, types.as_deref())).map(banner_view).collect();
     Ok(Json(json!({"items": items})))
+}
+
+/// Events & updates order: upcoming and running events first (soonest first), then posts (by publish time) and
+/// ended events (by when they ended), newest first; ties by id, newest first.
+pub fn post_order(kind: &str, event_start: Option<DateTime<Utc>>, event_end: Option<DateTime<Utc>>, published: DateTime<Utc>, id: i64, now: DateTime<Utc>) -> (u8, i64, i64) {
+    match (event_state(kind, event_start, event_end, now), event_start) {
+        (Some("upcoming" | "live"), Some(start)) => (0, start.timestamp(), -id),
+        (Some(_), Some(start)) => (1, -event_end.unwrap_or(start).timestamp(), -id),
+        _ => (1, -published.timestamp(), -id),
+    }
+}
+
+#[derive(Deserialize)]
+pub struct PostsQ {
+    kind: Option<String>,
+    page: Option<i64>,
+    limit: Option<i64>,
+}
+
+pub async fn posts(State(st): State<AppState>, u: UserCtx, Query(q): Query<PostsQ>) -> ApiResult<Json<Value>> {
+    let p = profile(&st, &u).await?;
+    let (page, limit, off) = paging(q.page, q.limit, 20, 50);
+    let kind = q.kind.filter(|k| matches!(k.as_str(), "event" | "post"));
+    let rows = sqlx::query(POSTS_LIVE).bind(&u.tenant).fetch_all(&st.pool).await?;
+    let types = account_types(&st, &u, &rows).await;
+    let seg = p.segment();
+    let now = Utc::now();
+    let mut items: Vec<&PgRow> = rows
+        .iter()
+        .filter(|r| kind.as_deref().is_none_or(|k| r.get::<String, _>("kind") == k))
+        .filter(|r| banner_matches(r, &seg, types.as_deref()))
+        .collect();
+    items.sort_by_key(|r| post_order(&r.get::<String, _>("kind"), r.get("event_starts_at"), r.get("event_ends_at"), r.get("starts_at"), r.get("id"), now));
+    let total = items.len();
+    let page_items: Vec<Value> = items.into_iter().skip(off as usize).take(limit as usize).map(banner_view).collect();
+    Ok(Json(json!({"items": page_items, "total": total, "page": page, "limit": limit})))
+}
+
+pub async fn post(State(st): State<AppState>, u: UserCtx, Path(id): Path<i64>) -> ApiResult<Json<Value>> {
+    let p = profile(&st, &u).await?;
+    let r = sqlx::query(
+        "SELECT * FROM banners WHERE id = $1 AND tenant = $2 AND kind IN ('event', 'post') AND active AND deleted_at IS NULL AND starts_at <= now() AND (ends_at IS NULL OR ends_at > now())",
+    )
+    .bind(id)
+    .bind(&u.tenant)
+    .fetch_optional(&st.pool)
+    .await?
+    .ok_or(ApiError::NotFound)?;
+    let types = account_types(&st, &u, std::slice::from_ref(&r)).await;
+    if !banner_matches(&r, &p.segment(), types.as_deref()) {
+        return Err(ApiError::NotFound);
+    }
+    let mut v = banner_view(&r);
+    v["content"] = json!(r.get::<String, _>("content"));
+    Ok(Json(json!({"post": v})))
 }
 
 #[derive(Deserialize)]
@@ -291,7 +384,7 @@ pub async fn banner_event(State(st): State<AppState>, u: UserCtx, Path(id): Path
     if !matches!(b.kind.as_str(), "impression" | "click" | "dismiss") {
         return Err(crate::error::invalid("kind", "kind must be impression, click or dismiss."));
     }
-    let n = sqlx::query("INSERT INTO banner_events (banner_id, user_id, kind, day) SELECT id, $3, $4, current_date FROM banners WHERE id = $1 AND tenant = $2 ON CONFLICT DO NOTHING")
+    let n = sqlx::query("INSERT INTO banner_events (banner_id, user_id, kind, day) SELECT id, $3, $4, current_date FROM banners WHERE id = $1 AND tenant = $2 AND deleted_at IS NULL ON CONFLICT DO NOTHING")
         .bind(id)
         .bind(&u.tenant)
         .bind(u.user_id)
@@ -312,4 +405,44 @@ pub async fn shares(State(st): State<AppState>, u: UserCtx) -> ApiResult<Json<Va
 pub async fn create_share(State(st): State<AppState>, u: UserCtx, Json(b): Json<ShareReq>) -> ApiResult<Json<Value>> {
     let p = profile(&st, &u).await?;
     Ok(Json(shares::create(&st, &u.tenant, u.user_id, &b, &p).await?))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn event_states() {
+        let now = Utc::now();
+        let h = Duration::hours;
+        assert_eq!(event_state("event", Some(now + h(2)), None, now), Some("upcoming"));
+        assert_eq!(event_state("event", Some(now - h(1)), Some(now + h(1)), now), Some("live"));
+        assert_eq!(event_state("event", Some(now - h(3)), Some(now - h(1)), now), Some("ended"));
+        // no end: over once it started
+        assert_eq!(event_state("event", Some(now - h(1)), None, now), Some("ended"));
+        assert_eq!(event_state("post", Some(now + h(2)), None, now), None);
+        assert_eq!(event_state("event", None, None, now), None);
+    }
+
+    #[test]
+    fn updates_order_upcoming_events_first_then_newest() {
+        let now = Utc::now();
+        let d = Duration::days;
+        // (kind, event start, event end, published, id)
+        let rows = [
+            ("post", None, None, now - d(3), 1),
+            ("event", Some(now + d(9)), None, now - d(1), 2),
+            ("event", Some(now - d(6)), Some(now - d(6) + Duration::hours(1)), now, 3),
+            ("post", None, None, now - Duration::hours(2), 4),
+            ("event", Some(now + d(2)), Some(now + d(2) + Duration::hours(3)), now - d(5), 5),
+            ("event", Some(now - Duration::hours(1)), Some(now + Duration::hours(1)), now - d(10), 6),
+            ("post", None, None, now - Duration::hours(2), 7),
+        ];
+        let mut sorted = rows.to_vec();
+        sorted.sort_by_key(|(k, s, e, p, id)| post_order(k, *s, *e, *p, *id, now));
+        let ids: Vec<i64> = sorted.iter().map(|r| r.4).collect();
+        // live (6), upcoming soonest first (5, 2); then newest: posts 7 and 4 (same time: newer id first), post 1 (3 days),
+        // the event that ended 6 days ago (3) although it was published just now
+        assert_eq!(ids, vec![6, 5, 2, 7, 4, 1, 3]);
+    }
 }

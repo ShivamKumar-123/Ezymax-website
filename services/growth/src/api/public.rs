@@ -1,4 +1,4 @@
-//! Public share cards (read by the Client Area server) and the voucher API for other services.
+//! Public share cards and uploaded images (read by the Client Area server) and the voucher API for other services.
 
 use super::Tenant;
 use crate::error::{ApiError, ApiResult};
@@ -72,6 +72,15 @@ pub async fn redeem_voucher(State(st): State<AppState>, Tenant(tenant): Tenant, 
     let v = sqlx::query("UPDATE vouchers SET status = 'used', used_at = now(), used_ref = $2 WHERE id = $1 RETURNING *").bind(v.get::<i64, _>("id")).bind(&b.reference).fetch_one(&mut *tx).await?;
     tx.commit().await?;
     Ok(Json(json!({"pct": num(v.get("pct")), "voucher": loyalty::voucher_json(&v), "replayed": false})))
+}
+
+/// `GET /v1/growth/public/media/{id}`: an uploaded banner / event / post image, for the Client Area BFF (public, no
+/// session: the web and the mobile app load it as an image) and the Back Office preview. Immutable: a new image is a
+/// new id, so browsers and the edge may cache it for a year; `If-None-Match` answers 304.
+pub async fn media(State(st): State<AppState>, Path(id): Path<String>, headers: axum::http::HeaderMap) -> ApiResult<axum::response::Response> {
+    let (bytes, mime, sha) = crate::media::read(&st, &id).await?;
+    let inm = headers.get(axum::http::header::IF_NONE_MATCH).and_then(|v| v.to_str().ok());
+    Ok(crate::media::response(&id, bytes, &mime, &sha, inm))
 }
 
 #[derive(Deserialize, Default)]

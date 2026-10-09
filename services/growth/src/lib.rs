@@ -1,5 +1,6 @@
 //! Ezymex growth: rewards (loyalty points, tiers, catalogue, cashback, contests) and marketing (bonus
-//! campaigns with per-lot release, promo codes, targeted banners, share P&L cards). D29, D121, D135, D136, D144.
+//! campaigns with per-lot release, promo codes, targeted banners, brand events and posts with uploaded images, share
+//! P&L cards). D29, D121, D135, D136, D144.
 //! Reads closed deals from the trading engine, posts bonus / credit through the engine's admin account API and
 //! pays cash rewards through the wallet service. See README.md.
 
@@ -16,6 +17,7 @@ pub mod deals;
 pub mod error;
 pub mod journeys;
 pub mod loyalty;
+pub mod media;
 pub mod model;
 pub mod money;
 pub mod payouts;
