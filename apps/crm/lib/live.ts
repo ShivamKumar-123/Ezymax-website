@@ -3,7 +3,7 @@
 // (see components/live-gate.tsx). Demo builds (NEXT_PUBLIC_EZYMEX_MODE=demo) render everything.
 
 /** Path prefixes rendered in live builds ("/" matches only the dashboard itself). */
-export const LIVE_PAGES = ["/", "/markets", "/profile", "/support", "/accounts", "/portfolio", "/social", "/partner", "/academy", "/prop", "/wallet", "/developer", "/rewards", "/news", "/calendar", "/options"] as const;
+export const LIVE_PAGES = ["/", "/markets", "/profile", "/support", "/accounts", "/portfolio", "/social", "/partner", "/academy", "/prop", "/wallet", "/developer", "/rewards", "/news", "/calendar", "/options", "/staking"] as const;
 
 /** Sub-pages of a live prefix that are still mock-only and stay gated in live builds. */
 export const LIVE_GATED = ["/academy/coach"] as const;

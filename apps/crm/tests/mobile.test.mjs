@@ -150,7 +150,8 @@ test("mobile paths resolve to rewrites of the cookie routes or to native routes;
   for (const family of mobile.REWRITE_FAMILIES) {
     assert.deepEqual(mobile.mobileRoute(`/api/mobile/${family}/x/1`), { kind: "rewrite", target: `/api/${family}/x/1`, policyPath: `/api/${family}/x/1` }, family);
   }
-  assert.equal(mobile.REWRITE_FAMILIES.length, 16);
+  assert.equal(mobile.REWRITE_FAMILIES.length, 17);
+  assert.deepEqual(mobile.mobileRoute("/api/mobile/staking/positions"), { kind: "rewrite", target: "/api/staking/positions", policyPath: "/api/staking/positions" });
   assert.deepEqual(mobile.mobileRoute("/api/mobile/notifications"), { kind: "rewrite", target: "/api/notifications", policyPath: "/api/notifications" });
   assert.deepEqual(mobile.mobileRoute("/api/mobile/suitability/options/quiz"), { kind: "rewrite", target: "/api/suitability/options/quiz", policyPath: "/api/suitability/options/quiz" });
   assert.deepEqual(mobile.mobileRoute("/api/mobile/auth/heartbeat"), { kind: "rewrite", target: "/api/auth/heartbeat", policyPath: "/api/auth/heartbeat" });

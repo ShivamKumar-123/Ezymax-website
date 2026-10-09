@@ -52,6 +52,7 @@ import {
   SlidersHorizontal,
   Bell,
   ChartSpline,
+  PiggyBank,
 } from "lucide-react";
 import type { NavModule } from "@ezymex/ui";
 import { IS_DEMO } from "@ezymex/mock/mode";
@@ -158,6 +159,18 @@ export const CRM_NAV: NavModule[] = [
     ],
   },
   {
+    key: "staking",
+    label: "Staking",
+    icon: PiggyBank,
+    href: "/staking",
+    section: "grow",
+    sub: [
+      { href: "/staking", label: "Plans", icon: PiggyBank },
+      { href: "/staking/portfolio", label: "My staking", icon: PieChart },
+      { href: "/staking/history", label: "History", icon: History },
+    ],
+  },
+  {
     key: "rewards",
     label: "Contests & Rewards",
     icon: Gift,
@@ -260,6 +273,7 @@ const MODULE_KEYS: Record<string, MessageKey> = {
   profile: "shell.nav.profileSecurity",
   support: "shell.nav.support",
   options: "options.nav.title",
+  staking: "staking.nav.title",
 };
 
 const SUB_KEYS: Record<string, MessageKey> = {
@@ -317,6 +331,9 @@ const SUB_KEYS: Record<string, MessageKey> = {
   "/profile/notifications": "shell.nav.notifications",
   "/social/managed": "shell.nav.managed",
   "/social/mam": "shell.nav.mamManager",
+  "/staking": "staking.nav.plans",
+  "/staking/portfolio": "staking.nav.portfolio",
+  "/staking/history": "staking.nav.history",
 };
 
 /** Navigation with labels in the reader's language (unknown entries keep their English label). */

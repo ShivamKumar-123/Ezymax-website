@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast, useSonner } from "sonner";
-import { ArrowDownToLine, Bell, CandlestickChart, CheckCircle2, Coins, IdCard, Info, LifeBuoy, Megaphone, ShieldCheck, Trophy, TriangleAlert, Users, Wallet, XCircle } from "lucide-react";
+import { ArrowDownToLine, Bell, CandlestickChart, CheckCircle2, Coins, IdCard, Info, LifeBuoy, Megaphone, PiggyBank, ShieldCheck, Trophy, TriangleAlert, Users, Wallet, XCircle } from "lucide-react";
 import { EmptyState, IconButton, Popover, cn } from "@/components/kit";
 import type { TileTone } from "@/components/kit";
 import { IS_DEMO, NOTIFICATIONS } from "@ezymex/mock";
@@ -208,6 +208,7 @@ const CATEGORY_TONE: Record<string, TileTone> = {
   ib: "amber",
   copy: "pink",
   prop: "amber",
+  staking: "mint",
   support: "lavender",
   marketing: "pink",
   system: "neutral",
@@ -222,6 +223,7 @@ const CATEGORY_ICON: Record<string, React.ReactNode> = {
   ib: <Coins />,
   copy: <Users />,
   prop: <Trophy />,
+  staking: <PiggyBank />,
   support: <LifeBuoy />,
   marketing: <Megaphone />,
   system: <Bell />,

@@ -228,6 +228,8 @@ const profile = {
   "notifications.cat.wallet.hint": "Deposits credited, withdrawals approved, rejected or paid",
   "notifications.cat.support": "Support replies",
   "notifications.cat.support.hint": "Replies from our support team",
+  "notifications.cat.staking": "Staking (Earn)",
+  "notifications.cat.staking.hint": "Subscriptions confirmed, monthly returns credited and principal returned at maturity",
 
   // Preferences page
   "prefs.title": "Preferences",
