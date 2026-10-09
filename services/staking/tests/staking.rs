@@ -305,6 +305,11 @@ async fn monthly_settlement_four_eyes_and_idempotent_credits() {
     assert_eq!(want_c, dec("8"));
     assert_eq!(pv["totals"]["lines"], 3);
     assert_eq!(D::from_str(&pv["totals"]["amount"].to_string()).unwrap(), want_a + want_b + want_c);
+    // the Back Office estimate is rounded line by line like the settlement
+    let mv = rates::month(&e.st, "ezymex", month).await.unwrap();
+    let item = mv["items"].as_array().unwrap().iter().find(|i| i["plan"]["id"] == plan.id).unwrap();
+    assert_eq!(D::from_str(&item["estimate"].to_string()).unwrap(), want_a + want_b);
+    assert_eq!((item["positions"].as_i64(), mv["editable"].as_bool()), (Some(2), Some(true)));
 
     let id = settlements::create(&e.st, "ezymex", &staff(1), month, "Month closed").await.unwrap();
     assert_eq!(code(settlements::create(&e.st, "ezymex", &staff(2), month, "Again").await.unwrap_err()), "settlement_exists");

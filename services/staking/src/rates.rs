@@ -38,6 +38,8 @@ pub async fn month(st: &AppState, tenant: &str, p: Period) -> ApiResult<Value> {
         .fetch_all(&st.pool)
         .await?;
     let mut base: HashMap<i64, (i64, D, D)> = HashMap::new();
+    // (principal, days) per plan: the estimate is rounded line by line, exactly like the settlement
+    let mut lines: HashMap<i64, Vec<(D, i64)>> = HashMap::new();
     let dim = D::from(p.days());
     for r in &pos {
         let days = period::days_active(r.get("started_at"), r.get("matures_at"), p);
@@ -49,6 +51,7 @@ pub async fn month(st: &AppState, tenant: &str, p: Period) -> ApiResult<Value> {
         e.0 += 1;
         e.1 += principal;
         e.2 += principal * D::from(days) / dim / HUNDRED;
+        lines.entry(r.get("plan_id")).or_default().push((principal, days));
     }
     let paid_prev = sqlx::query("SELECT plan_id, sum(amount) AS amount FROM settlement_lines WHERE tenant = $1 AND period = $2 AND status IN ('paid', 'transfer_pending', 'failed') GROUP BY plan_id")
         .bind(tenant)
@@ -67,7 +70,10 @@ pub async fn month(st: &AppState, tenant: &str, p: Period) -> ApiResult<Value> {
         .map(|pl| {
             let b = base.get(&pl.id).copied().unwrap_or((0, ZERO, ZERO));
             let cur = rates.get(&(pl.id, ps.clone())).map(|r| rate_json(r));
-            let estimate = rates.get(&(pl.id, ps.clone())).map(|r| r2(b.2 * r.get::<D, _>("rate_pct")));
+            let estimate = rates.get(&(pl.id, ps.clone())).map(|r| {
+                let rate: D = r.get("rate_pct");
+                lines.get(&pl.id).map(|v| v.iter().map(|(principal, days)| period::accrual(*principal, rate, *days, p.days())).sum::<D>()).unwrap_or(ZERO)
+            });
             json!({
                 "plan": {"id": pl.id, "name": pl.name, "status": pl.status, "currency": pl.currency, "maxMonthlyRatePct": num(pl.max_monthly_rate_pct), "termMonths": pl.term_months},
                 "rate": cur,
