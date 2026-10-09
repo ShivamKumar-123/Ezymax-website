@@ -17,28 +17,21 @@ import {
   type SeriesType,
   type UTCTimestamp,
 } from "lightweight-charts";
-import { candles, fetchCandles, getInstrument, priceFeed, serverOffset, type Candle, type LiveBar } from "@ezymex/mock";
+import { fetchCandles, getInstrument, priceFeed, type Candle, type LiveBar } from "@ezymex/mock";
 import type { IndicatorInstance } from "@/lib/indicators";
-import { TF_SECONDS, TIMEFRAMES, type ChartType, type Timeframe } from "@/lib/trading";
+import { TF_SECONDS, type ChartType, type Timeframe } from "@/lib/trading";
+import { LiveChartBars, buildHistory, chartBars, chartSeries, fromChartTime, toChartTime, type ChartSeries } from "@/lib/chart-time";
 import { createIndicatorLayer, type IndLegendRow, type IndicatorLayer } from "./indicators/layer";
 import { BrandWatermark } from "./brand-watermark";
 
-/**
- * Charts are drawn in broker server time like MT5: GMT+3 while US daylight saving is active, GMT+2 otherwise
- * (so the day starts at New York close). Always convert with these DST-aware helpers, never a fixed offset.
- */
-/** UTC unix seconds → chart time (server time, New York close). */
-export const toChartTime = (utc: number) => utc + serverOffset(utc);
-
-/** Chart time → UTC unix seconds (inverse of toChartTime, DST-aware). */
-export function fromChartTime(chart: number): number {
-  const summer = chart - 3 * 3600;
-  return summer + serverOffset(summer) === chart ? summer : chart - 2 * 3600;
-}
+// Charts are drawn in broker server time like MT5 (lib/chart-time.ts); the helpers stay importable from here.
+export { buildHistory, fromChartTime, toChartTime };
 
 /* ---- real history from the market-data service, cached per symbol/timeframe ---- */
 type History = Candle[] | "sim";
 const historyCache = new Map<string, History>();
+/** how the newest bar of a cached history was built (the repeated hour at the end of US DST), for its live stream */
+const historyTails = new WeakMap<Candle[], Pick<ChartSeries, "utc" | "base">>();
 /** when each real history entry was last brought up to date (ms) */
 const historyAt = new Map<string, number>();
 const historyWait = new Map<string, Promise<History>>();
@@ -64,7 +57,9 @@ function loadHistory(symbol: string, tf: Timeframe): Promise<History> {
       if (priceFeed().mode !== "live") return "sim";
       const bars = await fetching;
       if (!bars || bars.length === 0) return "sim";
-      return bars.map((b) => ({ ...b, time: toChartTime(b.time) }));
+      const s = chartSeries(bars);
+      historyTails.set(s.bars, s);
+      return s.bars;
     })().then((h) => {
       // a failed fetch while live is not remembered: the next mount retries
       if (h !== "sim" || priceFeed().mode !== "live") historyCache.set(key, h);
@@ -159,25 +154,6 @@ export function readPalette(el: Element): Palette {
     mono: readVar(document.body, "--font-geist-mono", "ui-monospace").replace(/"/g, "'") + ", ui-monospace, monospace",
     dark,
   };
-}
-
-/** Seeded history re-timed to "now" and scaled to a timeframe-appropriate volatility. */
-export function buildHistory(symbol: string, tf: Timeframe): Candle[] {
-  const step = TF_SECONDS[tf];
-  const idx = TIMEFRAMES.indexOf(tf);
-  const count = tf === "MN" ? 120 : tf === "W1" ? 200 : tf === "D1" ? 300 : 360 + idx;
-  const raw = candles(symbol, count, step);
-  const k = Math.min(2.6, 0.24 * Math.pow(step / 60, 0.2));
-  const last = raw[raw.length - 1]!.close;
-  const bid = priceFeed().snapshot(symbol)?.bid ?? last;
-  const f = (p: number) => bid * Math.exp(k * Math.log(p / last));
-  const now = toChartTime(Math.floor(Date.now() / 1000));
-  const lastT = Math.floor(now / step) * step;
-  return raw.map((c, i) => {
-    const o = f(c.open);
-    const cl = f(c.close);
-    return { time: lastT - (raw.length - 1 - i) * step, open: o, high: Math.max(f(c.high), o, cl), low: Math.min(f(c.low), o, cl), close: cl, volume: c.volume };
-  });
 }
 
 export interface LegendData {
@@ -331,12 +307,16 @@ export function useChartEngine(
     /* ---- live: the service pushes the exact forming bar (same candle as stored); quotes move the ask line ---- */
     let unsubBars = () => {};
     let lastLive: Candle | null = null;
+    // stream bars in chart time; the hour repeated when US daylight saving ends merges into the bar already drawn
+    const liveBars = new LiveChartBars();
+    liveBars.reset(history !== "sim" ? historyTails.get(history) : undefined);
     if (live) {
       unsubBars = priceFeed().subscribeBars(symbol, tf, (b: LiveBar) => {
-        const bar: Candle = { time: toChartTime(b.t), open: b.o, high: b.h, low: b.l, close: b.c, volume: b.v };
-        lastLive = bar;
         const last = data[data.length - 1]!;
-        if (bar.time < last.time) return;
+        const bar = liveBars.map({ time: b.t, open: b.o, high: b.h, low: b.l, close: b.c, volume: b.v }, last);
+        if (liveBars.stale) refreshTail();
+        if (!bar) return;
+        lastLive = bar;
         if (bar.time > last.time) data.push(bar);
         else data[data.length - 1] = bar;
         redraw(bar);
@@ -373,7 +353,7 @@ export function useChartEngine(
       void fetchCandles(symbol, tf, 1500, fromChartTime(first) - 1).then((older) => {
         loadingOlder = false;
         if (!alive.current) return;
-        const add = (older ?? []).map((b) => ({ ...b, time: toChartTime(b.time) })).filter((b) => b.time < first);
+        const add = chartBars(older ?? []).filter((b) => b.time < first);
         if (add.length === 0) {
           exhausted = true;
           return;
@@ -398,7 +378,9 @@ export function useChartEngine(
       void fetchCandles(symbol, tf, limit).then((fresh) => {
         refreshing = false;
         if (!alive.current || !fresh || fresh.length === 0) return;
-        const tail = fresh.map((b) => ({ ...b, time: toChartTime(b.time) }));
+        const series = chartSeries(fresh);
+        const tail = series.bars;
+        liveBars.reset(series);
         const from = tail[0]!.time;
         if (tail.length >= limit && from > lastT) {
           data.splice(0, data.length, ...tail); // the gap is longer than one page: start over from the fresh page
