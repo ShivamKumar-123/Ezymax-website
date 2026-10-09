@@ -123,6 +123,8 @@ const load = async () => ({
 });
 
 const BASE = "https://app.ezymex.com";
+// rewrites stay on this server: same host, the app's own http (proxy.ts sameServer; the edge terminates HTTPS)
+const INTERNAL = "http://app.ezymex.com";
 const headersOf = (res) => Object.fromEntries(res.headers.entries());
 const json = { "content-type": "application/json" };
 const auth = (t) => ({ authorization: `Bearer ${t}` });
@@ -225,11 +227,11 @@ test("a bearer token together with cookies is refused before any handler or upst
 test("bearer requests are rewritten onto the cookie routes and pass their same-origin check; identity comes from the gateway", async () => {
   const m = await load();
   const { res, target } = await viaProxy(m, "/api/mobile/wallet/withdrawals/quote", { method: "POST", headers: { ...json, ...auth(TOKENS.user) }, body: JSON.stringify({ amount: "10", chain: "tron", to_address: "TU7PHUS22Hw632YsnAyjxNh4gu3u8PzcHZ", user_id: 999 }) }, m.wallet.POST, { path: ["withdrawals", "quote"] });
-  assert.equal(target, `${BASE}/api/wallet/withdrawals/quote`);
+  assert.equal(target, `${INTERNAL}/api/wallet/withdrawals/quote`);
   assert.equal(res.status, 200);
   assert.equal(calls.findLast((c) => c.path === "/v1/withdrawals/quote").body.user_id, 42);
   const read = await viaProxy(m, "/api/mobile/wallet/overview?x=1", { headers: auth(TOKENS.user) }, m.wallet.GET, { path: ["overview"] });
-  assert.equal(read.target, `${BASE}/api/wallet/overview?x=1`, "the query string is kept");
+  assert.equal(read.target, `${INTERNAL}/api/wallet/overview?x=1`, "the query string is kept");
   assert.equal(read.res.status, 200);
   assert.ok(calls.findLast((c) => c.svc === "wallet").path.startsWith("/v1/wallets/42/"));
 });
@@ -264,7 +266,7 @@ test("uploads pass the rewrite: KYC multipart documents and support attachments 
   form.set("kind", "passport");
   form.set("side", "front");
   const kyc = await viaProxy(m, "/api/mobile/kyc/documents", { method: "POST", headers: auth(TOKENS.user), body: form }, m.kyc.POST, { path: ["documents"] });
-  assert.equal(kyc.target, `${BASE}/api/kyc/documents`);
+  assert.equal(kyc.target, `${INTERNAL}/api/kyc/documents`);
   assert.equal(kyc.res.status, 200, JSON.stringify(await kyc.res.clone().json()));
   const sent = calls.findLast((c) => c.path.startsWith("/v1/kyc/documents"));
   assert.match(sent.path, /kind=passport/);
@@ -283,7 +285,7 @@ test("uploads pass the rewrite: KYC multipart documents and support attachments 
 test("the support / notifications stream ticket works through the rewrite; config names the stream", async () => {
   const m = await load();
   const { res, target } = await viaProxy(m, "/api/mobile/support/stream-ticket", { method: "POST", headers: { ...json, ...auth(TOKENS.user) }, body: "{}" }, m.support.POST, { path: ["stream-ticket"] });
-  assert.equal(target, `${BASE}/api/support/stream-ticket`);
+  assert.equal(target, `${INTERNAL}/api/support/stream-ticket`);
   assert.equal(res.status, 200);
   assert.equal((await res.json()).ticket, "sup-ticket-1");
   // a read-only staff session may open the receive-only stream, as on the web
@@ -294,7 +296,7 @@ test("the support / notifications stream ticket works through the rewrite; confi
 test("the heartbeat cookie route works with the bearer (presence + restrictions)", async () => {
   const m = await load();
   const { res, target } = await viaProxy(m, "/api/mobile/auth/heartbeat", { method: "POST", headers: { ...json, ...auth(TOKENS.user) }, body: "{}" }, m.heartbeat.POST, {});
-  assert.equal(target, `${BASE}/api/auth/heartbeat`);
+  assert.equal(target, `${INTERNAL}/api/auth/heartbeat`);
   assert.equal(res.status, 200);
   assert.equal(calls.findLast((c) => c.path === "/v1/auth/heartbeat").headers.authorization, `Bearer ${TOKENS.user}`);
 });
