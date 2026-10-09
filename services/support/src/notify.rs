@@ -35,6 +35,7 @@ pub const PREF_KEYS: &[PrefKey] = &[
     // master); routine fills are sent in-app only by the engine (`"email": false`)
     PrefKey { key: "copy", label: "Copy trading and PAMM", hint: "Copied trades, skipped trades, protection stops, new terms, fees and fund rollovers", in_app: true, email: true, locked: false, audience: &["user"] },
     PrefKey { key: "prop", label: "Prop challenges", hint: "Phase passed or failed, funded account and payouts", in_app: true, email: true, locked: false, audience: &["user"] },
+    PrefKey { key: "staking", label: "Staking (Earn)", hint: "Subscriptions confirmed, monthly returns credited and principal returned at maturity", in_app: true, email: true, locked: false, audience: &["user"] },
     PrefKey { key: "support", label: "Support replies", hint: "Replies from our support team", in_app: true, email: true, locked: false, audience: &["user", "staff"] },
     PrefKey { key: "system", label: "Platform notices", hint: "Maintenance and service announcements", in_app: true, email: true, locked: false, audience: &["user", "staff"] },
     PrefKey { key: "marketing", label: "News and offers", hint: "Promotions, contests and product news", in_app: true, email: false, locked: false, audience: &["user"] },
@@ -52,6 +53,7 @@ pub fn pref_key(kind: &str) -> &'static str {
         "ib" => "ib",
         "copy" | "pamm" | "social" => "copy",
         "prop" => "prop",
+        "staking" => "staking",
         "support" => "support",
         "marketing" | "broadcast" => "marketing",
         _ => "system",
@@ -420,6 +422,7 @@ mod tests {
         assert_eq!(pref_key("wallet.deposit_credited"), "wallet");
         assert_eq!(pref_key("pamm.fee"), "copy");
         assert_eq!(pref_key("security.new_device"), "security");
+        assert_eq!(pref_key("staking.reward_paid"), "staking");
         assert_eq!(pref_key("whatever"), "system");
         assert!(valid_type("wallet.deposit_credited"));
         assert!(!valid_type("Wallet Deposit"));
