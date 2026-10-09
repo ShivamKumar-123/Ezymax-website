@@ -15,6 +15,8 @@ fi
 # into the terminal (scripts/sync-assets.mjs). Without it the terminal keeps its own chart.
 if [ -d /srv/ezymex-src/charting_library-master ]; then export TV_LIBRARY_DIR=/srv/ezymex-src/charting_library-master; fi
 pnpm install --frozen-lockfile
+# pnpm skips the root postinstall when nothing changed: copy the shared assets and the TradingView library every time
+node scripts/sync-assets.mjs
 cargo build --release -p market-data -p gateway -p trading -p prop -p ib
 cargo build --release -p academy
 cargo build --release -p algo
