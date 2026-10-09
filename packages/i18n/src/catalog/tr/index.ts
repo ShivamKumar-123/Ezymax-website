@@ -29,6 +29,7 @@ import desk from "./desk";
 import features from "./features";
 import updates from "./updates";
 import staking from "./staking";
+import payments from "./payments";
 
-const catalog: PartialCatalog = { common, shell, auth, dashboard, accounts, accountDetail, wallet, profile, kyc, trader, order, toolbox, market, partner, social, prop, security, rewards, developer, academy, support, news, portfolio, chart, aiTrader, options, desk, features, updates, staking };
+const catalog: PartialCatalog = { common, shell, auth, dashboard, accounts, accountDetail, wallet, profile, kyc, trader, order, toolbox, market, partner, social, prop, security, rewards, developer, academy, support, news, portfolio, chart, aiTrader, options, desk, features, updates, staking, payments };
 export default catalog;
