@@ -47,3 +47,24 @@ pub async fn system(tx: &mut Transaction<'_, Postgres>, tenant_id: i64, action: 
         .await?;
     Ok(())
 }
+
+/// A client's own action (e.g. cancelling a deposit request), with the request's ip / user agent.
+#[allow(clippy::too_many_arguments)]
+pub async fn user(tx: &mut Transaction<'_, Postgres>, tenant_id: i64, user_id: i64, ctx: &crate::state::Ctx, action: &str, target_kind: &str, target_id: String, before: Option<Value>, after: Option<Value>) -> sqlx::Result<()> {
+    sqlx::query(
+        "INSERT INTO audit_log (tenant_id, actor_kind, actor_id, action, target_kind, target_id, before, after, ip, user_agent)
+         VALUES ($1, 'user', $2, $3, $4, $5, $6, $7, $8, $9)",
+    )
+    .bind(tenant_id)
+    .bind(user_id.to_string())
+    .bind(action)
+    .bind(target_kind)
+    .bind(target_id)
+    .bind(before.map(sqlx::types::Json))
+    .bind(after.map(sqlx::types::Json))
+    .bind(&ctx.ip)
+    .bind(&ctx.user_agent)
+    .execute(&mut **tx)
+    .await?;
+    Ok(())
+}

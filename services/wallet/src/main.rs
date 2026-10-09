@@ -44,6 +44,8 @@ async fn main() -> anyhow::Result<()> {
         anyhow::bail!("{} ledger invariant violations — refusing to start", problems.len());
     }
     settings::seed(&pool, &cfg).await?;
+    // manual-payment images (QR codes, payment screenshots): private storage, 0700
+    wallet::media::ensure_dir(&cfg.storage_dir).await?;
 
     let mut chains: HashMap<ChainId, Arc<dyn Chain>> = HashMap::new();
     if !cfg.bsc_rpc_urls.is_empty() {

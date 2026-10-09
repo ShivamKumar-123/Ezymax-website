@@ -67,6 +67,8 @@ pub async fn summary(State(st): State<AppState>, s_ctx: StaffCtx) -> ApiResult<J
         "withdrawals": {"requested": n("wd_requested"), "approved": n("wd_approved"), "paid": n("wd_paid"), "open_amount": d("wd_open_amount"), "completed_today": d("wd_today")},
         "wallets": {"liabilities": d("liabilities"), "funded": n("funded_wallets")},
         "trading_transfers_pending": n("tt_pending"),
+        // bank / UPI / crypto deposit requests waiting for a decision (the Back Office nav badge)
+        "manual_deposits": crate::ops::manual::counts(&st, t).await?,
         "generated_at": Utc::now(),
     })))
 }

@@ -9,6 +9,7 @@ pub mod db;
 pub mod engine;
 pub mod error;
 pub mod ledger;
+pub mod media;
 pub mod money;
 pub mod notifier;
 pub mod ops;

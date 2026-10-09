@@ -178,7 +178,9 @@ pub async fn activity(State(st): State<AppState>, ctx: Ctx, Path(user_id): Path<
     if !matches!(kind, "all" | "deposit" | "withdrawal" | "transfer" | "other") {
         return Err(ApiError::BadRequest("type must be all, deposit, withdrawal, transfer or other".into()));
     }
-    let kinds: Vec<String> = transfers::KINDS.iter().chain(crate::ops::adjustments::LEDGER_KINDS).map(|k| k.to_string()).collect();
+    let kinds: Vec<String> = transfers::KINDS.iter().chain(crate::ops::adjustments::LEDGER_KINDS).chain(crate::ops::manual::LEDGER_KINDS).map(|k| k.to_string()).collect();
+    // approved bank / crypto deposit requests are deposits too (shown with their ledger kind)
+    let manual_kinds: Vec<String> = crate::ops::manual::LEDGER_KINDS.iter().map(|k| k.to_string()).collect();
     let rows = sqlx::query(
         "SELECT *, count(*) OVER () AS total FROM (
             SELECT 'deposit' AS type, id::text AS id, status, COALESCE(amount, expected_amount) AS amount, currency, chain, tx_hash AS hash,
@@ -198,7 +200,7 @@ pub async fn activity(State(st): State<AppState>, ctx: Ctx, Path(user_id): Path<
                    NULL, NULL, t.note, t.created_at, t.created_at, NULL, NULL, t.reference
               FROM ledger_txns t JOIN ledger_postings p ON p.txn_id = t.id AND p.user_id = $2 AND p.account_code LIKE '%:available'
              WHERE t.tenant_id = $1 AND t.kind = ANY($3)
-         ) x WHERE ($4 = 'all' OR type = $4) ORDER BY created_at DESC, id DESC LIMIT $5 OFFSET $6",
+         ) x WHERE ($4 = 'all' OR type = $4 OR ($4 = 'deposit' AND kind = ANY($7))) ORDER BY created_at DESC, id DESC LIMIT $5 OFFSET $6",
     )
     .bind(ctx.tenant.id)
     .bind(user_id)
@@ -206,6 +208,7 @@ pub async fn activity(State(st): State<AppState>, ctx: Ctx, Path(user_id): Path<
     .bind(kind)
     .bind(limit)
     .bind(offset)
+    .bind(&manual_kinds)
     .fetch_all(&st.pool)
     .await?;
     let total = rows.first().map(|r| r.get::<i64, _>("total")).unwrap_or(0);

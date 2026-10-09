@@ -30,6 +30,9 @@ pub fn kind_label(kind: &str) -> &'static str {
         "adjustment" => "Balance adjustment",
         "refund" => "Refund",
         "deposit" | "manual_deposit" => "Deposit",
+        // manual payments approved by staff (ops::manual)
+        "bank_deposit" => "Bank deposit",
+        "crypto_deposit" => "Crypto deposit",
         "withdrawal" | "manual_withdrawal" => "Withdrawal",
         "adjustment_in" | "adjustment_out" => "Balance adjustment",
         _ => "Wallet transaction",

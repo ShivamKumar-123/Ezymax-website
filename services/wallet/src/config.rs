@@ -30,6 +30,11 @@ pub struct Config {
     /// Support / notifications service (`POST /v1/notify`). Empty = notifications stay in-app only.
     pub support_url: String,
     pub support_token: String,
+    /// Private storage of manual-payment images: QR codes staff upload and payment screenshots clients attach
+    /// (WALLET_STORAGE_DIR, directory 0700, files 0600). Back it up with the database.
+    pub storage_dir: String,
+    /// Upload limit of those images (5 MB).
+    pub max_media_bytes: usize,
 }
 
 /// Masks the password in a connection URL (`postgres://user:secret@host` → `postgres://user:***@host`).
@@ -87,12 +92,18 @@ impl fmt::Debug for Config {
             .field("gateway_token", &redact(&self.gateway_token))
             .field("support_url", &self.support_url)
             .field("support_token", &redact(&self.support_token))
+            .field("storage_dir", &self.storage_dir)
+            .field("max_media_bytes", &self.max_media_bytes)
             .finish()
     }
 }
 
 fn var(key: &str, default: &str) -> String {
     env::var(key).ok().filter(|v| !v.trim().is_empty()).map(|v| v.trim().to_string()).unwrap_or_else(|| default.to_string())
+}
+
+fn home() -> String {
+    env::var("HOME").ok().filter(|h| !h.is_empty()).unwrap_or_else(|| ".".into())
 }
 
 pub const DEFAULT_BSC_RPCS: &str = "https://bsc-rpc.publicnode.com,https://bsc-dataseed.binance.org,https://bsc-dataseed1.defibit.io";
@@ -126,6 +137,8 @@ impl Config {
             gateway_token: var("GATEWAY_INTERNAL_TOKEN", ""),
             support_url: var("SUPPORT_URL", "http://127.0.0.1:8100").trim_end_matches('/').to_string(),
             support_token: var("SUPPORT_INTERNAL_TOKEN", ""),
+            storage_dir: var("WALLET_STORAGE_DIR", &format!("{}/.ezymex-data/wallet", home())),
+            max_media_bytes: 5 * 1024 * 1024,
         })
     }
 
@@ -153,6 +166,8 @@ impl Config {
             gateway_token: String::new(),
             support_url: String::new(),
             support_token: String::new(),
+            storage_dir: std::env::temp_dir().join(format!("ezymex-wallet-test-{}", std::process::id())).to_string_lossy().into_owned(),
+            max_media_bytes: 5 * 1024 * 1024,
         }
     }
 }

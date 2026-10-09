@@ -14,6 +14,7 @@ Other services (IB, copy/PAMM, prop) move money in and out of client wallets **o
 - [Wallet and trading accounts](#wallet-and-trading-accounts)
 - [Back Office API](#back-office-api)
 - [Balance & credit (manual adjustments)](#balance--credit-manual-adjustments)
+- [Manual payments (bank / UPI / crypto)](#manual-payments-bank--upi--crypto)
 - [Environment](#environment)
 - [Tests](#tests)
 - [Production checklist](#production-checklist)
@@ -106,7 +107,7 @@ Double-entry and append-only. Each change is one `ledger_txns` row with a unique
 | `sys:<ccy>:withdrawal:<chain>` | on-chain money paid out |
 | `sys:<ccy>:fees` | withdrawal fees earned |
 | `sys:<ccy>:trading` | net money moved into trading accounts |
-| `sys:<ccy>:<kind>` | counter-account per transfer kind (IB, prop, PAMM, copy, adjustments, refunds) |
+| `sys:<ccy>:<kind>` | counter-account per transfer kind (IB, prop, PAMM, copy, adjustments, refunds, approved bank / crypto deposit requests: `bank_deposit`, `crypto_deposit`) |
 
 `wallet_balances` is a projection updated in the same transaction as the postings, with `CHECK (available >= 0 AND locked >= 0)`. On start the service recomputes every balance from the postings and refuses to start on any mismatch. `GET /v1/admin/reconciliation` runs the same checks on demand.
 
@@ -203,7 +204,7 @@ The Back Office can restrict a client (gateway `client_controls.rs`); the wallet
 
 | Restriction | Refused |
 |---|---|
-| `deposits` | `POST /v1/deposits/intents`, `POST /v1/deposits/submit` |
+| `deposits` | `POST /v1/deposits/intents`, `POST /v1/deposits/submit`, `POST /v1/manual/deposits` |
 | `withdrawals` | `POST /v1/withdrawals`, `POST /v1/withdrawals/quote` |
 | `transfers` | `POST /v1/wallets/{user_id}/to-trading`, `from-trading` (also the copy-trading allocations that use them) |
 | `ib` | `POST /v1/wallets/transfers` credits of kind `commission` / `ib_payout` |
@@ -219,8 +220,9 @@ The service checks the role on every staff route. The admin app maps them to `fi
 | `finance.read` | platform_owner, super_admin, admin, finance, compliance, risk_manager | all `GET /v1/admin/*` |
 | `finance.write` | platform_owner, super_admin, admin, finance | assign / reject / recheck deposits, mark paid |
 | `finance.adjust`, `finance.credit`, `finance.adjust_approve`, `finance.adjust_force` | see [Balance & credit](#balance--credit-manual-adjustments) | manual adjustments |
-| `finance.approve` | platform_owner, super_admin, admin, finance | approve / reject withdrawals |
-| `finance.settings` | platform_owner, super_admin, admin | receiving addresses, confirmations, limits, fees |
+| `finance.approve` | platform_owner, super_admin, admin, finance | approve / reject withdrawals and [manual deposit requests](#manual-payments-bank--upi--crypto) |
+| `finance.settings` | platform_owner, super_admin, admin | receiving addresses, confirmations, limits, fees, manual payment methods and their QR codes |
+| `finance.export` | platform_owner, super_admin, admin, finance | the manual deposit CSV export |
 
 | Method & path | Body |
 |---|---|
@@ -282,6 +284,33 @@ The admin BFF forwards the staff member's `finance.*` keys as `X-Ezymex-Staff-Pe
 | `GET /v1/admin/adjustments/{id}` | `{adjustment}` |
 | `GET /v1/admin/adjustments/targets/{user_id}` | `{wallet, accounts (engine views, live and demo), engine_available, open[], recent[], threshold_usd, can:{adjust, credit, approve, force}}` |
 
+## Manual payments (bank / UPI / crypto)
+
+Besides the automatic BEP20 / TRC20 deposits, a broker can list **payment methods** clients pay outside the platform: bank accounts and UPI IDs, and crypto addresses on any network (TRC20, BEP20, ERC20, Polygon, Solana, BTC or a free-text network), each with an optional QR code. The client pays, then sends a **deposit request** with the UTR / transaction id / tx hash (and optionally a payment screenshot); staff check the payment and approve or reject it. Code: `src/ops/manual.rs`, `src/media.rs`, routes `src/api/manual.rs`, tables `payment_methods`, `payment_media`, `manual_deposits` (`migrations/0004_manual_payments.sql`).
+
+- **Methods.** `kind` `bank` (details `account_name`, `bank_name`, `account_number`, `ifsc`, `swift`, `iban`, `branch`, `upi_id`; `account_name` or `upi_id` required; IFSC / SWIFT / IBAN / UPI formats checked) or `crypto` (`network`, `token` (default USDT), `address` (checked for the preset networks), `memo`). `currency` is what the client pays in (INR, USD, AED, USDT …) and `rate` the units of it per 1 USDT (1 for USDT); `min_amount` / `max_amount` (optional) in that currency; `status` `active` | `hidden`; `sort_order`; `instructions`; `qr_media_id`. A crypto method on an EVM network may carry `evm {chain_id, token_contract (null = the native coin), token_decimals}`: the Client Area then offers **Pay with MetaMask** (an ERC-20 `transfer` or a native transfer to the address; the tx hash becomes the reference; the request still waits for approval). Edits are full updates with the loaded `version` (409 `stale` when someone else saved in between); the kind never changes; delete hides the method for good (requests keep a snapshot of it).
+- **Images.** QR codes (staff, `finance.settings`) and payment screenshots (clients): PNG / JPEG / WEBP sniffed from the bytes, at most 5 MB (413 `too_large`, 415 `unsupported_type`), stored under `WALLET_STORAGE_DIR` (directory 0700, files 0600) with a random 24-hex id. A QR is readable by every signed-in client of the tenant and by staff (cached as immutable); a screenshot only by staff and the client who uploaded it (`no-store`).
+- **Requests.** The method must be active; the amount above 0 (6 decimals at most), within the method's limits; `expected_credit = amount / rate` floored to 6 decimals. At most 5 pending requests per client (429 `too_many_pending`); the client's `deposits` restriction applies. The reference is normalised (bank: spaces removed; crypto: a 64-hex hash lower-cased, with `0x` on EVM networks) and can't be pending or approved twice in a tenant (unique index on `(tenant_id, kind, reference_key)`, 409 `reference_used`); a crypto hash the automatic deposits already know is refused too. `idempotency_key` (one per submit, unique per client) makes a double submit return the same request (`replayed: true`). A client can cancel their own pending request.
+- **Review.** Approve credits `expected_credit` USDT, or `credit_amount` with a `note` (required when it differs). One database transaction books the ledger credit (kind `bank_deposit` or `crypto_deposit`, key `manual:deposit:<tenant>:<id>`, counter-account `sys:USDT:<kind>`), the status, the audit entry and the client notification (`deposit.credited` → `wallet.deposit_credited`); approving again returns the request unchanged (`replayed: true`), so a retry never credits twice. Reject needs a reason the client sees (`deposit.rejected`). Approved credits show in the wallet history (labels "Bank deposit" / "Crypto deposit", also under the Deposits filter). Pending requests are counted in `GET /v1/admin/summary` (`manual_deposits`), which feeds the Back Office nav badge.
+- **Audit.** `wallet.manual.method.created` / `updated` / `hidden` / `shown` / `deleted`, `wallet.manual.qr.uploaded`, `wallet.manual.deposit.approved` / `rejected` (before / after), `wallet.manual.deposit.cancelled` (the client), `wallet.manual.export`.
+
+| Method & path | Who | Body / response |
+|---|---|---|
+| `GET /v1/manual/methods` | client | `{methods:[{id, kind, name, currency, rate, min_amount, max_amount, details, evm, qr_url, instructions}], max_pending}` |
+| `POST /v1/manual/proofs?user_id=` | client | the raw image → `{media:{id, url, mime, size}}` |
+| `POST /v1/manual/deposits` | client | `{user_id, method_id, amount, reference, proof_media_id?, note?, idempotency_key}` → `{deposit}` |
+| `GET /v1/manual/deposits?user_id=&status&page&limit` · `GET /v1/manual/deposits/{id}?user_id=` | client | `{items, total, pending, max_pending}` · `{deposit}` (`reason` when rejected, `credit_amount` when approved) |
+| `POST /v1/manual/deposits/{id}/cancel` | client | `{user_id}` → `{deposit}` (only while pending) |
+| `GET /v1/manual/media/{id}?user_id=` | client | the image (a QR, or the client's own screenshot) |
+| `GET /v1/admin/manual/methods` | `finance.read` | `{methods (with pending, version, created_by, updated_by), networks, counts}` |
+| `POST /v1/admin/manual/methods` · `PUT /v1/admin/manual/methods/{id}` (`version`) · `POST …/{id}/delete {reason?}` | `finance.settings` | `{method}` |
+| `POST /v1/admin/manual/media` · `GET /v1/admin/manual/media/{id}` | `finance.settings` · `finance.read` | QR upload (raw image) · any image of the tenant |
+| `GET /v1/admin/manual/deposits?status&kind&method_id&user_id&q&page&limit` | `finance.read` | `{items, total, counts:{pending, pending_bank, pending_crypto, pending_usdt, approved, rejected, cancelled, all}}` (pending first, oldest first) |
+| `GET /v1/admin/manual/deposits/{id}` | `finance.read` | `{deposit}` with `explorer_url` (crypto: tronscan, bscscan, etherscan, polygonscan, solscan, mempool.space), `proof_url`, `client_history`, `same_reference`, `history` |
+| `POST /v1/admin/manual/deposits/{id}/approve` | `finance.approve` | `{credit_amount?, note?}` |
+| `POST /v1/admin/manual/deposits/{id}/reject` | `finance.approve` | `{reason}` |
+| `GET /v1/admin/manual/deposits/export?<filters>` | `finance.export` | CSV (at most 10,000 rows; audited) |
+
 ## Environment
 
 | Variable | Default | |
@@ -301,6 +330,7 @@ The admin BFF forwards the staff member's `finance.*` keys as `X-Ezymex-Staff-Pe
 | `TRADING_URL` / `TRADING_INTERNAL_TOKEN` | `http://127.0.0.1:8090` | engine |
 | `GATEWAY_URL` / `GATEWAY_INTERNAL_TOKEN` | `http://127.0.0.1:8080` | KYC status |
 | `SUPPORT_URL` / `SUPPORT_INTERNAL_TOKEN` | `http://127.0.0.1:8100` / – | notification push (bell, realtime, email); empty URL = in-app only |
+| `WALLET_STORAGE_DIR` | `~/.ezymex-data/wallet` | manual-payment QR codes and payment screenshots (created 0700 on start; files 0600). Back it up with the database |
 
 The apps need `WALLET_URL` (default `http://127.0.0.1:8095`) and `WALLET_INTERNAL_TOKEN` (server-only) in `apps/crm` and `apps/admin`.
 
@@ -319,6 +349,8 @@ The apps need `WALLET_URL` (default `http://127.0.0.1:8095`) and `WALLET_INTERNA
   - to-trading / from-trading with engine success, rejection and timeout recovery;
   - the ledger invariants after every flow (Σ postings = 0 per txn, balances = Σ postings, append-only).
 - **Balance & credit** (`tests/adjustments.rs`): wallet add / deduct with the balance and ledger after each step, the notification and history note, a double submit booking once and a key conflict, over-deduction refused and audited, the external kinds; four-eyes (threshold set by `finance.settings` only, pending books nothing, the requester can't approve, a second staff member approves, double approval, reject / cancel, an approval that can no longer be booked fails); permissions (403 without `finance.adjust` / `finance.credit` / `finance.adjust_force`, role fallback without the header); trading accounts through the mock engine (free-margin refusal, force, credit take-back limits, another client's account refused, a lost engine answer settled by recovery with one booking, four-eyes on credit).
+
+- **Manual payments** (`tests/manual.rs`, images in a temp directory): methods (validation of bank / crypto details, rates, limits and the MetaMask config; `finance.settings` only; stale versions refused; hide / delete; before / after in the audit log); images (PNG accepted, GIF / HTML / PDF / empty refused, 5 MB limit in the store and on the body, 0600 files, a QR readable by any client, a screenshot only by its uploader and staff, a QR id required for methods); requests (min / max, a hidden or unknown method, a duplicate UTR or hash in any spelling, a hash known as an on-chain deposit, a double submit, the pending cap, the deposits restriction, cancel only own pending); review (approve credits once under concurrent retries, a changed amount needs a note, reject needs a reason, decided requests can't be decided again, notifications, history, CSV export with `finance.export`, ledger invariants).
 
 ## Production checklist
 

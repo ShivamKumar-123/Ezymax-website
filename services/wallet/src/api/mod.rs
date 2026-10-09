@@ -3,6 +3,7 @@
 pub mod adjust;
 pub mod admin;
 pub mod client;
+pub mod manual;
 
 use axum::Json;
 use axum::Router;
@@ -10,7 +11,7 @@ use axum::extract::{DefaultBodyLimit, Request, State};
 use axum::http::StatusCode;
 use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
-use axum::routing::{get, post};
+use axum::routing::{get, post, put};
 use serde_json::{Value, json};
 use subtle::ConstantTimeEq;
 
@@ -18,6 +19,8 @@ use crate::error::ApiError;
 use crate::state::AppState;
 
 pub fn router(st: AppState) -> Router {
+    // QR codes and payment screenshots: 5 MB images (the store checks the exact limit and sniffs the type)
+    let media_limit = DefaultBodyLimit::max(st.cfg.max_media_bytes + 64 * 1024);
     let internal = Router::new()
         // contract for other services + CRM
         .route("/v1/config", get(client::config))
@@ -43,6 +46,13 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/withdrawals/quote", post(client::quote_withdrawal))
         .route("/v1/withdrawals/{id}", get(client::get_withdrawal))
         .route("/v1/withdrawals/{id}/cancel", post(client::cancel_withdrawal))
+        // manual payments (bank / UPI / any-network crypto, approved by staff)
+        .route("/v1/manual/methods", get(manual::methods))
+        .route("/v1/manual/proofs", post(manual::upload_proof).layer(media_limit.clone()))
+        .route("/v1/manual/deposits", post(manual::create_deposit).get(manual::list_deposits))
+        .route("/v1/manual/deposits/{id}", get(manual::get_deposit))
+        .route("/v1/manual/deposits/{id}/cancel", post(manual::cancel_deposit))
+        .route("/v1/manual/media/{id}", get(manual::client_media))
         // Back Office
         .route("/v1/admin/summary", get(admin::summary))
         .route("/v1/admin/deposits", get(admin::deposits))
@@ -68,6 +78,16 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/admin/settings", get(admin::settings).put(admin::update_settings))
         .route("/v1/admin/reconciliation", get(admin::reconciliation))
         .route("/v1/admin/audit", get(admin::audit))
+        .route("/v1/admin/manual/methods", get(manual::admin_methods).post(manual::create_method))
+        .route("/v1/admin/manual/methods/{id}", put(manual::update_method))
+        .route("/v1/admin/manual/methods/{id}/delete", post(manual::delete_method))
+        .route("/v1/admin/manual/media", post(manual::upload_qr).layer(media_limit))
+        .route("/v1/admin/manual/media/{id}", get(manual::admin_media))
+        .route("/v1/admin/manual/deposits", get(manual::admin_deposits))
+        .route("/v1/admin/manual/deposits/export", get(manual::export))
+        .route("/v1/admin/manual/deposits/{id}", get(manual::admin_deposit))
+        .route("/v1/admin/manual/deposits/{id}/approve", post(manual::approve))
+        .route("/v1/admin/manual/deposits/{id}/reject", post(manual::reject))
         .layer(DefaultBodyLimit::max(64 * 1024))
         .layer(middleware::from_fn_with_state(st.clone(), internal_only));
     Router::new()
