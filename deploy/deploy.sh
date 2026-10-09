@@ -122,6 +122,9 @@ fi
 if ! grep -q '^TRONGRID_API_KEY=' .env.local && [ -f .env.tron ] && grep -q '^TRONGRID_API_KEY=' .env.tron; then
   grep '^TRONGRID_API_KEY=' .env.tron >> .env.local
 fi
+# manual payments: QR codes staff upload and payment screenshots clients attach, stored privately (0700 dir, 0600 files)
+grep -q '^WALLET_STORAGE_DIR=' .env.local || printf 'WALLET_STORAGE_DIR=%s\n' "$HOME/.ezymex-data/wallet" >> .env.local
+install -d -m 700 "$(grep '^WALLET_STORAGE_DIR=' .env.local | cut -d= -f2-)"
 # the Client Area and Back Office BFFs reach the wallet with the same token
 for app in apps/crm apps/admin; do
   f="$app/.env.production.local"; touch "$f"

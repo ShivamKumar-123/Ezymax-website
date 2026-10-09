@@ -42,7 +42,7 @@ Tests: `node --test apps/crm/tests` (`mobile.test.mjs`, `mobile-trade.test.mjs`)
 | `X-Ezymex-Trade` | `trade/*` account calls | the trade token from `trade/sessions` or `trade/login` |
 | `X-Ezymex-Stepup` | step-up protected writes | alternative to the `stepup_token` body field |
 | `User-Agent` | every call | please send something descriptive, e.g. `EzymexApp/1.0.0 (Android 15; Pixel 8)`. The Security page shows it in the session list |
-| `Content-Type` | writes | `application/json`, except the two uploads (section 8) |
+| `Content-Type` | writes | `application/json`, except the uploads (section 8) |
 
 ## 3. Errors
 
@@ -229,7 +229,7 @@ header comment of its route file in `apps/crm/app/api/<family>/…/route.ts`.
 | Family | What |
 |---|---|
 | `trading` | accounts (list, open, detail, history, ledger, CSV export, history ZIP), groups, passwords / leverage (step-up), rename / archive / restore / close, group change, demo balance / refill, prefs (default account), transfers between accounts, `accounts/{login}/sso` (web URL only; the app uses `trade/sessions`) |
-| `wallet` | config, overview, deposits (addresses, hash submit), withdrawals (quote, create with step-up), transfers, activity, ledger, notifications |
+| `wallet` | config, overview, deposits (addresses, hash submit), withdrawals (quote, create with step-up), transfers, activity, ledger, notifications; manual payments: `manual/methods` (the broker's bank / UPI / crypto methods), `manual/deposits` (list, create `{method_id, amount, reference, proof_media_id?, note?, idempotency_key}`, `{id}`, `{id}/cancel`), `manual/proofs` (screenshot upload), `manual/media/{id}` (QR codes and the client's own screenshots; send the bearer token, they are not public) |
 | `news` | feed, article, map, sources, brief, economic calendar and reminders |
 | `notifications` | the bell: inbox, `read`, `clear`, `prefs` |
 | `kyc` | status, `start`, `details`, `documents` (upload), `submit` |
@@ -252,6 +252,9 @@ header comment of its route file in `apps/crm/app/api/<family>/…/route.ts`.
 - Support attachments: `POST /api/mobile/support/attachments` with the raw file bytes as the body, `Content-Type` set
   to the file's type (`image/*` or `application/pdf`), and the `X-File-Name: <percent-encoded name>` header. Up to
   10 MB. The answer's `attachment.id` goes into `POST messages {body, attachmentId}`.
+- Deposit payment screenshots: `POST /api/mobile/wallet/manual/proofs` as `multipart/form-data` with `file` (PNG, JPG
+  or WEBP, up to 5 MB; the wallet checks the real type). The answer's `media.id` goes into
+  `POST wallet/manual/deposits {…, proof_media_id}`.
 
 **Downloads:** statements, CSV, ZIP and attachments come back as files, with `Content-Disposition`.
 

@@ -30,6 +30,11 @@ app.ezymex.com {
 	request_body @kycUpload {
 		max_size 12MB
 	}
+	# manual deposit payment screenshots (web and app): 5 MB images; the wallet enforces the exact limit and sniffs the type
+	@proofUpload path /api/wallet/manual/proofs /api/mobile/wallet/manual/proofs
+	request_body @proofUpload {
+		max_size 6MB
+	}
 	reverse_proxy 127.0.0.1:3000
 }
 
@@ -65,6 +70,11 @@ admin.ezymex.com {
 	# banner / event / post images: 5 MB files; the growth service enforces the exact limit and sniffs the type
 	@mediaUpload path /api/marketing/media
 	request_body @mediaUpload {
+		max_size 6MB
+	}
+	# manual payment method QR codes: 5 MB images; the wallet enforces the exact limit and sniffs the type
+	@qrUpload path /api/wallet/manual/media
+	request_body @qrUpload {
 		max_size 6MB
 	}
 	handle {
