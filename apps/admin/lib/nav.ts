@@ -20,6 +20,7 @@ import {
   PiggyBank,
 } from "lucide-react";
 import type { NavModule } from "@ezymex/ui";
+import { ADMIN_MANUAL_PENDING } from "@ezymex/mock/admin-manual-payments";
 
 /** Back Office navigation — the upgraded 16-section menu (plan: "Upgraded admin menu"). */
 export const ADMIN_NAV: NavModule[] = [
@@ -122,10 +123,13 @@ export const ADMIN_NAV: NavModule[] = [
     section: "money",
     sub: [
       { href: "/finance", label: "Deposits" },
+      // live builds: the badge is the wallet's pending count (components/shell.tsx); the demo shows the mock queue
+      { href: "/finance/manual-deposits", label: "Manual deposits", badge: ADMIN_MANUAL_PENDING },
       { href: "/finance/withdrawals", label: "Withdrawals", badge: 7 },
       { href: "/finance/wallets", label: "Wallets" },
       { href: "/finance/reconciliation", label: "Reconciliation" },
       { href: "/finance/settings", label: "Wallet settings" },
+      { href: "/finance/payment-methods", label: "Payment methods" },
       { href: "/finance/transactions", label: "Transactions" },
       { href: "/finance/adjustments", label: "Adjustments" },
       { href: "/finance/payouts", label: "Payouts", badge: 3 },

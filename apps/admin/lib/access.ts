@@ -18,6 +18,8 @@ export const PAGE_PERMS: Record<string, readonly string[]> = {
   "/options": ["options.read"],
   "/finance": ["finance.read"],
   "/finance/adjustments": ["finance.adjust", "finance.credit", "finance.adjust_approve", "finance.read"],
+  "/finance/manual-deposits": ["finance.read"],
+  "/finance/payment-methods": ["finance.read", "finance.settings"],
   "/partners": ["partners.read"],
   "/social": ["social.read"],
   "/social/marketplace": ["algo.read"],

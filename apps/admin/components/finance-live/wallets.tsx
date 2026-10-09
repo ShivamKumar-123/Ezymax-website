@@ -39,6 +39,8 @@ const KIND: Record<string, string> = {
   adjustment_in: "Adjustment (added)",
   adjustment_out: "Adjustment (deducted)",
   manual_deposit: "Deposit (external)",
+  bank_deposit: "Bank deposit",
+  crypto_deposit: "Crypto deposit",
   manual_withdrawal: "Withdrawal (external)",
   refund: "Refund",
 };

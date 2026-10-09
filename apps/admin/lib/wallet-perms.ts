@@ -17,9 +17,15 @@
  * |                   | wallet settings (read), wallet audit                                     | compliance, risk_manager                               |
  * | finance.write     | assign / reject / re-check deposits, manual wallet adjustments,          | platform_owner, super_admin, admin, finance            |
  * |                   | mark withdrawals paid (payout hash)                                      |                                                        |
- * | finance.approve   | approve / reject withdrawals                                             | platform_owner, super_admin, admin, finance            |
+ * | finance.approve   | approve / reject withdrawals and manual deposit requests (bank / UPI /   | platform_owner, super_admin, admin, finance            |
+ * |                   | crypto paid outside the platform)                                        |                                                        |
  * | finance.settings  | receiving / payout addresses, confirmations, limits, fees, the           | platform_owner, super_admin, admin                     |
- * |                   | four-eyes threshold of manual adjustments                                |                                                        |
+ * |                   | four-eyes threshold of manual adjustments, manual payment methods        |                                                        |
+ * |                   | (bank / UPI / crypto details, rates, limits, QR codes)                   |                                                        |
+ * | finance.export    | CSV export of manual deposit requests (audited by the wallet)            | platform_owner, super_admin, admin, finance            |
+ *
+ * Manual payments (services/wallet/src/ops/manual.rs): the requests list and detail, the methods list and their images
+ * need finance.read; approve / reject a request finance.approve; methods and QR uploads finance.settings.
  *
  * Balance & credit (manual adjustments, services/wallet/src/ops/adjustments.rs):
  *
@@ -31,7 +37,7 @@
  * | finance.adjust_force   | force a trading-account deduction past the free margin              | platform_owner, super_admin                    |
  */
 
-export const WALLET_PERMS = ["finance.read", "finance.write", "finance.approve", "finance.settings", "finance.credit", "finance.adjust_approve", "finance.adjust_force"] as const;
+export const WALLET_PERMS = ["finance.read", "finance.write", "finance.approve", "finance.settings", "finance.export", "finance.credit", "finance.adjust_approve", "finance.adjust_force"] as const;
 export type WalletPerm = (typeof WALLET_PERMS)[number];
 
 const READERS = ["platform_owner", "super_admin", "admin", "finance", "compliance", "risk_manager"];
@@ -44,6 +50,7 @@ export const WALLET_ROLE_MAP: Record<WalletPerm, readonly string[]> = {
   "finance.write": FINANCE,
   "finance.approve": FINANCE,
   "finance.settings": CONFIG,
+  "finance.export": FINANCE,
   "finance.credit": FINANCE,
   "finance.adjust_approve": FINANCE,
   "finance.adjust_force": SUPER,
