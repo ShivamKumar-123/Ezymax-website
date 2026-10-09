@@ -244,6 +244,7 @@ header comment of its route file in `apps/crm/app/api/<family>/…/route.ts`.
 | `reports` | analytics, monthly figures, statements (PDF / CSV / XLSX downloads) |
 | `algo` | strategies, backtests, deployments, marketplace, AI, API keys, webhooks, kill switch |
 | `suitability` | Ezymex FX Options onboarding: disclosure, accept, quiz |
+| `staking` | Staking (Earn): plans, portfolio, history, positions, subscribe (module `staking`, off unless the broker switched it on) |
 
 **Uploads:**
 - KYC: `POST /api/mobile/kyc/documents` as `multipart/form-data` with `file`, `kind`, `side?`, `party?`, `issue_date?`,
