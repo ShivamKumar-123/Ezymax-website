@@ -6,10 +6,14 @@ import { ArrowUpRight, X } from "lucide-react";
 import { Button, cn } from "@/components/kit";
 import { IS_DEMO } from "@ezymex/mock/mode";
 import { useT } from "@ezymex/i18n/react";
+import { useModule } from "@/components/tenant-config";
 import { growthApi, useGrowth, type BannerView } from "./api";
+import { HeroCarousel } from "./hero-carousel";
+import { useDashboardBanners } from "./promo";
 
 // Targeted marketing banners (D121) from the growth service. Renders nothing in demo builds, when the service is
-// unavailable or when no banner targets this client. Impressions are counted once per mount per banner.
+// unavailable or when no banner targets this client. Impressions are counted once per mount per banner. On the
+// dashboard, items with the hero layout go to the carousel at the top (DashboardBanners).
 
 const TONE: Record<string, { bar: string; chip: string }> = {
   ember: { bar: "bg-ember", chip: "text-ember" },
@@ -85,21 +89,41 @@ function BannerCard({ b, onDismiss }: { b: BannerView; onDismiss: () => void }) 
   );
 }
 
-function LiveBannerSlot({ placement, max, className }: { placement: string; max: number; className?: string }) {
-  const { data } = useGrowth<{ items: BannerView[] }>(`banners?placement=${encodeURIComponent(placement)}`);
+/** Card banners (hero items belong to the dashboard's carousel). */
+function CardBanners({ items, placement, max, className }: { items: BannerView[]; placement: string; max: number; className?: string }) {
   const [hidden, setHidden] = React.useState<Set<BannerView["id"]>>(() => new Set());
-  const items = (data?.items ?? []).filter((b) => !hidden.has(b.id)).slice(0, max);
-  if (items.length === 0) return null;
+  const shown = items.filter((b) => b.layout !== "hero" && !hidden.has(b.id)).slice(0, max);
+  if (shown.length === 0) return null;
   return (
     <div className={cn("space-y-3", className)} data-testid="banner-slot" data-placement={placement}>
-      {items.map((b) => (
+      {shown.map((b) => (
         <BannerCard key={b.id} b={b} onDismiss={() => setHidden((s) => new Set(s).add(b.id))} />
       ))}
     </div>
   );
 }
 
+function LiveBannerSlot({ placement, max, className }: { placement: string; max: number; className?: string }) {
+  const { data } = useGrowth<{ items: BannerView[] }>(`banners?placement=${encodeURIComponent(placement)}`);
+  return <CardBanners items={data?.items ?? []} placement={placement} max={max} className={className} />;
+}
+
 export function BannerSlot({ placement, max = 1, className = "mb-4" }: { placement: "dashboard" | "wallet" | "rewards" | "terminal"; max?: number; className?: string }) {
   if (IS_DEMO) return null;
   return <LiveBannerSlot placement={placement} max={max} className={className} />;
+}
+
+/**
+ * The top of the dashboard: the hero carousel (brand banners and featured events / posts, module `promotions`), then
+ * the card banner slot. One request for both (`banners?placement=dashboard`); demo builds show the sample hero.
+ */
+export function DashboardBanners({ max = 1 }: { max?: number }) {
+  const promotionsOn = useModule("promotions");
+  const { hero, cards } = useDashboardBanners();
+  return (
+    <>
+      {promotionsOn && hero.length > 0 && <HeroCarousel items={hero} className="mb-6" />}
+      <CardBanners items={cards} placement="dashboard" max={max} className="mb-4" />
+    </>
+  );
 }

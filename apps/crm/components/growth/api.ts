@@ -314,14 +314,37 @@ export interface JoinResult {
 
 export interface BannerView {
   id: Id;
+  /** banner = the banner slots; event / post = Events & updates (and the hero when featured). Older services: absent. */
+  kind?: "banner" | "event" | "post" | string;
+  /** hero = the dashboard's full-width carousel; card (default) = the banner slot / an updates card. */
+  layout?: "card" | "hero" | string;
   title: string;
   body: string;
   ctaLabel: string | null;
   ctaUrl: string | null;
+  /** An uploaded image is served at /api/growth/media/<id> (public, immutable). */
   imageUrl: string | null;
   tone: "ember" | "gold" | "neutral" | "up" | string;
   placement: string;
   dismissible: boolean;
+  eventStartsAt?: string | null;
+  eventEndsAt?: string | null;
+  eventState?: "upcoming" | "live" | "ended" | null;
+  /** A place, or an https:// link for online events. */
+  location?: string | null;
+  publishedAt?: string;
+}
+
+/** An event or brand post page (GET posts/{id}): the card plus its markdown body. */
+export interface PostView extends BannerView {
+  content: string;
+}
+
+export interface PostsPage {
+  items: BannerView[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
 /** Options share card (services/growth shares.rs option_card): premiums in USD per contract. */

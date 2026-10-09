@@ -58,6 +58,8 @@ import { BalancePanel, QuickActions } from "@/components/dashboard/home/balance-
 import { ActivityTabs, ChecklistCard, type ListRowItem } from "@/components/dashboard/home/list-cards";
 import { NotificationsPanel, type Prompt } from "@/components/dashboard/home/notifications-panel";
 import { OverviewLayout, SectionTitle } from "@/components/dashboard/home/overview";
+import { DashboardBanners } from "@/components/growth/banner-slot";
+import { UpdatesSection } from "@/components/growth/updates";
 import { RANGE_DAYS, StatisticCard, type StatMode, type StatRange } from "@/components/dashboard/home/statistic-card";
 import type { TrendPoint } from "@/components/dashboard/home/trend-chart";
 import { AiFacts, AiLink, AskAi, type AiChip } from "@/components/ai/ask-ai";
@@ -599,7 +601,10 @@ export default function DemoDashboard() {
   const t = useT();
   return (
     <div className="pb-40">
+      <DashboardBanners />
       <DemoOverview />
+
+      <UpdatesSection />
 
       <SectionTitle
         action={

@@ -35,7 +35,8 @@ import { useWalletFunded, walletStep } from "@/components/wallet-live/onboarding
 import { fmt, useWallet, type ActivityItem, type Page, type WalletConfig } from "@/components/wallet-live/api";
 import { KIND_LABEL } from "@/components/wallet-live/ui";
 import { useGrowth, type Rewards } from "@/components/growth/api";
-import { BannerSlot } from "@/components/growth/banner-slot";
+import { DashboardBanners } from "@/components/growth/banner-slot";
+import { UpdatesSection } from "@/components/growth/updates";
 import { LiveCalendarCard, LiveNewsCard, LiveWorldCard } from "@/components/news-live/dashboard";
 import { Trans, useFormat, useT } from "@ezymex/i18n/react";
 import { AccountsPanel, type CardAccount } from "@/components/dashboard/home/accounts-panel";
@@ -543,7 +544,7 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
 
   return (
     <div className="pb-16">
-      <BannerSlot placement="dashboard" />
+      <DashboardBanners />
       <OverviewLayout
         ai={readOnly || !askAiOn ? undefined : <AskAi chips={aiChips} />}
         header={
@@ -676,6 +677,8 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
         }
         notifications={<NotificationsPanel prompts={prompts} />}
       />
+
+      <UpdatesSection />
 
       <SectionTitle>{t("dashboard.home.marketsTitle")}</SectionTitle>
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-12">
