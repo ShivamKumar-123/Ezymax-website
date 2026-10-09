@@ -43,6 +43,9 @@ export const KIND_LABEL: Record<string, MessageKey> = {
   pamm_redeem: "wallet.kind.pammRedeem",
   copy_fee: "wallet.kind.copyFee",
   mam_fee: "wallet.kind.mamFee",
+  staking_subscribe: "wallet.kind.stakingSubscribe",
+  staking_reward: "wallet.kind.stakingReward",
+  staking_redeem: "wallet.kind.stakingRedeem",
   adjustment: "wallet.kind.adjustment",
   // Back Office "Balance & credit" (manual adjustments): the statement note is shown underneath
   adjustment_in: "wallet.kind.adjustment",
