@@ -64,6 +64,7 @@ const payments: NsMessages<"payments"> = {
   "form.proofHint": "PNG, JPG বা WEBP, সর্বোচ্চ 5 MB",
   "form.proofChoose": "স্ক্রিনশট আপলোড করুন",
   "form.proofUploading": "আপলোড হচ্ছে…",
+  "form.proofProgress": "আপলোড হচ্ছে… {percent}%",
   "form.proofRemove": "স্ক্রিনশট সরান",
   "form.note": "ব্রোকারের জন্য নোট (ঐচ্ছিক)",
   "form.notePlaceholder": "আপনার পেমেন্ট খুঁজে পেতে সাহায্য করে এমন যেকোনো তথ্য",

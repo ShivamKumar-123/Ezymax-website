@@ -64,6 +64,7 @@ const payments: NsMessages<"payments"> = {
   "form.proofHint": "PNG、JPG 或 WEBP，最大 5 MB",
   "form.proofChoose": "上传截图",
   "form.proofUploading": "正在上传…",
+  "form.proofProgress": "正在上传… {percent}%",
   "form.proofRemove": "移除截图",
   "form.note": "给经纪商的备注（可选）",
   "form.notePlaceholder": "任何有助于我们找到您付款的信息",

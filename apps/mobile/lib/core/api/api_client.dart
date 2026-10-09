@@ -115,9 +115,16 @@ class ApiClient {
     );
   }
 
-  /// Raw-body upload (support attachments: the bytes with their Content-Type and X-File-Name).
-  Future<T> upload<T>(String path, {required Object data, required String contentType, Map<String, String>? headers, CancelToken? cancel}) =>
-      _send<T>('POST', path, body: data, contentType: contentType, extraHeaders: headers, cancel: cancel);
+  /// Raw-body or multipart upload (support attachments: the bytes with their Content-Type and X-File-Name; KYC
+  /// documents and payment screenshots: multipart/form-data). `onSendProgress` reports the bytes sent.
+  Future<T> upload<T>(
+    String path, {
+    required Object data,
+    required String contentType,
+    Map<String, String>? headers,
+    CancelToken? cancel,
+    ProgressCallback? onSendProgress,
+  }) => _send<T>('POST', path, body: data, contentType: contentType, extraHeaders: headers, cancel: cancel, onSendProgress: onSendProgress);
 
   Future<T> _send<T>(
     String method,
@@ -130,6 +137,7 @@ class ApiClient {
     bool auth = true,
     String? contentType,
     Map<String, String>? extraHeaders,
+    ProgressCallback? onSendProgress,
   }) async {
     final r = await _raw(
       method,
@@ -142,6 +150,7 @@ class ApiClient {
       auth: auth,
       contentType: contentType,
       extraHeaders: extraHeaders,
+      onSendProgress: onSendProgress,
     );
     final status = r.statusCode ?? 0;
     if (status >= 400 || status == 0) throw _error(r);
@@ -162,11 +171,13 @@ class ApiClient {
     ResponseType? responseType,
     String? contentType,
     Map<String, String>? extraHeaders,
+    ProgressCallback? onSendProgress,
   }) async {
     try {
       return await dio.request<Object?>(
         path.startsWith('/') ? path.substring(1) : path,
         data: body,
+        onSendProgress: onSendProgress,
         queryParameters: query == null
             ? null
             : {

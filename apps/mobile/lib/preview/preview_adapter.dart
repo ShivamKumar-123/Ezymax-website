@@ -26,6 +26,16 @@ class PreviewAdapter implements HttpClientAdapter {
         // Ezymex Trader: the preview trade server (agent D, lib/features/terminal/preview)
         PreviewServer.instance.answer(o.method, path, o.uri.queryParameters, body, o.headers['X-Ezymex-Trade'] as String?) ??
         _answer(o.method, path, body);
+    // images (the wallet's private QR codes and payment screenshots) answer with their bytes
+    if (data is Uint8List) {
+      return ResponseBody.fromBytes(
+        data,
+        status,
+        headers: {
+          Headers.contentTypeHeader: ['image/png'],
+        },
+      );
+    }
     return ResponseBody.fromString(
       jsonEncode(data),
       status,

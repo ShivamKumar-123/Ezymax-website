@@ -547,13 +547,13 @@ void refreshWalletData(WidgetRef ref) {
 String fmt(Object? v, [int dp = 2]) => Fmt.amount(v, dp);
 
 /// Amount fields (web cleanAmount): a comma becomes the decimal point, anything that isn't a digit goes, one point
-/// and 2 decimals are kept.
-String cleanAmount(String raw) {
+/// and `dp` decimals are kept (2; manual payments take 6).
+String cleanAmount(String raw, [int dp = 2]) {
   final v = raw.replaceAll(',', '.').replaceAll(RegExp(r'[^\d.]'), '');
   final dot = v.indexOf('.');
   if (dot < 0) return v;
   final rest = v.substring(dot + 1).replaceAll('.', '');
-  return v.substring(0, dot + 1) + (rest.length > 2 ? rest.substring(0, 2) : rest);
+  return v.substring(0, dot + 1) + (rest.length > dp ? rest.substring(0, dp) : rest);
 }
 
 final RegExp _amount2 = RegExp(r'^\d{1,12}(\.\d{1,2})?$');
@@ -691,6 +691,9 @@ const Map<String, String> kKindLabel = {
   'manual_deposit': 'wallet.txType.deposit',
   'manual_withdrawal': 'wallet.txType.withdrawal',
   'refund': 'wallet.kind.refund',
+  // manual payments approved by the broker (bank / UPI, crypto on any network)
+  'bank_deposit': 'payments.kind.bankDeposit',
+  'crypto_deposit': 'payments.kind.cryptoDeposit',
 };
 
 /// The status chip of an activity row (null for other credits).

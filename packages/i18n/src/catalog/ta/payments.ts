@@ -64,6 +64,7 @@ const payments: NsMessages<"payments"> = {
   "form.proofHint": "PNG, JPG அல்லது WEBP, 5 MB வரை",
   "form.proofChoose": "ஸ்கிரீன்ஷாட்டைப் பதிவேற்று",
   "form.proofUploading": "பதிவேற்றுகிறது…",
+  "form.proofProgress": "பதிவேற்றுகிறது… {percent}%",
   "form.proofRemove": "ஸ்கிரீன்ஷாட்டை அகற்று",
   "form.note": "புரோக்கருக்கான குறிப்பு (விருப்பத்தேர்வு)",
   "form.notePlaceholder": "உங்கள் பணத்தைக் கண்டறிய உதவும் எந்தத் தகவலும்",

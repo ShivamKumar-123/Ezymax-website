@@ -680,6 +680,8 @@ const Map<String, String> _kindLabel = {
   'manual_deposit': 'wallet.txType.deposit',
   'manual_withdrawal': 'wallet.txType.withdrawal',
   'refund': 'wallet.kind.refund',
+  'bank_deposit': 'payments.kind.bankDeposit',
+  'crypto_deposit': 'payments.kind.cryptoDeposit',
 };
 
 /// USDT with the network's coin in the corner (BNB Chain / TRON).

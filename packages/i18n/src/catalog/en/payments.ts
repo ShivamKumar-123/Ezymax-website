@@ -4,7 +4,8 @@
 // the UTR / transaction hash; the broker verifies it and credits the wallet in USDT.
 // {amount}, {min}, {max} come formatted with their currency ("500.00 INR"); {rate} is a number ("88.00"); {currency}
 // and {token} are codes (INR, USDT); {network} a network name (TRC20, BEP20, Polygon …); {hash} a shortened
-// transaction hash; {ref} a payment reference; {reason} the broker's text; {error} an error message.
+// transaction hash; {ref} a payment reference; {reason} the broker's text; {error} an error message; {percent} a whole
+// number (upload progress).
 const payments = {
   // Ledger kinds (wallet history)
   "kind.bankDeposit": "Bank deposit",
@@ -68,6 +69,7 @@ const payments = {
   "form.proofHint": "PNG, JPG or WEBP, up to 5 MB",
   "form.proofChoose": "Upload screenshot",
   "form.proofUploading": "Uploading…",
+  "form.proofProgress": "Uploading… {percent}%",
   "form.proofRemove": "Remove screenshot",
   "form.note": "Note for the broker (optional)",
   "form.notePlaceholder": "Anything that helps us find your payment",

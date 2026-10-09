@@ -64,6 +64,7 @@ const payments: NsMessages<"payments"> = {
   "form.proofHint": "PNG, JPG ou WEBP, até 5 MB",
   "form.proofChoose": "Enviar captura de tela",
   "form.proofUploading": "Enviando imagem…",
+  "form.proofProgress": "Enviando imagem… {percent}%",
   "form.proofRemove": "Remover captura de tela",
   "form.note": "Observação para a corretora (opcional)",
   "form.notePlaceholder": "Qualquer informação que nos ajude a localizar seu pagamento",

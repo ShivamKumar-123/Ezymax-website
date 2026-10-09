@@ -5,9 +5,6 @@
 import 'dart:convert';
 import 'dart:math';
 
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/core/api/api_providers.dart';
 import 'package:ezymex/core/models/account.dart';
 import 'package:ezymex/core/models/user.dart';
@@ -22,6 +19,9 @@ import 'package:ezymex/preview/c1/preview_wallet.dart';
 import 'package:ezymex/preview/preview_data.dart';
 import 'package:ezymex/router/router.dart';
 import 'package:ezymex/ui/ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'helpers/test_app.dart';
@@ -415,7 +415,11 @@ void main() {
       await _open(tester, '/wallet/deposit');
       expect(find.byType(DepositScreen), findsOneWidget);
       expect(find.text('New deposit'), findsOneWidget);
+      // (the sample broker also takes bank / crypto payments: the chooser sits above, so the page is longer)
+      final page = find.descendant(of: find.byType(DepositScreen), matching: find.byType(Scrollable)).first;
+      await tester.scrollUntilVisible(find.text('How deposits work'), 300, scrollable: page);
       expect(find.text('How deposits work'), findsOneWidget);
+      await tester.scrollUntilVisible(find.text('TRON · pay with TronLink'), -300, scrollable: page);
       await _tap(tester, find.text('TRON · pay with TronLink'));
       await tester.enterText(find.byType(TextField).first, '5');
       await tester.pump();

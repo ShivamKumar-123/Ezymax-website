@@ -64,6 +64,7 @@ const payments: NsMessages<"payments"> = {
   "form.proofHint": "PNG, JPG hoặc WEBP, tối đa 5 MB",
   "form.proofChoose": "Tải lên ảnh chụp màn hình",
   "form.proofUploading": "Đang tải lên…",
+  "form.proofProgress": "Đang tải lên… {percent}%",
   "form.proofRemove": "Xóa ảnh chụp màn hình",
   "form.note": "Ghi chú cho nhà môi giới (không bắt buộc)",
   "form.notePlaceholder": "Bất kỳ thông tin nào giúp chúng tôi tìm khoản thanh toán của bạn",

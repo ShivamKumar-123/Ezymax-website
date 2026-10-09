@@ -64,6 +64,7 @@ const payments: NsMessages<"payments"> = {
   "form.proofHint": "PNG, JPG au WEBP, hadi 5 MB",
   "form.proofChoose": "Pakia picha ya skrini",
   "form.proofUploading": "Inapakia…",
+  "form.proofProgress": "Inapakia… {percent}%",
   "form.proofRemove": "Ondoa picha ya skrini",
   "form.note": "Ujumbe kwa broker (si lazima)",
   "form.notePlaceholder": "Chochote kitakachotusaidia kupata malipo yako",

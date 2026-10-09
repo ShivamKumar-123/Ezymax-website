@@ -64,6 +64,7 @@ const payments: NsMessages<"payments"> = {
   "form.proofHint": "PNG、JPG、WEBP、最大5 MB",
   "form.proofChoose": "スクリーンショットをアップロード",
   "form.proofUploading": "アップロード中…",
+  "form.proofProgress": "アップロード中… {percent}%",
   "form.proofRemove": "スクリーンショットを削除",
   "form.note": "ブローカーへのメモ（任意）",
   "form.notePlaceholder": "お支払いの照合に役立つ情報があればご記入ください",

@@ -64,6 +64,7 @@ const payments: NsMessages<"payments"> = {
   "form.proofHint": "PNG، JPG یا WEBP، حداکثر 5 MB",
   "form.proofChoose": "بارگذاری اسکرین‌شات",
   "form.proofUploading": "در حال بارگذاری…",
+  "form.proofProgress": "در حال بارگذاری… {percent}%",
   "form.proofRemove": "حذف اسکرین‌شات",
   "form.note": "یادداشت برای بروکر (اختیاری)",
   "form.notePlaceholder": "هر چیزی که به ما در یافتن پرداخت شما کمک کند",

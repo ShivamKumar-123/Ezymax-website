@@ -64,6 +64,7 @@ const payments: NsMessages<"payments"> = {
   "form.proofHint": "PNG, JPG atau WEBP, sehingga 5 MB",
   "form.proofChoose": "Muat naik tangkapan skrin",
   "form.proofUploading": "Memuat naik…",
+  "form.proofProgress": "Memuat naik… {percent}%",
   "form.proofRemove": "Alih keluar tangkapan skrin",
   "form.note": "Nota untuk broker (pilihan)",
   "form.notePlaceholder": "Apa-apa sahaja yang membantu kami mencari pembayaran anda",

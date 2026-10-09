@@ -64,6 +64,7 @@ const payments: NsMessages<"payments"> = {
   "form.proofHint": "PNG, JPG veya WEBP, en fazla 5 MB",
   "form.proofChoose": "Ekran görüntüsü yükle",
   "form.proofUploading": "Yükleniyor…",
+  "form.proofProgress": "Yükleniyor… {percent}%",
   "form.proofRemove": "Ekran görüntüsünü kaldır",
   "form.note": "Aracı kuruma not (isteğe bağlı)",
   "form.notePlaceholder": "Ödemenizi bulmamıza yardımcı olacak her şey",

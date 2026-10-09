@@ -64,6 +64,7 @@ const payments: NsMessages<"payments"> = {
   "form.proofHint": "PNG, JPG 또는 WEBP, 최대 5 MB",
   "form.proofChoose": "스크린샷 업로드",
   "form.proofUploading": "업로드 중…",
+  "form.proofProgress": "업로드 중… {percent}%",
   "form.proofRemove": "스크린샷 삭제",
   "form.note": "브로커에게 남길 메모 (선택)",
   "form.notePlaceholder": "결제를 찾는 데 도움이 되는 정보",

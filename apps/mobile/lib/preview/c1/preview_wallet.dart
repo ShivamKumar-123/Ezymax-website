@@ -8,6 +8,7 @@
 import 'dart:math' as math;
 
 import '../preview_data.dart';
+import 'preview_manual.dart';
 
 /// Every write the wallet pages sent (method, path, body), oldest first.
 final List<({String method, String path, Map<String, dynamic> body})> previewWalletCalls = [];
@@ -20,6 +21,7 @@ void resetPreviewWallet() {
   previewWalletCalls.clear();
   previewWalletReads.clear();
   _s = _WalletState();
+  resetPreviewManual();
 }
 
 _WalletState _s = _WalletState();
@@ -345,9 +347,14 @@ List<Map<String, dynamic>> _activity() {
       });
     }
   }
+  // bank / UPI and crypto requests the broker approved (preview_manual.dart)
+  rows.addAll(previewManualActivity());
   rows.sort((a, b) => '${b['created_at']}'.compareTo('${a['created_at']}'));
   return rows;
 }
+
+/// Ledger kinds the Deposits filter shows with the on-chain deposits (the service's manual kinds).
+const Set<String> _depositKinds = {'bank_deposit', 'crypto_deposit'};
 
 Map<String, dynamic> _overview() {
   final pending = [
@@ -433,6 +440,9 @@ Map<String, dynamic> _page(List<Map<String, dynamic>> all, Map<String, String> q
   final route = path.substring('wallet/'.length);
   if (method != 'GET') previewWalletCalls.add((method: method, path: path, body: Map.of(body)));
   if (method == 'GET') previewWalletReads.add(path);
+  // manual payments: methods, requests, screenshots (preview_manual.dart)
+  final manual = previewManual(method, route, body, query);
+  if (manual != null) return manual;
 
   if (method == 'GET') {
     switch (route) {
@@ -444,7 +454,9 @@ Map<String, dynamic> _page(List<Map<String, dynamic>> all, Map<String, String> q
         return (200, {'items': _s.notices, 'unread': _s.notices.where((n) => n['read'] != true).length});
       case 'activity':
         final type = query['type'];
-        final rows = _activity().where((r) => type == null || type == 'all' || r['type'] == type).toList();
+        final rows = _activity()
+            .where((r) => type == null || type == 'all' || r['type'] == type || (type == 'deposit' && _depositKinds.contains(r['kind'])))
+            .toList();
         return (200, _page(rows, query));
       case 'withdrawals':
         final list = [..._s.withdrawals]..sort((a, b) => '${b['created_at']}'.compareTo('${a['created_at']}'));

@@ -64,6 +64,7 @@ const payments: NsMessages<"payments"> = {
   "form.proofHint": "PNG, JPG o WEBP, hasta 5 MB",
   "form.proofChoose": "Subir captura",
   "form.proofUploading": "Subiendo…",
+  "form.proofProgress": "Subiendo… {percent}%",
   "form.proofRemove": "Quitar captura",
   "form.note": "Nota para el bróker (opcional)",
   "form.notePlaceholder": "Cualquier dato que nos ayude a localizar su pago",
