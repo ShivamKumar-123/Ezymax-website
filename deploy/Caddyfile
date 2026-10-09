@@ -62,6 +62,11 @@ admin.ezymex.com {
 		rewrite * /v1/dealing/stream?{query}
 		reverse_proxy 127.0.0.1:8090
 	}
+	# banner / event / post images: 5 MB files; the growth service enforces the exact limit and sniffs the type
+	@mediaUpload path /api/marketing/media
+	request_body @mediaUpload {
+		max_size 6MB
+	}
 	handle {
 		reverse_proxy 127.0.0.1:3001
 	}

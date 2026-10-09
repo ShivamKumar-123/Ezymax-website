@@ -22,6 +22,7 @@ One Ubuntu VPS runs everything. Only Caddy (ports 80/443) and SSH are reachable 
 - Sign-in without email: until `SMTP_HOST` is set, the gateway (production mode) signs clients and staff in with their password alone (`LOGIN_EMAIL_CODES=auto`); setting SMTP turns the emailed codes back on. Password resets and step-up codes (withdrawals, password changes) need SMTP.
 - Secrets live only on the server: `~/ezymex/.env.local` (services) and `apps/*/.env.production.local` (apps). They are generated there and never committed.
 - KYC documents: `deploy.sh` generates `KYC_ENCRYPTION_KEY` (AES-256-GCM, `openssl rand -hex 32`) and sets `KYC_STORAGE_DIR=~/.ezymex-data/kyc` (0700) in `~/ezymex/.env.local` on first deploy. Back up the key together with the directory: files can't be decrypted without it. Never serve that directory; staff read documents only through the Back Office (`/api/admin/kyc/documents/{id}/file`). Caddy caps `/api/kyc/documents` uploads at 12 MB. Optional: `KYC_SLA_HOURS` (review target, default 24).
+- Brand promotions: `deploy.sh` sets `GROWTH_STORAGE_DIR=~/.ezymex-data/growth` (0700) for the banner / event / post images staff upload in the Back Office (PNG / JPG / WEBP, files 0600, 5 MB; the edge allows 6 MB on `admin.…/api/marketing/media`). Back it up with the `ezymex_growth` database. Clients load the images publicly from `app.…/api/growth/media/<id>` (immutable, cached by Cloudflare).
 - Caddy reads `SITE_LOCK_USER` / `SITE_LOCK_HASH` from `/etc/caddy/ezymex.env` for the pre-launch lock.
 - Logs: `journalctl -u ezymex-<name> -f`.
 
