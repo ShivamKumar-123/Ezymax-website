@@ -5,118 +5,23 @@ import { useTheme } from "next-themes";
 import { LineStyle, type IPriceLine, type UTCTimestamp } from "lightweight-charts";
 import { toast } from "@/lib/notify";
 import { ArrowDownRight, ArrowUpRight, Bell, Camera, CandlestickChart, Crosshair, Layers, Minus, Plus, ShoppingCart, SlidersHorizontal, X } from "lucide-react";
-import { getInstrument, instrumentSpec, priceFeed } from "@ezymex/mock";
-import { cn, useQuote } from "@ezymex/ui";
-import { usePositionProfit, useTerminal, type Anchor, type ChartTab, type Drawing } from "@/lib/store";
-import { CHART_TYPES, TF_SECONDS, TIMEFRAMES, accMoney, fmtPrice, fmtVol, pointSize, profitAt, roundPrice, type PendingOrder, type TPosition } from "@/lib/trading";
+import { getInstrument, priceFeed } from "@ezymex/mock";
+import { cn } from "@ezymex/ui";
+import { useTerminal, type Anchor, type ChartTab, type Drawing } from "@/lib/store";
+import { CHART_TYPES, TF_SECONDS, TIMEFRAMES, fmtPrice, fmtVol, roundPrice } from "@/lib/trading";
 import { useContextMenu, type MenuItem } from "@/components/ui/menu";
 import { INDICATOR_CATEGORIES, INDICATOR_LIST } from "@/lib/indicators";
 import { chartRegistry, pendingRanges, useChartEngine, type ChartHandle, type LegendData } from "./engine";
 import { IndicatorLegendRow } from "./indicators/legend";
 import { addIndicator, openIndicatorList, openIndicatorSettings, removeIndicator, toggleIndicator } from "./indicators/state";
 import { OneClickPanel } from "./one-click";
+import { TradeChips, lineColor, useTradeLineState, type LineDrag, type TLine } from "./trade-overlay";
 import { clearDrawings, drawPrefs, editDrawings, setDrawPrefs, useDrawPrefs } from "./drawings";
 import { openRegister } from "@/lib/guest";
 import { useT } from "@ezymex/i18n/react";
 import type { MessageKey } from "@ezymex/i18n";
 
-/* ------------------------------------------------------------------ */
-/* Trade lines                                                         */
-/* ------------------------------------------------------------------ */
-
-export type LineKind = "pos" | "sl" | "tp" | "pending" | "alert";
-export interface TLine {
-  id: string;
-  kind: LineKind;
-  price: number;
-  ref: string;
-  side?: "buy" | "sell";
-  label: string;
-  draggable: boolean;
-  closable?: boolean;
-  /** SL / TP lines: whose stop it is, an open position's or a pending order's */
-  owner?: "pos" | "pnd";
-  /** position / order chips: the S and T handles, shown while that stop isn't set (drag one out to set it) */
-  stops?: { sl: boolean; tp: boolean };
-}
-
 const uid = () => Math.random().toString(36).slice(2, 9);
-
-/**
- * Position / SL / TP / pending / alert lines for one symbol. A position line doesn't move: its SL and TP come out of the
- * S and T handles on its chip (MT5 / TradingView style). Pending orders move, have S / T too and show their SL / TP.
- */
-export function useTradeLines(symbol: string): TLine[] {
-  const T = useTerminal();
-  const positions = T.positions.filter((p) => p.symbol === symbol);
-  const pendings = T.pendings.filter((p) => p.symbol === symbol);
-  const alerts = T.alerts.filter((a) => a.symbol === symbol && a.active);
-  const ro = T.readOnly;
-  const t = useT();
-  return React.useMemo(() => {
-    const out: TLine[] = [];
-    for (const p of positions) {
-      out.push({ id: `pos:${p.ticket}`, kind: "pos", price: p.openPrice, ref: p.ticket, side: p.side, label: t(p.side === "buy" ? "chart.line.buy" : "chart.line.sell", { lot: fmtVol(p.volume) }), draggable: false, closable: !ro, stops: ro ? undefined : { sl: p.sl === undefined, tp: p.tp === undefined } });
-      if (p.sl !== undefined) out.push({ id: `sl:${p.ticket}`, kind: "sl", price: p.sl, ref: p.ticket, side: p.side, owner: "pos", label: "SL", draggable: !ro, closable: !ro });
-      if (p.tp !== undefined) out.push({ id: `tp:${p.ticket}`, kind: "tp", price: p.tp, ref: p.ticket, side: p.side, owner: "pos", label: "TP", draggable: !ro, closable: !ro });
-    }
-    for (const o of pendings) {
-      out.push({ id: `pnd:${o.ticket}`, kind: "pending", price: o.price, ref: o.ticket, side: o.side, label: t(PENDING_LABEL[`${o.side}:${o.type}`] ?? "chart.line.buyLimit", { lot: fmtVol(o.volume) }), draggable: !ro, closable: !ro, stops: ro ? undefined : { sl: o.sl === undefined, tp: o.tp === undefined } });
-      if (o.sl !== undefined) out.push({ id: `psl:${o.ticket}`, kind: "sl", price: o.sl, ref: o.ticket, side: o.side, owner: "pnd", label: "SL", draggable: !ro, closable: !ro });
-      if (o.tp !== undefined) out.push({ id: `ptp:${o.ticket}`, kind: "tp", price: o.tp, ref: o.ticket, side: o.side, owner: "pnd", label: "TP", draggable: !ro, closable: !ro });
-    }
-    for (const a of alerts) out.push({ id: `alr:${a.id}`, kind: "alert", price: a.price, ref: a.id, label: t("chart.line.alert"), draggable: true, closable: true });
-    return out;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(positions.map((p) => [p.ticket, p.openPrice, p.sl, p.tp, p.volume, p.side])), JSON.stringify(pendings.map((p) => [p.ticket, p.price, p.volume, p.side, p.type, p.sl, p.tp])), JSON.stringify(alerts.map((a) => [a.id, a.price])), ro, t]);
-}
-
-const PENDING_LABEL: Record<string, MessageKey> = {
-  "buy:limit": "chart.line.buyLimit",
-  "sell:limit": "chart.line.sellLimit",
-  "buy:stop": "chart.line.buyStop",
-  "sell:stop": "chart.line.sellStop",
-  "buy:stop-limit": "chart.line.buyStopLimit",
-  "sell:stop-limit": "chart.line.sellStopLimit",
-};
-
-/**
- * Which side of the price a stop must sit on, the trade engine's check_sltp: a buy's stop loss below and its take profit
- * above, a sell's the other way round, at least `gap` (the symbol's stops level) away. `ref` is the price it is checked
- * against (see stopRef). Returns the message key and the nearest allowed price, or null when the stop is fine.
- */
-export function stopProblem(which: "sl" | "tp", side: "buy" | "sell", ref: number, price: number, gap = 0): { key: MessageKey; at: number } | null {
-  if ((which === "sl") === (side === "buy")) {
-    const at = ref - gap;
-    return price <= at && price < ref ? null : { key: which === "sl" ? "chart.line.bad.slBelow" : "chart.line.bad.tpBelow", at };
-  }
-  const at = ref + gap;
-  return price >= at && price > ref ? null : { key: which === "sl" ? "chart.line.bad.slAbove" : "chart.line.bad.tpAbove", at };
-}
-
-/** The price an SL / TP is checked against: an open position's closing price now (Bid for a buy, Ask for a sell), a
- *  pending order's entry (its stop-limit price, else its price). */
-function stopRef(l: TLine, q: { bid: number; ask: number }, pendings: PendingOrder[]): number | null {
-  if (l.owner === "pnd") {
-    const o = pendings.find((x) => x.ticket === l.ref);
-    return o ? o.stopLimit ?? o.price : null;
-  }
-  return l.side === "buy" ? q.bid : q.ask;
-}
-
-/** The symbol's minimum stop distance (stops level, in price). */
-const stopGap = (symbol: string) => (instrumentSpec(symbol)?.stopsLevelPoints ?? 0) * pointSize(symbol);
-
-/** Money at `price` for an SL / TP line: the position's P&L there (with its swap and commission so far), or a pending
- *  order's, counted from the order price. */
-function stopMoney(l: TLine, price: number, positions: TPosition[], pendings: PendingOrder[]): number | null {
-  if (l.owner === "pnd") {
-    const o = pendings.find((x) => x.ticket === l.ref);
-    return o ? profitAt({ symbol: o.symbol, side: o.side, volume: o.volume, openPrice: o.price }, price) : null;
-  }
-  const p = positions.find((x) => x.ticket === l.ref);
-  return p ? profitAt(p, price) + p.swap - p.commission : null;
-}
 
 /* ------------------------------------------------------------------ */
 /* Drawings                                                            */
@@ -162,16 +67,6 @@ export interface ChartViewProps {
   highlight?: boolean;
 }
 
-interface LineDrag {
-  id: string;
-  price: number;
-  /** an SL / TP being dragged out of a chip's S or T handle: the line it becomes when dropped */
-  create?: TLine;
-  /** pointer start and whether it really moved (a click on S / T without a drag sets nothing) */
-  y0?: number;
-  moved?: boolean;
-}
-
 export function ChartView({ tab, active, onActivate, compact, hideOneClick, highlight = active }: ChartViewProps) {
   const T = useTerminal();
   const t = useT();
@@ -194,7 +89,6 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
   // PositionChipPnl, StopDragTag) subscribe themselves; handlers read the current quote when they run.
   const quoteNow = () => priceFeed().quote(tab.symbol);
   const inst = getInstrument(tab.symbol);
-  const acc = T.account;
   const tool = active ? T.drawTool : "cursor";
   const drawing = tool === "hline" || tool === "trend" || tool === "rect" || tool === "fib" || tool === "brush" || tool === "text" || tool === "ruler";
   const prefs = useDrawPrefs();
@@ -263,40 +157,10 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
     };
   }, [engine, tab.id, tab.symbol, tab.tf, t]);
 
-  /* ---------------- lines from store ---------------- */
+  /* ---------------- trade lines (trade-overlay.tsx) ---------------- */
   const ro = T.readOnly;
-  const tradeLines = useTradeLines(tab.symbol);
-  // an SL / TP dropped from a chip's S / T: the new line shows at once, not when the trade server answers
-  const [fresh, setFresh] = React.useState<TLine | null>(null);
-  const [drag, setDrag] = React.useState<LineDrag | null>(null);
-  const dragRef = React.useRef(drag);
-  dragRef.current = drag;
-  const dragCreate = drag?.create ?? null;
-  const lines = React.useMemo(() => {
-    let out = tradeLines;
-    for (const x of [fresh, dragCreate]) if (x && !out.some((l) => l.id === x.id)) out = [...out, x];
-    return out;
-  }, [tradeLines, fresh, dragCreate]);
-
-  // a dropped SL / TP / pending line stays where it was dropped until the trade server has answered
-  const [hold, setHold] = React.useState<{ id: string; price: number } | null>(null);
-  const holdRef = React.useRef(hold);
-  holdRef.current = hold;
-  const settle = (id: string, price: number, p: Promise<boolean>) => {
-    setHold({ id, price });
-    void p.finally(() => setHold((h) => (h?.id === id && h.price === price ? null : h)));
-  };
-
-  /** Why an SL / TP at `price` would be rejected (translated), or null. */
-  const badStop = (l: TLine, price: number) => {
-    if ((l.kind !== "sl" && l.kind !== "tp") || !l.side) return null;
-    const ref = stopRef(l, quoteNow(), T.pendings);
-    const bad = ref === null ? null : stopProblem(l.kind, l.side, ref, price, stopGap(tab.symbol));
-    return bad ? t(bad.key, { price: fmtPrice(tab.symbol, bad.at) }) : null;
-  };
-  const dragLine = drag ? lines.find((l) => l.id === drag.id) ?? null : null;
-  const dragStop = dragLine && (dragLine.kind === "sl" || dragLine.kind === "tp") ? dragLine : null;
-  const dragBad = drag && dragStop ? badStop(dragStop, drag.price) : null;
+  const trade = useTradeLineState(tab.symbol);
+  const { lines, drag, setDrag, dragRef, hold, holdRef, dragStop, dragBad } = trade;
 
   const priceLines = React.useRef<{ owner: unknown; map: Map<string, IPriceLine> }>({ owner: null, map: new Map() });
 
@@ -306,8 +170,7 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
     if (priceLines.current.owner !== engine.chart) priceLines.current = { owner: engine.chart, map: new Map() }; // same chart survives theme recolours
     const c = engine.palette;
     const map = priceLines.current.map;
-    // BUY blue, SELL red; SL red, TP green, pending gold, alerts amber; a stop dragged to the wrong side goes grey
-    const colorOf = (l: TLine) => (dragBad && l.id === dragRef.current?.id ? c.fg3 : l.kind === "sl" ? c.down : l.kind === "tp" ? c.up : l.kind === "pending" ? c.gold : l.kind === "alert" ? c.warn : l.side === "buy" ? c.buy : c.down);
+    const colorOf = (l: TLine) => lineColor(l, c, !!dragBad && l.id === dragRef.current?.id);
     const want = new Map<string, { price: number; color: string; style: LineStyle; width: 1 | 2; title: string }>();
     for (const l of lines) want.set(l.id, { price: l.price, color: colorOf(l), style: l.kind === "pos" ? LineStyle.Solid : l.kind === "alert" ? LineStyle.SparseDotted : LineStyle.Dashed, width: 1, title: "" });
     if (!prefs.hidden) for (const d of tab.drawings) if (d.kind === "hline") want.set(`hl:${d.id}`, { price: d.price, color: T.selectedDrawing === d.id ? c.ember : c.fg2, style: LineStyle.Solid, width: 1, title: "" });
@@ -493,12 +356,10 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
 
   /** Drag an SL / TP out of a position's or order's S / T handle: a new line follows the pointer from the chip's price. */
   const startStop = (l: TLine, which: "sl" | "tp", clientY: number) => {
-    if (!engine || !l.side) return;
-    const owner = l.kind === "pos" ? "pos" : "pnd";
-    const id = `${owner === "pos" ? "" : "p"}${which}:${l.ref}`;
-    const create: TLine = { id, kind: which, price: l.price, ref: l.ref, side: l.side, owner, label: which === "sl" ? "SL" : "TP", draggable: false, closable: false };
+    const d = engine ? trade.stopDrag(l, which, clientY) : null;
+    if (!d || !engine) return;
     engine.chart.applyOptions({ handleScroll: false, handleScale: false });
-    setDrag({ id, price: l.price, create, y0: clientY, moved: false });
+    setDrag(d);
   };
 
   React.useEffect(() => {
@@ -527,42 +388,9 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
   }, [drag?.id, engine]);
 
   const commitDrag = (d: LineDrag) => {
-    const { id, price } = d;
-    const [kind, ref] = id.split(":") as [string, string];
-    if (kind === "hl") {
-      editDrawings(T, tab.id, (ds) => ds.map((x) => (x.id === ref && x.kind === "hline" ? { ...x, price } : x)));
-      return;
-    }
-    const l = d.create ?? linesRef.current.find((x) => x.id === id);
-    if (!l) return;
-    if (d.create && !d.moved) {
-      // a click on S / T: say how it works instead of setting a stop at the entry price
-      toast(t(l.kind === "sl" ? "chart.line.dragSl" : "chart.line.dragTp"), { id: "stop-hint" });
-      return;
-    }
-    if (!d.create && Math.abs(price - l.price) < 1 / 10 ** inst.digits) return;
-    if (l.kind === "sl" || l.kind === "tp") {
-      // the wrong side of the price: the trade server would reject it, so nothing is sent
-      const bad = badStop(l, price);
-      if (bad) return void toast.warning(bad, { description: t("chart.line.bad.notSent"), id: "stop-bad" });
-      const patch = l.kind === "sl" ? { sl: price } : { tp: price };
-      const req = l.owner === "pnd" ? T.modifyPending(l.ref, patch) : T.modifyPosition(l.ref, patch);
-      if (!d.create) return settle(id, price, req);
-      setFresh({ ...l, price });
-      settle(id, price, req.finally(() => setFresh((f) => (f?.id === id ? null : f))));
-    } else if (l.kind === "pending") settle(id, price, T.modifyPending(l.ref, { price }));
-    else if (l.kind === "alert") T.updateAlert(l.ref, { price });
-  };
-
-  /** × on a chip: close the position, remove the stop, cancel the order, delete the alert. */
-  const removeLine = (l: TLine) => {
-    if (l.kind === "pos") T.closePosition(l.ref);
-    else if (l.kind === "sl" || l.kind === "tp") {
-      const patch = l.kind === "sl" ? { sl: null } : { tp: null };
-      if (l.owner === "pnd") T.modifyPending(l.ref, patch);
-      else T.modifyPosition(l.ref, patch);
-    } else if (l.kind === "pending") T.cancelPending(l.ref);
-    else if (l.kind === "alert") T.removeAlert(l.ref);
+    const [kind, ref] = d.id.split(":") as [string, string];
+    if (kind === "hl") return editDrawings(T, tab.id, (ds) => ds.map((x) => (x.id === ref && x.kind === "hline" ? { ...x, price: d.price } : x)));
+    trade.commitTrade(d);
   };
 
   /* ---------------- moving a drawing ---------------- */
@@ -956,107 +784,28 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
 
       {/* trade line chips */}
       <div className="pointer-events-none absolute inset-0 z-[4]">
-        {chipRows(lines, geo.ys, geo.h).map((row) => (
-          // chips closer than a chip's height (two positions opened at the same price, SL next to a pending
-          // order…) share one row, side by side from the price scale leftwards, instead of covering each other
-          <div key={row.lines[0]!.id} className="absolute flex -translate-y-1/2 flex-row-reverse items-center gap-1" style={{ top: row.y, right: chipRight }}>
-            {row.lines.map((l) => {
-              const isDrag = drag?.id === l.id;
-              const price = isDrag ? drag.price : hold?.id === l.id ? hold.price : l.price;
-              const money = l.kind === "sl" || l.kind === "tp" ? stopMoney(l, price, T.positions, T.pendings) : null;
-              const bad = isDrag && !!dragBad;
-              const livePos = l.kind === "pos" ? T.positions.find((x) => x.ticket === l.ref) : undefined;
-              // TradingView-style label: one box framed in the line's colour, a solid tag (side + lot, SL, TP, order type)
-              // then the money, the TP / SL handles and ×
-              const frame = bad
-                ? "border-line-top"
-                : l.kind === "sl" || (l.kind === "pos" && l.side === "sell")
-                ? "border-down"
-                : l.kind === "tp"
-                ? "border-up"
-                : l.kind === "pending"
-                ? "border-gold"
-                : l.kind === "alert"
-                ? "border-warn"
-                : "border-buy";
-              const tag = bad
-                ? "bg-surface-3 text-fg-2"
-                : l.kind === "sl" || (l.kind === "pos" && l.side === "sell")
-                ? "bg-down text-white"
-                : l.kind === "tp"
-                ? "bg-up text-white"
-                : l.kind === "pending"
-                ? "bg-[color-mix(in_oklab,var(--k-gold)_88%,black)] text-[#1a1204]"
-                : l.kind === "alert"
-                ? "bg-warn text-[#1a1204]"
-                : "bg-buy text-white";
-              const handles = (["tp", "sl"] as const).filter((w) => l.stops?.[w]);
-              return (
-                <div
-                  key={l.id}
-                  data-line-chip
-                  className={cn("pointer-events-auto flex h-5 shrink-0 items-stretch overflow-hidden rounded-[3px] border bg-panel-2 font-sans text-[11px] font-semibold leading-none text-fg shadow-[0_2px_8px_rgba(0,0,0,0.35)]", frame, l.draggable && "cursor-ns-resize")}
-                  style={row.lines.length > 1 ? { transform: `translateY(${(geo.ys[l.id] ?? row.y) - row.y}px)` } : undefined}
-                  onPointerDown={(e) => {
-                    if (!l.draggable || e.button !== 0) return;
-                    e.stopPropagation();
-                    e.preventDefault();
-                    onActivate();
-                    startDrag(l.id);
-                  }}
-                  onDoubleClick={() => (l.kind === "pos" ? T.setUi({ positionDialog: l.ref }) : l.kind === "pending" && !ro ? T.setUi({ pendingDialog: l.ref }) : undefined)}
-                  title={bad ? dragBad! : l.kind === "pos" ? (ro ? undefined : t("chart.line.posTip")) : l.kind === "pending" && !ro ? t("chart.line.pendingTip") : l.draggable ? t("chart.line.dragTitle") : undefined}
-                >
-                  <span className={cn("flex items-center px-1.5", tag)}>
-                    {l.label}
-                    {isDrag && l.kind !== "pos" && <span className="k-num ml-1 opacity-80">{fmtPrice(tab.symbol, price)}</span>}
-                  </span>
-                  {livePos && <PositionChipPnl p={livePos} />}
-                  {money !== null && <span className="k-num flex items-center px-1.5">{accMoney(acc, money, { signed: true })}</span>}
-                  {handles.length > 0 && (
-                    <span className="flex items-stretch">
-                      {handles.map((w) => (
-                        <button
-                          key={w}
-                          type="button"
-                          data-stop-handle={w}
-                          aria-label={t(w === "sl" ? "chart.line.dragSl" : "chart.line.dragTp")}
-                          title={t(w === "sl" ? "chart.line.dragSl" : "chart.line.dragTp")}
-                          onPointerDown={(e) => {
-                            if (e.button !== 0) return;
-                            e.stopPropagation();
-                            e.preventDefault();
-                            onActivate();
-                            startStop(l, w, e.clientY);
-                          }}
-                          onDoubleClick={(e) => e.stopPropagation()}
-                          className={cn("flex cursor-ns-resize touch-none items-center border-l border-line px-1.5 text-[10.5px] font-bold leading-none transition-colors", w === "sl" ? "text-down hover:bg-down hover:text-white" : "text-up hover:bg-up hover:text-white")}
-                        >
-                          {w === "sl" ? "SL" : "TP"}
-                        </button>
-                      ))}
-                    </span>
-                  )}
-                  {l.closable && (
-                    <button
-                      aria-label={t("chart.line.remove", { label: l.label })}
-                      onPointerDown={(e) => e.stopPropagation()}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeLine(l);
-                      }}
-                      className="grid h-full w-5 place-items-center border-l border-line text-fg-3 transition-colors hover:bg-down hover:text-white"
-                    >
-                      <X className="size-2.5" />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ))}
-        {/* while an SL / TP is dragged: the price, the money there, and why it can't go there */}
-        {drag && dragStop && geo.ys[drag.id] != null && <StopDragTag line={dragStop} price={drag.price} symbol={tab.symbol} top={geo.ys[drag.id]!} />}
+        <TradeChips
+          symbol={tab.symbol}
+          lines={lines}
+          ys={geo.ys}
+          top={0}
+          bottom={geo.h}
+          right={chipRight}
+          tagLeft={12}
+          drag={drag}
+          hold={hold}
+          dragStop={dragStop}
+          dragBad={dragBad}
+          onLineDown={(l) => {
+            onActivate();
+            startDrag(l.id);
+          }}
+          onStopDown={(l, w, e) => {
+            onActivate();
+            startStop(l, w, e.clientY);
+          }}
+          onRemove={trade.removeLine}
+        />
       </div>
 
       {/* legend */}
@@ -1107,23 +856,6 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
       {cm.node}
     </div>
   );
-}
-
-/** Visible trade-line chips grouped into rows: lines less than one chip height apart share a row. */
-function chipRows(lines: TLine[], ys: Record<string, number | null>, h: number) {
-  const vis = lines.filter((l) => {
-    const y = ys[l.id];
-    return y != null && y >= 4 && y <= h - 4;
-  });
-  vis.sort((a, b) => ys[a.id]! - ys[b.id]!);
-  const rows: { y: number; lines: TLine[] }[] = [];
-  for (const l of vis) {
-    const y = ys[l.id]!;
-    const last = rows[rows.length - 1];
-    if (last && y - last.y < 19) last.lines.push(l);
-    else rows.push({ y, lines: [l] });
-  }
-  return rows;
 }
 
 /* ------------------------------------------------------------------ */
@@ -1188,36 +920,4 @@ function LegendOhlc({ store, digits, compact }: { store: LegendStore; digits: nu
 function LiveLegendRow({ store, uid, ...actions }: { store: LegendStore; uid: string; onToggle: () => void; onSettings: () => void; onRemove: () => void }) {
   const row = React.useSyncExternalStore(store.subscribe, () => store.get()?.ind.find((r) => r.uid === uid), () => undefined);
   return row ? <IndicatorLegendRow row={row} {...actions} /> : null;
-}
-
-/** Floating P&L on a position line chip: the engine's value (equity frames) or computed from the quote. */
-function PositionChipPnl({ p }: { p: TPosition }) {
-  const T = useTerminal();
-  const pnl = usePositionProfit(p);
-  return <span className={cn("k-num flex items-center px-1.5", pnl >= 0 ? "text-up" : "text-down")}>{accMoney(T.account, pnl, { signed: true })}</span>;
-}
-
-/**
- * The tag beside an SL / TP being dragged: "SL 1.08420 · −12.40", in the stop's colour, or grey with the reason when
- * the stop is on the wrong side of the price (checked against the live quote, so it follows the market while held).
- */
-function StopDragTag({ line, price, symbol, top }: { line: TLine; price: number; symbol: string; top: number }) {
-  const T = useTerminal();
-  const t = useT();
-  const q = useQuote(symbol);
-  const ref = stopRef(line, q, T.pendings);
-  const bad = ref === null || !line.side || (line.kind !== "sl" && line.kind !== "tp") ? null : stopProblem(line.kind, line.side, ref, price, stopGap(symbol));
-  const money = stopMoney(line, price, T.positions, T.pendings);
-  return (
-    <div
-      role="status"
-      className={cn("pointer-events-none absolute left-3 flex h-5 -translate-y-1/2 items-center gap-1.5 whitespace-nowrap rounded-[5px] px-1.5 font-mono text-[10.5px] shadow-[0_2px_8px_rgba(0,0,0,0.35)]", bad ? "border border-line-top bg-surface-3 text-fg-2" : line.kind === "sl" ? "bg-down text-white" : "bg-up text-white")}
-      style={{ top }}
-    >
-      <span className="font-semibold">{line.label}</span>
-      <span>{fmtPrice(symbol, price)}</span>
-      {money !== null && <span className="k-num">· {accMoney(T.account, money, { signed: true })}</span>}
-      {bad && <span className="font-sans font-medium text-warn">· {t(bad.key, { price: fmtPrice(symbol, bad.at) })}</span>}
-    </div>
-  );
 }
