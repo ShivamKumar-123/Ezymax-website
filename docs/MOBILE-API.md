@@ -236,7 +236,7 @@ header comment of its route file in `apps/crm/app/api/<family>/…/route.ts`.
 | `security` | sessions, sign-in history, view-only logins, closure / data-export requests |
 | `support` | chat (`me`, `messages`, `handover`, conversations, `read`, `typing`, rate / resolve), attachments, `stream-ticket`. **Ask Ezymex AI** is the support assistant in this chat: post a message and the reply streams over the support stream. |
 | `status` | public status page data |
-| `growth` | rewards, points, redeem, cashback, promotions, bonuses, promo codes, contests, banners, share cards |
+| `growth` | rewards, points, redeem, cashback, promotions, bonuses, promo codes, contests, banners (hero items included), Events & updates (`posts`, `posts/{id}`), share cards. Uploaded images: `GET <app>/api/growth/media/{id}` (public, no session, immutable) |
 | `partner` | IB dashboard, programme, campaigns, clients, network, commissions, payouts, settings |
 | `social` | copy trading (leaderboard, masters, subscriptions) and PAMM (funds, investments) |
 | `prop` | prop plans, challenges, payouts, certificates, notifications |

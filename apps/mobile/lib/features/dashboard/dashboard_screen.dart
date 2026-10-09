@@ -1,6 +1,6 @@
 // Dashboard › Overview, on real data. Port of the web's phone layout (apps/crm/components/dashboard/live-dashboard.tsx
 // in OverviewLayout's phone order, max-md:order-*):
-//   0 targeted banner (growth, placement "dashboard")
+//   0 hero carousel (brand banners, featured events / posts) and the targeted banner (growth, placement "dashboard")
 //   1 header (Overview + greeting + Verified), then Ask Ezymex AI (the pill; not for view-only / read-only sessions)
 //   2 total balance + Deposit / Withdraw / Transfer
 //   3 KPI cards (equity, today's P&L, wallet, rewards)
@@ -10,8 +10,8 @@
 //   7 notifications (prompts + latest)
 //   8 activity tabs (History / Funding / Linked)
 //   9 getting started checklist
-//   then Markets (movers, heatmap, calendar, news, world) and More for you (Ezymex Trader, your account, market clock,
-//   support).
+//   then Events & updates (events and brand posts), Markets (movers, heatmap, calendar, news, world) and More for you
+//   (Ezymex Trader, your account, market clock, support).
 // Whatever belongs to a module the broker switched off (wallet, rewards, copy trading, IB, news, calendar, support, AI
 // assistant) is left out, its data isn't loaded (shell/nav.dart pageOn, apps/crm/lib/modules.ts).
 import 'dart:async';
@@ -36,6 +36,8 @@ import '../../shell/nav.dart';
 import '../../ui/ui.dart';
 import '../accounts/account_actions.dart';
 import '../support/ask_ai.dart';
+import '../updates/updates_api.dart';
+import '../updates/widgets/updates_section.dart';
 import 'dashboard_data.dart';
 import 'dashboard_hero.dart';
 import 'widgets/accounts_panel.dart';
@@ -202,6 +204,7 @@ class DashboardScreen extends ConsumerWidget {
       ..invalidate(rewardsProvider)
       ..invalidate(equityCurveProvider)
       ..invalidate(dashBannersProvider)
+      ..invalidate(postsProvider)
       ..invalidate(dashNewsProvider)
       ..invalidate(dashCalendarProvider)
       ..invalidate(dashMapProvider);
@@ -595,6 +598,8 @@ class DashboardScreen extends ConsumerWidget {
           const SizedBox(height: 24),
           // 9. getting started
           ChecklistCard(title: t('dashboard.steps.title'), subtitle: t('dashboard.steps.subtitle'), rows: checklist, done: done, total: steps.length),
+          // Events & updates (brand events and posts; module promotions)
+          const DashboardUpdatesSection(),
           // Markets
           const SizedBox(height: 36),
           KSectionTitle(t('dashboard.home.marketsTitle'), large: true),

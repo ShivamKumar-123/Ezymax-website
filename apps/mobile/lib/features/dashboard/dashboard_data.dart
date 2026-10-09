@@ -15,6 +15,9 @@ import '../../core/api/api_providers.dart';
 import '../../core/lifecycle.dart';
 import '../markets/instruments.dart';
 import '../markets/markets_feed.dart';
+import '../updates/updates_api.dart';
+
+export '../updates/updates_api.dart' show PromoItem;
 
 double _d(Object? v) => v is num ? v.toDouble() : double.tryParse('${v ?? ''}') ?? 0;
 int _i(Object? v) => v is num ? v.toInt() : int.tryParse('${v ?? ''}') ?? 0;
@@ -189,31 +192,12 @@ Map<String, double> heatOf(List<DashMapCountry> countries) => {
 /* Growth banners                                                      */
 /* ------------------------------------------------------------------ */
 
-@immutable
-class DashBanner {
-  const DashBanner({required this.id, required this.title, required this.body, required this.tone, this.ctaLabel, this.ctaUrl, this.dismissible = false});
-  final String id, title, body, tone;
-  final String? ctaLabel, ctaUrl;
-  final bool dismissible;
-
-  static DashBanner fromJson(Map<String, dynamic> j) => DashBanner(
-    id: '${j['id']}',
-    title: '${j['title'] ?? ''}',
-    body: '${j['body'] ?? ''}',
-    tone: '${j['tone'] ?? 'neutral'}',
-    ctaLabel: j['ctaLabel'] as String?,
-    ctaUrl: j['ctaUrl'] as String?,
-    dismissible: j['dismissible'] == true,
-  );
-}
-
-/// Banners that target this client on the dashboard (web BannerSlot placement="dashboard", one at most).
-final dashBannersProvider = FutureProvider.autoDispose<List<DashBanner>>((ref) async {
+/// What targets this client on the dashboard (web DashboardBanners): hero items (layout "hero") for the carousel at
+/// the top, card banners for the slot under it (one at most).
+final dashBannersProvider = FutureProvider.autoDispose<List<PromoItem>>((ref) async {
   final j = await ref.watch(apiProvider).get<Map<String, dynamic>>('growth/banners', query: {'placement': 'dashboard'});
-  return [for (final b in _maps(j['items'])) DashBanner.fromJson(b)];
+  return [for (final b in _maps(j['items'])) PromoItem.fromJson(b)];
 });
 
 /// Counts a banner impression / click / dismissal (fire and forget, like the web's `track`).
-void trackBanner(ApiClient api, String id, String kind) {
-  unawaited(api.post<Object?>('growth/banners/$id/events', body: {'kind': kind}).then((_) {}, onError: (Object _) {}));
-}
+void trackBanner(ApiClient api, String id, String kind) => trackPromo(api, id, kind);

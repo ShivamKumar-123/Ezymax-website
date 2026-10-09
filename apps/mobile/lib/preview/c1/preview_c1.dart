@@ -4,6 +4,7 @@ import 'preview_accounts.dart';
 import 'preview_dashboard.dart';
 import 'preview_portfolio.dart';
 import 'preview_profile.dart';
+import 'preview_promotions.dart';
 import 'preview_support.dart';
 import 'preview_wallet.dart';
 
@@ -13,4 +14,5 @@ import 'preview_wallet.dart';
     previewPortfolio(method, path, body, query) ??
     previewProfile(method, path, body, query) ??
     previewSupport(method, path, body, query) ??
+    previewPromotions(method, path, body, query) ??
     previewDashboard(method, path, body, query);
