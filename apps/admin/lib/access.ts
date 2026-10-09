@@ -23,6 +23,7 @@ export const PAGE_PERMS: Record<string, readonly string[]> = {
   "/social/marketplace": ["algo.read"],
   "/social/api-keys": ["algo.read"],
   "/prop": ["prop.read"],
+  "/staking": ["staking.read"],
   "/algo": ["algo.read"],
   "/marketing": ["marketing.read"],
   "/support": ["support.read"],
