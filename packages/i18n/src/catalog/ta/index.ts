@@ -27,6 +27,7 @@ import aiTrader from "./aiTrader";
 import options from "./options";
 import desk from "./desk";
 import features from "./features";
+import updates from "./updates";
 
-const catalog: PartialCatalog = { common, shell, auth, dashboard, accounts, accountDetail, wallet, profile, kyc, trader, order, toolbox, market, partner, social, prop, security, rewards, developer, academy, support, news, portfolio, chart, aiTrader, options, desk, features };
+const catalog: PartialCatalog = { common, shell, auth, dashboard, accounts, accountDetail, wallet, profile, kyc, trader, order, toolbox, market, partner, social, prop, security, rewards, developer, academy, support, news, portfolio, chart, aiTrader, options, desk, features, updates };
 export default catalog;
