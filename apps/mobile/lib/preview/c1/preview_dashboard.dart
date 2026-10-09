@@ -3,6 +3,8 @@
 // so the News / Calendar pages keep their own sample data. Shapes are the real API's (the web's /api/news/… and
 // /api/growth/… routes); values are made up.
 
+import 'preview_promotions.dart';
+
 String _iso(Duration ago) => DateTime.now().subtract(ago).toUtc().toIso8601String();
 
 Map<String, dynamic> _story(
@@ -76,6 +78,7 @@ Map<String, dynamic> _event(
         200,
         {
           'items': [
+            ...previewHeroItems(),
             {
               'id': 41,
               'title': 'Zero-fee USDT deposits this week',

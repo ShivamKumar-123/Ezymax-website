@@ -14,6 +14,7 @@ use crate::contests::{self, CONTEST_SELECT};
 use crate::db;
 use crate::error::{ApiError, ApiResult, invalid};
 use crate::loyalty;
+use crate::media;
 use crate::model::{ASSET_CLASSES, AntiCheat, Prize, Settings, Tier, validate_prizes, validate_tiers};
 use crate::money::{D, ZERO, de_dec, de_opt_dec, num};
 use crate::payouts;
@@ -1137,23 +1138,43 @@ pub async fn promo_redemptions(State(st): State<AppState>, s: StaffCtx, Query(q)
     }).collect::<Vec<_>>(), "total": total, "page": page, "limit": limit})))
 }
 
-// ---------------------------------------------------------------- banners
+// ---------------------------------------------------------------- banners, events and brand posts
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BannerIn {
+    /// banner | event | post
+    #[serde(default = "banner_kind")]
+    kind: String,
+    /// card | hero (the dashboard carousel)
+    #[serde(default = "card")]
+    layout: String,
     title: String,
     #[serde(default)]
     body: String,
+    /// markdown, shown on the event / post page
+    #[serde(default)]
+    content: String,
     #[serde(default)]
     cta_label: Option<String>,
     #[serde(default)]
     cta_url: Option<String>,
     #[serde(default)]
     image_url: Option<String>,
+    /// an image uploaded with `POST /media` (wins over `imageUrl`)
+    #[serde(default)]
+    image_media_id: Option<String>,
     #[serde(default = "ember")]
     tone: String,
+    #[serde(default = "dashboard")]
     placement: String,
+    #[serde(default)]
+    event_starts_at: Option<String>,
+    #[serde(default)]
+    event_ends_at: Option<String>,
+    /// a place or an https:// link (online events)
+    #[serde(default)]
+    location: Option<String>,
     #[serde(default)]
     countries: Vec<String>,
     #[serde(default)]
@@ -1177,6 +1198,15 @@ pub struct BannerIn {
 fn ember() -> String {
     "ember".into()
 }
+fn banner_kind() -> String {
+    "banner".into()
+}
+fn card() -> String {
+    "card".into()
+}
+fn dashboard() -> String {
+    "dashboard".into()
+}
 
 fn safe_url(u: &Option<String>, field: &'static str) -> ApiResult<Option<String>> {
     match u.as_deref().map(str::trim).filter(|x| !x.is_empty()) {
@@ -1186,8 +1216,27 @@ fn safe_url(u: &Option<String>, field: &'static str) -> ApiResult<Option<String>
     }
 }
 
+/// An event's place ("Dubai, DIFC") or online link: links must be https://, text is kept on one line.
+fn location_of(v: &Option<String>) -> ApiResult<Option<String>> {
+    let Some(x) = v.as_deref().map(str::trim).filter(|x| !x.is_empty()) else { return Ok(None) };
+    if x.chars().count() > 200 {
+        return Err(invalid("location", "At most 200 characters."));
+    }
+    let lower = x.to_ascii_lowercase();
+    if lower.contains("://") || lower.starts_with("www.") || lower.starts_with("javascript:") || lower.starts_with("data:") {
+        if !x.starts_with("https://") || x.contains(char::is_whitespace) {
+            return Err(invalid("location", "Online links must start with https://."));
+        }
+    }
+    Ok(Some(x.chars().filter(|c| !c.is_control()).collect()))
+}
+
+/// The row as the Back Office edits it (raw image URL + uploaded image id, markdown body); the client view plus
+/// targeting, schedule and audit fields.
 pub fn banner_json(r: &sqlx::postgres::PgRow) -> Value {
     let mut v = banner_view(r);
+    v["imageUrl"] = json!(r.get::<Option<String>, _>("image_url"));
+    v["content"] = json!(r.get::<String, _>("content"));
     v["countries"] = json!(r.get::<Vec<String>, _>("countries"));
     v["kyc"] = json!(r.get::<Vec<String>, _>("kyc"));
     v["accountTypes"] = json!(r.get::<Vec<String>, _>("account_types"));
@@ -1197,21 +1246,64 @@ pub fn banner_json(r: &sqlx::postgres::PgRow) -> Value {
     v["startsAt"] = json!(r.get::<DateTime<Utc>, _>("starts_at"));
     v["endsAt"] = json!(r.get::<Option<DateTime<Utc>>, _>("ends_at"));
     v["createdAt"] = json!(r.get::<DateTime<Utc>, _>("created_at"));
+    v["updatedAt"] = json!(r.get::<DateTime<Utc>, _>("updated_at"));
+    if let Some(o) = v.as_object_mut() {
+        // client-only fields: the edit view carries the raw ones
+        o.remove("eventState");
+        o.remove("publishedAt");
+    }
     v
 }
 
 async fn write_banner(st: &AppState, s: &StaffCtx, id: Option<i64>, mut b: BannerIn, before: Option<Value>) -> ApiResult<Json<Value>> {
+    if !matches!(b.kind.as_str(), "banner" | "event" | "post") {
+        return Err(invalid("kind", "banner, event or post."));
+    }
+    if !matches!(b.layout.as_str(), "card" | "hero") {
+        return Err(invalid("layout", "card or hero."));
+    }
     b.title = text(&b.title, "title", 100, true)?;
     b.body = text(&b.body, "body", 400, false)?;
+    b.content = b.content.replace("\r\n", "\n").trim().to_string();
+    if b.content.chars().count() > 20_000 {
+        return Err(invalid("content", "At most 20,000 characters."));
+    }
     b.cta_label = b.cta_label.map(|l| l.trim().chars().take(40).collect::<String>()).filter(|l| !l.is_empty());
     b.cta_url = safe_url(&b.cta_url, "ctaUrl")?;
     b.image_url = safe_url(&b.image_url, "imageUrl")?;
+    b.image_media_id = b.image_media_id.map(|m| m.trim().to_string()).filter(|m| !m.is_empty());
+    if let Some(m) = &b.image_media_id {
+        if !media::exists(st, &s.tenant, m).await? {
+            return Err(invalid("imageMediaId", "Upload the image again: it wasn't found."));
+        }
+    }
     if !matches!(b.tone.as_str(), "ember" | "gold" | "neutral" | "up") {
         return Err(invalid("tone", "ember, gold, neutral or up."));
     }
     if !matches!(b.placement.as_str(), "dashboard" | "wallet" | "rewards" | "terminal") {
         return Err(invalid("placement", "dashboard, wallet, rewards or terminal."));
     }
+    // events and posts live on the dashboard (Events & updates, and the hero when featured)
+    if b.kind != "banner" {
+        b.placement = "dashboard".into();
+    }
+    if b.layout == "hero" && b.placement != "dashboard" {
+        return Err(invalid("layout", "Hero banners show at the top of the dashboard: pick the Dashboard placement."));
+    }
+    if b.layout == "hero" && b.image_url.is_none() && b.image_media_id.is_none() {
+        return Err(invalid("image", "A hero banner needs an image (1600 × 400)."));
+    }
+    let (ev_start, ev_end) = if b.kind == "event" {
+        let start = time_req(&b.event_starts_at, "eventStartsAt")?.ok_or_else(|| invalid("eventStartsAt", "When does the event start?"))?;
+        let end = time_req(&b.event_ends_at, "eventEndsAt")?;
+        if end.is_some_and(|e| e < start) {
+            return Err(invalid("eventEndsAt", "The event must end after it starts."));
+        }
+        (Some(start), end)
+    } else {
+        (None, None)
+    };
+    let location = if b.kind == "event" { location_of(&b.location)? } else { None };
     b.countries = clean_list(&b.countries, true);
     if b.countries.iter().any(|c| c.len() != 2) {
         return Err(invalid("countries", "Use ISO-2 country codes."));
@@ -1235,12 +1327,15 @@ async fn write_banner(st: &AppState, s: &StaffCtx, id: Option<i64>, mut b: Banne
     let mut tx = st.pool.begin().await?;
     let row = match id {
         None => sqlx::query(
-            "INSERT INTO banners (tenant, title, body, cta_label, cta_url, image_url, tone, placement, countries, kyc, account_types, new_users_days, priority, dismissible, active, starts_at, ends_at, created_by)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING *",
+            "INSERT INTO banners (tenant, title, body, cta_label, cta_url, image_url, tone, placement, countries, kyc, account_types, new_users_days, priority, dismissible, active, starts_at, ends_at, created_by,
+                                  kind, layout, content, event_starts_at, event_ends_at, location, image_media_id)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$20,$21,$22,$23,$24,$25,$26) RETURNING *",
         ),
         Some(_) => sqlx::query(
             "UPDATE banners SET title = $2, body = $3, cta_label = $4, cta_url = $5, image_url = $6, tone = $7, placement = $8, countries = $9, kyc = $10, account_types = $11,
-               new_users_days = $12, priority = $13, dismissible = $14, active = $15, starts_at = $16, ends_at = $17, updated_at = now() WHERE id = $19 AND tenant = $1 AND $18::text IS NOT NULL RETURNING *",
+               new_users_days = $12, priority = $13, dismissible = $14, active = $15, starts_at = $16, ends_at = $17, kind = $20, layout = $21, content = $22,
+               event_starts_at = $23, event_ends_at = $24, location = $25, image_media_id = $26, updated_at = now()
+             WHERE id = $19 AND tenant = $1 AND deleted_at IS NULL AND $18::text IS NOT NULL RETURNING *",
         ),
     }
     .bind(&s.tenant)
@@ -1262,8 +1357,16 @@ async fn write_banner(st: &AppState, s: &StaffCtx, id: Option<i64>, mut b: Banne
     .bind(ends)
     .bind(s.actor().label())
     .bind(id.unwrap_or(0))
-    .fetch_one(&mut *tx)
-    .await?;
+    .bind(&b.kind)
+    .bind(&b.layout)
+    .bind(&b.content)
+    .bind(ev_start)
+    .bind(ev_end)
+    .bind(&location)
+    .bind(&b.image_media_id)
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or(ApiError::NotFound)?;
     let v = banner_json(&row);
     audit::record(&mut *tx, &s.tenant, &s.actor(), if id.is_some() { "banner.update" } else { "banner.create" }, Some(format!("banner:{}", v["id"])), before, Some(v.clone()), None).await?;
     tx.commit().await?;
@@ -1276,7 +1379,7 @@ pub async fn banners(State(st): State<AppState>, s: StaffCtx) -> ApiResult<Json<
         "SELECT b.*, (SELECT count(*) FROM banner_events e WHERE e.banner_id = b.id AND e.kind = 'impression') AS imp,
                 (SELECT count(*) FROM banner_events e WHERE e.banner_id = b.id AND e.kind = 'click') AS clk,
                 (SELECT count(*) FROM banner_events e WHERE e.banner_id = b.id AND e.kind = 'dismiss') AS dis
-         FROM banners b WHERE b.tenant = $1 ORDER BY b.priority DESC, b.id DESC",
+         FROM banners b WHERE b.tenant = $1 AND b.deleted_at IS NULL ORDER BY b.priority DESC, b.id DESC",
     )
     .bind(&s.tenant)
     .fetch_all(&st.pool)
@@ -1300,9 +1403,36 @@ pub async fn create_banner(State(st): State<AppState>, s: StaffCtx, Json(body): 
 
 pub async fn patch_banner(State(st): State<AppState>, s: StaffCtx, Path(id): Path<i64>, Json(body): Json<Value>) -> ApiResult<Json<Value>> {
     s.require(ROLES_WRITE)?;
-    let cur = sqlx::query("SELECT * FROM banners WHERE id = $1 AND tenant = $2").bind(id).bind(&s.tenant).fetch_optional(&st.pool).await?.ok_or(ApiError::NotFound)?;
+    let cur = sqlx::query("SELECT * FROM banners WHERE id = $1 AND tenant = $2 AND deleted_at IS NULL").bind(id).bind(&s.tenant).fetch_optional(&st.pool).await?.ok_or(ApiError::NotFound)?;
     let before = banner_json(&cur);
     write_banner(&st, &s, Some(id), parse(merge(before.clone(), &body))?, Some(before)).await
+}
+
+/// Removes a banner, event or post: clients stop seeing it at once; the row stays (audit trail, stats).
+pub async fn delete_banner(State(st): State<AppState>, s: StaffCtx, Path(id): Path<i64>) -> ApiResult<Json<Value>> {
+    s.require(ROLES_WRITE)?;
+    let mut tx = st.pool.begin().await?;
+    let cur = sqlx::query("SELECT * FROM banners WHERE id = $1 AND tenant = $2 AND deleted_at IS NULL FOR UPDATE").bind(id).bind(&s.tenant).fetch_optional(&mut *tx).await?.ok_or(ApiError::NotFound)?;
+    sqlx::query("UPDATE banners SET deleted_at = now(), active = false, updated_at = now() WHERE id = $1").bind(id).execute(&mut *tx).await?;
+    audit::record(&mut *tx, &s.tenant, &s.actor(), "banner.delete", Some(format!("banner:{id}")), Some(banner_json(&cur)), None, None).await?;
+    tx.commit().await?;
+    Ok(Json(json!({"deleted": true, "id": id})))
+}
+
+/// `POST /media`: the raw image bytes (PNG, JPEG or WEBP, at most 5 MB; the type is sniffed). Returns
+/// `{media: {id, url, mime, size, sha256, createdAt}}`; the id goes into a banner's `imageMediaId`.
+pub async fn upload_media(State(st): State<AppState>, s: StaffCtx, body: Result<axum::body::Bytes, axum::extract::rejection::BytesRejection>) -> ApiResult<Json<Value>> {
+    s.require(ROLES_WRITE)?;
+    let bytes = body.map_err(|e| {
+        if e.status() == axum::http::StatusCode::PAYLOAD_TOO_LARGE {
+            ApiError::TooLarge(format!("Images can be up to {} MB.", st.cfg.max_media_bytes / 1024 / 1024))
+        } else {
+            ApiError::BadRequest("Send the image as the request body.".into())
+        }
+    })?;
+    let m = media::store(&st, &s.tenant, &s.actor().label(), &bytes).await?;
+    audit::record(&st.pool, &s.tenant, &s.actor(), "media.upload", Some(format!("media:{}", m["id"].as_str().unwrap_or_default())), None, Some(m.clone()), None).await?;
+    Ok(Json(json!({"media": m})))
 }
 
 #[derive(Deserialize)]

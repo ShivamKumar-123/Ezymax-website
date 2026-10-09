@@ -7,8 +7,13 @@ import { reportsFetch } from "@/lib/reports";
 // Marketing BFF: browser -> /api/marketing/<path> (same origin, staff cookie) -> growth service /v1/growth/admin/<path>.
 // The staff session is verified with the gateway on every call and the route's permission is checked here
 // (lib/marketing-perms.ts); the growth service checks the role again and writes the audit log.
+// Images: POST media = the raw image (PNG / JPG / WEBP ≤ 5 MB, the service sniffs the type) -> /v1/growth/admin/media;
+// GET media/<id> = an uploaded image for the editor's previews -> /v1/growth/public/media/<id>.
 
-type Method = "GET" | "POST" | "PUT" | "PATCH";
+type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+
+const MEDIA_ID = /^media\/([0-9a-f]{24})$/;
+const MAX_IMAGE = 5 * 1024 * 1024;
 type Route = { method: Method; re: RegExp; perm: MarketingPerm };
 
 const ID = "(\\d{1,18})";
@@ -28,6 +33,7 @@ const ROUTES: Route[] = [
   { method: "PUT", re: /^(settings|tiers)$/, perm: "marketing.write" },
   { method: "POST", re: /^(rules|catalogue|cashback\/programmes|bonuses\/campaigns|promos|banners|contests)$/, perm: "marketing.write" },
   { method: "PATCH", re: R(`(rules|catalogue|cashback/programmes|bonuses/campaigns|promos|banners|contests)/${ID}`), perm: "marketing.write" },
+  { method: "DELETE", re: R(`banners/${ID}`), perm: "marketing.write" },
   { method: "POST", re: R(`contests/${ID}/(cancel|refresh|finalize)`), perm: "marketing.write" },
   { method: "POST", re: R(`contests/${ID}/entries/${ID}/(disqualify|reinstate)`), perm: "marketing.write" },
   { method: "POST", re: R(`contests/${ID}/flags/${ID}/resolve`), perm: "marketing.write" },
@@ -51,6 +57,9 @@ async function handle(req: NextRequest, parts: string[], method: Method) {
   if (!growthConfigured()) return apiError(503, "not_configured", "The marketing service is not configured for the Back Office.");
   if (method === "GET" && path === "me") return perms(req);
   if (method === "GET" && path === "campaigns") return campaigns(req);
+  if (method === "POST" && path === "media") return upload(req);
+  const media = method === "GET" ? MEDIA_ID.exec(path) : null;
+  if (media) return image(req, media[1]!);
   const route = ROUTES.find((r) => r.method === method && r.re.test(path));
   if (!route) return apiError(404, "not_found", "Not found.");
 
@@ -75,6 +84,43 @@ async function handle(req: NextRequest, parts: string[], method: Method) {
   const target = `/v1/growth/admin/${path}${method === "GET" && q.size ? `?${q}` : ""}`;
   const r = await growth(target, { method, body, staff: who.staff });
   return NextResponse.json(r.data, { status: r.status, headers: { "cache-control": "no-store" } });
+}
+
+/** An image upload for a banner, event or post: the raw bytes, same-origin only, marketing.write. */
+async function upload(req: NextRequest) {
+  const origin = req.headers.get("origin");
+  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
+  let same = false;
+  try {
+    same = !!origin && new URL(origin).host === host;
+  } catch {
+    same = false;
+  }
+  if (!same) return apiError(403, "forbidden", "Cross-site request blocked.");
+  const who = await requireStaff(req);
+  if (who instanceof NextResponse) return who;
+  if (!marketingAllow(who.staff, "marketing.write")) return apiError(403, "forbidden", "Your role doesn't allow this.");
+  const declared = Number(req.headers.get("content-length") ?? 0);
+  if (declared > MAX_IMAGE) return apiError(413, "too_large", "Images can be up to 5 MB.");
+  const bytes = await req.arrayBuffer();
+  if (bytes.byteLength > MAX_IMAGE) return apiError(413, "too_large", "Images can be up to 5 MB.");
+  const r = await growth("/v1/growth/admin/media", { method: "POST", raw: bytes, staff: who.staff, timeoutMs: 60_000 });
+  return NextResponse.json(r.data, { status: r.status, headers: { "cache-control": "no-store" } });
+}
+
+/** An uploaded image for the editor's previews (signed-in staff with marketing.read). */
+async function image(req: NextRequest, id: string) {
+  const who = await requireStaff(req);
+  if (who instanceof NextResponse) return who;
+  if (!marketingAllow(who.staff, "marketing.read")) return apiError(403, "forbidden", "Your role doesn't allow this.");
+  const r = await growth(`/v1/growth/public/media/${id}`, { staff: who.staff, binary: true });
+  if (!r.bytes) return NextResponse.json(r.data, { status: r.status, headers: { "cache-control": "no-store" } });
+  const h = new Headers({ "cache-control": "private, max-age=86400" });
+  for (const k of ["content-type", "etag", "x-content-type-options", "content-security-policy"]) {
+    const v = r.headers?.get(k);
+    if (v) h.set(k, v);
+  }
+  return new NextResponse(r.bytes, { status: 200, headers: h });
 }
 
 /** UTM campaign attribution from the reports service (sign-ups, FTDs and deposits by utm source / medium / campaign). */
@@ -108,3 +154,4 @@ export const GET = async (req: NextRequest, { params }: Ctx) => handle(req, (awa
 export const POST = async (req: NextRequest, { params }: Ctx) => handle(req, (await params).path, "POST");
 export const PUT = async (req: NextRequest, { params }: Ctx) => handle(req, (await params).path, "PUT");
 export const PATCH = async (req: NextRequest, { params }: Ctx) => handle(req, (await params).path, "PATCH");
+export const DELETE = async (req: NextRequest, { params }: Ctx) => handle(req, (await params).path, "DELETE");

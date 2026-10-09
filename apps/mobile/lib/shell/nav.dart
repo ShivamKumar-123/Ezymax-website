@@ -42,7 +42,7 @@ const List<NavModule> kNav = [
     icon: LucideIcons.layoutGrid,
     href: '/',
     section: 'main',
-    match: ['/', '/markets', '/news', '/calendar'],
+    match: ['/', '/markets', '/news', '/calendar', '/updates'],
     sub: [
       NavSub('/', 'shell.nav.overview', LucideIcons.layoutGrid),
       NavSub('/markets', 'shell.nav.markets', LucideIcons.globe2),
@@ -216,6 +216,7 @@ const List<(String, String)> _pageModules = [
   ('/news', 'news'),
   ('/calendar', 'calendar'),
   ('/support', 'support'),
+  ('/updates', 'promotions'),
 ];
 
 bool _under(String path, String prefix) => prefix == '/' ? path == '/' : path == prefix || path.startsWith('$prefix/');
@@ -252,7 +253,7 @@ List<NavModule> navForFeatures(List<NavModule> nav, AppConfig cfg) {
 
 /// View-only logins (D90): the pages of their sections only (apps/crm/lib/viewer.ts VIEWER_SECTIONS).
 const Map<String, List<String>> _viewerPages = {
-  'dashboard': ['/', '/markets', '/news', '/calendar'],
+  'dashboard': ['/', '/markets', '/news', '/calendar', '/updates'],
   'accounts': ['/accounts'],
   'history': ['/portfolio'],
   'wallet': ['/wallet', '/wallet/history'],

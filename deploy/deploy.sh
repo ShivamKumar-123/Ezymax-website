@@ -165,6 +165,9 @@ grep -q '^GROWTH_INTERNAL_TOKEN=' .env.local || printf 'GROWTH_INTERNAL_TOKEN=%s
 if ! grep -q '^GROWTH_DATABASE_URL=' .env.local && grep -q '^GATEWAY_DATABASE_URL=' .env.local; then
   printf 'GROWTH_DATABASE_URL=%s\n' "$(grep '^GATEWAY_DATABASE_URL=' .env.local | cut -d= -f2- | sed -E 's#/[^/?]+([?].*)?$#/ezymex_growth\1#')" >> .env.local
 fi
+# banner / event / post images uploaded in the Back Office: stored privately (0700 dir, 0600 files) like support attachments
+grep -q '^GROWTH_STORAGE_DIR=' .env.local || printf 'GROWTH_STORAGE_DIR=%s\n' "$HOME/.ezymex-data/growth" >> .env.local
+install -d -m 700 "$(grep '^GROWTH_STORAGE_DIR=' .env.local | cut -d= -f2-)"
 for app in apps/crm apps/admin apps/terminal; do
   f="$app/.env.production.local"; touch "$f"
   grep -q '^GROWTH_URL=' "$f" || printf 'GROWTH_URL=http://127.0.0.1:8101\n' >> "$f"

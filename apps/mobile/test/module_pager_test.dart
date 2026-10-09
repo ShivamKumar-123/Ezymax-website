@@ -169,7 +169,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.byKey(kShellHeroHeader), findsOneWidget);
-    await _swipe(tester, -320, y: 180);
+    // (on the greeting: the hero carousel above it slides its own slides)
+    await _swipe(tester, -320, y: tester.getCenter(find.textContaining(RegExp(r'^Good (morning|afternoon|evening),$'))).dy);
     expect(_path(c), '/markets');
     expect(find.byKey(kShellHeroControls), findsNothing);
     await _swipe(tester, 320);

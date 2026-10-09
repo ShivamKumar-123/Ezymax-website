@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ezymex/core/config/app_config.dart';
 import 'package:ezymex/features/dashboard/dashboard_hero.dart';
 import 'package:ezymex/features/dashboard/dashboard_screen.dart';
+import 'package:ezymex/features/updates/widgets/hero_carousel.dart';
 import 'package:ezymex/router/router.dart';
 import 'package:ezymex/shell/app_shell.dart';
 import 'package:ezymex/ui/ui.dart';
@@ -36,6 +37,9 @@ void main() {
     expect(find.text('Arjun'), findsOneWidget);
     expect(find.textContaining(RegExp(r'^Good (morning|afternoon|evening),$')), findsOneWidget);
     expect(find.text('Overview'), findsOneWidget);
+    // the brand promotions' hero carousel opens the sheet, the balance follows
+    expect(find.byType(HeroCarousel), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Total balance'), 200, scrollable: page());
     expect(find.text('Total balance'), findsOneWidget);
     await unmount(tester);
   });

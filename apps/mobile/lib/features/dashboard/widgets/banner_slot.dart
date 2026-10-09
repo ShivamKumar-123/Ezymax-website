@@ -1,6 +1,7 @@
-// Targeted marketing banners from the growth service (web components/growth/banner-slot.tsx, placement "dashboard",
-// one at most): nothing when the service is unavailable or no banner targets this client. Impressions are counted
-// once per banner, clicks and dismissals too.
+// Targeted marketing banners from the growth service (web components/growth/banner-slot.tsx DashboardBanners,
+// placement "dashboard"): the hero carousel of brand banners and featured events / posts (layout "hero", module
+// promotions), then the card banner slot (one at most). Nothing when the service is unavailable or nothing targets
+// this client. Impressions are counted once per banner, clicks and dismissals too.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,8 +9,11 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/api/api_providers.dart';
+import '../../../core/config/app_config.dart';
 import '../../../i18n/i18n.dart';
+import '../../../shell/nav.dart';
 import '../../../ui/ui.dart';
+import '../../updates/widgets/hero_carousel.dart';
 import '../dashboard_data.dart';
 
 class DashboardBannerSlot extends ConsumerStatefulWidget {
@@ -26,25 +30,26 @@ class _DashboardBannerSlotState extends ConsumerState<DashboardBannerSlot> {
 
   @override
   Widget build(BuildContext context) {
-    final items = (ref.watch(dashBannersProvider).value ?? const <DashBanner>[]).where((b) => !_hidden.contains(b.id)).take(widget.max).toList();
-    if (items.isEmpty) return const SizedBox.shrink();
+    final all = (ref.watch(dashBannersProvider).value ?? const <PromoItem>[]).where((b) => !_hidden.contains(b.id)).toList();
+    // hero items: the carousel at the top (module promotions); the rest: the card slot under it
+    final hero = modulesOn(ref.watch(configProvider), 'promotions') ? all.where((b) => b.hero).toList() : const <PromoItem>[];
+    final items = all.where((b) => !b.hero).take(widget.max).toList();
+    if (items.isEmpty && hero.isEmpty) return const SizedBox.shrink();
     final api = ref.read(apiProvider);
     for (final b in items) {
       if (_seen.add(b.id)) trackBanner(api, b.id, 'impression');
     }
+    void dismiss(PromoItem b) {
+      trackBanner(api, b.id, 'dismiss');
+      setState(() => _hidden.add(b.id));
+    }
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
         children: [
-          for (final b in items)
-            _BannerCard(
-              b: b,
-              onCta: () => trackBanner(api, b.id, 'click'),
-              onDismiss: () {
-                trackBanner(api, b.id, 'dismiss');
-                setState(() => _hidden.add(b.id));
-              },
-            ),
+          if (hero.isNotEmpty) ...[HeroCarousel(items: hero, onDismiss: dismiss), if (items.isNotEmpty) const SizedBox(height: 16)],
+          for (final b in items) _BannerCard(b: b, onCta: () => trackBanner(api, b.id, 'click'), onDismiss: () => dismiss(b)),
         ],
       ),
     );
@@ -53,7 +58,7 @@ class _DashboardBannerSlotState extends ConsumerState<DashboardBannerSlot> {
 
 class _BannerCard extends StatelessWidget {
   const _BannerCard({required this.b, required this.onCta, required this.onDismiss});
-  final DashBanner b;
+  final PromoItem b;
   final VoidCallback onCta, onDismiss;
 
   @override

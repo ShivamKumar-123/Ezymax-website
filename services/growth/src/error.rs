@@ -13,6 +13,10 @@ pub enum ApiError {
     NotFound,
     Conflict { code: &'static str, message: String },
     Unavailable(String),
+    /// 413: an upload over the size limit.
+    TooLarge(String),
+    /// 415: an upload that isn't a PNG, JPEG or WEBP image.
+    Unsupported(String),
     Internal(anyhow::Error),
 }
 
@@ -38,6 +42,8 @@ impl IntoResponse for ApiError {
             ApiError::NotFound => (StatusCode::NOT_FOUND, json!({"code": "not_found", "message": "Not found."})),
             ApiError::Conflict { code, message } => (StatusCode::CONFLICT, json!({"code": code, "message": message})),
             ApiError::Unavailable(m) => (StatusCode::SERVICE_UNAVAILABLE, json!({"code": "unavailable", "message": m})),
+            ApiError::TooLarge(m) => (StatusCode::PAYLOAD_TOO_LARGE, json!({"code": "too_large", "message": m})),
+            ApiError::Unsupported(m) => (StatusCode::UNSUPPORTED_MEDIA_TYPE, json!({"code": "unsupported_type", "message": m})),
             ApiError::Internal(e) => {
                 tracing::error!(error = ?e, "internal error");
                 (StatusCode::INTERNAL_SERVER_ERROR, json!({"code": "internal", "message": "Something went wrong. Please try again."}))

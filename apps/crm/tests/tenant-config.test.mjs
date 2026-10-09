@@ -141,6 +141,21 @@ test("switched-off modules close their pages and BFF calls; notifications keep w
   assert.equal(await gate(m, "all-on.broker.test", "/api/support/messages"), "open");
 });
 
+test("brand promotions: Events & updates and the posts BFF follow the module; images and banners stay on", async () => {
+  const { cfg } = await load();
+  assert.equal(cfg.moduleFor("/updates"), "promotions");
+  assert.equal(cfg.moduleFor("/updates/42"), "promotions");
+  assert.equal(cfg.moduleFor("/api/growth/posts"), "promotions");
+  assert.equal(cfg.moduleFor("/api/growth/posts/42"), "promotions");
+  assert.equal(cfg.moduleOff({ promotions: false }, "/updates/42"), true);
+  assert.equal(cfg.moduleOff({ promotions: false }, "/api/growth/posts"), true);
+  // uploaded images also illustrate the card banners, which are no module
+  assert.equal(cfg.moduleOff({ promotions: false }, "/api/growth/media/0123456789abcdef01234567"), false);
+  assert.equal(cfg.moduleOff({ promotions: false }, "/api/growth/banners"), false);
+  assert.equal(cfg.moduleOff({ rewards: false }, "/api/growth/posts"), false);
+  assert.equal(cfg.moduleOff({ promotions: false }, "/"), false);
+});
+
 test("closed sign-ups send the sign-up pages to sign-in", async () => {
   const m = await load();
   assert.equal(await page(m, "lean.broker.test", "/register"), "/login");

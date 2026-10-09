@@ -1,6 +1,9 @@
 use std::env;
 use std::fmt;
 
+/// Largest banner / event / post image (PNG, JPEG or WEBP).
+pub const MAX_MEDIA_BYTES: usize = 5 * 1024 * 1024;
+
 /// Runtime configuration (env vars; the repo-root `.env.local` is loaded in development).
 #[derive(Clone)]
 pub struct Config {
@@ -22,6 +25,10 @@ pub struct Config {
     pub reports_url: String,
     pub reports_token: String,
     pub instruments_file: String,
+    /// Private storage of uploaded banner / event / post images (GROWTH_STORAGE_DIR, files 0600).
+    pub storage_dir: String,
+    /// Largest image upload in bytes (5 MB).
+    pub max_media_bytes: usize,
     /// Background loops. Tests turn them off.
     pub workers: bool,
     pub sync_secs: u64,
@@ -32,6 +39,10 @@ pub struct Config {
 
 fn var(key: &str, default: &str) -> String {
     env::var(key).ok().filter(|v| !v.trim().is_empty()).unwrap_or_else(|| default.to_string())
+}
+
+fn home() -> String {
+    env::var("HOME").unwrap_or_else(|_| ".".into())
 }
 
 fn redact(v: &str) -> &'static str {
@@ -69,6 +80,7 @@ impl fmt::Debug for Config {
             .field("reports_url", &self.reports_url)
             .field("reports_token", &redact(&self.reports_token))
             .field("instruments_file", &self.instruments_file)
+            .field("storage_dir", &self.storage_dir)
             .field("workers", &self.workers)
             .field("sync_secs", &self.sync_secs)
             .field("deals_secs", &self.deals_secs)
@@ -100,6 +112,8 @@ impl Config {
             reports_url: var("REPORTS_URL", "http://127.0.0.1:8102").trim_end_matches('/').to_string(),
             reports_token: var("REPORTS_INTERNAL_TOKEN", ""),
             instruments_file: var("INSTRUMENTS_FILE", concat!(env!("CARGO_MANIFEST_DIR"), "/../../config/instruments.json")),
+            storage_dir: var("GROWTH_STORAGE_DIR", &format!("{}/.ezymex-data/growth", home())),
+            max_media_bytes: MAX_MEDIA_BYTES,
             workers: var("GROWTH_WORKERS", "true") != "false",
             sync_secs: var("GROWTH_SYNC_SECS", "30").parse().unwrap_or(30).max(1),
             deals_secs: var("GROWTH_DEALS_SECS", "5").parse().unwrap_or(5).max(1),
@@ -126,6 +140,8 @@ impl Config {
             reports_url: "http://127.0.0.1:9".into(),
             reports_token: String::new(),
             instruments_file: concat!(env!("CARGO_MANIFEST_DIR"), "/../../config/instruments.json").into(),
+            storage_dir: std::env::temp_dir().join(format!("ezymex-growth-test-{}", std::process::id())).to_string_lossy().into_owned(),
+            max_media_bytes: MAX_MEDIA_BYTES,
             workers: false,
             sync_secs: 30,
             deals_secs: 5,

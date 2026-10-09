@@ -22,9 +22,11 @@ use serde_json::json;
 use subtle::ConstantTimeEq;
 
 pub fn router(st: AppState) -> Router {
+    let media_limit = axum::extract::DefaultBodyLimit::max(st.cfg.max_media_bytes + 64 * 1024);
     let v1 = Router::new()
         // public (Client Area server) + other services
         .route("/v1/growth/public/shares/{code}", get(public::share))
+        .route("/v1/growth/public/media/{id}", get(public::media))
         .route("/v1/growth/internal/vouchers", get(public::vouchers))
         .route("/v1/growth/internal/vouchers/redeem", post(public::redeem_voucher))
         .route("/v1/growth/internal/accounts/{login}/retired", post(public::account_retired))
@@ -44,6 +46,8 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/growth/me/contests/{id}/join", post(client::join))
         .route("/v1/growth/me/banners", get(client::banners))
         .route("/v1/growth/me/banners/{id}/events", post(client::banner_event))
+        .route("/v1/growth/me/posts", get(client::posts))
+        .route("/v1/growth/me/posts/{id}", get(client::post))
         .route("/v1/growth/me/shares", get(client::shares).post(client::create_share))
         // Back Office
         .route("/v1/growth/admin/overview", get(admin::overview))
@@ -71,7 +75,8 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/growth/admin/promos/{id}", patch(admin::patch_promo))
         .route("/v1/growth/admin/banners", get(admin::banners).post(admin::create_banner))
         .route("/v1/growth/admin/banners/preview", get(admin::banner_preview))
-        .route("/v1/growth/admin/banners/{id}", patch(admin::patch_banner))
+        .route("/v1/growth/admin/banners/{id}", patch(admin::patch_banner).delete(admin::delete_banner))
+        .route("/v1/growth/admin/media", post(admin::upload_media).layer(media_limit))
         .route("/v1/growth/admin/contests", get(admin::contests).post(admin::create_contest))
         .route("/v1/growth/admin/contests/{id}", get(admin::contest).patch(admin::patch_contest))
         .route("/v1/growth/admin/contests/{id}/cancel", post(admin::cancel_contest))

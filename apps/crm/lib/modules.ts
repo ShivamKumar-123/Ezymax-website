@@ -53,6 +53,11 @@ export const MODULE_PATHS: readonly (readonly [string, string])[] = [
   ["/rewards", "rewards"],
   // growth BFF: rewards features follow the module; banners and share cards stay on
   ...["rewards", "points", "redeem", "redemptions", "vouchers", "cashback", "promotions", "bonuses", "promo", "contests"].map((p) => [`/api/growth/${p}`, "rewards"] as const),
+  // brand promotions: the dashboard's hero carousel and Events & updates (events and brand posts); uploaded images
+  // also serve the card banners, so they stay on
+  ["/updates", "promotions"],
+  ["/api/growth/posts", "promotions"],
+  ["/api/growth/media", ""],
   // FX Options: the product page and its onboarding (suitability serves options only); the mobile app's options
   // trading and chain (the options service's own live / demo switches still apply on top)
   ["/options", "options"],

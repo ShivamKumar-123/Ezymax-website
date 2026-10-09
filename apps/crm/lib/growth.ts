@@ -46,6 +46,25 @@ export async function growth<T = Record<string, unknown>>(
   }
 }
 
+/**
+ * An uploaded banner / event / post image (`/v1/growth/public/media/<id>`, no user): status 200 with the bytes, 304
+ * when `ifNoneMatch` still matches, 404 unknown, 503 unavailable.
+ */
+export async function growthImage(id: string, ifNoneMatch?: string | null): Promise<{ status: number; bytes?: ArrayBuffer; type: string; etag: string | null }> {
+  const headers: Record<string, string> = { "x-ezymex-internal": GROWTH_TOKEN };
+  if (ifNoneMatch && ifNoneMatch.length <= 100) headers["if-none-match"] = ifNoneMatch;
+  try {
+    const res = await fetch(`${GROWTH_URL}/v1/growth/public/media/${encodeURIComponent(id)}`, { headers, cache: "no-store", signal: AbortSignal.timeout(15_000) });
+    const type = res.headers.get("content-type") ?? "";
+    const etag = res.headers.get("etag");
+    if (res.status === 304) return { status: 304, type, etag };
+    if (res.status !== 200 || !/^image\/(png|jpeg|webp)$/.test(type)) return { status: res.status === 404 ? 404 : 503, type, etag: null };
+    return { status: 200, bytes: await res.arrayBuffer(), type, etag };
+  } catch {
+    return { status: 503, type: "", etag: null };
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /* Public share cards (/s/<code>, no sign-in)                          */
 /* ------------------------------------------------------------------ */

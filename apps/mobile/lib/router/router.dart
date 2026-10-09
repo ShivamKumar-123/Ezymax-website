@@ -54,6 +54,7 @@ import '../features/rewards/rewards_routes.dart';
 import '../features/social/social_routes.dart';
 import '../features/support/support_screen.dart';
 import '../features/terminal/terminal_screen.dart';
+import '../features/updates/updates_routes.dart';
 import '../features/wallet/deposit_screen.dart';
 import '../features/wallet/transfer_screen.dart';
 import '../features/wallet/wallet_history_screen.dart';
@@ -250,7 +251,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: _moduleRoutes(
               'dashboard',
               screens: {'/': (_) => const DashboardScreen(), ..._c2Screens},
-              extra: [...marketsRoutes, ...newsRoutes, ...calendarRoutes],
+              extra: [...marketsRoutes, ...newsRoutes, ...calendarRoutes, ...updatesRoutes],
             ),
           ),
           StatefulShellBranch(

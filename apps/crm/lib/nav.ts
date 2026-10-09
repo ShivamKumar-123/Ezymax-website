@@ -64,7 +64,7 @@ export const CRM_NAV: NavModule[] = [
     label: "Dashboard",
     icon: LayoutGrid,
     href: "/",
-    match: ["/", "/markets", "/news", "/calendar"],
+    match: ["/", "/markets", "/news", "/calendar", "/updates"],
     section: "main",
     sub: [
       { href: "/", label: "Overview", icon: LayoutGrid },
