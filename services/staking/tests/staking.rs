@@ -343,6 +343,8 @@ async fn monthly_settlement_four_eyes_and_idempotent_credits() {
     let pf = positions::portfolio(&e.st, "ezymex", 42).await.unwrap();
     assert_eq!(D::from_str(&pf["summary"]["returnsPaid"].to_string()).unwrap(), want_a);
     assert_eq!(pf["monthly"][0]["period"], pm);
+    // last month earned but isn't paid yet: it is the next payout
+    assert_eq!(pf["summary"]["nextPayout"]["period"], month.next().to_string());
     let h = positions::history(&e.st, "ezymex", 42, 0, 10).await.unwrap();
     assert_eq!(h["total"], 2);
     assert_eq!(h["items"][0]["kind"], "reward");
@@ -368,6 +370,8 @@ async fn monthly_settlement_four_eyes_and_idempotent_credits() {
     let s: String = sqlx::query_scalar("SELECT status FROM settlements WHERE id = $1").bind(id3).fetch_one(&e.st.pool).await.unwrap();
     assert_eq!(s, "paid");
     assert_eq!(code(settlements::retry(&e.st, "ezymex", id3, &staff(3), "Again").await.unwrap_err()), "invalid_state");
+    let pf = positions::portfolio(&e.st, "ezymex", 42).await.unwrap();
+    assert_eq!(pf["summary"]["nextPayout"]["period"], Period::of(now).to_string());
 
     // past rates are shown to clients only for settled months
     let hist = rates::settled_history(&e.st, "ezymex", 6).await.unwrap();

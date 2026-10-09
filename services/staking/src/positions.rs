@@ -426,6 +426,22 @@ pub async fn portfolio(st: &AppState, tenant: &str, user_id: i64) -> ApiResult<V
         .fetch_one(&st.pool)
         .await?;
     let current = Period::of(now);
+    // the next month to be paid: last month while its return isn't credited yet, else the current one
+    let prev = current.prev();
+    let earned_prev = list.iter().any(|p| matches!(p.status.as_str(), "active" | "matured") && p.started_at.is_some_and(|s| s < prev.end()) && p.matures_at.is_some_and(|m| m > prev.start()));
+    let paid_prev: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM settlement_lines WHERE tenant = $1 AND user_id = $2 AND period = $3 AND status = 'paid')")
+        .bind(tenant)
+        .bind(user_id)
+        .bind(prev.to_string())
+        .fetch_one(&st.pool)
+        .await?;
+    let next = if earned_prev && !paid_prev {
+        Some(prev)
+    } else if invested > ZERO {
+        Some(current)
+    } else {
+        None
+    };
     let currency = list.first().map(|p| p.currency.clone()).unwrap_or_else(|| st.cfg.currencies.first().cloned().unwrap_or_else(|| "USDT".into()));
     Ok(json!({
         "summary": {
@@ -435,8 +451,8 @@ pub async fn portfolio(st: &AppState, tenant: &str, user_id: i64) -> ApiResult<V
             "returnsPaid": num(r2(returns_paid)),
             "returnsThisYear": num(this_year),
             "activePositions": list.iter().filter(|p| p.status == "active").count(),
-            // the current month is paid after it closes and its rate is approved; no amount is promised
-            "nextPayout": if invested > ZERO { json!({"period": current.to_string(), "after": current.end()}) } else { Value::Null },
+            // a month is paid after it closes and its settlement is approved; no amount is promised
+            "nextPayout": next.map(|p| json!({"period": p.to_string(), "after": p.end()})),
             "nextMaturity": next_maturity.map(|p| json!({"positionId": p.id, "planName": p.plan_name, "date": p.matures_at, "principal": num(p.principal)})),
         },
         "positions": list.iter().map(|p| json(p, last.get(&p.id).cloned(), now)).collect::<Vec<_>>(),
