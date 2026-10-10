@@ -8,7 +8,6 @@ const PAGES: { path: string; priority: number; freq: MetadataRoute.Sitemap[numbe
   { path: '/markets', priority: 0.9, freq: 'daily' },
   { path: '/accounts', priority: 0.8, freq: 'monthly' },
   { path: '/platforms', priority: 0.8, freq: 'monthly' },
-  { path: '/prop', priority: 0.8, freq: 'monthly' },
   { path: '/copy-trading', priority: 0.7, freq: 'monthly' },
   { path: '/partners', priority: 0.7, freq: 'monthly' },
   { path: '/academy', priority: 0.7, freq: 'monthly' },

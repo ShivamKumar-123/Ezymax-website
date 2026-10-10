@@ -33,7 +33,7 @@ export default function Footer() {
             </h2>
           </div>
           <div className="flex max-w-[22rem] flex-col gap-6 lg:items-end lg:text-right">
-            <p className="t-lead">One account for FX options, CFDs, prop and copy trading. Open it in a minute; start on demo.</p>
+            <p className="t-lead">One account for FX options, CFDs and copy trading. Open it in a minute; start on demo.</p>
             <div className="flex flex-wrap gap-3 lg:justify-end">
               <Button href={REGISTER_HREF}>Open account</Button>
               <Button href={TRADER_URL} variant="outline" arrow={false}>
@@ -50,7 +50,7 @@ export default function Footer() {
             <EzymexLogo className="h-7 w-auto self-start text-fg" />
             <p className="max-w-sm text-[0.95rem] leading-relaxed text-fg-2">
               A global multi-asset trading platform: Ezymex FX Options, CFDs on forex, metals, energies, indices and crypto,
-              prop challenges, copy trading and PAMM, on one account.
+              copy trading and PAMM, on one account.
             </p>
             <div className="flex flex-wrap gap-3">
               <Button href={REGISTER_HREF} size="sm">

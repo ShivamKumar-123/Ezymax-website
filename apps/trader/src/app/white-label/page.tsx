@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 const WL = [
   ['Your brand', 'Your name, logo, colours and support email across the website, Client Area, Ezymex Trader and every email.'],
   ['Your domains', 'Your own addresses for the website, the Client Area, the trading terminal and your Back Office.'],
-  ['Your product mix', 'Switch modules on per broker: options, prop, copy trading, PAMM and MAM, partners, academy, rewards.'],
+  ['Your product mix', 'Switch modules on per broker: options, copy trading, PAMM and MAM, partners, academy, rewards.'],
   ['Your data, isolated', 'Each broker’s clients, accounts and money are separated at the database level.'],
   ['Your back office', 'Clients, KYC, deposits and withdrawals, dealing, risk, partners and content, with staff roles.'],
   ['The whole platform', 'The same trading engine, option pricing, market data and 22 languages that run Ezymex.'],
@@ -40,7 +40,7 @@ export default function WhiteLabelPage() {
       <PageHero
         kicker="For business"
         lines={['Your brokerage.', <span key="b" className="text-fg-3">Our platform.</span>]}
-        lead="Launch a broker on the Ezymex platform under your own brand and domains, with forex options, CFDs, prop, copy trading and partners built in. Or plug your own systems into ours with the API."
+        lead="Launch a broker on the Ezymex platform under your own brand and domains, with forex options, CFDs, copy trading and partners built in. Or plug your own systems into ours with the API."
         actions={
           <>
             <Button href={mailto}>Talk to us</Button>

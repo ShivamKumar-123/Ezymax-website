@@ -6,7 +6,6 @@ export const NAV_PRIMARY: NavLink[] = [
   { label: 'Markets', href: '/markets' },
   { label: 'Accounts', href: '/accounts' },
   { label: 'Platforms', href: '/platforms' },
-  { label: 'Prop', href: '/prop' },
 ];
 
 /** Under "More" on desktop; listed in full in the mobile menu. */
@@ -37,7 +36,6 @@ export const FOOTER_COLUMNS: { title: string; links: NavLink[] }[] = [
       { label: 'Account types', href: '/accounts' },
       { label: 'Demo account', href: '/accounts#demo' },
       { label: 'Funding', href: '/accounts#funding' },
-      { label: 'Prop challenges', href: '/prop' },
       { label: 'Copy trading & PAMM', href: '/copy-trading' },
     ],
   },

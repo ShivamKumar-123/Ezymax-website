@@ -91,7 +91,7 @@ const FAQ = [
   },
   {
     q: 'Do I need a separate account?',
-    a: 'No. Options sit in the same Ezymex trading account as your CFDs, with one balance and cross-margin. Switch between CFD and Options at the top of Ezymex Trader. Prop, copy, PAMM and MAM accounts cannot trade options.',
+    a: 'No. Options sit in the same Ezymex trading account as your CFDs, with one balance and cross-margin. Switch between CFD and Options at the top of Ezymex Trader. Copy, PAMM and MAM accounts cannot trade options.',
   },
   {
     q: 'How do options settle?',

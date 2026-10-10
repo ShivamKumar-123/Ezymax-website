@@ -68,7 +68,7 @@ export function WhyEzymex() {
   const items = [
     {
       t: 'One account for CFDs and options',
-      d: 'Options sit in the same trading account as your CFDs, with one balance and cross-margin. Prop, copy trading, PAMM and partner earnings sit beside them in the Client Area, all funded from one USDT wallet.',
+      d: 'Options sit in the same trading account as your CFDs, with one balance and cross-margin. Copy trading, PAMM and partner earnings sit beside them in the Client Area, all funded from one USDT wallet.',
     },
     {
       t: 'Plain language before you confirm',
@@ -283,7 +283,7 @@ const SLIDES: ShowcaseSlide[] = [
     h: 1040,
     url: 'app.ezymex.com',
     t: 'The Client Area',
-    d: 'Accounts, wallet, copy trading, PAMM, prop, partner earnings and the academy in one place. Illustrative data.',
+    d: 'Accounts, wallet, copy trading, PAMM, partner earnings and the academy in one place. Illustrative data.',
     alt: 'Ezymex Client Area overview with equity, P&L, wallet, accounts and total balance (illustrative data)',
   },
 ];

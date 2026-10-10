@@ -9,7 +9,7 @@ import { BRAND_SUPPORT_EMAIL } from '@/lib/brand';
 export const metadata: Metadata = {
   title: 'FAQ',
   description:
-    'Answers about Ezymex accounts, USDT deposits and withdrawals, trading conditions, Ezymex FX Options, prop challenges, copy trading, partners and the platform.',
+    'Answers about Ezymex accounts, USDT deposits and withdrawals, trading conditions, Ezymex FX Options, copy trading, partners and the platform.',
   alternates: { canonical: '/faq' },
 };
 
@@ -107,24 +107,6 @@ const GROUPS: Group[] = [
     ],
   },
   {
-    id: 'prop',
-    title: 'Prop challenges',
-    items: [
-      {
-        q: 'Which prop plans are there?',
-        a: 'Classic 2-Step (targets of 8% and 5%), Rapid 1-Step (a 10% target) and Instant Funding (no evaluation), on simulated accounts from $5k to $200k, with fees from $49.',
-      },
-      {
-        q: 'How much of the profit do I keep?',
-        a: 'From 80% on Classic and Rapid and 70% on Instant Funding, rising to 90% with the scaling plan. Payouts go to your Ezymex wallet and need a verified identity.',
-      },
-      {
-        q: 'Is the capital real?',
-        a: 'Challenge and funded accounts trade simulated funds. Your share of the profit on a funded account is paid in real money, on your plan’s payout schedule.',
-      },
-    ],
-  },
-  {
     id: 'copy',
     title: 'Copy trading, PAMM and MAM',
     items: [
@@ -189,7 +171,7 @@ export default function FaqPage() {
         compact
         kicker="FAQ"
         lines={['Questions,', <span key="b" className="text-fg-3">answered.</span>]}
-        lead="Accounts, funding, trading conditions, options, prop, copy trading, partners and the platform."
+        lead="Accounts, funding, trading conditions, options, copy trading, partners and the platform."
       />
       <section className="section pt-8" aria-label="Frequently asked questions">
         <div className="container-site grid gap-12 lg:grid-cols-[240px_1fr] lg:gap-16">

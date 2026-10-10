@@ -15,7 +15,7 @@ export function Picture({
   priority = false,
   style,
 }: {
-  /** Base path without extension, e.g. /images/brand/model-glyph */
+  /** Base path without extension, e.g. /images/brand/hero-portal */
   name: string;
   /** [native, small] widths; the small file is `${name}-${small}.ext`. */
   widths: [number, number];

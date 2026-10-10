@@ -64,8 +64,8 @@ export function ProductsBento() {
         <SectionHead
           id="products-title"
           kicker="Everything Ezymex does"
-          lines={['Six ways to trade.', 'One account.']}
-          lead="Options and CFDs share one trading account and one margin. Prop, copy trading, PAMM and partner earnings live beside them in the Client Area, funded from a single USDT wallet."
+          lines={['Five ways to trade.', 'One account.']}
+          lead="Options and CFDs share one trading account and one margin. Copy trading, PAMM and partner earnings live beside them in the Client Area, funded from a single USDT wallet."
         />
         <div className="mt-14 grid gap-4 lg:mt-20 lg:grid-cols-12 lg:gap-5">
           {/* Options */}
@@ -90,7 +90,7 @@ export function ProductsBento() {
           </Tile>
 
           {/* CFDs */}
-          <Tile href="/markets" className="lg:col-span-5" delay={0.08}>
+          <Tile href="/markets" className="lg:col-span-5 lg:row-span-2" delay={0.08}>
             <TileHead kicker="CFDs" title="Every market that moves." />
             <div className="mt-auto pt-10">
               <p className="t-pixel text-[4.6rem] text-fg sm:text-[5.6rem]">1,389</p>
@@ -105,26 +105,6 @@ export function ProductsBento() {
                   </span>
                 ))}
               </div>
-            </div>
-          </Tile>
-
-          {/* Prop */}
-          <Tile href="/prop" className="!bg-black lg:col-span-5" delay={0.12}>
-            <Picture
-              name="/images/brand/model-glyph"
-              widths={[673, 448]}
-              height={1200}
-              alt="Portrait of a man with yellow glyphs painted across his face"
-              sizes="(min-width: 1024px) 300px, 56vw"
-              className="prop-face-mask pointer-events-none absolute inset-y-0 right-0 -z-10 block w-[56%] transition-transform duration-[1.2s] ease-out group-hover:scale-[1.04]"
-              imgClassName="h-full w-full object-cover object-[50%_32%]"
-            />
-            <TileHead kicker="Prop challenges" title={<>Trade our<br />capital.</>} />
-            <div className="mt-auto pt-10">
-              <p className="t-pixel text-[4.2rem] sm:text-[5rem]">90%</p>
-              <p className="mt-2 max-w-[15rem] text-sm text-fg-2">
-                profit split at the top of the scaling plan. Accounts from $5k to $200k, from $49.
-              </p>
             </div>
           </Tile>
 

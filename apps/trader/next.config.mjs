@@ -44,6 +44,10 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      /* Prop challenges are not offered on Ezymex: old links land on the home page. */
+      to('/prop', '/'),
+      to('/prop/:path*', '/'),
+
       /* Sign-in and registration: the Ezymex Client Area. */
       to('/auth/login', `${CRM_URL}/login`),
       to('/auth/register', `${CRM_URL}/register`),
@@ -95,7 +99,7 @@ const nextConfig = {
       to('/services/ico-coming-soon', '/'),
       to('/platforms/web', '/platforms'),
       to('/platforms/copy-trading', '/copy-trading'),
-      to('/platforms/prop-trading', '/prop'),
+      to('/platforms/prop-trading', '/'),
       to('/platforms/ib-management', '/partners'),
       to('/platforms/super-admin', '/white-label'),
       to('/platforms/insurance', '/'),

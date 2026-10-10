@@ -17,7 +17,6 @@ const TOPICS = [
   { t: 'Deposits and withdrawals', d: 'USDT on BNB Chain and TRON, limits, fees and timing.', href: '/faq#funding' },
   { t: 'Trading conditions', d: 'Spreads, commissions, margin and the markets you can trade.', href: '/faq#trading' },
   { t: 'Ezymex FX Options', d: 'How the chain works, costs, settlement and risk.', href: '/faq#options' },
-  { t: 'Prop challenges', d: 'Plans, rules, payouts and certificates.', href: '/faq#prop' },
   { t: 'Partners', d: 'Partner links, levels, commission and payouts.', href: '/faq#partners' },
 ];
 

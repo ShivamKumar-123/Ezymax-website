@@ -3,9 +3,9 @@ import { BRAND_NAME } from '@/lib/brand';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: `${BRAND_NAME}: forex options, CFDs and prop trading`,
+    name: `${BRAND_NAME}: forex options, CFDs and copy trading`,
     short_name: BRAND_NAME,
-    description: 'Ezymex FX Options, CFDs, prop challenges, copy trading and PAMM on one account.',
+    description: 'Ezymex FX Options, CFDs, copy trading and PAMM on one account.',
     start_url: '/',
     scope: '/',
     display: 'standalone',

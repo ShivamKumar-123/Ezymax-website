@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { CandlestickChart, Globe2, Layers, LineChart, ShieldCheck, Users } from 'lucide-react';
+import { CandlestickChart, Globe2, Layers, LineChart, Users } from 'lucide-react';
 import { PageHero } from '@/components/ui/PageHero';
 import { SectionHead, Reveal } from '@/components/ui/Section';
 import { Button, ArrowCircle } from '@/components/ui/Button';
-import { Picture } from '@/components/ui/Picture';
+import { BrandWall } from '@/components/brand/BrandWall';
 import { CtaBand } from '@/components/ui/CtaBand';
 import { INSTRUMENTS, OPTIONS } from '@/content/facts';
 import { REGISTER_HREF } from '@/lib/crm';
@@ -12,14 +12,13 @@ import { REGISTER_HREF } from '@/lib/crm';
 export const metadata: Metadata = {
   title: 'About Ezymex',
   description:
-    'Ezymex is a global multi-asset trading platform: Ezymex FX Options, CFDs on 1,389 instruments, prop challenges, copy trading and PAMM, built on our own technology and translated into 22 languages.',
+    'Ezymex is a global multi-asset trading platform: Ezymex FX Options, CFDs on 1,389 instruments, copy trading and PAMM, built on our own technology and translated into 22 languages.',
   alternates: { canonical: '/about' },
 };
 
 const PRODUCTS = [
   { Icon: LineChart, t: 'Ezymex FX Options', d: `Option chains on ${OPTIONS.fxPairs - 1} FX pairs, gold, silver and oil, with daily, weekly and monthly expiries.`, href: '/options' },
   { Icon: CandlestickChart, t: 'CFDs', d: `${INSTRUMENTS.total.toLocaleString('en-US')} instruments across forex, metals, energies, indices and crypto, with stocks coming soon.`, href: '/markets' },
-  { Icon: ShieldCheck, t: 'Prop challenges', d: 'Classic 2-Step, Rapid 1-Step and Instant Funding, with rules checked live on the server.', href: '/prop' },
   { Icon: Users, t: 'Copy trading, PAMM, MAM', d: 'Follow verified masters with your own limits, invest in managed funds, or become a master.', href: '/copy-trading' },
   { Icon: Layers, t: 'Partners and white-label', d: 'A five-level partner programme, and the whole platform for brokers under their own brand.', href: '/partners' },
   { Icon: Globe2, t: 'Academy', d: '118 lessons in 9 phases, from how markets work to macro regimes and FX options.', href: '/academy' },
@@ -28,7 +27,7 @@ const PRODUCTS = [
 const PRINCIPLES = [
   {
     t: 'One account, one wallet',
-    d: 'Options sit in the same trading account as CFDs. Prop, copy trading, PAMM and partner earnings live beside them in the Client Area, all funded from one USDT wallet.',
+    d: 'Options sit in the same trading account as CFDs. Copy trading, PAMM and partner earnings live beside them in the Client Area, all funded from one USDT wallet.',
   },
   {
     t: 'Plain language',
@@ -50,7 +49,7 @@ export default function AboutPage() {
       <PageHero
         kicker="About Ezymex"
         lines={['A trading platform', <span key="b" className="text-fg-3">built for every market.</span>]}
-        lead="Ezymex brings forex options, CFDs, prop challenges, copy trading and a partner programme together on one account, on technology we build ourselves."
+        lead="Ezymex brings forex options, CFDs, copy trading and a partner programme together on one account, on technology we build ourselves."
         actions={
           <>
             <Button href={REGISTER_HREF}>Open account</Button>
@@ -61,14 +60,7 @@ export default function AboutPage() {
         }
         visual={
           <div className="relative mx-auto w-full max-w-[640px] overflow-hidden rounded-[28px] border border-white/10 rim">
-            <Picture
-              name="/images/brand/hero-crimson"
-              widths={[1672, 960]}
-              height={941}
-              alt="Ezymex: a woman in a long black coat between two black great danes, in front of giant black Ezymex letters on a glowing red wall"
-              sizes="(min-width: 1024px) 640px, 92vw"
-              priority
-            />
+            <BrandWall />
           </div>
         }
       />
@@ -78,7 +70,7 @@ export default function AboutPage() {
           <SectionHead
             id="what-title"
             kicker="What we do"
-            lines={['Six products.', 'One platform.']}
+            lines={['Five products.', 'One platform.']}
             lead="Everything a trader needs, from the first demo trade to running a fund or a brokerage."
           />
           <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

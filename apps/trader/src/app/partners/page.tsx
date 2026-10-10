@@ -30,7 +30,7 @@ const FAQ = [
   },
   {
     q: 'What counts towards commission?',
-    a: 'Closed trades on your clients’ live accounts that were held for at least two minutes. Prop accounts do not count.',
+    a: 'Closed trades on your clients’ live accounts that were held for at least two minutes.',
   },
   {
     q: 'What is CPA?',

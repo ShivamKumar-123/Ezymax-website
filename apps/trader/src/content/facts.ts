@@ -154,59 +154,6 @@ export const OPTIONS = {
   models: 'Garman-Kohlhagen (FX), Black-Scholes with a lease rate (gold, silver), Black-76 (oil)',
 } as const;
 
-/** services/prop/migrations/0001_prop.sql:317-341 */
-export const PROP = [
-  {
-    id: 'classic',
-    name: 'Classic 2-Step',
-    summary: 'The classic evaluation. Two phases, relaxed rules, the fee comes back.',
-    phases: 'Phase 1: 8% target · Phase 2: 5% target',
-    minDays: '4 trading days per phase',
-    dailyLoss: '5% of balance',
-    maxDrawdown: '10% static',
-    split: '80%, scaling to 90%',
-    payouts: 'Every 2 weeks, first after 14 days',
-    leverage: '1:100',
-    refund: 'Fee refunded',
-    news: 'News trading and weekend holding allowed',
-    sizes: [
-      ['$5k', '$49'], ['$10k', '$89'], ['$25k', '$189'], ['$50k', '$299'], ['$100k', '$499'], ['$200k', '$979'],
-    ],
-  },
-  {
-    id: 'rapid',
-    name: 'Rapid 1-Step',
-    summary: 'One phase, one target. Faster to funded, tighter limits.',
-    phases: 'One phase: 10% target',
-    minDays: '3 trading days',
-    dailyLoss: '3% of equity',
-    maxDrawdown: '6% trailing',
-    split: '80%, scaling to 90%',
-    payouts: 'Every 2 weeks, first after 14 days',
-    leverage: '1:50',
-    refund: 'Fee refunded',
-    news: 'No news trading or weekend holding',
-    sizes: [
-      ['$5k', '$59'], ['$10k', '$99'], ['$25k', '$199'], ['$50k', '$319'], ['$100k', '$549'], ['$200k', '$1,049'],
-    ],
-  },
-  {
-    id: 'instant',
-    name: 'Instant Funding',
-    summary: 'No evaluation. Start on a funded account the same day.',
-    phases: 'No evaluation',
-    minDays: 'None',
-    dailyLoss: '3% of equity',
-    maxDrawdown: '6% trailing',
-    split: '70%, scaling to 90%',
-    payouts: 'Monthly, first after 30 days',
-    leverage: '1:30',
-    refund: 'No refund',
-    news: 'No news trading or weekend holding',
-    sizes: [['$5k', '$129'], ['$10k', '$229'], ['$25k', '$449'], ['$50k', '$749'], ['$100k', '$1,349']],
-  },
-] as const;
-
 /** services/ib/src/model.rs:106-127, 254-262 — USD per lot: FX major / FX minor / metals / indices / energies / crypto / stocks */
 export const IB_LEVELS = [
   { name: 'Bronze', fxMajor: 5, metals: 8, crypto: 6, cpa: 200, needs: 'From sign-up' },

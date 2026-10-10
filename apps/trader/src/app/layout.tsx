@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono'
 const display = Inter_Tight({ subsets: ['latin'], weight: ['500', '600'], variable: '--font-display', display: 'swap' });
 const pixel = Doto({ subsets: ['latin'], weight: ['800', '900'], variable: '--font-pixel', display: 'swap', preload: false });
 
-const TITLE = `${BRAND_NAME}: forex options, CFDs and prop trading on one account`;
+const TITLE = `${BRAND_NAME}: forex options, CFDs and copy trading on one account`;
 const DESCRIPTION =
-  'Ezymex is a global multi-asset trading platform: Ezymex FX Options with real option chains on forex, gold and oil, 1,389 CFD instruments, prop challenges, copy trading and PAMM, in 22 languages.';
+  'Ezymex is a global multi-asset trading platform: Ezymex FX Options with real option chains on forex, gold and oil, 1,389 CFD instruments, copy trading and PAMM, in 22 languages.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

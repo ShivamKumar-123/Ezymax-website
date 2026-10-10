@@ -30,7 +30,6 @@ const CLIENT_FEATURES = [
   ['Accounts', 'Open live and demo accounts, change leverage, set investor (read-only) passwords.'],
   ['Wallet', 'Deposit and withdraw USDT; move money between wallet and accounts instantly and free.'],
   ['Copy trading, PAMM, MAM', 'Follow masters, invest in funds, or apply to become a master yourself.'],
-  ['Prop challenges', 'Buy a challenge, track every rule in real time, request payouts, download certificates.'],
   ['Partner dashboard', 'Referral links, clients, your network, commissions and weekly payouts.'],
   ['Academy', '118 lessons in 9 phases, quizzes, exams and verifiable certificates.'],
   ['Developer', 'API keys, webhooks, a visual strategy builder, backtests and 24/7 deployments.'],
@@ -100,7 +99,7 @@ export default function PlatformsPage() {
               id="ca-title"
               kicker="Client Area"
               lines={['Everything around', 'your trading.']}
-              lead="One place for accounts, money, copy trading, prop, partner earnings and learning, in 22 languages with light and dark themes."
+              lead="One place for accounts, money, copy trading, partner earnings and learning, in 22 languages with light and dark themes."
             />
             <dl className="mt-10 grid gap-x-8 gap-y-6 sm:grid-cols-2">
               {CLIENT_FEATURES.map(([t, d], i) => (
