@@ -78,6 +78,14 @@ Response `200`:
 
 Newest first. `amount` is the signed change to the client's total (available + locked). A withdrawal request shows `available_delta -100, locked_delta +100, amount 0`.
 
+### `GET /v1/internal/users/{user_id}/funded`
+
+```json
+{ "user_id": 42, "funded": true, "first_deposit_at": "2026-10-01T08:30:00Z" }
+```
+
+Whether the client has at least one credited deposit of their own: ledger kinds `deposit` (on-chain USDT), `bank_deposit` and `crypto_deposit` (manual payments approved by staff). Commissions, bonuses, adjustments, staking returns and other transfers never count. Tenant from `X-Ezymex-Tenant` like every route. The gateway asks it before a sign-up counts as the client's referral (a referral link is active once its owner has deposited).
+
 ## Conventions
 
 - **Base URL** `http://127.0.0.1:8095`. JSON in and out, snake_case keys. Every route except `GET /health` needs `X-Ezymex-Internal`.

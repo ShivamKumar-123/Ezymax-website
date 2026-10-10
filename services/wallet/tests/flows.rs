@@ -178,6 +178,11 @@ async fn transfer_contract_is_idempotent_and_balanced() {
         assert_eq!(s, 200, "{kind} {v}");
     }
     assert_eq!(t.balance(77).await, ("100.75".into(), "0".into()));
+    // none of that is a deposit of the client's own: their referral link stays inactive (gateway referral.rs)
+    for user in [42, 77] {
+        let (s, v) = t.get(&format!("/v1/internal/users/{user}/funded")).await;
+        assert_eq!((s, v["funded"].as_bool(), v["first_deposit_at"].is_null()), (200, Some(false), true), "{v}");
+    }
     // validation
     for bad in [
         json!({"idempotency_key": "x1", "user_id": 42, "currency": "EUR", "amount": "1", "direction": "credit", "kind": "refund"}),
@@ -225,6 +230,10 @@ async fn transfer_contract_is_idempotent_and_balanced() {
     // internal token required
     let r = t.http.get(format!("{}/v1/wallets/42", t.base)).send().await.unwrap();
     assert_eq!(r.status().as_u16(), 403);
+    let r = t.http.get(format!("{}/v1/internal/users/42/funded", t.base)).send().await.unwrap();
+    assert_eq!(r.status().as_u16(), 403);
+    let (s, _) = t.get("/v1/internal/users/0/funded").await;
+    assert_eq!(s, 422);
     // append-only
     assert!(sqlx::query("UPDATE ledger_postings SET amount = amount * 2").execute(&t.st.pool).await.is_err());
     assert!(sqlx::query("DELETE FROM ledger_txns").execute(&t.st.pool).await.is_err());
@@ -235,6 +244,15 @@ async fn transfer_contract_is_idempotent_and_balanced() {
 #[tokio::test]
 async fn deposits_verify_confirm_and_credit() {
     let Some(t) = T::new("deposits").await else { return };
+    let funded = |user: i64| {
+        let t = &t;
+        async move {
+            let (s, v) = t.get(&format!("/v1/internal/users/{user}/funded")).await;
+            assert_eq!((s, v["user_id"].as_i64()), (200, Some(user)), "{v}");
+            (v["funded"].as_bool().unwrap(), v["first_deposit_at"].as_str().map(str::to_string))
+        }
+    };
+    assert_eq!(funded(7).await, (false, None));
     // TRON: intent → submit → confirmations → credited
     let (s, v) = t.post("/v1/deposits/intents", json!({"user_id": 7, "chain": "tron", "amount": "50"})).await;
     assert_eq!(s, 200, "{v}");
@@ -261,6 +279,9 @@ async fn deposits_verify_confirm_and_credit() {
     let (_, v) = t.get(&format!("/v1/deposits/{dep_id}?user_id=7")).await;
     assert_eq!(v["deposit"]["status"], "credited", "{v}");
     assert_eq!(t.balance(7).await.0, "50");
+    // a credited on-chain deposit makes the client funded (their referral link counts from now on)
+    let (is_funded, first) = funded(7).await;
+    assert!(is_funded && first.is_some());
     watcher::tick(&t.st).await.unwrap();
     assert_eq!(t.balance(7).await.0, "50", "credited once");
     let (_, n) = t.get("/v1/wallets/7/notifications").await;
@@ -288,6 +309,8 @@ async fn deposits_verify_confirm_and_credit() {
     assert_eq!(s, 200, "{v}");
     assert_eq!(v["deposit"]["status"], "credited");
     assert_eq!(t.balance(7).await.0, "74.999999", "BEP20 amount truncated to 6 decimals");
+    // the first deposit stays the first one
+    assert_eq!(funded(7).await, (true, first));
 
     // wrong recipient / reverted
     for (n, lookup, why) in [
@@ -313,6 +336,8 @@ async fn deposits_verify_confirm_and_credit() {
     let (_, v) = t.get(&format!("/v1/deposits/{id}")).await;
     assert_eq!(v["deposit"]["status"], "review");
     assert!(v["deposit"]["review_reason"].as_str().unwrap().contains("another client"));
+    // a deposit still in review doesn't count
+    assert_eq!(funded(8).await, (false, None));
     // validation
     let (s, _) = t.post("/v1/deposits/intents", json!({"user_id": 7, "chain": "eth", "amount": "10"})).await;
     assert_eq!(s, 422);

@@ -21,6 +21,22 @@ const NOT_FOUND_TTL_HOURS: i64 = 24;
 const INTENT_EARLY_MIN: i64 = 10;
 const INTENT_LATE_HOURS: i64 = 24;
 
+/// Ledger kinds that are the client's own money coming in: on-chain USDT deposits (`deposit`) and manual payments
+/// approved by staff (`bank_deposit`, `crypto_deposit`, ops::manual). Bonuses, adjustments, transfers from other
+/// services (IB commissions, staking returns, prop payouts…) and refunds are not.
+pub const FUNDING_KINDS: &[&str] = &["deposit", "bank_deposit", "crypto_deposit"];
+
+/// When the client's first credited deposit ([`FUNDING_KINDS`]) was booked, if they have one. The gateway's referral
+/// rule reads it (a client's referral link counts once they have deposited).
+pub async fn first_funding(pool: &sqlx::PgPool, tenant_id: i64, user_id: i64) -> sqlx::Result<Option<DateTime<Utc>>> {
+    sqlx::query_scalar("SELECT min(created_at) FROM ledger_txns WHERE tenant_id = $1 AND user_id = $2 AND kind = ANY($3)")
+        .bind(tenant_id)
+        .bind(user_id)
+        .bind(FUNDING_KINDS)
+        .fetch_one(pool)
+        .await
+}
+
 pub fn parse_chain(raw: &str) -> ApiResult<ChainId> {
     ChainId::parse(raw).ok_or_else(|| ApiError::validation("chain", "chain must be bsc or tron"))
 }

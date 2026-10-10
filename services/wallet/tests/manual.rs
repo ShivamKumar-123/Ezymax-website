@@ -463,9 +463,14 @@ async fn review_credits_once_and_needs_reasons() {
     assert_eq!(s, 403);
 
     // approve at the expected amount (8800 INR / 88 = 100 USDT): one credit, retry-safe
+    let (_, f) = t.client("GET", "/v1/internal/users/7/funded", None).await;
+    assert_eq!(f["funded"], false, "a pending request is not a deposit yet");
     let (s, v) = t.fin("POST", &format!("/v1/admin/manual/deposits/{a}/approve"), Some(json!({}))).await;
     assert_eq!(s, 200, "{v}");
     assert_eq!((v["deposit"]["status"].as_str(), v["deposit"]["credit_amount"].as_str(), v["deposit"]["replayed"].as_bool()), (Some("approved"), Some("100"), Some(false)));
+    // an approved bank deposit makes the client funded (gateway referral rule)
+    let (_, f) = t.client("GET", "/v1/internal/users/7/funded", None).await;
+    assert_eq!((f["funded"].as_bool(), f["first_deposit_at"].is_string()), (Some(true), true), "{f}");
     assert_eq!(v["deposit"]["decided_by"]["id"], "5");
     assert_eq!(t.available(7).await, "100");
     let mut hs = vec![];

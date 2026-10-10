@@ -138,6 +138,10 @@ async fn wallet_add_and_deduct_keep_the_ledger_balanced_and_book_once() {
     assert_eq!((a["before"]["available"].as_str(), a["after"]["available"].as_str()), (Some("0"), Some("100")));
     assert_eq!(t.available(42).await, "100");
     t.invariants().await;
+    // a staff adjustment is not a deposit of the client's own (their referral link stays inactive)
+    let tenant = t.st.tenants.get("ezymex").unwrap();
+    assert_eq!(wallet::ops::deposits::first_funding(&t.st.pool, tenant, 42).await.unwrap(), None);
+    assert!(wallet::ops::manual::LEDGER_KINDS.iter().all(|k| wallet::ops::deposits::FUNDING_KINDS.contains(k)), "manual deposits count");
     // a double click (same key) returns the same adjustment and books nothing more
     let (s, again) = t.adjust(wallet_req("k-1", "add", "compensation", "100")).await;
     assert_eq!((s, again["adjustment"]["replayed"].as_bool(), &again["adjustment"]["id"]), (200, Some(true), &a["id"]));

@@ -459,6 +459,17 @@ pub async fn trading_transfers(State(st): State<AppState>, ctx: Ctx, Path(user_i
     Ok(ok(json!({"items": rows.iter().map(trading::transfer_json).collect::<Vec<_>>(), "page": page, "limit": limit, "total": total})))
 }
 
+/* ---------------- funding (gateway referral rule) ---------------- */
+
+/// `GET /v1/internal/users/{user_id}/funded` → `{user_id, funded, first_deposit_at}`: whether the client has at least
+/// one credited deposit of their own (on-chain USDT, bank / UPI or crypto approved by staff; see
+/// `deposits::FUNDING_KINDS`). The gateway asks it before a sign-up counts as the client's referral.
+pub async fn funded(State(st): State<AppState>, ctx: Ctx, Path(user_id): Path<i64>) -> ApiResult<Json<Value>> {
+    let user_id = uid(user_id)?;
+    let first = deposits::first_funding(&st.pool, ctx.tenant.id, user_id).await?;
+    Ok(ok(json!({"user_id": user_id, "funded": first.is_some(), "first_deposit_at": first})))
+}
+
 /* ---------------- trading account lifecycle (closure checks, own-account transfers) ---------------- */
 
 #[derive(Deserialize, Default)]
