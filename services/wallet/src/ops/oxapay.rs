@@ -179,7 +179,14 @@ pub struct NewInvoice {
 /// `https://host` with nothing else: the only shape we will hand OxaPay.
 fn clean_origin(raw: &str) -> Result<String, ApiError> {
     let o = raw.trim().trim_end_matches('/');
-    let bad = !o.starts_with("https://") || o.len() < 12 || o.len() > 200 || o[8..].contains('/') || o.contains([' ', '"', '\'', '\\', '?', '#']);
+    let bad = !o.starts_with("https://")
+        || o.len() < 12
+        || o.len() > 200
+        || o[8..].contains('/')
+        || o.contains([' ', '"', '\'', '\\', '?', '#'])
+        // a control character survives the trim when it is not at the edge, and would travel
+        // into the JSON we send OxaPay
+        || o.chars().any(char::is_control);
     if bad {
         return Err(ApiError::validation("origin", "origin must be an https:// host"));
     }
@@ -696,7 +703,9 @@ mod tests {
     fn only_https_origins_are_accepted() {
         assert_eq!(clean_origin("https://app.ezymex.com/").unwrap(), "https://app.ezymex.com");
         assert_eq!(clean_origin(" https://my.broker.io ").unwrap(), "https://my.broker.io");
-        for bad in ["http://app.ezymex.com", "https://a.com/path", "https://a.com?x=1", "ftp://a.com", "", "https://a.com\n"] {
+        // surrounding whitespace is trimmed, so that alone is no reason to refuse
+        assert_eq!(clean_origin("https://a.com\n").unwrap(), "https://a.com");
+        for bad in ["http://app.ezymex.com", "https://a.com/path", "https://a.com?x=1", "ftp://a.com", "", "https://a.com\nEvil", "https://a\tb.com"] {
             assert!(clean_origin(bad).is_err(), "{bad} must be refused");
         }
     }
