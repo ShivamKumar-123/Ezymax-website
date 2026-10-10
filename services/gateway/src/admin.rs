@@ -227,6 +227,8 @@ fn user_row(r: &PgRow) -> Value {
         "country": r.get::<String, _>("country").trim().to_lowercase(),
         "date_of_birth": r.get::<NaiveDate, _>("date_of_birth"),
         "referral_code": r.get::<String, _>("referral_code"),
+        // the code from before name-free codes (2026-10-10); it still attributes sign-ups
+        "referral_code_legacy": r.get::<Option<String>, _>("referral_code_legacy"),
         "referred_by": r.get::<Option<i64>, _>("referred_by"),
         "kyc_status": r.get::<String, _>("kyc_status"),
         "status": r.get::<String, _>("status"),
@@ -373,7 +375,7 @@ pub fn users_page_cap(export: bool) -> i64 {
 }
 
 const USER_COLS: &str = "u.id, u.email, u.first_name, u.last_name, u.phone_dial, u.phone, u.country, u.date_of_birth, u.referral_code,
-     u.referred_by, u.kyc_status, u.status, u.email_verified_at, u.locked_until, u.last_login_at, u.created_at, u.last_active_at,
+     u.referral_code_legacy, u.referred_by, u.kyc_status, u.status, u.email_verified_at, u.locked_until, u.last_login_at, u.created_at, u.last_active_at,
      u.hidden_at, u.deleted_at,
      (SELECT array_agg(cr.kind ORDER BY cr.kind) FROM client_restrictions cr
        WHERE cr.user_id = u.id AND cr.lifted_at IS NULL AND (cr.expires_at IS NULL OR cr.expires_at > now())) AS restrictions,
@@ -435,7 +437,7 @@ pub async fn users(State(st): State<AppState>, ctx: Ctx, q: Result<Query<UsersQu
          FROM users u
          WHERE u.tenant_id = $1 AND NOT u.is_house
            AND ($2::text IS NULL OR u.email ILIKE $2 OR (u.first_name || ' ' || u.last_name) ILIKE $2
-                OR (u.phone_dial || u.phone) ILIKE $2 OR u.phone ILIKE $2 OR u.referral_code ILIKE $2 OR u.id = $3)
+                OR (u.phone_dial || u.phone) ILIKE $2 OR u.phone ILIKE $2 OR u.referral_code ILIKE $2 OR u.referral_code_legacy ILIKE $2 OR u.id = $3)
            AND ($4::text IS NULL OR u.kyc_status = $4)
            AND ($5::bool IS NULL OR (u.email_verified_at IS NOT NULL) = $5)
            AND ($6::text IS NULL OR u.status = $6)
@@ -542,6 +544,23 @@ pub async fn user_detail(State(st): State<AppState>, ctx: Ctx, Path(id): Path<i6
     };
     let code_raw: Option<String> = sqlx::query_scalar("SELECT referred_code_raw FROM users WHERE id = $1").bind(id).fetch_one(&mut *tx).await?;
     user["referred_code_raw"] = json!(code_raw);
+    // a code of a client whose referral link wasn't active yet (referral.rs): not attributed, kept for staff
+    let held = sqlx::query(
+        "SELECT u.referral_held, h.id, h.email, h.first_name, h.last_name, h.referral_code
+         FROM users u LEFT JOIN users h ON h.id = u.referral_held_for AND h.tenant_id = u.tenant_id WHERE u.id = $1",
+    )
+    .bind(id)
+    .fetch_one(&mut *tx)
+    .await?;
+    user["referral_held"] = json!(held.get::<Option<String>, _>("referral_held"));
+    let held_for = held.get::<Option<i64>, _>("id").map(|hid| {
+        json!({
+            "id": hid,
+            "email": held.get::<String, _>("email"),
+            "name": format!("{} {}", held.get::<String, _>("first_name"), held.get::<String, _>("last_name")),
+            "referral_code": held.get::<String, _>("referral_code"),
+        })
+    });
     // hidden / deleted: by whom and why (client_lifecycle.rs)
     let m = sqlx::query(
         "SELECT u.hidden_reason, hs.name AS hidden_by, u.deleted_reason, ds.name AS deleted_by
@@ -613,6 +632,7 @@ pub async fn user_detail(State(st): State<AppState>, ctx: Ctx, Path(id): Path<i6
     Ok(Json(json!({
         "user": user,
         "referrer": referrer,
+        "referral_held_for": held_for,
         "referrals": { "total": r.get::<i64, _>("referrals_total"), "items": referrals },
         "sessions": { "active": r.get::<i64, _>("active_sessions"), "total": r.get::<i64, _>("sessions_total") },
         "trusted_devices": r.get::<i64, _>("trusted_devices"),

@@ -22,7 +22,8 @@
 //!   status becomes `closed`, the personal data is scrubbed (name "Deleted Client", email
 //!   `deleted-<id>@deleted.invalid` so the address can register again, phone, date of birth, Google link, free-form
 //!   attribution, marketing consent), the password can never match, sessions and view-only logins end, KYC files
-//!   and rows are erased. The country, referral code and links stay for record-keeping.
+//!   and rows are erased. The country, referral code and links stay for record-keeping; an old referral code from
+//!   before name-free codes (`referral_code_legacy`, first name + digits) is erased with the name.
 //!
 //! In both modes the client's trading accounts are archived first, as this staff member (engine staff archive,
 //! reason `ARC-06`; demo accounts are emptied first; flat prop accounts are left to the prop service), so the
@@ -487,6 +488,7 @@ pub async fn delete_with<F: Finance>(st: &AppState, ctx: &Ctx, me: &Staff, id: i
                     date_of_birth = DATE '1900-01-01', password_hash = '!deleted-no-login', google_sub = NULL, google_linked_at = NULL, avatar_url = NULL,
                     utm_term = NULL, utm_content = NULL, landing_page = NULL, first_referrer = NULL, marketing_consent = false,
                     marketing_unsubscribed_at = COALESCE(marketing_unsubscribed_at, now()), status = 'closed', failed_logins = 0, locked_until = NULL, last_active_at = NULL,
+                    referral_code_legacy = NULL,
                     deleted_at = now(), deleted_by = $2, deleted_reason = $3, updated_at = now()
              WHERE id = $1",
         )

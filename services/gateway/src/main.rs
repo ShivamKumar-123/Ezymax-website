@@ -27,6 +27,7 @@ mod marketing;
 mod owner;
 mod ratelimit;
 mod rbac;
+mod referral;
 mod shares;
 mod staff_admin;
 mod staff_auth;

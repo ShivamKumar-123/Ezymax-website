@@ -240,3 +240,38 @@ async fn google_flows() {
 
     db.drop_db().await;
 }
+
+#[tokio::test]
+async fn google_sign_up_follows_the_referral_link_rule() {
+    let Some(db) = TestDb::new("Google sign-up referral").await else { return };
+    let stub = crate::referral::tests::Stub::default();
+    let referrer = password_user(&db, "ref@example.com", true, "Ezymex@2026").await;
+    let code = crate::referral::new_code();
+    sqlx::query("UPDATE users SET referral_code = $2 WHERE id = $1").bind(referrer).bind(&code).execute(&db.st.pool).await.unwrap();
+    let sign_up = |sub: &'static str, email: &'static str, device: &'static str| {
+        let (st, stub, code) = (db.st.clone(), &stub, code.clone());
+        async move {
+            let Json(v) = google(State(st.clone()), ctx(device), Ok(Json(greq(sub, email, true)))).await.unwrap();
+            let mut r = creq(v["ticket"].as_str().unwrap(), "1994-02-03");
+            r.referral_code = Some(code);
+            let (status, Json(v)) = complete_with(&st, &ctx(device), r, stub).await.unwrap();
+            assert_eq!(status, StatusCode::CREATED);
+            let id = v["user"]["id"].as_i64().unwrap();
+            assert!(crate::referral::is_new_code(v["user"]["referral_code"].as_str().unwrap()), "{v}");
+            sqlx::query_as::<_, (Option<i64>, Option<String>, Option<i64>)>("SELECT referred_by, referral_held, referral_held_for FROM users WHERE id = $1")
+                .bind(id)
+                .fetch_one(&st.pool)
+                .await
+                .unwrap()
+        }
+    };
+
+    // no deposit yet: signed up, not attributed, the referrer is told
+    assert_eq!(sign_up("701", "g1@gmail.com", "device-g1g1g1g1g1g1").await, (None, Some("not_funded".into()), Some(referrer)));
+    assert_eq!(stub.notified(), vec![("ezymex".to_string(), referrer)]);
+    // after the first deposit: attributed
+    stub.set(referrer, Ok(Some(chrono::Utc::now())));
+    assert_eq!(sign_up("702", "g2@gmail.com", "device-g2g2g2g2g2g2").await, (Some(referrer), None, None));
+    assert_eq!(stub.notified().len(), 1);
+    db.drop_db().await;
+}

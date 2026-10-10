@@ -291,7 +291,12 @@ pub struct CompleteReq {
 }
 
 pub async fn complete(State(st): State<AppState>, ctx: Ctx, req: Result<Json<CompleteReq>, JsonRejection>) -> ApiResult<(StatusCode, Json<Value>)> {
-    let r = body(req)?;
+    complete_with(&st, &ctx, body(req)?, crate::referral::http()).await
+}
+
+/// Google sign-up with the wallet / support clients of the referral link check (tests pass their own).
+pub(crate) async fn complete_with<U: crate::referral::Upstream>(st: &AppState, ctx: &Ctx, r: CompleteReq, up: &U) -> ApiResult<(StatusCode, Json<Value>)> {
+    let st = st.clone();
     identity::limit(&st, format!("google_complete:ip:{}", ctx.ip), 10, 15 * 60)?;
     let tenant_id = identity::tenant_id(&st.pool, &ctx.tenant_slug).await?;
     crate::tenancy::client_gate(&st, tenant_id).await?;
@@ -310,7 +315,9 @@ pub async fn complete(State(st): State<AppState>, ctx: Ctx, req: Result<Json<Com
         return Err(ApiError::Validation { field: "accept_terms", message: "Please confirm you are over 18 and accept the terms." });
     }
 
-    let referred_by = client_auth::referrer(&st, tenant_id, referral.as_deref()).await?;
+    // the referral counts only when the referrer's link is active (referral.rs); the sign-up goes ahead either way
+    let decision = crate::referral::decide(&st, up, tenant_id, &ctx.tenant_slug, referral.as_deref()).await?;
+    let referred_by = decision.referred_by;
     // Password sign-in stays closed until the client sets one ("Forgot password").
     let hash = identity::hash_password_blocking(crypto::random_token(32)).await?;
     let Some(user_id) = client_auth::insert_user(&st, NewUser {
@@ -326,6 +333,7 @@ pub async fn complete(State(st): State<AppState>, ctx: Ctx, req: Result<Json<Com
         referred_by,
         referral_raw: referral.as_deref(),
         referral_campaign: campaign.as_deref(),
+        referral_held: decision.held,
         google: Some((&t.sub, t.picture.as_deref())),
     })
     .await?
@@ -340,19 +348,21 @@ pub async fn complete(State(st): State<AppState>, ctx: Ctx, req: Result<Json<Com
     let attribution = crate::marketing::clean_attribution(&r.attribution.unwrap_or_default());
     crate::marketing::store_signup(&st.pool, user_id, &attribution, r.marketing_consent.unwrap_or(true)).await?;
 
-    audit::record(&st.pool, &ctx, Entry {
+    audit::record(&st.pool, ctx, Entry {
         tenant_id,
         actor_kind: "user",
         actor_id: Some(user_id),
         action: "user.register",
         target: Some(("user", user_id)),
         meta: json!({"method": "google", "country": country, "referral_code": referral, "referred_by": referred_by, "referral_campaign": campaign,
+                     "referral_held": decision.held.map(|h| h.0), "referral_held_for": decision.held.map(|h| h.1),
                      "utm_source": attribution.source, "utm_medium": attribution.medium, "utm_campaign": attribution.campaign}),
     })
     .await;
     tracing::info!(user_id, "client registered with google");
+    client_auth::referral_followup(up, &ctx.tenant_slug, &decision).await;
     client_auth::send_welcome(&st, t.email.clone(), first.clone());
-    Ok((StatusCode::CREATED, Json(google_sign_in(&st, &ctx, tenant_id, user_id).await?)))
+    Ok((StatusCode::CREATED, Json(google_sign_in(&st, ctx, tenant_id, user_id).await?)))
 }
 
 #[cfg(test)]

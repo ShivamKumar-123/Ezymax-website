@@ -14,6 +14,7 @@ use crate::crypto;
 use crate::error::{ApiError, ApiResult, field};
 use crate::flows;
 use crate::identity::{self, Kind, Purpose};
+use crate::referral;
 use crate::state::{AppState, Ctx};
 use crate::validate;
 
@@ -112,11 +113,6 @@ pub struct RegisterReq {
     accept_terms: bool,
 }
 
-pub(crate) fn referral_prefix(first: &str) -> String {
-    let p: String = first.chars().filter(|c| c.is_ascii_alphabetic()).take(6).collect::<String>().to_uppercase();
-    if p.len() >= 2 { p } else { "EZYMEX".into() }
-}
-
 /// A client account about to be created (email sign-up or Google sign-up).
 pub(crate) struct NewUser<'a> {
     pub tenant_id: i64,
@@ -132,27 +128,29 @@ pub(crate) struct NewUser<'a> {
     pub referral_raw: Option<&'a str>,
     /// Partner campaign slug; stored only together with `referred_by`.
     pub referral_campaign: Option<&'a str>,
+    /// The code belongs to a client whose link isn't active yet: (reason, that client) (referral.rs).
+    pub referral_held: Option<(&'static str, i64)>,
     /// Google sign-up: (sub, picture). The email counts as verified (Google verified it).
     pub google: Option<(&'a str, Option<&'a str>)>,
 }
 
-/// Inserts a user with a fresh referral code. `Ok(None)` when the email (or Google account) is already taken.
+/// Inserts a user with a fresh referral code (referral.rs: no name in it, never equal to any current or old code of
+/// the broker). `Ok(None)` when the email (or Google account) is already taken.
 pub(crate) async fn insert_user(st: &AppState, u: NewUser<'_>) -> ApiResult<Option<i64>> {
-    let prefix = referral_prefix(u.first_name);
     let (google_sub, avatar) = match u.google {
         Some((sub, pic)) => (Some(sub), pic),
         None => (None, None),
     };
-    for _ in 0..6 {
-        let n = u32::from_le_bytes(crypto::random_bytes::<4>()) % 9000 + 1000;
-        let code = format!("{prefix}{n}");
+    for _ in 0..8 {
+        let code = referral::new_code();
         let res = sqlx::query_scalar::<_, i64>(
             "INSERT INTO users (tenant_id, email, password_hash, first_name, last_name, phone_dial, phone, country, date_of_birth,
                                 referral_code, referred_by, referred_code_raw, terms_accepted_at,
-                                google_sub, google_linked_at, avatar_url, email_verified_at, referral_campaign)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12, now(),
-                     $13, CASE WHEN $13::text IS NULL THEN NULL ELSE now() END, $14,
-                     CASE WHEN $13::text IS NULL THEN NULL ELSE now() END, $15)
+                                google_sub, google_linked_at, avatar_url, email_verified_at, referral_campaign, referral_held, referral_held_for)
+             SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12, now(),
+                    $13, CASE WHEN $13::text IS NULL THEN NULL ELSE now() END, $14,
+                    CASE WHEN $13::text IS NULL THEN NULL ELSE now() END, $15, $16, $17
+             WHERE NOT EXISTS (SELECT 1 FROM users WHERE tenant_id = $1 AND referral_code_legacy = $10)
              ON CONFLICT DO NOTHING RETURNING id",
         )
         .bind(u.tenant_id)
@@ -170,12 +168,14 @@ pub(crate) async fn insert_user(st: &AppState, u: NewUser<'_>) -> ApiResult<Opti
         .bind(google_sub)
         .bind(avatar)
         .bind(u.referred_by.and(u.referral_campaign))
+        .bind(u.referral_held.map(|h| h.0))
+        .bind(u.referral_held.map(|h| h.1))
         .fetch_optional(&st.pool)
         .await?;
         if let Some(id) = res {
             return Ok(Some(id));
         }
-        // conflict: the email (or Google account) raced in, or the referral code collided
+        // conflict: the email (or Google account) raced in, or the referral code collided (with a current or an old code)
         let taken: Option<i64> = sqlx::query_scalar("SELECT id FROM users WHERE tenant_id = $1 AND (email = $2 OR google_sub = $3)")
             .bind(u.tenant_id)
             .bind(u.email)
@@ -189,16 +189,20 @@ pub(crate) async fn insert_user(st: &AppState, u: NewUser<'_>) -> ApiResult<Opti
     Err(anyhow::anyhow!("could not allocate referral code").into())
 }
 
-/// Resolves a referral code to the referring client (unknown codes are kept raw, not rejected).
-pub(crate) async fn referrer(st: &AppState, tenant_id: i64, code: Option<&str>) -> ApiResult<Option<i64>> {
-    Ok(match code {
-        Some(code) => sqlx::query_scalar("SELECT id FROM users WHERE tenant_id = $1 AND referral_code = $2").bind(tenant_id).bind(code).fetch_optional(&st.pool).await?,
-        None => None,
-    })
+/// After a sign-up: tells the referrer whose link isn't active yet that someone joined through it.
+pub(crate) async fn referral_followup<U: referral::Upstream>(up: &U, tenant: &str, d: &referral::Decision) {
+    if let Some(referrer) = d.notify() {
+        up.notify_inactive(tenant, referrer).await;
+    }
 }
 
 pub async fn register(State(st): State<AppState>, ctx: Ctx, req: Result<Json<RegisterReq>, JsonRejection>) -> ApiResult<(StatusCode, Json<Value>)> {
-    let r = body(req)?;
+    register_with(&st, &ctx, body(req)?, referral::http()).await
+}
+
+/// Email sign-up with the wallet / support clients of the referral link check (tests pass their own).
+pub(crate) async fn register_with<U: referral::Upstream>(st: &AppState, ctx: &Ctx, r: RegisterReq, up: &U) -> ApiResult<(StatusCode, Json<Value>)> {
+    let st = st.clone();
     identity::limit(&st, format!("register:ip:{}", ctx.ip), 10, 15 * 60)?;
 
     let first = validate::name(&r.first_name, "Enter your first name.").map_err(field("first_name"))?;
@@ -222,7 +226,9 @@ pub async fn register(State(st): State<AppState>, ctx: Ctx, req: Result<Json<Reg
     if exists.is_some() {
         return Err(ApiError::EmailTaken);
     }
-    let referred_by = referrer(&st, tenant_id, referral.as_deref()).await?;
+    // the referral counts only when the referrer's link is active (referral.rs); the sign-up goes ahead either way
+    let decision = referral::decide(&st, up, tenant_id, &ctx.tenant_slug, referral.as_deref()).await?;
+    let referred_by = decision.referred_by;
     let hash = identity::hash_password_blocking(r.password).await?;
 
     let user_id = insert_user(&st, NewUser {
@@ -238,6 +244,7 @@ pub async fn register(State(st): State<AppState>, ctx: Ctx, req: Result<Json<Reg
         referred_by,
         referral_raw: referral.as_deref(),
         referral_campaign: campaign.as_deref(),
+        referral_held: decision.held,
         google: None,
     })
     .await?
@@ -245,23 +252,25 @@ pub async fn register(State(st): State<AppState>, ctx: Ctx, req: Result<Json<Reg
     let attribution = crate::marketing::clean_attribution(&r.attribution.unwrap_or_default());
     crate::marketing::store_signup(&st.pool, user_id, &attribution, r.marketing_consent.unwrap_or(true)).await?;
 
-    audit::record(&st.pool, &ctx, Entry {
+    audit::record(&st.pool, ctx, Entry {
         tenant_id,
         actor_kind: "user",
         actor_id: Some(user_id),
         action: "user.register",
         target: Some(("user", user_id)),
         meta: json!({"country": country, "referral_code": referral, "referred_by": referred_by, "referral_campaign": campaign,
+                     "referral_held": decision.held.map(|h| h.0), "referral_held_for": decision.held.map(|h| h.1),
                      "utm_source": attribution.source, "utm_medium": attribution.medium, "utm_campaign": attribution.campaign}),
     })
     .await;
     tracing::info!(user_id, "client registered");
+    referral_followup(up, &ctx.tenant_slug, &decision).await;
 
     // no email delivery yet: the account signs in straight away (its email stays unverified until codes are on)
     if st.cfg.password_only {
-        return Ok((StatusCode::CREATED, Json(signed_in(&st, &ctx, tenant_id, user_id, "register").await?)));
+        return Ok((StatusCode::CREATED, Json(signed_in(&st, ctx, tenant_id, user_id, "register").await?)));
     }
-    let (challenge, code) = identity::send_otp(&st, &ctx, K, tenant_id, user_id, &email, Purpose::VerifyEmail).await?;
+    let (challenge, code) = identity::send_otp(&st, ctx, K, tenant_id, user_id, &email, Purpose::VerifyEmail).await?;
     Ok((StatusCode::CREATED, Json(identity::challenge_json(&st, &challenge, &email, Purpose::VerifyEmail, K, Some(&code)))))
 }
 
@@ -393,11 +402,26 @@ pub async fn me(State(st): State<AppState>, ctx: Ctx) -> ApiResult<Json<Value>> 
     user["restrictions"] = restrictions["restrictions"].clone();
     user["restricted"] = restrictions["restricted"].clone();
     user["impersonation"] = impersonation.clone();
+    // whether the client's referral link counts yet (referral.rs); a view-only session doesn't need it
+    if s.viewer_id.is_none() {
+        referral_fields(&st, referral::http(), &mut user, s.subject_id).await?;
+    }
     let viewer = match s.viewer_id {
         Some(v) => crate::client_security::viewer_scope(&st, v).await?,
         None => Value::Null,
     };
     Ok(Json(json!({ "user": user, "viewer": viewer, "session": session, "impersonation": impersonation })))
+}
+
+/// `referral_active` and `referral_inactive_reason` (`no_deposit` | `unavailable`, null when active) on the client's
+/// own record: the Client Area and the app show "Your referral link activates after your first deposit" while it is
+/// `no_deposit`.
+pub(crate) async fn referral_fields<U: referral::Upstream>(st: &AppState, up: &U, user: &mut Value, user_id: i64) -> ApiResult<()> {
+    let tenant = user["tenant"]["slug"].as_str().unwrap_or("ezymex").to_string();
+    let l = referral::link(st, up, &tenant, user_id).await?;
+    user["referral_active"] = json!(l == referral::Link::Active);
+    user["referral_inactive_reason"] = json!(l.reason());
+    Ok(())
 }
 
 // ---------- password reset ----------

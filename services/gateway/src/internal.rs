@@ -48,7 +48,7 @@ pub async fn referral_users(State(st): State<AppState>, q: Result<Query<Referral
     let rows = sqlx::query(
         "SELECT * FROM (
             SELECT u.id, t.slug AS tenant, u.email, u.first_name, u.last_name, u.country, u.date_of_birth,
-                   u.phone_dial || u.phone AS phone, u.referral_code, u.referred_by, u.referred_code_raw, u.referral_campaign,
+                   u.phone_dial || u.phone AS phone, u.referral_code, u.referral_code_legacy, u.referred_by, u.referred_code_raw, u.referral_campaign,
                    u.kyc_status, u.status, u.email_verified_at IS NOT NULL AS email_verified, u.created_at,
                    u.email_verified_at, u.last_login_at, to_char(u.date_of_birth, 'MM-DD') AS birthday,
                    u.utm_source, u.utm_medium, u.utm_campaign, u.utm_term, u.utm_content, u.landing_page, u.first_referrer,
@@ -69,7 +69,7 @@ pub async fn referral_users(State(st): State<AppState>, q: Result<Query<Referral
             UNION ALL
             -- purged clients: placeholder data from the tombstone, changed_at = when they were deleted
             SELECT d.id, t.slug, 'deleted-' || d.id || '@deleted.invalid', 'Deleted', 'Client', ''::text, NULL::date, '', d.referral_code,
-                   NULL::bigint, NULL::text, NULL::text, 'unverified', 'closed', false, d.created_at, NULL::timestamptz, NULL::timestamptz,
+                   NULL::text, NULL::bigint, NULL::text, NULL::text, 'unverified', 'closed', false, d.created_at, NULL::timestamptz, NULL::timestamptz,
                    NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, false, NULL::timestamptz,
                    d.deleted_at, '{}'::text[], '{}'::bytea[], false, true, true
             FROM deleted_users d JOIN tenants t ON t.id = d.tenant_id
@@ -110,6 +110,8 @@ pub async fn referral_users(State(st): State<AppState>, q: Result<Query<Referral
                 "last_name": last,
                 "country": r.get::<String, _>("country"),
                 "referral_code": r.get::<String, _>("referral_code"),
+                // the code from before name-free codes (2026-10-10); links with it still attribute
+                "referral_code_legacy": r.get::<Option<String>, _>("referral_code_legacy"),
                 "referred_by": r.get::<Option<i64>, _>("referred_by"),
                 "referred_code_raw": r.get::<Option<String>, _>("referred_code_raw"),
                 "referral_campaign": r.get::<Option<String>, _>("referral_campaign"),
