@@ -7,6 +7,8 @@ const partner: NsMessages<"partner"> = {
   referralCode: "Code de parrainage",
   copyReferralLink: "Copier le lien de parrainage",
   "toast.linkCopied": "Lien de parrainage copié",
+  "inactiveLink.title": "Votre lien de parrainage s'active après votre premier dépôt",
+  "inactiveLink.text": "Il est déjà possible de s'inscrire avec, mais seules les inscriptions faites après votre premier dépôt comptent comme vos filleuls.",
   clicks: "Clics",
   signups: "Inscriptions",
   firstDeposits: "Premiers dépôts",

@@ -7,6 +7,8 @@ const partner: NsMessages<"partner"> = {
   referralCode: "Codice di referral",
   copyReferralLink: "Copia link di referral",
   "toast.linkCopied": "Link di referral copiato",
+  "inactiveLink.title": "Il tuo link di referral si attiva dopo il tuo primo deposito",
+  "inactiveLink.text": "Ci si può già registrare con il link, ma solo le iscrizioni successive al tuo primo deposito contano come tuoi referral.",
   clicks: "Clic",
   signups: "Registrazioni",
   firstDeposits: "Primi depositi",

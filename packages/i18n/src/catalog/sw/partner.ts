@@ -7,6 +7,8 @@ const partner: NsMessages<"partner"> = {
   referralCode: "Msimbo wa rufaa",
   copyReferralLink: "Nakili kiungo cha rufaa",
   "toast.linkCopied": "Kiungo cha rufaa kimenakiliwa",
+  "inactiveLink.title": "Kiungo chako cha rufaa kitaanza kufanya kazi baada ya uwekaji wako wa kwanza",
+  "inactiveLink.text": "Watu wanaweza kujisajili kupitia kiungo hicho tayari, lakini ni usajili unaofanyika baada ya uwekaji wako wa kwanza pekee unaohesabiwa kuwa rufaa zako.",
   clicks: "Mibofyo",
   signups: "Usajili",
   firstDeposits: "Uwekaji wa kwanza",

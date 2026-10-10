@@ -7,6 +7,8 @@ const partner: NsMessages<"partner"> = {
   referralCode: "Referans kodu",
   copyReferralLink: "Referans bağlantısını kopyala",
   "toast.linkCopied": "Referans bağlantısı kopyalandı",
+  "inactiveLink.title": "Referans bağlantınız ilk para yatırma işleminizden sonra etkinleşir",
+  "inactiveLink.text": "Bu bağlantıyla şimdiden kayıt olunabilir, ancak yalnızca ilk para yatırma işleminizden sonraki kayıtlar referansınız olarak sayılır.",
   clicks: "Tıklamalar",
   signups: "Kayıtlar",
   firstDeposits: "İlk yatırımlar",

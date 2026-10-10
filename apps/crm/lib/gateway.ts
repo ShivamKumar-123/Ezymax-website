@@ -37,6 +37,12 @@ export type GatewayUser = {
   /** Signs in with Google (account linked to a Google account). */
   google_linked?: boolean;
   referral_code: string;
+  /** Whether the client's referral link counts yet: it does once they have deposited (gateway referral.rs). Only on
+   *  the client's own session record (/v1/auth/me); absent for view-only sessions. */
+  referral_active?: boolean;
+  /** Why it doesn't: `no_deposit` (show "activates after your first deposit") or `unavailable` (the wallet couldn't
+   *  be asked; show nothing). Null when active. */
+  referral_inactive_reason?: "no_deposit" | "unavailable" | null;
   created_at: string;
   tenant: { slug: string; name: string };
   /** Set when this is a view-only session (D90): the owner's reduced record, read-only, limited to the scope. */

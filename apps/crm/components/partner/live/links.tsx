@@ -55,7 +55,7 @@ import {
   type CampaignsResp,
 } from "./api";
 import { Trans, useFormat, useT } from "@ezymex/i18n/react";
-import { CardEmpty, PageFallback, SkeletonGrid } from "./ui";
+import { CardEmpty, InactiveLinkNote, PageFallback, SkeletonGrid } from "./ui";
 import { QrDialog, useQrCode, type QrTheme } from "./qr";
 
 const keyOf = (c: Campaign) => (c.id === null ? "default" : String(c.id));
@@ -780,6 +780,8 @@ export function LivePartnerLinks() {
           </Button>
         }
       />
+
+      <InactiveLinkNote className="mb-4" />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard

@@ -8,6 +8,8 @@ const partner: NsMessages<"partner"> = {
   referralCode: "รหัสแนะนำ",
   copyReferralLink: "คัดลอกลิงก์แนะนำ",
   "toast.linkCopied": "คัดลอกลิงก์แนะนำแล้ว",
+  "inactiveLink.title": "ลิงก์แนะนำของคุณจะเริ่มใช้งานได้หลังการฝากเงินครั้งแรกของคุณ",
+  "inactiveLink.text": "ผู้อื่นสมัครผ่านลิงก์นี้ได้แล้ว แต่จะนับเป็นผู้ที่คุณแนะนำเฉพาะการสมัครหลังจากที่คุณฝากเงินครั้งแรกเท่านั้น",
   clicks: "คลิก",
   signups: "สมัคร",
   firstDeposits: "ฝากเงินครั้งแรก",

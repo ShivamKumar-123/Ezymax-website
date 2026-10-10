@@ -8,6 +8,8 @@ const partner: NsMessages<"partner"> = {
   referralCode: "رمز الإحالة",
   copyReferralLink: "نسخ رابط الإحالة",
   "toast.linkCopied": "تم نسخ رابط الإحالة",
+  "inactiveLink.title": "يُفعَّل رابط الإحالة الخاص بك بعد أول إيداع لك",
+  "inactiveLink.text": "يمكن للآخرين التسجيل عبره الآن، لكن لا تُحتسب ضمن إحالاتك إلا التسجيلات التي تتم بعد أول إيداع لك.",
   clicks: "النقرات",
   signups: "التسجيلات",
   firstDeposits: "الإيداعات الأولى",

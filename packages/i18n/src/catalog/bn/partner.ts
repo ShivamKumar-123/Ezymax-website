@@ -7,6 +7,8 @@ const partner: NsMessages<"partner"> = {
   referralCode: "রেফারেল কোড",
   copyReferralLink: "রেফারেল লিংক কপি করুন",
   "toast.linkCopied": "রেফারেল লিংক কপি হয়েছে",
+  "inactiveLink.title": "আপনার প্রথম জমার পরে আপনার রেফারেল লিংক সক্রিয় হবে",
+  "inactiveLink.text": "এখনই যে কেউ এটি দিয়ে সাইন আপ করতে পারেন, তবে শুধু আপনার প্রথম জমার পরের সাইন আপগুলোই আপনার রেফারেল হিসেবে গণ্য হবে।",
   clicks: "ক্লিক",
   signups: "সাইন-আপ",
   firstDeposits: "প্রথম জমা",

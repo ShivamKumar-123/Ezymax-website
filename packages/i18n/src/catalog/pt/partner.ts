@@ -7,6 +7,8 @@ const partner: NsMessages<"partner"> = {
   referralCode: "Código de indicação",
   copyReferralLink: "Copiar link de indicação",
   "toast.linkCopied": "Link de indicação copiado",
+  "inactiveLink.title": "Seu link de indicação é ativado após o seu primeiro depósito",
+  "inactiveLink.text": "Já é possível se cadastrar com ele, mas só os cadastros feitos depois do seu primeiro depósito contam como suas indicações.",
   clicks: "Cliques",
   signups: "Cadastros",
   firstDeposits: "Primeiros depósitos",

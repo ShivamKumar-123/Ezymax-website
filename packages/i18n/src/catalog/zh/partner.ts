@@ -7,6 +7,8 @@ const partner: NsMessages<"partner"> = {
   referralCode: "推荐码",
   copyReferralLink: "复制推荐链接",
   "toast.linkCopied": "推荐链接已复制",
+  "inactiveLink.title": "您的推荐链接将在您首次入金后生效",
+  "inactiveLink.text": "现在已可通过该链接注册，但只有在您首次入金之后的注册才会计为您的推荐。",
   clicks: "点击",
   signups: "注册",
   firstDeposits: "首次入金",

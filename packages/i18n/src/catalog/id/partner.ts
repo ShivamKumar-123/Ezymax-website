@@ -7,6 +7,8 @@ const partner: NsMessages<"partner"> = {
   referralCode: "Kode referral",
   copyReferralLink: "Salin tautan referral",
   "toast.linkCopied": "Tautan referral tersalin",
+  "inactiveLink.title": "Tautan referral Anda aktif setelah deposit pertama Anda",
+  "inactiveLink.text": "Orang sudah bisa mendaftar melaluinya, tetapi hanya pendaftaran setelah deposit pertama Anda yang dihitung sebagai referral Anda.",
   clicks: "Klik",
   signups: "Pendaftaran",
   firstDeposits: "Deposit pertama",

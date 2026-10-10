@@ -68,6 +68,7 @@ import {
 import {
   CardEmpty,
   CommissionStatusChip,
+  InactiveLinkNote,
   PageFallback,
   PersonCell,
   SkeletonGrid,
@@ -937,6 +938,8 @@ export function LivePartnerDashboard() {
           </>
         }
       />
+
+      <InactiveLinkNote className="mb-4" />
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
         <Reveal className="min-w-0 xl:col-span-8">

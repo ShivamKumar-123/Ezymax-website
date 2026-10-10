@@ -8,6 +8,9 @@ const partner = {
   referralCode: "Referral code",
   copyReferralLink: "Copy referral link",
   "toast.linkCopied": "Referral link copied",
+  // A client's referral link counts only once they have deposited: shown wherever the link or code is offered
+  "inactiveLink.title": "Your referral link activates after your first deposit",
+  "inactiveLink.text": "People can already sign up with it, but only sign-ups after your first deposit count as your referrals.",
   clicks: "Clicks",
   signups: "Sign-ups",
   firstDeposits: "First deposits",

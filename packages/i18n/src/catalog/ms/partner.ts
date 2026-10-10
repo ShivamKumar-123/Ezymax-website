@@ -7,6 +7,8 @@ const partner: NsMessages<"partner"> = {
   referralCode: "Kod rujukan",
   copyReferralLink: "Salin pautan rujukan",
   "toast.linkCopied": "Pautan rujukan disalin",
+  "inactiveLink.title": "Pautan rujukan anda aktif selepas deposit pertama anda",
+  "inactiveLink.text": "Orang lain sudah boleh mendaftar dengannya, tetapi hanya pendaftaran selepas deposit pertama anda dikira sebagai rujukan anda.",
   clicks: "Klik",
   signups: "Pendaftaran",
   firstDeposits: "Deposit pertama",

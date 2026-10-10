@@ -8,6 +8,8 @@ const partner: NsMessages<"partner"> = {
   referralCode: "추천 코드",
   copyReferralLink: "추천 링크 복사",
   "toast.linkCopied": "추천 링크가 복사되었습니다",
+  "inactiveLink.title": "추천 링크는 첫 입금 후에 활성화됩니다",
+  "inactiveLink.text": "지금도 이 링크로 가입할 수 있지만, 첫 입금 이후의 가입만 나의 추천으로 집계됩니다.",
   clicks: "클릭",
   signups: "가입",
   firstDeposits: "첫 입금",

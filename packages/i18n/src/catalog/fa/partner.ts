@@ -7,6 +7,8 @@ const partner: NsMessages<"partner"> = {
   referralCode: "کد معرفی",
   copyReferralLink: "کپی لینک معرفی",
   "toast.linkCopied": "لینک معرفی کپی شد",
+  "inactiveLink.title": "لینک معرفی شما پس از نخستین واریزتان فعال می‌شود",
+  "inactiveLink.text": "دیگران هم‌اکنون می‌توانند با آن ثبت‌نام کنند، اما فقط ثبت‌نام‌های پس از نخستین واریز شما به‌عنوان معرفی‌های شما حساب می‌شوند.",
   clicks: "کلیک‌ها",
   signups: "ثبت‌نام‌ها",
   firstDeposits: "اولین واریزها",

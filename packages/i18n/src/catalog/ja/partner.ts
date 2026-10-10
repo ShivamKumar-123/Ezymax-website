@@ -7,6 +7,8 @@ const partner: NsMessages<"partner"> = {
   referralCode: "紹介コード",
   copyReferralLink: "紹介リンクをコピー",
   "toast.linkCopied": "紹介リンクをコピーしました",
+  "inactiveLink.title": "紹介リンクは初回入金後に有効になります",
+  "inactiveLink.text": "このリンクからの登録はすでに可能ですが、あなたの紹介としてカウントされるのは初回入金後の登録のみです。",
   clicks: "クリック数",
   signups: "登録数",
   firstDeposits: "初回入金",

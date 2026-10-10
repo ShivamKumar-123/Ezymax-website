@@ -23,7 +23,7 @@ const TOKENS = {
   staffFull: `s.${"f".repeat(43)}`,
   blocked: "b".repeat(43),
 };
-const USER = { id: 42, email: "arjun@example.com", first_name: "Arjun", last_name: "Mehta", name: "Arjun Mehta", kyc_status: "verified", tenant: { slug: "ezymex", name: "Ezymex" } };
+const USER = { id: 42, email: "arjun@example.com", first_name: "Arjun", last_name: "Mehta", name: "Arjun Mehta", kyc_status: "verified", referral_active: false, referral_inactive_reason: "no_deposit", tenant: { slug: "ezymex", name: "Ezymex" } };
 const VIEWER = { id: 7, label: "Accountant", username: "acc", accounts: ["50000001"], sections: ["accounts", "wallet"], expires_at: null, status: "active", last_login_at: null, created_at: "2026-09-01T00:00:00Z" };
 const SESSION = { token: TOKENS.user, expires_at: "2026-10-15T00:00:00Z" };
 
@@ -486,7 +486,10 @@ test("session actions need the bearer token; me answers for it; step-up returns 
   assert.equal(calls.findLast((c) => c.path === "/v1/auth/stepup/verify").headers.authorization, `Bearer ${TOKENS.user}`);
   const me = await viaProxy(m, "/api/mobile/auth/me", { headers: auth(TOKENS.user) }, m.auth.GET, { action: "me" });
   assert.equal(me.res.status, 200);
-  assert.equal((await me.res.json()).user.id, 42);
+  const meUser = (await me.res.json()).user;
+  assert.equal(meUser.id, 42);
+  // the app shows "Your referral link activates after your first deposit" from these
+  assert.deepEqual([meUser.referral_active, meUser.referral_inactive_reason], [false, "no_deposit"]);
   const out = await viaProxy(m, "/api/mobile/auth/logout", { method: "POST", headers: auth(TOKENS.user) }, m.auth.POST, { action: "logout" });
   assert.equal(out.res.status, 200);
   assert.equal((await out.res.json()).device, undefined, "session actions never mint a device id");

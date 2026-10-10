@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { RotateCw } from "lucide-react";
+import Link from "next/link";
+import { Hourglass, RotateCw } from "lucide-react";
 import {
   Avatar,
   Button,
@@ -16,7 +17,38 @@ import {
   type IllustrationName,
 } from "@/components/kit";
 import { useT } from "@ezymex/i18n/react";
+import { useReadOnly, useSession } from "@/components/session";
 import type { ClientStatus, PartnerApiError } from "./api";
+
+/* ------------------------------------------------------------------ */
+/* Referral link not active yet                                        */
+/* ------------------------------------------------------------------ */
+
+/** A client's referral link counts only once they have deposited (gateway referral.rs): until then people can sign up
+ *  with it, but they are not the client's referrals. Shown wherever the link or code is offered; nothing is hidden.
+ *  Not shown when the wallet couldn't be asked (`unavailable`) or the session has no referral state (view-only). */
+export function InactiveLinkNote({ className }: { className?: string }) {
+  const t = useT();
+  const me = useSession();
+  const readOnly = useReadOnly();
+  if (me.referral_inactive_reason !== "no_deposit") return null;
+  return (
+    <div role="status" data-testid="referral-inactive" className={cn("flex flex-wrap items-center gap-3 rounded-[14px] border border-warn/30 bg-warn-soft px-4 py-3 text-[13px]", className)}>
+      <Hourglass className="size-4 shrink-0 text-warn" />
+      <div className="min-w-0 flex-1 basis-[240px]">
+        <div className="font-medium text-fg">{t("partner.inactiveLink.title")}</div>
+        <div className="mt-0.5 text-[12.5px] text-fg-2">{t("partner.inactiveLink.text")}</div>
+      </div>
+      {!readOnly && (
+        <Link href="/wallet/deposit" className="shrink-0">
+          <Button size="sm" variant="ember">
+            {t("common.deposit")}
+          </Button>
+        </Link>
+      )}
+    </div>
+  );
+}
 
 /* ------------------------------------------------------------------ */
 /* Load states                                                         */

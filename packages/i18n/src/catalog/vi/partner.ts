@@ -9,6 +9,8 @@ const partner: NsMessages<"partner"> = {
   referralCode: "Mã giới thiệu",
   copyReferralLink: "Sao chép liên kết giới thiệu",
   "toast.linkCopied": "Đã sao chép liên kết giới thiệu",
+  "inactiveLink.title": "Liên kết giới thiệu của bạn sẽ được kích hoạt sau lần nạp tiền đầu tiên",
+  "inactiveLink.text": "Mọi người đã có thể đăng ký qua liên kết này, nhưng chỉ những lượt đăng ký sau lần nạp tiền đầu tiên của bạn mới được tính là người bạn giới thiệu.",
   clicks: "Lượt nhấp",
   signups: "Lượt đăng ký",
   firstDeposits: "Nạp tiền lần đầu",

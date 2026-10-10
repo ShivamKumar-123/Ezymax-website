@@ -7,6 +7,8 @@ const partner: NsMessages<"partner"> = {
   referralCode: "Empfehlungscode",
   copyReferralLink: "Empfehlungslink kopieren",
   "toast.linkCopied": "Empfehlungslink kopiert",
+  "inactiveLink.title": "Ihr Empfehlungslink wird nach Ihrer ersten Einzahlung aktiv",
+  "inactiveLink.text": "Registrierungen darüber sind schon jetzt möglich, aber nur Registrierungen nach Ihrer ersten Einzahlung zählen als Ihre Empfehlungen.",
   clicks: "Klicks",
   signups: "Registrierungen",
   firstDeposits: "Ersteinzahlungen",

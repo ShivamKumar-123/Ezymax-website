@@ -8,6 +8,8 @@ const partner: NsMessages<"partner"> = {
   referralCode: "Código de referido",
   copyReferralLink: "Copiar enlace de referido",
   "toast.linkCopied": "Enlace de referido copiado",
+  "inactiveLink.title": "Su enlace de referido se activa tras su primer depósito",
+  "inactiveLink.text": "Ya es posible registrarse con él, pero solo los registros posteriores a su primer depósito cuentan como sus referidos.",
   clicks: "Clics",
   signups: "Registros",
   firstDeposits: "Primeros depósitos",

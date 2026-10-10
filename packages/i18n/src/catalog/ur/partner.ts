@@ -7,6 +7,8 @@ const partner: NsMessages<"partner"> = {
   referralCode: "ریفرل کوڈ",
   copyReferralLink: "ریفرل لنک کاپی کریں",
   "toast.linkCopied": "ریفرل لنک کاپی ہو گیا",
+  "inactiveLink.title": "آپ کا ریفرل لنک آپ کے پہلے ڈپازٹ کے بعد فعال ہو گا",
+  "inactiveLink.text": "لوگ ابھی سے اس سے سائن اپ کر سکتے ہیں، لیکن صرف آپ کے پہلے ڈپازٹ کے بعد ہونے والے سائن اپ ہی آپ کے ریفرلز شمار ہوں گے۔",
   clicks: "کلکس",
   signups: "سائن اپس",
   firstDeposits: "پہلے ڈپازٹس",

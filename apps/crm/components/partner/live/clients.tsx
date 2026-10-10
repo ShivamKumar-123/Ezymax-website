@@ -44,6 +44,7 @@ import { tr, useT } from "@ezymex/i18n/react";
 import {
   CardEmpty,
   ClientStatusChip,
+  InactiveLinkNote,
   LoadProblem,
   MiniStat,
   PageFallback,
@@ -51,6 +52,9 @@ import {
   SkeletonGrid,
   TierChip,
 } from "./ui";
+
+/** "KL-000123": the client id partners keep when the broker masks names (the Client Area's own id format). */
+const clientId = (id: number) => `KL-${String(id).padStart(6, "0")}`;
 
 type TierF = "all" | "1" | "2" | "3";
 type StatusF = "all" | ClientStatus;
@@ -423,11 +427,12 @@ export function LivePartnerClients() {
           name={c.name}
           country={c.country}
           size={34}
-          sub={c.email ?? undefined}
+          sub={c.email ?? clientId(c.id)}
         />
       ),
       sort: (c) => c.name,
-      csv: (c) => c.name,
+      // masked (the default): initials plus the client id, never a name
+      csv: (c) => (full ? c.name : `${c.name} ${clientId(c.id)}`),
       width: "240px",
     },
     {
@@ -579,6 +584,8 @@ export function LivePartnerClients() {
         </div>
       </Reveal>
 
+      <InactiveLinkNote className="mt-4" />
+
       {!full && (
         <Reveal delay={0.04}>
           <div className="mt-4 flex items-start gap-3 rounded-[16px] border border-line bg-surface-2 px-4 py-3 text-[12.5px] text-fg-2">
@@ -599,7 +606,7 @@ export function LivePartnerClients() {
             rowKey={(c) => String(c.id)}
             onRowClick={full ? setSel : undefined}
             search={(c) =>
-              `${c.name} ${c.email ?? ""} ${c.country} ${c.campaign ?? ""}`
+              `${c.name} ${c.email ?? ""} ${clientId(c.id)} ${c.country} ${c.campaign ?? ""}`
             }
             searchPlaceholder={
               full
