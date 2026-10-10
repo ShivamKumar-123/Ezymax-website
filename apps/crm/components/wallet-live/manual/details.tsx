@@ -32,13 +32,6 @@ function MethodIcon({ m, size = 32 }: { m: PaymentMethod; size?: number }) {
   );
 }
 
-/** The method's limits, or null when it has none — brokers no longer set them, so most methods have none. */
-export function limitsText(m: PaymentMethod, t: ReturnType<typeof useT>): string | null {
-  const min = Number(m.min_amount) > 0;
-  if (m.max_amount) return t("payments.picker.limits", { min: money(m.min_amount, m.currency), max: money(m.max_amount, m.currency) });
-  return min ? t("payments.picker.minOnly", { min: money(m.min_amount, m.currency) }) : null;
-}
-
 /** Choose between several methods of the same kind. */
 export function MethodPicker({ methods, value, onChange }: { methods: PaymentMethod[]; value: number | null; onChange: (id: number) => void }) {
   const t = useT();
@@ -60,11 +53,7 @@ export function MethodPicker({ methods, value, onChange }: { methods: PaymentMet
               <MethodIcon m={m} />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[14px] font-medium">{m.name}</div>
-                <div className="truncate text-[12px] text-fg-3">
-                  {/* the separator only when a limits line follows it */}
-                  {m.kind === "crypto" ? `${m.details.token ?? ""} · ${m.details.network ?? ""}` : m.currency}
-                  {limitsText(m, t) ? ` · ${limitsText(m, t)}` : ""}
-                </div>
+                <div className="truncate text-[12px] text-fg-3">{m.kind === "crypto" ? `${m.details.token ?? ""} · ${m.details.network ?? ""}` : m.currency}</div>
               </div>
               {on && (
                 <span className="grid size-6 shrink-0 place-items-center rounded-full bg-ember text-white">
@@ -155,7 +144,6 @@ export function MethodDetails({ m }: { m: PaymentMethod }) {
           <div className={cn("grid gap-2", m.currency === "USDT" ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2")}>
             {/* a USDT method has nothing to convert */}
             {m.currency !== "USDT" && <Tile label={t("payments.card.rate")} value={<span dir="ltr">{t("payments.card.rateValue", { rate: rateText(m.rate), currency: m.currency })}</span>} />}
-            {limitsText(m, t) && <Tile label={t("payments.card.limits")} value={<span dir="ltr">{limitsText(m, t)}</span>} />}
           </div>
           {crypto && (
             <div className="flex items-start gap-2 rounded-[12px] border border-warn/30 bg-warn-soft px-3 py-2 text-[12px] text-fg-2">

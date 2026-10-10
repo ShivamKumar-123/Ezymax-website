@@ -13,7 +13,7 @@ import { useT } from "@ezymex/i18n/react";
 import { WalletError, fmt, requestId } from "../api";
 import { PayError, hasMetaMask, isMobile } from "../pay";
 import { InlineError, cleanAmount } from "../ui";
-import { cmpDec, createRequest, expectedCredit, money, rateText, requestError, uploadProof, usdt2, type ManualDeposit, type PaymentMethod } from "./api";
+import { cmpDec, createRequest, money, requestError, uploadProof, usdt2, type ManualDeposit, type PaymentMethod } from "./api";
 import { METAMASK_DOWNLOAD, metamaskDappLink, payEvm } from "./metamask";
 
 /** Amount field: like the wallet's cleanAmount but up to 6 decimals (crypto). */
@@ -96,7 +96,6 @@ export function RequestForm({ m, maxPending, onSent }: { m: PaymentMethod; maxPe
   const belowMin = shaped && cmpDec(amt, m.min_amount) < 0;
   const aboveMax = shaped && !!m.max_amount && cmpDec(amt, m.max_amount) > 0;
   const amountOk = shaped && !belowMin && !aboveMax;
-  const credit = shaped ? expectedCredit(amt, m.rate) : null;
   const amountError = !touched || !amt ? undefined : !shaped ? t("payments.form.invalidAmount") : belowMin ? t("payments.form.min", { amount: money(m.min_amount, m.currency) }) : aboveMax ? t("payments.form.max", { amount: money(m.max_amount, m.currency) }) : undefined;
   const evm = crypto ? m.evm : null;
 
@@ -181,12 +180,6 @@ export function RequestForm({ m, maxPending, onSent }: { m: PaymentMethod; maxPe
             data-testid="manual-amount"
           />
         </Field>
-        <div className="rounded-[14px] border border-line bg-surface-2 px-4 py-3" data-testid="manual-receive">
-          <div dir="ltr" className="k-num text-[18px] font-semibold">
-            {t("payments.form.receive", { amount: credit ? usdt2(credit) : "0.00" })}
-          </div>
-          <div className="mt-0.5 text-[12px] text-fg-3">{t("payments.form.receiveNote", { rate: rateText(m.rate), currency: m.currency })}</div>
-        </div>
         {evm && <MetaMaskBlock m={m} amount={amt} valid={amountOk} busy={busy === "metamask"} onPay={payMetaMask} />}
         <Field label={crypto ? t("payments.form.referenceCrypto") : t("payments.form.referenceBank")} hint={crypto ? t("payments.form.referenceCryptoHint") : t("payments.form.referenceBankHint")}>
           <Input
