@@ -39,7 +39,8 @@ pub fn new_code() -> String {
     s
 }
 
-/// True for a code in the current format.
+/// True for a code in the current format (the migration's `^EZ[2-9A-HJKMNP-Z]{6}$`).
+#[cfg(test)]
 pub fn is_new_code(code: &str) -> bool {
     code.len() == PREFIX.len() + LEN && code.starts_with(PREFIX) && code.bytes().skip(PREFIX.len()).all(|b| ALPHABET.contains(&b))
 }
