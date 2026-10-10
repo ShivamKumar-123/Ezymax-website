@@ -156,6 +156,7 @@ class _PartnerLinksScreenState extends ConsumerState<PartnerLinksScreen> {
             child: KButton(label: t('partner.links.create'), icon: LucideIcons.plus, onPressed: () => _create(code, base)),
           ),
         ],
+        if (ref.watch(meProvider)?.referralLinkInactive ?? false) ...[const SizedBox(height: 14), const PartnerInactiveLinkNote()],
         const SizedBox(height: 20),
         SizedBox(
           height: 186,

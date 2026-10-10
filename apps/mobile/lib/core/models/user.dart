@@ -37,6 +37,7 @@ class SessionUser {
     this.dateOfBirth = '',
     this.kycCaseStatus,
     this.referralCode = '',
+    this.referralInactiveReason,
     this.tenantName = 'Ezymex',
     this.viewer,
     this.idleMinutes,
@@ -59,6 +60,13 @@ class SessionUser {
   final String? kycCaseStatus;
   final bool emailVerified;
   final String referralCode;
+
+  /// Why the client's referral link doesn't count yet (`/v1/auth/me`): `no_deposit` (it activates with the first
+  /// deposit) or `unavailable` (the wallet couldn't be asked). Null when it counts, or when the answer doesn't say.
+  final String? referralInactiveReason;
+
+  /// Show "Your referral link activates after your first deposit" (the web's InactiveLinkNote).
+  bool get referralLinkInactive => referralInactiveReason == 'no_deposit';
   final DateTime createdAt;
   final String tenantName;
 
@@ -101,6 +109,7 @@ class SessionUser {
       kycCaseStatus: u['kyc_case_status'] as String?,
       emailVerified: u['email_verified'] == true,
       referralCode: '${u['referral_code'] ?? ''}',
+      referralInactiveReason: u['referral_inactive_reason'] is String ? u['referral_inactive_reason'] as String : null,
       createdAt: DateTime.tryParse('${u['created_at']}') ?? DateTime.now(),
       tenantName: u['tenant'] is Map ? '${(u['tenant'] as Map)['name'] ?? 'Ezymex'}' : 'Ezymex',
       viewer: ViewerScope.fromJson(j['viewer'] ?? u['viewer']),

@@ -11,11 +11,13 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/api/api_providers.dart';
+import '../../../core/auth/auth_controller.dart';
 import '../../../core/files.dart';
 import '../../../core/notifications/notifications.dart';
 import '../../../i18n/i18n.dart';
@@ -120,7 +122,8 @@ class PartnerPageFallback extends StatelessWidget {
       if (error != null)
         PartnerLoadProblem(error: error!, onRetry: onRetry)
       else
-        for (final h in skeleton) ...[KSkeletonCard(height: h), const SizedBox(height: 14)],
+        // short cards (the clients page's 92 pt stats) fit one line: three overflowed them while loading
+        for (final h in skeleton) ...[KSkeletonCard(height: h, lines: h < 140 ? 1 : 3), const SizedBox(height: 14)],
     ],
   );
 }
@@ -555,6 +558,78 @@ class TradeSymbolAvatar extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/* ------------------------------------------------------------------ referral link not active yet */
+
+/// The web's InactiveLinkNote: a client's referral link counts only once they have deposited (gateway referral.rs).
+/// Until then people can sign up with it, but they are not the client's referrals. Shown wherever the link or code is
+/// offered; nothing else is hidden. The texts are the web's `partner.inactiveLink.*` (English until the catalogs are
+/// re-exported); the button is `common.deposit`.
+class PartnerInactiveLinkNote extends ConsumerWidget {
+  const PartnerInactiveLinkNote({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final me = ref.watch(meProvider);
+    if (me == null || !me.referralLinkInactive) return const SizedBox.shrink();
+    final t = context.t;
+    final k = context.k;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+      decoration: BoxDecoration(
+        color: k.warnSoft,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: k.warn.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 1),
+                child: Icon(LucideIcons.hourglass, size: 16, color: k.warn),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      t.dyn('partner.inactiveLink.title', fallback: 'Your referral link activates after your first deposit'),
+                      style: context.text.callout.copyWith(color: k.fg, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      t.dyn(
+                        'partner.inactiveLink.text',
+                        fallback: 'People can already sign up with it, but only sign-ups after your first deposit count as your referrals.',
+                      ),
+                      style: context.text.footnote.copyWith(color: k.fg2),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (!me.readOnly) ...[
+            const SizedBox(height: 10),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: KButton(
+                label: t('common.deposit'),
+                icon: LucideIcons.arrowDownToLine,
+                size: KButtonSize.sm,
+                onPressed: () => context.go('/wallet/deposit'),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

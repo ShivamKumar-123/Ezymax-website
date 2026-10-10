@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/api/api_providers.dart';
+import '../../core/auth/auth_controller.dart';
 import '../../core/format/format.dart';
 import '../../i18n/i18n.dart';
 import '../../ui/ui.dart';
@@ -96,7 +97,7 @@ class _PartnerClientsScreenState extends ConsumerState<PartnerClientsScreen> {
     String? viaName(PClient c) => c.parentId == null ? null : byId[c.parentId]?.name;
     final rows = all.where((c) => (_tier == 'all' || '${c.tier}' == _tier) && (_status == 'all' || c.status == _status)).toList();
     final q = _q.trim().toLowerCase();
-    final shown = q.isEmpty ? rows : rows.where((c) => '${c.name} ${c.email ?? ''} ${c.country} ${c.campaign ?? ''}'.toLowerCase().contains(q)).toList();
+    final shown = q.isEmpty ? rows : rows.where((c) => '${c.name} ${c.email ?? ''} ${clientIdOf(c.id)} ${c.country} ${c.campaign ?? ''}'.toLowerCase().contains(q)).toList();
     final pages = math.max(1, (shown.length / _pageSize).ceil());
     final page = _page.clamp(0, pages - 1);
     final view = shown.skip(page * _pageSize).take(_pageSize).toList();
@@ -124,6 +125,7 @@ class _PartnerClientsScreenState extends ConsumerState<PartnerClientsScreen> {
             child: KButton(label: t('partner.clients.invite'), icon: LucideIcons.userPlus, onPressed: copyLink),
           ),
         ],
+        if (ref.watch(meProvider)?.referralLinkInactive ?? false) ...[const SizedBox(height: 14), const PartnerInactiveLinkNote()],
         const SizedBox(height: 20),
         Row(
           children: [
@@ -253,7 +255,8 @@ class _PartnerClientsScreenState extends ConsumerState<PartnerClientsScreen> {
                           t('common.status'),
                         ],
                         rows: [
-                          for (final c in shown) [c.name, c.tier, c.joinedAt, c.campaign ?? '', c.lotsMonth, c.earned, c.status],
+                          // masked (the default): initials plus the client id, never a name
+                          for (final c in shown) [full ? c.name : '${c.name} ${clientIdOf(c.id)}', c.tier, c.joinedAt, c.campaign ?? '', c.lotsMonth, c.earned, c.status],
                         ],
                       ),
                     ),
@@ -320,6 +323,9 @@ class _PartnerClientsScreenState extends ConsumerState<PartnerClientsScreen> {
   }
 }
 
+/// "KL-000123": the client id partners keep when the broker masks names (the web's clientId, SessionUser.clientId).
+String clientIdOf(int id) => 'KL-${id.toString().padLeft(6, '0')}';
+
 class _ClientRow extends StatelessWidget {
   const _ClientRow({required this.c, this.via, this.onTap});
   final PClient c;
@@ -332,7 +338,7 @@ class _ClientRow extends StatelessWidget {
     final k = context.k;
     final pf = PartnerFmt(t);
     final sub = [
-      ?c.email,
+      c.email ?? clientIdOf(c.id),
       if (c.tier > 1 && via != null) t('partner.clients.via', {'name': via}),
     ].join(' · ');
     final row = Padding(

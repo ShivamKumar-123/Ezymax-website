@@ -3,11 +3,15 @@
 // no payout request, so the page shows the accruing balance, the schedule, the history and a batch's details).
 import 'dart:async';
 
+import 'package:ezymex/core/models/user.dart';
+import 'package:ezymex/features/partner/partner_clients_screen.dart';
 import 'package:ezymex/features/partner/partner_commissions_screen.dart';
 import 'package:ezymex/features/partner/partner_dashboard_screen.dart';
 import 'package:ezymex/features/partner/partner_links_screen.dart';
 import 'package:ezymex/features/partner/partner_payouts_screen.dart';
+import 'package:ezymex/features/partner/widgets/partner_widgets.dart';
 import 'package:ezymex/preview/c2/partner.dart';
+import 'package:ezymex/preview/preview_data.dart';
 import 'package:ezymex/router/router.dart';
 import 'package:ezymex/ui/ui.dart';
 import 'package:flutter/cupertino.dart';
@@ -35,6 +39,7 @@ void main() {
     expect(find.byType(PartnerDashboardScreen), findsOneWidget);
     expect(find.text('Partner dashboard'), findsWidgets);
     expect(find.text('Silver'), findsWidgets);
+    expect(find.byType(PartnerInactiveLinkNote), findsNothing, reason: "the sample client's link is active");
 
     // the header's Copy referral link
     await tester.tap(find.text('Copy referral link'));
@@ -145,5 +150,39 @@ void main() {
     expect(find.text('Destination'), findsOneWidget);
     expect(find.text('Wallet · USDT'), findsOneWidget);
     await unmount(tester);
+  });
+
+  testWidgets('no deposit yet: "Your referral link activates after your first deposit" with a Deposit button', (tester) async {
+    // the gateway's /v1/auth/me says so (referral_inactive_reason); the sample client normally has an active link
+    final user = previewMe['user'] as Map;
+    user['referral_inactive_reason'] = 'no_deposit';
+    addTearDown(() => user.remove('referral_inactive_reason'));
+    final c = await pumpApp(tester, signedIn: true);
+    c.read(routerProvider).go('/partner');
+    await settle(tester);
+    expect(find.byType(PartnerInactiveLinkNote), findsOneWidget);
+    expect(find.text('Your referral link activates after your first deposit'), findsOneWidget);
+    // nothing else is hidden: the link can still be copied
+    expect(find.text('Copy referral link'), findsWidgets);
+    for (final path in ['/partner/links', '/partner/clients']) {
+      c.read(routerProvider).go(path);
+      await settle(tester);
+      expect(find.byType(PartnerInactiveLinkNote), findsOneWidget, reason: path);
+    }
+    await tester.tap(find.descendant(of: find.byType(PartnerInactiveLinkNote), matching: find.byType(KButton)));
+    await settle(tester);
+    expect(c.read(routerProvider).routerDelegate.currentConfiguration.uri.path, '/wallet/deposit');
+    await unmount(tester);
+  });
+
+  test('the session record carries the referral link state; masked clients keep their id', () {
+    SessionUser me(Object? reason) => SessionUser.fromJson({
+      'user': {...(previewMe['user'] as Map), 'referral_inactive_reason': reason},
+    });
+    expect(me('no_deposit').referralLinkInactive, isTrue);
+    expect(me('unavailable').referralLinkInactive, isFalse, reason: 'no note when the wallet could not be asked');
+    expect(me(null).referralLinkInactive, isFalse);
+    expect(me(true).referralInactiveReason, isNull);
+    expect(clientIdOf(51), 'KL-000051');
   });
 }

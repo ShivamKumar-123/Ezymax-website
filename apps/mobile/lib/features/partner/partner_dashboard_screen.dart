@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../core/auth/auth_controller.dart';
 import '../../core/format/format.dart';
 import '../../i18n/i18n.dart';
 import '../../ui/ui.dart';
@@ -116,6 +117,7 @@ class PartnerDashboardScreen extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 20),
+        if (ref.watch(meProvider)?.referralLinkInactive ?? false) ...[const PartnerInactiveLinkNote(), kGap],
         _LevelHero(d: d),
         kGap,
         _ReferralCard(d: d),
