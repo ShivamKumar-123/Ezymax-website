@@ -157,6 +157,8 @@ const dashboard = {
   "time.ago": "{time} ago",
 
   // Notifications bell / panel
+  // The dashboard's set-up prompts. Notifications themselves are in the bell, not on the dashboard.
+  "home.setUpTitle": "Get set up",
   "notifications.title": "Notifications",
   "notifications.ariaUnread": "Notifications, {count} unread",
   "notifications.markAll": "Mark all read",

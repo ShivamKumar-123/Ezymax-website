@@ -1,12 +1,10 @@
-// Notifications on the dashboard (web components/dashboard/home/notifications-panel.tsx): verification / funding
-// prompts with an action and "Later", then the latest notifications from the same inbox as the bell.
+// The set-up prompts on the dashboard (web components/dashboard/home/notifications-panel.tsx): verification /
+// funding tasks with an action and "Later". Notifications are not here: they live in the bell, and only there,
+// so the dashboard is not a second copy of the inbox.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../../../core/format/format.dart';
-import '../../../core/notifications/notifications.dart';
 import '../../../i18n/i18n.dart';
 import '../../../ui/ui.dart';
 
@@ -47,28 +45,13 @@ class NotificationsPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.t;
     final k = context.k;
-    final n = ref.watch(notificationsProvider);
     final later = ref.watch(_laterProvider);
     final shown = prompts.where((p) => !later.contains(p.id)).toList();
-    final rows = n.items.take((limit - shown.length).clamp(1, limit)).toList();
-    final f = LocaleFormat(t.locale);
-    final now = DateTime.now();
+    if (shown.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            Expanded(child: KSectionTitle(t('dashboard.notifications.title'), dot: n.unread > 0 || shown.isNotEmpty)),
-            if (n.unread > 0)
-              KTextButton(label: t('dashboard.notifications.markAll'), color: k.fg3, onPressed: ref.read(notificationsProvider.notifier).markAll),
-            KIconButton(
-              icon: LucideIcons.settings,
-              size: 38,
-              semanticLabel: t('dashboard.notifications.settings'),
-              onPressed: () => context.go('/profile/notifications'),
-            ),
-          ],
-        ),
+        Row(children: [Expanded(child: KSectionTitle(t('dashboard.home.setUpTitle')))]),
         for (var i = 0; i < shown.length; i++) ...[
           if (i > 0) const KDivider(),
           Padding(
@@ -110,37 +93,6 @@ class NotificationsPanel extends ConsumerWidget {
             ),
           ),
         ],
-        for (var i = 0; i < rows.length; i++) ...[
-          if (i > 0 || shown.isNotEmpty) const KDivider(),
-          KInfoRow(
-            icon: rows[i].icon,
-            tone: rows[i].tone,
-            title: rows[i].title,
-            subtitle: rows[i].body.isEmpty ? null : rows[i].body,
-            unread: !rows[i].read,
-            tileSize: 46,
-            trailing: Text(
-              timeAgo(t, f, rows[i].createdAt, now),
-              style: context.text.caption.copyWith(color: k.fg3, fontWeight: FontWeight.w400),
-            ),
-            onTap: rows[i].link == null ? null : () => ref.read(notificationsProvider.notifier).open(rows[i]),
-          ),
-        ],
-        if (shown.isEmpty && rows.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24),
-            child: Column(
-              children: [
-                Text(t('dashboard.notifications.emptyTitle'), style: context.text.headline.copyWith(fontSize: 14)),
-                const SizedBox(height: 4),
-                Text(
-                  t('dashboard.notifications.emptyText'),
-                  textAlign: TextAlign.center,
-                  style: context.text.footnote.copyWith(color: k.fg3),
-                ),
-              ],
-            ),
-          ),
       ],
     );
   }
