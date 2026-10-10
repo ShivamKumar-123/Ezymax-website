@@ -16,6 +16,9 @@ const desk: NsMessages<"desk"> = {
   "top.openAccount": "口座開設",
   "top.badge.cent": "セント",
   "top.badge.readOnly": "閲覧のみ",
+  "top.hideBalances": "残高を隠す",
+  "top.showBalances": "残高を表示",
+  "top.balancesHidden": "非表示",
 
   // Account switcher
   "acc.title": "取引口座",
@@ -271,6 +274,7 @@ const desk: NsMessages<"desk"> = {
   "keys.markets": "銘柄パネルの表示 / 非表示",
   "keys.trade": "取引パネルの表示 / 非表示",
   "keys.activity": "ポジションと取引状況の表示 / 非表示",
+  "keys.balances": "残高の非表示 / 表示",
 
   // First-run tour
   "tour.step": "ステップ {n} / {total}",

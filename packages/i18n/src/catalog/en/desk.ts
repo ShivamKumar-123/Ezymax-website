@@ -18,6 +18,9 @@ const desk = {
   "top.openAccount": "Open account",
   "top.badge.cent": "Cent",
   "top.badge.readOnly": "Read-only",
+  "top.hideBalances": "Hide balances",
+  "top.showBalances": "Show balances",
+  "top.balancesHidden": "Hidden",
 
   // Account switcher
   "acc.title": "Your trading accounts",
@@ -273,6 +276,7 @@ const desk = {
   "keys.markets": "Show / hide Markets",
   "keys.trade": "Show / hide the Trade panel",
   "keys.activity": "Show / hide positions and activity",
+  "keys.balances": "Hide / show balances",
 
   // First-run tour
   "tour.step": "Step {n} of {total}",

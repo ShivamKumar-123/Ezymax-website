@@ -16,6 +16,9 @@ const desk: NsMessages<"desk"> = {
   "top.openAccount": "Открыть счёт",
   "top.badge.cent": "Cent",
   "top.badge.readOnly": "Только чтение",
+  "top.hideBalances": "Скрыть балансы",
+  "top.showBalances": "Показать балансы",
+  "top.balancesHidden": "Скрыто",
 
   // Account switcher
   "acc.title": "Ваши торговые счета",
@@ -271,6 +274,7 @@ const desk: NsMessages<"desk"> = {
   "keys.markets": "Показать / скрыть «Рынки»",
   "keys.trade": "Показать / скрыть панель «Торговля»",
   "keys.activity": "Показать / скрыть позиции и активность",
+  "keys.balances": "Скрыть / показать балансы",
 
   // First-run tour
   "tour.step": "Шаг {n} из {total}",

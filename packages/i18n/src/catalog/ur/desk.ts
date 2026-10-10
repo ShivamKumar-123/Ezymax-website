@@ -16,6 +16,9 @@ const desk: NsMessages<"desk"> = {
   "top.openAccount": "اکاؤنٹ کھولیں",
   "top.badge.cent": "سینٹ",
   "top.badge.readOnly": "صرف پڑھنے کے لیے",
+  "top.hideBalances": "بیلنس چھپائیں",
+  "top.showBalances": "بیلنس دکھائیں",
+  "top.balancesHidden": "چھپا ہوا",
 
   // Account switcher
   "acc.title": "آپ کے ٹریڈنگ اکاؤنٹس",
@@ -271,6 +274,7 @@ const desk: NsMessages<"desk"> = {
   "keys.markets": "مارکیٹس دکھائیں / چھپائیں",
   "keys.trade": "ٹریڈ پینل دکھائیں / چھپائیں",
   "keys.activity": "پوزیشنز اور سرگرمی دکھائیں / چھپائیں",
+  "keys.balances": "بیلنس چھپائیں / دکھائیں",
 
   // First-run tour
   "tour.step": "{total} میں سے مرحلہ {n}",

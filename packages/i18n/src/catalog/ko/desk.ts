@@ -16,6 +16,9 @@ const desk: NsMessages<"desk"> = {
   "top.openAccount": "계좌 개설",
   "top.badge.cent": "센트",
   "top.badge.readOnly": "읽기 전용",
+  "top.hideBalances": "잔액 숨기기",
+  "top.showBalances": "잔액 보기",
+  "top.balancesHidden": "숨김",
 
   // Account switcher
   "acc.title": "내 거래 계좌",
@@ -271,6 +274,7 @@ const desk: NsMessages<"desk"> = {
   "keys.markets": "시장 패널 표시 / 숨기기",
   "keys.trade": "거래 패널 표시 / 숨기기",
   "keys.activity": "포지션 및 활동 표시 / 숨기기",
+  "keys.balances": "잔액 숨기기 / 보기",
 
   // First-run tour
   "tour.step": "{total}단계 중 {n}단계",

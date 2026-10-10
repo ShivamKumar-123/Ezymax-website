@@ -16,6 +16,9 @@ const desk: NsMessages<"desk"> = {
   "top.openAccount": "فتح حساب",
   "top.badge.cent": "سنت",
   "top.badge.readOnly": "قراءة فقط",
+  "top.hideBalances": "إخفاء الأرصدة",
+  "top.showBalances": "إظهار الأرصدة",
+  "top.balancesHidden": "مخفي",
 
   // Account switcher
   "acc.title": "حسابات التداول الخاصة بك",
@@ -271,6 +274,7 @@ const desk: NsMessages<"desk"> = {
   "keys.markets": "إظهار / إخفاء الأسواق",
   "keys.trade": "إظهار / إخفاء لوحة التداول",
   "keys.activity": "إظهار / إخفاء الصفقات والنشاط",
+  "keys.balances": "إخفاء / إظهار الأرصدة",
 
   // First-run tour
   "tour.step": "الخطوة {n} من {total}",

@@ -15,6 +15,7 @@ import { shareUi, useShareUi } from "@/lib/share";
 import { useContextMenu } from "@/components/ui/menu";
 import { Share2 } from "lucide-react";
 import { Badge, Empty, Pnl, Stepper, TButton, TInput, TSelect } from "@/components/ui/primitives";
+import { AccountMoney } from "@/components/ui/balances";
 import { useLocale, useT } from "@ezymex/i18n/react";
 import { loadOptionHistory, useOptionBook, type OptClosed } from "@/lib/options/book";
 import type { TClosed } from "@/lib/trading";
@@ -307,21 +308,30 @@ export function HistoryTab() {
                     <span className="font-sans text-fg-3">{t("toolbox.history.profit")}:</span> <span dir="ltr" className={net >= 0 ? "text-up" : "text-down"}>{accMoney(a, net)}</span>
                   </span>
                   <span>
-                    <span className="font-sans text-fg-3">{t("toolbox.history.credit")}:</span> <span dir="ltr">{accMoney(a, a.cent ? a.credit / 100 : a.credit)}</span>
+                    <span className="font-sans text-fg-3">{t("toolbox.history.credit")}:</span>{" "}
+                    <span dir="ltr">
+                      <AccountMoney>{accMoney(a, a.cent ? a.credit / 100 : a.credit)}</AccountMoney>
+                    </span>
                   </span>
                   {/* deposits / withdrawals live in the Client Area ledger; the engine history here is trades only */}
                   {!T.engine && (
                     <>
                       <span>
-                        <span className="font-sans text-fg-3">{t("toolbox.history.deposit")}:</span> <span dir="ltr">{accMoney(a, a.cent ? a.balance / 100 : a.balance)}</span>
+                        <span className="font-sans text-fg-3">{t("toolbox.history.deposit")}:</span>{" "}
+                        <span dir="ltr">
+                          <AccountMoney>{accMoney(a, a.cent ? a.balance / 100 : a.balance)}</AccountMoney>
+                        </span>
                       </span>
                       <span>
-                        <span className="font-sans text-fg-3">{t("toolbox.history.withdrawal")}:</span> 0.00
+                        <span className="font-sans text-fg-3">{t("toolbox.history.withdrawal")}:</span> <AccountMoney>0.00</AccountMoney>
                       </span>
                     </>
                   )}
                   <span>
-                    <span className="font-sans text-fg-3">{t("toolbox.history.balance")}:</span> <span dir="ltr" className="text-fg">{accMoney(a, T.balances[a.login] ?? 0)} {accCcy(a)}</span>
+                    <span className="font-sans text-fg-3">{t("toolbox.history.balance")}:</span>{" "}
+                    <span dir="ltr" className="text-fg">
+                      <AccountMoney>{accMoney(a, T.balances[a.login] ?? 0)}</AccountMoney> {accCcy(a)}
+                    </span>
                   </span>
                   {items.length > shown.length && <span className="font-sans text-fg-3">{t("toolbox.history.showingLatest", { shown: shown.length, total: items.length })}</span>}
                 </span>

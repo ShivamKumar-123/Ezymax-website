@@ -4,7 +4,7 @@ import * as React from "react";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { toast } from "@/lib/notify";
-import { ArrowUpRight, BarChart2, CandlestickChart, ChevronDown, ChevronRight, History, Languages, List, LogOut, Moon, RefreshCw, Search, Sun, UserRound, Wallet, X, Zap } from "lucide-react";
+import { ArrowUpRight, BarChart2, CandlestickChart, ChevronDown, ChevronRight, EyeOff, History, Languages, List, LogOut, Moon, RefreshCw, Search, Sun, UserRound, Wallet, X, Zap } from "lucide-react";
 import { INSTRUMENTS, getInstrument } from "@ezymex/mock";
 import { useMarketScope } from "@/lib/scope";
 import { LogoMark, PriceText, SymbolAvatar, cn, useQuote } from "@ezymex/ui";
@@ -17,6 +17,8 @@ import { LanguageMenu } from "@/components/shell/language-menu";
 import { useMarketOpen } from "@/lib/market-hours";
 import { PENDING_LABEL, TIMEFRAMES, accCcy, accMoney, fmtPrice, fmtServer, fmtVol, marginState } from "@/lib/trading";
 import { Badge, LiveMoney, MiniSwitch, Pnl, Stepper, TDialog } from "@/components/ui/primitives";
+import { AccountMoney, HideBalancesButton } from "@/components/ui/balances";
+import { setBalancesHidden, useBalancesHidden } from "@/lib/hide-balances";
 import { ChartView } from "@/components/chart/chart-view";
 import { TvChart } from "@/components/chart/tv-chart";
 import { useTvStatus } from "@/lib/tv/loader";
@@ -99,10 +101,19 @@ export function MobileTerminal() {
             {a.group} · {a.mode} · {a.server}
           </div>
         </button>
-        <div className="ml-auto text-right leading-tight">
-          <div className="font-mono text-[13px] font-semibold"><LiveMoney value={m.equity} format={(v) => accMoney(a, v)} /></div>
+        {/* the eye hides the equity and P&L here and every account amount in the tabs (lib/hide-balances.ts) */}
+        <HideBalancesButton shortcut={false} className="ml-auto" />
+        <div className="text-right leading-tight">
+          <div className="font-mono text-[13px] font-semibold">
+            <AccountMoney>
+              <LiveMoney value={m.equity} format={(v) => accMoney(a, v)} />
+            </AccountMoney>
+          </div>
           <div className="font-mono text-[10.5px]">
-            <Pnl value={m.floating} text={accMoney(a, m.floating, { signed: true })} format={(v) => accMoney(a, v, { signed: true })} /> <span className="text-fg-3">{accCcy(a)}</span>
+            <AccountMoney>
+              <Pnl value={m.floating} text={accMoney(a, m.floating, { signed: true })} format={(v) => accMoney(a, v, { signed: true })} />
+            </AccountMoney>{" "}
+            <span className="text-fg-3">{accCcy(a)}</span>
           </div>
         </div>
         <NotificationBell size="sm" className="-mr-1" />
@@ -254,6 +265,8 @@ function MTrade() {
   const m = useMetrics();
   const a = T.account;
   const [depth, setDepth] = React.useState(false);
+  // hidden balances: every amount is masked and loses its profit / loss colour; the margin level stays
+  const hidden = useBalancesHidden();
   return (
     <div className="t-scroll h-full overflow-y-auto">
       <div className="grid grid-cols-3 gap-px border-b border-line bg-line">
@@ -267,7 +280,9 @@ function MTrade() {
         ].map(([k, label, v]) => (
           <div key={k} className="bg-panel px-3 py-2">
             <div className="text-[10px] uppercase tracking-[0.06em] text-fg-3">{label}</div>
-            <div className={cn("k-num font-mono text-[12.5px]", k === "pnl" && (m.floating >= 0 ? "text-up" : "text-down"), k === "level" && { ok: "", low: "text-warn", call: "text-down", stopout: "text-down" }[marginState(m.level, a)], k === "free" && m.free < 0 && "text-down")}>{v}</div>
+            <div className={cn("k-num font-mono text-[12.5px]", !hidden && k === "pnl" && (m.floating >= 0 ? "text-up" : "text-down"), k === "level" && { ok: "", low: "text-warn", call: "text-down", stopout: "text-down" }[marginState(m.level, a)], !hidden && k === "free" && m.free < 0 && "text-down")}>
+              {k === "level" ? v : <AccountMoney>{v}</AccountMoney>}
+            </div>
           </div>
         ))}
       </div>
@@ -427,6 +442,7 @@ function MAccount() {
   const { resolvedTheme, setTheme } = useTheme();
   // one-click trading places CFD orders: CFD accounts only
   const options = useTradeMode() === "options";
+  const hidden = useBalancesHidden();
   return (
     <div className="t-scroll h-full space-y-3 overflow-y-auto p-3">
       <div className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-fg-3">{t("common.accounts")}</div>
@@ -443,6 +459,9 @@ function MAccount() {
         )}
         <Row label={t("trader.mobile.soundOnFills")}>
           <MiniSwitch checked={T.ws.sound} onChange={(v) => T.setWs({ sound: v })} label={t("trader.mobile.sound")} />
+        </Row>
+        <Row label={t("desk.top.hideBalances")} icon={<EyeOff />}>
+          <MiniSwitch checked={hidden} onChange={setBalancesHidden} label={t("desk.top.hideBalances")} />
         </Row>
         <Row label={t("trader.mobile.darkTheme")} icon={resolvedTheme === "light" ? <Sun /> : <Moon />}>
           <MiniSwitch checked={resolvedTheme !== "light"} onChange={(v) => setTheme(v ? "dark" : "light")} label={t("trader.menu.theme")} />
@@ -515,7 +534,7 @@ function MAccountRow({ login }: { login: string }) {
         </div>
       </div>
       <div className="text-right font-mono text-[12px]">
-        {accMoney(a, m.equity)} <span className="text-[10px] text-fg-3">{accCcy(a)}</span>
+        <AccountMoney>{accMoney(a, m.equity)}</AccountMoney> <span className="text-[10px] text-fg-3">{accCcy(a)}</span>
       </div>
     </button>
   );

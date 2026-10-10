@@ -7,6 +7,7 @@ import { openActivity, showSide, toggleFullChart, toggleFullscreen, toggleOneCli
 import { openIndicatorList } from "@/components/chart/indicators/state";
 import { deleteSelectedDrawing, redoDrawings, undoDrawings } from "@/components/chart/drawings";
 import { getTradeMode } from "@/lib/options/mode";
+import { toggleBalancesHidden } from "@/lib/hide-balances";
 
 /**
  * Global terminal keyboard shortcuts (MT5-compatible where possible). On an Options account the CFD chart's keys
@@ -105,6 +106,12 @@ export function useHotkeys() {
       if (e.key === "F" && e.shiftKey && !mod && !e.altKey) {
         e.preventDefault();
         toggleFullChart(t);
+        return;
+      }
+      if (e.key === "H" && e.shiftKey && !mod && !e.altKey) {
+        // hide / show the account amounts (lib/hide-balances.ts)
+        e.preventDefault();
+        toggleBalancesHidden();
         return;
       }
       if (e.key === "Escape" && t.ui.fullChart && t.drawTool === "cursor" && !t.selectedDrawing && !document.querySelector("[role=dialog]")) {

@@ -15,6 +15,7 @@ import { engineApi, type MamInfo } from "@/lib/engine/client";
 import { fmtServer } from "@/lib/trading";
 import { Td, Th } from "@/components/ui/panel";
 import { Badge, Empty, KV, TInput } from "@/components/ui/primitives";
+import { AccountMoney } from "@/components/ui/balances";
 
 const METHOD: Record<string, string> = { equity: "Equity share", balance: "Balance share", multiplier: "Multiplier", percent: "Percent" };
 const lots = (v: number | null | undefined) => (typeof v === "number" ? v.toFixed(2) : "—");
@@ -95,7 +96,7 @@ export function MamTab() {
         <div className="mt-2">
           <KV k="Allocation" v={METHOD[info.manager?.method ?? ""] ?? "—"} />
           <KV k="Linked accounts" v={<span data-testid="terminal-mam-accounts">{info.accounts ?? 0}</span>} />
-          <KV k="Equity managed" v={usd(info.equity)} />
+          <KV k="Equity managed" v={<AccountMoney>{usd(info.equity)}</AccountMoney>} />
           <KV k="Fees" v={`${info.manager?.perfFeePct ?? 0}%${info.manager?.mgmtFeePct ? ` + ${info.manager.mgmtFeePct}%/y` : ""}`} />
         </div>
         <p className="mt-2 text-[11.5px] leading-relaxed text-fg-3">Every opening trade on this account is a block: it is allocated to the linked accounts, rounded down to the lot step.</p>
@@ -132,7 +133,7 @@ export function MamTab() {
                 <tr key={r.linkId} className="hover:bg-surface-2/70">
                   <Td className="ps-3 font-mono">{r.account}</Td>
                   <Td right mono className="text-fg-2">
-                    {usd(info.manager?.method === "balance" ? r.balance : r.equity)}
+                    <AccountMoney>{usd(info.manager?.method === "balance" ? r.balance : r.equity)}</AccountMoney>
                   </Td>
                   <Td right mono className="text-fg-2">
                     {info.manager?.method === "multiplier" ? `${r.value}×` : info.manager?.method === "percent" ? `${r.value}%` : `${(r.basis * 100).toFixed(2)}%`}

@@ -11,6 +11,7 @@ import type { JournalLine, OrderRequest } from "../store";
 import { engineApi, type OrderBody, type Result } from "./client";
 import { rejectReason, type EngineErr, type EngineTradingAccount } from "./map";
 import { productMismatchText } from "../options/mode";
+import { maskMoney } from "../hide-balances";
 
 export interface EngineDeps {
   login: () => string;
@@ -279,7 +280,8 @@ export function engineActions(d: EngineDeps) {
     const a = d.account();
     const bal = a?.cent ? res.balance / 100 : res.balance;
     d.log("Account", `'${login}': demo balance refilled to ${a ? `${accMoney(a, bal)} ${accCcy(a)}` : bal}`);
-    toast.success(tr("order.toast.demoRefilled"), { description: a ? `${accMoney(a, bal)} ${accCcy(a)}` : undefined });
+    // the new balance pops up on screen: masked while the trader hides balances (the journal keeps the record)
+    toast.success(tr("order.toast.demoRefilled"), { description: a ? `${maskMoney(accMoney(a, bal))} ${accCcy(a)}` : undefined });
   }
 
   return { placeOrder, closePosition, modifyPosition, closeBy, cancelPending, modifyPending, bulkClose, cancelAllPendings, refillDemo, fail };

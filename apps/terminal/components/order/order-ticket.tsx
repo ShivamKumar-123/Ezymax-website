@@ -19,6 +19,7 @@ import { accCcy, accMoney, fmtPrice, fmtVol, marginRequired, pendingLabelKey, pi
 import { TInput, TSelect } from "@/components/ui/primitives";
 import { Button, FieldRow, HelpTip, InlineNumber, QuickStrip, Segmented, SummaryRow, Switch, Tip } from "@/components/ui/kit";
 import { DropMenu } from "@/components/ui/menu";
+import { AccountMoney } from "@/components/ui/balances";
 import { GuestActions } from "@/components/shell/guest";
 import { useT } from "@ezymex/i18n/react";
 
@@ -538,7 +539,8 @@ function SpreadChip({ symbol }: { symbol: string }) {
   );
 }
 
-/** Margin, pip value, size and the free margin left after the trade (the volume's consequences in plain words). */
+/** Margin, pip value, size and the free margin left after the trade (the volume's consequences in plain words). Hidden
+ *  balances mask the free margin and the share of it the margin takes (which would give it away). */
 function LiveSummary({ symbol, volume, unitLabel }: { symbol: string; volume: number; unitLabel: string }) {
   const T = useTerminal();
   const t = useT();
@@ -557,7 +559,9 @@ function LiveSummary({ symbol, volume, unitLabel }: { symbol: string; volume: nu
         <span className={short ? "text-down" : undefined}>
           {accMoney(acc, margin)} {ccy}
         </span>
-        <span className="ms-1.5 text-fg-3">· {Number.isFinite(pct) ? `${pct < 0.1 ? pct.toFixed(2) : pct.toFixed(1)}%` : "—"}</span>
+        <span className="ms-1.5 text-fg-3">
+          · <AccountMoney>{Number.isFinite(pct) ? `${pct < 0.1 ? pct.toFixed(2) : pct.toFixed(1)}%` : "—"}</AccountMoney>
+        </span>
       </SummaryRow>
       <SummaryRow label={t("desk.op.summary.pip")} help={<HelpTip title={t("desk.g.pip.t")} text={t("desk.g.pip")} />}>
         {accMoney(acc, pipV)} {ccy}
@@ -567,7 +571,7 @@ function LiveSummary({ symbol, volume, unitLabel }: { symbol: string; volume: nu
       </SummaryRow>
       <SummaryRow label={t("desk.op.summary.free")}>
         <span className={short ? "text-down" : undefined}>
-          {accMoney(acc, m.free - margin)} {ccy}
+          <AccountMoney>{accMoney(acc, m.free - margin)}</AccountMoney> {ccy}
         </span>
       </SummaryRow>
       <SummaryRow label={t("desk.sw.title")} help={<HelpTip title={t("desk.g.swap.t")} text={t("desk.g.swap")} />}>

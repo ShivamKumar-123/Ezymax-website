@@ -16,6 +16,9 @@ const desk: NsMessages<"desk"> = {
   "top.openAccount": "开立账户",
   "top.badge.cent": "美分",
   "top.badge.readOnly": "只读",
+  "top.hideBalances": "隐藏余额",
+  "top.showBalances": "显示余额",
+  "top.balancesHidden": "已隐藏",
 
   // Account switcher
   "acc.title": "您的交易账户",
@@ -271,6 +274,7 @@ const desk: NsMessages<"desk"> = {
   "keys.markets": "显示 / 隐藏市场",
   "keys.trade": "显示 / 隐藏交易面板",
   "keys.activity": "显示 / 隐藏持仓与动态",
+  "keys.balances": "隐藏 / 显示余额",
 
   // First-run tour
   "tour.step": "第 {n} 步，共 {total} 步",

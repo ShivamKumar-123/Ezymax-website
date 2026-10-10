@@ -16,6 +16,9 @@ const desk: NsMessages<"desk"> = {
   "top.openAccount": "கணக்கைத் திற",
   "top.badge.cent": "சென்ட்",
   "top.badge.readOnly": "படிக்க மட்டும்",
+  "top.hideBalances": "இருப்புகளை மறை",
+  "top.showBalances": "இருப்புகளைக் காட்டு",
+  "top.balancesHidden": "மறைக்கப்பட்டது",
 
   // Account switcher
   "acc.title": "உங்கள் டிரேடிங் கணக்குகள்",
@@ -271,6 +274,7 @@ const desk: NsMessages<"desk"> = {
   "keys.markets": "சந்தைகளைக் காட்டு / மறை",
   "keys.trade": "டிரேட் பேனலைக் காட்டு / மறை",
   "keys.activity": "பொசிஷன்கள், செயல்பாட்டைக் காட்டு / மறை",
+  "keys.balances": "இருப்புகளை மறை / காட்டு",
 
   // First-run tour
   "tour.step": "படி {n} / {total}",

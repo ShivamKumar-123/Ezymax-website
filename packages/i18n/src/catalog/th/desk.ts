@@ -16,6 +16,9 @@ const desk: NsMessages<"desk"> = {
   "top.openAccount": "เปิดบัญชี",
   "top.badge.cent": "Cent",
   "top.badge.readOnly": "อ่านอย่างเดียว",
+  "top.hideBalances": "ซ่อนยอดเงิน",
+  "top.showBalances": "แสดงยอดเงิน",
+  "top.balancesHidden": "ซ่อนอยู่",
 
   // Account switcher
   "acc.title": "บัญชีเทรดของคุณ",
@@ -271,6 +274,7 @@ const desk: NsMessages<"desk"> = {
   "keys.markets": "แสดง / ซ่อนตลาด",
   "keys.trade": "แสดง / ซ่อนแผงเทรด",
   "keys.activity": "แสดง / ซ่อนสถานะและกิจกรรม",
+  "keys.balances": "ซ่อน / แสดงยอดเงิน",
 
   // First-run tour
   "tour.step": "ขั้นตอนที่ {n} จาก {total}",

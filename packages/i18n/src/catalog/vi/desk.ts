@@ -16,6 +16,9 @@ const desk: NsMessages<"desk"> = {
   "top.openAccount": "Mở tài khoản",
   "top.badge.cent": "Cent",
   "top.badge.readOnly": "Chỉ xem",
+  "top.hideBalances": "Ẩn số dư",
+  "top.showBalances": "Hiện số dư",
+  "top.balancesHidden": "Đã ẩn",
 
   // Account switcher
   "acc.title": "Tài khoản giao dịch của bạn",
@@ -271,6 +274,7 @@ const desk: NsMessages<"desk"> = {
   "keys.markets": "Hiện / ẩn Thị trường",
   "keys.trade": "Hiện / ẩn bảng Giao dịch",
   "keys.activity": "Hiện / ẩn vị thế và hoạt động",
+  "keys.balances": "Ẩn / hiện số dư",
 
   // First-run tour
   "tour.step": "Bước {n}/{total}",

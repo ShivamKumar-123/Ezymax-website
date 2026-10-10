@@ -16,6 +16,9 @@ const desk: NsMessages<"desk"> = {
   "top.openAccount": "Fungua akaunti",
   "top.badge.cent": "Cent",
   "top.badge.readOnly": "Kusoma tu",
+  "top.hideBalances": "Ficha salio",
+  "top.showBalances": "Onyesha salio",
+  "top.balancesHidden": "Imefichwa",
 
   // Account switcher
   "acc.title": "Akaunti zako za biashara",
@@ -271,6 +274,7 @@ const desk: NsMessages<"desk"> = {
   "keys.markets": "Onyesha / ficha Masoko",
   "keys.trade": "Onyesha / ficha paneli ya Biashara",
   "keys.activity": "Onyesha / ficha nafasi na shughuli",
+  "keys.balances": "Ficha / onyesha salio",
 
   // First-run tour
   "tour.step": "Hatua {n} kati ya {total}",

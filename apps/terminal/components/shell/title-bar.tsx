@@ -1,10 +1,10 @@
 "use client";
 
 // Top bar of Ezymex Trader on desktop (docs/TERMINAL-DESIGN.md §2.2): ☰ · brand · search (⌘K) · account switcher
-// with equity · Deposit / Top up demo · notifications · profile. The ☰ menu (MT5 web style) holds the accounts, chart
-// settings and one-click trading (CFD accounts), theme, language, shortcuts and help; every command is also in ⌘K.
-// CFD or Options is the account's product (its badge here), not a switch: an Options account opens the options
-// workspace.
+// with equity · hide balances (eye) · Deposit / Top up demo · notifications · profile. The ☰ menu (MT5 web style)
+// holds the accounts, chart settings and one-click trading (CFD accounts), theme, language, shortcuts and help; every
+// command is also in ⌘K. CFD or Options is the account's product (its badge here), not a switch: an Options account
+// opens the options workspace.
 import * as React from "react";
 import { ArrowUpRight, ChevronDown, LogIn, LogOut, Menu, RefreshCw, Search, UserPlus, UserRound, Wallet } from "lucide-react";
 import { ME } from "@ezymex/mock";
@@ -16,6 +16,7 @@ import { productOf } from "@/lib/options/mode";
 import { DropMenu } from "@/components/ui/menu";
 import { Badge, LiveMoney } from "@/components/ui/primitives";
 import { Button, IconButton, Tip } from "@/components/ui/kit";
+import { AccountMoney, HideBalancesButton } from "@/components/ui/balances";
 import { Kbd } from "@/components/dialogs/kbd";
 import { CLIENT_AREA, LOGIN_URL, REGISTER_URL } from "@/lib/guest";
 import { useModule } from "@/lib/features";
@@ -73,7 +74,9 @@ function AccountRow({ login, active, onPick }: { login: string; active: boolean;
       </span>
       <span className="text-end">
         <span className="block font-mono text-[13px] text-fg">
-          <LiveMoney value={m.equity} format={(v) => accMoney(a, v)} />
+          <AccountMoney>
+            <LiveMoney value={m.equity} format={(v) => accMoney(a, v)} />
+          </AccountMoney>
         </span>
         <span className="block text-[11px] text-fg-3">{t("trader.account.equity", { ccy: accCcy(a) })}</span>
       </span>
@@ -106,7 +109,10 @@ function AccountSwitcher() {
           <span className="hidden items-center gap-1.5 min-[1180px]:flex">
             <Wallet className="size-3.5 text-fg-3" />
             <span className="font-mono text-[13px] font-medium text-fg">
-              <LiveMoney value={m.equity} format={(v) => `${accMoney(a, v)} ${accCcy(a)}`} />
+              <AccountMoney>
+                <LiveMoney value={m.equity} format={(v) => accMoney(a, v)} />
+              </AccountMoney>{" "}
+              {accCcy(a)}
             </span>
           </span>
           <ChevronDown className={cn("size-3.5 shrink-0 text-fg-3 transition-transform", open && "rotate-180")} />
@@ -123,7 +129,7 @@ function AccountSwitcher() {
             <div className="text-end">
               <div className="text-[11.5px] text-fg-3">{t("desk.top.balance")}</div>
               <div className="font-mono text-[13px] text-fg">
-                {accMoney(a, m.balance)} {accCcy(a)}
+                <AccountMoney>{accMoney(a, m.balance)}</AccountMoney> {accCcy(a)}
               </div>
             </div>
           </div>
@@ -290,6 +296,7 @@ export function TitleBar() {
         ) : (
           <>
             <AccountSwitcher />
+            <HideBalancesButton size="lg" />
             <FundButton />
           </>
         )}

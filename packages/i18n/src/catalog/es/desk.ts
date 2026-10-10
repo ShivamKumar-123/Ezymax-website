@@ -16,6 +16,9 @@ const desk: NsMessages<"desk"> = {
   "top.openAccount": "Abrir cuenta",
   "top.badge.cent": "Cent",
   "top.badge.readOnly": "Solo lectura",
+  "top.hideBalances": "Ocultar saldos",
+  "top.showBalances": "Mostrar saldos",
+  "top.balancesHidden": "Oculto",
 
   // Selector de cuenta
   "acc.title": "Sus cuentas de trading",
@@ -271,6 +274,7 @@ const desk: NsMessages<"desk"> = {
   "keys.markets": "Mostrar / ocultar Mercados",
   "keys.trade": "Mostrar / ocultar el panel Operar",
   "keys.activity": "Mostrar / ocultar posiciones y actividad",
+  "keys.balances": "Ocultar / mostrar saldos",
 
   // Recorrido de bienvenida
   "tour.step": "Paso {n} de {total}",

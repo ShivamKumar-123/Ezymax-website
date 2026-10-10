@@ -16,6 +16,7 @@ import {
   CircleHelp,
   Columns2,
   Expand,
+  EyeOff,
   Grid2x2,
   Maximize2,
   PanelBottom,
@@ -57,6 +58,8 @@ import type { MenuItem } from "@/components/ui/menu";
 import { askConfirm } from "@/components/dialogs/confirm";
 import { useModule, usePageOn } from "@/lib/features";
 import { getTradeMode, productOf, useTradeMode } from "@/lib/options/mode";
+import { toggleBalancesHidden, useBalancesHidden } from "@/lib/hide-balances";
+import { HIDE_BALANCES_KEYS } from "@/components/ui/balances";
 
 export function toggleFullscreen() {
   try {
@@ -195,6 +198,7 @@ export function useMainMenuItems(): MenuItem[] {
   const layout = useLayoutItems();
   const pageOn = usePageOn();
   const options = useTradeMode() === "options";
+  const hidden = useBalancesHidden();
   const tab = T.activeTab;
   const ro = T.readOnly || T.guest;
   // TradingView charts: chart type and indicators are the library's (its templates live in its header)
@@ -233,6 +237,8 @@ export function useMainMenuItems(): MenuItem[] {
     { label: resolvedTheme === "light" ? t("desk.menu.darkTheme") : t("desk.menu.lightTheme"), icon: resolvedTheme === "light" ? <Moon /> : <Sun />, onSelect: () => setTheme(resolvedTheme === "light" ? "dark" : "light") },
     { label: t("desk.set.language"), icon: <Languages />, hint: lang.info.name, items: LOCALES.map((l) => ({ label: l.name, icon: <Flag country={l.flag} className="size-3.5" />, hint: l.code === "en" ? undefined : l.english, checked: lang.locale === l.code, onSelect: () => void lang.setLocale(l.code) })) },
     { label: t("desk.set.sounds"), icon: <Volume2 />, checked: T.ws.sound, onSelect: () => (T.setWs({ sound: !T.ws.sound }), toast(T.ws.sound ? t("trader.toast.soundsOff") : t("trader.toast.soundsOn"))) },
+    // masks the account amounts (balance, equity, P&L, margin…) on this device: lib/hide-balances.ts
+    ...(T.guest ? [] : [{ label: t("desk.top.hideBalances"), icon: <EyeOff />, hint: HIDE_BALANCES_KEYS, checked: hidden, keepOpen: true, onSelect: toggleBalancesHidden } as MenuItem]),
     // slippage of CFD market orders
     ...(T.guest || options
       ? []
@@ -276,6 +282,7 @@ export function useCommands(): Command[] {
   const { resolvedTheme, setTheme } = useTheme();
   // CFD or options: the active account's product (lib/options/mode.ts), not a choice
   const options = useTradeMode() === "options";
+  const hidden = useBalancesHidden();
   // what the broker switched off: its toolbox tabs and Client Area links aren't offered
   const pageOn = usePageOn();
   const tabOn: Partial<Record<ToolboxTab, boolean>> = { news: useModule("news"), calendar: useModule("calendar"), ai: useModule("ai_assistant") };
@@ -358,6 +365,7 @@ export function useCommands(): Command[] {
   add({ id: "full", group: "view", label: t("desk.set.fullScreen"), hint: "F11", icon: <Expand />, keywords: "fullscreen full screen", run: toggleFullscreen });
   add({ id: "reset", group: "view", label: t("desk.set.reset"), keywords: "reset workspace default", run: () => T.resetWorkspace() });
   add({ id: "sounds", group: "view", label: t("desk.set.sounds"), icon: <Volume2 />, keywords: "sound audio beep", checked: T.ws.sound, run: () => T.setWs({ sound: !T.ws.sound }) });
+  if (!T.guest) add({ id: "hide-balances", group: "view", label: t("desk.top.hideBalances"), hint: HIDE_BALANCES_KEYS, icon: <EyeOff />, keywords: "hide show balances balance equity margin money amounts privacy mask", checked: hidden, run: toggleBalancesHidden });
 
   // account
   if (T.guest) {

@@ -24,6 +24,7 @@ import { errText, needsOnboarding, optionErrorText, reasonCode } from "@/lib/opt
 import { toTick } from "@/lib/options/normalize";
 import { getOpt, opt, useOpt, useSeriesQuote, type Ticket, type TicketLeg } from "@/lib/options-store";
 import type { BookOrderRequest, BookOrderResult, BookPreview, BookTif } from "@/lib/options/types";
+import { AccountMoney } from "@/components/ui/balances";
 import { ErrorNote, Seg } from "./bits";
 import { OrderStatusChip, qty, useSeriesUnits, type SeriesUnits } from "./book-bits";
 import { expiryLabel, px, usd } from "./format";
@@ -170,7 +171,7 @@ function BookPreviewCard({ state, req, units }: { state: PreviewState; req: Book
             <Line k={t("trader.opt.bt.pv.reserve")} v={`${usd(p.reserve)} USD`} sub={t("trader.opt.bt.pv.reserveSub")} />
           </>
         )}
-        {p.freeMarginAfter !== undefined && <Line k={t("trader.opt.preview.freeMarginAfter")} v={usd(p.freeMarginAfter)} tone={p.freeMarginAfter < 0 ? "down" : undefined} />}
+        {p.freeMarginAfter !== undefined && <Line k={t("trader.opt.preview.freeMarginAfter")} v={<AccountMoney>{usd(p.freeMarginAfter)}</AccountMoney>} tone={p.freeMarginAfter < 0 ? "down" : undefined} />}
       </div>
       {reasons.map((r, i) => (
         <ErrorNote key={i} code={reasonCode(r)} message={typeof r === "string" ? undefined : r.message} />

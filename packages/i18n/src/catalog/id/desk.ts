@@ -16,6 +16,9 @@ const desk: NsMessages<"desk"> = {
   "top.openAccount": "Buka akun",
   "top.badge.cent": "Cent",
   "top.badge.readOnly": "Hanya baca",
+  "top.hideBalances": "Sembunyikan saldo",
+  "top.showBalances": "Tampilkan saldo",
+  "top.balancesHidden": "Disembunyikan",
 
   // Account switcher
   "acc.title": "Akun trading Anda",
@@ -271,6 +274,7 @@ const desk: NsMessages<"desk"> = {
   "keys.markets": "Tampilkan / sembunyikan Pasar",
   "keys.trade": "Tampilkan / sembunyikan panel Trade",
   "keys.activity": "Tampilkan / sembunyikan posisi dan aktivitas",
+  "keys.balances": "Sembunyikan / tampilkan saldo",
 
   // First-run tour
   "tour.step": "Langkah {n} dari {total}",

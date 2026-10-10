@@ -16,6 +16,9 @@ const desk: NsMessages<"desk"> = {
   "top.openAccount": "Hesap aç",
   "top.badge.cent": "Cent",
   "top.badge.readOnly": "Salt okunur",
+  "top.hideBalances": "Bakiyeleri gizle",
+  "top.showBalances": "Bakiyeleri göster",
+  "top.balancesHidden": "Gizli",
 
   // Account switcher
   "acc.title": "İşlem hesaplarınız",
@@ -271,6 +274,7 @@ const desk: NsMessages<"desk"> = {
   "keys.markets": "Piyasalar panelini göster / gizle",
   "keys.trade": "İşlem panelini göster / gizle",
   "keys.activity": "Pozisyonları ve hareketleri göster / gizle",
+  "keys.balances": "Bakiyeleri gizle / göster",
 
   // First-run tour
   "tour.step": "Adım {n} / {total}",

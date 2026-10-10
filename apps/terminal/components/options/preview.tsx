@@ -18,6 +18,7 @@ import { estimatePreview, type EstimateLeg } from "@/lib/options/math";
 import { getOpt, opt, quoteOf, useOpt } from "@/lib/options-store";
 import { reasonCode, reasonText } from "@/lib/options/errors";
 import type { BarrierSpec, LegInput, OptionChain, OptionRight, Preview, Side } from "@/lib/options/types";
+import { AccountMoney } from "@/components/ui/balances";
 import { ErrorNote } from "./bits";
 import { greek, pips, px, usd, usdSigned } from "./format";
 import { isMarketOpen } from "@ezymex/mock";
@@ -158,9 +159,10 @@ export function PreviewSummary({ state, digits, pipsOf, className, showGreeks = 
       <Line k={t("trader.opt.preview.maxLoss")} v={p.maxLoss === null ? unlimited : usd(p.maxLoss)} tone="down" />
       <Line k={t("trader.opt.preview.breakeven", { count: p.breakevens.length })} v={p.breakevens.length ? p.breakevens.map((b) => px(b, digits)).join(" · ") : "—"} />
       <div className="my-1 border-t border-line/70" />
-      <Line k={t("trader.opt.preview.margin")} v={`${accMoney(acc, p.marginBefore)} → ${accMoney(acc, p.marginAfter)}`} tone={p.marginAfter > p.marginBefore ? "warn" : undefined} />
-      <Line k={t("trader.opt.preview.freeMarginAfter")} v={accMoney(acc, p.freeMarginAfter)} tone={p.freeMarginAfter < 0 ? "down" : undefined} />
-      <Line k={t("trader.opt.preview.cashAfter")} v={accMoney(acc, p.cashAfter)} tone={p.cashAfter < 0 ? "down" : undefined} />
+      {/* the account's margin, free margin and cash: masked while balances are hidden */}
+      <Line k={t("trader.opt.preview.margin")} v={<AccountMoney>{`${accMoney(acc, p.marginBefore)} → ${accMoney(acc, p.marginAfter)}`}</AccountMoney>} tone={p.marginAfter > p.marginBefore ? "warn" : undefined} />
+      <Line k={t("trader.opt.preview.freeMarginAfter")} v={<AccountMoney>{accMoney(acc, p.freeMarginAfter)}</AccountMoney>} tone={p.freeMarginAfter < 0 ? "down" : undefined} />
+      <Line k={t("trader.opt.preview.cashAfter")} v={<AccountMoney>{accMoney(acc, p.cashAfter)}</AccountMoney>} tone={p.cashAfter < 0 ? "down" : undefined} />
       {showGreeks && (
         <div className="mt-1.5 grid grid-cols-4 gap-1 text-center">
           {([

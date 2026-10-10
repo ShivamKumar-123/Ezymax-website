@@ -2,7 +2,8 @@
 
 // Account health strip (docs/TERMINAL-DESIGN.md §2.2): balance, equity, floating P&L, margin, free margin and margin
 // level with a safe / low / margin call / stop out meter, each with a plain-language (?) explanation. One slim line at
-// the foot of the positions card; it stays on screen when the card is collapsed.
+// the foot of the positions card; it stays on screen when the card is collapsed. The eye at its start hides the amounts
+// (lib/hide-balances.ts); the margin level stays.
 import * as React from "react";
 import { cn } from "@ezymex/ui";
 import { useT } from "@ezymex/i18n/react";
@@ -10,6 +11,7 @@ import { useMetrics, useTerminal } from "@/lib/store";
 import { accCcy, accMoney, marginState } from "@/lib/trading";
 import { LiveMoney, Pnl } from "@/components/ui/primitives";
 import { HelpTip, Tip } from "@/components/ui/kit";
+import { AccountMoney, HideBalancesButton } from "@/components/ui/balances";
 
 type Health = "idle" | "ok" | "low" | "call" | "stopout";
 
@@ -63,25 +65,32 @@ function Strip({ right, className }: { right?: React.ReactNode; className?: stri
   const tone = TONE[h];
   const money = (v: number) => accMoney(a, v);
   return (
-    <div data-tour="health" className={cn("@container flex h-8 shrink-0 items-center gap-x-4 overflow-hidden px-3", className)} role="group" aria-label={t("desk.ah.title")}>
+    <div data-tour="health" className={cn("@container flex h-8 shrink-0 items-center gap-x-4 overflow-hidden ps-1.5 pe-3", className)} role="group" aria-label={t("desk.ah.title")}>
+      <HideBalancesButton size="sm" tipSide="top" className="-me-2.5" />
       <Item label={t("desk.ah.balance")} helpTitle={t("desk.g.balance.t")} help={t("desk.g.balance")}>
-        {money(m.balance)} <span className="text-fg-3">{ccy}</span>
+        <AccountMoney>{money(m.balance)}</AccountMoney> <span className="text-fg-3">{ccy}</span>
       </Item>
       <Item label={t("desk.ah.equity")} helpTitle={t("desk.g.equity.t")} help={t("desk.g.equity")}>
-        <LiveMoney value={m.equity} format={money} />
+        <AccountMoney>
+          <LiveMoney value={m.equity} format={money} />
+        </AccountMoney>
       </Item>
       <Item label={t("desk.ah.pnl")} helpTitle={t("desk.g.pnl.t")} help={t("desk.g.pnl")}>
-        <Pnl value={m.floating} text={accMoney(a, m.floating, { signed: true })} format={(v) => accMoney(a, v, { signed: true })} />
+        <AccountMoney>
+          <Pnl value={m.floating} text={accMoney(a, m.floating, { signed: true })} format={(v) => accMoney(a, v, { signed: true })} />
+        </AccountMoney>
       </Item>
       <Item label={t("desk.ah.margin")} helpTitle={t("desk.g.margin.t")} help={t("desk.g.margin")} className="hidden @[760px]:flex">
-        {money(m.margin)}
+        <AccountMoney>{money(m.margin)}</AccountMoney>
       </Item>
       <Item label={t("desk.ah.free")} helpTitle={t("desk.g.free.t")} help={t("desk.g.free")} className="hidden @[620px]:flex">
-        <LiveMoney value={m.free} format={money} className={m.free < 0 ? "text-down" : undefined} />
+        <AccountMoney>
+          <LiveMoney value={m.free} format={money} className={m.free < 0 ? "text-down" : undefined} />
+        </AccountMoney>
       </Item>
       {m.credit > 0 && (
         <Item label={t("desk.ah.credit")} helpTitle={t("desk.g.credit.t")} help={t("desk.g.credit")} className="hidden @[1100px]:flex">
-          {money(m.credit)}
+          <AccountMoney>{money(m.credit)}</AccountMoney>
         </Item>
       )}
       <span className="flex shrink-0 items-center gap-1.5 whitespace-nowrap">

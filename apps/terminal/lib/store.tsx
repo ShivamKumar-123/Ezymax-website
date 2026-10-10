@@ -33,6 +33,7 @@ import {
   type Timeframe,
 } from "./trading";
 import { beep } from "./sound";
+import { maskMoney } from "./hide-balances";
 import { aiTrader } from "./ai-trader/runtime";
 import { migrateIndicators, type IndicatorInstance } from "./indicators";
 import { tvCharts } from "./tv/loader";
@@ -1676,7 +1677,8 @@ export function TerminalProvider({ initialSession, engineSessions, guestMode, ch
     const target = a.balance;
     commit((c) => ({ ...c, balances: { ...c.balances, [a.login]: target }, refills: { ...c.refills, [a.login]: left - 1 } }));
     log("Account", `'${a.login}': demo balance refilled to ${accMoney(a, target)} ${accCcy(a)} (${left - 1} refills left)`);
-    toast.success(tr("order.toast.demoRefilled"), { description: tr("order.toast.refillsLeft", { amount: `${accMoney(a, target)} ${accCcy(a)}`, count: left - 1 }) });
+    // the new balance pops up on screen: masked while the trader hides balances (the journal keeps the record)
+    toast.success(tr("order.toast.demoRefilled"), { description: tr("order.toast.refillsLeft", { amount: `${maskMoney(accMoney(a, target))} ${accCcy(a)}`, count: left - 1 }) });
   }, [commit, log]);
 
   const logoutMock = React.useCallback(() => {

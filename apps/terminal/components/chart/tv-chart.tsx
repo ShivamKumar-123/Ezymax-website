@@ -609,7 +609,7 @@ function forwardKey(e: KeyboardEvent, doc: Document): boolean {
   if (e.key === "F1" || e.key === "F9" || e.key === "F10" || e.key === "F11") return true;
   if (mod && !e.altKey && k.length === 1 && "kimtbd".includes(k)) return true;
   if (e.altKey && /^Digit[1-4]$/.test(e.code)) return true;
-  if (!mod && !e.altKey && e.shiftKey && k === "f") return true;
+  if (!mod && !e.altKey && e.shiftKey && (k === "f" || k === "h")) return true;
   if (!mod && !e.altKey && (e.key === "+" || e.key === "=" || e.key === "-" || e.key === "_")) return true;
   // Esc: ours (leave Full chart) unless one of the library's menus or dialogs is open
   if (e.key === "Escape") return !doc.querySelector("#overlap-manager-root > *, [data-dialog-name], [role=dialog]");
