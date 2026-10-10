@@ -125,6 +125,7 @@ export const ADMIN_NAV: NavModule[] = [
       { href: "/finance", label: "Deposits" },
       // live builds: the badge is the wallet's pending count (components/shell.tsx); the demo shows the mock queue
       { href: "/finance/manual-deposits", label: "Manual deposits", badge: ADMIN_MANUAL_PENDING },
+      { href: "/finance/checkouts", label: "Crypto checkouts" },
       { href: "/finance/withdrawals", label: "Withdrawals", badge: 7 },
       { href: "/finance/wallets", label: "Wallets" },
       { href: "/finance/reconciliation", label: "Reconciliation" },

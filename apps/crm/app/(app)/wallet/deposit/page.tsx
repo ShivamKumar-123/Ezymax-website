@@ -230,7 +230,8 @@ function DemoDepositPage() {
     />
   );
   const chooser = <DepositChooser value={via} onChange={choose} usdt bank={methods.some((m) => m.kind === "bank")} crypto={methods.some((m) => m.kind === "crypto")} />;
-  if (via !== "usdt") {
+  // the showcase never offers the crypto checkout (it is a live payment provider), so only these two narrow
+  if (via === "bank" || via === "crypto") {
     return (
       <div className="pb-16">
         {header}
