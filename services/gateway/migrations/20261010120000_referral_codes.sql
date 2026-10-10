@@ -3,7 +3,8 @@
 -- 1. Referral codes no longer carry the client's name. New codes are `EZ` + 6 characters from an unambiguous
 --    alphabet (no 0 / O / 1 / I / L), e.g. EZ7KQ4MX. Every existing client gets one now; the old code moves to
 --    `referral_code_legacy` and keeps resolving, so links already shared still attribute. A new code never equals
---    any old code of the same broker (both columns are checked), so a code always points at exactly one client.
+--    any old code of the same broker (both columns are checked, and purged clients' codes in deleted_users, which
+--    the IB / reports mirrors still hold), so a code always points at exactly one client.
 --    Deleted (anonymised) clients get a new code too but keep no old one (it contained their first name). House
 --    users keep their HOUSE… codes (they never had a name in them).
 -- 2. A client's referral link only counts once they have deposited (client_auth.rs / referral.rs). The first
@@ -23,7 +24,7 @@ ALTER TABLE users
 CREATE UNIQUE INDEX IF NOT EXISTS users_referral_code_legacy_idx ON users (tenant_id, referral_code_legacy) WHERE referral_code_legacy IS NOT NULL;
 CREATE INDEX IF NOT EXISTS users_referral_held_for_idx ON users (referral_held_for) WHERE referral_held_for IS NOT NULL;
 
--- A fresh code for one broker: EZ + 6 of 23456789ABCDEFGHJKMNPQRSTUVWXYZ, unused as a current or an old code.
+-- A fresh code for one broker: EZ + 6 of 23456789ABCDEFGHJKMNPQRSTUVWXYZ, unused as a current, old or purged code.
 -- (Not a secret: random() is enough. The gateway generates sign-up codes the same way, referral.rs.)
 CREATE OR REPLACE FUNCTION ezymex_new_referral_code(t BIGINT) RETURNS TEXT LANGUAGE plpgsql VOLATILE AS $$
 DECLARE
@@ -33,7 +34,8 @@ BEGIN
     LOOP
         SELECT 'EZ' || string_agg(substr(alphabet, 1 + floor(random() * length(alphabet))::int, 1), '')
           INTO code FROM generate_series(1, 6);
-        EXIT WHEN NOT EXISTS (SELECT 1 FROM users WHERE tenant_id = t AND (referral_code = code OR referral_code_legacy = code));
+        EXIT WHEN NOT EXISTS (SELECT 1 FROM users WHERE tenant_id = t AND (referral_code = code OR referral_code_legacy = code))
+              AND NOT EXISTS (SELECT 1 FROM deleted_users WHERE tenant_id = t AND referral_code = code);
     END LOOP;
     RETURN code;
 END $$;

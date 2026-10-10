@@ -151,6 +151,8 @@ pub(crate) async fn insert_user(st: &AppState, u: NewUser<'_>) -> ApiResult<Opti
                     $13, CASE WHEN $13::text IS NULL THEN NULL ELSE now() END, $14,
                     CASE WHEN $13::text IS NULL THEN NULL ELSE now() END, $15, $16, $17
              WHERE NOT EXISTS (SELECT 1 FROM users WHERE tenant_id = $1 AND referral_code_legacy = $10)
+               -- nor a purged client's (the IB / reports mirrors still hold it, unique per broker)
+               AND NOT EXISTS (SELECT 1 FROM deleted_users WHERE tenant_id = $1 AND referral_code = $10)
              ON CONFLICT DO NOTHING RETURNING id",
         )
         .bind(u.tenant_id)
