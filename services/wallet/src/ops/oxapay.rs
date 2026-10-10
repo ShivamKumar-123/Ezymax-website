@@ -598,24 +598,28 @@ pub struct AdminQuery {
     pub limit: Option<i64>,
 }
 
+/// The filter of the Back Office list, shared by the page query and its total.
+const ADMIN_WHERE: &str = "tenant_id = $1 AND ($2::text IS NULL OR status = $2) AND ($3::bigint IS NULL OR user_id = $3)
+     AND ($4::text IS NULL OR lower(order_id) LIKE $4 OR lower(COALESCE(track_id, '')) LIKE $4 OR lower(COALESCE(tx_hash, '')) LIKE $4)";
+
 pub async fn admin_list(st: &AppState, s_ctx: &StaffCtx, q: AdminQuery) -> ApiResult<Value> {
     let t = s_ctx.ctx.tenant.id;
     sweep(st, t, None).await?;
     let (page, limit, offset) = paging(q.page, q.limit, 25, 200);
     let status = q.status.as_deref().map(str::trim).filter(|s| !s.is_empty() && *s != "all").map(str::to_string);
-    let search = q.q.as_deref().map(str::trim).filter(|s| !s.is_empty()).map(|s| format!("%{}%", s.to_lowercase()));
-    let where_sql = "WHERE tenant_id = $1 AND ($2::text IS NULL OR status = $2) AND ($3::bigint IS NULL OR user_id = $3)
-                       AND ($4::text IS NULL OR lower(order_id) LIKE $4 OR lower(COALESCE(track_id, '')) LIKE $4 OR lower(COALESCE(tx_hash, '')) LIKE $4)";
-    let rows = sqlx::query(&format!("SELECT * FROM oxapay_invoices {where_sql} ORDER BY id DESC LIMIT $5 OFFSET $6"))
-        .bind(t)
-        .bind(&status)
-        .bind(q.user_id)
-        .bind(&search)
-        .bind(limit)
-        .bind(offset)
-        .fetch_all(&st.pool)
-        .await?;
-    let total: i64 = sqlx::query_scalar(&format!("SELECT count(*) FROM oxapay_invoices {where_sql}")).bind(t).bind(&status).bind(q.user_id).bind(&search).fetch_one(&st.pool).await?;
+    let search = q.q.as_deref().map(str::trim).filter(|s| !s.is_empty() && s.len() <= 100).map(|s| format!("%{}%", s.to_lowercase()));
+    let rows = sqlx::query(sqlx::AssertSqlSafe(format!(
+        "SELECT *, count(*) OVER () AS total FROM oxapay_invoices WHERE {ADMIN_WHERE} ORDER BY id DESC LIMIT $5 OFFSET $6"
+    )))
+    .bind(t)
+    .bind(&status)
+    .bind(q.user_id)
+    .bind(&search)
+    .bind(limit)
+    .bind(offset)
+    .fetch_all(&st.pool)
+    .await?;
+    let total = rows.first().map(|r| r.get::<i64, _>("total")).unwrap_or(0);
     let counts = sqlx::query("SELECT status, count(*) AS n, COALESCE(sum(credited), 0) AS credited FROM oxapay_invoices WHERE tenant_id = $1 GROUP BY status").bind(t).fetch_all(&st.pool).await?;
     let mut by_status = serde_json::Map::new();
     let mut credited_total = D::ZERO;
