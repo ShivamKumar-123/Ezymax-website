@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { DEVICE_COOKIE, SESSION_COOKIE, clientIp, edgeCountry, forgetSession, gateway, newDeviceId, safeNext, sameOrigin, setDeviceCookie, setSessionCookie } from "@/lib/gateway";
 import { withCampaign } from "@/lib/ib";
 import { withAttribution } from "@/lib/attribution";
+import { publicUrl } from "@/lib/tenant-host";
 
 // Client Area auth BFF. Browser -> /api/auth/<action> (same origin) -> gateway /v1/auth/<action>.
 // CSRF: cookies are SameSite=Lax, POSTs must be JSON and carry a same-origin Origin header.
@@ -84,9 +85,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ acti
     if (token) {
       // only clear a cookie that really is dead, so a cross-site link can't sign someone out
       const r = await gateway("/v1/auth/me", { token, ip: clientIp(req.headers), userAgent: req.headers.get("user-agent") });
-      if (r.status !== 401) return NextResponse.redirect(new URL(next || "/", req.url));
+      if (r.status !== 401) return NextResponse.redirect(publicUrl(req, next || "/"));
     }
-    const url = new URL("/login", req.url);
+    const url = publicUrl(req, "/login");
     if (next) url.searchParams.set("next", next);
     const res = NextResponse.redirect(url);
     res.cookies.delete(SESSION_COOKIE);

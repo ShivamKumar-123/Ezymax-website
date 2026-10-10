@@ -18,3 +18,25 @@ export async function requestHost(): Promise<string | undefined> {
     return undefined; // outside a request scope (build, proxy): the caller passes the host explicitly
   }
 }
+
+/**
+ * An absolute URL on the host the visitor actually opened, for a redirect out of a route handler.
+ *
+ * `new URL(path, req.url)` is not that. The app is started with `next start -H 127.0.0.1`, so behind the edge
+ * Next builds `req.url` from the bind address and the browser is sent to localhost:3000. The edge forwards
+ * the real Host (deploy/nginx/ezymex-proxy.conf), so that is what we build on, falling back to `req.url`
+ * when there is no usable host (tests, direct access).
+ */
+export function publicUrl(req: { url: string; headers: Headers }, path: string): URL {
+  const host = hostOf(req.headers);
+  if (!host) return new URL(path, req.url);
+  const fallback = (() => {
+    try {
+      return new URL(req.url).protocol.replace(":", "");
+    } catch {
+      return "https";
+    }
+  })();
+  const proto = (req.headers.get("x-forwarded-proto") ?? fallback).split(",")[0]!.trim() || "https";
+  return new URL(path, `${proto}://${host}`);
+}
