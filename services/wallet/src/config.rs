@@ -1,5 +1,7 @@
+use rust_decimal::Decimal;
 use std::env;
 use std::fmt;
+use std::str::FromStr;
 
 /// Runtime configuration (env vars; the repo-root `.env.local` and `.env.tron` are loaded in development).
 /// `Debug` is implemented by hand so secrets never reach logs.
@@ -35,6 +37,21 @@ pub struct Config {
     pub storage_dir: String,
     /// Upload limit of those images (5 MB).
     pub max_media_bytes: usize,
+    /// OxaPay crypto checkout (hosted payment gateway, `ops::oxapay`). An empty key switches the module off:
+    /// the routes answer `method_unavailable` and the Client Area hides the option. Platform-wide, so every
+    /// tenant's checkouts settle into the same OxaPay merchant account.
+    pub oxapay_api_key: String,
+    pub oxapay_api_url: String,
+    /// What a client may ask for in one checkout, in USD.
+    pub oxapay_min_usd: Decimal,
+    pub oxapay_max_usd: Decimal,
+    /// How long OxaPay keeps the payment page open (their range is 15–2880 minutes).
+    pub oxapay_lifetime_minutes: u32,
+    /// Whether the payer covers OxaPay's fee. True keeps the credited amount equal to the amount asked for.
+    pub oxapay_fee_paid_by_payer: bool,
+    pub oxapay_sandbox: bool,
+    /// Open checkouts one client may hold at once.
+    pub oxapay_max_open: i64,
 }
 
 /// Masks the password in a connection URL (`postgres://user:secret@host` → `postgres://user:***@host`).
@@ -94,12 +111,26 @@ impl fmt::Debug for Config {
             .field("support_token", &redact(&self.support_token))
             .field("storage_dir", &self.storage_dir)
             .field("max_media_bytes", &self.max_media_bytes)
+            .field("oxapay_api_key", &redact(&self.oxapay_api_key))
+            .field("oxapay_api_url", &self.oxapay_api_url)
+            .field("oxapay_min_usd", &self.oxapay_min_usd)
+            .field("oxapay_max_usd", &self.oxapay_max_usd)
+            .field("oxapay_lifetime_minutes", &self.oxapay_lifetime_minutes)
+            .field("oxapay_fee_paid_by_payer", &self.oxapay_fee_paid_by_payer)
+            .field("oxapay_sandbox", &self.oxapay_sandbox)
+            .field("oxapay_max_open", &self.oxapay_max_open)
             .finish()
     }
 }
 
 fn var(key: &str, default: &str) -> String {
     env::var(key).ok().filter(|v| !v.trim().is_empty()).map(|v| v.trim().to_string()).unwrap_or_else(|| default.to_string())
+}
+
+/// A decimal setting, falling back to `default` when unset or unparsable.
+fn dec(key: &str, default: i64) -> Decimal {
+    let raw = var(key, "");
+    if raw.is_empty() { Decimal::from(default) } else { Decimal::from_str(&raw).unwrap_or_else(|_| Decimal::from(default)) }
 }
 
 fn home() -> String {
@@ -139,7 +170,20 @@ impl Config {
             support_token: var("SUPPORT_INTERNAL_TOKEN", ""),
             storage_dir: var("WALLET_STORAGE_DIR", &format!("{}/.ezymex-data/wallet", home())),
             max_media_bytes: 5 * 1024 * 1024,
+            oxapay_api_key: var("WALLET_OXAPAY_API_KEY", ""),
+            oxapay_api_url: var("WALLET_OXAPAY_API_URL", "https://api.oxapay.com").trim_end_matches('/').to_string(),
+            oxapay_min_usd: dec("WALLET_OXAPAY_MIN_USD", 10),
+            oxapay_max_usd: dec("WALLET_OXAPAY_MAX_USD", 50_000),
+            oxapay_lifetime_minutes: var("WALLET_OXAPAY_LIFETIME_MINUTES", "60").parse().unwrap_or(60).clamp(15, 2880),
+            oxapay_fee_paid_by_payer: var("WALLET_OXAPAY_FEE_PAID_BY_PAYER", "true") != "false",
+            oxapay_sandbox: var("WALLET_OXAPAY_SANDBOX", "false") == "true",
+            oxapay_max_open: var("WALLET_OXAPAY_MAX_OPEN", "3").parse().unwrap_or(3).clamp(1, 20),
         })
+    }
+
+    /// Whether the crypto checkout is configured. Everything OxaPay refuses to do without a key is gated here.
+    pub fn oxapay_enabled(&self) -> bool {
+        !self.oxapay_api_key.is_empty()
     }
 
     /// A config for tests (no network, no secrets).
@@ -168,6 +212,14 @@ impl Config {
             support_token: String::new(),
             storage_dir: std::env::temp_dir().join(format!("ezymex-wallet-test-{}", std::process::id())).to_string_lossy().into_owned(),
             max_media_bytes: 5 * 1024 * 1024,
+            oxapay_api_key: String::new(),
+            oxapay_api_url: String::new(),
+            oxapay_min_usd: Decimal::from(10),
+            oxapay_max_usd: Decimal::from(50_000),
+            oxapay_lifetime_minutes: 60,
+            oxapay_fee_paid_by_payer: true,
+            oxapay_sandbox: false,
+            oxapay_max_open: 3,
         }
     }
 }

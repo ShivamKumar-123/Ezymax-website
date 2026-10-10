@@ -4,6 +4,7 @@ pub mod adjust;
 pub mod admin;
 pub mod client;
 pub mod manual;
+pub mod oxapay;
 
 use axum::Json;
 use axum::Router;
@@ -54,6 +55,12 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/manual/deposits/{id}", get(manual::get_deposit))
         .route("/v1/manual/deposits/{id}/cancel", post(manual::cancel_deposit))
         .route("/v1/manual/media/{id}", get(manual::client_media))
+        // OxaPay crypto checkout (hosted gateway). The callback arrives through the Client Area's public
+        // BFF route, which adds the internal header and passes OxaPay's bytes through unchanged.
+        .route("/v1/oxapay/invoices", post(oxapay::create).get(oxapay::list))
+        .route("/v1/oxapay/invoices/{id}", get(oxapay::get))
+        .route("/v1/oxapay/invoices/{id}/cancel", post(oxapay::cancel))
+        .route("/v1/oxapay/callback", post(oxapay::callback))
         // Back Office
         .route("/v1/admin/summary", get(admin::summary))
         .route("/v1/admin/deposits", get(admin::deposits))
@@ -89,6 +96,8 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/admin/manual/deposits/{id}", get(manual::admin_deposit))
         .route("/v1/admin/manual/deposits/{id}/approve", post(manual::approve))
         .route("/v1/admin/manual/deposits/{id}/reject", post(manual::reject))
+        .route("/v1/admin/oxapay/invoices", get(oxapay::admin_list))
+        .route("/v1/admin/oxapay/invoices/{id}/recheck", post(oxapay::admin_recheck))
         .layer(DefaultBodyLimit::max(64 * 1024))
         .layer(middleware::from_fn_with_state(st.clone(), internal_only));
     Router::new()

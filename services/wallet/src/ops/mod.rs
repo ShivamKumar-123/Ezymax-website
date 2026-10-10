@@ -3,6 +3,7 @@
 pub mod adjustments;
 pub mod deposits;
 pub mod manual;
+pub mod oxapay;
 pub mod trading;
 pub mod transfers;
 pub mod withdrawals;
