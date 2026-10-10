@@ -51,19 +51,26 @@ fn visitor(st: &AppState, ip: &str, ua: &str) -> String {
     mac.finalize().into_bytes().iter().take(16).map(|b| format!("{b:02x}")).collect()
 }
 
-/// `POST /v1/ib/clicks {code, campaign?, ip, userAgent, referer?, landing?}` → `{valid, code, campaign}`.
+/// `POST /v1/ib/clicks {code, campaign?, ip, userAgent, referer?, landing?}` → `{valid, code, campaign}` (`code` is the
+/// partner's current code, also when the link carries their old one).
 /// A click is unique per visitor (IP + user agent hash) per link per 24 h. Paused campaigns still attribute
 /// the code but not the campaign.
 pub async fn click(State(st): State<AppState>, Tenant(tenant): Tenant, Json(r): Json<ClickReq>) -> ApiResult<Json<Value>> {
     let Some(code) = clean_code(&r.code) else { return Ok(Json(json!({"valid": false}))) };
-    let Some(ib) = sqlx::query_scalar::<_, i64>("SELECT user_id FROM members WHERE tenant = $1 AND referral_code = $2 AND status = 'active'")
-        .bind(&tenant)
-        .bind(&code)
-        .fetch_optional(&st.pool)
-        .await?
+    // the current code, or the one from before name-free codes (links shared earlier still count)
+    let Some(found) = sqlx::query(
+        "SELECT user_id, referral_code FROM members WHERE tenant = $1 AND (referral_code = $2 OR referral_code_legacy = $2) AND status = 'active'
+         ORDER BY (referral_code = $2) DESC LIMIT 1",
+    )
+    .bind(&tenant)
+    .bind(&code)
+    .fetch_optional(&st.pool)
+    .await?
     else {
         return Ok(Json(json!({"valid": false})));
     };
+    let ib: i64 = found.get("user_id");
+    let code: String = found.get("referral_code");
     let campaign = match r.campaign.as_deref().and_then(clean_slug) {
         Some(slug) => sqlx::query("SELECT id, slug FROM campaigns WHERE tenant = $1 AND user_id = $2 AND slug = $3 AND active").bind(&tenant).bind(ib).bind(&slug).fetch_optional(&st.pool).await?,
         None => None,

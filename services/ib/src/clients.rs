@@ -32,6 +32,9 @@ pub struct GwUser {
     #[serde(default)]
     pub country: String,
     pub referral_code: String,
+    /// The code from before name-free codes (first name + digits); links with it still attribute.
+    #[serde(default)]
+    pub referral_code_legacy: Option<String>,
     pub referred_by: Option<i64>,
     #[serde(default)]
     pub referral_campaign: Option<String>,

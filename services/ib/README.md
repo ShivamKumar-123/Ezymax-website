@@ -53,7 +53,8 @@ On first start the service creates the `ezymex_ib` database, runs `migrations/`,
 
 | Area | Rule |
 |---|---|
-| Membership (D53) | Every gateway client is a member at the entry level (rank 1) with a referral code (the gateway's `referral_code`) |
+| Membership (D53) | Every gateway client is a member at the entry level (rank 1) with a referral code (the gateway's `referral_code`: `EZ` + 6 characters, no name in it since 2026-10-10; the old first-name code is kept as `referral_code_legacy` and still resolves) |
+| Active links (2026-10-10) | The gateway attributes a sign-up to the referrer only once the referrer has deposited (wallet `GET /v1/internal/users/{id}/funded`); before that the sign-up has no upline here and the referrer gets an `ib.referral_inactive` notification. No partner exemption: every client is a partner from sign-up |
 | Attribution (D63) | The upline is the gateway's `referred_by` at sign-up, set once. Only an admin reassignment changes it (audited, loop-checked). The campaign (`referral_campaign`) is attributed when it is one of that IB's campaign slugs |
 | Qualifying deal (D54, D59) | Closed deal on a **live** account, not in an excluded group (default `prop`), not reopened, not a price-correction deal, held ≥ `minTradeSeconds` (default 120 s), client has an upline and no self-referral block, symbol maps to a symbol group |
 | Lots | Deal volume in lots; cent accounts × `centLotFactor` (0.01) |
@@ -72,7 +73,7 @@ On first start the service creates the `ezymex_ib` database, runs `migrations/`,
 | Reversal | A reopened deal's unbatched pending lines are voided; lines already batched or paid get a negative `clawback` line that nets off the next payout |
 | Self-referral (D59) | Identity (keyed hash of name + date of birth, and of the phone), device hash and IP (loopback ignored) of the client vs its upline. Each signal: `block` (flag + no commission from that client until an admin dismisses), `flag`, or `off` |
 | Wash trading | Opposite, similar-volume (±10 %) trades on the same symbol by the IB or two clients of the same IB, opened and closed within 60 s of each other → flag. ≥ 10 sub-minimum trades making ≥ 50 % of a client's trades in 24 h → `short_trades` flag |
-| Visibility (D61) | `clientVisibility: full` shows IBs client names, emails, first deposit and trades (consent in the sign-up T&C); `masked` shows initials and totals only |
+| Visibility (D61) | `clientVisibility: masked` (default since 2026-10-10; migration 0004 switched brokers that were on `full`) shows IBs initials ("A. M."), client ids, country, dates and totals only, and their client search matches ids and country, never names; `full` also shows names, emails, first deposit amounts and trades (consent in the sign-up T&C) |
 
 Money is `rust_decimal` everywhere and `NUMERIC` in the database; every line is rounded to cents half away from zero.
 
@@ -103,7 +104,7 @@ Every route except `GET /health` needs `X-Ezymex-Internal: $IB_INTERNAL_TOKEN`. 
 
 | Method & path | Body | Response |
 |---|---|---|
-| `POST /v1/ib/clicks` | `{code, campaign?, ip, userAgent, referer?, landing?}` | `{valid, code, campaign, unique}` (the CRM proxy calls it) |
+| `POST /v1/ib/clicks` | `{code, campaign?, ip, userAgent, referer?, landing?}` | `{valid, code, campaign, unique}` (the CRM proxy calls it; an old first-name code resolves too, `code` is the current one) |
 | `POST /v1/ib/events/deposit` | `{userId, amount, at?}` | `{status, firstDeposit}` — confirmed real-money deposit (wallet) |
 | `POST /v1/ib/events/lots` | `{source: pamm\|copy, dealId, userId, symbol, side?, lots, openTime, closeTime, login?, reversed?}` | `{status: recorded\|duplicate, qualified, reason, lines}` |
 
@@ -178,7 +179,7 @@ cargo test -p ib
 ```
 
 - **Unit** (`calc`, `model`): option deals per contract and never lots, the options rate (default 0, validation, kept when absent), option series codes, per-lot amounts, three tiers with shares, rebate + split within the IB's own amount, caps, suspended IBs, rounding conservation, tiny deals, anti-abuse filters (demo, excluded group, reopened, price correction, minimum duration), cent lots, level evaluation (both targets, lock, demotion), wash-pair matching, payout periods, backoff, symbol groups, settings validation.
-- **Database** (`tests/programme.rs`, throw-away `ezymex_ib_test_*` database, skipped without PostgreSQL): option deals paid per contract only (rate 0 by default = no lines; the Back Office rate card through `PUT levels`, kept when a PUT omits it; tier %, rebate; short / demo / reopened filters; 0 lots, so level upgrades ignore them; a series pushed as PAMM / copy lots; feed parsing), multi-tier lines with rebate and split, the same deal twice (no double pay), a three-tier chain, short / demo / prop / no-referrer deals, PAMM lots, deals that arrive before the client is mirrored; self-referral block and admin clearing, loopback IPs ignored, wash-pair flag; CPA only after a deposit ≥ minimum and a trade, once; batch creation with carry-over, approval, a wallet that fails once (pending transfer, same idempotency key on retry, then paid), clawback after a paid deal is reopened, void of an unpaid one; batch rejection releasing lines; click tracking (unique per visitor, unknown campaign, unknown code).
+- **Database** (`tests/programme.rs`, throw-away `ezymex_ib_test_*` database, skipped without PostgreSQL): option deals paid per contract only (rate 0 by default = no lines; the Back Office rate card through `PUT levels`, kept when a PUT omits it; tier %, rebate; short / demo / reopened filters; 0 lots, so level upgrades ignore them; a series pushed as PAMM / copy lots; feed parsing), multi-tier lines with rebate and split, the same deal twice (no double pay), a three-tier chain, short / demo / prop / no-referrer deals, PAMM lots, deals that arrive before the client is mirrored; self-referral block and admin clearing, loopback IPs ignored, wash-pair flag; CPA only after a deposit ≥ minimum and a trade, once; batch creation with carry-over, approval, a wallet that fails once (pending transfer, same idempotency key on retry, then paid), clawback after a paid deal is reopened, void of an unpaid one; batch rejection releasing lines; click tracking (unique per visitor, unknown campaign, unknown code); old codes still tracking after the switch to name-free codes; masked visibility (no name, email or first deposit amount in the dashboard, clients, network or commissions; search by id / country only; trades closed) and the one-off switch of `full` brokers to `masked`.
 
 ## Known gaps
 

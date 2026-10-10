@@ -435,3 +435,118 @@ async fn batch_reject_releases_lines_and_clicks_are_tracked() {
     assert_eq!(e.count("SELECT count(*) FROM clicks WHERE user_id = 40").await, 3);
     e.drop().await;
 }
+
+#[tokio::test]
+async fn old_referral_codes_still_count_after_the_switch_to_name_free_codes() {
+    let Some(e) = env(None).await else { return };
+    // the gateway feed after its re-code: the new EZ code plus the old first-name code
+    let u: ib::clients::GwUser = serde_json::from_value(json!({
+        "id": 70, "tenant": "ezymex", "email": "shivam@example.com", "first_name": "Shivam", "last_name": "Singh", "country": "IN",
+        "referral_code": "EZ7KQ4MX", "referral_code_legacy": "SHIVAM4821", "referred_by": null, "kyc_status": "verified", "status": "active",
+        "email_verified": true, "created_at": "2026-09-01T10:00:00Z", "changed_at": "2026-10-10T10:00:00Z",
+    }))
+    .unwrap();
+    sync::upsert_member(&e.st, &u).await.unwrap();
+    let stored: (String, Option<String>) = sqlx::query_as("SELECT referral_code, referral_code_legacy FROM members WHERE user_id = 70").fetch_one(&e.st.pool).await.unwrap();
+    assert_eq!(stored, ("EZ7KQ4MX".into(), Some("SHIVAM4821".into())));
+    sqlx::query("INSERT INTO campaigns (tenant, user_id, slug, name) VALUES ('ezymex', 70, 'yt', 'YouTube')").execute(&e.st.pool).await.unwrap();
+    let click = |code: &str, camp: Option<&str>, ip: &str| {
+        let st = e.st.clone();
+        let body: ib::api::public::ClickReq = serde_json::from_value(json!({"code": code, "campaign": camp, "ip": ip, "userAgent": "UA"})).unwrap();
+        async move { ib::api::public::click(State(st), Tenant("ezymex".into()), Json(body)).await.unwrap().0 }
+    };
+    // a link shared before the change (old code + campaign) still tracks, under the partner's current code
+    let v = click("shivam4821", Some("yt"), "198.51.100.20").await;
+    assert_eq!((v["valid"].as_bool(), v["code"].as_str(), v["campaign"].as_str()), (Some(true), Some("EZ7KQ4MX"), Some("yt")));
+    let v = click("EZ7KQ4MX", None, "198.51.100.21").await;
+    assert_eq!((v["valid"].as_bool(), v["code"].as_str()), (Some(true), Some("EZ7KQ4MX")));
+    assert_eq!(e.count("SELECT count(*) FROM clicks WHERE user_id = 70").await, 2);
+    e.drop().await;
+}
+
+#[tokio::test]
+async fn partners_see_referred_clients_masked_by_default() {
+    use axum::extract::{Path, Query};
+    use ib::api::UserCtx;
+    use ib::api::client as c;
+    let Some(e) = env(None).await else { return };
+    // a fresh broker gets masked visibility
+    assert_eq!(db::settings(&e.st.pool, "ezymex").await.unwrap().client_visibility, "masked");
+    // partner 50 ← direct client 51 ← sub-client 52 (tier 2)
+    e.member(50, None, "bronze").await;
+    e.member(51, Some(50), "bronze").await;
+    e.member(52, Some(51), "bronze").await;
+    for (id, first, last, email) in [(50, "Priya", "Sharma", "priya@example.com"), (51, "Amit", "Mehta", "amit.mehta@example.com"), (52, "Neha", "Kapoor", "neha.k@example.com")] {
+        sqlx::query("UPDATE members SET first_name = $2, last_name = $3, email = $4, first_deposit_at = now() - interval '2 days', first_deposit_amount = 750 WHERE user_id = $1")
+            .bind(id)
+            .bind(first)
+            .bind(last)
+            .bind(email)
+            .execute(&e.st.pool)
+            .await
+            .unwrap();
+    }
+    deals::ingest(&e.st, &deal(9701, 51, "XAUUSD", "2", 600)).await.unwrap();
+    deals::ingest(&e.st, &deal(9702, 52, "XAUUSD", "1", 600)).await.unwrap();
+    let me = || UserCtx { tenant: "ezymex".into(), user_id: 50 };
+    let st = || State(e.st.clone());
+    let clients = |q: Value| {
+        let st = e.st.clone();
+        async move { c::clients(State(st), UserCtx { tenant: "ezymex".into(), user_id: 50 }, Query(serde_json::from_value(q).unwrap())).await.unwrap().0 }
+    };
+    let everything = |e: &Env| {
+        let st = e.st.clone();
+        async move {
+            let u = || UserCtx { tenant: "ezymex".into(), user_id: 50 };
+            let dash = c::dashboard(State(st.clone()), u()).await.unwrap().0;
+            let list = c::clients(State(st.clone()), u(), Query(serde_json::from_value(json!({})).unwrap())).await.unwrap().0;
+            let net = c::network(State(st.clone()), u()).await.unwrap().0;
+            let comm = c::commissions(State(st.clone()), u(), Query(c::CommQ::default())).await.unwrap().0;
+            (dash, list, net, comm)
+        }
+    };
+
+    let (dash, list, net, comm) = everything(&e).await;
+    // nothing a partner reads names a referred client: no names, no emails, no first deposit amounts
+    for (what, v) in [("dashboard", &dash), ("clients", &list), ("network", &net), ("commissions", &comm)] {
+        let s = v.to_string();
+        for secret in ["Amit", "Mehta", "Neha", "Kapoor", "amit.mehta@", "neha.k@"] {
+            assert!(!s.contains(secret), "{what} shows {secret}: {s}");
+        }
+    }
+    assert_eq!(list["visibility"], "masked");
+    let items = list["items"].as_array().unwrap();
+    let a = items.iter().find(|x| x["id"] == 51).unwrap();
+    let n = items.iter().find(|x| x["id"] == 52).unwrap();
+    // … but ids, country, dates, tiers and totals are there
+    assert_eq!((a["name"].as_str(), a["email"].is_null(), a["firstDepositAmount"].is_null(), a["country"].as_str(), a["tier"].as_i64()), (Some("A. M."), true, true, Some("IN"), Some(1)));
+    assert!(a["joinedAt"].is_string() && a["firstDepositAt"].is_string() && a["lotsMonth"].as_f64() == Some(2.0) && a["earned"].as_f64().unwrap() > 0.0);
+    assert_eq!((n["name"].as_str(), n["parentId"].as_i64(), n["tier"].as_i64()), (Some("N. K."), Some(51), Some(2)));
+    assert_eq!(dash["topClients"][0]["name"], "A. M.");
+    assert!(comm["items"].as_array().unwrap().iter().all(|x| x["client"]["name"] == "A. M." || x["client"]["name"] == "N. K."), "{comm}");
+    assert!(net["nodes"].as_array().unwrap().iter().all(|x| x["name"] == "A. M." || x["name"] == "N. K."));
+    assert_eq!(net["root"]["name"], "Priya Sharma", "the partner's own name is theirs to see");
+    // a search can't confirm a masked client's name; the client id and the country work
+    assert_eq!(clients(json!({"q": "Amit"})).await["items"].as_array().unwrap().len(), 0);
+    assert_eq!(clients(json!({"q": "amit.mehta@example.com"})).await["items"].as_array().unwrap().len(), 0);
+    assert_eq!(clients(json!({"q": "KL-000051"})).await["items"][0]["id"], 51);
+    assert_eq!(clients(json!({"q": "52"})).await["items"][0]["id"], 52);
+    assert_eq!(clients(json!({"q": "in"})).await["items"].as_array().unwrap().len(), 2);
+    // trades stay closed
+    assert!(c::client_trades(st(), me(), Path(51)).await.is_err());
+
+    // the broker can switch full details back on (Back Office setting): then names, emails and trades show
+    sqlx::query("UPDATE settings SET data = jsonb_set(data, '{clientVisibility}', '\"full\"') WHERE tenant = 'ezymex'").execute(&e.st.pool).await.unwrap();
+    let (_, list, net, _) = everything(&e).await;
+    let a = list["items"].as_array().unwrap().iter().find(|x| x["id"] == 51).unwrap().clone();
+    assert_eq!((a["name"].as_str(), a["email"].as_str()), (Some("Amit Mehta"), Some("amit.mehta@example.com")));
+    assert!(net.to_string().contains("Neha Kapoor"));
+    assert_eq!(clients(json!({"q": "Amit"})).await["items"].as_array().unwrap().len(), 1);
+    assert!(c::client_trades(st(), me(), Path(51)).await.is_ok());
+
+    // the one-off migration switches brokers still on full details to masked (and audits it)
+    sqlx::raw_sql(include_str!("../migrations/0004_referral_privacy.sql")).execute(&e.st.pool).await.unwrap();
+    assert_eq!(db::settings(&e.st.pool, "ezymex").await.unwrap().client_visibility, "masked");
+    assert_eq!(e.count("SELECT count(*) FROM audit_log WHERE action = 'settings.update' AND after->>'clientVisibility' = 'masked' AND actor = 'system'").await, 1);
+    e.drop().await;
+}

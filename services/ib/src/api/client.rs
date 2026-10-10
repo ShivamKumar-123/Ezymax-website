@@ -67,15 +67,23 @@ pub fn level_json(l: &Level) -> Value {
     })
 }
 
-/// Name as the IB may see it (D61): full, or first name + last initial when the tenant masks client details.
+/// Name as the IB may see it (D61): the full name, or initials ("A. M.") when the broker masks client details
+/// (the default). Never empty.
 pub fn shown_name(first: &str, last: &str, full: bool) -> String {
-    if full {
-        format!("{first} {last}").trim().to_string()
+    let name = if full {
+        format!("{} {}", first.trim(), last.trim()).trim().to_string()
     } else {
-        let f: String = first.chars().take(1).collect();
-        let l: String = last.chars().take(1).collect();
-        format!("{f}. {l}.")
-    }
+        [first, last].iter().filter_map(|p| p.trim().chars().next()).map(|c| format!("{}.", c.to_uppercase())).collect::<Vec<_>>().join(" ")
+    };
+    if name.is_empty() { "—".into() } else { name }
+}
+
+/// Client search of a partner: name or email (full visibility only), country, client id (`123` or `KL-000123`).
+/// Masked partners can't search by name, so a search can't confirm who a masked client is.
+fn client_search(q: Option<&str>) -> (Option<String>, Option<i64>) {
+    let Some(q) = q.map(str::trim).filter(|x| !x.is_empty() && x.len() <= 60) else { return (None, None) };
+    let id = q.to_ascii_uppercase().trim_start_matches("KL-").trim_start_matches('#').parse::<i64>().ok().filter(|i| *i > 0);
+    (Some(format!("%{}%", q.replace(['%', '_'], ""))), id)
 }
 
 fn programme_json(s: &Settings, levels: &[Level]) -> Value {
@@ -377,6 +385,7 @@ pub async fn clients(State(st): State<AppState>, u: UserCtx, Query(q): Query<Cli
     let t = u.tenant.as_str();
     let s = db::settings(&st.pool, t).await?;
     let full = s.client_visibility == "full";
+    let (search, search_id) = client_search(q.q.as_deref());
     let (m0, _) = calc::month_bounds(Utc::now());
     let depth = s.tiers.len() as i32;
     let rows = sqlx::query(
@@ -394,7 +403,8 @@ pub async fn clients(State(st): State<AppState>, u: UserCtx, Query(q): Query<Cli
                 (SELECT coalesce(sum(k.amount), 0) FROM commissions k WHERE k.beneficiary_id = $2 AND k.client_id = m.user_id AND k.status NOT IN ('void','rejected')) AS earned
          FROM down d JOIN members m ON m.user_id = d.user_id LEFT JOIN campaigns c ON c.id = m.campaign_id
          WHERE ($5::int IS NULL OR d.tier = $5)
-           AND ($6::text IS NULL OR (m.first_name || ' ' || m.last_name) ILIKE $6 OR ($7 AND m.email ILIKE $6))
+           AND ($6::text IS NULL OR m.user_id = $8 OR m.country ILIKE $6
+                OR ($7 AND ((m.first_name || ' ' || m.last_name) ILIKE $6 OR m.email ILIKE $6)))
          ORDER BY m.joined_at DESC LIMIT 2000",
     )
     .bind(t)
@@ -402,8 +412,9 @@ pub async fn clients(State(st): State<AppState>, u: UserCtx, Query(q): Query<Cli
     .bind(depth)
     .bind(m0)
     .bind(q.tier)
-    .bind(q.q.as_deref().map(str::trim).filter(|x| !x.is_empty() && x.len() <= 60).map(|x| format!("%{}%", x.replace(['%', '_'], ""))))
+    .bind(&search)
     .bind(full)
+    .bind(search_id)
     .fetch_all(&st.pool)
     .await?;
     let items: Vec<Value> = rows
@@ -650,6 +661,14 @@ mod tests {
     fn names_and_slugs() {
         assert_eq!(super::shown_name("Priya", "Sharma", true), "Priya Sharma");
         assert_eq!(super::shown_name("Priya", "Sharma", false), "P. S.");
+        assert_eq!(super::shown_name(" amit ", "mehta", false), "A. M.");
+        assert_eq!(super::shown_name("Priya", "", false), "P.");
+        assert_eq!(super::shown_name("", "", false), "—");
+        assert_eq!(super::shown_name("", " ", true), "—");
+        assert_eq!(super::client_search(Some("KL-000123")), (Some("%KL-000123%".into()), Some(123)));
+        assert_eq!(super::client_search(Some(" 42 ")), (Some("%42%".into()), Some(42)));
+        assert_eq!(super::client_search(Some("priya")), (Some("%priya%".into()), None));
+        assert_eq!(super::client_search(Some("  ")), (None, None));
         assert_eq!(super::slugify("  Diwali Gold -- Promo! "), "diwali-gold-promo");
         assert!(super::landing_ok("/register"));
         assert!(!super::landing_ok("//evil.com"));

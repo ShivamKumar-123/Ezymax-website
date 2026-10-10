@@ -84,7 +84,8 @@ pub struct Settings {
     /// Upper bounds for what an IB may give away (D60), in % of its own amount.
     pub max_rebate_pct: D,
     pub max_split_pct: D,
-    /// `full`: IBs see client names, emails and trades (consent in the sign-up T&C); `masked`: initials and lots only (D61).
+    /// `masked` (default since 2026-10-10, owner): IBs see initials, client ids, country, dates and totals only;
+    /// `full`: also client names, emails, first deposit amounts and trades (consent in the sign-up T&C) (D61).
     pub client_visibility: String,
     pub self_referral: SelfReferral,
     pub wash: WashRules,
@@ -120,7 +121,7 @@ impl Default for Settings {
             payout: PayoutRules { schedule: "weekly".into(), weekday: 1, month_day: 1, min_amount: dec("10"), auto_create: true },
             max_rebate_pct: dec("50"),
             max_split_pct: dec("50"),
-            client_visibility: "full".into(),
+            client_visibility: "masked".into(),
             self_referral: SelfReferral { ip: "block".into(), device: "block".into(), identity: "block".into() },
             wash: WashRules { enabled: true, window_secs: 60, volume_tolerance_pct: dec("10"), short_trades_min: 10, short_trades_pct: dec("50") },
             allow_demotion: false,
