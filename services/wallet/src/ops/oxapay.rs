@@ -114,6 +114,16 @@ fn is_dead(status: &str) -> bool {
     matches!(status.trim().to_ascii_lowercase().as_str(), "expired" | "failed" | "cancelled" | "canceled")
 }
 
+/// Our status for an OxaPay one that is neither paid nor dead. OxaPay's payment endpoint answers lower-case
+/// words ("new", "waiting", "confirming"); its callbacks use "Paying". Anything unrecognised counts as money
+/// in flight, which is the reading that never loses a payment: the invoice stays open and staff can recheck.
+fn pending_status(status: &str) -> &'static str {
+    match status.trim().to_ascii_lowercase().as_str() {
+        "new" | "waiting" | "" => "waiting",
+        _ => "paying",
+    }
+}
+
 // ── HTTP to OxaPay ───────────────────────────────────────────────────────────
 
 fn http() -> Result<reqwest::Client, ApiError> {
@@ -413,7 +423,7 @@ async fn settle(st: &AppState, id: i64, track: &str, p: Payment, callback_status
     .unwrap_or(Value::Null);
 
     if !is_paid(&status) {
-        let next = if is_dead(&status) { "expired" } else { "paying" };
+        let next = if is_dead(&status) { "expired" } else { pending_status(&status) };
         sqlx::query("UPDATE oxapay_invoices SET status = $2, last_payment = $3, updated_at = now() WHERE id = $1 AND status NOT IN ('credited', 'cancelled')")
             .bind(id)
             .bind(next)
@@ -688,6 +698,17 @@ mod tests {
             assert!(is_dead(d), "{d} ends the invoice");
         }
         assert!(!is_dead("Paying"));
+    }
+
+    #[test]
+    fn pending_statuses_are_mapped() {
+        assert_eq!(pending_status("new"), "waiting");
+        assert_eq!(pending_status("Waiting"), "waiting");
+        assert_eq!(pending_status(""), "waiting");
+        assert_eq!(pending_status("confirming"), "paying");
+        assert_eq!(pending_status("Paying"), "paying");
+        // a word OxaPay has not documented must not be read as "nothing happened"
+        assert_eq!(pending_status("something_new"), "paying");
     }
 
     #[test]

@@ -32,6 +32,14 @@ import { wallet, walletImage, walletUpload } from "@/lib/wallet";
 //   POST manual/deposits/{id}/cancel     only while pending
 //   POST manual/proofs                   payment screenshot: multipart/form-data `file` (or the raw image), ≤ 5 MB
 //   GET  manual/media/{id}               a QR code, or the client's own screenshot (image bytes, private)
+//
+// OxaPay crypto checkout (hosted gateway, credited automatically on payment; services/wallet README):
+//   POST oxapay/invoices {amount}        -> {checkout} with payment_url; send the client there
+//   GET  oxapay/invoices?page&limit      the client's checkouts, with the limits
+//   GET  oxapay/invoices/{id}?poll=1     one checkout; poll asks OxaPay first (the page after paying)
+//   POST oxapay/invoices/{id}/cancel     only while nothing has been paid
+// OxaPay's own notification is a separate public route: app/api/wallet/oxapay/callback.
+//
 // The mobile app reaches all of these through /api/mobile/wallet/… (lib/mobile.ts rewrites the `wallet` family).
 
 type Obj = Record<string, unknown>;
@@ -85,6 +93,13 @@ function amountOf(v: unknown): string | null {
   return AMOUNT_RE.test(s) && Number(s) > 0 ? s : null;
 }
 
+/** The origin OxaPay should send the payer back to, and call. Behind the edge the forwarded host is the
+ *  broker's own, so a white-label client returns to their own site. */
+function publicOrigin(req: NextRequest): string {
+  const host = (req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "").split(",")[0]!.trim();
+  return `https://${host}`;
+}
+
 function chainOf(v: unknown): "bsc" | "tron" | null {
   return v === "bsc" || v === "tron" ? v : null;
 }
@@ -111,6 +126,15 @@ export async function GET(req: NextRequest, { params }: Ctx) {
       deposits: `/v1/deposits?user_id=${uid}${q}`,
     }[route];
     return call(target);
+  }
+  if (route === "oxapay/invoices") {
+    const q = pageQuery(req);
+    if (q instanceof NextResponse) return q;
+    return call(`/v1/oxapay/invoices?user_id=${uid}${q}`);
+  }
+  if (path.length === 3 && path[0] === "oxapay" && path[1] === "invoices" && ID_RE.test(path[2]!)) {
+    const poll = req.nextUrl.searchParams.get("poll") === "1" ? "&poll=1" : "";
+    return call(`/v1/oxapay/invoices/${path[2]}?user_id=${uid}${poll}`);
   }
   if (route === "manual/methods") return call("/v1/manual/methods");
   if (route === "manual/deposits") {
@@ -187,6 +211,12 @@ export async function POST(req: NextRequest, { params }: Ctx) {
       if (!key) return error(422, "validation", "Missing request id.", "idempotency_key");
       return send(`/v1/wallets/${uid}/${path[1]}`, { login: body.login, amount, idempotency_key: `crm:${uid}:${key}` });
     }
+    case "oxapay/invoices": {
+      // USD, the currency the invoice is priced in; the wallet checks it against the configured limits
+      const amount = typeof body.amount === "string" || typeof body.amount === "number" ? String(body.amount).trim() : "";
+      if (!/^\d{1,9}(\.\d{1,2})?$/.test(amount) || Number(amount) <= 0) return error(422, "validation", "Enter an amount with up to 2 decimals.", "amount");
+      return send("/v1/oxapay/invoices", { user_id: uid, amount, origin: publicOrigin(req) });
+    }
     case "manual/deposits": {
       if (!Number.isInteger(body.method_id) || (body.method_id as number) <= 0) return error(422, "validation", "Choose a payment method.", "method_id");
       const amount = amountOf(body.amount);
@@ -203,6 +233,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   }
   if (path.length === 3 && path[0] === "withdrawals" && ID_RE.test(path[1]!) && path[2] === "cancel") return send(`/v1/withdrawals/${path[1]}/cancel`, { user_id: uid });
   if (path.length === 4 && path[0] === "manual" && path[1] === "deposits" && ID_RE.test(path[2]!) && path[3] === "cancel") return send(`/v1/manual/deposits/${path[2]}/cancel`, { user_id: uid });
+  if (path.length === 4 && path[0] === "oxapay" && path[1] === "invoices" && ID_RE.test(path[2]!) && path[3] === "cancel") return send(`/v1/oxapay/invoices/${path[2]}/cancel`, { user_id: uid });
   return error(404, "not_found", "Not found.");
 }
 

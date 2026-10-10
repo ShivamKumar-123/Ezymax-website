@@ -4,7 +4,7 @@
 // Used by the live deposit page and by the demo showcase (the data layer in ./api switches on IS_DEMO).
 
 import * as React from "react";
-import { Check, Landmark, Wallet, Zap } from "lucide-react";
+import { ArrowUpRight, Check, Landmark, Wallet, Zap } from "lucide-react";
 import { Card, CardHeader, CoinIcon, EmptyState, cn } from "@/components/kit";
 import { useT } from "@ezymex/i18n/react";
 import type { ManualDeposit, ManualKind, PaymentMethod } from "./api";
@@ -12,21 +12,24 @@ import { MethodDetails, MethodPicker } from "./details";
 import { RequestForm, RequestSent } from "./form";
 import { RequestsList } from "./requests";
 
-export type Via = "usdt" | ManualKind;
+/** usdt: our own addresses, watched on chain · bank / crypto: paid outside and approved by staff ·
+ *  checkout: OxaPay's hosted page, credited on payment. */
+export type Via = "usdt" | ManualKind | "checkout";
 
-/** USDT (automatic, on-chain) · Bank / UPI · Crypto. Only the options the broker offers are shown. */
-export function DepositChooser({ value, onChange, usdt, bank, crypto }: { value: Via; onChange: (v: Via) => void; usdt: boolean; bank: boolean; crypto: boolean }) {
+/** USDT (automatic, on-chain) · Bank / UPI · Crypto · Crypto checkout. Only what the broker offers. */
+export function DepositChooser({ value, onChange, usdt, bank, crypto, checkout = false }: { value: Via; onChange: (v: Via) => void; usdt: boolean; bank: boolean; crypto: boolean; checkout?: boolean }) {
   const t = useT();
   const options = [
     usdt && { v: "usdt" as const, title: t("payments.chooser.usdt"), text: t("payments.chooser.usdtText"), icon: <span className="relative"><CoinIcon coin="usdt" size={30} /><Zap className="absolute -bottom-1 -end-1 size-3.5 rounded-full bg-ember p-0.5 text-white" /></span> },
     bank && { v: "bank" as const, title: t("payments.chooser.bank"), text: t("payments.chooser.bankText"), icon: <span className="grid size-[30px] place-items-center rounded-full border border-line bg-surface-3 text-fg-2"><Landmark className="size-4" /></span> },
     crypto && { v: "crypto" as const, title: t("payments.chooser.crypto"), text: t("payments.chooser.cryptoText"), icon: <span className="grid size-[30px] place-items-center rounded-full border border-line bg-surface-3 text-fg-2"><Wallet className="size-4" /></span> },
+    checkout && { v: "checkout" as const, title: t("payments.chooser.checkout"), text: t("payments.chooser.checkoutText"), icon: <span className="grid size-[30px] place-items-center rounded-full border border-ember/30 bg-ember-soft text-ember"><ArrowUpRight className="size-4" /></span> },
   ].filter(Boolean) as { v: Via; title: string; text: string; icon: React.ReactNode }[];
   if (options.length < 2) return null;
   return (
     <div className="mb-4">
       <div className="k-label mb-2">{t("payments.chooser.title")}</div>
-      <div className={cn("grid grid-cols-1 gap-2", options.length === 3 ? "md:grid-cols-3" : "sm:grid-cols-2")} role="radiogroup" aria-label={t("payments.chooser.title")}>
+      <div className={cn("grid grid-cols-1 gap-2", options.length >= 4 ? "sm:grid-cols-2 xl:grid-cols-4" : options.length === 3 ? "md:grid-cols-3" : "sm:grid-cols-2")} role="radiogroup" aria-label={t("payments.chooser.title")}>
         {options.map((o) => {
           const on = o.v === value;
           return (
