@@ -12,11 +12,11 @@
  */
 
 import * as React from "react";
-import { ArrowUpRight, Inbox, Loader2, RefreshCw, Search } from "lucide-react";
+import { ArrowUpRight, Loader2, RefreshCw, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, DataTable, EmptyState, Input, KpiCard, PageHeader, type Column } from "@ezymex/ui";
 import { IS_DEMO } from "@ezymex/mock/mode";
-import { ErrorState, FilterSelect, Pager, TableSkeleton, ago, qs, useApi, useDebounced } from "@/components/live/kit";
+import { ErrorState, FilterSelect, Pager, TableSkeleton, ago, qs, useApi, useDebounced, useNow } from "@/components/live/kit";
 import { useCan } from "@/components/staff-session";
 import { ClientCell, Status, usd2, walletWrite } from "./kit";
 
@@ -92,7 +92,8 @@ function RecheckButton({ id, onDone }: { id: number; onDone: () => void }) {
 }
 
 export function LiveCheckoutsPage() {
-  const can = useCan();
+  const canRead = useCan("finance.read");
+  const now = useNow();
   const [status, setStatus] = React.useState("all");
   const [q, setQ] = React.useState("");
   const [page, setPage] = React.useState(1);
@@ -106,17 +107,17 @@ export function LiveCheckoutsPage() {
   const columns: Column<Checkout>[] = [
     { key: "id", header: "ID", cell: (r) => <span className="font-mono text-[12.5px]">{r.id}</span> },
     { key: "client", header: "Client", cell: (r) => <ClientCell id={r.user_id} /> },
-    { key: "amount", header: "Asked", align: "end", cell: (r) => <span className="k-num">{usd2(r.amount)} USD</span> },
-    { key: "credited", header: "Credited", align: "end", cell: (r) => <span className="k-num">{r.credited ? `${usd2(r.credited)} USDT` : "—"}</span> },
+    { key: "amount", header: "Asked", align: "right", cell: (r) => <span className="k-num">{usd2(r.amount)} USD</span> },
+    { key: "credited", header: "Credited", align: "right", cell: (r) => <span className="k-num">{r.credited ? `${usd2(r.credited)} USDT` : "—"}</span> },
     { key: "paid", header: "Paid in", cell: (r) => (r.paid_currency ? <span className="text-[12.5px]">{r.paid_amount ? `${r.paid_amount} ` : ""}{r.paid_currency}{r.network ? ` · ${r.network}` : ""}</span> : <span className="text-fg-3">—</span>) },
     { key: "reference", header: "Reference", cell: (r) => <span className="font-mono text-[11.5px] text-fg-2">{r.order_id}</span> },
     { key: "status", header: "Status", cell: (r) => <Status map={STATUS} s={r.status} /> },
-    { key: "created_at", header: "Opened", cell: (r) => <span className="text-[12.5px] text-fg-3">{ago(r.created_at)}</span> },
+    { key: "created_at", header: "Opened", cell: (r) => <span className="text-[12.5px] text-fg-3">{ago(r.created_at, now)}</span> },
     {
       key: "actions",
       header: "",
-      align: "end",
-      cell: (r) => (r.status === "credited" || !can("finance.read") ? null : <RecheckButton id={r.id} onDone={reload} />),
+      align: "right",
+      cell: (r) => (r.status === "credited" || !canRead ? null : <RecheckButton id={r.id} onDone={reload} />),
     },
   ];
 
@@ -127,7 +128,7 @@ export function LiveCheckoutsPage() {
       <div className="pb-16">
         {header}
         <Card>
-          <EmptyState icon={<Inbox />} title="Not in the showcase" text="Crypto checkouts need a live payment provider, so this page is empty in the demo build." />
+          <EmptyState illustration="bank" title="Not in the showcase" text="Crypto checkouts need a live payment provider, so this page is empty in the demo build." />
         </Card>
       </div>
     );
@@ -162,7 +163,7 @@ export function LiveCheckoutsPage() {
       </div>
       <Card>
         <div className="flex flex-wrap items-center gap-2 px-4 pt-4 sm:px-5">
-          <FilterSelect value={status} onChange={setStatus} options={FILTERS} />
+          <FilterSelect label="Status" value={status} onChange={setStatus} options={FILTERS} />
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -175,11 +176,11 @@ export function LiveCheckoutsPage() {
         {loading && !data ? (
           <TableSkeleton rows={8} />
         ) : !data?.items.length ? (
-          <EmptyState icon={<Inbox />} title="No checkouts" text="No crypto checkout matches this filter yet." />
+          <EmptyState illustration="bank" title="No checkouts" text="No crypto checkout matches this filter yet." />
         ) : (
           <>
             <DataTable columns={columns} rows={data.items} exportName="crypto-checkouts" />
-            <Pager page={data.page} limit={data.limit} total={data.total} onPage={setPage} />
+            <Pager page={data.page} perPage={data.limit} total={data.total} onPage={setPage} />
           </>
         )}
       </Card>
