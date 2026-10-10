@@ -3,7 +3,7 @@ description: "Ezymex: the Client Area and Ezymex Trader as one native app (Andro
 publish_to: 'none'
 
 # versionName+versionCode (sent as X-Ezymex-App-Version, compared with config.minAppVersion)
-version: 1.0.4+6
+version: 1.0.5+7
 
 environment:
   sdk: ^3.13.5
