@@ -3,16 +3,29 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, ArrowUpRight } from 'lucide-react';
+import { ChevronDown, ArrowUpRight, Download } from 'lucide-react';
 import { EzymexLogo } from '@/components/brand/Logo';
 import { NAV_MORE, NAV_PRIMARY } from '@/content/site';
 import { LOGIN_HREF, REGISTER_HREF } from '@/lib/crm';
 import { LanguagePicker, LanguageSelect } from '@/components/chrome/LanguagePicker';
-import { RISK_WARNING } from '@/content/facts';
+import { ANDROID_APP, RISK_WARNING } from '@/content/facts';
 import { cn } from '@/lib/cn';
+
+/**
+ * The Android app (APK) in one tap: a plain link with `download`, served as an attachment by the server. iPhones and
+ * iPads can't install an APK, so there the button opens the Platforms page instead.
+ */
+function useApkLink() {
+  const [ios, setIos] = useState(false);
+  useEffect(() => {
+    setIos(/iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+  }, []);
+  return ios ? { href: '/platforms' } : { href: ANDROID_APP.href, download: `Ezymex-${ANDROID_APP.version}.apk` };
+}
 
 export default function Nav() {
   const pathname = usePathname();
+  const apk = useApkLink();
   const [scrolled, setScrolled] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -147,8 +160,17 @@ export default function Nav() {
             </div>
           </nav>
 
-          <div className="relative z-[2] flex items-center gap-1.5">
+          <div className="relative z-[2] flex items-center gap-1 sm:gap-1.5">
             <LanguagePicker className="hidden lg:block" />
+            <a
+              {...apk}
+              aria-label={`Download the Ezymex Android app (APK, ${ANDROID_APP.sizeMb} MB)`}
+              title={`Android app ${ANDROID_APP.version} · ${ANDROID_APP.sizeMb} MB`}
+              className="glass grid h-10 w-10 place-items-center rounded-full text-fg transition-colors hover:text-ember-2 max-[359px]:hidden sm:h-11 sm:w-11 lg:flex lg:h-10 lg:w-auto lg:gap-2 lg:px-4 lg:text-[14px] lg:font-medium"
+            >
+              <Download size={16} aria-hidden />
+              <span className="hidden lg:inline">Download APK</span>
+            </a>
             <Link
               href={LOGIN_HREF}
               className="hidden h-10 items-center rounded-full px-4 text-[14px] font-medium text-fg-2 transition-colors hover:text-fg lg:flex"
@@ -157,7 +179,7 @@ export default function Nav() {
             </Link>
             <Link
               href={REGISTER_HREF}
-              className="btn btn-ember btn-sm !h-10 !px-4 text-[13px] sm:!px-5 sm:text-[14px]"
+              className="btn btn-ember btn-sm !h-10 !px-3.5 text-[13px] sm:!px-5 sm:text-[14px]"
             >
               Open account
             </Link>
@@ -167,7 +189,7 @@ export default function Nav() {
               aria-expanded={menu}
               aria-controls="mobile-menu"
               aria-label={menu ? 'Close menu' : 'Open menu'}
-              className="glass relative ml-1 grid h-11 w-11 place-items-center rounded-full lg:hidden"
+              className="glass relative ml-0.5 grid h-10 w-10 place-items-center rounded-full sm:ml-1 sm:h-11 sm:w-11 lg:hidden"
             >
               <span className="relative block h-3 w-5" aria-hidden>
                 <span
@@ -220,6 +242,10 @@ export default function Nav() {
             ))}
           </ul>
           <div className="flex flex-col gap-3">
+            <a {...apk} tabIndex={menu ? 0 : -1} className="btn btn-outline w-full gap-2">
+              <Download size={18} aria-hidden />
+              Download Android app (APK · {ANDROID_APP.sizeMb} MB)
+            </a>
             <Link href={REGISTER_HREF} tabIndex={menu ? 0 : -1} className="btn btn-ember w-full">
               Open account
             </Link>
