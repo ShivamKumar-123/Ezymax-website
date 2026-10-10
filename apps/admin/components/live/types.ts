@@ -20,6 +20,8 @@ export type Client = {
   country: string;
   date_of_birth: string;
   referral_code: string;
+  /** The client's code from before name-free codes (2026-10-10, first name + digits); it still attributes sign-ups. */
+  referral_code_legacy?: string | null;
   referred_by: number | null;
   kyc_status: "unverified" | "pending" | "verified" | "rejected";
   status: "active" | "blocked" | "closed";
@@ -67,6 +69,9 @@ export type ClientDetail = {
     failed_logins: number;
     updated_at: string | null;
     referred_code_raw: string | null;
+    /** The code used at sign-up belongs to a client whose referral link wasn't active (no deposit yet, or the wallet
+     *  couldn't be asked), so the sign-up was not attributed; `referral_held_for` is that client. */
+    referral_held?: "not_funded" | "unverified" | null;
     /** Who hid / deleted the client (staff name) and why. */
     hidden_reason?: string | null;
     hidden_by?: string | null;
@@ -74,6 +79,7 @@ export type ClientDetail = {
     deleted_by?: string | null;
   };
   referrer: { id: number; email: string; name: string; referral_code: string } | null;
+  referral_held_for?: { id: number; email: string; name: string; referral_code: string } | null;
   referrals: { total: number; items: { id: number; email: string; name: string; kyc_status: string; email_verified: boolean; created_at: string }[] };
   sessions: { active: number; total: number };
   trusted_devices: number;

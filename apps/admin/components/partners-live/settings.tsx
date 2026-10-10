@@ -502,7 +502,7 @@ export function LiveProgrammeSettings() {
                 <SettingRow label="Max sub-IB split" hint="Most an IB may pass down to the IB below it">
                   {edit ? <NumInput size="sm" className="w-28" value={s.maxSplitPct} onChange={(v) => set({ maxSplitPct: v })} min={0} max={100} suffix="%" /> : <Val>{s.maxSplitPct}%</Val>}
                 </SettingRow>
-                <SettingRow label="Client details shown to IBs" hint={s.clientVisibility === "full" ? "Names, emails and trades. Clients consent to this in the sign-up terms." : "Initials and lots only."}>
+                <SettingRow label="Client details shown to IBs" hint={s.clientVisibility === "full" ? "Names, emails, first deposits and trades. Clients consent to this in the sign-up terms." : "Initials, client ids, country, dates and totals only (the default)."}>
                   {edit ? <Segmented size="xs" value={s.clientVisibility} onChange={(v) => set({ clientVisibility: v })} options={[{ value: "full", label: "Full" }, { value: "masked", label: "Masked" }]} /> : <Val>{s.clientVisibility}</Val>}
                 </SettingRow>
                 <SettingRow label="Allow demotion" hint="Monthly evaluation may also move IBs down">

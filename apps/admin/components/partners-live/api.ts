@@ -58,7 +58,7 @@ export function toSettings(raw: Record<string, unknown>): Settings {
     payout: { schedule: r.payout?.schedule ?? "weekly", weekday: n(r.payout?.weekday) || 1, monthDay: n(r.payout?.monthDay) || 1, minAmount: n(r.payout?.minAmount), autoCreate: !!r.payout?.autoCreate },
     maxRebatePct: n(r.maxRebatePct),
     maxSplitPct: n(r.maxSplitPct),
-    clientVisibility: r.clientVisibility === "masked" ? "masked" : "full",
+    clientVisibility: r.clientVisibility === "full" ? "full" : "masked",
     selfReferral: { ip: r.selfReferral?.ip ?? "block", device: r.selfReferral?.device ?? "block", identity: r.selfReferral?.identity ?? "block" },
     wash: {
       enabled: !!r.wash?.enabled,

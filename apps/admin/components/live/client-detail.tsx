@@ -162,12 +162,24 @@ export function ClientDetailView({ id, compact = false }: { id: number; compact?
       <KeyValue
         rows={[
           ["Own referral code", <span key="rc" className="inline-flex items-center gap-1"><Mono>{u.referral_code}</Mono><CopyButton value={u.referral_code} label="Referral code" /></span>],
+          ...(u.referral_code_legacy
+            ? ([["Old referral code", <span key="lc" className="text-fg-3"><Mono>{u.referral_code_legacy}</Mono> (still works)</span>]] as [string, React.ReactNode][])
+            : []),
           [
             "Referred by",
             d.referrer ? (
               <Link key="rb" href={`/clients/${d.referrer.id}`} className="inline-flex items-center gap-1 text-ember hover:underline">
                 {d.referrer.name} <ArrowUpRight className="size-3.5" />
               </Link>
+            ) : u.referral_held && d.referral_held_for ? (
+              <span key="held" className="text-fg-3">
+                Code <Mono>{u.referred_code_raw}</Mono> of{" "}
+                <Link href={`/clients/${d.referral_held_for.id}`} className="text-ember hover:underline">
+                  {d.referral_held_for.name}
+                </Link>{" "}
+                — not counted:{" "}
+                {u.referral_held === "not_funded" ? "their referral link was not active yet (no deposit)" : "their deposit could not be checked"}. Reassign the upline in Partners to count it.
+              </span>
             ) : u.referred_code_raw ? (
               <span key="raw" className="text-fg-3">Code <Mono>{u.referred_code_raw}</Mono> (no match)</span>
             ) : (
