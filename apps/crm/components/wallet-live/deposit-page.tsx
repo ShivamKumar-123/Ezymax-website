@@ -392,7 +392,8 @@ function Inner() {
     return v === "usdt" || v === "bank" || v === "crypto" || v === "checkout" ? v : null;
   });
   const offered = (v: Via | null) => v === "usdt" || (v === "bank" && hasBank) || (v === "crypto" && hasCrypto) || (v === "checkout" && hasCheckout);
-  const via: Via = valid ? "usdt" : offered(picked) ? picked! : autoOn ? "usdt" : hasBank ? "bank" : hasCrypto ? "crypto" : hasCheckout ? "checkout" : "usdt";
+  // the crypto checkout is the quickest route (credited by itself), so it is the one the page opens on
+  const via: Via = valid ? "usdt" : offered(picked) ? picked! : hasCheckout ? "checkout" : autoOn ? "usdt" : hasBank ? "bank" : hasCrypto ? "crypto" : "usdt";
   const setIntent = (id: string | null) => {
     setIntentId(id);
     window.history.replaceState(window.history.state, "", id ? `/wallet/deposit?intent=${id}` : "/wallet/deposit");

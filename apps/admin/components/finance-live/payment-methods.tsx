@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import { Button, Card, Chip, DataTable, Dialog, EmptyState, Field, Input, KpiCard, PageHeader, Segmented, Toggle, cn, type Column } from "@ezymex/ui";
 import { ErrorState, TableSkeleton, ago, useNow, when } from "@/components/live/kit";
 import { useCan } from "@/components/staff-session";
-import { usd } from "./kit";
 import {
   CHAIN_NAMES,
   EVM_PRESETS,
@@ -25,7 +24,7 @@ import {
   type MethodInput,
   type PaymentMethod,
 } from "./manual-kit";
-import { announceManualChange, deleteMethod, expectedCredit, saveMethod, uploadQr, useManualMethods } from "./manual-data";
+import { announceManualChange, deleteMethod, saveMethod, uploadQr, useManualMethods } from "./manual-data";
 
 /* ------------------------------------------------------------------ */
 /* Form                                                                */
@@ -136,8 +135,9 @@ function toInput(f: Form, version?: number): MethodInput {
     sort_order: Number(f.sort_order) || 0,
     currency: t(f.currency).toUpperCase(),
     rate: t(f.currency).toUpperCase() === "USDT" ? "1" : t(f.rate),
-    min_amount: t(f.min_amount) || "0",
-    max_amount: t(f.max_amount) || null,
+    // no per-method limits any more: a save clears whatever the method had
+    min_amount: "0",
+    max_amount: null,
     details,
     evm: mm ? { chain_id: t(f.chain_id), token_contract: t(f.token_contract) || null, token_decimals: t(f.token_decimals) } : null,
     qr_media_id: f.qr_media_id,
@@ -246,8 +246,6 @@ function MethodEditor({
   const lines = rateLines(usdt ? "1" : f.rate, f.currency);
   const qrValue = generatedQr(f.kind, crypto ? { network: net, token: f.token, address: f.address } : f.bank);
   const showMm = crypto && metamaskPossible(net);
-  const minNum = Number(f.min_amount);
-  const example = lines && minNum > 0 && Number(usdt ? 1 : f.rate) > 0 ? expectedCredit(f.min_amount.trim(), usdt ? "1" : f.rate.trim()) : null;
   const presetKey = EVM_PRESETS.find((p) => (p.chain_id === null ? !f.token_contract.trim() && !!f.chain_id : String(p.chain_id) === f.chain_id.trim() && p.token_contract.toLowerCase() === f.token_contract.trim().toLowerCase()))?.key;
   const chainName = CHAIN_NAMES[Number(f.chain_id)];
 
@@ -428,19 +426,6 @@ function MethodEditor({
                 <span className="text-fg-3">Enter the rate to see the conversion.</span>
               )}
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Minimum" error={errs.min_amount}>
-                <Input value={f.min_amount} disabled={ro} inputMode="decimal" onChange={(e) => set("min_amount", e.target.value.replace(",", "."))} placeholder="0" trailing={<span className="text-[12px]">{f.currency}</span>} aria-label="Minimum amount" />
-              </Field>
-              <Field label="Maximum" hint="Optional" error={errs.max_amount}>
-                <Input value={f.max_amount} disabled={ro} inputMode="decimal" onChange={(e) => set("max_amount", e.target.value.replace(",", "."))} placeholder="No limit" trailing={<span className="text-[12px]">{f.currency}</span>} aria-label="Maximum amount" />
-              </Field>
-            </div>
-            {example && (
-              <div className="text-[12px] text-fg-3">
-                At the minimum, {money(f.min_amount, f.currency.toUpperCase())} credits <span className="k-num text-fg-2">{usd(example)} USDT</span>.
-              </div>
-            )}
           </Section>
 
           {crypto ? (
@@ -666,16 +651,6 @@ export function LivePaymentMethodsPage() {
           </div>
         );
       },
-    },
-    {
-      key: "l",
-      header: "Limits",
-      hideOn: "md",
-      cell: (r) => (
-        <span className="k-num whitespace-nowrap text-[12px] text-fg-2">
-          {Number(r.min_amount) ? money(r.min_amount) : "0"} – {r.max_amount ? money(r.max_amount) : "no max"} <span className="text-fg-3">{r.currency}</span>
-        </span>
-      ),
     },
     { key: "s", header: "Status", cell: (r) => (r.status === "active" ? <Chip size="sm" tone="up" dot>Active</Chip> : <Chip size="sm" dot>Hidden</Chip>) },
     {

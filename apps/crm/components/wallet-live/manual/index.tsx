@@ -16,14 +16,15 @@ import { RequestsList } from "./requests";
  *  checkout: OxaPay's hosted page, credited on payment. */
 export type Via = "usdt" | ManualKind | "checkout";
 
-/** USDT (automatic, on-chain) · Bank / UPI · Crypto · Crypto checkout. Only what the broker offers. */
+/** Crypto checkout (the quickest: paid on the provider's page and credited by itself) · USDT on-chain ·
+ *  Bank / UPI · Crypto. Only what the broker offers, in that order. */
 export function DepositChooser({ value, onChange, usdt, bank, crypto, checkout = false }: { value: Via; onChange: (v: Via) => void; usdt: boolean; bank: boolean; crypto: boolean; checkout?: boolean }) {
   const t = useT();
   const options = [
+    checkout && { v: "checkout" as const, title: t("payments.chooser.checkout"), text: t("payments.chooser.checkoutText"), icon: <span className="grid size-[30px] place-items-center rounded-full border border-ember/30 bg-ember-soft text-ember"><ArrowUpRight className="size-4" /></span> },
     usdt && { v: "usdt" as const, title: t("payments.chooser.usdt"), text: t("payments.chooser.usdtText"), icon: <span className="relative"><CoinIcon coin="usdt" size={30} /><Zap className="absolute -bottom-1 -end-1 size-3.5 rounded-full bg-ember p-0.5 text-white" /></span> },
     bank && { v: "bank" as const, title: t("payments.chooser.bank"), text: t("payments.chooser.bankText"), icon: <span className="grid size-[30px] place-items-center rounded-full border border-line bg-surface-3 text-fg-2"><Landmark className="size-4" /></span> },
     crypto && { v: "crypto" as const, title: t("payments.chooser.crypto"), text: t("payments.chooser.cryptoText"), icon: <span className="grid size-[30px] place-items-center rounded-full border border-line bg-surface-3 text-fg-2"><Wallet className="size-4" /></span> },
-    checkout && { v: "checkout" as const, title: t("payments.chooser.checkout"), text: t("payments.chooser.checkoutText"), icon: <span className="grid size-[30px] place-items-center rounded-full border border-ember/30 bg-ember-soft text-ember"><ArrowUpRight className="size-4" /></span> },
   ].filter(Boolean) as { v: Via; title: string; text: string; icon: React.ReactNode }[];
   if (options.length < 2) return null;
   return (
