@@ -4,6 +4,9 @@
  * (the platform showcase and the options page). The source captures are 1× PNGs; crops are scaled 2× with
  * Lanczos and lightly sharpened for high-density screens, then saved as WebP in public/images/product/.
  *
+ * The current crops (October 2026) were taken from 2x captures of the Ezymex demo builds instead (no upscaling). The
+ * original captures this script was written for still show the Kalks brand: do not run it on them.
+ *
  *   node scripts/feature-crops.mjs <redesign/final dir> <crm-redesign/after dir>
  */
 import sharp from 'sharp';
