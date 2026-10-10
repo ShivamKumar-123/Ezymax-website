@@ -36,7 +36,7 @@ GATEWAY_DATABASE_URL=postgres://ezymex:$PGPW@127.0.0.1:5432/ezymex_core
 DATABASE_URL=postgres://ezymex:$PGPW@127.0.0.1:5432/ezymex
 SUPER_ADMIN_EMAIL=$ADMIN_EMAIL
 SUPER_ADMIN_PASSWORD=$ADMIN_PW
-SUPER_ADMIN_NAME=Ezymex Admin
+SUPER_ADMIN_NAME="Ezymex Admin"
 # Live prices: the Infoway API key (https://infoway.io). Empty = no live feed yet.
 INFOWAY_API_KEY=
 EOF
