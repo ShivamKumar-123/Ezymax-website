@@ -1,6 +1,6 @@
 # wallet
 
-The Ezymex central client wallet (D3): per-user multi-currency balances on a double-entry ledger, USDT deposits on BNB Chain (BEP20) and TRON (TRC20) verified on-chain, withdrawals with admin approval, and transfers between the wallet and the client's own trading accounts. It is a Rust service (axum 0.8, sqlx 0.9, PostgreSQL) on `127.0.0.1:8095`.
+The Ezymex central client wallet (D3): per-user multi-currency balances on a double-entry ledger, USDT deposits on BNB Chain (BEP20) and TRON (TRC20) verified on-chain, crypto checkouts hosted by OxaPay, withdrawals with admin approval, and transfers between the wallet and the client's own trading accounts. It is a Rust service (axum 0.8, sqlx 0.9, PostgreSQL) on `127.0.0.1:8095`.
 
 Other services (IB, copy/PAMM, prop) move money in and out of client wallets **only** through [`POST /v1/wallets/transfers`](#wallet-api-contract-for-other-services).
 
@@ -15,6 +15,7 @@ Other services (IB, copy/PAMM, prop) move money in and out of client wallets **o
 - [Back Office API](#back-office-api)
 - [Balance & credit (manual adjustments)](#balance--credit-manual-adjustments)
 - [Manual payments (bank / UPI / crypto)](#manual-payments-bank--upi--crypto)
+- [Crypto checkout (OxaPay)](#crypto-checkout-oxapay)
 - [Environment](#environment)
 - [Tests](#tests)
 - [Production checklist](#production-checklist)
@@ -319,6 +320,55 @@ Besides the automatic BEP20 / TRC20 deposits, a broker can list **payment method
 | `POST /v1/admin/manual/deposits/{id}/reject` | `finance.approve` | `{reason}` |
 | `GET /v1/admin/manual/deposits/export?<filters>` | `finance.export` | CSV (at most 10,000 rows; audited) |
 
+## Crypto checkout (OxaPay)
+
+The third way money comes in. The client names an amount in **USD**, the service opens an invoice with
+[OxaPay](https://oxapay.com), and the client pays whichever coin they like on OxaPay's hosted page. Payment
+credits the wallet on its own: no hash to paste (unlike the on-chain path) and no staff approval (unlike the
+manual one). Code: `src/ops/oxapay.rs`, routes `src/api/oxapay.rs`, table `oxapay_invoices`
+(`migrations/0005_oxapay.sql`). Off unless `WALLET_OXAPAY_API_KEY` is set.
+
+- **The credit is an ordinary `crypto_deposit`** ledger transaction, the same kind a staff-approved manual
+  crypto payment books, with the idempotency key `oxapay:deposit:<tenant>:<track_id>`. So wallet history, the
+  funding rules (`FUNDING_KINDS`), the Back Office labels and the 23 locales all work with no new ledger kind.
+  `oxapay_invoices` carries the provenance: which invoice, which coin, which hash.
+- **The callback is a trigger, not an instruction.** OxaPay signs each callback with an HMAC-SHA512 of the raw
+  body under the merchant key, in an `HMAC` header, and the service checks it in constant time. It then asks
+  OxaPay what the payment actually is (`GET /v1/payment/{track_id}`) and credits from *that* answer. A replayed
+  or forged callback therefore cannot move money, and the body must reach the service byte for byte — the
+  Client Area's BFF route forwards it without parsing, because re-serialising the JSON would change the bytes.
+- **Idempotent.** OxaPay delivers a callback up to five times (after about 1 min, 3 min, 30 min and 3 h). Every
+  delivery lands on the same ledger key, so only the first one books. The route answers `200 ok`, which is what
+  OxaPay checks for; any other status asks it to try again, which is what we want while the wallet is down.
+- **The poll is the reliable path.** `GET /v1/oxapay/invoices/{id}?poll=1` asks OxaPay directly and credits the
+  same way. The Client Area polls the open checkout every 6 s and on the page OxaPay returns the payer to, and
+  staff can press **Recheck** in Back Office → Finance → Crypto checkouts. A callback that never arrives
+  therefore costs nothing.
+- **Amounts.** Invoices are created with `under_paid_coverage: 0`, so a paid invoice is a fully paid one and
+  the credited USDT is the USD that was asked for. `fee_paid_by_payer` defaults to true, so the broker receives
+  the whole amount.
+- **One merchant account.** The key is platform-wide, so every tenant's checkouts settle into the same OxaPay
+  account. A per-broker key belongs with the other per-tenant payment settings; until then a white-label broker
+  should leave this off and use the manual methods.
+
+| Method & path | Who | Body / response |
+|---|---|---|
+| `POST /v1/oxapay/invoices` | client | `{user_id, amount, origin}` -> `{checkout}` with `payment_url`. `origin` is the `https://host` the client is on, so a white-label client is called back and returned to their own broker's host |
+| `GET /v1/oxapay/invoices?user_id=&page&limit` | client | `{items, total, enabled, min_amount, max_amount}` |
+| `GET /v1/oxapay/invoices/{id}?user_id=&poll=1` | client | `{checkout}`; `poll=1` asks OxaPay first |
+| `POST /v1/oxapay/invoices/{id}/cancel` | client | `{user_id}`; only while nothing has been paid |
+| `POST /v1/oxapay/callback` | OxaPay | the raw signed body + the `HMAC` header. Answers `200 ok` |
+| `GET /v1/admin/oxapay/invoices?status&user_id&q&page&limit` | `finance.read` | `{items, total, counts, credited_total, enabled}` |
+| `POST /v1/admin/oxapay/invoices/{id}/recheck` | `finance.read` | asks OxaPay again and credits if it is paid |
+
+Statuses: `new` (created here) -> `waiting` (invoice open) -> `paying` (funds seen, unconfirmed) -> `credited`.
+The other end states are `expired`, `failed` and `cancelled`, and none of them books anything.
+
+**The callback URL** is `https://<the client's host>/api/wallet/oxapay/callback`, the one route under
+`/api/wallet` with no session (listed in `apps/crm/proxy.ts`). It needs no configuration in the OxaPay
+dashboard: every invoice carries its own `callback_url`. OxaPay will not call a private address, so the
+callback cannot be exercised from localhost; a tunnel, or the poll, is how you test it locally.
+
 ## Environment
 
 | Variable | Default | |
@@ -339,6 +389,13 @@ Besides the automatic BEP20 / TRC20 deposits, a broker can list **payment method
 | `GATEWAY_URL` / `GATEWAY_INTERNAL_TOKEN` | `http://127.0.0.1:8080` | KYC status |
 | `SUPPORT_URL` / `SUPPORT_INTERNAL_TOKEN` | `http://127.0.0.1:8100` / – | notification push (bell, realtime, email); empty URL = in-app only |
 | `WALLET_STORAGE_DIR` | `~/.ezymex-data/wallet` | manual-payment QR codes and payment screenshots (created 0700 on start; files 0600). Back it up with the database |
+| `WALLET_OXAPAY_API_KEY` | – | the OxaPay merchant key. Empty switches the crypto checkout off everywhere |
+| `WALLET_OXAPAY_API_URL` | `https://api.oxapay.com` | |
+| `WALLET_OXAPAY_MIN_USD` / `WALLET_OXAPAY_MAX_USD` | `10` / `50000` | what one checkout may ask for |
+| `WALLET_OXAPAY_LIFETIME_MINUTES` | `60` | how long the payment page stays open (OxaPay allows 15–2880) |
+| `WALLET_OXAPAY_FEE_PAID_BY_PAYER` | `true` | `false` takes OxaPay's fee off the broker instead |
+| `WALLET_OXAPAY_MAX_OPEN` | `3` | open checkouts one client may hold at once |
+| `WALLET_OXAPAY_SANDBOX` | `false` | `true` creates test invoices |
 
 The apps need `WALLET_URL` (default `http://127.0.0.1:8095`) and `WALLET_INTERNAL_TOKEN` (server-only) in `apps/crm` and `apps/admin`.
 
