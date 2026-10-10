@@ -11,6 +11,7 @@ mod db;
 mod demand;
 mod depth;
 mod gate;
+mod binance;
 mod ingest;
 mod instruments;
 mod spreads;
@@ -56,6 +57,8 @@ async fn main() -> anyhow::Result<()> {
     // stop signal for the provider connections: they unsubscribe and close before the process exits
     let (stop_tx, stop_rx) = tokio::sync::watch::channel(false);
     let ingest_tasks = ingest::spawn_all(&cfg, market.clone(), stop_rx.clone());
+    // crypto straight from Binance; the provider keeps forex, metals, indices and stocks
+    let _binance = binance::spawn(&cfg, market.clone(), stop_rx.clone());
     if cfg.upstream.is_empty() {
         backfill::spawn(&cfg, market.clone());
     } else {

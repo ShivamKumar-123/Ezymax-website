@@ -5,6 +5,9 @@ use std::fmt;
 /// `Debug` is implemented by hand so secrets (`infoway_key`, `admin_token`) never reach logs.
 #[derive(Clone)]
 pub struct Config {
+    /// Take crypto prices straight from Binance rather than through the provider (`binance.rs`).
+    pub binance_enabled: bool,
+    pub binance_ws: String,
     pub database_url: String,
     pub bind: String,
     pub infoway_key: String,
@@ -114,6 +117,8 @@ impl Config {
         Ok(Self {
             database_url: var("DATABASE_URL", "postgres://postgres@127.0.0.1:5433/ezymex"),
             bind: var("MARKET_DATA_BIND", "127.0.0.1:8081"),
+            binance_enabled: var("MARKET_DATA_BINANCE", "true") != "false",
+            binance_ws: var("BINANCE_WS", "wss://stream.binance.com:9443/stream"),
             infoway_key,
             infoway_rest: var("INFOWAY_REST_URL", "https://data.infoway.io"),
             infoway_ws: var("INFOWAY_WS_URL", "wss://data.infoway.io/ws"),

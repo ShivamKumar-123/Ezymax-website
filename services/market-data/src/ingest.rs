@@ -41,7 +41,7 @@ pub type Stop = watch::Receiver<bool>;
 /// Starts the planner and one connection task per provider market; the returned tasks finish once `stop` turns
 /// true and every connection has unsubscribed and closed.
 pub fn spawn_all(cfg: &Config, market: Arc<Market>, stop: Stop) -> Vec<tokio::task::JoinHandle<()>> {
-    let plans = spawn_planner(market.clone());
+    let plans = spawn_planner(market.clone(), cfg.binance_enabled);
     if !cfg.upstream.is_empty() {
         let (url, mk) = (cfg.upstream.clone(), market.clone());
         let all = plans.values().cloned().collect::<Vec<_>>();
@@ -65,7 +65,15 @@ pub const CONNECT_STAGGER: Duration = Duration::from_secs(5);
 
 /// Recomputes the plan whenever demand changes (and every 5 s for grace periods), publishes each market's
 /// provider codes, and asks for history of catalogue symbols that start streaming (their bars have a gap).
-fn spawn_planner(market: Arc<Market>) -> Plans {
+fn spawn_planner(market: Arc<Market>, binance: bool) -> Plans {
+    // Crypto comes from Binance, all of it, all the time: it counts as streaming whatever demand says,
+    // and the provider is never asked for it, so its crypto connection has nothing to stream and stays
+    // down (run() idles on an empty plan).
+    let crypto: BTreeSet<String> = if binance {
+        market.cat.list.iter().filter(|i| i.asset_class == "crypto").map(|i| i.symbol.clone()).collect()
+    } else {
+        BTreeSet::new()
+    };
     let mut txs: BTreeMap<String, watch::Sender<Arc<BTreeSet<String>>>> = BTreeMap::new();
     let mut rxs: Plans = BTreeMap::new();
     for m in market.cat.markets() {
@@ -86,7 +94,8 @@ fn spawn_planner(market: Arc<Market>) -> Plans {
             }
             let before = market.streaming();
             let plan = market.demand.lock().unwrap().plan(&market.cat, &before, std::time::Instant::now());
-            let after = plan.symbols();
+            let mut after = plan.symbols();
+            after.extend(crypto.iter().cloned());
             if after != before {
                 let added: Vec<&String> = after.difference(&before).collect();
                 let removed = before.difference(&after).count();
@@ -105,6 +114,9 @@ fn spawn_planner(market: Arc<Market>) -> Plans {
                 last_dropped = plan.dropped.len();
             }
             for (m, tx) in &txs {
+                if binance && m == "crypto" {
+                    continue;
+                }
                 let codes: BTreeSet<String> = plan.markets.get(m).into_iter().flatten().filter_map(|s| market.cat.get(s)).map(|i| i.provider.code.clone()).collect();
                 if **tx.borrow() != codes {
                     let _ = tx.send(Arc::new(codes));
