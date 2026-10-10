@@ -377,35 +377,65 @@ pub struct ArchiveBody {
     reason: Reason,
 }
 
-/// Staff archive (C1): reason code + note, audited. The balance stays on the account (no wallet transfer);
-/// credit and bonus are forfeited.
+/// Staff archive (C1): reason code + note, audited. Credit and bonus are forfeited.
+///
+/// With `empty`, the account is emptied first: open orders are cancelled and positions closed as a dealer
+/// close (so the dealer and reason are recorded), and then the withdrawable balance is moved to the client's
+/// wallet, exactly as the client's own archive does. The sweep runs before the archive, because an archived
+/// account can no longer transfer, and outside the engine op, because it is an HTTP call to the wallet. If it
+/// fails the account is left as it is — emptied, but not archived — and the failure is returned.
 pub async fn archive(State(st): State<AppState>, s: StaffCtx, Path(login): Path<i64>, Body(b): Body<ArchiveBody>) -> ApiResult<Json<Value>> {
     s.require(ROLES_DEALING)?;
     check_reason(&b.reason)?;
     let by = format!("staff:{}", s.staff.id);
     let dealer = crate::engine::trade::DealerCtx { staff: s.staff.name.clone(), reason_code: b.reason.reason_code.clone(), force: false };
     let (code, restorable, empty) = (b.reason.reason_code.clone(), b.client_restorable, b.empty);
-    let op: Op = Box::new(move |tx, env| {
-        let before = json!({"status": tx.st.account.status.as_str(), "positions": tx.st.positions.len(), "orders": tx.st.orders.len(), "credit": num(tx.st.credit), "bonus": num(tx.st.bonus)});
-        let mut closed = 0;
-        if empty {
+
+    // Empty the account first: the dealer close is one engine op, the wallet sweep an HTTP call after it.
+    let mut closed_count = 0i64;
+    let mut moved: Option<String> = None;
+    if empty {
+        let dealer2 = dealer.clone();
+        let close_op: Op = Box::new(move |tx, env| {
             let orders: Vec<i64> = tx.st.orders.keys().copied().collect();
             for t in orders {
                 crate::engine::trade::cancel_order(tx, env, t, "account archived")?;
             }
             let tickets: Vec<i64> = tx.st.positions.keys().copied().collect();
+            let mut closed = 0;
             for t in tickets {
-                crate::engine::trade::close_position(tx, env, t, crate::engine::trade::CloseReq { dealer: Some(dealer.clone()), ..Default::default() })?;
+                crate::engine::trade::close_position(tx, env, t, crate::engine::trade::CloseReq { dealer: Some(dealer2.clone()), ..Default::default() })?;
                 closed += 1;
             }
+            Ok(json!({"closed": closed}))
+        });
+        let d = staff_exec(&st, &s, login, &b.reason, "archive", close_op).await?;
+        closed_count = d.0["data"]["closed"].as_i64().unwrap_or(0);
+
+        // the client's money goes back to their wallet while the account can still transfer
+        let m = st.hub.meta(login).ok_or_else(|| ApiError::NotFound("Account not found".into()))?;
+        let c = super::lifecycle::check(&st, login).await?;
+        let actor = format!("staff:{}", s.staff.id);
+        let (steps, emptied) = super::lifecycle::empty_steps(&st, m.tenant_id, m.user_id, &actor, login, &c, "archive").await?;
+        if !emptied {
+            let why = steps.iter().rev().find_map(|x| x["detail"].as_str()).unwrap_or("the balance could not be moved to the wallet");
+            return Err(ApiError::Conflict { code: "not_emptied", message: format!("The account was not archived: {why}") });
         }
+        moved = steps.iter().find(|x| x["step"] == "return_balance").and_then(|x| x["detail"].as_str().map(str::to_string));
+    }
+
+    let op: Op = Box::new(move |tx, env| {
+        let before = json!({"status": tx.st.account.status.as_str(), "positions": tx.st.positions.len(), "orders": tx.st.orders.len(), "credit": num(tx.st.credit), "bonus": num(tx.st.bonus)});
         let changed = funds::archive(tx, env, &by, &code, restorable)?;
         if changed {
-            tx.audit.push(draft("account.archive", before, json!({"status": "archived", "clientRestorable": restorable, "closed": closed}), vec![]));
+            tx.audit.push(draft("account.archive", before, json!({"status": "archived", "clientRestorable": restorable, "closed": closed_count}), vec![]));
         }
-        Ok(json!({"status": "archived", "changed": changed, "closed": closed}))
+        Ok(json!({"status": "archived", "changed": changed, "closed": closed_count}))
     });
-    let r = staff_exec(&st, &s, login, &b.reason, "archive", op).await?;
+    let mut r = staff_exec(&st, &s, login, &b.reason, "archive", op).await?;
+    if let Some(m) = moved {
+        r.0["data"]["movedToWallet"] = json!(m);
+    }
     super::lifecycle::revoke_sessions(&st, login).await;
     if r.0["data"]["changed"] == true
         && let Some(m) = st.hub.meta(login)

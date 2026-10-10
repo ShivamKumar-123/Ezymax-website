@@ -193,7 +193,7 @@ pub async fn archive(State(st): State<AppState>, ctx: Ctx, headers: HeaderMap, P
     }
     let actor = format!("user:{user}");
     let fail = |steps: Vec<Value>, status: Status| Ok(Json(json!({"ok": false, "status": status.as_str(), "steps": steps})));
-    let (mut steps, emptied) = empty_steps(&st, &ctx, user, login, &c, "archive").await?;
+    let (mut steps, emptied) = empty_steps(&st, ctx.tenant.tenant_id, user, &actor, login, &c, "archive").await?;
     if !emptied {
         return fail(steps, c.status);
     }
@@ -212,15 +212,17 @@ pub async fn archive(State(st): State<AppState>, ctx: Ctx, headers: HeaderMap, P
     Ok(Json(json!({"ok": true, "status": "archived", "steps": steps})))
 }
 
-/// The "empty first" steps of archive and close: cancel orders and close positions as the client, then move the
-/// withdrawable balance of a live account to the wallet (idempotent key `<purpose>:{login}:{version}`). Returns the
-/// steps that ran and whether all of them succeeded.
-pub async fn empty_steps(st: &AppState, ctx: &Ctx, user: i64, login: i64, c: &Check, purpose: &str) -> ApiResult<(Vec<Value>, bool)> {
-    let actor = format!("user:{user}");
+/// The "empty first" steps of archive and close: cancel orders and close positions, then move the withdrawable
+/// balance of a live account to the wallet (idempotent key `<purpose>:{login}:{version}`). Returns the steps that
+/// ran and whether all of them succeeded.
+///
+/// `actor` is who the engine records for the closes (`user:<id>` for the client's own archive, `staff:<id>` for
+/// the Back Office). Staff pass the tenant and owner from `hub.meta`, since they have no client `Ctx`.
+pub async fn empty_steps(st: &AppState, tenant_id: i64, user: i64, actor: &str, login: i64, c: &Check, purpose: &str) -> ApiResult<(Vec<Value>, bool)> {
     let mut steps = Vec::new();
     if c.positions > 0 || c.orders > 0 {
         let op: Op = Box::new(close_everything);
-        match st.hub.exec(login, &actor, None, "", "", None, op).await {
+        match st.hub.exec(login, actor, None, "", "", None, op).await {
             Ok(d) => steps.push(step("close_positions", true, format!("{} position(s) closed, {} order(s) cancelled", d.value["closed"], d.value["cancelled"]))),
             Err(e) => {
                 steps.push(step("close_positions", false, exec_err(e)));
@@ -233,7 +235,7 @@ pub async fn empty_steps(st: &AppState, ctx: &Ctx, user: i64, login: i64, c: &Ch
         let amt = crate::social::copier::returnable(now.withdrawable_usd);
         if amt > ZERO {
             let key = format!("{purpose}:{login}:{}", now.version);
-            match st.social.wallet.from_trading(&st.social.slug(ctx.tenant.tenant_id), &key, user, login, amt).await {
+            match st.social.wallet.from_trading(&st.social.slug(tenant_id), &key, user, login, amt).await {
                 Ok(_) => steps.push(step("return_balance", true, format!("{} USD moved to the wallet", amt.normalize()))),
                 Err(e) => {
                     steps.push(step("return_balance", false, e.message));
@@ -377,7 +379,8 @@ pub async fn request_closure(State(st): State<AppState>, ctx: Ctx, headers: Head
         return Err(ApiError::Validation { field: "ackForfeit", message: "Credit and bonus on this account are forfeited when it is closed; confirm to continue".into() });
     }
     let balance_usd = total_usd(&c);
-    let (steps, emptied) = if c.status == Status::Archived { (vec![], true) } else { empty_steps(&st, &ctx, user, login, &c, "close").await? };
+    let (steps, emptied) =
+        if c.status == Status::Archived { (vec![], true) } else { empty_steps(&st, ctx.tenant.tenant_id, user, &format!("user:{user}"), login, &c, "close").await? };
     if !emptied {
         return Ok(Json(json!({"ok": false, "steps": steps, "request": Value::Null})));
     }
