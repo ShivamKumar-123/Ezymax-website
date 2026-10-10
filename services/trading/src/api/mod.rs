@@ -208,6 +208,7 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/admin/accounts/{login}/leverage", post(admin::leverage))
         .route("/v1/admin/groups", get(admin::groups).post(admin::create_group))
         .route("/v1/admin/groups/{code}", put(admin::update_group))
+        .route("/v1/admin/groups/{code}/delete", post(admin::delete_group))
         .route("/v1/admin/ledger/accounts", get(admin::ledger_accounts))
         // copy trading and PAMM: Client Area (X-Ezymex-User-Id) and public reads
         .route("/v1/social/leaderboard", get(social::leaderboard))

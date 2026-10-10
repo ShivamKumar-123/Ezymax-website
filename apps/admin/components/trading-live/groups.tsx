@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Copy, Layers, Pencil, Plus, RefreshCw, Users } from "lucide-react";
+import { Copy, Layers, Pencil, Plus, RefreshCw, Trash2, Users } from "lucide-react";
 import { Button, Card, Chip, Dialog, DialogClose, EmptyState, Field, Input, KpiCard, PageHeader, Reveal, Segmented, Toggle, cn, formatNumber } from "@ezymex/ui";
 import { ErrorState, useApi } from "@/components/live/kit";
 import { useCan } from "@/components/staff-session";
@@ -49,6 +49,7 @@ export function LiveGroupsPage() {
   const { data, error, reload } = useApi<{ groups: LiveGroup[] }>("/api/trading/admin/groups", { refreshMs: 30_000 });
   const canEdit = useCan("groups.write");
   const [edit, setEdit] = React.useState<{ g: LiveGroup; isNew: boolean } | null>(null);
+  const [doomed, setDoomed] = React.useState<LiveGroup | null>(null);
   const groups = data?.groups ?? [];
   const accounts = groups.reduce((s, g) => s + (g.accounts ?? 0), 0);
 
@@ -94,10 +95,26 @@ export function LiveGroupsPage() {
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
           {groups.map((g, i) => (
             <Reveal key={g.code} delay={Math.min(0.2, i * 0.03)}>
-              <GroupCard g={g} canEdit={canEdit} onEdit={() => setEdit({ g, isNew: false })} onDuplicate={() => setEdit({ g: { ...g, code: `${g.code}-2`, name: `${g.name} copy`, accounts: 0 }, isNew: true })} />
+              <GroupCard
+                g={g}
+                canEdit={canEdit}
+                onEdit={() => setEdit({ g, isNew: false })}
+                onDuplicate={() => setEdit({ g: { ...g, code: `${g.code}-2`, name: `${g.name} copy`, accounts: 0 }, isNew: true })}
+                onDelete={() => setDoomed(g)}
+              />
             </Reveal>
           ))}
         </div>
+      )}
+      {doomed && (
+        <DeleteGroupDialog
+          g={doomed}
+          onClose={() => setDoomed(null)}
+          onDeleted={() => {
+            reload();
+            void loadGroups();
+          }}
+        />
       )}
       <GroupEditor
         edit={edit}
@@ -112,7 +129,11 @@ export function LiveGroupsPage() {
   );
 }
 
-function GroupCard({ g, canEdit, onEdit, onDuplicate }: { g: LiveGroup; canEdit: boolean; onEdit: () => void; onDuplicate: () => void }) {
+function GroupCard({ g, canEdit, onEdit, onDuplicate, onDelete }: { g: LiveGroup; canEdit: boolean; onEdit: () => void; onDuplicate: () => void; onDelete: () => void }) {
+  // the same two rules the engine enforces, so the button says why instead of failing on press
+  const inUse = (g.accounts ?? 0) > 0;
+  const system = systemGroup(g.code);
+  const blocked = system ? `${g.code} is a system group` : inUse ? `${g.accounts} account(s) still in this group` : null;
   const rows: [string, React.ReactNode][] = [
     ["Leverage", `1:${Math.min(...g.leverages)} – 1:${Math.max(...g.leverages)} · default 1:${g.defaultLeverage}`],
     ["Margin call / stop-out", `${g.marginCallPct}% / ${g.stopOutPct}%`],
@@ -166,12 +187,84 @@ function GroupCard({ g, canEdit, onEdit, onDuplicate }: { g: LiveGroup; canEdit:
             <Button size="sm" variant="ghost" onClick={onDuplicate}>
               <Copy /> Duplicate
             </Button>
+            <Button size="sm" variant="ghost" className="ms-auto text-down hover:bg-down/10" onClick={onDelete} disabled={!!blocked} title={blocked ?? `Delete ${g.name}`}>
+              <Trash2 /> Delete
+            </Button>
           </>
         ) : (
           <span className="text-[12px] text-fg-3">Read-only for your role</span>
         )}
       </div>
     </Card>
+  );
+}
+
+/** Copy trading, PAMM, MAM, prop and the options market maker are wired to these codes (the engine's
+ *  `protected_group`), so they can never be deleted. */
+function systemGroup(code: string): boolean {
+  const g = code.trim().toLowerCase();
+  return g === "options-mm" || g.startsWith("prop") || g.startsWith("copy-") || g.startsWith("pamm-") || g.startsWith("mam-") || ["copy", "copy-netting", "copy-demo", "pamm", "mam"].includes(g);
+}
+
+/** Deleting a group: a reason for the audit log, and the code typed back, because there is no undo. */
+function DeleteGroupDialog({ g, onClose, onDeleted }: { g: LiveGroup; onClose: () => void; onDeleted: () => void }) {
+  const r = useReason();
+  const [confirm, setConfirm] = React.useState("");
+  const [busy, setBusy] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const typed = confirm.trim().toLowerCase() === g.code.toLowerCase();
+
+  const del = async () => {
+    setBusy(true);
+    setError(null);
+    const res = await tradingWrite<{ code: string }>(`admin/groups/${g.code}/delete`, {}, r.reason);
+    setBusy(false);
+    if (!res.ok) {
+      setError(res.error);
+      reportResult(res, "");
+      return;
+    }
+    reportResult(res, `${g.name} deleted`);
+    onDeleted();
+    onClose();
+  };
+
+  return (
+    <Dialog
+      open
+      onOpenChange={(o) => !o && onClose()}
+      side="right"
+      width={520}
+      title={`Delete ${g.name}`}
+      description="The group and its trading conditions are removed. Accounts are not touched — a group with any account cannot be deleted. There is no undo."
+      footer={
+        <>
+          <span className="mr-auto max-w-[240px] truncate text-[11.5px] text-fg-3">{error ?? r.error}</span>
+          <DialogClose asChild>
+            <Button size="sm" variant="ghost">
+              Cancel
+            </Button>
+          </DialogClose>
+          <Button size="sm" variant="sell" disabled={!typed || !!r.error || busy} onClick={del}>
+            {busy ? "Deleting…" : "Delete group"}
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-5">
+        <ErrorBanner error={error} />
+        <div className="rounded-[12px] border border-line bg-surface-2/60 px-4 py-3 text-[12.5px] text-fg-2">
+          <div className="font-medium text-fg">{g.name}</div>
+          <div className="mt-0.5 font-mono text-[11.5px] text-fg-3">{g.code}</div>
+          <div className="mt-2 text-fg-3">{g.accounts ?? 0} account(s) · spread group {g.spreadGroup}</div>
+        </div>
+        <Field label="Type the group code to confirm" hint={`Type ${g.code}`}>
+          <Input value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder={g.code} autoComplete="off" />
+        </Field>
+        <ReasonFields r={r} codes={GRP_REASONS} />
+        <AuditNotice />
+      </div>
+    </Dialog>
   );
 }
 

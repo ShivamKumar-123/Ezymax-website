@@ -69,6 +69,9 @@ const ROUTES: Route[] = [
   { method: "GET", re: /^admin\/groups$/, perm: "accounts.read" },
   { method: "POST", re: /^admin\/groups$/, perm: "groups.write" },
   { method: "PUT", re: /^admin\/groups\/[a-z0-9-]{1,40}$/, perm: "groups.write" },
+  // deleting a group is refused by the engine while any account still points at it, and for the
+  // system groups copy / PAMM / MAM / prop / options-mm run on
+  { method: "POST", re: /^admin\/groups\/[a-z0-9-]{1,40}\/delete$/, perm: "groups.write" },
   { method: "GET", re: /^admin\/ledger\/accounts$/, perm: "finance.adjust" },
 ];
 

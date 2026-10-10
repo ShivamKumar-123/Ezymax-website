@@ -650,6 +650,67 @@ async fn save_group(st: &AppState, s: &StaffCtx, g: &Group, r: &Reason, insert: 
     Ok(Json(json!({"data": g, "audit": [persist::audit_json(id, &a)]})))
 }
 
+/// The groups the engine's own features are wired to by code. Deleting one would break copy trading, PAMM,
+/// MAM, prop or the options market maker, so they are never deletable.
+fn protected_group(code: &str) -> bool {
+    let g = code.trim().to_ascii_lowercase();
+    crate::engine::options::system_group(&g) || g == "options-mm"
+}
+
+/// Deletes an account group (C1). Refused while any account still points at it — archived accounts included,
+/// since their statements and history are read through the group's settings — and refused for the system
+/// groups above. `accounts.group_code` has no foreign key, so this check is the only thing standing between a
+/// delete and an orphaned live account.
+pub async fn delete_group(State(st): State<AppState>, s: StaffCtx, Path(code): Path<String>, Body(r): Body<Reason>) -> ApiResult<Json<Value>> {
+    s.require(ROLES_CONFIG)?;
+    check_reason(&r)?;
+    let t = s.ctx.tenant.tenant_id;
+    let before = s.ctx.tenant.groups.get(&code).map(|x| json!(x)).ok_or_else(|| ApiError::NotFound(format!("Group {code} not found")))?;
+    if protected_group(&code) {
+        return Err(ApiError::Conflict {
+            code: "system_group",
+            message: format!("{code} is a system group: copy trading, PAMM, MAM, prop and the options market maker run on it"),
+        });
+    }
+    let used: i64 = sqlx::query_scalar("SELECT count(*) FROM accounts WHERE tenant_id = $1 AND group_code = $2").bind(t).bind(&code).fetch_one(&st.pool).await?;
+    if used > 0 {
+        return Err(ApiError::Conflict {
+            code: "group_in_use",
+            message: format!(
+                "{used} account(s) are still in this group (archived ones count). Move them to another group, or archive them under Trading → Accounts — that closes open trades and moves the balance to the client's wallet — then delete the group."
+            ),
+        });
+    }
+    let mut tx = st.pool.begin().await?;
+    let n = sqlx::query("DELETE FROM groups WHERE tenant_id = $1 AND code = $2").bind(t).bind(&code).execute(&mut *tx).await?.rows_affected();
+    if n == 0 {
+        return Err(ApiError::NotFound(format!("Group {code} not found")));
+    }
+    let a = AuditRow {
+        tenant_id: t,
+        at: chrono::Utc::now(),
+        staff_id: s.staff.id.clone(),
+        staff_name: s.staff.name.clone(),
+        staff_role: s.staff.role.clone(),
+        action: "group.delete".into(),
+        tickets: vec![],
+        login: None,
+        symbol: None,
+        before: Some(before),
+        after: None,
+        reason_code: r.reason_code.clone(),
+        note: r.note.clone(),
+        flags: vec!["deleted".into()],
+    };
+    let id = persist::insert_audit(&mut *tx, &a).await?;
+    tx.commit().await?;
+    st.hub.shared.registry.update(t, |cfg| {
+        cfg.groups.remove(&code);
+    });
+    tracing::info!(tenant = t, group = %code, staff = %s.staff.id, "account group deleted");
+    Ok(Json(json!({"data": {"code": code, "deleted": true}, "audit": [persist::audit_json(id, &a)]})))
+}
+
 pub async fn create_group(State(st): State<AppState>, s: StaffCtx, Body(b): Body<GroupWrite>) -> ApiResult<Json<Value>> {
     s.require(ROLES_CONFIG)?;
     check_reason(&b.reason)?;
