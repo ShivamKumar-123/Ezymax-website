@@ -13,6 +13,7 @@ import { PayError, hasMetaMask, hasTronLink, isMobile, metamaskDeepLink, payWith
 import { Confirmations, DEPOSIT_STATUS, HashLink, InlineError, StatusTag, Tile, WalletUnavailable, cleanAmount } from "./ui";
 import { useManualMethods } from "./manual/api";
 import { DepositChooser, ManualDepositPanel, ManualHowItWorks, type Via } from "./manual";
+import { CheckoutPanel, useCheckouts } from "./checkout";
 
 type IntentView = { intent: Intent; deposit: Deposit | null };
 
@@ -381,12 +382,17 @@ function Inner() {
   const hasCrypto = methods.some((m) => m.kind === "crypto");
   const hasManual = hasBank || hasCrypto;
   const autoOn = !!cfg.data?.chains.some((c) => c.deposits_enabled);
+  // OxaPay's hosted checkout (./checkout). ?checkout=<order_id> is where OxaPay sends the payer back.
+  const checkouts = useCheckouts();
+  const hasCheckout = !!checkouts.data?.enabled;
+  const returning = sp.get("checkout");
   const [picked, setPicked] = React.useState<Via | null>(() => {
+    if (sp.get("checkout")) return "checkout";
     const v = sp.get("via");
-    return v === "usdt" || v === "bank" || v === "crypto" ? v : null;
+    return v === "usdt" || v === "bank" || v === "crypto" || v === "checkout" ? v : null;
   });
-  const offered = (v: Via | null) => v === "usdt" || (v === "bank" && hasBank) || (v === "crypto" && hasCrypto);
-  const via: Via = valid ? "usdt" : offered(picked) ? picked! : autoOn || !hasManual ? "usdt" : hasBank ? "bank" : "crypto";
+  const offered = (v: Via | null) => v === "usdt" || (v === "bank" && hasBank) || (v === "crypto" && hasCrypto) || (v === "checkout" && hasCheckout);
+  const via: Via = valid ? "usdt" : offered(picked) ? picked! : autoOn ? "usdt" : hasBank ? "bank" : hasCrypto ? "crypto" : hasCheckout ? "checkout" : "usdt";
   const setIntent = (id: string | null) => {
     setIntentId(id);
     window.history.replaceState(window.history.state, "", id ? `/wallet/deposit?intent=${id}` : "/wallet/deposit");
@@ -399,7 +405,8 @@ function Inner() {
   const manualLoading = !manual.data && !manual.error;
 
   let main: React.ReactNode;
-  if (via !== "usdt") main = <ManualDepositPanel kind={via} methods={methods} maxPending={manual.data?.max_pending ?? 5} initialMethod={Number(sp.get("method")) || null} />;
+  if (via === "checkout") main = <CheckoutPanel list={checkouts} returning={returning} />;
+  else if (via !== "usdt") main = <ManualDepositPanel kind={via} methods={methods} maxPending={manual.data?.max_pending ?? 5} initialMethod={Number(sp.get("method")) || null} />;
   else if (cfg.error && !cfg.data) main = <WalletUnavailable onRetry={cfg.reload} />;
   else if (!cfg.data || (valid && !view.data && !view.error) || (!autoOn && manualLoading)) main = <Skeleton className="h-[420px] w-full rounded-[20px]" />;
   else if (valid && view.error) main = <WalletUnavailable onRetry={view.reload} message={view.error.status === 404 ? t("wallet.deposit.notFound") : undefined} />;
@@ -420,10 +427,10 @@ function Inner() {
           </Link>
         }
       />
-      {!valid && <DepositChooser value={via} onChange={choose} usdt={autoOn} bank={hasBank} crypto={hasCrypto} />}
+      {!valid && <DepositChooser value={via} onChange={choose} usdt={autoOn} bank={hasBank} crypto={hasCrypto} checkout={hasCheckout} />}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
         <div className="xl:col-span-8">{main}</div>
-        <div className="xl:col-span-4">{via === "usdt" ? cfg.data && <HowItWorks cfg={cfg.data} /> : <ManualHowItWorks />}</div>
+        <div className="xl:col-span-4">{via === "usdt" ? cfg.data && <HowItWorks cfg={cfg.data} /> : via === "checkout" ? null : <ManualHowItWorks />}</div>
       </div>
     </div>
   );

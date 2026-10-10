@@ -49,6 +49,10 @@ const ROUTES: Route[] = [
   { method: "PUT", re: new RegExp(`^manual/methods/${N}$`), perm: "finance.settings" },
   { method: "POST", re: new RegExp(`^manual/methods/${N}/delete$`), perm: "finance.settings" },
   { method: "POST", re: new RegExp(`^manual/deposits/${N}/(approve|reject)$`), perm: "finance.approve" },
+  // crypto checkouts (OxaPay). Recheck only asks the provider again and credits what it already owes,
+  // so it needs no approval right of its own.
+  { method: "GET", re: /^oxapay\/invoices$/, perm: "finance.read" },
+  { method: "POST", re: new RegExp(`^oxapay/invoices/${N}/recheck$`), perm: "finance.read" },
 ];
 
 const MEDIA_ID = /^manual\/media\/([0-9a-f]{24})$/;

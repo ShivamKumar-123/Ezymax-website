@@ -85,3 +85,32 @@ export async function walletImage(path: string, init: { user: GatewayUser; req: 
     return { status: 503, type: "", cache: null, etag: null };
   }
 }
+
+/**
+ * Forwards an OxaPay callback to the wallet service.
+ *
+ * No session: OxaPay is the caller, and the `HMAC` header is what proves it. The bytes are passed through
+ * exactly as they arrived, because the signature covers the raw body and re-serialising the JSON would
+ * change it. The wallet verifies the signature, then asks OxaPay what the payment really is.
+ */
+export async function walletCallback(path: string, raw: ArrayBuffer, hmac: string | null): Promise<WalletResult> {
+  const headers: Record<string, string> = {
+    "x-ezymex-internal": WALLET_TOKEN,
+    "x-ezymex-service": "oxapay",
+    "content-type": "application/json",
+  };
+  if (hmac) headers.hmac = hmac;
+  try {
+    const res = await fetch(`${WALLET_URL}${path}`, {
+      method: "POST",
+      headers,
+      body: Buffer.from(raw),
+      cache: "no-store",
+      signal: AbortSignal.timeout(30_000),
+    });
+    const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    return { status: res.status, data };
+  } catch {
+    return { status: 503, data: { error: { code: "unavailable", message: "The wallet is unavailable." } } };
+  }
+}

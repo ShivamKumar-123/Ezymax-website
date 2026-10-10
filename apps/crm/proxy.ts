@@ -26,7 +26,10 @@ const PUBLIC_PAGES = ["/certificate", "/verify", "/s", "/staff-session"];
 const REF_SEEN = "ezymex_ref_seen";
 
 /** Pages and APIs that stay reachable in maintenance mode and without a session. */
-const ALWAYS_OPEN = ["/status", "/maintenance", "/unavailable", "/api/status", "/unsubscribe", "/api/unsubscribe"];
+// /api/wallet/oxapay/callback is OxaPay's payment notification: no session exists for it, and the
+// `HMAC` header it carries is what the wallet authenticates. It stays open in maintenance mode too,
+// because money already paid has to be credited whatever the site is doing.
+const ALWAYS_OPEN = ["/status", "/maintenance", "/unavailable", "/api/status", "/unsubscribe", "/api/unsubscribe", "/api/wallet/oxapay/callback"];
 
 // Broker runtime config (gateway tenant config): maintenance mode holds clients on /maintenance (their API
 // calls answer 503); a module the Platform Owner switched off (D112) is hidden from the nav and its pages and
