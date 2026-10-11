@@ -182,6 +182,18 @@ const payments = {
   "checkout.statusExpired": "Expired",
   "checkout.statusFailed": "Failed",
   "checkout.statusCancelled": "Cancelled",
+
+  // The deposit entry popup: pick a payment brand, agree to the terms, go to that method.
+  "gate.title": "How do you want to deposit?",
+  "gate.subtitle": "Choose a payment method to continue.",
+  "gate.oxapaySub": "Crypto — pay any coin, credited automatically",
+  "gate.phonepeSub": "UPI or bank transfer in INR",
+  "gate.none": "No deposit methods are available right now. Please contact support.",
+  "gate.termsTitle": "Terms & Conditions",
+  "gate.termsFor": "Before you continue with {brand}",
+  "gate.termsBody": "Deposits are credited in USDT at the rate shown on the next screen. Trading leveraged products carries significant risk and you may lose your funds. By continuing you confirm the funds are your own, that you accept Ezymex's deposit terms and risk disclosure, and that you will complete the payment to {brand} yourself.",
+  "gate.agree": "I have read and agree to the deposit terms and risk disclosure.",
+  "gate.continueTo": "Continue to {brand}",
 };
 
 export default payments;

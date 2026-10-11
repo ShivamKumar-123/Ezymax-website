@@ -163,7 +163,7 @@ export const CRM_NAV: NavModule[] = [
     label: "Staking",
     icon: PiggyBank,
     href: "/staking",
-    section: "grow",
+    section: "earn",
     sub: [
       { href: "/staking", label: "Plans", icon: PiggyBank },
       { href: "/staking/portfolio", label: "My staking", icon: PieChart },

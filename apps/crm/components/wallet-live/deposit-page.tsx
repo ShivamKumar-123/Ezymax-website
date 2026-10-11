@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { ArrowLeft, ArrowLeftRight, Check, CircleAlert, Clock, Loader2, Smartphone, Wallet } from "lucide-react";
 import { toast } from "sonner";
@@ -14,6 +14,7 @@ import { Confirmations, DEPOSIT_STATUS, HashLink, InlineError, StatusTag, Tile, 
 import { useManualMethods } from "./manual/api";
 import { DepositChooser, ManualDepositPanel, ManualHowItWorks, type Via } from "./manual";
 import { CheckoutPanel, useCheckouts } from "./checkout";
+import { DepositGate } from "./deposit-gate";
 
 type IntentView = { intent: Intent; deposit: Deposit | null };
 
@@ -404,6 +405,10 @@ function Inner() {
     window.history.replaceState(window.history.state, "", v === "usdt" ? "/wallet/deposit" : `/wallet/deposit?via=${v}`);
   };
   const manualLoading = !manual.data && !manual.error;
+  const router = useRouter();
+  // the brand-choice + terms popup: shown on a fresh deposit visit, once the methods are known
+  const loaded = !!cfg.data && manual.data !== undefined && checkouts.data !== undefined;
+  const gateOpen = !valid && !returning && picked === null && loaded && (hasCheckout || hasBank);
 
   let main: React.ReactNode;
   if (via === "checkout") main = <CheckoutPanel list={checkouts} returning={returning} />;
@@ -428,10 +433,11 @@ function Inner() {
           </Link>
         }
       />
-      {!valid && <DepositChooser value={via} onChange={choose} usdt={autoOn} bank={hasBank} crypto={hasCrypto} checkout={hasCheckout} />}
+      <DepositGate open={gateOpen} hasCheckout={hasCheckout} hasBank={hasBank} onChoose={choose} onClose={() => router.push("/wallet")} />
+      {!valid && !gateOpen && <DepositChooser value={via} onChange={choose} usdt={autoOn} bank={hasBank} crypto={hasCrypto} checkout={hasCheckout} />}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <div className="xl:col-span-8">{main}</div>
-        <div className="xl:col-span-4">{via === "usdt" ? cfg.data && <HowItWorks cfg={cfg.data} /> : via === "checkout" ? null : <ManualHowItWorks />}</div>
+        <div className="xl:col-span-8">{gateOpen ? <Skeleton className="h-[420px] w-full rounded-[20px]" /> : main}</div>
+        <div className="xl:col-span-4">{gateOpen ? null : via === "usdt" ? cfg.data && <HowItWorks cfg={cfg.data} /> : via === "checkout" ? null : <ManualHowItWorks />}</div>
       </div>
     </div>
   );
