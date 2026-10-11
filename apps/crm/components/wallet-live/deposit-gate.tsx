@@ -11,33 +11,15 @@ import { AnimatePresence, motion } from "motion/react";
 import { ArrowRight, Check, ChevronLeft, Lock, ShieldCheck } from "lucide-react";
 import { Button, Dialog, cn } from "@/components/kit";
 import { useT } from "@ezymex/i18n/react";
-import { OXAPAY_COLOR, OxaPayMark, OxaPayWordmark, PHONEPE_COLOR, PhonePeMark } from "./brand-logos";
+import { OXAPAY_BRAND, PHONEPE_BRAND, type PayBrand } from "./brand-logos";
 
 export type DepositVia = "checkout" | "bank";
 
-type Brand = {
-  via: DepositVia;
-  name: string;
-  colour: string;
-  mark: (size: number) => React.ReactNode;
-  /** The provider's wordmark where it has one; otherwise the name is set in type. */
-  wordmark?: React.ReactNode;
-};
+/** A brand plus the deposit route it stands for. */
+type Brand = PayBrand & { via: DepositVia };
 
-const OXAPAY: Brand = {
-  via: "checkout",
-  name: "OxaPay",
-  colour: OXAPAY_COLOR,
-  mark: (s) => <OxaPayMark size={s} />,
-  wordmark: <OxaPayWordmark height={14} className="text-fg" />,
-};
-
-const PHONEPE: Brand = {
-  via: "bank",
-  name: "PhonePe",
-  colour: PHONEPE_COLOR,
-  mark: (s) => <PhonePeMark size={s} />,
-};
+const OXAPAY: Brand = { ...OXAPAY_BRAND, via: "checkout" };
+const PHONEPE: Brand = { ...PHONEPE_BRAND, via: "bank" };
 
 /** Honours the OS "reduce motion" setting: the handoff then passes straight through. */
 function useReducedMotion() {
@@ -74,7 +56,7 @@ function BrandTile({ brand, sub, onClick }: { brand: Brand; sub: string; onClick
         {brand.mark(30)}
       </span>
       <span className="relative min-w-0 flex-1">
-        <span className="flex h-[18px] items-center">{brand.wordmark ?? <span className="text-[15.5px] font-semibold text-fg">{brand.name}</span>}</span>
+        <span className="flex h-[18px] items-center">{brand.wordmark ? brand.wordmark() : <span className="text-[15.5px] font-semibold text-fg">{brand.name}</span>}</span>
         <span className="mt-1 block truncate text-[12.5px] text-fg-3">{sub}</span>
       </span>
       <ArrowRight className="relative size-4 shrink-0 text-fg-3 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-fg" />
@@ -252,7 +234,7 @@ export function DepositGate({
           {sel && (
             <div className="flex items-center gap-3 rounded-[14px] border border-line bg-surface-2/60 px-4 py-3">
               <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-white ring-1 ring-black/5">{sel.mark(26)}</span>
-              <span className="flex h-[18px] items-center">{sel.wordmark ?? <span className="text-[15px] font-semibold text-fg">{sel.name}</span>}</span>
+              <span className="flex h-[18px] items-center">{sel.wordmark ? sel.wordmark() : <span className="text-[15px] font-semibold text-fg">{sel.name}</span>}</span>
             </div>
           )}
           <div className="flex items-start gap-3 rounded-[14px] border border-line bg-surface-2/60 px-4 py-3 text-[12.5px] leading-relaxed text-fg-2">

@@ -16,6 +16,7 @@ import { Button, Card, CardHeader, Field, Input, Skeleton, cn } from "@/componen
 import { useT } from "@ezymex/i18n/react";
 import { WalletError, fmt, useWallet, walletApi } from "./api";
 import { InlineError, WalletUnavailable, cleanAmount } from "./ui";
+import { GatewayBanner, OXAPAY_BRAND } from "./brand-logos";
 
 export interface Checkout {
   id: number;
@@ -103,7 +104,8 @@ function OpenCheckout({ c, onChanged }: { c: Checkout; onChanged: () => void }) 
   }
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
+      <GatewayBanner brand={OXAPAY_BRAND} note={t("payments.card.secure")} />
       <CardHeader title={t("payments.checkout.openTitle")} subtitle={t("payments.checkout.openText")} action={<Status c={now} />} />
       <div className="space-y-4 px-4 pb-6 pt-4 sm:px-6">
         <div className="k-row flex items-center justify-between gap-3 px-4 py-3">
@@ -167,7 +169,8 @@ function StartCheckout({ list, onCreated }: { list: CheckoutList; onCreated: () 
   };
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
+      <GatewayBanner brand={OXAPAY_BRAND} note={t("payments.card.secure")} />
       <CardHeader title={t("payments.checkout.title")} subtitle={t("payments.checkout.subtitle")} />
       <form onSubmit={submit} className="space-y-5 px-4 pb-6 pt-4 sm:px-6">
         <Field label={t("common.amount")} hint={t("payments.checkout.amountHint", { min: fmt(list.min_amount), max: fmt(list.max_amount) })}>

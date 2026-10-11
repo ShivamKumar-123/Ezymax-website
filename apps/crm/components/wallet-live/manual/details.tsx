@@ -7,6 +7,7 @@ import * as React from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Check, CircleAlert, Landmark, Wallet } from "lucide-react";
 import { Card, CardHeader, CoinIcon, CopyButton, cn } from "@/components/kit";
+import { GatewayBanner, brandForMethod } from "../brand-logos";
 import { useT } from "@ezymex/i18n/react";
 import type { MessageKey } from "@ezymex/i18n";
 import { Tile } from "../ui";
@@ -15,6 +16,15 @@ import { money, qrPayload, rateText, type PaymentMethod } from "./api";
 const COIN: Record<string, string> = { TRC20: "trx", BEP20: "bnb", ERC20: "eth", Polygon: "matic", BTC: "btc", Solana: "sol" };
 
 function MethodIcon({ m, size = 32 }: { m: PaymentMethod; size?: number }) {
+  // a method the broker named after a brand we know shows that brand's own mark
+  const brand = brandForMethod(m.name);
+  if (brand) {
+    return (
+      <span className="grid shrink-0 place-items-center rounded-full bg-white ring-1 ring-black/5" style={{ width: size, height: size }}>
+        {brand.mark(Math.round(size * 0.7))}
+      </span>
+    );
+  }
   if (m.kind === "bank") {
     return (
       <span className="grid shrink-0 place-items-center rounded-full border border-line bg-surface-3 text-fg-2" style={{ width: size, height: size }}>
@@ -108,12 +118,14 @@ export function MethodDetails({ m }: { m: PaymentMethod }) {
   const t = useT();
   const d = m.details;
   const crypto = m.kind === "crypto";
+  const brand = brandForMethod(m.name);
   return (
-    <Card>
+    <Card className="overflow-hidden">
+      {brand && <GatewayBanner brand={brand} note={t("payments.card.secure")} />}
       <CardHeader
         title={crypto ? t("payments.card.payToAddress") : t("payments.card.payTo")}
         subtitle={m.name}
-        icon={crypto ? <Wallet /> : <Landmark />}
+        icon={brand ? brand.mark(20) : crypto ? <Wallet /> : <Landmark />}
       />
       <div className="grid grid-cols-1 gap-5 px-4 pb-6 pt-4 sm:px-6 md:grid-cols-[auto_1fr]">
         <div className="md:pt-1">

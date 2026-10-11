@@ -200,6 +200,7 @@ const payments = {
   "gate.step2": "Opening {brand}",
   "gate.step3": "Preparing your deposit",
   "gate.secure": "Encrypted connection",
+  "card.secure": "Secure payment",
 };
 
 export default payments;
