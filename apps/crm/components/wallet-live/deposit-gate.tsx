@@ -1,36 +1,45 @@
 "use client";
 
 // The deposit entry gate: opening Deposit shows a popup with the two payment brands (OxaPay crypto checkout and
-// PhonePe UPI / bank). Choosing one shows a Terms & Conditions step; agreeing takes the client straight to that
-// method's deposit panel. Only the brands the broker has enabled are offered.
+// PhonePe UPI / bank), each with the provider's own logo. Choosing one shows a Terms & Conditions step; agreeing
+// runs a short secure-handoff animation and then opens that method's deposit panel.
+//
+// Only the brands the broker has enabled are offered.
 
 import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowRight, ArrowUpRight, Check, ChevronLeft, Loader2, Lock, ShieldCheck } from "lucide-react";
+import { ArrowRight, Check, ChevronLeft, Lock, ShieldCheck } from "lucide-react";
 import { Button, Dialog, cn } from "@/components/kit";
 import { useT } from "@ezymex/i18n/react";
+import { OXAPAY_COLOR, OxaPayMark, OxaPayWordmark, PHONEPE_COLOR, PhonePeMark } from "./brand-logos";
 
 export type DepositVia = "checkout" | "bank";
 
-/** The OxaPay brand tile (its teal mark + wordmark). A drop-in official logo can replace the badge later. */
-function OxaPayBadge() {
-  return (
-    <span className="grid size-11 shrink-0 place-items-center rounded-[13px] bg-gradient-to-br from-[#12b5a4] to-[#0a8f82] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]">
-      <ArrowUpRight className="size-6" strokeWidth={2.4} />
-    </span>
-  );
-}
+type Brand = {
+  via: DepositVia;
+  name: string;
+  colour: string;
+  mark: (size: number) => React.ReactNode;
+  /** The provider's wordmark where it has one; otherwise the name is set in type. */
+  wordmark?: React.ReactNode;
+};
 
-/** The PhonePe brand tile (its purple mark + wordmark). */
-function PhonePeBadge() {
-  return (
-    <span className="grid size-11 shrink-0 place-items-center rounded-[13px] bg-[#5f259f] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
-      <span className="font-serif text-[18px] font-bold italic leading-none">Pe</span>
-    </span>
-  );
-}
+const OXAPAY: Brand = {
+  via: "checkout",
+  name: "OxaPay",
+  colour: OXAPAY_COLOR,
+  mark: (s) => <OxaPayMark size={s} />,
+  wordmark: <OxaPayWordmark height={14} className="text-fg" />,
+};
 
-/** Honours the OS "reduce motion" setting: the handoff then passes through without the theatre. */
+const PHONEPE: Brand = {
+  via: "bank",
+  name: "PhonePe",
+  colour: PHONEPE_COLOR,
+  mark: (s) => <PhonePeMark size={s} />,
+};
+
+/** Honours the OS "reduce motion" setting: the handoff then passes straight through. */
 function useReducedMotion() {
   const [reduced, setReduced] = React.useState(false);
   React.useEffect(() => {
@@ -43,14 +52,46 @@ function useReducedMotion() {
   return reduced;
 }
 
-/** How long each handoff step is shown, in ms. */
-const STEP_MS = 700;
+/* ---------------------------------- pick ---------------------------------- */
+
+function BrandTile({ brand, sub, onClick }: { brand: Brand; sub: string; onClick: () => void }) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.985 }}
+      transition={{ type: "spring", stiffness: 420, damping: 28 }}
+      className="group relative flex w-full items-center gap-4 overflow-hidden rounded-[16px] border border-line bg-surface-2/50 px-4 py-4 text-start transition-colors hover:border-[var(--brand)]/45"
+      style={{ ["--brand" as string]: brand.colour }}
+    >
+      {/* the brand's colour washes in from the left on hover */}
+      <span
+        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        style={{ background: `linear-gradient(90deg, ${brand.colour}1f, transparent 60%)` }}
+      />
+      <span className="relative grid size-12 shrink-0 place-items-center rounded-[14px] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] ring-1 ring-black/5">
+        {brand.mark(30)}
+      </span>
+      <span className="relative min-w-0 flex-1">
+        <span className="flex h-[18px] items-center">{brand.wordmark ?? <span className="text-[15.5px] font-semibold text-fg">{brand.name}</span>}</span>
+        <span className="mt-1 block truncate text-[12.5px] text-fg-3">{sub}</span>
+      </span>
+      <ArrowRight className="relative size-4 shrink-0 text-fg-3 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-fg" />
+    </motion.button>
+  );
+}
+
+/* -------------------------------- handoff --------------------------------- */
+
+const STEP_MS = 850;
 
 /**
- * The secure-handoff screen: the brand mark pulsing between two rings while three steps tick off.
- * Every line names something that is really happening, so the wait is honest, not decorative.
+ * The secure handoff: the provider's logo inside a rotating gradient halo, one status line crossfading through
+ * the steps, and a three-segment progress bar. Each line names something the app is really doing, so the pause
+ * is an honest handoff rather than a decorative loader.
  */
-function Handoff({ brand, badge, steps, done }: { brand: string; badge: React.ReactNode; steps: string[]; done: () => void }) {
+function Handoff({ brand, steps, secure, done }: { brand: Brand; steps: string[]; secure: string; done: () => void }) {
   const reduced = useReducedMotion();
   const [at, setAt] = React.useState(0);
 
@@ -59,111 +100,93 @@ function Handoff({ brand, badge, steps, done }: { brand: string; badge: React.Re
       done();
       return;
     }
-    const timers = steps.map((_, i) => setTimeout(() => setAt(i + 1), STEP_MS * (i + 1)));
-    const end = setTimeout(done, STEP_MS * steps.length + 450);
+    const timers = steps.map((_, i) => setTimeout(() => setAt(i), STEP_MS * i));
+    const end = setTimeout(done, STEP_MS * steps.length);
     return () => {
       timers.forEach(clearTimeout);
       clearTimeout(end);
     };
-    // the handoff runs once per agreement
+    // the handoff runs once, when the client agrees
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reduced]);
 
   if (reduced) return null;
 
   return (
-    <div className="flex flex-col items-center py-2">
-      <div className="relative grid size-[104px] place-items-center">
-        {[0, 1].map((i) => (
-          <motion.span
-            key={i}
-            className="absolute inset-0 rounded-full border border-ember/40"
-            initial={{ scale: 0.6, opacity: 0.55 }}
-            animate={{ scale: 1.25, opacity: 0 }}
-            transition={{ duration: 2, repeat: Infinity, delay: i * 1, ease: "easeOut" }}
-          />
-        ))}
-        <span className="absolute inset-[18px] rounded-full bg-ember-soft" />
+    <div className="flex flex-col items-center py-4">
+      <div className="relative grid size-[112px] place-items-center">
+        {/* brand-coloured glow, breathing */}
         <motion.span
-          className="relative"
-          animate={{ scale: [1, 1.06, 1] }}
-          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute inset-0 rounded-full blur-2xl"
+          style={{ background: brand.colour }}
+          animate={{ opacity: [0.18, 0.34, 0.18], scale: [0.9, 1.08, 0.9] }}
+          transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+        />
+        {/* the halo: a conic arc sweeping around the mark */}
+        <motion.span
+          className="absolute inset-0 rounded-full"
+          style={{ background: `conic-gradient(from 0deg, transparent 0deg, ${brand.colour} 110deg, transparent 220deg)` }}
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+        />
+        <span className="absolute inset-[3px] rounded-full bg-surface" />
+        <span className="absolute inset-[3px] rounded-full border border-line" />
+        {/* the provider's logo, on white so it always reads as its own brand */}
+        <motion.span
+          className="relative grid size-[74px] place-items-center rounded-full bg-white shadow-[0_4px_18px_-6px_rgba(0,0,0,0.35)] ring-1 ring-black/5"
+          initial={{ scale: 0.86, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 260, damping: 20 }}
         >
-          {badge}
+          {brand.mark(42)}
         </motion.span>
       </div>
 
-      <div className="mt-5 w-full max-w-[290px] space-y-2.5">
-        {steps.map((label, i) => {
-          const state = at > i ? "done" : at === i ? "busy" : "idle";
-          return (
-            <motion.div
-              key={label}
-              className="flex items-center gap-2.5 text-[13px]"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: state === "idle" ? 0.4 : 1, y: 0 }}
-              transition={{ duration: 0.3, delay: i * 0.08 }}
-            >
-              <span
-                className={cn(
-                  "grid size-5 shrink-0 place-items-center rounded-full border transition-colors",
-                  state === "done" ? "border-up/40 bg-up/15 text-up" : state === "busy" ? "border-ember/40 bg-ember-soft text-ember" : "border-line text-fg-3",
-                )}
-              >
-                <AnimatePresence mode="wait" initial={false}>
-                  {state === "done" ? (
-                    <motion.span key="d" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", bounce: 0.4, duration: 0.4 }}>
-                      <Check className="size-3" strokeWidth={3} />
-                    </motion.span>
-                  ) : state === "busy" ? (
-                    <motion.span key="b" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                      <Loader2 className="size-3 animate-spin" />
-                    </motion.span>
-                  ) : (
-                    <motion.span key="i" className="size-1.5 rounded-full bg-current" />
-                  )}
-                </AnimatePresence>
-              </span>
-              <span className={cn(state === "done" ? "text-fg-2" : state === "busy" ? "font-medium text-fg" : "text-fg-3")}>{label}</span>
-            </motion.div>
-          );
-        })}
+      {/* one status line at a time */}
+      <div className="relative mt-6 h-6 w-full">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.p
+            key={at}
+            className="absolute inset-0 text-center text-[14px] font-medium text-fg"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.28, ease: "easeOut" }}
+          >
+            {steps[at]}
+          </motion.p>
+        </AnimatePresence>
       </div>
 
-      <div className="mt-5 h-1 w-full max-w-[290px] overflow-hidden rounded-full bg-surface-3">
-        <motion.div
-          className="h-full rounded-full bg-gradient-to-r from-ember to-gold"
-          initial={{ width: "4%" }}
-          animate={{ width: `${Math.min(100, (at / steps.length) * 100 || 8)}%` }}
-          transition={{ duration: 0.55, ease: "easeOut" }}
-        />
+      {/* one segment per step */}
+      <div className="mt-4 flex w-full max-w-[220px] gap-1.5">
+        {steps.map((s, i) => (
+          <span key={s} className="h-[3px] flex-1 overflow-hidden rounded-full bg-surface-3">
+            <motion.span
+              className="block h-full rounded-full"
+              style={{ background: brand.colour }}
+              initial={{ width: "0%" }}
+              animate={{ width: i <= at ? "100%" : "0%" }}
+              transition={{ duration: i === at ? STEP_MS / 1000 : 0.2, ease: "linear" }}
+            />
+          </span>
+        ))}
       </div>
 
-      <div className="mt-4 flex items-center gap-1.5 text-[11.5px] text-fg-3">
+      <motion.div
+        className="mt-5 flex items-center gap-1.5 text-[11.5px] text-fg-3"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+      >
         <Lock className="size-3" />
-        <span>{brand}</span>
-      </div>
+        <span>{secure}</span>
+      </motion.div>
     </div>
   );
 }
 
-function BrandTile({ badge, name, sub, onClick }: { badge: React.ReactNode; name: React.ReactNode; sub: string; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="k-row group flex w-full items-center gap-3.5 px-4 py-3.5 text-start transition-all hover:border-ember/50 hover:bg-ember-soft"
-      data-testid={`deposit-brand-${typeof name === "string" ? name : ""}`}
-    >
-      {badge}
-      <span className="min-w-0 flex-1">
-        <span className="block text-[15px] font-semibold text-fg">{name}</span>
-        <span className="block truncate text-[12.5px] text-fg-3">{sub}</span>
-      </span>
-      <ArrowRight className="size-4 shrink-0 text-fg-3 transition-transform group-hover:translate-x-0.5 group-hover:text-ember" />
-    </button>
-  );
-}
+/* --------------------------------- gate ----------------------------------- */
 
 export function DepositGate({
   open,
@@ -180,7 +203,7 @@ export function DepositGate({
 }) {
   const t = useT();
   const [step, setStep] = React.useState<"pick" | "terms" | "handoff">("pick");
-  const [sel, setSel] = React.useState<DepositVia | null>(null);
+  const [sel, setSel] = React.useState<Brand | null>(null);
   const [agreed, setAgreed] = React.useState(false);
 
   // start fresh every time the gate opens
@@ -192,43 +215,46 @@ export function DepositGate({
     }
   }, [open]);
 
-  const pick = (v: DepositVia) => {
-    setSel(v);
+  const pick = (b: Brand) => {
+    setSel(b);
     setAgreed(false);
     setStep("terms");
   };
 
-  // agreeing runs the handoff first; the method opens when it finishes
-  const proceed = () => {
-    if (sel && agreed) setStep("handoff");
-  };
-
-  const brandName = sel === "checkout" ? "OxaPay" : "PhonePe";
+  const brandName = sel?.name ?? "";
 
   return (
     <Dialog
       open={open}
-      // closing the dialog without a choice goes back to the wallet
+      // closing without a choice goes back to the wallet
       onOpenChange={(o) => !o && onClose()}
       width={460}
       title={step === "pick" ? t("payments.gate.title") : step === "terms" ? t("payments.gate.termsTitle") : t("payments.gate.connecting", { brand: brandName })}
-      description={step === "pick" ? t("payments.gate.subtitle") : step === "terms" ? t("payments.gate.termsFor", { brand: brandName }) : t("payments.gate.connectingSub")}
+      description={
+        step === "pick" ? t("payments.gate.subtitle") : step === "terms" ? t("payments.gate.termsFor", { brand: brandName }) : t("payments.gate.connectingSub")
+      }
     >
-      {step === "handoff" ? (
+      {step === "handoff" && sel ? (
         <Handoff
-          brand={t("payments.gate.secure")}
-          badge={sel === "checkout" ? <OxaPayBadge /> : <PhonePeBadge />}
-          steps={[t("payments.gate.step1"), t("payments.gate.step2", { brand: brandName }), t("payments.gate.step3")]}
-          done={() => sel && onChoose(sel)}
+          brand={sel}
+          secure={t("payments.gate.secure")}
+          steps={[t("payments.gate.step1"), t("payments.gate.step2", { brand: sel.name }), t("payments.gate.step3")]}
+          done={() => onChoose(sel.via)}
         />
       ) : step === "pick" ? (
-        <div className="space-y-2.5">
-          {hasCheckout && <BrandTile badge={<OxaPayBadge />} name="OxaPay" sub={t("payments.gate.oxapaySub")} onClick={() => pick("checkout")} />}
-          {hasBank && <BrandTile badge={<PhonePeBadge />} name="PhonePe" sub={t("payments.gate.phonepeSub")} onClick={() => pick("bank")} />}
+        <div className="space-y-3">
+          {hasCheckout && <BrandTile brand={OXAPAY} sub={t("payments.gate.oxapaySub")} onClick={() => pick(OXAPAY)} />}
+          {hasBank && <BrandTile brand={PHONEPE} sub={t("payments.gate.phonepeSub")} onClick={() => pick(PHONEPE)} />}
           {!hasCheckout && !hasBank && <div className="py-6 text-center text-[13px] text-fg-3">{t("payments.gate.none")}</div>}
         </div>
       ) : (
         <div className="space-y-4">
+          {sel && (
+            <div className="flex items-center gap-3 rounded-[14px] border border-line bg-surface-2/60 px-4 py-3">
+              <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-white ring-1 ring-black/5">{sel.mark(26)}</span>
+              <span className="flex h-[18px] items-center">{sel.wordmark ?? <span className="text-[15px] font-semibold text-fg">{sel.name}</span>}</span>
+            </div>
+          )}
           <div className="flex items-start gap-3 rounded-[14px] border border-line bg-surface-2/60 px-4 py-3 text-[12.5px] leading-relaxed text-fg-2">
             <ShieldCheck className="mt-0.5 size-4 shrink-0 text-ember" />
             <p>{t("payments.gate.termsBody", { brand: brandName })}</p>
@@ -243,7 +269,7 @@ export function DepositGate({
             <Button variant="ghost" size="sm" onClick={() => setStep("pick")}>
               <ChevronLeft className="size-4" /> {t("common.back")}
             </Button>
-            <Button variant="ember" onClick={proceed} disabled={!agreed}>
+            <Button variant="ember" onClick={() => agreed && setStep("handoff")} disabled={!agreed}>
               {t("payments.gate.continueTo", { brand: brandName })} <ArrowRight className="size-4" />
             </Button>
           </div>
