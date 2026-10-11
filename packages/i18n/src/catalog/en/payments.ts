@@ -194,6 +194,12 @@ const payments = {
   "gate.termsBody": "Deposits are credited in USDT at the rate shown on the next screen. Trading leveraged products carries significant risk and you may lose your funds. By continuing you confirm the funds are your own, that you accept Ezymex's deposit terms and risk disclosure, and that you will complete the payment to {brand} yourself.",
   "gate.agree": "I have read and agree to the deposit terms and risk disclosure.",
   "gate.continueTo": "Continue to {brand}",
+  "gate.connecting": "Connecting to {brand}",
+  "gate.connectingSub": "Secure handoff — please keep this window open.",
+  "gate.step1": "Securing your session",
+  "gate.step2": "Opening {brand}",
+  "gate.step3": "Preparing your deposit",
+  "gate.secure": "Encrypted connection",
 };
 
 export default payments;
