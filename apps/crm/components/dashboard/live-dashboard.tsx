@@ -17,18 +17,16 @@ import {
   IdCard,
   Layers,
   LifeBuoy,
-  LineChart,
   Mail,
-  TrendingUp,
   UserRound,
   Wallet,
 } from "lucide-react";
-import { Button, Card, CardHeader, Chip, CoinIcon, KpiCard, MarketSessions, Money, PageHeader, Reveal, cn, formatMoney, useQuotes } from "@/components/kit";
+import { Button, Card, CardHeader, Chip, CoinIcon, MarketSessions, PageHeader, Reveal, cn, useQuotes } from "@/components/kit";
 import { INSTRUMENTS, isMarketOpen } from "@ezymex/mock";
 import { KYC_CHIP, useReadOnly, useSession, type SessionUser } from "@/components/session";
 import { FeedGuard } from "@/components/feed-guard";
 import { SUPPORT_EMAIL, TERMINAL_URL } from "@/lib/live";
-import { curOf, fmtLevel, isArchived, levelTone, serverOf, useAccounts, type EngineAccount } from "@/components/trading/api";
+import { curOf, isArchived, serverOf, useAccounts, type EngineAccount } from "@/components/trading/api";
 import { liveTotals } from "@/components/trading/accounts-page";
 import { AccountActions, FundButton, RefillButton, TradeButton, isPropAccount } from "@/components/trading/ui";
 import { useWalletFunded, walletStep } from "@/components/wallet-live/onboarding";
@@ -41,13 +39,12 @@ import { LiveCalendarCard, LiveNewsCard, LiveWorldCard } from "@/components/news
 import { Trans, useFormat, useT } from "@ezymex/i18n/react";
 import { AccountsPanel, type CardAccount } from "@/components/dashboard/home/accounts-panel";
 import { BalancePanel, QuickActions } from "@/components/dashboard/home/balance-panel";
-import { HideBalancesButton, MASK, useBalancesHidden } from "@/components/dashboard/home/hide-balances";
+import { HideBalancesButton } from "@/components/dashboard/home/hide-balances";
 import { ActivityTabs, ChecklistCard, type ListRowItem } from "@/components/dashboard/home/list-cards";
 import { NotificationsPanel, type Prompt } from "@/components/dashboard/home/notifications-panel";
-import { OverviewLayout, SectionTitle } from "@/components/dashboard/home/overview";
+import { OverviewLayout, ReadMore, SectionTitle } from "@/components/dashboard/home/overview";
 import { RANGE_DAYS, StatisticCard, type StatMode, type StatRange } from "@/components/dashboard/home/statistic-card";
 import type { TrendPoint } from "@/components/dashboard/home/trend-chart";
-import { AiFacts, AiLink, AskAi, type AiChip } from "@/components/ai/ask-ai";
 import { useModule, usePageOn } from "@/components/tenant-config";
 
 function greeting() {
@@ -400,7 +397,6 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
   const calendarOn = useModule("calendar");
   const supportOn = useModule("support");
   // Ask Ezymex AI is answered by the support chat's bot
-  const askAiOn = useModule("ai_assistant&support");
   const acc = useAccounts(10000);
   // Archived / closed accounts live on the Accounts page's Archived tab only.
   const accounts = React.useMemo(() => acc.data?.accounts.filter((a) => !isArchived(a)) ?? null, [acc.data]);
@@ -417,7 +413,7 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
   // Statistics card
   const [mode, setMode] = React.useState<StatMode>("equity");
   // the client's "Hide balances" choice (header eye): every amount on the dashboard shows as ••••••
-  const hidden = useBalancesHidden();
+  const [more, setMore] = React.useState(false);
   const [range, setRange] = React.useState<StatRange>("month");
   const n = RANGE_DAYS[range];
   const chart = useCurve(2 * n);
@@ -524,29 +520,11 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
     .filter(([page]) => !page || pageOn(page))
     .map(([, row]) => row);
 
-  // Ask Ezymex AI: suggestions answered by the real support bot; account questions also show the client's own figures
-  const liveAccts = totals.live;
-  const money2 = (a: EngineAccount, v: number) => `${curOf(a)}${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  const aiChips: AiChip[] = [
-    ...(walletOn ? [{ key: "deposit", label: t("dashboard.ai.chip.deposit"), extra: <AiLink href="/wallet/deposit">{t("common.deposit")}</AiLink> }] : []),
-    {
-      key: "freeMargin",
-      label: t("dashboard.ai.chip.freeMargin"),
-      extra: <AiFacts title={t("dashboard.ai.yourAccounts")} rows={liveAccts.map((a) => ({ label: `#${a.login} · ${a.groupName}`, value: money2(a, a.freeMargin) }))} />,
-    },
-    {
-      key: "marginLevel",
-      label: t("dashboard.ai.chip.marginLevel"),
-      extra: <AiFacts title={t("dashboard.ai.yourAccounts")} rows={liveAccts.map((a) => ({ label: `#${a.login} · ${a.groupName}`, value: fmtLevel(a.marginLevel), tone: levelTone(a.marginLevel) }))} />,
-    },
-    { key: "openAccount", label: t("dashboard.ai.chip.openAccount"), question: t("dashboard.ai.q.openAccount"), extra: <AiLink href="/accounts/new">{t("dashboard.accounts.open")}</AiLink> },
-  ];
-
   return (
     <div className="pb-16">
       <DashboardBanners />
       <OverviewLayout
-        ai={readOnly || !askAiOn ? undefined : <AskAi chips={aiChips} />}
+        more={<ReadMore open={more} onToggle={() => setMore((v) => !v)} labelMore={t("dashboard.home.readMore")} labelLess={t("dashboard.home.readLess")} />}
         header={
           <PageHeader
             className="mb-0"
@@ -564,59 +542,8 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
             }
           />
         }
-        kpis={
-          // an odd card out (wallet or rewards switched off) takes the full row
-          <div className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 [&>*]:w-[78%] [&>*]:shrink-0 [&>*]:snap-start sm:[&>*]:w-auto sm:[&>*:last-child:nth-child(odd)]:col-span-2">
-            <KpiCard
-              label={t("dashboard.equity.title")}
-              icon={<TrendingUp />}
-              value={!accounts ? "—" : hidden ? MASK : <Money value={totals.equity} countUp={false} />}
-              chip={hasLive ? t("dashboard.home.accountsChip", { live: totals.live.length, positions: totals.positions }) : t("dashboard.accounts.openLive.title")}
-              chipTone="neutral"
-              href="/accounts"
-            />
-            <KpiCard
-              label={today !== null ? t("dashboard.home.todayPnl") : t("dashboard.home.floating")}
-              icon={<LineChart />}
-              value={!accounts ? "—" : hidden ? MASK : <Money value={today ?? totals.profit} signed tone="auto" countUp={false} />}
-              chip={todayPct !== null && !hidden ? t("dashboard.home.todayPct", { pct: `${todayPct >= 0 ? "+" : ""}${todayPct.toFixed(2)}` }) : undefined}
-              chipTone={(today ?? totals.profit) >= 0 ? "up" : "down"}
-              accent={(today ?? totals.profit) >= 0 ? "var(--k-up)" : "var(--k-down)"}
-              href="/portfolio/analytics"
-              delay={0.05}
-            />
-            {walletOn && (
-              <KpiCard
-                label={t("dashboard.home.walletBalance")}
-                icon={<Wallet />}
-                value={walletTotal === null ? "—" : hidden ? MASK : <Money value={walletTotal} countUp={false} />}
-                accent="var(--k-info)"
-                footer={
-                  <div className="flex items-center gap-2">
-                    <CoinIcon coin="usdt" size={20} />
-                    <span className="text-[12px] font-semibold text-fg-3">USDT · TRC20 · BEP20</span>
-                  </div>
-                }
-                href="/wallet"
-                delay={0.1}
-              />
-            )}
-            {rewardsOn && (
-              <KpiCard
-                label={t("dashboard.home.rewards")}
-                icon={<Award />}
-                value={!r ? "—" : hidden ? MASK : <Money value={r.points.balance * r.pointValue} countUp={false} />}
-                accent="var(--k-gold)"
-                chipTone="gold"
-                chip={r && !hidden ? t("dashboard.home.points", { points: r.points.balance.toLocaleString("en-US") }) : t("shell.nav.loyalty")}
-                href="/rewards/loyalty"
-                delay={0.15}
-              />
-            )}
-          </div>
-        }
-        statistic={<StatisticCard mode={mode} onMode={setMode} range={range} onRange={setRange} points={series?.points ?? (chart.loading ? null : [])} compare={series?.compare} loading={chart.loading} />}
-        checklist={<ChecklistCard title={t("dashboard.steps.title")} subtitle={t("dashboard.steps.subtitle")} rows={checklist} done={done} total={list.length} />}
+        statistic={more ? <StatisticCard mode={mode} onMode={setMode} range={range} onRange={setRange} points={series?.points ?? (chart.loading ? null : [])} compare={series?.compare} loading={chart.loading} /> : undefined}
+        checklist={more ? <ChecklistCard title={t("dashboard.steps.title")} subtitle={t("dashboard.steps.subtitle")} rows={checklist} done={done} total={list.length} /> : undefined}
         accounts={
           <AccountsPanel
             accounts={cards}
@@ -678,7 +605,9 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
         notifications={<NotificationsPanel prompts={prompts} />}
       />
 
-      <UpdatesSection />
+      {more && (
+        <>
+          <UpdatesSection />
 
       <SectionTitle>{t("dashboard.home.marketsTitle")}</SectionTitle>
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-12">
@@ -726,10 +655,12 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
           <SessionsCard />
         </Reveal>
       </div>
-      {supportOn && (
-        <Reveal delay={0.05} className="mt-5 block">
-          <SupportCard />
-        </Reveal>
+          {supportOn && (
+            <Reveal delay={0.05} className="mt-5 block">
+              <SupportCard />
+            </Reveal>
+          )}
+        </>
       )}
     </div>
   );

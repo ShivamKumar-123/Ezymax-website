@@ -226,6 +226,8 @@ const dashboard = {
   "home.tradingTitle": "Trading",
   "home.marketsTitle": "Markets",
   "home.moreTitle": "More for you",
+  "home.readMore": "Read more",
+  "home.readLess": "Show less",
 
   // Ask Ezymex AI on the Overview (the support bot). {name} = the assistant's name, e.g. "Ezymex AI"
   "ai.title": "Ask {name}",

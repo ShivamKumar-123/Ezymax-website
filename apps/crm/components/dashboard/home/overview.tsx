@@ -6,12 +6,14 @@
 // column on top, the other two side by side. Phones: one column, the most used blocks first.
 
 import * as React from "react";
-import { cn } from "@ezymex/ui";
+import { ChevronDown } from "lucide-react";
+import { Button, cn } from "@ezymex/ui";
 
 export function OverviewLayout({
   header,
   ai,
   kpis,
+  more,
   statistic,
   checklist,
   accounts,
@@ -23,8 +25,10 @@ export function OverviewLayout({
   header: React.ReactNode;
   /** Ask Ezymex AI: a card under the title (a compact pill on phones). */
   ai?: React.ReactNode;
-  kpis: React.ReactNode;
-  statistic: React.ReactNode;
+  kpis?: React.ReactNode;
+  /** The "Read more" control, where the KPI row used to sit. */
+  more?: React.ReactNode;
+  statistic?: React.ReactNode;
   checklist?: React.ReactNode;
   accounts: React.ReactNode;
   activity: React.ReactNode;
@@ -40,6 +44,7 @@ export function OverviewLayout({
         {slot("max-md:order-1", header)}
         {slot("max-md:order-1", ai)}
         {slot("max-md:order-3", kpis)}
+        {slot("max-md:order-2", more)}
         {slot("max-md:order-6", statistic)}
         {slot("max-md:order-9", checklist)}
       </div>
@@ -52,6 +57,19 @@ export function OverviewLayout({
         {slot("max-md:order-5", quick)}
         {slot("max-md:order-7", notifications)}
       </div>
+    </div>
+  );
+}
+
+/** Opens and closes everything the dashboard keeps below the fold. Right-aligned, so it reads as a control
+ *  on the section rather than a call to action. */
+export function ReadMore({ open, onToggle, labelMore, labelLess }: { open: boolean; onToggle: () => void; labelMore: string; labelLess: string }) {
+  return (
+    <div className="flex justify-end">
+      <Button variant="surface" size="sm" onClick={onToggle} aria-expanded={open}>
+        {open ? labelLess : labelMore}
+        <ChevronDown className={cn("size-4 transition-transform duration-200", open && "rotate-180")} />
+      </Button>
     </div>
   );
 }

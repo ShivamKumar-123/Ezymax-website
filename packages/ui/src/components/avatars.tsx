@@ -35,8 +35,9 @@ export function Avatar({
       ) : (
         <span className="grid size-full place-items-center rounded-full bg-surface-3 text-xs font-semibold text-fg-2">{initials}</span>
       )}
+      {/* blue, not the green used for gains: this badge says "identity checked", and green beside a balance reads as profit */}
       {verified && (
-        <span className="absolute -bottom-0.5 -right-0.5 grid size-4 place-items-center rounded-full bg-up ring-2 ring-bg">
+        <span className="absolute -bottom-0.5 -right-0.5 grid size-4 place-items-center rounded-full bg-info ring-2 ring-bg">
           <svg viewBox="0 0 12 12" className="size-2.5 fill-none stroke-white stroke-2">
             <path d="M2.5 6.2l2.2 2.2 4.8-4.8" />
           </svg>
