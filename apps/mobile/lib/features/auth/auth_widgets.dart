@@ -224,12 +224,17 @@ const List<(String, String, String)> kCountries = [
   ('bd', 'Bangladesh', '+880'),
   ('lk', 'Sri Lanka', '+94'),
   ('np', 'Nepal', '+977'),
+  ('pk', 'Pakistan', '+92'),
+  ('bt', 'Bhutan', '+975'),
   ('ng', 'Nigeria', '+234'),
   ('ke', 'Kenya', '+254'),
+  ('ug', 'Uganda', '+256'),
+  ('et', 'Ethiopia', '+251'),
   ('za', 'South Africa', '+27'),
   ('br', 'Brazil', '+55'),
   ('mx', 'Mexico', '+52'),
   ('gb', 'United Kingdom', '+44'),
+  ('fr', 'France', '+33'),
 ];
 
 /// Latest date of birth for someone who is 18 today.
