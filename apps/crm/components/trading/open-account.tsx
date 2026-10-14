@@ -51,7 +51,7 @@ const usedIn = (accounts: EngineAccount[], g: EngineGroup, kind: AccountKind) =>
 const money = (v: number, cent: boolean) => (cent ? `USC ${(v * 100).toLocaleString("en-US")}` : `$${v.toLocaleString("en-US")}`);
 
 /** First wizard step: CFD account or Options account (also used by the demo-build wizard). */
-export function ProductCard({ product, selected, onSelect }: { product: AccountProduct; selected: boolean; onSelect: () => void }) {
+export function ProductCard({ product, selected, onSelect, soon }: { product: AccountProduct; selected: boolean; onSelect: () => void; soon?: boolean }) {
   const t = useT();
   const options = product === "options";
   const points = options
@@ -60,19 +60,28 @@ export function ProductCard({ product, selected, onSelect }: { product: AccountP
   return (
     <button
       type="button"
-      onClick={onSelect}
-      aria-pressed={selected}
+      onClick={soon ? undefined : onSelect}
+      disabled={soon}
+      aria-pressed={soon ? undefined : selected}
       data-testid={`product-${product}`}
       className={cn(
         "relative flex h-full flex-col overflow-hidden rounded-[20px] border p-6 text-start transition-colors duration-200",
-        selected ? "border-ember/60 bg-surface shadow-[0_0_0_4px_color-mix(in_oklab,var(--k-ember)_12%,transparent)]" : "k-card hover:border-[var(--k-border-top)]",
+        soon ? "k-card cursor-not-allowed opacity-60" : selected ? "border-ember/60 bg-surface shadow-[0_0_0_4px_color-mix(in_oklab,var(--k-ember)_12%,transparent)]" : "k-card hover:border-[var(--k-border-top)]",
       )}
     >
       <div className="flex items-start justify-between">
         <Chip tone={options ? "info" : "neutral"} className="font-semibold tracking-wider">
           {options ? t("accounts.product.options") : t("accounts.product.cfd")}
         </Chip>
-        <span className={cn("grid size-6 place-items-center rounded-full border transition-colors", selected ? "border-ember bg-ember text-white" : "border-line")}>{selected && <Check className="size-3.5" />}</span>
+        {/* the card stays on the step rather than being removed: a lone choice with no explanation only
+            prompts the question this answers */}
+        {soon ? (
+          <Chip tone="warn" className="font-semibold">
+            {t("common.comingSoon")}
+          </Chip>
+        ) : (
+          <span className={cn("grid size-6 place-items-center rounded-full border transition-colors", selected ? "border-ember bg-ember text-white" : "border-line")}>{selected && <Check className="size-3.5" />}</span>
+        )}
       </div>
       <div className="mt-4">
         <Icon3D name={options ? "chart_increasing" : "chart_increasing_with_yen"} size={64} />
@@ -438,7 +447,7 @@ function Wizard() {
                     <CardHeader title={t("accounts.wizard.productTitle")} subtitle={t("accounts.wizard.productSubtitle")} />
                     <div className="grid grid-cols-1 gap-4 px-4 pb-6 pt-4 sm:grid-cols-2 sm:px-6">
                       <ProductCard product="cfd" selected={product === "cfd"} onSelect={() => set("product", "cfd")} />
-                      <ProductCard product="options" selected={product === "options"} onSelect={() => set("product", "options")} />
+                      <ProductCard product="options" selected={false} onSelect={() => undefined} soon />
                     </div>
                   </Card>
                 )}

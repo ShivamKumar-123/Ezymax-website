@@ -5,13 +5,19 @@
 /** Path prefixes rendered in live builds ("/" matches only the dashboard itself). */
 export const LIVE_PAGES = ["/", "/markets", "/profile", "/support", "/accounts", "/portfolio", "/social", "/partner", "/academy", "/prop", "/wallet", "/developer", "/rewards", "/news", "/calendar", "/options", "/updates", "/staking"] as const;
 
-/** Sub-pages of a live prefix that are still mock-only and stay gated in live builds. */
-export const LIVE_GATED = ["/academy/coach"] as const;
+/** Sub-pages of a live prefix that are still mock-only and stay gated in live builds.
+ *  A gated path drops out of the navigation (lib/nav.ts) and renders the Coming soon page. */
+export const LIVE_GATED = ["/academy/coach", "/options"] as const;
 
 /** Modules that are next on the roadmap: listed in live navigation with a "Soon" chip. */
 export type SoonModule = { prefix: string; title: string; text: string };
 
 export const SOON_MODULES: SoonModule[] = [
+  {
+    prefix: "/options",
+    title: "Options are coming soon",
+    text: "Options accounts are not open yet. Your CFD accounts are unaffected, and we will announce options here as soon as they are ready.",
+  },
 ];
 
 export function soonFor(pathname: string): SoonModule | undefined {
