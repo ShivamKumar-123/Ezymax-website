@@ -16,7 +16,6 @@ import { activeSub, isActive } from "./nav-utils";
 export function MobileBar({ modules, onSignOut }: { modules: NavModule[]; onSignOut: () => void }) {
   const t = useT();
   const pathname = usePathname();
-  const picker = useTerminalPicker();
   const [open, setOpen] = React.useState(false);
   const primary = modules.slice(0, 4);
   const moreActive = !primary.some((m) => isActive(pathname, m));
@@ -41,14 +40,15 @@ export function MobileBar({ modules, onSignOut }: { modules: NavModule[]; onSign
         </button>
       </nav>
       <Dialog open={open} onOpenChange={setOpen} side="right" title={t("dashboard.chrome.menu")}>
-        <Drawer modules={modules} pathname={pathname} onSignOut={onSignOut} />
+        <Drawer modules={modules} pathname={pathname} onSignOut={onSignOut} onClose={() => setOpen(false)} />
       </Dialog>
     </>
   );
 }
 
-function Drawer({ modules, pathname, onSignOut }: { modules: NavModule[]; pathname: string; onSignOut: () => void }) {
+function Drawer({ modules, pathname, onSignOut, onClose }: { modules: NavModule[]; pathname: string; onSignOut: () => void; onClose: () => void }) {
   const t = useT();
+  const picker = useTerminalPicker();
   const { resolvedTheme, setTheme } = useTheme();
   const dark = resolvedTheme === "dark";
   const [openKey, setOpenKey] = React.useState<string | null>(() => modules.find((m) => isActive(pathname, m))?.key ?? null);
@@ -90,7 +90,7 @@ function Drawer({ modules, pathname, onSignOut }: { modules: NavModule[]; pathna
                       type="button"
                       className={cls}
                       onClick={() => {
-                        setOpen(false);
+                        onClose();
                         picker.open();
                       }}
                     >
