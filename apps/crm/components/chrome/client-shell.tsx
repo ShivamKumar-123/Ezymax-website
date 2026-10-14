@@ -26,6 +26,7 @@ import { SessionGuard, ViewerBar, navForViewer } from "@/components/security/ses
 import { viewerPageAllowed } from "@/lib/viewer";
 import { AccountNotices } from "@/components/account-notices";
 import { MaintenanceNotice } from "@/components/maintenance-notice";
+import { TerminalPickerProvider } from "@/components/trading/terminal-picker";
 import { BrandAvatar, Rail, useRailExpanded } from "./rail";
 import { AvatarButton, RailToggle, SubNav, WalletChip } from "./topbar";
 import { ProfileDrawer } from "./profile-drawer";
@@ -84,7 +85,8 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
 
   return (
     <NotificationsProvider userKey={String(me.id)} enabled={!viewer}>
-      <TooltipProvider>
+      <TerminalPickerProvider>
+        <TooltipProvider>
         <div className="relative min-h-dvh overflow-x-clip">
           <div className="k-backdrop" aria-hidden />
           <Rail modules={modules} expanded={expanded} />
@@ -141,7 +143,8 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
             extra={<LanguageMenu />}
           />
         </div>
-      </TooltipProvider>
+        </TooltipProvider>
+      </TerminalPickerProvider>
       {!IS_DEMO && <SessionGuard />}
       {!viewer && supportOn && <SupportLauncher />}
     </NotificationsProvider>

@@ -14,6 +14,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { ChevronDown } from "lucide-react";
 import { LogoMark, Tooltip, cn, useBrand, type NavModule, type SubNavItem } from "@/components/kit";
 import { useLocale, useT } from "@ezymex/i18n/react";
+import { useTerminalPicker } from "@/components/trading/terminal-picker";
 import { activeSub, isActive } from "./nav-utils";
 
 const KEY = "ezymex.crm.rail";
@@ -66,6 +67,7 @@ export function Rail({ modules, expanded }: { modules: NavModule[]; expanded: bo
   const pathname = usePathname();
   const { dir } = useLocale();
   const reduce = useReducedMotion();
+  const picker = useTerminalPicker();
   const side = dir === "rtl" ? "left" : "right";
 
   const current = modules.find((m) => isActive(pathname, m));
@@ -167,20 +169,28 @@ export function Rail({ modules, expanded }: { modules: NavModule[]; expanded: bo
                       >
                         {sub.map((s) => {
                           const on = here?.href === s.href;
+                          const cls = cn(
+                            "flex h-8 w-full items-center gap-2 rounded-[10px] pe-3 ps-10 text-[12.5px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ember/40",
+                            on ? "bg-surface-3 font-semibold text-fg" : "text-fg-3 hover:bg-surface-3/50 hover:text-fg",
+                          );
+                          const body = (
+                            <>
+                              <span className="min-w-0 flex-1 truncate text-start">{s.label}</span>
+                              {s.badge !== undefined && badge(s.badge)}
+                            </>
+                          );
                           return (
                             <li key={s.href} className="mt-[2px] first:mt-[3px]">
-                              <Link
-                                href={s.href}
-                                prefetch
-                                aria-current={on ? "page" : undefined}
-                                className={cn(
-                                  "flex h-8 items-center gap-2 rounded-[10px] pe-3 ps-10 text-[12.5px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ember/40",
-                                  on ? "bg-surface-3 font-semibold text-fg" : "text-fg-3 hover:bg-surface-3/50 hover:text-fg",
-                                )}
-                              >
-                                <span className="min-w-0 flex-1 truncate text-start">{s.label}</span>
-                                {s.badge !== undefined && badge(s.badge)}
-                              </Link>
+                              {/* an entry that opens something in place is a button, so it never navigates to its fallback href */}
+                              {s.action === "terminal" && picker ? (
+                                <button type="button" onClick={picker.open} className={cls}>
+                                  {body}
+                                </button>
+                              ) : (
+                                <Link href={s.href} prefetch aria-current={on ? "page" : undefined} className={cls}>
+                                  {body}
+                                </Link>
+                              )}
                             </li>
                           );
                         })}

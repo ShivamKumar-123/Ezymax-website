@@ -1,4 +1,5 @@
 import {
+  CandlestickChart,
   LayoutGrid,
   Layers,
   Wallet,
@@ -71,6 +72,8 @@ export const CRM_NAV: NavModule[] = [
     sub: [
       { href: "/accounts", label: "My accounts", icon: Layers },
       { href: "/accounts/new", label: "Open account", icon: PlusCircle },
+      // opens the account picker rather than a page: the terminal signs in to one account, so one has to be chosen
+      { href: "/terminal", label: "Ezymex Terminal", icon: CandlestickChart, action: "terminal" },
       { href: "/options", label: "Options", icon: ChartSpline },
       { href: "/portfolio", label: "Portfolio", icon: PieChart },
       { href: "/portfolio/analytics", label: "Performance", icon: BarChart3 },
@@ -124,7 +127,7 @@ export const CRM_NAV: NavModule[] = [
   },
   {
     key: "prop",
-    label: "Prop Challenges",
+    label: "Competition & Rewards",
     icon: Trophy,
     href: "/prop",
     section: "grow",
@@ -137,7 +140,7 @@ export const CRM_NAV: NavModule[] = [
   },
   {
     key: "earn",
-    label: "Earn",
+    label: "Ezymex SIP",
     icon: PiggyBank,
     href: "/staking",
     match: ["/staking", "/rewards"],

@@ -10,11 +10,13 @@ import { useTheme } from "next-themes";
 import { ChevronRight, LayoutGrid, LogOut, Moon, Settings, Sun } from "lucide-react";
 import { Dialog, LanguageMenu, cn, type NavModule } from "@/components/kit";
 import { useT } from "@ezymex/i18n/react";
+import { useTerminalPicker } from "@/components/trading/terminal-picker";
 import { activeSub, isActive } from "./nav-utils";
 
 export function MobileBar({ modules, onSignOut }: { modules: NavModule[]; onSignOut: () => void }) {
   const t = useT();
   const pathname = usePathname();
+  const picker = useTerminalPicker();
   const [open, setOpen] = React.useState(false);
   const primary = modules.slice(0, 4);
   const moreActive = !primary.some((m) => isActive(pathname, m));
@@ -74,12 +76,32 @@ function Drawer({ modules, pathname, onSignOut }: { modules: NavModule[]; pathna
             </div>
             {subs && expanded && (
               <div className="grid grid-cols-2 gap-1 px-2 pb-2">
-                {subs.map((s) => (
-                  <Link key={s.href} href={s.href} className={cn("flex min-h-11 items-center gap-2 rounded-[12px] px-3 text-[13px] font-medium", s === cur ? "bg-surface text-ember shadow-[var(--k-shadow-card)]" : "text-fg-2")}>
-                    {s.icon && <s.icon className="size-4 shrink-0" />}
-                    <span className="truncate">{s.label}</span>
-                  </Link>
-                ))}
+                {subs.map((s) => {
+                  const cls = cn("flex min-h-11 w-full items-center gap-2 rounded-[12px] px-3 text-[13px] font-medium", s === cur ? "bg-surface text-ember shadow-[var(--k-shadow-card)]" : "text-fg-2");
+                  const body = (
+                    <>
+                      {s.icon && <s.icon className="size-4 shrink-0" />}
+                      <span className="truncate">{s.label}</span>
+                    </>
+                  );
+                  return s.action === "terminal" && picker ? (
+                    <button
+                      key={s.href}
+                      type="button"
+                      className={cls}
+                      onClick={() => {
+                        setOpen(false);
+                        picker.open();
+                      }}
+                    >
+                      {body}
+                    </button>
+                  ) : (
+                    <Link key={s.href} href={s.href} className={cls}>
+                      {body}
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>

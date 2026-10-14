@@ -587,7 +587,7 @@ const accounts = {
   "label.product": "Product",
   "product.cfd": "CFD",
   "product.options": "Options",
-  "product.cfdTitle": "CFD account",
+  "product.cfdTitle": "Real account",
   "product.optionsTitle": "Options account",
   "product.cfdText": "Trade forex, metals, indices, energies, stocks and crypto as CFDs.",
   "product.optionsText": "Buy or sell options on forex, gold, silver and oil.",

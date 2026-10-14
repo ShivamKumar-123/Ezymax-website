@@ -16,6 +16,8 @@ export interface SubNavItem {
   label: string;
   icon?: LucideIcon;
   badge?: number | string;
+  /** The entry opens something in place instead of navigating; the shell decides what. `href` is only a fallback. */
+  action?: "terminal";
 }
 
 export interface NavModule {

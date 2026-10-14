@@ -144,6 +144,10 @@ const shell = {
   // shell.nav.support and shell.logOut, and the verification pill reuses the shell.kyc.* labels above
   // TEMPORARY: remove with components/maintenance-notice.tsx once the dashboard work ships
   "maintenance.text": "We're improving your dashboard right now, so some things may look different. Your funds, accounts and open positions are unaffected.",
+  "terminalPicker.title": "Open Ezymex Trader",
+  "terminalPicker.subtitle": "Choose the account to trade. The terminal opens signed in to it.",
+  "terminalPicker.none": "You have no trading account yet.",
+  "terminalPicker.opening": "Opening the terminal…",
   "profileDrawer.title": "My Profile",
   "profileDrawer.close": "Close profile",
   "profileDrawer.greeting": "Hey, {name}",
