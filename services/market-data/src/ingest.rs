@@ -629,7 +629,7 @@ mod shutdown_tests {
     fn refused_backoff_schedule_caps_and_resets_only_after_a_held_connection() {
         let mut b = Backoff::default();
         let short = Duration::from_secs(2);
-        // 429s: 15, 30, 60, 120, 240, 300, 300 s (no jitter), the alert only on the first
+        // 429s: 15, 30 s, then the cap (no jitter), the alert only on the first
         let mut delays = Vec::new();
         let mut alerts = 0;
         for _ in 0..7 {
@@ -637,12 +637,12 @@ mod shutdown_tests {
             delays.push(d.as_secs());
             alerts += alert as u32;
         }
-        assert_eq!(delays, vec![15, 30, 60, 120, 240, 300, 300]);
+        assert_eq!(delays, vec![15, 30, 60, 60, 60, 60, 60]);
         assert_eq!(alerts, 1, "one alert per episode");
         assert_eq!(b.refused_since, Some(t0()));
         // a connection that drops after 2 s does not end the episode or reset the schedule
         let (d, _) = b.next(Outcome::Dropped, short, 0.5, t0());
-        assert_eq!(d.as_secs(), 300);
+        assert_eq!(d, Backoff::REFUSED_CAP);
         assert!(b.refused_since.is_some());
         // one that held 60 s does: back to the 1 s error schedule, and a new 429 starts a new episode (alert again)
         let (d, _) = b.next(Outcome::Dropped, Duration::from_secs(60), 0.5, t0());
