@@ -60,29 +60,23 @@ import type { MessageKey, T } from "@ezymex/i18n";
 import { LIVE_GATED } from "@/lib/live";
 
 export const CRM_NAV: NavModule[] = [
+  { key: "dashboard", label: "Dashboard", icon: LayoutGrid, href: "/", match: ["/", "/updates"], section: "main" },
   {
-    key: "dashboard",
-    label: "Dashboard",
-    icon: LayoutGrid,
-    href: "/",
-    match: ["/", "/markets", "/news", "/calendar", "/updates"],
-    section: "main",
-    sub: [
-      { href: "/", label: "Overview", icon: LayoutGrid },
-      { href: "/markets", label: "Markets", icon: Globe2 },
-      { href: "/news", label: "News", icon: Newspaper },
-      { href: "/calendar", label: "Calendar", icon: CalendarDays },
-    ],
-  },
-  {
-    key: "accounts",
-    label: "Accounts",
+    key: "trading",
+    label: "Trading",
     icon: Layers,
     href: "/accounts",
+    match: ["/accounts", "/options", "/portfolio"],
     section: "main",
     sub: [
       { href: "/accounts", label: "My accounts", icon: Layers },
       { href: "/accounts/new", label: "Open account", icon: PlusCircle },
+      { href: "/options", label: "Options", icon: ChartSpline },
+      { href: "/portfolio", label: "Portfolio", icon: PieChart },
+      { href: "/portfolio/analytics", label: "Performance", icon: BarChart3 },
+      { href: "/portfolio/history", label: "Trade history", icon: History },
+      { href: "/portfolio/ledger", label: "Ledger", icon: BookText },
+      { href: "/portfolio/statements", label: "Statements", icon: FileText },
     ],
   },
   {
@@ -100,33 +94,16 @@ export const CRM_NAV: NavModule[] = [
     ],
   },
   {
-    key: "portfolio",
-    label: "Portfolio",
-    icon: PieChart,
-    href: "/portfolio",
+    key: "analytics",
+    label: "Analytics",
+    icon: LineChart,
+    href: "/markets",
+    match: ["/markets", "/news", "/calendar"],
     section: "main",
     sub: [
-      { href: "/portfolio", label: "Overview", icon: PieChart },
-      { href: "/portfolio/analytics", label: "Analytics", icon: BarChart3 },
-      { href: "/portfolio/history", label: "Trade history", icon: History },
-      { href: "/portfolio/ledger", label: "Ledger", icon: BookText },
-      { href: "/portfolio/statements", label: "Statements", icon: FileText },
-    ],
-  },
-  { key: "options", label: "Options", icon: ChartSpline, href: "/options", section: "main" },
-  {
-    key: "partner",
-    label: "Partner (IB)",
-    icon: Handshake,
-    href: "/partner",
-    section: "grow",
-    sub: [
-      { href: "/partner", label: "Dashboard", icon: LayoutGrid },
-      { href: "/partner/clients", label: "Clients", icon: Users },
-      { href: "/partner/network", label: "Network", icon: Network },
-      { href: "/partner/commissions", label: "Commissions", icon: Coins },
-      { href: "/partner/links", label: "Links & materials", icon: Link2 },
-      { href: "/partner/payouts", label: "Payouts", icon: Banknote },
+      { href: "/markets", label: "Markets", icon: Globe2 },
+      { href: "/news", label: "News", icon: Newspaper },
+      { href: "/calendar", label: "Calendar", icon: CalendarDays },
     ],
   },
   {
@@ -159,28 +136,35 @@ export const CRM_NAV: NavModule[] = [
     ],
   },
   {
-    key: "staking",
-    label: "Staking",
+    key: "earn",
+    label: "Earn",
     icon: PiggyBank,
     href: "/staking",
-    section: "earn",
-    sub: [
-      { href: "/staking", label: "Plans", icon: PiggyBank },
-      { href: "/staking/portfolio", label: "My staking", icon: PieChart },
-      { href: "/staking/history", label: "History", icon: History },
-    ],
-  },
-  {
-    key: "rewards",
-    label: "Contests & Rewards",
-    icon: Gift,
-    href: "/rewards",
+    match: ["/staking", "/rewards"],
     section: "grow",
     sub: [
+      { href: "/staking", label: "Staking plans", icon: PiggyBank },
+      { href: "/staking/portfolio", label: "My staking", icon: PieChart },
+      { href: "/staking/history", label: "Staking history", icon: History },
       { href: "/rewards", label: "Contests", icon: Medal },
       { href: "/rewards/loyalty", label: "Loyalty", icon: Gift },
       { href: "/rewards/cashback", label: "Cashback", icon: Percent },
       { href: "/rewards/promotions", label: "Promotions", icon: Ticket },
+    ],
+  },
+  {
+    key: "partner",
+    label: "Partner (IB)",
+    icon: Handshake,
+    href: "/partner",
+    section: "grow",
+    sub: [
+      { href: "/partner", label: "Dashboard", icon: LayoutGrid },
+      { href: "/partner/clients", label: "Clients", icon: Users },
+      { href: "/partner/network", label: "Network", icon: Network },
+      { href: "/partner/commissions", label: "Commissions", icon: Coins },
+      { href: "/partner/links", label: "Links & materials", icon: Link2 },
+      { href: "/partner/payouts", label: "Payouts", icon: Banknote },
     ],
   },
   {
@@ -200,12 +184,14 @@ export const CRM_NAV: NavModule[] = [
     ],
   },
   {
-    key: "academy",
-    label: "Academy & AI Coach",
-    icon: GraduationCap,
-    href: "/academy",
-    section: "learn",
+    key: "help",
+    label: "Help & Learn",
+    icon: LifeBuoy,
+    href: "/support",
+    match: ["/support", "/academy"],
+    section: "account",
     sub: [
+      { href: "/support", label: "Support", icon: LifeBuoy },
       { href: "/academy", label: "Courses", icon: GraduationCap },
       { href: "/academy/glossary", label: "Glossary", icon: BookOpen },
       { href: "/academy/progress", label: "My progress", icon: Award },
@@ -227,7 +213,6 @@ export const CRM_NAV: NavModule[] = [
       { href: "/profile/preferences", label: "Preferences", icon: SlidersHorizontal },
     ],
   },
-  { key: "support", label: "Support", icon: LifeBuoy, href: "/support", section: "account" },
 ];
 
 const gated = (href: string) => LIVE_GATED.some((g) => href === g || href.startsWith(g + "/"));
@@ -236,7 +221,6 @@ const gated = (href: string) => LIVE_GATED.some((g) => href === g || href.starts
  * sub-pages that are still gated (LIVE_GATED) — navigation never leads to a placeholder. */
 export const LIVE_NAV: NavModule[] = CRM_NAV.map((m) => ({
   ...m,
-  label: m.key === "academy" ? "Academy" : m.label,
   badge: undefined, // demo badges are mock counts
   sub: m.sub?.filter((s) => !gated(s.href)).map((s) => ({ ...s, badge: undefined })),
 }));

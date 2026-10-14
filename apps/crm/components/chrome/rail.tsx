@@ -1,7 +1,7 @@
 "use client";
 
 // Left sidebar of the Client Area (right in RTL): the broker's logo (plus its name when expanded), the module
-// navigation with the active module marked by an accent notch on the outer edge, and settings at the bottom.
+// navigation, with the active module marked by an accent notch on the outer edge.
 // Modules that carry more than one sub-page expand in place as an accordion — one open at a time, so a long
 // module list never pushes the rest of the navigation out of reach. The collapse toggle lives in the top bar and
 // sign-out in the profile drawer, so neither appears here. Collapsed the rail is icon-only with tooltips, and
@@ -11,7 +11,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { ChevronDown, Settings } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { LogoMark, Tooltip, cn, useBrand, type NavModule, type SubNavItem } from "@/components/kit";
 import { useLocale, useT } from "@ezymex/i18n/react";
 import { activeSub, isActive } from "./nav-utils";
@@ -105,21 +105,22 @@ export function Rail({ modules, expanded }: { modules: NavModule[]; expanded: bo
     );
   const rowCls = (active: boolean) =>
     cn(
-      "group/rail relative flex h-10 shrink-0 items-center rounded-[13px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ember/40",
-      expanded ? "w-full gap-3 px-3" : "w-10 justify-center",
-      active ? "bg-ember-soft text-ember" : "text-fg-3 hover:bg-surface-3/70 hover:text-fg",
+      "group/rail relative flex h-9 shrink-0 items-center rounded-[11px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ember/40",
+      expanded ? "w-full gap-2.5 px-2.5" : "w-10 justify-center",
+      // the notch already marks the active module, so the row only needs the accent colour behind it
+      active ? "bg-ember-soft/60 text-ember" : "text-fg-3 hover:bg-surface-3/60 hover:text-fg",
     );
   const badge = (value: number | string) => (
     <span className={cn("grid h-4 min-w-4 place-items-center rounded-full bg-ember px-1 text-[9px] font-bold text-[var(--k-on-ember)] ring-2 ring-[var(--k-rail-bg-solid)]", expanded ? "relative" : "absolute end-0.5 top-0.5")}>{value}</span>
   );
 
   return (
-    <aside className={cn("k-rail fixed inset-y-0 start-0 z-40 hidden flex-col pb-4 pt-7 transition-[width] duration-300 lg:flex", expanded ? "w-[248px] px-4" : "w-[84px] items-center px-0")}>
-      <Link href="/" className={cn("flex shrink-0 items-center gap-3", expanded ? "px-1" : "")} aria-label={t("shell.nav.dashboard")}>
-        <BrandAvatar size={46} />
-        {expanded && brand && <span className="min-w-0 flex-1 truncate text-[17px] font-bold leading-tight text-fg">{brand.name}</span>}
+    <aside className={cn("k-rail fixed inset-y-0 start-0 z-40 hidden flex-col pb-4 pt-5 transition-[width] duration-300 lg:flex", expanded ? "w-[248px] px-4" : "w-[84px] items-center px-0")}>
+      <Link href="/" className={cn("flex shrink-0 items-center gap-2.5", expanded ? "px-1" : "")} aria-label={t("shell.nav.dashboard")}>
+        <BrandAvatar size={36} />
+        {expanded && brand && <span className="min-w-0 flex-1 truncate text-[15.5px] font-bold leading-tight text-fg">{brand.name}</span>}
       </Link>
-      <span className={cn("mt-5 block h-px shrink-0 bg-line", expanded ? "mx-1" : "w-10")} />
+      <span className={cn("mt-4 block h-px shrink-0 bg-line", expanded ? "mx-1" : "w-10")} />
       <nav ref={navRef} className={cn("mt-3 flex min-h-0 flex-1 flex-col gap-[3px] overflow-y-auto [scrollbar-width:none]", expanded ? "-mx-4 px-4" : "w-full items-center")} style={fade ? { maskImage: fade, WebkitMaskImage: fade } : undefined}>
         {modules.map((m) => {
           const active = isActive(pathname, m);
@@ -133,8 +134,8 @@ export function Rail({ modules, expanded }: { modules: NavModule[]; expanded: bo
           const face = (
             <>
               {active && <motion.span layoutId="crm-rail-notch" aria-hidden className="k-rail-notch" transition={{ type: "spring", bounce: 0.2, duration: 0.5 }} />}
-              <Icon className="relative size-[19px] shrink-0" strokeWidth={active ? 2 : 1.75} />
-              {expanded && <span className="relative min-w-0 flex-1 truncate text-start text-[13.5px] font-semibold">{m.label}</span>}
+              <Icon className="relative size-[17px] shrink-0" strokeWidth={active ? 2 : 1.7} />
+              {expanded && <span className={cn("relative min-w-0 flex-1 truncate text-start text-[13px]", active ? "font-semibold" : "font-medium")}>{m.label}</span>}
               {m.badge !== undefined && badge(m.badge)}
             </>
           );
@@ -152,7 +153,7 @@ export function Rail({ modules, expanded }: { modules: NavModule[]; expanded: bo
                     className={rowCls(active)}
                   >
                     {face}
-                    <ChevronDown aria-hidden className={cn("relative size-4 shrink-0 text-fg-3 transition-transform duration-200", isOpen && "rotate-180")} strokeWidth={2} />
+                    <ChevronDown aria-hidden className={cn("relative size-3.5 shrink-0 text-fg-3/70 transition-transform duration-200", isOpen && "rotate-180")} strokeWidth={2} />
                   </button>
                   <AnimatePresence initial={false}>
                     {isOpen && (
@@ -173,7 +174,7 @@ export function Rail({ modules, expanded }: { modules: NavModule[]; expanded: bo
                                 prefetch
                                 aria-current={on ? "page" : undefined}
                                 className={cn(
-                                  "flex h-9 items-center gap-2 rounded-[12px] pe-3 ps-11 text-[13.5px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ember/40",
+                                  "flex h-8 items-center gap-2 rounded-[10px] pe-3 ps-10 text-[12.5px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ember/40",
                                   on ? "bg-surface-3 font-semibold text-fg" : "text-fg-3 hover:bg-surface-3/50 hover:text-fg",
                                 )}
                               >
@@ -200,16 +201,6 @@ export function Rail({ modules, expanded }: { modules: NavModule[]; expanded: bo
           );
         })}
       </nav>
-      <div className={cn("mt-2 flex shrink-0 flex-col gap-[3px]", expanded ? "" : "items-center")}>
-        {item(
-          "settings",
-          t("shell.preferences"),
-          <Link href="/profile/preferences" className={rowCls(pathname === "/profile/preferences")}>
-            <Settings className="size-[20px] shrink-0" strokeWidth={1.75} />
-            {expanded && <span className="flex-1 truncate text-start text-[13.5px] font-semibold">{t("shell.preferences")}</span>}
-          </Link>,
-        )}
-      </div>
     </aside>
   );
 }
