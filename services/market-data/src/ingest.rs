@@ -166,8 +166,9 @@ pub enum Outcome {
     Dropped,
 }
 
-/// Reconnect delays. A 429 starts at 15 s and doubles to 300 s; other drops start at 1 s and double to 30 s (or follow
-/// the 429 schedule while a refusal episode lasts). ±20 % jitter. Only a connection that held for 60 s starts over.
+/// Reconnect delays. A 429 starts at 15 s and doubles to `REFUSED_CAP`; other drops start at 1 s and double to 30 s
+/// (or follow the 429 schedule while a refusal episode lasts). ±20 % jitter. Only a connection that held for 60 s
+/// starts over.
 #[derive(Debug, Default)]
 pub struct Backoff {
     attempt: u32,
@@ -177,7 +178,16 @@ pub struct Backoff {
 
 impl Backoff {
     pub const REFUSED_BASE: Duration = Duration::from_secs(15);
-    pub const REFUSED_CAP: Duration = Duration::from_secs(300);
+    /// The longest a refused reconnect may wait.
+    ///
+    /// This is bounded by the trading engine, not by the provider: the engine stops pricing orders on a quote
+    /// older than `TRADING_MAX_QUOTE_AGE_SECS` (300 s by default) and pauses trading on the symbol. A single
+    /// wait at the old 300 s cap (360 s with jitter) therefore paused trading on every forex, metal and index
+    /// instrument on its own. Keeping the cap well inside that window means a refusal episode costs a retry
+    /// every minute — which the provider simply rejects, cheaply — instead of a dead trading desk.
+    ///
+    /// `refused_cap_stays_inside_the_engines_stale_window` holds this to the engine's limit.
+    pub const REFUSED_CAP: Duration = Duration::from_secs(60);
     pub const ERROR_BASE: Duration = Duration::from_secs(1);
     pub const ERROR_CAP: Duration = Duration::from_secs(30);
 
@@ -330,6 +340,10 @@ async fn session(business: &str, url: &str, mut plan: watch::Receiver<Arc<BTreeS
     current = (*want).clone();
     tracing::info!(%business, symbols = current.len(), "subscribed to provider stream");
     market.set_connected(business, true);
+    let opened = Instant::now();
+    // a refusal episode is cleared by the backoff only when a session ends, so a connection that recovered and
+    // then held left `/health` reporting a refusal that was long over. Clear it once this one counts as healthy.
+    let mut cleared_refusal = false;
 
     // the provider times a connection out after 90 s without a frame and counts every frame (60 a minute)
     let mut heartbeat = tokio::time::interval(Duration::from_secs(20));
@@ -351,6 +365,10 @@ async fn session(business: &str, url: &str, mut plan: watch::Receiver<Arc<BTreeS
                 tx.send(Message::text(json!({"code": 10010, "trace": format!("ezymex-{business}-hb")}).to_string())).await?;
             }
             _ = watchdog.tick() => {
+                if !cleared_refusal && opened.elapsed() >= HEALTHY_SESSION {
+                    market.set_refused(business, None);
+                    cleared_refusal = true;
+                }
                 // the provider does not answer heartbeats, so silence only means "dead" while a symbol of this
                 // stream is in its trading session (FX/indices are legitimately silent over the weekend)
                 let now = chrono::Utc::now();
@@ -550,6 +568,36 @@ mod tests {
     }
     fn codes(frames: &[String]) -> Vec<(i64, String)> {
         frames.iter().map(|f| serde_json::from_str::<Value>(f).unwrap()).map(|v| (v["code"].as_i64().unwrap(), v["data"]["codes"].as_str().unwrap().to_string())).collect()
+    }
+
+    /// The trading engine's default stale-quote cutoff (`TRADING_MAX_QUOTE_AGE_SECS`, services/trading).
+    const ENGINE_STALE_CUTOFF: Duration = Duration::from_secs(300);
+
+    #[test]
+    fn refused_cap_stays_inside_the_engines_stale_window() {
+        // +20 % jitter is the worst case a single wait can take
+        let worst_wait = Backoff::REFUSED_CAP.mul_f64(1.2);
+        assert!(
+            worst_wait < ENGINE_STALE_CUTOFF,
+            "a refused reconnect may wait {worst_wait:?}, which reaches the engine's {ENGINE_STALE_CUTOFF:?} stale cutoff and pauses trading"
+        );
+    }
+
+    #[test]
+    fn a_refusal_episode_reconnects_before_quotes_go_stale() {
+        // the worst case: every attempt is refused and every delay draws the longest jitter
+        let mut b = Backoff::default();
+        let now = chrono::Utc::now();
+        let mut silence = Duration::ZERO;
+        let mut attempts = 0;
+        while silence < ENGINE_STALE_CUTOFF {
+            let (d, _) = b.next(Outcome::Refused, Duration::ZERO, 1.0, now);
+            silence += d;
+            attempts += 1;
+            assert!(attempts < 50, "backoff never reaches the cutoff");
+        }
+        // the feed gets a decent number of tries before the engine would call the price stale
+        assert!(attempts >= 6, "only {attempts} reconnect attempts fit before quotes go stale");
     }
 
     #[test]
