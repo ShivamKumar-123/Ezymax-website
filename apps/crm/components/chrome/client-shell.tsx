@@ -25,6 +25,7 @@ import { logout, useSession } from "@/components/session";
 import { SessionGuard, ViewerBar, navForViewer } from "@/components/security/session-guard";
 import { viewerPageAllowed } from "@/lib/viewer";
 import { AccountNotices } from "@/components/account-notices";
+import { MaintenanceNotice } from "@/components/maintenance-notice";
 import { BrandAvatar, Rail, useRailExpanded } from "./rail";
 import { AvatarButton, RailToggle, SubNav, WalletChip } from "./topbar";
 import { ProfileDrawer } from "./profile-drawer";
@@ -88,6 +89,8 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
           <div className="k-backdrop" aria-hidden />
           <Rail modules={modules} expanded={expanded} />
           <div className={cn("relative transition-[padding] duration-300", expanded ? "lg:ps-[248px]" : "lg:ps-[84px]")}>
+            {/* TEMPORARY: remove with components/maintenance-notice.tsx when the dashboard work ships */}
+            <MaintenanceNotice />
             <header data-scrolled={scrolled || undefined} className="k-topbar sticky top-0 z-30">
               <div className="mx-auto flex h-[68px] max-w-[1640px] items-center gap-2 px-4 sm:gap-3 sm:px-6 lg:h-[72px] lg:px-8">
                 <RailToggle expanded={expanded} onToggle={() => setExpanded(!expanded)} label={expanded ? t("dashboard.chrome.collapse") : t("dashboard.chrome.expand")} />

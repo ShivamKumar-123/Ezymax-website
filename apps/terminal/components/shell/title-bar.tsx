@@ -38,15 +38,20 @@ export function ProductBadge({ account, className }: { account: { product?: stri
   );
 }
 
-/** DEMO / LIVE, CFD / OPTIONS (+ cent, read-only) badges of the active account. */
+/** DEMO / LIVE, the account's plan (+ cent, read-only) badges of the active account. */
 export function AccountBadges({ className }: { className?: string }) {
   const T = useTerminal();
   const t = useT();
   const a = T.account;
+  const options = productOf(a) === "options";
   return (
     <span className={cn("flex items-center gap-1", className)}>
-      <Badge tone={a.type === "live" ? "ember" : "gold"}>{t.dyn(`trader.accountType.${a.type}`, a.type)}</Badge>
-      <ProductBadge account={a} />
+      {/* green, not the ember the Deposit button and the active tab already use: this is the badge that says
+          real money, and it should not blend into the accents around it */}
+      <Badge tone={a.type === "live" ? "up" : "gold"}>{t.dyn(`trader.accountType.${a.type}`, a.type)}</Badge>
+      {/* the plan (VIP, Pro, Cent) rather than "CFD": every account here trades CFDs, so that word separated
+          nothing, while the plan is what actually differs between the logins being switched between */}
+      {options ? <ProductBadge account={a} /> : a.group ? <Badge tone="neutral">{a.group}</Badge> : null}
       {a.cent && <Badge tone="info">{t("desk.top.badge.cent")}</Badge>}
       {T.readOnly && <Badge tone="warn">{t("desk.top.badge.readOnly")}</Badge>}
     </span>
