@@ -209,7 +209,15 @@ export function CardHeader({
 export const Input = React.forwardRef<
   HTMLInputElement,
   React.InputHTMLAttributes<HTMLInputElement> & { leading?: React.ReactNode; trailing?: React.ReactNode; inputClassName?: string }
->(function Input({ className, leading, trailing, inputClassName, ...props }, ref) {
+>(function Input({ className, leading, trailing, inputClassName, onPaste, onChange, onKeyDown, ...props }, ref) {
+  // A password copied out of an email or a chat message usually brings a space with it, and the field hides it:
+  // all the person sees is "incorrect password". So a pasted password is trimmed at the ends, which leaves both
+  // what is stored and how it is checked untouched — the server cannot trim, since a password that genuinely ends
+  // in a space may already exist and would stop working. The sign-in forms flip `type` to "text" behind a show
+  // toggle, so autocomplete is what identifies them then.
+  const isPassword = props.type === "password" || (props.autoComplete ?? "").includes("password");
+  const pasted = React.useRef(false);
+
   return (
     <div
       className={cn(
@@ -221,6 +229,24 @@ export const Input = React.forwardRef<
       <input
         ref={ref}
         className={cn("h-full min-w-0 flex-1 bg-transparent text-fg outline-none placeholder:text-fg-3", inputClassName)}
+        onPaste={(e) => {
+          pasted.current = true;
+          onPaste?.(e);
+        }}
+        // typing is never trimmed, so a password that really does end in a space can still be entered by hand
+        onKeyDown={(e) => {
+          pasted.current = false;
+          onKeyDown?.(e);
+        }}
+        onChange={(e) => {
+          if (isPassword && pasted.current) {
+            pasted.current = false;
+            const clean = e.target.value.trim();
+            // the DOM already holds the pasted text; correcting it here is what the caller then reads
+            if (clean !== e.target.value) e.target.value = clean;
+          }
+          onChange?.(e);
+        }}
         {...props}
       />
       {trailing && <span className="flex shrink-0 items-center gap-2 text-fg-3">{trailing}</span>}
