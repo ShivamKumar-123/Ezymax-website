@@ -222,6 +222,28 @@ const dashboard = {
   "home.fundTitle": "Fund your wallet",
   "home.fundText": "Deposit USDT to start trading on a live account.",
   "home.depositNow": "Deposit now",
+  // "My Accounts": the wide account card, its action row, the promo teasers, Portfolio and Watchlists
+  "home.myAccounts": "My Accounts",
+  "home.accountNumber": "Account Number",
+  "home.switchAccount": "Switch account",
+  // Uppercase badge on the account card: a real-money account (DEMO is accounts.badge.demo)
+  "home.real": "REAL",
+  // P/L = profit and loss; "unrealized" = of the positions still open
+  "home.unrealizedPnl": "Unrealized P/L",
+  "home.portfolio": "Portfolio",
+  // {seconds} = refresh interval in seconds, e.g. "Updates every 60s"
+  "home.updatesEvery": "Updates every {seconds}s",
+  "home.referTitle": "Refer a Friend",
+  "home.referText": "Invite a friend to Ezymex and you both get rewarded.",
+  "home.rewardsTitle": "My Rewards",
+  "home.rewardsReferrals": { one: "{count} rewarded referral so far", other: "{count} rewarded referrals so far" },
+  "home.rewardsText": "Points, cashback and prizes for your trading.",
+  "home.watchlists": "Watchlists",
+  "home.watchlistCount": { one: "{count} instrument", other: "{count} instruments" },
+  "home.watchlistPopular": "Popular",
+  // Heading of the balance / wallet / accounts blocks kept under "Read more"
+  "home.accountsWalletTitle": "Accounts & wallet",
+
   // Sections below the overview
   "home.tradingTitle": "Trading",
   "home.marketsTitle": "Markets",

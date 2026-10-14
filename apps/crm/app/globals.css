@@ -305,6 +305,32 @@
       linear-gradient(135deg, #2c2935, #121016);
     box-shadow: 0 30px 50px -28px rgba(20, 14, 30, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.12);
   }
+  /* the currency pill of the wide account card: white on the gradient, so its text is a fixed dark in both themes */
+  .k-acct-pill {
+    background: #fff;
+    color: color-mix(in oklab, var(--k-ember) 45%, #17101f);
+  }
+  /* the dashboard's promo teasers: saturated gradients that carry white text, so they read in light and dark alike */
+  .k-promo { color: #fff; }
+  .k-promo-refer {
+    background:
+      radial-gradient(120% 160% at 100% 0%, rgba(255, 255, 255, 0.22), transparent 60%),
+      linear-gradient(120deg, color-mix(in oklab, var(--k-ember) 92%, #fff), color-mix(in oklab, var(--k-ember) 62%, #2a0f45));
+    box-shadow: 0 20px 40px -26px color-mix(in oklab, var(--k-ember) 70%, transparent);
+  }
+  /* --k-info is a deep blue in light and a bright sky in dark, so the dark theme mixes further towards the ink to
+     keep the white text readable */
+  .k-promo-rewards {
+    background:
+      radial-gradient(120% 160% at 100% 0%, rgba(255, 255, 255, 0.2), transparent 60%),
+      linear-gradient(120deg, color-mix(in oklab, var(--k-info) 80%, #06121f), color-mix(in oklab, var(--k-info) 42%, #0a1226));
+    box-shadow: 0 20px 40px -26px color-mix(in oklab, var(--k-info) 55%, transparent);
+  }
+  .dark .k-promo-rewards {
+    background:
+      radial-gradient(120% 160% at 100% 0%, rgba(255, 255, 255, 0.14), transparent 60%),
+      linear-gradient(120deg, color-mix(in oklab, var(--k-info) 50%, #06121f), color-mix(in oklab, var(--k-info) 22%, #080e1c));
+  }
   .k-acct-empty {
     border: 2px dashed color-mix(in oklab, var(--k-ember) 35%, var(--k-border));
     background: color-mix(in oklab, var(--k-surface) 60%, transparent);

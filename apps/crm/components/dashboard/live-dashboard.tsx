@@ -18,6 +18,7 @@ import {
   Layers,
   LifeBuoy,
   Mail,
+  Plus,
   UserRound,
   Wallet,
 } from "lucide-react";
@@ -26,9 +27,11 @@ import { INSTRUMENTS, isMarketOpen } from "@ezymex/mock";
 import { KYC_CHIP, useReadOnly, useSession, type SessionUser } from "@/components/session";
 import { FeedGuard } from "@/components/feed-guard";
 import { SUPPORT_EMAIL, TERMINAL_URL } from "@/lib/live";
-import { curOf, isArchived, serverOf, useAccounts, type EngineAccount } from "@/components/trading/api";
+import { curOf, fmtAmount, fmtPrice, isArchived, serverOf, useAccounts, usePoll, type AccountDetail, type EngineAccount, type EnginePosition } from "@/components/trading/api";
+import { TradeSymbolAvatar, symbolLabel } from "@/components/trading/instrument";
 import { liveTotals } from "@/components/trading/accounts-page";
 import { AccountActions, FundButton, RefillButton, TradeButton, isPropAccount } from "@/components/trading/ui";
+import { usePartner, type Dashboard as PartnerDashboard } from "@/components/partner/live/api";
 import { useWalletFunded, walletStep } from "@/components/wallet-live/onboarding";
 import { fmt, useWallet, type ActivityItem, type Page, type WalletConfig } from "@/components/wallet-live/api";
 import { KIND_LABEL } from "@/components/wallet-live/ui";
@@ -39,10 +42,25 @@ import { LiveCalendarCard, LiveNewsCard, LiveWorldCard } from "@/components/news
 import { Trans, useFormat, useT } from "@ezymex/i18n/react";
 import { AccountsPanel, type CardAccount } from "@/components/dashboard/home/accounts-panel";
 import { BalancePanel, QuickActions } from "@/components/dashboard/home/balance-panel";
-import { HideBalancesButton } from "@/components/dashboard/home/hide-balances";
 import { ActivityTabs, ChecklistCard, type ListRowItem } from "@/components/dashboard/home/list-cards";
+import {
+  ACTION_BUTTON_CLASS,
+  AccountActionRow,
+  AccountDetailsPanel,
+  AccountHero,
+  AccountHeroFallback,
+  AccountHeroSkeleton,
+  PORTFOLIO_REFRESH_SECONDS,
+  PortfolioPanel,
+  PromoCards,
+  type AccountFigures,
+  type HeroAccount,
+  type PositionRow,
+  type Promo,
+} from "@/components/dashboard/home/my-accounts";
+import { WatchlistsPanel } from "@/components/dashboard/home/watchlists";
 import { NotificationsPanel, type Prompt } from "@/components/dashboard/home/notifications-panel";
-import { OverviewLayout, ReadMore, SectionTitle } from "@/components/dashboard/home/overview";
+import { MyAccountsLayout, ReadMore, SectionTitle } from "@/components/dashboard/home/overview";
 import { RANGE_DAYS, StatisticCard, type StatMode, type StatRange } from "@/components/dashboard/home/statistic-card";
 import type { TrendPoint } from "@/components/dashboard/home/trend-chart";
 import { useModule, usePageOn } from "@/components/tenant-config";
@@ -375,6 +393,37 @@ function toCard(a: EngineAccount, t: T): CardAccount {
   };
 }
 
+/** The wide account card's fields. "USC" is the code of a cent account, whatever currency the engine reports. */
+function toHero(a: EngineAccount): HeroAccount {
+  return {
+    login: String(a.login),
+    type: a.type,
+    prop: isPropAccount(a),
+    code: a.cent || a.currency === "USC" ? "USC" : a.currency,
+    cur: curOf(a),
+    plan: a.groupName,
+    server: serverOf(a),
+    balance: a.balance,
+    profit: a.profit,
+  };
+}
+
+function toFigures(a: EngineAccount): AccountFigures {
+  return { cur: curOf(a), profit: a.profit, balance: a.balance, margin: a.margin, freeMargin: a.freeMargin, marginLevel: a.marginLevel, credit: a.credit, leverage: a.leverage };
+}
+
+function toPositionRows(positions: EnginePosition[], cur: string, t: T): PositionRow[] {
+  return positions.slice(0, 5).map((p) => ({
+    key: String(p.ticket),
+    icon: <TradeSymbolAvatar symbol={p.symbol} size={26} />,
+    title: symbolLabel(t, p.symbol, p.option),
+    sub: `${fmtPrice(p.openPrice)} → ${fmtPrice(p.currentPrice)} · #${p.ticket}`,
+    side: { label: `${p.side === "buy" ? t("accountDetail.side.buy") : t("accountDetail.side.sell")} ${p.volume}`, buy: p.side === "buy" },
+    value: fmtAmount(p.profit, cur, true),
+    profit: p.profit,
+  }));
+}
+
 const ACTIVITY_ICON: Record<string, { icon: React.ReactNode; tone: ListRowItem["tone"] }> = {
   deposit: { icon: <ArrowDownToLine />, tone: "mint" },
   withdrawal: { icon: <ArrowUpFromLine />, tone: "coral" },
@@ -382,7 +431,10 @@ const ACTIVITY_ICON: Record<string, { icon: React.ReactNode; tone: ListRowItem["
   other: { icon: <Coins />, tone: "amber" },
 };
 
-/** Live builds: only data that is real for this client — their record, accounts, wallet, live prices, real links. */
+/** Live builds: only data that is real for this client — their record, accounts, wallet, live prices, real links.
+ *  The page opens on "My Accounts" (the selected account's card, its money actions, the promos, Portfolio and
+ *  Watchlists, with Account details and Top gainers beside them); everything else the dashboard offers stays one
+ *  "Read more" away rather than being dropped. */
 export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
   const me = useSession();
   const t = useT();
@@ -412,7 +464,7 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
 
   // Statistics card
   const [mode, setMode] = React.useState<StatMode>("equity");
-  // the client's "Hide balances" choice (header eye): every amount on the dashboard shows as ••••••
+  // everything the page keeps below the fold, behind "Read more"
   const [more, setMore] = React.useState(false);
   const [range, setRange] = React.useState<StatRange>("month");
   const n = RANGE_DAYS[range];
@@ -425,11 +477,34 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
   const today = wk && wk.length > 1 ? wk[wk.length - 1]!.equity - wk[wk.length - 2]!.equity - wk[wk.length - 1]!.flow : null;
   const todayBase = wk && wk.length > 1 ? wk[wk.length - 2]!.equity : 0;
   const todayPct = today !== null && todayBase > 0 ? (today / todayBase) * 100 : null;
-  const hasLive = totals.live.length > 0;
 
   // carousel: live first, then demo, then prop
   const ordered = React.useMemo(() => [...totals.live, ...totals.demo, ...(accounts ?? []).filter((a) => isPropAccount(a))], [accounts, totals.live, totals.demo]);
   const cards = React.useMemo(() => (accounts ? ordered.slice(0, 8).map((a) => toCard(a, t)) : null), [accounts, ordered, t]);
+
+  // "My Accounts" is about one account at a time: the client's pick from the card's menu, else the first live one
+  const [sel, setSel] = React.useState<string | null>(null);
+  const selected = React.useMemo<EngineAccount | null>(() => ordered.find((a) => String(a.login) === sel) ?? ordered[0] ?? null, [ordered, sel]);
+  const heroes = React.useMemo(() => ordered.map(toHero), [ordered]);
+  // that account's open positions, refetched on the interval the Portfolio panel advertises
+  const detail = usePoll<AccountDetail>(selected ? `accounts/${selected.login}` : null, PORTFOLIO_REFRESH_SECONDS * 1000);
+  // while a switch is in flight the answer still belongs to the previous account: show the skeleton, not its positions
+  const fresh = selected && detail.data && detail.data.account.login === selected.login ? { a: selected, d: detail.data } : null;
+  const positions = fresh ? toPositionRows(fresh.d.positions, curOf(fresh.a), t) : null;
+
+  // Promo cards: each one goes when its module is off. Only the rewarded-referral count needs the partner dashboard,
+  // so it isn't fetched unless that card is shown.
+  const ibOn = pageOn("/partner/links");
+  const partner = usePartner<PartnerDashboard>(ibOn && rewardsOn ? "" : null);
+  const promos: Promo[] = [];
+  if (ibOn) promos.push({ key: "refer", href: "/partner/links", title: t("dashboard.home.referTitle"), text: t("dashboard.home.referText") });
+  if (rewardsOn)
+    promos.push({
+      key: "rewards",
+      href: "/rewards",
+      title: t("dashboard.home.rewardsTitle"),
+      text: partner.data ? t("dashboard.home.rewardsReferrals", { count: partner.data.counts.funded }) : t("dashboard.home.rewardsText"),
+    });
 
   const list = steps(me, accounts, t, f)
     .filter((s) => walletOn || s.key !== "wallet")
@@ -523,13 +598,18 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
   return (
     <div className="pb-16">
       <DashboardBanners />
-      <OverviewLayout
-        more={<ReadMore open={more} onToggle={() => setMore((v) => !v)} labelMore={t("dashboard.home.readMore")} labelLess={t("dashboard.home.readLess")} />}
+      <MyAccountsLayout
         header={
           <PageHeader
             className="mb-0"
-            title={t("shell.nav.overview")}
-            actions={<HideBalancesButton />}
+            title={t("dashboard.home.myAccounts")}
+            actions={
+              <Link href="/accounts/new">
+                <Button variant="ember" size="lg">
+                  <Plus /> {t("dashboard.accounts.open")}
+                </Button>
+              </Link>
+            }
             subtitle={
               <span className="inline-flex flex-wrap items-center gap-2">
                 {t.dyn(`dashboard.greeting.${hour}`, undefined, { name: me.first_name })}
@@ -542,119 +622,167 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
             }
           />
         }
-        statistic={more ? <StatisticCard mode={mode} onMode={setMode} range={range} onRange={setRange} points={series?.points ?? (chart.loading ? null : [])} compare={series?.compare} loading={chart.loading} /> : undefined}
-        checklist={more ? <ChecklistCard title={t("dashboard.steps.title")} subtitle={t("dashboard.steps.subtitle")} rows={checklist} done={done} total={list.length} /> : undefined}
-        accounts={
-          <AccountsPanel
-            accounts={cards}
-            loading={!acc.data && !acc.error}
-            failed={!!acc.error}
-            onRetry={acc.reload}
-            extraCount={Math.max(0, ordered.length - 8)}
-            actions={
-              readOnly
-                ? undefined
-                : (c) => {
-                    const a = accounts?.find((x) => String(x.login) === c.login);
-                    if (!a) return null;
-                    return (
-                      <>
-                        <TradeButton a={a} size="md" className="flex-1" />
-                        {a.type === "live" ? !isPropAccount(a) && <FundButton a={a} size="md" /> : <RefillButton a={a} onDone={acc.reload} size="md" />}
-                        <AccountActions a={a} onChanged={acc.reload} />
-                      </>
-                    );
-                  }
-            }
-          />
+        main={
+          <>
+            {selected ? (
+              <AccountHero a={toHero(selected)} accounts={heroes} onSelect={setSel} canOpen={!readOnly} />
+            ) : !acc.data && !acc.error ? (
+              <AccountHeroSkeleton />
+            ) : (
+              <AccountHeroFallback failed={!!acc.error} onRetry={acc.reload} />
+            )}
+            {/* a viewer session gets no money actions, and the wallet ones go when the broker switched it off */}
+            {!readOnly && selected && (
+              <AccountActionRow wallet={walletOn} trade={<TradeButton a={selected} className={ACTION_BUTTON_CLASS} label={t("dashboard.home.trade")} />} />
+            )}
+            <PromoCards items={promos} />
+            <PortfolioPanel rows={positions} failed={!!detail.error} onRetry={detail.reload} />
+            <WatchlistsPanel />
+          </>
         }
-        activity={
-          <ActivityTabs
-            tabs={[
-              ...(walletOn
-                ? [
-                    { key: "history", label: t("dashboard.home.history"), rows: historyRows, empty: t("wallet.recent.emptyText"), more: { label: t("common.viewAll"), href: "/wallet/history" } },
-                    { key: "funding", label: t("dashboard.home.funding"), rows: fundingRows, empty: t("wallet.recent.emptyText") },
-                  ]
-                : []),
-              { key: "linked", label: t("dashboard.home.linked"), rows: linkedRows, empty: "" },
-            ]}
-          />
+        side={
+          <>
+            <AccountDetailsPanel
+              figures={selected ? toFigures(selected) : null}
+              loading={!acc.data && !acc.error}
+              failed={!!acc.error && !accounts}
+              onRetry={acc.reload}
+              menu={!readOnly && selected ? <AccountActions a={selected} onChanged={acc.reload} vertical /> : undefined}
+            />
+            <FeedGuard title={t("dashboard.movers.title")} minHeight={320}>
+              {movers}
+            </FeedGuard>
+          </>
         }
-        balance={
-          <BalancePanel
-            total={accounts || walletTotal !== null ? totals.equity + (walletTotal ?? 0) : null}
-            loading={!accounts && !acc.error}
-            chip={todayPct !== null ? <span dir="ltr">{`${todayPct >= 0 ? "+" : ""}${todayPct.toFixed(2)}%`}</span> : undefined}
-            chipTone={todayPct !== null && todayPct < 0 ? "down" : "up"}
-            sub={walletOn ? t("dashboard.home.totalBalanceSub") : t("profile.stat.liveAccounts")}
-            readOnly={readOnly}
-          />
-        }
-        quick={
-          <QuickActions
-            title={t("dashboard.home.quickActions")}
-            items={[
-              { key: "transfer", label: t("common.transfer"), href: "/wallet/transfer", icon: <ArrowLeftRight className="rtl:-scale-x-100" />, tone: "lavender" },
-              { key: "trader", label: "Ezymex Trader", href: TERMINAL_URL, icon: <CandlestickChart />, tone: "accent", external: true },
-              { key: "copy", label: t("shell.nav.copyTrading"), href: "/social", icon: <Copy />, tone: "pink" },
-              { key: "support", label: t("shell.nav.support"), href: "/support", icon: <LifeBuoy />, tone: "amber" },
-            ]}
-          />
-        }
-        notifications={<NotificationsPanel prompts={prompts} />}
       />
+
+      <div className="mt-8">
+        <ReadMore open={more} onToggle={() => setMore((v) => !v)} labelMore={t("dashboard.home.readMore")} labelLess={t("dashboard.home.readLess")} />
+      </div>
 
       {more && (
         <>
+          <SectionTitle>{t("dashboard.home.accountsWalletTitle")}</SectionTitle>
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
+            <Reveal>
+              <AccountsPanel
+                accounts={cards}
+                loading={!acc.data && !acc.error}
+                failed={!!acc.error}
+                onRetry={acc.reload}
+                extraCount={Math.max(0, ordered.length - 8)}
+                actions={
+                  readOnly
+                    ? undefined
+                    : (c) => {
+                        const a = accounts?.find((x) => String(x.login) === c.login);
+                        if (!a) return null;
+                        return (
+                          <>
+                            <TradeButton a={a} size="md" className="flex-1" />
+                            {a.type === "live" ? !isPropAccount(a) && <FundButton a={a} size="md" /> : <RefillButton a={a} onDone={acc.reload} size="md" />}
+                            <AccountActions a={a} onChanged={acc.reload} />
+                          </>
+                        );
+                      }
+                }
+              />
+            </Reveal>
+            <Reveal delay={0.05}>
+              <BalancePanel
+                total={accounts || walletTotal !== null ? totals.equity + (walletTotal ?? 0) : null}
+                loading={!accounts && !acc.error}
+                chip={todayPct !== null ? <span dir="ltr">{`${todayPct >= 0 ? "+" : ""}${todayPct.toFixed(2)}%`}</span> : undefined}
+                chipTone={todayPct !== null && todayPct < 0 ? "down" : "up"}
+                sub={walletOn ? t("dashboard.home.totalBalanceSub") : t("profile.stat.liveAccounts")}
+                readOnly={readOnly}
+              />
+            </Reveal>
+            <Reveal delay={0.1} className="flex flex-col gap-8">
+              <QuickActions
+                title={t("dashboard.home.quickActions")}
+                items={[
+                  { key: "transfer", label: t("common.transfer"), href: "/wallet/transfer", icon: <ArrowLeftRight className="rtl:-scale-x-100" />, tone: "lavender" },
+                  { key: "trader", label: "Ezymex Trader", href: TERMINAL_URL, icon: <CandlestickChart />, tone: "accent", external: true },
+                  { key: "copy", label: t("shell.nav.copyTrading"), href: "/social", icon: <Copy />, tone: "pink" },
+                  { key: "support", label: t("shell.nav.support"), href: "/support", icon: <LifeBuoy />, tone: "amber" },
+                ]}
+              />
+              <NotificationsPanel prompts={prompts} />
+            </Reveal>
+          </div>
+
+          <div className="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <Reveal>
+              <ActivityTabs
+                tabs={[
+                  ...(walletOn
+                    ? [
+                        { key: "history", label: t("dashboard.home.history"), rows: historyRows, empty: t("wallet.recent.emptyText"), more: { label: t("common.viewAll"), href: "/wallet/history" } },
+                        { key: "funding", label: t("dashboard.home.funding"), rows: fundingRows, empty: t("wallet.recent.emptyText") },
+                      ]
+                    : []),
+                  { key: "linked", label: t("dashboard.home.linked"), rows: linkedRows, empty: "" },
+                ]}
+              />
+            </Reveal>
+            <Reveal delay={0.05}>
+              <StatisticCard mode={mode} onMode={setMode} range={range} onRange={setRange} points={series?.points ?? (chart.loading ? null : [])} compare={series?.compare} loading={chart.loading} />
+            </Reveal>
+          </div>
+
+          <div className="mt-8">
+            <ChecklistCard title={t("dashboard.steps.title")} subtitle={t("dashboard.steps.subtitle")} rows={checklist} done={done} total={list.length} />
+          </div>
+
           <UpdatesSection />
 
-      <SectionTitle>{t("dashboard.home.marketsTitle")}</SectionTitle>
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-12">
-        <Reveal delay={0.05} className="xl:col-span-4">
-          <FeedGuard title={t("dashboard.movers.title")} minHeight={320}>
-            {movers}
-          </FeedGuard>
-        </Reveal>
-        <Reveal delay={0.1} className="xl:col-span-8">
-          <FeedGuard title={t("dashboard.heatmap.title")} minHeight={320}>
-            <HeatmapCard />
-          </FeedGuard>
-        </Reveal>
-      </div>
-      {(newsOn || calendarOn) && (
-        // the calendar card, the news card and the news map; a lone calendar card takes the row
-        <div className={cn("mt-5 grid grid-cols-1 gap-5", newsOn && "md:grid-cols-2", newsOn && calendarOn && "xl:grid-cols-3")}>
-          {calendarOn && (
-            <Reveal delay={0.05}>
-              <LiveCalendarCard />
+          <SectionTitle>{t("dashboard.home.marketsTitle")}</SectionTitle>
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-12">
+            <Reveal delay={0.05} className="xl:col-span-4">
+              <FeedGuard title={t("dashboard.movers.title")} minHeight={320}>
+                {movers}
+              </FeedGuard>
             </Reveal>
+            <Reveal delay={0.1} className="xl:col-span-8">
+              <FeedGuard title={t("dashboard.heatmap.title")} minHeight={320}>
+                <HeatmapCard />
+              </FeedGuard>
+            </Reveal>
+          </div>
+          {(newsOn || calendarOn) && (
+            // the calendar card, the news card and the news map; a lone calendar card takes the row
+            <div className={cn("mt-5 grid grid-cols-1 gap-5", newsOn && "md:grid-cols-2", newsOn && calendarOn && "xl:grid-cols-3")}>
+              {calendarOn && (
+                <Reveal delay={0.05}>
+                  <LiveCalendarCard />
+                </Reveal>
+              )}
+              {newsOn && (
+                <>
+                  <Reveal delay={0.1}>
+                    <LiveNewsCard />
+                  </Reveal>
+                  <Reveal delay={0.15} className={cn(calendarOn && "md:col-span-2 xl:col-span-1")}>
+                    <LiveWorldCard />
+                  </Reveal>
+                </>
+              )}
+            </div>
           )}
-          {newsOn && (
-            <>
-              <Reveal delay={0.1}>
-                <LiveNewsCard />
-              </Reveal>
-              <Reveal delay={0.15} className={cn(calendarOn && "md:col-span-2 xl:col-span-1")}>
-                <LiveWorldCard />
-              </Reveal>
-            </>
-          )}
-        </div>
-      )}
 
-      <SectionTitle>{t("dashboard.home.moreTitle")}</SectionTitle>
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-        <Reveal>
-          <TraderBanner />
-        </Reveal>
-        <Reveal delay={0.05}>
-          <AccountCard />
-        </Reveal>
-        <Reveal delay={0.1} className="md:col-span-2 xl:col-span-1">
-          <SessionsCard />
-        </Reveal>
-      </div>
+          <SectionTitle>{t("dashboard.home.moreTitle")}</SectionTitle>
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+            <Reveal>
+              <TraderBanner />
+            </Reveal>
+            <Reveal delay={0.05}>
+              <AccountCard />
+            </Reveal>
+            <Reveal delay={0.1} className="md:col-span-2 xl:col-span-1">
+              <SessionsCard />
+            </Reveal>
+          </div>
           {supportOn && (
             <Reveal delay={0.05} className="mt-5 block">
               <SupportCard />

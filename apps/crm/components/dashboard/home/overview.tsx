@@ -1,6 +1,9 @@
 "use client";
 
-// The dashboard's overview layout, after the reference: a wide left column (title, KPI cards, Statistics, checklist),
+// The dashboard's layouts. `MyAccountsLayout` is what the live dashboard opens on (a wide main column and a narrower
+// one beside it); `OverviewLayout` below is the three-column overview the demo dashboard still uses.
+//
+// OverviewLayout, after the earlier reference: a wide left column (title, KPI cards, Statistics, checklist),
 // a middle column (account cards, account details, activity tabs) and a right column (total balance with the money
 // actions, quick actions, notifications), the two narrow columns set off by hairline dividers. Tablets: the left
 // column on top, the other two side by side. Phones: one column, the most used blocks first.
@@ -56,6 +59,21 @@ export function OverviewLayout({
         {slot("max-md:order-2", balance)}
         {slot("max-md:order-5", quick)}
         {slot("max-md:order-7", notifications)}
+      </div>
+    </div>
+  );
+}
+
+/** "My Accounts": a wide main column (account card, actions, promos, Portfolio, Watchlists) and a narrower one
+ *  beside it (Account details, Top gainers). Kept separate from `OverviewLayout`, which the demo dashboard still
+ *  lays out in three columns. Below xl the side column follows the main one, so nothing is pushed off a phone. */
+export function MyAccountsLayout({ header, main, side }: { header: React.ReactNode; main: React.ReactNode; side: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-6">
+      {header}
+      <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1.85fr)_minmax(0,1fr)] xl:gap-8">
+        <div className="flex min-w-0 flex-col gap-6">{main}</div>
+        <div className="flex min-w-0 flex-col gap-8">{side}</div>
       </div>
     </div>
   );

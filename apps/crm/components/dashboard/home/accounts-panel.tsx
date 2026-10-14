@@ -38,8 +38,9 @@ function spacedLogin(login: string) {
   return login.replace(/(\d{4})(?=\d)/g, "$1 ");
 }
 
-/** The glossy ribbon drawn over the account card (white strokes, purely decorative). */
-function Ribbon() {
+/** The glossy ribbon drawn over the account card (white strokes, purely decorative). Shared with the wide hero card
+ *  in `my-accounts.tsx` so both cards keep the same finish. */
+export function Ribbon() {
   return (
     <svg viewBox="0 0 400 250" preserveAspectRatio="none" className="pointer-events-none absolute inset-0 size-full" aria-hidden>
       <defs>

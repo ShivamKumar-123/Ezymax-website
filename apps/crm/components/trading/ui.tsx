@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowDownToLine, ArrowLeftRight, CandlestickChart, Check, Coins, KeyRound, Layers, Loader2, Lock, MoreHorizontal, PencilLine, RefreshCcw, Gauge as GaugeIcon, Star, StarOff, Trash2, Users, Wallet } from "lucide-react";
+import { ArrowDownToLine, ArrowLeftRight, CandlestickChart, Check, Coins, KeyRound, Layers, Loader2, Lock, MoreHorizontal, MoreVertical, PencilLine, RefreshCcw, Gauge as GaugeIcon, Star, StarOff, Trash2, Users, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Chip, CopyButton, Dialog, IconButton, Menu, Money, cn, type ButtonProps } from "@/components/kit";
 import { useT } from "@ezymex/i18n/react";
@@ -188,7 +188,8 @@ export function RefillButton({ a, onDone, size = "sm" }: { a: EngineAccount; onD
 /* Account row (accounts list, dashboard)                              */
 /* ------------------------------------------------------------------ */
 
-export function AccountActions({ a, onChanged }: { a: EngineAccount; onChanged?: () => void }) {
+/** `vertical` draws the trigger as vertical dots, which is what the dashboard's "Account details" heading wants. */
+export function AccountActions({ a, onChanged, vertical }: { a: EngineAccount; onChanged?: () => void; vertical?: boolean }) {
   const t = useT();
   const [renaming, setRenaming] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
@@ -216,7 +217,7 @@ export function AccountActions({ a, onChanged }: { a: EngineAccount; onChanged?:
       <Menu
         trigger={
           <IconButton size="sm" aria-label={t("accounts.menu.actions")}>
-            <MoreHorizontal />
+            {vertical ? <MoreVertical /> : <MoreHorizontal />}
           </IconButton>
         }
         items={[
