@@ -35,7 +35,16 @@ else
   sudo nginx -t
   EDGE=nginx
 fi
+# Docker publishes ports past UFW (see deploy/docker-firewall.sh), so where docker is installed the
+# guard that keeps containers off the public interface is installed and started with everything else.
+if command -v docker >/dev/null; then
+  sudo install -m 755 deploy/docker-firewall.sh /usr/local/sbin/ezymex-docker-firewall
+fi
+
 sudo systemctl daemon-reload
+if command -v docker >/dev/null; then
+  sudo systemctl enable --now ezymex-docker-firewall >/dev/null
+fi
 sudo systemctl enable ezymex-market-data ezymex-gateway ezymex-trading ezymex-ib ezymex-prop ezymex-crm ezymex-admin ezymex-terminal >/dev/null
 md_now="$(md_fingerprint)"
 if [ "$md_now" != "$(cat "$MD_FP_FILE" 2>/dev/null || true)" ]; then

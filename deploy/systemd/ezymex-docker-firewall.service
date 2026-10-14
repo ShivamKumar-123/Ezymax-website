@@ -1,0 +1,15 @@
+[Unit]
+Description=Keep Docker's published ports off the public interface
+# the DOCKER-USER chain only exists once dockerd has written its own rules, and a docker
+# restart recreates the chain empty - PartOf makes this run again with it
+After=docker.service
+Wants=docker.service
+PartOf=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/ezymex-docker-firewall
+
+[Install]
+WantedBy=multi-user.target
