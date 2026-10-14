@@ -22,6 +22,7 @@ export function Dialog({
   footer,
   width = 520,
   side,
+  closeLabel = "Close",
 }: {
   open?: boolean;
   onOpenChange?: (o: boolean) => void;
@@ -32,6 +33,8 @@ export function Dialog({
   footer?: React.ReactNode;
   width?: number;
   side?: "right";
+  /** Accessible name for the close button, which is an icon alone. English unless the caller translates it. */
+  closeLabel?: string;
 }) {
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
@@ -52,7 +55,7 @@ export function Dialog({
               <DialogPrimitive.Title className="text-lg font-medium tracking-tight">{title}</DialogPrimitive.Title>
               {description && <DialogPrimitive.Description className="mt-1 text-[13px] text-fg-3">{description}</DialogPrimitive.Description>}
             </div>
-            <DialogPrimitive.Close className="grid size-8 place-items-center rounded-full border border-line text-fg-2 hover:bg-surface-3 hover:text-fg">
+            <DialogPrimitive.Close aria-label={closeLabel} className="grid size-8 place-items-center rounded-full border border-line text-fg-2 hover:bg-surface-3 hover:text-fg">
               <X className="size-4" />
             </DialogPrimitive.Close>
           </div>

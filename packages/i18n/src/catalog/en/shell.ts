@@ -140,5 +140,13 @@ const shell = {
   "system.status.checked": "Checked {time} · refreshes every 15 seconds on reload",
   "system.status.expectedBack": "Expected back by {time}",
   "system.status.questions": "Questions? {email}",
+  // "My Profile" drawer: only its own wording lives here — the rows reuse shell.verification, shell.preferences,
+  // shell.nav.support and shell.logOut, and the verification pill reuses the shell.kyc.* labels above
+  "profileDrawer.title": "My Profile",
+  "profileDrawer.close": "Close profile",
+  "profileDrawer.greeting": "Hey, {name}",
+  "profileDrawer.partnerHub": "Partner Hub",
+  "profileDrawer.partnerHubSubtitle": "Your code, clients and commissions",
+  "profileDrawer.suggest": "Suggest new features or share your opinion",
 };
 export default shell;

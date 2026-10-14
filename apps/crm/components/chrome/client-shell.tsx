@@ -1,14 +1,18 @@
 "use client";
 
-// Client Area chrome for the signed-in client: the pastel backdrop, the slim rail (labelled when expanded), the top
-// area (module pages as text tabs, search, language, theme, notifications, profile pill) and, on phones and tablets,
-// a bottom bar with a "More" drawer.
+// Client Area chrome for the signed-in client: the backdrop, the sidebar (modules, with the current one's pages listed
+// under it), the top area (rail toggle, wallet balance, search, notifications, theme, avatar) and, on phones and
+// tablets, a bottom bar with a "More" drawer.
+//
+// The avatar opens a profile drawer rather than a dropdown, which is where the account's own destinations now live -
+// verification, partner hub, settings, support, language and signing out. The sidebar therefore carries navigation
+// only, and the top area carries no page tabs on desktop, because the sidebar already lists them.
 
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowDownToLine, ArrowUpRight, Eye, IdCard, LogOut, Settings, ShieldCheck, UserRound } from "lucide-react";
-import { Avatar, Button, Chip, CommandPalette, LanguageMenu, MarketBoundary, ThemeToggle, TooltipProvider, cn } from "@/components/kit";
+import { ArrowDownToLine, ArrowUpRight } from "lucide-react";
+import { Button, CommandPalette, LanguageMenu, MarketBoundary, ThemeToggle, TooltipProvider, cn } from "@/components/kit";
 import { IS_DEMO } from "@ezymex/mock";
 import { useT } from "@ezymex/i18n/react";
 import { CRM_COMMANDS, NAV, localizeCommands, localizeNav } from "@/lib/nav";
@@ -17,29 +21,15 @@ import { TERMINAL_URL } from "@/lib/live";
 import { LiveGate } from "@/components/live-gate";
 import { NotificationsBell, NotificationsProvider } from "@/components/notifications";
 import { SupportLauncher } from "@/components/support/launcher";
-import { KYC_CHIP, logout, useSession } from "@/components/session";
+import { logout, useSession } from "@/components/session";
 import { SessionGuard, ViewerBar, navForViewer } from "@/components/security/session-guard";
 import { viewerPageAllowed } from "@/lib/viewer";
 import { AccountNotices } from "@/components/account-notices";
 import { BrandAvatar, Rail, useRailExpanded } from "./rail";
-import { ProfilePill, SubNav, type MenuItem } from "./topbar";
+import { AvatarButton, RailToggle, SubNav, WalletChip } from "./topbar";
+import { ProfileDrawer } from "./profile-drawer";
 import { MobileBar } from "./mobile-nav";
 import { isActive } from "./nav-utils";
-
-const ACCOUNT_MENU_DEMO = [
-  { label: "shell.profile", icon: <UserRound />, href: "/profile" },
-  { label: "shell.security", icon: <ShieldCheck />, href: "/profile/security" },
-  { label: "shell.verification", icon: <IdCard />, href: "/profile/verification" },
-  { label: "shell.preferences", icon: <Settings />, href: "/profile/preferences" },
-] as const;
-
-const ACCOUNT_MENU_LIVE = [
-  { label: "shell.profile", icon: <UserRound />, href: "/profile" },
-  { label: "shell.security", icon: <ShieldCheck />, href: "/profile/security" },
-  { label: "shell.nav.viewers", icon: <Eye />, href: "/profile/viewers" },
-  { label: "shell.verification", icon: <IdCard />, href: "/profile/verification" },
-  { label: "shell.preferences", icon: <Settings />, href: "/profile/preferences" },
-] as const;
 
 /** True once the page has scrolled (the sticky top area then gets its frosted backdrop). */
 function useScrolled() {
@@ -58,7 +48,6 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const me = useSession();
   const verified = me.kyc_status === "verified";
-  const kyc = KYC_CHIP[me.kyc_status];
   // modules the broker switched off (Platform Owner, D112) disappear from the navigation
   const features = useFeatures();
   // a view-only session (D90) only gets the sections it was given, and no account actions
@@ -67,38 +56,16 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
   const current = modules.find((m) => isActive(pathname, m));
   const subs = current?.sub && current.sub.length > 1 ? current.sub : null;
   const [expanded, setExpanded] = useRailExpanded();
+  const [profileOpen, setProfileOpen] = React.useState(false);
   const scrolled = useScrolled();
   const signOut = () => void logout();
 
   const pageOn = usePageOn();
   const supportOn = useModule("support");
+  const walletOn = useModule("wallet");
   const commands = localizeCommands(CRM_COMMANDS, t)
     .filter((c) => pageOn(c.href) && (!viewer || viewerPageAllowed(viewer, c.href)))
     .map((c) => ({ group: c.group, label: c.label, href: c.href, icon: <c.Icon /> }));
-
-  const menuHeader = (
-    <div className="flex items-center gap-3">
-      <Avatar name={me.name} size={42} />
-      <div className="min-w-0">
-        <div className="truncate text-sm font-bold">{me.name}</div>
-        <div className="truncate text-xs text-fg-3">{viewer ? `${t("security.sessions.viewOnly")} · ${viewer.label}` : me.email}</div>
-        {viewer ? (
-          <Chip tone="info" size="sm" className="mt-1.5" dot>
-            Read-only
-          </Chip>
-        ) : (
-          <Chip tone={kyc.tone} size="sm" className="mt-1.5" dot>
-            {t(`shell.kyc.${me.kyc_status}`)}
-          </Chip>
-        )}
-      </div>
-    </div>
-  );
-  const menuItems: MenuItem[] = [
-    ...(viewer ? [] : IS_DEMO ? ACCOUNT_MENU_DEMO : ACCOUNT_MENU_LIVE).map(({ label, ...m }) => ({ ...m, label: t(label) })),
-    ...(viewer ? [] : ["sep" as const]),
-    { label: t("shell.logOut"), icon: <LogOut />, onSelect: signOut, danger: true },
-  ];
 
   const cta = viewer ? null : IS_DEMO ? (
     <Link href="/wallet/deposit" className="hidden md:block">
@@ -119,29 +86,26 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
       <TooltipProvider>
         <div className="relative min-h-dvh overflow-x-clip">
           <div className="k-backdrop" aria-hidden />
-          <Rail modules={modules} expanded={expanded} onToggle={() => setExpanded(!expanded)} onSignOut={signOut} />
+          <Rail modules={modules} expanded={expanded} />
           <div className={cn("relative transition-[padding] duration-300", expanded ? "lg:ps-[248px]" : "lg:ps-[84px]")}>
             <header data-scrolled={scrolled || undefined} className="k-topbar sticky top-0 z-30">
-              <div className="mx-auto flex h-[68px] max-w-[1640px] items-center gap-3 px-4 sm:px-6 lg:h-[76px] lg:px-8">
+              <div className="mx-auto flex h-[68px] max-w-[1640px] items-center gap-2 px-4 sm:gap-3 sm:px-6 lg:h-[72px] lg:px-8">
+                <RailToggle expanded={expanded} onToggle={() => setExpanded(!expanded)} label={expanded ? t("dashboard.chrome.collapse") : t("dashboard.chrome.expand")} />
                 <Link href="/" className="lg:hidden" aria-label={t("shell.nav.dashboard")}>
                   <BrandAvatar size={40} />
                 </Link>
+                {/* the module name is the phone's only orientation; on desktop the sidebar shows where you are */}
                 <div className="k-display min-w-0 flex-1 truncate text-[17px] font-bold tracking-[-0.01em] lg:hidden">{current?.label}</div>
-                <div className="hidden min-w-0 flex-1 lg:flex">{subs ? <SubNav fit items={subs} className="-ms-2.5" /> : <span className="k-display truncate text-[17px] font-bold tracking-[-0.01em]">{current?.label}</span>}</div>
+                <div className="hidden flex-1 lg:block" />
                 <div className="flex shrink-0 items-center gap-2">
                   <CommandPalette items={commands} />
+                  {!viewer && <WalletChip enabled={walletOn} />}
+                  {!viewer && <NotificationsBell />}
                   <span className="hidden sm:contents">
-                    <LanguageMenu />
                     <ThemeToggle />
                   </span>
-                  {!viewer && <NotificationsBell />}
                   {cta}
-                  <span className="hidden xl:block">
-                    <ProfilePill name={me.name} email={viewer ? viewer.label : me.email} verified={verified} header={menuHeader} items={menuItems} label={t("shell.accountMenu")} />
-                  </span>
-                  <span className="xl:hidden">
-                    <ProfilePill compact name={me.name} email={me.email} verified={verified} header={menuHeader} items={menuItems} label={t("shell.accountMenu")} />
-                  </span>
+                  <AvatarButton name={me.name} verified={verified} onOpen={() => setProfileOpen(true)} label={t("shell.accountMenu")} />
                 </div>
               </div>
               {subs && (
@@ -161,6 +125,18 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
             </main>
           </div>
           <MobileBar modules={modules} onSignOut={signOut} />
+          {/* a view-only session gets the drawer for its identity and the way out, but none of the account destinations */}
+          <ProfileDrawer
+            open={profileOpen}
+            onOpenChange={setProfileOpen}
+            name={me.name}
+            email={viewer ? viewer.label : me.email}
+            kycStatus={me.kyc_status}
+            verified={verified}
+            viewer={!!viewer}
+            onSignOut={signOut}
+            extra={<LanguageMenu />}
+          />
         </div>
       </TooltipProvider>
       {!IS_DEMO && <SessionGuard />}

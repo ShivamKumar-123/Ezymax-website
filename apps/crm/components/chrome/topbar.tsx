@@ -1,15 +1,19 @@
 "use client";
 
-// Top area of the Client Area: the current module's pages as underline text tabs, then search, language, theme,
-// notifications and the profile pill (avatar, name, e-mail, ▾ → account menu).
+// Top area of the Client Area: the rail's collapse control at the start, and at the end a wallet shortcut with the
+// balance, search, notifications, theme and the avatar that opens the profile drawer.
+//
+// A module's pages are listed in the sidebar on desktop, so SubNav is only reached below `lg`, where the sidebar is
+// hidden and the phone bar takes over.
 
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, CreditCard, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Avatar, Menu, cn, type NavModule, type SubNavItem } from "@/components/kit";
 import { useLocale, useT } from "@ezymex/i18n/react";
+import { fmt, useWallet, usdtAvailable, type Overview } from "@/components/wallet-live/api";
 import { activeSub } from "./nav-utils";
 
 /** The module's pages as text tabs with an accent underline. `fit` (desktop): as many tabs as the space allows, the
@@ -140,36 +144,58 @@ export function SubNav({ items, className, fit = false }: { items: SubNavItem[];
   );
 }
 
-export type MenuItem = { label: React.ReactNode; icon?: React.ReactNode; onSelect?: () => void; danger?: boolean; href?: string } | "sep";
+const ICON_BTN =
+  "k-surface-btn grid size-10 shrink-0 place-items-center rounded-full text-fg-2 outline-none transition-colors hover:text-fg focus-visible:ring-4 focus-visible:ring-ember/20";
 
-/** The profile pill: avatar, name and e-mail with a ▾, opening the account menu. Compact (avatar only) when narrow. */
-export function ProfilePill({ name, email, verified, header, items, compact, label }: { name: string; email: string; verified?: boolean; header: React.ReactNode; items: MenuItem[]; compact?: boolean; label: string }) {
+/** Collapses and expands the rail. It sits here rather than on the rail so the rail can run flush to the screen edge. */
+export function RailToggle({ expanded, onToggle, label }: { expanded: boolean; onToggle: () => void; label: string }) {
+  const Icon = expanded ? PanelLeftClose : PanelLeftOpen;
   return (
-    <Menu
-      width={272}
-      header={header}
-      items={items}
-      trigger={
-        <button
-          aria-label={label}
-          className={cn(
-            "k-surface-btn group flex shrink-0 items-center rounded-full text-start outline-none focus-visible:ring-4 focus-visible:ring-ember/20",
-            compact ? "size-10 justify-center" : "h-12 gap-3 py-1 pe-3.5 ps-1",
-          )}
+    <button type="button" onClick={onToggle} aria-expanded={expanded} aria-label={label} className={cn(ICON_BTN, "hidden lg:grid")}>
+      <Icon className="size-[18px] rtl:-scale-x-100" strokeWidth={1.9} />
+    </button>
+  );
+}
+
+/** A shortcut to the wallet, with the available balance beside it.
+ *
+ *  The figure appears only once it has arrived: while it loads, or if the request fails, the shortcut shows on its
+ *  own. A stale or invented number next to a deposit button is worse than no number at all. */
+export function WalletChip({ enabled }: { enabled: boolean }) {
+  const t = useT();
+  const o = useWallet<Overview>(enabled ? "overview" : null);
+  const balance = o.data ? usdtAvailable(o.data) : null;
+  if (!enabled) return null;
+  return (
+    <>
+      <Link href="/wallet" aria-label={t("shell.nav.wallet")} className={ICON_BTN}>
+        <CreditCard className="size-[18px]" strokeWidth={1.9} />
+      </Link>
+      {balance && (
+        <Link
+          href="/wallet"
+          className="k-surface-btn hidden h-10 shrink-0 items-center gap-1.5 rounded-full px-4 outline-none focus-visible:ring-4 focus-visible:ring-ember/20 sm:flex"
         >
-          <Avatar name={name} size={compact ? 36 : 40} verified={verified} />
-          {!compact && (
-            <>
-              <span className="flex min-w-0 max-w-[180px] flex-col">
-                <span className="truncate text-[13.5px] font-bold leading-tight text-fg">{name}</span>
-                <span className="truncate text-[11.5px] leading-tight text-fg-3">{email}</span>
-              </span>
-              <ChevronDown className="size-4 shrink-0 text-fg-3 transition-transform group-data-[state=open]:rotate-180" />
-            </>
-          )}
-        </button>
-      }
-    />
+          <span className="k-num text-[13.5px] font-bold text-fg">{fmt(balance.available)}</span>
+          <span className="text-[11.5px] font-medium text-fg-3">{balance.currency}</span>
+        </Link>
+      )}
+    </>
+  );
+}
+
+/** The avatar at the end of the top bar. It opens the profile drawer, so it carries no name, e-mail or caret. */
+export function AvatarButton({ name, verified, onOpen, label }: { name: string; verified?: boolean; onOpen: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label={label}
+      aria-haspopup="dialog"
+      className="shrink-0 rounded-full outline-none transition-transform hover:scale-[1.04] focus-visible:ring-4 focus-visible:ring-ember/20"
+    >
+      <Avatar name={name} size={38} verified={verified} />
+    </button>
   );
 }
 
