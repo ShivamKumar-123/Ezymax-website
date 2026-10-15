@@ -175,6 +175,12 @@ pub fn check_margin(tx: &mut Tx, env: &Env) {
         return;
     }
     let m = metrics(env, &tx.st);
+    // An account whose positions cannot all be valued has no margin level worth acting on. Liquidating on a
+    // partial picture is how a restart with no conversion rate yet stopped out an account that was never close
+    // to its stop-out level. Wait: the next tick brings the missing price and this runs again.
+    if m.unpriced > 0 {
+        return;
+    }
     let g = env.group;
     match m.level {
         Some(l) if l <= g.stop_out_pct => stop_out(tx, env),

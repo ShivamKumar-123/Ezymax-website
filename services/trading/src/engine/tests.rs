@@ -77,6 +77,49 @@ fn hedged_margin_percentage() {
     assert_eq!(r2(metrics(&kit.env(&h.st), &h.st).margin), d("2200.00"));
 }
 
+/// A conversion rate the engine does not have must stop it valuing, booking and liquidating - it may never fall
+/// back to the figure in the instrument's own quote currency.
+///
+/// 2026-10-14: the engine restarted holding a GBPJPY position and had no USDJPY quote yet. Margin came out in JPY
+/// and was read as USD, so the margin level collapsed and the account was stopped out; the close then booked a
+/// 4,600 JPY loss as 4,600 USD on a 287 USD account. Both numbers came from the same fallback.
+#[test]
+fn a_missing_conversion_rate_is_not_a_licence_to_guess() {
+    let kit = Kit::new();
+    kit.quote("USDJPY", "150.000", "150.000");
+    kit.quote("GBPJPY", "190.000", "190.000");
+    let mut h = Harness::live(&kit, "hedge", "100000");
+    let t = pos_ticket(&place(&mut h, &kit, buy("GBPJPY", "0.2")));
+
+    // the restart: the symbol is priced, its conversion pair is not
+    kit.forget("USDJPY");
+    kit.quote("GBPJPY", "189.000", "189.000");
+
+    let m = metrics(&kit.env(&h.st), &h.st);
+    // two valuations failed for the one position: its P&L and its margin
+    assert_eq!(m.unpriced, 2, "a position that cannot be converted is reported as unpriced");
+    assert_eq!(m.profit, d("0"), "no P&L is claimed for it");
+    assert_eq!(m.margin, d("0"), "and it is left out of margin rather than counted in JPY");
+
+    // on that partial picture the account is not touched
+    h.run(&kit, |tx, env| {
+        super::risk::check_margin(tx, env);
+        Ok(())
+    })
+    .unwrap();
+    assert!(h.st.positions.contains_key(&t), "stopped out on figures the engine could not compute");
+
+    // and closing refuses outright: money is written there
+    let e = h.run(&kit, |tx, env| trade::close_position(tx, env, t, CloseReq::default())).unwrap_err();
+    assert_eq!(e.code, "no_conversion");
+
+    // with the rate back it values normally: -1.000 x 0.2 x 100 000 = -20 000 JPY / 150
+    kit.quote("USDJPY", "150.000", "150.000");
+    let (_, p) = h.run(&kit, |tx, env| trade::close_position(tx, env, t, CloseReq::default())).unwrap();
+    assert_eq!(p, d("-133.33"));
+    h.assert_ledger();
+}
+
 #[test]
 fn quote_currency_conversion_usdjpy_and_cross() {
     let kit = Kit::new();

@@ -85,7 +85,7 @@ pub fn current(env: &Env, st: &AccountState, p: &Position) -> (Option<D>, Option
     }
     let Some(q) = env.quote(&st.account, &p.symbol) else { return (None, None) };
     let px = q.close_price(p.side);
-    let profit = env.specs.get(&p.symbol).map(|s| r2(pnl(env, &st.account, s, p.side, p.volume, p.open_price, px)));
+    let profit = env.specs.get(&p.symbol).and_then(|s| pnl(env, &st.account, s, p.side, p.volume, p.open_price, px)).map(r2);
     (Some(px), profit)
 }
 

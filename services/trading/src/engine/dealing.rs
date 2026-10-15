@@ -204,8 +204,12 @@ pub fn transfer_book(tx: &mut Tx, env: &Env, ticket: i64, to: Book, mv: BookMove
     let from = p.book;
     let acc = tx.st.account.clone();
     let staff = dealer.staff.clone();
+    if pnl(env, &acc, &spec, p.side, p.volume, p.open_price, px).is_none() {
+        return Err(Reject::new("no_conversion", format!("No {}/USD rate to value {} right now", spec.quote_ccy, spec.symbol)));
+    }
     let carry = |c: &mut Position, vol: D, from: Book| {
-        let seg = pnl(env, &acc, &spec, c.side, vol, c.book_price, px);
+        // checked just above: the rate is there for this symbol
+        let seg = pnl(env, &acc, &spec, c.side, vol, c.book_price, px).unwrap_or(ZERO);
         match from {
             Book::A => c.book_carry_a += seg,
             Book::B => c.book_carry_b += seg,

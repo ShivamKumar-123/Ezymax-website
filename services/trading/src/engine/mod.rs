@@ -282,23 +282,30 @@ impl Tx {
 /* ------------------------------------------------------------------ */
 
 /// Price P&L of `volume` lots in the account currency (unrounded).
-pub fn pnl(env: &Env, acc: &Account, spec: &Spec, side: Side, volume: D, open: D, close: D) -> D {
+///
+/// `None` when the quote currency has no conversion rate in memory. The raw figure is in the instrument's quote
+/// currency, so handing it back as the account's is not an approximation - a 4,600 JPY loss becomes a 4,600 USD
+/// one. Callers decide what to do without a number; none of them may invent one.
+pub fn pnl(env: &Env, acc: &Account, spec: &Spec, side: Side, volume: D, open: D, close: D) -> Option<D> {
     let q = (close - open) * side.sign() * volume * spec.contract_size;
-    env.to_usd(acc, &spec.quote_ccy, q, (&spec.symbol, close)).unwrap_or(q) * acc.usd_factor()
+    Some(env.to_usd(acc, &spec.quote_ccy, q, (&spec.symbol, close))? * acc.usd_factor())
 }
 
 /// Margin in account currency for `long` / `short` lots of one symbol at `price` (D14 hedged margin).
-pub fn symbol_margin(env: &Env, acc: &Account, spec: &Spec, long: D, short: D, price: D) -> D {
+///
+/// `None` for the same reason as `pnl`: margin taken in the quote currency and treated as the account's is what
+/// collapses a margin level and fires a stop-out that should never have happened.
+pub fn symbol_margin(env: &Env, acc: &Account, spec: &Spec, long: D, short: D, price: D) -> Option<D> {
     if long.is_zero() && short.is_zero() {
-        return ZERO;
+        return Some(ZERO);
     }
     let lev = D::from(acc.leverage.min(spec.max_leverage).max(1));
     let per_lot_quote = spec.contract_size * price;
-    let per_lot_usd = env.to_usd(acc, &spec.quote_ccy, per_lot_quote, (&spec.symbol, price)).unwrap_or(per_lot_quote);
+    let per_lot_usd = env.to_usd(acc, &spec.quote_ccy, per_lot_quote, (&spec.symbol, price))?;
     let hedged = long.min(short);
     let net = (long - short).abs();
     let lots = net + D::TWO * hedged * env.group.hedged_margin_pct / HUNDRED;
-    per_lot_usd * spec.margin_pct / HUNDRED / lev * lots * acc.usd_factor()
+    Some(per_lot_usd * spec.margin_pct / HUNDRED / lev * lots * acc.usd_factor())
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -324,7 +331,11 @@ pub struct Metrics {
     pub option_margin: D,
     /// Option settlement proceeds still in the re-run hold (not withdrawable yet).
     pub held: D,
-    /// CFD positions that could not be valued (no quote): their P&L is missing from `profit`.
+    /// Valuations the engine could not make: a CFD position with no quote, one whose quote currency has no
+    /// conversion rate, and a symbol whose margin could not be converted. One position can account for more than
+    /// one, so read this as "the picture is incomplete", never as a count of positions. While it is non-zero the
+    /// figures beside it are partial: `profit` is missing that P&L and `margin` is missing that margin, which is
+    /// why check_margin refuses to act on them.
     pub unpriced: usize,
     /// Reserved for working options order-book orders (docs/OPTIONS-EXCHANGE.md §3): part of neither margin nor
     /// equity, but subtracted from free margin, free cash and withdrawable. 0 when no book order works.
@@ -364,31 +375,37 @@ fn exposure(st: &AccountState, extra: Option<(&str, Side, D)>, exclude: &BTreeSe
     m
 }
 
-fn cfd_margin(env: &Env, st: &AccountState, exp: &BTreeMap<String, (D, D)>) -> D {
+/// Returns the margin it could value, and how many symbols it could not. A symbol with no conversion rate is
+/// left out rather than added in the wrong currency; the count is what stops the caller acting on the total.
+fn cfd_margin(env: &Env, st: &AccountState, exp: &BTreeMap<String, (D, D)>) -> (D, usize) {
     let acc = &st.account;
     let mut margin = ZERO;
+    let mut unvalued = 0;
     for (sym, (long, short)) in exp {
         let Some(spec) = env.specs.get(sym) else { continue };
         let price = match env.quote(acc, sym) {
             Some(q) => q.mid(),
             None => st.positions.values().find(|p| &p.symbol == sym).map(|p| p.open_price).unwrap_or(ZERO),
         };
-        margin += symbol_margin(env, acc, spec, *long, *short, price);
+        match symbol_margin(env, acc, spec, *long, *short, price) {
+            Some(m) => margin += m,
+            None => unvalued += 1,
+        }
     }
-    margin
+    (margin, unvalued)
 }
 
 /// CFD margin plus option scenario margin (with same-underlying CFD offsets), with an optional hypothetical CFD trade.
 pub fn total_margin(env: &Env, st: &AccountState, extra: Option<(&str, Side, D)>) -> D {
     let none = BTreeSet::new();
     let exp = exposure(st, extra, &none);
-    cfd_margin(env, st, &exp) + options::margin(env, st, &exp, &[], &none)
+    cfd_margin(env, st, &exp).0 + options::margin(env, st, &exp, &[], &none)
 }
 
 /// Margin of the account without the positions in `exclude` (what closing them would free).
 pub fn margin_without(env: &Env, st: &AccountState, exclude: &BTreeSet<i64>) -> D {
     let exp = exposure(st, None, exclude);
-    cfd_margin(env, st, &exp) + options::margin(env, st, &exp, &[], exclude)
+    cfd_margin(env, st, &exp).0 + options::margin(env, st, &exp, &[], exclude)
 }
 
 pub fn metrics(env: &Env, st: &AccountState) -> Metrics {
@@ -411,11 +428,16 @@ pub fn metrics(env: &Env, st: &AccountState) -> Metrics {
             unpriced += 1;
             continue;
         };
-        profit += pnl(env, acc, spec, p.side, p.volume, p.open_price, q.close_price(p.side));
+        match pnl(env, acc, spec, p.side, p.volume, p.open_price, q.close_price(p.side)) {
+            Some(v) => profit += v,
+            // priced, but with no way to express it in the account's currency: as unusable as no price at all
+            None => unpriced += 1,
+        }
     }
     let none = BTreeSet::new();
     let exp = exposure(st, None, &none);
-    let cfd = cfd_margin(env, st, &exp);
+    let (cfd, unvalued_margin) = cfd_margin(env, st, &exp);
+    unpriced += unvalued_margin;
     let option_margin = options::margin(env, st, &exp, &[], &none);
     let margin = cfd + option_margin;
     let equity = st.balance + st.credit + st.bonus + profit + swap + option_value;
@@ -447,7 +469,7 @@ pub fn position_floating(env: &Env, acc: &Account, p: &crate::model::Position) -
     }
     let spec = env.specs.get(&p.symbol)?;
     let q = env.quote(acc, &p.symbol)?;
-    Some(pnl(env, acc, spec, p.side, p.volume, p.open_price, q.close_price(p.side)) + p.swap)
+    Some(pnl(env, acc, spec, p.side, p.volume, p.open_price, q.close_price(p.side))? + p.swap)
 }
 
 #[cfg(test)]

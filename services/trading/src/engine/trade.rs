@@ -651,7 +651,9 @@ pub fn close_part(tx: &mut Tx, env: &Env, ticket: i64, volume: D, price: D, meta
     let volume = volume.min(p.volume);
     let full = volume == p.volume;
     let frac = volume / p.volume;
-    let profit = r2(pnl(env, &acc, &spec, p.side, volume, p.open_price, price));
+    // money is written here, so there is no acceptable fallback: a close with no conversion rate waits
+    let profit = r2(pnl(env, &acc, &spec, p.side, volume, p.open_price, price)
+        .ok_or_else(|| Reject::new("no_conversion", format!("No {}/USD rate to value {} right now", spec.quote_ccy, spec.symbol)))?);
     let swap = if full { p.swap } else { r2(p.swap * frac) };
     let comm = if full { p.commission } else { r2(p.commission * frac) };
     let deal_id = env.ids.deal();

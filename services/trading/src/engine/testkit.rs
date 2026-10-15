@@ -210,6 +210,11 @@ impl Kit {
         self.quotes.0.lock().unwrap().insert(symbol.into(), Quote { bid: d(bid), ask: d(ask), t_ms: self.now.timestamp_millis() });
     }
 
+    /// Forgets a symbol, which is what a restart does to the engine's quote map until the first tick arrives.
+    pub fn forget(&self, symbol: &str) {
+        self.quotes.0.lock().unwrap().remove(symbol);
+    }
+
     pub fn env<'a>(&'a self, st: &AccountState) -> Env<'a> {
         Env {
             specs: &self.specs,
