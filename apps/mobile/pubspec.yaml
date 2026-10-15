@@ -38,6 +38,8 @@ dependencies:
 
   # later screens: the chart (lightweight-charts in a WebView), KYC camera, support attachments, deep links, sharing
   webview_flutter: ^4.14.1
+  # the dashboard hero's brand clip (features/dashboard/dashboard_hero.dart)
+  video_player: ^2.9.2
   image_picker: ^1.2.4
   camera: ^0.12.1
   file_picker: ^13.1.0
@@ -72,6 +74,8 @@ flutter:
     - assets/chart/
     # news story covers (the web's own photo library, apps/crm/public/assets/photos, 720 px)
     - assets/photos/
+    # the dashboard hero's clip and its still frame
+    - assets/video/
 
   fonts:
     # Client Area text (the web's --font-display), OFL: assets/fonts/PlusJakartaSans-OFL.txt

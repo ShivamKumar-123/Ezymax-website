@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../core/config/app_config.dart';
 import '../../i18n/i18n.dart';
@@ -22,20 +23,88 @@ double dashboardHeroHeight(MediaQueryData mq) => (mq.size.height * 0.46).clamp(3
 /// How far the sheet reaches up over the picture (its rounded corners show the robot's background).
 const double kDashboardHeroOverlap = 28;
 
-/// The robot, drawn behind the page (KPageHero.picture): cover-fitted with the helmet kept in view, flipped in RTL so
-/// it faces the text, a soft scrim at the very top for the status bar.
-class DashboardHeroPicture extends StatelessWidget {
+/// The brand clip, drawn behind the page (KPageHero.picture), over its own still frame, with a soft scrim at the very
+/// top for the status bar. Flipped in RTL like the artwork it replaced.
+class DashboardHeroPicture extends StatefulWidget {
   const DashboardHeroPicture({super.key});
+
+  @override
+  State<DashboardHeroPicture> createState() => _DashboardHeroPictureState();
+}
+
+class _DashboardHeroPictureState extends State<DashboardHeroPicture> with WidgetsBindingObserver {
+  VideoPlayerController? _video;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // after the first frame, so the still picture is on screen before anything is decoded
+    WidgetsBinding.instance.addPostFrameCallback((_) => _start());
+  }
+
+  void _start() {
+    if (!mounted) return;
+    // a device set to reduce motion keeps the still frame
+    if (MediaQuery.of(context).disableAnimations) return;
+    final c = VideoPlayerController.asset('assets/video/hero.mp4');
+    _video = c;
+    c.initialize().then((_) {
+      if (!mounted) {
+        c.dispose();
+        return;
+      }
+      c
+        ..setVolume(0)
+        ..setLooping(true)
+        ..play();
+      setState(() {});
+    }).catchError((Object _) {
+      // the still frame is a complete hero on its own, so a device that cannot decode this loses nothing
+      c.dispose();
+      if (mounted) setState(() => _video = null);
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final c = _video;
+    if (c == null || !c.value.isInitialized) return;
+    if (state == AppLifecycleState.resumed) {
+      c.play();
+    } else {
+      c.pause();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _video?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final rtl = Directionality.of(context) == TextDirection.rtl;
+    final c = _video;
+    final playing = c != null && c.value.isInitialized;
     return Transform.flip(
       flipX: rtl,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset('assets/photos/hero-robot-tall.jpg', fit: BoxFit.cover, alignment: const Alignment(0.35, -0.6), filterQuality: FilterQuality.high),
+          Image.asset('assets/video/hero-poster.jpg', fit: BoxFit.cover, filterQuality: FilterQuality.high),
+          if (playing)
+            FittedBox(
+              fit: BoxFit.cover,
+              clipBehavior: Clip.hardEdge,
+              child: SizedBox(
+                width: c.value.size.width,
+                height: c.value.size.height,
+                child: VideoPlayer(c),
+              ),
+            ),
           DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
