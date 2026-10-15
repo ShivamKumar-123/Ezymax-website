@@ -36,6 +36,9 @@ export interface Plan {
   description: string;
   riskText: string;
   version: number;
+  /** The rate staff have set for the month in progress; null until they set it. Never a forecast: a month's
+   *  rate can only be set once that month has started (services/staking/src/rates.rs). */
+  currentRate: number | null;
   recentRates: RecentRate[];
 }
 

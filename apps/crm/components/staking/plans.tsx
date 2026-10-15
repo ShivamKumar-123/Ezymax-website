@@ -54,6 +54,8 @@ function PlanCard({ plan, onSubscribe }: { plan: Plan; onSubscribe: () => void }
   if (plan.capacityLeft !== null) rows.push([t("staking.plan.capacityLeft"), money(plan.capacityLeft)]);
   if (plan.maxNow !== null && plan.perUserMax !== null) rows.push([t("staking.plan.room"), money(Math.max(0, plan.maxNow))]);
   if (plan.invested > 0) rows.push([t("staking.plan.invested"), money(plan.invested)]);
+  // only once staff have set it: an empty row would invite a guess, and this plan pays a different rate each month
+  if (plan.currentRate !== null) rows.push([t("staking.plan.thisMonth"), fx.rate(plan.currentRate)]);
   return (
     <div className={cn("k-card flex h-full flex-col p-5", (paused || full) && "opacity-90")}>
       <div className="flex items-start justify-between gap-3">

@@ -57,6 +57,7 @@ class StakingPlan {
     required this.riskText,
     required this.version,
     required this.recentRates,
+    this.currentRate,
   });
 
   final int id;
@@ -82,6 +83,10 @@ class StakingPlan {
   /// Settled months only (rates are never promised in advance).
   final List<StakingRate> recentRates;
 
+  /// The rate staff have set for the month in progress; null until they set it. Never a forecast: a month's
+  /// rate can only be set once that month has started (services/staking/src/rates.rs).
+  final double? currentRate;
+
   bool get paused => status != 'active';
 
   /// Open for a new subscription: active, not full, and room for at least the minimum.
@@ -104,6 +109,7 @@ class StakingPlan {
     riskText: _s(j['riskText']),
     version: _i(j['version'], 1),
     recentRates: [for (final r in _l(j['recentRates'])) StakingRate.fromJson(r)],
+    currentRate: _dn(j['currentRate']),
   );
 }
 

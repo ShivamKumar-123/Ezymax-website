@@ -27,6 +27,9 @@ pub async fn plans(State(st): State<AppState>, u: UserCtx) -> ApiResult<Json<Val
         .await?;
     let mine: HashMap<i64, D> = mine.into_iter().collect();
     let now = Utc::now();
+    let current = Period::of(now);
+    // the rate this month is already running on, where staff have set it: a decision taken, not a forecast
+    let this_month = rates::for_period(&st, &u.tenant, current).await?;
     let items: Vec<Value> = list
         .iter()
         .filter(|p| matches!(p.status.as_str(), "active" | "paused"))
@@ -43,11 +46,11 @@ pub async fn plans(State(st): State<AppState>, u: UserCtx) -> ApiResult<Json<Val
                 "capacityLeft": opt_num(left), "full": left.is_some_and(|l| l < p.min_amount),
                 "invested": num(invested), "maxNow": opt_num(max_now),
                 "description": p.description, "riskText": p.risk_text, "version": p.version,
+                "currentRate": this_month.get(&p.id).map(|r| num(*r)),
                 "recentRates": history.get(&p.id).map(|v| v.iter().map(|(period, rate)| json!({"period": period, "ratePct": num(*rate)})).collect::<Vec<_>>()).unwrap_or_default(),
             })
         })
         .collect();
-    let current = Period::of(now);
     Ok(Json(json!({"plans": items, "currencies": st.cfg.currencies, "currentPeriod": current.to_string(), "nextPayoutAfter": current.end(), "serverTime": now})))
 }
 

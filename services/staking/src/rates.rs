@@ -146,6 +146,21 @@ pub async fn set(st: &AppState, tenant: &str, actor: &Actor, body: &Value) -> Ap
 }
 
 /// The last `n` settled months per plan (approved or paid settlements): what clients see as past returns.
+/// The rate the admin has set for `p`, per plan, whether or not that month is settled yet.
+///
+/// Clients may see this one. It is a decision already taken about a month that has started, not a forecast:
+/// a month's rate can only be set once the month is under way (see the note at the top of this file), so there
+/// is never a future rate to show. A plan's `max_monthly_rate_pct` stays out of their reach for the opposite
+/// reason - a ceiling shown next to a product reads as what to expect.
+pub async fn for_period(st: &AppState, tenant: &str, p: Period) -> ApiResult<HashMap<i64, D>> {
+    let rows = sqlx::query("SELECT plan_id, rate_pct FROM monthly_rates WHERE tenant = $1 AND period = $2")
+        .bind(tenant)
+        .bind(p.to_string())
+        .fetch_all(&st.pool)
+        .await?;
+    Ok(rows.iter().map(|r| (r.get("plan_id"), r.get("rate_pct"))).collect())
+}
+
 pub async fn settled_history(st: &AppState, tenant: &str, n: usize) -> ApiResult<HashMap<i64, Vec<(String, D)>>> {
     let rows = sqlx::query(
         "SELECT r.plan_id, r.period, r.rate_pct FROM monthly_rates r

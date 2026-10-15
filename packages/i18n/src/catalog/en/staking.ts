@@ -42,6 +42,7 @@ const staking = {
   "plan.capacityLeft": "Capacity left",
   "plan.noLimit": "No limit",
   "plan.invested": "You hold",
+  "plan.thisMonth": "This month's rate",
   "plan.pastReturns": "Past monthly returns",
   "plan.noPastReturns": "No month settled yet",
   "plan.pastNote": "Past returns don't predict future returns.",

@@ -166,6 +166,8 @@ class StakingPlanCard extends StatelessWidget {
       KKV(t('staking.plan.room'), limit(p.maxNow)),
       KKV(t('staking.plan.capacityLeft'), p.full ? stakingAmount(t, 0, cur) : limit(p.capacityLeft)),
       if (p.invested > 0) KKV(t('staking.plan.invested'), stakingAmount(t, p.invested, cur), tone: k.up),
+      // only once staff have set it: an empty row would invite a guess, and this plan pays a different rate each month
+      if (p.currentRate != null) KKV(t('staking.plan.thisMonth'), stakingRate(t, p.currentRate!)),
     ];
     return KCard(
       child: Column(
