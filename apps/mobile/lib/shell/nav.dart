@@ -36,27 +36,25 @@ class NavModule {
 
 /// CRM_NAV / LIVE_NAV (live builds: no demo badges, no gated sub-pages such as /academy/coach).
 const List<NavModule> kNav = [
+  NavModule(key: 'dashboard', labelKey: 'shell.nav.dashboard', icon: LucideIcons.layoutGrid, href: '/', section: 'main', match: ['/', '/updates']),
   NavModule(
-    key: 'dashboard',
-    labelKey: 'shell.nav.dashboard',
-    icon: LucideIcons.layoutGrid,
-    href: '/',
-    section: 'main',
-    match: ['/', '/markets', '/news', '/calendar', '/updates'],
-    sub: [
-      NavSub('/', 'shell.nav.overview', LucideIcons.layoutGrid),
-      NavSub('/markets', 'shell.nav.markets', LucideIcons.globe2),
-      NavSub('/news', 'shell.nav.news', LucideIcons.newspaper),
-      NavSub('/calendar', 'shell.nav.calendar', LucideIcons.calendarDays),
-    ],
-  ),
-  NavModule(
-    key: 'accounts',
-    labelKey: 'shell.nav.accounts',
+    key: 'trading',
+    labelKey: 'shell.nav.trading',
     icon: LucideIcons.layers,
     href: '/accounts',
     section: 'main',
-    sub: [NavSub('/accounts', 'shell.nav.myAccounts', LucideIcons.layers), NavSub('/accounts/new', 'shell.nav.openAccount', LucideIcons.circlePlus)],
+    match: ['/accounts', '/options', '/portfolio'],
+    sub: [
+      NavSub('/accounts', 'shell.nav.myAccounts', LucideIcons.layers),
+      NavSub('/accounts/new', 'shell.nav.openAccount', LucideIcons.circlePlus),
+      // /options is not offered yet and is left out the same way /academy/coach is (apps/crm/lib/live.ts
+      // LIVE_GATED); reaching it anyway lands on the Coming soon stub
+      NavSub('/portfolio', 'shell.nav.portfolio', LucideIcons.chartPie),
+      NavSub('/portfolio/analytics', 'shell.nav.performance', LucideIcons.chartColumn),
+      NavSub('/portfolio/history', 'shell.nav.tradeHistory', LucideIcons.history),
+      NavSub('/portfolio/ledger', 'shell.nav.ledger', LucideIcons.bookText),
+      NavSub('/portfolio/statements', 'shell.nav.statements', LucideIcons.fileText),
+    ],
   ),
   NavModule(
     key: 'wallet',
@@ -73,33 +71,16 @@ const List<NavModule> kNav = [
     ],
   ),
   NavModule(
-    key: 'portfolio',
-    labelKey: 'shell.nav.portfolio',
-    icon: LucideIcons.chartPie,
-    href: '/portfolio',
+    key: 'analytics',
+    labelKey: 'shell.nav.analytics',
+    icon: LucideIcons.chartLine,
+    href: '/markets',
     section: 'main',
+    match: ['/markets', '/news', '/calendar'],
     sub: [
-      NavSub('/portfolio', 'shell.nav.overview', LucideIcons.chartPie),
-      NavSub('/portfolio/analytics', 'shell.nav.analytics', LucideIcons.chartColumn),
-      NavSub('/portfolio/history', 'shell.nav.tradeHistory', LucideIcons.history),
-      NavSub('/portfolio/ledger', 'shell.nav.ledger', LucideIcons.bookText),
-      NavSub('/portfolio/statements', 'shell.nav.statements', LucideIcons.fileText),
-    ],
-  ),
-  NavModule(key: 'options', labelKey: 'options.nav.title', icon: LucideIcons.chartSpline, href: '/options', section: 'main'),
-  NavModule(
-    key: 'partner',
-    labelKey: 'shell.nav.partner',
-    icon: LucideIcons.handshake,
-    href: '/partner',
-    section: 'grow',
-    sub: [
-      NavSub('/partner', 'shell.nav.dashboard', LucideIcons.layoutGrid),
-      NavSub('/partner/clients', 'shell.nav.clients', LucideIcons.users),
-      NavSub('/partner/network', 'shell.nav.network', LucideIcons.network),
-      NavSub('/partner/commissions', 'shell.nav.commissions', LucideIcons.coins),
-      NavSub('/partner/links', 'shell.nav.links', LucideIcons.link2),
-      NavSub('/partner/payouts', 'shell.nav.payouts', LucideIcons.banknote),
+      NavSub('/markets', 'shell.nav.markets', LucideIcons.globe2),
+      NavSub('/news', 'shell.nav.news', LucideIcons.newspaper),
+      NavSub('/calendar', 'shell.nav.calendar', LucideIcons.calendarDays),
     ],
   ),
   NavModule(
@@ -132,28 +113,35 @@ const List<NavModule> kNav = [
     ],
   ),
   NavModule(
-    key: 'staking',
-    labelKey: 'staking.nav.title',
+    key: 'earn',
+    labelKey: 'shell.nav.earn',
     icon: LucideIcons.piggyBank,
     href: '/staking',
     section: 'grow',
+    match: ['/staking', '/rewards'],
     sub: [
       NavSub('/staking', 'staking.nav.plans', LucideIcons.piggyBank),
       NavSub('/staking/portfolio', 'staking.nav.portfolio', LucideIcons.chartPie),
       NavSub('/staking/history', 'staking.nav.history', LucideIcons.history),
-    ],
-  ),
-  NavModule(
-    key: 'rewards',
-    labelKey: 'shell.nav.rewards',
-    icon: LucideIcons.gift,
-    href: '/rewards',
-    section: 'grow',
-    sub: [
       NavSub('/rewards', 'shell.nav.contests', LucideIcons.medal),
       NavSub('/rewards/loyalty', 'shell.nav.loyalty', LucideIcons.gift),
       NavSub('/rewards/cashback', 'shell.nav.cashback', LucideIcons.percent),
       NavSub('/rewards/promotions', 'shell.nav.promotions', LucideIcons.ticket),
+    ],
+  ),
+  NavModule(
+    key: 'partner',
+    labelKey: 'shell.nav.partner',
+    icon: LucideIcons.handshake,
+    href: '/partner',
+    section: 'grow',
+    sub: [
+      NavSub('/partner', 'shell.nav.dashboard', LucideIcons.layoutGrid),
+      NavSub('/partner/clients', 'shell.nav.clients', LucideIcons.users),
+      NavSub('/partner/network', 'shell.nav.network', LucideIcons.network),
+      NavSub('/partner/commissions', 'shell.nav.commissions', LucideIcons.coins),
+      NavSub('/partner/links', 'shell.nav.links', LucideIcons.link2),
+      NavSub('/partner/payouts', 'shell.nav.payouts', LucideIcons.banknote),
     ],
   ),
   NavModule(
@@ -173,13 +161,15 @@ const List<NavModule> kNav = [
     ],
   ),
   NavModule(
-    key: 'academy',
-    labelKey: 'shell.nav.academyLive',
-    icon: LucideIcons.graduationCap,
-    href: '/academy',
-    section: 'learn',
+    key: 'help',
+    labelKey: 'shell.nav.help',
+    icon: LucideIcons.lifeBuoy,
+    href: '/support',
+    section: 'account',
+    match: ['/support', '/academy'],
     // /academy/coach is gated in live builds (apps/crm/lib/live.ts LIVE_GATED)
     sub: [
+      NavSub('/support', 'shell.nav.support', LucideIcons.lifeBuoy),
       NavSub('/academy', 'shell.nav.courses', LucideIcons.graduationCap),
       NavSub('/academy/glossary', 'shell.nav.glossary', LucideIcons.bookOpen),
       NavSub('/academy/progress', 'shell.nav.myProgress', LucideIcons.award),
@@ -200,11 +190,10 @@ const List<NavModule> kNav = [
       NavSub('/profile/preferences', 'shell.nav.preferences', LucideIcons.slidersHorizontal),
     ],
   ),
-  NavModule(key: 'support', labelKey: 'shell.nav.support', icon: LucideIcons.lifeBuoy, href: '/support', section: 'account'),
 ];
 
 /// The four modules of the bottom bar; everything else is under More.
-const List<String> kPrimaryModules = ['dashboard', 'accounts', 'wallet', 'portfolio'];
+const List<String> kPrimaryModules = ['dashboard', 'trading', 'wallet', 'analytics'];
 
 /// Page path -> module expression: the page entries of the Client Area's map (apps/crm/lib/modules.ts MODULE_PATHS,
 /// the /api ones are the server's business); keep them in step. "a|b": open while either is on, "a&b": only while

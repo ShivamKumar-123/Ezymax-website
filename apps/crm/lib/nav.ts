@@ -127,7 +127,7 @@ export const CRM_NAV: NavModule[] = [
   },
   {
     key: "prop",
-    label: "Competition & Rewards",
+    label: "Competition & Rewards", // shown via shell.nav.prop
     icon: Trophy,
     href: "/prop",
     section: "grow",
@@ -248,6 +248,10 @@ export const CRM_COMMANDS = NAV.flatMap((m) =>
 
 const MODULE_KEYS: Record<string, MessageKey> = {
   dashboard: "shell.nav.dashboard",
+  trading: "shell.nav.trading",
+  analytics: "shell.nav.analytics",
+  earn: "shell.nav.earn",
+  help: "shell.nav.help",
   accounts: "shell.nav.accounts",
   wallet: "shell.nav.wallet",
   portfolio: "shell.nav.portfolio",
@@ -269,6 +273,9 @@ const SUB_KEYS: Record<string, MessageKey> = {
   "/news": "shell.nav.news",
   "/calendar": "shell.nav.calendar",
   "/accounts": "shell.nav.myAccounts",
+  "/portfolio": "shell.nav.portfolio",
+  "/options": "options.nav.title",
+  "/support": "shell.nav.support",
   "/accounts/new": "shell.nav.openAccount",
   "/wallet": "shell.nav.overview",
   "/wallet/deposit": "shell.nav.deposit",
@@ -276,7 +283,7 @@ const SUB_KEYS: Record<string, MessageKey> = {
   "/wallet/transfer": "shell.nav.transfer",
   "/wallet/history": "shell.nav.history",
   "/portfolio": "shell.nav.overview",
-  "/portfolio/analytics": "shell.nav.analytics",
+  "/portfolio/analytics": "shell.nav.performance",
   "/portfolio/history": "shell.nav.tradeHistory",
   "/portfolio/ledger": "shell.nav.ledger",
   "/portfolio/statements": "shell.nav.statements",
