@@ -12,6 +12,7 @@ const POST_ACTIONS: Record<string, string> = {
   login: "/v1/auth/login",
   "verify-email": "/v1/auth/verify-email",
   resend: "/v1/auth/resend",
+  "change-email": "/v1/auth/change-email",
   forgot: "/v1/auth/forgot",
   reset: "/v1/auth/reset",
   logout: "/v1/auth/logout",

@@ -82,6 +82,7 @@ sign-in yet.
 | `POST login` | `{email, password}` (a view-only login uses its viewer ID as `email`) | `{status: "ok", user, session:{token, expires_at}, device?}`, or `{status: "otp_required", challenge, purpose, email_masked, expires_in, resend_in, device?}` for a new device or an unverified email |
 | `POST verify-email` | `{challenge, code}` | `{status: "ok", user, session, device?}` |
 | `POST resend` | `{challenge}` | a fresh challenge |
+| `POST change-email` | `{challenge, email}` | sign-up only: corrects a mistyped address on the still-unverified account and returns a fresh challenge for it (`email_taken` if the corrected address has an account) |
 | `POST register` | the web form's fields: `{first_name, last_name, email, password, country, phone_dial, phone, date_of_birth, referral_code?, referral_campaign?, accept_terms, marketing_consent}` | `{status: "otp_required", challenge, …}`, then `verify-email` returns the session |
 | `POST forgot` | `{email}` | `{challenge, …}` |
 | `POST reset` | `{challenge, code, password}` | `{status: "ok"}` (sign in again afterwards) |

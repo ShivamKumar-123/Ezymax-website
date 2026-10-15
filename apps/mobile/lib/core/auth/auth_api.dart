@@ -119,6 +119,12 @@ class AuthApi {
   Future<OtpChallenge> resend(String challenge) async =>
       OtpChallenge.fromJson(await _api.post<Map<String, dynamic>>('auth/resend', body: {'challenge': challenge}, auth: false));
 
+  /// Sign-up only: the registrant mistyped their address and corrects it from the verify step. The old code is
+  /// void; the fresh challenge is for the corrected address.
+  Future<OtpChallenge> changeEmail(String challenge, String email) async => OtpChallenge.fromJson(
+    await _api.post<Map<String, dynamic>>('auth/change-email', body: {'challenge': challenge, 'email': email}, auth: false),
+  );
+
   /// A code to confirm the email, or (password-only sign-in, no email delivery yet) the new account signed in.
   Future<SignInResult> register(RegisterForm f) async =>
       _result(await _api.post<Map<String, dynamic>>('auth/register', body: f.toJson(), auth: false));

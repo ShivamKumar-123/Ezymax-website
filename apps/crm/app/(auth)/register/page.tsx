@@ -29,6 +29,9 @@ export default function RegisterPage() {
   const [otp, setOtp] = React.useState<OtpChallenge | null>(null);
   const [otpKey, setOtpKey] = React.useState(0);
   const [code, setCode] = React.useState("");
+  // the registrant mistyped their address: correct it from the verify step (gateway /v1/auth/change-email)
+  const [fixEmail, setFixEmail] = React.useState(false);
+  const [newEmail, setNewEmail] = React.useState("");
   const [dobMax, setDobMax] = React.useState<string>();
   const dial = COUNTRIES.find((c) => c[0] === form.country)?.[2] ?? "+91";
 
@@ -55,6 +58,23 @@ export default function RegisterPage() {
     setOtp(r.data);
     setOtpKey((k) => k + 1);
     setStep(1);
+  }
+
+  async function changeEmail(e: React.FormEvent) {
+    e.preventDefault();
+    if (!otp || loading) return;
+    setErr(null);
+    setLoading(true);
+    const r = await authPost<OtpChallenge>("change-email", { challenge: otp.challenge, email: newEmail });
+    setLoading(false);
+    if (!r.ok) return setErr(r.error);
+    setForm((f) => ({ ...f, email: newEmail.trim().toLowerCase() }));
+    setOtp(r.data);
+    setOtpKey((k) => k + 1);
+    setCode("");
+    setFixEmail(false);
+    setNewEmail("");
+    toast.success(t("auth.toast.newCodeSent"), { description: t("auth.toast.checkEmail", { email: r.data.email_masked }) });
   }
 
   async function verify(value = code) {
@@ -188,21 +208,67 @@ export default function RegisterPage() {
             <p className="mt-2 text-[14px] text-fg-2">
               <Trans k="auth.register.enterCode" vars={{ email: otp?.email_masked }} tags={{ b: (c) => <span className="text-fg">{c}</span> }} />
             </p>
-            <div className="mt-8 space-y-4">
-              <FormError>{err?.message}</FormError>
-              <OtpInput
-                key={otpKey}
-                onComplete={(c) => {
-                  setCode(c);
-                  void verify(c);
-                }}
-              />
-            </div>
-            <DevCodeHint code={otp?.dev_code} />
-            <Button variant="ember" size="xl" className="mt-6 w-full" disabled={loading || code.length !== 6} onClick={() => verify()}>
-              {loading ? t("auth.otp.verifying") : t("auth.register.verifyEmail")}
-            </Button>
-            <div className="mt-5 text-end text-[13px] text-fg-3">
+            {fixEmail ? (
+              <form onSubmit={changeEmail} className="mt-8 space-y-4">
+                <p className="text-[13px] text-fg-3">{t("auth.register.changeEmailHint")}</p>
+                <FormError>{err?.field !== "email" ? err?.message : undefined}</FormError>
+                <Field label={t("auth.register.newEmail")} error={fieldErr("email")}>
+                  <Input
+                    type="email"
+                    autoComplete="email"
+                    autoFocus
+                    dir="ltr"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder={t("auth.placeholder.email")}
+                  />
+                </Field>
+                <Button type="submit" variant="ember" size="xl" className="w-full" disabled={loading || !newEmail.includes("@")}>
+                  {loading ? t("auth.otp.sending") : t("auth.register.sendToNewEmail")}
+                </Button>
+                <button
+                  type="button"
+                  className="block w-full text-center text-[13px] text-fg-3 underline-offset-4 hover:text-fg hover:underline"
+                  onClick={() => {
+                    setFixEmail(false);
+                    setErr(null);
+                  }}
+                >
+                  {t("auth.register.keepEmail")}
+                </button>
+              </form>
+            ) : (
+              <>
+                <div className="mt-8 space-y-4">
+                  <FormError>{err?.message}</FormError>
+                  <OtpInput
+                    key={otpKey}
+                    onComplete={(c) => {
+                      setCode(c);
+                      void verify(c);
+                    }}
+                  />
+                </div>
+                <DevCodeHint code={otp?.dev_code} />
+                <Button variant="ember" size="xl" className="mt-6 w-full" disabled={loading || code.length !== 6} onClick={() => verify()}>
+                  {loading ? t("auth.otp.verifying") : t("auth.register.verifyEmail")}
+                </Button>
+                <div className="mt-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-[13px] text-fg-3">
+                  <span>
+                    {t("auth.register.wrongEmail")}{" "}
+                    <button
+                      type="button"
+                      className="font-medium text-fg underline-offset-4 hover:underline"
+                      onClick={() => {
+                        setErr(null);
+                        setNewEmail(form.email);
+                        setFixEmail(true);
+                      }}
+                    >
+                      {t("auth.register.changeEmail")}
+                    </button>
+                  </span>
+                  <span>
               {t("auth.otp.didntGetIt")}{" "}
               <ResendLink
                 key={otp?.challenge}
@@ -220,7 +286,10 @@ export default function RegisterPage() {
                   toast.success(t("auth.toast.newCodeSent"), { description: t("auth.toast.checkEmail", { email: r.data.email_masked }) });
                 }}
               />
-            </div>
+                  </span>
+                </div>
+              </>
+            )}
           </motion.div>
         )}
         {step === 2 && (

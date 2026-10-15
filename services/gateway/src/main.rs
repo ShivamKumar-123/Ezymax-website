@@ -180,6 +180,7 @@ fn router(st: AppState) -> Router {
         .route("/v1/auth/reset", post(client_auth::reset))
         .route("/v1/auth/verify-email", post(client_auth::verify_email))
         .route("/v1/auth/resend", post(client_auth::resend))
+        .route("/v1/auth/change-email", post(client_auth::change_email))
         .route("/v1/auth/password", post(stepup::change_password))
         .route("/v1/auth/stepup", post(stepup::request))
         .route("/v1/auth/stepup/resend", post(stepup::resend))

@@ -368,6 +368,68 @@ pub async fn resend(State(st): State<AppState>, ctx: Ctx, req: Result<Json<Resen
     Ok(Json(identity::resend_otp(&st, K, &r.challenge).await?))
 }
 
+// ---------- correcting a mistyped address during sign-up ----------
+
+#[derive(Deserialize)]
+pub struct ChangeEmailReq {
+    #[serde(default)]
+    pub(crate) challenge: String,
+    #[serde(default)]
+    pub(crate) email: String,
+}
+
+/// A registrant who mistyped their address never gets the code (Gmail answers 550 5.1.1 to the relay and the
+/// bounce lands in the support mailbox, invisible to them) and keeps pressing resend. This lets them fix the
+/// address from the verify step. Only an account whose email was never verified, and only through the open
+/// verify-email challenge the registration (or the unverified sign-in) handed back; that challenge is the
+/// proof that it is the person who just signed up.
+pub async fn change_email(State(st): State<AppState>, ctx: Ctx, req: Result<Json<ChangeEmailReq>, JsonRejection>) -> ApiResult<Json<Value>> {
+    let r = body(req)?;
+    let email = validate::email(&r.email).map_err(field("email"))?;
+    identity::limit(&st, format!("resend:ip:{}", ctx.ip), 10, 10 * 60)?;
+    let row = sqlx::query(
+        "SELECT o.tenant_id, o.subject_id, u.email
+         FROM email_otps o JOIN users u ON u.id = o.subject_id
+         WHERE o.id = $1 AND o.subject_kind = 'user' AND o.purpose = 'verify_email'
+           AND o.consumed_at IS NULL AND o.expires_at > now() AND u.email_verified_at IS NULL",
+    )
+    .bind(&r.challenge)
+    .fetch_optional(&st.pool)
+    .await?
+    .ok_or(ApiError::CodeExpired)?;
+    let (tenant_id, user_id, old): (i64, i64, String) = (row.get("tenant_id"), row.get("subject_id"), row.get("email"));
+    if old == email {
+        return Err(ApiError::Validation { field: "email", message: "That is already the address on the account. Enter the corrected one." });
+    }
+    let changed = sqlx::query("UPDATE users SET email = $3, updated_at = now() WHERE id = $1 AND tenant_id = $2 AND email_verified_at IS NULL")
+        .bind(user_id)
+        .bind(tenant_id)
+        .bind(&email)
+        .execute(&st.pool)
+        .await;
+    match changed {
+        Ok(res) if res.rows_affected() == 1 => {}
+        Ok(_) => return Err(ApiError::CodeExpired),
+        // UNIQUE (tenant_id, email): somebody already has the corrected address
+        Err(sqlx::Error::Database(e)) if e.is_unique_violation() => return Err(ApiError::EmailTaken),
+        Err(e) => return Err(e.into()),
+    }
+    // the code that went to the wrong address must not verify the right one
+    sqlx::query("UPDATE email_otps SET consumed_at = now() WHERE id = $1").bind(&r.challenge).execute(&st.pool).await?;
+    audit::record(&st.pool, &ctx, Entry {
+        tenant_id,
+        actor_kind: "user",
+        actor_id: Some(user_id),
+        action: "user.email_corrected",
+        target: Some(("user", user_id)),
+        meta: json!({"from": old, "to": email}),
+    })
+    .await;
+    tracing::info!(user_id, "unverified email corrected");
+    let (challenge, code) = identity::send_otp(&st, &ctx, K, tenant_id, user_id, &email, Purpose::VerifyEmail).await?;
+    Ok(Json(identity::challenge_json(&st, &challenge, &email, Purpose::VerifyEmail, K, Some(&code))))
+}
+
 // ---------- session ----------
 
 pub async fn logout(State(st): State<AppState>, ctx: Ctx) -> ApiResult<Json<Value>> {
@@ -482,4 +544,78 @@ pub async fn reset(State(st): State<AppState>, ctx: Ctx, req: Result<Json<ResetR
     identity::trust_device(&st, &ctx, K, v.tenant_id, v.subject_id, v.device_hash).await?;
     audit::record(&st.pool, &ctx, Entry { tenant_id: v.tenant_id, actor_kind: "user", actor_id: Some(v.subject_id), action: "user.password_reset", target: Some(("user", v.subject_id)), meta: json!({}) }).await;
     Ok(Json(json!({ "status": "ok" })))
+}
+
+#[cfg(test)]
+mod tests {
+    //! Runs the real handlers against a throwaway PostgreSQL database (`testdb`); skipped, with a note, when no
+    //! server is reachable.
+
+    use super::*;
+    use crate::testdb::TestDb;
+
+    fn ctx() -> Ctx {
+        Ctx { ip: "203.0.113.7".into(), user_agent: "test".into(), device: Some("device-register-aaaa".into()), tenant_slug: "ezymex".into(), bearer: None }
+    }
+
+    /// A registrant: password set, email never verified.
+    async fn unverified(db: &TestDb, email: &str) -> i64 {
+        let hash = crypto::hash_password("Ezymex@2026").unwrap();
+        sqlx::query_scalar(
+            "INSERT INTO users (tenant_id, email, password_hash, first_name, last_name, phone_dial, phone, country, date_of_birth,
+                                referral_code, terms_accepted_at)
+             VALUES (1, $1, $2, 'Priya', 'Shah', '+91', '9876543210', 'in', '1990-01-01', $3, now()) RETURNING id",
+        )
+        .bind(email)
+        .bind(hash)
+        .bind(format!("T{}", crypto::random_token(6)))
+        .fetch_one(&db.st.pool)
+        .await
+        .unwrap()
+    }
+
+    fn change(challenge: &str, email: &str) -> Result<Json<ChangeEmailReq>, JsonRejection> {
+        Ok(Json(ChangeEmailReq { challenge: challenge.into(), email: email.into() }))
+    }
+
+    fn verify(challenge: &str, code: &str) -> Result<Json<VerifyReq>, JsonRejection> {
+        Ok(Json(VerifyReq { challenge: challenge.into(), code: code.into() }))
+    }
+
+    #[tokio::test]
+    async fn a_mistyped_address_is_corrected_from_the_verify_step() {
+        let Some(db) = TestDb::new("change-email").await else { return };
+        let st = || State(db.st.clone());
+        let uid = unverified(&db, "priya.shha@gmail.com").await;
+        unverified(&db, "taken@gmail.com").await;
+        let (old_challenge, old_code) = identity::send_otp(&db.st, &ctx(), K, 1, uid, "priya.shha@gmail.com", Purpose::VerifyEmail).await.unwrap();
+
+        // the address must be a real-looking one, and different from the one on the account
+        assert!(matches!(change_email(st(), ctx(), change(&old_challenge, "not-an-address")).await.unwrap_err(), ApiError::Validation { field: "email", .. }));
+        assert!(matches!(change_email(st(), ctx(), change(&old_challenge, "priya.shha@gmail.com")).await.unwrap_err(), ApiError::Validation { field: "email", .. }));
+        // ...and not somebody else's
+        assert!(matches!(change_email(st(), ctx(), change(&old_challenge, "taken@gmail.com")).await.unwrap_err(), ApiError::EmailTaken));
+        // an unknown challenge is no proof of anything
+        assert!(matches!(change_email(st(), ctx(), change("nope", "priya.shah@gmail.com")).await.unwrap_err(), ApiError::CodeExpired));
+
+        let Json(ch) = change_email(st(), ctx(), change(&old_challenge, " Priya.Shah@gmail.com ")).await.unwrap();
+        assert_eq!(ch["status"], "otp_required");
+        assert_eq!(ch["purpose"], "verify_email");
+        let new_challenge = ch["challenge"].as_str().unwrap().to_string();
+        let new_code = ch["dev_code"].as_str().unwrap().to_string();
+        assert_ne!(new_challenge, old_challenge);
+
+        let email: String = sqlx::query_scalar("SELECT email FROM users WHERE id = $1").bind(uid).fetch_one(&db.st.pool).await.unwrap();
+        assert_eq!(email, "priya.shah@gmail.com");
+        assert_eq!(db.count("SELECT count(*) FROM audit_log WHERE actor_id = $1 AND action = 'user.email_corrected'", uid).await, 1);
+
+        // the code that went to the wrong address is void; the one sent to the right address signs in
+        assert!(matches!(verify_email(st(), ctx(), verify(&old_challenge, &old_code)).await.unwrap_err(), ApiError::CodeExpired));
+        let Json(ok) = verify_email(st(), ctx(), verify(&new_challenge, &new_code)).await.unwrap();
+        assert_eq!(ok["status"], "ok");
+
+        // once verified, the address can no longer be changed this way
+        let (c, _) = identity::send_otp(&db.st, &ctx(), K, 1, uid, "priya.shah@gmail.com", Purpose::VerifyEmail).await.unwrap();
+        assert!(matches!(change_email(st(), ctx(), change(&c, "another@gmail.com")).await.unwrap_err(), ApiError::CodeExpired));
+    }
 }

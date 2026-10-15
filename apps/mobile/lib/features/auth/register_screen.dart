@@ -139,6 +139,74 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
   }
 
+  /// "Wrong address? Change it": the code went to a mistyped address. Asks for the corrected one, then swaps
+  /// the challenge for the fresh code sent there.
+  Future<void> _changeEmail() async {
+    final otp = _otp;
+    if (otp == null) return;
+    final ctl = TextEditingController(text: _email.text);
+    final value = await showKSheet<String>(
+      context,
+      title: context.t('auth.register.newEmail'),
+      builder: (ctx) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(ctx.t('auth.register.changeEmailHint'), style: ctx.text.footnote.copyWith(color: ctx.k.fg3)),
+          const SizedBox(height: 14),
+          KTextField(
+            label: ctx.t('auth.field.email'),
+            placeholder: ctx.t('auth.placeholder.email'),
+            controller: ctl,
+            leading: LucideIcons.mail,
+            keyboardType: TextInputType.emailAddress,
+            autofillHints: const [AutofillHints.email],
+            textInputAction: TextInputAction.done,
+            autofocus: true,
+            ltr: true,
+            onSubmitted: (v) => Navigator.of(ctx).pop(v),
+          ),
+          const SizedBox(height: 18),
+          KButton(
+            label: ctx.t('auth.register.sendToNewEmail'),
+            size: KButtonSize.lg,
+            expand: true,
+            onPressed: () => Navigator.of(ctx).pop(ctl.text),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || value == null || value.trim().isEmpty) return;
+    setState(() {
+      _err = null;
+      _loading = true;
+    });
+    try {
+      final next = await _auth.changeEmail(otp.challenge, value.trim());
+      if (!mounted) return;
+      _email.text = value.trim().toLowerCase();
+      setState(() {
+        _otp = next;
+        _otpKey++;
+        _code = '';
+        _loading = false;
+      });
+      ref
+          .read(notificationsProvider.notifier)
+          .toast(
+            NotificationKind.success,
+            context.t('auth.toast.newCodeSent'),
+            description: context.t('auth.toast.checkEmail', {'email': next.emailMasked}),
+            keep: false,
+          );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _err = e;
+        _loading = false;
+      });
+    }
+  }
+
   Future<int?> _resend() async {
     final otp = _otp;
     if (otp == null) return null;
@@ -287,6 +355,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               children: [
                 Text(t('auth.otp.didntGetIt'), style: context.text.footnote.copyWith(color: k.fg3)),
                 KResendLink(key: ValueKey(otp.challenge), seconds: otp.resendIn, onResend: _resend),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(t('auth.register.wrongEmail'), style: context.text.footnote.copyWith(color: k.fg3)),
+                KTextButton(label: t('auth.register.changeEmail'), onPressed: _loading ? null : _changeEmail),
               ],
             ),
           ],

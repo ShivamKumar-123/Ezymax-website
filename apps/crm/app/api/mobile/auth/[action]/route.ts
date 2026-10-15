@@ -19,6 +19,7 @@ import { bearerOf, deviceOf, platformOf } from "@/lib/mobile";
 //   POST login            {email, password}                 {status: ok, user, session} | {status: otp_required, challenge, …}
 //   POST verify-email     {challenge, code}                 {status: ok, user, session}
 //   POST resend           {challenge}
+//   POST change-email     {challenge, email}                -> a fresh challenge for the corrected address (sign-up only)
 //   POST register         {first_name, last_name, email, password, country, phone_dial?, phone?, referral_code?,
 //                          referral_campaign?, marketing_consent?, …}   -> {status: otp_required, challenge, …}
 //   POST forgot           {email}
@@ -36,6 +37,7 @@ const POST_ACTIONS: Record<string, string> = {
   login: "/v1/auth/login",
   "verify-email": "/v1/auth/verify-email",
   resend: "/v1/auth/resend",
+  "change-email": "/v1/auth/change-email",
   forgot: "/v1/auth/forgot",
   reset: "/v1/auth/reset",
   logout: "/v1/auth/logout",
