@@ -60,7 +60,6 @@ const shell = {
   // groups the sidebar was regrouped into; without these they fall back to English in every locale
   "nav.trading": "Trading",
   "nav.performance": "Performance",
-  "nav.analytics": "Analytics",
   "nav.earn": "Ezymex SIP",
   "nav.help": "Help & Learn",
   "nav.contests": "Contests",

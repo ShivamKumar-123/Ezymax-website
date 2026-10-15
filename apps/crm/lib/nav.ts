@@ -273,7 +273,6 @@ const SUB_KEYS: Record<string, MessageKey> = {
   "/news": "shell.nav.news",
   "/calendar": "shell.nav.calendar",
   "/accounts": "shell.nav.myAccounts",
-  "/portfolio": "shell.nav.portfolio",
   "/options": "options.nav.title",
   "/support": "shell.nav.support",
   "/accounts/new": "shell.nav.openAccount",
