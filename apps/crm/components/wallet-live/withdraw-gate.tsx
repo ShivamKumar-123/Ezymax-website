@@ -21,13 +21,17 @@ type Rail = {
   name: string;
   colour: string;
   mark: (size: number) => React.ReactNode;
+  /** A mark that is already a filled coin needs no light card behind it. */
+  plain?: boolean;
 };
 
 const USDT: Rail = {
   via: "usdt",
   name: "USDT",
   colour: "#26A17B",
+  // Tether's own mark (assets/coins/usdt.svg), and the networks it can be sent on
   mark: (size) => <CoinIcon coin="usdt" size={size} />,
+  plain: true,
 };
 
 const UPI: Rail = {
@@ -36,6 +40,31 @@ const UPI: Rail = {
   colour: "#5F259F",
   mark: (size) => <Smartphone style={{ width: size * 0.66, height: size * 0.66 }} className="text-[#5F259F]" strokeWidth={1.75} />,
 };
+
+/** The two networks a USDT payout can go out on, with each chain's own coin. */
+function Networks() {
+  return (
+    <span className="mt-1.5 flex items-center gap-3">
+      {(
+        [
+          ["trx", "TRC20"],
+          ["bnb", "BEP20"],
+        ] as const
+      ).map(([coin, label]) => (
+        <span key={coin} className="flex items-center gap-1.5 text-[11.5px] text-fg-3">
+          <CoinIcon coin={coin} size={15} />
+          {label}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/** The mark, on a light card only where the mark needs one. */
+function Mark({ rail, size }: { rail: Rail; size: number }) {
+  if (rail.plain) return <span className="relative grid shrink-0 place-items-center">{rail.mark(size)}</span>;
+  return <span className="relative grid shrink-0 place-items-center rounded-[14px] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] ring-1 ring-black/5" style={{ width: size, height: size }}>{rail.mark(size * 0.62)}</span>;
+}
 
 /** Honours the OS "reduce motion" setting: the handoff then passes straight through. */
 function useReducedMotion() {
@@ -66,10 +95,11 @@ function RailTile({ rail, sub, onClick }: { rail: Rail; sub: string; onClick: ()
     >
       {/* the rail's colour washes in from the left on hover */}
       <span className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" style={{ background: `linear-gradient(90deg, ${rail.colour}1f, transparent 60%)` }} />
-      <span className="relative grid size-12 shrink-0 place-items-center rounded-[14px] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] ring-1 ring-black/5">{rail.mark(30)}</span>
+      <Mark rail={rail} size={48} />
       <span className="relative min-w-0 flex-1">
         <span className="block text-[15.5px] font-semibold text-fg">{rail.name}</span>
-        <span className="mt-1 block truncate text-[12.5px] text-fg-3">{sub}</span>
+        <span className="mt-1 block text-[12.5px] leading-snug text-fg-3">{sub}</span>
+        {rail.via === "usdt" && <Networks />}
       </span>
       <ArrowRight className="relative size-4 shrink-0 text-fg-3 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-fg" />
     </motion.button>
@@ -124,12 +154,12 @@ function Handoff({ rail, steps, secure, done }: { rail: Rail; steps: string[]; s
         <span className="absolute inset-[3px] rounded-full bg-surface" />
         <span className="absolute inset-[3px] rounded-full border border-line" />
         <motion.span
-          className="relative grid size-[74px] place-items-center rounded-full bg-white shadow-[0_4px_18px_-6px_rgba(0,0,0,0.35)] ring-1 ring-black/5"
+          className={cn("relative grid size-[74px] place-items-center rounded-full", rail.plain ? "" : "bg-white shadow-[0_4px_18px_-6px_rgba(0,0,0,0.35)] ring-1 ring-black/5")}
           initial={{ scale: 0.86, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: "spring", stiffness: 260, damping: 20 }}
         >
-          {rail.mark(42)}
+          {rail.mark(rail.plain ? 70 : 42)}
         </motion.span>
       </div>
 
@@ -208,7 +238,7 @@ export function WithdrawGate({ open, hasUsdt, hasUpi, currency, onChoose, onClos
         <div className="space-y-4">
           {sel && (
             <div className="flex items-center gap-3 rounded-[14px] border border-line bg-surface-2/60 px-4 py-3">
-              <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-white ring-1 ring-black/5">{sel.mark(26)}</span>
+              <Mark rail={sel} size={40} />
               <span className="text-[15px] font-semibold text-fg">{sel.name}</span>
             </div>
           )}

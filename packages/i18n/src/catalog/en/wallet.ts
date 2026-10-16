@@ -239,7 +239,8 @@ const wallet = {
   // The entry popup: pick a rail, read what it means, agree, then the form opens (mirrors payments.gate.*).
   "withdrawGate.title": "How would you like to be paid?",
   "withdrawGate.subtitle": "Choose where your money should go. You can change this later.",
-  "withdrawGate.usdtSub": "USDT to your own wallet on TRON or BNB Chain",
+  // the networks are shown as their own coin marks under this line, so it does not name them again
+  "withdrawGate.usdtSub": "To a wallet address you control",
   "withdrawGate.upiSub": "{currency} to your own UPI ID",
   "withdrawGate.termsTitle": "Before you continue",
   "withdrawGate.termsFor": "Paying out by {rail}",
