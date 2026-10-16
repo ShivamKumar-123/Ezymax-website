@@ -8,6 +8,19 @@ import { ErrorState, TableSkeleton, useApi, when } from "@/components/live/kit";
 import { useCan } from "@/components/staff-session";
 import { Addr, CHAIN_NAME, CHAIN_SHORT, walletWrite, type AuditItem, type Chain } from "./kit";
 
+/** An off-chain way to pay a client out (wallet `withdraw_methods`). */
+type WithdrawMethod = {
+  method: "upi";
+  enabled: boolean;
+  currency: string;
+  /** Units of `currency` per 1 USDT. Null until someone sets it, and the method cannot be enabled until then. */
+  rate: string | null;
+  fee_flat: string;
+  min_amount: string | null;
+  max_amount: string | null;
+  instructions: string | null;
+};
+
 type ChainSettings = {
   chain: Chain;
   network: string;
@@ -37,6 +50,7 @@ type Settings = {
   limits_updated_at: string | null;
   limits_updated_by: string | null;
   chains: ChainSettings[];
+  withdraw_methods: WithdrawMethod[];
   missing_chains: Chain[];
   addresses: { chain: Chain; address: string; role: string; active: boolean; created_at: string }[];
   history: AuditItem[];
@@ -122,6 +136,78 @@ function ChainForm({ c, canEdit, onSave }: { c: ChainSettings; canEdit: boolean;
   );
 }
 
+const METHOD_NAME: Record<WithdrawMethod["method"], string> = { upi: "UPI" };
+
+function MethodForm({ m, canEdit, onSave }: { m: WithdrawMethod; canEdit: boolean; onSave: (patch: Record<string, unknown>) => Promise<boolean> }) {
+  const [f, setF] = React.useState(m);
+  React.useEffect(() => setF(m), [m]);
+  const dirty = JSON.stringify(f) !== JSON.stringify(m);
+  const set = <K extends keyof WithdrawMethod>(k: K, v: WithdrawMethod[K]) => setF((x) => ({ ...x, [k]: v }));
+  const priced = !!f.rate && Number(f.rate) > 0;
+  return (
+    <Card>
+      <CardHeader
+        title={`${METHOD_NAME[m.method]} · ${f.currency} payouts`}
+        subtitle="Clients give their own UPI ID; staff pay from the company account and record the UTR."
+        action={m.enabled ? undefined : <Chip size="sm" tone="warn">Off</Chip>}
+      />
+      <div className="space-y-4 px-6 pb-6 pt-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <Field label="Currency" hint="Three-letter code.">
+            <Input value={f.currency} disabled={!canEdit} onChange={(e) => set("currency", e.target.value.toUpperCase())} aria-label="Payout currency" />
+          </Field>
+          <Field label={`Rate (${f.currency} per USDT)`} hint="The client is quoted at this rate and it is frozen on their request.">
+            <Input value={f.rate ?? ""} disabled={!canEdit} onChange={(e) => set("rate", e.target.value)} placeholder="e.g. 88.50" aria-label="Payout rate" />
+          </Field>
+          <Field label="Fee (USDT)" hint="On top of the wallet's flat and percentage fee.">
+            <Input value={f.fee_flat} disabled={!canEdit} onChange={(e) => set("fee_flat", e.target.value)} aria-label="Method fee" />
+          </Field>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Field label="Minimum (USDT, optional)">
+            <Input value={f.min_amount ?? ""} disabled={!canEdit} onChange={(e) => set("min_amount", e.target.value)} placeholder="No extra minimum" aria-label="Method minimum" />
+          </Field>
+          <Field label="Maximum (USDT, optional)">
+            <Input value={f.max_amount ?? ""} disabled={!canEdit} onChange={(e) => set("max_amount", e.target.value)} placeholder="No extra maximum" aria-label="Method maximum" />
+          </Field>
+        </div>
+        <Field label="Note to the client (optional)" hint="Replaces the default note under the withdrawal form.">
+          <Input value={f.instructions ?? ""} disabled={!canEdit} onChange={(e) => set("instructions", e.target.value)} placeholder="Use a UPI ID in your own name." aria-label="Client note" />
+        </Field>
+        <label className="flex items-center gap-2 text-[13px]">
+          <Toggle checked={f.enabled} onChange={(v) => canEdit && priced && set("enabled", v)} /> Offered to clients
+        </label>
+        {!priced && (
+          <div className="flex gap-2 rounded-[14px] border border-warn/35 bg-warn-soft px-3.5 py-2.5 text-[12.5px]">
+            <ShieldAlert className="mt-0.5 size-4 shrink-0 text-warn" />
+            Set the {f.currency} rate before offering this method. Without it the wallet cannot tell a client what they will receive, so it stays hidden.
+          </div>
+        )}
+        {canEdit && (
+          <Button
+            variant="ember"
+            disabled={!dirty}
+            onClick={() =>
+              onSave({
+                method: m.method,
+                enabled: f.enabled,
+                currency: f.currency.trim(),
+                rate: (f.rate ?? "").trim(),
+                fee_flat: f.fee_flat,
+                min_amount: (f.min_amount ?? "").trim(),
+                max_amount: (f.max_amount ?? "").trim(),
+                instructions: f.instructions ?? "",
+              })
+            }
+          >
+            <Save /> Save {METHOD_NAME[m.method]}
+          </Button>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 export function LiveWalletSettingsPage() {
   const { data, error, reload } = useApi<Settings>("/api/wallet/settings");
   const canEdit = useCan("finance.settings");
@@ -165,6 +251,9 @@ export function LiveWalletSettingsPage() {
           )}
           {!canEdit && <div className="rounded-[14px] border border-line bg-surface-2 px-4 py-3 text-[12.5px] text-fg-3">Read-only: only admins change wallet settings.</div>}
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            {(data.withdraw_methods ?? []).map((m) => (
+              <MethodForm key={m.method} m={m} canEdit={canEdit} onSave={(method) => save({ withdraw_methods: [method] })} />
+            ))}
             {data.chains.map((c) => (
               <ChainForm key={c.chain} c={c} canEdit={canEdit} onSave={(chain) => save({ chains: [chain] })} />
             ))}

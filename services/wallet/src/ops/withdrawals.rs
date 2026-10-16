@@ -1,6 +1,15 @@
 //! Withdrawals (D11, D36): request (locks funds; KYC gate, limits, fees, post-deposit cooldown) → approve /
-//! reject (staff) → paid (staff enter the payout hash; the watcher verifies it on chain) → completed.
-//! The client can cancel while `requested`.
+//! reject (staff) → paid → completed. The client can cancel while `requested`.
+//!
+//! Two ways out, picked by `method` and priced the same way (tenant flat + percentage fee, plus whatever the
+//! destination itself costs):
+//!
+//! * `crypto` — USDT to the client's own wallet. Staff enter the payout hash and the watcher verifies on chain
+//!   that a company address really sent the net amount, so `paid` is a claim the chain has to confirm.
+//! * `upi` — INR to the client's own UPI ID, for clients who funded in rupees and have no wallet. There is no
+//!   chain to ask, so staff pay out of band and record the bank reference: `paid` completes it then and there.
+//!   The INR figure is frozen when the client asks (`payout_amount`), so a later rate change cannot move what
+//!   they were promised.
 
 use chrono::{DateTime, Duration, FixedOffset, TimeZone, Utc};
 use serde_json::{Value, json};
@@ -12,21 +21,23 @@ use crate::audit::{self, Entry};
 use crate::chain::{ChainId, TxStatus, confirmations};
 use crate::error::{ApiError, ApiResult};
 use crate::ledger::{self, Leg, NewTxn, PostError};
-use crate::money::{D, ENGINE_DP, ceil_dp, check_amount, s, s_opt};
-use crate::settings::{self, ChainCfg, Limits};
+use crate::money::{D, ENGINE_DP, ceil_dp, check_amount, floor_dp, s, s_opt};
+use crate::settings::{self, Limits};
 use crate::state::{AppState, Ctx, StaffCtx};
 
 /// A payout hash that is still not on chain after this long is rejected (the withdrawal returns to approved).
 const PAYOUT_NOT_FOUND_HOURS: i64 = 6;
 
 pub fn withdrawal_json(r: &PgRow) -> Value {
-    let chain = ChainId::parse(r.get::<String, _>("chain").as_str()).unwrap_or(ChainId::Tron);
+    // `chain` is NULL for every off-chain method, so there is nothing to fall back to and nothing to show.
+    let chain = r.get::<Option<String>, _>("chain").and_then(|c| ChainId::parse(&c));
     let hash: Option<String> = r.get("payout_tx_hash");
     json!({
         "id": r.get::<i64, _>("id"),
         "user_id": r.get::<i64, _>("user_id"),
-        "chain": chain.as_str(),
-        "network": chain.network(),
+        "method": r.get::<String, _>("method"),
+        "chain": chain.map(|c| c.as_str()),
+        "network": chain.map(|c| c.network()),
         "currency": r.get::<String, _>("currency"),
         "to_address": r.get::<String, _>("to_address"),
         "amount": s(r.get::<D, _>("amount")),
@@ -39,7 +50,11 @@ pub fn withdrawal_json(r: &PgRow) -> Value {
         "reviewed_by": r.get::<Option<String>, _>("reviewed_by"),
         "reviewed_at": r.get::<Option<DateTime<Utc>>, _>("reviewed_at"),
         "payout_tx_hash": hash,
-        "explorer_url": hash.as_deref().map(|h| chain.explorer_tx(h)),
+        "explorer_url": hash.as_deref().zip(chain).map(|(h, c)| c.explorer_tx(h)),
+        "payout_reference": r.get::<Option<String>, _>("payout_reference"),
+        "payout_currency": r.get::<Option<String>, _>("payout_currency"),
+        "payout_amount": s_opt(r.get::<Option<D>, _>("payout_amount")),
+        "payout_rate": s_opt(r.get::<Option<D>, _>("payout_rate")),
         "payout_error": r.get::<Option<String>, _>("payout_error"),
         "payout_confirmations": r.get::<i32, _>("payout_confirmations"),
         "paid_by": r.get::<Option<String>, _>("paid_by"),
@@ -62,9 +77,29 @@ pub fn client_json(r: &PgRow) -> Value {
     v
 }
 
-/// Withdrawal fee: flat + percentage (rounded up to cents) + the chain's network fee.
-pub fn fee_for(limits: &Limits, chain: &ChainCfg, amount: D) -> D {
-    limits.withdraw_fee_flat + ceil_dp(amount * limits.withdraw_fee_pct / D::ONE_HUNDRED, ENGINE_DP) + chain.withdraw_fee
+/// Withdrawal fee: flat + percentage (rounded up to cents) + whatever the destination costs — a chain's network
+/// fee, or an off-chain method's own flat fee.
+pub fn fee_for(limits: &Limits, dest_fee: D, amount: D) -> D {
+    limits.withdraw_fee_flat + ceil_dp(amount * limits.withdraw_fee_pct / D::ONE_HUNDRED, ENGINE_DP) + dest_fee
+}
+
+/// A UPI ID (`name@bank`), lower-cased, or `None` when it cannot be one. NPCI allows letters, digits, dot,
+/// hyphen and underscore before the `@` and an alphanumeric handle after it; this refuses the rest rather than
+/// letting staff chase a payment that was never going to arrive.
+pub fn normalize_upi_id(raw: &str) -> Option<String> {
+    let v = raw.trim().to_ascii_lowercase();
+    if !(3..=255).contains(&v.len()) {
+        return None;
+    }
+    let (local, psp) = v.split_once('@')?;
+    if psp.contains('@') {
+        return None;
+    }
+    let ok_local = (1..=191).contains(&local.len())
+        && local.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_'))
+        && local.starts_with(|c: char| c.is_ascii_alphanumeric());
+    let ok_psp = (2..=64).contains(&psp.len()) && psp.chars().all(|c| c.is_ascii_alphanumeric()) && psp.starts_with(|c: char| c.is_ascii_alphabetic());
+    (ok_local && ok_psp).then_some(v)
 }
 
 /// Start of the current server day (GMT+3) in UTC.
@@ -97,7 +132,11 @@ pub async fn cooldown_until(pool: &sqlx::PgPool, tenant_id: i64, user_id: i64, h
 pub struct RequestIn {
     pub user_id: i64,
     pub amount: D,
+    /// `crypto` (the default, for older callers) or `upi`.
+    pub method: String,
+    /// Crypto only.
     pub chain: String,
+    /// The client's wallet address, or their UPI ID.
     pub to_address: String,
     pub idempotency_key: Option<String>,
 }
@@ -117,27 +156,51 @@ async fn check_or_request(st: &AppState, ctx: &Ctx, r: RequestIn, dry_run: bool)
     if r.user_id <= 0 {
         return Err(ApiError::validation("user_id", "user_id is required"));
     }
-    let chain = ChainId::parse(&r.chain).ok_or_else(|| ApiError::validation("chain", "chain must be bsc or tron"))?;
-    let to = chain.normalize_address(&r.to_address).ok_or_else(|| {
-        ApiError::validation("to_address", match chain {
-            ChainId::Bsc => "Enter a BNB Chain address (0x followed by 40 hexadecimal characters)",
-            ChainId::Tron => "Enter a valid TRON address (starts with T, 34 characters)",
-        })
-    })?;
+    let method = match r.method.trim().to_ascii_lowercase().as_str() {
+        "" | "crypto" => "crypto",
+        "upi" => "upi",
+        _ => return Err(ApiError::validation("method", "method must be crypto or upi")),
+    };
     let amount = check_amount(r.amount, ENGINE_DP).map_err(|m| ApiError::validation("amount", m))?;
     let key = r.idempotency_key.as_deref().map(str::trim).filter(|k| !k.is_empty()).map(str::to_string);
-    if let Some(k) = key.as_ref().filter(|_| !dry_run) {
-        if k.len() > 128 {
-            return Err(ApiError::validation("idempotency_key", "idempotency_key must be at most 128 characters"));
-        }
-        if let Some(w) = sqlx::query("SELECT * FROM withdrawals WHERE tenant_id = $1 AND idempotency_key = $2").bind(tenant_id).bind(k).fetch_optional(&st.pool).await? {
-            let same = w.get::<i64, _>("user_id") == r.user_id && w.get::<D, _>("amount") == amount && w.get::<String, _>("to_address") == to && w.get::<String, _>("chain") == chain.as_str();
-            return if same { Ok(client_json(&w)) } else { Err(ApiError::conflict("idempotency_conflict", "This idempotency key was used for a different withdrawal")) };
-        }
+    if key.as_ref().is_some_and(|k| k.len() > 128) {
+        return Err(ApiError::validation("idempotency_key", "idempotency_key must be at most 128 characters"));
     }
-    let cfg = settings::chain(&st.pool, tenant_id, chain).await?.filter(|c| c.withdrawals_enabled).ok_or_else(|| ApiError::unprocessable("chain_disabled", format!("Withdrawals on {} are not available", chain.network())))?;
-    if settings::company_addresses(&st.pool, tenant_id, chain).await?.contains(&to) {
-        return Err(ApiError::validation("to_address", "This is a Ezymex deposit address. Enter your own wallet address."));
+    // Where it goes, what the destination adds to the fee, and - off chain only - the method that prices it.
+    let (chain, to, dest_fee, off_chain) = match method {
+        "upi" => {
+            let to = normalize_upi_id(&r.to_address).ok_or_else(|| ApiError::validation("to_address", "Enter your UPI ID, for example name@bank"))?;
+            let m = settings::withdraw_method(&st.pool, tenant_id, "upi")
+                .await?
+                .filter(|m| m.usable())
+                .ok_or_else(|| ApiError::unprocessable("method_disabled", "UPI withdrawals are not available right now"))?;
+            (None, to, m.fee_flat, Some(m))
+        }
+        _ => {
+            let chain = ChainId::parse(&r.chain).ok_or_else(|| ApiError::validation("chain", "chain must be bsc or tron"))?;
+            let to = chain.normalize_address(&r.to_address).ok_or_else(|| {
+                ApiError::validation("to_address", match chain {
+                    ChainId::Bsc => "Enter a BNB Chain address (0x followed by 40 hexadecimal characters)",
+                    ChainId::Tron => "Enter a valid TRON address (starts with T, 34 characters)",
+                })
+            })?;
+            let cfg = settings::chain(&st.pool, tenant_id, chain).await?.filter(|c| c.withdrawals_enabled).ok_or_else(|| ApiError::unprocessable("chain_disabled", format!("Withdrawals on {} are not available", chain.network())))?;
+            if settings::company_addresses(&st.pool, tenant_id, chain).await?.contains(&to) {
+                return Err(ApiError::validation("to_address", "This is a Ezymex deposit address. Enter your own wallet address."));
+            }
+            (Some(chain), to, cfg.withdraw_fee, None)
+        }
+    };
+    // The replay check compares the normalised destination, so it has to wait until we have one.
+    if let Some(k) = key.as_ref().filter(|_| !dry_run)
+        && let Some(w) = sqlx::query("SELECT * FROM withdrawals WHERE tenant_id = $1 AND idempotency_key = $2").bind(tenant_id).bind(k).fetch_optional(&st.pool).await?
+    {
+        let same = w.get::<i64, _>("user_id") == r.user_id
+            && w.get::<D, _>("amount") == amount
+            && w.get::<String, _>("method") == method
+            && w.get::<String, _>("to_address") == to
+            && w.get::<Option<String>, _>("chain").as_deref() == chain.map(|c| c.as_str());
+        return if same { Ok(client_json(&w)) } else { Err(ApiError::conflict("idempotency_conflict", "This idempotency key was used for a different withdrawal")) };
     }
     let limits = settings::limits(&st.pool, tenant_id).await?;
     if amount < limits.withdraw_min {
@@ -146,8 +209,22 @@ async fn check_or_request(st: &AppState, ctx: &Ctx, r: RequestIn, dry_run: bool)
     if amount > limits.withdraw_max {
         return Err(ApiError::unprocessable("above_maximum", format!("The maximum per withdrawal is {} USDT", s(limits.withdraw_max))));
     }
-    let fee = fee_for(&limits, &cfg, amount);
+    if let Some(m) = &off_chain {
+        if let Some(min) = m.min_amount.filter(|v| amount < *v) {
+            return Err(ApiError::unprocessable("below_minimum", format!("The minimum {} withdrawal is {} USDT", m.method.to_uppercase(), s(min))));
+        }
+        if let Some(max) = m.max_amount.filter(|v| amount > *v) {
+            return Err(ApiError::unprocessable("above_maximum", format!("The maximum {} withdrawal is {} USDT", m.method.to_uppercase(), s(max))));
+        }
+    }
+    let fee = fee_for(&limits, dest_fee, amount);
     let net = amount - fee;
+    // What the client is actually paid off chain, at today's rate. Floored to the currency's smallest unit, so
+    // rounding never promises more than the broker will send.
+    let quote = off_chain.as_ref().map(|m| {
+        let rate = m.rate.unwrap_or(D::ONE);
+        (m.currency.clone(), floor_dp(net * rate, 2), rate)
+    });
     if net <= D::ZERO {
         return Err(ApiError::unprocessable("below_minimum", format!("The amount must be above the {} USDT fee", s(fee))));
     }
@@ -185,7 +262,12 @@ async fn check_or_request(st: &AppState, ctx: &Ctx, r: RequestIn, dry_run: bool)
             return Err(ApiError::insufficient());
         }
         return Ok(json!({
-            "chain": chain.as_str(), "network": chain.network(), "to_address": to, "amount": s(amount), "fee": s(fee), "net_amount": s(net),
+            "method": method,
+            "chain": chain.map(|c| c.as_str()), "network": chain.map(|c| c.network()),
+            "to_address": to, "amount": s(amount), "fee": s(fee), "net_amount": s(net),
+            "payout_currency": quote.as_ref().map(|q| q.0.clone()),
+            "payout_amount": quote.as_ref().map(|q| s(q.1)),
+            "payout_rate": quote.as_ref().map(|q| s(q.2)),
             "used_today": s(used), "daily_max": s(limits.withdraw_daily_max), "available": s(available),
         }));
     }
@@ -203,13 +285,16 @@ async fn check_or_request(st: &AppState, ctx: &Ctx, r: RequestIn, dry_run: bool)
         return Err(ApiError::unprocessable("daily_limit", format!("This exceeds your daily withdrawal limit ({} of {} USDT used today)", s(used), s(limits.withdraw_daily_max))));
     }
     let w = sqlx::query(
-        "INSERT INTO withdrawals (tenant_id, user_id, idempotency_key, chain, to_address, amount, fee, net_amount, status, kyc_status, ip, user_agent)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'requested', $9, $10, $11) ON CONFLICT (tenant_id, idempotency_key) DO NOTHING RETURNING *",
+        "INSERT INTO withdrawals (tenant_id, user_id, idempotency_key, method, chain, to_address, amount, fee, net_amount, status, kyc_status, ip, user_agent,
+                                  payout_currency, payout_amount, payout_rate)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'requested', $10, $11, $12, $13, $14, $15)
+         ON CONFLICT (tenant_id, idempotency_key) DO NOTHING RETURNING *",
     )
     .bind(tenant_id)
     .bind(r.user_id)
     .bind(&key)
-    .bind(chain.as_str())
+    .bind(method)
+    .bind(chain.map(|c| c.as_str()))
     .bind(&to)
     .bind(amount)
     .bind(fee)
@@ -217,6 +302,9 @@ async fn check_or_request(st: &AppState, ctx: &Ctx, r: RequestIn, dry_run: bool)
     .bind(&user.kyc_status)
     .bind(&ctx.ip)
     .bind(&ctx.user_agent)
+    .bind(quote.as_ref().map(|q| q.0.clone()))
+    .bind(quote.as_ref().map(|q| q.1))
+    .bind(quote.as_ref().map(|q| q.2))
     .fetch_optional(&mut *tx)
     .await?
     .ok_or_else(|| ApiError::conflict("in_progress", "This withdrawal is already being processed"))?;
@@ -246,7 +334,7 @@ async fn check_or_request(st: &AppState, ctx: &Ctx, r: RequestIn, dry_run: bool)
     notify(&mut tx, tenant_id, r.user_id, "withdrawal.requested", "Withdrawal requested", &format!("Your withdrawal of {} USDT is waiting for review.", s(amount)), json!({"withdrawal_id": id})).await?;
     tx.commit().await?;
     record_ip(&st.pool, tenant_id, r.user_id, ctx.ip.as_deref()).await;
-    tracing::info!(withdrawal = id, tenant_id, user_id = r.user_id, amount = %amount, chain = %chain, "withdrawal requested");
+    tracing::info!(withdrawal = id, tenant_id, user_id = r.user_id, amount = %amount, method, chain = ?chain.map(|c| c.as_str()), "withdrawal requested");
     Ok(client_json(&w))
 }
 
@@ -328,16 +416,20 @@ pub async fn reject(st: &AppState, s_ctx: &StaffCtx, id: i64, reason: &str) -> A
     Ok(withdrawal_json(&r))
 }
 
-/// Staff sent the payout from the company wallet and enter its hash; the watcher verifies it on chain.
-pub async fn mark_paid(st: &AppState, s_ctx: &StaffCtx, id: i64, tx_hash: &str) -> ApiResult<Value> {
+/// Staff sent the payout and record what identifies it: a chain hash, which the watcher then verifies, or - for
+/// an off-chain method - the bank reference, which nobody can verify for us, so the withdrawal completes here.
+pub async fn mark_paid(st: &AppState, s_ctx: &StaffCtx, id: i64, reference: &str) -> ApiResult<Value> {
     let mut tx = st.pool.begin().await?;
     let w = sqlx::query("SELECT * FROM withdrawals WHERE id = $1 AND tenant_id = $2 FOR UPDATE").bind(id).bind(s_ctx.ctx.tenant.id).fetch_optional(&mut *tx).await?.ok_or_else(|| ApiError::not_found("Withdrawal"))?;
     let status: String = w.get("status");
     if status != "approved" {
         return Err(ApiError::conflict("invalid_state", format!("A {status} withdrawal can't be marked as paid; approve it first")));
     }
-    let chain = ChainId::parse(w.get::<String, _>("chain").as_str()).unwrap_or(ChainId::Tron);
-    let hash = chain.normalize_hash(tx_hash).ok_or_else(|| ApiError::validation("tx_hash", "Enter the payout transaction hash (64 hexadecimal characters)"))?;
+    if w.get::<String, _>("method") != "crypto" {
+        return off_chain_paid(st, s_ctx, tx, w, reference).await;
+    }
+    let chain = w.get::<Option<String>, _>("chain").and_then(|c| ChainId::parse(&c)).ok_or_else(|| ApiError::conflict("invalid_state", "This withdrawal has no chain"))?;
+    let hash = chain.normalize_hash(reference).ok_or_else(|| ApiError::validation("tx_hash", "Enter the payout transaction hash (64 hexadecimal characters)"))?;
     let used: Option<i64> = sqlx::query_scalar("SELECT id FROM withdrawals WHERE chain = $1 AND payout_tx_hash = $2 AND id <> $3").bind(chain.as_str()).bind(&hash).bind(id).fetch_optional(&mut *tx).await?;
     let is_deposit: Option<i64> = sqlx::query_scalar("SELECT id FROM deposits WHERE chain = $1 AND tx_hash = $2").bind(chain.as_str()).bind(&hash).fetch_optional(&mut *tx).await?;
     if used.is_some() || is_deposit.is_some() {
@@ -357,6 +449,39 @@ pub async fn mark_paid(st: &AppState, s_ctx: &StaffCtx, id: i64, tx_hash: &str) 
     let r2 = sqlx::query("SELECT * FROM withdrawals WHERE id = $1").bind(id).fetch_one(&st.pool).await?;
     let _ = r;
     Ok(withdrawal_json(&r2))
+}
+
+/// An off-chain payout (UPI): staff already sent the money, so all we can record is their reference. There is
+/// nothing to verify against, which is exactly why the reference is required, has to be unique, and lands in the
+/// audit log next to the name of whoever entered it.
+async fn off_chain_paid(st: &AppState, s_ctx: &StaffCtx, mut tx: Transaction<'_, Postgres>, w: PgRow, reference: &str) -> ApiResult<Value> {
+    let id: i64 = w.get("id");
+    let method: String = w.get("method");
+    let reference = reference.trim();
+    if !(4..=64).contains(&reference.chars().count()) || !reference.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '/')) {
+        return Err(ApiError::validation("reference", "Enter the payment reference (UTR), 4 to 64 letters or digits"));
+    }
+    let used: Option<i64> = sqlx::query_scalar("SELECT id FROM withdrawals WHERE tenant_id = $1 AND payout_reference = $2 AND id <> $3")
+        .bind(s_ctx.ctx.tenant.id)
+        .bind(reference)
+        .bind(id)
+        .fetch_optional(&mut *tx)
+        .await?;
+    if used.is_some() {
+        return Err(ApiError::conflict("reference_used", "This payment reference is already recorded for another withdrawal"));
+    }
+    sqlx::query("UPDATE withdrawals SET status = 'paid', payout_reference = $2, payout_error = NULL, paid_by = $3, paid_at = now(), updated_at = now() WHERE id = $1")
+        .bind(id)
+        .bind(reference)
+        .bind(format!("{} ({})", s_ctx.staff.name, s_ctx.staff.tag()))
+        .execute(&mut *tx)
+        .await?;
+    audit::staff(&mut tx, s_ctx, Entry { action: "wallet.withdrawal.paid", target_kind: "withdrawal", target_id: id.to_string(), reason: None, before: Some(json!({"status": "approved"})), after: Some(json!({"status": "paid", "method": method, "payout_reference": reference})) }).await?;
+    tx.commit().await?;
+    // No chain to wait for: the money has left the broker's bank, so the ledger follows immediately.
+    complete(st, id).await.map_err(ApiError::Internal)?;
+    let r = sqlx::query("SELECT * FROM withdrawals WHERE id = $1").bind(id).fetch_one(&st.pool).await?;
+    Ok(withdrawal_json(&r))
 }
 
 async fn payout_failed(st: &AppState, id: i64, reason: &str) -> anyhow::Result<()> {
@@ -415,7 +540,9 @@ async fn complete(st: &AppState, id: i64) -> anyhow::Result<()> {
     let Some(w) = sqlx::query("SELECT * FROM withdrawals WHERE id = $1 AND status = 'paid' FOR UPDATE").bind(id).fetch_optional(&mut *tx).await? else { return Ok(()) };
     let (tenant_id, user_id): (i64, i64) = (w.get("tenant_id"), w.get("user_id"));
     let (amount, fee, net): (D, D, D) = (w.get("amount"), w.get("fee"), w.get("net_amount"));
-    let chain: String = w.get("chain");
+    let method: String = w.get("method");
+    // the house account the money leaves by: one per chain, one per off-chain method
+    let rail: String = w.get::<Option<String>, _>("chain").unwrap_or_else(|| method.clone());
     let ccy: String = w.get("currency");
     let t = match ledger::post(
         &mut tx,
@@ -425,11 +552,11 @@ async fn complete(st: &AppState, id: i64) -> anyhow::Result<()> {
             kind: "withdrawal".into(),
             user_id: Some(user_id),
             currency: ccy.clone(),
-            reference: w.get("payout_tx_hash"),
+            reference: w.get::<Option<String>, _>("payout_tx_hash").or_else(|| w.get("payout_reference")),
             note: Some(format!("Withdrawal to {}", w.get::<String, _>("to_address"))),
             actor: "system".into(),
             request: None,
-            legs: vec![Leg::locked(user_id, &ccy, -amount), Leg::sys(&ccy, &format!("withdrawal:{chain}"), net), Leg::sys(&ccy, "fees", fee)],
+            legs: vec![Leg::locked(user_id, &ccy, -amount), Leg::sys(&ccy, &format!("withdrawal:{rail}"), net), Leg::sys(&ccy, "fees", fee)],
         },
     )
     .await
@@ -440,7 +567,12 @@ async fn complete(st: &AppState, id: i64) -> anyhow::Result<()> {
         Err(PostError::Db(e)) => return Err(e),
     };
     sqlx::query("UPDATE withdrawals SET status = 'completed', final_txn_id = $2, completed_at = now(), updated_at = now() WHERE id = $1").bind(id).bind(t).execute(&mut *tx).await?;
-    notify(&mut tx, tenant_id, user_id, "withdrawal.completed", "Withdrawal sent", &format!("{} USDT was sent to your wallet.", s(net)), json!({"withdrawal_id": id, "tx_hash": w.get::<Option<String>, _>("payout_tx_hash")})).await?;
+    // say what actually left: rupees to a UPI ID, or USDT to a wallet
+    let sent = match (w.get::<Option<D>, _>("payout_amount"), w.get::<Option<String>, _>("payout_currency")) {
+        (Some(a), Some(c)) => format!("{} {c} was sent to {}.", s(a), w.get::<String, _>("to_address")),
+        _ => format!("{} USDT was sent to your wallet.", s(net)),
+    };
+    notify(&mut tx, tenant_id, user_id, "withdrawal.completed", "Withdrawal sent", &sent, json!({"withdrawal_id": id, "tx_hash": w.get::<Option<String>, _>("payout_tx_hash"), "reference": w.get::<Option<String>, _>("payout_reference")})).await?;
     tx.commit().await?;
     tracing::info!(withdrawal = id, tenant_id, user_id, net = %net, "withdrawal completed");
     Ok(())
@@ -545,20 +677,35 @@ mod tests {
             deposit_cooldown_hours: 24,
             intent_ttl_minutes: 60,
         };
-        let c = ChainCfg {
-            chain: ChainId::Tron,
-            receiving_address: String::new(),
-            payout_address: None,
-            confirmations: 20,
-            deposits_enabled: true,
-            withdrawals_enabled: true,
-            min_deposit: D::from(10),
-            withdraw_fee: D::from_str("0.5").unwrap(),
-        };
-        // 1 flat + 0.5% of 101 = 0.505 → 0.51 (rounded up) + 0.5 network
-        assert_eq!(fee_for(&l, &c, D::from(101)), D::from_str("2.01").unwrap());
+        // 1 flat + 0.5% of 101 = 0.505 → 0.51 (rounded up) + what the destination costs (0.5 network fee here)
+        assert_eq!(fee_for(&l, D::from_str("0.5").unwrap(), D::from(101)), D::from_str("2.01").unwrap());
+        // an off-chain method with no fee of its own is priced by the tenant's fee alone
+        assert_eq!(fee_for(&l, D::ZERO, D::from(101)), D::from_str("1.51").unwrap());
         let now = DateTime::parse_from_rfc3339("2026-09-28T22:30:00Z").unwrap().with_timezone(&Utc);
         // 22:30 UTC is 01:30 GMT+3 on the 29th → day starts 2026-09-28T21:00Z
         assert_eq!(server_day_start(now).to_rfc3339(), "2026-09-28T21:00:00+00:00");
+    }
+
+    #[test]
+    fn upi_ids_are_checked_before_staff_chase_a_payment() {
+        for good in ["9876543210@ybl", "Priya.Shah@okaxis", "a_b-c@PAYTM", "x1@ok"] {
+            assert_eq!(normalize_upi_id(good), Some(good.to_ascii_lowercase()), "{good}");
+        }
+        assert_eq!(normalize_upi_id("  9876543210@ybl  "), Some("9876543210@ybl".into()));
+        for bad in [
+            "9876543210",        // no handle
+            "@ybl",              // no name
+            "name@",             // no bank
+            "a@b",               // handle too short
+            "name@@ybl",         // two handles
+            "name@ok axis",      // space
+            "name@ok.axis",      // dot in the handle
+            ".name@ybl",         // starts with a dot
+            "name@1bl",          // handle starts with a digit
+            "na me@ybl",
+            "नाम@ybl",
+        ] {
+            assert_eq!(normalize_upi_id(bad), None, "{bad} should be refused");
+        }
     }
 }

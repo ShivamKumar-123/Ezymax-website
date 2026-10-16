@@ -26,8 +26,11 @@ fn uid(v: i64) -> ApiResult<i64> {
 pub async fn config(State(st): State<AppState>, ctx: Ctx) -> ApiResult<Json<Value>> {
     let chains = settings::chains(&st.pool, ctx.tenant.id).await?;
     let limits = settings::limits(&st.pool, ctx.tenant.id).await?;
+    // only methods that are switched on and have a rate: anything else cannot quote a payout
+    let methods = settings::withdraw_methods(&st.pool, ctx.tenant.id).await?;
     Ok(ok(json!({
         "chains": chains.iter().filter(|c| st.chains.contains_key(&c.chain)).map(|c| c.public_json()).collect::<Vec<_>>(),
+        "withdraw_methods": methods.iter().filter(|m| m.usable()).map(|m| m.json()).collect::<Vec<_>>(),
         "limits": limits.json(),
         "currencies": transfers::CURRENCIES,
     })))
@@ -366,6 +369,9 @@ pub struct WithdrawBody {
     user_id: i64,
     #[serde(deserialize_with = "de_dec")]
     amount: D,
+    /// `crypto` (the default) or `upi`.
+    #[serde(default)]
+    method: String,
     #[serde(default)]
     chain: String,
     #[serde(default)]
@@ -375,12 +381,12 @@ pub struct WithdrawBody {
 }
 
 pub async fn request_withdrawal(State(st): State<AppState>, ctx: Ctx, Body(b): Body<WithdrawBody>) -> ApiResult<Json<Value>> {
-    let w = withdrawals::request(&st, &ctx, withdrawals::RequestIn { user_id: b.user_id, amount: b.amount, chain: b.chain, to_address: b.to_address, idempotency_key: b.idempotency_key }).await?;
+    let w = withdrawals::request(&st, &ctx, withdrawals::RequestIn { user_id: b.user_id, amount: b.amount, method: b.method, chain: b.chain, to_address: b.to_address, idempotency_key: b.idempotency_key }).await?;
     Ok(ok(json!({"withdrawal": w})))
 }
 
 pub async fn quote_withdrawal(State(st): State<AppState>, ctx: Ctx, Body(b): Body<WithdrawBody>) -> ApiResult<Json<Value>> {
-    let q = withdrawals::quote(&st, &ctx, withdrawals::RequestIn { user_id: b.user_id, amount: b.amount, chain: b.chain, to_address: b.to_address, idempotency_key: None }).await?;
+    let q = withdrawals::quote(&st, &ctx, withdrawals::RequestIn { user_id: b.user_id, amount: b.amount, method: b.method, chain: b.chain, to_address: b.to_address, idempotency_key: None }).await?;
     Ok(ok(json!({"quote": q})))
 }
 

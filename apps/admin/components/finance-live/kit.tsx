@@ -42,8 +42,11 @@ export type Deposit = {
 export type Withdrawal = {
   id: number;
   user_id: number;
-  chain: Chain;
-  network: string;
+  /** "crypto" pays a wallet address and is verified on chain; "upi" pays a UPI ID and is settled by staff. */
+  method: "crypto" | "upi";
+  /** Null for every off-chain method. */
+  chain: Chain | null;
+  network: string | null;
   to_address: string;
   amount: string;
   fee: string;
@@ -58,6 +61,11 @@ export type Withdrawal = {
   explorer_url: string | null;
   payout_error: string | null;
   payout_confirmations: number;
+  /** Off-chain payouts: the bank reference staff recorded, and the local amount promised at request time. */
+  payout_reference: string | null;
+  payout_currency: string | null;
+  payout_amount: string | null;
+  payout_rate: string | null;
   paid_by: string | null;
   paid_at: string | null;
   completed_at: string | null;
@@ -134,7 +142,9 @@ export function usd(v: string | number | null | undefined, dp = 2, maxDp?: numbe
 /** Headline figures (KPI cards): always two decimals, "56,082.48" rather than "56,082.476344". */
 export const usd2 = (v: string | number | null | undefined) => usd(v, 2, 2);
 
-export function ChainTag({ chain }: { chain: Chain }) {
+/** `null` for a withdrawal that never touched a chain (an off-chain payout); the caller names the method. */
+export function ChainTag({ chain }: { chain: Chain | null }) {
+  if (!chain) return <span className="text-[12px] text-fg-3">&mdash;</span>;
   return (
     <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[12px]">
       {/* eslint-disable-next-line @next/next/no-img-element */}

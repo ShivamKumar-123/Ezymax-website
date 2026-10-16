@@ -224,6 +224,16 @@ const wallet = {
   "withdraw.confirmTitle": "Confirm your withdrawal",
   // "250.00 USDT to 0x1234…abcd on BNB Smart Chain"
   "withdraw.confirmDescription": "{amount} USDT to {address} on {network}",
+  // Paying out to a UPI ID: the client gives their own, and is quoted in rupees at the broker's rate.
+  "withdraw.methodUpi": "UPI",
+  "withdraw.methodUpiSub": "To your UPI ID, in {currency}",
+  "withdraw.upiDestination": "Your UPI ID",
+  "withdraw.upiError": "Enter a UPI ID like name@bank",
+  "withdraw.upiNote": "We email you a code to confirm. Use a UPI ID in your own name — payments to someone else's ID are rejected at review.",
+  "withdraw.rateNote": "{net} USDT at {rate} {currency} per USDT, fixed now and not affected by later rate changes.",
+  "withdraw.confirmUpi": "{payout} to {upi}",
+  "withdraw.toastRequestedLocal": "{amount} USDT · you receive {payout} after review.",
+  "withdraw.noneAvailable": "Withdrawals are closed right now. Please contact support.",
   // Completes the sentence "To {what}, enter the 6-digit code we sent to …"
   "withdraw.stepUpWhat": "withdraw from your wallet",
   "withdraw.limitsTitle": "Limits and fees",

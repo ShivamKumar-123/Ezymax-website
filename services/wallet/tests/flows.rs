@@ -386,6 +386,87 @@ async fn scanner_finds_unmatched_and_staff_assign() {
     t.drop_db().await;
 }
 
+/// Paying a client in rupees: no chain to ask, so the quote, the switch and the reference carry the weight.
+#[tokio::test]
+async fn upi_withdrawals_are_quoted_frozen_and_settled_by_staff() {
+    let Some(t) = T::new("upi-withdrawals").await else { return };
+    t.credit(7, "500", "seed-upi").await;
+    t.users.set(7, "verified");
+    let req = |amount: &str, upi: &str, key: &str| json!({"user_id": 7, "method": "upi", "amount": amount, "to_address": upi, "idempotency_key": key});
+
+    // switched off by default: a client is never offered a rail the broker has not priced
+    let (s, v) = t.post("/v1/withdrawals", req("100", "priya@okaxis", "u1")).await;
+    assert_eq!((s, v["error"]["code"].as_str()), (422, Some("method_disabled")));
+    let (_, cfg) = t.get("/v1/config").await;
+    assert_eq!(cfg["withdraw_methods"].as_array().map(Vec::len), Some(0));
+
+    // enabling without a rate is refused: there would be nothing to quote
+    let (s, v) = t.staff("PUT", "/v1/admin/settings", Some(json!({"reason": "open UPI", "withdraw_methods": [{"method": "upi", "enabled": true}]}))).await;
+    assert_eq!((s, v["error"]["field"].as_str()), (422, Some("rate")), "{v}");
+
+    let (s, v) = t
+        .staff("PUT", "/v1/admin/settings", Some(json!({"reason": "open UPI", "withdraw_methods": [{"method": "upi", "enabled": true, "currency": "INR", "rate": "88.5", "fee_flat": "0.5"}]})))
+        .await;
+    assert_eq!(s, 200, "{v}");
+    let m = v["withdraw_methods"].as_array().unwrap().iter().find(|m| m["method"] == "upi").unwrap().clone();
+    assert_eq!((m["enabled"].as_bool(), m["rate"].as_str()), (Some(true), Some("88.5")));
+
+    // a UPI ID that cannot exist is refused before anyone is asked to pay it
+    for bad in ["priya", "priya@", "@okaxis", "priya@ok axis"] {
+        let (s, v) = t.post("/v1/withdrawals", req("100", bad, "bad")).await;
+        assert_eq!((s, v["error"]["field"].as_str()), (422, Some("to_address")), "{bad} should be refused");
+    }
+
+    // the quote: 1 flat + 0.5 method fee, and the rest converted at the rate in force
+    let (s, v) = t.post("/v1/withdrawals/quote", req("100", "Priya@OkAxis", "q")).await;
+    assert_eq!(s, 200, "{v}");
+    let q = &v["quote"];
+    assert_eq!((q["method"].as_str(), q["fee"].as_str(), q["net_amount"].as_str()), (Some("upi"), Some("1.5"), Some("98.5")));
+    assert_eq!((q["payout_currency"].as_str(), q["payout_amount"].as_str()), (Some("INR"), Some("8717.25")));
+    assert_eq!(q["to_address"], "priya@okaxis", "the ID is normalised before it is shown back");
+
+    let (s, v) = t.post("/v1/withdrawals", req("100", "Priya@OkAxis", "u2")).await;
+    assert_eq!(s, 200, "{v}");
+    let w = v["withdrawal"]["id"].as_i64().unwrap();
+    assert_eq!(v["withdrawal"]["method"], "upi");
+    assert_eq!(v["withdrawal"]["chain"], Value::Null, "an off-chain payout has no chain");
+    assert_eq!(v["withdrawal"]["payout_amount"], "8717.25");
+    assert_eq!(t.balance(7).await, ("400".into(), "100".into()), "the funds are locked while it waits");
+
+    // moving the rate afterwards must not move what this client was promised
+    t.staff("PUT", "/v1/admin/settings", Some(json!({"reason": "rate moved", "withdraw_methods": [{"method": "upi", "rate": "80"}]}))).await;
+    let (_, v) = t.get(&format!("/v1/withdrawals/{w}?user_id=7")).await;
+    assert_eq!(v["withdrawal"]["payout_amount"], "8717.25", "the quote is frozen on the row");
+
+    // staff pay out of band; the reference is required and has to look like one
+    t.staff("POST", &format!("/v1/admin/withdrawals/{w}/approve"), Some(json!({"note": "ok"}))).await;
+    let (s, v) = t.staff("POST", &format!("/v1/admin/withdrawals/{w}/paid"), Some(json!({"reference": "no"}))).await;
+    assert_eq!((s, v["error"]["field"].as_str()), (422, Some("reference")));
+    let (s, v) = t.staff("POST", &format!("/v1/admin/withdrawals/{w}/paid"), Some(json!({"reference": "UTR123456789"}))).await;
+    assert_eq!(s, 200, "{v}");
+    // nothing to wait for: recording the payment is what completes it
+    assert_eq!(v["withdrawal"]["status"], "completed", "{v}");
+    assert_eq!(v["withdrawal"]["payout_reference"], "UTR123456789");
+    assert_eq!(t.balance(7).await, ("400".into(), "0".into()));
+
+    // the same bank reference cannot settle a second withdrawal
+    let (_, v) = t.post("/v1/withdrawals", req("20", "priya@okaxis", "u3")).await;
+    let w2 = v["withdrawal"]["id"].as_i64().unwrap();
+    t.staff("POST", &format!("/v1/admin/withdrawals/{w2}/approve"), Some(json!({}))).await;
+    let (s, v) = t.staff("POST", &format!("/v1/admin/withdrawals/{w2}/paid"), Some(json!({"reference": "UTR123456789"}))).await;
+    assert_eq!((s, v["error"]["code"].as_str()), (409, Some("reference_used")));
+
+    // switching the method off stops new requests and leaves the open one alone
+    t.staff("PUT", "/v1/admin/settings", Some(json!({"reason": "pause", "withdraw_methods": [{"method": "upi", "enabled": false}]}))).await;
+    let (s, _) = t.post("/v1/withdrawals", req("20", "priya@okaxis", "u4")).await;
+    assert_eq!(s, 422);
+    let (_, v) = t.get(&format!("/v1/withdrawals/{w2}?user_id=7")).await;
+    assert_eq!(v["withdrawal"]["status"], "approved");
+
+    t.invariants().await;
+    t.drop_db().await;
+}
+
 #[tokio::test]
 async fn withdrawals_lifecycle() {
     let Some(t) = T::new("withdrawals").await else { return };

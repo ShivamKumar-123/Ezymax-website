@@ -30,8 +30,24 @@ export interface ChainConfig {
   withdraw_fee: string;
 }
 
+/** An off-chain way to be paid: switched on and priced in the Back Office (wallet `withdraw_methods`). */
+export interface WithdrawMethodConfig {
+  method: "upi";
+  enabled: boolean;
+  /** What the client is paid in, e.g. INR. */
+  currency: string;
+  /** Units of `currency` per 1 USDT. Only a priced method reaches the client. */
+  rate: string | null;
+  fee_flat: string;
+  min_amount: string | null;
+  max_amount: string | null;
+  instructions: string | null;
+}
+
 export interface WalletConfig {
   chains: ChainConfig[];
+  /** Empty when the broker offers crypto payouts only. */
+  withdraw_methods?: WithdrawMethodConfig[];
   limits: {
     withdraw_min: string;
     withdraw_max: string;
@@ -84,8 +100,10 @@ export type WithdrawalStatus = "requested" | "approved" | "rejected" | "cancelle
 
 export interface Withdrawal {
   id: number;
-  chain: Chain;
-  network: string;
+  /** "crypto" pays a wallet address, "upi" pays a UPI ID in local currency. */
+  method: "crypto" | "upi";
+  chain: Chain | null;
+  network: string | null;
   to_address: string;
   amount: string;
   fee: string;
@@ -95,6 +113,11 @@ export interface Withdrawal {
   payout_tx_hash: string | null;
   explorer_url: string | null;
   payout_confirmations: number;
+  /** Off-chain payouts: the bank reference staff recorded, and the amount promised at request time. */
+  payout_reference: string | null;
+  payout_currency: string | null;
+  payout_amount: string | null;
+  payout_rate: string | null;
   created_at: string;
   updated_at: string;
   completed_at: string | null;
@@ -274,4 +297,20 @@ export const CHAIN_LABEL: Record<Chain, { name: string; short: string; wallet: s
 export function addressLooksValid(chain: Chain, a: string) {
   const v = a.trim();
   return chain === "bsc" ? /^0x[0-9a-fA-F]{40}$/.test(v) : /^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(v);
+}
+
+/** UPI ID check, the same shape the wallet service enforces (`normalize_upi_id`). */
+export function upiLooksValid(id: string) {
+  return /^[a-z0-9][a-z0-9.\-_]{0,190}@[a-z][a-z0-9]{1,63}$/i.test(id.trim());
+}
+
+/** How a withdrawal is paid, for a one-line label: the network short name, or the method ("UPI"). */
+export function railLabel(w: { method?: "crypto" | "upi"; chain: Chain | null }) {
+  return w.chain ? CHAIN_LABEL[w.chain].short : (w.method ?? "upi").toUpperCase();
+}
+
+/** What the client receives off chain, at the rate the quote carries. */
+export function payoutLabel(currency: string, amount: string) {
+  const n = Number(amount);
+  return `${Number.isFinite(n) ? n.toLocaleString(undefined, { maximumFractionDigits: 2 }) : amount} ${currency}`;
 }

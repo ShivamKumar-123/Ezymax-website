@@ -169,20 +169,32 @@ Deposit statuses: `pending` (submitted, not yet found on chain) → `confirming`
 
 ## Withdrawals
 
-`requested` → `approved` / `rejected` (staff, reason) → `paid` (staff enter the payout tx hash) → `completed`. The client can `cancel` while the withdrawal is `requested`.
+`requested` → `approved` / `rejected` (staff, reason) → `paid` → `completed`. The client can `cancel` while the withdrawal is `requested`.
 
-- **Request.** `POST /v1/withdrawals` locks `amount` (available → locked).
-  - Fee = `withdraw_fee_flat + amount × withdraw_fee_pct / 100` plus the chain's `withdraw_fee`. The client receives `amount − fee`.
+Two rails, chosen by `method` and priced the same way (the tenant's flat + percentage fee, plus whatever the destination itself costs):
+
+| `method` | Goes to | Switched on in | Settled by |
+|---|---|---|---|
+| `crypto` (default) | the client's USDT wallet: `chain` + `to_address` | `chain_settings.withdrawals_enabled` | staff enter the payout hash; the watcher verifies it on chain |
+| `upi` | the client's own UPI ID, held in `to_address`; `chain` is NULL | `withdraw_methods` (`enabled` **and** a `rate`) | staff pay from the company account and enter the UTR, which completes it there and then |
+
+`upi` exists because deposits arrive in INR through `manual_deposits` while payouts were crypto-only, so a client who funded in rupees had no way back out. Nothing can verify an off-chain payout for us, which is why the reference is required, must be unique per tenant, and is audited with the name of whoever entered it.
+
+**The local figure is frozen at request time** (`payout_currency`, `payout_amount`, `payout_rate` on the row). A later rate change never moves what the client was promised, and staff pay exactly what the row says. A method with no rate cannot be enabled: the API refuses rather than invent one, and the client config only lists methods that are both switched on and priced.
+
+- **Request.** `POST /v1/withdrawals` locks `amount` (available → locked). `method` is `crypto` (the default) or `upi`.
+  - Fee = `withdraw_fee_flat + amount × withdraw_fee_pct / 100` plus the destination's own fee (the chain's `withdraw_fee`, or the method's `fee_flat`). The client receives `amount − fee`, converted at the method's `rate` for an off-chain payout.
   - Checks, in order:
-    - `to_address` format (BSC `0x` + 40 hex, TRON base58check `T…`);
-    - the chain is enabled;
-    - `withdraw_min` / `withdraw_max`;
+    - `to_address` format (BSC `0x` + 40 hex, TRON base58check `T…`, UPI `name@bank`);
+    - the chain, or the off-chain method, is enabled;
+    - `withdraw_min` / `withdraw_max`, and the method's own `min_amount` / `max_amount` where it sets them;
     - the daily total (server day, GMT+3) against `withdraw_daily_max`;
     - no credited deposit within `deposit_cooldown_hours`;
     - the available balance.
   - **KYC gate (D6).** The service asks the gateway (`GET /v1/internal/users/{id}`). `kyc_status` other than `verified` returns `403 kyc_required`.
 - **Reject or cancel.** The funds are unlocked.
-- **Paid.** Staff enter the payout tx hash. The watcher checks the transaction on chain:
+- **Paid (`upi`).** Staff enter the bank reference (4–64 letters, digits, `-`, `_` or `/`), which must not already be on another withdrawal. There is nothing to wait for, so the withdrawal completes immediately. Ledger: locked → `sys:withdrawal:upi` (net) and `sys:fees` (fee).
+- **Paid (`crypto`).** Staff enter the payout tx hash. The watcher checks the transaction on chain:
   - a USDT `Transfer` from a company address (a receiving or payout address of that chain) to `to_address` of exactly `amount − fee`;
   - it succeeded;
   - it has the required confirmations.

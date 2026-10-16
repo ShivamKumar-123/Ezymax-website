@@ -1,6 +1,6 @@
-//! Per-tenant wallet settings: limits / fees / cooldown (D36) and per-chain receiving addresses,
-//! confirmations (D10) and switches. Seeded from the environment on first start; afterwards only the audited
-//! admin endpoint changes them.
+//! Per-tenant wallet settings: limits / fees / cooldown (D36), per-chain receiving addresses, confirmations
+//! (D10) and switches, and the off-chain withdrawal methods (UPI). Seeded from the environment on first start;
+//! afterwards only the audited admin endpoint changes them.
 
 use serde_json::{Value, json};
 use sqlx::{PgPool, Postgres, Row, Transaction};
@@ -74,6 +74,67 @@ impl ChainCfg {
         }
         v
     }
+}
+
+/// An off-chain way to pay a client out. Crypto is not one of these: a chain has its own row in
+/// `chain_settings` with its own switch, network fee and confirmations.
+#[derive(Clone, Debug)]
+pub struct WithdrawMethod {
+    /// `upi` today; the table is keyed by this so a second method (bank transfer) needs no new shape.
+    pub method: String,
+    pub enabled: bool,
+    /// What the client is actually paid in.
+    pub currency: String,
+    /// Units of `currency` per 1 USDT. `None` until staff set one, which is also why the method cannot be
+    /// enabled before then: quoting a payout without knowing the rate would mean inventing it.
+    pub rate: Option<D>,
+    /// USDT, charged on top of the tenant's flat and percentage fee (a chain's network fee works the same way).
+    pub fee_flat: D,
+    pub min_amount: Option<D>,
+    pub max_amount: Option<D>,
+    pub instructions: Option<String>,
+}
+
+impl WithdrawMethod {
+    pub fn json(&self) -> Value {
+        json!({
+            "method": self.method,
+            "enabled": self.enabled,
+            "currency": self.currency,
+            "rate": self.rate.map(s),
+            "fee_flat": s(self.fee_flat),
+            "min_amount": self.min_amount.map(s),
+            "max_amount": self.max_amount.map(s),
+            "instructions": self.instructions,
+        })
+    }
+    /// A method the client can actually use: switched on and priced.
+    pub fn usable(&self) -> bool {
+        self.enabled && self.rate.is_some_and(|r| r > D::ZERO)
+    }
+}
+
+fn withdraw_method_row(r: &sqlx::postgres::PgRow) -> WithdrawMethod {
+    WithdrawMethod {
+        method: r.get("method"),
+        enabled: r.get("enabled"),
+        currency: r.get("currency"),
+        rate: r.get("rate"),
+        fee_flat: r.get("fee_flat"),
+        min_amount: r.get("min_amount"),
+        max_amount: r.get("max_amount"),
+        instructions: r.get("instructions"),
+    }
+}
+
+pub async fn withdraw_methods(pool: &PgPool, tenant_id: i64) -> sqlx::Result<Vec<WithdrawMethod>> {
+    let rows = sqlx::query("SELECT * FROM withdraw_methods WHERE tenant_id = $1 ORDER BY method").bind(tenant_id).fetch_all(pool).await?;
+    Ok(rows.iter().map(withdraw_method_row).collect())
+}
+
+pub async fn withdraw_method(pool: &PgPool, tenant_id: i64, method: &str) -> sqlx::Result<Option<WithdrawMethod>> {
+    let r = sqlx::query("SELECT * FROM withdraw_methods WHERE tenant_id = $1 AND method = $2").bind(tenant_id).bind(method).fetch_optional(pool).await?;
+    Ok(r.as_ref().map(withdraw_method_row))
 }
 
 pub async fn limits(pool: &PgPool, tenant_id: i64) -> sqlx::Result<Limits> {
@@ -162,6 +223,8 @@ pub async fn seed(pool: &PgPool, cfg: &Config) -> anyhow::Result<()> {
     let tenants: Vec<i64> = sqlx::query_scalar("SELECT id FROM tenants").fetch_all(pool).await?;
     for t in tenants {
         sqlx::query("INSERT INTO tenant_settings (tenant_id) VALUES ($1) ON CONFLICT DO NOTHING").bind(t).execute(pool).await?;
+        // switched off and unpriced: a broker turns UPI payouts on in the Back Office once it has a rate
+        sqlx::query("INSERT INTO withdraw_methods (tenant_id, method, updated_by) VALUES ($1, 'upi', 'seed') ON CONFLICT DO NOTHING").bind(t).execute(pool).await?;
         for (chain, raw, conf) in [(ChainId::Bsc, &cfg.bsc_address, cfg.bsc_confirmations), (ChainId::Tron, &cfg.tron_address, cfg.tron_confirmations)] {
             if raw.is_empty() {
                 continue;

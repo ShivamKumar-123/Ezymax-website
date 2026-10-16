@@ -46,6 +46,15 @@ function RiskChecklist({ r }: { r: Risk }) {
   );
 }
 
+/** What staff are asked to paste: a chain hash, or the bank reference for an off-chain payout. */
+const payoutFieldLabel = (w: Withdrawal) => (w.method === "upi" ? "Payment reference (UTR)" : "Payout transaction hash");
+
+/** A hash is 64 hex characters; a bank reference is whatever the bank prints, so only its shape is checked. */
+const payoutRefOk = (w: Withdrawal, text: string) => {
+  const v = text.trim();
+  return w.method === "upi" ? /^[A-Za-z0-9\-_/]{4,64}$/.test(v) : /^(0x)?[0-9a-fA-F]{64}$/.test(v);
+};
+
 function WithdrawalDrawer({ id, onClose, onChanged }: { id: number | null; onClose: () => void; onChanged: () => void }) {
   const { data, error, reload } = useApi<Detail>(id ? `/api/wallet/withdrawals/${id}` : null, { refreshMs: 10_000 });
   const canApprove = useCan("finance.approve");
@@ -85,7 +94,7 @@ function WithdrawalDrawer({ id, onClose, onChanged }: { id: number | null; onClo
       open={id !== null}
       onOpenChange={(o) => !o && onClose()}
       title={w ? `Withdrawal #${w.id}` : "Withdrawal"}
-      description={w ? `${w.network} · requested ${when(w.created_at)}` : undefined}
+      description={w ? `${w.method === "upi" ? "UPI" : w.network} · requested ${when(w.created_at)}` : undefined}
       footer={
         w ? (
           <>
@@ -126,9 +135,22 @@ function WithdrawalDrawer({ id, onClose, onChanged }: { id: number | null; onClo
           {w.payout_error && w.status === "approved" && <div className="rounded-[14px] border border-down/30 bg-down-soft px-3.5 py-2.5 text-[12.5px]">Payout check failed: {w.payout_error}</div>}
           <div>
             <Row k="Client" v={<ClientCell id={w.user_id} />} />
-            <Row k="Network" v={<ChainTag chain={w.chain} />} />
-            <Row k="Send to" v={<Addr a={w.to_address} full />} />
-            <Row k="Amount to send" v={<span className="k-num font-semibold">{usd(w.net_amount)} USDT</span>} />
+            {w.method === "upi" ? <Row k="Method" v="UPI" /> : <Row k="Network" v={<ChainTag chain={w.chain} />} />}
+            <Row k={w.method === "upi" ? "Pay to UPI ID" : "Send to"} v={w.method === "upi" ? <span className="font-mono text-[12.5px]">{w.to_address}</span> : <Addr a={w.to_address} full />} />
+            <Row
+              k="Amount to send"
+              v={
+                w.payout_amount && w.payout_currency ? (
+                  <span className="k-num font-semibold">
+                    {w.payout_amount} {w.payout_currency}
+                  </span>
+                ) : (
+                  <span className="k-num font-semibold">{usd(w.net_amount)} USDT</span>
+                )
+              }
+            />
+            {w.payout_rate && w.payout_currency && <Row k="Rate" v={`${w.payout_rate} ${w.payout_currency} per USDT, fixed when the client asked`} />}
+            {w.payout_reference && <Row k="Payment reference" v={<span className="font-mono text-[12.5px]">{w.payout_reference}</span>} />}
             {w.reviewed_by && <Row k={w.status === "rejected" ? "Rejected by" : "Approved by"} v={`${w.reviewed_by}${w.reviewed_at ? ` · ${when(w.reviewed_at)}` : ""}`} />}
             {w.review_note && <Row k="Note" v={w.review_note} />}
             {w.reason && <Row k="Reason" v={w.reason} />}
@@ -144,13 +166,26 @@ function WithdrawalDrawer({ id, onClose, onChanged }: { id: number | null; onClo
           {mode && (
             <div className="space-y-3 rounded-[16px] border border-line bg-surface-2 p-4">
               <div className="text-[13.5px] font-medium">{mode === "approve" ? "Approve this withdrawal" : mode === "reject" ? "Reject this withdrawal" : "Record the payout"}</div>
-              {mode === "paid" && (
-                <p className="text-[12.5px] text-fg-3">
-                  Send exactly {usd(w.net_amount)} USDT on {w.network} from a company address to {w.to_address}, then paste the transaction hash. The wallet verifies it on chain and completes the withdrawal after the confirmations.
-                </p>
-              )}
-              <Field label={mode === "approve" ? "Note (optional)" : mode === "reject" ? "Reason (shown to the client)" : "Payout transaction hash"}>
-                <Input value={text} onChange={(e) => setText(e.target.value)} inputClassName={mode === "paid" ? "font-mono text-[12.5px]" : undefined} placeholder={mode === "paid" ? (w.chain === "bsc" ? "0x…" : "64 hex characters") : undefined} aria-label={mode === "paid" ? "Payout transaction hash" : "Reason"} />
+              {mode === "paid" &&
+                (w.method === "upi" ? (
+                  <p className="text-[12.5px] text-fg-3">
+                    Send {w.payout_amount} {w.payout_currency} to {w.to_address} from the company account, then enter the UTR. Nothing can check this for us, so recording it completes the withdrawal and debits the client
+                    straight away &mdash; enter it only once the money has actually left.
+                  </p>
+                ) : (
+                  <p className="text-[12.5px] text-fg-3">
+                    Send exactly {usd(w.net_amount)} USDT on {w.network} from a company address to {w.to_address}, then paste the transaction hash. The wallet verifies it on chain and completes the withdrawal after the
+                    confirmations.
+                  </p>
+                ))}
+              <Field label={mode === "approve" ? "Note (optional)" : mode === "reject" ? "Reason (shown to the client)" : payoutFieldLabel(w)}>
+                <Input
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  inputClassName={mode === "paid" ? "font-mono text-[12.5px]" : undefined}
+                  placeholder={mode === "paid" ? (w.method === "upi" ? "UTR / reference" : w.chain === "bsc" ? "0x…" : "64 hex characters") : undefined}
+                  aria-label={mode === "paid" ? payoutFieldLabel(w) : "Reason"}
+                />
               </Field>
               {err && <div className="text-[12.5px] text-down">{err}</div>}
               <div className="flex gap-2">
@@ -168,8 +203,8 @@ function WithdrawalDrawer({ id, onClose, onChanged }: { id: number | null; onClo
                   </Button>
                 )}
                 {mode === "paid" && (
-                  <Button variant="ember" disabled={busy || !/^(0x)?[0-9a-fA-F]{64}$/.test(text.trim())} onClick={() => act("paid", { tx_hash: text.trim() }, "Payout recorded")}>
-                    Verify payout
+                  <Button variant="ember" disabled={busy || !payoutRefOk(w, text)} onClick={() => act("paid", { tx_hash: text.trim() }, "Payout recorded")}>
+                    {w.method === "upi" ? "Record payment and complete" : "Verify payout"}
                   </Button>
                 )}
               </div>
@@ -215,7 +250,7 @@ export function LiveWithdrawalsPage() {
     { key: "c", header: "Client", cell: (r) => <ClientCell id={r.user_id} /> },
     { key: "a", header: "Amount", align: "right", cell: (r) => <span className="k-num font-mono text-[12.5px] font-medium">{usd(r.amount)}</span> },
     { key: "n", header: "Send", align: "right", hideOn: "lg", cell: (r) => <span className="k-num font-mono text-[12px] text-fg-2">{usd(r.net_amount)}</span> },
-    { key: "ch", header: "Network", cell: (r) => <ChainTag chain={r.chain} /> },
+    { key: "ch", header: "Via", cell: (r) => (r.method === "upi" ? <span className="text-[12.5px]">UPI</span> : <ChainTag chain={r.chain} />) },
     { key: "to", header: "To", cell: (r) => <Addr a={r.to_address} /> },
     { key: "k", header: "KYC", hideOn: "xl", cell: (r) => <span className="text-[12px] text-fg-3">{r.kyc_status ?? "—"}</span> },
     { key: "s", header: "Status", cell: (r) => <Status map={WD_STATUS} s={r.status} /> },
@@ -226,7 +261,7 @@ export function LiveWithdrawalsPage() {
     <div className="pb-10">
       <PageHeader
         title="Withdrawals"
-        subtitle="Review each request with the risk checklist, approve or reject it, then record the payout hash. The payout is verified on chain before the withdrawal completes."
+        subtitle="Review each request with the risk checklist, approve or reject it, then record the payout. A crypto payout is verified on chain; a UPI payout completes when staff record the bank reference."
         actions={
           <Button variant="surface" size="lg" onClick={() => (reload(), sum.reload())}>
             <RefreshCw /> Refresh

@@ -225,7 +225,8 @@ pub async fn reject_withdrawal(State(st): State<AppState>, s_ctx: StaffCtx, Path
 
 #[derive(Deserialize)]
 pub struct PaidBody {
-    #[serde(default)]
+    /// The chain hash for a crypto payout, or the bank reference (UTR) for an off-chain one.
+    #[serde(default, alias = "reference")]
     tx_hash: String,
 }
 
@@ -309,6 +310,7 @@ pub async fn settings(State(st): State<AppState>, s_ctx: StaffCtx) -> ApiResult<
     s_ctx.require(ROLES_READ)?;
     let t = s_ctx.ctx.tenant.id;
     let chains = settings::chains(&st.pool, t).await?;
+    let methods = settings::withdraw_methods(&st.pool, t).await?;
     let limits = settings::limits(&st.pool, t).await?;
     let book: Vec<Value> = sqlx::query("SELECT chain, address, role, active, created_at FROM company_addresses WHERE tenant_id = $1 ORDER BY chain, role, created_at DESC")
         .bind(t)
@@ -325,6 +327,7 @@ pub async fn settings(State(st): State<AppState>, s_ctx: StaffCtx) -> ApiResult<
         "limits_updated_by": row_meta.as_ref().and_then(|r| r.get::<Option<String>, _>("updated_by")),
         "chains": chains.iter().map(|c| { let mut v = c.json(); v["available"] = json!(st.chains.contains_key(&c.chain)); v }).collect::<Vec<_>>(),
         "missing_chains": ChainId::ALL.iter().filter(|c| !chains.iter().any(|x| x.chain == **c)).map(|c| c.as_str()).collect::<Vec<_>>(),
+        "withdraw_methods": methods.iter().map(|m| m.json()).collect::<Vec<_>>(),
         "addresses": book,
         "history": history,
     })))
@@ -368,12 +371,35 @@ pub struct ChainPatch {
     withdraw_fee: Option<D>,
 }
 
+/// An off-chain withdrawal method (UPI). Only the fields sent are changed.
+#[derive(Deserialize)]
+pub struct MethodPatch {
+    method: String,
+    #[serde(default)]
+    enabled: Option<bool>,
+    #[serde(default)]
+    currency: Option<String>,
+    /// Units of `currency` per 1 USDT.
+    #[serde(default, deserialize_with = "de_opt_dec")]
+    rate: Option<D>,
+    #[serde(default, deserialize_with = "de_opt_dec")]
+    fee_flat: Option<D>,
+    #[serde(default, deserialize_with = "de_opt_dec")]
+    min_amount: Option<D>,
+    #[serde(default, deserialize_with = "de_opt_dec")]
+    max_amount: Option<D>,
+    #[serde(default)]
+    instructions: Option<String>,
+}
+
 #[derive(Deserialize)]
 pub struct SettingsBody {
     #[serde(default)]
     limits: Option<LimitsPatch>,
     #[serde(default)]
     chains: Option<Vec<ChainPatch>>,
+    #[serde(default)]
+    withdraw_methods: Option<Vec<MethodPatch>>,
     #[serde(default)]
     reason: String,
 }
@@ -506,6 +532,56 @@ pub async fn update_settings(State(st): State<AppState>, s_ctx: StaffCtx, Body(b
             },
         )
         .await?;
+    }
+    for m in b.withdraw_methods.unwrap_or_default() {
+        let method = m.method.trim().to_ascii_lowercase();
+        if method != "upi" {
+            return Err(ApiError::validation("method", "method must be upi"));
+        }
+        let cur = settings::withdraw_method(&st.pool, t, &method).await?;
+        let currency = match m.currency.as_deref().map(str::trim) {
+            Some(c) if c.len() == 3 && c.chars().all(|c| c.is_ascii_alphabetic()) => c.to_ascii_uppercase(),
+            Some(_) => return Err(ApiError::validation("currency", "Use a three-letter currency code, for example INR")),
+            None => cur.as_ref().map(|x| x.currency.clone()).unwrap_or_else(|| "INR".into()),
+        };
+        let next = settings::WithdrawMethod {
+            method: method.clone(),
+            enabled: m.enabled.or(cur.as_ref().map(|x| x.enabled)).unwrap_or(false),
+            currency,
+            rate: nonneg("rate", m.rate)?.or(cur.as_ref().and_then(|x| x.rate)),
+            fee_flat: nonneg("fee_flat", m.fee_flat)?.or(cur.as_ref().map(|x| x.fee_flat)).unwrap_or(D::ZERO),
+            min_amount: nonneg("min_amount", m.min_amount)?.or(cur.as_ref().and_then(|x| x.min_amount)),
+            max_amount: nonneg("max_amount", m.max_amount)?.or(cur.as_ref().and_then(|x| x.max_amount)),
+            instructions: m.instructions.map(|i| i.trim().chars().take(500).collect()).filter(|i: &String| !i.is_empty()).or_else(|| cur.as_ref().and_then(|x| x.instructions.clone())),
+        };
+        // A payout method with no rate cannot quote what the client will receive, so it must not go on sale.
+        if next.enabled && !next.rate.is_some_and(|r| r > D::ZERO) {
+            return Err(ApiError::validation("rate", format!("Set the {} per USDT rate before enabling {} withdrawals", next.currency, method.to_uppercase())));
+        }
+        if let (Some(min), Some(max)) = (next.min_amount, next.max_amount)
+            && max < min
+        {
+            return Err(ApiError::validation("max_amount", "The maximum must be at least the minimum"));
+        }
+        sqlx::query(
+            "INSERT INTO withdraw_methods (tenant_id, method, enabled, currency, rate, fee_flat, min_amount, max_amount, instructions, updated_at, updated_by)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now(), $10)
+             ON CONFLICT (tenant_id, method) DO UPDATE SET enabled = $3, currency = $4, rate = $5, fee_flat = $6, min_amount = $7, max_amount = $8,
+                 instructions = $9, updated_at = now(), updated_by = $10",
+        )
+        .bind(t)
+        .bind(&method)
+        .bind(next.enabled)
+        .bind(&next.currency)
+        .bind(next.rate)
+        .bind(next.fee_flat)
+        .bind(next.min_amount)
+        .bind(next.max_amount)
+        .bind(&next.instructions)
+        .bind(s_ctx.staff.tag())
+        .execute(&mut *tx)
+        .await?;
+        audit::staff(&mut tx, &s_ctx, Entry { action: "wallet.settings.withdraw_method", target_kind: "withdraw_method", target_id: method.clone(), reason: Some(&reason), before: cur.as_ref().map(|x| x.json()), after: Some(next.json()) }).await?;
     }
     tx.commit().await?;
     settings(State(st), s_ctx).await

@@ -7,7 +7,7 @@ import { Button, Card, CardHeader, Chip, EmptyState, PageHeader, Skeleton, forma
 import { Trans, useT } from "@ezymex/i18n/react";
 import { useReadOnly, useSession } from "@/components/session";
 import { toUsd, useAccounts } from "@/components/trading/api";
-import { CHAIN_LABEL, fmt, usdtAvailable, useWallet, walletApi, type ActivityItem, type Notification, type Overview, type Page } from "./api";
+import { CHAIN_LABEL, fmt, railLabel, usdtAvailable, useWallet, walletApi, type ActivityItem, type Notification, type Overview, type Page } from "./api";
 import { ActivityRow, Confirmations, DEPOSIT_STATUS, HashLink, KycNotice, StatusTag, WITHDRAWAL_STATUS, WalletUnavailable } from "./ui";
 import { isPropAccount } from "@/components/trading/ui";
 
@@ -99,7 +99,7 @@ function InProgress({ o }: { o: Overview }) {
         ))}
         {o.open_withdrawals.map((w) => (
           <Link key={`w${w.id}`} href="/wallet/withdraw" className="k-row flex flex-wrap items-center gap-2 px-4 py-3 hover:border-[var(--k-border-top)]">
-            <span className="text-[13.5px] font-medium">{t("wallet.withdrawalLine", { network: CHAIN_LABEL[w.chain].short })}</span>
+            <span className="text-[13.5px] font-medium">{t("wallet.withdrawalLine", { network: railLabel(w) })}</span>
             <StatusTag {...WITHDRAWAL_STATUS[w.status]} />
             <span dir="ltr" className="k-num ms-auto text-[14px] font-semibold">−{fmt(w.amount)} USDT</span>
             <div className="w-full text-[11.5px] text-fg-3">
