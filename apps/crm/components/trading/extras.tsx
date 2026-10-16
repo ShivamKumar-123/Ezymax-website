@@ -58,7 +58,8 @@ export function ChangeTypeDialog({ a, open, onOpenChange, onDone }: { a: EngineA
     setPick("");
     // an account keeps its product: only types of the same product (the engine offers and allows no others)
     tradingApi<{ groups: GroupOption[] }>(`accounts/${a.login}/group-options`)
-      .then((r) => !stop && setOpts(r.groups.filter((g) => productOf(g) === productOf(a))))
+      // cheapest first, like the Open account wizard: the engine returns them by code, which means nothing here
+      .then((r) => !stop && setOpts(r.groups.filter((g) => productOf(g) === productOf(a)).sort((x, y) => x.minDeposit - y.minDeposit || x.name.localeCompare(y.name))))
       .catch((e) => !stop && setErr(e instanceof Error && e.message ? e.message : ""));
     return () => {
       stop = true;

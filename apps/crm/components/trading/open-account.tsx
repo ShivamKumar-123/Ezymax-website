@@ -278,7 +278,13 @@ function Wizard() {
   const sp = useSearchParams();
   const groupsQ = useGroups();
   const accountsQ = useAccounts(0);
-  const groups = React.useMemo(() => groupsQ.data?.groups ?? [], [groupsQ.data]);
+  // Cheapest first: the client reads the types as a ladder they climb, so Standard ($20) has to come before
+  // Pro ($200) and VIP ($1,000). The engine returns them by code, which is alphabetical and means nothing here.
+  // Name breaks a tie so the order never shuffles between loads.
+  const groups = React.useMemo(
+    () => [...(groupsQ.data?.groups ?? [])].sort((a, b) => a.minDeposit - b.minDeposit || a.name.localeCompare(b.name)),
+    [groupsQ.data],
+  );
   const accounts = accountsQ.data?.accounts ?? [];
 
   const features = useFeatures();

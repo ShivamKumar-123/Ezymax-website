@@ -83,7 +83,8 @@ function Inner() {
   const readOnly = useReadOnly();
   // Options account types are offered only while the broker has the Options module on
   const optionsOn = useFeatures()?.modules.options !== false;
-  const types = (groups.data?.groups ?? []).filter((g) => optionsOn || productOf(g) !== "options");
+  // cheapest first, the order the client meets them in everywhere else
+  const types = (groups.data?.groups ?? []).filter((g) => optionsOn || productOf(g) !== "options").sort((a, b) => a.minDeposit - b.minDeposit || a.name.localeCompare(b.name));
 
   return (
     <div className="pb-16">
