@@ -276,14 +276,10 @@ export function TitleBar() {
   return (
     <header className="t-glass-strong relative z-20 flex h-12 shrink-0 items-center gap-2 border-b border-line px-2">
       <MainMenu />
-      <div className="flex shrink-0 items-center gap-2">
-        <span className="grid size-8 place-items-center rounded-[9px] border border-line-top bg-surface-3">
-          <LogoMark size={15} className="text-fg" />
-        </span>
-        <span className="hidden text-[14px] font-semibold tracking-tight min-[1600px]:inline">
-          Ezymex <span className="font-normal text-fg-2">Trader</span>
-        </span>
-      </div>
+      {/* the mark alone: the words beside it named a page the trader is already looking at */}
+      <span className="grid size-8 shrink-0 place-items-center rounded-[9px] border border-line-top bg-surface-3">
+        <LogoMark size={15} className="text-fg" />
+      </span>
       {/* the open charts: the row they used to have is the row the chart gets back */}
       {options ? <span className="flex-1" /> : <ChartTabs className="min-w-0 flex-1" />}
       {/* the search was a 320 px box that said it answers to a shortcut; the shortcut and the tooltip still do */}
