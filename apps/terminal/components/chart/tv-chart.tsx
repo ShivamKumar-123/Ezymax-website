@@ -365,20 +365,16 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
     });
     const full = make("right", svg(ICON.max), tr("desk.ch.fullChart"), () => toggleFullChart(live.current.T));
 
-    // Sell · spread · Buy, where the reference terminal keeps them. A click opens the Trade column - the ticket
-    // is where the order is placed, and its own Sell / Buy sit right under the pointer - and with one-click
-    // trading on the order still goes at once, as the switch promises.
-    const quick = (side: "buy" | "sell") => {
-      const { T: Tm, tab: tb } = live.current;
-      showSide(Tm, "order");
-      if (Tm.guest) return void Tm.quickTrade(tb.symbol, side, Tm.ws.lot);
-      if (Tm.ws.oneClick && !Tm.readOnly) Tm.quickTrade(tb.symbol, side, Tm.ws.lot);
-    };
-    const sell = make("right", `<span>${esc(tr("common.sell"))}</span><span class="ezx-px">\u2014</span>`, tr("common.sell"), () => quick("sell"));
+    // Sell · spread · Buy, where the reference terminal keeps them. A click only ever *opens* the Trade column:
+    // these are prices to read and a way in, never the order itself. One-click trading governs the ticket's own
+    // Sell / Buy, which the trader is looking at when they press them - a header button they may have aimed at
+    // the chart behind it must not be able to open a position.
+    const quick = () => showSide(live.current.T, "order");
+    const sell = make("right", `<span>${esc(tr("common.sell"))}</span><span class="ezx-px">\u2014</span>`, tr("common.sell"), quick);
     sell.dataset.tone = "sell";
     const spread = make("right", `<span class="ezx-px">\u2014</span>`, tr("desk.op.spread"), () => showSide(live.current.T, "order"));
     spread.dataset.tone = "spread";
-    const buy = make("right", `<span>${esc(tr("common.buy"))}</span><span class="ezx-px">\u2014</span>`, tr("common.buy"), () => quick("buy"));
+    const buy = make("right", `<span>${esc(tr("common.buy"))}</span><span class="ezx-px">\u2014</span>`, tr("common.buy"), quick);
     buy.dataset.tone = "buy";
 
     buttons.current = { order, full, sell, buy, spread };
