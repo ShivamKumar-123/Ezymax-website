@@ -3,7 +3,7 @@
 import * as React from "react";
 import { ArrowUpRight, CircleDollarSign, Clock, RefreshCw, Search, Send } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Card, DataTable, Dialog, EmptyState, Field, Input, KpiCard, PageHeader, Tabs, type Column } from "@ezymex/ui";
+import { Button, Card, CopyButton, DataTable, Dialog, EmptyState, Field, Input, KpiCard, PageHeader, Tabs, type Column } from "@ezymex/ui";
 import { ErrorState, FilterSelect, Pager, TableSkeleton, ago, qs, useApi, useDebounced, useNow, when } from "@/components/live/kit";
 import { useCan } from "@/components/staff-session";
 import { Addr, ChainTag, Check, ClientCell, Row, Status, TxLink, WD_STATUS, usd, usd2, walletWrite, type AuditItem, type Paged, type Summary, type Withdrawal } from "./kit";
@@ -136,21 +136,44 @@ function WithdrawalDrawer({ id, onClose, onChanged }: { id: number | null; onClo
           <div>
             <Row k="Client" v={<ClientCell id={w.user_id} />} />
             {w.method === "upi" ? <Row k="Method" v="UPI" /> : <Row k="Network" v={<ChainTag chain={w.chain} />} />}
-            <Row k={w.method === "upi" ? "Pay to UPI ID" : "Send to"} v={w.method === "upi" ? <span className="font-mono text-[12.5px]">{w.to_address}</span> : <Addr a={w.to_address} full />} />
+            <Row
+              k={w.method === "upi" ? "Pay to UPI ID" : "Send to"}
+              v={
+                // staff retype this into a wallet or a banking app, where one wrong character loses the money
+                <span className="flex items-start justify-end gap-1.5">
+                  {w.method === "upi" ? <span className="font-mono text-[12.5px] break-all">{w.to_address}</span> : <Addr a={w.to_address} full />}
+                  <CopyButton value={w.to_address} label={w.method === "upi" ? "UPI ID" : "Address"} className="-mt-0.5 shrink-0" />
+                </span>
+              }
+            />
             <Row
               k="Amount to send"
               v={
-                w.payout_amount && w.payout_currency ? (
-                  <span className="k-num font-semibold">
-                    {w.payout_amount} {w.payout_currency}
-                  </span>
-                ) : (
-                  <span className="k-num font-semibold">{usd(w.net_amount)} USDT</span>
-                )
+                <span className="flex items-center justify-end gap-1.5">
+                  {w.payout_amount && w.payout_currency ? (
+                    <span className="k-num font-semibold">
+                      {w.payout_amount} {w.payout_currency}
+                    </span>
+                  ) : (
+                    <span className="k-num font-semibold">{usd(w.net_amount)} USDT</span>
+                  )}
+                  {/* the exact figure, unformatted, so it pastes straight into the amount box */}
+                  <CopyButton value={w.payout_amount ?? w.net_amount} label="Amount" className="shrink-0" />
+                </span>
               }
             />
             {w.payout_rate && w.payout_currency && <Row k="Rate" v={`${w.payout_rate} ${w.payout_currency} per USDT, fixed when the client asked`} />}
-            {w.payout_reference && <Row k="Payment reference" v={<span className="font-mono text-[12.5px]">{w.payout_reference}</span>} />}
+            {w.payout_reference && (
+              <Row
+                k="Payment reference"
+                v={
+                  <span className="flex items-center justify-end gap-1.5">
+                    <span className="font-mono text-[12.5px] break-all">{w.payout_reference}</span>
+                    <CopyButton value={w.payout_reference} label="Reference" className="shrink-0" />
+                  </span>
+                }
+              />
+            )}
             {w.reviewed_by && <Row k={w.status === "rejected" ? "Rejected by" : "Approved by"} v={`${w.reviewed_by}${w.reviewed_at ? ` · ${when(w.reviewed_at)}` : ""}`} />}
             {w.review_note && <Row k="Note" v={w.review_note} />}
             {w.reason && <Row k="Reason" v={w.reason} />}
