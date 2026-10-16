@@ -1,8 +1,12 @@
 "use client";
 
-// The right-hand column of the desktop terminal (docs/TERMINAL-DESIGN.md §2.2), MT5 web style: Instruments (search,
-// asset classes, Symbol · Bid · Ask · Daily change), the Order book and its Ticks / Trades, and, when chosen in the
-// Layout menu, the Navigator. Collapses to a slim edge button; in Full chart mode it slides in over the chart.
+// The right-hand column of the desktop terminal: the docked Order ticket (the tab it opens on), Instruments
+// (search, asset classes, Symbol · Bid · Ask · Daily change), the Order book and its Ticks / Trades, and, when
+// chosen in the Layout menu, the Navigator. Collapses to a slim edge button; in Full chart mode it slides in over
+// the chart.
+//
+// The ticket follows the active chart tab, so switching instrument switches what you are about to trade - the
+// same thing the chart's Buy / Sell box and the New order popup do, all three sharing `OrderTicket`.
 import * as React from "react";
 import dynamic from "next/dynamic";
 import { ChevronsRight } from "lucide-react";
@@ -13,6 +17,7 @@ import { IconButton } from "@/components/ui/kit";
 import { InstrumentsPanel } from "@/components/market/instruments";
 import { Navigator } from "@/components/market/navigator";
 import { CfdOrderBook, TickTape } from "@/components/order/order-book";
+import { OrderTicket } from "@/components/order/order-ticket";
 import { showSide } from "./commands";
 
 // the options column: its own chunk, like the rest of the options workspace
@@ -24,6 +29,8 @@ export function SideColumn({ options, onClose }: { options: boolean; onClose: ()
   const t = useT();
   const side: SideTab = options && T.ws.side === "navigator" ? "instruments" : T.ws.side;
   const tabs: { value: SideTab; label: React.ReactNode }[] = [
+    // options accounts trade from their own ticket popup, so the docked one is a CFD tab
+    ...(options ? [] : [{ value: "order" as const, label: t("desk.side.order") }]),
     { value: "instruments", label: options ? t("trader.opt.inst.title") : t("desk.side.instruments") },
     { value: "book", label: t("desk.ob.title") },
     { value: "ticks", label: options ? <OptionsTradesLabel /> : t("desk.ob.ticks") },
@@ -39,7 +46,11 @@ export function SideColumn({ options, onClose }: { options: boolean; onClose: ()
       </header>
       <div className="min-h-0 flex-1">
         {options ? (
-          <OptionsSide tab={side === "navigator" ? "instruments" : side} />
+          <OptionsSide tab={side === "navigator" || side === "order" ? "instruments" : side} />
+        ) : side === "order" ? (
+          <div className="h-full overflow-y-auto p-3">
+            <OrderTicket key={T.activeSymbol} symbol={T.activeSymbol} variant="panel" />
+          </div>
         ) : side === "instruments" ? (
           <InstrumentsPanel />
         ) : side === "book" ? (

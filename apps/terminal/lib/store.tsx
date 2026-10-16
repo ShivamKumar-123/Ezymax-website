@@ -128,7 +128,8 @@ const TAB_PRODUCT: Partial<Record<ToolboxTab, TradeMode>> = { positions: "cfd", 
 export type RightTab = "order" | "depth" | "info";
 export type MwTab = "symbols" | "details" | "favourites";
 /** The right-hand column of the desktop terminal (docs/TERMINAL-DESIGN.md §2.2): instruments, the order book, or the Navigator. */
-export type SideTab = "instruments" | "book" | "ticks" | "navigator";
+/** `order` is the docked ticket: the column opens on it, as every retail terminal does. */
+export type SideTab = "order" | "instruments" | "book" | "ticks" | "navigator";
 /** Instrument list filter: an asset class, everything, or favourites (Market Watch, symbol search). */
 export type Segment = "all" | "forex" | "metals" | "indices" | "energies" | "crypto" | "stocks" | "favourites";
 /** Which chart engine renders chart tiles. "ezymex" = the original lightweight-charts engine. */
@@ -250,9 +251,10 @@ export function defaultWorkspace(): Workspace {
     activeId: tabs[0]!.id,
     // the Navigator duplicates the account switcher, the indicator list and the Close positions menu: off by default
     panels: { watch: true, right: true, toolbox: true, navigator: false, book: false, bookOpt: true },
-    side: "instruments",
+    side: "order",
     optPanel: false,
-    posLayout: "page",
+    // open risk belongs on the first screen, not below the fold
+    posLayout: "split",
     rightTab: "order",
     toolboxTab: "positions",
     mwTab: "symbols",
@@ -330,7 +332,15 @@ function readWorkspace(): Workspace {
       // tab's `indicators` / `drawings` stay for our own chart, used when the library isn't installed.
       w.uiVersion = 5;
     }
-    if (!["instruments", "book", "ticks", "navigator"].includes(w.side)) w.side = "instruments";
+    if ((w.uiVersion ?? 1) < 6) {
+      // the ticket comes back to the right-hand column and positions to the first screen; a trader who had
+      // deliberately hidden either gets them back once, which is the point of the change
+      w.panels = { ...w.panels, watch: true, toolbox: true };
+      w.side = "order";
+      w.posLayout = "split";
+      w.uiVersion = 6;
+    }
+    if (!["order", "instruments", "book", "ticks", "navigator"].includes(w.side)) w.side = "order";
     if (w.posLayout !== "split") w.posLayout = "page";
     if (w.toolboxTab === "trade") w.toolboxTab = "positions";
     return fitSlots(w);

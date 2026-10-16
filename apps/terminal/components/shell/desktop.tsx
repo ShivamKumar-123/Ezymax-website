@@ -85,7 +85,7 @@ export function DesktopTerminal() {
   const vw = useViewportWidth();
   const tv = useTvStatus() !== "missing";
   const center = React.useRef<HTMLDivElement>(null);
-  // the column: ~320 px, resizable between ~280 and ~440
+  // the column: ~360 px (the ticket needs more room than a symbol list), resizable between ~300 and ~480
   const pct = (px: number) => Math.min(45, Math.max(10, (px / Math.max(vw - 16, 1)) * 100));
   const main = options ? <OptionsMain /> : <ChartWorkspace />;
   // dir="ltr": the workspace keeps its arrangement (chart left, column right, prices left-to-right) in
@@ -112,7 +112,7 @@ export function DesktopTerminal() {
                 {open && !full && (
                   <>
                     <PanelResizeHandle className="t-handle" />
-                    <Panel id="side" order={2} defaultSize={pct(344)} minSize={pct(288)} maxSize={pct(480)}>
+                    <Panel id="side" order={2} defaultSize={pct(368)} minSize={pct(304)} maxSize={pct(520)}>
                       <SideColumn options={options} onClose={() => T.togglePanel("watch", false)} />
                     </Panel>
                   </>
@@ -123,7 +123,7 @@ export function DesktopTerminal() {
               {full && peek && (
                 // below the chart's toolbar row (it keeps Exit full chart reachable; on TradingView charts that is in
                 // the library's header, under the tabs), opaque over the live chart
-                <div className={cn("t-pop absolute bottom-0 end-0 z-[5] w-[344px] rounded-[14px] bg-panel shadow-[var(--t-shadow-pop)]", tv && !options ? "top-[86px]" : "top-[46px]")}>
+                <div className={cn("t-pop absolute bottom-0 end-0 z-[5] w-[368px] rounded-[14px] bg-panel shadow-[var(--t-shadow-pop)]", tv && !options ? "top-[86px]" : "top-[46px]")}>
                   <SideColumn options={options} onClose={() => setPeek(false)} />
                 </div>
               )}
