@@ -13,7 +13,7 @@ import { useTerminal, type ToolboxTab } from "@/lib/store";
 import { PanelTabs } from "@/components/ui/panel";
 import { CountBadge, IconButton, Segmented } from "@/components/ui/kit";
 import { setPositionsLayout } from "@/components/shell/commands";
-import { DropMenu, type MenuItem } from "@/components/ui/menu";
+import { DropMenu } from "@/components/ui/menu";
 import { PendingTab, PositionsTab, bulkMenu } from "./trade-tab";
 import { AlertsTab, CalendarTab, ExposureTab, HistoryTab, JournalTab, NewsTab } from "./tabs";
 import { AiTraderTab, useAi } from "./ai-trader";
@@ -101,32 +101,21 @@ export function Toolbox({ onCollapse, onMaximize, maximized, onTop, health = tru
   const { primary, secondary, more, tab } = useActivityTabs();
   // (an Options account opens on its option tabs: lib/store.tsx moves the tab whenever the account's product changes)
   const set = (v: ToolboxTab) => T.setWs({ toolboxTab: v });
-  const inMore = more.find((x) => x.value === tab);
-  const moreItems: MenuItem[] = more.map((x) => ({ label: x.count ? `${x.label} (${x.count})` : x.label, checked: x.value === tab, onSelect: () => set(x.value) }));
   const cfdTab = tab === "positions" || tab === "pending";
+  // Alerts, News, Calendar, Exposure, Journal, AI and MAM are reached from the command palette, the chart's bell
+  // and the Client Area; the bar keeps the three a trader reads with a position open. One of the others can
+  // still be the open tab, and then it joins the row so the panel does not look unselected.
+  const extra = [...secondary, ...more].filter((x) => x.value === tab);
   return (
     <section data-tour="activity-panel" className="t-glass flex h-full min-h-0 flex-col overflow-hidden rounded-[14px] border border-line">
       <header className="flex h-10 shrink-0 items-center gap-1 px-1.5">
         <PanelTabs value={tab} onChange={set} tabs={primary} />
-        <span className="mx-1 h-4 w-px shrink-0 bg-line" aria-hidden />
-        <PanelTabs value={tab} onChange={set} tabs={secondary} className="min-w-0" />
-        <DropMenu
-          width={240}
-          items={moreItems}
-          trigger={({ toggle, open }) => (
-            <button
-              type="button"
-              onClick={toggle}
-              aria-expanded={open}
-              aria-haspopup="menu"
-              className={cn("flex h-7 shrink-0 items-center gap-1 rounded-[8px] px-2.5 text-[13px] font-medium transition-colors", inMore ? "bg-surface-3 text-fg" : open ? "text-fg" : "text-fg-2 hover:bg-surface-3/50 hover:text-fg")}
-            >
-              {inMore ? inMore.label : t("desk.act.more")}
-              {inMore?.count ? <CountBadge n={inMore.count} tone="accent" /> : null}
-              <ChevronDown className={cn("size-3.5 text-fg-3 transition-transform", open && "rotate-180")} />
-            </button>
-          )}
-        />
+        {extra.length > 0 && (
+          <>
+            <span className="mx-1 h-4 w-px shrink-0 bg-line" aria-hidden />
+            <PanelTabs value={tab} onChange={set} tabs={extra} className="min-w-0" />
+          </>
+        )}
         <div className="ms-auto flex shrink-0 items-center gap-1">
           {!T.guest && (cfdTab || tab === "history") && <ShareControls />}
           {!T.readOnly && !T.guest && cfdTab && (
