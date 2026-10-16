@@ -379,7 +379,7 @@ export function useCommands(): Command[] {
     add({ id: "open-acc", group: "account", label: t("desk.acc.openNew"), icon: <UserPlus />, keywords: "open new account register", run: () => window.open(`${CLIENT_AREA}/accounts`, "_blank") });
     if (T.account.type === "demo") add({ id: "refill", group: "account", label: t("trader.menu.refillDemo", { count: T.refillsLeft }), icon: <RefreshCw />, keywords: "refill top up demo balance reset", run: () => T.refillDemo() });
     else if (pageOn("/wallet")) add({ id: "deposit", group: "account", label: t("desk.top.deposit"), icon: <Wallet />, keywords: "deposit fund wallet money", run: () => window.open(`${CLIENT_AREA}/wallet`, "_blank") });
-    add({ id: "client-area", group: "account", label: t("trader.clientArea"), icon: <ArrowUpRight />, keywords: "client area portal", run: () => window.open(CLIENT_AREA, "_blank") });
+    add({ id: "client-area", group: "account", label: t("trader.dashboard"), icon: <ArrowUpRight />, keywords: "dashboard client area portal", run: () => window.open(CLIENT_AREA, "_blank") });
     add({ id: "profile", group: "account", label: t("trader.account.profileSecurity"), keywords: "profile security password", run: () => window.open(`${CLIENT_AREA}/profile`, "_blank") });
     add({ id: "logout", group: "account", label: t("trader.menu.logOut"), icon: <LogOut />, keywords: "log out logout sign out exit", run: () => T.logout() });
   }

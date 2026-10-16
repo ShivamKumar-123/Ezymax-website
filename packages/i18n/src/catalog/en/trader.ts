@@ -5,6 +5,8 @@
 const trader = {
   // Shared shell words
   clientArea: "Client Area",
+  // the account menu names the portal by what it opens to, not by the product name
+  dashboard: "Dashboard",
   newOrder: "New order",
   searchSymbol: "Search symbol",
   searchSymbols: "Search symbols",

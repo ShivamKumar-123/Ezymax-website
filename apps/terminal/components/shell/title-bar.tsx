@@ -244,7 +244,7 @@ function ProfileMenu() {
       items={[
         { header: T.engine ? `${a.nickname ? `${a.nickname} · ` : ""}${a.login} · ${t.dyn(`trader.accountType.${a.type}`, a.type)}` : `${ME.name} · ${ME.email}` },
         { label: t("trader.account.connectedTo", { server: a.server }), icon: <UserRound />, disabled: true },
-        { label: t("trader.clientArea"), icon: <ArrowUpRight />, onSelect: () => window.open(CLIENT_AREA, "_blank") },
+        { label: t("trader.dashboard"), icon: <ArrowUpRight />, onSelect: () => window.open(CLIENT_AREA, "_blank") },
         { label: t("trader.account.profileSecurity"), icon: <ArrowUpRight />, onSelect: () => window.open(`${CLIENT_AREA}/profile`, "_blank") },
         "sep",
         { label: t("trader.menu.logOut"), icon: <LogOut />, danger: true, onSelect: () => T.logout() },
