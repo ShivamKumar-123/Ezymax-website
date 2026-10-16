@@ -85,6 +85,14 @@ interface Ready {
   coords: ChartCoords & { calibrate: (price: number, offsetY: number) => void; dispose: () => void };
 }
 
+/** One horizontal line to draw: a trade line, or one of the two quote lines this file adds. */
+interface Shape {
+  id: string;
+  price: number;
+  color: string;
+  style: number;
+}
+
 export function TvChart({ tab, active, onActivate, compact, variant = "desktop", hideOneClick, highlight = active }: TvChartProps) {
   const T = useTerminal();
   const t = useT();
@@ -109,6 +117,8 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
   const palette = React.useRef<Palette | null>(null);
   const shapes = React.useRef(new Map<string, { entity: string | null; price: number; key: string }>());
   const drawnRef = React.useRef<DrawnLine[]>([]);
+  /** the account's executable prices, drawn as two lines of their own (see quoteLines) */
+  const quoteRef = React.useRef<{ bid: number; ask: number }>({ bid: 0, ask: 0 });
   const [legendTop, setLegendTop] = React.useState<number | null>(null);
   const [popup, setPopup] = React.useState(false);
   const showBox = !T.readOnly && !hideOneClick;
@@ -463,15 +473,26 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
         /* already gone with a layout or symbol change */
       }
     };
-    const want = new Map(drawnRef.current.map((l) => [l.id, l]));
+    // Bid and Ask: the two prices this account can trade at, each in the colour of the button that fills it.
+    // Dashed, behind the trade lines, and never selectable - they are a readout, not something to drag.
+    const c0 = palette.current;
+    const q = quoteRef.current;
+    const quoteLines: Shape[] =
+      !c0 || !(q.bid > 0) || !(q.ask > 0)
+        ? []
+        : [
+            { id: "q:bid", price: q.bid, color: c0.down, style: 1 },
+            { id: "q:ask", price: q.ask, color: c0.buy, style: 1 },
+          ];
+    const all: Shape[] = [...drawnRef.current.map((l) => ({ id: l.id, price: l.price, color: lineColor(l.line, c, l.bad), style: l.line.kind === "pos" ? 0 : l.line.kind === "alert" ? 1 : 2 })), ...quoteLines];
+    const want = new Map(all.map((l) => [l.id, l]));
     for (const [id, r] of shapes.current) {
       if (want.has(id)) continue;
       if (r.entity) drop(r.entity);
       shapes.current.delete(id);
     }
-    for (const l of drawnRef.current) {
-      const color = lineColor(l.line, c, l.bad);
-      const style = l.line.kind === "pos" ? 0 : l.line.kind === "alert" ? 1 : 2;
+    for (const l of all) {
+      const { color, style } = l;
       const key = `${color}|${style}`;
       const r = shapes.current.get(l.id);
       if (r) {
@@ -495,7 +516,7 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
         .then((id) => {
           if (shapes.current.get(l.id) !== rec) return drop(id);
           rec.entity = id;
-          const now = drawnRef.current.find((x) => x.id === l.id);
+          const now = all.find((x) => x.id === l.id);
           if (now && now.price !== rec.price) {
             rec.price = NaN;
             syncShapes(w);
@@ -519,6 +540,26 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
     shapes.current.clear();
     syncShapes(w);
   };
+  // The quote the ticket shows, at most twice a second: enough for a line to look live, far less work than a
+  // shape update per tick. `syncShapes` skips a shape whose price has not moved, so a quiet market costs nothing.
+  React.useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const off = priceFeed().subscribe([tab.symbol], (x) => {
+      quoteRef.current = { bid: x.bid, ask: x.ask };
+      if (timer) return;
+      timer = setTimeout(() => {
+        timer = null;
+        const w = readyRef.current?.widget;
+        if (w) syncShapes(w);
+      }, 500);
+    });
+    return () => {
+      off();
+      if (timer) clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab.symbol]);
+
   const onLines = React.useCallback((lines: DrawnLine[]) => {
     drawnRef.current = lines;
     const w = readyRef.current?.widget;
