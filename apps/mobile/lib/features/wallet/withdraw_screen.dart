@@ -292,7 +292,7 @@ class _WithdrawFormState extends ConsumerState<WithdrawForm> {
         children: [
           KCardHeader(title: _isUpi ? t('wallet.withdraw.titleUpi') : t('wallet.withdrawUsdt'), subtitle: t('wallet.withdraw.formSubtitle')),
           const SizedBox(height: 16),
-          if (!_offered) WalletInlineError(t('wallet.withdraw.noneAvailable'), top: 0),
+          if (!_offered) WalletInlineError(t('wallet.withdraw.noneAvailable')),
           for (final c in _chains) ...[
             WalletRow(
               selected: c.chain == _chain,

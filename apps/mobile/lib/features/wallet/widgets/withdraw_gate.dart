@@ -114,7 +114,7 @@ class _GateState extends State<_Gate> {
             if (widget.upi != null) ...[
               _RailTile(
                 colour: _upiPurple,
-                mark: const _UpiMark(size: 44),
+                mark: const _UpiMark(),
                 name: 'UPI',
                 sub: t('wallet.withdrawGate.upiSub', {'currency': widget.upi!.currency}),
                 badges: const [],

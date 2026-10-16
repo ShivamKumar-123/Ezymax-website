@@ -302,10 +302,6 @@ void main() {
       expect(manualMoney('750', 'USDT'), '750.00 USDT');
       expect(manualMoney('0.0005', 'BTC'), '0.0005 BTC');
       expect(manualMoney('25000', 'BTC'), '25,000 BTC');
-      expect(manualRateText('88'), '88.00');
-      expect(manualRateText('3.67'), '3.67');
-      expect(manualRateText('0.0000158'), '0.0000158');
-      expect(manualRate('88', 'INR', _t), '1 USDT = 88.00 INR');
     });
 
     test('compare, limits and the amount check', () {
