@@ -106,6 +106,8 @@ const desk = {
 
   // Order panel
   "op.market": "Market",
+  // the other half of the ticket's first question: leave the order at a price instead
+  "op.pending": "Pending",
   "op.marketTip": "Trade now at the current price.",
   "op.type.limit": "Limit",
   "op.type.stop": "Stop",
@@ -188,7 +190,8 @@ const desk = {
 
   // Activity panel
   "act.positions": "Positions",
-  "act.orders": "Orders",
+  // the tab holds pending orders; its value has always been `pending` (toolbox.tsx)
+  "act.orders": "Pending",
   "act.history": "History",
   "act.closed": "Closed",
   "act.settlements": "Settlements",

@@ -37,7 +37,7 @@ interface StopState {
 }
 
 const PRESETS = [0.01, 0.1, 0.5, 1, 2] as const;
-const TYPES: OrderType[] = ["market", "limit", "stop", "stop-limit"];
+const PENDING_TYPES = ["limit", "stop", "stop-limit"] as const satisfies readonly Exclude<OrderType, "market">[];
 
 /* The Markets panel (price click), the order book, empty states and the chart ask the form for a side / a price. */
 type Intent = { symbol?: string; side?: "buy" | "sell"; pending?: boolean; price?: number };
@@ -127,6 +127,9 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
 
   const vol = Math.max(0.01, parseFloat(volume) || 0);
   const pending = type !== "market";
+  // switching back to Pending returns to the kind last used, rather than always Limit
+  const lastPending = React.useRef<Exclude<OrderType, "market">>("limit");
+  if (pending) lastPending.current = type as Exclude<OrderType, "market">;
   const pv = pipValuePerLot(symbol, q.bid); // USD per pip per lot
   const cent = acc.cent ? 100 : 1;
   const balance = T.engine ? acc.balance / cent : (T.balances[acc.login] ?? 0);
@@ -334,24 +337,33 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
           ))}
         </div>
 
-        {/* order type ▾ and the spread */}
+        {/* now, or at a price: the first question, and the spread beside it */}
         <div className="flex items-center gap-2">
-          <DropMenu
-            width={300}
-            items={[{ header: t("desk.op.typeTitle") }, ...TYPES.map((ty) => ({ label: typeWord(ty), hint: ty === "market" ? t("desk.op.typeNow") : t("desk.op.typeLater"), checked: type === ty, onSelect: () => setType(ty) }))]}
-            trigger={({ toggle, open }) => (
-              <Tip content={t("desk.op.typeTitle")} side="top">
-                <button type="button" onClick={toggle} aria-expanded={open} className={cn("flex h-7 items-center gap-1.5 rounded-[8px] border border-line bg-panel-2 px-2.5 text-[13px] font-medium text-fg hover:bg-surface-3", open && "bg-surface-3")}>
-                  {typeWord(type)}
-                  <ChevronDown className="size-3.5 text-fg-3" />
-                </button>
-              </Tip>
-            )}
+          <Segmented
+            size="sm"
+            stretch={false}
+            label={t("desk.op.typeTitle")}
+            value={pending ? "pending" : "market"}
+            onChange={(v) => setType(v === "market" ? "market" : lastPending.current)}
+            options={[
+              { value: "market", label: t("desk.op.market") },
+              { value: "pending", label: t("desk.op.pending") },
+            ]}
           />
           <HelpTip title={t("desk.op.typeTitle")} text={explain} />
           <span className="flex-1" />
           <SpreadChip symbol={symbol} />
         </div>
+        {/* and only then, which kind of pending order */}
+        {pending && (
+          <Segmented
+            size="sm"
+            label={t("desk.op.typeTitle")}
+            value={type}
+            onChange={setType}
+            options={PENDING_TYPES.map((ty) => ({ value: ty, label: typeWord(ty) }))}
+          />
+        )}
         {pending && <p className="rounded-[9px] bg-panel-2/60 px-2.5 py-1.5 text-[12px] leading-[17px] text-fg-2">{explain}</p>}
         {!marketOpen && (
           <div role="status" className="flex items-center gap-2 rounded-[9px] border border-warn/30 bg-warn-soft px-2.5 py-1.5 text-[12px] text-warn">
