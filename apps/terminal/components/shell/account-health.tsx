@@ -1,35 +1,27 @@
 "use client";
 
 // Account health strip (docs/TERMINAL-DESIGN.md §2.2): balance, equity, floating P&L, margin, free margin and margin
-// level with a safe / low / margin call / stop out meter, each with a plain-language (?) explanation. One slim line at
-// the foot of the positions card; it stays on screen when the card is collapsed. The eye at its start hides the amounts
-// (lib/hide-balances.ts); the margin level stays.
+// level. One slim line at the foot of the positions card; it stays on screen when the card is collapsed.
+// Label and value, nothing else: the eye that hides the amounts is in the top bar, and the glossary that each (?)
+// opened is on the order ticket, where a trader meets those words while deciding something. The margin level carries
+// its own state as colour - safe, low, margin call, stop out - in place of the meter and badge that said it twice.
 import * as React from "react";
 import { cn } from "@ezymex/ui";
 import { useT } from "@ezymex/i18n/react";
 import { useMetrics, useTerminal } from "@/lib/store";
 import { accCcy, accMoney, marginState } from "@/lib/trading";
 import { LiveMoney, Pnl } from "@/components/ui/primitives";
-import { HelpTip, Tip } from "@/components/ui/kit";
-import { AccountMoney, HideBalancesButton } from "@/components/ui/balances";
+import { Tip } from "@/components/ui/kit";
+import { AccountMoney } from "@/components/ui/balances";
 
 type Health = "idle" | "ok" | "low" | "call" | "stopout";
 
-const TONE: Record<Health, { text: string; bar: string }> = {
-  idle: { text: "text-up", bar: "bg-up" },
-  ok: { text: "text-up", bar: "bg-up" },
-  low: { text: "text-warn", bar: "bg-warn" },
-  call: { text: "text-down", bar: "bg-down" },
-  stopout: { text: "text-down", bar: "bg-down" },
-};
+const TONE: Record<Health, string> = { idle: "text-up", ok: "text-up", low: "text-warn", call: "text-down", stopout: "text-down" };
 
-function Item({ label, help, helpTitle, children, className }: { label: string; help: string; helpTitle: string; children: React.ReactNode; className?: string }) {
+function Item({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
   return (
     <span className={cn("flex shrink-0 items-center gap-1.5 whitespace-nowrap", className)}>
-      <span className="flex items-center gap-0.5 text-[12px] text-fg-3">
-        {label}
-        <HelpTip title={helpTitle} text={help} side="top" className="size-3.5 [&>svg]:size-3" />
-      </span>
+      <span className="text-[12px] text-fg-3">{label}</span>
       <span className="k-num font-mono text-[12.5px] text-fg" dir="ltr">
         {children}
       </span>
@@ -60,55 +52,42 @@ function Strip({ right, className }: { right?: React.ReactNode; className?: stri
   const call = e?.marginCallLevel ?? 100;
   const out = e?.stopOutLevel ?? 50;
   const h: Health = lvl === null || m.margin <= 0 ? "idle" : marginState(lvl, a);
-  // meter: empty at the stop-out level, full at four times the margin-call level (or with no margin in use)
-  const fill = h === "idle" ? 1 : Math.max(0.04, Math.min(1, ((lvl ?? 0) - out) / (call * 4 - out)));
-  const tone = TONE[h];
   const money = (v: number) => accMoney(a, v);
   return (
-    <div data-tour="health" className={cn("@container flex h-8 shrink-0 items-center gap-x-4 overflow-hidden ps-1.5 pe-3", className)} role="group" aria-label={t("desk.ah.title")}>
-      <HideBalancesButton size="sm" tipSide="top" className="-me-2.5" />
-      <Item label={t("desk.ah.balance")} helpTitle={t("desk.g.balance.t")} help={t("desk.g.balance")}>
+    <div data-tour="health" className={cn("@container flex h-8 shrink-0 items-center gap-x-4 overflow-hidden ps-3 pe-3", className)} role="group" aria-label={t("desk.ah.title")}>
+      <Item label={t("desk.ah.balance")}>
         <AccountMoney>{money(m.balance)}</AccountMoney> <span className="text-fg-3">{ccy}</span>
       </Item>
-      <Item label={t("desk.ah.equity")} helpTitle={t("desk.g.equity.t")} help={t("desk.g.equity")}>
+      <Item label={t("desk.ah.equity")}>
         <AccountMoney>
           <LiveMoney value={m.equity} format={money} />
         </AccountMoney>
       </Item>
-      <Item label={t("desk.ah.pnl")} helpTitle={t("desk.g.pnl.t")} help={t("desk.g.pnl")}>
+      <Item label={t("desk.ah.pnl")}>
         <AccountMoney>
           <Pnl value={m.floating} text={accMoney(a, m.floating, { signed: true })} format={(v) => accMoney(a, v, { signed: true })} />
         </AccountMoney>
       </Item>
-      <Item label={t("desk.ah.margin")} helpTitle={t("desk.g.margin.t")} help={t("desk.g.margin")} className="hidden @[760px]:flex">
+      <Item label={t("desk.ah.margin")} className="hidden @[760px]:flex">
         <AccountMoney>{money(m.margin)}</AccountMoney>
       </Item>
-      <Item label={t("desk.ah.free")} helpTitle={t("desk.g.free.t")} help={t("desk.g.free")} className="hidden @[620px]:flex">
+      <Item label={t("desk.ah.free")} className="hidden @[620px]:flex">
         <AccountMoney>
           <LiveMoney value={m.free} format={money} className={m.free < 0 ? "text-down" : undefined} />
         </AccountMoney>
       </Item>
       {m.credit > 0 && (
-        <Item label={t("desk.ah.credit")} helpTitle={t("desk.g.credit.t")} help={t("desk.g.credit")} className="hidden @[1100px]:flex">
+        <Item label={t("desk.ah.credit")} className="hidden @[1100px]:flex">
           <AccountMoney>{money(m.credit)}</AccountMoney>
         </Item>
       )}
       <span className="flex shrink-0 items-center gap-1.5 whitespace-nowrap">
-        <span className="flex items-center gap-0.5 text-[12px] text-fg-3">
-          {t("desk.ah.level")}
-          <HelpTip title={t("desk.g.level.t")} text={t("desk.g.level")} className="size-3.5 [&>svg]:size-3" />
-        </span>
+        <span className="text-[12px] text-fg-3">{t("desk.ah.level")}</span>
+        {/* the meter and the "Safe" badge said in three ways what the number says once; the colour is what a
+            trader needs from them, so the number keeps that and they go */}
         <Tip content={t.dyn(`desk.ah.stateTip.${h}`, undefined, { call, out })}>
-          <span className="flex items-center gap-1.5" tabIndex={0}>
-            <span className="k-num font-mono text-[12.5px] text-fg" dir="ltr">
-              {lvl === null || h === "idle" ? "—" : `${lvl.toLocaleString("en-US", { maximumFractionDigits: 0 })}%`}
-            </span>
-            <span className="relative h-1.5 w-14 overflow-hidden rounded-full bg-surface-3" aria-hidden>
-              <span className={cn("absolute inset-y-0 start-0 rounded-full transition-[width] duration-500", tone.bar)} style={{ width: `${fill * 100}%` }} />
-            </span>
-            {/* with nothing at risk the word repeats the dash, the full bar and Margin 0.00; Safe / Margin call
-                / Stop out earn their place */}
-            {h !== "idle" && <span className={cn("text-[12px] font-semibold", tone.text)}>{t.dyn(`desk.ah.state.${h}`)}</span>}
+          <span className={cn("k-num font-mono text-[12.5px]", h === "idle" ? "text-fg" : TONE[h])} dir="ltr" tabIndex={0}>
+            {lvl === null || h === "idle" ? "—" : `${lvl.toLocaleString("en-US", { maximumFractionDigits: 0 })}%`}
           </span>
         </Tip>
       </span>

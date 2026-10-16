@@ -1,9 +1,11 @@
 "use client";
 
 // The bar at the bottom of the first screen (docs/TERMINAL-DESIGN.md §2.2): account health (balance, equity, P&L,
-// margin, free margin, margin level), the connection (prices and, on live builds, the trade server), server time and
-// the "Positions (3) ↓" button that scrolls the page down to the positions. Theme, sounds, shortcuts and support live
-// in the ☰ menu.
+// margin, free margin, margin level), one dot for the connection, and the "Positions (3) ↓" button that scrolls the
+// page down to the positions. Theme, sounds, shortcuts and support live in the ☰ menu.
+// The dot is green and wordless while the prices and the trade server are both fine; a slow feed, a simulated feed or
+// a trade server that is not up puts its words back, in warning colour. The server, the quote rate, the delay and the
+// clock are on its tooltip - the chart prints that clock two rows above, so the bar does not print it again.
 import * as React from "react";
 import { ArrowDown, ChevronDown, ChevronUp } from "lucide-react";
 import { priceFeed } from "@ezymex/mock";
@@ -42,20 +44,17 @@ function Connection() {
   const st = serverTime();
   // the server's real offset (UTC+3 in US summer time, UTC+2 otherwise), the same clock the charts' time axis uses
   const zone = serverZone();
+  // silence is the healthy state: words only when the feed is simulated, still connecting, or behind
+  const warn = mode === "sim" ? t("desk.st.simulated") : mode !== "live" ? t("desk.st.connecting") : ping !== null && ping >= 150 ? t("desk.st.latency", { ms: ping }) : null;
   return (
     <div className="flex shrink-0 items-center gap-2 text-[12px] text-fg-3">
-      <Tip content={`${T.account.server} · ${t("desk.st.latencyTip", { qps })}`} side="top">
-        <div className="flex h-6 items-center gap-2 rounded-full border border-line bg-panel-2/70 px-2.5" tabIndex={0}>
+      <Tip content={`${T.account.server} · ${t("desk.st.latencyTip", { qps })}${ping === null ? "" : ` · ${t("desk.st.latency", { ms: ping })}`} · ${st.time} ${zone}`} side="top">
+        <div className="flex h-6 items-center gap-1.5 px-1" tabIndex={0}>
           <span className={cn("size-1.5 rounded-full", ok ? "bg-up shadow-[0_0_6px_var(--k-up)]" : mode === "sim" ? "bg-warn" : "bg-warn animate-pulse")} aria-hidden />
-          <span className="text-fg-2">{mode === "live" ? t("desk.st.connected") : mode === "sim" ? t("desk.st.simulated") : t("desk.st.connecting")}</span>
-          <span className={cn("k-num hidden whitespace-nowrap font-mono min-[1280px]:inline", ok ? "text-fg-3" : "text-warn")}>{ping === null ? "" : t("desk.st.latency", { ms: ping })}</span>
+          {warn && <span className="whitespace-nowrap text-warn">{warn}</span>}
         </div>
       </Tip>
       {T.engine && <TradeServerCell />}
-      <span className="hidden items-center gap-1.5 whitespace-nowrap min-[1180px]:flex" title={t("chart.clock.tip", { zone })}>
-        <span className="k-num font-mono text-fg-2">{st.time}</span>
-        <span dir="ltr">{zone}</span>
-      </span>
     </div>
   );
 }
@@ -65,13 +64,14 @@ function TradeServerCell() {
   const T = useTerminal();
   const t = useT();
   const st = useStreamStatus();
-  const up = st.s === "open";
-  const text = up ? t("trader.status.tradeServer") : st.s === "reconnecting" ? `${t("trader.status.reconnecting")}${st.attempt > 1 ? ` (${st.attempt})` : ""}` : st.s === "connecting" ? t("trader.status.connecting") : t("trader.status.tradeServerOffline");
+  // the account stream is one of the two things the dot beside it promises; it speaks only when that promise breaks
+  if (st.s === "open") return null;
+  const text = st.s === "reconnecting" ? `${t("trader.status.reconnecting")}${st.attempt > 1 ? ` (${st.attempt})` : ""}` : st.s === "connecting" ? t("trader.status.connecting") : t("trader.status.tradeServerOffline");
   return (
-    <Tip content={up ? t("trader.status.streamUp", { login: T.account.login, server: T.account.server }) : t("trader.status.streamDown")} side="top">
+    <Tip content={t("trader.status.streamDown")} side="top">
       <div className="flex h-6 items-center gap-1.5 whitespace-nowrap" tabIndex={0}>
-        <span className={cn("size-1.5 rounded-full", up ? "bg-up" : "bg-warn")} aria-hidden />
-        <span className={up ? "hidden text-fg-3 min-[1380px]:inline" : "text-warn"}>{text}</span>
+        <span className="size-1.5 rounded-full bg-warn" aria-hidden />
+        <span className="text-warn">{text}</span>
       </div>
     </Tip>
   );
