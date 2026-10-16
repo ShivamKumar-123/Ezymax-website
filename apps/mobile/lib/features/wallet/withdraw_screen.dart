@@ -1,11 +1,12 @@
 // Wallet › Withdraw: port of apps/crm/components/wallet-live/withdraw-page.tsx (LiveWithdrawPage), phone order:
 //   header (Withdraw + ← Wallet)
+//   the gate (widgets/withdraw_gate.dart) when there is more than one rail: pick, agree, handoff
 //   KYC notice
 //   the form: destination (a chain, or UPI where the broker has it open), the address or UPI ID, amount (Max),
 //   the fee quote (POST wallet/withdrawals/quote, 400 ms after typing), Withdraw -> the emailed code first
 //   (step-up `withdrawal`, target "<rail>-<amount>", as the web's StepUpDialog)
 //   -> POST wallet/withdrawals {method, chain?, amount, to_address, idempotency_key, stepup_token}
-//   -> "Withdrawal requested"
+//   -> the tracker: requested -> reviewed -> paid, followed through `withdrawals?limit=20`
 //   limits and fees (today's use, min / max, fee, wait after a deposit)
 //   your withdrawals (Cancel while waiting for review: POST wallet/withdrawals/{id}/cancel)
 // Data: config once, overview every 15 s, withdrawals?limit=20 every 15 s.
@@ -25,27 +26,66 @@ import '../../i18n/i18n.dart';
 import '../../ui/ui.dart';
 import 'wallet_api.dart';
 import 'widgets/wallet_ui.dart';
+import 'widgets/withdraw_gate.dart';
 
-class WithdrawScreen extends ConsumerWidget {
+class WithdrawScreen extends ConsumerStatefulWidget {
   const WithdrawScreen({super.key, this.query = const {}});
 
   /// The route's query parameters (the web page's search params).
   final Map<String, String> query;
 
+  @override
+  ConsumerState<WithdrawScreen> createState() => _WithdrawScreenState();
+}
+
+class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
   static const int _overviewMs = 15000;
+
+  /// The rail the client chose, from `?via=` or from the gate. Null until they have chosen and there is a
+  /// choice to make.
+  late String? _picked = switch (widget.query['via']) {
+    'usdt' => 'usdt',
+    'upi' => 'upi',
+    _ => null,
+  };
+  bool _gateAsked = false;
 
   void _reload(WidgetRef ref) {
     refreshWalletData(ref);
   }
 
+  /// Ask once, after the frame, when the broker really offers a choice. Dismissing it goes back to the wallet,
+  /// as closing the deposit gate does.
+  void _askGate(List<WalletChain> chains, WithdrawMethod upi) {
+    if (_gateAsked) return;
+    _gateAsked = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final picked = await showWithdrawGate(context, chains: chains, upi: upi);
+      if (!mounted) return;
+      if (picked == null) {
+        context.go('/wallet');
+        return;
+      }
+      setState(() => _picked = picked);
+    });
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final t = context.t;
     final kyc = ref.watch(meProvider)?.kycStatus ?? KycStatus.unverified;
     final cfg = ref.watch(walletCfgProvider);
     final o = ref.watch(walletOverviewEveryProvider(_overviewMs));
     final list = ref.watch(withdrawalsProvider);
     final failed = (cfg.hasError && !cfg.hasValue) || (o.hasError && !o.hasValue);
+
+    final chains = cfg.value?.chains.where((c) => c.withdrawalsEnabled).toList() ?? const <WalletChain>[];
+    final upi = cfg.value?.upi;
+    // a choice only exists when both rails are open; otherwise the one rail is the answer
+    final needsGate = _picked == null && chains.isNotEmpty && upi != null;
+    if (needsGate) _askGate(chains, upi);
+    final via = _picked ?? (chains.isNotEmpty ? 'usdt' : 'upi');
 
     return KPageScroll(
       onRefresh: () async {
@@ -66,8 +106,8 @@ class WithdrawScreen extends ConsumerWidget {
         else ...[
           KycNotice(status: kyc),
           if (kycNoticeTitle(kyc) != null) const SizedBox(height: kWalletGap),
-          if (cfg.hasValue && o.hasValue)
-            WithdrawForm(cfg: cfg.requireValue, o: o.requireValue, kyc: kyc, onDone: () => _reload(ref))
+          if (cfg.hasValue && o.hasValue && !needsGate)
+            WithdrawForm(cfg: cfg.requireValue, o: o.requireValue, kyc: kyc, via: via, onDone: () => _reload(ref))
           else
             const KSkeletonCard(height: 420, lines: 6),
           if (cfg.hasValue && o.hasValue) ...[const SizedBox(height: kWalletGap), _LimitsCard(cfg: cfg.requireValue, o: o.requireValue)],
@@ -83,10 +123,13 @@ class WithdrawScreen extends ConsumerWidget {
 
 /// The withdrawal form (web WithdrawForm), with its debounced quote and the step-up confirmation.
 class WithdrawForm extends ConsumerStatefulWidget {
-  const WithdrawForm({super.key, required this.cfg, required this.o, required this.kyc, required this.onDone});
+  const WithdrawForm({super.key, required this.cfg, required this.o, required this.kyc, required this.via, required this.onDone});
   final WalletConfig cfg;
   final WalletOverviewData o;
   final KycStatus kyc;
+
+  /// The rail the gate (or `?via=`) settled on: `usdt` or `upi`.
+  final String via;
   final VoidCallback onDone;
 
   @override
@@ -97,11 +140,14 @@ class _WithdrawFormState extends ConsumerState<WithdrawForm> {
   // the open chains, then UPI: `_chain` is null when the client is being paid off chain
   late final List<WalletChain> _chains = widget.cfg.chains.where((c) => c.withdrawalsEnabled).toList();
   late final WithdrawMethod? _upi = widget.cfg.upi;
-  late String? _chain = _chains.firstOrNull?.chain ?? (_upi == null ? 'tron' : null);
+  late String? _chain = widget.via == 'upi' && _upi != null ? null : (_chains.firstOrNull?.chain ?? (_upi == null ? 'tron' : null));
   final _to = TextEditingController();
   final _amount = TextEditingController();
   String? _err;
   String _key = requestId();
+
+  /// The withdrawal just asked for. The id is what the tracker follows; the snapshot stands in until the
+  /// polled list has caught up.
   Withdrawal? _requested;
 
   // the quote (web useQuote): every check of the request, 400 ms after the last change
@@ -215,44 +261,15 @@ class _WithdrawFormState extends ConsumerState<WithdrawForm> {
   Widget build(BuildContext context) {
     final t = context.t;
     final k = context.k;
-    final requested = _requested;
-    // the request is in: the team reviews it, then it is sent (the form comes back with Done)
-    if (requested != null) {
-      return KCard(
-        key: const ValueKey('withdrawal-requested'),
-        padding: const EdgeInsets.fromLTRB(20, 32, 20, 32),
-        child: Semantics(
-          liveRegion: true,
-          child: Column(
-            children: [
-              const KIllustration(KIllustrationName.withdrawalProcessing, width: 210, maxHeight: 140),
-              const SizedBox(height: 20),
-              Text(t('wallet.withdraw.toastRequested'), textAlign: TextAlign.center, style: context.text.title1),
-              const SizedBox(height: 6),
-              Text(
-                t('wallet.withdraw.toastRequestedText', {'amount': fmt(requested.amount), 'net': fmt(requested.netAmount)}),
-                textAlign: TextAlign.center,
-                style: context.text.callout.copyWith(color: k.fg2),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                t('wallet.withdraw.formSubtitle'),
-                textAlign: TextAlign.center,
-                style: context.text.footnote.copyWith(color: k.fg3),
-              ),
-              const SizedBox(height: 20),
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  KButton(label: t('common.done'), variant: KButtonVariant.surface, onPressed: () => setState(() => _requested = null)),
-                  KButton(label: t('wallet.backToWallet'), variant: KButtonVariant.ghost, onPressed: () => context.go('/wallet')),
-                ],
-              ),
-            ],
-          ),
-        ),
+    final snapshot = _requested;
+    // the request is in: follow it through review and payment. The list already polls, so the tracked row comes
+    // from there, with the snapshot standing in until the first refresh.
+    if (snapshot != null) {
+      final fresh = ref.watch(withdrawalsProvider).value?.items.where((w) => w.id == snapshot.id).firstOrNull;
+      return _Tracker(
+        w: fresh ?? snapshot,
+        onNew: () => setState(() => _requested = null),
+        onChanged: widget.onDone,
       );
     }
 
@@ -424,6 +441,156 @@ class _WithdrawFormState extends ConsumerState<WithdrawForm> {
   }
 }
 
+/* ------------------------------------------------------------------ the tracker */
+
+/// Where the withdrawal has got to (web Tracker). Cancel stays while it can still be cancelled.
+class _Tracker extends ConsumerStatefulWidget {
+  const _Tracker({required this.w, required this.onNew, required this.onChanged});
+  final Withdrawal w;
+  final VoidCallback onNew, onChanged;
+
+  @override
+  ConsumerState<_Tracker> createState() => _TrackerState();
+}
+
+class _TrackerState extends ConsumerState<_Tracker> {
+  bool _busy = false;
+
+  Future<void> _cancel() async {
+    final t = context.t;
+    final notes = ref.read(notificationsProvider.notifier);
+    setState(() => _busy = true);
+    try {
+      await ref.read(apiProvider).post<Object?>('wallet/withdrawals/${widget.w.id}/cancel', body: const <String, Object?>{});
+      notes.toast(NotificationKind.success, t('wallet.withdrawalCancelled'), description: t('wallet.withdraw.cancelledText'));
+      widget.onChanged();
+    } catch (e) {
+      notes.toast(NotificationKind.error, t('wallet.withdraw.cancelFailed'), description: walletErrorText(e, t));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.t;
+    final k = context.k;
+    final w = widget.w;
+    final done = w.status == 'completed';
+    final bad = w.status == 'rejected' || w.status == 'cancelled';
+    final reviewed = w.status != 'requested';
+    final sent = w.status == 'paid' || done;
+    final isUpi = w.method == 'upi';
+    final receives = w.payoutAmount != null && w.payoutCurrency != null ? '${fmt(w.payoutAmount)} ${w.payoutCurrency}' : '${fmt(w.netAmount)} USDT';
+    final reference = w.payoutReference ?? w.payoutTxHash;
+    final st = kWithdrawalStatus[w.status];
+
+    return KCard(
+      key: const ValueKey('withdrawal-requested'),
+      child: Semantics(
+        liveRegion: true,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            KCardHeader(
+              title: done
+                  ? t('wallet.withdraw.trackDone')
+                  : bad
+                  ? t('wallet.withdraw.trackStopped')
+                  : t('wallet.withdraw.trackOnItsWay'),
+              subtitle: isUpi ? t('wallet.withdraw.toUpi', {'upi': w.toAddress}) : '${chainLabel(w.chain).name} · USDT ${w.rail}',
+              action: st == null ? null : WalletStatusChip(st),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('−${fmt(w.amount)} USDT', style: context.text.title1.copyWith(fontFeatures: kTabular)),
+                      const SizedBox(height: 6),
+                      Text(
+                        '${t('wallet.youReceive')} $receives',
+                        style: context.text.footnote.copyWith(color: k.fg3, fontSize: 12.5),
+                      ),
+                      if (reference != null) ...[
+                        const SizedBox(height: 2),
+                        Text(reference, style: context.text.caption.copyWith(color: k.fg3, fontSize: 11.5, fontWeight: FontWeight.w400)),
+                      ],
+                    ],
+                  ),
+                ),
+                if (done) const KIllustration(KIllustrationName.withdrawalProcessing, width: 120, maxHeight: 110),
+              ],
+            ),
+            if (!bad) ...[
+              const SizedBox(height: 18),
+              for (final step in <({String label, bool ok, int n})>[
+                (label: t('wallet.withdraw.stepRequested'), ok: true, n: 1),
+                (label: t('wallet.withdraw.stepApproved'), ok: reviewed, n: 2),
+                (label: isUpi ? t('wallet.withdraw.stepPaidUpi') : t('wallet.withdraw.stepPaidChain'), ok: sent, n: 3),
+              ]) ...[
+                Row(
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 240),
+                      width: 20,
+                      height: 20,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: step.ok ? k.upSoft : Colors.transparent,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: step.ok ? k.up.withValues(alpha: 0.4) : k.line),
+                      ),
+                      child: step.ok
+                          ? Icon(LucideIcons.check, size: 12, color: k.up)
+                          : Text('${step.n}', style: context.text.caption.copyWith(color: k.fg3, fontSize: 10, fontWeight: FontWeight.w400)),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(step.label, style: context.text.footnote.copyWith(color: step.ok ? k.fg : k.fg3, fontSize: 12.5)),
+                  ],
+                ),
+                const SizedBox(height: 10),
+              ],
+            ],
+            if (w.status == 'requested') _Note(text: t('wallet.withdraw.trackReview'), tint: k.warnSoft, edge: k.warn),
+            if (w.status == 'paid' && !isUpi) _Note(text: t('wallet.withdraw.trackConfirming', {'n': w.payoutConfirmations}), tint: k.infoSoft, edge: k.info),
+            if (bad) WalletInlineError(w.reason ?? t('wallet.withdraw.cancelledText'), top: 8),
+            const SizedBox(height: 18),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                if (w.status == 'requested')
+                  KButton(label: t('common.cancel'), variant: KButtonVariant.surface, loading: _busy, onPressed: _busy ? null : _cancel),
+                KButton(label: t('wallet.withdraw.newOne'), variant: done ? KButtonVariant.surface : KButtonVariant.ghost, onPressed: widget.onNew),
+                KButton(label: t('wallet.backToWallet'), variant: KButtonVariant.ghost, onPressed: () => context.go('/wallet')),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A one-line tinted note, the shape the KYC notice uses.
+class _Note extends StatelessWidget {
+  const _Note({required this.text, required this.tint, required this.edge});
+  final String text;
+  final Color tint, edge;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.only(top: 4),
+    padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+    decoration: BoxDecoration(color: tint, borderRadius: BorderRadius.circular(14), border: Border.all(color: edge.withValues(alpha: 0.3))),
+    child: Text(text, style: context.text.footnote.copyWith(color: context.k.fg2, fontSize: 12.5)),
+  );
+}
+
 /* ------------------------------------------------------------------ limits and fees */
 
 class _LimitsCard extends StatelessWidget {
@@ -570,7 +737,7 @@ class _MyWithdrawalsState extends ConsumerState<_MyWithdrawals> {
                               crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
                                 Text(
-                                  '${fmt(w.amount)} USDT · ${chainLabel(w.chain).short}',
+                                  '${fmt(w.amount)} USDT · ${w.rail}',
                                   textDirection: TextDirection.ltr,
                                   style: context.text.label.copyWith(fontSize: 13.5, fontWeight: FontWeight.w500, fontFeatures: kTabular),
                                 ),

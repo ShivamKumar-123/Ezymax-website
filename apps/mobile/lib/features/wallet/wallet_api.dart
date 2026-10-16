@@ -291,6 +291,7 @@ class Withdrawal {
     required this.payoutReference,
     required this.payoutCurrency,
     required this.payoutAmount,
+    required this.payoutConfirmations,
     required this.createdAt,
   });
 
@@ -309,6 +310,9 @@ class Withdrawal {
 
   /// Off chain: the bank reference staff recorded, and the local amount promised when the client asked.
   final String? payoutReference, payoutCurrency, payoutAmount;
+
+  /// Confirmations the payout has collected; only a chain counts them.
+  final int payoutConfirmations;
   final DateTime createdAt;
 
   /// How it is being paid, for a one-line label: the network short name, or the method.
@@ -330,6 +334,7 @@ class Withdrawal {
     payoutReference: _s(j['payout_reference']),
     payoutCurrency: _s(j['payout_currency']),
     payoutAmount: _s(j['payout_amount']),
+    payoutConfirmations: _int(j['payout_confirmations']),
     createdAt: _date(j['created_at']),
   );
 }
