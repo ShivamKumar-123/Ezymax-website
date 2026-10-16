@@ -1,11 +1,12 @@
 "use client";
 
 // Order form (docs/TERMINAL-DESIGN.md §2.2, §2.5), exchange style:
-//   Sell | Buy with live prices · order type ▾ (Market / Limit / Stop / Stop limit, each explained) · label-value rows
-//   (price, expiry, volume with a quick-adjust strip, Stop loss and Take profit with switches, settable by price, pips
-//   or money) · More options (trailing stop, OCO, comment, max price change) · summary rows (margin, pip value, size,
-//   free margin after, reward / risk) · ONE confirm button that names the trade. With one-click trading on, Sell / Buy
-//   send the order at once (as on the chart and the order book) and the confirm button steps aside.
+//   Sell | Buy with live prices · Market | Pending · the order price, with the kind (Limit / Stop / Stop limit) as a
+//   chip inside the field · Volume · Stop loss and Take profit, settable by price, pips or money · ONE confirm button
+//   that names the trade. With one-click trading on, Sell / Buy send the order at once (as on the chart and the order
+//   book) and the confirm button steps aside.
+//   More options holds what is set occasionally rather than per order: expiry, trailing stop, OCO, comment, max price
+//   change, and the two summary numbers that describe an order rather than decide it (position size, overnight swap).
 import * as React from "react";
 import { Calculator, ChevronDown, Lock, Zap } from "lucide-react";
 import { toast } from "@/lib/notify";
@@ -17,7 +18,7 @@ import { useMarketOpen } from "@/lib/market-hours";
 import { useSlowQuote } from "@/lib/market";
 import { accCcy, accMoney, fmtPrice, fmtVol, marginRequired, pendingLabelKey, pipSize, pipValuePerLot, splitSymbol, type Expiry, type OrderType, type PendingOrder, swapSummary } from "@/lib/trading";
 import { TInput, TSelect } from "@/components/ui/primitives";
-import { Button, FieldRow, HelpTip, InlineNumber, QuickStrip, Segmented, SummaryRow, Switch, Tip } from "@/components/ui/kit";
+import { Button, FieldRow, HelpTip, InlineNumber, Segmented, SummaryRow, Switch, Tip } from "@/components/ui/kit";
 import { DropMenu } from "@/components/ui/menu";
 import { AccountMoney } from "@/components/ui/balances";
 import { GuestActions } from "@/components/shell/guest";
@@ -36,7 +37,6 @@ interface StopState {
   value: string;
 }
 
-const PRESETS = [0.01, 0.1, 0.5, 1, 2] as const;
 const PENDING_TYPES = ["limit", "stop", "stop-limit"] as const satisfies readonly Exclude<OrderType, "market">[];
 
 /* The Markets panel (price click), the order book, empty states and the chart ask the form for a side / a price. */
@@ -303,7 +303,9 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
               />
             </>
           ) : (
-            <span className="pe-2 text-[12px] text-fg-3">{t("desk.op.off")}</span>
+            <button type="button" onClick={() => toggleStop(which, true)} className="h-7 pe-2 text-[12px] text-fg-3 hover:text-fg">
+              {t("desk.op.notSet")}
+            </button>
           )}
         </FieldRow>
         {st.on && (
@@ -354,17 +356,6 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
           <span className="flex-1" />
           <SpreadChip symbol={symbol} />
         </div>
-        {/* and only then, which kind of pending order */}
-        {pending && (
-          <Segmented
-            size="sm"
-            label={t("desk.op.typeTitle")}
-            value={type}
-            onChange={setType}
-            options={PENDING_TYPES.map((ty) => ({ value: ty, label: typeWord(ty) }))}
-          />
-        )}
-        {pending && <p className="rounded-[9px] bg-panel-2/60 px-2.5 py-1.5 text-[12px] leading-[17px] text-fg-2">{explain}</p>}
         {!marketOpen && (
           <div role="status" className="flex items-center gap-2 rounded-[9px] border border-warn/30 bg-warn-soft px-2.5 py-1.5 text-[12px] text-warn">
             <Lock className="size-3.5 shrink-0" /> {t("order.ticket.marketClosedNote", { symbol })}
@@ -373,34 +364,41 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
 
         {pending && (
           <>
-            <FieldRow label={type === "limit" ? t("desk.op.orderPrice") : t("desk.op.stopPrice")} htmlFor="tk-price">
+            <FieldRow label={t("desk.op.orderPrice")} htmlFor="tk-price">
+              {/* which kind of pending order: a chip in the field it governs, not a row of its own */}
+              <DropMenu
+                align="end"
+                width={190}
+                items={[{ header: t("desk.op.typeTitle") }, ...PENDING_TYPES.map((ty) => ({ label: typeWord(ty), checked: type === ty, onSelect: () => setType(ty) }))]}
+                trigger={({ toggle, open }) => (
+                  <button type="button" onClick={toggle} aria-expanded={open} aria-label={t("desk.op.typeTitle")} className={cn("flex h-6 shrink-0 items-center gap-0.5 rounded-[6px] border border-line bg-panel px-1.5 text-[11.5px] font-medium text-fg-2 hover:text-fg", open && "text-fg")}>
+                    {typeWord(type)}
+                    <ChevronDown className="size-3 text-fg-3" />
+                  </button>
+                )}
+              />
               <InlineNumber id="tk-price" value={price} onChange={setPrice} step={priceStep} decimals={inst.digits} ariaLabel={t("order.ticket.orderPrice")} placeholder={fmtPrice(symbol, side === "sell" ? q.bid : q.ask)} />
             </FieldRow>
+            {/* how far the order sits from where this side can trade now */}
+            {side && !!parseFloat(price) && <div className="px-1 text-[12px] text-fg-3">{t("desk.op.pipsAway", { n: ((parseFloat(price) - (side === "buy" ? q.ask : q.bid)) / pip).toFixed(1) })}</div>}
             {type === "stop-limit" && (
               <FieldRow label={t("desk.op.limitPrice")} htmlFor="tk-sl-price">
                 <InlineNumber id="tk-sl-price" value={stopLimit} onChange={setStopLimit} step={priceStep} decimals={inst.digits} ariaLabel={t("order.ticket.stopLimitPrice")} placeholder={price || fmtPrice(symbol, q.ask)} />
               </FieldRow>
             )}
-            <FieldRow label={t("desk.op.expiry")}>
-              <TSelect ariaLabel={t("order.ticket.expiry")} value={expiry} onChange={setExpiry} options={[{ value: "GTC", label: t("order.expiry.gtc") }, { value: "Today", label: t("order.expiry.today") }, { value: "Date", label: t("order.expiry.date") }]} className="h-6 w-auto border-0 bg-transparent text-end" />
-              {expiry === "Date" && <TInput type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} aria-label={t("order.ticket.expiryDate")} className="h-6 w-[130px] font-mono" dir="ltr" />}
-            </FieldRow>
           </>
         )}
 
         <div data-tour="size" className="space-y-2">
           {/* volume */}
           <FieldRow label={t("desk.op.volume")} htmlFor="tk-vol" help={<HelpTip title={t("desk.g.lot.t")} text={t("desk.g.lot")} />}>
-            <InlineNumber id="tk-vol" value={volume} onChange={setVolume} step={0.01} min={0.01} decimals={2} ariaLabel={t("order.ticket.volume")} suffix={t("desk.ob.lots").toLowerCase()} />
-          </FieldRow>
-          <div className="flex items-center gap-1.5">
-            <QuickStrip options={PRESETS} value={PRESETS.find((v) => Math.abs(vol - v) < 1e-9) ?? null} onPick={(v) => setVolume(v.toFixed(2))} label={t("desk.op.volume")} className="min-w-0 flex-1" />
             <Tip content={t("desk.op.calc.text")}>
-              <button type="button" onClick={() => setCalcOpen(!calcOpen)} aria-expanded={calcOpen} aria-label={t("desk.op.byRisk")} className={cn("grid size-7 shrink-0 place-items-center rounded-[8px] border border-line", calcOpen ? "bg-ember-soft text-accent-text" : "bg-panel-2 text-fg-2 hover:text-fg")}>
+              <button type="button" onClick={() => setCalcOpen(!calcOpen)} aria-expanded={calcOpen} aria-label={t("desk.op.byRisk")} className={cn("grid size-6 shrink-0 place-items-center rounded-[6px]", calcOpen ? "bg-ember-soft text-accent-text" : "text-fg-3 hover:bg-surface-3 hover:text-fg")}>
                 <Calculator className="size-3.5" />
               </button>
             </Tip>
-          </div>
+            <InlineNumber id="tk-vol" value={volume} onChange={setVolume} step={0.01} min={0.01} decimals={2} ariaLabel={t("order.ticket.volume")} suffix={t("desk.ob.lots").toLowerCase()} />
+          </FieldRow>
           {calcOpen && (
             <div className="space-y-2 rounded-[10px] border border-line bg-panel-2/60 p-2.5">
               <div className="flex items-center gap-1.5 text-[12.5px] font-semibold text-fg">
@@ -428,10 +426,16 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
         <button type="button" onClick={() => setMore(!more)} aria-expanded={more} className="flex h-7 w-full min-w-0 items-center gap-1.5 rounded-[8px] px-1 text-[12.5px] font-medium text-fg-2 hover:text-fg">
           <ChevronDown className={cn("size-3.5 shrink-0 text-fg-3 transition-transform", more ? "rotate-0" : "-rotate-90")} />
           <span className="shrink-0">{t("desk.op.more")}</span>
-          <span className="min-w-0 truncate text-[12px] font-normal text-fg-3">{[t("desk.op.trailing"), pending && type !== "stop-limit" ? "OCO" : null, t("desk.op.comment"), t("desk.op.maxDev")].filter(Boolean).join(" · ")}</span>
+          <span className="min-w-0 truncate text-[12px] font-normal text-fg-3">{[pending ? t("desk.op.expiry") : null, t("desk.op.trailing"), pending && type !== "stop-limit" ? "OCO" : null, t("desk.op.comment"), t("desk.op.maxDev")].filter(Boolean).join(" · ")}</span>
         </button>
         {more && (
           <div className="space-y-2">
+            {pending && (
+              <FieldRow label={t("desk.op.expiry")}>
+                <TSelect ariaLabel={t("order.ticket.expiry")} value={expiry} onChange={setExpiry} options={[{ value: "GTC", label: t("order.expiry.gtc") }, { value: "Today", label: t("order.expiry.today") }, { value: "Date", label: t("order.expiry.date") }]} className="h-6 w-auto border-0 bg-transparent text-end" />
+                {expiry === "Date" && <TInput type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} aria-label={t("order.ticket.expiryDate")} className="h-6 w-[130px] font-mono" dir="ltr" />}
+              </FieldRow>
+            )}
             <FieldRow
               label={
                 <span className="flex items-center gap-2">
@@ -467,7 +471,7 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
 
         {/* summary */}
         <div className="space-y-0.5 border-t border-line px-1 pt-2">
-          <LiveSummary symbol={symbol} volume={vol} unitLabel={unitLabel} />
+          <LiveSummary symbol={symbol} volume={vol} unitLabel={unitLabel} detail={more} />
           {sl.on && tp.on && slMoney !== null && tpMoney !== null && slMoney < 0 && (
             <SummaryRow label={t("desk.op.ratioLabel")}>
               <span className="text-down">{accMoney(acc, slMoney, { signed: true })}</span>
@@ -547,9 +551,10 @@ function SpreadChip({ symbol }: { symbol: string }) {
   );
 }
 
-/** Margin, pip value, size and the free margin left after the trade (the volume's consequences in plain words). Hidden
+/** The volume's consequences in plain words. Margin, pip value and the free margin left decide whether to send the
+ *  order at all, so they are always here; size and the overnight swap describe it, and follow More options. Hidden
  *  balances mask the free margin and the share of it the margin takes (which would give it away). */
-function LiveSummary({ symbol, volume, unitLabel }: { symbol: string; volume: number; unitLabel: string }) {
+function LiveSummary({ symbol, volume, unitLabel, detail }: { symbol: string; volume: number; unitLabel: string; detail: boolean }) {
   const T = useTerminal();
   const t = useT();
   const m = useMetrics();
@@ -574,17 +579,21 @@ function LiveSummary({ symbol, volume, unitLabel }: { symbol: string; volume: nu
       <SummaryRow label={t("desk.op.summary.pip")} help={<HelpTip title={t("desk.g.pip.t")} text={t("desk.g.pip")} />}>
         {accMoney(acc, pipV)} {ccy}
       </SummaryRow>
-      <SummaryRow label={t("desk.op.summary.size")}>
-        {(volume * inst.contractSize).toLocaleString("en-US", { maximumFractionDigits: 2 })} <span className="text-fg-3">{unitLabel}</span>
-      </SummaryRow>
+      {detail && (
+        <SummaryRow label={t("desk.op.summary.size")}>
+          {(volume * inst.contractSize).toLocaleString("en-US", { maximumFractionDigits: 2 })} <span className="text-fg-3">{unitLabel}</span>
+        </SummaryRow>
+      )}
       <SummaryRow label={t("desk.op.summary.free")}>
         <span className={short ? "text-down" : undefined}>
           <AccountMoney>{accMoney(acc, m.free - margin)}</AccountMoney> {ccy}
         </span>
       </SummaryRow>
-      <SummaryRow label={t("desk.sw.title")} help={<HelpTip title={t("desk.g.swap.t")} text={t("desk.g.swap")} />}>
-        <span className="whitespace-normal text-end font-sans text-[11.5px] text-fg-2">{swapSummary(t, symbol)}</span>
-      </SummaryRow>
+      {detail && (
+        <SummaryRow label={t("desk.sw.title")} help={<HelpTip title={t("desk.g.swap.t")} text={t("desk.g.swap")} />}>
+          <span className="whitespace-normal text-end font-sans text-[11.5px] text-fg-2">{swapSummary(t, symbol)}</span>
+        </SummaryRow>
+      )}
       {short && <div className="text-[12px] font-medium text-down">{t("desk.op.notEnough")}</div>}
     </>
   );

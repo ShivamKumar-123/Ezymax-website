@@ -349,6 +349,7 @@ const desk = {
 
   // Order form (exchange style)
   "op.off": "Off",
+  "op.notSet": "Not set",
   "op.typeTitle": "Order type",
   "op.typeNow": "now, at the market price",
   "op.typeLater": "later, at your price",
