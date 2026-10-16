@@ -1,7 +1,9 @@
 "use client";
 
-// Top bar of Ezymex Trader on desktop (docs/TERMINAL-DESIGN.md §2.2): ☰ · brand · search (⌘K) · account switcher
-// with equity · hide balances (eye) · Deposit / Top up demo · notifications · profile. The ☰ menu (MT5 web style)
+// Top bar of Ezymex Trader on desktop (docs/TERMINAL-DESIGN.md §2.2): ☰ · brand · the open charts as tabs ·
+// search (⌘K) · account switcher with equity · hide balances (eye) · Deposit / Top up demo · notifications
+// · profile. The tabs live here rather than in the chart card so the candles start one row higher; the card
+// renders them itself in Full chart, where this bar is hidden. The ☰ menu (MT5 web style)
 // holds the accounts, chart settings and one-click trading (CFD accounts), theme, language, shortcuts and help; every
 // command is also in ⌘K. CFD or Options is the account's product (its badge here), not a switch: an Options account
 // opens the options workspace.
@@ -17,11 +19,11 @@ import { DropMenu } from "@/components/ui/menu";
 import { Badge, LiveMoney } from "@/components/ui/primitives";
 import { Button, IconButton, Tip } from "@/components/ui/kit";
 import { AccountMoney, HideBalancesButton } from "@/components/ui/balances";
-import { Kbd } from "@/components/dialogs/kbd";
 import { CLIENT_AREA, LOGIN_URL, REGISTER_URL } from "@/lib/guest";
 import { useModule } from "@/lib/features";
 import { GuestUserMenu } from "./guest";
 import { NotificationBell } from "./notifications";
+import { ChartTabs } from "@/components/chart/workspace";
 import { useMainMenuItems } from "./commands";
 
 export { CLIENT_AREA };
@@ -269,33 +271,27 @@ function ProfileMenu() {
 export function TitleBar() {
   const T = useTerminal();
   const t = useT();
+  // an options account has no chart tabs: its workspace is the chain, not a chart
+  const options = productOf(T.account) === "options";
   return (
-    <header className="t-glass-strong relative z-20 flex h-12 shrink-0 items-center gap-3 border-b border-line px-2">
+    <header className="t-glass-strong relative z-20 flex h-12 shrink-0 items-center gap-2 border-b border-line px-2">
       <MainMenu />
       <div className="flex shrink-0 items-center gap-2">
         <span className="grid size-8 place-items-center rounded-[9px] border border-line-top bg-surface-3">
           <LogoMark size={15} className="text-fg" />
         </span>
-        <span className="hidden text-[14px] font-semibold tracking-tight min-[1400px]:inline">
+        <span className="hidden text-[14px] font-semibold tracking-tight min-[1600px]:inline">
           Ezymex <span className="font-normal text-fg-2">Trader</span>
         </span>
       </div>
-      <Tip content={t("desk.top.search")} shortcut="⌘K" side="bottom">
-        <button
-          onClick={() => T.setUi({ search: true })}
-          data-tour="search"
-          className="flex h-8 w-[clamp(170px,20vw,320px)] min-w-0 items-center gap-2 rounded-[9px] border border-line bg-panel-2/70 px-2.5 text-[13px] text-fg-3 transition-colors hover:bg-surface-3 hover:text-fg-2"
-          aria-label={t("desk.top.search")}
-        >
-          <Search className="size-3.5 shrink-0" />
-          <span className="truncate">{t("desk.top.search")}</span>
-          <span className="ms-auto shrink-0">
-            <Kbd>⌘K</Kbd>
-          </span>
-        </button>
-      </Tip>
+      {/* the open charts: the row they used to have is the row the chart gets back */}
+      {options ? <span className="flex-1" /> : <ChartTabs className="min-w-0 flex-1" />}
+      {/* the search was a 320 px box that said it answers to a shortcut; the shortcut and the tooltip still do */}
+      <IconButton label={t("desk.top.search")} shortcut="⌘K" onClick={() => T.setUi({ search: true })} data-tour="search" size="lg">
+        <Search />
+      </IconButton>
 
-      <div className="ms-auto flex min-w-0 items-center gap-1.5">
+      <div className="flex min-w-0 shrink-0 items-center gap-1.5">
         {T.guest ? (
           <GuestActionsBar />
         ) : (

@@ -1,7 +1,8 @@
 "use client";
 
-// Chart card (docs/TERMINAL-DESIGN.md §2.2), TradingView / broker-terminal style. Row 1: every open chart as a tab with
-// its flags (scrolls sideways, "Open charts" lists them all when they don't fit) and + New chart. Row 2, the toolbar:
+// Chart card (docs/TERMINAL-DESIGN.md §2.2), TradingView / broker-terminal style. The row of open-chart tabs (flags,
+// sideways scroll, "Open charts" when they don't all fit, + New chart) sits in the app's top bar - title-bar.tsx
+// places it - and is rendered here only in Full chart, where that bar is hidden. Row 2, the toolbar:
 // symbol search · timeframe favourites 1m 30m 1h 4h D (+ the current one) and the rest in a menu · chart type ·
 // indicators · templates · layout · undo / redo · New order · zoom | save layout · alert · picture · full chart · full
 // screen. Left: the drawing rail (tools, magnet, lock, hide, delete all). Under the charts: date
@@ -59,7 +60,8 @@ export function ChartWorkspace() {
   const ticketDocked = T.ws.panels.watch && T.ws.side === "order" && !T.ui.fullChart;
   return (
     <section data-tour="chart" className="t-glass flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-[14px] border border-line">
-      <ChartTabs />
+      {/* Full chart hides the title bar that normally carries these, so the card carries them there and only there */}
+      {T.ui.fullChart && <ChartTabs className="h-9 shrink-0 border-b border-line px-1.5" />}
       {!tv && <ChartBar />}
       <div className="flex min-h-0 flex-1">
         {!tv && <DrawingBar />}
@@ -84,7 +86,7 @@ function Sep({ className }: { className?: string }) {
 /* ------------------------------------------------------------------ */
 
 /** Every open chart as a tab (flags, market, timeframe); × closes, middle-click too. Scrolls sideways when they don't fit. */
-function ChartTabs() {
+export function ChartTabs({ className }: { className?: string }) {
   const T = useTerminal();
   const t = useT();
   const scroller = React.useRef<HTMLDivElement>(null);
@@ -118,7 +120,7 @@ function ChartTabs() {
   }, [T.ws.activeId, T.ws.tabs.length]);
   const fade = edge.left && edge.right ? "[mask-image:linear-gradient(to_right,transparent,#000_24px,#000_calc(100%-24px),transparent)]" : edge.right ? "[mask-image:linear-gradient(to_right,#000_calc(100%-24px),transparent)]" : edge.left ? "[mask-image:linear-gradient(to_right,transparent,#000_24px)]" : "";
   return (
-    <div className="flex h-9 shrink-0 items-center gap-1 border-b border-line px-1.5">
+    <div className={cn("flex items-center gap-1", className)}>
       <div
         ref={scroller}
         role="tablist"
@@ -187,7 +189,7 @@ function OpenChartsMenu() {
         { label: t("trader.menu.closeChart"), icon: <X />, disabled: T.ws.tabs.length <= 1, onSelect: () => T.closeTab(T.activeTab.id) },
       ]}
       trigger={({ toggle, open }) => (
-        <button onClick={toggle} aria-expanded={open} aria-label={t("desk.ch.openCharts")} title={t("desk.ch.openCharts")} className={cn("ms-auto flex h-6 shrink-0 items-center gap-0.5 rounded-[6px] px-1.5 font-mono text-[11px] transition-colors", open ? "bg-surface-3 text-fg" : "text-fg-2 hover:bg-surface-3 hover:text-fg")}>
+        <button onClick={toggle} aria-expanded={open} aria-label={t("desk.ch.openCharts")} title={t("desk.ch.openCharts")} className={cn("flex h-6 shrink-0 items-center gap-0.5 rounded-[6px] px-1.5 font-mono text-[11px] transition-colors", open ? "bg-surface-3 text-fg" : "text-fg-2 hover:bg-surface-3 hover:text-fg")}>
           {T.ws.tabs.length}
           <ChevronDown className="size-3.5" />
         </button>
