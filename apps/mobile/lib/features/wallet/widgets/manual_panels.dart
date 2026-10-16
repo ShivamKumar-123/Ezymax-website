@@ -391,18 +391,8 @@ class ManualMethodDetails extends StatelessWidget {
         ?_detail(t('payments.card.branch'), d.branch),
         ?_detail(t('payments.card.upiId'), d.upiId, mono: true),
       ],
-      Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: _InfoTile(label: t('payments.card.rate'), value: manualRate(m.rate, m.currency, t)),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _InfoTile(label: t('payments.card.limits'), value: manualLimits(m, t)),
-          ),
-        ],
-      ),
+      // No rate here: the client is told what the amount converts to, on the form where they type it.
+      _InfoTile(label: t('payments.card.limits'), value: manualLimits(m, t)),
       if (crypto)
         KNotice(
           tone: KChipTone.warn,

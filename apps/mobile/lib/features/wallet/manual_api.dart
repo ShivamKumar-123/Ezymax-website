@@ -510,8 +510,6 @@ String manualMoney(String amount, String currency) {
   return '${decimalDisplay(amount, minDp: fiat || currency == 'USDT' ? 2 : 0)} $currency';
 }
 
-/// The rate as shown (web rateText): "88.00", "3.67", and small rates as written ("0.0000158").
-String manualRateText(String rate) => (compareDecimal(rate, '1') ?? 0) >= 0 ? decimalDisplay(rate) : rate.trim();
 
 /// Amount fields of manual payments (web cleanDecimal): what [cleanAmount] keeps, with `dp` decimals (2 for bank
 /// methods, 6 for crypto: the wallet's limit).
@@ -571,9 +569,6 @@ String manualLimits(ManualMethod m, T t) {
   if (mx == null) return t('payments.picker.minOnly', {'min': min});
   return t('payments.picker.limits', {'min': min, 'max': manualLtr(t, manualMoney(mx, m.currency))});
 }
-
-/// "1 USDT = 88.00 INR".
-String manualRate(String rate, String currency, T t) => t('payments.card.rateValue', {'rate': manualLtr(t, manualRateText(rate)), 'currency': currency});
 
 /// Figures stay left to right inside right-to-left text (an LTR isolate in Arabic, Urdu and Persian).
 String manualLtr(T t, String s) => t.rtl ? '\u2066$s\u2069' : s;

@@ -42,7 +42,10 @@ final accountsOnceProvider = FutureProvider.autoDispose<List<EngineAccount>>((re
 /// `GET trading/groups` (web useGroups(): no polling).
 final groupsProvider = FutureProvider.autoDispose<List<EngineGroup>>((ref) async {
   final j = await ref.watch(apiProvider).get<Map<String, dynamic>>('trading/groups');
-  return [for (final g in _maps(j['groups'])) EngineGroup.fromJson(g)];
+  // Cheapest first, as on the web: the client reads the types as a ladder they climb, and the engine returns
+  // them by code, which is alphabetical and means nothing here. Name breaks a tie so the order never shuffles.
+  return [for (final g in _maps(j['groups'])) EngineGroup.fromJson(g)]
+    ..sort((a, b) => a.minDeposit.compareTo(b.minDeposit) != 0 ? a.minDeposit.compareTo(b.minDeposit) : a.name.compareTo(b.name));
 });
 
 /// `GET trading/accounts/{login}` (web account-detail usePoll: every 3 s).

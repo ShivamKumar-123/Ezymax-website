@@ -44,6 +44,37 @@ const Map<String, ChainLabel> kChainLabel = {
 /// The label of `chain` (an unknown chain shows its own code).
 ChainLabel chainLabel(String? chain) => kChainLabel[chain] ?? (name: chain ?? '', short: (chain ?? '').toUpperCase(), wallet: '');
 
+/// An off-chain way to be paid, from `GET wallet/config` (wallet `withdraw_methods`): switched on and priced
+/// in the Back Office. Only methods that are both reach the app.
+class WithdrawMethod {
+  const WithdrawMethod({required this.method, required this.enabled, required this.currency, required this.rate, required this.feeFlat, required this.minAmount, required this.maxAmount, required this.instructions});
+
+  /// `upi` today.
+  final String method;
+  final bool enabled;
+
+  /// What the client is actually paid in, e.g. INR.
+  final String currency;
+
+  /// Units of `currency` per 1 USDT; null until the broker prices it.
+  final String? rate, minAmount, maxAmount, instructions;
+  final String feeFlat;
+
+  /// Offerable: switched on and priced.
+  bool get usable => enabled && (double.tryParse(rate ?? '') ?? 0) > 0;
+
+  static WithdrawMethod fromJson(Map<String, dynamic> j) => WithdrawMethod(
+    method: '${j['method'] ?? ''}',
+    enabled: j['enabled'] == true,
+    currency: '${j['currency'] ?? 'INR'}',
+    rate: _s(j['rate']),
+    feeFlat: '${j['fee_flat'] ?? '0'}',
+    minAmount: _s(j['min_amount']),
+    maxAmount: _s(j['max_amount']),
+    instructions: _s(j['instructions']),
+  );
+}
+
 /// A network of `GET wallet/config`.
 class WalletChain {
   const WalletChain({
@@ -112,14 +143,22 @@ class WalletLimits {
 
 /// `GET wallet/config`: networks, limits, fees.
 class WalletConfig {
-  const WalletConfig({required this.chains, required this.limits});
+  const WalletConfig({required this.chains, required this.limits, this.withdrawMethods = const []});
   final List<WalletChain> chains;
+  final List<WithdrawMethod> withdrawMethods;
+
+  /// The off-chain method the broker has open, if any (UPI today).
+  WithdrawMethod? get upi => withdrawMethods.where((m) => m.method == 'upi' && m.usable).firstOrNull;
   final WalletLimits limits;
 
   WalletChain? chain(String c) => chains.where((x) => x.chain == c).firstOrNull;
 
   static WalletConfig fromJson(Map<String, dynamic> j) =>
-      WalletConfig(chains: [for (final c in _list(j['chains'])) WalletChain.fromJson(c)], limits: WalletLimits.fromJson(_map(j['limits'])));
+      WalletConfig(
+        chains: [for (final c in _list(j['chains'])) WalletChain.fromJson(c)],
+        limits: WalletLimits.fromJson(_map(j['limits'])),
+        withdrawMethods: [for (final m in _list(j['withdraw_methods'])) WithdrawMethod.fromJson(m)],
+      );
 }
 
 /* ------------------------------------------------------------------ deposits */
@@ -238,6 +277,7 @@ class IntentView {
 class Withdrawal {
   const Withdrawal({
     required this.id,
+    required this.method,
     required this.chain,
     required this.network,
     required this.toAddress,
@@ -248,21 +288,37 @@ class Withdrawal {
     required this.reason,
     required this.payoutTxHash,
     required this.explorerUrl,
+    required this.payoutReference,
+    required this.payoutCurrency,
+    required this.payoutAmount,
     required this.createdAt,
   });
 
   final int id;
-  final String chain, network, toAddress, amount, fee, netAmount;
+
+  /// `crypto` pays a wallet address, `upi` pays a UPI ID in local currency.
+  final String method;
+
+  /// Null for an off-chain payout, which has no chain.
+  final String? chain, network;
+  final String toAddress, amount, fee, netAmount;
 
   /// requested | approved | rejected | cancelled | paid | completed
   final String status;
   final String? reason, payoutTxHash, explorerUrl;
+
+  /// Off chain: the bank reference staff recorded, and the local amount promised when the client asked.
+  final String? payoutReference, payoutCurrency, payoutAmount;
   final DateTime createdAt;
+
+  /// How it is being paid, for a one-line label: the network short name, or the method.
+  String get rail => chain == null ? method.toUpperCase() : chainLabel(chain).short;
 
   static Withdrawal fromJson(Map<String, dynamic> j) => Withdrawal(
     id: _int(j['id']),
-    chain: '${j['chain'] ?? ''}',
-    network: '${j['network'] ?? ''}',
+    method: '${j['method'] ?? 'crypto'}',
+    chain: _s(j['chain']),
+    network: _s(j['network']),
     toAddress: '${j['to_address'] ?? ''}',
     amount: '${j['amount'] ?? '0'}',
     fee: '${j['fee'] ?? '0'}',
@@ -271,6 +327,9 @@ class Withdrawal {
     reason: _s(j['reason']),
     payoutTxHash: _s(j['payout_tx_hash']),
     explorerUrl: _s(j['explorer_url']),
+    payoutReference: _s(j['payout_reference']),
+    payoutCurrency: _s(j['payout_currency']),
+    payoutAmount: _s(j['payout_amount']),
     createdAt: _date(j['created_at']),
   );
 }
@@ -284,8 +343,16 @@ class WithdrawQuote {
     required this.usedToday,
     required this.dailyMax,
     required this.available,
+    required this.payoutCurrency,
+    required this.payoutAmount,
   });
   final String amount, fee, netAmount, usedToday, dailyMax, available;
+
+  /// Off chain only: what the client is paid, in the broker's currency, at the rate in force now.
+  final String? payoutCurrency, payoutAmount;
+
+  /// What to show as "you receive": the local figure where there is one, else the net USDT.
+  String get receives => payoutAmount != null && payoutCurrency != null ? '${fmt(payoutAmount)} $payoutCurrency' : '${fmt(netAmount)} USDT';
 
   static WithdrawQuote fromJson(Map<String, dynamic> j) => WithdrawQuote(
     amount: '${j['amount'] ?? '0'}',
@@ -294,6 +361,8 @@ class WithdrawQuote {
     usedToday: '${j['used_today'] ?? '0'}',
     dailyMax: '${j['daily_max'] ?? '0'}',
     available: '${j['available'] ?? '0'}',
+    payoutCurrency: _s(j['payout_currency']),
+    payoutAmount: _s(j['payout_amount']),
   );
 }
 
@@ -564,6 +633,12 @@ bool amountOk(String amount) {
   final a = amount.trim();
   return _amount2.hasMatch(a) && (double.tryParse(a) ?? 0) > 0;
 }
+
+/// A UPI ID (`name@bank`), the same shape the wallet service enforces (`normalize_upi_id`). Checked here so a
+/// client is told before staff are asked to chase a payment that was never going to arrive.
+final RegExp _upi = RegExp(r'^[a-z0-9][a-z0-9.\-_]{0,190}@[a-z][a-z0-9]{1,63}$', caseSensitive: false);
+
+bool upiLooksValid(String id) => _upi.hasMatch(id.trim());
 
 /// A deposit amount: up to 6 decimals, above zero and at least the network's minimum.
 bool depositAmountOk(String amount, String? minDeposit) {

@@ -1,9 +1,10 @@
 // Wallet › Withdraw: port of apps/crm/components/wallet-live/withdraw-page.tsx (LiveWithdrawPage), phone order:
 //   header (Withdraw + ← Wallet)
 //   KYC notice
-//   the form: network, destination address, amount (Max), the fee quote (POST wallet/withdrawals/quote, 400 ms after
-//   typing), Withdraw -> the emailed code first (step-up `withdrawal`, target "<chain>-<amount>", as the web's
-//   StepUpDialog) -> POST wallet/withdrawals {chain, amount, to_address, idempotency_key, stepup_token}
+//   the form: destination (a chain, or UPI where the broker has it open), the address or UPI ID, amount (Max),
+//   the fee quote (POST wallet/withdrawals/quote, 400 ms after typing), Withdraw -> the emailed code first
+//   (step-up `withdrawal`, target "<rail>-<amount>", as the web's StepUpDialog)
+//   -> POST wallet/withdrawals {method, chain?, amount, to_address, idempotency_key, stepup_token}
 //   -> "Withdrawal requested"
 //   limits and fees (today's use, min / max, fee, wait after a deposit)
 //   your withdrawals (Cancel while waiting for review: POST wallet/withdrawals/{id}/cancel)
@@ -93,7 +94,10 @@ class WithdrawForm extends ConsumerStatefulWidget {
 }
 
 class _WithdrawFormState extends ConsumerState<WithdrawForm> {
-  late String _chain = widget.cfg.chains.where((c) => c.withdrawalsEnabled).firstOrNull?.chain ?? 'tron';
+  // the open chains, then UPI: `_chain` is null when the client is being paid off chain
+  late final List<WalletChain> _chains = widget.cfg.chains.where((c) => c.withdrawalsEnabled).toList();
+  late final WithdrawMethod? _upi = widget.cfg.upi;
+  late String? _chain = _chains.firstOrNull?.chain ?? (_upi == null ? 'tron' : null);
   final _to = TextEditingController();
   final _amount = TextEditingController();
   String? _err;
@@ -109,7 +113,12 @@ class _WithdrawFormState extends ConsumerState<WithdrawForm> {
 
   bool get _verified => widget.kyc == KycStatus.verified;
   String get _amt => _amount.text.trim();
-  bool get _addrOk => addressLooksValid(_chain, _to.text);
+  bool get _isUpi => _chain == null;
+
+  /// What identifies this rail in a step-up target and in the body.
+  String get _rail => _chain ?? 'upi';
+  bool get _toOk => _isUpi ? upiLooksValid(_to.text) : addressLooksValid(_chain!, _to.text);
+  bool get _offered => _chains.isNotEmpty || _upi != null;
 
   @override
   void dispose() {
@@ -119,16 +128,27 @@ class _WithdrawFormState extends ConsumerState<WithdrawForm> {
     super.dispose();
   }
 
+  /// A destination for one rail is never valid for another, so the field starts again.
+  void _pick(String? chain) {
+    if (chain == _chain) return;
+    _to.clear();
+    setState(() {
+      _chain = chain;
+      _err = null;
+    });
+    _changed();
+  }
+
   void _changed() {
     _debounce?.cancel();
     final seq = ++_seq;
     setState(() {
       _quote = null;
       _quoteErr = null;
-      _quoting = _verified && amountOk(_amt) && _addrOk;
+      _quoting = _verified && _offered && amountOk(_amt) && _toOk;
     });
     if (!_quoting) return;
-    final body = {'chain': _chain, 'amount': _amt, 'to_address': _to.text.trim()};
+    final body = {..._rails, 'amount': _amt, 'to_address': _to.text.trim()};
     _debounce = Timer(const Duration(milliseconds: 400), () async {
       try {
         final r = await ref.read(apiProvider).post<Map<String, dynamic>>('wallet/withdrawals/quote', body: body);
@@ -143,18 +163,22 @@ class _WithdrawFormState extends ConsumerState<WithdrawForm> {
     });
   }
 
+  /// The two fields that say where the money goes. A chain is named only when there is one.
+  Map<String, Object?> get _rails => _isUpi ? {'method': 'upi'} : {'method': 'crypto', 'chain': _chain};
+
   Future<void> _confirm() async {
     final t = context.t;
     final q = _quote;
     if (q == null) return;
     setState(() => _err = null);
-    final l = chainLabel(_chain);
     await showStepUpSheet(
       context,
       action: 'withdrawal',
-      target: '$_chain-$_amt',
+      target: '$_rail-$_amt',
       title: t('wallet.withdraw.confirmTitle'),
-      description: t('wallet.withdraw.confirmDescription', {'amount': fmt(q.amount), 'address': shortHash(_to.text.trim(), 8, 6), 'network': l.name}),
+      description: _isUpi
+          ? t('wallet.withdraw.confirmUpi', {'payout': q.receives, 'upi': _to.text.trim()})
+          : t('wallet.withdraw.confirmDescription', {'amount': fmt(q.amount), 'address': shortHash(_to.text.trim(), 8, 6), 'network': chainLabel(_chain).name}),
       what: t('wallet.withdraw.stepUpWhat'),
       confirmLabel: t('wallet.confirmWithdrawal'),
       onConfirmed: _send,
@@ -169,7 +193,7 @@ class _WithdrawFormState extends ConsumerState<WithdrawForm> {
           .read(apiProvider)
           .post<Map<String, dynamic>>(
             'wallet/withdrawals',
-            body: {'chain': _chain, 'amount': _amt, 'to_address': _to.text.trim(), 'idempotency_key': _key, 'stepup_token': token},
+            body: {..._rails, 'amount': _amt, 'to_address': _to.text.trim(), 'idempotency_key': _key, 'stepup_token': token},
           );
       if (!mounted) return;
       _amount.clear();
@@ -234,24 +258,29 @@ class _WithdrawFormState extends ConsumerState<WithdrawForm> {
 
     final available = widget.o.usdt.available;
     final limits = widget.cfg.limits;
+    // read once into a local: a `late final` field is never promoted, so `_upi.currency` would not compile
+    final upi = _upi;
     final q = _quote;
-    final addrError = _to.text.isNotEmpty && !_addrOk ? (_chain == 'bsc' ? t('wallet.withdraw.bscAddressError') : t('wallet.withdraw.tronAddressError')) : null;
+    final addrError = _to.text.isEmpty || _toOk
+        ? null
+        : _isUpi
+        ? t('wallet.withdraw.upiError')
+        : _chain == 'bsc'
+        ? t('wallet.withdraw.bscAddressError')
+        : t('wallet.withdraw.tronAddressError');
     final shownErr = _quoteErr != null ? walletErrorText(_quoteErr, t, fallback: t('wallet.withdraw.checkFailed')) : _err;
     return KCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          KCardHeader(title: t('wallet.withdrawUsdt'), subtitle: t('wallet.withdraw.formSubtitle')),
+          KCardHeader(title: _isUpi ? t('wallet.withdraw.titleUpi') : t('wallet.withdrawUsdt'), subtitle: t('wallet.withdraw.formSubtitle')),
           const SizedBox(height: 16),
-          for (final c in widget.cfg.chains) ...[
+          if (!_offered) WalletInlineError(t('wallet.withdraw.noneAvailable'), top: 0),
+          for (final c in _chains) ...[
             WalletRow(
               selected: c.chain == _chain,
-              enabled: c.withdrawalsEnabled && _verified,
-              onTap: () {
-                if (_chain == c.chain) return;
-                _chain = c.chain;
-                _changed();
-              },
+              enabled: _verified,
+              onTap: () => _pick(c.chain),
               child: Row(
                 children: [
                   ChainCoin(c.chain, size: 28),
@@ -273,12 +302,50 @@ class _WithdrawFormState extends ConsumerState<WithdrawForm> {
             ),
             const SizedBox(height: 8),
           ],
+          if (upi != null) ...[
+            WalletRow(
+              selected: _isUpi,
+              enabled: _verified,
+              onTap: () => _pick(null),
+              child: Row(
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(color: k.info.withValues(alpha: 0.15), shape: BoxShape.circle),
+                    child: Icon(LucideIcons.smartphone, size: 15, color: k.info),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(t('wallet.withdraw.methodUpi'), style: context.text.label.copyWith(fontSize: 13.5, fontWeight: FontWeight.w500)),
+                        Text(
+                          t('wallet.withdraw.methodUpiSub', {'currency': upi.currency}),
+                          style: context.text.caption.copyWith(color: k.fg3, fontWeight: FontWeight.w400, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
           const SizedBox(height: 10),
           KTextField(
-            label: t('wallet.withdraw.destination'),
+            label: _isUpi ? t('wallet.withdraw.upiDestination') : t('wallet.withdraw.destination'),
             controller: _to,
-            placeholder: ltrHint(_chain == 'bsc' ? '0x…' : 'T…'),
-            enabled: _verified,
+            placeholder: ltrHint(
+              _isUpi
+                  ? 'name@bank'
+                  : _chain == 'bsc'
+                  ? '0x…'
+                  : 'T…',
+            ),
+            enabled: _verified && _offered,
             ltr: true,
             error: addrError,
             onChanged: (_) => _changed(),
@@ -288,7 +355,7 @@ class _WithdrawFormState extends ConsumerState<WithdrawForm> {
             label: t('common.amount'),
             controller: _amount,
             placeholder: '0.00',
-            enabled: _verified,
+            enabled: _verified && _offered,
             ltr: true,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: [amountFormatter],
@@ -317,10 +384,17 @@ class _WithdrawFormState extends ConsumerState<WithdrawForm> {
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: WalletTile(label: t('wallet.youReceive'), value: '${fmt(q.netAmount)} USDT', valueColor: k.up),
+                  child: WalletTile(label: t('wallet.youReceive'), value: q.receives, valueColor: k.up),
                 ),
               ],
             ),
+            if (q.payoutAmount != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                t('wallet.withdraw.rateNote', {'net': fmt(q.netAmount)}),
+                style: context.text.caption.copyWith(color: k.fg3, fontWeight: FontWeight.w400, fontSize: 12),
+              ),
+            ],
           ],
           if (_quoting && q == null) ...[
             const SizedBox(height: 12),
@@ -341,7 +415,7 @@ class _WithdrawFormState extends ConsumerState<WithdrawForm> {
           ),
           const SizedBox(height: 12),
           Text(
-            t('wallet.withdraw.emailNote', {'network': chainLabel(_chain).name}),
+            _isUpi ? (upi?.instructions ?? t('wallet.withdraw.upiNote')) : t('wallet.withdraw.emailNote', {'network': chainLabel(_chain).name}),
             style: context.text.caption.copyWith(color: k.fg3, fontWeight: FontWeight.w400, fontSize: 12),
           ),
         ],

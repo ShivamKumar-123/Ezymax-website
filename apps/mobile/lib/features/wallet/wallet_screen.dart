@@ -314,7 +314,7 @@ class _InProgress extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    head(t('wallet.withdrawalLine', {'network': chainLabel(w.chain).short}), kWithdrawalStatus[w.status], '−${fmt(w.amount)} USDT', null),
+                    head(t('wallet.withdrawalLine', {'network': w.rail}), kWithdrawalStatus[w.status], '−${fmt(w.amount)} USDT', null),
                     const SizedBox(height: 4),
                     Text('${f.dateTime(w.createdAt)} · ${t('wallet.progress.withdrawalNet', {'net': fmt(w.netAmount), 'fee': fmt(w.fee)})}', style: small),
                   ],

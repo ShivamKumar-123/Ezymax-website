@@ -58,7 +58,8 @@ const payments = {
   "form.amount": "Amount paid",
   "form.amountHint": "In {currency}, exactly as you paid it",
   "form.receive": "You'll receive ≈ {amount} USDT",
-  "form.receiveNote": "At 1 USDT = {rate} {currency}. The final amount is confirmed by the broker.",
+  // the rate behind the figure is the broker's own number and is not published to clients
+  "form.receiveNote": "The final amount is confirmed by the broker.",
   "form.referenceBank": "UTR / transaction ID",
   "form.referenceBankHint": "The UTR or transaction ID shown by your bank or UPI app",
   "form.referenceBankPlaceholder": "e.g. 412345678901",

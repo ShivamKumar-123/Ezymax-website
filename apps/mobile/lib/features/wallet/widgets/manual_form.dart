@@ -233,7 +233,7 @@ class _ManualRequestFormState extends ConsumerState<ManualRequestForm> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  t('payments.form.receiveNote', {'rate': manualLtr(t, manualRateText(m.rate)), 'currency': m.currency}),
+                  t('payments.form.receiveNote'),
                   style: context.text.footnote.copyWith(color: k.fg3, fontSize: 12),
                 ),
               ],
