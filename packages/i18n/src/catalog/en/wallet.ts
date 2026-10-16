@@ -236,6 +236,26 @@ const wallet = {
   "withdraw.noneAvailable": "Withdrawals are closed right now. Please contact support.",
   // The flow: pick a rail, request, then watch the tracker (mirrors the deposit page).
   "withdraw.chooser.title": "How would you like to be paid?",
+  // The entry popup: pick a rail, read what it means, agree, then the form opens (mirrors payments.gate.*).
+  "withdrawGate.title": "How would you like to be paid?",
+  "withdrawGate.subtitle": "Choose where your money should go. You can change this later.",
+  "withdrawGate.usdtSub": "USDT to your own wallet on TRON or BNB Chain",
+  "withdrawGate.upiSub": "{currency} to your own UPI ID",
+  "withdrawGate.termsTitle": "Before you continue",
+  "withdrawGate.termsFor": "Paying out by {rail}",
+  "withdrawGate.termsUsdt":
+    "You choose the network and paste the address yourself. A transfer cannot be reversed, and an address on the wrong network loses the funds, so check both before you confirm. We pay only to an address you control; our team reviews every withdrawal first.",
+  "withdrawGate.termsUpi":
+    "You enter your own UPI ID. A payment cannot be reversed once sent, and a UPI ID in someone else's name is rejected at review. The amount in {currency} is fixed at the rate shown when you ask, and our team reviews every withdrawal first.",
+  "withdrawGate.agreeUsdt": "I have checked the network and the address, and I understand the transfer cannot be reversed.",
+  "withdrawGate.agreeUpi": "The UPI ID is mine, and I understand the payment cannot be reversed.",
+  "withdrawGate.continueTo": "Continue with {rail}",
+  "withdrawGate.opening": "Opening {rail}",
+  "withdrawGate.openingSub": "One moment while we set up your request.",
+  "withdrawGate.step1": "Checking your balance and limits",
+  "withdrawGate.step2": "Preparing the {rail} form",
+  "withdrawGate.step3": "Ready",
+  "withdrawGate.secure": "Reviewed by our team before anything is sent",
   "withdraw.chooser.usdt": "USDT",
   "withdraw.chooser.usdtText": "To your own wallet on BNB Chain or TRON.",
   "withdraw.chooser.upi": "UPI",

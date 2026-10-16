@@ -176,6 +176,8 @@ Two rails, chosen by `method` and priced the same way (the tenant's flat + perce
 | `method` | Goes to | Switched on in | Settled by |
 |---|---|---|---|
 | `crypto` (default) | the client's USDT wallet: `chain` + `to_address` | `chain_settings.withdrawals_enabled` | staff enter the payout hash; the watcher verifies it on chain |
+
+A chain can be open for **withdrawals only**: `receiving_address` is required exactly when `deposits_enabled` (a CHECK enforces it), so a broker whose money arrives by UPI can still pay out in USDT without publishing a deposit address. With no company address on file for that chain the watcher cannot check *who* sent the payout, so it checks everything that protects the client (token, recipient, exact net amount, success, confirmations), skips the sender, and sets `payout_sender_unverified` on the row for reconciliation.
 | `upi` | the client's own UPI ID, held in `to_address`; `chain` is NULL | `withdraw_methods` (`enabled` **and** a `rate`) | staff pay from the company account and enter the UTR, which completes it there and then |
 
 `upi` exists because deposits arrive in INR through `manual_deposits` while payouts were crypto-only, so a client who funded in rupees had no way back out. Nothing can verify an off-chain payout for us, which is why the reference is required, must be unique per tenant, and is audited with the name of whoever entered it.

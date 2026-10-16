@@ -122,6 +122,11 @@ pub async fn create_intent(st: &AppState, tenant_id: i64, user_id: i64, chain_ra
         return Err(ApiError::Coded { status: axum::http::StatusCode::TOO_MANY_REQUESTS, code: "rate_limited", message: "Too many deposit requests. Please try again later.".into() });
     }
     let limits = settings::limits(&st.pool, tenant_id).await?;
+    // belt and braces: deposits_enabled already gates this, and the column cannot be null while it is on
+    let receiving = cfg
+        .receiving_address
+        .clone()
+        .ok_or_else(|| ApiError::unprocessable("chain_disabled", format!("Deposits on {} are not available", chain.network())))?;
     let id = random_id("dep_");
     let r = sqlx::query(
         "INSERT INTO deposit_intents (id, tenant_id, user_id, chain, currency, amount, address, token_contract, ip, expires_at)
@@ -132,7 +137,7 @@ pub async fn create_intent(st: &AppState, tenant_id: i64, user_id: i64, chain_ra
     .bind(user_id)
     .bind(chain.as_str())
     .bind(amount)
-    .bind(&cfg.receiving_address)
+    .bind(&receiving)
     .bind(chain.usdt_contract_display())
     .bind(ip)
     .bind(limits.intent_ttl_minutes)
@@ -412,7 +417,8 @@ pub async fn expire_intents(st: &AppState) -> anyhow::Result<u64> {
 pub async fn scan(st: &AppState, tenant_id: i64, chain: ChainId) -> anyhow::Result<usize> {
     let Ok(client) = st.chain(chain) else { return Ok(0) };
     let Some(cfg) = settings::chain(&st.pool, tenant_id, chain).await? else { return Ok(0) };
-    let address = cfg.receiving_address.clone();
+    // nothing to scan on a chain the broker never receives on
+    let Some(address) = cfg.receiving_address.clone() else { return Ok(0) };
     let cursor: Option<i64> = sqlx::query_scalar("SELECT position FROM chain_cursors WHERE tenant_id = $1 AND chain = $2 AND address = $3")
         .bind(tenant_id)
         .bind(chain.as_str())

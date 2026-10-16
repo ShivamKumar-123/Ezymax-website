@@ -56,6 +56,7 @@ pub fn withdrawal_json(r: &PgRow) -> Value {
         "payout_amount": s_opt(r.get::<Option<D>, _>("payout_amount")),
         "payout_rate": s_opt(r.get::<Option<D>, _>("payout_rate")),
         "payout_error": r.get::<Option<String>, _>("payout_error"),
+        "payout_sender_unverified": r.get::<bool, _>("payout_sender_unverified"),
         "payout_confirmations": r.get::<i32, _>("payout_confirmations"),
         "paid_by": r.get::<Option<String>, _>("paid_by"),
         "paid_at": r.get::<Option<DateTime<Utc>>, _>("paid_at"),
@@ -522,9 +523,21 @@ pub async fn verify_payout(st: &AppState, id: i64) -> anyhow::Result<()> {
     let company = settings::company_addresses(&st.pool, tenant_id, chain).await?;
     let to: String = w.get("to_address");
     let net: D = w.get("net_amount");
-    let ok = lookup.transfers.iter().any(|t| t.token == chain.usdt_contract() && company.contains(&t.from) && t.to == to && t.amount == net);
+    // Who sent it is a reconciliation question, not a "was the client paid" one. With no company address on
+    // file that check can only ever say no, which would bounce every honest payout, so it is skipped and
+    // recorded. Everything that protects the client - token, recipient, exact amount - still has to hold.
+    let unchecked_sender = company.is_empty();
+    let ok = lookup
+        .transfers
+        .iter()
+        .any(|t| t.token == chain.usdt_contract() && (unchecked_sender || company.contains(&t.from)) && t.to == to && t.amount == net);
     if !ok {
-        return payout_failed(st, id, &format!("The transaction does not send exactly {} USDT from a company address to {to}", s(net))).await;
+        let from = if unchecked_sender { String::new() } else { " from a company address".into() };
+        return payout_failed(st, id, &format!("The transaction does not send exactly {} USDT{from} to {to}", s(net))).await;
+    }
+    if unchecked_sender {
+        sqlx::query("UPDATE withdrawals SET payout_sender_unverified = true WHERE id = $1").bind(id).execute(&st.pool).await?;
+        tracing::warn!(withdrawal = id, %chain, "payout accepted without a company address to check the sender against");
     }
     let conf = confirmations(client.head().await?, lookup.block.unwrap_or_default());
     let required = settings::chain(&st.pool, tenant_id, chain).await?.map(|c| c.confirmations).unwrap_or(20);

@@ -37,7 +37,9 @@ impl Limits {
 #[derive(Clone, Debug)]
 pub struct ChainCfg {
     pub chain: ChainId,
-    pub receiving_address: String,
+    /// Where clients deposit. `None` when the chain is open for payouts only; the database refuses `None`
+    /// while `deposits_enabled`.
+    pub receiving_address: Option<String>,
     pub payout_address: Option<String>,
     pub confirmations: i32,
     pub deposits_enabled: bool,

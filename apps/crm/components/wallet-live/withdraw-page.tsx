@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, ArrowLeftRight, ArrowUpFromLine, Check, Loader2, Smartphone } from "lucide-react";
 import { toast } from "sonner";
@@ -29,6 +29,7 @@ import {
   type Withdrawal,
 } from "./api";
 import { HashLink, InlineError, KycNotice, StatusTag, Tile, WITHDRAWAL_STATUS, WalletUnavailable, cleanAmount } from "./ui";
+import { WithdrawGate } from "./withdraw-gate";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -533,6 +534,7 @@ function MyWithdrawals({ list, onOpen }: { list: Page<Withdrawal> | null; onOpen
 function Inner() {
   const t = useT();
   const sp = useSearchParams();
+  const router = useRouter();
   const me = useSession();
   const cfg = useWallet<WalletConfig>("config");
   const o = useWallet<Overview>("overview", 15000);
@@ -546,6 +548,10 @@ function Inner() {
   const upi = (cfg.data?.withdraw_methods ?? []).find((m) => m.method === "upi" && m.enabled && m.rate);
   const [picked, setPicked] = React.useState<Via | null>(() => (sp.get("via") === "upi" ? "upi" : sp.get("via") === "usdt" ? "usdt" : null));
   const via: Via = picked && (picked === "usdt" ? chains.length > 0 : !!upi) ? picked : chains.length ? "usdt" : upi ? "upi" : "usdt";
+  // The gate opens on a fresh visit, once the rails are known and there is really a choice to make. Reopening
+  // an existing withdrawal (?w=) or arriving with ?via= skips it.
+  const loaded = !!cfg.data;
+  const gateOpen = !openId && picked === null && loaded && chains.length > 0 && !!upi;
 
   const open = (id: number | null) => {
     setOpenId(id);
@@ -613,9 +619,10 @@ function Inner() {
         }
       />
       <KycNotice status={me.kyc_status} />
-      {!openId && <WithdrawChooser value={via} onChange={choose} usdt={chains.length > 0} upi={upi?.currency ?? null} />}
+      <WithdrawGate open={gateOpen} hasUsdt={chains.length > 0} hasUpi={!!upi} currency={upi?.currency ?? null} onChoose={choose} onClose={() => router.push("/wallet")} />
+      {!openId && !gateOpen && <WithdrawChooser value={via} onChange={choose} usdt={chains.length > 0} upi={upi?.currency ?? null} />}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <div className="space-y-4 xl:col-span-7">{main}</div>
+        <div className="space-y-4 xl:col-span-7">{gateOpen ? <Skeleton className="h-[420px] w-full rounded-[20px]" /> : main}</div>
         <div className="space-y-4 xl:col-span-5">
           <HowItWorks via={via} currency={upi?.currency ?? null} />
           {cfg.data && o.data && <LimitsCard cfg={cfg.data} o={o.data} />}

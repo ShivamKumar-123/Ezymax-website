@@ -467,10 +467,11 @@ pub async fn update_settings(State(st): State<AppState>, s_ctx: StaffCtx, Body(b
     for c in b.chains.unwrap_or_default() {
         let chain = ChainId::parse(&c.chain).ok_or_else(|| ApiError::validation("chain", "chain must be bsc or tron"))?;
         let cur = settings::chain(&st.pool, t, chain).await?;
+        // "" clears it, which is how a chain becomes payout-only
         let receiving = match (&c.receiving_address, &cur) {
-            (Some(a), _) => chain.normalize_address(a).ok_or_else(|| ApiError::validation("receiving_address", format!("Invalid {} address", chain.network())))?,
-            (None, Some(cur)) => cur.receiving_address.clone(),
-            (None, None) => return Err(ApiError::validation("receiving_address", format!("Set the receiving address for {}", chain.network()))),
+            (Some(a), _) if a.trim().is_empty() => None,
+            (Some(a), _) => Some(chain.normalize_address(a).ok_or_else(|| ApiError::validation("receiving_address", format!("Invalid {} address", chain.network())))?),
+            (None, cur) => cur.as_ref().and_then(|x| x.receiving_address.clone()),
         };
         let payout = match &c.payout_address {
             Some(a) if a.trim().is_empty() => None,
@@ -484,12 +485,16 @@ pub async fn update_settings(State(st): State<AppState>, s_ctx: StaffCtx, Body(b
         if !(1..=500).contains(&confirmations) {
             return Err(ApiError::validation("confirmations", "Use 1 to 500 confirmations"));
         }
+        let deposits_on = c.deposits_enabled.or(cur.as_ref().map(|x| x.deposits_enabled)).unwrap_or(true);
+        if deposits_on && receiving.is_none() {
+            return Err(ApiError::validation("receiving_address", format!("Set the receiving address for {}, or switch deposits off to open the chain for withdrawals only", chain.network())));
+        }
         let next = settings::ChainCfg {
             chain,
             receiving_address: receiving.clone(),
             payout_address: payout.clone(),
             confirmations,
-            deposits_enabled: c.deposits_enabled.or(cur.as_ref().map(|x| x.deposits_enabled)).unwrap_or(true),
+            deposits_enabled: deposits_on,
             withdrawals_enabled: c.withdrawals_enabled.or(cur.as_ref().map(|x| x.withdrawals_enabled)).unwrap_or(true),
             min_deposit: nonneg("min_deposit", c.min_deposit)?.or(cur.as_ref().map(|x| x.min_deposit)).unwrap_or(D::TEN),
             withdraw_fee: nonneg("withdraw_fee", c.withdraw_fee)?.or(cur.as_ref().map(|x| x.withdraw_fee)).unwrap_or(D::ZERO),
@@ -512,7 +517,9 @@ pub async fn update_settings(State(st): State<AppState>, s_ctx: StaffCtx, Body(b
         .bind(s_ctx.staff.tag())
         .execute(&mut *tx)
         .await?;
-        settings::remember_address(&mut tx, t, chain, &receiving, "receiving").await?;
+        if let Some(r) = &receiving {
+            settings::remember_address(&mut tx, t, chain, r, "receiving").await?;
+        }
         if let Some(p) = &payout {
             settings::remember_address(&mut tx, t, chain, p, "payout").await?;
         } else {
