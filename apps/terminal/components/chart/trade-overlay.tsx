@@ -132,10 +132,15 @@ function stopMoney(l: TLine, price: number, positions: TPosition[], pendings: Pe
   return p ? profitAt(p, price) + p.swap - p.commission : null;
 }
 
-/** A line's colour: BUY blue, SELL red; SL red, TP green, pending gold, alerts amber; a stop dragged to the wrong side
- *  goes grey. */
+/** A line's colour: BUY green, SELL red; SL red, TP green, pending gold, alerts amber; a stop dragged to the wrong
+ *  side goes grey.
+ *
+ *  A buy line takes `up` (#22c55e) rather than the chart's blue `buy`: the owner asked for the green every other
+ *  terminal uses on a long, and the blue stays where it belongs - rising candles, volume and the Buy prices - so
+ *  the candles are unchanged. BUY and TP then share green exactly as SELL and SL already share red; the chip
+ *  beside each line is what names it ("BUY 0.50" against "TP"), as it already did on the sell side. */
 export function lineColor(l: TLine, c: Palette, bad = false): string {
-  return bad ? c.fg3 : l.kind === "sl" ? c.down : l.kind === "tp" ? c.up : l.kind === "pending" ? c.gold : l.kind === "alert" ? c.warn : l.side === "buy" ? c.buy : c.down;
+  return bad ? c.fg3 : l.kind === "sl" ? c.down : l.kind === "tp" ? c.up : l.kind === "pending" ? c.gold : l.kind === "alert" ? c.warn : l.side === "buy" ? c.up : c.down;
 }
 
 /** A line being dragged. */
