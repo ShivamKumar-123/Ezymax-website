@@ -22,7 +22,7 @@ import { chartFont, chartOverrides, features, loadingScreen, shareFonts, studyOv
 import type { TvChartApi, TvWidget } from "@/lib/tv/types";
 import { useContextMenu, type MenuItem } from "@/components/ui/menu";
 import { segmentLabel } from "@/components/market/segments";
-import { openActivity, toggleFullChart, useLayoutItems } from "@/components/shell/commands";
+import { openActivity, showSide, toggleFullChart, useLayoutItems } from "@/components/shell/commands";
 import { chartRegistry, readPalette, type ChartHandle, type Palette } from "./engine";
 import { TradeOverlay, lineColor, type ChartCoords, type DrawnLine, type PlotFrame } from "./trade-overlay";
 
@@ -121,7 +121,8 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
   const quoteRef = React.useRef<{ bid: number; ask: number }>({ bid: 0, ask: 0 });
   const [legendTop, setLegendTop] = React.useState<number | null>(null);
   const [popup, setPopup] = React.useState(false);
-  const showBox = !T.readOnly && !hideOneClick;
+  // Sell / Buy live in the header now (headerButtons), so nothing floats over the candles
+  const showBox = false;
   const showBoxRef = React.useRef(showBox);
   showBoxRef.current = showBox;
 
@@ -332,7 +333,7 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
   };
 
   /* ---------------- our buttons in the library's header ---------------- */
-  const buttons = React.useRef<{ order?: HTMLElement; full?: HTMLElement }>({});
+  const buttons = React.useRef<{ order?: HTMLElement; full?: HTMLElement; sell?: HTMLElement; buy?: HTMLElement; spread?: HTMLElement }>({});
   const headerButtons = (w: TvWidget) => {
     const tr = live.current.t;
     const make = (align: "left" | "right", html: string, title: string, onClick: (b: HTMLElement) => void, tone?: "accent") => {
@@ -359,8 +360,42 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
       if (f) live.current.cm.open({ clientX: f.left + r.left, clientY: f.top + r.bottom + 4 }, live.current.layoutItems);
     });
     const full = make("right", svg(ICON.max), tr("desk.ch.fullChart"), () => toggleFullChart(live.current.T));
-    buttons.current = { order, full };
+
+    // Sell · spread · Buy, where the reference terminal keeps them. A click opens the Trade column - the ticket
+    // is where the order is placed, and its own Sell / Buy sit right under the pointer - and with one-click
+    // trading on the order still goes at once, as the switch promises.
+    const quick = (side: "buy" | "sell") => {
+      const { T: Tm, tab: tb } = live.current;
+      showSide(Tm, "order");
+      if (Tm.guest) return void Tm.quickTrade(tb.symbol, side, Tm.ws.lot);
+      if (Tm.ws.oneClick && !Tm.readOnly) Tm.quickTrade(tb.symbol, side, Tm.ws.lot);
+    };
+    const sell = make("right", `<span>${esc(tr("common.sell"))}</span><span class="ezx-px">\u2014</span>`, tr("common.sell"), () => quick("sell"));
+    sell.dataset.tone = "sell";
+    const spread = make("right", `<span class="ezx-px">\u2014</span>`, tr("desk.op.spread"), () => showSide(live.current.T, "order"));
+    spread.dataset.tone = "spread";
+    const buy = make("right", `<span>${esc(tr("common.buy"))}</span><span class="ezx-px">\u2014</span>`, tr("common.buy"), () => quick("buy"));
+    buy.dataset.tone = "buy";
+
+    buttons.current = { order, full, sell, buy, spread };
+    paintQuote();
     syncButtons();
+  };
+
+  /** Writes the live prices into the header pair (text nodes only: they are not React's to re-render). */
+  const paintQuote = () => {
+    const { sell, buy, spread } = buttons.current;
+    if (!sell && !buy && !spread) return;
+    const { bid, ask } = quoteRef.current;
+    const sym = live.current.tab.symbol;
+    const px = (el: HTMLElement | undefined, v: number) => {
+      const n = el?.querySelector(".ezx-px");
+      if (n) n.textContent = v > 0 ? fmtPrice(sym, v) : "\u2014";
+    };
+    px(sell, bid);
+    px(buy, ask);
+    const n = spread?.querySelector(".ezx-px");
+    if (n) n.textContent = bid > 0 && ask > 0 ? fmtVol(ask - bid).replace(/0+$/, "").replace(/\.$/, "") : "\u2014";
   };
 
   const full = T.ui.fullChart;
@@ -549,6 +584,7 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
       if (timer) return;
       timer = setTimeout(() => {
         timer = null;
+        paintQuote();
         const w = readyRef.current?.widget;
         if (w) syncShapes(w);
       }, 500);

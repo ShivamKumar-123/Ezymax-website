@@ -54,9 +54,8 @@ export function ChartWorkspace() {
   // TradingView charts (when the licensed library is installed) bring their own toolbars, drawing rail and date
   // ranges: the card keeps only its row of tabs. A slot's widget lives on while its tab, symbol or timeframe change.
   const tv = useTvStatus() !== "missing";
-  // The floating Sell · lot · Buy box duplicates the docked ticket, which carries the same prices and the same
-  // one-click switch, so it only earns its place on the plot when the ticket is not on screen - the column
-  // hidden, showing another tab, or Full chart.
+  // Sell / Buy belong in the header, not over the candles: on the TradingView chart they are header buttons,
+  // and here the toolbar carries them (ChartBar). Nothing floats on the plot either way.
   const ticketDocked = T.ws.panels.watch && T.ws.side === "order" && !T.ui.fullChart;
   return (
     <section data-tour="chart" className="t-glass flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-[14px] border border-line">
@@ -66,7 +65,7 @@ export function ChartWorkspace() {
         {!tv && <DrawingBar />}
         <div className={cn("grid min-h-0 min-w-0 flex-1 gap-1.5 pb-1.5 pe-1.5", tv && "ps-1.5 pt-1.5", grid)}>
           {slots.map((tab, i) => {
-            const props = { tab, active: tab.id === T.ws.activeId && slots.length > 0, highlight: tab.id === T.ws.activeId && slots.length > 1, onActivate: () => T.ws.activeId !== tab.id && T.activateTab(tab.id), compact: layout === "4", hideOneClick: ticketDocked };
+            const props = { tab, active: tab.id === T.ws.activeId && slots.length > 0, highlight: tab.id === T.ws.activeId && slots.length > 1, onActivate: () => T.ws.activeId !== tab.id && T.activateTab(tab.id), compact: layout === "4", hideOneClick: true };
             return tv ? <TvChart key={`slot-${i}`} {...props} /> : <ChartView key={tab.id} {...props} />;
           })}
         </div>
