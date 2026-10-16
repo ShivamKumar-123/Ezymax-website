@@ -1,5 +1,8 @@
 /* Ezymex inside the TradingView Advanced Charts frame (custom_css_url; components/chart/tv-chart.tsx). The colours are
-   set at run time from the terminal's tokens (--tv-color-*, --ezx-*: lib/tv/style.ts), for the theme and the broker. */
+   set at run time from the terminal's tokens (--tv-color-*, --ezx-*: lib/tv/style.ts), for the theme and the broker.
+
+   This file is fetched inside the library's iframe, which a page reload does not refresh - the browser keeps the
+   copy it has. After editing it, bump CSS_VERSION in tv-chart.tsx or no trader will ever see the change. */
 
 /* our buttons in the library's header: New order, alerts, layout, Full chart */
 .ezx-btn {

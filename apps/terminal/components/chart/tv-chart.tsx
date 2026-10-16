@@ -62,6 +62,10 @@ const RANGES = [
   { text: "1d", title: "1D", resolution: "1", tip: "chart.range.1d" },
 ] as const;
 
+/** public/tv/ezymex.css is loaded inside the library's iframe, where a reload of the page does not refetch it:
+ *  the browser keeps serving the cached copy and new rules never arrive. **Bump this whenever that file changes.** */
+const CSS_VERSION = "2";
+
 /** Room left under the legend's symbol line for the one-click box (public/tv/ezymex.css). */
 const BOX_GAP = 50;
 
@@ -163,7 +167,7 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
         timezone: "Etc/UTC",
         saved_data: saved,
         auto_save_delay: 2,
-        custom_css_url: "/tv/ezymex.css",
+        custom_css_url: `/tv/ezymex.css?v=${CSS_VERSION}`,
         custom_font_family: chartFont(),
         loading_screen: loadingScreen(c),
         overrides: chartOverrides(c),
