@@ -264,9 +264,13 @@ export function useChartEngine(
     });
 
     /* ---- bid / ask lines (account group's spread) ---- */
+    // The two prices the account can actually trade at, each in the colour of the button that uses it: Bid is
+    // where a sell fills (red, like Sell), Ask where a buy fills (the chart's buy blue, like Buy). They were grey
+    // and red before, which put the sell price in the same colour as every falling candle and left the buy price
+    // as the lowest-contrast thing on the chart - two lines that were drawn but could not be found.
     const snap = priceFeed().quote(symbol);
-    const bidLine = main.createPriceLine({ price: snap.bid, color: c.fg2, lineWidth: 1, lineStyle: LineStyle.Dotted, axisLabelVisible: true, title: "", axisLabelColor: c.fg2, axisLabelTextColor: c.dark ? "#0a0a0d" : "#fff" });
-    const askLine = main.createPriceLine({ price: snap.ask, color: c.down, lineWidth: 1, lineStyle: LineStyle.Dotted, axisLabelVisible: true, title: "", axisLabelColor: c.down, axisLabelTextColor: "#fff" });
+    const bidLine = main.createPriceLine({ price: snap.bid, color: c.down, lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: true, title: "", axisLabelColor: c.down, axisLabelTextColor: "#fff" });
+    const askLine = main.createPriceLine({ price: snap.ask, color: c.buy, lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: true, title: "", axisLabelColor: c.buy, axisLabelTextColor: "#fff" });
 
     /* ---- legend ---- */
     // today's open from the service (rolls at New York close); the simulator falls back to ~1 day of bars back
@@ -426,8 +430,8 @@ export function useChartEngine(
       main.applyOptions({ priceLineColor: c.fg2 });
       vol.setData(data.map((d) => ({ time: t(d.time), value: d.volume, color: volColor(d) })));
       indicators.setPalette(c);
-      askLine.applyOptions({ color: c.down, axisLabelColor: c.down });
-      bidLine.applyOptions({ color: c.fg2, axisLabelColor: c.fg2, axisLabelTextColor: c.dark ? "#0a0a0d" : "#fff" });
+      askLine.applyOptions({ color: c.buy, axisLabelColor: c.buy, axisLabelTextColor: "#fff" });
+      bidLine.applyOptions({ color: c.down, axisLabelColor: c.down, axisLabelTextColor: "#fff" });
       watermark.applyOptions({ dark: c.dark });
       legendRef.current(legendAt(hovering >= 0 ? hovering : data.length - 1));
       setEngine((e) => (e && e.chart === chart ? { ...e, palette: c } : e));
