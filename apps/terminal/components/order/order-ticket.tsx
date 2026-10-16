@@ -469,12 +469,8 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
 
       {/* the one primary action (sticky at the bottom of the panel) */}
       <div className={cn("space-y-2 border-t border-line", dialog ? "pt-3" : "t-bar sticky bottom-0 z-[2] px-2.5 pb-2.5 pt-2.5")}>
-        {T.ws.oneClick ? (
-          <div className="flex items-center gap-2 rounded-[10px] border border-ember/30 bg-ember-soft/50 px-2.5 py-2 text-[12px] leading-[16px] text-fg-2">
-            <Zap className="size-3.5 shrink-0 fill-current text-accent-text" />
-            {t("desk.op.oneClickNote")}
-          </div>
-        ) : (
+        {/* one-click on: Sell and Buy are the action, so there is no confirm button - the switch below says so */}
+        {!T.ws.oneClick && (
           <Button data-tour="confirm" size="xl" variant={canConfirm ? "primary" : "secondary"} disabled={!canConfirm} onClick={() => side && void submit(side)} className="w-full disabled:opacity-80">
             <span className="truncate">{confirm}</span>
           </Button>

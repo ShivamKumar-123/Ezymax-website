@@ -256,6 +256,8 @@ function ChartBar() {
   const history = useDrawingHistory(tab);
   const reg = () => chartRegistry.get(tab.id);
   const full = T.ui.fullChart;
+  // the docked ticket is the order form; this button only opens a popup of it (F9 still does, from anywhere)
+  const ticketDocked = T.ws.panels.watch && T.ws.side === "order" && !full;
   const btn = (open?: boolean) => cn("flex h-9 shrink-0 items-center gap-1.5 rounded-[6px] px-2 text-[14px] font-medium transition-colors [&>svg]:size-[19px] [&>svg]:stroke-[1.6]", open ? "bg-surface-3 text-fg" : "text-fg-2 hover:bg-surface-3 hover:text-fg");
   return (
     <div role="toolbar" aria-label={t("desk.ch.toolbar")} className="@container flex h-[42px] shrink-0 items-center gap-0.5 border-b border-line px-1.5">
@@ -323,13 +325,17 @@ function ChartBar() {
       <ToolbarButton label={t("chart.toolbar.redo")} shortcut="Ctrl+Shift+Z" disabled={!history.canRedo} onClick={() => redoDrawings(T, tab.id)} className="hidden @[560px]:inline-grid">
         <Redo2 />
       </ToolbarButton>
-      <Sep />
-      <Tip content={t("trader.newOrder")} shortcut="F9" side="bottom">
-        <button onClick={() => T.openNewOrder({ symbol: tab.symbol })} disabled={T.readOnly} data-tour="new-order" className="flex h-9 shrink-0 items-center gap-1.5 rounded-[6px] border border-line px-2.5 text-[14px] font-semibold text-fg transition-colors hover:border-ember/50 hover:bg-ember-soft/40 disabled:opacity-45 [&>svg]:size-[18px]">
-          <ShoppingCart className="text-accent-text" />
-          <span className="hidden @[700px]:inline">{t("trader.newOrder")}</span>
-        </button>
-      </Tip>
+      {!ticketDocked && (
+        <>
+          <Sep />
+          <Tip content={t("trader.newOrder")} shortcut="F9" side="bottom">
+            <button onClick={() => T.openNewOrder({ symbol: tab.symbol })} disabled={T.readOnly} data-tour="new-order" className="flex h-9 shrink-0 items-center gap-1.5 rounded-[6px] border border-line px-2.5 text-[14px] font-semibold text-fg transition-colors hover:border-ember/50 hover:bg-ember-soft/40 disabled:opacity-45 [&>svg]:size-[18px]">
+              <ShoppingCart className="text-accent-text" />
+              <span className="hidden @[700px]:inline">{t("trader.newOrder")}</span>
+            </button>
+          </Tip>
+        </>
+      )}
       <ToolbarButton label={t("desk.ch.zoomIn")} shortcut="+" onClick={() => reg()?.zoom(1)} className="hidden @[760px]:inline-grid">
         <ZoomIn />
       </ToolbarButton>

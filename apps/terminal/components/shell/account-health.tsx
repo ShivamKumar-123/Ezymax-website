@@ -106,7 +106,9 @@ function Strip({ right, className }: { right?: React.ReactNode; className?: stri
             <span className="relative h-1.5 w-14 overflow-hidden rounded-full bg-surface-3" aria-hidden>
               <span className={cn("absolute inset-y-0 start-0 rounded-full transition-[width] duration-500", tone.bar)} style={{ width: `${fill * 100}%` }} />
             </span>
-            <span className={cn("text-[12px] font-semibold", tone.text)}>{t.dyn(`desk.ah.state.${h}`)}</span>
+            {/* with nothing at risk the word repeats the dash, the full bar and Margin 0.00; Safe / Margin call
+                / Stop out earn their place */}
+            {h !== "idle" && <span className={cn("text-[12px] font-semibold", tone.text)}>{t.dyn(`desk.ah.state.${h}`)}</span>}
           </span>
         </Tip>
       </span>
