@@ -37,7 +37,7 @@ function fade(color: string, a: number): string {
 const token = (name: string, fallback: string) => solid(getComputedStyle(document.documentElement).getPropertyValue(name) || fallback, fallback);
 
 /** The chart's colours (TradingView properties): rising blue (--t-buy), falling red (--k-down), our grid, scales, Bid
- *  and Ask lines; the last-trade line and label are off, the axis carries the account's Bid and Ask instead (as MT5). */
+ *  and Ask lines; the last-price line and its label are on, with the account's Bid and Ask beside them. */
 export function chartOverrides(c: Palette): Record<string, unknown> {
   const up = solid(c.buy, "#4a7bff");
   const down = solid(c.down, "#f04438");
@@ -51,14 +51,22 @@ export function chartOverrides(c: Palette): Record<string, unknown> {
     "paneProperties.crossHairProperties.color": solid(c.fg3, "#63636e"),
     "scalesProperties.textColor": solid(c.fg2, "#a1a1aa"),
     "scalesProperties.lineColor": line,
-    "scalesProperties.showSeriesLastValue": false,
+    // The current price, drawn from the bars the chart is already streaming: one dashed line across the plot with
+    // its badge on the scale. It was off, with only the Bid and Ask lines left to mark the price - and those come
+    // from the datafeed's quotes channel, so when it is quiet there is nothing on the chart at all. The line the
+    // trader is looking for cannot depend on a second feed.
+    "scalesProperties.showSeriesLastValue": true,
     "scalesProperties.showBidAskLabels": true,
-    "mainSeriesProperties.showPriceLine": false,
+    "mainSeriesProperties.showPriceLine": true,
+    "mainSeriesProperties.priceLineColor": solid(c.fg2, "#a1a1aa"),
+    "mainSeriesProperties.priceLineWidth": 1,
+    // Bid and Ask keep the colour of the button each one fills: Bid where a sell goes, Ask where a buy goes.
+    // Grey on a dark chart and red across falling candles is why neither could be found.
     "mainSeriesProperties.bidAsk.visible": true,
     "mainSeriesProperties.bidAsk.lineStyle": 1,
     "mainSeriesProperties.bidAsk.lineWidth": 1,
-    "mainSeriesProperties.bidAsk.bidLineColor": solid(c.fg2, "#a1a1aa"),
-    "mainSeriesProperties.bidAsk.askLineColor": down,
+    "mainSeriesProperties.bidAsk.bidLineColor": down,
+    "mainSeriesProperties.bidAsk.askLineColor": up,
     "mainSeriesProperties.lineStyle.color": up,
     "mainSeriesProperties.areaStyle.linecolor": up,
     "mainSeriesProperties.areaStyle.color1": fade(up, 0.28),
