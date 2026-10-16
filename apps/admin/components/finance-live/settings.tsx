@@ -156,7 +156,7 @@ function MethodForm({ m, canEdit, onSave }: { m: WithdrawMethod; canEdit: boolea
           <Field label="Currency" hint="Three-letter code.">
             <Input value={f.currency} disabled={!canEdit} onChange={(e) => set("currency", e.target.value.toUpperCase())} aria-label="Payout currency" />
           </Field>
-          <Field label={`Rate (${f.currency} per USDT)`} hint="The client is quoted at this rate and it is frozen on their request.">
+          <Field label={`Rate (${f.currency} per USDT)`} hint="Clients see the amount this produces, not the rate. Frozen on each request.">
             <Input value={f.rate ?? ""} disabled={!canEdit} onChange={(e) => set("rate", e.target.value)} placeholder="e.g. 88.50" aria-label="Payout rate" />
           </Field>
           <Field label="Fee (USDT)" hint="On top of the wallet's flat and percentage fee.">

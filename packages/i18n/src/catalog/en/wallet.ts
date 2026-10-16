@@ -230,7 +230,8 @@ const wallet = {
   "withdraw.upiDestination": "Your UPI ID",
   "withdraw.upiError": "Enter a UPI ID like name@bank",
   "withdraw.upiNote": "We email you a code to confirm. Use a UPI ID in your own name — payments to someone else's ID are rejected at review.",
-  "withdraw.rateNote": "{net} USDT at {rate} {currency} per USDT, fixed now and not affected by later rate changes.",
+  // the amount is the promise; the rate behind it is the broker's own number and is not quoted here
+  "withdraw.rateNote": "{net} USDT, converted when you ask. Later rate changes do not affect this withdrawal.",
   "withdraw.confirmUpi": "{payout} to {upi}",
   "withdraw.toastRequestedLocal": "{amount} USDT · you receive {payout} after review.",
   "withdraw.noneAvailable": "Withdrawals are closed right now. Please contact support.",

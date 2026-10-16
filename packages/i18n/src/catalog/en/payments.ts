@@ -115,6 +115,7 @@ const payments = {
   "list.ref": "Ref {ref}",
   "list.credited": "Credited {amount} USDT",
   "list.expected": "≈ {amount} USDT",
+  "form.youGet": "You get about {amount} USDT.",
   "list.reason": "Reason: {reason}",
   "list.cancel": "Cancel request",
   "list.cancelConfirm": "Cancel this request?",

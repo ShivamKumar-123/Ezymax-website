@@ -11,7 +11,7 @@ import { GatewayBanner, brandForMethod } from "../brand-logos";
 import { useT } from "@ezymex/i18n/react";
 import type { MessageKey } from "@ezymex/i18n";
 import { Tile } from "../ui";
-import { money, qrPayload, rateText, type PaymentMethod } from "./api";
+import { money, qrPayload, type PaymentMethod } from "./api";
 
 const COIN: Record<string, string> = { TRC20: "trx", BEP20: "bnb", ERC20: "eth", Polygon: "matic", BTC: "btc", Solana: "sol" };
 
@@ -155,7 +155,6 @@ export function MethodDetails({ m }: { m: PaymentMethod }) {
           )}
           <div className={cn("grid gap-2", m.currency === "USDT" ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2")}>
             {/* a USDT method has nothing to convert */}
-            {m.currency !== "USDT" && <Tile label={t("payments.card.rate")} value={<span dir="ltr">{t("payments.card.rateValue", { rate: rateText(m.rate), currency: m.currency })}</span>} />}
           </div>
           {crypto && (
             <div className="flex items-start gap-2 rounded-[12px] border border-warn/30 bg-warn-soft px-3 py-2 text-[12px] text-fg-2">

@@ -276,7 +276,7 @@ function RequestForm({ cfg, o, kyc, via, onCreated }: { cfg: WalletConfig; o: Ov
                 />
               </div>
               {quote.payout_rate && quote.payout_currency && (
-                <p className="mt-2 text-[12px] text-fg-3">{t("wallet.withdraw.rateNote", { net: fmt(quote.net_amount), rate: fmt(quote.payout_rate), currency: quote.payout_currency })}</p>
+                <p className="mt-2 text-[12px] text-fg-3">{t("wallet.withdraw.rateNote", { net: fmt(quote.net_amount) })}</p>
               )}
             </motion.div>
           )}

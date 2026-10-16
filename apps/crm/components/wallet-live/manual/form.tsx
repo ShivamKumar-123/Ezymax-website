@@ -92,6 +92,8 @@ export function RequestForm({ m, maxPending, onSent }: { m: PaymentMethod; maxPe
   }, [m.id]);
 
   const amt = amount.trim();
+  const rate = Number(m.rate);
+  const converted = amt && Number(amt) > 0 && rate > 0 ? usdt2(String(Number(amt) / rate)) : null;
   const shaped = /^\d{1,12}(\.\d{1,6})?$/.test(amt) && Number(amt) > 0;
   const belowMin = shaped && cmpDec(amt, m.min_amount) < 0;
   const aboveMax = shaped && !!m.max_amount && cmpDec(amt, m.max_amount) > 0;
@@ -180,6 +182,13 @@ export function RequestForm({ m, maxPending, onSent }: { m: PaymentMethod; maxPe
             data-testid="manual-amount"
           />
         </Field>
+        {/* what the client gets, rather than the rate it came from: the same division the service does, cut to
+            2 decimals the same way, so the number here is the number credited */}
+        {converted && (
+          <p className="-mt-2 text-[12px] text-fg-3" data-testid="manual-expected">
+            {t("payments.form.youGet", { amount: converted })}
+          </p>
+        )}
         {evm && <MetaMaskBlock m={m} amount={amt} valid={amountOk} busy={busy === "metamask"} onPay={payMetaMask} />}
         <Field label={crypto ? t("payments.form.referenceCrypto") : t("payments.form.referenceBank")} hint={crypto ? t("payments.form.referenceCryptoHint") : t("payments.form.referenceBankHint")}>
           <Input
