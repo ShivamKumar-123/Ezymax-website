@@ -130,6 +130,7 @@ export interface TvChartApi {
   createShape(point: { price: number; time?: number }, options: { shape: string; lock?: boolean; disableSelection?: boolean; disableSave?: boolean; disableUndo?: boolean; showInObjectsTree?: boolean; zOrder?: "top" | "bottom"; text?: string; overrides?: Record<string, unknown> }): Promise<string>;
   getShapeById(id: string): TvShape;
   removeEntity(id: string, options?: { disableUndo?: boolean }): void;
+  getAllStudies(): { id: string; name: string }[];
   getAllShapes(): { id: string; name: string }[];
   createStudy(name: string, forceOverlay?: boolean, lock?: boolean, inputs?: Record<string, unknown>, overrides?: Record<string, unknown>): Promise<string | null>;
   resetData(): void;

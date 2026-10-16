@@ -61,6 +61,8 @@ export function symbolInfo(symbol: string, broker: string): TvSymbolInfo {
     intraday_multipliers: ["1", "5", "15", "30", "60", "240"],
     volume_precision: 0,
     data_status: "streaming",
+    // "ohlcv", so VWAP, On Balance Volume and Money Flow still have the volume they need; the default Volume study
+    // itself is taken off the chart in tv-chart.tsx, which is where its status line came from.
     visible_plots_set: "ohlcv",
   };
 }

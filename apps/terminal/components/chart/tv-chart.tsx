@@ -186,6 +186,13 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
         if (!alive || !iframe || !doc || !win) return;
         const chart = w.activeChart();
         if (!saved && !blankState) w.save((s) => (blankState = s));
+        // The "Volume 14.91 K" row above the candles is the status line of the library's default Volume study, and
+        // the histogram along the bottom is the same study's plot. There is no way to show one without the other,
+        // and the override that would hide the row (showStudyTitles / showStudyValues) hides the status line of
+        // every indicator, so an RSI added later would lose its name and reading too. So the study goes - on each
+        // open, since a chart arranged earlier carries it in its saved state. The data stays (ohlcv), so VWAP, OBV,
+        // Money Flow and Volume itself all still work from Indicators.
+        for (const st of chart.getAllStudies()) if (st.name === "Volume") chart.removeEntity(st.id, { disableUndo: true });
         shareFonts(doc);
         applyColors(w, c, showBoxRef.current && variant === "desktop");
 
