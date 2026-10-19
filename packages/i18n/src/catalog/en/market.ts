@@ -14,6 +14,7 @@ const market = {
 
   // Market Watch columns (shown uppercase)
   "col.symbol": "Symbol",
+  "col.description": "Description",
   "col.bid": "Bid",
   "col.ask": "Ask",
   "col.spread": "Sp", // Spread, very narrow column

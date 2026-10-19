@@ -30,15 +30,15 @@ const ROW = 32;
 const CARD = 124;
 const OVERSCAN = 8;
 /** known asset classes first, in this order; anything new the catalogue brings follows alphabetically */
-const ORDER = ["forex", "metals", "indices", "energies", "crypto", "stocks"];
+export const ORDER = ["forex", "metals", "indices", "energies", "crypto", "stocks"];
 
-const classLabel = (c: string, t: Translate) => t.dyn(`market.segment.${c}`, (ASSET_CLASS_LABEL as Record<string, string>)[c] ?? c.charAt(0).toUpperCase() + c.slice(1));
+export const classLabel = (c: string, t: Translate) => t.dyn(`market.segment.${c}`, (ASSET_CLASS_LABEL as Record<string, string>)[c] ?? c.charAt(0).toUpperCase() + c.slice(1));
 
 /**
  * The list the panel can show: the 28 core instruments and the provider catalogue (1,400+), only the markets that
  * trade live for live accounts and guests (lib/scope.ts), plus generated test markets with `?stress=`.
  */
-function useCatalogue(): Instrument[] {
+export function useCatalogue(): Instrument[] {
   const { list } = useMarketScope();
   return React.useMemo(() => (STRESS_COUNT ? [...list, ...STRESS_INSTRUMENTS] : list), [list]);
 }
@@ -63,7 +63,7 @@ function useRowQuote(symbol: string): Quote {
 }
 
 /** Search rank: symbol prefix, then symbol contains, then name contains; -1 = no match. */
-function rank(i: Instrument, q: string): number {
+export function rank(i: Instrument, q: string): number {
   if (!q) return 0;
   const s = i.symbol.toLowerCase();
   if (s.startsWith(q)) return 0;

@@ -21,6 +21,7 @@ import { CHART_TYPES, TIMEFRAMES, serverTime, serverZone, type ChartType, type T
 import { DropMenu } from "@/components/ui/menu";
 import { CountBadge, IconButton, Tip } from "@/components/ui/kit";
 import { useLayoutItems, openActivity, saveLayout, toggleFullChart, toggleFullscreen } from "@/components/shell/commands";
+import { AddChartMenu } from "@/components/market/add-chart-menu";
 import { ChartView } from "./chart-view";
 import { TvChart } from "./tv-chart";
 import { useTvStatus } from "@/lib/tv/loader";
@@ -165,9 +166,8 @@ export function ChartTabs({ className }: { className?: string }) {
           );
         })}
       </div>
-      <IconButton label={t("desk.ch.newChart")} size="sm" onClick={() => T.addTab()}>
-        <Plus />
-      </IconButton>
+      {/* + opens the catalogue rather than a second chart of what is already on screen (add-chart-menu.tsx) */}
+      <AddChartMenu />
       {(edge.left || edge.right) && <OpenChartsMenu />}
     </div>
   );
