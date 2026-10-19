@@ -8,7 +8,7 @@
 //   More options holds what is set occasionally rather than per order: expiry, trailing stop, OCO, comment, max price
 //   change, and the two summary numbers that describe an order rather than decide it (position size, overnight swap).
 import * as React from "react";
-import { Calculator, ChevronDown, Lock, Zap } from "lucide-react";
+import { Calculator, ChevronDown, Lock } from "lucide-react";
 import { toast } from "@/lib/notify";
 import { getInstrument, priceFeed, type Quote } from "@ezymex/mock";
 import { visibleInstruments } from "@/lib/scope";
@@ -221,14 +221,10 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
       onDone?.();
     }
   };
-  const onSide = (s: "buy" | "sell") => {
-    setSide(s);
-    // One-click trading is a promise about market orders: the price you see is the price you get, so there is
-    // nothing left to confirm. A pending order is the opposite - a price typed by hand, an expiry, sometimes a
-    // second price - and none of that should go on one click. Sell / Buy only choose the side here; the confirm
-    // button below sends it.
-    if (T.ws.oneClick && !pending) void submit(s);
-  };
+  // In the ticket, Sell and Buy choose a side; the button at the foot sends the order, naming it in full. One-click
+  // trading still sends at once where it reads as one gesture - the chart's Sell / Buy, the order book, the depth
+  // ladder - but a form you have just filled in deserves the sentence that says what is about to happen.
+  const onSide = (s: "buy" | "sell") => setSide(s);
 
   const riskUsd = riskMode === "pct" ? (balance * (parseFloat(risk) || 0)) / 100 : (parseFloat(risk) || 0) / cent;
   const calcLots = Math.max(0.01, Math.floor((riskUsd / ((parseFloat(riskPips) || 1) * pv)) * 100) / 100);
@@ -339,7 +335,7 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
         {/* side: Sell | Buy with live prices - the two buttons that send the order when one-click is on */}
         <div data-tour="side" role="radiogroup" aria-label={t("desk.op.when")} className="grid grid-cols-2 gap-2">
           {(["sell", "buy"] as const).map((s) => (
-            <SideButton key={s} symbol={symbol} side={s} chosen={side === s} armed={T.ws.oneClick && !pending} disabled={!marketOpen || busy} fixed={pending && price ? parseFloat(price) || undefined : undefined} label={sideWord(s)} hint={s === "buy" ? t("desk.op.buyHint") : t("desk.op.sellHint")} onClick={() => onSide(s)} />
+            <SideButton key={s} symbol={symbol} side={s} chosen={side === s} disabled={!marketOpen || busy} fixed={pending && price ? parseFloat(price) || undefined : undefined} label={sideWord(s)} hint={s === "buy" ? t("desk.op.buyHint") : t("desk.op.sellHint")} onClick={() => onSide(s)} />
           ))}
         </div>
 
@@ -489,13 +485,10 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
 
       {/* the one primary action (sticky at the bottom of the panel) */}
       <div className={cn("space-y-2 border-t border-line", dialog ? "pt-3" : "t-bar sticky bottom-0 z-[2] px-2.5 pb-2.5 pt-2.5")}>
-        {/* one-click on: Sell and Buy are the action for a market order, so there is no confirm button - the switch
-            below says so. A pending order always has one: it is built from typed prices, not from the quote. */}
-        {(!T.ws.oneClick || pending) && (
-          <Button data-tour="confirm" size="xl" variant={canConfirm ? "primary" : "secondary"} disabled={!canConfirm} onClick={() => side && void submit(side)} className="w-full disabled:opacity-80">
-            <span className="truncate">{confirm}</span>
-          </Button>
-        )}
+        {/* the one primary action: it names the order it will send, and it is the only thing in the ticket that sends */}
+        <Button data-tour="confirm" size="xl" variant={canConfirm ? "primary" : "secondary"} disabled={!canConfirm} onClick={() => side && void submit(side)} className="w-full disabled:opacity-80">
+          <span className="truncate">{confirm}</span>
+        </Button>
         <div className="flex items-center gap-2">
           <Switch checked={T.ws.oneClick} onChange={(v) => T.setWs({ oneClick: v })} label={t("desk.op.oneClick")} size="sm" />
           <span className="text-[12px] font-medium text-fg-2">{t("desk.op.oneClick")}</span>
@@ -518,7 +511,7 @@ function tomorrow() {
  *  colours (bg-buy-fill / bg-sell-fill, as the depth ladder and the position dialog), because with one-click trading
  *  on these two are the order - there is no confirm button behind them. The ring marks the chosen side, which is what
  *  the confirm button follows when one-click is off. */
-function SideButton({ symbol, side, chosen, armed, disabled, fixed, label, hint, onClick }: { symbol: string; side: "buy" | "sell"; chosen: boolean; armed: boolean; disabled: boolean; fixed?: number; label: string; hint: string; onClick: () => void }) {
+function SideButton({ symbol, side, chosen, disabled, fixed, label, hint, onClick }: { symbol: string; side: "buy" | "sell"; chosen: boolean; disabled: boolean; fixed?: number; label: string; hint: string; onClick: () => void }) {
   const q = useQuote(symbol);
   const buy = side === "buy";
   return (
@@ -537,7 +530,6 @@ function SideButton({ symbol, side, chosen, armed, disabled, fixed, label, hint,
     >
       <span className="flex items-baseline gap-1.5">
         <span className="flex items-center gap-1 text-[13px] font-semibold capitalize">
-          {armed && <Zap className="size-3 fill-current" aria-hidden />}
           {label}
         </span>
         {/* the price inherits the button, so its grey-on-panel tones do not land on a filled surface */}
@@ -633,7 +625,7 @@ function GuestTicket({ symbol }: { symbol: string }) {
     <div className="space-y-2.5 px-2.5 pb-2.5">
       <div data-tour="side" className="grid grid-cols-2 gap-1 rounded-[11px] border border-line bg-panel-2 p-1">
         {(["sell", "buy"] as const).map((s) => (
-          <SideButton key={s} symbol={symbol} side={s} chosen={false} armed={false} disabled={false} label={s === "buy" ? t("desk.pos.buy") : t("desk.pos.sell")} hint={s === "buy" ? t("desk.op.buyHint") : t("desk.op.sellHint")} onClick={() => T.quickTrade(symbol, s)} />
+          <SideButton key={s} symbol={symbol} side={s} chosen={false} disabled={false} label={s === "buy" ? t("desk.pos.buy") : t("desk.pos.sell")} hint={s === "buy" ? t("desk.op.buyHint") : t("desk.op.sellHint")} onClick={() => T.quickTrade(symbol, s)} />
         ))}
       </div>
       <div className="rounded-[12px] border border-line bg-panel-2/60 px-3 py-3.5 text-center">
