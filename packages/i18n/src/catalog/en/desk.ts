@@ -406,7 +406,7 @@ const desk = {
   "tour3.2.title": "Sell or Buy on the chart",
   "tour3.2.text": "Buy if you think the price will rise, Sell if you think it will fall. The prices are live. With one-click trading off, a click opens the order form so you can check everything first.",
   "tour3.3.title": "The order form",
-  "tour3.3.text": "New order (F9) opens the form in the middle of the screen: pick the side and the volume, add Stop loss and Take profit, and one button says exactly what will be sent.",
+  "tour3.3.text": "The ticket beside the chart is where an order is placed: pick the side and the volume, add Stop loss and Take profit, and the button at the foot says exactly what will be sent. F9 opens the same form as a popup.",
   "tour3.4.title": "Your positions are below",
   "tour3.4.text": "Press here, or scroll down, to see your positions, orders and history across the full width. Your balance and margin stay in this bar.",
   "tour3.5.title": "Everything else is in the menu",

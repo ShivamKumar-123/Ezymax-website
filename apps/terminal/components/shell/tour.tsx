@@ -25,7 +25,7 @@ const STEPS: Record<TradeMode, Step[]> = {
   cfd: [
     { target: "markets", title: "desk.tour3.1.title", text: "desk.tour3.1.text", open: (T) => showSide(T, "instruments") },
     { target: "oneclick", title: "desk.tour3.2.title", text: "desk.tour3.2.text", guestText: "desk.tour.guest.2.text" },
-    { target: "new-order", title: "desk.tour3.3.title", text: "desk.tour3.3.text", account: true },
+    { target: "side", title: "desk.tour3.3.title", text: "desk.tour3.3.text", account: true, open: (T) => showSide(T, "order") },
     { target: "activity", title: "desk.tour3.4.title", text: "desk.tour3.4.text" },
     { target: "menu", title: "desk.tour3.5.title", text: "desk.tour3.5.text" },
   ],

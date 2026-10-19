@@ -70,7 +70,6 @@ const CSS_VERSION = "2";
 const BOX_GAP = 50;
 
 const ICON = {
-  cart: '<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>',
   bell: '<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>',
   layout: '<rect width="7" height="18" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/>',
   max: '<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" x2="14" y1="3" y2="10"/><line x1="3" x2="10" y1="21" y2="14"/>',
@@ -347,7 +346,7 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
   };
 
   /* ---------------- our buttons in the library's header ---------------- */
-  const buttons = React.useRef<{ order?: HTMLElement; full?: HTMLElement; sell?: HTMLElement; buy?: HTMLElement; spread?: HTMLElement }>({});
+  const buttons = React.useRef<{ full?: HTMLElement; sell?: HTMLElement; buy?: HTMLElement; spread?: HTMLElement }>({});
   const headerButtons = (w: TvWidget) => {
     const tr = live.current.t;
     const make = (align: "left" | "right", html: string, title: string, onClick: (b: HTMLElement) => void, tone?: "accent") => {
@@ -361,11 +360,8 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
       b.addEventListener("click", () => onClick(b));
       return b;
     };
-    const order = make("left", `${svg(ICON.cart)}<span>${esc(tr("trader.newOrder"))}</span>`, `${tr("trader.newOrder")} (F9)`, () => {
-      const { T: Tm, tab: tb } = live.current;
-      if (!Tm.readOnly) Tm.openNewOrder({ symbol: tb.symbol });
-    }, "accent");
-    order.dataset.tour = "new-order";
+    // New order is not here: the same ticket is docked in the column beside the chart, and F9 or the command
+    // palette still opens it as a popup for anyone who wants it over the plot.
     make("right", svg(ICON.bell), tr("trader.menu.priceAlerts"), () => openActivity(live.current.T, "alerts"));
     make("right", svg(ICON.layout), tr("desk.ch.layout"), (b) => {
       // our layout menu, under the button (the button lives in the chart's frame)
@@ -387,7 +383,7 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
     const buy = make("right", `<span>${esc(tr("common.buy"))}</span><span class="ezx-px">\u2014</span>`, tr("common.buy"), quick);
     buy.dataset.tone = "buy";
 
-    buttons.current = { order, full, sell, buy, spread };
+    buttons.current = { full, sell, buy, spread };
     paintQuote();
     syncButtons();
   };
@@ -410,11 +406,9 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
 
   const full = T.ui.fullChart;
   const syncButtons = () => {
-    const { order, full: fb } = buttons.current;
+    const { full: fb } = buttons.current;
     const tr = live.current.t;
     const on = live.current.T.ui.fullChart;
-    // our own attribute: the library manages aria-* on its header items
-    order?.setAttribute("data-off", String(live.current.T.readOnly));
     if (fb) {
       fb.innerHTML = svg(on ? ICON.min : ICON.max);
       fb.title = on ? tr("desk.ch.exitFullChart") : `${tr("desk.ch.fullChart")} (Shift+F)`;
