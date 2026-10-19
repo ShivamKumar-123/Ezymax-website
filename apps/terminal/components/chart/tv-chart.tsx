@@ -371,16 +371,22 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
     });
     const full = make("right", svg(ICON.max), tr("desk.ch.fullChart"), () => toggleFullChart(live.current.T));
 
-    // Sell · spread · Buy, where the reference terminal keeps them. A click only ever *opens* the Trade column:
-    // these are prices to read and a way in, never the order itself. One-click trading governs the ticket's own
-    // Sell / Buy, which the trader is looking at when they press them - a header button they may have aimed at
-    // the chart behind it must not be able to open a position.
-    const quick = () => showSide(live.current.T, "order");
-    const sell = make("right", `<span>${esc(tr("common.sell"))}</span><span class="ezx-px">\u2014</span>`, tr("common.sell"), quick);
+    // Sell · spread · Buy, where the reference terminal keeps them. A click opens the Trade column with that
+    // side already chosen, so the press carries into the ticket instead of being asked for twice. It never places
+    // the order: a header button can be aimed at the chart behind it, and the ticket's confirm button is the one
+    // thing in that form that sends.
+    const quick = (side: "buy" | "sell") => {
+      const { T: Tm, tab: tb } = live.current;
+      showSide(Tm, "order");
+      // the same intent the Markets panel and the order book raise; the ticket takes it whether it is already
+      // mounted or opening with the column (order-ticket.tsx)
+      window.dispatchEvent(new CustomEvent("ezymex:ticket", { detail: { symbol: tb.symbol, side } }));
+    };
+    const sell = make("right", `<span>${esc(tr("common.sell"))}</span><span class="ezx-px">\u2014</span>`, tr("common.sell"), () => quick("sell"));
     sell.dataset.tone = "sell";
     const spread = make("right", `<span class="ezx-px">\u2014</span>`, tr("desk.op.spread"), () => showSide(live.current.T, "order"));
     spread.dataset.tone = "spread";
-    const buy = make("right", `<span>${esc(tr("common.buy"))}</span><span class="ezx-px">\u2014</span>`, tr("common.buy"), quick);
+    const buy = make("right", `<span>${esc(tr("common.buy"))}</span><span class="ezx-px">\u2014</span>`, tr("common.buy"), () => quick("buy"));
     buy.dataset.tone = "buy";
 
     buttons.current = { full, sell, buy, spread };
