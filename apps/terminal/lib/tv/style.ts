@@ -135,9 +135,10 @@ export function uiColors(c: Palette): Record<string, string> {
     "--ezx-text-hover": fg,
     "--ezx-hover": surface3,
     "--ezx-line": c.dark ? "rgba(255,255,255,0.14)" : "rgba(15,15,20,0.14)",
-    // the Sell / Buy pair in the header, the same two colours as the ticket's buttons
-    "--ezx-sell": solid(c.down, "#f04438"),
-    "--ezx-buy": buy,
+    // the Sell / Buy pair in the header opens the ticket, so it is the same button and wears the same two colours
+    // (the chart's blue stays the chart's: it says a candle rose, not that a button buys)
+    "--ezx-sell": token("--t-sell-fill", "#dc2626"),
+    "--ezx-buy": token("--t-buy-fill", "#15803d"),
   };
 }
 

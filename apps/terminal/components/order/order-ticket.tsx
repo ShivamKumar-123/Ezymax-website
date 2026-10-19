@@ -332,8 +332,8 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
           </div>
         )}
 
-        {/* side: Sell | Buy with live prices */}
-        <div data-tour="side" role="radiogroup" aria-label={t("desk.op.when")} className="grid grid-cols-2 gap-1 rounded-[11px] border border-line bg-panel-2 p-1">
+        {/* side: Sell | Buy with live prices - the two buttons that send the order when one-click is on */}
+        <div data-tour="side" role="radiogroup" aria-label={t("desk.op.when")} className="grid grid-cols-2 gap-2">
           {(["sell", "buy"] as const).map((s) => (
             <SideButton key={s} symbol={symbol} side={s} chosen={side === s} armed={T.ws.oneClick} disabled={!marketOpen || busy} fixed={pending && price ? parseFloat(price) || undefined : undefined} label={sideWord(s)} hint={s === "buy" ? t("desk.op.buyHint") : t("desk.op.sellHint")} onClick={() => onSide(s)} />
           ))}
@@ -509,7 +509,10 @@ function tomorrow() {
 
 /* ---- per-tick leaves ---- */
 
-/** Sell / Buy: label and live price on one line, one short line under; 44 px. */
+/** Sell / Buy: label and live price on one line, one short line under. Filled in the terminal's own buy and sell
+ *  colours (bg-buy-fill / bg-sell-fill, as the depth ladder and the position dialog), because with one-click trading
+ *  on these two are the order - there is no confirm button behind them. The ring marks the chosen side, which is what
+ *  the confirm button follows when one-click is off. */
 function SideButton({ symbol, side, chosen, armed, disabled, fixed, label, hint, onClick }: { symbol: string; side: "buy" | "sell"; chosen: boolean; armed: boolean; disabled: boolean; fixed?: number; label: string; hint: string; onClick: () => void }) {
   const q = useQuote(symbol);
   const buy = side === "buy";
@@ -521,19 +524,21 @@ function SideButton({ symbol, side, chosen, armed, disabled, fixed, label, hint,
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "flex h-11 min-w-0 flex-col justify-center rounded-[8px] border px-2.5 text-start transition-[background-color,border-color,color] duration-150 disabled:cursor-not-allowed disabled:opacity-50",
-        chosen ? (buy ? "border-up/45 bg-up-soft" : "border-down/45 bg-down-soft") : "border-transparent hover:bg-surface-3/70",
-        armed && !chosen && (buy ? "border-up/25" : "border-down/25"),
+        "flex h-12 min-w-0 flex-col justify-center rounded-[9px] px-3 text-start text-white transition-[filter,box-shadow] duration-150 hover:brightness-110 active:brightness-95",
+        "disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-3 disabled:hover:brightness-100",
+        buy ? "bg-buy-fill" : "bg-sell-fill",
+        chosen && "ring-2 ring-white/70",
       )}
     >
       <span className="flex items-baseline gap-1.5">
-        <span className={cn("flex items-center gap-1 text-[12.5px] font-semibold capitalize", buy ? "text-up" : "text-down")}>
+        <span className="flex items-center gap-1 text-[13px] font-semibold capitalize">
           {armed && <Zap className="size-3 fill-current" aria-hidden />}
           {label}
         </span>
-        <PriceText symbol={symbol} value={fixed ?? (buy ? q.ask : q.bid)} dir={fixed === undefined ? q.dir : 0} className="ms-auto text-[14px]" />
+        {/* the price inherits the button, so its grey-on-panel tones do not land on a filled surface */}
+        <PriceText symbol={symbol} value={fixed ?? (buy ? q.ask : q.bid)} dir={fixed === undefined ? q.dir : 0} className="ms-auto text-[15px] [&_span]:text-white" />
       </span>
-      <span className="truncate text-[11.5px] leading-[15px] text-fg-3">{hint}</span>
+      <span className="truncate text-[11.5px] leading-[15px] text-white/75">{hint}</span>
     </button>
   );
 }
