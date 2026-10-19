@@ -223,7 +223,11 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
   };
   const onSide = (s: "buy" | "sell") => {
     setSide(s);
-    if (T.ws.oneClick) void submit(s);
+    // One-click trading is a promise about market orders: the price you see is the price you get, so there is
+    // nothing left to confirm. A pending order is the opposite - a price typed by hand, an expiry, sometimes a
+    // second price - and none of that should go on one click. Sell / Buy only choose the side here; the confirm
+    // button below sends it.
+    if (T.ws.oneClick && !pending) void submit(s);
   };
 
   const riskUsd = riskMode === "pct" ? (balance * (parseFloat(risk) || 0)) / 100 : (parseFloat(risk) || 0) / cent;
@@ -335,7 +339,7 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
         {/* side: Sell | Buy with live prices - the two buttons that send the order when one-click is on */}
         <div data-tour="side" role="radiogroup" aria-label={t("desk.op.when")} className="grid grid-cols-2 gap-2">
           {(["sell", "buy"] as const).map((s) => (
-            <SideButton key={s} symbol={symbol} side={s} chosen={side === s} armed={T.ws.oneClick} disabled={!marketOpen || busy} fixed={pending && price ? parseFloat(price) || undefined : undefined} label={sideWord(s)} hint={s === "buy" ? t("desk.op.buyHint") : t("desk.op.sellHint")} onClick={() => onSide(s)} />
+            <SideButton key={s} symbol={symbol} side={s} chosen={side === s} armed={T.ws.oneClick && !pending} disabled={!marketOpen || busy} fixed={pending && price ? parseFloat(price) || undefined : undefined} label={sideWord(s)} hint={s === "buy" ? t("desk.op.buyHint") : t("desk.op.sellHint")} onClick={() => onSide(s)} />
           ))}
         </div>
 
@@ -485,8 +489,9 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
 
       {/* the one primary action (sticky at the bottom of the panel) */}
       <div className={cn("space-y-2 border-t border-line", dialog ? "pt-3" : "t-bar sticky bottom-0 z-[2] px-2.5 pb-2.5 pt-2.5")}>
-        {/* one-click on: Sell and Buy are the action, so there is no confirm button - the switch below says so */}
-        {!T.ws.oneClick && (
+        {/* one-click on: Sell and Buy are the action for a market order, so there is no confirm button - the switch
+            below says so. A pending order always has one: it is built from typed prices, not from the quote. */}
+        {(!T.ws.oneClick || pending) && (
           <Button data-tour="confirm" size="xl" variant={canConfirm ? "primary" : "secondary"} disabled={!canConfirm} onClick={() => side && void submit(side)} className="w-full disabled:opacity-80">
             <span className="truncate">{confirm}</span>
           </Button>
