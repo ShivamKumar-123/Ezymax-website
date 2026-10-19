@@ -831,7 +831,7 @@ export function LiveContestsPage() {
       ) : (
         <Card>
           <div className="flex flex-col items-center px-6 py-12 text-center">
-            <Illustration name="rewards" width={208} maxHeight={156} />
+            <Illustration name="contests" width={240} maxHeight={132} />
             <h3 className="mt-6 text-[17px] font-medium">{t("rewards.contests.noneTitle")}</h3>
             <p className="mt-1 max-w-md text-[13.5px] text-fg-3">{t("rewards.contests.noneText")}</p>
           </div>

@@ -61,6 +61,7 @@ const FILES = {
   propChallenge: ["prop-challenge.png", "prop challange.png"],
   propPassed: ["prop-passed.png", "prop passed.png"],
   rewards: ["rewards.png"],
+  contests: ["contests.png"],
   partnerIb: ["partner-ib.png", "partner ib.png"],
   marketClosed: ["market-closed.png", "market closed.png"],
 };
