@@ -120,6 +120,9 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
   const syncing = React.useRef(0);
   const palette = React.useRef<Palette | null>(null);
   const shapes = React.useRef(new Map<string, { entity: string | null; price: number; key: string }>());
+  /** every shape id this chart has created: the library can stop resolving a handle while the shape is still on the
+   *  plot, and without this list such a line could never be removed again (see sweepOrphans) */
+  const created = React.useRef(new Set<string>());
   const drawnRef = React.useRef<DrawnLine[]>([]);
   /** the account's executable prices, drawn as two lines of their own (see quoteLines) */
   const quoteRef = React.useRef<{ bid: number; ask: number }>({ bid: 0, ask: 0 });
@@ -509,11 +512,21 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
       return;
     }
     const drop = (id: string) => {
+      created.current.delete(id);
       try {
         chart.removeEntity(id, { disableUndo: true });
       } catch {
         /* already gone with a layout or symbol change */
       }
+    };
+    /** Removes shapes this chart drew that no record points at any more. Without it a handle lost on any path - a
+     *  lookup that throws, a removal that throws while the map is cleared - leaves a line on the plot for good, and
+     *  the next reconcile draws another in its place. */
+    const sweepOrphans = () => {
+      if (!created.current.size) return;
+      const live = new Set<string>();
+      for (const r of shapes.current.values()) if (r.entity) live.add(r.entity);
+      for (const id of [...created.current]) if (!live.has(id)) drop(id);
     };
     // Bid and Ask: the two prices this account can trade at, each in the colour of the button that fills it.
     // Dashed, behind the trade lines, and never selectable - they are a readout, not something to drag.
@@ -547,7 +560,10 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
           r.key = key;
           continue;
         } catch {
-          shapes.current.delete(l.id); // gone (another symbol's layout loaded): draw it again
+          // the library will not resolve the handle (another symbol's layout loaded). It may still be drawing the
+          // shape, so ask for it to go before forgetting it - otherwise the line below replaces a line that stays.
+          drop(r.entity);
+          shapes.current.delete(l.id);
         }
       }
       const rec = { entity: null as string | null, price: l.price, key };
@@ -556,6 +572,7 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
       void chart
         .createShape({ price: l.price, time }, { shape: "horizontal_line", lock: true, disableSelection: true, disableSave: true, disableUndo: true, showInObjectsTree: false, zOrder: "top", overrides: { linecolor: color, linestyle: style, linewidth: 1, showPrice: true, showLabel: false } })
         .then((id) => {
+          created.current.add(id);
           if (shapes.current.get(l.id) !== rec) return drop(id);
           rec.entity = id;
           const now = all.find((x) => x.id === l.id);
@@ -566,6 +583,7 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
         })
         .catch(() => shapes.current.get(l.id) === rec && shapes.current.delete(l.id));
     }
+    sweepOrphans();
   };
   /** Draws every line again (a new symbol or layout in the library drops shapes). */
   const redrawShapes = () => {
@@ -586,6 +604,9 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
   // shape update per tick. `syncShapes` skips a shape whose price has not moved, so a quiet market costs nothing.
   React.useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
+    // a chart moved to another market has no executable price yet: drawing the last one would put gold's Bid on a
+    // bitcoin chart until its first tick arrives
+    quoteRef.current = { bid: 0, ask: 0 };
     const off = priceFeed().subscribe([tab.symbol], (x) => {
       quoteRef.current = { bid: x.bid, ask: x.ask };
       if (timer) return;
