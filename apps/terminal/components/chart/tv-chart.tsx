@@ -405,10 +405,17 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
   };
 
   const full = T.ui.fullChart;
+  // The ticket in the column carries the same Sell and Buy, on the same market, a few hundred pixels away. While it
+  // is on screen the header pair is the same button twice, so it steps aside; it comes back when the column is
+  // closed, showing another tab, or hidden behind Full chart - the cases where nothing else offers a side.
+  const ticketDocked = T.ws.panels.watch && T.ws.side === "order" && !T.ui.fullChart;
   const syncButtons = () => {
-    const { full: fb } = buttons.current;
+    const { full: fb, sell, buy, spread } = buttons.current;
     const tr = live.current.t;
     const on = live.current.T.ui.fullChart;
+    const Tm = live.current.T;
+    const hidePair = Tm.ws.panels.watch && Tm.ws.side === "order" && !Tm.ui.fullChart;
+    for (const b of [sell, spread, buy]) if (b) b.style.display = hidePair ? "none" : "";
     if (fb) {
       fb.innerHTML = svg(on ? ICON.min : ICON.max);
       fb.title = on ? tr("desk.ch.exitFullChart") : `${tr("desk.ch.fullChart")} (Shift+F)`;
@@ -416,7 +423,7 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
       fb.setAttribute("aria-pressed", String(on));
     }
   };
-  React.useEffect(syncButtons, [full, T.readOnly, ready]);
+  React.useEffect(syncButtons, [full, T.readOnly, ready, ticketDocked]);
 
   /* ---------------- colours: theme, broker brand ---------------- */
   const applyColors = (w: TvWidget, c: Palette, box: boolean) => {
