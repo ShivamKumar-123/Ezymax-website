@@ -501,6 +501,8 @@ export function LivePartnerNetwork() {
   const directClients = rootKids.filter((c) => !tree.kids.has(c.id));
   const allIbs = data.nodes.filter((c) => tree.kids.has(c.id));
   const total = data.nodes.reduce((s, c) => s + c.lotsMonth, 0);
+  // what the whole tree paid the partner this month: the one number the page never actually showed them
+  const earnedTotal = data.nodes.reduce((s, c) => s + c.earnedMonth, 0);
   const tierList = Array.from({ length: data.tiers }, (_, i) => i + 1);
   const tierPct = (t: number) =>
     prog?.tiers.find((x) => x.tier === t)?.pct ?? null;
@@ -609,9 +611,18 @@ export function LivePartnerNetwork() {
                       })}
                     </div>
                   </div>
-                  <span className="hidden font-mono text-[12px] text-fg-2 sm:block">
-                    {data.root.code}
-                  </span>
+                  {/* the partner's own earnings, on the row that is about them; the code sits under it */}
+                  <div className="shrink-0 text-end">
+                    <div className="text-[11.5px] text-fg-3">
+                      {t("partner.network.toYouMonth")}
+                    </div>
+                    <div className={cn("k-num text-[17px] font-semibold leading-tight", earnedTotal ? "text-up" : "text-fg-3")}>
+                      {formatMoney(earnedTotal)}
+                    </div>
+                    <div className="mt-0.5 hidden font-mono text-[11px] text-fg-3 sm:block">
+                      {data.root.code}
+                    </div>
+                  </div>
                 </div>
                 {data.nodes.length === 0 ? (
                   <CardEmpty
