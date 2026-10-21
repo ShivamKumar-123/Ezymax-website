@@ -21,23 +21,42 @@ pub async fn create_batch(st: &AppState, tenant: &str, actor: &Actor, period_sta
     let mut tx = st.pool.begin().await?;
     // serialise batch creation per tenant
     sqlx::query("SELECT pg_advisory_xact_lock(hashtext('ib-batch:' || $1))").bind(tenant).execute(&mut *tx).await?;
-    let payees = sqlx::query(
-        "SELECT beneficiary_id, sum(amount) AS amount, count(*) AS lines FROM commissions
+    // Every candidate line, locked for the life of this transaction, and the batch built from exactly these
+    // rows. Summing in one statement and attaching by the same predicate in another is not the same set: a plain
+    // BEGIN is READ COMMITTED, so each statement takes its own snapshot, and the advisory lock above only keeps
+    // two batch runs apart - the reversal worker and deal ingestion are not holding it. A line reversed between
+    // the two was paid for with nothing behind it; a line that committed between them was attached and marked
+    // paid without ever being in the payout's amount.
+    let rows = sqlx::query(
+        "SELECT id, beneficiary_id, amount FROM commissions
          WHERE tenant = $1 AND status = 'pending' AND batch_id IS NULL AND available_at <= $2 AND created_at < $2
-         GROUP BY beneficiary_id
-         HAVING sum(amount) > 0 AND sum(amount) >= $3
-         ORDER BY beneficiary_id",
+         ORDER BY beneficiary_id, id FOR UPDATE",
     )
     .bind(tenant)
     .bind(period_end)
-    .bind(s.payout.min_amount)
     .fetch_all(&mut *tx)
     .await?;
+    // one entry per payee, in beneficiary order, carrying the ids that make up its amount
+    let mut payees: Vec<(i64, D, Vec<i64>)> = Vec::new();
+    for r in &rows {
+        let who: i64 = r.get("beneficiary_id");
+        let amount: D = r.get("amount");
+        let id: i64 = r.get("id");
+        match payees.last_mut() {
+            Some(p) if p.0 == who => {
+                p.1 += amount;
+                p.2.push(id);
+            }
+            _ => payees.push((who, amount, vec![id])),
+        }
+    }
+    // the programme minimum, applied to the amount actually being attached
+    payees.retain(|p| p.1 > ZERO && p.1 >= s.payout.min_amount);
     if payees.is_empty() {
         return Ok(None);
     }
-    let total: D = payees.iter().map(|r| r.get::<D, _>("amount")).sum();
-    let lines: i64 = payees.iter().map(|r| r.get::<i64, _>("lines")).sum();
+    let total: D = payees.iter().map(|p| p.1).sum();
+    let lines: i64 = payees.iter().map(|p| p.2.len() as i64).sum();
     let batch_id: Option<i64> = sqlx::query_scalar(
         "INSERT INTO payout_batches (tenant, schedule, period_start, period_end, total, lines, payees, created_by)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT DO NOTHING RETURNING id",
@@ -53,30 +72,25 @@ pub async fn create_batch(st: &AppState, tenant: &str, actor: &Actor, period_sta
     .fetch_optional(&mut *tx)
     .await?;
     let Some(batch_id) = batch_id else { return Ok(None) };
-    for p in &payees {
-        let user: i64 = p.get("beneficiary_id");
+    for (user, amount, ids) in &payees {
         let payout_id: i64 = sqlx::query_scalar(
             "INSERT INTO payouts (tenant, batch_id, user_id, amount, lines, idempotency_key) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id",
         )
         .bind(tenant)
         .bind(batch_id)
         .bind(user)
-        .bind(p.get::<D, _>("amount"))
-        .bind(p.get::<i64, _>("lines") as i32)
+        .bind(amount)
+        .bind(ids.len() as i32)
         .bind(format!("ib:payout:{tenant}:{batch_id}:{user}"))
         .fetch_one(&mut *tx)
         .await?;
-        sqlx::query(
-            "UPDATE commissions SET batch_id = $1, payout_id = $2, updated_at = now()
-             WHERE tenant = $3 AND beneficiary_id = $4 AND status = 'pending' AND batch_id IS NULL AND available_at <= $5 AND created_at < $5",
-        )
-        .bind(batch_id)
-        .bind(payout_id)
-        .bind(tenant)
-        .bind(user)
-        .bind(period_end)
-        .execute(&mut *tx)
-        .await?;
+        // by id, not by the predicate again: these are the rows the amount above was summed from
+        sqlx::query("UPDATE commissions SET batch_id = $1, payout_id = $2, updated_at = now() WHERE id = ANY($3)")
+            .bind(batch_id)
+            .bind(payout_id)
+            .bind(&ids[..])
+            .execute(&mut *tx)
+            .await?;
     }
     audit::record(&mut *tx, tenant, actor, "batch.create", Some(format!("batch:{batch_id}")), None, Some(json!({"total": total.to_string(), "payees": payees.len(), "lines": lines, "periodEnd": period_end})), None).await?;
     tx.commit().await?;

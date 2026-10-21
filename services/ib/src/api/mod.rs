@@ -136,14 +136,26 @@ impl StaffCtx {
     }
 }
 
+/// Hex digit, or None. Byte-wise on purpose: slicing the &str to parse the pair panics whenever the % is
+/// followed by a multi-byte character ("50%<euro>", "100%<cjk>"), and this runs in StaffCtx before any role
+/// check, so a staff display name could take down every Back Office route.
+fn hex(b: u8) -> Option<u8> {
+    match b {
+        b'0'..=b'9' => Some(b - b'0'),
+        b'a'..=b'f' => Some(b - b'a' + 10),
+        b'A'..=b'F' => Some(b - b'A' + 10),
+        _ => None,
+    }
+}
+
 fn percent_decode(s: &str) -> String {
     let b = s.as_bytes();
     let mut out = Vec::with_capacity(b.len());
     let mut i = 0;
     while i < b.len() {
         if b[i] == b'%' && i + 2 < b.len() {
-            if let Ok(v) = u8::from_str_radix(&s[i + 1..i + 3], 16) {
-                out.push(v);
+            if let (Some(h), Some(l)) = (hex(b[i + 1]), hex(b[i + 2])) {
+                out.push(h * 16 + l);
                 i += 3;
                 continue;
             }
@@ -191,5 +203,11 @@ mod tests {
         assert_eq!(super::percent_decode("Julia%20Novak"), "Julia Novak");
         assert_eq!(super::percent_decode("A%C3%AFda"), "Aïda");
         assert_eq!(super::percent_decode("50%"), "50%");
+        // a % followed by a multi-byte character: slicing the &str to read the pair used to panic here, inside
+        // StaffCtx, before any role check - one staff display name would have taken down every Back Office route
+        assert_eq!(super::percent_decode("50%\u{20ac}"), "50%\u{20ac}");
+        assert_eq!(super::percent_decode("100%\u{8fbe}\u{4eba}"), "100%\u{8fbe}\u{4eba}");
+        assert_eq!(super::percent_decode("%\u{1f600}x"), "%\u{1f600}x");
+        assert_eq!(super::percent_decode("%zz"), "%zz");
     }
 }

@@ -108,8 +108,11 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
       setTp((s) => (s.mode === "price" ? { ...s, value: "" } : s));
       setSide(null);
     }
-    if (it && (!it.symbol || it.symbol === symbol)) {
-      apply(it);
+    // An intent belongs to the press that opened this ticket, so it is spent here whether or not it fits: the
+    // listener below banks every intent, and keeping an unmatched one would let a press on another market pre-select
+    // a side in some later ticket, minutes after the trader has forgotten it.
+    if (it) {
+      if (!it.symbol || it.symbol === symbol) apply(it);
       intent = null;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -380,7 +383,7 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
               <InlineNumber id="tk-price" value={price} onChange={setPrice} step={priceStep} decimals={inst.digits} ariaLabel={t("order.ticket.orderPrice")} placeholder={fmtPrice(symbol, side === "sell" ? q.bid : q.ask)} />
             </FieldRow>
             {/* how far the order sits from where this side can trade now */}
-            {side && !!parseFloat(price) && <div className="px-1 text-[12px] text-fg-3">{t("desk.op.pipsAway", { n: ((parseFloat(price) - (side === "buy" ? q.ask : q.bid)) / pip).toFixed(1) })}</div>}
+            {side && !!parseFloat(price) && <div className="px-1 text-[12px] text-fg-3">{t("desk.op.pipsAway", { n: (Math.abs(parseFloat(price) - (side === "buy" ? q.ask : q.bid)) / pip).toFixed(1) })}</div>}
             {type === "stop-limit" && (
               <FieldRow label={t("desk.op.limitPrice")} htmlFor="tk-sl-price">
                 <InlineNumber id="tk-sl-price" value={stopLimit} onChange={setStopLimit} step={priceStep} decimals={inst.digits} ariaLabel={t("order.ticket.stopLimitPrice")} placeholder={price || fmtPrice(symbol, q.ask)} />

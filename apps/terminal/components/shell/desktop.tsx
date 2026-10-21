@@ -27,7 +27,7 @@ import { TitleBar } from "./title-bar";
 import { ScreenBar } from "./status-bar";
 import { SideColumn } from "./side-column";
 import { Tour } from "./tour";
-import { ACTIVITY_ID, scrollToChart, showSide } from "./commands";
+import { ACTIVITY_ID, PEEK_EVENT, scrollToChart, showSide } from "./commands";
 import { useTradeMode } from "@/lib/options/mode";
 import { useTvStatus } from "@/lib/tv/loader";
 
@@ -68,6 +68,12 @@ export function DesktopTerminal() {
   const split = T.ws.posLayout === "split";
   const open = T.ws.panels.watch;
   const [peek, setPeek] = React.useState(false);
+  // Full chart hides the column, so the chart's own Sell / Buy ask for the peek overlay instead (tv-chart.tsx)
+  React.useEffect(() => {
+    const on = () => setPeek(true);
+    window.addEventListener(PEEK_EVENT, on);
+    return () => window.removeEventListener(PEEK_EVENT, on);
+  }, []);
   React.useEffect(() => {
     setPeek(false);
   }, [full]);

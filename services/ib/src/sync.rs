@@ -82,11 +82,16 @@ pub async fn upsert_member(st: &AppState, u: &GwUser) -> anyhow::Result<()> {
     let inserted: bool = row.get("inserted");
     if inserted {
         sqlx::query("INSERT INTO level_history (tenant, user_id, from_key, to_key, reason) VALUES ($1,$2,NULL,$3,'joined')").bind(tenant).bind(u.id).bind(&entry).execute(&st.pool).await?;
-        // deals that arrived before the client was mirrored are re-evaluated now
-        crate::deals::reprocess_unknown(st, u.id).await?;
     }
     let settings = db::settings(&st.pool, tenant).await?;
     check_self_referral(st, tenant, u.id, &settings).await?;
+    if inserted {
+        // Deals that arrived before the client was mirrored are re-evaluated now - after the self-referral
+        // check, never before it. ingest() reads the block from the member row, so re-ingesting first paid full
+        // commission on a self-referred client's whole backlog, and the block that followed only stopped the
+        // deals they had not made yet.
+        crate::deals::reprocess_unknown(st, u.id).await?;
+    }
     let children: Vec<i64> = sqlx::query_scalar("SELECT user_id FROM members WHERE tenant = $1 AND parent_id = $2").bind(tenant).bind(u.id).fetch_all(&st.pool).await?;
     for c in children {
         check_self_referral(st, tenant, c, &settings).await?;

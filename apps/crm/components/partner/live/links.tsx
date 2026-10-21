@@ -578,7 +578,8 @@ export function LivePartnerLinks() {
   const rawClicks = campaigns.reduce((s, c) => s + c.clicks, 0);
   const signups = campaigns.reduce((s, c) => s + c.signups, 0);
   const ftds = campaigns.reduce((s, c) => s + c.ftds, 0);
-  const deposits = campaigns.reduce((s, c) => s + c.deposits, 0);
+  // null everywhere when the broker masks client details, and then the whole metric steps aside
+  const deposits = campaigns.some((c) => c.deposits !== null) ? campaigns.reduce((s, c) => s + (c.deposits ?? 0), 0) : null;
   const own = campaigns.filter((c) => c.id !== null).length;
 
   const toggleActive = async (c: Campaign) => {
@@ -692,7 +693,7 @@ export function LivePartnerLinks() {
           {c.deposits ? formatMoney(c.deposits, "USD", 0) : "—"}
         </span>
       ),
-      sort: (c) => c.deposits,
+      sort: (c) => c.deposits ?? -1,
       hideOn: "sm",
     },
     {
@@ -824,10 +825,10 @@ export function LivePartnerLinks() {
           label={t("partner.links.ftdVolume")}
           icon={<Banknote />}
           value={
-            <span className="k-num">{formatMoney(deposits, "USD", 0)}</span>
+            <span className="k-num">{deposits === null ? "—" : formatMoney(deposits, "USD", 0)}</span>
           }
           chip={
-            ftds
+            ftds && deposits !== null
               ? t("partner.links.average", {
                   amount: formatMoney(deposits / ftds, "USD", 0),
                 })

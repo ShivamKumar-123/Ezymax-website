@@ -22,7 +22,7 @@ import { chartFont, chartOverrides, features, loadingScreen, shareFonts, studyOv
 import type { TvChartApi, TvWidget } from "@/lib/tv/types";
 import { useContextMenu, type MenuItem } from "@/components/ui/menu";
 import { segmentLabel } from "@/components/market/segments";
-import { openActivity, showSide, toggleFullChart, useLayoutItems } from "@/components/shell/commands";
+import { PEEK_EVENT, openActivity, showSide, toggleFullChart, useLayoutItems } from "@/components/shell/commands";
 import { chartRegistry, readPalette, type ChartHandle, type Palette } from "./engine";
 import { TradeOverlay, lineColor, type ChartCoords, type DrawnLine, type PlotFrame } from "./trade-overlay";
 
@@ -289,6 +289,7 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
       }
       feed?.dispose();
       shapes.current.clear();
+      created.current.clear();
       setReady(null);
     };
     // the theme, colours, tab, symbol and timeframe follow below without a new widget; a language needs one
@@ -381,16 +382,15 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
       // A pointer-down on the plot activates the slot, but these buttons live inside the library iframe, so that
       // event never reaches the handler: without this the column opens on another market and the side is dropped.
       live.current.onActivate();
-      showSide(Tm, "order");
-      // the same intent the Markets panel and the order book raise; the ticket takes it whether it is already
-      // mounted or opening with the column (order-ticket.tsx)
+      openTicket(Tm);
+      // the ticket takes this whether it is already mounted or opening with the column (order-ticket.tsx)
       window.dispatchEvent(new CustomEvent("ezymex:ticket", { detail: { symbol: tb.symbol, side } }));
     };
     const sell = make("right", `<span>${esc(tr("common.sell"))}</span><span class="ezx-px">\u2014</span>`, tr("common.sell"), () => quick("sell"));
     sell.dataset.tone = "sell";
     const spread = make("right", `<span class="ezx-px">\u2014</span>`, tr("desk.op.spread"), () => {
       live.current.onActivate();
-      showSide(live.current.T, "order");
+      openTicket(live.current.T);
     });
     spread.dataset.tone = "spread";
     const buy = make("right", `<span>${esc(tr("common.buy"))}</span><span class="ezx-px">\u2014</span>`, tr("common.buy"), () => quick("buy"));
@@ -399,6 +399,13 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
     buttons.current = { full, sell, buy, spread };
     paintQuote();
     syncButtons();
+  };
+
+  /** Puts the ticket on screen from inside the chart. In Full chart the column is not rendered at all - it comes
+   *  back only as the peek overlay - so showSide alone leaves the press with nothing to show for it. */
+  const openTicket = (Tm: ReturnType<typeof useTerminal>) => {
+    showSide(Tm, "order");
+    if (Tm.ui.fullChart) window.dispatchEvent(new Event(PEEK_EVENT));
   };
 
   /** Writes the live prices into the header pair (text nodes only: they are not React's to re-render). */
@@ -428,7 +435,13 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
     const on = live.current.T.ui.fullChart;
     const Tm = live.current.T;
     const hidePair = Tm.ws.panels.watch && Tm.ws.side === "order" && !Tm.ui.fullChart;
-    for (const b of [sell, spread, buy]) if (b) b.style.display = hidePair ? "none" : "";
+    for (const b of [sell, spread, buy]) {
+      if (!b) continue;
+      b.style.display = hidePair ? "none" : "";
+      // an investor-password account cannot trade: the pair dims and stops responding, as the New order button
+      // these replaced used to, and as the library's own context menu still does
+      b.dataset.off = String(Tm.readOnly);
+    }
     if (fb) {
       fb.innerHTML = svg(on ? ICON.min : ICON.max);
       fb.title = on ? tr("desk.ch.exitFullChart") : `${tr("desk.ch.fullChart")} (Shift+F)`;

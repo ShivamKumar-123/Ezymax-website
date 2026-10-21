@@ -190,8 +190,10 @@ const desk = {
 
   // Activity panel
   "act.positions": "Positions",
-  // the tab holds pending orders; its value has always been `pending` (toolbox.tsx)
-  "act.orders": "Pending",
+  // an Options account uses this for its live option order book (toolbox.tsx optOrders); the CFD tab of
+  // pending stop / limit orders is act.pending
+  "act.orders": "Orders",
+  "act.pending": "Pending",
   "act.history": "History",
   "act.closed": "Closed",
   "act.settlements": "Settlements",

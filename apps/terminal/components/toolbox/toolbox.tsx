@@ -62,7 +62,7 @@ export function useActivityTabs() {
   const optCount = book.positions.length + book.orders.length;
   const options = mode === "options";
   const cfdPositions: TabDef = { value: "positions", label: options ? t("desk.act.cfdPositions") : t("desk.act.positions"), count: T.positions.length };
-  const cfdOrders: TabDef = { value: "pending", label: options ? t("desk.act.cfdOrders") : t("desk.act.orders"), count: T.pendings.length };
+  const cfdOrders: TabDef = { value: "pending", label: options ? t("desk.act.cfdOrders") : t("desk.act.pending"), count: T.pendings.length };
   const history: TabDef = { value: "history", label: t("desk.act.history") };
   const optPositions: TabDef = { value: "options", label: options ? t("desk.act.positions") : t("desk.act.optPositions"), count: optCount };
   const optOrders: TabDef = { value: "orders", label: options ? t("desk.act.orders") : t("desk.act.optOrders"), count: bookFlag.open };

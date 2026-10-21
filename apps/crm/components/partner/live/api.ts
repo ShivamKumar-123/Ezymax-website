@@ -160,7 +160,8 @@ export interface Campaign {
   uniqueClicks: number;
   signups: number;
   ftds: number;
-  deposits: number;
+  /** null when the broker masks client details: a one-signup campaign would be that client's deposit */
+  deposits: number | null;
   lots: number;
   /** Clicks per day, last 30 days (oldest first). */
   trend: number[];

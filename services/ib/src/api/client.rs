@@ -243,6 +243,9 @@ pub async fn dashboard(State(st): State<AppState>, u: UserCtx) -> ApiResult<Json
 pub async fn campaigns(State(st): State<AppState>, u: UserCtx) -> ApiResult<Json<Value>> {
     let me = me(&st, &u).await?;
     let t = u.tenant.as_str();
+    // first-deposit amounts are a full-visibility field (model.rs), and the client list nulls them per client.
+    // A campaign with one signup is that one client's deposit, so the sum follows the same rule.
+    let full = db::settings(&st.pool, t).await?.client_visibility == "full";
     let rows = sqlx::query(
         "WITH c AS (
             SELECT id, slug, name, landing, utm_source, utm_medium, utm_campaign, active, created_at FROM campaigns WHERE tenant = $1 AND user_id = $2
@@ -274,7 +277,7 @@ pub async fn campaigns(State(st): State<AppState>, u: UserCtx) -> ApiResult<Json
                 "utmMedium": r.get::<Option<String>, _>("utm_medium"), "utmCampaign": r.get::<Option<String>, _>("utm_campaign"),
                 "active": r.get::<bool, _>("active"), "createdAt": r.get::<Option<DateTime<Utc>>, _>("created_at"),
                 "clicks": r.get::<i64, _>("clicks"), "uniqueClicks": r.get::<i64, _>("unique_clicks"), "signups": r.get::<i64, _>("signups"),
-                "ftds": r.get::<i64, _>("ftds"), "deposits": num(r.get("deposits")), "lots": num(r.get("lots")), "trend": r.get::<Vec<i32>, _>("trend"),
+                "ftds": r.get::<i64, _>("ftds"), "deposits": if full { num(r.get("deposits")) } else { Value::Null }, "lots": num(r.get("lots")), "trend": r.get::<Vec<i32>, _>("trend"),
             })
         })
         .collect();
@@ -469,7 +472,9 @@ pub async fn client_trades(State(st): State<AppState>, u: UserCtx, Path(id): Pat
     }
     let rows = sqlx::query(
         "SELECT d.source, d.deal_id, d.login, d.symbol, d.side, d.volume, d.lots, d.instrument, d.contracts, d.open_time, d.close_time, d.qualified, d.reason, d.reversed,
-                (SELECT coalesce(sum(k.amount), 0) FROM commissions k WHERE k.deal_source = d.source AND k.deal_id = d.deal_id AND k.beneficiary_id = $2 AND k.status NOT IN ('void','rejected')) AS earned
+                -- client_id too: (source, deal_id) is not unique, because one PAMM or copy master deal is pushed
+                -- once per investor, and without it each investor's row carried the others' commission as well
+                (SELECT coalesce(sum(k.amount), 0) FROM commissions k WHERE k.deal_source = d.source AND k.deal_id = d.deal_id AND k.client_id = d.user_id AND k.beneficiary_id = $2 AND k.status NOT IN ('void','rejected')) AS earned
          FROM deals d WHERE d.user_id = $1 AND d.tenant = $3 ORDER BY d.close_time DESC LIMIT 200",
     )
     .bind(id)

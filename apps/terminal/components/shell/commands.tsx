@@ -101,6 +101,8 @@ export function applyPreset(T: Terminal, p: (typeof PRESETS)[number]) {
 
 /** The positions / orders / history section below the chart (the page scrolls down to it). */
 export const ACTIVITY_ID = "k-activity";
+/** Full chart renders the side column only as an overlay the shell owns; the chart asks for it with this. */
+export const PEEK_EVENT = "ezymex:peek";
 
 /** Scroll the page down to the positions section (Delta-style full-page scroll). */
 export function scrollToActivity() {
