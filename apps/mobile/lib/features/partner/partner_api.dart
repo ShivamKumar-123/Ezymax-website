@@ -472,6 +472,8 @@ class PClient {
     required this.lotsTotal,
     required this.earned,
     required this.status,
+    required this.missedLotsMonth,
+    this.missedReason,
   });
   final int id, tier;
   final String name;
@@ -485,6 +487,11 @@ class PClient {
   final String? firstTradeAt, lastTradeAt;
   final double lotsMonth, lotsTotal, earned;
   final String status;
+
+  /// Lots this month that earned nothing, and the reason behind most of them (partner.reason.*). Without these a
+  /// client who traded all month on disqualified deals looks exactly like one who never traded.
+  final double missedLotsMonth;
+  final String? missedReason;
 
   static PClient fromJson(Map<String, dynamic> j) => PClient(
     id: _i(j['id']),
@@ -506,6 +513,8 @@ class PClient {
     lotsTotal: _d(j['lotsTotal']),
     earned: _d(j['earned']),
     status: _s(j['status'], 'registered'),
+    missedLotsMonth: _d(j['missedLotsMonth']),
+    missedReason: _sn(j['missedReason']),
   );
 }
 

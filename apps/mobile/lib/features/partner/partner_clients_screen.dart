@@ -377,7 +377,8 @@ class _ClientRow extends StatelessWidget {
                 ],
                 const SizedBox(height: 3),
                 Text(
-                  '${c.lotsMonth != 0 ? t('partner.lotsN', {'lots': pf.lots(c.lotsMonth)}) : '—'} · ${t('partner.clients.lotsTotal', {'lots': pf.lots(c.lotsTotal, 1)})}',
+                  // a client whose every deal was disqualified traded; a dash would say they did not
+                  '${c.lotsMonth != 0 ? t('partner.lotsN', {'lots': pf.lots(c.lotsMonth)}) : c.missedLotsMonth > 0 ? t('partner.lotsN', {'lots': pf.lots(c.missedLotsMonth)}) : '—'} · ${t('partner.clients.lotsTotal', {'lots': pf.lots(c.lotsTotal, 1)})}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: context.text.caption.copyWith(color: k.fg2, fontWeight: FontWeight.w400, fontFeatures: kTabular),
@@ -401,7 +402,11 @@ class _ClientRow extends StatelessWidget {
               ClientStatusChip(c.status),
               const SizedBox(height: 3),
               Text(
-                c.lastTradeAt != null ? pf.rel(c.lastTradeAt) : t('partner.noTrades'),
+                c.lastTradeAt != null
+                    ? pf.rel(c.lastTradeAt)
+                    : c.missedLotsMonth > 0
+                    ? _reasonLabel(t, c.missedReason)
+                    : t('partner.noTrades'),
                 style: context.text.caption.copyWith(fontSize: 11, color: k.fg3, fontWeight: FontWeight.w400, fontFeatures: kTabular),
               ),
             ],

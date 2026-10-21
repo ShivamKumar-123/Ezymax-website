@@ -377,6 +377,10 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
     // thing in that form that sends.
     const quick = (side: "buy" | "sell") => {
       const { T: Tm, tab: tb } = live.current;
+      // On a split layout this button belongs to one chart of two or four, and the ticket follows the active one.
+      // A pointer-down on the plot activates the slot, but these buttons live inside the library iframe, so that
+      // event never reaches the handler: without this the column opens on another market and the side is dropped.
+      live.current.onActivate();
       showSide(Tm, "order");
       // the same intent the Markets panel and the order book raise; the ticket takes it whether it is already
       // mounted or opening with the column (order-ticket.tsx)
@@ -384,7 +388,10 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
     };
     const sell = make("right", `<span>${esc(tr("common.sell"))}</span><span class="ezx-px">\u2014</span>`, tr("common.sell"), () => quick("sell"));
     sell.dataset.tone = "sell";
-    const spread = make("right", `<span class="ezx-px">\u2014</span>`, tr("desk.op.spread"), () => showSide(live.current.T, "order"));
+    const spread = make("right", `<span class="ezx-px">\u2014</span>`, tr("desk.op.spread"), () => {
+      live.current.onActivate();
+      showSide(live.current.T, "order");
+    });
     spread.dataset.tone = "spread";
     const buy = make("right", `<span>${esc(tr("common.buy"))}</span><span class="ezx-px">\u2014</span>`, tr("common.buy"), () => quick("buy"));
     buy.dataset.tone = "buy";
