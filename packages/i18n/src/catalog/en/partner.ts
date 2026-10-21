@@ -354,6 +354,8 @@ const partner = {
   "network.inTheirNetwork": "{n} in their network · {lots} lots this month",
   "network.lotsThisMonth": "{lots} lots this month",
   "network.noTradesThisMonth": "No trades this month",
+  // a client who traded all month and earned nothing is not a client who did not trade
+  "network.missedThisMonth": "{lots} lots this month earned nothing \u00b7 {reason}",
   "network.toYouMonth": "To you · month",
   "network.directClients": { one: "{count} direct client", other: "{count} direct clients" },
   "network.directGroupHint": "{n} traded this month · signed up with your link",

@@ -141,6 +141,15 @@ function NodeStats({ items }: { items: [string, React.ReactNode][] }) {
 const initials = (name: string) =>
   name.replace(/[^\p{L}\s]/gu, "").trim() || "?";
 
+/** Why a client's lots earned nothing this month. The reason describes the partner's own commission rather than
+ *  the client's details, so it shows whatever clientVisibility is set to. */
+function MissedLine({ c }: { c: NetworkNode }) {
+  const t = useT();
+  if (!(c.missedLotsMonth > 0)) return <>{t("partner.network.noTradesThisMonth")}</>;
+  const reason = c.missedReason ? t.dyn(`partner.reason.${c.missedReason}`, c.missedReason.replace(/_/g, " ")) : t("partner.reason.notEligible");
+  return <>{t("partner.network.missedThisMonth", { lots: fmtLots(c.missedLotsMonth, 1), reason })}</>;
+}
+
 function PartnerNode({ c }: { c: NetworkNode }) {
   const t = useT();
   const { open, toggle, tree } = React.useContext(Ctx);
@@ -199,7 +208,7 @@ function PartnerNode({ c }: { c: NetworkNode }) {
                 ? t("partner.network.lotsThisMonth", {
                     lots: fmtLots(c.lotsMonth),
                   })
-                : t("partner.network.noTradesThisMonth")}
+                : <MissedLine c={c} />}
           </div>
         </div>
         <NodeStats
@@ -315,7 +324,7 @@ function DirectGroupNode({ list }: { list: NetworkNode[] }) {
                   <div className="text-[11px] text-fg-3">
                     {c.lotsMonth > 0
                       ? t("partner.tradedThisMonth")
-                      : t("partner.network.noTradesThisMonth")}
+                      : <MissedLine c={c} />}
                   </div>
                 </div>
                 <span

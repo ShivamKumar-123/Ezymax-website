@@ -397,6 +397,9 @@ pub async fn clients(State(st): State<AppState>, u: UserCtx, Query(q): Query<Cli
                 m.first_deposit_at, m.first_deposit_amount, m.first_trade_at, c.name AS campaign,
                 (SELECT count(*) FROM members x WHERE x.parent_id = m.user_id) AS referrals,
                 (SELECT coalesce(sum(x.lots), 0) FROM deals x WHERE x.user_id = m.user_id AND x.qualified AND NOT x.reversed AND x.close_time >= $4) AS lots_month,
+                (SELECT coalesce(sum(x.lots), 0) FROM deals x WHERE x.user_id = m.user_id AND x.close_time >= $4 AND (NOT x.qualified OR x.reversed)) AS missed_lots,
+                (SELECT x.reason FROM deals x WHERE x.user_id = m.user_id AND x.close_time >= $4 AND (NOT x.qualified OR x.reversed)
+                  GROUP BY x.reason ORDER BY sum(x.lots) DESC NULLS LAST LIMIT 1) AS missed_reason,
                 (SELECT coalesce(sum(x.lots), 0) FROM deals x WHERE x.user_id = m.user_id AND x.qualified AND NOT x.reversed) AS lots_total,
                 (SELECT coalesce(sum(x.contracts), 0) FROM deals x WHERE x.user_id = m.user_id AND x.qualified AND NOT x.reversed AND x.close_time >= $4) AS contracts_month,
                 (SELECT max(x.close_time) FROM deals x WHERE x.user_id = m.user_id AND x.tenant = $1 AND x.qualified) AS last_trade,
@@ -435,6 +438,7 @@ pub async fn clients(State(st): State<AppState>, u: UserCtx, Query(q): Query<Cli
                 "firstDepositAmount": if full { r.get::<Option<D>, _>("first_deposit_amount").map(num).unwrap_or(Value::Null) } else { Value::Null },
                 "firstTradeAt": r.get::<Option<DateTime<Utc>>, _>("first_trade_at"), "lastTradeAt": r.get::<Option<DateTime<Utc>>, _>("last_trade"),
                 "lotsMonth": num(lots_month), "lotsTotal": num(r.get("lots_total")), "optionContractsMonth": num(contracts_month), "earned": num(r.get("earned")), "status": status,
+                "missedLotsMonth": num(r.get("missed_lots")), "missedReason": r.get::<Option<String>, _>("missed_reason"),
             })
         })
         .collect();
@@ -495,6 +499,9 @@ pub async fn network(State(st): State<AppState>, u: UserCtx) -> ApiResult<Json<V
          )
          SELECT d.user_id, d.parent_id, d.tier, m.first_name, m.last_name, m.country, m.level_key, m.joined_at,
                 (SELECT coalesce(sum(x.lots), 0) FROM deals x WHERE x.user_id = d.user_id AND x.qualified AND NOT x.reversed AND x.close_time >= $4) AS lots_month,
+                (SELECT coalesce(sum(x.lots), 0) FROM deals x WHERE x.user_id = d.user_id AND x.close_time >= $4 AND (NOT x.qualified OR x.reversed)) AS missed_lots,
+                (SELECT x.reason FROM deals x WHERE x.user_id = d.user_id AND x.close_time >= $4 AND (NOT x.qualified OR x.reversed)
+                  GROUP BY x.reason ORDER BY sum(x.lots) DESC NULLS LAST LIMIT 1) AS missed_reason,
                 (SELECT coalesce(sum(k.amount), 0) FROM commissions k WHERE k.beneficiary_id = $2 AND k.client_id = d.user_id AND k.created_at >= $4 AND k.status NOT IN ('void','rejected')) AS earned_month
          FROM down d JOIN members m ON m.user_id = d.user_id ORDER BY d.tier, m.joined_at LIMIT 2000",
     )
@@ -512,6 +519,9 @@ pub async fn network(State(st): State<AppState>, u: UserCtx) -> ApiResult<Json<V
                 "name": shown_name(&r.get::<String, _>("first_name"), &r.get::<String, _>("last_name"), full),
                 "country": r.get::<String, _>("country"), "level": r.get::<String, _>("level_key"), "joinedAt": r.get::<DateTime<Utc>, _>("joined_at"),
                 "lotsMonth": num(r.get("lots_month")), "earnedMonth": num(r.get("earned_month")),
+                // what their trading earned nothing on, and why: without it a client who traded all month and a
+                // client who never opened the terminal are the same empty row
+                "missedLotsMonth": num(r.get("missed_lots")), "missedReason": r.get::<Option<String>, _>("missed_reason"),
             })
         })
         .collect();

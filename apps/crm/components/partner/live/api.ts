@@ -232,6 +232,9 @@ export interface NetworkNode {
   joinedAt: string;
   lotsMonth: number;
   earnedMonth: number;
+  /** lots this month that earned nothing, and the reason behind most of them (partner.reason.*) */
+  missedLotsMonth: number;
+  missedReason: string | null;
 }
 
 export interface NetworkResp {
