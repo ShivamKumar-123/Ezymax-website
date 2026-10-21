@@ -22,6 +22,7 @@ enum KIllustrationName {
   propChallenge('assets/illustrations/propChallenge.png', 1.5000),
   propPassed('assets/illustrations/propPassed.png', 1.0000),
   rewards('assets/illustrations/rewards.png', 1.1934),
+  contests('assets/illustrations/contests.png', 2.0730),
   partnerIb('assets/illustrations/partnerIb.png', 1.5000),
   marketClosed('assets/illustrations/marketClosed.png', 1.3333);
 

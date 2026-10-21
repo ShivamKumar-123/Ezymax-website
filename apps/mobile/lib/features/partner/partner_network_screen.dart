@@ -12,6 +12,16 @@ import 'partner_api.dart';
 import 'widgets/partner_widgets.dart';
 
 /// The tree: children per parent (the root's id for direct clients) and nodes by id.
+/// A client who traded and earned the partner nothing is not a client who did not trade: name the lots and the
+/// reason. Mirrors the web tree (apps/crm/components/partner/live/network.tsx MissedLine).
+String _missedLine(T t, PartnerFmt pf, PNode c) {
+  if (c.missedLotsMonth <= 0) return t('partner.network.noTradesThisMonth');
+  final reason = c.missedReason == null
+      ? t('partner.reason.notEligible')
+      : t.dyn('partner.reason.${c.missedReason}', fallback: c.missedReason!.replaceAll('_', ' '));
+  return t('partner.network.missedThisMonth', {'lots': pf.lots(c.missedLotsMonth, 1), 'reason': reason});
+}
+
 class _Tree {
   _Tree(List<PNode> nodes, int rootId) {
     for (final n in nodes) {
@@ -646,7 +656,7 @@ class _PartnerNode extends StatelessWidget {
                       ? t('partner.network.inTheirNetwork', {'n': net.length, 'lots': pf.lots(lots, 1)})
                       : c.lotsMonth != 0
                       ? t('partner.network.lotsThisMonth', {'lots': pf.lots(c.lotsMonth)})
-                      : t('partner.network.noTradesThisMonth'),
+                      : _missedLine(t, pf, c),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: context.text.caption.copyWith(color: k.fg3, fontWeight: FontWeight.w400),

@@ -110,7 +110,7 @@ class _ContestsScreenState extends ConsumerState<ContestsScreen> {
           ContestHero(card: featured, detail: d, onJoined: reload)
         else
           KCard(
-            child: KEmptyState(art: KIllustrationName.rewards, title: t('rewards.contests.noneTitle'), text: t('rewards.contests.noneText')),
+            child: KEmptyState(art: KIllustrationName.contests, title: t('rewards.contests.noneTitle'), text: t('rewards.contests.noneText')),
           ),
         const SizedBox(height: kBlockGap),
         SizedBox(

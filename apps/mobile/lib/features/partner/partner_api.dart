@@ -584,12 +584,19 @@ class PNode {
     required this.joinedAt,
     required this.lotsMonth,
     required this.earnedMonth,
+    required this.missedLotsMonth,
+    this.missedReason,
   });
   final int id;
   final int? parentId;
   final int tier;
   final String name, country, level, joinedAt;
   final double lotsMonth, earnedMonth;
+
+  /// Lots this month that earned nothing, and the reason behind most of them (partner.reason.*): without these
+  /// a client who traded all month on disqualified deals is the same empty row as one who never traded.
+  final double missedLotsMonth;
+  final String? missedReason;
 
   static PNode fromJson(Map<String, dynamic> j) => PNode(
     id: _i(j['id']),
@@ -601,6 +608,8 @@ class PNode {
     joinedAt: _s(j['joinedAt']),
     lotsMonth: _d(j['lotsMonth']),
     earnedMonth: _d(j['earnedMonth']),
+    missedLotsMonth: _d(j['missedLotsMonth']),
+    missedReason: _sn(j['missedReason']),
   );
 }
 
