@@ -397,8 +397,8 @@ pub async fn clients(State(st): State<AppState>, u: UserCtx, Query(q): Query<Cli
                 m.first_deposit_at, m.first_deposit_amount, m.first_trade_at, c.name AS campaign,
                 (SELECT count(*) FROM members x WHERE x.parent_id = m.user_id) AS referrals,
                 (SELECT coalesce(sum(x.lots), 0) FROM deals x WHERE x.user_id = m.user_id AND x.qualified AND NOT x.reversed AND x.close_time >= $4) AS lots_month,
-                (SELECT coalesce(sum(x.lots), 0) FROM deals x WHERE x.user_id = m.user_id AND x.close_time >= $4 AND (NOT x.qualified OR x.reversed)) AS missed_lots,
-                (SELECT x.reason FROM deals x WHERE x.user_id = m.user_id AND x.close_time >= $4 AND (NOT x.qualified OR x.reversed) AND x.reason IS NOT NULL
+                (SELECT coalesce(sum(x.lots), 0) FROM deals x WHERE x.tenant = $1 AND x.user_id = m.user_id AND x.close_time >= $4 AND (NOT x.qualified OR x.reversed)) AS missed_lots,
+                (SELECT x.reason FROM deals x WHERE x.tenant = $1 AND x.user_id = m.user_id AND x.close_time >= $4 AND (NOT x.qualified OR x.reversed) AND x.reason IS NOT NULL
                   GROUP BY x.reason ORDER BY sum(x.lots) DESC LIMIT 1) AS missed_reason,
                 (SELECT coalesce(sum(x.lots), 0) FROM deals x WHERE x.user_id = m.user_id AND x.qualified AND NOT x.reversed) AS lots_total,
                 (SELECT coalesce(sum(x.contracts), 0) FROM deals x WHERE x.user_id = m.user_id AND x.qualified AND NOT x.reversed AND x.close_time >= $4) AS contracts_month,
@@ -499,8 +499,8 @@ pub async fn network(State(st): State<AppState>, u: UserCtx) -> ApiResult<Json<V
          )
          SELECT d.user_id, d.parent_id, d.tier, m.first_name, m.last_name, m.country, m.level_key, m.joined_at,
                 (SELECT coalesce(sum(x.lots), 0) FROM deals x WHERE x.user_id = d.user_id AND x.qualified AND NOT x.reversed AND x.close_time >= $4) AS lots_month,
-                (SELECT coalesce(sum(x.lots), 0) FROM deals x WHERE x.user_id = d.user_id AND x.close_time >= $4 AND (NOT x.qualified OR x.reversed)) AS missed_lots,
-                (SELECT x.reason FROM deals x WHERE x.user_id = d.user_id AND x.close_time >= $4 AND (NOT x.qualified OR x.reversed) AND x.reason IS NOT NULL
+                (SELECT coalesce(sum(x.lots), 0) FROM deals x WHERE x.tenant = $1 AND x.user_id = d.user_id AND x.close_time >= $4 AND (NOT x.qualified OR x.reversed)) AS missed_lots,
+                (SELECT x.reason FROM deals x WHERE x.tenant = $1 AND x.user_id = d.user_id AND x.close_time >= $4 AND (NOT x.qualified OR x.reversed) AND x.reason IS NOT NULL
                   GROUP BY x.reason ORDER BY sum(x.lots) DESC LIMIT 1) AS missed_reason,
                 (SELECT coalesce(sum(k.amount), 0) FROM commissions k WHERE k.beneficiary_id = $2 AND k.client_id = d.user_id AND k.created_at >= $4 AND k.status NOT IN ('void','rejected')) AS earned_month
          FROM down d JOIN members m ON m.user_id = d.user_id ORDER BY d.tier, m.joined_at LIMIT 2000",
