@@ -464,6 +464,57 @@ async fn old_referral_codes_still_count_after_the_switch_to_name_free_codes() {
     e.drop().await;
 }
 
+/// A client who trades and earns the partner nothing must not look like a client who never traded: the lots are
+/// counted separately and the reason behind most of them is named. Without this the two are the same empty row,
+/// and on a masked tenant there is no other page that would tell them apart.
+#[tokio::test]
+async fn a_clients_disqualified_trading_is_separate_from_no_trading() {
+    use axum::extract::Query;
+    use ib::api::UserCtx;
+    use ib::api::client as c;
+    let Some(e) = env(None).await else { return };
+    // partner 60 <- 61 (trades, but every deal is held under the 120 s minimum) and 62 (never trades)
+    e.member(60, None, "bronze").await;
+    e.member(61, Some(60), "bronze").await;
+    e.member(62, Some(60), "bronze").await;
+    for (id, secs) in [(9801, 30), (9802, 45)] {
+        let out = deals::ingest(&e.st, &deal(id, 61, "XAUUSD", "1.5", secs)).await.unwrap();
+        assert!(matches!(out, Outcome::Recorded { qualified: false, .. }), "{id} should not qualify: {out:?}");
+    }
+    let u = || UserCtx { tenant: "ezymex".into(), user_id: 60 };
+    let list = c::clients(State(e.st.clone()), u(), Query(serde_json::from_value(json!({})).unwrap())).await.unwrap().0;
+    let net = c::network(State(e.st.clone()), u()).await.unwrap().0;
+
+    for (what, items) in [("clients", list["items"].as_array().unwrap()), ("network", net["nodes"].as_array().unwrap())] {
+        let traded = items.iter().find(|x| x["id"] == 61).unwrap();
+        let quiet = items.iter().find(|x| x["id"] == 62).unwrap();
+        // nothing was earned on either, and neither shows a qualified lot
+        assert_eq!(traded["lotsMonth"].as_f64(), Some(0.0), "{what}: a disqualified deal is not a qualified lot");
+        assert_eq!(quiet["lotsMonth"].as_f64(), Some(0.0), "{what}");
+        // but the one who traded says so, with the reason, and the one who did not stays empty
+        assert_eq!(traded["missedLotsMonth"].as_f64(), Some(3.0), "{what}: both deals count: {traded}");
+        assert_eq!(traded["missedReason"].as_str(), Some("short_duration"), "{what}: {traded}");
+        assert_eq!(quiet["missedLotsMonth"].as_f64(), Some(0.0), "{what}: {quiet}");
+        assert!(quiet["missedReason"].is_null(), "{what}: {quiet}");
+    }
+
+    // a deal that qualified and was then reversed earns nothing either, and carries no reason of its own
+    deals::ingest(&e.st, &deal(9803, 62, "XAUUSD", "2", 600)).await.unwrap();
+    sqlx::query("UPDATE deals SET reversed = true WHERE deal_id = 9803").execute(&e.st.pool).await.unwrap();
+    let net = c::network(State(e.st.clone()), u()).await.unwrap().0;
+    let quiet = net["nodes"].as_array().unwrap().iter().find(|x| x["id"] == 62).unwrap().clone();
+    assert_eq!(quiet["lotsMonth"].as_f64(), Some(0.0), "a reversed deal is not a qualified lot: {quiet}");
+    assert_eq!(quiet["missedLotsMonth"].as_f64(), Some(2.0), "{quiet}");
+    assert!(quiet["missedReason"].is_null(), "a reversed deal has no disqualification reason: {quiet}");
+
+    // the boundary: last month's disqualified trading is not this month's
+    sqlx::query("UPDATE deals SET close_time = now() - interval '45 days', open_time = now() - interval '45 days' WHERE user_id = 61").execute(&e.st.pool).await.unwrap();
+    let net = c::network(State(e.st.clone()), u()).await.unwrap().0;
+    let traded = net["nodes"].as_array().unwrap().iter().find(|x| x["id"] == 61).unwrap().clone();
+    assert_eq!(traded["missedLotsMonth"].as_f64(), Some(0.0), "only this month counts: {traded}");
+    e.drop().await;
+}
+
 #[tokio::test]
 async fn partners_see_referred_clients_masked_by_default() {
     use axum::extract::{Path, Query};
