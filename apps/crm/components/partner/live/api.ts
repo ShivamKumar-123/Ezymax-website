@@ -193,6 +193,9 @@ export interface NetworkClient {
   lotsTotal: number;
   earned: number;
   status: ClientStatus;
+  /** lots this month that earned nothing, and the reason behind most of them (partner.reason.*) */
+  missedLotsMonth: number;
+  missedReason: string | null;
 }
 
 export interface ClientsResp {

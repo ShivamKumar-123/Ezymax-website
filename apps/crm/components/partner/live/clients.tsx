@@ -477,7 +477,16 @@ export function LivePartnerClients() {
       cell: (c) => (
         <span className="block">
           <span className="k-num font-medium">
-            {c.lotsMonth ? fmtLots(c.lotsMonth) : "—"}
+            {c.lotsMonth ? (
+              fmtLots(c.lotsMonth)
+            ) : c.missedLotsMonth > 0 ? (
+              // they traded; none of it qualified. A dash here reads as "did not trade".
+              <span className="font-normal text-fg-3" title={reasonLabel(c.missedReason)}>
+                {fmtLots(c.missedLotsMonth)}
+              </span>
+            ) : (
+              "—"
+            )}
           </span>
           <span className="k-num block text-[11px] text-fg-3">
             {t("partner.clients.lotsTotal", { lots: fmtLots(c.lotsTotal, 1) })}
@@ -511,7 +520,7 @@ export function LivePartnerClients() {
         <span className="flex flex-col items-end gap-0.5">
           <ClientStatusChip status={c.status} />
           <span className="k-num text-[11px] text-fg-3">
-            {c.lastTradeAt ? relTime(c.lastTradeAt) : t("partner.noTrades")}
+            {c.lastTradeAt ? relTime(c.lastTradeAt) : c.missedLotsMonth > 0 ? reasonLabel(c.missedReason) : t("partner.noTrades")}
           </span>
         </span>
       ),
