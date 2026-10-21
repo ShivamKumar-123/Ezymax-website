@@ -273,8 +273,14 @@ function DirectGroupNode({ list }: { list: NetworkNode[] }) {
           <Users className="size-4" />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 text-[13.5px] font-medium">
-            {t("partner.network.directClients", { count: list.length })}{" "}
+          <div className="flex min-w-0 items-center gap-1.5 text-[13.5px] font-medium">
+            <span className="shrink-0">{t("partner.network.directClients", { count: list.length })}</span>
+            {/* who they are, so the collapsed group is not just a count (names follow clientVisibility) */}
+            {list.length > 0 && (
+              <span className="min-w-0 truncate text-[12.5px] font-normal text-fg-3">
+                ({list.map((c) => c.name).join(", ")})
+              </span>
+            )}
             <TierChip tier={1} />
           </div>
           <div className="truncate text-[11.5px] text-fg-3">
