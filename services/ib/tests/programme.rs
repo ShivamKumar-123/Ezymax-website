@@ -274,6 +274,19 @@ async fn self_referral_blocks_until_cleared_and_wash_pairs_are_flagged() {
     sync::check_self_referral(&e.st, "ezymex", 11, &s).await.unwrap();
     assert!(matches!(deals::ingest(&e.st, &deal(9102, 11, "EURUSD", "1", 600)).await.unwrap(), Outcome::Recorded { qualified: true, .. }));
 
+    // ... and the deals the block had already rejected are paid too, not only the ones that come after it.
+    // Lifting a false positive has to mean the period under suspicion as well, or the partner is never paid for
+    // it and has no way to find out why.
+    let short = deals::ingest(&e.st, &deal(9105, 11, "EURUSD", "1", 10)).await.unwrap();
+    assert_eq!(short, Outcome::Recorded { qualified: false, reason: Some("short_duration".into()), lines: 0 });
+    assert_eq!(e.count("SELECT count(*) FROM deals WHERE deal_id = 9101 AND qualified").await, 0);
+    let before = e.sum("SELECT sum(amount) FROM commissions WHERE beneficiary_id = 10").await;
+    assert_eq!(deals::reprocess(&e.st, 11, "self_referral").await.unwrap(), 1, "only the deals that reason blocked");
+    assert_eq!(e.count("SELECT count(*) FROM deals WHERE deal_id = 9101 AND qualified").await, 1);
+    assert!(e.sum("SELECT sum(amount) FROM commissions WHERE beneficiary_id = 10").await > before, "the IB is paid for it");
+    // a trade that failed a different rule is not swept up: four seconds is still four seconds
+    assert_eq!(e.count("SELECT count(*) FROM deals WHERE deal_id = 9105 AND NOT qualified").await, 1);
+
     // wash trading: 12 sells what 11 buys, same size, same minute
     let mut a = deal(9103, 11, "GBPUSD", "3", 900);
     let mut b = deal(9104, 12, "GBPUSD", "3", 890);

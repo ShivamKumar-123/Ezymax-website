@@ -759,7 +759,8 @@ pub async fn flags(State(st): State<AppState>, s: StaffCtx, Query(q): Query<Flag
     })))
 }
 
-/// `dismiss`: a false positive. A self-referral block is lifted (the client's future deals earn again).
+/// `dismiss`: a false positive. The self-referral block is lifted and the deals it had already rejected are
+/// re-evaluated, so the partner is paid for the period under suspicion rather than only for what follows.
 /// `confirm`: abuse confirmed. The client's pending, unbatched commission lines are voided.
 pub async fn resolve_flag(State(st): State<AppState>, s: StaffCtx, Path(id): Path<i64>, Json(r): Json<NoteReq>) -> ApiResult<Json<Value>> {
     s.require(ROLES_WRITE)?;
@@ -778,6 +779,8 @@ pub async fn resolve_flag(State(st): State<AppState>, s: StaffCtx, Path(id): Pat
     let status = if action == "dismiss" { "dismissed" } else { "confirmed" };
     sqlx::query("UPDATE fraud_flags SET status = $2, resolved_by = $3, resolved_at = now(), note = $4 WHERE id = $1").bind(id).bind(status).bind(format!("{} ({})", s.name, s.actor().id)).bind(&note).execute(&mut *tx).await?;
     let mut effect = json!({});
+    // the deals this block rejected, re-evaluated once the member row is committed (see below)
+    let mut replay: Option<i64> = None;
     if let Some(c) = client {
         if action == "dismiss" && kind.starts_with("self_referral") {
             sqlx::query("UPDATE fraud_flags SET status = 'dismissed', resolved_by = $3, resolved_at = now(), note = $4 WHERE tenant = $1 AND client_id = $2 AND kind LIKE 'self_referral%' AND status = 'open'")
@@ -789,6 +792,7 @@ pub async fn resolve_flag(State(st): State<AppState>, s: StaffCtx, Path(id): Pat
                 .await?;
             sqlx::query("UPDATE members SET abuse_cleared = true, self_referral = NULL WHERE user_id = $1").bind(c).execute(&mut *tx).await?;
             effect = json!({"selfReferralCleared": c});
+            replay = Some(c);
         }
         if action == "confirm" {
             let voided = sqlx::query("UPDATE commissions SET status = 'void', note = $2, updated_at = now() WHERE client_id = $1 AND status = 'pending' AND batch_id IS NULL AND kind <> 'clawback'")
@@ -802,6 +806,18 @@ pub async fn resolve_flag(State(st): State<AppState>, s: StaffCtx, Path(id): Pat
     }
     audit::record(&mut *tx, &s.tenant, &s.actor(), &format!("flag.{action}"), Some(format!("flag:{id}")), Some(json!({"status": "open", "kind": kind})), Some(json!({"status": status, "effect": effect})), Some(&note)).await?;
     tx.commit().await?;
+    // After the commit, never inside it: reprocess runs on its own connection and would otherwise still read
+    // the self_referral value this transaction just cleared, and reject every deal a second time.
+    if let Some(c) = replay {
+        match crate::deals::reprocess(&st, c, "self_referral").await {
+            Ok(n) => {
+                tracing::info!(client = c, deals = n, "self-referral dismissed: blocked deals re-evaluated");
+                effect["dealsReprocessed"] = json!(n);
+            }
+            // the flag is dismissed either way; the replay can be run again by dismissing a later flag
+            Err(e) => tracing::error!(client = c, error = %e, "self-referral dismissed but the blocked deals could not be re-evaluated"),
+        }
+    }
     Ok(Json(json!({"status": status, "effect": effect})))
 }
 

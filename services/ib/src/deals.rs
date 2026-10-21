@@ -224,14 +224,27 @@ pub async fn ingest(st: &AppState, d: &DealInput) -> anyhow::Result<Outcome> {
 }
 
 /// Deals recorded before their client was mirrored from the gateway are evaluated again.
-pub async fn reprocess_unknown(st: &AppState, user_id: i64) -> anyhow::Result<()> {
+pub async fn reprocess_unknown(st: &AppState, user_id: i64) -> anyhow::Result<usize> {
+    reprocess(st, user_id, "unknown_client").await
+}
+
+/// Re-evaluates the deals this client had rejected for one reason, now that the reason no longer holds: a
+/// client mirrored late ("unknown_client"), or a self-referral block an administrator has since dismissed.
+/// Each deal goes back through `ingest`, so every other rule still applies - a trade held for four seconds
+/// stays unpaid whatever was cleared. Returns how many were re-evaluated.
+///
+/// The caller must have committed whatever changed the member row: this runs on its own pool connection and
+/// would otherwise read the old value and reject the deals again.
+pub async fn reprocess(st: &AppState, user_id: i64, reason: &str) -> anyhow::Result<usize> {
     let rows = sqlx::query(
-        "DELETE FROM deals d WHERE d.user_id = $1 AND d.reason = 'unknown_client'
+        "DELETE FROM deals d WHERE d.user_id = $1 AND d.reason = $2
          RETURNING d.source, d.deal_id, d.tenant, d.login, d.symbol, d.side, d.volume, d.open_time, d.close_time, d.reversed, d.instrument",
     )
     .bind(user_id)
+    .bind(reason)
     .fetch_all(&st.pool)
     .await?;
+    let n = rows.len();
     for r in rows {
         let login: Option<i64> = r.get("login");
         let account = match login {
@@ -256,7 +269,7 @@ pub async fn reprocess_unknown(st: &AppState, user_id: i64) -> anyhow::Result<()
         };
         Box::pin(ingest(st, &d)).await?;
     }
-    Ok(())
+    Ok(n)
 }
 
 /// One-time CPA for the client's direct IB once the client has a first live deposit ≥ the minimum and a
