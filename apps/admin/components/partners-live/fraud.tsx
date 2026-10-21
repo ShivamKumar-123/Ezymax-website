@@ -38,7 +38,7 @@ function effectText(f: Flag, action: "dismiss" | "confirm") {
   const selfRef = f.kind.startsWith("self_referral");
   if (action === "dismiss")
     return selfRef
-      ? "Marks this as a false positive. Every open self-referral flag on this client is dismissed and the block is lifted: the client's future deals earn commission again. Lines already voided stay voided."
+      ? "Marks this as a false positive. Every open self-referral flag on this client is dismissed and the block is lifted. The deals this block already rejected are re-evaluated and pay their upline, as well as everything the client trades from now on — a trade that failed another rule, such as the minimum holding time, stays unpaid. Lines already voided stay voided."
       : "Marks this as a false positive. Nothing else changes.";
   return "Confirms abuse. All of this client's pending commission lines that are not yet in a payout batch are voided. Lines already in a batch are not touched; reject the batch if needed.";
 }
