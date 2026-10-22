@@ -113,6 +113,9 @@ class PriceFeed {
   private backoff = 0;
   /** last frame from the stream (quotes or the 5s heartbeat) — a silent socket is reconnected */
   private lastFrame = 0;
+  /** The pending reconnect from `onclose`. Tracked so the watchdog can tell a retry that is on its way from
+   *  one that will never arrive (a timer a background tab dropped, or an `openSocket` that threw). */
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private watchdog: ReturnType<typeof setInterval> | null = null;
   private opened = false;
   /** Group of the open socket (its quotes carry that group's spread). */
@@ -367,12 +370,25 @@ class PriceFeed {
     if (this.simOnly.size) this.ensureSimulator();
   }
 
-  /** Reconnects a socket that went silent (no quote or heartbeat for 12s) and resyncs after a hidden tab. */
+  /** Revives a stream that stopped without saying so, and resyncs after a hidden tab.
+   *
+   *  Three ways it dies, and none of them raises `onclose`:
+   *    - open but silent, the network dropped it with no FIN;
+   *    - stuck in CONNECTING, a handshake that never completes;
+   *    - gone entirely with no retry pending, because a background tab dropped the one-shot timer.
+   *  Each leaves the terminal showing the last price it ever received while still reporting itself live. */
   private startWatchdog() {
     if (this.watchdog) return;
     this.watchdog = setInterval(() => {
+      if (this.mode !== "live" || this.holding) return;
       const ws = this.ws;
-      if (ws && ws.readyState === WebSocket.OPEN && Date.now() - this.lastFrame > 12_000) {
+      if (!ws) {
+        // nothing is coming unless onclose already scheduled it
+        if (!this.reconnectTimer) this.openSocket();
+        return;
+      }
+      const waiting = ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING;
+      if (waiting && Date.now() - this.lastFrame > 12_000) {
         this.ws = null;
         ws.close();
         this.openSocket();
@@ -393,6 +409,10 @@ class PriceFeed {
 
   /** Closes the current socket without the reconnect of onclose. */
   private dropSocket() {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     const old = this.ws;
     this.ws = null;
     this.held.clear();
@@ -400,6 +420,10 @@ class PriceFeed {
   }
 
   private openSocket() {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     const ws = new WebSocket(`${MARKET_DATA_URL.replace(/^http/, "ws")}/v1/stream?group=${encodeURIComponent(this.group)}`);
     this.ws = ws;
     this.wsGroup = this.group;
@@ -447,7 +471,10 @@ class PriceFeed {
       if (this.ws !== ws) return;
       this.ws = null;
       // first retry almost at once, then back off (max 2s) while the service is down
-      setTimeout(() => this.openSocket(), this.backoff);
+      this.reconnectTimer = setTimeout(() => {
+        this.reconnectTimer = null;
+        this.openSocket();
+      }, this.backoff);
       this.backoff = Math.min(Math.max(250, this.backoff * 2), 2000);
     };
   }
