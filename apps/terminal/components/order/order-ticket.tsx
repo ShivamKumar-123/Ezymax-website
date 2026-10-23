@@ -497,8 +497,10 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
 
       {/* the one primary action (sticky at the bottom of the panel) */}
       <div className={cn("space-y-2 border-t border-line", dialog ? "pt-3" : "t-bar sticky bottom-0 z-[2] px-2.5 pb-2.5 pt-2.5")}>
-        {/* the one primary action: it names the order it will send, and it is the only thing in the ticket that sends */}
-        <Button data-tour="confirm" size="xl" variant={canConfirm ? "primary" : "secondary"} disabled={!canConfirm} onClick={() => side && void submit(side)} className="w-full disabled:opacity-80">
+        {/* The one primary action: it names the order it will send, and it is the only thing in the ticket that sends.
+            It wears the colour of the side it will send, the same fill as the Sell / Buy pair above it - the brand
+            orange said nothing about which way the trade goes, on the button that commits it. */}
+        <Button data-tour="confirm" size="xl" variant={canConfirm ? (side === "buy" ? "buy" : "sell") : "secondary"} disabled={!canConfirm} onClick={() => side && void submit(side)} className="w-full disabled:opacity-80">
           <span className="truncate">{confirm}</span>
         </Button>
         <div className="flex items-center gap-2">
