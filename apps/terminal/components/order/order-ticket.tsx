@@ -96,7 +96,6 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
       shown.current = symbol;
       setPrice("");
       setStopLimit("");
-      setOcoPrice("");
       setSl((s) => (s.mode === "price" ? { ...s, value: "" } : s));
       setTp((s) => (s.mode === "price" ? { ...s, value: "" } : s));
       setSide(null);
