@@ -5,8 +5,9 @@
 //   chip inside the field · Volume · Stop loss and Take profit, settable by price, pips or money · ONE confirm button
 //   that names the trade. With one-click trading on, Sell / Buy send the order at once (as on the chart and the order
 //   book) and the confirm button steps aside.
-//   More options holds what is set occasionally rather than per order: expiry, trailing stop, OCO, comment, max price
-//   change, and the two summary numbers that describe an order rather than decide it (position size, overnight swap).
+//   Nothing else: the form asks what decides a trade and no more. Expiry, trailing stop, OCO, an order comment and
+//   max price change used to live behind a More options row here and now keep their defaults - a pending order is
+//   Good till cancelled, and a trailing stop is set on the position once it is open.
 import * as React from "react";
 import { Calculator, ChevronDown, Lock } from "lucide-react";
 import { toast } from "@/lib/notify";
@@ -17,7 +18,7 @@ import { useMetrics, useTerminal } from "@/lib/store";
 import { useMarketOpen } from "@/lib/market-hours";
 import { useSlowQuote } from "@/lib/market";
 import { accCcy, accMoney, fmtPrice, fmtVol, marginRequired, pendingLabelKey, pipSize, pipValuePerLot, splitSymbol, type Expiry, type OrderType, type PendingOrder, swapSummary } from "@/lib/trading";
-import { TInput, TSelect } from "@/components/ui/primitives";
+import { TSelect } from "@/components/ui/primitives";
 import { Button, FieldRow, HelpTip, InlineNumber, Segmented, SummaryRow, Switch, Tip } from "@/components/ui/kit";
 import { DropMenu } from "@/components/ui/menu";
 import { AccountMoney } from "@/components/ui/balances";
@@ -70,14 +71,6 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
   const [stopLimit, setStopLimit] = React.useState("");
   const [sl, setSl] = React.useState<StopState>({ on: false, mode: "pips", value: "" });
   const [tp, setTp] = React.useState<StopState>({ on: false, mode: "pips", value: "" });
-  const [trailing, setTrailing] = React.useState(false);
-  const [trailPips, setTrailPips] = React.useState("20");
-  const [expiry, setExpiry] = React.useState<Expiry>("GTC");
-  const [expiryDate, setExpiryDate] = React.useState(tomorrow);
-  const [oco, setOco] = React.useState(false);
-  const [ocoPrice, setOcoPrice] = React.useState("");
-  const [comment, setComment] = React.useState("");
-  const [more, setMore] = React.useState(false);
   const [calcOpen, setCalcOpen] = React.useState(false);
   const [riskMode, setRiskMode] = React.useState<"pct" | "usd">("pct");
   const [risk, setRisk] = React.useState("1");
@@ -221,11 +214,8 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
       stopLimit: type === "stop-limit" ? parseFloat(stopLimit) || parseFloat(price) : undefined,
       sl: stopPrice(sl, "sl", s, qq),
       tp: stopPrice(tp, "tp", s, qq),
-      trailing: trailing ? (parseFloat(trailPips) || 0) * pip || undefined : undefined,
-      expiry: pending ? expiry : undefined,
-      expiryDate: pending && expiry === "Date" ? expiryDate : undefined,
-      comment: comment || undefined,
-      ocoPrice: pending && oco && type !== "stop-limit" && ocoPrice ? parseFloat(ocoPrice) : undefined,
+      // the form no longer asks for an expiry, so a pending order is Good till cancelled
+      expiry: pending ? ("GTC" satisfies Expiry) : undefined,
     });
     setBusy(false);
     if (ok) {
@@ -434,56 +424,9 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
           {stopRow("tp")}
         </div>
 
-        {/* more options */}
-        <button type="button" onClick={() => setMore(!more)} aria-expanded={more} className="flex h-7 w-full min-w-0 items-center gap-1.5 rounded-[8px] px-1 text-[12.5px] font-medium text-fg-2 hover:text-fg">
-          <ChevronDown className={cn("size-3.5 shrink-0 text-fg-3 transition-transform", more ? "rotate-0" : "-rotate-90")} />
-          <span className="shrink-0">{t("desk.op.more")}</span>
-          <span className="min-w-0 truncate text-[12px] font-normal text-fg-3">{[pending ? t("desk.op.expiry") : null, t("desk.op.trailing"), pending && type !== "stop-limit" ? "OCO" : null, t("desk.op.comment"), t("desk.op.maxDev")].filter(Boolean).join(" · ")}</span>
-        </button>
-        {more && (
-          <div className="space-y-2">
-            {pending && (
-              <FieldRow label={t("desk.op.expiry")}>
-                <TSelect ariaLabel={t("order.ticket.expiry")} value={expiry} onChange={setExpiry} options={[{ value: "GTC", label: t("order.expiry.gtc") }, { value: "Today", label: t("order.expiry.today") }, { value: "Date", label: t("order.expiry.date") }]} className="h-6 w-auto border-0 bg-transparent text-end" />
-                {expiry === "Date" && <TInput type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} aria-label={t("order.ticket.expiryDate")} className="h-6 w-[130px] font-mono" dir="ltr" />}
-              </FieldRow>
-            )}
-            <FieldRow
-              label={
-                <span className="flex items-center gap-2">
-                  <Switch size="sm" checked={trailing} onChange={setTrailing} label={t("desk.op.trailing")} />
-                  {t("desk.op.trailing")}
-                </span>
-              }
-              help={<HelpTip title={t("desk.op.trailing")} text={t("desk.op.trailingHint")} />}
-            >
-              {trailing ? <InlineNumber value={trailPips} onChange={setTrailPips} step={1} decimals={0} min={1} ariaLabel={t("order.ticket.trailingPips")} suffix={t("order.pips")} className="[&_input]:w-[48px]" /> : <span className="pe-2 text-[12px] text-fg-3">{t("desk.op.off")}</span>}
-            </FieldRow>
-            {pending && type !== "stop-limit" && (
-              <FieldRow
-                label={
-                  <span className="flex items-center gap-2">
-                    <Switch size="sm" checked={oco} onChange={setOco} label={t("desk.op.oco")} />
-                    OCO
-                  </span>
-                }
-                help={<HelpTip title="OCO" text={t("desk.op.oco")} />}
-              >
-                {oco ? <InlineNumber value={ocoPrice} onChange={setOcoPrice} step={priceStep} decimals={inst.digits} ariaLabel={t("desk.op.ocoPrice")} placeholder={fmtPrice(symbol, q.bid)} /> : <span className="pe-2 text-[12px] text-fg-3">{t("desk.op.off")}</span>}
-              </FieldRow>
-            )}
-            <FieldRow label={t("desk.op.comment")}>
-              <input value={comment} onChange={(e) => setComment(e.target.value)} placeholder={t("common.optional")} maxLength={31} aria-label={t("desk.op.comment")} className="h-7 w-[150px] bg-transparent pe-2 text-end text-[13px] text-fg outline-none placeholder:text-fg-3" />
-            </FieldRow>
-            <FieldRow label={t("desk.op.maxDev")} help={<HelpTip title={t("desk.set.maxDeviation")} text={t("desk.set.maxDeviationHint")} />}>
-              <InlineNumber value={T.ws.maxDeviation === null ? "" : String(T.ws.maxDeviation)} placeholder={t("order.ticket.anyPrice")} onChange={(v) => T.setWs({ maxDeviation: v.trim() === "" ? null : Math.max(0, Math.round(parseFloat(v) || 0)) })} step={1} decimals={0} ariaLabel={t("order.ticket.maxDeviation")} className="[&_input]:w-[80px]" />
-            </FieldRow>
-          </div>
-        )}
-
         {/* summary */}
         <div className="space-y-0.5 border-t border-line px-1 pt-2">
-          <LiveSummary symbol={symbol} volume={vol} unitLabel={unitLabel} detail={more} />
+          <LiveSummary symbol={symbol} volume={vol} unitLabel={unitLabel} detail={false} />
           {sl.on && tp.on && slMoney !== null && tpMoney !== null && slMoney < 0 && (
             <SummaryRow label={t("desk.op.ratioLabel")}>
               <span className="text-down">{accMoney(acc, slMoney, { signed: true })}</span>
@@ -512,11 +455,6 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
       </div>
     </div>
   );
-}
-
-function tomorrow() {
-  const d = new Date(Date.now() + 86400e3);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 /* ---- per-tick leaves ---- */

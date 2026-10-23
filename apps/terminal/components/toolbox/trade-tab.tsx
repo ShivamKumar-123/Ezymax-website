@@ -122,12 +122,6 @@ export function PositionsTab() {
                   <HelpTip title={t("desk.g.swap.t")} text={t("desk.g.swap")} side="bottom" />
                 </span>
               </Th>
-              <Th right>
-                <span className="inline-flex items-center gap-1">
-                  {t("desk.pos.col.commission")}
-                  <HelpTip title={t("desk.g.commission.t")} text={t("desk.g.commission")} side="bottom" />
-                </span>
-              </Th>
               <Th right>{t("desk.pos.col.pnl")}</Th>
               <Th className="w-[140px]" />
             </tr>
@@ -243,9 +237,6 @@ function PositionGroup({ symbol, positions, picking, row, onMenu }: { symbol: st
         <Td right mono className="text-fg-2">
           <span dir="ltr">{accMoney(a, positions.reduce((s, p) => s + p.swap, 0))}</span>
         </Td>
-        <Td right mono className="text-fg-2">
-          <span dir="ltr">{accMoney(a, -positions.reduce((s, p) => s + p.commission, 0))}</span>
-        </Td>
         <Td right className="text-[13px] font-semibold">
           <span dir="ltr">
             <Pnl value={pr} text={accMoney(a, pr, { signed: true })} format={(v) => accMoney(a, v, { signed: true })} arrow />
@@ -327,9 +318,6 @@ const PositionRow = React.memo(function PositionRow({ p, nested, picking, select
       </Td>
       <Td right mono className="text-fg-2">
         <span dir="ltr" title={swapSummary(t, p.symbol)}>{accMoney(a, p.swap)}</span>
-      </Td>
-      <Td right mono className="text-fg-2">
-        <span dir="ltr">{accMoney(a, -p.commission)}</span>
       </Td>
       <Td right className="text-[13px] font-semibold">
         <span dir="ltr">

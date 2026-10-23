@@ -104,9 +104,6 @@ function OptionHistoryRow({ o, picking }: { o: OptClosed; picking: boolean }) {
       <Td right mono className="text-fg-2">
         <span dir="ltr">{accMoney(a, o.swap)}</span>
       </Td>
-      <Td right mono className="text-fg-2">
-        <span dir="ltr">{accMoney(a, -o.commission)}</span>
-      </Td>
       <Td right className="font-semibold">
         <span dir="ltr">
           <Pnl value={o.profit} text={accMoney(a, o.profit)} />
@@ -218,8 +215,7 @@ export function HistoryTab() {
               <Th>{t("toolbox.col.closeTime")}</Th>
               <Th right>{t("toolbox.col.price")}</Th>
               <Th right>{t("toolbox.col.swap")}</Th>
-              <Th right>{t("toolbox.col.commission")}</Th>
-              <Th right>{t("toolbox.col.profit")}</Th>
+              <Th right>{t("desk.pos.col.pnl")}</Th>
               <Th>{t("toolbox.col.reason")}</Th>
             </tr>
           </thead>
@@ -276,9 +272,6 @@ export function HistoryTab() {
                   <Td right mono className="text-fg-2">
                     <span dir="ltr">{accMoney(a, h.swap)}</span>
                   </Td>
-                  <Td right mono className="text-fg-2">
-                    <span dir="ltr">{accMoney(a, -h.commission)}</span>
-                  </Td>
                   <Td right className="font-semibold">
                     <span dir="ltr"><Pnl value={h.profit} text={accMoney(a, h.profit)} /></span>
                   </Td>
@@ -294,7 +287,7 @@ export function HistoryTab() {
             })}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={picking ? 15 : 14} className="h-12 text-center text-[12px] text-fg-3">
+                <td colSpan={picking ? 14 : 13} className="h-12 text-center text-[12px] text-fg-3">
                   {t("toolbox.history.empty")}
                 </td>
               </tr>
@@ -302,7 +295,7 @@ export function HistoryTab() {
           </tbody>
           <tfoot>
             <tr className="[&>td]:sticky [&>td]:bottom-0 [&>td]:border-t [&>td]:border-line [&>td]:bg-panel-2">
-              <td colSpan={picking ? 13 : 12} className="h-[28px] whitespace-nowrap ps-3 font-mono text-[12px] text-fg-2">
+              <td colSpan={picking ? 12 : 11} className="h-[28px] whitespace-nowrap ps-3 font-mono text-[12px] text-fg-2">
                 <span className="flex gap-4">
                   <span>
                     <span className="font-sans text-fg-3">{t("toolbox.history.profit")}:</span> <span dir="ltr" className={net >= 0 ? "text-up" : "text-down"}>{accMoney(a, net)}</span>
