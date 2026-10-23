@@ -359,13 +359,26 @@ export function EmptyState({ icon, title, text, action, className }: { icon?: Re
 
 /** Full-width rounded row: grey label on the left, the value or a control on the right (order forms). */
 export function FieldRow({ label, help, children, className, htmlFor, tone }: { label: React.ReactNode; help?: React.ReactNode; children?: React.ReactNode; className?: string; htmlFor?: string; tone?: "up" | "down" }) {
+  // The row is taller and wider than the control inside it, so a click just above, below or beside the number used
+  // to land on the row itself and do nothing - which reads as a field that will not let you edit it. Any click on
+  // the row's own padding now puts the caret in the field the row is for, with the value selected ready to replace.
+  const reach = (e: React.PointerEvent<HTMLElement>) => {
+    if (!htmlFor || e.target !== e.currentTarget || e.button !== 0) return;
+    const el = document.getElementById(htmlFor) as HTMLInputElement | null;
+    if (!el || el.disabled || el.readOnly) return;
+    e.preventDefault(); // keep the browser from moving focus somewhere else first
+    el.focus();
+    el.select?.();
+  };
   return (
-    <div className={cn("flex min-h-9 items-center gap-2 rounded-[10px] border bg-panel-2 ps-3 pe-1", tone === "down" ? "border-down/25" : tone === "up" ? "border-up/25" : "border-line", "focus-within:border-ember/50", className)}>
+    <div onPointerDown={reach} className={cn("flex min-h-9 items-center gap-2 rounded-[10px] border bg-panel-2 ps-3 pe-1", tone === "down" ? "border-down/25" : tone === "up" ? "border-up/25" : "border-line", "focus-within:border-ember/50", className)}>
       <label htmlFor={htmlFor} className="flex min-w-0 shrink-0 items-center gap-1 text-[12.5px] text-fg-2">
         {label}
         {help}
       </label>
-      <div className="ms-auto flex min-w-0 items-center justify-end gap-1">{children}</div>
+      <div onPointerDown={reach} className="ms-auto flex min-w-0 items-center justify-end gap-1">
+        {children}
+      </div>
     </div>
   );
 }
@@ -377,17 +390,28 @@ export function InlineNumber({ value, onChange, step, decimals, min = 0, id, ari
     const n = parseFloat(value || placeholder || "0") || 0;
     onChange(Math.max(min, n + d * step).toFixed(decimals));
   };
+  const ref = React.useRef<HTMLInputElement>(null);
+  // the strip is wider than the input: clicking its own gaps counts as clicking the number
+  const reach = (e: React.PointerEvent<HTMLElement>) => {
+    if (e.target !== e.currentTarget || e.button !== 0) return;
+    e.preventDefault();
+    ref.current?.focus();
+    ref.current?.select();
+  };
   return (
-    <span className={cn("flex items-center", className)}>
+    <span onPointerDown={reach} className={cn("flex items-center", className)}>
       <button type="button" tabIndex={-1} onClick={() => bump(-1)} aria-label={t("trader.stepper.decrease")} className="grid size-6 shrink-0 place-items-center rounded-[6px] text-fg-3 hover:bg-surface-3 hover:text-fg">
         <Minus className="size-3.5" />
       </button>
       <input
+        ref={ref}
         id={id}
         aria-label={ariaLabel}
         inputMode="decimal"
         value={value}
         placeholder={placeholder}
+        // one click then type replaces the number, rather than dropping a caret between two of its digits
+        onFocus={(e) => e.currentTarget.select()}
         onChange={(e) => onChange(e.target.value.replace(/[^0-9.]/g, ""))}
         onKeyDown={(e) => {
           if (e.key === "ArrowUp" || e.key === "ArrowDown") {

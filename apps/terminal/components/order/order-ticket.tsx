@@ -130,6 +130,15 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
 
   const vol = Math.max(0.01, parseFloat(volume) || 0);
   const pending = type !== "market";
+  // Pending opens on the price the trader is looking at. Left empty, the field showed the live price as a
+  // placeholder while the confirm button said "Enter the order price": a field that looks filled and will not
+  // confirm. Seeded only when it is empty, so it never overwrites a price the trader typed or dragged in.
+  React.useEffect(() => {
+    if (!pending) return;
+    setPrice((p) => p || fmtPrice(symbol, side === "sell" ? q.bid : q.ask));
+    // the quote is deliberately not a dependency: this fills the field once, it does not follow the market
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pending, symbol]);
   // switching back to Pending returns to the kind last used, rather than always Limit
   const lastPending = React.useRef<Exclude<OrderType, "market">>("limit");
   if (pending) lastPending.current = type as Exclude<OrderType, "market">;
