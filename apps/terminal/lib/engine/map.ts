@@ -138,17 +138,17 @@ export function mapOrder(o: EngOrder): PendingOrder {
 
 const REASONS: Record<string, string> = { client: "manual", sl: "sl", tp: "tp", stop_out: "stop out", close_by: "close by", dealer: "dealer", force: "dealer", price_correction: "correction", pending_fill: "manual" };
 
-/** Closing deals → closed-trade rows (one per exit deal, newest first). Entry deals give the commission share. */
+/** Closing deals → closed-trade rows (one per exit deal, newest first). */
 export function mapHistory(deals: EngDeal[], cent: boolean): (TClosed & { deal: string })[] {
   const k = cent ? 100 : 1;
-  const entries = new Map<number, EngDeal>();
-  for (const d of deals) if (d.entry === "in" && !entries.has(d.positionTicket)) entries.set(d.positionTicket, d);
   return deals
     .filter((d) => (d.entry === "out" || d.entry === "out_by") && !d.reversed)
     .map((d) => {
-      const e = entries.get(d.positionTicket);
-      const entryCommission = e && e.volume > 0 ? (e.commission * Math.min(1, d.volume / e.volume)) : 0;
-      const commission = (d.commission + entryCommission) / k;
+      // The commission is charged once, when the position is opened. An exit deal's own `commission` is the
+      // closed share of that same charge restated for reporting, not a second one (services/trading/src/model.rs),
+      // and the ledger posts nothing for it. Adding the entry deal's share to it billed the trader twice on paper:
+      // a trade that settled +55 on the balance read +45 here.
+      const commission = d.commission / k;
       const swap = d.swap / k;
       const gross = d.profit / k;
       return {

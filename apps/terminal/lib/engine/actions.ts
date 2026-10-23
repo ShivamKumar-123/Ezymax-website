@@ -165,7 +165,10 @@ export function engineActions(d: EngineDeps) {
     const q = p ? priceFeed().snapshot(p.symbol) : undefined;
     d.log("Trade", `'${login}': ${reason !== "manual" ? `${reason}: ` : ""}deal #${res.dealId} ${p ? `${p.side === "buy" ? "sell" : "buy"} ${fmtVol(vol ?? p.volume)} ${p.symbol} ` : ""}done (close #${ticket}${partial ? `, partial ${fmtVol(vol!)} of ${fmtVol(p!.volume)}` : ""}), profit ${money(d.account()?.cent ? res.profit / 100 : res.profit)}`);
     if (!quiet) {
-      const profit = d.account()?.cent ? res.profit / 100 : res.profit;
+      // what the trade realised, not what the closing deal alone was worth: the commission went out when the
+      // position was opened, so leaving it out here printed a number the History row would disagree with
+      const share = p && p.volume > 0 ? Math.min(1, (vol ?? p.volume) / p.volume) : 1;
+      const profit = (d.account()?.cent ? res.profit / 100 : res.profit) - (p ? p.commission * share : 0);
       (profit >= 0 ? toast.success : toast.error)(partial ? tr("order.toast.closedPartial", { ticket, volume: fmtVol(vol!) }) : tr("order.toast.closed", { ticket }), {
         description: p
           ? q
@@ -244,9 +247,12 @@ export function engineActions(d: EngineDeps) {
     const scope = `${kind}${symbol ? ` ${symbol}` : ""}`;
     const n = d.positions().filter((p) => (kind !== "symbol" || p.symbol === symbol) && (kind !== "buys" || p.side === "buy") && (kind !== "sells" || p.side === "sell")).length;
     if (!n) return void toast(tr("order.toast.nothingToClose"), { description: tr("order.toast.noPositionsMatch") });
+    const open = d.positions(); // their commission is needed after the close, when they are gone
     const res = await run(login, `bulk close (${scope})`, engineApi.bulkClose(login, filter, kind === "symbol" ? symbol : undefined));
     if (!res) return;
-    const profit = d.account()?.cent ? res.profit / 100 : res.profit;
+    const done = new Set(res.done.map(String));
+    const commission = open.reduce((s, p) => (done.has(p.ticket) ? s + p.commission : s), 0);
+    const profit = (d.account()?.cent ? res.profit / 100 : res.profit) - commission;
     const reasons = res.failed.map((f) => (typeof f.error === "string" ? f.error : rejectReason({ status: 422, code: f.error.code, message: f.error.message })));
     // same reasons in the reader's language for the toast (the journal keeps the English ones)
     const shown = res.failed.map((f, i) => (typeof f.error === "string" ? f.error : tr.dyn(`order.reject.${f.error.code}`, reasons[i])));
