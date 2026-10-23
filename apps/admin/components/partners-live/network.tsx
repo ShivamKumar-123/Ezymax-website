@@ -17,7 +17,7 @@
  */
 
 import * as React from "react";
-import { Search, Users } from "lucide-react";
+import { ChevronDown, Search, Users } from "lucide-react";
 import { Avatar, Card, Chip, Flag, PageHeader, Reveal, Skeleton, cn } from "@ezymex/ui";
 import { EmptyNote, LevelChip, PartnersError, int, lots as fmtLots, reasonLabel, usd, useLevels } from "./kit";
 import { useApi, useDebounced } from "@/components/live/kit";
@@ -64,6 +64,7 @@ function Node({ node, kids, levels, open, toggle, depth }: { node: TreeNode; kid
       <div
         role={hasKids ? "button" : undefined}
         tabIndex={hasKids ? 0 : undefined}
+        aria-expanded={hasKids ? isOpen : undefined}
         onClick={hasKids ? () => toggle(node.id) : undefined}
         onKeyDown={hasKids ? (e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), toggle(node.id)) : undefined}
         className={cn(
@@ -97,6 +98,20 @@ function Node({ node, kids, levels, open, toggle, depth }: { node: TreeNode; kid
             <div className={cn("k-num text-[13px] font-medium", earnedTotal ? "text-up" : "text-fg-3")}>{usd(earnedTotal)}</div>
           </div>
         </div>
+        {/* the one visible sign that a row opens: without it a sub-IB reads the same as a leaf */}
+        {hasKids ? (
+          <span
+            aria-hidden
+            className={cn(
+              "grid size-7 shrink-0 place-items-center rounded-full border border-gold/30 bg-surface-2 text-fg-2 transition-transform",
+              isOpen && "rotate-180",
+            )}
+          >
+            <ChevronDown className="size-3.5" />
+          </span>
+        ) : (
+          <span className="size-7 shrink-0" aria-hidden />
+        )}
       </div>
       {isOpen && (
         <div className="mt-2 space-y-2">
