@@ -146,6 +146,7 @@ export const ADMIN_NAV: NavModule[] = [
     sub: [
       { href: "/partners", label: "IB overview" },
       { href: "/partners/list", label: "Partners" },
+      { href: "/partners/network", label: "Network" },
       { href: "/partners/plans", label: "Commission plans" },
       { href: "/partners/levels", label: "Levels" },
       { href: "/partners/sub-brokers", label: "Sub-brokers" },
