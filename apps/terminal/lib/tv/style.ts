@@ -55,6 +55,8 @@ export function chartOverrides(c: Palette): Record<string, unknown> {
     // its badge on the scale. It was off, with only the Bid and Ask lines left to mark the price - and those come
     // from the datafeed's quotes channel, so when it is quiet there is nothing on the chart at all. The line the
     // trader is looking for cannot depend on a second feed.
+    // The price the chart is moving at: one dashed line across the plot and one badge on the scale, red rather
+    // than the grey it used to be - it is a price, not a gridline, and grey lost it among the scale's own labels.
     "scalesProperties.showSeriesLastValue": true,
     // One badge, not three. Bid and Ask used to be labelled on the scale as well, so the trader read three numbers
     // a few cents apart where there is only one price to act on. Our bars close on the bid (lib/tv/datafeed.ts), so
@@ -63,7 +65,7 @@ export function chartOverrides(c: Palette): Record<string, unknown> {
     // in the library's own settings.
     "scalesProperties.showBidAskLabels": false,
     "mainSeriesProperties.showPriceLine": true,
-    "mainSeriesProperties.priceLineColor": solid(c.fg2, "#a1a1aa"),
+    "mainSeriesProperties.priceLineColor": down,
     "mainSeriesProperties.priceLineWidth": 1,
     // Bid and Ask keep the colour of the button each one fills: Bid where a sell goes, Ask where a buy goes.
     "mainSeriesProperties.bidAsk.visible": false,
