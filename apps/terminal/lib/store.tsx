@@ -277,7 +277,7 @@ export function defaultWorkspace(): Workspace {
     lot: 0.5,
     lots: {},
     profile: "Default",
-    uiVersion: 5,
+    uiVersion: 7,
   };
 }
 
@@ -349,6 +349,15 @@ function readWorkspace(): Workspace {
       w.side = "order";
       w.posLayout = "split";
       w.uiVersion = 6;
+    }
+    if ((w.uiVersion ?? 1) < 7) {
+      // One lot used to be shared by every market, and every order overwrote it - so the number saved here is the
+      // last size traded, not a default anyone chose. Carried over it would open gold's 5 lots on bitcoin, which is
+      // the same bug arriving through the fallback. It goes back to the default; each market earns its own size
+      // from the next order placed on it. Sizes already recorded per market are kept.
+      w.lot = d.lot;
+      w.lots = w.lots ?? {};
+      w.uiVersion = 7;
     }
     if (!["order", "instruments", "book", "ticks", "navigator"].includes(w.side)) w.side = "order";
     if (w.posLayout !== "split") w.posLayout = "page";
