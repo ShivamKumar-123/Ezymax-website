@@ -160,6 +160,23 @@ export const FLAG_STATUS: Record<string, { label: string; tone: ChipTone }> = {
   dismissed: S("Dismissed", "neutral"),
 };
 
+/** Why a client's lots earned the partner nothing. Same wording as the Client Area (partner.reason.*). */
+export const REASON_LABEL: Record<string, string> = {
+  short_duration: "Held too briefly",
+  excluded_group: "Excluded account group",
+  mam_master: "MAM master account",
+  pamm_fund: "PAMM fund account",
+  self_referral: "Self-referral check",
+  demo: "Not a live account",
+  reversed: "Reversed",
+  price_correction: "Price correction",
+  no_volume: "No volume",
+  no_symbol_group: "Symbol not in rate card",
+  no_referrer: "No referrer",
+  unknown_client: "Client not mirrored yet",
+};
+export const reasonLabel = (r: string | null) => (r ? (REASON_LABEL[r] ?? r.replace(/_/g, " ")) : "Not eligible");
+
 export const SEV_TONE: Record<string, ChipTone> = { high: "down", medium: "warn", low: "neutral" };
 
 export function StatusPill({ map, status }: { map: Record<string, { label: string; tone: ChipTone }>; status: string }) {

@@ -174,7 +174,7 @@ export type PartnerRow = {
 
 export type Paged<T> = { items: T[]; page: number; limit: number; total: number };
 
-export type TreeNode = { id: number; parentId: number | null; tier: number; name: string; country: string; level: string; joinedAt: string; funded: boolean; selfReferral: string | null; lotsMonth: number };
+export type TreeNode = { id: number; parentId: number | null; tier: number; name: string; country: string; level: string; joinedAt: string; funded: boolean; selfReferral: string | null; lotsMonth: number; /** what this partner earned from the client this month */ earnedMonth: number; /** lots that earned nothing, and the reason behind most of them */ missedLotsMonth: number; missedReason: string | null };
 
 export type FlagMin = { id: number; kind: FlagKind; severity: "low" | "medium" | "high"; status: "open" | "confirmed" | "dismissed"; clientId: number | null; ibId: number | null; details: Record<string, unknown>; createdAt: string };
 

@@ -321,7 +321,13 @@ pub async fn partner(State(st): State<AppState>, s: StaffCtx, Path(id): Path<i64
             UNION ALL SELECT m.user_id, m.parent_id, d.tier + 1 FROM members m JOIN down d ON m.parent_id = d.user_id WHERE d.tier < $3
          )
          SELECT d.user_id, d.parent_id, d.tier, m.first_name, m.last_name, m.country, m.level_key, m.joined_at, m.first_deposit_at, m.self_referral,
-                (SELECT coalesce(sum(x.lots), 0) FROM deals x WHERE x.user_id = d.user_id AND x.qualified AND NOT x.reversed AND x.close_time >= $4) AS lots_month
+                (SELECT coalesce(sum(x.lots), 0) FROM deals x WHERE x.user_id = d.user_id AND x.qualified AND NOT x.reversed AND x.close_time >= $4) AS lots_month,
+                -- what this partner earned from that client this month, and what earned them nothing: the same two
+                -- columns the partner's own network page shows (api/client.rs network)
+                (SELECT coalesce(sum(k.amount), 0) FROM commissions k WHERE k.beneficiary_id = $2 AND k.client_id = d.user_id AND k.created_at >= $4 AND k.status NOT IN ('void','rejected')) AS earned_month,
+                (SELECT coalesce(sum(x.lots), 0) FROM deals x WHERE x.tenant = $1 AND x.user_id = d.user_id AND x.close_time >= $4 AND (NOT x.qualified OR x.reversed)) AS missed_lots,
+                (SELECT x.reason FROM deals x WHERE x.tenant = $1 AND x.user_id = d.user_id AND x.close_time >= $4 AND (NOT x.qualified OR x.reversed) AND x.reason IS NOT NULL
+                  GROUP BY x.reason ORDER BY sum(x.lots) DESC LIMIT 1) AS missed_reason
          FROM down d JOIN members m ON m.user_id = d.user_id ORDER BY d.tier, m.joined_at LIMIT 1000",
     )
     .bind(t)
@@ -355,6 +361,8 @@ pub async fn partner(State(st): State<AppState>, s: StaffCtx, Path(id): Path<i64
             "name": format!("{} {}", x.get::<String, _>("first_name"), x.get::<String, _>("last_name")), "country": x.get::<String, _>("country"),
             "level": x.get::<String, _>("level_key"), "joinedAt": x.get::<DateTime<Utc>, _>("joined_at"), "funded": x.get::<Option<DateTime<Utc>>, _>("first_deposit_at").is_some(),
             "selfReferral": x.get::<Option<String>, _>("self_referral"), "lotsMonth": num(x.get("lots_month")),
+            "earnedMonth": num(x.get("earned_month")), "missedLotsMonth": num(x.get("missed_lots")),
+            "missedReason": x.get::<Option<String>, _>("missed_reason"),
         })).collect::<Vec<_>>(),
         "commissions": comms.iter().map(|x| json!({
             "id": x.get::<i64, _>("id"), "kind": x.get::<String, _>("kind"), "status": x.get::<String, _>("status"), "amount": num(x.get("amount")),

@@ -20,6 +20,7 @@ import {
   kindLabelOf,
   lots,
   unitsText,
+  reasonLabel,
   usd,
   useReasonAction,
 } from "./kit";
@@ -72,7 +73,17 @@ function NetworkTree({ rootId, nodes, levels, tiers, onOpen }: { rootId: number;
             <LevelChip level={n.level} levels={levels} />
           </span>
           <span className={cn("hidden w-14 text-right text-[11px] sm:inline", n.funded ? "text-up" : "text-fg-3")}>{n.funded ? "Funded" : "Not funded"}</span>
-          <span className="k-num w-16 shrink-0 text-right text-fg-2" title="Qualified lots this month">{lots(n.lotsMonth)}</span>
+          {/* qualified lots, or - when none qualified - what they traded anyway, muted, with the reason on hover */}
+          <span
+            className={cn("k-num w-16 shrink-0 text-right", n.lotsMonth ? "text-fg-2" : n.missedLotsMonth > 0 ? "text-fg-3" : "text-fg-3")}
+            title={n.lotsMonth ? "Qualified lots this month" : n.missedLotsMonth > 0 ? `${lots(n.missedLotsMonth)} lots this month earned nothing - ${reasonLabel(n.missedReason)}` : "No trades this month"}
+          >
+            {n.lotsMonth ? lots(n.lotsMonth) : n.missedLotsMonth > 0 ? lots(n.missedLotsMonth) : lots(0)}
+          </span>
+          {/* the money: what this partner earned from this client, which the tree never showed */}
+          <span className={cn("k-num hidden w-20 shrink-0 text-right sm:inline", n.earnedMonth ? "text-up" : "text-fg-3")} title="Commission this partner earned from this client this month">
+            {usd(n.earnedMonth)}
+          </span>
           {children.length > 0 && !isOpen && <span className="k-num hidden w-8 text-right text-[11px] text-fg-3 sm:inline">+{children.length}</span>}
         </div>
         {isOpen && children.map((c) => row(c, depth + 1))}
