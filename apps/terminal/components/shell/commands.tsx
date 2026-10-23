@@ -75,7 +75,7 @@ export const PRESETS: { id: string; name: string; hint: string; nameKey: Message
   { id: "trading", name: "Trading", hint: "Default", nameKey: "trader.preset.trading", hintKey: "trader.preset.tradingHint", profile: "Default", patch: (w) => ({ layout: "1", panels: { ...w.panels, watch: true, toolbox: true }, side: "instruments" }) },
   { id: "focus", name: "Chart focus", hint: "Charts only", nameKey: "trader.preset.chartFocus", hintKey: "trader.preset.chartFocusHint", profile: "Default", patch: (w) => ({ layout: "1", panels: { ...w.panels, watch: false } }) },
   { id: "analysis", name: "Analysis", hint: "4 charts", nameKey: "trader.preset.analysis", hintKey: "trader.preset.analysisHint", profile: "Analysis", patch: (w) => ({ layout: "4", panels: { ...w.panels, watch: true, toolbox: true }, side: "instruments" }) },
-  { id: "scalper", name: "Scalper", hint: "Order book + 2 charts", nameKey: "trader.preset.scalper", hintKey: "trader.preset.scalperHint", profile: "Scalping", patch: (w) => ({ layout: "2v", panels: { ...w.panels, watch: true, toolbox: true }, side: "book" }) },
+  { id: "scalper", name: "Scalper", hint: "Order book + 2 charts", nameKey: "trader.preset.scalper", hintKey: "trader.preset.scalperHint", profile: "Scalping", patch: (w) => ({ layout: "2v", panels: { ...w.panels, watch: true, toolbox: true }, side: "order" }) },
 ];
 
 export const LAYOUTS: { id: Layout; label: MessageKey; hint: string; icon: React.ReactNode }[] = [
@@ -179,7 +179,7 @@ export function useLayoutItems(): MenuItem[] {
     "sep",
     { header: t("desk.set.panels") },
     { label: options ? t("trader.opt.inst.title") : t("desk.side.instruments"), icon: <PanelRight />, checked: T.ws.panels.watch && T.ws.side === "instruments", hint: "Ctrl+M", keepOpen: true, onSelect: () => showSide(T, "instruments", true) },
-    { label: t("desk.ob.title"), checked: T.ws.panels.watch && T.ws.side === "book", hint: "Ctrl+B", keepOpen: true, onSelect: () => showSide(T, "book", true) },
+    ...(options ? [{ label: t("desk.ob.title"), checked: T.ws.panels.watch && T.ws.side === "book", hint: "Ctrl+B", keepOpen: true, onSelect: () => showSide(T, "book", true) } as MenuItem] : []),
     ...(options ? [] : [{ label: t("desk.panel.navigator"), checked: T.ws.panels.watch && T.ws.side === "navigator", keepOpen: true, onSelect: () => showSide(T, "navigator", true) } as MenuItem]),
     { label: t("desk.ch.fullChart"), icon: <Maximize2 />, checked: T.ui.fullChart, hint: "Shift+F", onSelect: () => toggleFullChart(T) },
     { header: t("desk.pl.title") },
@@ -346,7 +346,7 @@ export function useCommands(): Command[] {
 
   // view
   add({ id: "p-watch", group: "view", label: options ? t("trader.opt.inst.title") : t("desk.side.instruments"), hint: "Ctrl+M", keywords: "market watch instruments symbols panel toggle view", checked: T.ws.panels.watch && T.ws.side === "instruments", run: () => showSide(T, "instruments", true) });
-  add({ id: "p-book", group: "view", label: t("desk.ob.title"), hint: "Ctrl+B", keywords: "order book depth dom ladder", checked: T.ws.panels.watch && T.ws.side === "book", run: () => showSide(T, "book", true) });
+  if (options) add({ id: "p-book", group: "view", label: t("desk.ob.title"), hint: "Ctrl+B", keywords: "order book depth dom ladder", checked: T.ws.panels.watch && T.ws.side === "book", run: () => showSide(T, "book", true) });
   add({ id: "p-box", group: "view", label: t("desk.panel.activity"), hint: "Ctrl+T", keywords: "toolbox positions orders panel scroll", run: () => openActivity(T, T.ws.toolboxTab) });
   if (!options) add({ id: "p-nav", group: "view", label: t("desk.panel.navigator"), keywords: "navigator scripts strategies", checked: T.ws.panels.watch && T.ws.side === "navigator", run: () => showSide(T, "navigator", true) });
   add({ id: "full-chart", group: "view", label: t("desk.ch.fullChart"), hint: "Shift+F", icon: <Maximize2 />, keywords: "full chart maximise chart hide panels", checked: T.ui.fullChart, run: () => toggleFullChart(T) });

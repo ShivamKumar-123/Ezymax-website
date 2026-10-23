@@ -16,7 +16,6 @@ import { PanelTabs } from "@/components/ui/panel";
 import { IconButton } from "@/components/ui/kit";
 import { InstrumentsPanel } from "@/components/market/instruments";
 import { Navigator } from "@/components/market/navigator";
-import { CfdOrderBook, TickTape } from "@/components/order/order-book";
 import { OrderTicket } from "@/components/order/order-ticket";
 import { showSide } from "./commands";
 
@@ -27,13 +26,17 @@ const OptionsTradesLabel = dynamic(() => import("@/components/options/side").the
 export function SideColumn({ options, onClose }: { options: boolean; onClose: () => void }) {
   const T = useTerminal();
   const t = useT();
-  const side: SideTab = options && T.ws.side === "navigator" ? "instruments" : T.ws.side;
+  // A workspace saved while the CFD column still had Order book / Ticks - or the Scalper preset as it used to be -
+  // can still ask for a tab that is no longer there; it opens on the ticket instead of on nothing.
+  const saved = T.ws.side;
+  const side: SideTab = options && saved === "navigator" ? "instruments" : !options && (saved === "book" || saved === "ticks") ? "order" : saved;
   const tabs: { value: SideTab; label: React.ReactNode }[] = [
     // options accounts trade from their own ticket popup, so the docked one is a CFD tab
     ...(options ? [] : [{ value: "order" as const, label: t("desk.side.order") }]),
     { value: "instruments", label: options ? t("trader.opt.inst.title") : t("desk.side.instruments") },
-    { value: "book", label: t("desk.ob.title") },
-    { value: "ticks", label: options ? <OptionsTradesLabel /> : t("desk.ob.ticks") },
+    // the book and the tape belong to options, which trades off a real book; a CFD account trades against the
+    // house, so its column is the ticket and the instrument list
+    ...(options ? [{ value: "book" as const, label: t("desk.ob.title") }, { value: "ticks" as const, label: <OptionsTradesLabel /> }] : []),
     ...(!options && side === "navigator" ? [{ value: "navigator" as const, label: t("desk.panel.navigator") }] : []),
   ];
   return (
@@ -53,10 +56,6 @@ export function SideColumn({ options, onClose }: { options: boolean; onClose: ()
           </div>
         ) : side === "instruments" ? (
           <InstrumentsPanel />
-        ) : side === "book" ? (
-          <CfdOrderBook symbol={T.activeSymbol} />
-        ) : side === "ticks" ? (
-          <TickTape symbol={T.activeSymbol} />
         ) : (
           <Navigator />
         )}

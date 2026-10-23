@@ -12,7 +12,7 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { toast } from "@/lib/notify";
-import { BarChart2, Clock3, Eye, EyeOff, FileText, Info, LayoutGrid, List, MoreHorizontal, Search, ShoppingCart, Star, TrendingUp, X } from "lucide-react";
+import { BarChart2, Clock3, Eye, EyeOff, Info, LayoutGrid, List, MoreHorizontal, Search, ShoppingCart, Star, TrendingUp, X } from "lucide-react";
 import { ASSET_CLASS_LABEL, getInstrument, type Instrument, type Quote } from "@ezymex/mock";
 import { useMarketScope } from "@/lib/scope";
 import { PriceText, SymbolAvatar, cn, useQuote } from "@ezymex/ui";
@@ -24,7 +24,6 @@ import { fmtPrice } from "@/lib/trading";
 import { EmptyState, Segmented } from "@/components/ui/kit";
 import { useContextMenu, type MenuItem } from "@/components/ui/menu";
 import { STRESS_COUNT, STRESS_INSTRUMENTS, isStressSymbol, stressQuote, subscribeStress } from "@/lib/stress-instruments";
-import { showSide } from "@/components/shell/commands";
 
 const ROW = 32;
 const CARD = 124;
@@ -126,7 +125,6 @@ export function InstrumentsPanel() {
       { label: t("market.menu.newOrder"), icon: <ShoppingCart />, hint: "F9", disabled: T.readOnly, onSelect: () => T.openNewOrder({ symbol }) },
       { label: t("market.menu.chartWindow"), icon: <BarChart2 />, onSelect: () => T.addTab(symbol) },
       { label: t("market.menu.openInActive"), icon: <TrendingUp />, onSelect: () => T.openSymbol(symbol) },
-      ...(T.guest ? [] : ([{ label: t("market.menu.depth"), icon: <FileText />, onSelect: () => (T.openSymbol(symbol), showSide(T, "book")) }] as MenuItem[])),
       "sep",
       { label: t("market.menu.specification"), icon: <Info />, onSelect: () => T.setUi({ spec: symbol }) },
       { label: fav ? t("market.menu.removeFavourite") : t("market.menu.addFavourite"), icon: <Star />, onSelect: () => toggleFav(symbol) },

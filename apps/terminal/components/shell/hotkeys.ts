@@ -77,7 +77,8 @@ export function useHotkeys() {
         else openActivity(t, t.ws.toolboxTab);
         return;
       }
-      if (mod && e.key.toLowerCase() === "b") {
+      if (mod && e.key.toLowerCase() === "b" && !cfd) {
+        // the book is an options tab now; on a CFD account Ctrl+B is left to the browser
         e.preventDefault();
         showSide(t, "book", true);
         return;
