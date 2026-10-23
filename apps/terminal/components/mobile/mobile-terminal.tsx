@@ -8,7 +8,7 @@ import { ArrowUpRight, BarChart2, CandlestickChart, ChevronDown, ChevronRight, E
 import { INSTRUMENTS, getInstrument } from "@ezymex/mock";
 import { useMarketScope } from "@/lib/scope";
 import { LogoMark, PriceText, SymbolAvatar, cn, useQuote } from "@ezymex/ui";
-import { useGroupOpen, useMetrics, usePositionProfit, usePositionsProfit, useTerminal } from "@/lib/store";
+import { lotOf, useGroupOpen, useMetrics, usePositionProfit, usePositionsProfit, useTerminal } from "@/lib/store";
 import { askConfirm } from "@/components/dialogs/confirm";
 import { avgOpen, bySymbol } from "@/components/toolbox/trade-tab";
 import type { TPosition } from "@/lib/trading";
@@ -211,7 +211,7 @@ function MChart() {
   const t = useT();
   const tab = T.activeTab;
   const q = useQuote(tab.symbol);
-  const [vol, setVol] = React.useState(T.ws.lot.toFixed(2));
+  const [vol, setVol] = React.useState(() => lotOf(T.ws, tab.symbol).toFixed(2));
   const v = Math.max(0.01, parseFloat(vol) || 0.01);
   const marketOpen = useMarketOpen(tab.symbol);
   const trade = (side: "buy" | "sell") => {

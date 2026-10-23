@@ -13,7 +13,7 @@ import { cn, useBrand } from "@ezymex/ui";
 import { useLocale, useT } from "@ezymex/i18n/react";
 import { toast } from "@/lib/notify";
 import { openRegister } from "@/lib/guest";
-import { useTerminal, type ChartTab } from "@/lib/store";
+import { lotOf, useTerminal, type ChartTab } from "@/lib/store";
 import { fmtPrice, fmtVol, roundPrice, serverZone } from "@/lib/trading";
 import { TF_RES, createDatafeed, resToTf, tvSymbol } from "@/lib/tv/datafeed";
 import { TV_LIBRARY_PATH, loadTradingView } from "@/lib/tv/loader";
@@ -329,9 +329,9 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
     const q = priceFeed().quote(tb.symbol);
     const p = roundPrice(tb.symbol, price);
     const ps = fmtPrice(tb.symbol, p);
-    const lot = fmtVol(Tm.ws.lot);
+    const lot = fmtVol(lotOf(Tm.ws, tb.symbol));
     const place = (side: "buy" | "sell", type: "limit" | "stop") => {
-      if (Tm.ws.oneClick) Tm.placeOrder({ symbol: tb.symbol, side, type, volume: Tm.ws.lot, price: p });
+      if (Tm.ws.oneClick) Tm.placeOrder({ symbol: tb.symbol, side, type, volume: lotOf(Tm.ws, tb.symbol), price: p });
       else Tm.openNewOrder({ symbol: tb.symbol, side, type, price: p });
     };
     // below the price: buy limit and sell stop; above it: sell limit and buy stop (the others would be rejected)

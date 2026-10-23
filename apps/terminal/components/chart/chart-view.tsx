@@ -7,7 +7,7 @@ import { toast } from "@/lib/notify";
 import { ArrowDownRight, ArrowUpRight, Bell, Camera, CandlestickChart, Crosshair, Layers, Minus, Plus, ShoppingCart, SlidersHorizontal, X } from "lucide-react";
 import { getInstrument, priceFeed } from "@ezymex/mock";
 import { cn } from "@ezymex/ui";
-import { useTerminal, type Anchor, type ChartTab, type Drawing } from "@/lib/store";
+import { lotOf, useTerminal, type Anchor, type ChartTab, type Drawing } from "@/lib/store";
 import { CHART_TYPES, TF_SECONDS, TIMEFRAMES, fmtPrice, fmtVol, roundPrice } from "@/lib/trading";
 import { useContextMenu, type MenuItem } from "@/components/ui/menu";
 import { INDICATOR_CATEGORIES, INDICATOR_LIST } from "@/lib/indicators";
@@ -525,7 +525,7 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
     const ps = fmtPrice(tab.symbol, p);
     const below = p < q.bid;
     const place = (side: "buy" | "sell", type: "limit" | "stop") => {
-      if (T.ws.oneClick) T.placeOrder({ symbol: tab.symbol, side, type, volume: T.ws.lot, price: p });
+      if (T.ws.oneClick) T.placeOrder({ symbol: tab.symbol, side, type, volume: lotOf(T.ws, tab.symbol), price: p });
       else T.openNewOrder({ symbol: tab.symbol, side, type, price: p });
     };
     const trade: MenuItem[] = T.guest
@@ -536,10 +536,10 @@ export function ChartView({ tab, active, onActivate, compact, hideOneClick, high
       : ro
       ? [{ header: t("chart.menu.readOnly") }]
       : [
-          { label: t("chart.menu.buyLimitAt", { lot: fmtVol(T.ws.lot), price: ps }), icon: <ArrowUpRight />, tone: "up", disabled: !below, onSelect: () => place("buy", "limit") },
-          { label: t("chart.menu.sellLimitAt", { lot: fmtVol(T.ws.lot), price: ps }), icon: <ArrowDownRight />, tone: "down", disabled: below, onSelect: () => place("sell", "limit") },
-          { label: t("chart.menu.buyStopAt", { lot: fmtVol(T.ws.lot), price: ps }), icon: <ArrowUpRight />, tone: "up", disabled: below, onSelect: () => place("buy", "stop") },
-          { label: t("chart.menu.sellStopAt", { lot: fmtVol(T.ws.lot), price: ps }), icon: <ArrowDownRight />, tone: "down", disabled: !below, onSelect: () => place("sell", "stop") },
+          { label: t("chart.menu.buyLimitAt", { lot: fmtVol(lotOf(T.ws, tab.symbol)), price: ps }), icon: <ArrowUpRight />, tone: "up", disabled: !below, onSelect: () => place("buy", "limit") },
+          { label: t("chart.menu.sellLimitAt", { lot: fmtVol(lotOf(T.ws, tab.symbol)), price: ps }), icon: <ArrowDownRight />, tone: "down", disabled: below, onSelect: () => place("sell", "limit") },
+          { label: t("chart.menu.buyStopAt", { lot: fmtVol(lotOf(T.ws, tab.symbol)), price: ps }), icon: <ArrowUpRight />, tone: "up", disabled: below, onSelect: () => place("buy", "stop") },
+          { label: t("chart.menu.sellStopAt", { lot: fmtVol(lotOf(T.ws, tab.symbol)), price: ps }), icon: <ArrowDownRight />, tone: "down", disabled: !below, onSelect: () => place("sell", "stop") },
           "sep",
           { label: t("chart.menu.newOrder"), icon: <ShoppingCart />, hint: "F9", onSelect: () => T.openNewOrder({ symbol: tab.symbol }) },
         ];

@@ -164,11 +164,19 @@ export interface Workspace {
   sound: boolean;
   /** max slippage (points) from the price on screen when the order is sent; null = any price (market execution) */
   maxDeviation: number | null;
-  lot: number; // default one-click lot
+  lot: number; // the lot a market gets before the trader has sized it (Settings)
+  /** the lot last traded on each market: sizing gold does not resize bitcoin */
+  lots: Record<string, number>;
   profile: string;
   /** Workspace format: 3 = the chart-first shell (docs/TERMINAL-DESIGN.md). Older saves are migrated once on load. */
   uiVersion?: number;
 }
+
+/** The lot to trade on one market: the last one used there, or the default from Settings. */
+export const lotOf = (w: Workspace, symbol: string) => w.lots?.[symbol] ?? w.lot;
+
+/** A `setWs` patch that remembers a lot for one market and leaves every other market alone. */
+export const withLot = (w: Workspace, symbol: string, v: number): Partial<Workspace> => ({ lots: { ...(w.lots ?? {}), [symbol]: v } });
 
 export interface PriceAlert {
   id: string;
@@ -267,6 +275,7 @@ export function defaultWorkspace(): Workspace {
     sound: true,
     maxDeviation: null,
     lot: 0.5,
+    lots: {},
     profile: "Default",
     uiVersion: 5,
   };
@@ -295,6 +304,7 @@ function readWorkspace(): Workspace {
     if (!raw) return d;
     const w = { ...d, ...(JSON.parse(raw) as Partial<Workspace>) };
     w.panels = { ...d.panels, ...w.panels };
+    if (!w.lots || typeof w.lots !== "object") w.lots = {}; // saved before lots were per market
     if (!Array.isArray(w.tabs) || w.tabs.length === 0) return d;
     w.tabs = w.tabs.filter((t) => !!INSTRUMENT_MAP[t.symbol]).map((t) => ({ ...t, drawings: t.drawings ?? [], indicators: migrateIndicators(t.indicators) }));
     if (!w.tabs.length) return d;
@@ -1320,7 +1330,7 @@ export function TerminalProvider({ initialSession, engineSessions, guestMode, ch
     [eng, placeOrderMock],
   );
   const quickTrade = React.useCallback(
-    (symbol: string, side: "buy" | "sell", volume?: number) => void placeOrder({ symbol, side, type: "market", volume: volume ?? wsRef.current.lot }),
+    (symbol: string, side: "buy" | "sell", volume?: number) => void placeOrder({ symbol, side, type: "market", volume: volume ?? lotOf(wsRef.current, symbol) }),
     [placeOrder],
   );
   const closePosition = React.useCallback(

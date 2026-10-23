@@ -10,7 +10,7 @@ import { ArrowDown, ArrowUp, ChevronDown, Rows3, PanelTopClose, PanelBottomClose
 import { IS_DEMO, getInstrument, priceFeed, type DepthBook } from "@ezymex/mock";
 import { cn, useQuote } from "@ezymex/ui";
 import { useT } from "@ezymex/i18n/react";
-import { useTerminal } from "@/lib/store";
+import { lotOf, useTerminal } from "@/lib/store";
 import { useMarketOpen } from "@/lib/market-hours";
 import { fmtPrice, fmtVol, pipSize, serverTime } from "@/lib/trading";
 import { DropMenu } from "@/components/ui/menu";
@@ -289,7 +289,7 @@ export function CfdOrderBook({ symbol }: { symbol: string }) {
     if (T.readOnly || T.guest || !open) return;
     // the DOM convention: a bid level rests a buy limit there, an ask level a sell limit
     const s = level === "bid" ? "buy" : "sell";
-    if (T.ws.oneClick) void T.placeOrder({ symbol, side: s, type: "limit", volume: T.ws.lot, price });
+    if (T.ws.oneClick) void T.placeOrder({ symbol, side: s, type: "limit", volume: lotOf(T.ws, symbol), price });
     else T.openNewOrder({ symbol, side: s, type: "limit", price });
   };
   return (

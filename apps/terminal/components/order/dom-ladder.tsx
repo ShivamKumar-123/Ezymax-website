@@ -3,7 +3,7 @@
 import * as React from "react";
 import { getInstrument, priceFeed, type DepthBook } from "@ezymex/mock";
 import { cn, useQuote } from "@ezymex/ui";
-import { useTerminal } from "@/lib/store";
+import { lotOf, useTerminal } from "@/lib/store";
 import { useMarketOpen } from "@/lib/market-hours";
 import { fmtPrice, fmtVol, pipSize } from "@/lib/trading";
 import { Stepper } from "@/components/ui/primitives";
@@ -35,7 +35,7 @@ export function DomLadder({ symbol }: { symbol: string }) {
   const inst = getInstrument(symbol);
   const pip = pipSize(inst);
   const stepPx = inst.assetClass === "crypto" && pip === 1 ? 5 : inst.assetClass === "indices" ? 0.5 : inst.symbol === "XAUUSD" ? 0.1 : pip / 2;
-  const [vol, setVol] = React.useState(T.ws.lot.toFixed(2));
+  const [vol, setVol] = React.useState(() => lotOf(T.ws, symbol).toFixed(2));
   const v = Math.max(0.01, parseFloat(vol) || 0.01);
   const LEVELS = 10;
   // best ask at the bottom of the ask block, best bid at the top of the bid block

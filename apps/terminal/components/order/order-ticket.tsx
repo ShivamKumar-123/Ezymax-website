@@ -14,7 +14,7 @@ import { toast } from "@/lib/notify";
 import { getInstrument, priceFeed, type Quote } from "@ezymex/mock";
 import { visibleInstruments } from "@/lib/scope";
 import { PriceText, SymbolAvatar, cn, useQuote } from "@ezymex/ui";
-import { useMetrics, useTerminal } from "@/lib/store";
+import { lotOf, useMetrics, useTerminal, withLot } from "@/lib/store";
 import { useMarketOpen } from "@/lib/market-hours";
 import { useSlowQuote } from "@/lib/market";
 import { accCcy, accMoney, fmtPrice, fmtVol, marginRequired, pendingLabelKey, pipSize, pipValuePerLot, splitSymbol, type Expiry, type OrderType, type PendingOrder, swapSummary } from "@/lib/trading";
@@ -66,7 +66,7 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
   const marketOpen = useMarketOpen(symbol);
   const [type, setType] = React.useState<OrderType>(prefill?.type ?? "market");
   const [side, setSide] = React.useState<"buy" | "sell" | null>(prefill?.side ?? null);
-  const [volume, setVolume] = React.useState(T.ws.lot.toFixed(2));
+  const [volume, setVolume] = React.useState(() => lotOf(T.ws, symbol).toFixed(2));
   const [price, setPrice] = React.useState(prefill?.price ? fmtPrice(symbol, prefill.price) : "");
   const [stopLimit, setStopLimit] = React.useState("");
   const [sl, setSl] = React.useState<StopState>({ on: false, mode: "pips", value: "" });
@@ -218,7 +218,7 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
     });
     setBusy(false);
     if (ok) {
-      T.setWs({ lot: vol });
+      T.setWs((w) => withLot(w, symbol, vol));
       onDone?.();
     }
   };

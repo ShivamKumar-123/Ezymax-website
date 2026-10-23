@@ -8,7 +8,7 @@ import { ChevronUp, Zap } from "lucide-react";
 import { getInstrument } from "@ezymex/mock";
 import { PriceText, cn, useQuote } from "@ezymex/ui";
 import { useT } from "@ezymex/i18n/react";
-import { useTerminal } from "@/lib/store";
+import { lotOf, useTerminal, withLot } from "@/lib/store";
 import { useMarketOpen } from "@/lib/market-hours";
 
 /** Quote, spread (points), market state and the Sell / Buy action shared by the box and the toolbar pair. */
@@ -35,22 +35,25 @@ export function useQuickTrade(symbol: string, volume: () => number) {
 export function OneClickPanel({ symbol, compact, top, left, className }: { symbol: string; compact?: boolean; top: number; left?: number; className?: string }) {
   const T = useTerminal();
   const t = useT();
-  const [lot, setLot] = React.useState(String(T.ws.lot.toFixed(2)));
+  const mine = lotOf(T.ws, symbol);
+  const [lot, setLot] = React.useState(() => mine.toFixed(2));
+  // the box follows its own market, so moving the chart to another one brings that market's size with it
   React.useEffect(() => {
-    setLot(T.ws.lot.toFixed(2));
-  }, [T.ws.lot]);
+    setLot(mine.toFixed(2));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [symbol]);
   const vol = Math.max(0.01, parseFloat(lot) || 0.01);
   const q = useQuickTrade(symbol, () => vol);
   const commitLot = () => {
     const v = Math.max(0.01, Math.round(vol * 100) / 100);
-    T.setWs({ lot: v });
+    T.setWs((w) => withLot(w, symbol, v));
     setLot(v.toFixed(2));
   };
   const step = (d: number) => {
     const inc = vol >= 10 ? 1 : vol >= 1 ? 0.1 : 0.01;
     const v = Math.max(0.01, +(vol + d * inc).toFixed(2));
     setLot(v.toFixed(2));
-    T.setWs({ lot: v });
+    T.setWs((w) => withLot(w, symbol, v));
   };
   const [collapsed, setCollapsed] = React.useState(false);
   if (collapsed)
