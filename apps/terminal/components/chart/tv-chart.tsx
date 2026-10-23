@@ -123,7 +123,7 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
    *  plot, and without this list such a line could never be removed again (see sweepOrphans) */
   const created = React.useRef(new Set<string>());
   const drawnRef = React.useRef<DrawnLine[]>([]);
-  /** the account's executable prices, drawn as two lines of their own (see quoteLines) */
+  /** the account's executable prices, for the Sell / Buy pair in the chart header */
   const quoteRef = React.useRef<{ bid: number; ask: number }>({ bid: 0, ask: 0 });
   const [legendTop, setLegendTop] = React.useState<number | null>(null);
   const [popup, setPopup] = React.useState(false);
@@ -555,18 +555,11 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
       for (const r of shapes.current.values()) if (r.entity) live.add(r.entity);
       for (const id of [...created.current]) if (!live.has(id)) drop(id);
     };
-    // Bid and Ask: the two prices this account can trade at, each in the colour of the button that fills it.
-    // Dashed, behind the trade lines, and never selectable - they are a readout, not something to drag.
-    const c0 = palette.current;
-    const q = quoteRef.current;
-    const quoteLines: Shape[] =
-      !c0 || !(q.bid > 0) || !(q.ask > 0)
-        ? []
-        : [
-            { id: "q:bid", price: q.bid, color: c0.down, style: 1 },
-            { id: "q:ask", price: q.ask, color: c0.buy, style: 1 },
-          ];
-    const all: Shape[] = [...drawnRef.current.map((l) => ({ id: l.id, price: l.price, color: lineColor(l.line, c, l.bad), style: l.line.kind === "pos" ? 0 : l.line.kind === "alert" ? 1 : 2 })), ...quoteLines];
+    // One price on the scale, the library's own: its last-value line and badge, drawn from the bars the chart is
+    // already streaming. Bid and Ask used to be two more lines drawn here, so the scale carried three numbers a few
+    // cents apart with only one of them to act on. The prices a trade actually goes at are in the ticket and in the
+    // Sell / Buy pair in the chart header, both live from the same quotes.
+    const all: Shape[] = drawnRef.current.map((l) => ({ id: l.id, price: l.price, color: lineColor(l.line, c, l.bad), style: l.line.kind === "pos" ? 0 : l.line.kind === "alert" ? 1 : 2 }));
     const want = new Map(all.map((l) => [l.id, l]));
     for (const [id, r] of shapes.current) {
       if (want.has(id)) continue;
@@ -627,8 +620,9 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
     shapes.current.clear();
     syncShapes(w);
   };
-  // The quote the ticket shows, at most twice a second: enough for a line to look live, far less work than a
-  // shape update per tick. `syncShapes` skips a shape whose price has not moved, so a quiet market costs nothing.
+  // The header's Sell / Buy pair, repainted at most twice a second. No shape depends on a quote any more, so this
+  // no longer redraws the chart's lines - that loop is what used to leave stale ones behind when the library lost a
+  // shape handle. The lines are redrawn when they change (onLines) and when a layout loads.
   React.useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
     // a chart moved to another market has no executable price yet: drawing the last one would put gold's Bid on a
@@ -640,8 +634,6 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
       timer = setTimeout(() => {
         timer = null;
         paintQuote();
-        const w = readyRef.current?.widget;
-        if (w) syncShapes(w);
       }, 500);
     });
     return () => {
