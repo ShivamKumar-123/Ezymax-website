@@ -19,9 +19,9 @@
 import * as React from "react";
 import { ChevronDown, Search, Users } from "lucide-react";
 import { Avatar, Card, Chip, Flag, PageHeader, Reveal, Skeleton, cn } from "@ezymex/ui";
-import { EmptyNote, LevelChip, PartnersError, int, lots as fmtLots, reasonLabel, usd, useLevels } from "./kit";
+import { EmptyNote, LevelChip, PartnersError, int, lots as fmtLots, reasonLabel, usd, useLevels, usePerms, useReasonAction } from "./kit";
 import { useApi, useDebounced } from "@/components/live/kit";
-import { P, type Level, type Paged, type PartnerDetail, type PartnerRow, type TreeNode } from "./api";
+import { P, ibSend, type Level, type Paged, type PartnerDetail, type PartnerRow, type TreeNode } from "./api";
 
 /** Children by parent id; the root's own children sit under `rootId`. */
 function childMap(nodes: TreeNode[], rootId: number) {
@@ -42,7 +42,17 @@ function subtree(kids: Map<number, TreeNode[]>, id: number): TreeNode[] {
 /* One row of the tree                                                  */
 /* ------------------------------------------------------------------ */
 
-function Node({ node, kids, levels, open, toggle, depth }: { node: TreeNode; kids: Map<number, TreeNode[]>; levels: Level[]; open: Set<number>; toggle: (id: number) => void; depth: number }) {
+type Dnd = {
+  /** the member being dragged, or null */
+  held: TreeNode | null;
+  start: (n: TreeNode | null) => void;
+  /** false for the member itself, anyone in its own branch, and its current parent */
+  canDrop: (targetId: number) => boolean;
+  drop: (targetId: number, targetName: string) => void;
+  enabled: boolean;
+};
+
+function Node({ node, kids, levels, open, toggle, depth, dnd }: { node: TreeNode; kids: Map<number, TreeNode[]>; levels: Level[]; open: Set<number>; toggle: (id: number) => void; depth: number; dnd: Dnd }) {
   const children = kids.get(node.id) ?? [];
   const hasKids = children.length > 0;
   const isOpen = open.has(node.id);
@@ -67,9 +77,32 @@ function Node({ node, kids, levels, open, toggle, depth }: { node: TreeNode; kid
         aria-expanded={hasKids ? isOpen : undefined}
         onClick={hasKids ? () => toggle(node.id) : undefined}
         onKeyDown={hasKids ? (e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), toggle(node.id)) : undefined}
+        draggable={dnd.enabled}
+        onDragStart={(e) => {
+          dnd.start(node);
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", String(node.id));
+        }}
+        onDragEnd={() => dnd.start(null)}
+        onDragOver={(e) => {
+          if (!dnd.canDrop(node.id)) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+        }}
+        onDrop={(e) => {
+          if (!dnd.canDrop(node.id)) return;
+          e.preventDefault();
+          e.stopPropagation();
+          dnd.drop(node.id, node.name.trim() || `#${node.id}`);
+        }}
+        title={dnd.enabled ? "Drag onto another member to move this one under them" : undefined}
         className={cn(
           "flex items-center gap-3 rounded-[14px] border px-3.5 py-2.5 transition-colors",
           hasKids ? "cursor-pointer border-gold/25 bg-gold/[0.05] hover:border-gold/40" : "border-line bg-surface-2",
+          // while something is being dragged, say plainly where it may land
+          dnd.held && dnd.held.id === node.id && "opacity-50",
+          dnd.held && dnd.canDrop(node.id) && "border-dashed border-ember/60 bg-ember/[0.06]",
+          dnd.held && !dnd.canDrop(node.id) && dnd.held.id !== node.id && "opacity-40",
         )}
         style={{ marginLeft: depth * 18 }}
       >
@@ -116,7 +149,7 @@ function Node({ node, kids, levels, open, toggle, depth }: { node: TreeNode; kid
       {isOpen && (
         <div className="mt-2 space-y-2">
           {children.map((c) => (
-            <Node key={c.id} node={c} kids={kids} levels={levels} open={open} toggle={toggle} depth={depth + 1} />
+            <Node key={c.id} node={c} kids={kids} levels={levels} open={open} toggle={toggle} depth={depth + 1} dnd={dnd} />
           ))}
         </div>
       )}
@@ -133,6 +166,9 @@ export function LivePartnerNetwork() {
   const dq = useDebounced(q, 300);
   const [id, setId] = React.useState<number | null>(null);
   const [open, setOpen] = React.useState<Set<number>>(() => new Set());
+  const [held, setHeld] = React.useState<TreeNode | null>(null);
+  const perms = usePerms();
+  const act = useReasonAction();
 
   // the picker: IBs that actually have a downline come first, because those are the ones with a network to look at
   const list = useApi<Paged<PartnerRow>>(`${P("partners")}?scope=all&limit=12${dq.trim() ? `&q=${encodeURIComponent(dq.trim())}` : ""}`);
@@ -166,6 +202,33 @@ export function LivePartnerNetwork() {
   const withKids = nodes.filter((n) => kids.has(n.id)).map((n) => n.id);
   const allOpen = withKids.length > 0 && withKids.every((x) => open.has(x));
 
+  // a member may not land on itself, inside its own branch, or back on the parent it already has
+  const heldBranch = React.useMemo(
+    () => (held ? new Set<number>([held.id, ...subtree(kids, held.id).map((n) => n.id)]) : null),
+    [held, kids],
+  );
+  const dnd: Dnd = {
+    held,
+    start: setHeld,
+    canDrop: (targetId) => !!held && !!heldBranch && !heldBranch.has(targetId) && (held.parentId ?? rootId) !== targetId,
+    drop: (targetId, targetName) => {
+      const m = held;
+      setHeld(null);
+      if (!m) return;
+      act.ask({
+        title: `Move ${m.name.trim() || `#${m.id}`} under ${targetName}`,
+        description:
+          "Future deals follow the new tree. Commission already accrued stays with the old upline, and the move is recorded in the audit log.",
+        confirmLabel: "Move member",
+        run: (reason) => ibSend(`partners/${m.id}/reassign`, { parentId: targetId, reason }, "POST"),
+        success: "Member moved",
+        successDetail: "Future deals follow the new tree",
+        onDone: () => detail.reload(),
+      });
+    },
+    enabled: !!perms.write,
+  };
+
   const leaders = nodes
     .filter((n) => kids.has(n.id))
     .map((n) => ({ n, people: subtree(kids, n.id).length, lots: n.lotsMonth + subtree(kids, n.id).reduce((s, k) => s + k.lotsMonth, 0) }))
@@ -177,6 +240,7 @@ export function LivePartnerNetwork() {
   return (
     <div className="pb-16">
       <PageHeader title="Network" subtitle="A partner's downline exactly as they see it in their own Client Area" />
+      {act.node}
 
       <Card className="p-3 sm:p-4">
         <div className="flex items-center gap-2">
@@ -222,6 +286,9 @@ export function LivePartnerNetwork() {
               <div className="mb-4 flex flex-wrap items-center gap-2">
                 <span className="text-[15px] font-medium">Network tree</span>
                 <Chip size="sm" tone="ember">{int(nodes.length)} people · {int(tiers)} tiers</Chip>
+                {perms.write && (
+                  <span className="text-[11.5px] text-fg-3">{held ? "Drop on a highlighted member" : "Drag a member onto another to move them"}</span>
+                )}
                 {withKids.length > 0 && (
                   <button type="button" className="ms-auto text-[12px] text-fg-3 hover:text-fg" onClick={() => setOpen(allOpen ? new Set() : new Set(withKids))}>
                     {allOpen ? "Collapse all" : "Expand all"}
@@ -235,7 +302,18 @@ export function LivePartnerNetwork() {
                 <EmptyNote className="py-10" title="Pick a partner" text="Choose someone above to see the network they see." />
               ) : (
                 <>
-                  <div className="k-hot-card mb-3 flex items-center gap-3 rounded-[16px] px-4 py-3.5">
+                  <div
+                    onDragOver={(e) => dnd.canDrop(rootId) && (e.preventDefault(), (e.dataTransfer.dropEffect = "move"))}
+                    onDrop={(e) => {
+                      if (!dnd.canDrop(rootId)) return;
+                      e.preventDefault();
+                      dnd.drop(rootId, root.name || `#${root.id}`);
+                    }}
+                    className={cn(
+                      "k-hot-card mb-3 flex items-center gap-3 rounded-[16px] px-4 py-3.5",
+                      held && dnd.canDrop(rootId) && "ring-2 ring-ember/50",
+                    )}
+                  >
                     <Avatar name={root.name || `#${root.id}`} size={44} />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
@@ -258,7 +336,7 @@ export function LivePartnerNetwork() {
                   ) : (
                     <div className="space-y-2">
                       {top.map((n) => (
-                        <Node key={n.id} node={n} kids={kids} levels={levels} open={open} toggle={toggle} depth={0} />
+                        <Node key={n.id} node={n} kids={kids} levels={levels} open={open} toggle={toggle} depth={0} dnd={dnd} />
                       ))}
                     </div>
                   )}
