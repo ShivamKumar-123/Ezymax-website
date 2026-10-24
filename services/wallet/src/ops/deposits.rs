@@ -110,8 +110,10 @@ pub async fn create_intent(st: &AppState, tenant_id: i64, user_id: i64, chain_ra
     let chain = parse_chain(chain_raw)?;
     let cfg = settings::chain(&st.pool, tenant_id, chain).await?.filter(|c| c.deposits_enabled).ok_or_else(|| ApiError::unprocessable("chain_disabled", format!("Deposits on {} are not available", chain.network())))?;
     let amount = check_amount(amount, WALLET_DP).map_err(|m| ApiError::validation("amount", m))?;
-    if amount < cfg.min_deposit {
-        return Err(ApiError::unprocessable("below_minimum", format!("The minimum deposit is {} USDT", s(cfg.min_deposit))));
+    // the chain's own setting or the platform floor, whichever asks for more (ops/manual.rs)
+    let min = crate::ops::manual::effective_min(cfg.min_deposit, D::ONE);
+    if amount < min {
+        return Err(ApiError::unprocessable("below_minimum", format!("The minimum deposit is {} USDT", s(min))));
     }
     let open: i64 = sqlx::query_scalar("SELECT count(*) FROM deposit_intents WHERE tenant_id = $1 AND user_id = $2 AND created_at > now() - interval '1 hour'")
         .bind(tenant_id)

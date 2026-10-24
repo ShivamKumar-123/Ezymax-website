@@ -212,8 +212,9 @@ pub async fn create(st: &AppState, ctx: &Ctx, n: NewInvoice) -> ApiResult<Value>
     let t = ctx.tenant.id;
     let origin = clean_origin(&n.origin)?;
     let amount = check_amount(n.amount, 2).map_err(|m| ApiError::validation("amount", m))?;
-    if amount < cfg.oxapay_min_usd {
-        return Err(ApiError::unprocessable("below_minimum", format!("The minimum is {} USD", s(cfg.oxapay_min_usd))));
+    let min = crate::ops::manual::effective_min(cfg.oxapay_min_usd, D::ONE);
+    if amount < min {
+        return Err(ApiError::unprocessable("below_minimum", format!("The minimum is {} USD", s(min))));
     }
     if amount > cfg.oxapay_max_usd {
         return Err(ApiError::unprocessable("above_maximum", format!("The maximum is {} USD", s(cfg.oxapay_max_usd))));
@@ -591,7 +592,7 @@ pub async fn list(st: &AppState, ctx: &Ctx, user_id: i64, page: Option<i64>, lim
         .await?;
     let total: i64 = sqlx::query_scalar("SELECT count(*) FROM oxapay_invoices WHERE tenant_id = $1 AND user_id = $2").bind(t).bind(user_id).fetch_one(&st.pool).await?;
     Ok(json!({"items": rows.iter().map(client_json).collect::<Vec<_>>(), "page": page, "limit": limit, "total": total,
-              "enabled": st.cfg.oxapay_enabled(), "min_amount": s(st.cfg.oxapay_min_usd), "max_amount": s(st.cfg.oxapay_max_usd)}))
+              "enabled": st.cfg.oxapay_enabled(), "min_amount": s(crate::ops::manual::effective_min(st.cfg.oxapay_min_usd, D::ONE)), "max_amount": s(st.cfg.oxapay_max_usd)}))
 }
 
 /// One checkout. `poll=true` asks OxaPay first, for the page the client lands on after paying.
