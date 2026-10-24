@@ -334,6 +334,20 @@ async fn validate_method(st: &AppState, tenant_id: i64, kind: &str, m: &MethodIn
     Ok(ValidMethod { name, status, sort_order: m.sort_order, currency, rate, min_amount, max_amount, details, evm, qr_media_id, instructions })
 }
 
+/// The smallest deposit the broker accepts, in USD. It is not a per-method setting on purpose: the Back Office
+/// method editor writes `min_amount: "0"` on every save, so anything stored per method is one routine edit away
+/// from disappearing.
+pub const MIN_DEPOSIT_USD: i64 = 20;
+
+/// What a method's minimum really is: its own figure, or the platform floor converted at the method's rate,
+/// whichever is larger. `rate` is the method's currency per USDT, so a USDT method floors at 20 and an INR
+/// method at 20 x its rate. Both the listing clients read and the check that accepts a request use this, so the
+/// figure shown and the figure enforced are the same one.
+pub fn effective_min(min_amount: D, rate: D) -> D {
+    let floor = D::from(MIN_DEPOSIT_USD) * rate;
+    if floor > min_amount { floor } else { min_amount }
+}
+
 /// A method as clients see it (no staff fields).
 pub fn method_json(r: &PgRow) -> Value {
     let qr: Option<String> = r.get("qr_media_id");
@@ -345,7 +359,7 @@ pub fn method_json(r: &PgRow) -> Value {
         "sort_order": r.get::<i32, _>("sort_order"),
         "currency": r.get::<String, _>("currency"),
         "rate": s(r.get::<D, _>("rate")),
-        "min_amount": s(r.get::<D, _>("min_amount")),
+        "min_amount": s(effective_min(r.get::<D, _>("min_amount"), r.get::<D, _>("rate"))),
         "max_amount": s_opt(r.get::<Option<D>, _>("max_amount")),
         "details": r.get::<sqlx::types::Json<Value>, _>("details").0,
         "evm": r.get::<Option<sqlx::types::Json<Value>>, _>("evm").map(|j| j.0),
@@ -633,7 +647,7 @@ pub async fn create(st: &AppState, ctx: &Ctx, n: NewRequest) -> ApiResult<Value>
     };
     let currency: String = method.get("currency");
     let rate: D = method.get("rate");
-    let min: D = method.get("min_amount");
+    let min: D = effective_min(method.get("min_amount"), rate);
     let max: Option<D> = method.get("max_amount");
     if amount < min {
         return Err(ApiError::unprocessable("below_minimum", format!("The minimum for this method is {} {currency}", s(min))));
