@@ -224,7 +224,10 @@ export function RequestForm({ m, maxPending, onSent }: { m: PaymentMethod; maxPe
           <Input value={note} onChange={(e) => setNote(e.target.value.slice(0, 500))} placeholder={t("payments.form.notePlaceholder")} aria-label={t("payments.form.note")} />
         </Field>
         <InlineError>{err}</InlineError>
-        <Button type="submit" variant="ember" size="lg" className="w-full sm:w-auto" disabled={busy !== null || uploading} data-testid="manual-submit">
+        {/* A figure outside the method's limits cannot be sent: the button goes dead rather than letting the trader
+            press it and be told no. An empty or malformed amount keeps it alive - pressing it is how you learn
+            what is missing. The amount is checked again on the server, which rejects it as `below_minimum`. */}
+        <Button type="submit" variant="ember" size="lg" className="w-full sm:w-auto" disabled={busy !== null || uploading || belowMin || aboveMax} data-testid="manual-submit">
           {busy === "send" ? <Loader2 className="animate-spin" /> : <Send />} {busy === "send" ? t("payments.form.sending") : t("payments.form.submit")}
         </Button>
       </form>
