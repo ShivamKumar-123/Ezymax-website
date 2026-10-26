@@ -15,6 +15,7 @@ import { getInstrument, priceFeed, type Quote } from "@ezymex/mock";
 import { visibleInstruments } from "@/lib/scope";
 import { PriceText, SymbolAvatar, cn, useQuote } from "@ezymex/ui";
 import { lotOf, useMetrics, useTerminal, withLot } from "@/lib/store";
+import { setPendingDraft, takeDraggedPrice, usePendingDraft } from "@/lib/pending-draft";
 import { useMarketOpen } from "@/lib/market-hours";
 import { useSlowQuote } from "@/lib/market";
 import { accCcy, accMoney, fmtPrice, fmtVol, marginRequired, pendingLabelKey, pipSize, pipValuePerLot, splitSymbol, type Expiry, type OrderType, type PendingOrder, swapSummary } from "@/lib/trading";
@@ -122,6 +123,23 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
 
   const vol = Math.max(0.01, parseFloat(volume) || 0);
   const pending = type !== "market";
+  // The chart draws the order while it is still being typed, and a drag of that line comes back here as a price
+  // (lib/pending-draft.ts). Only the docked ticket publishes: the New order popup sits over the chart, and two
+  // tickets writing one draft would fight over it.
+  const draft = usePendingDraft();
+  React.useEffect(() => {
+    if (variant !== "panel") return;
+    if (!pending) return void setPendingDraft(null);
+    setPendingDraft({ symbol, side, kind: type as Exclude<OrderType, "market">, price: parseFloat(price) || null, volume: vol });
+  }, [variant, pending, symbol, side, type, price, vol]);
+  // the ticket owns its field: it takes the dragged figure and formats it the way it formats every other price
+  React.useEffect(() => {
+    const p = takeDraggedPrice();
+    if (p !== null) setPrice(fmtPrice(symbol, p));
+  }, [draft, symbol]);
+  // a ticket that goes away takes its line with it
+  React.useEffect(() => () => setPendingDraft(null), []);
+
   // Pending opens on the price the trader is looking at. Left empty, the field showed the live price as a
   // placeholder while the confirm button said "Enter the order price": a field that looks filled and will not
   // confirm. Seeded only when it is empty, so it never overwrites a price the trader typed or dragged in.
@@ -218,6 +236,7 @@ function Ticket({ symbol, onSymbol, prefill, variant, onDone }: { symbol: string
     });
     setBusy(false);
     if (ok) {
+      setPendingDraft(null); // it is a real order now, with a line of its own
       T.setWs((w) => withLot(w, symbol, vol));
       onDone?.();
     }

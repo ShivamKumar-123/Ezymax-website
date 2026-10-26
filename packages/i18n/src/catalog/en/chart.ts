@@ -161,8 +161,11 @@ const chart = {
   "line.bad.tpBelow": "Take profit must be below {price}",
   "line.bad.pendBelow": "The order price must be below {price}",
   "line.bad.pendAbove": "The order price must be above {price}",
+  "line.bad.notPlaced": "The order was not placed.",
   "line.bad.notSent": "Nothing was sent to the server.",
   "line.dragTitle": "Drag to move",
+  // the order the ticket is still filling in, before a side has been chosen
+  "line.draftOrder": "New order {lot}",
   "line.remove": "Remove {label}",
 
   // Legend

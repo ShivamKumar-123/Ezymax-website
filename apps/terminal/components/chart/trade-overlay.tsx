@@ -13,6 +13,7 @@ import { cn, useQuote } from "@ezymex/ui";
 import { useT } from "@ezymex/i18n/react";
 import type { MessageKey } from "@ezymex/i18n";
 import { useGroupOpen, usePositionProfit, usePositionsProfit, useTerminal } from "@/lib/store";
+import { dragPendingDraft, pendingDraft, usePendingDraft } from "@/lib/pending-draft";
 import { askConfirm } from "@/components/dialogs/confirm";
 import { accMoney, fmtPrice, fmtVol, pointSize, profitAt, roundPrice, type OrderType, type PendingOrder, type TPosition } from "@/lib/trading";
 import { OneClickPanel } from "./one-click";
@@ -38,6 +39,8 @@ export interface TLine {
   stops?: { sl: boolean; tp: boolean };
   /** several trades on one side shown as one line at their average price, "BUY 0.30 (3)": a click shows each */
   group?: string[];
+  /** the order the ticket is still filling in: it has no ticket, and a drag goes back to the ticket, not the server */
+  draft?: boolean;
   /** a trade of a side shown one by one: its chip can group that side again */
   grouped?: boolean;
 }
@@ -62,6 +65,7 @@ export function useTradeLines(symbol: string): TLine[] {
   const positions = T.positions.filter((p) => p.symbol === symbol);
   const [open] = useGroupOpen(symbol);
   const pendings = T.pendings.filter((p) => p.symbol === symbol);
+  const draft = usePendingDraft();
   const alerts = T.alerts.filter((a) => a.symbol === symbol && a.active);
   const ro = T.readOnly;
   const t = useT();
@@ -83,6 +87,21 @@ export function useTradeLines(symbol: string): TLine[] {
       if (p.sl !== undefined) out.push({ id: `sl:${p.ticket}`, kind: "sl", price: p.sl, ref: p.ticket, side: p.side, owner: "pos", label: "SL", draggable: !ro, closable: !ro });
       if (p.tp !== undefined) out.push({ id: `tp:${p.ticket}`, kind: "tp", price: p.tp, ref: p.ticket, side: p.side, owner: "pos", label: "TP", draggable: !ro, closable: !ro });
     }
+    // the order being typed in the ticket, drawn so it can be placed by eye (lib/pending-draft.ts)
+    if (draft && draft.symbol === symbol && draft.price !== null && !ro) {
+      const lot = fmtVol(draft.volume);
+      out.push({
+        id: "draft",
+        kind: "pending",
+        price: draft.price,
+        ref: "draft",
+        side: draft.side ?? undefined,
+        label: draft.side ? t(PENDING_LABEL[`${draft.side}:${draft.kind}`] ?? "chart.line.buyLimit", { lot }) : t("chart.line.draftOrder", { lot }),
+        draggable: true,
+        closable: false,
+        draft: true,
+      });
+    }
     for (const o of pendings) {
       out.push({ id: `pnd:${o.ticket}`, kind: "pending", price: o.price, ref: o.ticket, side: o.side, label: t(PENDING_LABEL[`${o.side}:${o.type}`] ?? "chart.line.buyLimit", { lot: fmtVol(o.volume) }), draggable: !ro, closable: !ro, stops: ro ? undefined : { sl: o.sl === undefined, tp: o.tp === undefined } });
       if (o.sl !== undefined) out.push({ id: `psl:${o.ticket}`, kind: "sl", price: o.sl, ref: o.ticket, side: o.side, owner: "pnd", label: "SL", draggable: !ro, closable: !ro });
@@ -91,7 +110,7 @@ export function useTradeLines(symbol: string): TLine[] {
     for (const a of alerts) out.push({ id: `alr:${a.id}`, kind: "alert", price: a.price, ref: a.id, label: t("chart.line.alert"), draggable: true, closable: true });
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(positions.map((p) => [p.ticket, p.openPrice, p.sl, p.tp, p.volume, p.side])), JSON.stringify(pendings.map((p) => [p.ticket, p.price, p.volume, p.side, p.type, p.sl, p.tp])), JSON.stringify(alerts.map((a) => [a.id, a.price])), ro, t, open, symbol]);
+  }, [JSON.stringify(positions.map((p) => [p.ticket, p.openPrice, p.sl, p.tp, p.volume, p.side])), JSON.stringify(pendings.map((p) => [p.ticket, p.price, p.volume, p.side, p.type, p.sl, p.tp])), JSON.stringify(alerts.map((a) => [a.id, a.price])), draft, ro, t, open, symbol]);
 }
 
 /**
@@ -213,9 +232,15 @@ export function useTradeLineState(symbol: string) {
   };
   /** Why a pending order's entry at `price` would be rejected (translated), or null. */
   const badPending = (l: TLine, price: number) => {
-    const o = l.kind === "pending" && l.side ? T.pendings.find((x) => x.ticket === l.ref) : undefined;
-    if (!o) return null;
-    const bad = pendingProblem(o.type, o.side, pendingRef(o.side, priceFeed().quote(symbol)), price);
+    if (l.kind !== "pending") return null;
+    const d = l.draft ? pendingDraft() : null;
+    const o = l.draft ? undefined : T.pendings.find((x) => x.ticket === l.ref);
+    const side = d ? d.side : o?.side;
+    const kind = d ? d.kind : o?.type;
+    // nothing to check until a side is chosen: the line marks a price, the ticket refuses the order
+    if (!side || !kind) return null;
+    // a draft becomes a new order, which has to clear the stops level; a modify only has to be on the right side
+    const bad = pendingProblem(kind, side, pendingRef(side, priceFeed().quote(symbol)), price, d ? stopGap(symbol) : 0);
     return bad ? t(bad.key, { price: fmtPrice(symbol, bad.at) }) : null;
   };
   const dragLine = drag ? lines.find((l) => l.id === drag.id) ?? null : null;
@@ -262,10 +287,12 @@ export function useTradeLineState(symbol: string) {
       // the wrong side of the market: the trade server would reject it, so nothing is sent and the line stays put
       const bad = badPending(l, price);
       if (bad) {
-        toast.warning(bad, { description: t("chart.line.bad.notSent"), id: "pending-bad" });
+        toast.warning(bad, { description: t(l.draft ? "chart.line.bad.notPlaced" : "chart.line.bad.notSent"), id: "pending-bad" });
         return true;
       }
-      settle(id, price, T.modifyPending(l.ref, { price }));
+      // the draft has no ticket to modify: its price goes back to the ticket, which still has to be submitted
+      if (l.draft) dragPendingDraft(price);
+      else settle(id, price, T.modifyPending(l.ref, { price }));
     }
     else if (l.kind === "alert") T.updateAlert(l.ref, { price });
     return true;
