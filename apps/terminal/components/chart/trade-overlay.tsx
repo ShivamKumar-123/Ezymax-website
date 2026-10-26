@@ -14,7 +14,7 @@ import { useT } from "@ezymex/i18n/react";
 import type { MessageKey } from "@ezymex/i18n";
 import { useGroupOpen, usePositionProfit, usePositionsProfit, useTerminal } from "@/lib/store";
 import { askConfirm } from "@/components/dialogs/confirm";
-import { accMoney, fmtPrice, fmtVol, pointSize, profitAt, roundPrice, type PendingOrder, type TPosition } from "@/lib/trading";
+import { accMoney, fmtPrice, fmtVol, pointSize, profitAt, roundPrice, type OrderType, type PendingOrder, type TPosition } from "@/lib/trading";
 import { OneClickPanel } from "./one-click";
 import type { Palette } from "./engine";
 
@@ -108,6 +108,27 @@ export function stopProblem(which: "sl" | "tp", side: "buy" | "sell", ref: numbe
   return price >= at && price > ref ? null : { key: which === "sl" ? "chart.line.bad.slAbove" : "chart.line.bad.tpAbove", at };
 }
 
+/**
+ * Which side of the market a pending order's entry must sit on, the trade engine's own rule (engine/trade.rs): a
+ * limit waits for a better price than the market, a stop waits for a worse one, both measured against the price the
+ * order would open at - the Ask for a buy, the Bid for a sell. A stop-limit is triggered by its stop price, so it
+ * follows the stop rule.
+ *
+ * `gap` is the symbol's stops level. Placing a new order has to clear it; `modify_order` does not ask for it, so a
+ * drag of an order that already exists passes 0 rather than refusing a price the server would take.
+ */
+export function pendingProblem(type: OrderType, side: "buy" | "sell", mkt: number, price: number, gap = 0): { key: MessageKey; at: number } | null {
+  const buy = side === "buy";
+  // a buy limit and a sell stop sit below the market; a sell limit and a buy stop sit above it
+  const below = (type === "limit") === buy;
+  const at = below ? mkt - gap : mkt + gap;
+  if (below ? price < at : price > at) return null;
+  return { key: below ? "chart.line.bad.pendBelow" : "chart.line.bad.pendAbove", at };
+}
+
+/** The market price a pending order's entry is measured against: the price it would open at. */
+const pendingRef = (side: "buy" | "sell", q: { bid: number; ask: number }) => (side === "buy" ? q.ask : q.bid);
+
 /** The price an SL / TP is checked against: an open position's closing price now (Bid for a buy, Ask for a sell), a
  *  pending order's entry (its stop-limit price, else its price). */
 function stopRef(l: TLine, q: { bid: number; ask: number }, pendings: PendingOrder[]): number | null {
@@ -190,9 +211,16 @@ export function useTradeLineState(symbol: string) {
     const bad = ref === null ? null : stopProblem(l.kind, l.side, ref, price, stopGap(symbol));
     return bad ? t(bad.key, { price: fmtPrice(symbol, bad.at) }) : null;
   };
+  /** Why a pending order's entry at `price` would be rejected (translated), or null. */
+  const badPending = (l: TLine, price: number) => {
+    const o = l.kind === "pending" && l.side ? T.pendings.find((x) => x.ticket === l.ref) : undefined;
+    if (!o) return null;
+    const bad = pendingProblem(o.type, o.side, pendingRef(o.side, priceFeed().quote(symbol)), price);
+    return bad ? t(bad.key, { price: fmtPrice(symbol, bad.at) }) : null;
+  };
   const dragLine = drag ? lines.find((l) => l.id === drag.id) ?? null : null;
   const dragStop = dragLine && (dragLine.kind === "sl" || dragLine.kind === "tp") ? dragLine : null;
-  const dragBad = drag && dragStop ? badStop(dragStop, drag.price) : null;
+  const dragBad = !drag || !dragLine ? null : dragStop ? badStop(dragStop, drag.price) : badPending(dragLine, drag.price);
 
   /** The drag for an SL / TP pulled out of a position's or order's S / T handle: a new line from the chip's price. */
   const stopDrag = (l: TLine, which: "sl" | "tp", clientY: number): LineDrag | null => {
@@ -230,7 +258,15 @@ export function useTradeLineState(symbol: string) {
       }
       setFresh({ ...l, price });
       settle(id, price, req.finally(() => setFresh((f) => (f?.id === id ? null : f))));
-    } else if (l.kind === "pending") settle(id, price, T.modifyPending(l.ref, { price }));
+    } else if (l.kind === "pending") {
+      // the wrong side of the market: the trade server would reject it, so nothing is sent and the line stays put
+      const bad = badPending(l, price);
+      if (bad) {
+        toast.warning(bad, { description: t("chart.line.bad.notSent"), id: "pending-bad" });
+        return true;
+      }
+      settle(id, price, T.modifyPending(l.ref, { price }));
+    }
     else if (l.kind === "alert") T.updateAlert(l.ref, { price });
     return true;
   };

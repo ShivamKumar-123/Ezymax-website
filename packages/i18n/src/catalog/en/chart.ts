@@ -159,6 +159,8 @@ const chart = {
   "line.bad.slAbove": "Stop loss must be above {price}",
   "line.bad.tpAbove": "Take profit must be above {price}",
   "line.bad.tpBelow": "Take profit must be below {price}",
+  "line.bad.pendBelow": "The order price must be below {price}",
+  "line.bad.pendAbove": "The order price must be above {price}",
   "line.bad.notSent": "Nothing was sent to the server.",
   "line.dragTitle": "Drag to move",
   "line.remove": "Remove {label}",
