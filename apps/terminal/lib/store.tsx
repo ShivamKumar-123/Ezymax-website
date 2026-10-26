@@ -471,6 +471,8 @@ interface UiState {
   newOrder: NewOrderPrefill | null;
   positionDialog: string | null;
   pendingDialog: string | null;
+  /** the ticket picked in the positions / orders list: its chip on the chart is ringed (components/chart) */
+  selected: string | null;
   search: boolean;
   shortcuts: boolean;
   spec: string | null;
@@ -648,7 +650,7 @@ export function TerminalProvider({ initialSession, engineSessions, guestMode, ch
   wsRef.current = ws;
   const sessionRef = React.useRef(session);
   sessionRef.current = session;
-  const [ui, setUiState] = React.useState<UiState>({ newOrder: null, positionDialog: null, pendingDialog: null, search: false, shortcuts: false, spec: null, about: false, options: false, alertDialog: null, loginDialog: false, tour: false, glossary: false, fullChart: false, openGroups: [] });
+  const [ui, setUiState] = React.useState<UiState>({ newOrder: null, positionDialog: null, pendingDialog: null, selected: null, search: false, shortcuts: false, spec: null, about: false, options: false, alertDialog: null, loginDialog: false, tour: false, glossary: false, fullChart: false, openGroups: [] });
   const [drawTool, setDrawTool] = React.useState<DrawTool>("cursor");
   const [selectedDrawing, selectDrawing] = React.useState<string | null>(null);
   const jid = React.useRef(0);

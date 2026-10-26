@@ -63,7 +63,10 @@ export function PositionsTab() {
   const T = useTerminal();
   const t = useT();
   const cm = useContextMenu(260);
-  const [sel, setSel] = React.useState<string | null>(null);
+  // the chart rings the chosen ticket's chip, so this lives with the rest of the ui state rather than in
+  // this table (lib/store.tsx)
+  const sel = T.ui.selected;
+  const setSel = (ticket: string | null) => T.setUi({ selected: ticket });
   const hedging = T.account.mode === "hedging";
   const picking = useShareUi().selecting;
 
@@ -421,7 +424,10 @@ export function PendingTab() {
   const T = useTerminal();
   const t = useT();
   const cm = useContextMenu(240);
-  const [sel, setSel] = React.useState<string | null>(null);
+  // the chart rings the chosen ticket's chip, so this lives with the rest of the ui state rather than in
+  // this table (lib/store.tsx)
+  const sel = T.ui.selected;
+  const setSel = (ticket: string | null) => T.setUi({ selected: ticket });
   const picking = useShareUi().selecting;
   const ordMenu = (o: PendingOrder): MenuItem[] => [
     { label: t("toolbox.menu.modifyOrDelete"), icon: <Edit3 />, onSelect: () => T.setUi({ pendingDialog: o.ticket }) },

@@ -376,6 +376,9 @@ export function TradeChips({ symbol, lines, ys, top, bottom, right, tagLeft, dra
         <div key={row.lines[0]!.id} className="absolute flex -translate-y-1/2 flex-row-reverse items-center gap-1" style={{ top: row.y, right }}>
           {row.lines.map((l) => {
             const isDrag = drag?.id === l.id;
+            // the trade picked in the list: its entry and its stops are ringed together, so one click shows where
+            // an order really sits among everything else on the chart
+            const picked = !l.draft && !!T.ui.selected && l.ref === T.ui.selected;
             const price = isDrag ? drag.price : hold?.id === l.id ? hold.price : l.price;
             const money = l.kind === "sl" || l.kind === "tp" ? stopMoney(l, price, T.positions, T.pendings) : null;
             const bad = isDrag && !!dragBad;
@@ -409,7 +412,7 @@ export function TradeChips({ symbol, lines, ys, top, bottom, right, tagLeft, dra
               <div
                 key={l.id}
                 data-line-chip
-                className={cn("pointer-events-auto flex h-5 shrink-0 items-stretch overflow-hidden rounded-[3px] border bg-panel-2 font-sans text-[11px] font-semibold leading-none text-fg shadow-[0_2px_8px_rgba(0,0,0,0.35)]", frame, l.draggable && "cursor-ns-resize touch-none", l.group && "cursor-pointer")}
+                className={cn("pointer-events-auto flex h-5 shrink-0 items-stretch overflow-hidden rounded-[3px] border bg-panel-2 font-sans text-[11px] font-semibold leading-none text-fg shadow-[0_2px_8px_rgba(0,0,0,0.35)]", frame, l.draggable && "cursor-ns-resize touch-none", l.group && "cursor-pointer", picked && "ring-2 ring-ember")}
                 onClick={l.group ? toggleGroup : undefined}
                 style={row.lines.length > 1 ? { transform: `translateY(${(ys[l.id] ?? row.y) - row.y}px)` } : undefined}
                 onPointerDown={(e) => {
@@ -419,6 +422,7 @@ export function TradeChips({ symbol, lines, ys, top, bottom, right, tagLeft, dra
                   onLineDown(l, e);
                 }}
                 onDoubleClick={() => (l.group ? undefined : l.kind === "pos" ? T.setUi({ positionDialog: l.ref }) : l.kind === "pending" && !ro ? T.setUi({ pendingDialog: l.ref }) : undefined)}
+                data-selected={picked || undefined}
                 title={bad ? dragBad! : l.group ? t("chart.line.groupTip") : l.kind === "pos" ? (ro ? undefined : t("chart.line.posTip")) : l.kind === "pending" && !ro ? t("chart.line.pendingTip") : l.draggable ? t("chart.line.dragTitle") : undefined}
               >
                 <span className={cn("flex items-center px-1.5", tag)}>
