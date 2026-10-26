@@ -172,7 +172,9 @@ function stopMoney(l: TLine, price: number, positions: TPosition[], pendings: Pe
   return p ? profitAt(p, price) + p.swap - p.commission : null;
 }
 
-/** A line's colour: BUY green, SELL red; SL red, TP green, pending gold, alerts amber; a stop dragged to the wrong
+/** A line's colour: BUY green, SELL red; SL red, TP green, alerts amber; a pending order takes its own side's
+ *  colour and only keeps gold while it has no side (the ticket's draft, before Sell or Buy is chosen); a stop dragged
+ *  to the wrong
  *  side goes grey.
  *
  *  A buy line takes `up` (#22c55e) rather than the chart's blue `buy`: the owner asked for the green every other
@@ -180,7 +182,13 @@ function stopMoney(l: TLine, price: number, positions: TPosition[], pendings: Pe
  *  the candles are unchanged. BUY and TP then share green exactly as SELL and SL already share red; the chip
  *  beside each line is what names it ("BUY 0.50" against "TP"), as it already did on the sell side. */
 export function lineColor(l: TLine, c: Palette, bad = false): string {
-  return bad ? c.fg3 : l.kind === "sl" ? c.down : l.kind === "tp" ? c.up : l.kind === "pending" ? c.gold : l.kind === "alert" ? c.warn : l.side === "buy" ? c.up : c.down;
+  if (bad) return c.fg3;
+  if (l.kind === "sl") return c.down;
+  if (l.kind === "tp") return c.up;
+  if (l.kind === "alert") return c.warn;
+  // an order with no side is the draft being typed: gold says "not decided yet", not "not a buy"
+  if (l.kind === "pending" && !l.side) return c.gold;
+  return l.side === "buy" ? c.up : c.down;
 }
 
 /** A line being dragged. */
@@ -392,7 +400,11 @@ export function TradeChips({ symbol, lines, ys, top, bottom, right, tagLeft, dra
               : l.kind === "tp"
               ? "border-up"
               : l.kind === "pending"
-              ? "border-gold"
+              ? l.side === "buy"
+                ? "border-up"
+                : l.side === "sell"
+                ? "border-down"
+                : "border-gold"
               : l.kind === "alert"
               ? "border-warn"
               : "border-buy";
@@ -403,7 +415,11 @@ export function TradeChips({ symbol, lines, ys, top, bottom, right, tagLeft, dra
               : l.kind === "tp"
               ? "bg-up text-white"
               : l.kind === "pending"
-              ? "bg-[color-mix(in_oklab,var(--k-gold)_88%,black)] text-[#1a1204]"
+              ? l.side === "buy"
+                ? "bg-up text-white"
+                : l.side === "sell"
+                ? "bg-down text-white"
+                : "bg-[color-mix(in_oklab,var(--k-gold)_88%,black)] text-[#1a1204]"
               : l.kind === "alert"
               ? "bg-warn text-[#1a1204]"
               : "bg-buy text-white";
@@ -427,7 +443,9 @@ export function TradeChips({ symbol, lines, ys, top, bottom, right, tagLeft, dra
               >
                 <span className={cn("flex items-center px-1.5", tag)}>
                   {l.label}
-                  {isDrag && l.kind !== "pos" && <span className="k-num ml-1 opacity-80">{fmtPrice(symbol, price)}</span>}
+                  {/* a pending order's entry is part of what the line says, not only something the drag reveals: the
+                      axis badge that used to carry it is the TradingView chart's, and the fallback chart has none */}
+                  {(l.kind === "pending" || isDrag) && l.kind !== "pos" && <span className="k-num ml-1 opacity-80">{fmtPrice(symbol, price)}</span>}
                 </span>
                 {livePos && <PositionChipPnl p={livePos} />}
                 {l.group && <GroupChipPnl tickets={l.group} />}
