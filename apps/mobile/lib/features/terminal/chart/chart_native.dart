@@ -164,11 +164,17 @@ class _NativeChartSurfaceState extends State<NativeChartSurface> {
     return fallback;
   }
 
-  // buy positions blue, sell red; SL red, TP green, orders gold
+  // buy positions blue, sell red; SL red, TP green. A pending order wears its own side (green buy, red sell) and
+  // keeps gold only while it has no side - the draft the ticket is still filling in. `k.buy` is the candles' blue,
+  // so an order line takes `k.up`.
   Color _lineColor(_Line l, KTokens k) => switch (l.kind) {
     'sl' => _c('down', k.down),
     'tp' => _c('up', k.up),
-    'pending' => _c('gold', k.gold),
+    'pending' => switch (l.side) {
+      'buy' => _c('up', k.up),
+      'sell' => _c('down', k.down),
+      _ => _c('gold', k.gold),
+    },
     'alert' || 'barrier' => _c('warn', k.warn),
     'strike' => _c('ember', k.ember),
     'breakeven' => _c('fg2', k.fg2),
@@ -426,7 +432,7 @@ class _NativeChartSurfaceState extends State<NativeChartSurface> {
 
   double _chipWidth(_Line l) {
     final dragging = _dragId == l.id && l.kind != 'pos';
-    var chars = l.label.length + (dragging ? _digits + 6 : 0);
+    var chars = l.label.length + (dragging || l.kind == 'pending' ? _digits + 6 : 0);
     var w = chars * 6.4 + 12;
     if (l.drag) w += 14;
     if (l.note != null) {
@@ -564,7 +570,8 @@ class _NativeChartSurfaceState extends State<NativeChartSurface> {
                 ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 5),
-                child: Text('${l.label}${_dragId == l.id && l.kind != 'pos' ? ' ${price.toStringAsFixed(_digits)}' : ''}', style: st(fg)),
+                // a pending order shows its entry price whether or not a finger is on it (chart.html does the same)
+                child: Text('${l.label}${_dragId == l.id && l.kind != 'pos' || l.kind == 'pending' ? ' ${price.toStringAsFixed(_digits)}' : ''}', style: st(fg)),
               ),
               if (note != null) ...[
                 sep,

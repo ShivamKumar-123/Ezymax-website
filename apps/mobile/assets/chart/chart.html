@@ -642,16 +642,22 @@
 
         /* ---------------- trade lines ---------------- */
 
-        // buy positions blue, sell red; SL red, TP green, orders gold
+        // buy positions blue, sell red; SL red, TP green. A pending order wears its own side - green buy, red sell,
+        // as the Sell / Buy buttons do - and keeps gold only while it has no side (the ticket's draft). pal.buy is the
+        // blue the candles are drawn in, so an order line takes pal.up instead.
         const colorOf = (l) =>
-          l.kind === "sl" ? pal.down : l.kind === "tp" ? pal.up : l.kind === "pending" ? pal.gold : l.kind === "alert" || l.kind === "barrier" ? pal.warn : l.kind === "strike" ? pal.ember : l.kind === "breakeven" ? pal.fg2 : l.side === "buy" ? pal.buy : pal.down;
+          l.kind === "sl" ? pal.down : l.kind === "tp" ? pal.up : l.kind === "pending" ? (l.side === "buy" ? pal.up : l.side === "sell" ? pal.down : pal.gold) : l.kind === "alert" || l.kind === "barrier" ? pal.warn : l.kind === "strike" ? pal.ember : l.kind === "breakeven" ? pal.fg2 : l.side === "buy" ? pal.buy : pal.down;
         // 0 solid · 1 dotted · 2 dashed · 4 sparse dotted (lightweight-charts LineStyle)
         const styleOf = (l) => (l.kind === "pos" ? 0 : l.kind === "alert" ? 4 : l.kind === "breakeven" ? 1 : 2);
 
         function chipColors(l) {
           if (l.kind === "sl") return [pal.down, "#fff", pal.down];
           if (l.kind === "tp") return [pal.up, "#fff", pal.up];
-          if (l.kind === "pending") return [pal.gold, onWarm(), pal.gold];
+          if (l.kind === "pending") {
+            if (l.side === "buy") return [pal.up, "#fff", pal.up];
+            if (l.side === "sell") return [pal.down, "#fff", pal.down];
+            return [pal.gold, onWarm(), pal.gold];
+          }
           if (l.kind === "alert" || l.kind === "barrier") return [pal.warn, onWarm(), pal.warn];
           if (l.kind === "strike") return [pal.ember, "#fff", pal.ember];
           if (l.kind === "breakeven") return [pal.panel, pal.fg2, pal.fg3];
@@ -757,7 +763,9 @@
             if (c.note.textContent.length !== note.length) c.w = -1;
             c.note.textContent = note;
           }
-          setLabel(c, dragging && l.kind !== "pos" ? l.label + " " + fmt(drag.price) : l.label);
+          // a pending order's entry belongs on the chip, not only under a finger: the price scale's own badge is
+          // behind the chip at that price, and letting go used to take the figure away with it
+          setLabel(c, dragging && l.kind !== "pos" ? l.label + " " + fmt(drag.price) : l.kind === "pending" ? l.label + " " + fmt(l.price) : l.label);
         }
 
         /** The chip font is monospaced: the width changes only with the text length. */
