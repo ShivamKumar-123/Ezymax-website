@@ -126,19 +126,29 @@ fn epoch(v: i64) -> Option<chrono::DateTime<chrono::Utc>> {
     if v.abs() > 100_000_000_000 { chrono::DateTime::from_timestamp_millis(v) } else { chrono::DateTime::from_timestamp(v, 0) }
 }
 
-/// Statuses that mean the money is OxaPay's to keep and ours to credit.
+/// Statuses that mean the money is OxaPay's to keep and ours to credit (their payment status table).
+///
+/// `manual_accept` is the one that is easy to miss and expensive to miss: an underpaid invoice expires
+/// unsettled, and the merchant then accepts it from the OxaPay dashboard, at which point "the corresponding
+/// amount has been charged to your balance" and the status becomes `manual_accept` rather than `paid`. Without
+/// it here, accepting an underpayment takes the money and credits the client nothing.
 fn is_paid(status: &str) -> bool {
-    matches!(status.trim().to_ascii_lowercase().as_str(), "paid" | "completed" | "complete")
+    matches!(status.trim().to_ascii_lowercase().as_str(), "paid" | "completed" | "complete" | "manual_accept")
 }
 
-/// Statuses that end the invoice without payment.
+/// Statuses that end the invoice without payment. `refunded` is final and the payer has the money back;
+/// `refunding` is deliberately absent, being still in flight.
 fn is_dead(status: &str) -> bool {
-    matches!(status.trim().to_ascii_lowercase().as_str(), "expired" | "failed" | "cancelled" | "canceled")
+    matches!(status.trim().to_ascii_lowercase().as_str(), "expired" | "failed" | "cancelled" | "canceled" | "refunded")
 }
 
 /// Our status for an OxaPay one that is neither paid nor dead. OxaPay's payment endpoint answers lower-case
-/// words ("new", "waiting", "confirming"); its callbacks use "Paying". Anything unrecognised counts as money
-/// in flight, which is the reading that never loses a payment: the invoice stays open and staff can recheck.
+/// words ("new", "waiting", "confirming", "underpaid", "refunding"); its callbacks use "Paying". Anything
+/// unrecognised counts as money in flight, which is the reading that never loses a payment: the invoice stays
+/// open, the reconciler keeps asking and staff can recheck.
+///
+/// `underpaid` lands on `paying` on purpose. The money is real and it is at OxaPay; what is missing is the
+/// merchant's decision to accept or refund it, so the invoice is not finished and must not read as dead.
 fn pending_status(status: &str) -> &'static str {
     match status.trim().to_ascii_lowercase().as_str() {
         "new" | "waiting" | "" => "waiting",
