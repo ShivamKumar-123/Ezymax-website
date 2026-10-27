@@ -582,13 +582,13 @@ pub async fn reconcile(st: &AppState) -> ApiResult<usize> {
         match fetch(st, &track).await {
             Ok(p) => {
                 if let Err(e) = settle(st, id, &track, p, None).await {
-                    tracing::warn!(invoice = id, track, error = %e, "oxapay reconcile could not settle");
+                    tracing::warn!(invoice = id, track, error = e.code(), "oxapay reconcile could not settle");
                 } else {
                     seen += 1;
                 }
             }
             // the provider being unreachable is not this invoice's fault: leave it for the next pass
-            Err(e) => tracing::warn!(invoice = id, track, error = %e, "oxapay reconcile could not read the payment"),
+            Err(e) => tracing::warn!(invoice = id, track, error = e.code(), "oxapay reconcile could not read the payment"),
         }
     }
     if seen > 0 {
@@ -605,7 +605,7 @@ pub fn spawn(st: AppState) {
         loop {
             t.tick().await;
             if let Err(e) = reconcile(&st).await {
-                tracing::error!(error = %e, "oxapay reconcile pass failed");
+                tracing::error!(error = e.code(), "oxapay reconcile pass failed");
             }
         }
     });
