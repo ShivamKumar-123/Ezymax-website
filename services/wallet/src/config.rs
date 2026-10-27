@@ -50,9 +50,14 @@ pub struct Config {
     /// Whether the payer covers OxaPay's fee. True keeps the credited amount equal to the amount asked for.
     pub oxapay_fee_paid_by_payer: bool,
     /// How far short of the invoice a payment may land and still settle, as a percentage (OxaPay's
-    /// `under_paid_coverage`, 0-60). Their commission comes out of what the payer sends, so at 0 a client who
-    /// pays exactly the amount we asked for is always a little short and the invoice never settles. What
-    /// actually arrived is what gets credited, so this is a tolerance for fees, not a discount.
+    /// `under_paid_coverage`, 0-60). At 0 nothing settles: with `fee_paid_by_payer` OxaPay asks the payer for
+    /// the invoice plus their commission, and a client who sends the figure our own form quoted them is short
+    /// by that commission before the network fee is counted.
+    ///
+    /// The incident of 27 October measures it: a 50 USD deposit became a 50.75 invoice at OxaPay, 49.25 was
+    /// applied, and the shortfall was 2.95 % - so the 2 this started at would still have left it stuck. Five
+    /// carries that case with room to spare, and costs nothing to be generous with, because `settle` credits
+    /// the money that actually arrived rather than the sum the invoice asked for.
     pub oxapay_under_paid_pct: Decimal,
     pub oxapay_sandbox: bool,
     /// Open checkouts one client may hold at once.
@@ -182,7 +187,7 @@ impl Config {
             oxapay_max_usd: dec("WALLET_OXAPAY_MAX_USD", 50_000),
             oxapay_lifetime_minutes: var("WALLET_OXAPAY_LIFETIME_MINUTES", "60").parse().unwrap_or(60).clamp(15, 2880),
             oxapay_fee_paid_by_payer: var("WALLET_OXAPAY_FEE_PAID_BY_PAYER", "true") != "false",
-            oxapay_under_paid_pct: var("WALLET_OXAPAY_UNDER_PAID_PCT", "2").parse().unwrap_or(Decimal::TWO).clamp(Decimal::ZERO, Decimal::from(60)),
+            oxapay_under_paid_pct: var("WALLET_OXAPAY_UNDER_PAID_PCT", "5").parse().unwrap_or(Decimal::from(5)).clamp(Decimal::ZERO, Decimal::from(60)),
             oxapay_sandbox: var("WALLET_OXAPAY_SANDBOX", "false") == "true",
             oxapay_max_open: var("WALLET_OXAPAY_MAX_OPEN", "3").parse().unwrap_or(3).clamp(1, 20),
         })
@@ -225,7 +230,7 @@ impl Config {
             oxapay_max_usd: Decimal::from(50_000),
             oxapay_lifetime_minutes: 60,
             oxapay_fee_paid_by_payer: true,
-            oxapay_under_paid_pct: Decimal::TWO,
+            oxapay_under_paid_pct: Decimal::from(5),
             oxapay_sandbox: false,
             oxapay_max_open: 3,
         }

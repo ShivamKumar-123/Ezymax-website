@@ -561,12 +561,16 @@ pub async fn reconcile(st: &AppState) -> ApiResult<usize> {
     if !st.cfg.oxapay_enabled() {
         return Ok(0);
     }
-    // `paying` at any age, and anything still open well past its expiry: a late payment settles an invoice the
-    // client gave up on, and we would rather find it than let it sit.
+    // `paying` at any age; anything still open past its expiry, so a late payment is not lost; and an expired
+    // invoice that money did arrive against. That last one is not idle: an underpaid invoice expires unsettled
+    // and OxaPay hands the decision to the merchant, who accepts it from their dashboard days later. Accepting
+    // fires the webhook, but an invoice this never looks at again would depend on that one delivery arriving.
     let rows = sqlx::query(
         "SELECT id, track_id FROM oxapay_invoices
          WHERE track_id IS NOT NULL
-           AND (status = 'paying' OR (status IN ('new', 'waiting') AND expires_at IS NOT NULL AND expires_at < now()))
+           AND (status = 'paying'
+                OR (status IN ('new', 'waiting') AND expires_at IS NOT NULL AND expires_at < now())
+                OR (status = 'expired' AND coalesce(jsonb_array_length(last_payment -> 'txs'), 0) > 0))
            AND updated_at < now() - make_interval(mins => $1::int)
            AND created_at > now() - interval '7 days'
          ORDER BY updated_at
