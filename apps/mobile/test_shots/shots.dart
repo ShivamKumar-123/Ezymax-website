@@ -9,7 +9,12 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../test/helpers/test_app.dart';
 
-const String shotsDir = '/private/tmp/claude-501/-Users-shivamsingh-Desktop-ezymex/8887654c-7bec-49a8-bfdd-05d6e4ed1bce/scratchpad/mobile/c1/shots';
+/// Where the PNGs land. The default is one machine's scratchpad and is useless anywhere else, so it can be
+/// overridden: `flutter test test_shots/... --update-goldens --dart-define=SHOTS_DIR=/path/to/dir`.
+const String shotsDir = String.fromEnvironment(
+  'SHOTS_DIR',
+  defaultValue: '/private/tmp/claude-501/-Users-shivamsingh-Desktop-ezymex/8887654c-7bec-49a8-bfdd-05d6e4ed1bce/scratchpad/mobile/c1/shots',
+);
 
 /// Opens `location` as the signed-in sample client in `theme` / `locale`, runs `before` (taps, sheets), scrolls the
 /// page by `scroll` pixels, and saves `<shotsDir>/<name>.png`.
