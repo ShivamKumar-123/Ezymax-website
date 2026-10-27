@@ -76,9 +76,9 @@ const Set<String> _systemPaths = {'/boot', '/unlock', '/maintenance', '/update'}
 /// The tab (shell branch) each module's pages live in.
 int branchOf(String moduleKey) => switch (moduleKey) {
   'dashboard' => 0,
-  'accounts' => 1,
+  'trading' => 1,
   'wallet' => 2,
-  'portfolio' => 3,
+  'analytics' => 3,
   _ => 4,
 };
 
@@ -257,7 +257,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           StatefulShellBranch(
             routes: _moduleRoutes(
-              'accounts',
+              'trading',
               screens: _c1Screens,
               extra: [
                 GoRoute(
@@ -268,7 +268,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
           StatefulShellBranch(routes: _moduleRoutes('wallet', screens: _c1Screens)),
-          StatefulShellBranch(routes: _moduleRoutes('portfolio', screens: _c1Screens)),
+          StatefulShellBranch(routes: _moduleRoutes('analytics', screens: _c1Screens)),
           StatefulShellBranch(
             routes: [
               GoRoute(path: '/more', pageBuilder: (c, s) => _tab(const MoreScreen(), s)),
