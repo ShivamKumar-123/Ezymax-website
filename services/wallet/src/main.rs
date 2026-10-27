@@ -65,6 +65,8 @@ async fn main() -> anyhow::Result<()> {
     if cfg.workers {
         watcher::spawn(st.clone());
         notifier::spawn(st.clone());
+        // invoices OxaPay will never call us about again (ops::oxapay::reconcile)
+        ops::oxapay::spawn(st.clone());
     }
     let listener = tokio::net::TcpListener::bind(&cfg.bind).await?;
     tracing::info!(bind = %cfg.bind, workers = cfg.workers, "http listening");

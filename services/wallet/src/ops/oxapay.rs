@@ -82,6 +82,28 @@ struct Tx {
     amount: Value,
 }
 
+/// What the payment's transactions actually carried, in `want` (the invoice's own currency).
+///
+/// OxaPay publishes no total-received field and no underpaid flag, so this is summed from `txs[]`. Only
+/// transactions in the invoice's currency count: `mixed_payment` can bring a second coin, and adding two
+/// currencies together would be arithmetic on unlike things. `None` when nothing could be totalled - the caller
+/// then keeps to the invoice amount rather than guessing downwards.
+fn received(txs: &[Tx], want: &str) -> Option<D> {
+    let mut total = D::ZERO;
+    let mut any = false;
+    for t in txs {
+        let same = t.currency.as_deref().map(|c| c.eq_ignore_ascii_case(want)).unwrap_or(false);
+        if !same {
+            continue;
+        }
+        if let Some(v) = num_text(&t.amount).and_then(|n| n.parse::<D>().ok()) {
+            total += v;
+            any = true;
+        }
+    }
+    any.then_some(total)
+}
+
 /// OxaPay sends `track_id` as a number in some payloads and a string in others.
 fn id_text(v: &Value) -> Option<String> {
     match v {
@@ -263,8 +285,10 @@ pub async fn create(st: &AppState, ctx: &Ctx, n: NewInvoice) -> ApiResult<Value>
         "amount": s(amount),
         "currency": "USD",
         "lifetime": cfg.oxapay_lifetime_minutes,
-        // no partial payments: `Paid` then means the full amount arrived, and we can credit what we asked for
-        "under_paid_coverage": 0,
+        // A percentage (OxaPay: 0-60, "the maximum acceptable difference between the requested and paid
+        // amount"). At 0 nobody who pays the amount we asked for ever settles, because OxaPay's commission
+        // comes out of what they send. `settle` credits what actually arrived, so this covers fees only.
+        "under_paid_coverage": s(cfg.oxapay_under_paid_pct),
         "fee_paid_by_payer": if cfg.oxapay_fee_paid_by_payer { 1 } else { 0 },
         "to_currency": "USDT",
         "callback_url": format!("{origin}/api/wallet/oxapay/callback"),
@@ -444,9 +468,14 @@ async fn settle(st: &AppState, id: i64, track: &str, p: Payment, callback_status
     let (t, user_id) = (cur.get::<i64, _>("tenant_id"), cur.get::<i64, _>("user_id"));
     let amount: D = cur.get("amount");
     let order_id: String = cur.get("order_id");
-    // credited 1:1 against the USD we asked OxaPay for. `under_paid_coverage: 0` on the invoice means a paid
-    // invoice is a fully paid one, so there is no second amount to reconcile against.
-    let credit = crate::money::floor_dp(amount, WALLET_DP);
+    // An invoice may now settle a little short of what it asked for (`under_paid_coverage`), so a paid invoice
+    // is no longer necessarily a fully paid one and the request is no longer a safe figure to credit. Credit the
+    // smaller of what was asked and what the transactions carried: an overpayment still credits the invoice (the
+    // surplus is OxaPay's affair, not the ledger's), and a shortfall credits the money that actually arrived.
+    // With nothing to total, the invoice amount stands - OxaPay called it paid, and inventing a lower number
+    // from a payload we could not read would short the client.
+    let got = received(&p.txs, "USDT");
+    let credit = crate::money::floor_dp(got.map_or(amount, |r| r.min(amount)), WALLET_DP);
     let key = format!("oxapay:deposit:{t}:{track}");
     let posted = ledger::post(
         &mut tx,
@@ -513,6 +542,75 @@ async fn settle(st: &AppState, id: i64, track: &str, p: Payment, callback_status
 
 /// Re-reads an invoice from OxaPay and applies whatever it says. Used by the client's "I have paid" poll and
 /// by staff, so a lost callback never leaves money unbooked.
+/// How long an invoice may sit unchanged before the reconciler asks OxaPay about it again.
+const RECONCILE_AFTER_MINS: i64 = 5;
+
+/// How many invoices one pass re-reads. OxaPay's REST is rate limited and this is background work.
+const RECONCILE_BATCH: i64 = 20;
+
+/// Re-reads invoices that saw money but never settled, and ones still open past their expiry.
+///
+/// OxaPay calls the webhook when an invoice becomes paid. An invoice that does not become paid is therefore
+/// waited on by nobody: no callback is coming, and `sweep` only ever expired `new` and `waiting`, so one that
+/// reached `paying` - money seen, not settled - was looked at by nothing at all. Invoice 24 on 27 October sat
+/// there from 05:45 until a person went looking for it.
+///
+/// This asks OxaPay for the authoritative payment and hands it to `settle`, which credits only on a paid
+/// answer, so a missed, rejected or never-sent callback heals itself. It books nothing on its own.
+pub async fn reconcile(st: &AppState) -> ApiResult<usize> {
+    if !st.cfg.oxapay_enabled() {
+        return Ok(0);
+    }
+    // `paying` at any age, and anything still open well past its expiry: a late payment settles an invoice the
+    // client gave up on, and we would rather find it than let it sit.
+    let rows = sqlx::query(
+        "SELECT id, track_id FROM oxapay_invoices
+         WHERE track_id IS NOT NULL
+           AND (status = 'paying' OR (status IN ('new', 'waiting') AND expires_at IS NOT NULL AND expires_at < now()))
+           AND updated_at < now() - make_interval(mins => $1::int)
+           AND created_at > now() - interval '7 days'
+         ORDER BY updated_at
+         LIMIT $2",
+    )
+    .bind(RECONCILE_AFTER_MINS as i32)
+    .bind(RECONCILE_BATCH)
+    .fetch_all(&st.pool)
+    .await?;
+    let mut seen = 0;
+    for r in &rows {
+        let (id, track) = (r.get::<i64, _>("id"), r.get::<String, _>("track_id"));
+        match fetch(st, &track).await {
+            Ok(p) => {
+                if let Err(e) = settle(st, id, &track, p, None).await {
+                    tracing::warn!(invoice = id, track, error = %e, "oxapay reconcile could not settle");
+                } else {
+                    seen += 1;
+                }
+            }
+            // the provider being unreachable is not this invoice's fault: leave it for the next pass
+            Err(e) => tracing::warn!(invoice = id, track, error = %e, "oxapay reconcile could not read the payment"),
+        }
+    }
+    if seen > 0 {
+        tracing::info!(count = seen, "oxapay invoices reconciled");
+    }
+    Ok(seen)
+}
+
+/// The reconciler's own loop, started with the other workers (main.rs).
+pub fn spawn(st: AppState) {
+    tokio::spawn(async move {
+        let mut t = tokio::time::interval(Duration::from_secs(st.cfg.scan_secs.max(30)));
+        t.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+        loop {
+            t.tick().await;
+            if let Err(e) = reconcile(&st).await {
+                tracing::error!(error = %e, "oxapay reconcile pass failed");
+            }
+        }
+    });
+}
+
 pub async fn refresh(st: &AppState, id: i64) -> ApiResult<()> {
     if !st.cfg.oxapay_enabled() {
         return Ok(());
