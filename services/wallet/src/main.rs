@@ -8,7 +8,7 @@ use wallet::config::Config;
 use wallet::engine::HttpEngine;
 use wallet::state::{AppState, Tenants};
 use wallet::users::GatewayUsers;
-use wallet::{api, db, ledger, notifier, settings, watcher};
+use wallet::{api, db, ledger, notifier, ops, settings, watcher};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
