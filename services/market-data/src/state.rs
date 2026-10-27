@@ -141,6 +141,12 @@ impl Market {
         self.quotes.read().unwrap().get(symbol).copied()
     }
 
+    /// Provider markets that should be streaming but are not (refused or dropped). The symbols they carry have no
+    /// live price until one comes back, so the snapshot sweep covers them meanwhile (backfill.rs).
+    pub fn markets_missing(&self) -> Vec<String> {
+        self.stats.lock().unwrap().missing()
+    }
+
     /// Is `symbol` subscribed at the provider right now?
     pub fn is_streaming(&self, symbol: &str) -> bool {
         self.streaming.read().unwrap().contains(symbol)

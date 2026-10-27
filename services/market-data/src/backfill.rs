@@ -257,16 +257,35 @@ async fn snapshot(pv: &Provider, mk: &Arc<Market>, symbols: &[String], prio: Pri
     Ok(n)
 }
 
-/// Every `every` seconds: a delayed price for every catalogue symbol that is not streamed (background priority).
+/// How often the sweep runs while a provider market is off the air. The normal interval is a background refresh
+/// for symbols nobody watches; as the only source of price for a market someone is trading it would be useless.
+const DOWN_SWEEP_SECS: u64 = 15;
+
+/// Every `every` seconds: a delayed price for every catalogue symbol that is not streamed (background priority) -
+/// and, while a provider market is off the air, for the symbols that market streams as well.
+///
+/// A streamed symbol is skipped here because it already has a live price, which holds until the stream itself is
+/// what broke. On 27 October the `common` connection was refused for 45 minutes and every forex and metal price
+/// stood still for the whole episode, because the symbols with the most demand on them were the ones this filter
+/// excluded. The quotes still come from Infoway, through the same rate gate at background priority, so they cannot
+/// crowd out a chart someone is waiting on; the refusal counts open WebSocket connections, not requests, so REST
+/// keeps working throughout.
 async fn snapshot_sweep(mk: Arc<Market>, every: u64) {
     // let the startup backfill of the core instruments go first
     tokio::time::sleep(std::time::Duration::from_secs(30)).await;
     loop {
-        let todo: Vec<String> = mk.cat.list.iter().filter(|i| !i.is_core() && !mk.is_streaming(&i.symbol)).map(|i| i.symbol.clone()).collect();
+        let missing = mk.markets_missing();
+        let todo: Vec<String> = mk
+            .cat
+            .list
+            .iter()
+            .filter(|i| if mk.is_streaming(&i.symbol) { missing.iter().any(|m| m == &i.provider.market) } else { !i.is_core() })
+            .map(|i| i.symbol.clone())
+            .collect();
         if !todo.is_empty() {
             mk.request_history(HistoryJob::Snapshot { symbols: todo });
         }
-        tokio::time::sleep(std::time::Duration::from_secs(every)).await;
+        tokio::time::sleep(std::time::Duration::from_secs(if missing.is_empty() { every } else { DOWN_SWEEP_SECS })).await;
     }
 }
 
