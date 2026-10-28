@@ -51,6 +51,10 @@ const payments = {
   "card.qrCrypto": "Scan with your wallet app",
   "card.instructions": "Instructions from the broker",
   "card.copy": "Copy {label}",
+  // The account details stay hidden until the client has said what they are paying, so nobody pays less than the
+  // minimum and then waits for a credit that can't come.
+  "card.locked": "Enter {min} or more",
+  "card.lockedCaption": "The payment details appear once you enter the amount below",
 
   // Request form
   "form.title": "Send your deposit request",

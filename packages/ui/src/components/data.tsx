@@ -70,18 +70,23 @@ export function KpiCard({
 /* Copy                                                                */
 /* ------------------------------------------------------------------ */
 
-export function CopyButton({ value, label, className }: { value: string; label?: string; className?: string }) {
+export function CopyButton({ value, label, className, disabled }: { value: string; label?: string; className?: string; disabled?: boolean }) {
   const [done, setDone] = React.useState(false);
   return (
     <button
       type="button"
+      disabled={disabled}
       onClick={() => {
         navigator.clipboard?.writeText(value).catch(() => {});
         setDone(true);
         toast.success(label ? `${label} copied` : "Copied to clipboard");
         setTimeout(() => setDone(false), 1400);
       }}
-      className={cn("inline-grid size-6 place-items-center rounded-md text-fg-3 transition-colors hover:bg-surface-3 hover:text-fg", className)}
+      className={cn(
+        "inline-grid size-6 place-items-center rounded-md text-fg-3 transition-colors",
+        disabled ? "cursor-not-allowed opacity-40" : "hover:bg-surface-3 hover:text-fg",
+        className,
+      )}
       aria-label="Copy"
     >
       {done ? <Check className="size-3.5 text-up" /> : <Copy className="size-3.5" />}

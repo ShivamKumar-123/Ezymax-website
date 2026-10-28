@@ -13,7 +13,7 @@ import { useT } from "@ezymex/i18n/react";
 import { WalletError, fmt, requestId } from "../api";
 import { PayError, hasMetaMask, isMobile } from "../pay";
 import { InlineError, cleanAmount } from "../ui";
-import { cmpDec, createRequest, money, requestError, uploadProof, usdt2, type ManualDeposit, type PaymentMethod } from "./api";
+import { checkAmount, createRequest, money, requestError, uploadProof, usdt2, type ManualDeposit, type PaymentMethod } from "./api";
 import { METAMASK_DOWNLOAD, metamaskDappLink, payEvm } from "./metamask";
 
 /** Amount field: like the wallet's cleanAmount but up to 6 decimals (crypto). */
@@ -65,11 +65,11 @@ function MetaMaskBlock({ m, amount, valid, busy, onPay }: { m: PaymentMethod; am
   );
 }
 
-export function RequestForm({ m, maxPending, onSent }: { m: PaymentMethod; maxPending: number; onSent: (d: ManualDeposit) => void }) {
+/** The amount lives in the panel above, because the account details decide whether to show themselves from it. */
+export function RequestForm({ m, maxPending, onSent, amount, setAmount }: { m: PaymentMethod; maxPending: number; onSent: (d: ManualDeposit) => void; amount: string; setAmount: (v: string) => void }) {
   const t = useT();
   const crypto = m.kind === "crypto";
   const dp = crypto ? 6 : 2;
-  const [amount, setAmount] = React.useState("");
   const [reference, setReference] = React.useState("");
   const [note, setNote] = React.useState("");
   const [proof, setProof] = React.useState<{ id: string; url: string; name: string } | null>(null);
@@ -91,13 +91,9 @@ export function RequestForm({ m, maxPending, onSent }: { m: PaymentMethod; maxPe
     attempt.current = null;
   }, [m.id]);
 
-  const amt = amount.trim();
+  const { amt, shaped, belowMin, aboveMax, ok: amountOk } = checkAmount(amount, m);
   const rate = Number(m.rate);
   const converted = amt && Number(amt) > 0 && rate > 0 ? usdt2(String(Number(amt) / rate)) : null;
-  const shaped = /^\d{1,12}(\.\d{1,6})?$/.test(amt) && Number(amt) > 0;
-  const belowMin = shaped && cmpDec(amt, m.min_amount) < 0;
-  const aboveMax = shaped && !!m.max_amount && cmpDec(amt, m.max_amount) > 0;
-  const amountOk = shaped && !belowMin && !aboveMax;
   const amountError = !touched || !amt ? undefined : !shaped ? t("payments.form.invalidAmount") : belowMin ? t("payments.form.min", { amount: money(m.min_amount, m.currency) }) : aboveMax ? t("payments.form.max", { amount: money(m.max_amount, m.currency) }) : undefined;
   const evm = crypto ? m.evm : null;
 

@@ -108,6 +108,19 @@ export function cmpDec(a: string, b: string): number {
   return x === y ? 0 : x < y ? -1 : 1;
 }
 
+/**
+ * What the client typed in "Amount paid", judged against the method's own limits. The form needs the three reasons
+ * apart to word its error; the panel needs only `ok`, to decide whether to show the account details at all. One
+ * definition so the figure that unlocks the QR is the same figure the Send button accepts.
+ */
+export function checkAmount(amount: string, m: PaymentMethod) {
+  const amt = amount.trim();
+  const shaped = /^\d{1,12}(\.\d{1,6})?$/.test(amt) && Number(amt) > 0;
+  const belowMin = shaped && cmpDec(amt, m.min_amount) < 0;
+  const aboveMax = shaped && !!m.max_amount && cmpDec(amt, m.max_amount) > 0;
+  return { amt, shaped, belowMin, aboveMax, ok: shaped && !belowMin && !aboveMax };
+}
+
 /** "200000" INR → "200,000.00 INR" (display only). Crypto amounts keep their decimals. */
 export function money(v: string | null | undefined, currency: string) {
   const fiat = /^[A-Z]{3}$/.test(currency) && currency !== "BTC" && currency !== "ETH" && currency !== "BNB";

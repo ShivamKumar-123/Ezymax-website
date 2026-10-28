@@ -7,7 +7,7 @@ import * as React from "react";
 import { ArrowUpRight, Check, Landmark, Wallet, Zap } from "lucide-react";
 import { Card, CardHeader, CoinIcon, EmptyState, cn } from "@/components/kit";
 import { useT } from "@ezymex/i18n/react";
-import type { ManualDeposit, ManualKind, PaymentMethod } from "./api";
+import { checkAmount, type ManualDeposit, type ManualKind, type PaymentMethod } from "./api";
 import { MethodDetails, MethodPicker } from "./details";
 import { RequestForm, RequestSent } from "./form";
 import { RequestsList } from "./requests";
@@ -95,6 +95,9 @@ export function ManualDepositPanel({ kind, methods, maxPending, initialMethod }:
   const [id, setId] = React.useState<number | null>(() => list.find((m) => m.id === initialMethod)?.id ?? list[0]?.id ?? null);
   const [sent, setSent] = React.useState<ManualDeposit | null>(null);
   const [reloadKey, setReloadKey] = React.useState(0);
+  // What the client says they are paying. It belongs here rather than in the form because the account details above
+  // the form stay hidden until it is an amount we can accept (RequestForm clears it when the method changes).
+  const [amount, setAmount] = React.useState("");
   React.useEffect(() => {
     if (!list.some((m) => m.id === id)) setId(list[0]?.id ?? null);
   }, [list, id]);
@@ -111,13 +114,16 @@ export function ManualDepositPanel({ kind, methods, maxPending, initialMethod }:
   return (
     <div className="space-y-4">
       <MethodPicker methods={list} value={m.id} onChange={setId} />
-      <MethodDetails m={m} />
+      {/* Once the request is sent the client has already paid, so there is nothing left to hold back. */}
+      <MethodDetails m={m} locked={!sent && !checkAmount(amount, m).ok} />
       {sent ? (
         <RequestSent d={sent} onAnother={() => setSent(null)} onList={toList} />
       ) : (
         <RequestForm
           m={m}
           maxPending={maxPending}
+          amount={amount}
+          setAmount={setAmount}
           onSent={(d) => {
             setSent(d);
             setReloadKey((k) => k + 1);
