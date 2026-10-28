@@ -333,7 +333,18 @@ class _ManualDepositPanelState extends State<ManualDepositPanel> {
         if (_sent != null)
           ManualRequestSent(d: _sent!, onAnother: () => setState(() => _sent = null), onList: _toRequests)
         else
-          ManualRequestForm(key: ValueKey('manual-form-${m.id}'), method: m, maxPending: widget.maxPending, amount: _amount, onSent: (d) => setState(() => _sent = d)),
+          ManualRequestForm(
+            key: ValueKey('manual-form-${m.id}'),
+            method: m,
+            maxPending: widget.maxPending,
+            amount: _amount,
+            onSent: (d) {
+              // the form used to own this and started fresh each time it was rebuilt; now that the panel holds it,
+              // the next request has to be given its empty field back
+              _amount.clear();
+              setState(() => _sent = d);
+            },
+          ),
         const SizedBox(height: kWalletGap),
         ManualRequestsList(key: _requests),
       ],
