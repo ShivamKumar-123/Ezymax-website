@@ -494,19 +494,23 @@ void main() {
       expect(find.text('50200071234567'), findsOneWidget);
       expect(find.text('HDFC0001234'), findsOneWidget);
       expect(find.text('ezymex@hdfcbank'), findsOneWidget);
-      expect(find.text('1 USDT = 88.00 INR'), findsOneWidget);
-      expect(find.text('Scan with any UPI app'), findsOneWidget);
-      final qr = tester.widget<KQrCode>(find.byType(KQrCode));
-      expect(qr.data, 'upi://pay?pa=ezymex@hdfcbank&pn=Ezymex%20Markets%20Pvt%20Ltd&cu=INR');
       expect(find.text('Pay from a bank account or UPI app in your own name. Third-party payments are returned.'), findsOneWidget);
-      // copy the UPI ID
+      // what you would pay to is held back until the amount is known: the QR is blurred behind the minimum and the
+      // copy button does nothing
       final copy = find.byWidgetPredicate((w) => w is KIconButton && w.semanticLabel == 'Copy UPI ID');
-      await _tap(tester, copy);
-      expect(find.text('Copied to clipboard'), findsWidgets);
+      expect(find.text('The payment details appear once you enter the amount below'), findsOneWidget);
+      expect(find.text('Enter 500.00 INR or more'), findsOneWidget);
+      expect(tester.widget<KIconButton>(copy).onPressed, isNull);
       // the form: ≈ USDT at 88 INR per USDT
       expect(find.text("You'll receive ≈ 0.00 USDT"), findsOneWidget);
       await _enter(tester, 'manual-amount', '5000');
       expect(find.text("You'll receive ≈ 56.818181 USDT"), findsOneWidget);
+      // …and an acceptable amount reveals them
+      expect(find.text('Scan with any UPI app'), findsOneWidget);
+      final qr = tester.widget<KQrCode>(find.byType(KQrCode));
+      expect(qr.data, 'upi://pay?pa=ezymex@hdfcbank&pn=Ezymex%20Markets%20Pvt%20Ltd&cu=INR');
+      await _tap(tester, copy);
+      expect(find.text('Copied to clipboard'), findsWidgets);
       expect(find.text('At 1 USDT = 88.00 INR. The final amount is confirmed by the broker.'), findsOneWidget);
       await _enter(tester, 'manual-reference', ' 412398765099 ');
       await _enter(tester, 'manual-note', 'From my own account');
@@ -542,7 +546,9 @@ void main() {
       expect(previewWalletReads, contains('wallet/manual/media/$id'));
       expect(find.byKey(const ValueKey('manual-qr-image')), findsOneWidget);
       expect(find.byType(KQrCode), findsNothing);
-      // an uploaded QR of a bank method reads "Scan to pay"
+      // an uploaded QR of a bank method reads "Scan to pay", once the amount has unlocked it
+      expect(find.text('The payment details appear once you enter the amount below'), findsOneWidget);
+      await _enter(tester, 'manual-amount', '5000');
       expect(find.text('Scan to pay'), findsOneWidget);
       // a bank account without UPI and without a QR shows none
       await _tap(tester, find.byKey(const ValueKey('manual-method-2')));
@@ -632,15 +638,16 @@ void main() {
       expect(find.text('Send to this address'), findsOneWidget);
       expect(find.text('TXYZ7r8Lw3q2pHn9KbT1cV4mZs6UeJfRgA'), findsOneWidget);
       expect(tester.widget<KQrCode>(find.byType(KQrCode)).data, 'TXYZ7r8Lw3q2pHn9KbT1cV4mZs6UeJfRgA');
-      expect(find.text('Scan with your wallet app'), findsOneWidget);
+      // a crypto address is held back the same way a bank account is
+      expect(find.text('The payment details appear once you enter the amount below'), findsOneWidget);
       expect(find.text('Send only USDT on the TRC20 network to this address. Other tokens or networks can be lost.'), findsOneWidget);
       expect(find.text('Transaction hash / ID'), findsOneWidget);
       // Bitcoin
       await _tap(tester, find.byKey(const ValueKey('manual-method-5')));
       expect(find.text('bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh'), findsOneWidget);
-      expect(find.text('1 USDT = 0.0000158 BTC'), findsOneWidget);
       expect(find.text('Min 0.0005 BTC'), findsOneWidget);
       await _enter(tester, 'manual-amount', '0.01');
+      expect(find.text('Scan with your wallet app'), findsOneWidget);
       expect(find.text("You'll receive ≈ 632.911392 USDT"), findsOneWidget);
       await _enter(tester, 'manual-reference', 'ab' * 32);
       await _tap(tester, find.byKey(ManualRequestForm.submitKey));
