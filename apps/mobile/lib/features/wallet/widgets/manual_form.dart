@@ -19,10 +19,13 @@ import 'wallet_ui.dart';
 
 /// The request form of one method (web RequestForm). Keyed by the method, so another method starts empty.
 class ManualRequestForm extends ConsumerStatefulWidget {
-  const ManualRequestForm({super.key, required this.method, required this.maxPending, required this.onSent});
+  const ManualRequestForm({super.key, required this.method, required this.maxPending, required this.onSent, required this.amount});
   final ManualMethod method;
   final int maxPending;
   final ValueChanged<ManualDeposit> onSent;
+
+  /// Owned by the panel above, which keeps the account details hidden until this holds an amount the method accepts.
+  final TextEditingController amount;
 
   /// The submit button (tests).
   static const submitKey = ValueKey('manual-submit');
@@ -32,7 +35,7 @@ class ManualRequestForm extends ConsumerStatefulWidget {
 }
 
 class _ManualRequestFormState extends ConsumerState<ManualRequestForm> {
-  final _amount = TextEditingController();
+  TextEditingController get _amount => widget.amount;
   final _reference = TextEditingController();
   final _note = TextEditingController();
   final _amountFocus = FocusNode();
@@ -66,7 +69,7 @@ class _ManualRequestFormState extends ConsumerState<ManualRequestForm> {
   @override
   void dispose() {
     _upload?.cancel();
-    _amount.dispose();
+    // _amount belongs to the panel, which disposes it
     _reference.dispose();
     _note.dispose();
     _amountFocus.dispose();

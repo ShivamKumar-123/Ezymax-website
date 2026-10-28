@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -320,5 +322,25 @@ class KInfoRow extends StatelessWidget {
       ),
     );
     return onTap == null ? row : KPressable(onTap: onTap, pressedScale: 1, child: row);
+  }
+}
+
+/// A value held back until the client has earned the right to read it: the widget keeps its size and place, so
+/// nothing shifts when it clears. Used for the broker's payment details before the deposit amount is known.
+class KBlurred extends StatelessWidget {
+  const KBlurred({super.key, required this.blurred, required this.child, this.sigma = 5});
+  final bool blurred;
+  final Widget child;
+  final double sigma;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!blurred) return child;
+    return ExcludeSemantics(
+      child: ImageFiltered(
+        imageFilter: ui.ImageFilter.blur(sigmaX: sigma, sigmaY: sigma, tileMode: TileMode.decal),
+        child: child,
+      ),
+    );
   }
 }

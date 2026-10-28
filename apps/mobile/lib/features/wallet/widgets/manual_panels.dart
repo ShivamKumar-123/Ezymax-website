@@ -259,20 +259,47 @@ class _ManualDepositPanelState extends State<ManualDepositPanel> {
   ManualDeposit? _sent;
   final GlobalKey _requests = GlobalKey();
 
+  /// What the client says they are paying. It lives here rather than in the form because the details card above the
+  /// form keeps the QR and the payable identifiers hidden until this is an amount the method accepts.
+  final _amount = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _amount.addListener(_onAmount);
+  }
+
+  @override
+  void dispose() {
+    _amount.removeListener(_onAmount);
+    _amount.dispose();
+    super.dispose();
+  }
+
+  void _onAmount() {
+    if (mounted) setState(() {});
+  }
+
   int? _valid(int? id) => id != null && widget.methods.any((m) => m.id == id) ? id : null;
 
   @override
   void didUpdateWidget(ManualDepositPanel old) {
     super.didUpdateWidget(old);
-    if (old.kind != widget.kind) _sent = null;
+    if (old.kind != widget.kind) {
+      _sent = null;
+      _amount.clear();
+    }
     if (_valid(_id) == null) {
       _id = _valid(widget.initialMethod) ?? widget.methods.firstOrNull?.id;
       _sent = null;
+      _amount.clear();
     }
   }
 
   void _pick(int id) {
     if (id == _id) return;
+    // another method has its own limits, so what was typed for the last one cannot unlock this one
+    _amount.clear();
     setState(() {
       _id = id;
       _sent = null;
@@ -300,12 +327,13 @@ class _ManualDepositPanelState extends State<ManualDepositPanel> {
           ManualMethodPicker(methods: widget.methods, value: m.id, onChanged: _pick),
           const SizedBox(height: kWalletGap),
         ],
-        ManualMethodDetails(m: m),
+        // Once the request is sent the client has already paid, so there is nothing left to hold back.
+        ManualMethodDetails(m: m, locked: _sent == null && manualAmountIssue(m, _amount.text) != null),
         const SizedBox(height: kWalletGap),
         if (_sent != null)
           ManualRequestSent(d: _sent!, onAnother: () => setState(() => _sent = null), onList: _toRequests)
         else
-          ManualRequestForm(key: ValueKey('manual-form-${m.id}'), method: m, maxPending: widget.maxPending, onSent: (d) => setState(() => _sent = d)),
+          ManualRequestForm(key: ValueKey('manual-form-${m.id}'), method: m, maxPending: widget.maxPending, amount: _amount, onSent: (d) => setState(() => _sent = d)),
         const SizedBox(height: kWalletGap),
         ManualRequestsList(key: _requests),
       ],
@@ -357,8 +385,12 @@ class ManualMethodPicker extends StatelessWidget {
 
 /// The broker's payment details for one method (web MethodDetails).
 class ManualMethodDetails extends StatelessWidget {
-  const ManualMethodDetails({super.key, required this.m});
+  const ManualMethodDetails({super.key, required this.m, this.locked = false});
   final ManualMethod m;
+
+  /// Hides what you would pay to - the QR and every payable identifier - until the amount is known. Who you would be
+  /// paying (bank, branch, network, token) stays readable, so the card still says where the money is going.
+  final bool locked;
 
   @override
   Widget build(BuildContext context) {
@@ -379,17 +411,17 @@ class ManualMethodDetails extends StatelessWidget {
             ),
           ],
         ),
-        ?_detail(t('payments.card.address'), d.address, mono: true),
-        ?_detail(t('payments.card.memo'), d.memo, mono: true),
+        ?_detail(t('payments.card.address'), d.address, mono: true, lock: true),
+        ?_detail(t('payments.card.memo'), d.memo, mono: true, lock: true),
       ] else ...[
         ?_detail(t('payments.card.accountName'), d.accountName),
         ?_detail(t('payments.card.bankName'), d.bankName),
-        ?_detail(t('payments.card.accountNumber'), d.accountNumber, mono: true),
-        ?_detail(t('payments.card.ifsc'), d.ifsc, mono: true),
-        ?_detail(t('payments.card.swift'), d.swift, mono: true),
-        ?_detail(t('payments.card.iban'), d.iban, mono: true),
+        ?_detail(t('payments.card.accountNumber'), d.accountNumber, mono: true, lock: true),
+        ?_detail(t('payments.card.ifsc'), d.ifsc, mono: true, lock: true),
+        ?_detail(t('payments.card.swift'), d.swift, mono: true, lock: true),
+        ?_detail(t('payments.card.iban'), d.iban, mono: true, lock: true),
         ?_detail(t('payments.card.branch'), d.branch),
-        ?_detail(t('payments.card.upiId'), d.upiId, mono: true),
+        ?_detail(t('payments.card.upiId'), d.upiId, mono: true, lock: true),
       ],
       // No rate here: the client is told what the amount converts to, on the form where they type it.
       _InfoTile(label: t('payments.card.limits'), value: manualLimits(m, t)),
@@ -429,7 +461,7 @@ class ManualMethodDetails extends StatelessWidget {
             subtitle: m.name,
             icon: crypto ? LucideIcons.wallet : LucideIcons.landmark,
           ),
-          if (manualHasQr(m)) ...[const SizedBox(height: 18), ManualQr(m: m)],
+          if (manualHasQr(m)) ...[const SizedBox(height: 18), ManualQr(m: m, locked: locked)],
           const SizedBox(height: 16),
           for (var i = 0; i < rows.length; i++) ...[if (i > 0) const SizedBox(height: 8), rows[i]],
         ],
@@ -437,14 +469,18 @@ class ManualMethodDetails extends StatelessWidget {
     );
   }
 
-  Widget? _detail(String label, String? value, {bool mono = false}) => value == null ? null : ManualDetailRow(label: label, value: value, mono: mono);
+  Widget? _detail(String label, String? value, {bool mono = false, bool lock = false}) =>
+      value == null ? null : ManualDetailRow(label: label, value: value, mono: mono, locked: lock && locked);
 }
 
 /// One payment detail with its copy button (web DetailRow).
 class ManualDetailRow extends StatelessWidget {
-  const ManualDetailRow({super.key, required this.label, required this.value, this.mono = false});
+  const ManualDetailRow({super.key, required this.label, required this.value, this.mono = false, this.locked = false});
   final String label, value;
   final bool mono;
+
+  /// Blurred and uncopyable: the row keeps its height, so the card does not jump when the amount unlocks it.
+  final bool locked;
 
   @override
   Widget build(BuildContext context) {
@@ -463,10 +499,13 @@ class ManualDetailRow extends StatelessWidget {
                   style: context.text.caption.copyWith(color: k.fg3, letterSpacing: 0.8, fontWeight: FontWeight.w500, fontSize: 11),
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  value,
-                  textDirection: TextDirection.ltr,
-                  style: mono ? context.text.mono(12.5) : context.text.label.copyWith(fontSize: 13.5, fontWeight: FontWeight.w500),
+                KBlurred(
+                  blurred: locked,
+                  child: Text(
+                    value,
+                    textDirection: TextDirection.ltr,
+                    style: mono ? context.text.mono(12.5) : context.text.label.copyWith(fontSize: 13.5, fontWeight: FontWeight.w500),
+                  ),
                 ),
               ],
             ),
@@ -474,8 +513,9 @@ class ManualDetailRow extends StatelessWidget {
           KIconButton(
             icon: LucideIcons.copy,
             size: 32,
+            color: locked ? k.fg3.withValues(alpha: 0.4) : null,
             semanticLabel: t('payments.card.copy', {'label': label}),
-            onPressed: () => kCopy(context, value),
+            onPressed: locked ? null : () => kCopy(context, value),
           ),
         ],
       ),
@@ -517,22 +557,55 @@ class _InfoTile extends StatelessWidget {
 /// The QR to scan (web MethodQr): the broker's uploaded image (loaded with the session), else one generated from the
 /// UPI ID or the address; with what to scan it with under it.
 class ManualQr extends ConsumerWidget {
-  const ManualQr({super.key, required this.m, this.size = 168});
+  const ManualQr({super.key, required this.m, this.size = 168, this.locked = false});
   final ManualMethod m;
   final double size;
+
+  /// Blurred behind a badge naming the minimum, so nobody scans and pays before saying what they are paying.
+  final bool locked;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.t;
     final k = context.k;
     final payload = manualQrData(m);
-    final caption = !m.bank
+    final caption = locked
+        ? t('payments.card.lockedCaption')
+        : !m.bank
         ? t('payments.card.qrCrypto')
         : (m.details.upiId != null && m.qrUrl == null ? t('payments.card.qrUpi') : t('payments.card.qrBank'));
     Widget withCaption(Widget code) => Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Center(child: code),
+        Center(
+          child: locked
+              ? Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    KBlurred(blurred: true, sigma: 7, child: code),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: k.surface.withValues(alpha: 0.95),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: k.line),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(LucideIcons.lock, size: 14, color: k.fg3),
+                          const SizedBox(width: 6),
+                          Text(
+                            t('payments.card.locked', {'min': manualLtr(t, manualMoney(m.minAmount, m.currency))}),
+                            style: context.text.label.copyWith(fontSize: 11.5, fontWeight: FontWeight.w500, color: k.fg2),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                )
+              : code,
+        ),
         const SizedBox(height: 8),
         Text(
           caption,
