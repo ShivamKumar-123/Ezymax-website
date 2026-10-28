@@ -511,7 +511,7 @@ void main() {
       expect(qr.data, 'upi://pay?pa=ezymex@hdfcbank&pn=Ezymex%20Markets%20Pvt%20Ltd&cu=INR');
       await _tap(tester, copy);
       expect(find.text('Copied to clipboard'), findsWidgets);
-      expect(find.text('At 1 USDT = 88.00 INR. The final amount is confirmed by the broker.'), findsOneWidget);
+      expect(find.text('The final amount is confirmed by the broker.'), findsOneWidget);
       await _enter(tester, 'manual-reference', ' 412398765099 ');
       await _enter(tester, 'manual-note', 'From my own account');
       await _tap(tester, find.byKey(ManualRequestForm.submitKey));
