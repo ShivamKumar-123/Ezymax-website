@@ -219,6 +219,10 @@ const portfolio = {
   "export.nothingDesc": "Adjust your filters and try again.",
   "export.done": "{file} exported",
   "export.doneDesc": "{count} rows · times in GMT+3",
+  // The PDF's fonts cover Latin only; anything else is marked on the page and the CSV has the full text.
+  "export.pdfDropped": "Some characters are not in the PDF font — use CSV for the full text",
+  "export.pdf": "PDF",
+  "export.csv": "CSV",
   "st.preparing": "Preparing your statement…",
   "st.downloadFailed": "Couldn't download the statement",
 };

@@ -1,6 +1,7 @@
 import { toast } from "sonner";
 import { tr } from "@ezymex/i18n/react";
 import { intlTag } from "@ezymex/i18n/locales";
+import { downloadTablePdf } from "@ezymex/ui/table-pdf";
 
 /** Builds a CSV from plain rows and triggers a browser download. */
 export function downloadCsv(name: string, rows: Record<string, string | number>[]) {
@@ -25,6 +26,30 @@ export function downloadCsv(name: string, rows: Record<string, string | number>[
     /* ignore — toast still confirms */
   }
   toast.success(tr("portfolio.export.done", { file: `${name}.csv` }), { description: tr("portfolio.export.doneDesc", { count: rows.length }) });
+}
+
+/**
+ * The same rows as a printable table, from the same keys the CSV uses for its header. Column names stay the
+ * snake_case the CSV already exports rather than becoming prose, so the two files line up.
+ *
+ * The format's fonts are Latin-1: a value in another script is counted and the last page says so. The CSV button
+ * next to this one has no such limit, which is the point of keeping both.
+ */
+export function downloadPdf(name: string, title: string, rows: Record<string, string | number>[], subtitle?: string) {
+  if (!rows.length) {
+    toast.error(tr("portfolio.export.nothing"), { description: tr("portfolio.export.nothingDesc") });
+    return;
+  }
+  const head = Object.keys(rows[0]!);
+  const { dropped } = downloadTablePdf(
+    name,
+    head,
+    rows.map((r) => head.map((h) => r[h] ?? "")),
+    { title, subtitle, footer: "Ezymex" },
+  );
+  toast.success(tr("portfolio.export.done", { file: `${name}.pdf` }), {
+    description: dropped > 0 ? tr("portfolio.export.pdfDropped") : tr("portfolio.export.doneDesc", { count: rows.length }),
+  });
 }
 
 /** "24 Sep 2026, 14:03" in server time (GMT+3). */

@@ -4,7 +4,7 @@ import * as React from "react";
 import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, BadgePercent, CandlestickChart, Coins, Download, Gift, Handshake, Moon, Receipt, Search, X } from "lucide-react";
 import { Button, Card, Chip, DataTable, Menu, Money, PageHeader, Reveal, Segmented, cn, type ChipTone, type Column } from "@/components/kit";
 import { LEDGER, LEDGER_TYPE_LABEL, LIVE_ACCOUNTS, PORTFOLIO_NOW, type LedgerEntry, type LedgerType } from "@ezymex/mock/portfolio-extra";
-import { downloadCsv, serverTime } from "@/components/portfolio/export";
+import { downloadCsv, downloadPdf, serverTime } from "@/components/portfolio/export";
 import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LiveLedgerPage } from "@/components/trading/portfolio";
 
@@ -106,23 +106,26 @@ function DemoLedgerPage() {
     },
   ];
 
+  // one shape for both files, so the CSV and the PDF never drift apart
+  const exportRows = () =>
+    rows.map((e) => ({ id: e.id, time: serverTime(e.time, true), account: e.login, type: LEDGER_TYPE_LABEL[e.type], reference: e.ref, description: e.note, amount: e.amount, balance: account === "all" ? e.total : e.balance }));
+  const exportName = `ezymex-ledger-${preset.toLowerCase()}`;
+  const exportSub = `${account === "all" ? "All accounts" : `#${account}`} · ${preset} · times in GMT+3`;
+
   return (
     <div className="pb-24">
       <PageHeader
         title="Ledger"
         subtitle="Every balance movement: funding, trade P&L, commissions, swaps, bonuses and IB payouts."
         actions={
-          <Button
-            variant="ember"
-            onClick={() =>
-              downloadCsv(
-                `ezymex-ledger-${preset.toLowerCase()}`,
-                rows.map((e) => ({ id: e.id, time: serverTime(e.time, true), account: e.login, type: LEDGER_TYPE_LABEL[e.type], reference: e.ref, description: e.note, amount: e.amount, balance: account === "all" ? e.total : e.balance })),
-              )
-            }
-          >
-            <Download /> Export CSV
-          </Button>
+          <>
+            <Button variant="surface" onClick={() => downloadPdf(exportName, "Ledger", exportRows(), exportSub)}>
+              <Download /> PDF
+            </Button>
+            <Button variant="ember" onClick={() => downloadCsv(exportName, exportRows())}>
+              <Download /> CSV
+            </Button>
+          </>
         }
       />
 

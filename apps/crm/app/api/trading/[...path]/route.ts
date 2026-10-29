@@ -6,6 +6,7 @@ import { tenantConfig } from "@/lib/tenant-config";
 import { Memo } from "@/lib/memo";
 import { wallet } from "@/lib/wallet";
 import { reportsFetch } from "@/lib/reports";
+import { buildTablePdf } from "@ezymex/ui/table-pdf";
 import { dealCommission, dealPremiumsUsd, isOptionTrade, matchesInstrument, optionTerms, usdFactorOf, type DealOption } from "@/components/trading/option-deal";
 
 // Client Area trading BFF. Browser -> /api/trading/<route> (same origin) -> trading engine /v1/…
@@ -518,38 +519,55 @@ async function exportCsv(req: NextRequest, user: GatewayUser, login: string) {
     if (batch.length < EXPORT_PAGE || seen >= (r.data.total ?? 0)) break;
   }
 
-  let csv: string;
+  // The table is built once from the deals and then written as whichever file was asked for, so the two formats
+  // can never disagree about what a client's own history says. `textCols` are the free-text ones: a CSV has to
+  // defuse a leading = + - @ before a spreadsheet reads it as a formula, a PDF has no such reader to protect.
+  let head: string[];
+  let table: (string | number | null | undefined)[][];
+  let textCols: ReadonlySet<number>;
   if (kind === "history") {
     // Ezymex FX Options deals: Volume = contracts, Price / Open price = premium per unit of the underlying (quote
     // currency); the option columns give the terms and the premiums in USD per contract
     const usdFactor = rows.some((d) => isOptionTrade(d as unknown as DealRow)) ? await accountUsdFactor(req, user, login) : 1;
-    const head = ["Time (UTC)", "Deal", "Position", "Order", "Symbol", "Type", "Direction", "Volume", "Price", "Open price", "Open time (UTC)", "Commission", "Swap", "Profit", "Reason", "Comment", "Instrument", "Underlying", "Call/Put", "Strike", "Expiry", "Quote currency", "Premium per contract (USD)", "Open premium per contract (USD)"];
-    csv = [
-      head.join(","),
-      ...rows.map((d) => {
-        const row = d as unknown as DealRow & { volume: number; price: number; openPrice: number | null; profit: number };
-        const isOpt = isOptionTrade(row);
-        const o = isOpt ? optionTerms(row.symbol, row.option) : null;
-        const prem = isOpt ? dealPremiumsUsd(row, usdFactor) : null;
-        const usd = (v: number | null | undefined) => (v === null || v === undefined ? "" : v.toFixed(2));
-        const opt = isOpt
-          ? ["Option", o?.underlying ?? "", o ? (o.right === "call" ? "Call" : "Put") : "", o?.strikeLabel ?? "", o?.expiry ?? "", o?.quoteCurrency ?? "", usd(prem?.own), row.entry === "in" ? "" : usd(prem?.open)]
-          : ["CFD", "", "", "", "", "", "", ""];
-        return [d.time, d.id, d.positionTicket, d.orderTicket, d.symbol, d.side, d.entry, d.volume, d.price, d.openPrice, d.openTime, d.commission, d.swap, d.profit, d.reason, cell(d.comment, true), ...opt]
-          .map((v, i) => (i === 15 ? v : cell(v)))
-          .join(",");
-      }),
-    ].join("\r\n");
+    head = ["Time (UTC)", "Deal", "Position", "Order", "Symbol", "Type", "Direction", "Volume", "Price", "Open price", "Open time (UTC)", "Commission", "Swap", "Profit", "Reason", "Comment", "Instrument", "Underlying", "Call/Put", "Strike", "Expiry", "Quote currency", "Premium per contract (USD)", "Open premium per contract (USD)"];
+    textCols = new Set([15]);
+    table = rows.map((d) => {
+      const row = d as unknown as DealRow & { volume: number; price: number; openPrice: number | null; profit: number };
+      const isOpt = isOptionTrade(row);
+      const o = isOpt ? optionTerms(row.symbol, row.option) : null;
+      const prem = isOpt ? dealPremiumsUsd(row, usdFactor) : null;
+      const usd = (v: number | null | undefined) => (v === null || v === undefined ? "" : v.toFixed(2));
+      const opt = isOpt
+        ? ["Option", o?.underlying ?? "", o ? (o.right === "call" ? "Call" : "Put") : "", o?.strikeLabel ?? "", o?.expiry ?? "", o?.quoteCurrency ?? "", usd(prem?.own), row.entry === "in" ? "" : usd(prem?.open)]
+        : ["CFD", "", "", "", "", "", "", ""];
+      return [d.time, d.id, d.positionTicket, d.orderTicket, d.symbol, d.side, d.entry, d.volume, d.price, d.openPrice, d.openTime, d.commission, d.swap, d.profit, d.reason, d.comment, ...opt] as (string | number | null | undefined)[];
+    });
   } else {
-    const head = ["Time (UTC)", "Transaction", "Type", "Sub-ledger", "Amount", "Currency", "Reference", "Note"];
-    csv = [head.join(","), ...rows.map((e) => [cell(e.at), cell(e.txn), cell(e.kind), cell(e.subLedger), cell(e.amount), cell(e.currency), cell(e.reference, true), cell(e.note, true)].join(","))].join("\r\n");
+    head = ["Time (UTC)", "Transaction", "Type", "Sub-ledger", "Amount", "Currency", "Reference", "Note"];
+    textCols = new Set([6, 7]);
+    table = rows.map((e) => [e.at, e.txn, e.kind, e.subLedger, e.amount, e.currency, e.reference, e.note] as (string | number | null | undefined)[]);
   }
 
   const span = [range.get("from"), range.get("to")].filter(Boolean).map((s) => s!.slice(0, 10)).join("_");
-  const name = `ezymex-${login}-${kind === "history" ? (inst === "option" ? "options" : inst === "cfd" ? "cfd-trades" : "trades") : "ledger"}${span ? `-${span}` : ""}.csv`;
+  const stem = `ezymex-${login}-${kind === "history" ? (inst === "option" ? "options" : inst === "cfd" ? "cfd-trades" : "trades") : "ledger"}${span ? `-${span}` : ""}`;
+
+  if (sp.get("format") === "pdf") {
+    const period = span ? span.replace("_", " to ") : "all time";
+    const { bytes } = buildTablePdf(head, table, {
+      title: kind === "history" ? "Trade history" : "Ledger",
+      subtitle: `Account ${login} · ${period} · times in UTC`,
+      footer: "Ezymex",
+    });
+    return new NextResponse(bytes as unknown as BodyInit, {
+      status: 200,
+      headers: { ...NO_STORE, "content-type": "application/pdf", "content-disposition": `attachment; filename="${stem}.pdf"`, "x-content-type-options": "nosniff" },
+    });
+  }
+
+  const csv = [head.join(","), ...table.map((r) => r.map((v, i) => cell(v, textCols.has(i))).join(","))].join("\r\n");
   return new NextResponse("﻿" + csv + "\r\n", {
     status: 200,
-    headers: { ...NO_STORE, "content-type": "text/csv; charset=utf-8", "content-disposition": `attachment; filename="${name}"`, "x-content-type-options": "nosniff" },
+    headers: { ...NO_STORE, "content-type": "text/csv; charset=utf-8", "content-disposition": `attachment; filename="${stem}.csv"`, "x-content-type-options": "nosniff" },
   });
 }
 

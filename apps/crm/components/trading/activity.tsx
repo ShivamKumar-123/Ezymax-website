@@ -265,6 +265,9 @@ export function HistoryPanel({ a, title }: { a: Pick<EngineAccount, "login" | "c
           action={
             <>
               {data && data.total > 0 && !invalid && <SharePeriodButton login={a.login} from={q.from ?? isoDay(new Date(Date.now() - 5 * 365 * 86400_000))} to={q.to ?? isoDay(new Date(Date.now() + 86400_000))} />}
+              <Button size="sm" variant="surface" disabled={invalid} onClick={() => downloadExport(a.login, "history", q.from, q.to, inst, "pdf")}>
+                <Download /> PDF
+              </Button>
               <Button size="sm" variant="surface" disabled={invalid} onClick={() => downloadExport(a.login, "history", q.from, q.to, inst)}>
                 <Download /> CSV
               </Button>
@@ -337,9 +340,14 @@ export function LedgerPanel({ a, title }: { a: Pick<EngineAccount, "login" | "ce
             </span>
           }
           action={
-            <Button size="sm" variant="surface" disabled={invalid} onClick={() => downloadExport(a.login, "ledger", q.from, q.to)}>
-              <Download /> CSV
-            </Button>
+            <>
+              <Button size="sm" variant="surface" disabled={invalid} onClick={() => downloadExport(a.login, "ledger", q.from, q.to, "all", "pdf")}>
+                <Download /> PDF
+              </Button>
+              <Button size="sm" variant="surface" disabled={invalid} onClick={() => downloadExport(a.login, "ledger", q.from, q.to)}>
+                <Download /> CSV
+              </Button>
+            </>
           }
         />
         <div className="px-4 pb-5 pt-4 sm:px-6">

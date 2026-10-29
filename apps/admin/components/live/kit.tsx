@@ -9,6 +9,7 @@ import { ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Chip, EmptyState, IconButton, Skeleton, cn, formatDateTime, type ChipTone } from "@ezymex/ui";
 import { readCached, writeCached } from "@ezymex/ui/swr-cache";
+import { downloadTablePdf } from "@ezymex/ui/table-pdf";
 
 export type ApiErr = { code: string; message: string; field?: string };
 
@@ -258,6 +259,18 @@ export function downloadCsv(name: string, header: string[], rows: (string | numb
   a.click();
   URL.revokeObjectURL(url);
   toast.success(`${name}.csv downloaded`, { description: `${rows.length} rows` });
+}
+
+/**
+ * The same rows as a printable table. `title` is what the page is called; the file name carries the date, as the
+ * CSV's does. Latin-1 only (the format's own fonts), so a name in another script is counted and the page says so -
+ * the CSV beside this button is the one to use when that matters.
+ */
+export function downloadPdf(name: string, title: string, header: string[], rows: (string | number | null | undefined)[][], subtitle?: string) {
+  const { dropped } = downloadTablePdf(name, header, rows, { title, subtitle, footer: "Ezymex Back Office" });
+  toast.success(`${name}.pdf downloaded`, {
+    description: dropped > 0 ? `${rows.length} rows · some characters are not in this format's font` : `${rows.length} rows`,
+  });
 }
 
 /* ---------- states ---------- */

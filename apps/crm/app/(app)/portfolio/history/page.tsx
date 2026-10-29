@@ -6,7 +6,7 @@ import { Bot, Code2, Copy as CopyIcon, Download, Hand, Search, Workflow, X } fro
 import { Button, Card, Chip, DataTable, Menu, Money, PageHeader, Reveal, Segmented, SymbolCell, cn, formatMoney, formatNumber, type Column } from "@/components/kit";
 import { HISTORY, getInstrument, type ClosedTrade } from "@ezymex/mock";
 import { LIVE_ACCOUNTS, PORTFOLIO_NOW } from "@ezymex/mock/portfolio-extra";
-import { downloadCsv, serverTime } from "@/components/portfolio/export";
+import { downloadCsv, downloadPdf, serverTime } from "@/components/portfolio/export";
 import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LiveHistoryPage } from "@/components/trading/portfolio";
 
@@ -111,25 +111,27 @@ function DemoTradeHistoryPage() {
 
   const accountLabel = account === "all" ? "All accounts" : `#${account}`;
 
-  const exportCsv = () =>
-    downloadCsv(
-      `ezymex-trades-${preset.toLowerCase()}`,
-      rows.map((t) => ({
-        ticket: t.ticket,
-        account: t.login,
-        symbol: t.symbol,
-        side: t.side,
-        volume: t.volume,
-        open_price: t.openPrice,
-        close_price: t.closePrice,
-        open_time: serverTime(t.openTime, true),
-        close_time: serverTime(t.closeTime, true),
-        swap: t.swap,
-        commission: -t.commission,
-        profit: t.profit,
-        source: t.source,
-      })),
-    );
+  // one shape for both files, so the CSV and the PDF never drift apart
+  const exportRows = () =>
+    rows.map((t) => ({
+      ticket: t.ticket,
+      account: t.login,
+      symbol: t.symbol,
+      side: t.side,
+      volume: t.volume,
+      open_price: t.openPrice,
+      close_price: t.closePrice,
+      open_time: serverTime(t.openTime, true),
+      close_time: serverTime(t.closeTime, true),
+      swap: t.swap,
+      commission: -t.commission,
+      profit: t.profit,
+      source: t.source,
+    }));
+  const exportName = `ezymex-trades-${preset.toLowerCase()}`;
+  const exportSub = `${accountLabel} · ${preset} · times in GMT+3`;
+  const exportCsv = () => downloadCsv(exportName, exportRows());
+  const exportPdf = () => downloadPdf(exportName, "Trade history", exportRows(), exportSub);
 
   return (
     <div className="pb-24">
@@ -141,8 +143,11 @@ function DemoTradeHistoryPage() {
             <Link href="/portfolio/statements">
               <Button variant="surface">Statements</Button>
             </Link>
+            <Button variant="surface" onClick={exportPdf}>
+              <Download /> PDF
+            </Button>
             <Button variant="ember" onClick={exportCsv}>
-              <Download /> Export CSV
+              <Download /> CSV
             </Button>
           </>
         }

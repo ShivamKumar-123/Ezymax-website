@@ -479,13 +479,14 @@ export const REASON_LABEL: Record<string, string> = {
   price_correction: "Price correction",
 };
 
-/** Browser download of a server-built CSV (the BFF sets Content-Disposition). `instrument` narrows a trades export
- *  to CFD or option deals. */
-export function downloadExport(login: number, kind: "history" | "ledger", from?: string, to?: string, instrument: InstrumentFilter = "all") {
+/** Browser download of a server-built CSV or PDF (the BFF sets Content-Disposition). `instrument` narrows a trades
+ *  export to CFD or option deals. Both formats come off the same table, so they always say the same thing. */
+export function downloadExport(login: number, kind: "history" | "ledger", from?: string, to?: string, instrument: InstrumentFilter = "all", format: "csv" | "pdf" = "csv") {
   const q = new URLSearchParams({ kind });
   if (from) q.set("from", from);
   if (to) q.set("to", to);
   if (kind === "history" && instrument !== "all") q.set("instrument", instrument);
+  if (format === "pdf") q.set("format", "pdf");
   const description = tr("accounts.toast.exportDesc", { login, kind: tr(kind === "history" ? "accounts.export.trades" : "accounts.export.ledger") });
   // fetched first: a service error becomes a message instead of replacing the page with raw JSON
   void (async () => {
@@ -498,7 +499,7 @@ export function downloadExport(login: number, kind: "history" | "ledger", from?:
       const href = URL.createObjectURL(await r.blob());
       const a = document.createElement("a");
       a.href = href;
-      a.download = /filename="?([^";]+)"?/.exec(r.headers.get("content-disposition") ?? "")?.[1] ?? `${login}-${kind}.csv`;
+      a.download = /filename="?([^";]+)"?/.exec(r.headers.get("content-disposition") ?? "")?.[1] ?? `${login}-${kind}.${format}`;
       document.body.appendChild(a);
       a.click();
       a.remove();

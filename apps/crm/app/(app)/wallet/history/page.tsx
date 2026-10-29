@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowDownLeft, ArrowLeft, ArrowUpRight, Clock, Download, Receipt } from "lucide-react";
 import { toast } from "sonner";
+import { downloadTablePdf } from "@ezymex/ui/table-pdf";
 import { Button, Card, DataTable, KpiCard, Money, PageHeader, Reveal, Segmented, StatusChip, formatDateTime, formatNumber, type Column } from "@/components/kit";
 import { tr, useT } from "@ezymex/i18n/react";
 import { WALLET_TXS, type WalletTx } from "@ezymex/mock";
@@ -18,18 +19,37 @@ type RangeF = "7D" | "30D" | "ALL";
 
 const NOW = Date.parse("2026-09-24T21:00:00Z");
 
+const EXPORT_HEAD = ["id", "date_gmt3", "type", "status", "direction", "amount", "asset", "fee", "from", "to", "tx_hash"];
+
+/** One shape for both files, so the CSV and the PDF never drift apart. */
+function exportRows(rows: WalletTx[]): (string | number)[][] {
+  return rows.map((t) => [t.id, formatDateTime(t.createdAt, { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }), TX_TYPE_LABEL[t.type], t.status, txDirection(t), t.amount.toFixed(2), t.asset, t.fee.toFixed(2), t.from, t.to, fullHash(t.hash)]);
+}
+
+const exportName = () => `ezymex-wallet-history-${new Date(NOW).toISOString().slice(0, 10)}`;
+
 function downloadCsv(rows: WalletTx[]) {
-  const head = ["id", "date_gmt3", "type", "status", "direction", "amount", "asset", "fee", "from", "to", "tx_hash"];
   const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
-  const lines = rows.map((t) => [t.id, formatDateTime(t.createdAt, { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }), TX_TYPE_LABEL[t.type], t.status, txDirection(t), t.amount.toFixed(2), t.asset, t.fee.toFixed(2), t.from, t.to, fullHash(t.hash)].map(esc).join(","));
-  const blob = new Blob([[head.join(","), ...lines].join("\n")], { type: "text/csv" });
+  const lines = exportRows(rows).map((r) => r.map(esc).join(","));
+  const blob = new Blob([[EXPORT_HEAD.join(","), ...lines].join("\n")], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `ezymex-wallet-history-${new Date(NOW).toISOString().slice(0, 10)}.csv`;
+  a.download = `${exportName()}.csv`;
   a.click();
   URL.revokeObjectURL(url);
   toast.success(tr("wallet.demo.csvExported"), { description: tr("wallet.demo.transactionsCount", { count: rows.length }) });
+}
+
+function downloadPdf(rows: WalletTx[]) {
+  const { dropped } = downloadTablePdf(exportName(), EXPORT_HEAD, exportRows(rows), {
+    title: tr("wallet.history.title"),
+    subtitle: tr("wallet.demo.transactionsCount", { count: rows.length }),
+    footer: "Ezymex",
+  });
+  toast.success(tr("portfolio.export.done", { file: `${exportName()}.pdf` }), {
+    description: dropped > 0 ? tr("portfolio.export.pdfDropped") : tr("wallet.demo.transactionsCount", { count: rows.length }),
+  });
 }
 
 function DemoWalletHistoryPage() {
@@ -97,8 +117,11 @@ function DemoWalletHistoryPage() {
         actions={
           <>
             <Segmented size="sm" value={range} onChange={setRange} options={[{ value: "7D", label: t("wallet.demo.days7") }, { value: "30D", label: t("wallet.demo.days30") }, { value: "ALL", label: t("common.all") }]} />
+            <Button variant="surface" onClick={() => downloadPdf(rows)}>
+              <Download /> {t("portfolio.export.pdf")}
+            </Button>
             <Button variant="surface" onClick={() => downloadCsv(rows)}>
-              <Download /> {t("wallet.demo.exportCsv")}
+              <Download /> {t("portfolio.export.csv")}
             </Button>
             <Link href="/wallet">
               <Button variant="ghost">
