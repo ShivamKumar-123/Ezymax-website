@@ -75,7 +75,7 @@ const market: NsMessages<"market"> = {
   "nav.openAccountTitle": "Ezymex-Konto erstellen (öffnet den Kundenbereich)",
   "nav.signIn": "Anmelden",
   "nav.signInTitle": "Im Kundenbereich anmelden",
-  "nav.accountType.live": "live",
+  "nav.accountType.live": "echt",
   "nav.accountType.demo": "demo",
   "nav.category.trend": "Trend",
   "nav.category.oscillators": "Oszillatoren",

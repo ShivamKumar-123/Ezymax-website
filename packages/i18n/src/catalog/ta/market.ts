@@ -75,7 +75,7 @@ const market: NsMessages<"market"> = {
   "nav.openAccountTitle": "உங்கள் Ezymex கணக்கை உருவாக்குங்கள் (கிளையன்ட் ஏரியாவைத் திறக்கும்)",
   "nav.signIn": "உள்நுழை",
   "nav.signInTitle": "கிளையன்ட் ஏரியாவில் உள்நுழையுங்கள்",
-  "nav.accountType.live": "லைவ்",
+  "nav.accountType.live": "நிஜம்",
   "nav.accountType.demo": "டெமோ",
   "nav.category.trend": "டிரெண்ட்",
   "nav.category.oscillators": "ஆஸிலேட்டர்கள்",

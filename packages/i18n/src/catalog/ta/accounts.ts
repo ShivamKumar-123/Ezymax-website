@@ -3,7 +3,7 @@ import type { NsMessages } from "../../core";
 // Account type names (Standard, Pro, ECN, Cent) and brands stay in English.
 const accounts: NsMessages<"accounts"> = {
   // Badges on account rows
-  "badge.live": "லைவ்",
+  "badge.live": "நிஜம்",
   "badge.demo": "டெமோ",
 
   // Position modes

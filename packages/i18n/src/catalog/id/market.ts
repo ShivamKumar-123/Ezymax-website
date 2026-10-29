@@ -75,7 +75,7 @@ const market: NsMessages<"market"> = {
   "nav.openAccountTitle": "Buat akun Ezymex Anda (membuka Client Area)",
   "nav.signIn": "Masuk",
   "nav.signInTitle": "Masuk ke Client Area",
-  "nav.accountType.live": "live",
+  "nav.accountType.live": "nyata",
   "nav.accountType.demo": "demo",
   "nav.category.trend": "Tren",
   "nav.category.oscillators": "Osilator",

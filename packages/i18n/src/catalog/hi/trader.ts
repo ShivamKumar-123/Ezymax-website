@@ -13,7 +13,7 @@ const trader: NsMessages<"trader"> = {
   fullscreen: "फ़ुलस्क्रीन",
   fullscreenHint: "फ़ुलस्क्रीन (F11)",
   // Account type chips (shown in small uppercase badges)
-  "accountType.live": "लाइव",
+  "accountType.live": "असली",
   "accountType.demo": "डेमो",
   // Position side, lowercase as shown in mobile lists
   "side.buy": "बाय",

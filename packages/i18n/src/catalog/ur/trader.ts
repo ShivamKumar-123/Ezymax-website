@@ -13,7 +13,7 @@ const trader: NsMessages<"trader"> = {
   fullscreen: "فل اسکرین",
   fullscreenHint: "فل اسکرین (F11)",
   // Account type chips
-  "accountType.live": "لائیو",
+  "accountType.live": "اصلی",
   "accountType.demo": "ڈیمو",
   // Position side
   "side.buy": "خرید",

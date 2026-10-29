@@ -3,7 +3,7 @@ import type { NsMessages } from "../../core";
 // Account type names (Standard, Pro, ECN, Cent, ...) are product names and are not translated.
 const accounts: NsMessages<"accounts"> = {
   // Badges on account rows (uppercase chips)
-  "badge.live": "लाइव",
+  "badge.live": "असली",
   "badge.demo": "डेमो",
 
   // Position modes (server enum values)

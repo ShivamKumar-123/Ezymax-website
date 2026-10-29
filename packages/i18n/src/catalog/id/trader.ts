@@ -13,7 +13,7 @@ const trader: NsMessages<"trader"> = {
   fullscreen: "Layar penuh",
   fullscreenHint: "Layar penuh (F11)",
   // Account type chips
-  "accountType.live": "live",
+  "accountType.live": "nyata",
   "accountType.demo": "demo",
   // Position side, lowercase as shown in mobile lists
   "side.buy": "buy",

@@ -75,7 +75,7 @@ const market: NsMessages<"market"> = {
   "nav.openAccountTitle": "अपना Ezymex अकाउंट बनाएँ (क्लाइंट एरिया खुलेगा)",
   "nav.signIn": "साइन इन",
   "nav.signInTitle": "क्लाइंट एरिया में साइन इन करें",
-  "nav.accountType.live": "लाइव",
+  "nav.accountType.live": "असली",
   "nav.accountType.demo": "डेमो",
   "nav.category.trend": "ट्रेंड",
   "nav.category.oscillators": "ऑसिलेटर",

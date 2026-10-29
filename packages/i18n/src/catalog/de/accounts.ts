@@ -4,7 +4,7 @@ import type { NsMessages } from "../../core";
 // Ezymex, Ezymex Trader, Ezymex-Live, Ezymex-Demo, MT5, MetaTrader 5, USDT, USD, USC stay in English.
 const accounts: NsMessages<"accounts"> = {
   // Badges on account rows (uppercase chips)
-  "badge.live": "LIVE",
+  "badge.live": "ECHT",
   "badge.demo": "DEMO",
 
   // Position modes (server enum values)

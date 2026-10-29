@@ -75,7 +75,7 @@ const market: NsMessages<"market"> = {
   "nav.openAccountTitle": "আপনার Ezymex অ্যাকাউন্ট তৈরি করুন (ক্লায়েন্ট এরিয়া খুলবে)",
   "nav.signIn": "সাইন ইন",
   "nav.signInTitle": "ক্লায়েন্ট এরিয়ায় সাইন ইন করুন",
-  "nav.accountType.live": "লাইভ",
+  "nav.accountType.live": "আসল",
   "nav.accountType.demo": "ডেমো",
   "nav.category.trend": "ট্রেন্ড",
   "nav.category.oscillators": "অসিলেটর",

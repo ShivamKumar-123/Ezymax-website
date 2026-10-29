@@ -75,7 +75,7 @@ const market: NsMessages<"market"> = {
   "nav.openAccountTitle": "اپنا Ezymex اکاؤنٹ بنائیں (کلائنٹ ایریا کھلے گا)",
   "nav.signIn": "سائن اِن",
   "nav.signInTitle": "کلائنٹ ایریا میں سائن اِن کریں",
-  "nav.accountType.live": "لائیو",
+  "nav.accountType.live": "اصلی",
   "nav.accountType.demo": "ڈیمو",
   "nav.category.trend": "ٹرینڈ",
   "nav.category.oscillators": "آسیلیٹرز",

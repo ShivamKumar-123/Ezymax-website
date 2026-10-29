@@ -12,7 +12,7 @@ const trader: NsMessages<"trader"> = {
   toggleTheme: "தீமை மாற்று",
   fullscreen: "முழுத்திரை",
   fullscreenHint: "முழுத்திரை (F11)",
-  "accountType.live": "லைவ்",
+  "accountType.live": "நிஜம்",
   "accountType.demo": "டெமோ",
   "side.buy": "வாங்கு",
   "side.sell": "விற்பனை",
