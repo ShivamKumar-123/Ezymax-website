@@ -427,12 +427,14 @@ export function LiveManualDepositsPage() {
               <RefreshCw /> Refresh
             </Button>
             {canExport && (
-              <Button variant="surface" size="lg" disabled={exporting} onClick={() => doExport("pdf")}>
-                {exporting ? <Loader2 className="animate-spin" /> : <Download />} PDF
-              </Button>
-              <Button variant="surface" size="lg" disabled={exporting} onClick={() => doExport("csv")}>
-                {exporting ? <Loader2 className="animate-spin" /> : <Download />} CSV
-              </Button>
+              <>
+                <Button variant="surface" size="lg" disabled={exporting} onClick={() => doExport("pdf")}>
+                  {exporting ? <Loader2 className="animate-spin" /> : <Download />} PDF
+                </Button>
+                <Button variant="surface" size="lg" disabled={exporting} onClick={() => doExport("csv")}>
+                  {exporting ? <Loader2 className="animate-spin" /> : <Download />} CSV
+                </Button>
+              </>
             )}
           </div>
         }
