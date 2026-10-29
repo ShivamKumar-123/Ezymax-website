@@ -28,10 +28,6 @@ impl Keys {
         self.all.len()
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.all.is_empty()
-    }
-
     /// The key at `i`, wrapping, so a caller can walk forward without bounds checks.
     pub fn at(&self, i: usize) -> &str {
         if self.all.is_empty() { "" } else { &self.all[i % self.all.len()] }
