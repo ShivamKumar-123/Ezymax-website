@@ -108,10 +108,14 @@ function AccountSwitcher() {
           className={cn("flex h-8 min-w-0 items-center gap-2 rounded-[9px] border border-line bg-panel-2/70 ps-1.5 pe-2 text-start transition-colors hover:bg-surface-3", open && "bg-surface-3")}
           aria-label={t("trader.account.switch")}
           aria-expanded={open}
-          title={`${a.group} · ${t.dyn(`order.mode.${a.mode}`, a.mode)} · ${t.dyn(`desk.g.${a.mode}`)}`}
+          title={`${a.login} · ${a.group} · ${t.dyn(`order.mode.${a.mode}`, a.mode)} · ${t.dyn(`desk.g.${a.mode}`)}`}
         >
           <AccountBadges />
-          <span className="k-num font-mono text-[12.5px] text-fg-2">{a.login}</span>
+          {/* What the client named this account tells them which one they are trading on; the number does not. The
+              login stays in the tooltip and on every row of the menu below, so nothing is lost. */}
+          <span className={cn("truncate text-[12.5px] text-fg-2", a.nickname ? "max-w-[150px]" : "k-num font-mono")}>
+            {a.nickname || a.login}
+          </span>
           <span className="hidden h-4 w-px bg-line min-[1180px]:block" aria-hidden />
           <span className="hidden items-center gap-1.5 min-[1180px]:flex">
             <Wallet className="size-3.5 text-fg-3" />
