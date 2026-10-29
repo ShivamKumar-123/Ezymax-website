@@ -21,7 +21,7 @@ use tokio::sync::watch;
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use tokio_tungstenite::tungstenite::protocol::{CloseFrame, frame::coding::CloseCode};
 
-use crate::config::Config;
+use crate::config::{Config, Keys};
 use crate::state::{HistoryJob, Market};
 
 fn num(v: &Value) -> Option<f64> {
@@ -51,11 +51,11 @@ pub fn spawn_all(cfg: &Config, market: Arc<Market>, stop: Stop) -> Vec<tokio::ta
         .into_iter()
         .enumerate()
         .map(|(i, (m, plan))| {
-            let url = format!("{}?business={}&apikey={}", cfg.infoway_ws, m, cfg.infoway_key);
+            let (ws, keys) = (cfg.infoway_ws.clone(), cfg.keys.clone());
             let (mk, st) = (market.clone(), stop.clone());
             // gentle start: one market at a time
             let first = CONNECT_STAGGER * i as u32;
-            tokio::spawn(async move { run(m, url, plan, mk, st, first).await })
+            tokio::spawn(async move { run(m, ws, keys, plan, mk, st, first).await })
         })
         .collect()
 }
@@ -217,6 +217,14 @@ pub fn is_refused(e: &anyhow::Error) -> bool {
     matches!(e.downcast_ref::<Error>(), Some(Error::Http(r)) if r.status().as_u16() == 429)
 }
 
+/// The provider answered about the key rather than the stream, so the same key will keep failing: 429 (another
+/// platform holds its one connection for this business) or 401/403 (revoked, rotated, or never ours). Retrying is
+/// pointless; the next key is the only thing that can change the answer.
+pub fn is_key_problem(e: &anyhow::Error) -> bool {
+    use tokio_tungstenite::tungstenite::Error;
+    matches!(e.downcast_ref::<Error>(), Some(Error::Http(r)) if matches!(r.status().as_u16(), 401 | 403 | 429))
+}
+
 /// A cheap jitter in [0, 1) (no RNG dependency).
 fn jitter() -> f64 {
     let n = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.subsec_nanos()).unwrap_or(0);
@@ -234,8 +242,19 @@ async fn sleep_or_stop(d: Duration, stop: &mut Stop) -> bool {
     }
 }
 
-async fn run(business: String, url: String, mut plan: watch::Receiver<Arc<BTreeSet<String>>>, market: Arc<Market>, mut stop: Stop, first: Duration) {
+async fn run(
+    business: String,
+    ws: String,
+    keys: Arc<Keys>,
+    mut plan: watch::Receiver<Arc<BTreeSet<String>>>,
+    market: Arc<Market>,
+    mut stop: Stop,
+    first: Duration,
+) {
     let mut backoff = Backoff::default();
+    // Each market walks the key list on its own: the provider counts connections per key per business, so a key
+    // that is full for `common` may still be free for `stock`, and moving one market must not move the other.
+    let mut key_at = keys.good();
     if sleep_or_stop(first, &mut stop).await {
         return;
     }
@@ -254,7 +273,8 @@ async fn run(business: String, url: String, mut plan: watch::Receiver<Arc<BTreeS
         market.set_expected(&business, true);
         let started = Instant::now();
         // run each session in its own task so a panic inside it becomes a reconnect, never a silent stop
-        let (b, u, p, m, st) = (business.clone(), url.clone(), plan.clone(), market.clone(), stop.clone());
+        let url = format!("{}?business={}&apikey={}", ws, business, keys.at(key_at));
+        let (b, u, p, m, st) = (business.clone(), url, plan.clone(), market.clone(), stop.clone());
         let joined = tokio::spawn(async move { session(&b, &u, p, &m, st).await }).await;
         let res = match joined {
             Ok(v) => v,
@@ -264,6 +284,19 @@ async fn run(business: String, url: String, mut plan: watch::Receiver<Arc<BTreeS
         if *stop.borrow() {
             market.set_expected(&business, false);
             return;
+        }
+        // The key either answered for the stream or answered about itself. A stream that got as far as being
+        // dropped had a working key, and says so for the REST backfill to follow; one refused over the key moves
+        // on, so the next attempt asks a different key the same question.
+        match &res {
+            Err(e) if is_key_problem(e) => {
+                if keys.len() > 1 {
+                    let next = (key_at + 1) % keys.len();
+                    tracing::warn!(%business, from = key_at, to = next, "provider key refused; trying the next key");
+                    key_at = next;
+                }
+            }
+            _ => keys.mark_good(key_at),
         }
         let outcome = match &res {
             Err(e) if is_refused(e) => Outcome::Refused,

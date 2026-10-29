@@ -1,8 +1,67 @@
 use std::env;
 use std::fmt;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+/// The provider keys this broker may use, in order of preference, and the one last known to work.
+///
+/// A key stops answering in one of two ways: another platform is holding its one connection for that business
+/// (429), or its owner revokes it (401). Either way the key will not come back by itself, so a stream that keeps
+/// retrying the same one stays down until someone notices - which has meant 25 to 45 minutes of a frozen chart.
+/// Each stream therefore walks the list instead.
+///
+/// `good` is the key a stream last connected with. The REST backfill has no handshake of its own to learn from,
+/// so it reads `good` and follows whichever key the streams found, without being told.
+pub struct Keys {
+    all: Vec<String>,
+    good: AtomicUsize,
+}
+
+impl Keys {
+    /// The first entry is the primary; the rest are tried in order. Empty entries are dropped.
+    pub fn new(all: Vec<String>) -> Self {
+        let all: Vec<String> = all.into_iter().map(|k| k.trim().to_string()).filter(|k| !k.is_empty()).collect();
+        Self { all, good: AtomicUsize::new(0) }
+    }
+
+    pub fn len(&self) -> usize {
+        self.all.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.all.is_empty()
+    }
+
+    /// The key at `i`, wrapping, so a caller can walk forward without bounds checks.
+    pub fn at(&self, i: usize) -> &str {
+        if self.all.is_empty() { "" } else { &self.all[i % self.all.len()] }
+    }
+
+    /// The key a stream last connected with; where a newcomer starts.
+    pub fn good(&self) -> usize {
+        self.good.load(Ordering::Relaxed)
+    }
+
+    pub fn mark_good(&self, i: usize) {
+        if !self.all.is_empty() {
+            self.good.store(i % self.all.len(), Ordering::Relaxed);
+        }
+    }
+
+    /// What REST callers send. Not a reservation: a key can go bad between this call and the request.
+    pub fn current(&self) -> &str {
+        self.at(self.good())
+    }
+}
+
+impl fmt::Debug for Keys {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Keys({} configured, using #{})", self.all.len(), self.good())
+    }
+}
 
 /// Runtime configuration (env vars; `.env.local` at the repo root is loaded in development).
-/// `Debug` is implemented by hand so secrets (`infoway_key`, `admin_token`) never reach logs.
+/// `Debug` is implemented by hand so secrets (the provider keys, `admin_token`) never reach logs.
 #[derive(Clone)]
 pub struct Config {
     /// Take crypto prices straight from Binance rather than through the provider (`binance.rs`).
@@ -10,7 +69,8 @@ pub struct Config {
     pub binance_ws: String,
     pub database_url: String,
     pub bind: String,
-    pub infoway_key: String,
+    /// The provider keys, primary first (INFOWAY_API_KEY, then INFOWAY_API_KEY_FALLBACKS).
+    pub keys: Arc<Keys>,
     pub infoway_rest: String,
     pub infoway_ws: String,
     /// Relay mode (development): take quotes from another Ezymex market-data stream instead of the provider,
@@ -78,7 +138,7 @@ impl fmt::Debug for Config {
         f.debug_struct("Config")
             .field("database_url", &redact_url(&self.database_url))
             .field("bind", &self.bind)
-            .field("infoway_key", &redact(&self.infoway_key))
+            .field("keys", &self.keys)
             .field("infoway_rest", &self.infoway_rest)
             .field("infoway_ws", &self.infoway_ws)
             .field("upstream", &self.upstream)
@@ -113,13 +173,17 @@ fn var(k: &str, d: &str) -> String {
 
 impl Config {
     pub fn from_env() -> anyhow::Result<Self> {
-        let infoway_key = env::var("INFOWAY_API_KEY").map_err(|_| anyhow::anyhow!("INFOWAY_API_KEY is not set (add it to .env.local)"))?;
+        let primary = env::var("INFOWAY_API_KEY").map_err(|_| anyhow::anyhow!("INFOWAY_API_KEY is not set (add it to .env.local)"))?;
+        // Spares to fall back on when the primary is refused or revoked; one per comma.
+        let mut all = vec![primary];
+        all.extend(var("INFOWAY_API_KEY_FALLBACKS", "").split(',').map(str::to_string));
+        let keys = Arc::new(Keys::new(all));
         Ok(Self {
             database_url: var("DATABASE_URL", "postgres://postgres@127.0.0.1:5433/ezymex"),
             bind: var("MARKET_DATA_BIND", "127.0.0.1:8081"),
             binance_enabled: var("MARKET_DATA_BINANCE", "true") != "false",
             binance_ws: var("BINANCE_WS", "wss://stream.binance.com:9443/stream"),
-            infoway_key,
+            keys,
             infoway_rest: var("INFOWAY_REST_URL", "https://data.infoway.io"),
             infoway_ws: var("INFOWAY_WS_URL", "wss://data.infoway.io/ws"),
             upstream: var("MARKET_DATA_UPSTREAM", ""),

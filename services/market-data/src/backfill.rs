@@ -15,7 +15,7 @@ use serde_json::{json, Value};
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::{Arc, Mutex as StdMutex};
 
-use crate::config::Config;
+use crate::config::{Config, Keys};
 use crate::db::{self, Bar, Source};
 use crate::gate::{Gate, Prio};
 use crate::instruments::Instrument;
@@ -25,7 +25,9 @@ use crate::timeframes::Tf;
 pub struct Provider {
     http: reqwest::Client,
     base: String,
-    key: String,
+    /// Shared with the streams: REST has no handshake to learn from, so it sends whichever key they last
+    /// connected with rather than one fixed at start-up.
+    keys: Arc<Keys>,
     pub gate: Gate,
     /// Codes per batch request.
     batch: usize,
@@ -40,7 +42,7 @@ impl Provider {
             body["timestamp"] = json!(b.timestamp());
         }
         let url = format!("{}/{}/v2/batch_kline", self.base, inst.provider.market);
-        let v: Value = self.http.post(&url).header("apiKey", &self.key).json(&body).send().await?.json().await?;
+        let v: Value = self.http.post(&url).header("apiKey", self.keys.current()).json(&body).send().await?.json().await?;
         let ret = v["ret"].as_i64().unwrap_or(0);
         if ret != 200 {
             anyhow::bail!("provider ret {ret}: {}", v["msg"].as_str().unwrap_or(""));
@@ -56,7 +58,7 @@ impl Provider {
     pub async fn adjustment_factors(&self, code: &str, market: &str, from: &str, to: &str) -> anyhow::Result<Vec<(String, f64)>> {
         self.gate.acquire(Prio::Interactive).await;
         let url = reqwest::Url::parse_with_params(&format!("{}/common/basic/symbols/adjustment_factors", self.base), &[("symbol", code), ("market", market), ("beginDay", from), ("endDay", to)])?;
-        let v: Value = self.http.get(url).header("apiKey", &self.key).send().await.map_err(|e| anyhow::anyhow!(e.without_url().to_string()))?.json().await.map_err(|e| anyhow::anyhow!(e.without_url().to_string()))?;
+        let v: Value = self.http.get(url).header("apiKey", self.keys.current()).send().await.map_err(|e| anyhow::anyhow!(e.without_url().to_string()))?.json().await.map_err(|e| anyhow::anyhow!(e.without_url().to_string()))?;
         let ret = v["ret"].as_i64().unwrap_or(0);
         if ret != 200 {
             anyhow::bail!("provider ret {ret}: {}", v["msg"].as_str().unwrap_or(""));
@@ -77,7 +79,7 @@ impl Provider {
         self.gate.acquire(prio).await;
         let body = json!({"klineType": kline, "klineNum": n, "codes": codes.join(",")});
         let url = format!("{}/{}/v2/batch_kline", self.base, market);
-        let v: Value = self.http.post(&url).header("apiKey", &self.key).json(&body).send().await?.json().await?;
+        let v: Value = self.http.post(&url).header("apiKey", self.keys.current()).json(&body).send().await?.json().await?;
         let ret = v["ret"].as_i64().unwrap_or(0);
         if ret != 200 {
             anyhow::bail!("provider ret {ret}: {}", v["msg"].as_str().unwrap_or(""));
@@ -110,7 +112,7 @@ pub fn spawn(cfg: &Config, market: Arc<Market>) {
     let provider = Arc::new(Provider {
         http: reqwest::Client::builder().timeout(std::time::Duration::from_secs(30)).build().expect("http client"),
         base: cfg.infoway_rest.clone(),
-        key: cfg.infoway_key.clone(),
+        keys: cfg.keys.clone(),
         gate: Gate::start(std::time::Duration::from_secs_f64(1.0 / cfg.provider_rps.max(0.1))),
         batch: cfg.batch_codes,
     });
