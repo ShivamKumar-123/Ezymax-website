@@ -558,7 +558,7 @@ async function exportCsv(req: NextRequest, user: GatewayUser, login: string) {
       subtitle: `Account ${login} · ${period} · times in UTC`,
       footer: "Ezymex",
     });
-    return new NextResponse(bytes as unknown as BodyInit, {
+    return new NextResponse(bytes, {
       status: 200,
       headers: { ...NO_STORE, "content-type": "application/pdf", "content-disposition": `attachment; filename="${stem}.pdf"`, "x-content-type-options": "nosniff" },
     });

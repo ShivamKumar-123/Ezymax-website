@@ -5,7 +5,7 @@ import { Download, RefreshCw, Search, ShieldCheck, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, Chip, DataTable, Dialog, PageHeader, Progress, Reveal, Segmented, Skeleton, type Column } from "@ezymex/ui";
 import { MiniStat, Section } from "@/components/config/kit";
-import { FilterSelect, Pager, TableSkeleton, ago, day, downloadCsv, qs, useApi, useDebounced, useNow, when } from "@/components/live/kit";
+import { FilterSelect, Pager, TableSkeleton, ago, day, downloadCsv, downloadPdf, qs, useApi, useDebounced, useNow, when } from "@/components/live/kit";
 import { S, stakingGet, type PlansDoc, type Position, type PositionDetail, type PositionReturn, type PositionStatus, type PositionsDoc } from "./api";
 import { Amount, ClientLink, EmptyNote, Note, POSITION_STATUS, StakingError, StatusPill, amt, money, int, monthName, pct, statusLabel, usePerms, useUrlParam } from "./kit";
 
@@ -184,7 +184,8 @@ export function LiveStakingPositions() {
   const selId = sel && /^\d+$/.test(sel) ? Number(sel) : null;
   const cur = plansDoc?.currencies[0] ?? "USDT";
 
-  const exportCsv = async () => {
+  const exportCsv = async (format: "csv" | "pdf") => {
+    const dl = format === "pdf" ? (n: string, h: string[], r: (string | number | null | undefined)[][]) => downloadPdf(n, "Staking positions", h, r) : downloadCsv;
     setExporting(true);
     const r = await stakingGet<{ items: Position[] }>(`positions/export${qs(filters)}`);
     setExporting(false);
@@ -198,7 +199,7 @@ export function LiveStakingPositions() {
       return;
     }
     const stamp = new Date().toISOString().slice(0, 10);
-    downloadCsv(
+    dl(
       `staking-positions-${stamp}`,
       ["Position", "Client ID", "Client", "Plan ID", "Plan", "Plan version", "Currency", "Term (months)", "Principal", "Status", "Started", "Matures", "Matured", "Returns paid", "Days elapsed", "Days total", "Failure reason", "Terms accepted", "Risk acknowledged", "Created"],
       rows.map((p) => [
@@ -309,9 +310,14 @@ export function LiveStakingPositions() {
               <RefreshCw /> Refresh
             </Button>
             {perms.export && (
-              <Button variant="surface" onClick={exportCsv} disabled={exporting}>
-                <Download /> {exporting ? "Exporting…" : "Export CSV"}
-              </Button>
+              <>
+                <Button variant="surface" onClick={() => exportCsv("pdf")} disabled={exporting}>
+                  <Download /> {exporting ? "Exporting…" : "PDF"}
+                </Button>
+                <Button variant="surface" onClick={() => exportCsv("csv")} disabled={exporting}>
+                  <Download /> {exporting ? "Exporting…" : "CSV"}
+                </Button>
+              </>
             )}
           </>
         }

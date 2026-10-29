@@ -368,12 +368,12 @@ export function LiveManualDepositsPage() {
   const methods = useManualMethods();
   const c = data?.counts;
 
-  const doExport = async () => {
+  const doExport = async (format: "csv" | "pdf") => {
     setExporting(true);
-    const r = await exportDeposits(filters);
+    const r = await exportDeposits(filters, format);
     setExporting(false);
     if (!r.ok) toast.error("Export failed", { description: r.error.message });
-    else if (r.data.rows === null) toast.success("Export downloaded", { description: "Manual deposits with the current filters (CSV)." });
+    else if (r.data.rows === null) toast.success("Export downloaded", { description: `Manual deposits with the current filters (${format.toUpperCase()}).` });
   };
 
   const cols: Column<ManualDeposit>[] = [
@@ -427,8 +427,11 @@ export function LiveManualDepositsPage() {
               <RefreshCw /> Refresh
             </Button>
             {canExport && (
-              <Button variant="surface" size="lg" disabled={exporting} onClick={doExport}>
-                {exporting ? <Loader2 className="animate-spin" /> : <Download />} Export CSV
+              <Button variant="surface" size="lg" disabled={exporting} onClick={() => doExport("pdf")}>
+                {exporting ? <Loader2 className="animate-spin" /> : <Download />} PDF
+              </Button>
+              <Button variant="surface" size="lg" disabled={exporting} onClick={() => doExport("csv")}>
+                {exporting ? <Loader2 className="animate-spin" /> : <Download />} CSV
               </Button>
             )}
           </div>

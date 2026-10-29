@@ -9,7 +9,7 @@
 import * as React from "react";
 import { IS_DEMO } from "@ezymex/mock/mode";
 import { MANUAL_NETWORKS, manualDemoSeed, manualExpectedCredit, manualSum } from "@ezymex/mock/admin-manual-payments";
-import { downloadCsv, qs, sendJson, useApi, type ApiErr } from "@/components/live/kit";
+import { downloadCsv, downloadPdf, qs, sendJson, useApi, type ApiErr } from "@/components/live/kit";
 import type { AuditItem } from "./kit";
 import { networkPreset, type DepositsResp, type ManualCounts, type ManualDeposit, type ManualDepositDetail, type MethodInput, type MethodsResp, type PaymentMethod } from "./manual-kit";
 
@@ -349,12 +349,13 @@ export async function rejectDeposit(id: number, reason: string): Promise<Result<
   return later({ ok: true, data: { deposit: d! } });
 }
 
-/** Downloads the requests matching the filters as CSV (the service's export in live builds; finance.export). */
-export async function exportDeposits(f: Omit<DepositQuery, "page" | "limit">): Promise<Result<{ rows: number | null }>> {
+/** Downloads the requests matching the filters (the service's export in live builds; finance.export). */
+export async function exportDeposits(f: Omit<DepositQuery, "page" | "limit">, format: "csv" | "pdf" = "csv"): Promise<Result<{ rows: number | null }>> {
   const stamp = new Date().toISOString().slice(0, 10);
   if (IS_DEMO) {
     const rows = demoFilter(getDemo().deposits, f);
-    downloadCsv(
+    const dl = format === "pdf" ? (n: string, h: string[], r: (string | number | null | undefined)[][]) => downloadPdf(n, "Manual deposits", h, r) : downloadCsv;
+    dl(
       `manual-deposits-${stamp}`,
       ["id", "created_at", "status", "kind", "method", "network", "client_id", "client_name", "client_email", "amount", "currency", "rate", "expected_credit_usdt", "credited_usdt", "reference", "decided_by", "decided_at", "reason", "note"],
       rows.map((d) => [d.id, d.created_at, d.status, d.kind, d.method.name, d.method.network ?? "", d.user_id, d.user_name, d.user_email, d.amount, d.currency, d.rate, d.expected_credit, d.credit_amount, d.reference, d.decided_by?.name ?? "", d.decided_at, d.reason, d.decision_note]),
@@ -362,7 +363,7 @@ export async function exportDeposits(f: Omit<DepositQuery, "page" | "limit">): P
     return { ok: true, data: { rows: rows.length } };
   }
   try {
-    const r = await fetch(`/api/wallet/manual/deposits/export${qs(filterQs(f))}`, { credentials: "same-origin", cache: "no-store" });
+    const r = await fetch(`/api/wallet/manual/deposits/export${qs({ ...filterQs(f), ...(format === "pdf" ? { format: "pdf" } : {}) })}`, { credentials: "same-origin", cache: "no-store" });
     if (r.status === 401) {
       window.location.assign(`/api/auth/expired?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
       return fail(undefined, "Your session has ended.", "unauthorized");
@@ -372,7 +373,7 @@ export async function exportDeposits(f: Omit<DepositQuery, "page" | "limit">): P
       return { ok: false, error: e?.message ? e : { code: String(r.status), message: "The export failed." } };
     }
     const blob = await r.blob();
-    const name = /filename="?([^";]+)"?/.exec(r.headers.get("content-disposition") ?? "")?.[1] ?? `manual-deposits-${stamp}.csv`;
+    const name = /filename="?([^";]+)"?/.exec(r.headers.get("content-disposition") ?? "")?.[1] ?? `manual-deposits-${stamp}.${format}`;
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;

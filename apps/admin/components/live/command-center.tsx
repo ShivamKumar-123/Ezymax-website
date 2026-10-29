@@ -7,7 +7,7 @@ import { Avatar, Button, Card, CardHeader, Chip, EmptyState, Flag, KpiCard, Page
 import { useServerClock } from "@/components/command/kit";
 import { ColumnChart } from "@/components/config/kit";
 import { useCan } from "@/components/staff-session";
-import { EmailChip, ErrorState, actionLabel, actionTone, ago, downloadCsv, useApi, useNow, when } from "./kit";
+import { EmailChip, ErrorState, actionLabel, actionTone, ago, downloadCsv, downloadPdf, useApi, useNow, when } from "./kit";
 import type { AuditPage, HealthResp, Stats, UsersPage } from "./types";
 
 function Num({ v }: { v: number | undefined }) {
@@ -212,7 +212,8 @@ export function LiveCommandCenter() {
 
   const chart = (s?.registrations ?? []).map((d) => ({ label: new Date(d.day + "T00:00:00Z").toLocaleDateString("en-GB", { day: "2-digit", month: "short", timeZone: "UTC" }).replace("Sept", "Sep"), values: [d.count] }));
 
-  function exportSnapshot() {
+  function exportSnapshot(format: "csv" | "pdf") {
+    const dl = format === "pdf" ? (n: string, h: string[], r: (string | number | null | undefined)[][]) => downloadPdf(n, "Command centre snapshot", h, r) : downloadCsv;
     if (!s) return;
     const rows: (string | number)[][] = [
       ["Clients total", s.clients.total],
@@ -227,7 +228,7 @@ export function LiveCommandCenter() {
       ["Failed sign-ins 24h", s.security.failed_logins_24h],
       ...s.registrations.map((d) => [`Registrations ${d.day}`, d.count]),
     ];
-    downloadCsv(`command-center-${s.generated_at.slice(0, 10)}`, ["Metric", "Value"], rows);
+    dl(`command-center-${s.generated_at.slice(0, 10)}`, ["Metric", "Value"], rows);
   }
 
   return (
@@ -251,8 +252,11 @@ export function LiveCommandCenter() {
             <Button variant="surface" size="lg" onClick={() => (reload(), health.reload())}>
               <RefreshCw /> Refresh
             </Button>
-            <Button variant="ember" size="lg" onClick={exportSnapshot} disabled={!s}>
-              <Download /> Export snapshot
+            <Button variant="surface" size="lg" onClick={() => exportSnapshot("pdf")} disabled={!s}>
+              <Download /> PDF
+            </Button>
+            <Button variant="ember" size="lg" onClick={() => exportSnapshot("csv")} disabled={!s}>
+              <Download /> CSV
             </Button>
           </>
         }

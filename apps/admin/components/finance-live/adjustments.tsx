@@ -11,7 +11,7 @@ import { useSearchParams } from "next/navigation";
 import { Check, Clock3, Download, Plus, ShieldCheck, TrendingDown, TrendingUp, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CardHeader, Chip, DataTable, Dialog, EmptyState, Input, KpiCard, PageHeader, cn, type Column } from "@ezymex/ui";
-import { ErrorState, FilterSelect, Pager, TableSkeleton, ago, downloadCsv, qs, useApi, useDebounced, useNow, when } from "@/components/live/kit";
+import { ErrorState, FilterSelect, Pager, TableSkeleton, ago, downloadCsv, downloadPdf, qs, useApi, useDebounced, useNow, when } from "@/components/live/kit";
 import { useCan, useStaff } from "@/components/staff-session";
 import { MiniField } from "@/components/config/kit";
 import { AdjustDialog, CATEGORY_LABEL, OP_LABEL, fmt, type Adjustment } from "@/components/clients/adjust-dialog";
@@ -96,11 +96,12 @@ export function LiveAdjustmentsPage() {
   const pending = useApi<ListResp>(`/api/wallet/adjustments${qs({ status: "pending", limit: 100 })}`, { refreshMs: 15_000 });
   const refresh = () => (reload(), pending.reload());
 
-  async function exportCsv() {
+  async function exportCsv(format: "csv" | "pdf") {
+    const dl = format === "pdf" ? (n: string, h: string[], r: (string | number | null | undefined)[][]) => downloadPdf(n, "Balance adjustments", h, r) : downloadCsv;
     const r = await fetch(`/api/wallet/adjustments${qs({ ...filters, page: 1, limit: 2000 })}`, { cache: "no-store" });
     if (!r.ok) return toast.error("Export failed");
     const d = (await r.json()) as ListResp;
-    downloadCsv(
+    dl(
       `adjustments-${new Date().toISOString().slice(0, 10)}`,
       ["ID", "Created (UTC)", "Applied (UTC)", "Client ID", "Target", "Account", "Account type", "Operation", "Reason", "Amount", "Currency", "USD", "Status", "Requested by", "Decided by", "Decision note", "Comment", "Statement note", "Notified", "Forced", "Ledger kind", "Txn", "Before", "After", "Error"],
       d.items.map((a) => [
@@ -192,8 +193,11 @@ export function LiveAdjustmentsPage() {
                 <ShieldCheck /> Four-eyes
               </Button>
             )}
-            <Button variant="surface" onClick={exportCsv} disabled={!data}>
-              <Download /> Export CSV
+            <Button variant="surface" onClick={() => exportCsv("pdf")} disabled={!data}>
+              <Download /> PDF
+            </Button>
+            <Button variant="surface" onClick={() => exportCsv("csv")} disabled={!data}>
+              <Download /> CSV
             </Button>
             {canCreate && (
               <Button variant="ember" onClick={() => setPick(true)}>

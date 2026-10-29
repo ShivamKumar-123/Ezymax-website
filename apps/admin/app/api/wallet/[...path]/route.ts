@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { buildTablePdf } from "@ezymex/ui/table-pdf";
 import { clientIp, gateway } from "@/lib/gateway";
 import { apiError, mutationAllowed, requireStaff } from "@/lib/bff";
 import { walletConfigured, walletRaw, walletService } from "@/lib/wallet";
@@ -149,14 +150,66 @@ async function image(req: NextRequest, id: string) {
 }
 
 /** The manual deposit requests as CSV with the list's filters (finance.export; the wallet audits the export). */
+/** RFC 4180 rows: quoted fields may hold commas, newlines and doubled quotes. */
+function parseCsv(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = "";
+  let quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]!;
+    if (quoted) {
+      if (c !== '"') field += c;
+      else if (text[i + 1] === '"') (field += '"'), i++;
+      else quoted = false;
+    } else if (c === '"') {
+      quoted = true;
+    } else if (c === ",") {
+      row.push(field);
+      field = "";
+    } else if (c === "\n" || c === "\r") {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = "";
+    } else {
+      field += c;
+    }
+  }
+  if (field !== "" || row.length) {
+    row.push(field);
+    rows.push(row);
+  }
+  return rows.filter((r) => r.some((v) => v !== ""));
+}
+
 async function exportCsv(req: NextRequest) {
   const who = await requireStaff(req);
   if (who instanceof NextResponse) return who;
   if (!walletAllows(who.staff, "finance.export")) return apiError(403, "forbidden", "Your role doesn't allow this.");
-  const res = await walletRaw(`/v1/admin/manual/deposits/export${req.nextUrl.search}`, { staff: who.staff, ip: clientIp(req.headers), userAgent: req.headers.get("user-agent"), timeoutMs: 60_000 });
+  const wanted = req.nextUrl.searchParams.get("format") === "pdf" ? "pdf" : "csv";
+  // the service only speaks CSV; `format` is ours, so it never reaches it
+  const upstream = new URLSearchParams(req.nextUrl.searchParams);
+  upstream.delete("format");
+  const qs = upstream.toString();
+  const res = await walletRaw(`/v1/admin/manual/deposits/export${qs ? `?${qs}` : ""}`, { staff: who.staff, ip: clientIp(req.headers), userAgent: req.headers.get("user-agent"), timeoutMs: 60_000 });
   if (!res) return unavailable();
   if (!res.ok) return passJson(res);
   const h = new Headers({ "cache-control": "no-store", "x-content-type-options": "nosniff" });
+
+  if (wanted === "pdf") {
+    // The wallet service writes the CSV, so that is where the columns are decided; this reads them back rather
+    // than keeping a second list here that would drift the first time a column is added.
+    const text = (await res.text()).replace(/^﻿/, "");
+    const table = parseCsv(text);
+    const head = table.shift() ?? [];
+    const { bytes } = buildTablePdf(head, table, { title: "Manual deposits", subtitle: `${table.length} requests · times in UTC`, footer: "Ezymex Back Office" });
+    h.set("content-type", "application/pdf");
+    h.set("content-disposition", (res.headers.get("content-disposition") ?? 'attachment; filename="manual-deposits.csv"').replace(/\.csv"/, '.pdf"'));
+    return new NextResponse(bytes, { status: 200, headers: h });
+  }
+
   h.set("content-type", res.headers.get("content-type") ?? "text/csv; charset=utf-8");
   h.set("content-disposition", res.headers.get("content-disposition") ?? 'attachment; filename="manual-deposits.csv"');
   return new NextResponse(res.body, { status: 200, headers: h });

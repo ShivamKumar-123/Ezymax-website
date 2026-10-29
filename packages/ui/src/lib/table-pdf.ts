@@ -104,7 +104,7 @@ export interface TablePdfOptions {
 }
 
 interface Built {
-  bytes: Uint8Array;
+  bytes: Uint8Array<ArrayBuffer>;
   dropped: number;
 }
 
@@ -245,8 +245,9 @@ export function buildTablePdf(headers: string[], rows: (string | number | null |
   for (const o of offsets) file += `${String(o).padStart(10, "0")} 00000 n \n`;
   file += `trailer\n<< /Size ${objs.length + 1} /Root ${catalog} 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
 
-  // every char in `file` is one byte: WinAnsi text, ASCII structure
-  const bytes = new Uint8Array(file.length);
+  // every char in `file` is one byte: WinAnsi text, ASCII structure. Built over its own ArrayBuffer so the view is
+  // Uint8Array<ArrayBuffer>, which is what Blob and Response take.
+  const bytes = new Uint8Array(new ArrayBuffer(file.length));
   for (let n = 0; n < file.length; n++) bytes[n] = file.charCodeAt(n) & 0xff;
   return { bytes, dropped: enc.dropped };
 }

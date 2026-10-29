@@ -9,7 +9,7 @@
 import * as React from "react";
 import { ChevronDown, Download, RefreshCw, ScrollText, Search } from "lucide-react";
 import { Button, Card, Chip, EmptyState, PageHeader, Reveal, Segmented, cn, type ChipTone } from "@ezymex/ui";
-import { ErrorState, TableSkeleton, ago, downloadCsv, useNow, when } from "@/components/live/kit";
+import { ErrorState, TableSkeleton, ago, downloadCsv, downloadPdf, useNow, when } from "@/components/live/kit";
 import type { AuditEntry } from "./types";
 import { useOpt, useOptPerms } from "./kit";
 import { IS_DEMO } from "@ezymex/mock/mode";
@@ -90,6 +90,9 @@ export function AuditPage() {
         subtitle="Every change made in the Options section: who, when, why, and the values before and after. Append-only."
         actions={
           <>
+            <Button variant="surface" size="lg" onClick={() => downloadPdf("options-audit", "Options audit", ["id", "at", "tenant", "actor", "action", "target", "reason", "before", "after"], rows.map((e) => [e.id, e.at, e.tenant, e.actor, e.action, e.target, e.reason, JSON.stringify(e.before ?? null), JSON.stringify(e.after ?? null)]))} disabled={!rows.length}>
+              <Download /> PDF
+            </Button>
             <Button variant="surface" size="lg" onClick={() => downloadCsv("options-audit", ["id", "at", "tenant", "actor", "action", "target", "reason", "before", "after"], rows.map((e) => [e.id, e.at, e.tenant, e.actor, e.action, e.target, e.reason, JSON.stringify(e.before ?? null), JSON.stringify(e.after ?? null)]))} disabled={!rows.length}>
               <Download /> CSV
             </Button>

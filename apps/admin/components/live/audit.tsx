@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Download, RefreshCw, Search, ShieldCheck, X } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Button, Card, CardHeader, Chip, CopyButton, DataTable, Dialog, EmptyState, KeyValue, PageHeader, Reveal, Segmented, type Column } from "@ezymex/ui";
-import { ErrorState, FilterSelect, Mono, Pager, TableSkeleton, actionLabel, actionTone, ago, device, downloadCsv, qs, useApi, useDebounced, useNow, when } from "./kit";
+import { ErrorState, FilterSelect, Mono, Pager, TableSkeleton, actionLabel, actionTone, ago, device, downloadCsv, downloadPdf, qs, useApi, useDebounced, useNow, when } from "./kit";
 import type { AuditEvent, AuditPage, Stats } from "./types";
 import { useCan } from "@/components/staff-session";
 
@@ -66,7 +66,8 @@ export function LiveAudit() {
   const sec = stats.data?.security;
   const canExport = useCan("audit.export");
 
-  async function exportCsv() {
+  async function exportCsv(format: "csv" | "pdf") {
+    const dl = format === "pdf" ? (n: string, h: string[], r: (string | number | null | undefined)[][]) => downloadPdf(n, "Audit log", h, r) : downloadCsv;
     const rows: AuditEvent[] = [];
     for (let p = 1; p <= 20; p++) {
       const r = await fetch(`/api/admin/audit${qs({ ...filters, page: p, per_page: 1000, export: true })}`, { cache: "no-store" });
@@ -75,7 +76,7 @@ export function LiveAudit() {
       rows.push(...d.items);
       if (rows.length >= d.total || d.items.length === 0) break;
     }
-    downloadCsv(
+    dl(
       `audit-log-${new Date().toISOString().slice(0, 10)}`,
       ["ID", "Time (UTC)", "Actor type", "Actor ID", "Actor", "Actor email", "Action", "Target type", "Target ID", "Target", "IP", "User agent", "Details"],
       rows.map((e) => [e.id, e.created_at, e.actor.kind, e.actor.id, actorName(e), e.actor.email, e.action, e.target.kind, e.target.id, targetText(e), e.ip, e.user_agent, JSON.stringify(e.meta)]),
@@ -127,9 +128,14 @@ export function LiveAudit() {
               <RefreshCw /> Refresh
             </Button>
             {canExport && (
-              <Button variant="ember" onClick={exportCsv} disabled={!data || data.total === 0}>
-                <Download /> Export CSV
-              </Button>
+              <>
+                <Button variant="surface" onClick={() => exportCsv("pdf")} disabled={!data || data.total === 0}>
+                  <Download /> PDF
+                </Button>
+                <Button variant="ember" onClick={() => exportCsv("csv")} disabled={!data || data.total === 0}>
+                  <Download /> CSV
+                </Button>
+              </>
             )}
           </>
         }

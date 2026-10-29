@@ -13,7 +13,7 @@ import { OnlineNow, PRESENCE_POLL_MS, PresenceCell } from "@/components/clients/
 import { RestrictionChips } from "@/components/clients/restrictions-card";
 import { ClientManageMenu, ClientStateChips, type ManageResult } from "@/components/clients/manage";
 import { ClientDetailView } from "./client-detail";
-import { EmailChip, ErrorState, KycChip, Mono, Pager, TableSkeleton, ago, countryName, day, downloadCsv, qs, sendJson, useApi, useDebounced, useNow, when } from "./kit";
+import { EmailChip, ErrorState, KycChip, Mono, Pager, TableSkeleton, ago, countryName, day, downloadCsv, downloadPdf, qs, sendJson, useApi, useDebounced, useNow, when } from "./kit";
 import type { Client, Stats, UsersPage } from "./types";
 
 type Kyc = "all" | "unverified" | "pending" | "verified" | "rejected";
@@ -61,7 +61,8 @@ export function LiveClients() {
   const s = stats.data?.clients;
   const canExport = useCan("clients.export");
 
-  async function exportAll() {
+  async function exportAll(format: "csv" | "pdf") {
+    const dl = format === "pdf" ? (n: string, h: string[], r: (string | number | null | undefined)[][]) => downloadPdf(n, "Clients", h, r) : downloadCsv;
     const rows: Client[] = [];
     for (let p = 1; p <= 50; p++) {
       const r = await fetch(`/api/admin/users${qs({ q: dq, kyc, verified, hidden, page: p, per_page: 200, export: true })}`, { cache: "no-store" });
@@ -70,7 +71,7 @@ export function LiveClients() {
       rows.push(...d.items);
       if (rows.length >= d.total || d.items.length === 0) break;
     }
-    downloadCsv(
+    dl(
       `clients-${new Date().toISOString().slice(0, 10)}`,
       ["ID", "First name", "Last name", "Email", "Phone", "Country", "Date of birth", "Email verified", "KYC", "Status", "Referral code", "Referred by ID", "Registered", "Last sign-in"],
       rows.map((u) => [u.id, u.first_name, u.last_name, u.email, `${u.phone_dial} ${u.phone}`, u.country.toUpperCase(), u.date_of_birth, u.email_verified ? "yes" : "no", u.kyc_status, u.status, u.referral_code, u.referred_by, u.created_at, u.last_login_at]),
@@ -167,9 +168,14 @@ export function LiveClients() {
               <RefreshCw /> Refresh
             </Button>
             {canExport && (
-              <Button variant="ember" onClick={exportAll} disabled={!data || data.total === 0}>
-                <Download /> Export CSV
-              </Button>
+              <>
+                <Button variant="surface" onClick={() => exportAll("pdf")} disabled={!data || data.total === 0}>
+                  <Download /> PDF
+                </Button>
+                <Button variant="ember" onClick={() => exportAll("csv")} disabled={!data || data.total === 0}>
+                  <Download /> CSV
+                </Button>
+              </>
             )}
           </>
         }
