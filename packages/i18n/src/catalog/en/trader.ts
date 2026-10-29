@@ -16,7 +16,7 @@ const trader = {
   fullscreen: "Fullscreen",
   fullscreenHint: "Fullscreen (F11)",
   // Account type chips (shown in small uppercase badges)
-  "accountType.live": "live",
+  "accountType.live": "real",
   "accountType.demo": "demo",
   // Position side, lowercase as shown in mobile lists
   "side.buy": "buy",

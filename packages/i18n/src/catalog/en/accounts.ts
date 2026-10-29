@@ -3,7 +3,7 @@
 // Ezymex, Ezymex Trader, Ezymex-Live, Ezymex-Demo, MT5, MetaTrader 5, USDT, USD, USC stay in English.
 const accounts = {
   // Badges on account rows (uppercase chips)
-  "badge.live": "LIVE",
+  "badge.live": "REAL",
   "badge.demo": "DEMO",
 
   // Position modes (server enum values)

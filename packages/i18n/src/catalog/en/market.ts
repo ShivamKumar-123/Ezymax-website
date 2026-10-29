@@ -76,7 +76,7 @@ const market = {
   "nav.openAccountTitle": "Create your Ezymex account (opens the Client Area)",
   "nav.signIn": "Sign in",
   "nav.signInTitle": "Sign in to the Client Area",
-  "nav.accountType.live": "live",
+  "nav.accountType.live": "real",
   "nav.accountType.demo": "demo",
   "nav.category.trend": "Trend",
   "nav.category.oscillators": "Oscillators",
