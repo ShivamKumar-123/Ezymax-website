@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button, Card, CopyButton, DataTable, Dialog, EmptyState, Field, Input, KpiCard, PageHeader, Tabs, type Column } from "@ezymex/ui";
 import { ErrorState, FilterSelect, Pager, TableSkeleton, ago, qs, useApi, useDebounced, useNow, when } from "@/components/live/kit";
 import { useCan } from "@/components/staff-session";
-import { Addr, ChainTag, Check, ClientCell, Row, Status, TxLink, WD_STATUS, payout, usd, usd2, walletWrite, type AuditItem, type Paged, type Summary, type Withdrawal } from "./kit";
+import { Addr, ChainTag, Check, ClientCell, Row, Status, TxLink, WD_STATUS, payoutView, usd, usd2, walletWrite, type AuditItem, type Paged, type Summary, type Withdrawal } from "./kit";
 
 const PER = 50;
 type Tab = "requested" | "approved" | "paid" | "completed" | "all";
@@ -125,9 +125,13 @@ function WithdrawalDrawer({ id, onClose, onChanged }: { id: number | null; onClo
         <div className="space-y-5">
           <div className="k-row flex items-center justify-between px-4 py-4">
             <div>
-              <div className="k-num text-[26px] font-semibold">{usd(w.amount)} USDT</div>
+              <div className="k-num text-[26px] font-semibold">
+                {usd2(payoutView(w).gross)} {payoutView(w).currency}
+              </div>
               <div className="text-[12px] text-fg-3">
-                Send {usd(w.net_amount)} USDT · fee {usd(w.fee)}
+                Send {usd2(payoutView(w).net)} {payoutView(w).currency} · fee {usd2(payoutView(w).fee)}
+                {/* what actually left the wallet, for whoever reconciles it */}
+                {payoutView(w).ledger && <> · {usd(payoutView(w).ledger)} USDT from the wallet</>}
               </div>
             </div>
             <Status map={WD_STATUS} s={w.status} />
@@ -152,10 +156,10 @@ function WithdrawalDrawer({ id, onClose, onChanged }: { id: number | null; onClo
                 <span className="flex items-center justify-end gap-1.5">
                   {/* grouped, because this is read off the screen and typed into a banking app */}
                   <span className="k-num font-semibold">
-                    {usd2(payout(w).amount)} {payout(w).currency}
+                    {usd2(payoutView(w).net)} {payoutView(w).currency}
                   </span>
                   {/* the exact figure, unformatted, so it pastes straight into the amount box */}
-                  <CopyButton value={payout(w).amount} label="Amount" className="shrink-0" />
+                  <CopyButton value={payoutView(w).net} label="Amount" className="shrink-0" />
                 </span>
               }
             />
@@ -189,7 +193,7 @@ function WithdrawalDrawer({ id, onClose, onChanged }: { id: number | null; onClo
               {mode === "paid" &&
                 (w.method === "upi" ? (
                   <p className="text-[12.5px] text-fg-3">
-                    Send {usd2(payout(w).amount)} {payout(w).currency} to {w.to_address} from the company account, then enter the UTR. Nothing can check this for us, so recording it completes the withdrawal and debits the client
+                    Send {usd2(payoutView(w).net)} {payoutView(w).currency} to {w.to_address} from the company account, then enter the UTR. Nothing can check this for us, so recording it completes the withdrawal and debits the client
                     straight away &mdash; enter it only once the money has actually left.
                   </p>
                 ) : (
@@ -275,7 +279,7 @@ export function LiveWithdrawalsPage() {
       // named, because the column beside it is in the client's currency and the two are easy to read as one
       cell: (r) => (
         <span className="k-num whitespace-nowrap font-mono text-[12.5px] font-medium">
-          {usd(r.amount)} <span className="font-normal text-fg-3">USDT</span>
+          {usd2(payoutView(r).gross)} <span className="font-normal text-fg-3">{payoutView(r).currency}</span>
         </span>
       ),
     },
@@ -287,7 +291,7 @@ export function LiveWithdrawalsPage() {
       // the figure that leaves the company account, in the currency it leaves in - the same one the drawer shows
       cell: (r) => (
         <span className="k-num whitespace-nowrap font-mono text-[12px] text-fg-2">
-          {usd2(payout(r).amount)} <span className="text-fg-3">{payout(r).currency}</span>
+          {usd2(payoutView(r).net)} <span className="text-fg-3">{payoutView(r).currency}</span>
         </span>
       ),
     },

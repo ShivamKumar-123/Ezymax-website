@@ -143,15 +143,26 @@ export function usd(v: string | number | null | undefined, dp = 2, maxDp?: numbe
 export const usd2 = (v: string | number | null | undefined) => usd(v, 2, 2);
 
 /**
- * What staff actually have to send, and in which currency.
+ * A withdrawal in the currency the person paying it works in.
  *
- * A crypto payout leaves in USDT net of the fee; an off-chain one leaves in the client's own currency, at the rate
- * fixed when they asked. The two are different numbers for the same withdrawal, so the figure is worked out once
- * here and shown the same way wherever it appears - a list that says 9,999.00 beside a drawer that says 999,900 is
- * a transposition waiting to be typed into a banking app.
+ * The wallet is denominated in USDT and that is what the ledger moves, but an off-chain payout is agreed with the
+ * client in their own currency at a rate fixed when they asked - and the person sending it thinks, types and
+ * reconciles in that currency. So the whole row converts together at that one rate: a gross in rupees beside a fee
+ * in tether is how the wrong figure gets sent.
+ *
+ * `net` is the amount promised at request time rather than a fresh multiplication of it, so what the client was
+ * quoted is what the Back Office is told to send. The USDT the wallet actually moved is kept in `ledger` instead
+ * of being dropped, because that is still the entry that will be reconciled.
  */
-export function payout(w: Pick<Withdrawal, "payout_amount" | "payout_currency" | "net_amount">): { amount: string; currency: string } {
-  return w.payout_amount && w.payout_currency ? { amount: w.payout_amount, currency: w.payout_currency } : { amount: w.net_amount, currency: "USDT" };
+export function payoutView(w: Pick<Withdrawal, "amount" | "fee" | "net_amount" | "payout_amount" | "payout_currency" | "payout_rate">) {
+  const rate = Number(w.payout_rate);
+  if (!w.payout_amount || !w.payout_currency || !Number.isFinite(rate) || rate <= 0) {
+    return { currency: "USDT", gross: w.amount, fee: w.fee, net: w.net_amount, ledger: null as string | null };
+  }
+  // rate and amounts both carry few decimals, so a double holds the product exactly at these sizes; rounded to
+  // the minor unit anyway, because a payout is made in whole paise
+  const at = (v: string) => (Math.round(Number(v) * rate * 100) / 100).toFixed(2);
+  return { currency: w.payout_currency, gross: at(w.amount), fee: at(w.fee), net: w.payout_amount, ledger: w.amount };
 }
 
 /** `null` for a withdrawal that never touched a chain (an off-chain payout); the caller names the method. */
