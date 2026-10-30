@@ -230,6 +230,10 @@ const wallet = {
   "withdraw.upiDestination": "Your UPI ID",
   "withdraw.upiError": "Enter a UPI ID like name@bank",
   "withdraw.upiNote": "We email you a code to confirm. Use a UPI ID in your own name — payments to someone else's ID are rejected at review.",
+  // Said instead of the two notes above while the emailed confirmation is stood down (WITHDRAWAL_STEPUP=off):
+  // promising a code that is not coming is worse than not mentioning one.
+  "withdraw.noteNoCode": "Send only to a destination in your own name — payments to anyone else are rejected at review.",
+  "withdraw.noteNoCodeChain": "Send only to an address on {network} that you control; exchange deposit addresses on another network lose the funds.",
   // the amount is the promise; the rate behind it is the broker's own number and is not quoted here
   "withdraw.rateNote": "{net} USDT, converted when you ask. Later rate changes do not affect this withdrawal.",
   "withdraw.confirmUpi": "{payout} to {upi}",

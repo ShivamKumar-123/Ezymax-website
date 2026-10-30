@@ -217,6 +217,11 @@ class _WithdrawFormState extends ConsumerState<WithdrawForm> {
     final q = _quote;
     if (q == null) return;
     setState(() => _err = null);
+    // with the emailed code stood down there is nothing to confirm, so the request goes straight out
+    if (ref.read(walletCfgProvider).value?.stepUpWithdrawal == false) {
+      await _send('');
+      return;
+    }
     await showStepUpSheet(
       context,
       action: 'withdrawal',

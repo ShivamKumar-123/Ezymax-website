@@ -48,6 +48,8 @@ export interface WalletConfig {
   chains: ChainConfig[];
   /** Empty when the broker offers crypto payouts only. */
   withdraw_methods?: WithdrawMethodConfig[];
+  /** False while the emailed confirmation is stood down (WITHDRAWAL_STEPUP=off). Absent means on. */
+  stepup_withdrawal?: boolean;
   limits: {
     withdraw_min: string;
     withdraw_max: string;

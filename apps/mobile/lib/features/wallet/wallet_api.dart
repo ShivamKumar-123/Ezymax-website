@@ -143,9 +143,12 @@ class WalletLimits {
 
 /// `GET wallet/config`: networks, limits, fees.
 class WalletConfig {
-  const WalletConfig({required this.chains, required this.limits, this.withdrawMethods = const []});
+  const WalletConfig({required this.chains, required this.limits, this.withdrawMethods = const [], this.stepUpWithdrawal = true});
   final List<WalletChain> chains;
   final List<WithdrawMethod> withdrawMethods;
+
+  /// False while the emailed confirmation is stood down (WITHDRAWAL_STEPUP=off). Absent means on.
+  final bool stepUpWithdrawal;
 
   /// The off-chain method the broker has open, if any (UPI today).
   WithdrawMethod? get upi => withdrawMethods.where((m) => m.method == 'upi' && m.usable).firstOrNull;
@@ -158,6 +161,7 @@ class WalletConfig {
         chains: [for (final c in _list(j['chains'])) WalletChain.fromJson(c)],
         limits: WalletLimits.fromJson(_map(j['limits'])),
         withdrawMethods: [for (final m in _list(j['withdraw_methods'])) WithdrawMethod.fromJson(m)],
+        stepUpWithdrawal: j['stepup_withdrawal'] != false,
       );
 }
 

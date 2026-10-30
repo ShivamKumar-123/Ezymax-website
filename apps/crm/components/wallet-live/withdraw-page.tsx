@@ -189,6 +189,8 @@ function RequestForm({ cfg, o, kyc, via, onCreated }: { cfg: WalletConfig; o: Ov
   const offered = isUpi ? !!upi : chains.length > 0;
   const { quote, err: qErr, busy } = useQuote(dest, amt, to, verified && offered && amountOk && toOk);
   const L = cfg.limits;
+  // absent means on: a broker whose config predates the switch keeps the confirmation
+  const stepUpOn = cfg.stepup_withdrawal !== false;
 
   // a destination for one rail is never valid for another
   React.useEffect(() => {
@@ -294,12 +296,18 @@ function RequestForm({ cfg, o, kyc, via, onCreated }: { cfg: WalletConfig; o: Ov
           disabled={!verified || !quote}
           onClick={() => {
             setErr(null);
-            setConfirm(true);
+            // with the emailed code stood down there is nothing to confirm, so the request goes straight out
+            if (stepUpOn) setConfirm(true);
+            else void send("");
           }}
         >
           <ArrowUpFromLine /> {t("common.continue")}
         </Button>
-        <p className="text-[12px] text-fg-3">{isUpi ? (upi?.instructions ?? t("wallet.withdraw.upiNote")) : t("wallet.withdraw.emailNote", { network: CHAIN_LABEL[chain].name })}</p>
+        <p className="text-[12px] text-fg-3">
+          {isUpi
+            ? (upi?.instructions ?? t(stepUpOn ? "wallet.withdraw.upiNote" : "wallet.withdraw.noteNoCode"))
+            : t(stepUpOn ? "wallet.withdraw.emailNote" : "wallet.withdraw.noteNoCodeChain", { network: CHAIN_LABEL[chain].name })}
+        </p>
       </div>
       <StepUpDialog
         open={confirm}

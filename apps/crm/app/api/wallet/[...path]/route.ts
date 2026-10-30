@@ -52,6 +52,19 @@ const AMOUNT_RE = /^\d{1,12}(\.\d{1,6})?$/;
 const KEY_RE = /^[A-Za-z0-9:_-]{8,128}$/;
 /** A UPI ID, the shape the withdraw form accepts (components/wallet-live/api.ts upiLooksValid). */
 const UPI_RE = /^[a-z0-9][a-z0-9.\-_]{0,190}@[a-z][a-z0-9]{1,63}$/i;
+
+/**
+ * Whether a withdrawal still has to be confirmed with the emailed code.
+ *
+ * It is a switch rather than a deletion because the code is the one check between a stolen session and an empty
+ * wallet, and the only reason to stand it down is that our mail is not arriving - a fault we expect to fix. Set
+ * WITHDRAWAL_STEPUP=off to stand it down; anything else, including the variable being absent, keeps it on, so a
+ * fresh environment is never quietly less safe than this one.
+ *
+ * While it is off, a withdrawal still needs a signed-in session, a verified identity, and the finance team's
+ * review before any money moves.
+ */
+const WITHDRAWAL_STEPUP = process.env.WITHDRAWAL_STEPUP !== "off";
 /** Manual-payment images: 24 lower-case hex characters (services/wallet src/media.rs). */
 const MEDIA_RE = /^[0-9a-f]{24}$/;
 const MAX_IMAGE = 5 * 1024 * 1024;
@@ -114,7 +127,12 @@ export async function GET(req: NextRequest, { params }: Ctx) {
   const call = (p: string) => wallet(p, { user, req }).then((r) => reply(r.status, r.data));
   const route = path.join("/");
 
-  if (route === "config") return call("/v1/config");
+  if (route === "config") {
+    // the switch travels with the config so the form knows whether to ask for a code at all
+    const r = await wallet("/v1/config", { user, req });
+    const data = r.status === 200 && r.data && typeof r.data === "object" ? { ...(r.data as Obj), stepup_withdrawal: WITHDRAWAL_STEPUP } : r.data;
+    return reply(r.status, data);
+  }
   if (route === "overview") return call(`/v1/wallets/${uid}/overview`);
   if (route === "notifications") return call(`/v1/wallets/${uid}/notifications`);
   if (route === "activity" || route === "ledger" || route === "transfers" || route === "withdrawals" || route === "deposits") {
@@ -210,9 +228,14 @@ export async function POST(req: NextRequest, { params }: Ctx) {
       // every check first, so the one-time confirmation is not spent on a request that would fail
       const q = await wallet("/v1/withdrawals/quote", { user, req, body: req0 });
       if (q.status !== 200) return reply(q.status, q.data);
-      // the code is bound to the payout it was asked for, so it cannot be spent on a different rail
-      const denied = await consumeStepup(uid, req.headers, "withdrawal", `${chain ?? method}-${amount}`, stepupTokenOf(req.headers, body));
-      if (denied) return reply(denied.status, denied.data);
+      if (WITHDRAWAL_STEPUP) {
+        // the code is bound to the payout it was asked for, so it cannot be spent on a different rail
+        const denied = await consumeStepup(uid, req.headers, "withdrawal", `${chain ?? method}-${amount}`, stepupTokenOf(req.headers, body));
+        if (denied) return reply(denied.status, denied.data);
+      } else {
+        // left in the log so the window without the emailed code is visible afterwards, request by request
+        console.warn(`withdrawal without step-up: user=${uid} ${chain ?? method} ${amount}`);
+      }
       return send("/v1/withdrawals", { ...req0, idempotency_key: `crm:${uid}:${key}` });
     }
     case "transfers/to-trading":
