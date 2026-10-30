@@ -187,10 +187,7 @@ function RequestForm({ cfg, o, kyc, via, onCreated }: { cfg: WalletConfig; o: Ov
   const toOk = isUpi ? upiLooksValid(to) : addressLooksValid(chain, to);
   const verified = kyc === "verified";
   const offered = isUpi ? !!upi : chains.length > 0;
-  const { quote, err: qErr, busy } = useQuote(dest, amt, to, verified && offered && amountOk && toOk, payCcy);
   const L = cfg.limits;
-  // absent means on: a broker whose config predates the switch keeps the confirmation
-  const stepUpOn = cfg.stepup_withdrawal !== false;
   /**
    * An off-chain client works in their own money. They type what they want to be paid, the limits are quoted to
    * them in it, and the service works the wallet debit back from the figure - so the rupees they asked for are
@@ -202,6 +199,9 @@ function RequestForm({ cfg, o, kyc, via, onCreated }: { cfg: WalletConfig; o: Ov
   // what is left after the fee, since the fee is added on top of whatever they ask for
   const spendable = Math.max(0, (Number(available) - Number(L.withdraw_fee_flat) - Number(upi?.fee_flat ?? 0)) / (1 + Number(L.withdraw_fee_pct) / 100));
   const maxAsk = payCcy === "USDT" ? Math.floor(Number(available) * 100) / 100 : Math.floor(spendable * rate * 100) / 100;
+  const { quote, err: qErr, busy } = useQuote(dest, amt, to, verified && offered && amountOk && toOk, payCcy);
+  // absent means on: a broker whose config predates the switch keeps the confirmation
+  const stepUpOn = cfg.stepup_withdrawal !== false;
 
   // a destination for one rail is never valid for another
   React.useEffect(() => {
@@ -486,10 +486,16 @@ function HowItWorks({ via, currency }: { via: Via; currency: string | null }) {
   );
 }
 
-function LimitsCard({ cfg, o }: { cfg: WalletConfig; o: Overview }) {
+/** `via` decides the currency the whole card is quoted in: a client reading rupees everywhere else should not
+ *  meet their limits in tether. The limits themselves are the wallet's, so they are converted, not different. */
+function LimitsCard({ cfg, o, via }: { cfg: WalletConfig; o: Overview; via: Via }) {
   const t = useT();
-  const used = Number(o.limits.used_today);
-  const max = Number(o.limits.daily_max);
+  const m = (cfg.withdraw_methods ?? []).find((x) => x.method === "upi" && x.enabled && x.rate);
+  const ccy = via === "upi" && m?.rate ? m.currency : "USDT";
+  const rate = via === "upi" && m?.rate ? Number(m.rate) : 1;
+  const at = (v: string | number) => Number(v) * rate;
+  const used = at(o.limits.used_today);
+  const max = at(o.limits.daily_max);
   const L = cfg.limits;
   return (
     <Card>
@@ -499,15 +505,15 @@ function LimitsCard({ cfg, o }: { cfg: WalletConfig; o: Overview }) {
           <div className="mb-1.5 flex justify-between text-[12.5px]">
             <span className="text-fg-2">{t("wallet.withdraw.withdrawnToday")}</span>
             <span dir="ltr" className="k-num text-fg-3">
-              <span className="text-fg">{fmt(used)}</span> / {fmt(max)} USDT
+              <span className="text-fg">{fmt(used)}</span> / {fmt(max)} {ccy}
             </span>
           </div>
           <Progress value={max ? (used / max) * 100 : 0} tone={max && used / max > 0.8 ? "warn" : "gold"} />
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <Tile label={t("wallet.minimum")} value={<span dir="ltr">{fmt(inPay(L.withdraw_min))} {payCcy}</span>} />
-          <Tile label={t("wallet.maximum")} value={<span dir="ltr">{fmt(inPay(L.withdraw_max))} {payCcy}</span>} />
-          <Tile label={t("wallet.fee")} value={<span dir="ltr">{`${fmt(L.withdraw_fee_flat)} USDT${Number(L.withdraw_fee_pct) > 0 ? ` + ${L.withdraw_fee_pct}%` : ""}`}</span>} />
+          <Tile label={t("wallet.minimum")} value={<span dir="ltr">{fmt(at(L.withdraw_min))} {ccy}</span>} />
+          <Tile label={t("wallet.maximum")} value={<span dir="ltr">{fmt(at(L.withdraw_max))} {ccy}</span>} />
+          <Tile label={t("wallet.fee")} value={<span dir="ltr">{`${fmt(at(L.withdraw_fee_flat))} ${ccy}${Number(L.withdraw_fee_pct) > 0 ? ` + ${L.withdraw_fee_pct}%` : ""}`}</span>} />
           <Tile label={t("wallet.withdraw.afterDeposit")} value={L.deposit_cooldown_hours ? t("wallet.withdraw.hoursWait", { hours: L.deposit_cooldown_hours }) : t("wallet.withdraw.noWait")} />
         </div>
         {o.limits.cooldown_until && <div className="text-[12px] text-warn">{t("wallet.withdraw.cooldown", { date: formatDateTime(o.limits.cooldown_until) })}</div>}
@@ -644,7 +650,7 @@ function Inner() {
         <div className="space-y-4 xl:col-span-7">{gateOpen ? <Skeleton className="h-[420px] w-full rounded-[20px]" /> : main}</div>
         <div className="space-y-4 xl:col-span-5">
           <HowItWorks via={via} currency={upi?.currency ?? null} />
-          {cfg.data && o.data && <LimitsCard cfg={cfg.data} o={o.data} />}
+          {cfg.data && o.data && <LimitsCard cfg={cfg.data} o={o.data} via={via} />}
           <MyWithdrawals list={list.data} onOpen={open} />
         </div>
       </div>
