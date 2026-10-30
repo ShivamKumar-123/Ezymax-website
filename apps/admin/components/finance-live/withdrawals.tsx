@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button, Card, CopyButton, DataTable, Dialog, EmptyState, Field, Input, KpiCard, PageHeader, Tabs, type Column } from "@ezymex/ui";
 import { ErrorState, FilterSelect, Pager, TableSkeleton, ago, qs, useApi, useDebounced, useNow, when } from "@/components/live/kit";
 import { useCan } from "@/components/staff-session";
-import { Addr, ChainTag, Check, ClientCell, Row, Status, TxLink, WD_STATUS, usd, usd2, walletWrite, type AuditItem, type Paged, type Summary, type Withdrawal } from "./kit";
+import { Addr, ChainTag, Check, ClientCell, Row, Status, TxLink, WD_STATUS, payout, usd, usd2, walletWrite, type AuditItem, type Paged, type Summary, type Withdrawal } from "./kit";
 
 const PER = 50;
 type Tab = "requested" | "approved" | "paid" | "completed" | "all";
@@ -150,15 +150,12 @@ function WithdrawalDrawer({ id, onClose, onChanged }: { id: number | null; onClo
               k="Amount to send"
               v={
                 <span className="flex items-center justify-end gap-1.5">
-                  {w.payout_amount && w.payout_currency ? (
-                    <span className="k-num font-semibold">
-                      {w.payout_amount} {w.payout_currency}
-                    </span>
-                  ) : (
-                    <span className="k-num font-semibold">{usd(w.net_amount)} USDT</span>
-                  )}
+                  {/* grouped, because this is read off the screen and typed into a banking app */}
+                  <span className="k-num font-semibold">
+                    {usd2(payout(w).amount)} {payout(w).currency}
+                  </span>
                   {/* the exact figure, unformatted, so it pastes straight into the amount box */}
-                  <CopyButton value={w.payout_amount ?? w.net_amount} label="Amount" className="shrink-0" />
+                  <CopyButton value={payout(w).amount} label="Amount" className="shrink-0" />
                 </span>
               }
             />
@@ -192,7 +189,7 @@ function WithdrawalDrawer({ id, onClose, onChanged }: { id: number | null; onClo
               {mode === "paid" &&
                 (w.method === "upi" ? (
                   <p className="text-[12.5px] text-fg-3">
-                    Send {w.payout_amount} {w.payout_currency} to {w.to_address} from the company account, then enter the UTR. Nothing can check this for us, so recording it completes the withdrawal and debits the client
+                    Send {usd2(payout(w).amount)} {payout(w).currency} to {w.to_address} from the company account, then enter the UTR. Nothing can check this for us, so recording it completes the withdrawal and debits the client
                     straight away &mdash; enter it only once the money has actually left.
                   </p>
                 ) : (
@@ -271,8 +268,29 @@ export function LiveWithdrawalsPage() {
   const cols: Column<Withdrawal>[] = [
     { key: "id", header: "ID", cell: (r) => <span className="font-mono text-[12px] text-fg-3">#{r.id}</span> },
     { key: "c", header: "Client", cell: (r) => <ClientCell id={r.user_id} /> },
-    { key: "a", header: "Amount", align: "right", cell: (r) => <span className="k-num font-mono text-[12.5px] font-medium">{usd(r.amount)}</span> },
-    { key: "n", header: "Send", align: "right", hideOn: "lg", cell: (r) => <span className="k-num font-mono text-[12px] text-fg-2">{usd(r.net_amount)}</span> },
+    {
+      key: "a",
+      header: "Amount",
+      align: "right",
+      // named, because the column beside it is in the client's currency and the two are easy to read as one
+      cell: (r) => (
+        <span className="k-num whitespace-nowrap font-mono text-[12.5px] font-medium">
+          {usd(r.amount)} <span className="font-normal text-fg-3">USDT</span>
+        </span>
+      ),
+    },
+    {
+      key: "n",
+      header: "Send",
+      align: "right",
+      hideOn: "lg",
+      // the figure that leaves the company account, in the currency it leaves in - the same one the drawer shows
+      cell: (r) => (
+        <span className="k-num whitespace-nowrap font-mono text-[12px] text-fg-2">
+          {usd2(payout(r).amount)} <span className="text-fg-3">{payout(r).currency}</span>
+        </span>
+      ),
+    },
     { key: "ch", header: "Via", cell: (r) => (r.method === "upi" ? <span className="text-[12.5px]">UPI</span> : <ChainTag chain={r.chain} />) },
     { key: "to", header: "To", cell: (r) => <Addr a={r.to_address} /> },
     { key: "k", header: "KYC", hideOn: "xl", cell: (r) => <span className="text-[12px] text-fg-3">{r.kyc_status ?? "—"}</span> },

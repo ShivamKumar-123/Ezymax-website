@@ -142,6 +142,18 @@ export function usd(v: string | number | null | undefined, dp = 2, maxDp?: numbe
 /** Headline figures (KPI cards): always two decimals, "56,082.48" rather than "56,082.476344". */
 export const usd2 = (v: string | number | null | undefined) => usd(v, 2, 2);
 
+/**
+ * What staff actually have to send, and in which currency.
+ *
+ * A crypto payout leaves in USDT net of the fee; an off-chain one leaves in the client's own currency, at the rate
+ * fixed when they asked. The two are different numbers for the same withdrawal, so the figure is worked out once
+ * here and shown the same way wherever it appears - a list that says 9,999.00 beside a drawer that says 999,900 is
+ * a transposition waiting to be typed into a banking app.
+ */
+export function payout(w: Pick<Withdrawal, "payout_amount" | "payout_currency" | "net_amount">): { amount: string; currency: string } {
+  return w.payout_amount && w.payout_currency ? { amount: w.payout_amount, currency: w.payout_currency } : { amount: w.net_amount, currency: "USDT" };
+}
+
 /** `null` for a withdrawal that never touched a chain (an off-chain payout); the caller names the method. */
 export function ChainTag({ chain }: { chain: Chain | null }) {
   if (!chain) return <span className="text-[12px] text-fg-3">&mdash;</span>;
