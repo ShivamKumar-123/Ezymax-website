@@ -273,25 +273,23 @@ export function LiveWithdrawalsPage() {
     { key: "id", header: "ID", cell: (r) => <span className="font-mono text-[12px] text-fg-3">#{r.id}</span> },
     { key: "c", header: "Client", cell: (r) => <ClientCell id={r.user_id} /> },
     {
-      key: "a",
-      header: "Amount",
-      align: "right",
-      // named, because the column beside it is in the client's currency and the two are easy to read as one
-      cell: (r) => (
-        <span className="k-num whitespace-nowrap font-mono text-[12.5px] font-medium">
-          {usd2(payoutView(r).gross)} <span className="font-normal text-fg-3">{payoutView(r).currency}</span>
-        </span>
-      ),
-    },
-    {
       key: "n",
       header: "Send",
       align: "right",
-      hideOn: "lg",
-      // the figure that leaves the company account, in the currency it leaves in - the same one the drawer shows
+      /*
+       * One money column, not two. This is a worklist: the reader is about to send a payment, and the only figure
+       * they act on is what leaves. Two figures a column apart, in two currencies, is how the wrong one gets typed
+       * into a banking app - which is the whole reason this column exists.
+       *
+       * The wallet debit is not dropped, only demoted: it is what the ledger moves and what reconciliation will
+       * look for, so it stays underneath, quietly, where nobody will mistake it for the amount to send.
+       */
       cell: (r) => (
-        <span className="k-num whitespace-nowrap font-mono text-[12px] text-fg-2">
-          {usd2(payoutView(r).net)} <span className="text-fg-3">{payoutView(r).currency}</span>
+        <span className="inline-flex flex-col items-end leading-tight">
+          <span className="k-num whitespace-nowrap font-mono text-[12.5px] font-medium">
+            {usd2(payoutView(r).net)} <span className="font-normal text-fg-3">{payoutView(r).currency}</span>
+          </span>
+          {payoutView(r).ledger && <span className="k-num whitespace-nowrap font-mono text-[11px] text-fg-3">{usd(payoutView(r).ledger)} USDT from the wallet</span>}
         </span>
       ),
     },
