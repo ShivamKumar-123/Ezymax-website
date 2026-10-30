@@ -93,7 +93,8 @@ pub fn fee_for(limits: &Limits, dest_fee: D, amount: D, on_chain: bool) -> D {
 /// The wallet debit behind an off-chain payout the client asked for in their own money: what they typed,
 /// converted at the frozen rate and rounded up so the rupees promised are never short of the rupees asked for,
 /// plus whatever the method itself charges. Nothing else comes off — the client receives exactly the figure
-/// they typed, and the broker's margin is the rate.
+/// they typed, and the broker's margin is the rate. Rounding up is at the engine's two places, so a rate that
+/// does not divide evenly costs the client a fraction of a cent rather than short-paying them.
 pub fn off_chain_debit(payout: D, rate: D, method_fee: D) -> D {
     ceil_dp(payout / rate, ENGINE_DP) + method_fee
 }
@@ -730,10 +731,11 @@ mod tests {
         // method priced at nothing costs the client nothing: 10,000 rupees asked for is 10,000 rupees paid
         assert_eq!(fee_for(&l, D::ZERO, D::from(101), false), D::ZERO);
         assert_eq!(fee_for(&l, D::from_str("0.25").unwrap(), D::from(101), false), D::from_str("0.25").unwrap());
-        // 10,000 rupees at 101 to the dollar: the client is paid 10,000 and the wallet loses the conversion
-        // alone, rounded up at the engine's six places. No fee, so nothing is cut from the 10,000.
+        // 10,000 rupees at 101 to the dollar: the client is paid all 10,000 and the wallet loses the
+        // conversion alone - 99.0099, rounded up to the engine's two places, so the rupees promised are never
+        // short. No fee, so nothing is cut from the 10,000.
         let at = |r: u32| off_chain_debit(D::from(10_000), D::from(r), D::ZERO);
-        assert_eq!(at(101), D::from_str("99.009901").unwrap());
+        assert_eq!(at(101), D::from_str("99.01").unwrap());
         assert_eq!(at(100), D::from(100));
         // a method that does charge adds its fee on top of the conversion, never out of the payout
         assert_eq!(off_chain_debit(D::from(10_000), D::from(100), D::from_str("0.5").unwrap()), D::from_str("100.5").unwrap());
