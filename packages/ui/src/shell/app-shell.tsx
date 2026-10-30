@@ -11,6 +11,33 @@ import { Logo, LogoMark } from "./logo";
 import { Tooltip, TooltipProvider, Menu } from "../components/overlays";
 import { useLocale, useT } from "@ezymex/i18n/react";
 
+/**
+ * The count on a nav item, with a ring that fires once when the number goes up.
+ *
+ * Back Office queues are watched out of the corner of an eye: a request that just arrived has to interrupt, while
+ * one that has been waiting ten minutes only has to stay visible. So the ring plays on an increase and then stops -
+ * a badge that pulses for as long as there is work becomes wallpaper, and the next arrival is the one nobody sees.
+ * It stays quiet on the first render, so opening a page with a full queue does not set everything flashing.
+ */
+function NavBadge({ value, className }: { value: number | string; className?: string }) {
+  const seen = React.useRef<number | string | null>(null);
+  const [grew, setGrew] = React.useState(false);
+  React.useEffect(() => {
+    const before = seen.current;
+    seen.current = value;
+    if (before === null || typeof value !== "number" || typeof before !== "number" || value <= before) return;
+    setGrew(true);
+    const t = setTimeout(() => setGrew(false), 2600);
+    return () => clearTimeout(t);
+  }, [value]);
+  return (
+    <span className={cn("relative grid place-items-center", className)}>
+      {grew && <span aria-hidden className="absolute -inset-1 animate-ping rounded-full bg-ember/50 motion-reduce:hidden" />}
+      <span className="relative grid h-full w-full place-items-center rounded-full">{value}</span>
+    </span>
+  );
+}
+
 export interface SubNavItem {
   href: string;
   label: string;
@@ -110,7 +137,7 @@ function IconRail({ modules, footer, side = "right" }: { modules: NavModule[]; f
                     </>
                   )}
                   <Icon className="relative size-[19px]" strokeWidth={1.7} />
-                  {m.badge !== undefined && <span className="absolute end-0.5 top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-ember px-1 text-[9px] font-bold text-white ring-2 ring-surface">{m.badge}</span>}
+                  {m.badge !== undefined && <NavBadge value={m.badge} className="absolute end-0.5 top-0.5 h-4 min-w-4 rounded-full bg-ember px-1 text-[9px] font-bold text-white ring-2 ring-surface" />}
                 </Link>
               </Tooltip>
             </React.Fragment>
@@ -192,7 +219,7 @@ function PillNav({ items, variant, fit = false }: { items: SubNavItem[]; variant
       <>
         {Icon && <Icon className="relative size-[17px]" strokeWidth={1.8} />}
         {!iconOnly && <span className="relative whitespace-nowrap">{s.label}</span>}
-        {s.badge !== undefined && <span className="relative grid h-[18px] min-w-[18px] place-items-center rounded-full bg-ember-soft px-1 text-[10px] font-semibold text-ember">{s.badge}</span>}
+        {s.badge !== undefined && <NavBadge value={s.badge} className="h-[18px] min-w-[18px] rounded-full bg-ember-soft px-1 text-[10px] font-semibold text-ember" />}
       </>
     );
   };
