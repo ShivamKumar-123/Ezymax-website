@@ -50,6 +50,8 @@ const ID_RE = /^\d{1,18}$/;
 const INTENT_RE = /^dep_[0-9a-f]{24}$/;
 const AMOUNT_RE = /^\d{1,12}(\.\d{1,6})?$/;
 const KEY_RE = /^[A-Za-z0-9:_-]{8,128}$/;
+/** A UPI ID, the shape the withdraw form accepts (components/wallet-live/api.ts upiLooksValid). */
+const UPI_RE = /^[a-z0-9][a-z0-9.\-_]{0,190}@[a-z][a-z0-9]{1,63}$/i;
 /** Manual-payment images: 24 lower-case hex characters (services/wallet src/media.rs). */
 const MEDIA_RE = /^[0-9a-f]{24}$/;
 const MAX_IMAGE = 5 * 1024 * 1024;
@@ -184,13 +186,23 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     }
     case "withdrawals/quote":
     case "withdrawals": {
-      const chain = chainOf(body.chain);
-      if (!chain) return error(422, "validation", "Choose a network.", "chain");
+      // A payout leaves either on a chain or through an off-chain method the broker has switched on. The service
+      // has taken `method` for a while ("crypto" for older callers, or "upi"); this stayed crypto-only, so a UPI
+      // payout - which has no network to pick - was turned away for not picking one.
+      const method = body.method === "upi" ? "upi" : "crypto";
+      const chain = method === "crypto" ? chainOf(body.chain) : null;
+      if (method === "crypto" && !chain) return error(422, "validation", "Choose a network.", "chain");
       const amount = typeof body.amount === "string" || typeof body.amount === "number" ? String(body.amount).trim() : "";
       if (!/^\d{1,12}(\.\d{1,2})?$/.test(amount) || Number(amount) <= 0) return error(422, "validation", "Enter an amount with up to 2 decimals.", "amount");
       const to = typeof body.to_address === "string" ? body.to_address.trim() : "";
-      if (!to || to.length > 64) return error(422, "validation", "Enter the destination address.", "to_address");
-      const req0 = { user_id: uid, chain, amount, to_address: to };
+      if (method === "upi") {
+        // the same shape the form accepts (components/wallet-live/api.ts upiLooksValid)
+        if (!UPI_RE.test(to)) return error(422, "validation", "Enter a UPI ID in your own name, like name@bank.", "to_address");
+      } else if (!to || to.length > 64) {
+        return error(422, "validation", "Enter the destination address.", "to_address");
+      }
+      // `chain` stays in the body for crypto only; the service reads it just for that method
+      const req0 = { user_id: uid, method, amount, to_address: to, ...(chain ? { chain } : {}) };
       if (route === "withdrawals/quote") return send("/v1/withdrawals/quote", req0);
       if (user.kyc_status !== "verified") return error(403, "kyc_required", "Verify your identity before your first withdrawal.");
       const key = typeof body.idempotency_key === "string" && KEY_RE.test(body.idempotency_key) ? body.idempotency_key : null;
@@ -198,7 +210,8 @@ export async function POST(req: NextRequest, { params }: Ctx) {
       // every check first, so the one-time confirmation is not spent on a request that would fail
       const q = await wallet("/v1/withdrawals/quote", { user, req, body: req0 });
       if (q.status !== 200) return reply(q.status, q.data);
-      const denied = await consumeStepup(uid, req.headers, "withdrawal", `${chain}-${amount}`, stepupTokenOf(req.headers, body));
+      // the code is bound to the payout it was asked for, so it cannot be spent on a different rail
+      const denied = await consumeStepup(uid, req.headers, "withdrawal", `${chain ?? method}-${amount}`, stepupTokenOf(req.headers, body));
       if (denied) return reply(denied.status, denied.data);
       return send("/v1/withdrawals", { ...req0, idempotency_key: `crm:${uid}:${key}` });
     }

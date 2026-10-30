@@ -402,12 +402,19 @@ Map<String, dynamic> _pollIntent(_Intent i) {
   return view;
 }
 
-(int, Object) _quote(String chain, String amount, String to) {
+/// `method` is 'crypto' or 'upi'; a UPI payout has no network to validate an address against (the BFF's rule).
+(int, Object) _quote(String method, String chain, String amount, String to) {
   final cfg = previewWalletConfigFull;
   final limits = cfg['limits'] as Map<String, dynamic>;
   final a = _d(amount);
-  final valid = chain == 'bsc' ? RegExp(r'^0x[0-9a-fA-F]{40}$').hasMatch(to) : RegExp(r'^T[1-9A-HJ-NP-Za-km-z]{33}$').hasMatch(to);
-  if (!valid) return (422, _err('validation', 'Enter a valid ${chain == 'bsc' ? 'BEP20' : 'TRC20'} address.', 'to_address'));
+  if (method == 'upi') {
+    if (!RegExp(r'^[a-z0-9][a-z0-9.\-_]{0,190}@[a-z][a-z0-9]{1,63}$', caseSensitive: false).hasMatch(to)) {
+      return (422, _err('validation', 'Enter a UPI ID in your own name, like name@bank.', 'to_address'));
+    }
+  } else {
+    final valid = chain == 'bsc' ? RegExp(r'^0x[0-9a-fA-F]{40}$').hasMatch(to) : RegExp(r'^T[1-9A-HJ-NP-Za-km-z]{33}$').hasMatch(to);
+    if (!valid) return (422, _err('validation', 'Enter a valid ${chain == 'bsc' ? 'BEP20' : 'TRC20'} address.', 'to_address'));
+  }
   if (a < _d(limits['withdraw_min'])) return (422, _err('below_minimum', 'The minimum withdrawal is ${limits['withdraw_min']} USDT.', 'amount'));
   if (a > _d(limits['withdraw_max'])) return (422, _err('above_maximum', 'The maximum withdrawal is ${limits['withdraw_max']} USDT.', 'amount'));
   if (_s.usedToday + a > 50000) return (422, _err('daily_limit', 'This is over your daily withdrawal limit.', 'amount'));
@@ -512,15 +519,16 @@ Map<String, dynamic> _page(List<Map<String, dynamic>> all, Map<String, String> q
         ..polls = 0;
       return (200, {'deposit': i.depositJson()});
     case 'withdrawals/quote':
-      return _quote('${body['chain']}', '${body['amount'] ?? ''}'.trim(), '${body['to_address'] ?? ''}'.trim());
+      return _quote('${body['method'] ?? 'crypto'}', '${body['chain']}', '${body['amount'] ?? ''}'.trim(), '${body['to_address'] ?? ''}'.trim());
     case 'withdrawals':
+      final method = '${body['method'] ?? 'crypto'}';
       final chain = '${body['chain']}';
       final amount = '${body['amount'] ?? ''}'.trim();
       final to = '${body['to_address'] ?? ''}'.trim();
       final key = '${body['idempotency_key'] ?? ''}';
       if (!RegExp(r'^[A-Za-z0-9:_-]{8,128}$').hasMatch(key)) return (422, _err('validation', 'Missing request id.', 'idempotency_key'));
       // every check first, then the emailed code (as the BFF)
-      final q = _quote(chain, amount, to);
+      final q = _quote(method, chain, amount, to);
       if (q.$1 != 200) return q;
       if (body['stepup_token'] == null || '${body['stepup_token']}'.isEmpty) {
         return (403, _err('stepup_required', 'Confirm this withdrawal with the code we email you.'));
