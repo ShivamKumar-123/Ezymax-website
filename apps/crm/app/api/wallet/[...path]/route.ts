@@ -219,8 +219,12 @@ export async function POST(req: NextRequest, { params }: Ctx) {
       } else if (!to || to.length > 64) {
         return error(422, "validation", "Enter the destination address.", "to_address");
       }
+      // An off-chain client types what they want to be paid, in their own currency; the service works the wallet
+      // debit back from it so they receive exactly that. A crypto client types the debit itself, as before.
+      const currency = typeof body.amount_currency === "string" ? body.amount_currency.trim().toUpperCase() : "";
+      if (currency && !/^[A-Z]{3,5}$/.test(currency)) return error(422, "validation", "Unknown currency.", "amount_currency");
       // `chain` stays in the body for crypto only; the service reads it just for that method
-      const req0 = { user_id: uid, method, amount, to_address: to, ...(chain ? { chain } : {}) };
+      const req0 = { user_id: uid, method, amount, to_address: to, ...(chain ? { chain } : {}), ...(currency ? { amount_currency: currency } : {}) };
       if (route === "withdrawals/quote") return send("/v1/withdrawals/quote", req0);
       if (user.kyc_status !== "verified") return error(403, "kyc_required", "Verify your identity before your first withdrawal.");
       const key = typeof body.idempotency_key === "string" && KEY_RE.test(body.idempotency_key) ? body.idempotency_key : null;

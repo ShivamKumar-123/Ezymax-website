@@ -54,7 +54,7 @@ type Quote = {
   payout_rate: string | null;
 };
 
-function useQuote(dest: Dest, amount: string, to: string, enabled: boolean) {
+function useQuote(dest: Dest, amount: string, to: string, enabled: boolean, payCurrency: string) {
   const [quote, setQuote] = React.useState<Quote | null>(null);
   const [err, setErr] = React.useState<WalletError | null>(null);
   const [busy, setBusy] = React.useState(false);
@@ -67,7 +67,7 @@ function useQuote(dest: Dest, amount: string, to: string, enabled: boolean) {
     setBusy(true);
     const t = setTimeout(async () => {
       try {
-        const body = key === "upi" ? { method: "upi" } : { method: "crypto", chain: key };
+        const body = key === "upi" ? { method: "upi", amount_currency: payCurrency } : { method: "crypto", chain: key };
         const r = await walletApi<{ quote: Quote }>("withdrawals/quote", { body: { ...body, amount, to_address: to.trim() }, signal: ctl.signal });
         setQuote(r.quote);
       } catch (e) {
@@ -80,7 +80,7 @@ function useQuote(dest: Dest, amount: string, to: string, enabled: boolean) {
       ctl.abort();
       clearTimeout(t);
     };
-  }, [key, amount, to, enabled]);
+  }, [key, amount, to, enabled, payCurrency]);
   return { quote, err, busy };
 }
 
@@ -187,10 +187,21 @@ function RequestForm({ cfg, o, kyc, via, onCreated }: { cfg: WalletConfig; o: Ov
   const toOk = isUpi ? upiLooksValid(to) : addressLooksValid(chain, to);
   const verified = kyc === "verified";
   const offered = isUpi ? !!upi : chains.length > 0;
-  const { quote, err: qErr, busy } = useQuote(dest, amt, to, verified && offered && amountOk && toOk);
+  const { quote, err: qErr, busy } = useQuote(dest, amt, to, verified && offered && amountOk && toOk, payCcy);
   const L = cfg.limits;
   // absent means on: a broker whose config predates the switch keeps the confirmation
   const stepUpOn = cfg.stepup_withdrawal !== false;
+  /**
+   * An off-chain client works in their own money. They type what they want to be paid, the limits are quoted to
+   * them in it, and the service works the wallet debit back from the figure - so the rupees they asked for are
+   * the rupees they get, and the fee comes on top rather than out of them.
+   */
+  const payCcy = isUpi && upi?.rate ? upi.currency : "USDT";
+  const rate = isUpi && upi?.rate ? Number(upi.rate) : 1;
+  const inPay = (usdt: string | number) => Math.floor(Number(usdt) * rate * 100) / 100;
+  // what is left after the fee, since the fee is added on top of whatever they ask for
+  const spendable = Math.max(0, (Number(available) - Number(L.withdraw_fee_flat) - Number(upi?.fee_flat ?? 0)) / (1 + Number(L.withdraw_fee_pct) / 100));
+  const maxAsk = payCcy === "USDT" ? Math.floor(Number(available) * 100) / 100 : Math.floor(spendable * rate * 100) / 100;
 
   // a destination for one rail is never valid for another
   React.useEffect(() => {
@@ -200,7 +211,7 @@ function RequestForm({ cfg, o, kyc, via, onCreated }: { cfg: WalletConfig; o: Ov
 
   const send = async (token: string) => {
     try {
-      const body = isUpi ? { method: "upi" } : { method: "crypto", chain };
+      const body = isUpi ? { method: "upi", amount_currency: payCcy } : { method: "crypto", chain };
       const r = await walletApi<{ withdrawal: Withdrawal }>("withdrawals", { body: { ...body, amount: amt, to_address: to.trim(), idempotency_key: key, stepup_token: token } });
       setAmount("");
       setKey(requestId());
@@ -247,7 +258,7 @@ function RequestForm({ cfg, o, kyc, via, onCreated }: { cfg: WalletConfig; o: Ov
             </Field>
           </motion.div>
         </AnimatePresence>
-        <Field label={t("common.amount")} hint={t("wallet.withdraw.amountHint", { available: fmt(available), min: fmt(L.withdraw_min), max: fmt(L.withdraw_max) })}>
+        <Field label={t("common.amount")} hint={t("wallet.withdraw.amountHintCcy", { available: fmt(maxAsk), min: fmt(inPay(L.withdraw_min)), max: fmt(inPay(L.withdraw_max)), currency: payCcy })}>
           <Input
             inputMode="decimal"
             value={amount}
@@ -256,7 +267,7 @@ function RequestForm({ cfg, o, kyc, via, onCreated }: { cfg: WalletConfig; o: Ov
             placeholder="0.00"
             aria-label={t("wallet.withdraw.amountAria")}
             trailing={
-              <button type="button" className="text-[12px] font-medium text-ember disabled:opacity-50" disabled={!verified} onClick={() => setAmount(String(Math.floor(Number(available) * 100) / 100))}>
+              <button type="button" className="text-[12px] font-medium text-ember disabled:opacity-50" disabled={!verified} onClick={() => setAmount(String(maxAsk))}>
                 {t("wallet.max")}
               </button>
             }
@@ -494,8 +505,8 @@ function LimitsCard({ cfg, o }: { cfg: WalletConfig; o: Overview }) {
           <Progress value={max ? (used / max) * 100 : 0} tone={max && used / max > 0.8 ? "warn" : "gold"} />
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <Tile label={t("wallet.minimum")} value={<span dir="ltr">{fmt(L.withdraw_min)} USDT</span>} />
-          <Tile label={t("wallet.maximum")} value={<span dir="ltr">{fmt(L.withdraw_max)} USDT</span>} />
+          <Tile label={t("wallet.minimum")} value={<span dir="ltr">{fmt(inPay(L.withdraw_min))} {payCcy}</span>} />
+          <Tile label={t("wallet.maximum")} value={<span dir="ltr">{fmt(inPay(L.withdraw_max))} {payCcy}</span>} />
           <Tile label={t("wallet.fee")} value={<span dir="ltr">{`${fmt(L.withdraw_fee_flat)} USDT${Number(L.withdraw_fee_pct) > 0 ? ` + ${L.withdraw_fee_pct}%` : ""}`}</span>} />
           <Tile label={t("wallet.withdraw.afterDeposit")} value={L.deposit_cooldown_hours ? t("wallet.withdraw.hoursWait", { hours: L.deposit_cooldown_hours }) : t("wallet.withdraw.noWait")} />
         </div>

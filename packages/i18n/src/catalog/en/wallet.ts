@@ -217,6 +217,9 @@ const wallet = {
   "withdraw.bscAddressError": "A BNB Chain address starts with 0x and has 42 characters.",
   "withdraw.tronAddressError": "A TRON address starts with T and has 34 characters.",
   "withdraw.amountHint": "Available {available} USDT · min {min} · max {max} per withdrawal",
+  // The same line for a client paid in their own money: the figures are what they can ask to receive, so the
+  // currency has to be named rather than assumed to be USDT.
+  "withdraw.amountHintCcy": "You can ask for up to {available} {currency} · min {min} · max {max} per withdrawal",
   "withdraw.amountAria": "Withdrawal amount",
   "withdraw.youSend": "You send",
   "withdraw.checkingLimits": "Checking limits…",
