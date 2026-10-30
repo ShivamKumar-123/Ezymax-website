@@ -376,17 +376,20 @@ pub struct WithdrawBody {
     chain: String,
     #[serde(default)]
     to_address: String,
+    /// Empty or USDT = the wallet debit; the off-chain method's currency = what the client asked to be paid.
+    #[serde(default)]
+    amount_currency: String,
     #[serde(default)]
     idempotency_key: Option<String>,
 }
 
 pub async fn request_withdrawal(State(st): State<AppState>, ctx: Ctx, Body(b): Body<WithdrawBody>) -> ApiResult<Json<Value>> {
-    let w = withdrawals::request(&st, &ctx, withdrawals::RequestIn { user_id: b.user_id, amount: b.amount, method: b.method, chain: b.chain, to_address: b.to_address, idempotency_key: b.idempotency_key }).await?;
+    let w = withdrawals::request(&st, &ctx, withdrawals::RequestIn { user_id: b.user_id, amount: b.amount, method: b.method, chain: b.chain, to_address: b.to_address, amount_currency: b.amount_currency, idempotency_key: b.idempotency_key }).await?;
     Ok(ok(json!({"withdrawal": w})))
 }
 
 pub async fn quote_withdrawal(State(st): State<AppState>, ctx: Ctx, Body(b): Body<WithdrawBody>) -> ApiResult<Json<Value>> {
-    let q = withdrawals::quote(&st, &ctx, withdrawals::RequestIn { user_id: b.user_id, amount: b.amount, method: b.method, chain: b.chain, to_address: b.to_address, idempotency_key: None }).await?;
+    let q = withdrawals::quote(&st, &ctx, withdrawals::RequestIn { user_id: b.user_id, amount: b.amount, method: b.method, chain: b.chain, to_address: b.to_address, amount_currency: b.amount_currency, idempotency_key: None }).await?;
     Ok(ok(json!({"quote": q})))
 }
 

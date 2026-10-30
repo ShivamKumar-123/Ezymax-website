@@ -139,6 +139,9 @@ pub struct RequestIn {
     pub chain: String,
     /// The client's wallet address, or their UPI ID.
     pub to_address: String,
+    /// The currency `amount` is in. Empty or USDT means the wallet debit, as it always has. The off-chain
+    /// method's own currency means the client asked to be paid that much, and the debit is worked back from it.
+    pub amount_currency: String,
     pub idempotency_key: Option<String>,
 }
 
@@ -162,7 +165,7 @@ async fn check_or_request(st: &AppState, ctx: &Ctx, r: RequestIn, dry_run: bool)
         "upi" => "upi",
         _ => return Err(ApiError::validation("method", "method must be crypto or upi")),
     };
-    let amount = check_amount(r.amount, ENGINE_DP).map_err(|m| ApiError::validation("amount", m))?;
+    let mut amount = check_amount(r.amount, ENGINE_DP).map_err(|m| ApiError::validation("amount", m))?;
     let key = r.idempotency_key.as_deref().map(str::trim).filter(|k| !k.is_empty()).map(str::to_string);
     if key.as_ref().is_some_and(|k| k.len() > 128) {
         return Err(ApiError::validation("idempotency_key", "idempotency_key must be at most 128 characters"));
@@ -204,6 +207,31 @@ async fn check_or_request(st: &AppState, ctx: &Ctx, r: RequestIn, dry_run: bool)
         return if same { Ok(client_json(&w)) } else { Err(ApiError::conflict("idempotency_conflict", "This idempotency key was used for a different withdrawal")) };
     }
     let limits = settings::limits(&st.pool, tenant_id).await?;
+
+    // A client paid off chain works in their own money: they ask for 1,000 rupees and must receive 1,000 rupees,
+    // so what they typed is the payout and the wallet debit is worked back from it - the fee comes on top rather
+    // than out of what they asked for. The fee itself can be a percentage of the debit, so the debit cannot be
+    // solved in one step; it is raised until its net covers the payout, which lands in two passes and can only
+    // ever end up at or above what is needed. A crypto client still types the USDT that leaves the wallet.
+    let asked_payout = match &off_chain {
+        Some(m) if !r.amount_currency.is_empty() && r.amount_currency.eq_ignore_ascii_case(&m.currency) => Some(amount),
+        _ => None,
+    };
+    if let Some(payout) = asked_payout {
+        let m = off_chain.as_ref().expect("asked_payout is only set for an off-chain method");
+        let rate = m.rate.filter(|r| *r > D::ZERO).ok_or_else(|| ApiError::unprocessable("method_disabled", format!("{} withdrawals are not priced right now", m.method.to_uppercase())))?;
+        // rounded up, so the rupees promised are never short of the rupees asked for
+        let net_needed = ceil_dp(payout / rate, ENGINE_DP);
+        amount = net_needed + limits.withdraw_fee_flat + dest_fee;
+        for _ in 0..4 {
+            let short = net_needed - (amount - fee_for(&limits, dest_fee, amount));
+            if short <= D::ZERO {
+                break;
+            }
+            amount += short;
+        }
+    }
+
     if amount < limits.withdraw_min {
         return Err(ApiError::unprocessable("below_minimum", format!("The minimum withdrawal is {} USDT", s(limits.withdraw_min))));
     }
@@ -224,7 +252,8 @@ async fn check_or_request(st: &AppState, ctx: &Ctx, r: RequestIn, dry_run: bool)
     // rounding never promises more than the broker will send.
     let quote = off_chain.as_ref().map(|m| {
         let rate = m.rate.unwrap_or(D::ONE);
-        (m.currency.clone(), floor_dp(net * rate, 2), rate)
+        // the figure the client asked for, not a re-multiplication of it: they are promised what they typed
+        (m.currency.clone(), asked_payout.unwrap_or_else(|| floor_dp(net * rate, 2)), rate)
     });
     if net <= D::ZERO {
         return Err(ApiError::unprocessable("below_minimum", format!("The amount must be above the {} USDT fee", s(fee))));
