@@ -78,9 +78,15 @@ pub fn client_json(r: &PgRow) -> Value {
     v
 }
 
-/// Withdrawal fee: flat + percentage (rounded up to cents) + whatever the destination costs — a chain's network
-/// fee, or an off-chain method's own flat fee.
-pub fn fee_for(limits: &Limits, dest_fee: D, amount: D) -> D {
+/// Withdrawal fee. The tenant's flat and percentage fee pay for sending USDT on chain — gas, and the desk's
+/// handling of it — so they apply to the crypto rail only, on top of that chain's own network fee. An
+/// off-chain payout is never sent on chain and the broker's margin already sits in the rate the admin sets, so
+/// that rail carries nothing but the method's own flat fee: a client who asks for 10,000 rupees is debited
+/// exactly what 10,000 rupees costs at the rate, and no charge is taken out of what they asked for.
+pub fn fee_for(limits: &Limits, dest_fee: D, amount: D, on_chain: bool) -> D {
+    if !on_chain {
+        return dest_fee;
+    }
     limits.withdraw_fee_flat + ceil_dp(amount * limits.withdraw_fee_pct / D::ONE_HUNDRED, ENGINE_DP) + dest_fee
 }
 
@@ -209,10 +215,10 @@ async fn check_or_request(st: &AppState, ctx: &Ctx, r: RequestIn, dry_run: bool)
     let limits = settings::limits(&st.pool, tenant_id).await?;
 
     // A client paid off chain works in their own money: they ask for 1,000 rupees and must receive 1,000 rupees,
-    // so what they typed is the payout and the wallet debit is worked back from it - the fee comes on top rather
-    // than out of what they asked for. The fee itself can be a percentage of the debit, so the debit cannot be
-    // solved in one step; it is raised until its net covers the payout, which lands in two passes and can only
-    // ever end up at or above what is needed. A crypto client still types the USDT that leaves the wallet.
+    // so what they typed is the payout and the wallet debit is worked back from it. Off chain the fee is flat
+    // (fee_for charges no percentage on this rail), so the debit is exact in one step: the rupees asked for,
+    // converted at the frozen rate, plus whatever the method itself charges - nothing is taken out of the
+    // payout. A crypto client still types the USDT that leaves the wallet.
     let asked_payout = match &off_chain {
         Some(m) if !r.amount_currency.is_empty() && r.amount_currency.eq_ignore_ascii_case(&m.currency) => Some(amount),
         _ => None,
@@ -222,14 +228,7 @@ async fn check_or_request(st: &AppState, ctx: &Ctx, r: RequestIn, dry_run: bool)
         let rate = m.rate.filter(|r| *r > D::ZERO).ok_or_else(|| ApiError::unprocessable("method_disabled", format!("{} withdrawals are not priced right now", m.method.to_uppercase())))?;
         // rounded up, so the rupees promised are never short of the rupees asked for
         let net_needed = ceil_dp(payout / rate, ENGINE_DP);
-        amount = net_needed + limits.withdraw_fee_flat + dest_fee;
-        for _ in 0..4 {
-            let short = net_needed - (amount - fee_for(&limits, dest_fee, amount));
-            if short <= D::ZERO {
-                break;
-            }
-            amount += short;
-        }
+        amount = net_needed + dest_fee;
     }
 
     if amount < limits.withdraw_min {
@@ -246,7 +245,7 @@ async fn check_or_request(st: &AppState, ctx: &Ctx, r: RequestIn, dry_run: bool)
             return Err(ApiError::unprocessable("above_maximum", format!("The maximum {} withdrawal is {} USDT", m.method.to_uppercase(), s(max))));
         }
     }
-    let fee = fee_for(&limits, dest_fee, amount);
+    let fee = fee_for(&limits, dest_fee, amount, chain.is_some());
     let net = amount - fee;
     // What the client is actually paid off chain, at today's rate. Floored to the currency's smallest unit, so
     // rounding never promises more than the broker will send.
@@ -719,10 +718,12 @@ mod tests {
             deposit_cooldown_hours: 24,
             intent_ttl_minutes: 60,
         };
-        // 1 flat + 0.5% of 101 = 0.505 → 0.51 (rounded up) + what the destination costs (0.5 network fee here)
-        assert_eq!(fee_for(&l, D::from_str("0.5").unwrap(), D::from(101)), D::from_str("2.01").unwrap());
-        // an off-chain method with no fee of its own is priced by the tenant's fee alone
-        assert_eq!(fee_for(&l, D::ZERO, D::from(101)), D::from_str("1.51").unwrap());
+        // on chain: 1 flat + 0.5% of 101 = 0.505 → 0.51 (rounded up) + the chain's network fee (0.5 here)
+        assert_eq!(fee_for(&l, D::from_str("0.5").unwrap(), D::from(101), true), D::from_str("2.01").unwrap());
+        // off chain the tenant's flat and percentage fee do not apply - only the method's own fee, so a UPI
+        // method priced at nothing costs the client nothing: 10,000 rupees asked for is 10,000 rupees paid
+        assert_eq!(fee_for(&l, D::ZERO, D::from(101), false), D::ZERO);
+        assert_eq!(fee_for(&l, D::from_str("0.25").unwrap(), D::from(101), false), D::from_str("0.25").unwrap());
         let now = DateTime::parse_from_rfc3339("2026-09-28T22:30:00Z").unwrap().with_timezone(&Utc);
         // 22:30 UTC is 01:30 GMT+3 on the 29th → day starts 2026-09-28T21:00Z
         assert_eq!(server_day_start(now).to_rfc3339(), "2026-09-28T21:00:00+00:00");

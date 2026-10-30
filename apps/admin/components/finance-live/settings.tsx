@@ -60,8 +60,8 @@ const LIMIT_FIELDS: [keyof Limits, string, string][] = [
   ["withdraw_min", "Minimum withdrawal", "USDT"],
   ["withdraw_max", "Maximum per withdrawal", "USDT"],
   ["withdraw_daily_max", "Daily limit per client", "USDT"],
-  ["withdraw_fee_flat", "Withdrawal fee (flat)", "USDT"],
-  ["withdraw_fee_pct", "Withdrawal fee (percent)", "%"],
+  ["withdraw_fee_flat", "Crypto withdrawal fee (flat)", "USDT"],
+  ["withdraw_fee_pct", "Crypto withdrawal fee (percent)", "%"],
   ["deposit_cooldown_hours", "Wait after a deposit", "hours"],
   ["intent_ttl_minutes", "Deposit request valid for", "minutes"],
 ];
@@ -159,7 +159,7 @@ function MethodForm({ m, canEdit, onSave }: { m: WithdrawMethod; canEdit: boolea
           <Field label={`Rate (${f.currency} per USDT)`} hint="Clients see the amount this produces, not the rate. Frozen on each request.">
             <Input value={f.rate ?? ""} disabled={!canEdit} onChange={(e) => set("rate", e.target.value)} placeholder="e.g. 88.50" aria-label="Payout rate" />
           </Field>
-          <Field label="Fee (USDT)" hint="On top of the wallet's flat and percentage fee.">
+          <Field label="Fee (USDT)" hint="The only fee on this rail — the crypto fees above do not apply. Leave at 0 to pay the client exactly what they ask for.">
             <Input value={f.fee_flat} disabled={!canEdit} onChange={(e) => set("fee_flat", e.target.value)} aria-label="Method fee" />
           </Field>
         </div>

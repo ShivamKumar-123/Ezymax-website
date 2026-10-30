@@ -197,7 +197,12 @@ function RequestForm({ cfg, o, kyc, via, onCreated }: { cfg: WalletConfig; o: Ov
   const rate = isUpi && upi?.rate ? Number(upi.rate) : 1;
   const inPay = (usdt: string | number) => Math.floor(Number(usdt) * rate * 100) / 100;
   // what is left after the fee, since the fee is added on top of whatever they ask for
-  const spendable = Math.max(0, (Number(available) - Number(L.withdraw_fee_flat) - Number(upi?.fee_flat ?? 0)) / (1 + Number(L.withdraw_fee_pct) / 100));
+  // What the balance can cover. Off chain the wallet's flat and percentage fee do not apply (fee_for in the
+  // wallet service charges them on the crypto rail only), so the whole balance converts into rupees minus
+  // whatever the UPI method itself charges - today nothing, so the client can ask for all of it.
+  const feeFlat = isUpi ? Number(upi?.fee_flat ?? 0) : Number(L.withdraw_fee_flat);
+  const feePct = isUpi ? 0 : Number(L.withdraw_fee_pct);
+  const spendable = Math.max(0, (Number(available) - feeFlat) / (1 + feePct / 100));
   const maxAsk = payCcy === "USDT" ? Math.floor(Number(available) * 100) / 100 : Math.floor(spendable * rate * 100) / 100;
   const { quote, err: qErr, busy } = useQuote(dest, amt, to, verified && offered && amountOk && toOk, payCcy);
   // absent means on: a broker whose config predates the switch keeps the confirmation
@@ -494,6 +499,11 @@ function LimitsCard({ cfg, o, via }: { cfg: WalletConfig; o: Overview; via: Via 
   const ccy = via === "upi" && m?.rate ? m.currency : "USDT";
   const rate = via === "upi" && m?.rate ? Number(m.rate) : 1;
   const at = (v: string | number) => Number(v) * rate;
+  // Off chain only the method's own fee is charged, so the tile shows that and drops the percentage: a client
+  // paid in rupees reads the charge the service will actually make, which today is none.
+  const offChain = via === "upi" && m?.rate ? m : null;
+  const feeFlat = offChain ? Number(offChain.fee_flat) : Number(cfg.limits.withdraw_fee_flat);
+  const feePct = offChain ? 0 : Number(cfg.limits.withdraw_fee_pct);
   const used = at(o.limits.used_today);
   const max = at(o.limits.daily_max);
   const L = cfg.limits;
@@ -513,7 +523,7 @@ function LimitsCard({ cfg, o, via }: { cfg: WalletConfig; o: Overview; via: Via 
         <div className="grid grid-cols-2 gap-2">
           <Tile label={t("wallet.minimum")} value={<span dir="ltr">{fmt(at(L.withdraw_min))} {ccy}</span>} />
           <Tile label={t("wallet.maximum")} value={<span dir="ltr">{fmt(at(L.withdraw_max))} {ccy}</span>} />
-          <Tile label={t("wallet.fee")} value={<span dir="ltr">{`${fmt(at(L.withdraw_fee_flat))} ${ccy}${Number(L.withdraw_fee_pct) > 0 ? ` + ${L.withdraw_fee_pct}%` : ""}`}</span>} />
+          <Tile label={t("wallet.fee")} value={<span dir="ltr">{`${fmt(at(feeFlat))} ${ccy}${feePct > 0 ? ` + ${feePct}%` : ""}`}</span>} />
           <Tile label={t("wallet.withdraw.afterDeposit")} value={L.deposit_cooldown_hours ? t("wallet.withdraw.hoursWait", { hours: L.deposit_cooldown_hours }) : t("wallet.withdraw.noWait")} />
         </div>
         {o.limits.cooldown_until && <div className="text-[12px] text-warn">{t("wallet.withdraw.cooldown", { date: formatDateTime(o.limits.cooldown_until) })}</div>}
