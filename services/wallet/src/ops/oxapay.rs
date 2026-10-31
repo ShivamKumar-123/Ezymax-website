@@ -27,12 +27,41 @@ use std::time::Duration;
 use crate::api::paging;
 use crate::error::{ApiError, ApiResult};
 use crate::ledger::{self, Leg, NewTxn, PostError};
-use crate::money::{D, WALLET_DP, check_amount, s, s_opt};
+use crate::money::{D, WALLET_DP, ceil_dp, check_amount, floor_dp, s, s_opt};
 use crate::ops::notify;
 use crate::state::{AppState, Ctx, StaffCtx};
 
 /// Ledger kind of the credit. Deliberately the same kind as a staff-approved crypto payment.
 const LEDGER_KIND: &str = "crypto_deposit";
+
+/// What a paid invoice credits to the wallet: what was asked for, what the transactions actually carried, the
+/// shortfall OxaPay was told to accept, and who carries OxaPay's commission.
+///
+/// When the payer carries it, OxaPay bills them the invoice plus its fee, the whole invoice arrives, and
+/// crediting what arrived and what was asked for come to the same thing.
+///
+/// When the broker carries it, the client is billed the invoice exactly and the commission comes out of what
+/// they send, so less arrives than was asked for - by design. Crediting what arrived would hand the fee back
+/// to the client after all, only invisibly: they would pay 1,000 and find 985 in their wallet. So the invoice
+/// is credited in full and the difference is the broker's cost, which is what they chose to carry.
+///
+/// That is bounded by the same coverage OxaPay was given. A shortfall wider than that is not a commission -
+/// it is an underpayment - and is credited at the money that actually turned up.
+pub fn credit_for(asked: D, got: Option<D>, coverage_pct: D, broker_pays_fee: bool) -> D {
+    let covered = asked - ceil_dp(asked * coverage_pct / D::ONE_HUNDRED, WALLET_DP);
+    floor_dp(
+        match got {
+            // nothing to total: OxaPay called it paid, and inventing a lower number from a payload we could
+            // not read would short the client
+            None => asked,
+            // an overpayment still credits the invoice; the surplus is OxaPay's affair, not the ledger's
+            Some(r) if r >= asked => asked,
+            Some(r) if broker_pays_fee && r >= covered => asked,
+            Some(r) => r,
+        },
+        WALLET_DP,
+    )
+}
 
 /// How long we wait on OxaPay. Their create call sits in the client's request path.
 const HTTP_TIMEOUT: Duration = Duration::from_secs(20);
@@ -478,14 +507,20 @@ async fn settle(st: &AppState, id: i64, track: &str, p: Payment, callback_status
     let (t, user_id) = (cur.get::<i64, _>("tenant_id"), cur.get::<i64, _>("user_id"));
     let amount: D = cur.get("amount");
     let order_id: String = cur.get("order_id");
-    // An invoice may now settle a little short of what it asked for (`under_paid_coverage`), so a paid invoice
-    // is no longer necessarily a fully paid one and the request is no longer a safe figure to credit. Credit the
-    // smaller of what was asked and what the transactions carried: an overpayment still credits the invoice (the
-    // surplus is OxaPay's affair, not the ledger's), and a shortfall credits the money that actually arrived.
-    // With nothing to total, the invoice amount stands - OxaPay called it paid, and inventing a lower number
-    // from a payload we could not read would short the client.
+    // Who carries OxaPay's commission decides what the wallet is credited.
+    //
+    // When the payer carries it, OxaPay bills them the invoice plus its fee, the whole invoice arrives, and
+    // crediting what arrived and what was asked for come to the same thing.
+    //
+    // When the broker carries it, the client is billed the invoice exactly and the commission is taken out of
+    // what they send, so less arrives than was asked for - by design. Crediting what arrived would hand the
+    // fee back to the client after all, only invisibly: they would pay 1,000 and find 985. So the invoice is
+    // credited in full and the difference is the broker's cost, which is what they chose to carry.
+    //
+    // That generosity is bounded by the same coverage OxaPay was given. A shortfall wider than that is not a
+    // commission - it is an underpayment - and is credited at the money that actually turned up.
     let got = received(&p.txs, "USDT");
-    let credit = crate::money::floor_dp(got.map_or(amount, |r| r.min(amount)), WALLET_DP);
+    let credit = credit_for(amount, got, st.cfg.oxapay_under_paid_pct, !st.cfg.oxapay_fee_paid_by_payer);
     let key = format!("oxapay:deposit:{t}:{track}");
     let posted = ledger::post(
         &mut tx,
@@ -774,6 +809,37 @@ pub async fn admin_recheck(st: &AppState, s_ctx: &StaffCtx, id: i64) -> ApiResul
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::str::FromStr;
+
+    #[test]
+    fn who_carries_the_commission_decides_what_the_wallet_credits() {
+        let d = |s: &str| D::from_str(s).unwrap();
+        let asked = d("1000");
+        let cover = d("5");
+
+        // The payer carries it: OxaPay billed them 1,015, the whole 1,000 arrived, nothing to decide.
+        assert_eq!(credit_for(asked, Some(d("1000")), cover, false), d("1000"));
+
+        // The broker carries it: the client was billed 1,000 exactly and OxaPay kept its 1.5%. The client
+        // gets the 1,000 they paid for and the 15 is the broker's cost.
+        assert_eq!(credit_for(asked, Some(d("985")), cover, true), d("1000"));
+
+        // The same shortfall when the payer was supposed to cover the fee is just an underpayment: the client
+        // is credited the money that turned up, and the broker is not quietly charged for it.
+        assert_eq!(credit_for(asked, Some(d("985")), cover, false), d("985"));
+
+        // Generosity stops at the coverage. 5% of 1,000 is 50, so 950 is still carried and 949.99 is not.
+        assert_eq!(credit_for(asked, Some(d("950")), cover, true), d("1000"));
+        assert_eq!(credit_for(asked, Some(d("949.99")), cover, true), d("949.99"));
+
+        // An overpayment credits the invoice either way; the surplus is OxaPay's affair.
+        assert_eq!(credit_for(asked, Some(d("1200")), cover, true), d("1000"));
+        assert_eq!(credit_for(asked, Some(d("1200")), cover, false), d("1000"));
+
+        // Nothing to total: OxaPay called it paid, so inventing a lower number would short the client.
+        assert_eq!(credit_for(asked, None, cover, true), d("1000"));
+        assert_eq!(credit_for(asked, None, cover, false), d("1000"));
+    }
 
     // RFC 4231 test case 1 for HMAC-SHA512: the key and data are the standard ones, so a wrong digest or a
     // wrong key handling shows up here rather than on a live callback.
