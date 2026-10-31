@@ -97,7 +97,7 @@ export function HeroCarousel({ items, className }: { items: BannerView[]; classN
       aria-roledescription="carousel"
       aria-label={t("updates.hero.label")}
       data-testid="hero-carousel"
-      className={cn("group/hero relative isolate overflow-hidden rounded-[24px] border border-line bg-surface-3", className)}
+      className={cn("group/hero relative isolate overflow-hidden rounded-[24px] border border-line bg-surface-3", poster && "k-poster-glow", className)}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       onFocus={() => setFocus(true)}
@@ -258,7 +258,7 @@ function Slide({ b, active, label, onDismiss, onRatio }: { b: BannerView; active
       {poster && b.imageUrl && (
         <span
           aria-hidden
-          className="k-poster-sheen pointer-events-none absolute inset-y-0 -left-1/4 -z-10 w-1/4 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+          className="k-poster-sheen pointer-events-none absolute inset-y-0 -left-1/4 -z-10 w-1/4 bg-gradient-to-r from-transparent via-white/35 to-transparent"
         />
       )}
       {/* the gradient exists to make overlaid words readable; a poster has none, so darkening it only dulls the art */}
