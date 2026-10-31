@@ -20,6 +20,7 @@ import '../core/auth/auth_controller.dart';
 import '../core/auth/biometrics.dart';
 import '../core/config/app_config.dart';
 import '../core/models/user.dart';
+import '../core/net/online.dart';
 import '../core/notifications/notifications.dart';
 import '../core/prefs.dart';
 import '../env.dart';
@@ -127,8 +128,10 @@ class _AppShellState extends ConsumerState<AppShell> {
     final module = moduleOf(nav, widget.path);
     final subs = module != null && module.sub.length > 1 ? module.sub : null;
     final demo = ref.watch(demoModeProvider);
-    final demoH = demo ? _DemoStrip.height : 0.0;
-    final headerH = mq.padding.top + demoH + KSize.header + (subs != null ? KSize.subNav : 0);
+    // a dropped signal is said once, at the top, instead of every page failing on its own with no reason given
+    final offline = ref.watch(onlineProvider).value == false;
+    final stripH = (demo ? _DemoStrip.height : 0.0) + (offline ? _OfflineStrip.height : 0.0);
+    final headerH = mq.padding.top + stripH + KSize.header + (subs != null ? KSize.subNav : 0);
     final barBottom = mq.padding.bottom < 12 ? 12.0 : mq.padding.bottom;
     final barH = KSize.tabBar + barBottom + 8;
 
@@ -136,7 +139,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     // once it reaches the bottom of the header row; while the pager slides the picture page in or out, the hero
     // chrome stays (collapsed by the slide itself)
     _hero = dashboardHeroAt(widget.path, cfg) || (_sliding && cfg.tenantDefault && module?.key == 'dashboard');
-    _collapseAt = dashboardHeroHeight(mq) - kDashboardHeroOverlap - (mq.padding.top + demoH + KSize.header);
+    _collapseAt = dashboardHeroHeight(mq) - kDashboardHeroOverlap - (mq.padding.top + stripH + KSize.header);
     final collapsed = _hero && _collapsed;
     final b = Theme.of(context).brightness;
     // light status-bar icons over the picture
@@ -245,12 +248,14 @@ class _Header extends ConsumerWidget {
     final cfg = ref.watch(configProvider);
     final unread = ref.watch(notificationsProvider.select((s) => s.unread));
     final viewer = me?.viewer != null;
+    final offline = ref.watch(onlineProvider).value == false;
     final content = SafeArea(
       bottom: false,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (demo) const _DemoStrip(),
+          if (offline) const _OfflineStrip(),
           SizedBox(
             height: KSize.header,
             child: Padding(
@@ -417,6 +422,7 @@ class _HeroControls extends ConsumerWidget {
     final me = ref.watch(meProvider);
     final unread = ref.watch(notificationsProvider.select((s) => s.unread));
     final viewer = me?.viewer != null;
+    final offline = ref.watch(onlineProvider).value == false;
     // the sheets open from the shell's own context, in the app's theme
     final shell = context;
     final shadow = [BoxShadow(color: Colors.black.withValues(alpha: 0.12), offset: const Offset(0, 6), blurRadius: 16)];
@@ -427,6 +433,7 @@ class _HeroControls extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (demo) KFrosted(color: k.bar, child: const _DemoStrip()),
+          if (offline) KFrosted(color: k.bar, child: const _OfflineStrip()),
           Padding(
             padding: const EdgeInsetsDirectional.only(start: 14, end: 12, top: 8),
             child: Row(
@@ -493,6 +500,39 @@ class _HeroControls extends ConsumerWidget {
 
 /// "Demo · Sample data · Exit demo": the strip over the header while the in-app demo runs, so the sample client is
 /// never taken for a live account. Exit = the demo's Log out (the profile menu and More do the same).
+/// Said once, at the top, while the device has no network: every page below is about to fail and this is
+/// the only honest reason for it. It goes on its own the moment the signal returns, and pulling any page
+/// down fetches it again.
+class _OfflineStrip extends StatelessWidget {
+  const _OfflineStrip();
+
+  static const double height = 28;
+
+  @override
+  Widget build(BuildContext context) {
+    final k = context.k;
+    return Container(
+      height: height,
+      color: k.downSoft,
+      padding: const EdgeInsetsDirectional.only(start: 14, end: 14),
+      child: Row(
+        children: [
+          Icon(LucideIcons.wifiOff, size: 13, color: k.down),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              context.t('common.offline'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.text.caption.copyWith(color: k.down, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _DemoStrip extends ConsumerWidget {
   const _DemoStrip();
 
