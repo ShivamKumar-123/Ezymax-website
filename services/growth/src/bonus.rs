@@ -339,17 +339,29 @@ pub async fn auto_grant_tick(st: &AppState) -> anyhow::Result<usize> {
         if feed.is_empty() {
             continue;
         }
+        // The cursor marks what has been *settled*, not merely what has been read. A deposit that qualifies
+        // but for something that can still change - a client who paid before verifying, which is the usual
+        // order for a new sign-up - holds it back, so the offer is still theirs when they verify. Everything
+        // after it is still processed, so nobody waits behind them; only the mark stops moving.
         let mut seen = cursor;
+        let mut held = false;
         for f in &feed {
             for c in &campaigns {
                 match grant_for_deposit(st, &tenant, c, f).await {
-                    Ok(true) => granted += 1,
-                    Ok(false) => {}
-                    // one client's problem must not stall the feed for everyone behind them
-                    Err(e) => tracing::warn!(error = %e, txn = f.txn, user = f.user_id, "automatic bonus skipped"),
+                    Ok(Outcome::Granted) => granted += 1,
+                    Ok(Outcome::Settled) => {}
+                    Ok(Outcome::Waiting) => held = true,
+                    // one client's problem must not stall the feed for everyone behind them, and an error is
+                    // not a decision: the deposit is looked at again next time
+                    Err(e) => {
+                        held = true;
+                        tracing::warn!(error = %e, txn = f.txn, user = f.user_id, "automatic bonus skipped");
+                    }
                 }
             }
-            seen = f.txn;
+            if !held {
+                seen = f.txn;
+            }
         }
         sqlx::query("INSERT INTO funding_cursor (tenant, after_txn) VALUES ($1,$2) ON CONFLICT (tenant) DO UPDATE SET after_txn = GREATEST(funding_cursor.after_txn, $2), updated_at = now()")
             .bind(&tenant)
@@ -373,30 +385,50 @@ pub fn deposit_in_scope(first_ever: bool, at: DateTime<Utc>, starts: DateTime<Ut
     first_ever && at >= starts && !ends.is_some_and(|e| at >= e) && (groups.is_empty() || groups.iter().any(|g| g.eq_ignore_ascii_case(group)))
 }
 
-/// One deposit against one campaign. `Ok(true)` when a bonus was queued.
-async fn grant_for_deposit(st: &AppState, tenant: &str, c: &sqlx::postgres::PgRow, f: &clients::Funding) -> anyhow::Result<bool> {
+/// What became of one deposit, which decides whether the cursor may move past it.
+#[derive(Debug, PartialEq, Eq)]
+pub enum Outcome {
+    /// A bonus was queued.
+    Granted,
+    /// Nothing to do, and nothing that could change it: the wrong dates, not a first deposit, under the
+    /// minimum, already granted, or the campaign's own limits reached.
+    Settled,
+    /// It would qualify, but for something that can still change - so far only a client who has not yet
+    /// verified. Worth looking at again.
+    Waiting,
+}
+
+/// One deposit against one campaign.
+async fn grant_for_deposit(st: &AppState, tenant: &str, c: &sqlx::postgres::PgRow, f: &clients::Funding) -> anyhow::Result<Outcome> {
     let groups: Vec<String> = c.get("account_groups");
     if !deposit_in_scope(f.first_ever, f.at, c.get("starts_at"), c.get("ends_at"), &groups, &f.group) {
-        return Ok(false);
+        return Ok(Outcome::Settled);
     }
-    let Some(bonus) = calc::deposit_bonus(f.amount, c.get("pct"), c.get("cap"), c.get("min_deposit")) else { return Ok(false) };
+    let Some(bonus) = calc::deposit_bonus(f.amount, c.get("pct"), c.get("cap"), c.get("min_deposit")) else { return Ok(Outcome::Settled) };
     let seg = crate::profiles::get(st, tenant, f.user_id).await?.segment();
     let campaign_id: i64 = c.get("id");
+
+    // Paying before verifying is the usual order for a new sign-up, and verification is the one gate here
+    // that is a matter of time rather than of fact. So this deposit is left open: the client keeps the offer
+    // if they verify while the campaign is still running, instead of losing it for having paid first.
+    if c.get::<bool, _>("kyc_required") && seg.kyc != "verified" {
+        return Ok(Outcome::Waiting);
+    }
 
     let mut tx = st.pool.begin().await?;
     // the campaign row is taken for update so two deposits landing together cannot both pass the limit check
     sqlx::query("SELECT 1 FROM bonus_campaigns WHERE id = $1 FOR UPDATE").bind(campaign_id).fetch_optional(&mut *tx).await?;
     let (all, mine) = claim_counts(&mut tx, campaign_id, f.user_id).await?;
     if mine > 0 {
-        return Ok(false); // claimed by hand, or already granted: deposit_tick owns it
+        return Ok(Outcome::Settled); // claimed by hand, or already granted: deposit_tick owns it
     }
     if calc::check_limits(&limits_of(c, all, mine), &seg, Utc::now()).is_err() {
-        return Ok(false);
+        return Ok(Outcome::Settled);
     }
     let id = match queue_grant(&mut tx, tenant, campaign_id, f.user_id, "auto", f.login, f.cent, bonus, Some(f.amount), Some(f.txn), c.get("release_per_lot"), c.get("expiry_days"), None).await {
         Ok(id) => id,
         // the account already carries a bonus: not an error, just not this one's turn
-        Err(ApiError::Conflict { .. }) => return Ok(false),
+        Err(ApiError::Conflict { .. }) => return Ok(Outcome::Settled),
         // ApiError is an HTTP shape and there is no request here, so it is reported rather than returned
         Err(ApiError::Internal(e)) => return Err(e),
         Err(e) => anyhow::bail!("queue grant for login {}: {e:?}", f.login),
@@ -413,7 +445,7 @@ async fn grant_for_deposit(st: &AppState, tenant: &str, c: &sqlx::postgres::PgRo
     )
     .await?;
     tx.commit().await?;
-    Ok(true)
+    Ok(Outcome::Granted)
 }
 
 /// Posts pending legs to the engine in id order per grant, round after round while legs keep booking (a
