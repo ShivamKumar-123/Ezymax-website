@@ -61,7 +61,7 @@ const shell = {
   "nav.trading": "Trading",
   "nav.performance": "Performance",
   "nav.earn": "Ezymex SIP",
-  "nav.help": "Help & Learn",
+  "nav.help": "Education",
   "nav.contests": "Contests",
   "nav.loyalty": "Loyalty",
   "nav.cashback": "Cashback",

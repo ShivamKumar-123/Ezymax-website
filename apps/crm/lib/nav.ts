@@ -188,7 +188,7 @@ export const CRM_NAV: NavModule[] = [
   },
   {
     key: "help",
-    label: "Help & Learn",
+    label: "Education",
     icon: LifeBuoy,
     href: "/support",
     match: ["/support", "/academy"],
