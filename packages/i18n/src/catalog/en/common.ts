@@ -65,6 +65,7 @@ const common = {
   errorRetry: "Something went wrong. Please try again.",
   unavailable: "This service is temporarily unavailable. Please try again shortly.",
   networkError: "Network error. Check your connection and try again.",
+  offline: "You’re offline. This refreshes on its own when the connection is back.",
   today: "Today",
   yesterday: "Yesterday",
   pending: "Pending",

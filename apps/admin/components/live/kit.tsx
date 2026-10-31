@@ -18,6 +18,27 @@ function expired() {
   window.location.assign(`/api/auth/expired?next=${encodeURIComponent(next)}`);
 }
 
+/** Whether the browser currently has a connection. A dropped link is worth knowing about rather than
+ *  discovering one failed request at a time: without it every poll fires into a disconnected network, and a
+ *  page fetched only once stays broken until someone reloads it. */
+function useOnline() {
+  // the server and the first paint assume a connection, so nothing renders an offline notice before it is true
+  const [online, setOnline] = React.useState(true);
+  React.useEffect(() => {
+    const read = () => setOnline(navigator.onLine);
+    read();
+    window.addEventListener("online", read);
+    window.addEventListener("offline", read);
+    return () => {
+      window.removeEventListener("online", read);
+      window.removeEventListener("offline", read);
+    };
+  }, []);
+  return online;
+}
+
+const OFFLINE: ApiErr = { code: "offline", message: "You're offline. This refreshes on its own when the connection is back." };
+
 /** GET a BFF endpoint. `url = null` skips the request. Re-fetches when `url` changes; `reload()` forces it.
  *  A page opened again starts from the last answer of this tab (dimmed as `loading`, like a poll) while it refetches
  *  (@ezymex/ui/swr-cache: per signed-in staff member, cleared by any write). */
@@ -26,8 +47,18 @@ export function useApi<T>(url: string | null, opts: { refreshMs?: number } = {})
   const [error, setError] = React.useState<ApiErr | null>(null);
   const [loading, setLoading] = React.useState(!!url);
   const [tick, setTick] = React.useState(0);
+  const online = useOnline();
+  // consecutive failures, to back a failing endpoint off instead of retrying it at full rate
+  const fails = React.useRef(0);
   React.useEffect(() => {
     if (!url) return;
+    if (!online) {
+      // the request would only fail, and whatever is already on screen is still the best answer we have.
+      // Coming back online re-runs this effect, so the page repairs itself without a reload.
+      setError(OFFLINE);
+      setLoading(false);
+      return;
+    }
     let alive = true;
     setLoading(true);
     // a different URL (filter, page, record) starts from its own last answer when this tab has one
@@ -39,24 +70,53 @@ export function useApi<T>(url: string | null, opts: { refreshMs?: number } = {})
         if (!alive) return;
         if (r.status === 401) return expired();
         if (!r.ok) {
+          fails.current += 1;
           setError(body?.error ?? { code: "unknown", message: "Something went wrong." });
           return;
         }
+        fails.current = 0;
         setError(null);
         setData(body as T);
         writeCached(url, body);
       })
-      .catch(() => alive && setError({ code: "network", message: "Can't reach the Back Office server." }))
+      .catch(() => {
+        if (!alive) return;
+        fails.current += 1;
+        setError(navigator.onLine ? { code: "network", message: "Can't reach the Back Office server." } : OFFLINE);
+      })
       .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
     };
-  }, [url, tick]);
+  }, [url, tick, online]);
+  // Polling, scheduled one step at a time so the delay can grow. It waits while the connection is down and
+  // while nobody is looking at the tab - a Back Office left open in the background would otherwise keep every
+  // queue on this page polling for as long as it sits there - and refreshes at once when staff come back to it.
   React.useEffect(() => {
-    if (!url || !opts.refreshMs) return;
-    const t = setInterval(() => setTick((n) => n + 1), opts.refreshMs);
-    return () => clearInterval(t);
-  }, [url, opts.refreshMs]);
+    if (!url || !opts.refreshMs || !online) return;
+    const every = opts.refreshMs;
+    let stop = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const schedule = () => {
+      timer = setTimeout(
+        () => {
+          if (stop) return;
+          if (document.visibilityState === "visible") setTick((n) => n + 1);
+          schedule();
+        },
+        // a failing endpoint backs off to at most eight times the normal interval
+        every * Math.min(2 ** fails.current, 8),
+      );
+    };
+    schedule();
+    const onShow = () => document.visibilityState === "visible" && setTick((n) => n + 1);
+    document.addEventListener("visibilitychange", onShow);
+    return () => {
+      stop = true;
+      clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onShow);
+    };
+  }, [url, opts.refreshMs, online]);
   const reload = React.useCallback(() => setTick((n) => n + 1), []);
   return { data, error, loading, reload };
 }

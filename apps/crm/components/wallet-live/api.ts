@@ -231,15 +231,43 @@ export function walletToast(title: string, e: unknown) {
   toast.error(title, { description: e instanceof Error ? e.message : tr("common.errorRetry") });
 }
 
+/** Whether the browser currently has a connection. Clients are on mobile data more often than not, so a poll
+ *  that keeps firing into a dropped link - and a one-shot fetch that never tries again after one - is the
+ *  difference between a page that heals itself and one the client has to reload. */
+function useOnline() {
+  // the server and the first paint assume a connection, so nothing shows an offline error before it is true
+  const [online, setOnline] = React.useState(true);
+  React.useEffect(() => {
+    const read = () => setOnline(navigator.onLine);
+    read();
+    window.addEventListener("online", read);
+    window.addEventListener("offline", read);
+    return () => {
+      window.removeEventListener("online", read);
+      window.removeEventListener("offline", read);
+    };
+  }, []);
+  return online;
+}
+
 /** Polls a wallet BFF path every `ms` while the tab is visible (ms = 0: once).
+ *  Offline it waits, and fetches again the moment the connection returns - that retry is what repairs a
+ *  one-shot path, which has no poll of its own to fall back on.
  *  Opened again, a page starts from this tab's last answer while it refetches (@ezymex/ui/swr-cache). */
 export function useWallet<T>(path: string | null, ms = 0) {
   const [data, setData] = React.useState<T | null>(() => (path ? (readCached<T>(`wallet:${path}`) ?? null) : null));
   const [error, setError] = React.useState<WalletError | null>(null);
   const [tick, setTick] = React.useState(0);
+  const online = useOnline();
+  // consecutive failures, so a failing path is backed off rather than retried at full rate
+  const fails = React.useRef(0);
   const reload = React.useCallback(() => setTick((t) => t + 1), []);
   React.useEffect(() => {
     if (!path) return;
+    if (!online) {
+      setError(new WalletError(0, "offline", tr("common.offline")));
+      return;
+    }
     const cached = readCached<T>(`wallet:${path}`);
     if (cached !== undefined) setData(cached);
     let stop = false;
@@ -251,15 +279,18 @@ export function useWallet<T>(path: string | null, ms = 0) {
         try {
           const d = await walletApi<T>(path, { signal: ctl.signal });
           if (stop) return;
+          fails.current = 0;
           setData(d);
           writeCached(`wallet:${path}`, d);
           setError(null);
         } catch (e) {
           if (stop || (e as Error).name === "AbortError") return;
+          fails.current += 1;
           setError(e instanceof WalletError ? e : new WalletError(0, "error", tr("wallet.error.generic")));
         }
       }
-      if (!stop && ms > 0) timer = setTimeout(run, ms);
+      // a failing path backs off to at most eight times the normal interval
+      if (!stop && ms > 0) timer = setTimeout(run, ms * Math.min(2 ** fails.current, 8));
     };
     run();
     return () => {
@@ -267,7 +298,7 @@ export function useWallet<T>(path: string | null, ms = 0) {
       ctl.abort();
       if (timer) clearTimeout(timer);
     };
-  }, [path, ms, tick]);
+  }, [path, ms, tick, online]);
   return { data, error, loading: data === null && error === null, reload };
 }
 
