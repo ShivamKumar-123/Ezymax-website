@@ -16,6 +16,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../core/api/api_providers.dart';
+import '../../../env.dart';
 import '../../../i18n/i18n.dart';
 import '../../../ui/ui.dart';
 import '../rewards_api.dart';
@@ -32,6 +34,8 @@ class BonusSteps extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.t;
     final k = context.k;
+    // the sample client has no campaigns of their own, and asking for some would only fail
+    if (Env.preview || ref.watch(demoModeProvider)) return const SizedBox.shrink();
     final data = ref.watch(promotionsProvider).value;
     if (data == null) return const SizedBox.shrink();
 
