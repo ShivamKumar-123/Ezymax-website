@@ -488,6 +488,7 @@ const rewards = {
   "depositBonus.stepCredited": "{pct} lands as bonus credit, within a minute",
   "depositBonus.release": "Bonus credit counts toward your equity and margin. It becomes money you can withdraw as you trade, {amount} per lot, and whatever is still unreleased after {days} days, or when you withdraw, is removed.",
   "depositBonus.claimCta": "Claim it first",
+  "depositBonus.depositCta": "Make your deposit",
   "claim.termsTitle": "{name} · terms",
   "card.badgeDeposit": "DEPOSIT BONUS",
   "card.badgeBonus": "BONUS",

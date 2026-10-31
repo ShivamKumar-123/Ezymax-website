@@ -1,16 +1,17 @@
 "use client";
 
-// The bonus notice on the Deposit page.
+// What it takes to actually get the bonus the dashboard is advertising.
 //
-// A client reads "25% cashback on your first deposit" on the dashboard, comes here and pays. Whether that
-// earns them anything depends on things this page never mentioned: that a deposit campaign has to be claimed
-// before the money arrives, that the bonus is paid onto a trading account rather than into the wallet, and
-// that there is a minimum. The instructions existed, but only inside the claim dialog - behind the very step
-// nobody knew to take. So they are said here, at the moment the client is about to act.
+// A client reads "25% cashback on your first deposit" on the banner and has no way of knowing the rest: that
+// a deposit campaign has to be claimed before the money arrives, that the bonus is paid onto a trading
+// account rather than into the wallet, and that there is a minimum. The wording for all of it existed - but
+// only inside the claim dialog, behind the very step nobody knew to take.
 //
-// It shows one of two things and otherwise nothing at all: a bonus already waiting for this deposit, or one
-// that still has to be claimed first. When the broker turns on automatic granting the claim step disappears
-// by itself, and so does the wording that asks for it.
+// So it is said in the two places a client is actually looking: under the banner that made the promise, and
+// on the Deposit page at the moment they are about to pay. It shows one of two things and otherwise nothing
+// at all: a bonus already waiting for their deposit, or one that still has to be claimed first. When the
+// broker turns on automatic granting the claim step disappears by itself, because this reads the client's
+// own state rather than a script.
 
 import * as React from "react";
 import Link from "next/link";
@@ -31,12 +32,7 @@ function pick(data: Promotions | null) {
 function Step({ n, done, children }: { n: number; done?: boolean; children: React.ReactNode }) {
   return (
     <li className="flex items-start gap-2.5">
-      <span
-        className={cn(
-          "mt-px grid size-[18px] shrink-0 place-items-center rounded-full text-[10.5px] font-bold",
-          done ? "bg-up text-white" : "bg-ember-soft text-ember",
-        )}
-      >
+      <span className={cn("mt-px grid size-[18px] shrink-0 place-items-center rounded-full text-[10.5px] font-bold", done ? "bg-up text-white" : "bg-ember-soft text-ember")}>
         {done ? <Check className="size-3" strokeWidth={3} /> : n}
       </span>
       <span className={cn("text-[12.5px] leading-snug", done ? "text-fg-3 line-through" : "text-fg-2")}>{children}</span>
@@ -44,7 +40,9 @@ function Step({ n, done, children }: { n: number; done?: boolean; children: Reac
   );
 }
 
-export function DepositBonusNotice() {
+/** `on` is where this is being read, which decides the button: it always points at the step still to do, and
+ *  never at the page the client is already on. */
+export function BonusSteps({ on, className }: { on: "dashboard" | "deposit"; className?: string }) {
   const t = useT();
   const { data } = useGrowth<Promotions>(IS_DEMO ? null : "promotions");
   if (IS_DEMO) return null;
@@ -55,9 +53,15 @@ export function DepositBonusNotice() {
   const pct = `${c.pct}%`;
   const min = `$${c.minDeposit.toLocaleString("en-US")}`;
   const cap = `$${c.cap.toLocaleString("en-US")}`;
+  // claim it, or - once that is done - go and deposit, unless that is this very page
+  const cta = !waiting
+    ? { href: "/rewards/promotions", label: t("rewards.depositBonus.claimCta") }
+    : on === "dashboard"
+      ? { href: "/wallet/deposit", label: t("rewards.depositBonus.depositCta") }
+      : null;
 
   return (
-    <Card className="mb-4 border-ember/30 bg-ember-soft/40">
+    <Card className={cn("border-ember/30 bg-ember-soft/40", className)}>
       <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-start sm:gap-4 sm:px-6">
         <span className="grid size-9 shrink-0 place-items-center rounded-full bg-ember text-white">
           <BadgePercent className="size-[18px]" />
@@ -69,20 +73,20 @@ export function DepositBonusNotice() {
             </h3>
             <p className="mt-0.5 text-[12.5px] text-fg-2">{t("rewards.depositBonus.sub", { pct, min, cap })}</p>
           </div>
-          <ol className="space-y-1.5">
-            {/* claiming is step one until it is done - and it vanishes for a campaign granted automatically */}
-            {!waiting && <Step n={1}>{t("rewards.depositBonus.stepClaim")}</Step>}
-            {waiting && <Step n={1} done>{t("rewards.depositBonus.stepClaim")}</Step>}
+          <ol className="space-y-1.5 sm:columns-2 sm:gap-6 [&>li]:break-inside-avoid">
+            <Step n={1} done={!!waiting}>
+              {t("rewards.depositBonus.stepClaim")}
+            </Step>
             <Step n={2}>{t("rewards.depositBonus.stepDeposit", { min })}</Step>
             {/* the step people miss: the bonus is paid onto a trading account, not into the wallet */}
             <Step n={3}>{t("rewards.depositBonus.stepTransfer")}</Step>
             <Step n={4}>{t("rewards.depositBonus.stepCredited", { pct })}</Step>
           </ol>
           <p className="text-[11.5px] leading-snug text-fg-3">{t("rewards.depositBonus.release", { amount: `$${c.releasePerLot}`, days: c.expiryDays })}</p>
-          {!waiting && (
-            <Link href="/rewards/promotions" className="inline-block">
+          {cta && (
+            <Link href={cta.href} className="inline-block">
               <Button size="sm" variant="ember">
-                {t("rewards.depositBonus.claimCta")} <ArrowRight className="rtl:-scale-x-100" />
+                {cta.label} <ArrowRight className="rtl:-scale-x-100" />
               </Button>
             </Link>
           )}

@@ -15,7 +15,7 @@ import { useManualMethods } from "./manual/api";
 import { DepositChooser, ManualDepositPanel, ManualHowItWorks, type Via } from "./manual";
 import { CheckoutPanel, useCheckouts } from "./checkout";
 import { DepositGate } from "./deposit-gate";
-import { DepositBonusNotice } from "@/components/growth/deposit-bonus";
+import { BonusSteps } from "@/components/growth/bonus-steps";
 
 type IntentView = { intent: Intent; deposit: Deposit | null };
 
@@ -435,7 +435,7 @@ function Inner() {
         }
       />
       {/* what the dashboard banner promised, and what it takes to actually get it */}
-      <DepositBonusNotice />
+      <BonusSteps on="deposit" className="mb-4" />
       <DepositGate open={gateOpen} hasCheckout={hasCheckout} hasBank={hasBank} onChoose={choose} onClose={() => router.push("/wallet")} />
       {!valid && !gateOpen && <DepositChooser value={via} onChange={choose} usdt={autoOn} bank={hasBank} crypto={hasCrypto} checkout={hasCheckout} />}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">

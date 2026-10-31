@@ -37,6 +37,7 @@ import { fmt, useWallet, type ActivityItem, type Page, type WalletConfig } from 
 import { KIND_LABEL } from "@/components/wallet-live/ui";
 import { useGrowth, type Rewards } from "@/components/growth/api";
 import { DashboardBanners } from "@/components/growth/banner-slot";
+import { BonusSteps } from "@/components/growth/bonus-steps";
 import { UpdatesSection } from "@/components/growth/updates";
 import { LiveCalendarCard, LiveNewsCard, LiveWorldCard } from "@/components/news-live/dashboard";
 import { Trans, useFormat, useT } from "@ezymex/i18n/react";
@@ -598,6 +599,8 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
   return (
     <div className="pb-16">
       <DashboardBanners />
+      {/* the banner above promises the cashback; this says what it takes to get it */}
+      <BonusSteps on="dashboard" className="mb-6" />
       <MyAccountsLayout
         header={
           <PageHeader
