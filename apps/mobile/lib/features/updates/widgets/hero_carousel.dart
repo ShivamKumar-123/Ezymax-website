@@ -236,6 +236,54 @@ class _HeroCarouselState extends ConsumerState<HeroCarousel> {
   }
 }
 
+/// Artwork fades up and settles to full size from very slightly under it, the web's .k-poster-in. It stops at
+/// exactly 1: the point of a poster is that none of it is cut off, and anything that went past 1 would quietly
+/// shave the edges. Off for a photograph being written over, and still when the system asks for less motion.
+class _PosterEntrance extends StatefulWidget {
+  const _PosterEntrance({required this.on, required this.child});
+  final bool on;
+  final Widget child;
+
+  @override
+  State<_PosterEntrance> createState() => _PosterEntranceState();
+}
+
+class _PosterEntranceState extends State<_PosterEntrance> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 900));
+  late final Animation<double> _e = CurvedAnimation(parent: _c, curve: Curves.easeOutCubic);
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.on) _c.forward();
+  }
+
+  @override
+  void didUpdateWidget(_PosterEntrance old) {
+    super.didUpdateWidget(old);
+    if (widget.on && !old.on) _c.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.on || MediaQuery.disableAnimationsOf(context)) return widget.child;
+    return AnimatedBuilder(
+      animation: _e,
+      builder: (context, child) => Opacity(
+        opacity: _e.value,
+        child: Transform.scale(scale: 0.985 + 0.015 * _e.value, child: child),
+      ),
+      child: widget.child,
+    );
+  }
+}
+
 class _Slide extends ConsumerWidget {
   const _Slide({required this.p, required this.label, required this.onDismiss});
   final PromoItem p;
@@ -263,11 +311,16 @@ class _Slide extends ConsumerWidget {
           fit: StackFit.expand,
           children: [
             if (image != null)
-              Image(
-                image: image,
-                // a poster is never cut: the card was sized to its shape, so it fits exactly
-                fit: p.poster ? BoxFit.contain : BoxFit.cover,
-                errorBuilder: (context, _, _) => ColoredBox(color: k.surface3),
+              _PosterEntrance(
+                on: p.poster,
+                child: Image(
+                  image: image,
+                  // a poster is never cut: the card was sized to its shape, so it fits exactly
+                  fit: p.poster ? BoxFit.contain : BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                  errorBuilder: (context, _, _) => ColoredBox(color: k.surface3),
+                ),
               )
             else
               DecoratedBox(

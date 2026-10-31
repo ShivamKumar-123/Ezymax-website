@@ -247,11 +247,19 @@ function Slide({ b, active, label, onDismiss, onRatio }: { b: BannerView; active
                 }
               : undefined
           }
-          className={cn("absolute inset-0 -z-10 size-full", poster ? "object-contain" : "object-cover")}
+          className={cn("absolute inset-0 -z-10 size-full", poster ? "k-poster-in object-contain" : "object-cover")}
           loading={active ? "eager" : "lazy"}
         />
       ) : (
         <span aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-br from-ember/60 via-surface-3 to-bg" />
+      )}
+      {/* glossy artwork catches the light; it passes every so often rather than forever, so it reads as a
+          highlight and not as a loading bar */}
+      {poster && b.imageUrl && (
+        <span
+          aria-hidden
+          className="k-poster-sheen pointer-events-none absolute inset-y-0 -left-1/4 -z-10 w-1/4 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+        />
       )}
       {/* the gradient exists to make overlaid words readable; a poster has none, so darkening it only dulls the art */}
       {!poster && (

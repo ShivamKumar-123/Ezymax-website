@@ -691,7 +691,7 @@ function BannerDialog({ open, onOpenChange, banner, kind, onSaved }: { open: boo
               <SelectF label="Tone" value={d.tone} onChange={(v) => set("tone", v)} options={TONES} />
               {isBanner && <SelectF label="Placement" value={d.placement} onChange={(v) => set("placement", v)} options={PLACEMENTS} />}
             </div>
-            <ImageField layout={d.layout} image={image} mediaId={d.imageMediaId} url={d.imageUrl} onMedia={(id) => set("imageMediaId", id)} onUrl={(u) => set("imageUrl", u)} />
+            <ImageField layout={d.layout} whole={whole} image={image} mediaId={d.imageMediaId} url={d.imageUrl} onMedia={(id) => set("imageMediaId", id)} onUrl={(u) => set("imageUrl", u)} />
           </FormSection>
 
           {isEvent && (

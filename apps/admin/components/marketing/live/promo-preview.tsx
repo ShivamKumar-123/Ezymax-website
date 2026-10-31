@@ -297,6 +297,7 @@ export function PostBody({ src, className }: { src: string; className?: string }
 
 export function ImageField({
   layout,
+  whole = false,
   image,
   mediaId,
   url,
@@ -304,6 +305,9 @@ export function ImageField({
   onUrl,
 }: {
   layout: BannerLayout;
+  /** The carousel will show this one whole, whatever the layout field says (banners.tsx showsWhole), so it is
+   *  judged by the poster's rules: nothing about a crop that is not going to happen. */
+  whole?: boolean;
   /** What the preview shows (the upload through this BFF, else the URL). */
   image: string | null;
   mediaId: string;
@@ -316,7 +320,6 @@ export function ImageField({
   const [drag, setDrag] = React.useState(false);
   const [dims, setDims] = React.useState<{ w: number; h: number } | null>(null);
   const [useUrl, setUseUrl] = React.useState(!mediaId && !!url);
-  const want = IMAGE_SIZE[layout];
   React.useEffect(() => setDims(null), [image]);
 
   const pick = async (f: File | undefined) => {
@@ -331,14 +334,15 @@ export function ImageField({
     setUseUrl(false);
     toast.success("Image uploaded", { description: `${f.name} · ${(f.size / 1024).toFixed(0)} KB` });
   };
-  const note = dims ? sizeNote(layout, dims.w, dims.h) : null;
+  const judged: BannerLayout = whole ? "poster" : layout;
+  const note = dims ? sizeNote(judged, dims.w, dims.h) : null;
 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2 text-[12.5px] font-medium text-fg-2">
         <span>Image</span>
         <span className="text-[11.5px] font-normal text-fg-3">
-          {layout === "hero" ? "Hero" : "Card"}: {want.label} · PNG, JPG or WEBP ≤ 5 MB
+          {judged === "poster" ? "Poster" : judged === "hero" ? "Hero" : "Card"}: {IMAGE_SIZE[judged].label} · PNG, JPG or WEBP ≤ 5 MB
         </span>
       </div>
       <div

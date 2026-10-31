@@ -107,6 +107,29 @@
 .k-reveal {
   animation: k-reveal var(--k-reveal-ms, 450ms) cubic-bezier(0.16, 1, 0.3, 1) var(--k-reveal-delay, 0s) backwards;
 }
+/* A poster in the dashboard carousel is artwork, so it is given an entrance: it fades up, settling to full size
+   from very slightly under it, and then the light sweeps across it every so often the way it would across
+   something printed and glossy.
+
+   Both are deliberately restrained about scale. The point of a poster is that none of it is cut off, so the
+   settle ends at exactly 1 and never goes past it - a Ken Burns drift would look handsome and quietly crop the
+   edges of the artwork the whole time it ran. The sweep moves nothing; it only lights. Reduced motion stops
+   both, through the rule at the end of this file. */
+@keyframes k-poster-in {
+  from { opacity: 0; transform: scale(0.985); }
+  to { opacity: 1; transform: scale(1); }
+}
+.k-poster-in { animation: k-poster-in 900ms cubic-bezier(0.16, 1, 0.3, 1) backwards; }
+
+/* one pass takes about two seconds of the thirteen; the rest of the cycle it waits off the edge */
+@keyframes k-poster-sheen {
+  0% { transform: translateX(-130%) skewX(-18deg); opacity: 0; }
+  2% { opacity: 1; }
+  13% { opacity: 1; }
+  16%, 100% { transform: translateX(430%) skewX(-18deg); opacity: 0; }
+}
+.k-poster-sheen { animation: k-poster-sheen 13s cubic-bezier(0.45, 0, 0.2, 1) 700ms infinite; }
+
 @keyframes flash-up { from { color: var(--k-up); text-shadow: 0 0 10px var(--k-up-soft); } }
 @keyframes flash-down { from { color: var(--k-down); text-shadow: 0 0 10px var(--k-down-soft); } }
 @keyframes tick-bg-up { from { background-color: color-mix(in oklab, var(--k-up) 30%, transparent); } to { background-color: transparent; } }
