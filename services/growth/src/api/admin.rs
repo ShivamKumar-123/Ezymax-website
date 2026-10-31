@@ -1256,8 +1256,8 @@ pub fn banner_json(r: &sqlx::postgres::PgRow) -> Value {
 }
 
 async fn write_banner(st: &AppState, s: &StaffCtx, id: Option<i64>, mut b: BannerIn, before: Option<Value>) -> ApiResult<Json<Value>> {
-    if !matches!(b.kind.as_str(), "banner" | "event" | "post") {
-        return Err(invalid("kind", "banner, event or post."));
+    if !matches!(b.kind.as_str(), "banner" | "event" | "post" | "offer") {
+        return Err(invalid("kind", "banner, event, post or offer."));
     }
     if !matches!(b.layout.as_str(), "card" | "hero" | "poster") {
         return Err(invalid("layout", "card, hero or poster."));
@@ -1283,7 +1283,8 @@ async fn write_banner(st: &AppState, s: &StaffCtx, id: Option<i64>, mut b: Banne
     if !matches!(b.placement.as_str(), "dashboard" | "wallet" | "rewards" | "terminal") {
         return Err(invalid("placement", "dashboard, wallet, rewards or terminal."));
     }
-    // events and posts live on the dashboard (Events & updates, and the hero when featured)
+    // everything but a slot banner lives on a page of its own - Events & updates, or the Offers page - and
+    // reaches the dashboard only by taking a carousel layout, so none of them carries a placement
     if b.kind != "banner" {
         b.placement = "dashboard".into();
     }

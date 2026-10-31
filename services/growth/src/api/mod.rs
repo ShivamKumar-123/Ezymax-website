@@ -45,6 +45,7 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/growth/me/contests/{id}", get(client::contest))
         .route("/v1/growth/me/contests/{id}/join", post(client::join))
         .route("/v1/growth/me/banners", get(client::banners))
+        .route("/v1/growth/me/offers", get(client::offers))
         .route("/v1/growth/me/banners/{id}/events", post(client::banner_event))
         .route("/v1/growth/me/posts", get(client::posts))
         .route("/v1/growth/me/posts/{id}", get(client::post))

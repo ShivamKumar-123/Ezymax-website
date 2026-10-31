@@ -132,7 +132,8 @@ export type Kyc = "unverified" | "pending" | "verified" | "rejected";
 export type AccountType = "live" | "demo" | "none";
 
 /** banner = the banner slots; event = a dated event (time range, place or link); post = a brand post. */
-export type BannerKind = "banner" | "event" | "post";
+/** offer = a promotion listed on the Client Area's Offers page, and badged there until the client reads it. */
+export type BannerKind = "banner" | "event" | "post" | "offer";
 /** card = the banner slot / the updates list; hero = the dashboard's full-width carousel. */
 /** poster = finished artwork shown whole in the dashboard carousel, with no wording written over it. */
 export type BannerLayout = "card" | "hero" | "poster";

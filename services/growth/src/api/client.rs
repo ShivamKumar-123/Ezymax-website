@@ -275,7 +275,11 @@ pub fn banner_matches(r: &PgRow, seg: &Segment, account_types: Option<&[String]>
 
 /// Banner slots: the targeted banners of a placement, plus events and posts featured in the hero (layout `hero`).
 pub const BANNER_LIVE: &str = "SELECT * FROM banners WHERE tenant = $1 AND active AND deleted_at IS NULL AND starts_at <= now() AND (ends_at IS NULL OR ends_at > now())
-     AND ($2::text IS NULL OR placement = $2) AND (kind = 'banner' OR layout = 'hero') ORDER BY priority DESC, id DESC";
+     AND ($2::text IS NULL OR placement = $2) AND (kind = 'banner' OR layout IN ('hero', 'poster')) ORDER BY priority DESC, id DESC";
+/// Offers: every live offer aimed at this client. An offer has its own page rather than a placement slot, so
+/// nothing is filtered here but the dates - the targeting is applied below, as it is for posts.
+pub const OFFERS_LIVE: &str = "SELECT * FROM banners WHERE tenant = $1 AND kind = 'offer' AND active AND deleted_at IS NULL AND starts_at <= now() AND (ends_at IS NULL OR ends_at > now())
+     ORDER BY priority DESC, id DESC LIMIT 200";
 /// Events & updates: live events and brand posts (targeting is applied after).
 pub const POSTS_LIVE: &str = "SELECT * FROM banners WHERE tenant = $1 AND kind IN ('event', 'post') AND active AND deleted_at IS NULL AND starts_at <= now() AND (ends_at IS NULL OR ends_at > now())
      ORDER BY id DESC LIMIT 500";
@@ -317,6 +321,37 @@ pub async fn banners(State(st): State<AppState>, u: UserCtx, Query(q): Query<Ban
     let types = account_types(&st, &u, &rows).await;
     let seg = p.segment();
     let items: Vec<Value> = rows.iter().filter(|r| !dismissed.contains(&r.get::<i64, _>("id"))).filter(|r| banner_matches(r, &seg, types.as_deref())).map(banner_view).collect();
+    Ok(Json(json!({"items": items})))
+}
+
+/// The offers page, and the count the rail badges. Each offer says whether this client has been shown it
+/// before: an impression is recorded the first time it is rendered, and `isNew` stays true until then, so a
+/// client who has never opened the page is told how many are waiting rather than being badged forever.
+pub async fn offers(State(st): State<AppState>, u: UserCtx) -> ApiResult<Json<Value>> {
+    let p = profile(&st, &u).await?;
+    let rows = sqlx::query(OFFERS_LIVE).bind(&u.tenant).fetch_all(&st.pool).await?;
+    if rows.is_empty() {
+        return Ok(Json(json!({"items": []})));
+    }
+    // dismissing an offer hides it, the same gesture as a banner; seeing one only clears its "new" mark
+    let hidden: Vec<i64> = sqlx::query_scalar("SELECT DISTINCT banner_id FROM banner_events WHERE user_id = $1 AND kind = 'dismiss'").bind(u.user_id).fetch_all(&st.pool).await?;
+    let seen: Vec<i64> = sqlx::query_scalar("SELECT DISTINCT banner_id FROM banner_events WHERE user_id = $1 AND kind = 'impression'").bind(u.user_id).fetch_all(&st.pool).await?;
+    let types = account_types(&st, &u, &rows).await;
+    let seg = p.segment();
+    let items: Vec<Value> = rows
+        .iter()
+        .filter(|r| !hidden.contains(&r.get::<i64, _>("id")))
+        .filter(|r| banner_matches(r, &seg, types.as_deref()))
+        .map(|r| {
+            let mut v = banner_view(r);
+            if let Some(o) = v.as_object_mut() {
+                o.insert("isNew".into(), json!(!seen.contains(&r.get::<i64, _>("id"))));
+                o.insert("endsAt".into(), json!(r.get::<Option<DateTime<Utc>>, _>("ends_at")));
+                o.insert("content".into(), json!(r.get::<String, _>("content")));
+            }
+            v
+        })
+        .collect();
     Ok(Json(json!({"items": items})))
 }
 

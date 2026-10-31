@@ -11,7 +11,7 @@ import { intlTag } from "@ezymex/i18n/locales";
 import { useFormat, useT } from "@ezymex/i18n/react";
 import { cn } from "@/components/kit";
 import { Inline, parseBlocks } from "@/components/academy/live/markdown";
-import { GrowthApiError, growthApi, useGrowth, type BannerView, type PostView, type PostsPage } from "./api";
+import { GrowthApiError, growthApi, useGrowth, type BannerView, type OfferView, type PostView, type PostsPage } from "./api";
 
 /* ------------------------------------------------------------------ */
 /* Data                                                                */
@@ -39,6 +39,13 @@ export function useDashboardBanners(): { hero: BannerView[]; cards: BannerView[]
   const items = live.data?.items ?? [];
   const carousel = (b: BannerView) => b.layout === "hero" || b.layout === "poster";
   return { hero: items.filter(carousel), cards: items.filter((b) => !carousel(b)), loading: live.loading };
+}
+
+/** Every live offer for this client, newest and highest priority first. Polled by the rail for its badge, so
+ *  the answer is shared through the growth cache rather than fetched twice. */
+export function useOffers(pollMs = 0) {
+  const live = useGrowth<{ items: OfferView[] }>(IS_DEMO ? null : "offers", pollMs);
+  return { offers: IS_DEMO ? [] : (live.data?.items ?? []), loading: !IS_DEMO && live.loading };
 }
 
 /** Events & updates (`posts?kind=&page=&limit=`). */

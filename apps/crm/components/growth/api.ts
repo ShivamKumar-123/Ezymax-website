@@ -336,6 +336,16 @@ export interface BannerView {
   publishedAt?: string;
 }
 
+/** An offer (GET offers): a banner of kind "offer", plus what the Offers page needs on top of it. */
+export interface OfferView extends BannerView {
+  /** False once the client has been shown it: what the rail badges, and what the "New" chip marks. */
+  isNew: boolean;
+  /** When the offer stops running, for the "ends in" line. Null = open ended. */
+  endsAt: string | null;
+  /** The terms, in the Academy's markdown subset. */
+  content: string;
+}
+
 /** An event or brand post page (GET posts/{id}): the card plus its markdown body. */
 export interface PostView extends BannerView {
   content: string;

@@ -22,6 +22,7 @@ import { sameOrigin, sessionUser } from "@/lib/trading";
 //   POST  contests/{id}/join              {login?} (demo: credentials returned once, passed through)
 //   GET   banners?placement=              banner slot items (+ hero items on the dashboard)
 //   POST  banners/{id}/events             {kind}
+//   GET   offers                          the Offers page: every live offer for this client, each with isNew
 //   GET   posts?kind=&page=&limit=        Events & updates (events and brand posts targeted at the client)
 //   GET   posts/{id}                      an event / post page (markdown body)
 //   GET   shares · POST shares            {kind, login, dealId | from/to, showAmounts}
@@ -35,7 +36,7 @@ function error(status: number, code: string, message: string) {
 }
 
 const ID = String.raw`[A-Za-z0-9_-]{1,64}`;
-const GET_ROUTES = [/^rewards$/, /^points$/, /^redemptions$/, /^vouchers$/, /^cashback$/, /^promotions$/, /^contests$/, new RegExp(`^contests/${ID}$`), /^banners$/, /^posts$/, /^posts\/\d{1,18}$/, /^shares$/];
+const GET_ROUTES = [/^rewards$/, /^points$/, /^redemptions$/, /^vouchers$/, /^cashback$/, /^promotions$/, /^contests$/, new RegExp(`^contests/${ID}$`), /^banners$/, /^offers$/, /^posts$/, /^posts\/\d{1,18}$/, /^shares$/];
 /** Uploaded images: 24 hex characters (services/growth src/media.rs). */
 const MEDIA = /^media\/([0-9a-f]{24})$/;
 const POST_ROUTES = [

@@ -29,7 +29,8 @@ import features from "./features";
 import updates from "./updates";
 import staking from "./staking";
 import payments from "./payments";
+import offers from "./offers";
 
 /** English: the source language and the fallback for every missing translation. */
-export const en = { common, shell, auth, dashboard, accounts, accountDetail, wallet, profile, kyc, trader, order, toolbox, market, partner, social, prop, security, rewards, developer, academy, support, news, portfolio, chart, aiTrader, options, desk, features, updates, staking, payments };
+export const en = { common, shell, auth, dashboard, accounts, accountDetail, wallet, profile, kyc, trader, order, toolbox, market, partner, social, prop, security, rewards, developer, academy, support, news, portfolio, chart, aiTrader, options, desk, features, updates, staking, payments, offers };
 export type EnCatalog = typeof en;

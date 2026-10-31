@@ -12,27 +12,37 @@ import { Tooltip, TooltipProvider, Menu } from "../components/overlays";
 import { useLocale, useT } from "@ezymex/i18n/react";
 
 /**
- * The count on a nav item, with a ring that fires once when the number goes up.
+ * The count on a nav item, with a ring that draws the eye to it.
  *
- * Back Office queues are watched out of the corner of an eye: a request that just arrived has to interrupt, while
- * one that has been waiting ten minutes only has to stay visible. So the ring plays on an increase and then stops -
- * a badge that pulses for as long as there is work becomes wallpaper, and the next arrival is the one nobody sees.
- * It stays quiet on the first render, so opening a page with a full queue does not set everything flashing.
+ * Two kinds of number want two different rings.
+ *
+ * `increase` (the default) is for a working queue. Back Office queues are watched out of the corner of an eye: a
+ * request that just arrived has to interrupt, while one that has been waiting ten minutes only has to stay
+ * visible. So the ring plays on an increase and then stops - a badge that pulses for as long as there is work
+ * becomes wallpaper, and the next arrival is the one nobody sees. It stays quiet on the first render, so opening
+ * a page with a full queue does not set everything flashing.
+ *
+ * `unseen` is for something addressed to this reader that they have not looked at yet - an offer waiting on the
+ * Offers page. Here the first render is exactly when it matters: somebody signing in should be told, not only
+ * somebody who happened to be looking when it arrived. It rings for as long as the count stands, which cannot
+ * become wallpaper because reading the thing is what clears it.
  */
-function NavBadge({ value, className }: { value: number | string; className?: string }) {
+export function NavBadge({ value, className, pulse = "increase" }: { value: number | string; className?: string; pulse?: "increase" | "unseen" }) {
   const seen = React.useRef<number | string | null>(null);
   const [grew, setGrew] = React.useState(false);
   React.useEffect(() => {
+    if (pulse === "unseen") return;
     const before = seen.current;
     seen.current = value;
     if (before === null || typeof value !== "number" || typeof before !== "number" || value <= before) return;
     setGrew(true);
     const t = setTimeout(() => setGrew(false), 2600);
     return () => clearTimeout(t);
-  }, [value]);
+  }, [value, pulse]);
+  const ringing = pulse === "unseen" ? value !== 0 && value !== "" : grew;
   return (
     <span className={cn("relative grid place-items-center", className)}>
-      {grew && <span aria-hidden className="absolute -inset-1 animate-ping rounded-full bg-ember/50 motion-reduce:hidden" />}
+      {ringing && <span aria-hidden className="absolute -inset-1 animate-ping rounded-full bg-ember/50 motion-reduce:hidden" />}
       <span className="relative grid h-full w-full place-items-center rounded-full">{value}</span>
     </span>
   );

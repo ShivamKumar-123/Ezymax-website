@@ -12,7 +12,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { ChevronDown } from "lucide-react";
-import { LogoMark, Tooltip, cn, useBrand, type NavModule, type SubNavItem } from "@/components/kit";
+import { LogoMark, NavBadge, Tooltip, cn, useBrand, type NavModule, type SubNavItem } from "@/components/kit";
 import { useLocale, useT } from "@ezymex/i18n/react";
 import { useTerminalPicker } from "@/components/trading/terminal-picker";
 import { activeSub, isActive } from "./nav-utils";
@@ -112,8 +112,14 @@ export function Rail({ modules, expanded }: { modules: NavModule[]; expanded: bo
       // the notch already marks the active module, so the row only needs the accent colour behind it
       active ? "bg-ember-soft/60 text-ember" : "text-fg-3 hover:bg-surface-3/60 hover:text-fg",
     );
+  // "unseen": a client signing in to a waiting offer should be told, not only one who was looking when it
+  // arrived. Reading it clears the count, so the ring cannot outstay its welcome.
   const badge = (value: number | string) => (
-    <span className={cn("grid h-4 min-w-4 place-items-center rounded-full bg-ember px-1 text-[9px] font-bold text-[var(--k-on-ember)] ring-2 ring-[var(--k-rail-bg-solid)]", expanded ? "relative" : "absolute end-0.5 top-0.5")}>{value}</span>
+    <NavBadge
+      value={value}
+      pulse="unseen"
+      className={cn("h-4 min-w-4 rounded-full bg-ember px-1 text-[9px] font-bold text-[var(--k-on-ember)] ring-2 ring-[var(--k-rail-bg-solid)]", expanded ? "relative" : "absolute end-0.5 top-0.5")}
+    />
   );
 
   return (

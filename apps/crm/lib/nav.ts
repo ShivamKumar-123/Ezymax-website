@@ -1,4 +1,5 @@
 import {
+  BadgePercent,
   CandlestickChart,
   LayoutGrid,
   Layers,
@@ -139,6 +140,13 @@ export const CRM_NAV: NavModule[] = [
     ],
   },
   {
+    key: "offers",
+    label: "Offers",
+    icon: BadgePercent,
+    href: "/offers",
+    section: "grow",
+  },
+  {
     key: "earn",
     label: "Ezymex SIP",
     icon: PiggyBank,
@@ -251,6 +259,7 @@ const MODULE_KEYS: Record<string, MessageKey> = {
   trading: "shell.nav.trading",
   analytics: "shell.nav.analytics",
   earn: "shell.nav.earn",
+  offers: "shell.nav.offers",
   help: "shell.nav.help",
   accounts: "shell.nav.accounts",
   wallet: "shell.nav.wallet",

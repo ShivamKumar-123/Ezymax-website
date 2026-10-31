@@ -12,7 +12,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowDownToLine, ArrowUpRight } from "lucide-react";
-import { Button, CommandPalette, LanguageMenu, MarketBoundary, ThemeToggle, TooltipProvider, cn } from "@/components/kit";
+import { Button, CommandPalette, LanguageMenu, MarketBoundary, ThemeToggle, TooltipProvider, cn, type NavModule } from "@/components/kit";
 import { IS_DEMO } from "@ezymex/mock";
 import { useT } from "@ezymex/i18n/react";
 import { CRM_COMMANDS, NAV, localizeCommands, localizeNav } from "@/lib/nav";
@@ -31,6 +31,17 @@ import { AvatarButton, RailToggle, SubNav, WalletChip } from "./topbar";
 import { ProfileDrawer } from "./profile-drawer";
 import { MobileBar } from "./mobile-nav";
 import { isActive } from "./nav-utils";
+import { useOffers } from "@/components/growth/promo";
+
+/** How often the rail asks whether an offer is waiting. Slow on purpose: it runs on every page, for every
+ *  signed-in client, and a promotion that shows up five minutes late has lost nothing. */
+const OFFERS_POLL_MS = 300_000;
+
+/** Puts the count of unread offers on the Offers module, and nowhere else. */
+function withOfferBadge(modules: NavModule[], count: number): NavModule[] {
+  if (count <= 0) return modules;
+  return modules.map((m) => (m.key === "offers" ? { ...m, badge: count } : m));
+}
 
 /** True once the page has scrolled (the sticky top area then gets its frosted backdrop). */
 function useScrolled() {
@@ -53,7 +64,11 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
   const features = useFeatures();
   // a view-only session (D90) only gets the sections it was given, and no account actions
   const viewer = me.viewer ?? null;
-  const modules = localizeNav(viewer ? navForViewer(navForFeatures(NAV, features), viewer) : navForFeatures(NAV, features), t);
+  // Offers waiting to be read. Polled slowly: a promotion is not urgent to the second, and this runs on every
+  // page for every signed-in client. A staff member looking at someone's account is not the audience for it.
+  const { offers } = useOffers(viewer ? 0 : OFFERS_POLL_MS);
+  const newOffers = viewer ? 0 : offers.filter((o) => o.isNew).length;
+  const modules = withOfferBadge(localizeNav(viewer ? navForViewer(navForFeatures(NAV, features), viewer) : navForFeatures(NAV, features), t), newOffers);
   const current = modules.find((m) => isActive(pathname, m));
   const subs = current?.sub && current.sub.length > 1 ? current.sub : null;
   const [expanded, setExpanded] = useRailExpanded();

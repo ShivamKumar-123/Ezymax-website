@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { CalendarDays, CalendarRange, Eye, Image as ImageIcon, LayoutPanelTop, MapPin, Megaphone, MousePointerClick, Newspaper, Pencil, Plus, RefreshCw, Trash2, Users, Video, X } from "lucide-react";
+import { BadgePercent, CalendarDays, CalendarRange, Eye, Image as ImageIcon, LayoutPanelTop, MapPin, Megaphone, MousePointerClick, Newspaper, Pencil, Plus, RefreshCw, Trash2, Users, Video, X } from "lucide-react";
 import { Button, Card, CardHeader, Chip, KpiCard, PageHeader, Reveal, Segmented, cn } from "@ezymex/ui";
 import { TableSkeleton, day, qs, useApi, useDebounced } from "@/components/live/kit";
 import { M, imageSrc, mkSend, type AccountType, type Banner, type BannerInput, type BannerKind, type BannerLayout, type BannerView, type Kyc, type Overview, type Placement, type Tone } from "./api";
@@ -41,8 +41,9 @@ const KINDS: { value: BannerKind; label: string; hint: string; icon: React.React
   { value: "banner", label: "Banner", hint: "A targeted banner in a slot (dashboard, wallet, rewards, terminal)", icon: <Megaphone className="size-3.5" /> },
   { value: "event", label: "Event", hint: "A webinar, meetup or launch with a date and a place or link", icon: <CalendarDays className="size-3.5" /> },
   { value: "post", label: "Post", hint: "A brand announcement with a full page", icon: <Newspaper className="size-3.5" /> },
+  { value: "offer", label: "Offer", hint: "A promotion on the client's Offers page, marked new until they read it", icon: <BadgePercent className="size-3.5" /> },
 ];
-const KIND_LABEL: Record<BannerKind, string> = { banner: "Banner", event: "Event", post: "Post" };
+const KIND_LABEL: Record<BannerKind, string> = { banner: "Banner", event: "Event", post: "Post", offer: "Offer" };
 const LAYOUTS: { value: BannerLayout; label: string }[] = [
   { value: "card", label: "Card" },
   { value: "hero", label: "Hero" },
@@ -119,6 +120,8 @@ function ItemPreview({ b, className }: { b: Pick<BannerView, "kind" | "layout" |
   const image = imageSrc(b);
   if (showsWhole(b, image)) return <PosterPreview b={b} image={image} className={className} />;
   if (b.layout === "hero") return <HeroPreview b={b} image={image} className={className} />;
+  // an offer is read on its own page as the artwork plus what was written under it - an updates card is the
+  // closest thing the Back Office already draws
   if (b.kind !== "banner") return <UpdateCardPreview b={b} image={image} className={className} />;
   return <ClientBanner b={b} image={image} className={className} />;
 }
@@ -573,6 +576,7 @@ function BannerDialog({ open, onOpenChange, banner, kind, onSaved }: { open: boo
     if (d.ctaLabel.trim() && !d.ctaUrl.trim()) return "Add the link the button opens.";
     if (d.layout === "hero" && !image) return `A hero needs an image (${IMAGE_SIZE.hero.label}).`;
     if (d.layout === "poster" && !image) return "A poster is its image: upload the artwork.";
+    if (d.kind === "offer" && !image) return `An offer needs its artwork (${IMAGE_SIZE.poster.label}).`;
     if (inCarousel(d.layout) && isBanner && d.placement !== "dashboard") return "Hero and poster banners show at the top of the dashboard: pick the Dashboard placement.";
     const evStart = fromLocalInput(d.eventStartsAt);
     const evEnd = fromLocalInput(d.eventEndsAt);
@@ -623,7 +627,7 @@ function BannerDialog({ open, onOpenChange, banner, kind, onSaved }: { open: boo
     location: loc || null,
   };
   const whole = showsWhole({ layout: d.layout, kind: d.kind, body: d.body, ctaLabel: d.ctaLabel, ctaUrl: d.ctaUrl }, image);
-  const where = inCarousel(d.layout) ? `Dashboard · ${whole ? "poster" : "hero"} carousel` : isBanner ? `${PLACEMENTS.find((p) => p.value === d.placement)?.label} · banner slot` : "Dashboard · Events & updates";
+  const where = d.kind === "offer" && !inCarousel(d.layout) ? "Client Area · Offers" : inCarousel(d.layout) ? `Dashboard · ${whole ? "poster" : "hero"} carousel` : isBanner ? `${PLACEMENTS.find((p) => p.value === d.placement)?.label} · banner slot` : "Dashboard · Events & updates";
 
   return (
     <FormDialog
