@@ -134,7 +134,8 @@ export type AccountType = "live" | "demo" | "none";
 /** banner = the banner slots; event = a dated event (time range, place or link); post = a brand post. */
 export type BannerKind = "banner" | "event" | "post";
 /** card = the banner slot / the updates list; hero = the dashboard's full-width carousel. */
-export type BannerLayout = "card" | "hero";
+/** poster = finished artwork shown whole in the dashboard carousel, with no wording written over it. */
+export type BannerLayout = "card" | "hero" | "poster";
 
 export type BannerInput = {
   kind: BannerKind;

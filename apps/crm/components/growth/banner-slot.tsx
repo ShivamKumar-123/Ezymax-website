@@ -89,10 +89,10 @@ function BannerCard({ b, onDismiss }: { b: BannerView; onDismiss: () => void }) 
   );
 }
 
-/** Card banners (hero items belong to the dashboard's carousel). */
+/** Card banners (hero and poster items belong to the dashboard's carousel). */
 function CardBanners({ items, placement, max, className }: { items: BannerView[]; placement: string; max: number; className?: string }) {
   const [hidden, setHidden] = React.useState<Set<BannerView["id"]>>(() => new Set());
-  const shown = items.filter((b) => b.layout !== "hero" && !hidden.has(b.id)).slice(0, max);
+  const shown = items.filter((b) => b.layout !== "hero" && b.layout !== "poster" && !hidden.has(b.id)).slice(0, max);
   if (shown.length === 0) return null;
   return (
     <div className={cn("space-y-3", className)} data-testid="banner-slot" data-placement={placement}>

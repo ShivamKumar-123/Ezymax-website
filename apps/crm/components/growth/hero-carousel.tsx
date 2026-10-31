@@ -1,7 +1,10 @@
 "use client";
 
-// The dashboard's hero carousel: brand banners and featured events / posts (layout "hero") across the top of the
-// page, the image full width with the title and the call to action on a dark gradient. One slide every 6 s; it pauses
+// The dashboard's hero carousel: brand banners and featured events / posts across the top of the page. A "hero"
+// slide is a photograph used as a background, with the title and the call to action written over it on a dark
+// gradient. A "poster" slide is finished artwork that already carries its own wording - a festival offer drawn in
+// Photoshop, say - so it is shown whole at its own shape, with nothing drawn over it and nothing cropped off.
+// One slide every 6 s; it pauses
 // while the pointer or the keyboard focus is on it, when the reader paused it, and for reduced motion. Swipe on touch,
 // arrow keys, dots, and a close button on dismissible slides (hidden for this client afterwards).
 
@@ -14,6 +17,16 @@ import type { BannerView } from "./api";
 import { hrefOf, isExternal, isOnlineLink, trackPromo, useEventTime } from "./promo";
 
 const ROTATE_MS = 6000;
+
+/** Artwork that speaks for itself: shown entire, never cropped, never written over. */
+const isPoster = (b: BannerView) => b.layout === "poster";
+
+/** Until the artwork loads we have to reserve some shape, and most posters are drawn 16:9. */
+const POSTER_RATIO = 16 / 9;
+
+/** A tall poster would push the accounts off the screen, so the box stops here and the artwork letterboxes
+ *  inside it rather than losing its edges. */
+const POSTER_MAX_H = 520;
 
 function useReducedMotion() {
   const [reduced, setReduced] = React.useState(false);
@@ -37,6 +50,8 @@ export function HeroCarousel({ items, className }: { items: BannerView[]; classN
   const [paused, setPaused] = React.useState(false);
   const reduced = useReducedMotion();
   const seen = React.useRef<Set<BannerView["id"]>>(new Set());
+  // each poster's own width ÷ height, measured when its artwork loads, so the box takes the artwork's shape
+  const [ratios, setRatios] = React.useState<Record<string, number>>({});
   const touch = React.useRef<{ x: number; y: number } | null>(null);
   const n = slides.length;
   const i = n ? Math.min(index, n - 1) : 0;
@@ -60,6 +75,9 @@ export function HeroCarousel({ items, className }: { items: BannerView[]; classN
   }, [rotating, i, go]);
 
   if (!current) return null;
+
+  // the box follows whichever slide is showing: a poster's own shape, or the 4:1 strip a hero photo is cut to
+  const poster = isPoster(current);
 
   const dismiss = (b: BannerView) => {
     trackPromo(b.id, "dismiss");
@@ -96,9 +114,19 @@ export function HeroCarousel({ items, className }: { items: BannerView[]; classN
         go(forward ? i + 1 : i - 1);
       }}
     >
-      <div className="relative h-[264px] sm:h-auto sm:aspect-[4/1] sm:min-h-[220px]">
+      <div
+        className={cn("relative", !poster && "h-[264px] sm:h-auto sm:aspect-[4/1] sm:min-h-[220px]")}
+        style={poster ? { aspectRatio: String(ratios[String(current.id)] ?? POSTER_RATIO), maxHeight: POSTER_MAX_H } : undefined}
+      >
         {slides.map((b, k) => (
-          <Slide key={b.id} b={b} active={k === i} label={t("updates.hero.slide", { n: k + 1, total: n })} onDismiss={() => dismiss(b)} />
+          <Slide
+            key={b.id}
+            b={b}
+            active={k === i}
+            label={t("updates.hero.slide", { n: k + 1, total: n })}
+            onDismiss={() => dismiss(b)}
+            onRatio={(r) => setRatios((x) => (x[String(b.id)] === r ? x : { ...x, [String(b.id)]: r }))}
+          />
         ))}
       </div>
 
@@ -150,8 +178,9 @@ export function HeroCarousel({ items, className }: { items: BannerView[]; classN
   );
 }
 
-function Slide({ b, active, label, onDismiss }: { b: BannerView; active: boolean; label: string; onDismiss: () => void }) {
+function Slide({ b, active, label, onDismiss, onRatio }: { b: BannerView; active: boolean; label: string; onDismiss: () => void; onRatio: (ratio: number) => void }) {
   const t = useT();
+  const poster = isPoster(b);
   const when = useEventTime();
   const href = hrefOf(b);
   const event = b.kind === "event" && b.eventStartsAt;
@@ -162,7 +191,10 @@ function Slide({ b, active, label, onDismiss }: { b: BannerView; active: boolean
       {cta} <ArrowUpRight className="rtl:-scale-x-100" />
     </span>
   );
-  const copy = (
+  // a poster carries its own wording inside the artwork, so writing the title over it would say everything twice
+  const copy = poster ? (
+    <span className="block h-full" />
+  ) : (
     <div className="flex h-full max-w-[min(640px,90%)] flex-col justify-end gap-2 px-5 pb-11 pt-6 text-white *:shrink-0 sm:max-w-[60%] sm:justify-center sm:px-9 sm:pb-8">
       {event && (
         <span className="flex min-w-0 items-center gap-x-3 text-[11.5px] font-medium text-white/80">
@@ -196,18 +228,35 @@ function Slide({ b, active, label, onDismiss }: { b: BannerView; active: boolean
     >
       {b.imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={b.imageUrl} alt="" className="absolute inset-0 -z-10 size-full object-cover" loading={active ? "eager" : "lazy"} />
+        <img
+          src={b.imageUrl}
+          // the link below names a poster; without one the artwork is the only thing here, so it carries the name
+          alt={poster && !href ? b.title : ""}
+          onLoad={
+            poster
+              ? (e) => {
+                  const el = e.currentTarget;
+                  if (el.naturalWidth && el.naturalHeight) onRatio(el.naturalWidth / el.naturalHeight);
+                }
+              : undefined
+          }
+          className={cn("absolute inset-0 -z-10 size-full", poster ? "object-contain" : "object-cover")}
+          loading={active ? "eager" : "lazy"}
+        />
       ) : (
         <span aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-br from-ember/60 via-surface-3 to-bg" />
       )}
-      <span aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-t from-black/85 via-black/45 to-black/10 sm:bg-gradient-to-r sm:from-black/80 sm:via-black/45 sm:to-transparent rtl:sm:bg-gradient-to-l" />
+      {/* the gradient exists to make overlaid words readable; a poster has none, so darkening it only dulls the art */}
+      {!poster && (
+        <span aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-t from-black/85 via-black/45 to-black/10 sm:bg-gradient-to-r sm:from-black/80 sm:via-black/45 sm:to-transparent rtl:sm:bg-gradient-to-l" />
+      )}
       {href ? (
         isExternal(href) ? (
-          <a href={href} target="_blank" rel="noopener noreferrer" onClick={onClick} className="block h-full outline-none" data-testid="hero-link">
+          <a href={href} target="_blank" rel="noopener noreferrer" onClick={onClick} aria-label={poster ? b.title : undefined} className="block h-full outline-none" data-testid="hero-link">
             {copy}
           </a>
         ) : (
-          <Link href={href} onClick={onClick} className="block h-full outline-none" data-testid="hero-link">
+          <Link href={href} onClick={onClick} aria-label={poster ? b.title : undefined} className="block h-full outline-none" data-testid="hero-link">
             {copy}
           </Link>
         )

@@ -1259,8 +1259,8 @@ async fn write_banner(st: &AppState, s: &StaffCtx, id: Option<i64>, mut b: Banne
     if !matches!(b.kind.as_str(), "banner" | "event" | "post") {
         return Err(invalid("kind", "banner, event or post."));
     }
-    if !matches!(b.layout.as_str(), "card" | "hero") {
-        return Err(invalid("layout", "card or hero."));
+    if !matches!(b.layout.as_str(), "card" | "hero" | "poster") {
+        return Err(invalid("layout", "card, hero or poster."));
     }
     b.title = text(&b.title, "title", 100, true)?;
     b.body = text(&b.body, "body", 400, false)?;
@@ -1287,11 +1287,17 @@ async fn write_banner(st: &AppState, s: &StaffCtx, id: Option<i64>, mut b: Banne
     if b.kind != "banner" {
         b.placement = "dashboard".into();
     }
-    if b.layout == "hero" && b.placement != "dashboard" {
-        return Err(invalid("layout", "Hero banners show at the top of the dashboard: pick the Dashboard placement."));
+    // a poster rides the same dashboard carousel as a hero, so it carries the same two rules: it belongs at
+    // the top of the dashboard, and it is nothing but its artwork, so it cannot exist without one
+    let carousel = matches!(b.layout.as_str(), "hero" | "poster");
+    if carousel && b.placement != "dashboard" {
+        return Err(invalid("layout", "Hero and poster banners show at the top of the dashboard: pick the Dashboard placement."));
     }
-    if b.layout == "hero" && b.image_url.is_none() && b.image_media_id.is_none() {
-        return Err(invalid("image", "A hero banner needs an image (1600 × 400)."));
+    if carousel && b.image_url.is_none() && b.image_media_id.is_none() {
+        return Err(invalid(
+            "image",
+            if b.layout == "poster" { "A poster is its image: upload the artwork." } else { "A hero banner needs an image (1600 × 400)." },
+        ));
     }
     let (ev_start, ev_end) = if b.kind == "event" {
         let start = time_req(&b.event_starts_at, "eventStartsAt")?.ok_or_else(|| invalid("eventStartsAt", "When does the event start?"))?;

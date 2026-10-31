@@ -316,8 +316,9 @@ export interface BannerView {
   id: Id;
   /** banner = the banner slots; event / post = Events & updates (and the hero when featured). Older services: absent. */
   kind?: "banner" | "event" | "post" | string;
-  /** hero = the dashboard's full-width carousel; card (default) = the banner slot / an updates card. */
-  layout?: "card" | "hero" | string;
+  /** hero / poster = the dashboard's full-width carousel; card (default) = the banner slot / an updates card.
+   *  A poster is artwork that already carries its own wording, so it is shown whole and nothing is drawn over it. */
+  layout?: "card" | "hero" | "poster" | string;
   title: string;
   body: string;
   ctaLabel: string | null;

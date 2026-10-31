@@ -29,7 +29,7 @@ import {
   usePerms,
   windowState,
 } from "./kit";
-import { HeroPreview, IMAGE_SIZE, ImageField, PostBody, UpdateCardPreview, eventRange, isLink } from "./promo-preview";
+import { HeroPreview, IMAGE_SIZE, ImageField, PostBody, PosterPreview, UpdateCardPreview, eventRange, isLink } from "./promo-preview";
 
 const PLACEMENTS: { value: Placement; label: string }[] = [
   { value: "dashboard", label: "Dashboard" },
@@ -46,7 +46,10 @@ const KIND_LABEL: Record<BannerKind, string> = { banner: "Banner", event: "Event
 const LAYOUTS: { value: BannerLayout; label: string }[] = [
   { value: "card", label: "Card" },
   { value: "hero", label: "Hero" },
+  { value: "poster", label: "Poster" },
 ];
+/** Both ride the dashboard carousel; a hero is a background for the title, a poster is the finished thing. */
+const inCarousel = (l: BannerLayout | string | undefined) => l === "hero" || l === "poster";
 const KYC_OPTS: { value: Kyc; label: string }[] = [
   { value: "unverified", label: "Unverified" },
   { value: "pending", label: "Pending" },
@@ -104,6 +107,7 @@ export function ClientBanner({ b, image, className }: { b: Pick<BannerView, "tit
 /** Any item as the client sees it: the hero slide, the Events & updates card or the slot banner. */
 function ItemPreview({ b, className }: { b: Pick<BannerView, "kind" | "layout" | "title" | "body" | "ctaLabel" | "tone" | "dismissible" | "eventStartsAt" | "eventEndsAt" | "location" | "imageUrl" | "imageMediaId">; className?: string }) {
   const image = imageSrc(b);
+  if (b.layout === "poster") return <PosterPreview b={b} image={image} className={className} />;
   if (b.layout === "hero") return <HeroPreview b={b} image={image} className={className} />;
   if (b.kind !== "banner") return <UpdateCardPreview b={b} image={image} className={className} />;
   return <ClientBanner b={b} image={image} className={className} />;
@@ -128,7 +132,7 @@ export function LiveBanners() {
   const ofKind = items.filter((b) => kind === "all" || b.kind === kind);
   const shown = ofKind
     .filter((b) => placement === "all" || b.placement === placement)
-    .sort((a, b) => Number(b.layout === "hero") - Number(a.layout === "hero") || a.placement.localeCompare(b.placement) || b.priority - a.priority);
+    .sort((a, b) => Number(inCarousel(b.layout)) - Number(inCarousel(a.layout)) || a.placement.localeCompare(b.placement) || b.priority - a.priority);
   const k = ov.data?.banners;
   const count = (p: Placement) => ofKind.filter((b) => b.placement === p).length;
   const kindCount = (x: BannerKind) => items.filter((b) => b.kind === x).length;
@@ -291,9 +295,9 @@ function BannerTile({ b, canWrite, onEdit, onToggle, onRemove }: { b: Banner; ca
           <Chip size="sm" tone={b.kind === "banner" ? "neutral" : "info"}>
             {KIND_LABEL[b.kind] ?? b.kind}
           </Chip>
-          {b.layout === "hero" ? (
+          {inCarousel(b.layout) ? (
             <Chip size="sm" tone="ember">
-              <LayoutPanelTop className="size-3" /> Hero
+              <LayoutPanelTop className="size-3" /> {b.layout === "poster" ? "Poster" : "Hero"}
             </Chip>
           ) : (
             b.kind === "banner" && <Chip size="sm">{PLACEMENTS.find((p) => p.value === b.placement)?.label ?? b.placement}</Chip>
@@ -558,7 +562,8 @@ function BannerDialog({ open, onOpenChange, banner, kind, onSaved }: { open: boo
     if (bad) return `Countries: "${bad}" isn't an ISO-2 code.`;
     if (d.ctaLabel.trim() && !d.ctaUrl.trim()) return "Add the link the button opens.";
     if (d.layout === "hero" && !image) return `A hero needs an image (${IMAGE_SIZE.hero.label}).`;
-    if (d.layout === "hero" && isBanner && d.placement !== "dashboard") return "Hero banners show at the top of the dashboard: pick the Dashboard placement.";
+    if (d.layout === "poster" && !image) return "A poster is its image: upload the artwork.";
+    if (inCarousel(d.layout) && isBanner && d.placement !== "dashboard") return "Hero and poster banners show at the top of the dashboard: pick the Dashboard placement.";
     const evStart = fromLocalInput(d.eventStartsAt);
     const evEnd = fromLocalInput(d.eventEndsAt);
     if (isEvent && !evStart) return "When does the event start?";
@@ -607,7 +612,7 @@ function BannerDialog({ open, onOpenChange, banner, kind, onSaved }: { open: boo
     eventEndsAt: fromLocalInput(d.eventEndsAt),
     location: loc || null,
   };
-  const where = d.layout === "hero" ? "Dashboard · hero carousel" : isBanner ? `${PLACEMENTS.find((p) => p.value === d.placement)?.label} · banner slot` : "Dashboard · Events & updates";
+  const where = inCarousel(d.layout) ? `Dashboard · ${d.layout === "poster" ? "poster" : "hero"} carousel` : isBanner ? `${PLACEMENTS.find((p) => p.value === d.placement)?.label} · banner slot` : "Dashboard · Events & updates";
 
   return (
     <FormDialog
@@ -646,7 +651,15 @@ function BannerDialog({ open, onOpenChange, banner, kind, onSaved }: { open: boo
             <div>
               <div className="mb-1.5 flex items-center justify-between text-[12.5px] font-medium text-fg-2">
                 <span>Layout</span>
-                <span className="text-[11.5px] font-normal text-fg-3">{d.layout === "hero" ? `Full width at the top of the dashboard · ${IMAGE_SIZE.hero.label}` : isBanner ? "In the banner slot" : `A card in Events & updates · ${IMAGE_SIZE.card.label}`}</span>
+                <span className="text-[11.5px] font-normal text-fg-3">
+                  {d.layout === "poster"
+                    ? `Artwork shown whole at the top of the dashboard, nothing written over it · ${IMAGE_SIZE.poster.label}`
+                    : d.layout === "hero"
+                      ? `Full width at the top of the dashboard, title and button over the image · ${IMAGE_SIZE.hero.label}`
+                      : isBanner
+                        ? "In the banner slot"
+                        : `A card in Events & updates · ${IMAGE_SIZE.card.label}`}
+                </span>
               </div>
               <Segmented size="sm" value={d.layout} onChange={(v) => set("layout", v)} options={LAYOUTS} />
             </div>
@@ -697,7 +710,7 @@ function BannerDialog({ open, onOpenChange, banner, kind, onSaved }: { open: boo
               <DateTimeF label="Show until" value={d.endsAt} onChange={(v) => set("endsAt", v)} hint="optional" />
             </div>
             <div className="k-row divide-y divide-line px-4">
-              <ToggleRow label="Dismissible" hint={d.layout === "hero" || isBanner ? "Clients can close it; hidden for them afterwards" : "Applies when it's featured in the hero"} checked={d.dismissible} onChange={(v) => set("dismissible", v)} />
+              <ToggleRow label="Dismissible" hint={inCarousel(d.layout) || isBanner ? "Clients can close it; hidden for them afterwards" : "Applies when it's featured in the hero"} checked={d.dismissible} onChange={(v) => set("dismissible", v)} />
               <ToggleRow label="Active" hint="Off: saved but not shown" checked={d.active} onChange={(v) => set("active", v)} />
             </div>
           </FormSection>
@@ -706,9 +719,9 @@ function BannerDialog({ open, onOpenChange, banner, kind, onSaved }: { open: boo
         <div className="lg:sticky lg:top-0 lg:self-start">
           <div className="k-label mb-2.5">Preview · {where}</div>
           <div className="rounded-[20px] border border-line bg-bg p-4">
-            {d.layout === "hero" ? (
+            {inCarousel(d.layout) ? (
               <>
-                <HeroPreview b={preview} image={image} />
+                {d.layout === "poster" ? <PosterPreview b={preview} image={image} /> : <HeroPreview b={preview} image={image} />}
                 <div className="mt-3 flex items-center justify-between">
                   <div className="h-2.5 w-24 rounded-full bg-surface-3" />
                   <div className="h-5 w-14 rounded-full bg-surface-3" />

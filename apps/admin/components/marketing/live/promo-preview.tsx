@@ -16,15 +16,24 @@ import { MAX_IMAGE_BYTES, errText, mkUpload, type BannerKind, type BannerLayout,
 /* Sizes                                                                */
 /* ------------------------------------------------------------------ */
 
-/** Recommended image sizes: the hero is a 4:1 strip across the dashboard, cards are 16:9. */
+/** Recommended image sizes: the hero is a 4:1 strip across the dashboard, cards are 16:9. A poster is shown at
+ *  whatever shape it was drawn in, so its size is a suggestion rather than a crop it has to survive. */
 export const IMAGE_SIZE: Record<BannerLayout, { w: number; h: number; label: string }> = {
   hero: { w: 1600, h: 400, label: "1600 × 400 (4:1)" },
   card: { w: 800, h: 450, label: "800 × 450 (16:9)" },
+  poster: { w: 1600, h: 900, label: "1600 × 900 (16:9) or wider" },
 };
 
 /** A note when an image's size doesn't suit the layout (null = fine). */
 export function sizeNote(layout: BannerLayout, w: number, h: number): string | null {
   const want = IMAGE_SIZE[layout];
+  if (layout === "poster") {
+    // nothing is cropped here, so the only thing worth warning about is artwork too small to read, or so tall
+    // it would crowd the accounts below it
+    if (w < want.w / 2) return `This artwork is ${w} × ${h}: it may look soft. Best: ${want.label}.`;
+    if (w / h < 1.2) return `This artwork is ${w} × ${h}, nearly square: it will be shown whole but takes up a lot of the dashboard. Best: ${want.label}.`;
+    return null;
+  }
   const ratio = w / h;
   const target = want.w / want.h;
   if (Math.abs(ratio - target) / target > 0.15) return `This image is ${w} × ${h}: it will be cropped to ${layout === "hero" ? "4:1" : "16:9"}. Best: ${want.label}.`;
@@ -112,6 +121,27 @@ export function HeroPreview({ b, image, className }: { b: Preview; image: string
         <span className="size-1.5 rounded-full bg-white/45" />
         <span className="size-1.5 rounded-full bg-white/45" />
       </span>
+      {b.dismissible && (
+        <span className="absolute right-2 top-2 grid size-6 place-items-center rounded-full bg-black/45 text-white/80" aria-hidden>
+          <X className="size-3.5" />
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** A poster as clients see it: the artwork whole, at its own shape, with nothing written over it. */
+export function PosterPreview({ b, image, className }: { b: Preview; image: string | null; className?: string }) {
+  return (
+    <div className={cn("relative isolate w-full overflow-hidden rounded-[16px] border border-line bg-surface-3", className)}>
+      {image ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={image} alt={b.title} className="block h-auto max-h-[260px] w-full object-contain" />
+      ) : (
+        <div className="grid aspect-[16/9] max-h-[260px] place-items-center bg-gradient-to-br from-surface-3 to-surface-2 text-[12px] text-fg-3">
+          Upload the artwork · {IMAGE_SIZE.poster.label}
+        </div>
+      )}
       {b.dismissible && (
         <span className="absolute right-2 top-2 grid size-6 place-items-center rounded-full bg-black/45 text-white/80" aria-hidden>
           <X className="size-3.5" />

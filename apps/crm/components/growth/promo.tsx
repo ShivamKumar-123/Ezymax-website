@@ -37,7 +37,8 @@ export function useDashboardBanners(): { hero: BannerView[]; cards: BannerView[]
   const live = useGrowth<{ items: BannerView[] }>(IS_DEMO ? null : "banners?placement=dashboard");
   if (IS_DEMO) return { hero: PROMO_HERO, cards: [], loading: false };
   const items = live.data?.items ?? [];
-  return { hero: items.filter((b) => b.layout === "hero"), cards: items.filter((b) => b.layout !== "hero"), loading: live.loading };
+  const carousel = (b: BannerView) => b.layout === "hero" || b.layout === "poster";
+  return { hero: items.filter(carousel), cards: items.filter((b) => !carousel(b)), loading: live.loading };
 }
 
 /** Events & updates (`posts?kind=&page=&limit=`). */
