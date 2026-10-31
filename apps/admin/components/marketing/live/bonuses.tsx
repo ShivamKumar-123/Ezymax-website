@@ -368,8 +368,7 @@ function CampaignDialog({ open, onOpenChange, campaign, onSaved }: { open: boole
       : `A ${usd(exampleDeposit, 0)} deposit gives ${usd(Number.isFinite(credit) ? credit : 0, 0)} bonus.`,
     `Fully released after ${num(lotsReq)} lots at ${usd(n(d.releasePerLot))} per lot.`,
     `Unreleased credit is removed after ${int(n(d.expiryDays))} days (${num(perDay)} lots per day to release in full).`,
-  ].join("
-");
+  ].join("\n");
   // A figure in the terms that no longer matches what the campaign pays. Only the sentence the Example itself
   // produces is checked, because that is the one people paste and then forget to re-paste.
   const staleTerms = (() => {
