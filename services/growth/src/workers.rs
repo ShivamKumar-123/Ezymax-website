@@ -97,7 +97,13 @@ pub fn spawn(st: &AppState) {
     });
     every(st, "bonus-lifecycle", secs(15), |st| async move {
         bonus::deposit_tick(&st).await?;
-        bonus::auto_grant_tick(&st).await?;
+        // The automatic grant reads the trading engine's funding feed. That is the one part of this round
+        // that depends on another service answering, and it is an addition to the bonus lifecycle rather
+        // than part of it - so when it cannot run, it says so and the expiries and forfeitures below still
+        // happen. The manual "bonus" tick keeps the error, so an operator running it by hand sees it.
+        if let Err(e) = bonus::auto_grant_tick(&st).await {
+            tracing::warn!(error = %e, "automatic bonus grant skipped this round");
+        }
         bonus::lifecycle_tick(&st).await?;
         Ok(())
     });
