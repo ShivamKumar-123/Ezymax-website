@@ -161,6 +161,30 @@ class _WithdrawFormState extends ConsumerState<WithdrawForm> {
   String get _amt => _amount.text.trim();
   bool get _isUpi => _chain == null;
 
+  /// The priced off-chain method, when that is the rail. It decides what the client types their amount in:
+  /// off chain they work in their own money - they ask for 10,000 rupees and are paid 10,000 rupees, and the
+  /// service works the wallet debit back from it - while on chain they type the USDT that leaves the wallet,
+  /// as before. A `late final` field is never promoted, so it is read into a local first.
+  WithdrawMethod? get _priced {
+    final m = _upi;
+    if (!_isUpi || m == null) return null;
+    return (double.tryParse(m.rate ?? '') ?? 0) > 0 ? m : null;
+  }
+
+  String get _payCcy => _priced?.currency ?? 'USDT';
+  double get _rate => double.tryParse(_priced?.rate ?? '') ?? 1;
+
+  /// A USDT figure as the client reads it, in the currency they are typing.
+  String _inPay(Object? usdt) => maxAmount((double.tryParse('${usdt ?? ''}') ?? 0) * _rate);
+
+  /// What the balance can cover, in the currency the client is typing: off chain the wallet's flat and
+  /// percentage fee do not apply, so only the method's own fee is held back.
+  String _spendable(Object? available) {
+    final bal = double.tryParse('${available ?? ''}') ?? 0;
+    final fee = double.tryParse(_priced?.feeFlat ?? '') ?? 0;
+    return _inPay((bal - fee).clamp(0, double.infinity));
+  }
+
   /// What identifies this rail in a step-up target and in the body.
   String get _rail => _chain ?? 'upi';
   bool get _toOk => _isUpi ? upiLooksValid(_to.text) : addressLooksValid(_chain!, _to.text);
@@ -194,7 +218,7 @@ class _WithdrawFormState extends ConsumerState<WithdrawForm> {
       _quoting = _verified && _offered && amountOk(_amt) && _toOk;
     });
     if (!_quoting) return;
-    final body = {..._rails, 'amount': _amt, 'to_address': _to.text.trim()};
+    final body = {..._rails, 'amount': _amt, 'to_address': _to.text.trim(), if (_payCcy != 'USDT') 'amount_currency': _payCcy};
     _debounce = Timer(const Duration(milliseconds: 400), () async {
       try {
         final r = await ref.read(apiProvider).post<Map<String, dynamic>>('wallet/withdrawals/quote', body: body);
@@ -244,7 +268,7 @@ class _WithdrawFormState extends ConsumerState<WithdrawForm> {
           .read(apiProvider)
           .post<Map<String, dynamic>>(
             'wallet/withdrawals',
-            body: {..._rails, 'amount': _amt, 'to_address': _to.text.trim(), 'idempotency_key': _key, 'stepup_token': token},
+            body: {..._rails, 'amount': _amt, 'to_address': _to.text.trim(), 'idempotency_key': _key, 'stepup_token': token, if (_payCcy != 'USDT') 'amount_currency': _payCcy},
           );
       if (!mounted) return;
       _amount.clear();
@@ -386,13 +410,24 @@ class _WithdrawFormState extends ConsumerState<WithdrawForm> {
               label: t('wallet.max'),
               onPressed: _verified
                   ? () {
-                      _amount.text = maxAmount(available);
+                      // off chain the wallet's flat and percentage fee do not apply, so the whole balance
+                      // converts; the method's own fee is the only thing held back
+                      _amount.text = _payCcy == 'USDT' ? maxAmount(available) : _spendable(available);
                       _changed();
                     }
                   : null,
             ),
           ),
-          FieldHint(t('wallet.withdraw.amountHint', {'available': fmt(available), 'min': fmt(limits.withdrawMin), 'max': fmt(limits.withdrawMax)})),
+          FieldHint(
+            _payCcy == 'USDT'
+                ? t('wallet.withdraw.amountHint', {'available': fmt(available), 'min': fmt(limits.withdrawMin), 'max': fmt(limits.withdrawMax)})
+                : t('wallet.withdraw.amountHintCcy', {
+                    'available': fmt(_spendable(available)),
+                    'min': fmt(_inPay(limits.withdrawMin)),
+                    'max': fmt(_inPay(limits.withdrawMax)),
+                    'currency': _payCcy,
+                  }),
+          ),
           if (q != null) ...[
             const SizedBox(height: 14),
             Row(
