@@ -59,7 +59,9 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
       children: [
         KPageHeader(title: title, subtitle: Text(subtitle)),
         if (shown.isEmpty)
-          KCard(child: KEmptyState(title: t('offers.emptyTitle'), text: t('offers.emptyText'), icon: LucideIcons.badgePercent))
+          KCard(
+            child: KEmptyState(title: t('offers.emptyTitle'), text: t('offers.emptyText'), icon: LucideIcons.badgePercent),
+          )
         else
           for (final o in shown) ...[
             _OfferCard(

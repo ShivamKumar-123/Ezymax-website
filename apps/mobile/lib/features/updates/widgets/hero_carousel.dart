@@ -75,14 +75,11 @@ class _HeroCarouselState extends ConsumerState<HeroCarousel> {
     if (provider == null) return;
     final stream = provider.resolve(ImageConfiguration.empty);
     late final ImageStreamListener listener;
-    listener = ImageStreamListener(
-      (info, _) {
-        stream.removeListener(listener);
-        final r = info.image.width / info.image.height;
-        if (mounted && r.isFinite && r > 0) setState(() => _ratios[p.id] = r);
-      },
-      onError: (_, _) => stream.removeListener(listener),
-    );
+    listener = ImageStreamListener((info, _) {
+      stream.removeListener(listener);
+      final r = info.image.width / info.image.height;
+      if (mounted && r.isFinite && r > 0) setState(() => _ratios[p.id] = r);
+    }, onError: (_, _) => stream.removeListener(listener));
     stream.addListener(listener);
   }
 
@@ -293,56 +290,56 @@ class _Slide extends ConsumerWidget {
               ),
             if (!p.poster)
               Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(20, 20, 20, 34),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (p.isEvent) ...[
-                    Row(
-                      children: [
-                        const Icon(LucideIcons.calendarDays, size: 13, color: Color(0xCCFFFFFF)),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Text(
-                            eventWhen(t.locale, p.eventStartsAt!, p.eventEndsAt),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: context.text.caption.copyWith(color: const Color(0xCCFFFFFF)),
+                padding: const EdgeInsetsDirectional.fromSTEB(20, 20, 20, 34),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (p.isEvent) ...[
+                      Row(
+                        children: [
+                          const Icon(LucideIcons.calendarDays, size: 13, color: Color(0xCCFFFFFF)),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              eventWhen(t.locale, p.eventStartsAt!, p.eventEndsAt),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.text.caption.copyWith(color: const Color(0xCCFFFFFF)),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                  ],
-                  Text(
-                    p.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.text.title1.copyWith(color: Colors.white, fontSize: 21, height: 1.15),
-                  ),
-                  if (p.body.isNotEmpty) ...[
-                    const SizedBox(height: 4),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                    ],
                     Text(
-                      p.body,
+                      p.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: context.text.footnote.copyWith(color: const Color(0xD9FFFFFF)),
+                      style: context.text.title1.copyWith(color: Colors.white, fontSize: 21, height: 1.15),
                     ),
+                    if (p.body.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        p.body,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.text.footnote.copyWith(color: const Color(0xD9FFFFFF)),
+                      ),
+                    ],
+                    if (cta != null && p.href != null) ...[
+                      const SizedBox(height: 12),
+                      KButton(
+                        label: cta,
+                        size: KButtonSize.sm,
+                        trailingIcon: rtl ? LucideIcons.arrowUpLeft : LucideIcons.arrowUpRight,
+                        variant: p.tone == 'neutral' ? KButtonVariant.surface : KButtonVariant.ember,
+                        onPressed: open,
+                      ),
+                    ],
                   ],
-                  if (cta != null && p.href != null) ...[
-                    const SizedBox(height: 12),
-                    KButton(
-                      label: cta,
-                      size: KButtonSize.sm,
-                      trailingIcon: rtl ? LucideIcons.arrowUpLeft : LucideIcons.arrowUpRight,
-                      variant: p.tone == 'neutral' ? KButtonVariant.surface : KButtonVariant.ember,
-                      onPressed: open,
-                    ),
-                  ],
-                ],
+                ),
               ),
-            ),
             if (p.dismissible)
               PositionedDirectional(
                 top: 8,

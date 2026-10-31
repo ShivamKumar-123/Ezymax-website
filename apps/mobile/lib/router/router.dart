@@ -242,10 +242,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/trader',
         parentNavigatorKey: rootNavigatorKey,
-        pageBuilder: (c, s) => CupertinoFullscreenPage(
-          key: s.pageKey,
-          child: TerminalScreen.fromQuery(s.uri.queryParameters),
-        ),
+        pageBuilder: (c, s) => CupertinoFullscreenPage(key: s.pageKey, child: TerminalScreen.fromQuery(s.uri.queryParameters)),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => AppShell(shell: shell, path: state.uri.path),

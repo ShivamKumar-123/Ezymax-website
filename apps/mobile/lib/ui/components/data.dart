@@ -387,7 +387,11 @@ class _KPulseBadgeState extends State<KPulseBadge> with SingleTickerProviderStat
     final still = MediaQuery.disableAnimationsOf(context);
     final label = widget.count > 99 ? '99+' : '${widget.count}';
     final core = widget.dotOnly
-        ? Container(width: 9, height: 9, decoration: BoxDecoration(color: k.ember, shape: BoxShape.circle))
+        ? Container(
+            width: 9,
+            height: 9,
+            decoration: BoxDecoration(color: k.ember, shape: BoxShape.circle),
+          )
         : Container(
             constraints: const BoxConstraints(minWidth: 17),
             height: 17,
