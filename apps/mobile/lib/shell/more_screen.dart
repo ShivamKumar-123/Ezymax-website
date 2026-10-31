@@ -11,6 +11,7 @@ import '../core/config/app_config.dart';
 import '../core/theme_controller.dart';
 import '../env.dart';
 import '../features/common/pickers.dart';
+import '../features/offers/offers_api.dart';
 import '../i18n/i18n.dart';
 import '../ui/ui.dart';
 import 'nav.dart';
@@ -36,6 +37,7 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
     final locale = localeInfo(ref.watch(localeProvider));
     final dark = Theme.of(context).brightness == Brightness.dark;
     final info = ref.watch(appInfoProvider);
+    final unreadOffers = ref.watch(unreadOffersProvider);
 
     // modules in the web's sections (main, grow, build, learn, account), one grouped card per section
     final sections = <String, List<NavModule>>{};
@@ -46,11 +48,20 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
     Widget moduleRow(NavModule m) {
       final subs = m.sub.length > 1 ? m.sub : null;
       final expanded = _open == m.key;
+      final waiting = m.key == 'offers' ? unreadOffers : 0;
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           KListRow(
-            leading: KIconTile(icon: m.icon, tone: KTone.neutral, size: 34, radius: 10),
+            leading: waiting > 0
+                ? Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      KIconTile(icon: m.icon, tone: KTone.ember, size: 34, radius: 10),
+                      PositionedDirectional(top: -5, end: -6, child: KPulseBadge(count: waiting)),
+                    ],
+                  )
+                : KIconTile(icon: m.icon, tone: KTone.neutral, size: 34, radius: 10),
             title: t(m.labelKey),
             chevron: subs == null,
             onTap: () => context.go(m.href),

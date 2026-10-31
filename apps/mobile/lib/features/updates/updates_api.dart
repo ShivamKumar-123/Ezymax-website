@@ -52,7 +52,14 @@ class PromoItem {
   /// The markdown body of an event / post page (`posts/{id}` only).
   final String? content;
 
-  bool get hero => layout == 'hero';
+  /// Rides the dashboard carousel: a photograph written over, or finished artwork shown whole.
+  bool get hero => layout == 'hero' || layout == 'poster';
+
+  /// Artwork that speaks for itself: shown entire, never cropped, never written over. Either the layout says
+  /// so, or there is nothing of its own to write - an image and a title and no more is a designed poster, and
+  /// its title only repeats what the picture already says. Mirrors isPoster in the web hero-carousel.tsx.
+  bool get poster => layout == 'poster' || (imageUrl != null && body.isEmpty && (ctaLabel == null || ctaLabel!.isEmpty) && href == null);
+
   bool get isEvent => kind == 'event' && eventStartsAt != null;
 
   /// Events and posts open their own page.

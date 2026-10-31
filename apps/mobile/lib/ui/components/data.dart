@@ -344,3 +344,85 @@ class KBlurred extends StatelessWidget {
     );
   }
 }
+
+/// A count that keeps ringing for as long as it stands: something addressed to this reader that they have not
+/// looked at yet, such as an offer waiting on the Offers page. The web's NavBadge in "unseen" mode
+/// (packages/ui/src/shell/app-shell.tsx).
+///
+/// This is deliberately not the Back Office's ring, which fires once when a queue grows. Here the first sight
+/// of it is the point: somebody opening the app to a waiting offer should be told, not only somebody who
+/// happened to be looking when it arrived. It cannot become wallpaper, because reading the thing clears it.
+/// Still when the system asks for less motion - the number alone carries it then.
+class KPulseBadge extends StatefulWidget {
+  const KPulseBadge({super.key, required this.count, this.dotOnly = false});
+
+  final int count;
+
+  /// A plain dot rather than the number: for a tab that only says "something inside here is new".
+  final bool dotOnly;
+
+  @override
+  State<KPulseBadge> createState() => _KPulseBadgeState();
+}
+
+class _KPulseBadgeState extends State<KPulseBadge> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600));
+
+  @override
+  void initState() {
+    super.initState();
+    _c.repeat();
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.count <= 0) return const SizedBox.shrink();
+    final k = context.k;
+    final still = MediaQuery.disableAnimationsOf(context);
+    final label = widget.count > 99 ? '99+' : '${widget.count}';
+    final core = widget.dotOnly
+        ? Container(width: 9, height: 9, decoration: BoxDecoration(color: k.ember, shape: BoxShape.circle))
+        : Container(
+            constraints: const BoxConstraints(minWidth: 17),
+            height: 17,
+            padding: const EdgeInsets.symmetric(horizontal: 5),
+            decoration: BoxDecoration(color: k.ember, borderRadius: BorderRadius.circular(9)),
+            alignment: Alignment.center,
+            child: Text(
+              label,
+              style: context.text.caption.copyWith(color: k.onEmber, fontSize: 10, fontWeight: FontWeight.w700, height: 1, fontFeatures: kTabular),
+            ),
+          );
+    if (still) return core;
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.center,
+      children: [
+        // the ring: grows out of the badge and fades, over and over, the way animate-ping does on the web
+        AnimatedBuilder(
+          animation: _c,
+          builder: (context, _) => IgnorePointer(
+            child: Opacity(
+              opacity: (1 - _c.value) * 0.5,
+              child: Transform.scale(
+                scale: 1 + _c.value * 1.6,
+                child: Container(
+                  width: widget.dotOnly ? 9 : 17,
+                  height: widget.dotOnly ? 9 : 17,
+                  decoration: BoxDecoration(color: k.ember, borderRadius: BorderRadius.circular(9)),
+                ),
+              ),
+            ),
+          ),
+        ),
+        core,
+      ],
+    );
+  }
+}

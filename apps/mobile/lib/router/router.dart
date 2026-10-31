@@ -50,6 +50,7 @@ import '../features/profile/security_screen.dart';
 import '../features/profile/verification_screen.dart';
 import '../features/profile/viewers_screen.dart';
 import '../features/prop/prop_routes.dart';
+import '../features/offers/offers_routes.dart';
 import '../features/rewards/rewards_routes.dart';
 import '../features/social/social_routes.dart';
 import '../features/staking/staking_routes.dart';
@@ -117,6 +118,7 @@ final ModuleScreens _c2Screens = {
   ...socialScreens,
   ...partnerScreens,
   ...propScreens,
+  ...offersScreens,
   ...rewardsScreens,
   ...academyScreens,
   ...developerScreens,

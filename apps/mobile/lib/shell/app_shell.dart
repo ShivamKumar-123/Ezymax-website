@@ -25,6 +25,7 @@ import '../core/prefs.dart';
 import '../env.dart';
 import '../features/dashboard/dashboard_hero.dart';
 import '../features/support/launcher.dart';
+import '../features/offers/offers_api.dart';
 import '../i18n/i18n.dart';
 import '../ui/ui.dart';
 import 'chrome.dart';
@@ -531,7 +532,7 @@ class _DemoStrip extends ConsumerWidget {
 
 /// The floating ink bar: five white icons on a near-black pill, the open tab in a white disc. The labels stay as
 /// tooltips and for assistive tech.
-class _TabBar extends StatelessWidget {
+class _TabBar extends ConsumerWidget {
   const _TabBar({required this.shell, required this.path, required this.nav});
   final StatefulNavigationShell shell;
   final String path;
@@ -540,12 +541,13 @@ class _TabBar extends StatelessWidget {
   static const Color _ink = Color(0xFF0C0C0F);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final t = context.t;
     final k = context.k;
+    final unreadOffers = ref.watch(unreadOffersProvider);
     final primary = [for (final key in kPrimaryModules) nav.where((m) => m.key == key).firstOrNull];
     final moreActive = !primary.any((m) => m != null && isActive(path, m));
-    Widget item(int index, IconData icon, String label, bool active, {bool enabled = true}) => Expanded(
+    Widget item(int index, IconData icon, String label, bool active, {bool enabled = true, int badge = 0}) => Expanded(
       child: Semantics(
         selected: active,
         button: true,
@@ -570,7 +572,16 @@ class _TabBar extends StatelessWidget {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(color: active ? Colors.white : Colors.transparent, shape: BoxShape.circle),
-                  child: Icon(icon, size: 22, color: active ? _ink : Colors.white.withValues(alpha: enabled ? 1 : 0.35)),
+                  child: badge > 0
+                      ? Stack(
+                          clipBehavior: Clip.none,
+                          alignment: Alignment.center,
+                          children: [
+                            Icon(icon, size: 22, color: active ? _ink : Colors.white.withValues(alpha: enabled ? 1 : 0.35)),
+                            const PositionedDirectional(top: 6, end: 6, child: KPulseBadge(count: 1, dotOnly: true)),
+                          ],
+                        )
+                      : Icon(icon, size: 22, color: active ? _ink : Colors.white.withValues(alpha: enabled ? 1 : 0.35)),
                 ),
               ),
             ),
@@ -596,7 +607,8 @@ class _TabBar extends StatelessWidget {
               // a module the broker switched off (wallet) or a view-only login without it
               enabled: primary[i] != null,
             ),
-          item(4, LucideIcons.layoutGrid, t('shell.more'), moreActive),
+          // Offers lives inside More, so the tab says there is something to find without opening it
+          item(4, LucideIcons.layoutGrid, t('shell.more'), moreActive, badge: unreadOffers),
         ],
       ),
     );
