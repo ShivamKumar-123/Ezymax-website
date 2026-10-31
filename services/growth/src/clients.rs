@@ -296,6 +296,51 @@ pub struct LedgerItem {
     pub at: DateTime<Utc>,
 }
 
+/// Money that arrived on a live account, from the engine's cursor feed (`/v1/internal/funding`).
+#[derive(Clone, Debug)]
+pub struct Funding {
+    pub txn: i64,
+    pub login: i64,
+    pub user_id: i64,
+    pub group: String,
+    pub cent: bool,
+    /// USD (USC converted).
+    pub amount: D,
+    pub at: DateTime<Utc>,
+}
+
+/// Deposits onto live accounts after `after_txn`, oldest first. The cursor feed behind the automatic bonus:
+/// one call sees every client's new deposits, so the work is the number of deposits and not the number of
+/// clients.
+pub async fn funding(st: &AppState, tenant: &str, after_txn: i64, limit: i64) -> anyhow::Result<Vec<Funding>> {
+    let url = format!("{}/v1/internal/funding?{}", st.cfg.trading_url, qs(&[("after_txn", after_txn.to_string()), ("limit", limit.to_string())]));
+    let res = engine_staff(st, tenant, st.http.get(url)).send().await?;
+    if !res.status().is_success() {
+        anyhow::bail!("engine funding feed returned {}", res.status());
+    }
+    let v: Value = res.json().await?;
+    Ok(v["items"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|it| {
+            let mut amount = value_dec(&it["amount"])?;
+            if it["currency"].as_str() == Some("USC") {
+                amount /= crate::money::HUNDRED;
+            }
+            Some(Funding {
+                txn: int(&it["txn"])?,
+                login: int(&it["login"])?,
+                user_id: int(&it["userId"])?,
+                group: it["group"].as_str().unwrap_or("").to_string(),
+                cent: it["cent"].as_bool().unwrap_or(false),
+                amount,
+                at: time(&it["at"])?,
+            })
+        })
+        .collect())
+}
+
 /// Ledger lines of an account since `from` (newest first, up to 1000).
 pub async fn ledger(st: &AppState, tenant: &str, login: i64, user_id: i64, from: DateTime<Utc>) -> anyhow::Result<Vec<LedgerItem>> {
     let url = format!("{}/v1/accounts/{login}/ledger?{}", st.cfg.trading_url, qs(&[("from", ts(from)), ("limit", "1000".into())]));

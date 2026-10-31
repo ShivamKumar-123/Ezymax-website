@@ -41,6 +41,7 @@ pub fn campaign_json(r: &sqlx::postgres::PgRow) -> Value {
         "perUserLimit": r.get::<i32, _>("per_user_limit"),
         "newUsersDays": r.get::<Option<i32>, _>("new_users_days"),
         "kycRequired": r.get::<bool, _>("kyc_required"),
+        "autoGrant": r.get::<bool, _>("auto_grant"),
         "visibility": r.get::<String, _>("visibility"),
         "status": r.get::<String, _>("status"),
         "startsAt": r.get::<DateTime<Utc>, _>("starts_at"),
@@ -183,15 +184,15 @@ pub async fn claim_in(tx: &mut sqlx::PgConnection, tenant: &str, user_id: i64, c
         if amount <= ZERO {
             return Err(crate::error::invalid("amount", "The bonus amount must be positive."));
         }
-        queue_grant(tx, tenant, campaign_id, user_id, o.source, acc, amount, None, None, rpl, expiry, o.note.as_deref()).await?
+        queue_grant(tx, tenant, campaign_id, user_id, o.source, acc.login, acc.cent, amount, None, None, rpl, expiry, o.note.as_deref()).await?
     };
     Ok(id)
 }
 
 /// Inserts a `pending` grant on an account and its `grant` leg. 409 when the account already has a bonus.
 #[allow(clippy::too_many_arguments)]
-pub async fn queue_grant(tx: &mut sqlx::PgConnection, tenant: &str, campaign_id: i64, user_id: i64, source: &str, acc: &clients::Account, amount: D, deposit: Option<D>, deposit_txn: Option<i64>, rpl: D, expiry_days: i32, note: Option<&str>) -> ApiResult<i64> {
-    let busy: Option<i64> = sqlx::query_scalar("SELECT id FROM bonus_grants WHERE login = $1 AND status IN ('pending','active')").bind(acc.login).fetch_optional(&mut *tx).await?;
+pub async fn queue_grant(tx: &mut sqlx::PgConnection, tenant: &str, campaign_id: i64, user_id: i64, source: &str, login: i64, cent: bool, amount: D, deposit: Option<D>, deposit_txn: Option<i64>, rpl: D, expiry_days: i32, note: Option<&str>) -> ApiResult<i64> {
+    let busy: Option<i64> = sqlx::query_scalar("SELECT id FROM bonus_grants WHERE login = $1 AND status IN ('pending','active')").bind(login).fetch_optional(&mut *tx).await?;
     if busy.is_some() {
         return Err(ApiError::Conflict { code: "not_eligible", message: "That account already has an active bonus.".into() });
     }
@@ -203,8 +204,8 @@ pub async fn queue_grant(tx: &mut sqlx::PgConnection, tenant: &str, campaign_id:
     .bind(campaign_id)
     .bind(user_id)
     .bind(source)
-    .bind(acc.login)
-    .bind(acc.cent)
+    .bind(login)
+    .bind(cent)
     .bind(deposit)
     .bind(deposit_txn)
     .bind(amount)
@@ -302,6 +303,117 @@ pub async fn deposit_tick(st: &AppState) -> anyhow::Result<usize> {
         st.wake.notify_one();
     }
     Ok(n)
+}
+
+/// Deposit campaigns the broker marked `auto_grant`: the offer the banner actually promises. The bonus is
+/// granted on the first qualifying deposit a client makes while the campaign is running, without their having
+/// to find the Promotions page and press Claim beforehand.
+///
+/// Three things are worth knowing about what "first deposit" means here.
+///
+/// It is the first deposit **within the campaign's own window**, not the first the client ever made. Whatever
+/// they did before the campaign opened is not looked at, so an existing client is as eligible as a new one -
+/// `per_user_limit` is what holds it to one bonus each, and `new_users_days` is there if the broker wants to
+/// narrow it to recent sign-ups.
+///
+/// Deposits are read from the engine's cursor feed, oldest first, so the work is the number of new deposits
+/// and not the number of clients, and the cursor only moves past a deposit once it has been dealt with.
+///
+/// A client who already has a grant on the campaign - because they claimed it by hand - is skipped and left to
+/// `deposit_tick`, so the two paths can never both pay for the same offer.
+pub async fn auto_grant_tick(st: &AppState) -> anyhow::Result<usize> {
+    let mut granted = 0;
+    for tenant in crate::db::tenants(&st.pool).await? {
+        let campaigns = sqlx::query(
+            "SELECT * FROM bonus_campaigns WHERE tenant = $1 AND auto_grant AND kind = 'deposit' AND status = 'active'
+               AND starts_at <= now() AND (ends_at IS NULL OR ends_at > now()) ORDER BY id",
+        )
+        .bind(&tenant)
+        .fetch_all(&st.pool)
+        .await?;
+        if campaigns.is_empty() {
+            continue;
+        }
+        let cursor: i64 = sqlx::query_scalar("SELECT after_txn FROM funding_cursor WHERE tenant = $1").bind(&tenant).fetch_optional(&st.pool).await?.unwrap_or(0);
+        let feed = clients::funding(st, &tenant, cursor, 200).await?;
+        if feed.is_empty() {
+            continue;
+        }
+        let mut seen = cursor;
+        for f in &feed {
+            for c in &campaigns {
+                match grant_for_deposit(st, &tenant, c, f).await {
+                    Ok(true) => granted += 1,
+                    Ok(false) => {}
+                    // one client's problem must not stall the feed for everyone behind them
+                    Err(e) => tracing::warn!(error = %e, txn = f.txn, user = f.user_id, "automatic bonus skipped"),
+                }
+            }
+            seen = f.txn;
+        }
+        sqlx::query("INSERT INTO funding_cursor (tenant, after_txn) VALUES ($1,$2) ON CONFLICT (tenant) DO UPDATE SET after_txn = GREATEST(funding_cursor.after_txn, $2), updated_at = now()")
+            .bind(&tenant)
+            .bind(seen)
+            .execute(&st.pool)
+            .await?;
+    }
+    if granted > 0 {
+        st.wake.notify_one();
+    }
+    Ok(granted)
+}
+
+/// Whether a deposit is one this campaign is offering to pay on: it landed inside the campaign's own dates,
+/// on an account group the campaign covers.
+///
+/// The date test is what makes "first deposit" mean the first one made *while the offer runs* rather than the
+/// first the client ever made. A deposit from before the campaign opened is not the offer's business, so an
+/// existing client is as eligible as a new one; `per_user_limit` is what holds it to one bonus each.
+pub fn deposit_in_scope(at: DateTime<Utc>, starts: DateTime<Utc>, ends: Option<DateTime<Utc>>, groups: &[String], group: &str) -> bool {
+    at >= starts && !ends.is_some_and(|e| at >= e) && (groups.is_empty() || groups.iter().any(|g| g.eq_ignore_ascii_case(group)))
+}
+
+/// One deposit against one campaign. `Ok(true)` when a bonus was queued.
+async fn grant_for_deposit(st: &AppState, tenant: &str, c: &sqlx::postgres::PgRow, f: &clients::Funding) -> anyhow::Result<bool> {
+    let groups: Vec<String> = c.get("account_groups");
+    if !deposit_in_scope(f.at, c.get("starts_at"), c.get("ends_at"), &groups, &f.group) {
+        return Ok(false);
+    }
+    let Some(bonus) = calc::deposit_bonus(f.amount, c.get("pct"), c.get("cap"), c.get("min_deposit")) else { return Ok(false) };
+    let seg = crate::profiles::get(st, tenant, f.user_id).await?.segment();
+    let campaign_id: i64 = c.get("id");
+
+    let mut tx = st.pool.begin().await?;
+    // the campaign row is taken for update so two deposits landing together cannot both pass the limit check
+    sqlx::query("SELECT 1 FROM bonus_campaigns WHERE id = $1 FOR UPDATE").bind(campaign_id).fetch_optional(&mut *tx).await?;
+    let (all, mine) = claim_counts(&mut tx, campaign_id, f.user_id).await?;
+    if mine > 0 {
+        return Ok(false); // claimed by hand, or already granted: deposit_tick owns it
+    }
+    if calc::check_limits(&limits_of(c, all, mine), &seg, Utc::now()).is_err() {
+        return Ok(false);
+    }
+    let id = match queue_grant(&mut tx, tenant, campaign_id, f.user_id, "auto", f.login, f.cent, bonus, Some(f.amount), Some(f.txn), c.get("release_per_lot"), c.get("expiry_days"), None).await {
+        Ok(id) => id,
+        // the account already carries a bonus: not an error, just not this one's turn
+        Err(ApiError::Conflict { .. }) => return Ok(false),
+        // ApiError is an HTTP shape and there is no request here, so it is reported rather than returned
+        Err(ApiError::Internal(e)) => return Err(e),
+        Err(e) => anyhow::bail!("queue grant for login {}: {e:?}", f.login),
+    };
+    audit::record(
+        &mut *tx,
+        tenant,
+        &Actor::system(),
+        "bonus.auto_granted",
+        Some(format!("grant:{id}")),
+        None,
+        Some(json!({"login": f.login, "deposit": num(f.amount), "bonus": num(bonus), "txn": f.txn})),
+        None,
+    )
+    .await?;
+    tx.commit().await?;
+    Ok(true)
 }
 
 /// Posts pending legs to the engine in id order per grant, round after round while legs keep booking (a
@@ -451,4 +563,51 @@ pub async fn lifecycle_tick(st: &AppState) -> anyhow::Result<usize> {
         st.wake.notify_one();
     }
     Ok(n)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::str::FromStr;
+
+    fn t(s: &str) -> DateTime<Utc> {
+        DateTime::parse_from_rfc3339(s).unwrap().with_timezone(&Utc)
+    }
+
+    #[test]
+    fn an_offer_counts_deposits_made_while_it_runs() {
+        let starts = t("2026-10-31T00:00:00Z");
+        let ends = Some(t("2026-11-08T23:59:59Z"));
+        let any: Vec<String> = vec![];
+
+        // the rule the broker set: a deposit from the day it opened until the day it closes
+        assert!(deposit_in_scope(t("2026-10-31T06:00:00Z"), starts, ends, &any, "standard"));
+        assert!(deposit_in_scope(t("2026-11-08T23:00:00Z"), starts, ends, &any, "vip"));
+        // what the client did before it opened is not this offer's business, however long they have been here
+        assert!(!deposit_in_scope(t("2026-10-30T23:59:00Z"), starts, ends, &any, "standard"));
+        // and the day after it closes is too late
+        assert!(!deposit_in_scope(t("2026-11-09T00:30:00Z"), starts, ends, &any, "standard"));
+
+        // an open-ended campaign has no closing date to fail
+        assert!(deposit_in_scope(t("2027-01-01T00:00:00Z"), starts, None, &any, "standard"));
+
+        // named groups: only those accounts, and the name is matched however it was typed
+        let only = vec!["VIP".to_string(), "pro".to_string()];
+        assert!(deposit_in_scope(t("2026-11-01T00:00:00Z"), starts, ends, &only, "vip"));
+        assert!(deposit_in_scope(t("2026-11-01T00:00:00Z"), starts, ends, &only, "PRO"));
+        assert!(!deposit_in_scope(t("2026-11-01T00:00:00Z"), starts, ends, &only, "standard"));
+    }
+
+    #[test]
+    fn the_bonus_is_a_percentage_under_a_cap_above_a_floor() {
+        let d = |s: &str| D::from_str(s).unwrap();
+        let (pct, cap, min) = (d("25"), d("1000"), d("100"));
+        // 25% of a qualifying deposit
+        assert_eq!(calc::deposit_bonus(d("1000"), pct, cap, min), Some(d("250")));
+        // under the minimum there is no offer at all - not a smaller one
+        assert_eq!(calc::deposit_bonus(d("99.99"), pct, cap, min), None);
+        assert_eq!(calc::deposit_bonus(d("100"), pct, cap, min), Some(d("25")));
+        // and the cap holds however large the deposit is
+        assert_eq!(calc::deposit_bonus(d("100000"), pct, cap, min), Some(d("1000")));
+    }
 }

@@ -343,6 +343,57 @@ pub async fn ledger_json(st: &AppState, login: i64, q: &PageQ) -> ApiResult<Valu
     Ok(json!({"items": items, "page": page, "limit": limit, "total": total}))
 }
 
+#[derive(Deserialize)]
+pub struct FundingQ {
+    after_txn: Option<i64>,
+    limit: Option<i64>,
+}
+
+/// Money arriving on live accounts, oldest first, for a service that has to react to it (growth's automatic
+/// bonus on a first deposit). A cursor feed rather than a per-client poll: the caller keeps the last `txn` it
+/// saw and asks for what came after, so the cost is the number of new deposits and not the number of clients.
+///
+/// Only the balance sub-ledger of a live account counts, and only money coming in - the same test the bonus
+/// matcher applies to one client's ledger, asked across all of them.
+pub async fn funding(State(st): State<AppState>, ctx: Ctx, Query(q): Query<FundingQ>) -> ApiResult<Json<Value>> {
+    let limit = q.limit.unwrap_or(200).clamp(1, 1000);
+    let after = q.after_txn.unwrap_or(0);
+    let rows = sqlx::query(
+        "SELECT t.id, t.kind, t.created_at, t.login, a.user_id, a.group_code, a.cent, p.amount, p.currency
+         FROM ledger_txns t
+         JOIN ledger_postings p ON p.txn_id = t.id
+         JOIN accounts a ON a.login = t.login AND a.tenant_id = t.tenant_id
+         WHERE t.tenant_id = $1 AND t.id > $2
+           AND t.kind IN ('deposit', 'transfer_in')
+           AND a.kind = 'live'
+           AND p.account_code = 'acct:' || t.login || ':balance'
+           AND p.amount > 0
+         ORDER BY t.id LIMIT $3",
+    )
+    .bind(ctx.tenant.tenant_id)
+    .bind(after)
+    .bind(limit)
+    .fetch_all(&st.pool)
+    .await?;
+    let items: Vec<Value> = rows
+        .iter()
+        .map(|r| {
+            json!({
+                "txn": r.get::<i64, _>("id"),
+                "kind": r.get::<String, _>("kind"),
+                "at": r.get::<chrono::DateTime<Utc>, _>("created_at"),
+                "login": r.get::<i64, _>("login"),
+                "userId": r.get::<i64, _>("user_id"),
+                "group": r.get::<String, _>("group_code"),
+                "cent": r.get::<bool, _>("cent"),
+                "amount": num(r.get("amount")),
+                "currency": r.get::<String, _>("currency"),
+            })
+        })
+        .collect();
+    Ok(Json(json!({"items": items})))
+}
+
 pub async fn ledger(State(st): State<AppState>, ctx: Ctx, headers: HeaderMap, Path(login): Path<i64>, Query(q): Query<HistQ>) -> ApiResult<Json<Value>> {
     let user = user_of(&headers, q.user_id)?;
     owned(&st, &ctx, login, user)?;

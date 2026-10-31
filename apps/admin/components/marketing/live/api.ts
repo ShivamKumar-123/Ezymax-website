@@ -48,6 +48,8 @@ export type CampaignInput = {
   perUserLimit: number;
   newUsersDays: number | null;
   kycRequired: boolean;
+  /** Deposit campaigns: granted on a first deposit without the client pressing Claim. */
+  autoGrant?: boolean;
   visibility: "public" | "code_only";
   status: CampaignStatus;
   startsAt?: string;

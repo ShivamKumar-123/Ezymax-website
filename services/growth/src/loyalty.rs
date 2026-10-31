@@ -242,7 +242,7 @@ pub async fn redeem(st: &AppState, tenant: &str, user_id: i64, item_id: i64, log
             let campaign = system_campaign(&mut tx, tenant).await?;
             let rpl = params["releasePerLot"].as_f64().and_then(crate::money::from_f64).filter(|d| *d > ZERO).unwrap_or(D::from(5));
             let exp = params["expiryDays"].as_i64().filter(|d| *d > 0).unwrap_or(60) as i32;
-            let gid = bonus::queue_grant(&mut tx, tenant, campaign, user_id, "redemption", acc, value, None, None, rpl, exp, Some(&format!("redemption:{rid}"))).await?;
+            let gid = bonus::queue_grant(&mut tx, tenant, campaign, user_id, "redemption", acc.login, acc.cent, value, None, None, rpl, exp, Some(&format!("redemption:{rid}"))).await?;
             sqlx::query("UPDATE redemptions SET grant_id = $2, status = 'completed', completed_at = now() WHERE id = $1").bind(rid).bind(gid).execute(&mut *tx).await?;
         }
         _ => {

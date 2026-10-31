@@ -720,6 +720,9 @@ pub struct CampaignIn {
     new_users_days: Option<i32>,
     #[serde(default)]
     kyc_required: bool,
+    /// Grant on a first deposit without waiting for the client to press Claim (deposit campaigns only).
+    #[serde(default)]
+    auto_grant: bool,
     #[serde(default = "public")]
     visibility: String,
     #[serde(default = "draft")]
@@ -794,13 +797,13 @@ async fn write_campaign(st: &AppState, s: &StaffCtx, id: Option<i64>, mut c: Cam
     let row = match id {
         None => sqlx::query(
             "INSERT INTO bonus_campaigns (tenant, name, description, terms, kind, pct, cap, fixed_amount, min_deposit, release_per_lot, expiry_days, forfeit_on_withdrawal, claim_window_days,
-               account_groups, max_claims, per_user_limit, new_users_days, kyc_required, visibility, status, starts_at, ends_at, created_by)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23) RETURNING *",
+               account_groups, max_claims, per_user_limit, new_users_days, kyc_required, visibility, status, starts_at, ends_at, created_by, auto_grant)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$25) RETURNING *",
         ),
         Some(_) => sqlx::query(
             "UPDATE bonus_campaigns SET name = $2, description = $3, terms = $4, kind = $5, pct = $6, cap = $7, fixed_amount = $8, min_deposit = $9, release_per_lot = $10,
                expiry_days = $11, forfeit_on_withdrawal = $12, claim_window_days = $13, account_groups = $14, max_claims = $15, per_user_limit = $16, new_users_days = $17,
-               kyc_required = $18, visibility = $19, status = $20, starts_at = $21, ends_at = $22, updated_at = now() WHERE id = $24 AND tenant = $1 AND $23::text IS NOT NULL RETURNING *",
+               kyc_required = $18, visibility = $19, status = $20, starts_at = $21, ends_at = $22, auto_grant = $25, updated_at = now() WHERE id = $24 AND tenant = $1 AND $23::text IS NOT NULL RETURNING *",
         ),
     }
     .bind(&s.tenant)
@@ -827,6 +830,7 @@ async fn write_campaign(st: &AppState, s: &StaffCtx, id: Option<i64>, mut c: Cam
     .bind(ends)
     .bind(s.actor().label())
     .bind(id.unwrap_or(0))
+    .bind(c.auto_grant && c.kind == "deposit")
     .fetch_one(&mut *tx)
     .await?;
     let v = bonus::campaign_json(&row);
@@ -922,7 +926,7 @@ pub async fn manual_grant(State(st): State<AppState>, s: StaffCtx, Json(b): Json
         _ => return Err(invalid("amount", "Enter the bonus amount.")),
     };
     let mut tx = st.pool.begin().await?;
-    let gid = bonus::queue_grant(&mut tx, &s.tenant, b.campaign_id, b.user_id, "admin", &acc, amount, None, None, c.get("release_per_lot"), c.get("expiry_days"), Some(&note)).await?;
+    let gid = bonus::queue_grant(&mut tx, &s.tenant, b.campaign_id, b.user_id, "admin", acc.login, acc.cent, amount, None, None, c.get("release_per_lot"), c.get("expiry_days"), Some(&note)).await?;
     audit::record(&mut *tx, &s.tenant, &s.actor(), "bonus.manual_grant", Some(format!("grant:{gid}")), None, Some(json!({"userId": b.user_id, "login": b.login, "amount": num(amount)})), Some(&note)).await?;
     tx.commit().await?;
     st.wake.notify_one();

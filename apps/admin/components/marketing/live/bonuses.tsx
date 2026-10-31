@@ -184,6 +184,7 @@ function CampaignCard({ c, canWrite, onEdit, onToggle }: { c: Campaign; canWrite
               <Chip size="sm">{c.kind === "deposit" ? "Deposit %" : "Fixed credit"}</Chip>
               {c.visibility === "code_only" && <Chip size="sm" tone="info">Promo code only</Chip>}
               {c.kycRequired && <Chip size="sm">KYC</Chip>}
+              {c.autoGrant && <Chip size="sm" tone="ember">Auto</Chip>}
             </div>
           </div>
           {canWrite && (c.status === "active" || c.status === "paused" || c.status === "draft") && (
@@ -286,6 +287,7 @@ type Draft = {
   perUserLimit: string;
   newUsersDays: string;
   kycRequired: boolean;
+  autoGrant: boolean;
   visibility: "public" | "code_only";
   status: "draft" | "active" | "paused" | "ended";
   startsAt: string;
@@ -310,6 +312,7 @@ const EMPTY: Draft = {
   perUserLimit: "1",
   newUsersDays: "",
   kycRequired: true,
+  autoGrant: false,
   visibility: "public",
   status: "draft",
   startsAt: "",
@@ -335,6 +338,7 @@ function fromCampaign(c: Campaign): Draft {
     perUserLimit: numStr(c.perUserLimit),
     newUsersDays: numStr(c.newUsersDays),
     kycRequired: c.kycRequired,
+    autoGrant: c.autoGrant ?? false,
     visibility: c.visibility,
     status: c.status,
     startsAt: toLocalInput(c.startsAt),
@@ -382,6 +386,7 @@ function CampaignDialog({ open, onOpenChange, campaign, onSaved }: { open: boole
       perUserLimit: Math.max(1, Math.round(n(d.perUserLimit) || 1)),
       newUsersDays: numOrNull(d.newUsersDays),
       kycRequired: d.kycRequired,
+      autoGrant: d.autoGrant,
       visibility: d.visibility,
       status: d.status,
       ...(startsAt ? { startsAt } : {}),
@@ -451,6 +456,14 @@ function CampaignDialog({ open, onOpenChange, campaign, onSaved }: { open: boole
           <DateTimeF label="Ends" value={d.endsAt} onChange={(v) => set("endsAt", v)} hint="optional" />
         </div>
         <div className="k-row divide-y divide-line px-4">
+          {d.kind === "deposit" && (
+            <ToggleRow
+              label="Grant on a first deposit, without a claim"
+              hint="The client does not have to press Claim first: the first deposit they make while this runs earns the bonus. One each — what they did before it opened is not counted."
+              checked={d.autoGrant}
+              onChange={(v) => set("autoGrant", v)}
+            />
+          )}
           <ToggleRow label="Require verified KYC" hint="Claim is refused until KYC is approved" checked={d.kycRequired} onChange={(v) => set("kycRequired", v)} />
           <ToggleRow label="Forfeit on withdrawal" hint="A withdrawal or transfer out removes the unreleased remainder" checked={d.forfeitOnWithdrawal} onChange={(v) => set("forfeitOnWithdrawal", v)} />
         </div>

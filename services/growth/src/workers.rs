@@ -49,7 +49,7 @@ pub async fn run_job(st: &AppState, job: &str) -> anyhow::Result<serde_json::Val
             }
             json!({"deals": n})
         }
-        "bonus" => json!({"deposits": bonus::deposit_tick(st).await?, "lifecycle": bonus::lifecycle_tick(st).await?, "posted": bonus::post_tick(st).await?}),
+        "bonus" => json!({"deposits": bonus::deposit_tick(st).await?, "auto": bonus::auto_grant_tick(st).await?, "lifecycle": bonus::lifecycle_tick(st).await?, "posted": bonus::post_tick(st).await?}),
         "contests" => json!({"refreshed": contests::tick(st).await?}),
         "payouts" => {
             let mut created = 0;
@@ -97,6 +97,7 @@ pub fn spawn(st: &AppState) {
     });
     every(st, "bonus-lifecycle", secs(15), |st| async move {
         bonus::deposit_tick(&st).await?;
+        bonus::auto_grant_tick(&st).await?;
         bonus::lifecycle_tick(&st).await?;
         Ok(())
     });
