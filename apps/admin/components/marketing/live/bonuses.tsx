@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { CalendarClock, Gift, HandCoins, Pause, Pencil, Play, Plus, RefreshCw, TrendingUp, Wallet } from "lucide-react";
+import { CalendarClock, Gift, HandCoins, Pause, Pencil, Play, Plus, RefreshCw, ShieldAlert, TrendingUp, Wallet } from "lucide-react";
 import { Button, Card, CardHeader, Chip, DataTable, KpiCard, PageHeader, Progress, Reveal, Segmented, cn, type Column } from "@ezymex/ui";
 import { FilterSelect, Pager, TableSkeleton, day, qs, useApi, when } from "@/components/live/kit";
 import { M, mkSend, type Campaign, type CampaignInput, type Grant, type Overview, type Paged } from "./api";
@@ -354,10 +354,30 @@ function CampaignDialog({ open, onOpenChange, campaign, onSaved }: { open: boole
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setD((x) => ({ ...x, [k]: v }));
 
   const n = (s: string) => Number(s) || 0;
+  // The Example below and the Terms the client reads are the same sentences. They are built here once so the
+  // "use as terms" button writes exactly what the check below looks for, and a campaign whose rate changes
+  // cannot quietly leave the old figure in the terms - which is how a 30% campaign came to promise $300 after
+  // it had been reduced to 25%.
   const exampleDeposit = Math.max(n(d.minDeposit), 1000);
   const credit = d.kind === "fixed" ? n(d.fixedAmount) : Math.min(n(d.cap) || Infinity, (exampleDeposit * n(d.pct)) / 100);
   const lotsReq = n(d.releasePerLot) > 0 ? credit / n(d.releasePerLot) : 0;
   const perDay = n(d.expiryDays) > 0 ? lotsReq / n(d.expiryDays) : 0;
+  const exampleTerms = [
+    d.kind === "fixed"
+      ? `The client receives ${usd(credit, 0)} bonus on a chosen live account.`
+      : `A ${usd(exampleDeposit, 0)} deposit gives ${usd(Number.isFinite(credit) ? credit : 0, 0)} bonus.`,
+    `Fully released after ${num(lotsReq)} lots at ${usd(n(d.releasePerLot))} per lot.`,
+    `Unreleased credit is removed after ${int(n(d.expiryDays))} days (${num(perDay)} lots per day to release in full).`,
+  ].join("
+");
+  // A figure in the terms that no longer matches what the campaign pays. Only the sentence the Example itself
+  // produces is checked, because that is the one people paste and then forget to re-paste.
+  const staleTerms = (() => {
+    const m = d.terms.match(/deposit gives \$([\d,]+(?:\.\d+)?) bonus/i);
+    if (!m || !Number.isFinite(credit)) return null;
+    const said = Number(m[1]!.replace(/,/g, ""));
+    return Math.abs(said - credit) < 0.005 ? null : { said, credit };
+  })();
 
   const submit = () => {
     if (!d.name.trim()) return "Give the campaign a name.";
@@ -412,6 +432,15 @@ function CampaignDialog({ open, onOpenChange, campaign, onSaved }: { open: boole
         <TextF label="Name" value={d.name} onChange={(v) => set("name", v)} placeholder="e.g. 30% welcome bonus" maxLength={120} />
         <AreaF label="Description" value={d.description} onChange={(v) => set("description", v)} rows={2} placeholder="One or two lines shown on the offer card" />
         <AreaF label="Terms" value={d.terms} onChange={(v) => set("terms", v)} rows={5} placeholder="Full terms and conditions shown to the client before claiming" />
+        {staleTerms && (
+          <div className="mt-1.5 flex gap-2 rounded-[12px] border border-warn/35 bg-warn-soft px-3 py-2 text-[12px] leading-snug">
+            <ShieldAlert className="mt-0.5 size-3.5 shrink-0 text-warn" />
+            <span>
+              These terms promise <span className="k-num font-semibold">{usd(staleTerms.said, 0)}</span> on a {usd(exampleDeposit, 0)} deposit, but this campaign pays{" "}
+              <span className="k-num font-semibold">{usd(staleTerms.credit, 0)}</span>. Clients read both. Use the example below, or correct the wording.
+            </span>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-3">
           <SelectF label="Type" value={d.kind} onChange={(v) => set("kind", v)} options={[{ value: "deposit", label: "Deposit %" }, { value: "fixed", label: "Fixed credit" }]} />
           <SelectF
@@ -470,7 +499,14 @@ function CampaignDialog({ open, onOpenChange, campaign, onSaved }: { open: boole
       </FormSection>
 
       <div className="k-row px-4 py-4">
-        <div className="k-label">Example</div>
+        <div className="flex items-center justify-between gap-2">
+          <div className="k-label">Example</div>
+          {d.terms.trim() !== exampleTerms && (
+            <Button size="sm" variant="surface" onClick={() => set("terms", exampleTerms)}>
+              Use as the terms
+            </Button>
+          )}
+        </div>
         <div className="mt-1.5 text-[14px] leading-snug">
           {d.kind === "fixed" ? (
             <>
