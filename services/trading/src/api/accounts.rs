@@ -355,11 +355,27 @@ pub struct FundingQ {
 ///
 /// Only the balance sub-ledger of a live account counts, and only money coming in - the same test the bonus
 /// matcher applies to one client's ledger, asked across all of them.
+///
+/// `firstEver` says whether this is the first such deposit the client has ever made, across every live
+/// account they hold. A first-deposit offer turns on that and nothing else: the date a deposit landed cannot
+/// answer it, because a client who funded an account last year and tops up during a campaign is not making a
+/// first deposit. Only the engine can see the whole history, so it answers here rather than being guessed
+/// from a campaign's dates.
 pub async fn funding(State(st): State<AppState>, ctx: Ctx, Query(q): Query<FundingQ>) -> ApiResult<Json<Value>> {
     let limit = q.limit.unwrap_or(200).clamp(1, 1000);
     let after = q.after_txn.unwrap_or(0);
     let rows = sqlx::query(
-        "SELECT t.id, t.kind, t.created_at, t.login, a.user_id, a.group_code, a.cent, p.amount, p.currency
+        "SELECT t.id, t.kind, t.created_at, t.login, a.user_id, a.group_code, a.cent, p.amount, p.currency,
+                NOT EXISTS (
+                  SELECT 1 FROM ledger_txns e
+                  JOIN ledger_postings q ON q.txn_id = e.id
+                  JOIN accounts b ON b.login = e.login AND b.tenant_id = e.tenant_id
+                  WHERE b.user_id = a.user_id AND e.tenant_id = t.tenant_id AND e.id < t.id
+                    AND e.kind IN ('deposit', 'transfer_in')
+                    AND b.kind = 'live'
+                    AND q.account_code = 'acct:' || e.login || ':balance'
+                    AND q.amount > 0
+                ) AS first_ever
          FROM ledger_txns t
          JOIN ledger_postings p ON p.txn_id = t.id
          JOIN accounts a ON a.login = t.login AND a.tenant_id = t.tenant_id
@@ -386,6 +402,7 @@ pub async fn funding(State(st): State<AppState>, ctx: Ctx, Query(q): Query<Fundi
                 "userId": r.get::<i64, _>("user_id"),
                 "group": r.get::<String, _>("group_code"),
                 "cent": r.get::<bool, _>("cent"),
+                "firstEver": r.get::<bool, _>("first_ever"),
                 "amount": num(r.get("amount")),
                 "currency": r.get::<String, _>("currency"),
             })

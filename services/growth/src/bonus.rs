@@ -311,10 +311,10 @@ pub async fn deposit_tick(st: &AppState) -> anyhow::Result<usize> {
 ///
 /// Three things are worth knowing about what "first deposit" means here.
 ///
-/// It is the first deposit **within the campaign's own window**, not the first the client ever made. Whatever
-/// they did before the campaign opened is not looked at, so an existing client is as eligible as a new one -
-/// `per_user_limit` is what holds it to one bonus each, and `new_users_days` is there if the broker wants to
-/// narrow it to recent sign-ups.
+/// It is the client's **first deposit ever**, and it has to land while the campaign is running. Both halves
+/// matter and neither implies the other: a client who funded an account last year and tops up during the
+/// campaign is not making a first deposit, and a genuine first deposit made before the campaign opened is
+/// not this offer's to pay. The engine answers the first half, because only it can see the whole history.
 ///
 /// Deposits are read from the engine's cursor feed, oldest first, so the work is the number of new deposits
 /// and not the number of clients, and the cursor only moves past a deposit once it has been dealt with.
@@ -363,20 +363,20 @@ pub async fn auto_grant_tick(st: &AppState) -> anyhow::Result<usize> {
     Ok(granted)
 }
 
-/// Whether a deposit is one this campaign is offering to pay on: it landed inside the campaign's own dates,
-/// on an account group the campaign covers.
+/// Whether a deposit is one this campaign is offering to pay on: the client's first ever, landed inside the
+/// campaign's own dates, on an account group the campaign covers.
 ///
-/// The date test is what makes "first deposit" mean the first one made *while the offer runs* rather than the
-/// first the client ever made. A deposit from before the campaign opened is not the offer's business, so an
-/// existing client is as eligible as a new one; `per_user_limit` is what holds it to one bonus each.
-pub fn deposit_in_scope(at: DateTime<Utc>, starts: DateTime<Utc>, ends: Option<DateTime<Utc>>, groups: &[String], group: &str) -> bool {
-    at >= starts && !ends.is_some_and(|e| at >= e) && (groups.is_empty() || groups.iter().any(|g| g.eq_ignore_ascii_case(group)))
+/// `first_ever` and the dates are separate tests and the offer needs both. Dropping the first would pay an
+/// existing client for topping up; dropping the second would pay for a first deposit made long before the
+/// campaign opened.
+pub fn deposit_in_scope(first_ever: bool, at: DateTime<Utc>, starts: DateTime<Utc>, ends: Option<DateTime<Utc>>, groups: &[String], group: &str) -> bool {
+    first_ever && at >= starts && !ends.is_some_and(|e| at >= e) && (groups.is_empty() || groups.iter().any(|g| g.eq_ignore_ascii_case(group)))
 }
 
 /// One deposit against one campaign. `Ok(true)` when a bonus was queued.
 async fn grant_for_deposit(st: &AppState, tenant: &str, c: &sqlx::postgres::PgRow, f: &clients::Funding) -> anyhow::Result<bool> {
     let groups: Vec<String> = c.get("account_groups");
-    if !deposit_in_scope(f.at, c.get("starts_at"), c.get("ends_at"), &groups, &f.group) {
+    if !deposit_in_scope(f.first_ever, f.at, c.get("starts_at"), c.get("ends_at"), &groups, &f.group) {
         return Ok(false);
     }
     let Some(bonus) = calc::deposit_bonus(f.amount, c.get("pct"), c.get("cap"), c.get("min_deposit")) else { return Ok(false) };
@@ -575,27 +575,33 @@ mod tests {
     }
 
     #[test]
-    fn an_offer_counts_deposits_made_while_it_runs() {
+    fn a_first_deposit_offer_needs_a_first_deposit_and_an_open_campaign() {
         let starts = t("2026-10-31T00:00:00Z");
         let ends = Some(t("2026-11-08T23:59:59Z"));
         let any: Vec<String> = vec![];
+        let first = true;
+        let again = false;
 
-        // the rule the broker set: a deposit from the day it opened until the day it closes
-        assert!(deposit_in_scope(t("2026-10-31T06:00:00Z"), starts, ends, &any, "standard"));
-        assert!(deposit_in_scope(t("2026-11-08T23:00:00Z"), starts, ends, &any, "vip"));
-        // what the client did before it opened is not this offer's business, however long they have been here
-        assert!(!deposit_in_scope(t("2026-10-30T23:59:00Z"), starts, ends, &any, "standard"));
-        // and the day after it closes is too late
-        assert!(!deposit_in_scope(t("2026-11-09T00:30:00Z"), starts, ends, &any, "standard"));
+        // a client's first ever deposit, landed while the offer runs
+        assert!(deposit_in_scope(first, t("2026-10-31T06:00:00Z"), starts, ends, &any, "standard"));
+        assert!(deposit_in_scope(first, t("2026-11-08T23:00:00Z"), starts, ends, &any, "vip"));
+
+        // an existing client topping up during the campaign is not making a first deposit, whatever the date
+        assert!(!deposit_in_scope(again, t("2026-11-01T10:00:00Z"), starts, ends, &any, "standard"));
+
+        // and a genuine first deposit from before the campaign opened is not this offer's to pay
+        assert!(!deposit_in_scope(first, t("2026-10-30T23:59:00Z"), starts, ends, &any, "standard"));
+        // nor is one after it closes
+        assert!(!deposit_in_scope(first, t("2026-11-09T00:30:00Z"), starts, ends, &any, "standard"));
 
         // an open-ended campaign has no closing date to fail
-        assert!(deposit_in_scope(t("2027-01-01T00:00:00Z"), starts, None, &any, "standard"));
+        assert!(deposit_in_scope(first, t("2027-01-01T00:00:00Z"), starts, None, &any, "standard"));
 
         // named groups: only those accounts, and the name is matched however it was typed
         let only = vec!["VIP".to_string(), "pro".to_string()];
-        assert!(deposit_in_scope(t("2026-11-01T00:00:00Z"), starts, ends, &only, "vip"));
-        assert!(deposit_in_scope(t("2026-11-01T00:00:00Z"), starts, ends, &only, "PRO"));
-        assert!(!deposit_in_scope(t("2026-11-01T00:00:00Z"), starts, ends, &only, "standard"));
+        assert!(deposit_in_scope(first, t("2026-11-01T00:00:00Z"), starts, ends, &only, "vip"));
+        assert!(deposit_in_scope(first, t("2026-11-01T00:00:00Z"), starts, ends, &only, "PRO"));
+        assert!(!deposit_in_scope(first, t("2026-11-01T00:00:00Z"), starts, ends, &only, "standard"));
     }
 
     #[test]

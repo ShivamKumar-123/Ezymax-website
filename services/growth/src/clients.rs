@@ -307,6 +307,8 @@ pub struct Funding {
     /// USD (USC converted).
     pub amount: D,
     pub at: DateTime<Utc>,
+    /// The first deposit this client has ever made, across every live account they hold.
+    pub first_ever: bool,
 }
 
 /// Deposits onto live accounts after `after_txn`, oldest first. The cursor feed behind the automatic bonus:
@@ -334,6 +336,8 @@ pub async fn funding(st: &AppState, tenant: &str, after_txn: i64, limit: i64) ->
                 user_id: int(&it["userId"])?,
                 group: it["group"].as_str().unwrap_or("").to_string(),
                 cent: it["cent"].as_bool().unwrap_or(false),
+                // an engine that does not answer is not evidence of a first deposit, so the offer stays shut
+                first_ever: it["firstEver"].as_bool().unwrap_or(false),
                 amount,
                 at: time(&it["at"])?,
             })
