@@ -50,6 +50,16 @@ const LAYOUTS: { value: BannerLayout; label: string }[] = [
 ];
 /** Both ride the dashboard carousel; a hero is a background for the title, a poster is the finished thing. */
 const inCarousel = (l: BannerLayout | string | undefined) => l === "hero" || l === "poster";
+
+/** What the carousel will actually do with this banner, mirroring isPoster in the Client Area's
+ *  components/growth/hero-carousel.tsx: a slide with an image and a title and nothing else has nothing the
+ *  artwork is not already saying, so it is shown whole instead of being cut to the hero's 4:1 strip. */
+function showsWhole(b: { layout?: string; kind?: string; body?: string | null; ctaLabel?: string | null; ctaUrl?: string | null }, image: string | null) {
+  if (b.layout === "poster") return true;
+  if (b.layout !== "hero" || !image) return false;
+  // events and posts always link to their own page, so they always keep the hero treatment
+  return b.kind === "banner" && !b.body?.trim() && !b.ctaLabel?.trim() && !b.ctaUrl?.trim();
+}
 const KYC_OPTS: { value: Kyc; label: string }[] = [
   { value: "unverified", label: "Unverified" },
   { value: "pending", label: "Pending" },
@@ -105,9 +115,9 @@ export function ClientBanner({ b, image, className }: { b: Pick<BannerView, "tit
 }
 
 /** Any item as the client sees it: the hero slide, the Events & updates card or the slot banner. */
-function ItemPreview({ b, className }: { b: Pick<BannerView, "kind" | "layout" | "title" | "body" | "ctaLabel" | "tone" | "dismissible" | "eventStartsAt" | "eventEndsAt" | "location" | "imageUrl" | "imageMediaId">; className?: string }) {
+function ItemPreview({ b, className }: { b: Pick<BannerView, "kind" | "layout" | "title" | "body" | "ctaLabel" | "ctaUrl" | "tone" | "dismissible" | "eventStartsAt" | "eventEndsAt" | "location" | "imageUrl" | "imageMediaId">; className?: string }) {
   const image = imageSrc(b);
-  if (b.layout === "poster") return <PosterPreview b={b} image={image} className={className} />;
+  if (showsWhole(b, image)) return <PosterPreview b={b} image={image} className={className} />;
   if (b.layout === "hero") return <HeroPreview b={b} image={image} className={className} />;
   if (b.kind !== "banner") return <UpdateCardPreview b={b} image={image} className={className} />;
   return <ClientBanner b={b} image={image} className={className} />;
@@ -612,7 +622,8 @@ function BannerDialog({ open, onOpenChange, banner, kind, onSaved }: { open: boo
     eventEndsAt: fromLocalInput(d.eventEndsAt),
     location: loc || null,
   };
-  const where = inCarousel(d.layout) ? `Dashboard · ${d.layout === "poster" ? "poster" : "hero"} carousel` : isBanner ? `${PLACEMENTS.find((p) => p.value === d.placement)?.label} · banner slot` : "Dashboard · Events & updates";
+  const whole = showsWhole({ layout: d.layout, kind: d.kind, body: d.body, ctaLabel: d.ctaLabel, ctaUrl: d.ctaUrl }, image);
+  const where = inCarousel(d.layout) ? `Dashboard · ${whole ? "poster" : "hero"} carousel` : isBanner ? `${PLACEMENTS.find((p) => p.value === d.placement)?.label} · banner slot` : "Dashboard · Events & updates";
 
   return (
     <FormDialog
@@ -655,7 +666,9 @@ function BannerDialog({ open, onOpenChange, banner, kind, onSaved }: { open: boo
                   {d.layout === "poster"
                     ? `Artwork shown whole at the top of the dashboard, nothing written over it · ${IMAGE_SIZE.poster.label}`
                     : d.layout === "hero"
-                      ? `Full width at the top of the dashboard, title and button over the image · ${IMAGE_SIZE.hero.label}`
+                      ? whole
+                        ? "Shown whole, nothing written over it — with no body text and no button there is nothing to write. Add either to get the hero treatment."
+                        : `Full width at the top of the dashboard, title and button over the image · ${IMAGE_SIZE.hero.label}`
                       : isBanner
                         ? "In the banner slot"
                         : `A card in Events & updates · ${IMAGE_SIZE.card.label}`}
@@ -721,7 +734,7 @@ function BannerDialog({ open, onOpenChange, banner, kind, onSaved }: { open: boo
           <div className="rounded-[20px] border border-line bg-bg p-4">
             {inCarousel(d.layout) ? (
               <>
-                {d.layout === "poster" ? <PosterPreview b={preview} image={image} /> : <HeroPreview b={preview} image={image} />}
+                {whole ? <PosterPreview b={preview} image={image} /> : <HeroPreview b={preview} image={image} />}
                 <div className="mt-3 flex items-center justify-between">
                   <div className="h-2.5 w-24 rounded-full bg-surface-3" />
                   <div className="h-5 w-14 rounded-full bg-surface-3" />

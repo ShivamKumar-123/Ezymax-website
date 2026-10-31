@@ -18,8 +18,14 @@ import { hrefOf, isExternal, isOnlineLink, trackPromo, useEventTime } from "./pr
 
 const ROTATE_MS = 6000;
 
-/** Artwork that speaks for itself: shown entire, never cropped, never written over. */
-const isPoster = (b: BannerView) => b.layout === "poster";
+/** Artwork that speaks for itself: shown entire, never cropped, never written over.
+ *
+ *  Either the layout says so, or the banner has nothing of its own to write. A hero is a photograph used as a
+ *  background, and what makes it a hero is the words over it: a line of copy, a button, usually both. A slide
+ *  carrying an image and a title and nothing else is finished artwork - the title repeats what the picture
+ *  already says - and that is how a designed poster actually arrives. Treating it as one means such a banner
+ *  is never cut to the hero's 4:1 strip, whoever set it up and whichever layout they picked. */
+const isPoster = (b: BannerView) => b.layout === "poster" || (!!b.imageUrl && !b.body?.trim() && !b.ctaLabel?.trim() && !hrefOf(b));
 
 /** Until the artwork loads we have to reserve some shape, and most posters are drawn 16:9. */
 const POSTER_RATIO = 16 / 9;
