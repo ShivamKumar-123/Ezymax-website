@@ -14,6 +14,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 final onlineProvider = StreamProvider<bool>((ref) async* {
   final c = Connectivity();
   bool up(List<ConnectivityResult> r) => r.any((x) => x != ConnectivityResult.none);
-  yield up(await c.checkConnectivity());
-  yield* c.onConnectivityChanged.map(up);
+  try {
+    yield up(await c.checkConnectivity());
+    yield* c.onConnectivityChanged.map(up);
+  } catch (_) {
+    // No platform implementation - a widget test, or a host the plugin does not cover. Not knowing is not
+    // the same as being offline, and claiming otherwise would put the strip over every screen.
+    yield true;
+  }
 });
