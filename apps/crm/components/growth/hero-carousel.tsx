@@ -25,8 +25,9 @@ const isPoster = (b: BannerView) => b.layout === "poster";
 const POSTER_RATIO = 16 / 9;
 
 /** A tall poster would push the accounts off the screen, so the box stops here and the artwork letterboxes
- *  inside it rather than losing its edges. */
-const POSTER_MAX_H = 520;
+ *  inside it rather than losing its edges. Set above what a banner-shaped poster needs - 8:3 artwork runs
+ *  edge to edge on any realistic dashboard width - so the cap only ever catches something nearly square. */
+const POSTER_MAX_H = 600;
 
 function useReducedMotion() {
   const [reduced, setReduced] = React.useState(false);
