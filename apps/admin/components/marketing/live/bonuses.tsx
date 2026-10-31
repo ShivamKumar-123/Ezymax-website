@@ -170,7 +170,29 @@ export function LiveBonuses() {
 
 /* ------------------------------------------------------------------ */
 
+/** What a $1,000 deposit - or the campaign's own minimum, if that is larger - actually pays. */
+function exampleCredit(c: { kind: string; pct: number; cap: number; fixedAmount: number; minDeposit: number }) {
+  const deposit = Math.max(c.minDeposit, 1000);
+  return { deposit, credit: c.kind === "fixed" ? c.fixedAmount : Math.min(c.cap || Infinity, (deposit * c.pct) / 100) };
+}
+
+/** The bonus figure written into a campaign's terms, when it disagrees with what the campaign pays.
+ *
+ *  Only the sentence the Example block produces is matched, because that is the one people paste - and then
+ *  forget to paste again after changing the rate, which is how a campaign came to promise $300 while paying
+ *  $250. Clients are shown the pasted wording and the computed figures side by side, so a disagreement is
+ *  not cosmetic: it is a promise the broker will not keep, which is why it is said on the card and not only
+ *  to whoever opens the editor. */
+function termsDrift(terms: string, c: { kind: string; pct: number; cap: number; fixedAmount: number; minDeposit: number }) {
+  const m = terms.match(/deposit gives \$([\d,]+(?:\.\d+)?) bonus/i);
+  const { deposit, credit } = exampleCredit(c);
+  if (!m || !Number.isFinite(credit)) return null;
+  const said = Number(m[1]!.replace(/,/g, ""));
+  return Math.abs(said - credit) < 0.005 ? null : { said, credit, deposit };
+}
+
 function CampaignCard({ c, canWrite, onEdit, onToggle }: { c: Campaign; canWrite: boolean; onEdit: () => void; onToggle: () => void }) {
+  const drift = termsDrift(c.terms, c);
   const releasedPct = c.issued > 0 ? (c.released / c.issued) * 100 : 0;
   return (
     <Card className="flex h-full flex-col" data-testid={`campaign-card-${c.id}`}>
@@ -184,6 +206,11 @@ function CampaignCard({ c, canWrite, onEdit, onToggle }: { c: Campaign; canWrite
               <Chip size="sm">{c.kind === "deposit" ? "Deposit %" : "Fixed credit"}</Chip>
               {c.visibility === "code_only" && <Chip size="sm" tone="info">Promo code only</Chip>}
               {c.kycRequired && <Chip size="sm">KYC</Chip>}
+              {drift && (
+                <Chip size="sm" tone="warn">
+                  <ShieldAlert className="size-3" /> Terms say {usd(drift.said, 0)}, pays {usd(drift.credit, 0)}
+                </Chip>
+              )}
               {c.autoGrant && <Chip size="sm" tone="ember">Auto</Chip>}
             </div>
           </div>
@@ -371,12 +398,7 @@ function CampaignDialog({ open, onOpenChange, campaign, onSaved }: { open: boole
   ].join("\n");
   // A figure in the terms that no longer matches what the campaign pays. Only the sentence the Example itself
   // produces is checked, because that is the one people paste and then forget to re-paste.
-  const staleTerms = (() => {
-    const m = d.terms.match(/deposit gives \$([\d,]+(?:\.\d+)?) bonus/i);
-    if (!m || !Number.isFinite(credit)) return null;
-    const said = Number(m[1]!.replace(/,/g, ""));
-    return Math.abs(said - credit) < 0.005 ? null : { said, credit };
-  })();
+  const staleTerms = termsDrift(d.terms, { kind: d.kind, pct: n(d.pct), cap: n(d.cap), fixedAmount: n(d.fixedAmount), minDeposit: n(d.minDeposit) });
 
   const submit = () => {
     if (!d.name.trim()) return "Give the campaign a name.";
