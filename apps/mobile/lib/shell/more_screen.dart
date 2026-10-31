@@ -57,7 +57,7 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
                 ? Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      KIconTile(icon: m.icon, tone: KTone.ember, size: 34, radius: 10),
+                      KIconTile(icon: m.icon, tone: KTone.coral, size: 34, radius: 10),
                       PositionedDirectional(top: -5, end: -6, child: KPulseBadge(count: waiting)),
                     ],
                   )

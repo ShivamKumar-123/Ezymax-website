@@ -134,7 +134,6 @@ class _OfferCard extends ConsumerWidget {
                       KButton(
                         label: p.ctaLabel?.isNotEmpty == true ? p.ctaLabel! : t('offers.claim'),
                         size: KButtonSize.sm,
-                        variant: KButtonVariant.ember,
                         trailingIcon: rtl ? LucideIcons.arrowUpLeft : LucideIcons.arrowUpRight,
                         onPressed: () {
                           trackPromo(ref.read(apiProvider), p.id, 'click');
