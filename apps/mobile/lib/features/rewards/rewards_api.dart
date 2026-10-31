@@ -439,6 +439,7 @@ class Campaign {
 class Grant {
   const Grant({
     required this.id,
+    required this.campaignId,
     required this.campaign,
     required this.status,
     required this.source,
@@ -457,7 +458,7 @@ class Grant {
     this.endReason,
     this.claimDeadline,
   });
-  final int id;
+  final int id, campaignId;
   final String campaign, status, source;
   final int? login;
   final double? depositAmount;
@@ -467,6 +468,7 @@ class Grant {
 
   factory Grant.fromJson(Map<String, dynamic> j) => Grant(
     id: _i(j['id']),
+    campaignId: _i(j['campaignId']),
     campaign: _s(j['campaign']),
     status: _s(j['status']),
     source: _s(j['source']),

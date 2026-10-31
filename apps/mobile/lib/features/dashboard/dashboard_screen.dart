@@ -35,6 +35,7 @@ import '../../i18n/i18n.dart';
 import '../../shell/nav.dart';
 import '../../ui/ui.dart';
 import '../accounts/account_actions.dart';
+import '../rewards/widgets/bonus_steps.dart';
 import '../support/ask_ai.dart';
 import '../updates/updates_api.dart';
 import '../updates/widgets/updates_section.dart';
@@ -429,12 +430,19 @@ class DashboardScreen extends ConsumerWidget {
         children: [
           // 0. targeted banner
           const DashboardBannerSlot(),
+          // the banner above promises the cashback; this says what it takes to get it
+          const BonusSteps(on: BonusStepsOn.dashboard),
+          const SizedBox(height: 16),
           // 1. header: the greeting as the title, the name in bold; the eye hides every amount on the dashboard
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: _Greeting(template: t.dyn('dashboard.greeting.${_greeting(DateTime.now())}'), name: me.firstName, verified: me.kycStatus == KycStatus.verified),
+                child: _Greeting(
+                  template: t.dyn('dashboard.greeting.${_greeting(DateTime.now())}'),
+                  name: me.firstName,
+                  verified: me.kycStatus == KycStatus.verified,
+                ),
               ),
               KIconButton(
                 key: const ValueKey('dashboard-hide-balances'),

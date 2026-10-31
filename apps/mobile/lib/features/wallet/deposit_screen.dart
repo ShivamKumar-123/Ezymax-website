@@ -18,6 +18,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/api/api_error.dart';
 import '../../i18n/i18n.dart';
 import '../../ui/ui.dart';
+import '../rewards/widgets/bonus_steps.dart';
 import 'manual_api.dart';
 import 'wallet_api.dart';
 import 'widgets/deposit_panels.dart';
@@ -140,12 +141,18 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
           subtitle: hasManual ? t('payments.page.subtitle') : t('wallet.deposit.subtitle'),
           actions: const [BackToWallet()],
         ),
+        // what the dashboard banner promised, and what it takes to actually get it
+        const BonusSteps(on: BonusStepsOn.deposit),
+        const SizedBox(height: kWalletGap),
         if (!valid && !cfgPending) DepositChooser(value: via, onChanged: _choose, usdt: autoOn, bank: bank.isNotEmpty, crypto: crypto.isNotEmpty),
         main,
-        if (via != DepositVia.usdt)
-          ...[const SizedBox(height: kWalletGap), const ManualHowItWorks()]
-        else if (cfg.hasValue)
-          ...[const SizedBox(height: kWalletGap), HowItWorks(cfg: cfg.requireValue)],
+        if (via != DepositVia.usdt) ...[
+          const SizedBox(height: kWalletGap),
+          const ManualHowItWorks(),
+        ] else if (cfg.hasValue) ...[
+          const SizedBox(height: kWalletGap),
+          HowItWorks(cfg: cfg.requireValue),
+        ],
       ],
     );
   }
