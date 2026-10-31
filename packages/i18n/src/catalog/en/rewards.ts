@@ -477,6 +477,17 @@ const rewards = {
   "claim.accountHint": "The bonus is credited to a live account. Open one first.",
   "claim.note": "The bonus counts toward equity and margin but can't be withdrawn until it is released by trading. One active bonus per account.",
   "claim.terms": "Terms",
+
+  // The notice on the Deposit page: what the dashboard banner promised, and the steps it actually takes.
+  "depositBonus.offerTitle": "Claim your {pct} cashback before you pay",
+  "depositBonus.waitingTitle": "Your {pct} cashback is waiting for this deposit",
+  "depositBonus.sub": "{pct} of your first deposit, up to {cap}. Deposits from {min}.",
+  "depositBonus.stepClaim": "Claim the offer on the Promotions page",
+  "depositBonus.stepDeposit": "Deposit {min} or more",
+  "depositBonus.stepTransfer": "Transfer it from your wallet to a live trading account — the bonus is paid there, not into the wallet",
+  "depositBonus.stepCredited": "{pct} lands as bonus credit, within a minute",
+  "depositBonus.release": "Bonus credit counts toward your equity and margin. It becomes money you can withdraw as you trade, {amount} per lot, and whatever is still unreleased after {days} days, or when you withdraw, is removed.",
+  "depositBonus.claimCta": "Claim it first",
   "claim.termsTitle": "{name} · terms",
   "card.badgeDeposit": "DEPOSIT BONUS",
   "card.badgeBonus": "BONUS",
