@@ -79,12 +79,21 @@ pub async fn policy(pool: &PgPool, tenant_id: i64) -> sqlx::Result<Policy> {
 /* what a client is shown                                             */
 /* ------------------------------------------------------------------ */
 
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Summary {
     pub deposits: D,
     pub required: D,
     pub completed: D,
     pub open: i64,
+    /// Whether the broker's switch is currently on. Off, the outstanding requirements are kept but hold
+    /// nobody: see `met`.
+    pub enforced: bool,
+}
+
+impl Default for Summary {
+    fn default() -> Self {
+        Summary { deposits: D::ZERO, required: D::ZERO, completed: D::ZERO, open: 0, enforced: true }
+    }
 }
 
 impl Summary {
@@ -98,15 +107,21 @@ impl Summary {
         if self.required <= D::ZERO {
             return 100;
         }
-        if self.remaining() <= D::ZERO {
+        if !self.enforced || self.remaining() <= D::ZERO {
             return 100;
         }
         let pct = (self.completed * D::ONE_HUNDRED / self.required).floor();
         pct.try_into().unwrap_or(0_i64).clamp(0, 99)
     }
 
+    /// Whether this client may withdraw.
+    ///
+    /// Switching the policy off releases everyone at once, outstanding requirements included. A broker who
+    /// turns a restriction off means "stop holding my clients' money", and a switch that left them held
+    /// would be a trap with no way out but waiving one requirement at a time. The rows are kept rather than
+    /// deleted, so turning it back on resumes exactly where it left off.
     pub fn met(&self) -> bool {
-        self.remaining() <= D::ZERO
+        !self.enforced || self.remaining() <= D::ZERO
     }
 
     pub fn json(&self) -> Value {
@@ -117,6 +132,7 @@ impl Summary {
             "remaining_volume": s(self.remaining()),
             "completion_percentage": self.percent(),
             "open_requirements": self.open,
+            "enforced": self.enforced,
             "eligible": self.met(),
             "status": if self.met() { "completed" } else { "pending" },
         })
@@ -139,7 +155,13 @@ pub async fn summary(pool: &PgPool, tenant_id: i64, user_id: i64) -> sqlx::Resul
     .bind(user_id)
     .fetch_one(pool)
     .await?;
-    Ok(Summary { deposits: r.get("deposits"), required: r.get("required"), completed: r.get("completed"), open: r.get("open") })
+    Ok(Summary {
+        deposits: r.get("deposits"),
+        required: r.get("required"),
+        completed: r.get("completed"),
+        open: r.get("open"),
+        enforced: policy(pool, tenant_id).await?.enabled,
+    })
 }
 
 /// Requirement by requirement, newest first: what the withdrawal modal expands into when a client has funded
@@ -159,7 +181,7 @@ pub async fn breakdown(pool: &PgPool, tenant_id: i64, user_id: i64, limit: i64) 
         .map(|r| {
             let required: D = r.get("required");
             let completed: D = r.get("completed");
-            let one = Summary { deposits: r.get("deposit_amount"), required, completed, open: 1 };
+            let one = Summary { deposits: r.get("deposit_amount"), required, completed, open: 1, enforced: true };
             json!({
                 "id": r.get::<i64, _>("id"),
                 "deposit_txn": r.get::<i64, _>("ledger_txn_id"),
@@ -575,14 +597,26 @@ mod tests {
 
     #[test]
     fn progress_never_reads_complete_while_a_dollar_is_owed() {
-        let nearly = Summary { deposits: d("2000"), required: d("2000"), completed: d("1999.99"), open: 1 };
+        let nearly = Summary { deposits: d("2000"), required: d("2000"), completed: d("1999.99"), open: 1, enforced: true };
         assert_eq!(nearly.percent(), 99);
         assert!(!nearly.met());
-        let done = Summary { deposits: d("2000"), required: d("2000"), completed: d("2000"), open: 1 };
+        let done = Summary { deposits: d("2000"), required: d("2000"), completed: d("2000"), open: 1, enforced: true };
         assert_eq!((done.percent(), done.met()), (100, true));
         // over-trading does not overflow the bar
-        let over = Summary { deposits: d("2000"), required: d("2000"), completed: d("5000"), open: 1 };
+        let over = Summary { deposits: d("2000"), required: d("2000"), completed: d("5000"), open: 1, enforced: true };
         assert_eq!((over.percent(), over.remaining()), (100, D::ZERO));
+    }
+
+    #[test]
+    fn turning_the_policy_off_releases_everyone_at_once() {
+        let owed = Summary { deposits: d("2000"), required: d("2000"), completed: d("100"), open: 1, enforced: true };
+        assert!(!owed.met(), "while it is on, the volume is owed");
+        let released = Summary { enforced: false, ..owed.clone() };
+        assert!(released.met(), "switching it off must let them withdraw, not leave them held");
+        assert_eq!(released.percent(), 100);
+        // the obligation is kept, not erased, so turning it back on resumes where it left off
+        assert_eq!(released.remaining(), d("1900"));
+        assert!(Summary { enforced: true, ..released }.met() == false);
     }
 
     #[test]
@@ -594,7 +628,7 @@ mod tests {
     #[test]
     fn the_spec_worked_example() {
         // deposit 1 of $2,000 and deposit 2 of $1,000, $2,500 traded
-        let s = Summary { deposits: d("3000"), required: d("3000"), completed: d("2500"), open: 2 };
+        let s = Summary { deposits: d("3000"), required: d("3000"), completed: d("2500"), open: 2, enforced: true };
         assert_eq!(s.remaining(), d("500"));
         assert_eq!(s.percent(), 83);
         assert!(!s.met());

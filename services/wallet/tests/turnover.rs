@@ -244,6 +244,33 @@ async fn the_policy_is_off_until_a_broker_turns_it_on() {
     t.drop_db().await;
 }
 
+/// The switch is a real switch: turning it off lets everyone withdraw at once, and turning it back on
+/// resumes the same obligation rather than starting it over.
+#[tokio::test]
+async fn the_switch_releases_and_resumes() {
+    let Some(t) = T::new("turnover kill switch").await else { return };
+    t.set_policy(true, "1.0", "0").await;
+    t.deposit("1000", 51).await;
+    t.engine.close_deal(1, USER, Some(d("400")));
+    watcher::tick(&t.st).await.unwrap();
+    assert_eq!(t.try_withdraw("50").await.0, 422, "held while it is on");
+
+    // off: nobody is held, and the figures say so rather than contradicting the gate
+    t.set_policy(false, "1.0", "0").await;
+    let s = t.summary().await;
+    assert_eq!((s["eligible"].as_bool(), s["enforced"].as_bool()), (Some(true), Some(false)), "{s}");
+    assert_eq!(t.try_withdraw("50").await.0, 200, "turning it off must release, not leave them held");
+    // the obligation is kept, not erased
+    assert_eq!(s["remaining_volume"].as_str(), Some("600"));
+
+    // back on: the same 600 is owed, not a fresh 1000
+    t.set_policy(true, "1.0", "0").await;
+    let s = t.summary().await;
+    assert_eq!((s["remaining_volume"].as_str(), s["completed_volume"].as_str()), (Some("600"), Some("400")), "{s}");
+    assert_eq!(t.try_withdraw("50").await.0, 422);
+    t.drop_db().await;
+}
+
 /// A deal the engine could not value must not be counted as nothing, and a reopened one must be taken back.
 #[tokio::test]
 async fn unpriced_and_reopened_deals_are_handled_honestly() {
