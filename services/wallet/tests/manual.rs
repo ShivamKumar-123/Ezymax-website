@@ -49,7 +49,7 @@ impl T {
         let base = std::env::var("WALLET_TEST_DATABASE_URL").unwrap_or_else(|_| "postgres://postgres@127.0.0.1:5433/postgres".into());
         let admin = PgConnectOptions::from_str(&base).ok()?.database("postgres");
         if admin.connect().await.is_err() {
-            eprintln!("skipping {what}: no PostgreSQL at {base}");
+            eprintln!("skipping {what}: no PostgreSQL at {base} — set WALLET_TEST_DATABASE_URL to a server where this role may CREATE DATABASE");
             return None;
         }
         let mut b = [0u8; 5];
@@ -329,11 +329,11 @@ async fn images_are_sniffed_limited_and_private() {
     assert_eq!(v["method"]["qr_url"], format!("/api/wallet/manual/media/{qr}"));
     // a proof of another client can't be attached
     let method = v["method"]["id"].as_i64().unwrap();
-    let mut r = request(method, 8, "1000", "UTR123456789", "k-proof-1");
+    let mut r = request(method, 8, "2000", "UTR123456789", "k-proof-1");
     r["proof_media_id"] = json!(proof);
     let (s, v) = t.client("POST", "/v1/manual/deposits", Some(r)).await;
     assert_eq!((s, v["error"]["field"].as_str()), (422, Some("proof_media_id")));
-    let mut r = request(method, 7, "1000", "UTR123456789", "k-proof-2");
+    let mut r = request(method, 7, "2000", "UTR123456789", "k-proof-2");
     r["proof_media_id"] = json!(proof);
     let (s, v) = t.client("POST", "/v1/manual/deposits", Some(r)).await;
     assert_eq!(s, 200, "{v}");
@@ -355,9 +355,9 @@ async fn deposit_requests_follow_the_rules() {
     }
     let (s, v) = t.client("POST", "/v1/manual/deposits", Some(request(bank, 7, "0", "UTR000000001", "k-zero"))).await;
     assert_eq!((s, v["error"]["field"].as_str()), (422, Some("amount")));
-    let (s, v) = t.client("POST", "/v1/manual/deposits", Some(request(999, 7, "1000", "UTR000000001", "k-unknown"))).await;
+    let (s, v) = t.client("POST", "/v1/manual/deposits", Some(request(999, 7, "2000", "UTR000000001", "k-unknown"))).await;
     assert_eq!((s, v["error"]["code"].as_str()), (422, Some("method_unavailable")));
-    let (s, v) = t.client("POST", "/v1/manual/deposits", Some(request(bank, 7, "1000", "12", "k-shortref"))).await;
+    let (s, v) = t.client("POST", "/v1/manual/deposits", Some(request(bank, 7, "2000", "12", "k-shortref"))).await;
     assert_eq!((s, v["error"]["field"].as_str()), (422, Some("reference")));
 
     // a valid request: expected credit = amount / rate, floored to 6 decimals; snapshot of the method
@@ -393,10 +393,10 @@ async fn deposit_requests_follow_the_rules() {
 
     // the pending cap: 5 per client (2 pending now)
     for i in 0..3 {
-        let (s, v) = t.client("POST", "/v1/manual/deposits", Some(request(bank, 7, "1000", &format!("UTR77700000{i}"), &format!("k-cap-{i}")))).await;
+        let (s, v) = t.client("POST", "/v1/manual/deposits", Some(request(bank, 7, "2000", &format!("UTR77700000{i}"), &format!("k-cap-{i}")))).await;
         assert_eq!(s, 200, "{v}");
     }
-    let (s, v) = t.client("POST", "/v1/manual/deposits", Some(request(bank, 7, "1000", "UTR777000009", "k-cap-9"))).await;
+    let (s, v) = t.client("POST", "/v1/manual/deposits", Some(request(bank, 7, "2000", "UTR777000009", "k-cap-9"))).await;
     assert_eq!((s, v["error"]["code"].as_str()), (429, Some("too_many_pending")));
 
     // cancel: only the owner, only while pending; it frees a slot and the reference
@@ -419,7 +419,7 @@ async fn deposit_requests_follow_the_rules() {
     let (s, v) = t.client("POST", "/v1/manual/deposits", Some(request(crypto, 9, "50", &"ef".repeat(32), "k-hidden"))).await;
     assert_eq!((s, v["error"]["code"].as_str()), (422, Some("method_unavailable")));
     t.users.restrict(9, &["deposits"]);
-    let (s, v) = t.client("POST", "/v1/manual/deposits", Some(request(bank, 9, "1000", "UTR999000001", "k-restricted"))).await;
+    let (s, v) = t.client("POST", "/v1/manual/deposits", Some(request(bank, 9, "2000", "UTR999000001", "k-restricted"))).await;
     assert_eq!((s, v["error"]["code"].as_str()), (403, Some("restricted")));
 
     // the client's own list, newest first, with the pending count
@@ -439,7 +439,7 @@ async fn review_credits_once_and_needs_reasons() {
     let a = a["deposit"]["id"].as_i64().unwrap();
     let (_, b) = t.client("POST", "/v1/manual/deposits", Some(request(crypto, 8, "250.5", &"12".repeat(32), "k-b"))).await;
     let b = b["deposit"]["id"].as_i64().unwrap();
-    let (_, c) = t.client("POST", "/v1/manual/deposits", Some(request(bank, 7, "1000", "UTR100000003", "k-c"))).await;
+    let (_, c) = t.client("POST", "/v1/manual/deposits", Some(request(bank, 7, "2000", "UTR100000003", "k-c"))).await;
     let c = c["deposit"]["id"].as_i64().unwrap();
 
     // the queue: counts, filters, detail with the explorer link
@@ -522,7 +522,7 @@ async fn review_credits_once_and_needs_reasons() {
     let (s, v) = t.fin("POST", &format!("/v1/admin/manual/deposits/{c}/approve"), Some(json!({}))).await;
     assert_eq!((s, v["error"]["code"].as_str()), (409, Some("invalid_state")));
     // a rejected UTR may be sent again (the first try may have had a typo in the amount)
-    let (s, _) = t.client("POST", "/v1/manual/deposits", Some(request(bank, 7, "1000", "UTR100000003", "k-c-again"))).await;
+    let (s, _) = t.client("POST", "/v1/manual/deposits", Some(request(bank, 7, "2000", "UTR100000003", "k-c-again"))).await;
     assert_eq!(s, 200);
 
     // notifications, audit, history (Deposits tab includes the bank credit) and the ledger

@@ -44,7 +44,7 @@ impl T {
         let base = std::env::var("WALLET_TEST_DATABASE_URL").unwrap_or_else(|_| "postgres://postgres@127.0.0.1:5433/postgres".into());
         let admin = PgConnectOptions::from_str(&base).ok()?.database("postgres");
         if admin.connect().await.is_err() {
-            eprintln!("skipping {what}: no PostgreSQL at {base}");
+            eprintln!("skipping {what}: no PostgreSQL at {base} — set WALLET_TEST_DATABASE_URL to a server where this role may CREATE DATABASE");
             return None;
         }
         let mut b = [0u8; 5];

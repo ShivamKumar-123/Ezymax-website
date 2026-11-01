@@ -49,7 +49,7 @@ impl T {
         let base = std::env::var("WALLET_TEST_DATABASE_URL").unwrap_or_else(|_| "postgres://postgres@127.0.0.1:5433/postgres".into());
         let admin = PgConnectOptions::from_str(&base).ok()?.database("postgres");
         if admin.connect().await.is_err() {
-            eprintln!("skipping {what}: no PostgreSQL at {base}");
+            eprintln!("skipping {what}: no PostgreSQL at {base} — set WALLET_TEST_DATABASE_URL to a server where this role may CREATE DATABASE");
             return None;
         }
         let mut b = [0u8; 5];
@@ -317,18 +317,21 @@ async fn deposits_verify_confirm_and_credit() {
         (3, usdt_tx(ChainId::Tron, CLIENT_TRON, OTHER_TRON, "10", 1000), "does not send USDT"),
         (4, TxLookup { status: TxStatus::Failed, block: Some(1000), block_time: None, transfers: vec![] }, "failed"),
     ] {
-        let (_, v) = t.post("/v1/deposits/intents", json!({"user_id": 7, "chain": "tron", "amount": "10"})).await;
+        // at or above the platform floor (ops/manual.rs MIN_DEPOSIT_USD), so what is under test here is the
+        // transfer itself and not the minimum
+        let (_, v) = t.post("/v1/deposits/intents", json!({"user_id": 7, "chain": "tron", "amount": "25"})).await;
         t.tron.put(&hash(n), lookup);
         let (_, v) = t.post("/v1/deposits/submit", json!({"user_id": 7, "intent_id": v["intent"]["id"], "tx_hash": hash(n)})).await;
-        let id = v["deposit"]["id"].as_i64().unwrap();
+        let id = v["deposit"]["id"].as_i64().unwrap_or_else(|| panic!("submit did not return a deposit: {v}"));
         watcher::tick(&t.st).await.unwrap();
         let (_, v) = t.get(&format!("/v1/deposits/{id}")).await;
         assert_eq!(v["deposit"]["status"], "failed");
         assert!(v["deposit"]["failure_reason"].as_str().unwrap().contains(why), "{v}");
     }
     // a sender used by another client goes to review
-    let (_, v) = t.post("/v1/deposits/intents", json!({"user_id": 8, "chain": "tron", "amount": "15"})).await;
-    t.tron.put(&hash(5), usdt_tx(ChainId::Tron, CLIENT_TRON, TRON_ADDR, "15", 1010));
+    let (_, v) = t.post("/v1/deposits/intents", json!({"user_id": 8, "chain": "tron", "amount": "25"})).await;
+    // the intent and the transfer agree, so the shared sender is the only thing left to send it to review
+    t.tron.put(&hash(5), usdt_tx(ChainId::Tron, CLIENT_TRON, TRON_ADDR, "25", 1010));
     let (_, v) = t.post("/v1/deposits/submit", json!({"user_id": 8, "intent_id": v["intent"]["id"], "tx_hash": hash(5)})).await;
     let id = v["deposit"]["id"].as_i64().unwrap();
     t.tron.set_head(1100);
@@ -401,11 +404,11 @@ async fn upi_withdrawals_are_quoted_frozen_and_settled_by_staff() {
     assert_eq!(cfg["withdraw_methods"].as_array().map(Vec::len), Some(0));
 
     // enabling without a rate is refused: there would be nothing to quote
-    let (s, v) = t.staff("PUT", "/v1/admin/settings", Some(json!({"reason": "open UPI", "withdraw_methods": [{"method": "upi", "enabled": true}]}))).await;
+    let (s, v) = t.call("PUT", "/v1/admin/settings", Some(json!({"reason": "open UPI", "withdraw_methods": [{"method": "upi", "enabled": true}]})), Some("super_admin")).await;
     assert_eq!((s, v["error"]["field"].as_str()), (422, Some("rate")), "{v}");
 
     let (s, v) = t
-        .staff("PUT", "/v1/admin/settings", Some(json!({"reason": "open UPI", "withdraw_methods": [{"method": "upi", "enabled": true, "currency": "INR", "rate": "88.5", "fee_flat": "0.5"}]})))
+        .call("PUT", "/v1/admin/settings", Some(json!({"reason": "open UPI", "withdraw_methods": [{"method": "upi", "enabled": true, "currency": "INR", "rate": "88.5", "fee_flat": "0.5"}]})), Some("super_admin"))
         .await;
     assert_eq!(s, 200, "{v}");
     let m = v["withdraw_methods"].as_array().unwrap().iter().find(|m| m["method"] == "upi").unwrap().clone();
@@ -417,12 +420,14 @@ async fn upi_withdrawals_are_quoted_frozen_and_settled_by_staff() {
         assert_eq!((s, v["error"]["field"].as_str()), (422, Some("to_address")), "{bad} should be refused");
     }
 
-    // the quote: 1 flat + 0.5 method fee, and the rest converted at the rate in force
+    // The quote: the method's own 0.5 and nothing else. The tenant's flat and percentage fees are the crypto
+    // rail's and do not reach this one (ops/withdrawals.rs fee_for), so 100 USDT converts at the rate in force
+    // less that 0.5 - a client asking for rupees is paid the rupees they asked for.
     let (s, v) = t.post("/v1/withdrawals/quote", req("100", "Priya@OkAxis", "q")).await;
     assert_eq!(s, 200, "{v}");
     let q = &v["quote"];
-    assert_eq!((q["method"].as_str(), q["fee"].as_str(), q["net_amount"].as_str()), (Some("upi"), Some("1.5"), Some("98.5")));
-    assert_eq!((q["payout_currency"].as_str(), q["payout_amount"].as_str()), (Some("INR"), Some("8717.25")));
+    assert_eq!((q["method"].as_str(), q["fee"].as_str(), q["net_amount"].as_str()), (Some("upi"), Some("0.5"), Some("99.5")));
+    assert_eq!((q["payout_currency"].as_str(), q["payout_amount"].as_str()), (Some("INR"), Some("8805.75")));
     assert_eq!(q["to_address"], "priya@okaxis", "the ID is normalised before it is shown back");
 
     let (s, v) = t.post("/v1/withdrawals", req("100", "Priya@OkAxis", "u2")).await;
@@ -430,13 +435,13 @@ async fn upi_withdrawals_are_quoted_frozen_and_settled_by_staff() {
     let w = v["withdrawal"]["id"].as_i64().unwrap();
     assert_eq!(v["withdrawal"]["method"], "upi");
     assert_eq!(v["withdrawal"]["chain"], Value::Null, "an off-chain payout has no chain");
-    assert_eq!(v["withdrawal"]["payout_amount"], "8717.25");
+    assert_eq!(v["withdrawal"]["payout_amount"], "8805.75");
     assert_eq!(t.balance(7).await, ("400".into(), "100".into()), "the funds are locked while it waits");
 
     // moving the rate afterwards must not move what this client was promised
-    t.staff("PUT", "/v1/admin/settings", Some(json!({"reason": "rate moved", "withdraw_methods": [{"method": "upi", "rate": "80"}]}))).await;
+    t.call("PUT", "/v1/admin/settings", Some(json!({"reason": "rate moved", "withdraw_methods": [{"method": "upi", "rate": "80"}]})), Some("super_admin")).await;
     let (_, v) = t.get(&format!("/v1/withdrawals/{w}?user_id=7")).await;
-    assert_eq!(v["withdrawal"]["payout_amount"], "8717.25", "the quote is frozen on the row");
+    assert_eq!(v["withdrawal"]["payout_amount"], "8805.75", "the quote is frozen on the row");
 
     // staff pay out of band; the reference is required and has to look like one
     t.staff("POST", &format!("/v1/admin/withdrawals/{w}/approve"), Some(json!({"note": "ok"}))).await;
@@ -457,7 +462,7 @@ async fn upi_withdrawals_are_quoted_frozen_and_settled_by_staff() {
     assert_eq!((s, v["error"]["code"].as_str()), (409, Some("reference_used")));
 
     // switching the method off stops new requests and leaves the open one alone
-    t.staff("PUT", "/v1/admin/settings", Some(json!({"reason": "pause", "withdraw_methods": [{"method": "upi", "enabled": false}]}))).await;
+    t.call("PUT", "/v1/admin/settings", Some(json!({"reason": "pause", "withdraw_methods": [{"method": "upi", "enabled": false}]})), Some("super_admin")).await;
     let (s, _) = t.post("/v1/withdrawals", req("20", "priya@okaxis", "u4")).await;
     assert_eq!(s, 422);
     let (_, v) = t.get(&format!("/v1/withdrawals/{w2}?user_id=7")).await;
