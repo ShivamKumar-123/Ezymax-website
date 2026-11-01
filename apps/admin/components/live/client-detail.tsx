@@ -10,6 +10,7 @@ import { RevokeDialog, sessionColumns } from "./sessions";
 import { ClientSecurityCard } from "./client-security";
 import { ClientKycCard } from "@/components/kyc/client-kyc-card";
 import { ClientBalanceCard } from "@/components/clients/balance-card";
+import { ClientTurnoverCard } from "@/components/clients/turnover-card";
 import { ClientStateChips } from "@/components/clients/manage";
 import type { ClientDetail, Session, SessionsPage } from "./types";
 
@@ -275,6 +276,7 @@ export function ClientDetailView({ id, compact = false }: { id: number; compact?
             <ClientKycCard userId={u.id} kycStatus={u.kyc_status} />
             {referral}
             <ClientBalanceCard userId={u.id} clientName={u.name} />
+            <ClientTurnoverCard userId={u.id} />
           </div>
         </div>
       )}

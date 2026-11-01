@@ -9,6 +9,7 @@ import { wallet, walletImage, walletUpload } from "@/lib/wallet";
 //
 //   GET  config                          networks, limits, fees
 //   GET  overview                        balances, pending deposits, open withdrawals, today's limit use
+//   GET  turnover                        deposit turnover: totals, deposit-by-deposit breakdown, policy
 //   GET  activity?type&page&limit        deposits, withdrawals, transfers and other credits / debits
 //   GET  ledger?page&limit
 //   GET  notifications                   POST notifications/read {ids?}
@@ -134,6 +135,7 @@ export async function GET(req: NextRequest, { params }: Ctx) {
     return reply(r.status, data);
   }
   if (route === "overview") return call(`/v1/wallets/${uid}/overview`);
+  if (route === "turnover") return call(`/v1/turnover/${uid}`);
   if (route === "notifications") return call(`/v1/wallets/${uid}/notifications`);
   if (route === "activity" || route === "ledger" || route === "transfers" || route === "withdrawals" || route === "deposits") {
     const q = pageQuery(req, route === "activity" ? ["type"] : []);

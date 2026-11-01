@@ -10,6 +10,7 @@ import { toUsd, useAccounts } from "@/components/trading/api";
 import { CHAIN_LABEL, fmt, railLabel, usdtAvailable, useWallet, walletApi, type ActivityItem, type Notification, type Overview, type Page } from "./api";
 import { ActivityRow, Confirmations, DEPOSIT_STATUS, HashLink, KycNotice, StatusTag, WITHDRAWAL_STATUS, WalletUnavailable } from "./ui";
 import { isPropAccount } from "@/components/trading/ui";
+import { TurnoverPanel } from "./turnover";
 
 function BalanceCard({ o, loading }: { o: Overview | null; loading: boolean }) {
   const t = useT();
@@ -258,6 +259,7 @@ export function LiveWalletPage() {
             )}
           </div>
           {!readOnly && <KycNotice status={me.kyc_status} />}
+          {!readOnly && <TurnoverPanel className="mb-4" />}
           {o && <InProgress o={o} />}
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
             <Card className={readOnly ? "xl:col-span-12" : "xl:col-span-7"}>

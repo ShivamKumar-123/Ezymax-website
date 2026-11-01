@@ -6,6 +6,7 @@ pub mod manual;
 pub mod oxapay;
 pub mod trading;
 pub mod transfers;
+pub mod turnover;
 pub mod withdrawals;
 
 use serde_json::Value;

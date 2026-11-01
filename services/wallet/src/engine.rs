@@ -2,12 +2,14 @@
 //! (`POST /v1/ledger/transfers`, `GET /v1/ledger/transfers/{key}`).
 
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::sync::Mutex;
 use std::time::Duration;
 
 use crate::money::D;
+use crate::ops::turnover::DealIn;
 
 #[derive(Clone, Debug)]
 pub struct EngineAccount {
@@ -60,6 +62,36 @@ pub trait Engine: Send + Sync {
     async fn transfer(&self, tenant: &str, key: &str, login: i64, amount: D, direction: &str, reference: &str) -> Result<EngineTransfer, EngineError>;
     /// The stored result for `key`, None when the engine has no transfer with this key.
     async fn transfer_status(&self, tenant: &str, key: &str) -> Result<Option<EngineTransfer>, EngineError>;
+
+    /// `GET /v1/internal/volume`: closed deals after `after_deal`, each valued in USD, for the deposit
+    /// turnover requirements (`ops/turnover.rs`). An engine that cannot report volume reports none, which
+    /// leaves every requirement where it is rather than completing one by accident.
+    async fn volume(&self, _tenant: &str, _after_deal: i64, _limit: i64) -> Result<Vec<DealIn>, EngineError> {
+        Ok(vec![])
+    }
+
+    /// The same feed, for deals closed since `since` that the desk has reopened.
+    async fn reversed_volume(&self, _tenant: &str, _since: DateTime<Utc>) -> Result<Vec<DealIn>, EngineError> {
+        Ok(vec![])
+    }
+}
+
+/// One row of the engine's volume feed. `notional` is absent when the engine could not value the deal in USD,
+/// and stays absent here: inventing a zero would cost the client a trade they really made.
+fn parse_deal(v: &Value) -> Option<DealIn> {
+    let dec = |k: &str| v.get(k).and_then(Value::as_str).and_then(crate::money::parse);
+    Some(DealIn {
+        deal: v.get("deal")?.as_i64()?,
+        user_id: v.get("userId")?.as_i64()?,
+        login: v.get("login").and_then(Value::as_i64).unwrap_or(0),
+        symbol: v.get("symbol").and_then(Value::as_str).unwrap_or("").to_string(),
+        lots: dec("lots").unwrap_or(D::ZERO),
+        notional: dec("notional"),
+        rate: dec("rate"),
+        closed_at: v.get("at").and_then(Value::as_str).and_then(|t| DateTime::parse_from_rfc3339(t).ok()).map(|t| t.with_timezone(&Utc))?,
+        reversed: v.get("reversed").and_then(Value::as_bool).unwrap_or(false),
+        option: v.get("option").and_then(Value::as_bool).unwrap_or(false),
+    })
 }
 
 pub struct HttpEngine {
@@ -170,6 +202,24 @@ impl Engine for HttpEngine {
             s => Err(EngineError::Unavailable(format!("http {s}"))),
         }
     }
+
+    async fn volume(&self, tenant: &str, after_deal: i64, limit: i64) -> Result<Vec<DealIn>, EngineError> {
+        let (status, v) = self.send(self.http.get(format!("{}/v1/internal/volume?after_deal={after_deal}&limit={limit}", self.base)), tenant).await?;
+        if status != 200 {
+            return Err(EngineError::Unavailable(format!("http {status}")));
+        }
+        Ok(v["items"].as_array().map(|a| a.iter().filter_map(parse_deal).collect()).unwrap_or_default())
+    }
+
+    async fn reversed_volume(&self, tenant: &str, since: DateTime<Utc>) -> Result<Vec<DealIn>, EngineError> {
+        // seconds and a trailing Z, so the timestamp carries no '+' and needs no escaping in the query
+        let since = since.to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+        let (status, v) = self.send(self.http.get(format!("{}/v1/internal/volume?reversed_since={since}&limit=2000", self.base)), tenant).await?;
+        if status != 200 {
+            return Err(EngineError::Unavailable(format!("http {status}")));
+        }
+        Ok(v["items"].as_array().map(|a| a.iter().filter_map(parse_deal).collect()).unwrap_or_default())
+    }
 }
 
 /* ------------------------------------------------------------------ */
@@ -192,9 +242,34 @@ pub struct MockEngine {
     pub adjust_calls: std::sync::atomic::AtomicU32,
     /// Staff identities the adjust route saw (id, perms).
     pub adjust_staff: Mutex<Vec<(String, Option<Vec<String>>)>>,
+    /// Closed deals the volume feed hands out, in deal order (ops/turnover.rs).
+    pub deals: Mutex<Vec<DealIn>>,
 }
 
 impl MockEngine {
+    /// Adds one closed deal to the volume feed. `notional` of None is a deal the engine could not value.
+    pub fn close_deal(&self, deal: i64, user_id: i64, notional: Option<D>) {
+        self.deals.lock().unwrap().push(DealIn {
+            deal,
+            user_id,
+            login: 10_000_000 + user_id,
+            symbol: "EURUSD".into(),
+            lots: D::ONE,
+            notional,
+            rate: Some(D::ONE),
+            closed_at: Utc::now(),
+            reversed: false,
+            option: false,
+        });
+    }
+
+    /// Marks a deal the desk reopened, so the reversal sweep finds it.
+    pub fn reverse_deal(&self, deal: i64) {
+        if let Some(d) = self.deals.lock().unwrap().iter_mut().find(|d| d.deal == deal) {
+            d.reversed = true;
+        }
+    }
+
     pub fn with_account(self, user_id: i64, login: i64, kind: &str) -> Self {
         self.accounts.lock().unwrap().entry(user_id).or_default().push(EngineAccount { login, kind: kind.into(), status: "active".into(), currency: "USD".into(), cent: false, group: "standard".into() });
         self
@@ -224,6 +299,12 @@ impl MockEngine {
 impl Engine for MockEngine {
     async fn accounts(&self, _tenant: &str, user_id: i64) -> Result<Vec<EngineAccount>, EngineError> {
         Ok(self.accounts.lock().unwrap().get(&user_id).cloned().unwrap_or_default())
+    }
+    async fn volume(&self, _tenant: &str, after_deal: i64, limit: i64) -> Result<Vec<DealIn>, EngineError> {
+        Ok(self.deals.lock().unwrap().iter().filter(|d| d.deal > after_deal).take(limit as usize).cloned().collect())
+    }
+    async fn reversed_volume(&self, _tenant: &str, since: DateTime<Utc>) -> Result<Vec<DealIn>, EngineError> {
+        Ok(self.deals.lock().unwrap().iter().filter(|d| d.reversed && d.closed_at >= since).cloned().collect())
     }
     async fn transfer(&self, _tenant: &str, key: &str, login: i64, amount: D, direction: &str, _reference: &str) -> Result<EngineTransfer, EngineError> {
         self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);

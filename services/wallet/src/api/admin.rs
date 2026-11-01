@@ -306,6 +306,31 @@ pub async fn wallet(State(st): State<AppState>, s_ctx: StaffCtx, Path(user_id): 
 
 /* ---------------- settings ---------------- */
 
+/// One client's turnover requirements, for the Back Office client drawer.
+pub async fn turnover(State(st): State<AppState>, s_ctx: StaffCtx, Path(user_id): Path<i64>) -> ApiResult<Json<Value>> {
+    s_ctx.require(ROLES_READ)?;
+    let t = s_ctx.ctx.tenant.id;
+    let mut out = crate::ops::turnover::summary(&st.pool, t, user_id).await?.json();
+    out["deposits"] = Value::Array(crate::ops::turnover::breakdown(&st.pool, t, user_id, 200).await?);
+    out["history"] = Value::Array(crate::ops::turnover::history(&st.pool, t, user_id, 200).await?);
+    out["policy"] = crate::ops::turnover::policy(&st.pool, t).await?.json();
+    Ok(ok(out))
+}
+
+#[derive(serde::Deserialize)]
+pub struct WaiveBody {
+    #[serde(default)]
+    reason: String,
+}
+
+/// Lifts one requirement: the compliant exception path, for a client the restriction must not apply to or one
+/// a review has cleared. It moves no money - it only stops this requirement holding the gate shut.
+pub async fn waive_turnover(State(st): State<AppState>, s_ctx: StaffCtx, Path(id): Path<i64>, Body(b): Body<WaiveBody>) -> ApiResult<Json<Value>> {
+    s_ctx.require(ROLES_APPROVE)?;
+    let t = s_ctx.ctx.tenant.id;
+    Ok(ok(crate::ops::turnover::waive(&st, &s_ctx, t, id, &b.reason).await?))
+}
+
 pub async fn settings(State(st): State<AppState>, s_ctx: StaffCtx) -> ApiResult<Json<Value>> {
     s_ctx.require(ROLES_READ)?;
     let t = s_ctx.ctx.tenant.id;
@@ -341,6 +366,11 @@ pub struct LimitsPatch {
     withdraw_max: Option<D>,
     #[serde(default, deserialize_with = "de_opt_dec")]
     withdraw_daily_max: Option<D>,
+    turnover_enabled: Option<bool>,
+    #[serde(default, deserialize_with = "crate::money::de_opt_dec")]
+    turnover_multiplier: Option<D>,
+    #[serde(default, deserialize_with = "crate::money::de_opt_dec")]
+    turnover_min_deposit: Option<D>,
     #[serde(default, deserialize_with = "de_opt_dec")]
     withdraw_fee_flat: Option<D>,
     #[serde(default, deserialize_with = "de_opt_dec")]
@@ -429,6 +459,9 @@ pub async fn update_settings(State(st): State<AppState>, s_ctx: StaffCtx, Body(b
             withdraw_fee_pct: nonneg("withdraw_fee_pct", l.withdraw_fee_pct)?.unwrap_or(cur.withdraw_fee_pct),
             deposit_cooldown_hours: l.deposit_cooldown_hours.unwrap_or(cur.deposit_cooldown_hours),
             intent_ttl_minutes: l.intent_ttl_minutes.unwrap_or(cur.intent_ttl_minutes),
+            turnover_enabled: l.turnover_enabled.unwrap_or(cur.turnover_enabled),
+            turnover_multiplier: nonneg("turnover_multiplier", l.turnover_multiplier)?.unwrap_or(cur.turnover_multiplier),
+            turnover_min_deposit: nonneg("turnover_min_deposit", l.turnover_min_deposit)?.unwrap_or(cur.turnover_min_deposit),
         };
         if next.withdraw_min <= D::ZERO {
             return Err(ApiError::validation("withdraw_min", "The minimum withdrawal must be above 0"));
@@ -445,11 +478,21 @@ pub async fn update_settings(State(st): State<AppState>, s_ctx: StaffCtx, Body(b
         if !(5..=1440).contains(&next.intent_ttl_minutes) {
             return Err(ApiError::validation("intent_ttl_minutes", "Use 5 to 1440 minutes"));
         }
+        // A turnover requirement holds a client's own money against a trading target, so the ceiling is low
+        // on purpose: anything beyond a few times the deposit stops being a turnover rule and becomes a trap.
+        if next.turnover_multiplier > D::TEN {
+            return Err(ApiError::validation("turnover_multiplier", "The turnover multiplier must be 10x or less"));
+        }
+        if next.turnover_enabled && next.turnover_multiplier <= D::ZERO {
+            return Err(ApiError::validation("turnover_multiplier", "Set a multiplier above 0 before turning the requirement on"));
+        }
         sqlx::query(
-            "INSERT INTO tenant_settings (tenant_id, withdraw_min, withdraw_max, withdraw_daily_max, withdraw_fee_flat, withdraw_fee_pct, deposit_cooldown_hours, intent_ttl_minutes, updated_at, updated_by)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now(), $9)
+            "INSERT INTO tenant_settings (tenant_id, withdraw_min, withdraw_max, withdraw_daily_max, withdraw_fee_flat, withdraw_fee_pct, deposit_cooldown_hours, intent_ttl_minutes,
+                 turnover_enabled, turnover_multiplier, turnover_min_deposit, updated_at, updated_by)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $10, $11, $12, now(), $9)
              ON CONFLICT (tenant_id) DO UPDATE SET withdraw_min = $2, withdraw_max = $3, withdraw_daily_max = $4, withdraw_fee_flat = $5, withdraw_fee_pct = $6,
-                 deposit_cooldown_hours = $7, intent_ttl_minutes = $8, updated_at = now(), updated_by = $9",
+                 deposit_cooldown_hours = $7, intent_ttl_minutes = $8, turnover_enabled = $10, turnover_multiplier = $11, turnover_min_deposit = $12,
+                 updated_at = now(), updated_by = $9",
         )
         .bind(t)
         .bind(next.withdraw_min)
@@ -460,6 +503,9 @@ pub async fn update_settings(State(st): State<AppState>, s_ctx: StaffCtx, Body(b
         .bind(next.deposit_cooldown_hours)
         .bind(next.intent_ttl_minutes)
         .bind(s_ctx.staff.tag())
+        .bind(next.turnover_enabled)
+        .bind(next.turnover_multiplier)
+        .bind(next.turnover_min_deposit)
         .execute(&mut *tx)
         .await?;
         audit::staff(&mut tx, &s_ctx, Entry { action: "wallet.settings.limits", target_kind: "settings", target_id: "limits".into(), reason: Some(&reason), before: Some(cur.json()), after: Some(next.json()) }).await?;

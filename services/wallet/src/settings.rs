@@ -18,6 +18,10 @@ pub struct Limits {
     pub withdraw_fee_pct: D,
     pub deposit_cooldown_hours: i32,
     pub intent_ttl_minutes: i32,
+    /// Deposit turnover (ops/turnover.rs). Off, and asking for nothing, until a broker says otherwise.
+    pub turnover_enabled: bool,
+    pub turnover_multiplier: D,
+    pub turnover_min_deposit: D,
 }
 
 impl Limits {
@@ -30,6 +34,9 @@ impl Limits {
             "withdraw_fee_pct": s(self.withdraw_fee_pct),
             "deposit_cooldown_hours": self.deposit_cooldown_hours,
             "intent_ttl_minutes": self.intent_ttl_minutes,
+            "turnover_enabled": self.turnover_enabled,
+            "turnover_multiplier": s(self.turnover_multiplier),
+            "turnover_min_deposit": s(self.turnover_min_deposit),
         })
     }
 }
@@ -150,6 +157,9 @@ pub async fn limits(pool: &PgPool, tenant_id: i64) -> sqlx::Result<Limits> {
             withdraw_fee_pct: r.get("withdraw_fee_pct"),
             deposit_cooldown_hours: r.get("deposit_cooldown_hours"),
             intent_ttl_minutes: r.get("intent_ttl_minutes"),
+            turnover_enabled: r.get("turnover_enabled"),
+            turnover_multiplier: r.get("turnover_multiplier"),
+            turnover_min_deposit: r.get("turnover_min_deposit"),
         },
         None => Limits {
             withdraw_min: D::from(10),
@@ -159,6 +169,9 @@ pub async fn limits(pool: &PgPool, tenant_id: i64) -> sqlx::Result<Limits> {
             withdraw_fee_pct: D::ZERO,
             deposit_cooldown_hours: 24,
             intent_ttl_minutes: 60,
+            turnover_enabled: false,
+            turnover_multiplier: D::ZERO,
+            turnover_min_deposit: D::ZERO,
         },
     })
 }

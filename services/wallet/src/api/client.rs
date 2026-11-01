@@ -13,7 +13,7 @@ use super::{Body, Q, ok, paging};
 use crate::error::{ApiError, ApiResult};
 use crate::ledger;
 use crate::money::{D, de_dec, s};
-use crate::ops::{self, deposits, trading, transfers, withdrawals};
+use crate::ops::{self, deposits, trading, transfers, turnover, withdrawals};
 use crate::settings;
 use crate::state::{AppState, Ctx};
 
@@ -171,7 +171,24 @@ pub async fn overview(State(st): State<AppState>, ctx: Ctx, Path(user_id): Path<
             "cooldown_until": cooldown,
         },
         "notifications_unread": unread,
+        "turnover": turnover::summary(&st.pool, t, user_id).await?.json(),
     })))
+}
+
+/// Everything the withdrawal gate and the dashboard panel need: the totals, the deposit-by-deposit
+/// breakdown the modal expands into, and the policy in force.
+///
+/// It is a read of the client's own state, so it is safe to call on every page; the restriction itself is
+/// enforced in `ops::turnover::gate`, inside the withdrawal path, and never here.
+pub async fn turnover_summary(State(st): State<AppState>, ctx: Ctx, Path(user_id): Path<i64>) -> ApiResult<Json<Value>> {
+    let user_id = uid(user_id)?;
+    let t = ctx.tenant.id;
+    let sum = turnover::summary(&st.pool, t, user_id).await?;
+    let mut out = sum.json();
+    out["deposits"] = Value::Array(turnover::breakdown(&st.pool, t, user_id, 50).await?);
+    out["history"] = Value::Array(turnover::history(&st.pool, t, user_id, 50).await?);
+    out["policy"] = turnover::policy(&st.pool, t).await?.json();
+    Ok(ok(out))
 }
 
 pub async fn activity(State(st): State<AppState>, ctx: Ctx, Path(user_id): Path<i64>, Q(q): Q<PageQ>) -> ApiResult<Json<Value>> {

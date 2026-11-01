@@ -38,6 +38,7 @@ import { KIND_LABEL } from "@/components/wallet-live/ui";
 import { useGrowth, type Rewards } from "@/components/growth/api";
 import { DashboardBanners } from "@/components/growth/banner-slot";
 import { BonusSteps } from "@/components/growth/bonus-steps";
+import { TurnoverPanel } from "@/components/wallet-live/turnover";
 import { UpdatesSection } from "@/components/growth/updates";
 import { LiveCalendarCard, LiveNewsCard, LiveWorldCard } from "@/components/news-live/dashboard";
 import { Trans, useFormat, useT } from "@ezymex/i18n/react";
@@ -600,6 +601,9 @@ export function LiveDashboard({ movers }: { movers: React.ReactNode }) {
     <div className="pb-16">
       <DashboardBanners />
       {/* the banner above promises the cashback; this says what it takes to get it */}
+      {/* a trading requirement belongs where the client already is, not only on the page they hit when
+          they try to take their money out */}
+      <TurnoverPanel className="mb-6" />
       <BonusSteps on="dashboard" className="mb-6" />
       <MyAccountsLayout
         header={

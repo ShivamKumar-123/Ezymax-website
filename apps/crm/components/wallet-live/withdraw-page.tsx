@@ -30,6 +30,7 @@ import {
 } from "./api";
 import { HashLink, InlineError, KycNotice, StatusTag, Tile, WITHDRAWAL_STATUS, WalletUnavailable, cleanAmount } from "./ui";
 import { WithdrawGate } from "./withdraw-gate";
+import { TurnoverCleared, TurnoverGate, owesVolume, useTurnover } from "./turnover";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -579,6 +580,11 @@ function Inner() {
   const [openId, setOpenId] = React.useState<number | null>(() => Number(sp.get("w")) || null);
   const tracked = useWallet<{ withdrawal: Withdrawal }>(openId ? `withdrawals/${openId}` : null, 10000);
 
+  // Deposit turnover (components/wallet-live/turnover.tsx). The service refuses the request either way; this
+  // is so the client is told why by a page that explains it, rather than by an error on a form they filled in.
+  const turnover = useTurnover();
+  const owes = owesVolume(turnover.data);
+
   const chains = cfg.data?.chains.filter((c) => c.withdrawals_enabled) ?? [];
   const upi = (cfg.data?.withdraw_methods ?? []).find((m) => m.method === "upi" && m.enabled && m.rate);
   const [picked, setPicked] = React.useState<Via | null>(() => (sp.get("via") === "upi" ? "upi" : sp.get("via") === "usdt" ? "usdt" : null));
@@ -586,7 +592,8 @@ function Inner() {
   // The gate opens on a fresh visit, once the rails are known and there is really a choice to make. Reopening
   // an existing withdrawal (?w=) or arriving with ?via= skips it.
   const loaded = !!cfg.data;
-  const gateOpen = !openId && picked === null && loaded && chains.length > 0 && !!upi;
+  // the turnover gate comes first: there is no point choosing a rail for a payout that cannot be made yet
+  const gateOpen = !openId && picked === null && loaded && !owes && chains.length > 0 && !!upi;
 
   const open = (id: number | null) => {
     setOpenId(id);
@@ -626,6 +633,7 @@ function Inner() {
         }}
       />
     );
+  else if (owes && turnover.data) main = <Skeleton className="h-[420px] w-full rounded-[20px]" />;
   else
     main = (
       <RequestForm
@@ -654,6 +662,8 @@ function Inner() {
         }
       />
       <KycNotice status={me.kyc_status} />
+      {turnover.data && <TurnoverGate open={owes} d={turnover.data} onClose={() => router.push("/wallet")} />}
+      <TurnoverCleared />
       <WithdrawGate open={gateOpen} hasUsdt={chains.length > 0} hasUpi={!!upi} currency={upi?.currency ?? null} onChoose={choose} onClose={() => router.push("/wallet")} />
       {!openId && !gateOpen && <WithdrawChooser value={via} onChange={choose} usdt={chains.length > 0} upi={upi?.currency ?? null} />}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">

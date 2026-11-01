@@ -43,6 +43,9 @@ type Limits = {
   withdraw_fee_pct: string;
   deposit_cooldown_hours: number;
   intent_ttl_minutes: number;
+  turnover_enabled: boolean;
+  turnover_multiplier: string;
+  turnover_min_deposit: string;
 };
 
 type Settings = {
@@ -266,6 +269,38 @@ export function LiveWalletSettingsPage() {
                   <Input disabled={!canEdit} value={String(limits[k])} onChange={(e) => setLimits((l) => (l ? { ...l, [k]: typeof l[k] === "number" ? Number(e.target.value) : e.target.value } : l))} aria-label={label} />
                 </Field>
               ))}
+            </div>
+            {/* Deposit turnover. It holds a client's own money against a trading target, so it is set apart
+                from the limits above, states what it does in plain words, and ships off. */}
+            <div className="border-t border-line px-6 py-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="text-[14px] font-semibold">Deposit turnover requirement</h3>
+                  <p className="mt-0.5 max-w-prose text-[12.5px] leading-relaxed text-fg-3">
+                    When this is on, each new deposit asks the client to trade a matching amount of volume (deposit x multiplier, in USD notional) before they can
+                    withdraw. It applies to deposits taken from the moment you switch it on - never to money already paid in - and each deposit keeps the multiplier
+                    that was in force when it landed.
+                  </p>
+                </div>
+                <label className="flex items-center gap-2 text-[13px]">
+                  <Toggle checked={limits.turnover_enabled} onChange={(v) => canEdit && setLimits((l) => (l ? { ...l, turnover_enabled: v } : l))} /> Enabled
+                </label>
+              </div>
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <Field label="Turnover multiplier (x deposit)" hint="1.0 asks for the deposit once over. 10x is the ceiling the service accepts.">
+                  <Input disabled={!canEdit} value={limits.turnover_multiplier} onChange={(e) => setLimits((l) => (l ? { ...l, turnover_multiplier: e.target.value } : l))} aria-label="Turnover multiplier" />
+                </Field>
+                <Field label="Only deposits of at least (USDT)" hint="0 applies it to every deposit.">
+                  <Input disabled={!canEdit} value={limits.turnover_min_deposit} onChange={(e) => setLimits((l) => (l ? { ...l, turnover_min_deposit: e.target.value } : l))} aria-label="Minimum deposit for turnover" />
+                </Field>
+              </div>
+              {limits.turnover_enabled && !data.limits.turnover_enabled && (
+                <div className="mt-4 flex gap-2 rounded-[14px] border border-warn/35 bg-warn-soft px-3.5 py-2.5 text-[12.5px]">
+                  <ShieldAlert className="mt-0.5 size-4 shrink-0 text-warn" />
+                  This stops clients withdrawing until they have traded. Before switching it on, check it is disclosed in your terms and allowed under your broker
+                  agreements and your regulator's rules on returning client funds. Individual requirements can be waived, with a reason, from the client's page.
+                </div>
+              )}
             </div>
             {canEdit && (
               <div className="px-6 pb-6">

@@ -600,5 +600,21 @@ const wallet = {
   "demo.convertedNote": "{asset} is converted to USD at the live rate minus {markup}% markup. Rate refreshes every tick until you confirm.",
   "demo.confirmTransfer": "Confirm transfer",
   "demo.confirmTransferText": "Transfers between your own wallet and accounts are processed instantly.",
+  // Deposit turnover (components/wallet-live/turnover.tsx). Only ever shown to a client who owes volume.
+  "turnover.panelTitle": "Trading requirement",
+  "turnover.panelSub": "Your deposit needs to be traded before it can be withdrawn",
+  "turnover.gateTitle": "Complete your trading requirement",
+  "turnover.gateSub": "Before you withdraw, finish the trading volume that came with your deposit.",
+  "turnover.deposited": "Deposited",
+  "turnover.required": "Required volume",
+  "turnover.completed": "Completed",
+  "turnover.remaining": "Remaining",
+  "turnover.percentDone": "{pct}% completed",
+  "turnover.left": "{amount} to go",
+  "turnover.explain": "You have deposited {deposited} and completed {completed} in eligible trading volume. Complete the remaining {remaining} to become eligible for withdrawal.",
+  "turnover.perDeposit": "Show each deposit ({count})",
+  "turnover.depositOf": "Deposit of {amount}",
+  "turnover.continueTrading": "Continue trading",
+  "turnover.cleared": "Your trading volume requirement is complete. You can go ahead with your withdrawal.",
 };
 export default wallet;

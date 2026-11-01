@@ -287,6 +287,9 @@ async fn check_or_request(st: &AppState, ctx: &Ctx, r: RequestIn, dry_run: bool)
     if let Some(until) = cooldown_until(&st.pool, tenant_id, r.user_id, limits.deposit_cooldown_hours).await? {
         return Err(ApiError::unprocessable("deposit_cooldown", format!("Withdrawals open {} hours after your last deposit, at {} UTC", limits.deposit_cooldown_hours, until.format("%Y-%m-%d %H:%M"))));
     }
+    // Deposit turnover (ops/turnover.rs). It sits in `check_or_request`, which both the quote and the request
+    // run, so the modal the client is shown and the answer a direct API call gets are the same answer.
+    crate::ops::turnover::gate(&st.pool, tenant_id, r.user_id).await?;
 
     if dry_run {
         let used = used_today(&st.pool, tenant_id, r.user_id).await?;
@@ -724,6 +727,9 @@ mod tests {
             withdraw_fee_pct: D::from_str("0.5").unwrap(),
             deposit_cooldown_hours: 24,
             intent_ttl_minutes: 60,
+            turnover_enabled: false,
+            turnover_multiplier: D::ZERO,
+            turnover_min_deposit: D::ZERO,
         };
         // on chain: 1 flat + 0.5% of 101 = 0.505 → 0.51 (rounded up) + the chain's network fee (0.5 here)
         assert_eq!(fee_for(&l, D::from_str("0.5").unwrap(), D::from(101), true), D::from_str("2.01").unwrap());
