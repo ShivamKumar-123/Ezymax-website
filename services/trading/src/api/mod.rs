@@ -124,6 +124,7 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/admin/accounts/{login}/staff-sso", post(controls::staff_sso))
         .route("/v1/internal/restrictions/refresh", post(controls::refresh))
         .route("/v1/internal/funding", get(accounts::funding))
+        .route("/v1/internal/volume", get(accounts::volume))
         // Client Area (CRM BFF, with the gateway user id)
         .route("/v1/accounts", post(accounts::open).get(accounts::list))
         .route("/v1/accounts/{login}", get(accounts::detail).patch(lifecycle::rename))

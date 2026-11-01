@@ -343,6 +343,85 @@ pub async fn ledger_json(st: &AppState, login: i64, q: &PageQ) -> ApiResult<Valu
     Ok(json!({"items": items, "page": page, "limit": limit, "total": total}))
 }
 
+/* ------------------------------------------------------------------ */
+/* Traded volume feed (deposit turnover requirements)                  */
+/* ------------------------------------------------------------------ */
+
+#[derive(Deserialize)]
+pub struct VolumeQ {
+    /// Deals after this id, in id order. Absent = from the beginning.
+    pub after_deal: Option<i64>,
+    pub limit: Option<i64>,
+    /// Instead of new deals: deals closed since this time that the desk has since reopened, so a consumer can
+    /// take back what it credited for them.
+    pub reversed_since: Option<String>,
+}
+
+/// What one closed deal is worth as turnover, in USD.
+///
+/// A deposit turnover requirement is denominated in the money the client paid in, so the volume that works it
+/// off has to be in the same money: the notional the position actually carried, converted to USD, and never
+/// lots - a lot of EURUSD and a lot of XAUUSD are not the same size, and counting them alike would make one
+/// requirement mean different things on different symbols.
+///
+/// The conversion is the engine's own (`engine::usd_of`), in decimal, and it refuses rather than guesses. A
+/// USD-quoted symbol needs no rate at all and is exact; a USDJPY deal converts at its own closing price and is
+/// also exact; only a cross needs a current mid. When nothing prices the currency the deal comes back with a
+/// null `notional`, and the consumer is expected to leave its cursor where it is and ask again later rather
+/// than credit the client nothing for a trade they really made.
+fn volume_row(st: &AppState, specs: &crate::specs::Specs, r: &sqlx::postgres::PgRow) -> Value {
+    let symbol: String = r.get("symbol");
+    let volume: D = r.get("volume");
+    let price: D = r.get("price");
+    // a cent account's lot is a hundredth of a standard one
+    let lots = if r.get::<bool, _>("cent") { volume / D::ONE_HUNDRED } else { volume };
+    let spec = specs.get(&symbol);
+    // an option's volume is contracts, and its notional is not contract_size * price
+    let option = r.get::<Option<Value>, _>("option").is_some();
+    let conv = match (&spec, option) {
+        (Some(s), false) => crate::engine::usd_of(specs, |p| st.hub.shared.quotes.any_mid(p), &s.quote_ccy, lots * s.contract_size * price, (&symbol, price)),
+        _ => None,
+    };
+    json!({
+        "deal": r.get::<i64, _>("id"),
+        "login": r.get::<i64, _>("login"),
+        "userId": r.get::<i64, _>("user_id"),
+        "group": r.get::<String, _>("group_code"),
+        "symbol": symbol,
+        "at": r.get::<chrono::DateTime<Utc>, _>("time"),
+        "lots": num(lots),
+        "option": option,
+        "reversed": r.get::<bool, _>("reversed"),
+        "notional": conv.map(|(usd, _)| num(usd)),
+        "rate": conv.map(|(_, rate)| num(rate)),
+        "quoteCcy": spec.as_ref().map(|s| s.quote_ccy.clone()),
+    })
+}
+
+/// Closed deals and what each one is worth as turnover, oldest first, for the wallet's deposit turnover
+/// requirements (`services/wallet/src/ops/turnover.rs`).
+///
+/// Only exits on live accounts count: an opening leg is the same money as the close that follows it, a demo
+/// account is not the client's money, and a price correction is the desk fixing its own record rather than the
+/// client trading. Reversals are reported rather than filtered out, because a consumer that has already
+/// credited one needs to hear about it.
+pub async fn volume(State(st): State<AppState>, ctx: Ctx, Query(q): Query<VolumeQ>) -> ApiResult<Json<Value>> {
+    let limit = q.limit.unwrap_or(500).clamp(1, 2000);
+    let cols = "SELECT d.id, d.login, a.user_id, a.group_code, a.cent, d.symbol, d.volume, d.price, d.time, d.reversed, d.data -> 'option' AS option
+         FROM deals d JOIN accounts a ON a.login = d.login AND a.tenant_id = d.tenant_id
+         WHERE d.tenant_id = $1 AND a.kind = 'live' AND d.entry <> 'in' AND NOT d.price_correction";
+    let since = parse_time(&q.reversed_since)?;
+    let tail = if since.is_some() { "AND d.reversed AND d.time >= $2" } else { "AND d.id > $2" };
+    let base = sqlx::query(sqlx::AssertSqlSafe(format!("{cols} {tail} ORDER BY d.id LIMIT $3"))).bind(ctx.tenant.tenant_id);
+    let rows = match since {
+        Some(t) => base.bind(t).bind(limit).fetch_all(&st.pool).await?,
+        None => base.bind(q.after_deal.unwrap_or(0)).bind(limit).fetch_all(&st.pool).await?,
+    };
+    let specs = st.hub.shared.specs.load();
+    let items: Vec<Value> = rows.iter().map(|r| volume_row(&st, &specs, r)).collect();
+    Ok(Json(json!({"items": items})))
+}
+
 #[derive(Deserialize)]
 pub struct FundingQ {
     after_txn: Option<i64>,

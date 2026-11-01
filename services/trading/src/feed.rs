@@ -52,6 +52,15 @@ impl QuoteBook {
         let now = Utc::now().timestamp_millis();
         self.status.read().unwrap().iter().map(|(k, (c, t))| (k.clone(), (*c, now - t))).collect()
     }
+    /// The mid of `symbol` from whichever spread group has one, for converting a currency to USD.
+    ///
+    /// Trading always asks for a named group's quote, because the spread it pays is the group's. A conversion
+    /// rate is not that: it is the mid, and the groups differ only in the spread around it, so holding out for
+    /// one group's book would mean refusing to convert a figure the engine can price perfectly well.
+    pub fn any_mid(&self, symbol: &str) -> Option<crate::money::D> {
+        self.quotes.read().unwrap().iter().find(|((_, s), q)| s == symbol && q.bid > crate::money::ZERO).map(|(_, q)| q.mid())
+    }
+
     pub fn snapshot(&self, group: &str) -> Vec<(String, Quote)> {
         self.quotes.read().unwrap().iter().filter(|((g, _), _)| g == group).map(|((_, s), q)| (s.clone(), *q)).collect()
     }

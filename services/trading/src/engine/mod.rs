@@ -139,15 +139,7 @@ impl Env<'_> {
     /// Converts `amount` in `ccy` to USD. `own` = (symbol, price) of the instrument being valued, used when it
     /// is itself the conversion pair (USDJPY P&L converts at its own closing price).
     pub fn to_usd(&self, acc: &Account, ccy: &str, amount: D, own: (&str, D)) -> Option<D> {
-        if ccy == "USD" {
-            return Some(amount);
-        }
-        let (pair, multiply) = self.specs.usd_pair(ccy)?;
-        let rate = if pair == own.0 { own.1 } else { self.quote(acc, &pair)?.mid() };
-        if rate <= ZERO {
-            return None;
-        }
-        Some(if multiply { amount * rate } else { amount / rate })
+        usd_of(self.specs, |p| self.quote(acc, p).map(|q| q.mid()), ccy, amount, own).map(|(usd, _)| usd)
     }
 
     pub fn commission_per_lot(&self, spec: &Spec) -> D {
@@ -280,6 +272,26 @@ impl Tx {
 /* ------------------------------------------------------------------ */
 /* P&L and margin                                                      */
 /* ------------------------------------------------------------------ */
+
+/// `amount` in `ccy` as USD, and the rate it took, or `None` when nothing in memory prices the currency.
+///
+/// `own` = (symbol, price) of the instrument being valued: a USDJPY figure converts at that deal's own price
+/// rather than at today's, which is both exact and free. `mid` supplies any other pair's current mid.
+///
+/// Refusing to answer is the point. A figure in the quote currency handed back as USD is not an approximation -
+/// 4,600 JPY becomes 4,600 USD - so every caller is made to decide what to do without a number, and none of
+/// them may invent one.
+pub fn usd_of(specs: &Specs, mid: impl Fn(&str) -> Option<D>, ccy: &str, amount: D, own: (&str, D)) -> Option<(D, D)> {
+    if ccy == "USD" {
+        return Some((amount, D::ONE));
+    }
+    let (pair, multiply) = specs.usd_pair(ccy)?;
+    let rate = if pair == own.0 { own.1 } else { mid(&pair)? };
+    if rate <= ZERO {
+        return None;
+    }
+    Some((if multiply { amount * rate } else { amount / rate }, rate))
+}
 
 /// Price P&L of `volume` lots in the account currency (unrounded).
 ///
