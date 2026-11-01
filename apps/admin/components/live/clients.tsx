@@ -35,6 +35,9 @@ export function LiveClients() {
   const [presence, setPresence] = React.useState<Presence>((params.get("presence") as Presence) || "all");
   const [restricted, setRestricted] = React.useState(params.get("restricted") === "true");
   const [sort, setSort] = React.useState<Sort>((params.get("sort") as Sort) || "new");
+  // registration date, as whole broker days: admin.rs `parse_when`, the same rule the audit log uses
+  const [from, setFrom] = React.useState(params.get("from") ?? "");
+  const [to, setTo] = React.useState(params.get("to") ?? "");
   // hidden (test / spam) and deleted clients are left out unless switched on (gateway client_lifecycle.rs)
   const [showHidden, setShowHidden] = React.useState(params.get("hidden") === "include");
   const [sel, setSel] = React.useState<Set<number>>(new Set());
@@ -45,13 +48,13 @@ export function LiveClients() {
   const canDelete = useCan("clients.delete");
   const hidden = showHidden ? "include" : null;
 
-  React.useEffect(() => setPage(1), [dq, kyc, verified, presence, restricted, sort, showHidden]);
+  React.useEffect(() => setPage(1), [dq, kyc, verified, presence, restricted, sort, showHidden, from, to]);
   React.useEffect(() => {
-    router.replace(`/clients${qs({ q: dq, kyc, verified, presence, restricted: restricted ? "true" : null, sort: sort === "online" ? "online" : null, hidden })}`, { scroll: false });
-  }, [dq, kyc, verified, presence, restricted, sort, hidden, router]);
+    router.replace(`/clients${qs({ q: dq, kyc, verified, presence, restricted: restricted ? "true" : null, sort: sort === "online" ? "online" : null, hidden, from, to })}`, { scroll: false });
+  }, [dq, kyc, verified, presence, restricted, sort, hidden, from, to, router]);
 
   // presence changes by the minute: the page refreshes every 15 s (one query for the whole page)
-  const listUrl = `/api/admin/users${qs({ q: dq, kyc, verified, presence, restricted: restricted ? "true" : null, sort: sort === "online" ? "online" : null, hidden, page, per_page: PER })}`;
+  const listUrl = `/api/admin/users${qs({ q: dq, kyc, verified, presence, restricted: restricted ? "true" : null, sort: sort === "online" ? "online" : null, hidden, from, to, page, per_page: PER })}`;
   const { data, error, loading, reload } = useApi<UsersPage>(listUrl, { refreshMs: PRESENCE_POLL_MS });
   // dim the table while a new filter / page loads, not on the silent 15 s refresh
   const shownUrl = React.useRef(listUrl);
@@ -61,21 +64,42 @@ export function LiveClients() {
   const s = stats.data?.clients;
   const canExport = useCan("clients.export");
 
+  /** What the export covers, printed under the title so a saved PDF still says which clients are in it. */
+  function caption(n: number) {
+    const parts = [
+      dq ? `matching “${dq}”` : null,
+      kyc !== "all" ? `KYC ${kyc}` : null,
+      verified !== "all" ? (verified === "true" ? "verified emails" : "unverified emails") : null,
+      presence !== "all" ? presence : null,
+      restricted ? "restricted" : null,
+      showHidden ? "including hidden and deleted" : null,
+      from && to ? `registered ${from} to ${to}` : from ? `registered from ${from}` : to ? `registered up to ${to}` : null,
+    ].filter(Boolean);
+    return `${n.toLocaleString("en-US")} client${n === 1 ? "" : "s"}${parts.length ? ` · ${parts.join(" · ")}` : ""} · ${when(new Date().toISOString())}`;
+  }
+
   async function exportAll(format: "csv" | "pdf") {
-    const dl = format === "pdf" ? (n: string, h: string[], r: (string | number | null | undefined)[][]) => downloadPdf(n, "Clients", h, r) : downloadCsv;
     const rows: Client[] = [];
     for (let p = 1; p <= 50; p++) {
-      const r = await fetch(`/api/admin/users${qs({ q: dq, kyc, verified, hidden, page: p, per_page: 200, export: true })}`, { cache: "no-store" });
+      // the same filters the table is showing, so what downloads is what is on the screen
+      const filters = { q: dq, kyc, verified, presence, restricted: restricted ? "true" : null, hidden, from, to, page: p, per_page: 200, export: true };
+      const r = await fetch(`/api/admin/users${qs(filters)}`, { cache: "no-store" });
       if (!r.ok) return toast.error("Export failed", { description: "Couldn't load clients. Try again." });
       const d = (await r.json()) as UsersPage;
       rows.push(...d.items);
       if (rows.length >= d.total || d.items.length === 0) break;
     }
-    dl(
-      `clients-${new Date().toISOString().slice(0, 10)}`,
-      ["ID", "First name", "Last name", "Email", "Phone", "Country", "Date of birth", "Email verified", "KYC", "Status", "Referral code", "Referred by ID", "Registered", "Last sign-in"],
-      rows.map((u) => [u.id, u.first_name, u.last_name, u.email, `${u.phone_dial} ${u.phone}`, u.country.toUpperCase(), u.date_of_birth, u.email_verified ? "yes" : "no", u.kyc_status, u.status, u.referral_code, u.referred_by, u.created_at, u.last_login_at]),
-    );
+    const name = `clients-${new Date().toISOString().slice(0, 10)}`;
+    const header = ["ID", "First name", "Last name", "Email", "Phone", "Country", "Date of birth", "Email verified", "KYC", "Status", "Referral code", "Referred by ID", "Registered", "Last sign-in"];
+    // a CSV is read by a machine and keeps its timestamps as they came; a PDF is read by a person, and a
+    // microsecond-precision UTC string costs three printed lines to say what one line of local time says better
+    const stamp = (iso: string | null) => (format === "csv" ? iso : iso ? when(iso) : "");
+    const body = rows.map((u) => [
+      u.id, u.first_name, u.last_name, u.email, `${u.phone_dial} ${u.phone}`, u.country.toUpperCase(), u.date_of_birth,
+      u.email_verified ? "yes" : "no", u.kyc_status, u.status, u.referral_code, u.referred_by, stamp(u.created_at), stamp(u.last_login_at),
+    ]);
+    if (format === "pdf") downloadPdf(name, "Clients", header, body, caption(rows.length));
+    else downloadCsv(name, header, body);
   }
 
   const rows = data?.items ?? [];
@@ -153,7 +177,7 @@ export function LiveClients() {
     stats.reload();
   }
 
-  const filtered = !!dq || kyc !== "all" || verified !== "all" || presence !== "all" || restricted || showHidden;
+  const filtered = !!dq || kyc !== "all" || verified !== "all" || presence !== "all" || restricted || showHidden || !!from || !!to;
   const hiddenCount = (data?.counts?.hidden ?? 0) + (data?.counts?.deleted ?? 0);
 
   return (
@@ -233,6 +257,14 @@ export function LiveClients() {
               ]}
             />
             <Segmented size="xs" value={sort} onChange={setSort} options={[{ value: "new", label: "Newest" }, { value: "online", label: "Last active" }]} />
+            <label className="flex h-9 items-center gap-2 rounded-full border border-line bg-surface-2 px-3.5 text-[12.5px] text-fg-3">
+              Registered
+              <input type="date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} className="bg-transparent text-fg outline-none" aria-label="Registered from" />
+            </label>
+            <label className="flex h-9 items-center gap-2 rounded-full border border-line bg-surface-2 px-3.5 text-[12.5px] text-fg-3">
+              to
+              <input type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} className="bg-transparent text-fg outline-none" aria-label="Registered to" />
+            </label>
             <Button size="xs" variant={restricted ? "ember" : "surface"} onClick={() => setRestricted((v) => !v)} aria-pressed={restricted} data-testid="filter-restricted">
               <Ban /> Restricted{stats.data?.clients.restricted ? ` · ${stats.data.clients.restricted}` : ""}
             </Button>
@@ -257,6 +289,8 @@ export function LiveClients() {
                   setPresence("all");
                   setRestricted(false);
                   setShowHidden(false);
+                  setFrom("");
+                  setTo("");
                 }}
               >
                 Clear filters
@@ -293,7 +327,7 @@ export function LiveClients() {
                   filtered ? (
                     <EmptyState
                       title="No clients match"
-                      text={!showHidden && hiddenCount ? "Try a different search, clear the filters or turn on “Show hidden”." : "Try a different search or clear the filters."}
+                      text={from || to ? "Try a wider date range or clear the filters." : !showHidden && hiddenCount ? "Try a different search, clear the filters or turn on “Show hidden”." : "Try a different search or clear the filters."}
                       illustration="magnifying_glass_tilted_left"
                     />
                   ) : (

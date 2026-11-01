@@ -6,6 +6,10 @@
 // Mirrors services/reports/src/pdf.rs, which prints the branded statement server side - same page size, same
 // Helvetica, same WinAnsi limits - so a statement and an export look like they came from one platform.
 //
+// Nothing printed here is cut short to make a row fit. A clipped email still reads; a clipped phone number does
+// not - it reads as a different phone number, and nothing on the page says so. So a cell too wide for its column
+// wraps onto further lines, and the columns divide the page by the rule in `fairWidths`.
+//
 // WinAnsi covers Latin-1: English, Spanish, French, German, Portuguese, Italian, Turkish in part. It does not
 // cover Cyrillic, Arabic, Indic, Thai or CJK, and a hand-rolled writer cannot embed a font that would. Rather
 // than print a page of question marks and let someone mail it to a client, `dropped` counts what could not be
@@ -71,7 +75,7 @@ function widthOf(s: string, bold: boolean, size: number): number {
   return (w * size) / 1000;
 }
 
-/** `s` cut to `max` points, with an ellipsis when something was cut. */
+/** `s` cut to `max` points, with an ellipsis when something was cut. Table cells use `wrap` instead. */
 function fit(s: string, bold: boolean, size: number, max: number): string {
   if (widthOf(s, bold, size) <= max) return s;
   const dots = widthOf("…", bold, size);
@@ -81,6 +85,69 @@ function fit(s: string, bold: boolean, size: number, max: number): string {
     out += ch;
   }
   return `${out.trimEnd()}…`;
+}
+
+/**
+ * `s` broken into lines that each fit `max`, at spaces where there are any and mid-token where there are not, so
+ * an email or an id wider than its column wraps instead of losing its tail.
+ *
+ * `maxLines` is the one place something can still be dropped: a column of free text would otherwise make every
+ * row as tall as its longest note and turn a ten-page export into forty. Past that many lines the rest is cut
+ * with an ellipsis, the way everything used to be.
+ */
+function wrap(s: string, bold: boolean, size: number, max: number, maxLines: number): string[] {
+  if (!s || widthOf(s, bold, size) <= max) return [s];
+  const lines: string[] = [];
+  let line = "";
+  for (const word of s.split(" ")) {
+    const joined = line ? `${line} ${word}` : word;
+    if (widthOf(joined, bold, size) <= max) {
+      line = joined;
+      continue;
+    }
+    if (line) lines.push(line);
+    // a token wider than the whole column - an email, a hash - has no space to break at, so it breaks per character
+    let part = "";
+    for (const ch of word) {
+      if (part && widthOf(part + ch, bold, size) > max) {
+        lines.push(part);
+        part = "";
+      }
+      part += ch;
+    }
+    line = part;
+  }
+  if (line) lines.push(line);
+  if (lines.length <= maxLines) return lines;
+  const kept = lines.slice(0, maxLines - 1);
+  kept.push(fit(lines.slice(maxLines - 1).join(" "), bold, size, max));
+  return kept;
+}
+
+/**
+ * How wide each column gets once the widths they asked for do not fit the page.
+ *
+ * Scaling every column down by one factor, which is what this used to do, treats the columns as alike, and they
+ * are not. A phone number, a date or an id is a single atom: cut it and the cell is not merely shorter, it is
+ * wrong, because +91 9001607526 and +91 9001607999 clip to the same string and the page gives no sign of it. A
+ * name or an email survives being folded onto a second line. So the page is shared the other way round - each
+ * column gets what it asked for or an equal share, whichever is less. The narrow columns are then paid in full,
+ * the few wide ones divide what is left, and those are exactly the ones whose text can wrap.
+ */
+function fairWidths(want: number[], inner: number): number[] {
+  if (want.reduce((a, b) => a + b, 0) <= inner) return want;
+  let left = inner;
+  let open = want.length;
+  let cap = Infinity;
+  for (const w of [...want].sort((a, b) => a - b)) {
+    if (w * open > left) {
+      cap = left / open;
+      break;
+    }
+    left -= w;
+    open--;
+  }
+  return want.map((w) => Math.min(w, cap));
 }
 
 /** PDF string literal: the three characters that end or escape one. */
@@ -111,10 +178,9 @@ interface Built {
 /**
  * Lays the table out over as many pages as it takes and returns the finished file.
  *
- * Column widths come from the content: each column asks for what its widest cell needs, and when the row is wider
- * than the page every column is scaled down by the same factor and its cells are cut with an ellipsis. A column of
- * timestamps therefore keeps its width while a column of free text gives way, which is the opposite of what equal
- * columns would do.
+ * Column widths come from the content: each column asks for what its widest cell needs, and `fairWidths` settles
+ * it when those do not fit the page. A cell too wide for the column it ends up with wraps onto further lines, so a
+ * row stands as tall as its tallest cell and a page takes as many rows as it has room for.
  */
 export function buildTablePdf(headers: string[], rows: (string | number | null | undefined)[][], opts: TablePdfOptions): Built {
   const enc = new Encoder();
@@ -125,6 +191,9 @@ export function buildTablePdf(headers: string[], rows: (string | number | null |
   const HEAD_SIZE = 7.5;
   const CELL_SIZE = 8;
   const ROW_H = 15;
+  /** A wrapped cell's second and further lines, and the cap that stops one long note making every row that tall. */
+  const LINE_H = 9;
+  const MAX_LINES = 3;
 
   const head = headers.map((h) => enc.encode(String(h)));
   const body = rows.map((r) => headers.map((_, i) => enc.encode(r[i] === null || r[i] === undefined ? "" : String(r[i]))));
@@ -135,27 +204,38 @@ export function buildTablePdf(headers: string[], rows: (string | number | null |
     for (const r of body) w = Math.max(w, widthOf(r[i]!, false, CELL_SIZE));
     return Math.min(w + 10, inner * 0.4);
   });
-  const total = want.reduce((a, b) => a + b, 0);
-  const cols = total <= inner ? want : want.map((w) => (w * inner) / total);
+  const cols = fairWidths(want, inner);
 
-  const firstTop = MARGIN + 46;
-  const laterTop = MARGIN + 18;
-  const bottom = pageH - MARGIN - 16;
-  const perFirst = Math.max(1, Math.floor((bottom - firstTop - ROW_H) / ROW_H));
-  const perLater = Math.max(1, Math.floor((bottom - laterTop - ROW_H) / ROW_H));
-
-  const pages: (typeof body)[] = [];
-  let i = 0;
-  while (i < body.length || pages.length === 0) {
-    const take = pages.length === 0 ? perFirst : perLater;
-    pages.push(body.slice(i, i + take));
-    i += take;
-  }
+  // every cell laid out at the width its column ended up with; a row stands as tall as its tallest cell
+  const headLines = head.map((h, c) => wrap(h, true, HEAD_SIZE, cols[c]! - 6, 2));
+  const headTall = Math.max(1, ...headLines.map((l) => l.length));
+  const laid = body.map((r) => r.map((cell, c) => wrap(cell, false, CELL_SIZE, cols[c]! - 6, MAX_LINES)));
+  const heights = laid.map((r) => ROW_H + (Math.max(1, ...r.map((l) => l.length)) - 1) * LINE_H);
 
   const title = enc.encode(opts.title);
   const subtitle = opts.subtitle ? enc.encode(opts.subtitle) : "";
   const footer = opts.footer ? enc.encode(opts.footer) : "";
   const note = enc.dropped > 0 ? enc.encode("Some characters are outside this format's font and show as “?” — the CSV export has the full text.") : "";
+
+  /** The baseline of the header's last line: as far down the page as the masthead above the rows reaches. */
+  const headBaseline = (first: boolean) => (first ? MARGIN + 14 + (subtitle ? 27 : 10) : MARGIN + 18) + 9 + (headTall - 1) * LINE_H;
+  const bottom = pageH - MARGIN - 16;
+
+  // rows are no longer all one height, so a page takes as many as fit rather than a count worked out in advance
+  const pages: number[][] = [];
+  let i = 0;
+  while (i < laid.length || pages.length === 0) {
+    const page: number[] = [];
+    let y = headBaseline(pages.length === 0) + ROW_H;
+    while (i < laid.length) {
+      const h = heights[i]!;
+      if (page.length > 0 && y + h - ROW_H + 4.5 > bottom) break;
+      page.push(i);
+      y += h;
+      i++;
+    }
+    pages.push(page);
+  }
 
   const streams = pages.map((rowsOnPage, p) => {
     const out: string[] = [];
@@ -183,21 +263,23 @@ export function buildTablePdf(headers: string[], rows: (string | number | null |
     // header row
     const headY = y + 9;
     let x = MARGIN;
-    head.forEach((h, c) => {
-      text(fit(h, true, HEAD_SIZE, cols[c]! - 6), x, headY, HEAD_SIZE, true, 0.3);
+    headLines.forEach((ls, c) => {
+      ls.forEach((l, k) => text(l, x, headY + k * LINE_H, HEAD_SIZE, true, 0.3));
       x += cols[c]!;
     });
-    line(MARGIN, headY + 4, pageW - MARGIN, 0.55);
+    const headBottom = headY + (headTall - 1) * LINE_H;
+    line(MARGIN, headBottom + 4, pageW - MARGIN, 0.55);
 
-    let rowY = headY + ROW_H;
-    for (const r of rowsOnPage) {
+    let rowY = headBottom + ROW_H;
+    for (const n of rowsOnPage) {
       x = MARGIN;
-      r.forEach((cell, c) => {
-        text(fit(cell, false, CELL_SIZE, cols[c]! - 6), x, rowY, CELL_SIZE, false, 0.1);
+      laid[n]!.forEach((ls, c) => {
+        ls.forEach((l, k) => text(l, x, rowY + k * LINE_H, CELL_SIZE, false, 0.1));
         x += cols[c]!;
       });
-      line(MARGIN, rowY + 4.5, pageW - MARGIN, 0.88);
-      rowY += ROW_H;
+      // the rule sits under the last line of the tallest cell, so a wrapped row is boxed like any other
+      line(MARGIN, rowY + heights[n]! - ROW_H + 4.5, pageW - MARGIN, 0.88);
+      rowY += heights[n]!;
     }
 
     const footY = pageH - MARGIN + 2;

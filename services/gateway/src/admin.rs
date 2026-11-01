@@ -367,6 +367,10 @@ pub struct UsersQuery {
     pub sort: Option<String>,
     /// Hidden and deleted clients (client_lifecycle.rs): `exclude` (default), `include` or `only`.
     pub hidden: Option<String>,
+    /// Registered on or after this day, `YYYY-MM-DD` in broker time or RFC 3339 (`parse_when`).
+    pub from: Option<String>,
+    /// Registered before the end of this day, so `from` = `to` is that one whole day.
+    pub to: Option<String>,
 }
 
 /// Page size cap for the client list: browsing reads at most 100 rows a page; exports (`clients.export`) 200.
@@ -429,6 +433,14 @@ pub async fn users(State(st): State<AppState>, ctx: Ctx, q: Result<Query<UsersQu
     if !matches!(hidden, "exclude" | "include" | "only") {
         return Err(ApiError::BadRequest("hidden must be exclude, include or only."));
     }
+    // registration date, by the same whole-broker-day rule the audit log uses
+    let from = clean(&q.from).map(|v| parse_when(v, false)).transpose().map_err(ApiError::BadRequest)?;
+    let to = clean(&q.to).map(|v| parse_when(v, true)).transpose().map_err(ApiError::BadRequest)?;
+    if let (Some(a), Some(b)) = (from, to)
+        && a >= b
+    {
+        return Err(ApiError::BadRequest("The start of the range must come before its end."));
+    }
 
     let sql = live_sql(&format!(
         "SELECT {USER_COLS},
@@ -451,6 +463,8 @@ pub async fn users(State(st): State<AppState>, ctx: Ctx, q: Result<Query<UsersQu
            AND CASE $16 WHEN 'include' THEN true
                         WHEN 'only' THEN u.hidden_at IS NOT NULL OR u.deleted_at IS NOT NULL
                         ELSE u.hidden_at IS NULL AND u.deleted_at IS NULL END
+           AND ($17::timestamptz IS NULL OR u.created_at >= $17)
+           AND ($18::timestamptz IS NULL OR u.created_at < $18)
          ORDER BY CASE WHEN $11 THEN u.last_active_at END DESC NULLS LAST, u.created_at DESC, u.id DESC
          LIMIT $7 OFFSET $8"
     ), 14);
@@ -473,6 +487,8 @@ pub async fn users(State(st): State<AppState>, ctx: Ctx, q: Result<Query<UsersQu
         .bind(idle_secs(Kind::Staff))
         .bind(idle_secs(Kind::User))
         .bind(hidden)
+        .bind(from)
+        .bind(to)
         .fetch_all(&mut *tx)
         .await?;
     // what the "Show hidden" switch would add
@@ -486,7 +502,7 @@ pub async fn users(State(st): State<AppState>, ctx: Ctx, q: Result<Query<UsersQu
     tx.commit().await?;
     let total = rows.first().map(|r| r.get::<i64, _>("total")).unwrap_or(0);
     if export && page == 1 {
-        let meta = json!({"q": term, "kyc": kyc, "verified": verified, "status": status, "hidden": hidden, "rows": total});
+        let meta = json!({"q": term, "kyc": kyc, "verified": verified, "status": status, "hidden": hidden, "from": from, "to": to, "rows": total});
         audit::record(&st.pool, &ctx, Entry { tenant_id: me.tenant_id, actor_kind: "staff", actor_id: Some(me.id), action: "clients.exported", target: None, meta }).await;
     }
     Ok(Json(json!({
@@ -1153,6 +1169,18 @@ mod db_tests {
         assert_eq!(v["items"][0]["active_sessions"], 1);
         let Json(v) = users(State(st.clone()), ctx(Some(&owner_tok)), Ok(Query(UsersQuery { q: Some("%".into()), ..Default::default() }))).await.unwrap();
         assert_eq!(v["total"], 0, "LIKE wildcards are escaped");
+
+        // registered between two dates: whole broker days, both ends inclusive. Alice and Bob both signed up today.
+        let day = |n: i64| (Utc::now() + Duration::hours(3) + Duration::days(n)).date_naive().to_string();
+        let range = |f: Option<String>, t: Option<String>| Ok(Query(UsersQuery { from: f, to: t, ..Default::default() }));
+        let Json(v) = users(State(st.clone()), ctx(Some(&owner_tok)), range(Some(day(0)), Some(day(0)))).await.unwrap();
+        assert_eq!(v["total"], 2, "a single day covers the whole of it");
+        let Json(v) = users(State(st.clone()), ctx(Some(&owner_tok)), range(Some(day(1)), None)).await.unwrap();
+        assert_eq!(v["total"], 0, "nobody registered tomorrow");
+        let Json(v) = users(State(st.clone()), ctx(Some(&owner_tok)), range(None, Some(day(-1)))).await.unwrap();
+        assert_eq!(v["total"], 0, "nobody registered before yesterday ended");
+        assert!(matches!(users(State(st.clone()), ctx(Some(&owner_tok)), range(Some(day(0)), Some(day(-1)))).await, Err(ApiError::BadRequest(_))));
+        assert!(matches!(users(State(st.clone()), ctx(Some(&owner_tok)), range(Some("last tuesday".into()), None)).await, Err(ApiError::BadRequest(_))));
 
         // browsing is capped at 100 a page; bulk export needs clients.export (support has only clients.read) and is audited
         let Json(v) = users(State(st.clone()), ctx(Some(&support_tok)), Ok(Query(UsersQuery { per_page: Some(500), ..Default::default() }))).await.unwrap();
