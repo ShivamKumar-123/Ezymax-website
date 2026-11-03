@@ -257,6 +257,11 @@ void main() {
           indicatorRegistryProvider.overrideWith((ref) async => reg),
         ],
       );
+      // two indicators on this chart (a chart starts bare): the count on the button, the legend rows below
+      h.container.read(workspaceProvider.notifier).updateChart('XAUUSD', (c) => c.copyWith(indicators: [
+        IndInstance(uid: newIndicatorUid(), type: 'ema', params: const {'period': 50, 'source': 'close'}),
+        IndInstance(uid: newIndicatorUid(), type: 'sma', params: const {'period': 20, 'source': 'close'}),
+      ]));
     });
     final router = GoRouter(
       initialLocation: '/trader?login=10042817&symbol=XAUUSD',
