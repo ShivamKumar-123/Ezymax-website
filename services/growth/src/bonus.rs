@@ -276,7 +276,13 @@ pub async fn deposit_tick(st: &AppState) -> anyhow::Result<usize> {
                 .filter(|l| calc::is_deposit_kind(&l.kind) && l.sub_ledger == "balance" && l.amount > ZERO && l.at >= claimed)
                 .map(|l| (l.txn, l.amount))
                 .collect();
-            let Some((dep_txn, dep_amount, bonus)) = calc::paying_deposit(&deposits, g.get("pct"), g.get("cap"), g.get("min_deposit")) else { continue };
+            // A trading account is funded by moving money out of the client's own wallet, so a transfer in is
+            // not proof that any money came into the platform. The wallet is asked what the client has really
+            // paid in since they claimed, and the offer pays on no more than that: otherwise a client can
+            // shuttle the same balance between their two pockets and be paid for it every time.
+            let Some(paid_in) = clients::wallet_deposited(st, &tenant, user, claimed).await else { continue };
+            let backed: Vec<(i64, D)> = deposits.iter().map(|&(txn, amount)| (txn, amount.min(paid_in))).collect();
+            let Some((dep_txn, dep_amount, bonus)) = calc::paying_deposit(&backed, g.get("pct"), g.get("cap"), g.get("min_deposit")) else { continue };
             let mut tx = st.pool.begin().await?;
             let still: Option<String> = sqlx::query_scalar("SELECT status FROM bonus_grants WHERE id = $1 FOR UPDATE").bind(id).fetch_one(&mut *tx).await?;
             if still.as_deref() != Some("awaiting_deposit") {
@@ -407,7 +413,16 @@ async fn grant_for_deposit(st: &AppState, tenant: &str, c: &sqlx::postgres::PgRo
     if !deposit_in_scope(f.first_ever, f.at, c.get("starts_at"), c.get("ends_at"), &groups, &f.group) {
         return Ok(Outcome::Settled);
     }
-    let Some(bonus) = calc::deposit_bonus(f.amount, c.get("pct"), c.get("cap"), c.get("min_deposit")) else { return Ok(Outcome::Settled) };
+    // The feed shows money arriving at a trading account, which is a transfer out of the client's own wallet
+    // and says nothing about whether any money came into the platform. The wallet is asked what they have
+    // really paid in since the campaign opened, and the offer pays on no more than that. Without this a client
+    // can move the same balance from wallet to account and be paid a "first deposit" bonus on their own money.
+    let starts: DateTime<Utc> = c.get("starts_at");
+    let Some(paid_in) = clients::wallet_deposited(st, tenant, f.user_id, starts).await else {
+        // the wallet is unreachable; not knowing is not the same as nothing, so look again next pass
+        return Ok(Outcome::Waiting);
+    };
+    let Some(bonus) = calc::deposit_bonus(f.amount.min(paid_in), c.get("pct"), c.get("cap"), c.get("min_deposit")) else { return Ok(Outcome::Settled) };
     let seg = crate::profiles::get(st, tenant, f.user_id).await?.segment();
     let campaign_id: i64 = c.get("id");
 
@@ -428,7 +443,7 @@ async fn grant_for_deposit(st: &AppState, tenant: &str, c: &sqlx::postgres::PgRo
     if calc::check_limits(&limits_of(c, all, mine), &seg, Utc::now()).is_err() {
         return Ok(Outcome::Settled);
     }
-    let id = match queue_grant(&mut tx, tenant, campaign_id, f.user_id, "auto", f.login, f.cent, bonus, Some(f.amount), Some(f.txn), c.get("release_per_lot"), c.get("expiry_days"), None).await {
+    let id = match queue_grant(&mut tx, tenant, campaign_id, f.user_id, "auto", f.login, f.cent, bonus, Some(f.amount.min(paid_in)), Some(f.txn), c.get("release_per_lot"), c.get("expiry_days"), None).await {
         Ok(id) => id,
         // the account already carries a bonus: not an error, just not this one's turn
         Err(ApiError::Conflict { .. }) => return Ok(Outcome::Settled),

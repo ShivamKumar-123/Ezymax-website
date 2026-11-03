@@ -447,6 +447,33 @@ pub enum WalletOutcome {
     Fail(String),
 }
 
+/// Real money the client has paid into the wallet since `since` - the only figure a deposit offer may pay on.
+///
+/// What this service sees is money arriving at a *trading account*, and that is an internal transfer from the
+/// client's own wallet. It looks the same whether the money is new, came back out of a trade, was an IB
+/// payout, or was put there by the desk. Only the wallet can tell, so it is asked.
+///
+/// `None` means the wallet could not be reached - which is not the same as "they deposited nothing", so the
+/// caller must wait rather than decide.
+pub async fn wallet_deposited(st: &AppState, tenant: &str, user_id: i64, since: DateTime<Utc>) -> Option<D> {
+    let url = format!("{}/v1/internal/users/{user_id}/funded?since={}", st.cfg.wallet_url, since.to_rfc3339_opts(chrono::SecondsFormat::Secs, true));
+    let r = st
+        .http
+        .get(url)
+        .header("x-ezymex-internal", &st.cfg.wallet_token)
+        .header("x-ezymex-tenant", tenant)
+        .header("x-ezymex-service", "growth")
+        .send()
+        .await
+        .ok()?;
+    if !r.status().is_success() {
+        tracing::warn!(status = %r.status(), user_id, "wallet funded lookup failed");
+        return None;
+    }
+    let v: Value = r.json().await.ok()?;
+    v["deposited"].as_str().and_then(|x| x.parse::<D>().ok())
+}
+
 pub async fn wallet_credit(st: &AppState, tenant: &str, key: &str, user_id: i64, amount: D, kind: &str, reference: &str, note: &str) -> WalletOutcome {
     let body = json!({
         "idempotency_key": key, "user_id": user_id, "currency": "USDT", "amount": amount.normalize().to_string(),

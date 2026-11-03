@@ -37,6 +37,27 @@ pub async fn first_funding(pool: &sqlx::PgPool, tenant_id: i64, user_id: i64) ->
         .await
 }
 
+/// Real money the client has paid in since `since` (all of it when `since` is None), in wallet currency.
+///
+/// Only [`FUNDING_KINDS`] count. Money arriving from a trading account, an IB payout and a staff adjustment
+/// are all credits to the same balance, and none of them is a deposit: the first is the client's own money
+/// coming back, the second is something they earned, the third is the desk correcting its books. A deposit
+/// offer that cannot tell those apart pays people for moving money between their own pockets.
+pub async fn funded_total(pool: &sqlx::PgPool, tenant_id: i64, user_id: i64, since: Option<DateTime<Utc>>) -> sqlx::Result<D> {
+    let v: Option<D> = sqlx::query_scalar(
+        "SELECT sum(p.amount) FROM ledger_txns t JOIN ledger_postings p ON p.txn_id = t.id
+          WHERE t.tenant_id = $1 AND t.user_id = $2 AND t.kind = ANY($3) AND p.user_id = $2 AND p.amount > 0
+            AND ($4::timestamptz IS NULL OR t.created_at >= $4)",
+    )
+    .bind(tenant_id)
+    .bind(user_id)
+    .bind(FUNDING_KINDS)
+    .bind(since)
+    .fetch_one(pool)
+    .await?;
+    Ok(v.unwrap_or(D::ZERO))
+}
+
 pub fn parse_chain(raw: &str) -> ApiResult<ChainId> {
     ChainId::parse(raw).ok_or_else(|| ApiError::validation("chain", "chain must be bsc or tron"))
 }

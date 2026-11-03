@@ -312,6 +312,29 @@ async fn deposits_verify_confirm_and_credit() {
     // the first deposit stays the first one
     assert_eq!(funded(7).await, (true, first));
 
+    // `deposited` is what a deposit offer may pay on, and only real money counts towards it. Growth sees money
+    // arriving at a trading account, which is a transfer out of this wallet and looks identical whether the
+    // money is new or the client's own coming back; this is the figure that tells the two apart.
+    let deposited = |since: Option<&'static str>| {
+        let t = &t;
+        async move {
+            let q = since.map(|x| format!("?since={x}")).unwrap_or_default();
+            let (s, v) = t.get(&format!("/v1/internal/users/7/funded{q}")).await;
+            assert_eq!(s, 200, "{v}");
+            v["deposited"].as_str().unwrap().to_string()
+        }
+    };
+    // 50 on chain + 24.999999 credited after the staff assigned the BEP20 payment
+    assert_eq!(deposited(None).await, "74.999999");
+    // money coming back from a trading account, an IB payout and a staff credit are all credits to the same
+    // balance, and none of them is a deposit
+    t.credit(7, "500", "not-a-deposit-ib").await;
+    let (s, v) = t.post("/v1/wallets/transfers", json!({"idempotency_key": "nd-2", "user_id": 7, "currency": "USDT", "amount": "250", "direction": "credit", "kind": "refund"})).await;
+    assert_eq!(s, 200, "{v}");
+    assert_eq!(deposited(None).await, "74.999999", "an IB payout and a refund are not deposits");
+    // and `since` is honoured, so an offer can ask what was paid in after it was claimed
+    assert_eq!(deposited(Some("2099-01-01T00:00:00Z")).await, "0");
+
     // wrong recipient / reverted
     for (n, lookup, why) in [
         (3, usdt_tx(ChainId::Tron, CLIENT_TRON, OTHER_TRON, "10", 1000), "does not send USDT"),

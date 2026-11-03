@@ -490,10 +490,33 @@ pub async fn trading_transfers(State(st): State<AppState>, ctx: Ctx, Path(user_i
 /// `GET /v1/internal/users/{user_id}/funded` → `{user_id, funded, first_deposit_at}`: whether the client has at least
 /// one credited deposit of their own (on-chain USDT, bank / UPI or crypto approved by staff; see
 /// `deposits::FUNDING_KINDS`). The gateway asks it before a sign-up counts as the client's referral.
-pub async fn funded(State(st): State<AppState>, ctx: Ctx, Path(user_id): Path<i64>) -> ApiResult<Json<Value>> {
+#[derive(Deserialize, Default)]
+pub struct FundedQ {
+    /// Only count deposits from this moment on (RFC 3339). Absent: the client's whole history.
+    #[serde(default)]
+    since: Option<String>,
+}
+
+/// `GET /v1/internal/users/{id}/funded[?since=]`: whether the client has ever paid real money in, when they
+/// first did, and how much they have paid in since `since`.
+///
+/// `deposited` is what a deposit offer may pay on. Growth sees money arriving at a *trading account*, which is
+/// an internal transfer from this wallet and says nothing about whether the money is new; only the wallet knows
+/// that, and only for [`deposits::FUNDING_KINDS`].
+pub async fn funded(State(st): State<AppState>, ctx: Ctx, Path(user_id): Path<i64>, Q(q): Q<FundedQ>) -> ApiResult<Json<Value>> {
     let user_id = uid(user_id)?;
+    let since = match q.since.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+        None => None,
+        Some(raw) => Some(DateTime::parse_from_rfc3339(raw).map_err(|_| ApiError::validation("since", "Use an RFC 3339 timestamp"))?.with_timezone(&Utc)),
+    };
     let first = deposits::first_funding(&st.pool, ctx.tenant.id, user_id).await?;
-    Ok(ok(json!({"user_id": user_id, "funded": first.is_some(), "first_deposit_at": first})))
+    let deposited = deposits::funded_total(&st.pool, ctx.tenant.id, user_id, since).await?;
+    Ok(ok(json!({
+        "user_id": user_id,
+        "funded": first.is_some(),
+        "first_deposit_at": first,
+        "deposited": s(deposited),
+    })))
 }
 
 /* ---------------- trading account lifecycle (closure checks, own-account transfers) ---------------- */
