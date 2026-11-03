@@ -87,8 +87,7 @@
       has_weekly_and_monthly: true,
       supported_resolutions: Object.values(TF_TO_RES),
       data_status: "streaming",
-    }), 0);
-    ,
+    }), 0),
 
     getBars: (_symbol, _res, period, onHistory, onError) => {
       if (period.firstDataRequest) return onHistory(bars.slice(), { noData: bars.length === 0 });
