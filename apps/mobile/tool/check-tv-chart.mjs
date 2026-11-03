@@ -57,6 +57,16 @@ vm.runInContext(src, ctx);
 const K = ctx.window.K;
 const bar = (t, c) => ({ t, o: c, h: c + 1, l: c - 1, c, v: 10 });
 
+// The handshake comes first. The app sends nothing until the page has said ready - not even the init that
+// builds the chart - so ready has to be posted by the time the script has run, before anything is received.
+// (A version that waited for the chart to be built before saying ready shipped a blank pane: each side was
+// waiting for the other. This is the line that would have caught it.)
+const readyFirst = posted.length === 1 && posted[0].type === "ready";
+
+// lines and a quote that arrive before the library has started must still be drawn once it has
+K.recv({ type: "lines", lines: [{ id: "early:1", kind: "alert", price: 1.5, label: "early" }] });
+K.recv({ type: "quote", bid: 1.49, ask: 1.51 });
+
 // init builds the widget; the library only reports ready once it says so
 K.recv({ type: "init", digits: 5, intraday: true, palette: { dark: true, bg: "#000", up: "#0f0", down: "#f00" }, symbol: "EURUSD", tf: "M5", step: 300, chartType: "candles", indicators: [{ uid: "u1", type: "rsi", params: { len: 14 }, visible: true }] });
 onReadyCb();
@@ -74,7 +84,8 @@ K.batch([{ type: "bar", bar: bar(1_700_000_600, 1.35) }, { type: "quote", bid: 1
 const fail = [];
 const want = (cond, msg) => { if (!cond) fail.push(msg); };
 
-want(posted.some((p) => p.type === "ready"), "never posted ready");
+want(readyFirst, "ready must be posted as soon as the script runs, before any message is received");
+want(made.length >= 3, "a line sent before the chart was ready was never drawn after it was");
 want(calls.includes("widget()"), "widget was never built");
 want(calls.includes("study:Relative Strength Index"), "RSI study not created");
 want(calls.filter((c) => c === "line.remove").length >= 1, "the removed SL line was not cleaned up");

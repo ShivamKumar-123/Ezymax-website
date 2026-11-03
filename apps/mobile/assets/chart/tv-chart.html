@@ -53,6 +53,9 @@
   const lines = new Map();    // id -> { obj, kind, sig }
   const studies = new Map();  // uid -> study id
   let quoteLines = null;      // the bid / ask pair
+  // What arrived before the library was ready to draw it. The app sends lines and quotes the moment it has
+  // them, which can be before TradingView has finished starting, and a line that came then must not be lost.
+  let lastLines = null, lastQuote = null, lastIndicators = null;
 
   const palette = () => (cfg && cfg.palette) || {};
   const num = (v) => (typeof v === "number" && isFinite(v) ? v : null);
@@ -272,8 +275,9 @@
     widget.onChartReady(() => {
       chart = widget.activeChart();
       try { chart.setChartType(STYLE[cfg.chartType] ?? 1); } catch (_) {}
-      drawStudies(cfg.indicators);
-      post({ type: "ready" });
+      drawStudies(lastIndicators || cfg.indicators);
+      if (lastLines) drawLines(lastLines);
+      if (lastQuote) drawQuote(lastQuote.bid, lastQuote.ask);
     });
   }
 
@@ -317,9 +321,9 @@
         return;
       }
 
-      case "quote": return drawQuote(m.bid, m.ask);
-      case "lines": return drawLines(m.lines);
-      case "indicators": return drawStudies(m.indicators);
+      case "quote": lastQuote = { bid: m.bid, ask: m.ask }; return drawQuote(m.bid, m.ask);
+      case "lines": lastLines = m.lines || []; return drawLines(lastLines);
+      case "indicators": lastIndicators = m.indicators || []; return drawStudies(lastIndicators);
 
       case "chartType":
         if (cfg) cfg.chartType = m.chartType;
@@ -359,8 +363,12 @@
   // If the library is not there at all, say so in the app's colours rather than leaving a blank pane.
   if (typeof TradingView === "undefined" || !TradingView.widget) {
     document.getElementById("fail").style.display = "grid";
-    post({ type: "ready" });
   }
+
+  // The handshake. The app sends nothing - not even the init that builds the chart - until the page has said
+  // `ready`, so it is said here, as soon as this script has run, exactly as chart.html says it. Waiting for
+  // the library to finish first would mean each side waiting on the other, forever, over a blank pane.
+  post({ type: "ready" });
 })();
 </script>
 </body>

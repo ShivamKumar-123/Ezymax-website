@@ -42,9 +42,15 @@ class _WebViewChartState extends State<_WebViewChart> {
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0x00000000))
       ..addJavaScriptChannel('EzymexChart', onMessageReceived: (m) => _onMessage(m.message))
+      // The page's own console and any file it fails to load, on the app's log. A chart that stops drawing says
+      // why in here and nowhere else, and a blank pane on a handset is otherwise a blank pane.
+      ..setOnConsoleMessage((m) => debugPrint('chart ${m.level.name}: ${m.message}'))
       ..setNavigationDelegate(
-        // the chart's own two origins and nothing else: a page that tries to navigate away is stopped
-        NavigationDelegate(onNavigationRequest: (r) => r.url.startsWith('file:') || r.url.startsWith('http://127.0.0.1:') ? NavigationDecision.navigate : NavigationDecision.prevent),
+        NavigationDelegate(
+          // the chart's own two origins and nothing else: a page that tries to navigate away is stopped
+          onNavigationRequest: (r) => r.url.startsWith('file:') || r.url.startsWith('http://127.0.0.1:') ? NavigationDecision.navigate : NavigationDecision.prevent,
+          onWebResourceError: (e) => debugPrint('chart resource error ${e.errorCode} ${e.errorType}: ${e.description} ${e.url ?? ''}'),
+        ),
       );
     unawaited(_load());
   }
