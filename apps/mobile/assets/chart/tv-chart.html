@@ -23,11 +23,24 @@
   /* Shown only if the library never starts: a dark panel rather than a white flash behind the terminal. */
   #fail { position: absolute; inset: 0; display: none; place-items: center; color: #8b929e;
           font: 13px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; text-align: center; padding: 24px; }
+  /* Ours, over the library's frame: the TP / SL handles of a trade without a stop, and the ghost stop a handle
+     drags out. The frame swallows every pointer event, so only these elements take them. */
+  #ov { position: absolute; inset: 0; z-index: 5; pointer-events: none; overflow: hidden;
+        font: 600 11px/1 -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .hd { position: absolute; pointer-events: auto; touch-action: none; display: flex; align-items: center;
+        height: 22px; padding: 0 7px; border-radius: 6px; border: 1px solid; background: rgba(10,10,13,0.92);
+        transform: translateY(-50%); letter-spacing: 0.02em; user-select: none; -webkit-user-select: none; }
+  .hd.on { filter: brightness(1.25); }
+  #ghost { position: absolute; left: 0; top: 0; display: none; border-top: 1px dashed; width: 100%; }
+  #glabel { position: absolute; left: 0; top: 0; display: none; padding: 4px 7px; border-radius: 6px; color: #fff;
+            font: 600 11px/1.3 -apple-system, "Segoe UI", Roboto, sans-serif; white-space: nowrap; overflow: hidden;
+            text-overflow: ellipsis; }
 </style>
 </head>
 <body>
 <div id="chart"></div>
 <div id="fail">The chart could not start.</div>
+<div id="ov"><div id="ghost"></div><div id="glabel"></div></div>
 <script src="tv/charting_library.standalone.js"></script>
 <script>
 (() => {
@@ -191,8 +204,13 @@
     return l.side === "sell" ? (p.down || "#dc2626") : (p.up || "#16a34a");
   };
 
+  // The app's JSON names the flags `drag` and `close` (chart_bridge.dart ChartLine.toJson); the first version of this
+  // page read `draggable` and `closable`, so no line could ever be moved or closed from the TradingView chart.
+  const canDrag = (l) => l.drag === true || l.draggable === true;
+  const canClose = (l) => l.close === true || l.closable === true;
+
   /** Everything that decides how a line looks, so an unchanged line is left alone between frames. */
-  const sigOf = (l) => [l.kind, l.price, l.label, l.note, l.side, l.draggable, l.closable].join("|");
+  const sigOf = (l) => [l.kind, l.price, l.label, l.note, l.side, canDrag(l), canClose(l)].join("|");
 
   function drawLines(list) {
     if (!chart) return;
@@ -201,7 +219,12 @@
       if (num(l.price) === null) continue;
       seen.add(l.id);
       const had = lines.get(l.id);
-      if (had && had.sig === sigOf(l)) continue;
+      if (had && had.sig === sigOf(l)) {
+        // The same line as before, but the library may have left it where a finger dropped it: the server refused
+        // the move (or the app did, a pending order on the wrong side), and the app sends the old price back.
+        try { if (had.obj.getPrice() !== l.price) had.obj.setPrice(l.price); } catch (_) {}
+        continue;
+      }
       if (had) { try { had.obj.remove(); } catch (_) {} }
       let obj;
       try {
@@ -210,6 +233,7 @@
         continue;
       }
       const colour = lineColour(l);
+      let moving = false;
       obj.setPrice(l.price)
         .setText(l.label || "")
         .setQuantity(l.note || "")
@@ -220,12 +244,13 @@
         .setQuantityBorderColor(colour)
         .setBodyBackgroundColor(palette().panel || "#11151c")
         .setLineStyle(l.kind === "pending" || l.kind === "alert" ? 2 : 0)
-        .setEditable(!!l.draggable);
-      if (l.draggable) {
-        obj.onMoving(() => post({ type: "dragstart", id: l.id }));
-        obj.onMove(() => { post({ type: "drag", id: l.id, price: obj.getPrice() }); post({ type: "dragend", id: l.id }); });
+        .setEditable(canDrag(l));
+      if (canDrag(l)) {
+        // the app holds its line updates from the first movement to the drop, so the line stays under the finger
+        obj.onMoving(() => { if (!moving) { moving = true; post({ type: "dragstart", id: l.id }); } });
+        obj.onMove(() => { moving = false; post({ type: "drag", id: l.id, price: obj.getPrice() }); post({ type: "dragend", id: l.id }); });
       }
-      if (l.closable) { obj.setCancelTooltip("Close").onCancel(() => post({ type: "close", id: l.id })); }
+      if (canClose(l)) { obj.setCancelTooltip("Close").onCancel(() => post({ type: "close", id: l.id })); }
       obj.onModify(() => post({ type: "tap", id: l.id }));
       lines.set(l.id, { obj, kind: l.kind, sig: sigOf(l) });
     }
@@ -234,7 +259,286 @@
       try { v.obj.remove(); } catch (_) {}
       lines.delete(id);
     }
+    overlay.setLines(list || []);
   }
+
+  /* ----------------------------------------------------------------- over the frame: stop handles, long press */
+
+  // The library's order lines carry the chips, their drag and their x, but nothing to set a stop loss or take profit
+  // on a trade that has none - the S / T handles the app's own chart and the web terminal have. Those are drawn
+  // here, over the library's frame, at the price's pixel on the main pane: the pane's element and the main price
+  // scale's visible range are read from the frame's document, which is ours (the loopback origin), the way the web
+  // terminal's trade overlay reads them (apps/terminal/components/chart/tv-chart.tsx tvCoords). A long press on the
+  // plot is read there too - the frame swallows every touch, so the listener sits on its document.
+  const overlay = (() => {
+    const ov = document.getElementById("ov");
+    const ghost = document.getElementById("ghost");
+    const glabel = document.getElementById("glabel");
+    const raf = typeof requestAnimationFrame === "function" ? requestAnimationFrame : (f) => setTimeout(f, 16);
+    let doc = null;            // the frame's document, once the chart is ready
+    let rect = null;           // the main pane's box in page pixels, plus the price scale's width
+    let cal = 0;               // the crosshair's correction to our mapping
+    let shown = [];            // the app's lines, as last drawn
+    let held = null;           // lines that arrived while a handle was dragged: drawn at the drop
+    let drag = null;           // the handle drag in progress
+    const handles = new Map(); // "id|which" -> element
+    let loopOn = false;
+
+    const mainPane = () => {
+      const panes = chart.getPanes();
+      const i = panes.findIndex((p) => p.hasMainSeries());
+      return { api: panes[i] || null, el: doc.querySelectorAll(".chart-markup-table.pane")[i] || null };
+    };
+    function measure() {
+      try {
+        const el = mainPane().el;
+        if (!el) { rect = null; return; }
+        const r = el.getBoundingClientRect();
+        rect = { top: r.top, left: r.left, width: r.width, height: r.height, scaleWidth: doc.documentElement.clientWidth - (r.left + r.width) };
+      } catch (_) { rect = null; }
+    }
+    function scale() {
+      if (!rect) return null;
+      try {
+        const pane = mainPane().api;
+        const sc = pane && pane.getMainSourcePriceScale();
+        const range = sc && sc.getVisiblePriceRange();
+        if (!pane || !sc || !range) return null;
+        const mode = sc.getMode();
+        if (mode >= 2) return null; // percentage / indexed: prices are not on the axis
+        return { range, log: mode === 1, inverted: sc.isInverted(), h: pane.getHeight() || rect.height, top: rect.top };
+      } catch (_) { return null; }
+    }
+    const v = (sc, x) => (sc.log ? Math.log(x) : x);
+    function toY(sc, price) {
+      if (sc.log && price <= 0) return null;
+      const hi = v(sc, sc.range.to), lo = v(sc, sc.range.from);
+      if (hi === lo) return null;
+      const k = (hi - v(sc, price)) / (hi - lo);
+      return sc.top + (sc.inverted ? 1 - k : k) * sc.h + cal;
+    }
+    function toPrice(sc, y) {
+      const hi = v(sc, sc.range.to), lo = v(sc, sc.range.from);
+      let k = (y - cal - sc.top) / sc.h;
+      if (sc.inverted) k = 1 - k;
+      const a = hi - k * (hi - lo);
+      return sc.log ? Math.exp(a) : a;
+    }
+    const digits = () => (cfg && num(cfg.digits) !== null ? cfg.digits : 5);
+    const pow = () => Math.pow(10, digits());
+    const fmt = (p) => Number(p).toFixed(digits());
+    const texts = () => (cfg && cfg.texts) || {};
+
+    /* ---- stops: money and side (chart_bridge.dart ChartStops; the app's own chart does the same) ---- */
+    function fmtMoney(x) {
+      const a = Math.abs(x).toFixed(2);
+      const zero = Number(a) === 0;
+      const dot = a.indexOf(".");
+      return (x < 0 && !zero ? "-" : x > 0 && !zero ? "+" : "") + a.slice(0, dot).replace(/\B(?=(\d{3})+$)/g, ",") + a.slice(dot);
+    }
+    const stopMoney = (st, p) => ((p - st.open) * st.k) / (st.inv && p > 0 ? p : 1) + (st.c || 0);
+    /** Null when a stop `which` of line l may go to `price`, else [text key, limit] (the engine's check_sltp). */
+    function stopProblem(l, which, price) {
+      const st = l.stops;
+      if (!st) return null;
+      const buy = l.side === "buy";
+      const q = lastQuote || {};
+      const r = st.order ? st.open : buy ? q.bid : q.ask;
+      if (!(r > 0)) return null;
+      const gap = st.gap || 0;
+      const below = (which === "sl") === buy;
+      const limit = below ? r - gap : r + gap;
+      const eps = 1e-9 * Math.max(1, r);
+      const bad = price <= 0 || (below ? price > limit + eps || price >= r - eps : price < limit - eps || price <= r + eps);
+      return bad ? [which + (below ? "Below" : "Above"), limit] : null;
+    }
+    const badText = (b) => (texts()[b[0]] || b[0]).replace("{price}", fmt(b[1]));
+
+    /* ---- the ghost stop while a handle is held ---- */
+    let ghostTimer = 0;
+    function showGhost(y, tone, text) {
+      clearTimeout(ghostTimer);
+      const p = palette();
+      const col = tone === "bad" ? (p.fg3 || "#8b929e") : tone === "sl" ? (p.down || "#f04438") : (p.up || "#16a34a");
+      const yy = Math.round(y);
+      ghost.style.display = "block";
+      ghost.style.width = (rect ? rect.width : ov.clientWidth) + "px";
+      ghost.style.left = (rect ? rect.left : 0) + "px";
+      ghost.style.borderTopColor = col;
+      ghost.style.transform = `translateY(${yy}px)`;
+      glabel.style.display = "block";
+      glabel.style.left = (rect ? rect.left : 0) + "px";
+      glabel.style.maxWidth = Math.max(80, (rect ? rect.width : ov.clientWidth) - 16) + "px";
+      glabel.style.background = tone === "bad" ? (p.label || "#26262e") : col;
+      if (glabel.textContent !== text) glabel.textContent = text;
+      glabel.style.transform = yy > 40 ? `translate(8px, calc(${yy - 4}px - 100%))` : `translate(8px, ${yy + 4}px)`;
+    }
+    function hideGhost(after) {
+      clearTimeout(ghostTimer);
+      const go = () => { ghost.style.display = "none"; glabel.style.display = "none"; };
+      if (after) ghostTimer = setTimeout(go, after); else go();
+    }
+
+    /* ---- the handles ---- */
+    function startStop(e, l, which, el) {
+      e.preventDefault();
+      e.stopPropagation();
+      const sc = scale();
+      if (!sc) return;
+      const startY = e.clientY;
+      const y0 = toY(sc, l.price);
+      const hint = which === "sl" ? texts().dragSl || "Drag to set a stop loss" : texts().dragTp || "Drag to set a take profit";
+      drag = { id: l.id, which, price: l.price, y: y0 === null ? startY : y0, moved: false, raf: 0 };
+      const d0 = drag;
+      el.classList.add("on");
+      try { el.setPointerCapture(e.pointerId); } catch (_) {}
+      showGhost(d0.y, which, hint);
+      const paint = () => {
+        d0.raf = 0;
+        if (drag !== d0) return;
+        const bad = stopProblem(l, which, d0.price);
+        const money = l.stops ? " · " + fmtMoney(stopMoney(l.stops, d0.price)) : "";
+        showGhost(d0.y, bad ? "bad" : which, bad ? badText(bad) : which.toUpperCase() + " " + fmt(d0.price) + money);
+      };
+      const move = (ev) => {
+        if (drag !== d0) return;
+        if (!d0.moved) {
+          if (Math.abs(ev.clientY - startY) <= 4) return;
+          d0.moved = true;
+        }
+        const s2 = scale();
+        if (!s2) return;
+        const y = Math.max(s2.top + 2, Math.min(s2.top + s2.h - 2, ev.clientY));
+        d0.y = y;
+        d0.price = Math.round(toPrice(s2, y) * pow()) / pow();
+        if (!d0.raf) d0.raf = raf(paint);
+      };
+      const up = () => {
+        el.removeEventListener("pointermove", move);
+        el.removeEventListener("pointerup", up);
+        el.removeEventListener("pointercancel", up);
+        el.removeEventListener("lostpointercapture", up);
+        el.classList.remove("on");
+        if (drag !== d0) return;
+        drag = null;
+        if (!d0.moved) {
+          hideGhost(1600); // a tap on the handle: the hint stays a moment
+        } else {
+          const bad = stopProblem(l, which, d0.price);
+          if (bad) {
+            showGhost(d0.y, "bad", badText(bad) + " · " + (texts().notSent || "Nothing was sent to the server."));
+            hideGhost(2400);
+          } else {
+            hideGhost();
+            post({ type: "stop", id: l.id, which, price: d0.price });
+          }
+        }
+        if (held) { const h = held; held = null; drawLines(h); }
+      };
+      el.addEventListener("pointermove", move);
+      el.addEventListener("pointerup", up);
+      el.addEventListener("pointercancel", up);
+      el.addEventListener("lostpointercapture", up);
+    }
+
+    function render() {
+      const want = new Set();
+      const sc = rect && scale();
+      if (sc) {
+        const p = palette();
+        for (const l of shown) {
+          for (const which of ["sl", "tp"]) {
+            if (!(which === "sl" ? l.addSl : l.addTp)) continue;
+            const key = l.id + "|" + which;
+            const y = toY(sc, l.price);
+            if (y === null || y < sc.top + 4 || y > sc.top + sc.h - 4) continue;
+            want.add(key);
+            let el = handles.get(key);
+            if (!el) {
+              el = document.createElement("div");
+              el.className = "hd";
+              el.textContent = which.toUpperCase();
+              el.addEventListener("pointerdown", (e) => { if (e.button === 0 || e.pointerType !== "mouse") startStop(e, l, which, el); });
+              ov.appendChild(el);
+              handles.set(key, el);
+            }
+            el.__line = l;
+            const col = which === "sl" ? (p.down || "#f04438") : (p.up || "#16a34a");
+            el.style.color = col;
+            el.style.borderColor = col;
+            // beside the price scale, SL on the left of TP, clear of the chip at the line's other end
+            const right = rect.scaleWidth + 6 + (which === "sl" && l.addTp ? 34 : 0);
+            el.style.right = right + "px";
+            el.style.top = Math.round(y) + "px";
+          }
+        }
+      }
+      for (const [key, el] of [...handles]) {
+        if (want.has(key)) continue;
+        el.remove();
+        handles.delete(key);
+      }
+    }
+    function loop() {
+      if (!loopOn) return;
+      try { render(); } catch (_) {}
+      raf(loop);
+    }
+
+    /* ---- a long press on the plot ---- */
+    function longPress() {
+      let timer = 0, x0 = 0, y0 = 0;
+      doc.addEventListener("touchstart", (e) => {
+        if (e.touches.length !== 1 || drag) return;
+        x0 = e.touches[0].clientX;
+        y0 = e.touches[0].clientY;
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          const sc = scale();
+          if (!sc || !rect || y0 < sc.top || y0 > sc.top + sc.h || x0 < rect.left || x0 > rect.left + rect.width) return;
+          const p = toPrice(sc, y0);
+          if (isFinite(p) && p > 0) post({ type: "long", price: Math.round(p * pow()) / pow() });
+        }, 600);
+      }, { passive: true });
+      const cancel = (e) => {
+        if (e && e.touches && e.touches.length && Math.hypot(e.touches[0].clientX - x0, e.touches[0].clientY - y0) < 8) return;
+        clearTimeout(timer);
+      };
+      doc.addEventListener("touchmove", cancel, { passive: true });
+      doc.addEventListener("touchend", () => clearTimeout(timer), { passive: true });
+      doc.addEventListener("touchcancel", () => clearTimeout(timer), { passive: true });
+    }
+
+    return {
+      /** Once the chart is ready: find the frame, measure, follow the crosshair, start the loop. */
+      start() {
+        try {
+          const frame = document.querySelector("#chart iframe");
+          doc = frame && frame.contentDocument;
+        } catch (_) { doc = null; }
+        if (!doc) return;
+        measure();
+        setInterval(measure, 500);
+        try {
+          // the crosshair says where a price is drawn: keeps the small offset between our mapping and the library's
+          chart.crossHairMoved().subscribe(null, (e) => {
+            if (!e || num(e.price) === null || num(e.offsetY) === null) return;
+            const sc = scale();
+            const y = sc && toY(sc, e.price);
+            if (y == null) return;
+            const err = e.offsetY + (sc.top - cal) - y + cal;
+            if (Math.abs(err) < 3) cal = cal * 0.7 + err * 0.3;
+          });
+        } catch (_) {}
+        longPress();
+        loopOn = true;
+        raf(loop);
+      },
+      setLines(list) { shown = list; },
+      /** Lines from the app wait while a handle is held: the chip and its handle stay under the finger. */
+      hold(list) { if (!drag) return false; held = list; return true; },
+    };
+  })();
 
   /* ----------------------------------------------------------------- the quote */
 
@@ -351,6 +655,7 @@
       drawStudies(lastIndicators || cfg.indicators);
       if (lastLines) drawLines(lastLines);
       if (lastQuote) drawQuote(lastQuote.ask);
+      overlay.start();
     });
   }
 
@@ -402,7 +707,7 @@
       }
 
       case "quote": lastQuote = { bid: m.bid, ask: m.ask }; return drawQuote(m.ask);
-      case "lines": lastLines = m.lines || []; return drawLines(lastLines);
+      case "lines": lastLines = m.lines || []; return overlay.hold(lastLines) ? undefined : drawLines(lastLines);
       case "indicators": lastIndicators = m.indicators || []; return drawStudies(lastIndicators);
 
       case "chartType":

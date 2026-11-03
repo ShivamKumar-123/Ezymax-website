@@ -21,7 +21,12 @@ const orderLine = () => {
   for (const m of ["setPrice", "setText", "setQuantity", "setLineColor", "setBodyBorderColor", "setBodyTextColor",
     "setQuantityBackgroundColor", "setQuantityBorderColor", "setBodyBackgroundColor", "setLineStyle",
     "setEditable", "setLineWidth", "setCancelTooltip", "onMoving", "onMove", "onCancel", "onModify"]) o[m] = () => o;
-  o.getPrice = () => 1.2345;
+  o.price = null;
+  o.setPrice = (p) => { o.price = p; return o; };
+  o.getPrice = () => o.price;
+  o.setEditable = (v) => { o.editable = v; return o; };
+  o.onCancel = (fn) => { o.cancel = fn; return o; };
+  o.onMove = (fn) => { o.move = fn; return o; };
   o.remove = () => calls.push("line.remove");
   made.push(o);
   return o;
@@ -61,13 +66,13 @@ const widget = {
   applyOverrides: () => calls.push("applyOverrides"),
 };
 
-const el = { style: {} };
+const el = { style: {}, classList: { add() {}, remove() {} }, appendChild() {}, clientWidth: 400 };
 const ctx = {
   console,
   setTimeout,
   // the datafeed the page hands the library is kept, so the test can play the library's side of it
   TradingView: { widget: function (opts) { calls.push("widget()"); ctx.__datafeed = opts.datafeed; ctx.__opts = opts; return widget; } },
-  document: { getElementById: () => el },
+  document: { getElementById: () => el, querySelector: () => null, createElement: () => ({ style: {}, classList: { add() {}, remove() {} }, addEventListener() {}, remove() {} }) },
   window: { EzymexChart: { postMessage: (s) => posted.push(JSON.parse(s)) } },
 };
 ctx.window.window = ctx.window;
@@ -104,8 +109,16 @@ const parked = firstAnswer === null;
 K.recv({ type: "bars", bars: [bar(1_700_000_000, 1.1), bar(1_700_000_300, 1.2)] });
 K.recv({ type: "bar", bar: bar(1_700_000_600, 1.3) });
 K.recv({ type: "quote", bid: 1.2999, ask: 1.3001 });
-K.recv({ type: "lines", lines: [{ id: "pos:1", kind: "pos", price: 1.25, label: "Buy 0.10", side: "buy", closable: true, note: "+12.40" }, { id: "sl:1", kind: "sl", price: 1.2, label: "SL", draggable: true }] });
-K.recv({ type: "lines", lines: [{ id: "pos:1", kind: "pos", price: 1.25, label: "Buy 0.10", side: "buy", closable: true, note: "+12.40" }] });
+// the lines as chart_bridge.dart ChartLine.toJson sends them: `drag` and `close`, not draggable / closable
+K.recv({ type: "lines", lines: [{ id: "pos:1", kind: "pos", price: 1.25, label: "Buy 0.10", side: "buy", close: true, note: "+12.40", addSl: true, addTp: true }, { id: "sl:1", kind: "sl", price: 1.2, label: "SL", side: "buy", drag: true, close: true }] });
+// the SL line is dragged to 1.18 and dropped: the app hears drag + dragend with that price
+const slLine = made.find((o) => o.price === 1.2);
+if (slLine && slLine.move) { slLine.price = 1.18; slLine.move(); }
+// the app refused the move and sends the old price back: the line goes back to 1.2 without being redrawn
+K.recv({ type: "lines", lines: [{ id: "pos:1", kind: "pos", price: 1.25, label: "Buy 0.10", side: "buy", close: true, note: "+12.40", addSl: true, addTp: true }, { id: "sl:1", kind: "sl", price: 1.2, label: "SL", side: "buy", drag: true, close: true }] });
+const slBack = slLine ? slLine.price : null;
+if (slLine && slLine.cancel) slLine.cancel();
+K.recv({ type: "lines", lines: [{ id: "pos:1", kind: "pos", price: 1.25, label: "Buy 0.10", side: "buy", close: true, note: "+12.40" }] });
 K.recv({ type: "chartType", chartType: "line" });
 K.recv({ type: "palette", palette: { dark: false, bg: "#fff" } });
 K.recv({ type: "indicators", indicators: [] });
@@ -123,6 +136,10 @@ want(firstAnswer && firstAnswer !== "error" && firstAnswer.b.length === 2, "the 
 want(firstAnswer && firstAnswer.b[0].time === 1_700_000_000_000 && firstAnswer.b[0].open === 1.1 && firstAnswer.b[0].volume === 10, "a bar sent as [t,o,h,l,c,v] in seconds was not decoded to milliseconds");
 want(firstAnswer && firstAnswer.meta && firstAnswer.meta.noData === false, "the first answer must not claim no data");
 want(made.length >= 3, "a line sent before the chart was ready was never drawn after it was");
+want(slLine && slLine.editable === true, "a line the app marks `drag: true` is not editable on the chart");
+want(posted.some((p) => p.type === "drag" && p.id === "sl:1" && p.price === 1.18) && posted.some((p) => p.type === "dragend" && p.id === "sl:1"), "a dropped line did not reach the app as drag + dragend");
+want(slBack === 1.2, `a refused move left the line at ${slBack}, not back at 1.2`);
+want(posted.some((p) => p.type === "close" && p.id === "sl:1"), "the x of a line the app marks `close: true` does not reach the app");
 want(calls.includes("widget()"), "widget was never built");
 // the web terminal's candles: rising in the buy blue, not the P&L green; the volume bars in the same two colours
 const ov = (ctx.__opts || {}).overrides || {};
