@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The chart's own server (lib/features/terminal/chart/chart_server.dart) is plain http on the loopback
+  address, because the licensed TradingView library runs part of itself in an iframe and needs a real origin,
+  which a file:// page cannot give it. Android has refused cleartext by default since API 28, so the WebView
+  would not load it at all (net::ERR_CLEARTEXT_NOT_PERMITTED).
+
+  The exception is for 127.0.0.1 and nothing else: those bytes never leave the handset. Everything that does
+  leave it - the Client Area API, market data, the trading streams - stays on TLS, which the base config below
+  keeps enforced for every other host.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+    </domain-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>
