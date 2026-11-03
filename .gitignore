@@ -27,3 +27,6 @@ apps/terminal/public/charting_library/
 
 # design scratch
 .superdesign/tmp/
+
+# The licensed TradingView library, copied into the app by scripts/sync-assets.mjs (never committed).
+apps/mobile/assets/chart/tv/

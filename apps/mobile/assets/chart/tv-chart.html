@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Ezymex chart</title>
+<!--
+  The licensed TradingView Advanced Charts, inside the app, behind the same bridge the app's own chart uses
+  (lib/features/terminal/chart/chart_bridge.dart). It is the same library and version the web terminal runs,
+  copied into assets/chart/tv/ by scripts/sync-assets.mjs and served from the loopback server in
+  chart_server.dart - the library needs a real origin for its iframe, which a file:// page cannot give it.
+
+  The chart has no data of its own and reaches nothing over the network. Every bar, tick and line arrives from
+  Flutter through window.K.recv / window.K.batch, so the prices on the chart are by construction the prices
+  everywhere else in the app: the same market-data stream, in the same spread group.
+
+  Gestures go back on the EzymexChart channel, unchanged, so the Flutter side does not know which chart is
+  drawing. When the library is missing from a build the app loads chart.html instead and nothing here runs.
+-->
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; }
+  #chart { position: absolute; inset: 0; }
+  /* Shown only if the library never starts: a dark panel rather than a white flash behind the terminal. */
+  #fail { position: absolute; inset: 0; display: none; place-items: center; color: #8b929e;
+          font: 13px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; text-align: center; padding: 24px; }
+</style>
+</head>
+<body>
+<div id="chart"></div>
+<div id="fail">The chart could not start.</div>
+<script src="tv/charting_library.standalone.js"></script>
+<script>
+(() => {
+  "use strict";
+
+  const post = (m) => { try { window.EzymexChart.postMessage(JSON.stringify(m)); } catch (_) {} };
+
+  /* ----------------------------------------------------------------- timeframes */
+
+  // The app's timeframe names and TradingView's resolutions are the same ladder under two spellings.
+  const TF_TO_RES = { M1: "1", M5: "5", M15: "15", M30: "30", H1: "60", H4: "240", D1: "1D", W1: "1W", MN: "1M" };
+  const resOf = (tf) => TF_TO_RES[String(tf || "").toUpperCase()] || "1";
+
+  /* ----------------------------------------------------------------- state */
+
+  let widget = null;          // the TradingView widget, once init has told us what to draw
+  let chart = null;           // its active chart, once it is ready
+  let cfg = null;             // the init message
+  let bars = [];              // every bar we hold, oldest first
+  let onTick = null;          // the datafeed's realtime callback
+  let olderWait = null;       // the getBars resolver waiting for an `older` message
+  let exhausted = false;      // the app has told us there is no more history
+  const lines = new Map();    // id -> { obj, kind, sig }
+  const studies = new Map();  // uid -> study id
+  let quoteLines = null;      // the bid / ask pair
+
+  const palette = () => (cfg && cfg.palette) || {};
+  const num = (v) => (typeof v === "number" && isFinite(v) ? v : null);
+
+  /* ----------------------------------------------------------------- datafeed */
+
+  // Everything here is answered out of what Flutter has already sent. Nothing is fetched.
+  const datafeed = {
+    onReady: (cb) => setTimeout(() => cb({
+      supported_resolutions: Object.values(TF_TO_RES),
+      supports_marks: false,
+      supports_timescale_marks: false,
+      supports_time: true,
+    }), 0),
+
+    searchSymbols: (_a, _b, _c, cb) => cb([]),
+
+    resolveSymbol: (_name, onResolve) => setTimeout(() => onResolve({
+      name: cfg.symbol || "",
+      ticker: cfg.symbol || "",
+      description: cfg.symbol || "",
+      type: "forex",
+      session: "24x7",
+      timezone: "Etc/UTC",
+      exchange: "",
+      listed_exchange: "",
+      format: "price",
+      // `digits` is the instrument's own precision, so the axis reads exactly as the rest of the app does
+      pricescale: Math.pow(10, Number(cfg.digits) || 5),
+      minmov: 1,
+      has_intraday: !!cfg.intraday,
+      has_weekly_and_monthly: true,
+      supported_resolutions: Object.values(TF_TO_RES),
+      data_status: "streaming",
+    }), 0);
+    ,
+
+    getBars: (_symbol, _res, period, onHistory, onError) => {
+      if (period.firstDataRequest) return onHistory(bars.slice(), { noData: bars.length === 0 });
+      // Scroll-back: the app owns the history, so it is asked and the answer is awaited. Only one request is
+      // ever in flight, which is what TradingView does anyway.
+      if (olderWait) return onError("busy");
+      if (exhausted || bars.length === 0) return onHistory([], { noData: true });
+      olderWait = { onHistory, onError };
+      post({ type: "older", before: Math.floor(bars[0].time / 1000) });
+    },
+
+    subscribeBars: (_symbol, _res, cb) => { onTick = cb; },
+    unsubscribeBars: () => { onTick = null; },
+  };
+
+  /* ----------------------------------------------------------------- theme */
+
+  function overrides() {
+    const p = palette();
+    const up = p.up || "#16a34a", down = p.down || "#dc2626";
+    return {
+      "paneProperties.background": p.bg || "#000000",
+      "paneProperties.backgroundType": "solid",
+      "paneProperties.vertGridProperties.color": p.grid || "#1b1f27",
+      "paneProperties.horzGridProperties.color": p.grid || "#1b1f27",
+      "scalesProperties.textColor": p.fg3 || "#8b929e",
+      "scalesProperties.lineColor": p.line || "#242a33",
+      "mainSeriesProperties.candleStyle.upColor": up,
+      "mainSeriesProperties.candleStyle.downColor": down,
+      "mainSeriesProperties.candleStyle.borderUpColor": up,
+      "mainSeriesProperties.candleStyle.borderDownColor": down,
+      "mainSeriesProperties.candleStyle.wickUpColor": up,
+      "mainSeriesProperties.candleStyle.wickDownColor": down,
+      "mainSeriesProperties.barStyle.upColor": up,
+      "mainSeriesProperties.barStyle.downColor": down,
+      "mainSeriesProperties.lineStyle.color": p.ember || "#f97316",
+      "mainSeriesProperties.areaStyle.linecolor": p.ember || "#f97316",
+    };
+  }
+
+  const STYLE = { candles: 1, bars: 0, line: 2, area: 3 };
+
+  /* ----------------------------------------------------------------- lines */
+
+  const lineColour = (l) => {
+    const p = palette();
+    if (l.kind === "sl" || l.kind === "osl") return p.down || "#dc2626";
+    if (l.kind === "tp" || l.kind === "otp") return p.up || "#16a34a";
+    if (l.kind === "alert") return p.warn || "#d97706";
+    if (l.kind === "pending") return p.info || p.fg3 || "#8b929e";
+    return l.side === "sell" ? (p.down || "#dc2626") : (p.up || "#16a34a");
+  };
+
+  /** Everything that decides how a line looks, so an unchanged line is left alone between frames. */
+  const sigOf = (l) => [l.kind, l.price, l.label, l.note, l.side, l.draggable, l.closable].join("|");
+
+  function drawLines(list) {
+    if (!chart) return;
+    const seen = new Set();
+    for (const l of list || []) {
+      if (num(l.price) === null) continue;
+      seen.add(l.id);
+      const had = lines.get(l.id);
+      if (had && had.sig === sigOf(l)) continue;
+      if (had) { try { had.obj.remove(); } catch (_) {} }
+      let obj;
+      try {
+        obj = chart.createOrderLine();
+      } catch (_) {
+        continue;
+      }
+      const colour = lineColour(l);
+      obj.setPrice(l.price)
+        .setText(l.label || "")
+        .setQuantity(l.note || "")
+        .setLineColor(colour)
+        .setBodyBorderColor(colour)
+        .setBodyTextColor(colour)
+        .setQuantityBackgroundColor(colour)
+        .setQuantityBorderColor(colour)
+        .setBodyBackgroundColor(palette().panel || "#11151c")
+        .setLineStyle(l.kind === "pending" || l.kind === "alert" ? 2 : 0)
+        .setEditable(!!l.draggable);
+      if (l.draggable) {
+        obj.onMoving(() => post({ type: "dragstart", id: l.id }));
+        obj.onMove(() => { post({ type: "drag", id: l.id, price: obj.getPrice() }); post({ type: "dragend", id: l.id }); });
+      }
+      if (l.closable) { obj.setCancelTooltip("Close").onCancel(() => post({ type: "close", id: l.id })); }
+      obj.onModify(() => post({ type: "tap", id: l.id }));
+      lines.set(l.id, { obj, kind: l.kind, sig: sigOf(l) });
+    }
+    for (const [id, v] of [...lines]) {
+      if (seen.has(id)) continue;
+      try { v.obj.remove(); } catch (_) {}
+      lines.delete(id);
+    }
+  }
+
+  function drawQuote(bid, ask) {
+    if (!chart || num(bid) === null || num(ask) === null) return;
+    const p = palette();
+    if (!quoteLines) {
+      try {
+        quoteLines = { bid: chart.createOrderLine(), ask: chart.createOrderLine() };
+      } catch (_) { quoteLines = null; return; }
+      for (const [k, o] of Object.entries(quoteLines)) {
+        o.setText(k.toUpperCase()).setLineStyle(1).setEditable(false).setLineWidth(1)
+          .setBodyBackgroundColor(p.panel || "#11151c").setBodyTextColor(p.fg3 || "#8b929e").setBodyBorderColor(p.line || "#242a33");
+      }
+      quoteLines.bid.setLineColor(p.down || "#dc2626");
+      quoteLines.ask.setLineColor(p.up || "#16a34a");
+    }
+    quoteLines.bid.setPrice(bid);
+    quoteLines.ask.setPrice(ask);
+  }
+
+  /* ----------------------------------------------------------------- indicators */
+
+  // The app names its indicators as traders do, and so does TradingView, so almost all of them match on the
+  // name alone. One that does not is left off rather than drawn as something else, and says so in the console.
+  const STUDY = {
+    "ma": "Moving Average", "ema": "Moving Average Exponential", "wma": "Moving Average Weighted",
+    "smma": "Smoothed Moving Average", "dema": "Double EMA", "tema": "Triple EMA", "hma": "Hull Moving Average",
+    "vwap": "VWAP", "ichimoku": "Ichimoku Cloud", "psar": "Parabolic SAR", "supertrend": "SuperTrend",
+    "envelopes": "Envelopes", "pivots": "Pivot Points Standard", "bb": "Bollinger Bands",
+    "keltner": "Keltner Channels", "donchian": "Donchian Channels", "atr": "Average True Range",
+    "stddev": "Standard Deviation", "rsi": "Relative Strength Index", "stoch": "Stochastic",
+    "stochrsi": "Stochastic RSI", "macd": "MACD", "cci": "Commodity Channel Index",
+    "williams": "Williams %R", "momentum": "Momentum", "roc": "Rate Of Change",
+    "adx": "Average Directional Index", "aroon": "Aroon", "ao": "Awesome Oscillator",
+    "ac": "Accelerator Oscillator", "obv": "On Balance Volume", "mfi": "Money Flow Index",
+    "cmf": "Chaikin Money Flow", "volume": "Volume", "zigzag": "Zig Zag",
+  };
+
+  function drawStudies(list) {
+    if (!chart) return;
+    const seen = new Set();
+    for (const ind of list || []) {
+      if (!ind || !ind.uid || ind.visible === false) continue;
+      seen.add(ind.uid);
+      if (studies.has(ind.uid)) continue;
+      const name = STUDY[String(ind.type || "").toLowerCase()];
+      if (!name) { console.warn("no TradingView study for", ind.type); continue; }
+      const inputs = Object.values(ind.params || {}).filter((v) => typeof v === "number" || typeof v === "string");
+      studies.set(ind.uid, null);
+      chart.createStudy(name, false, false, inputs).then((id) => studies.set(ind.uid, id)).catch(() => studies.delete(ind.uid));
+    }
+    for (const [uid, id] of [...studies]) {
+      if (seen.has(uid)) continue;
+      if (id) { try { chart.removeEntity(id); } catch (_) {} }
+      studies.delete(uid);
+    }
+  }
+
+  /* ----------------------------------------------------------------- the widget */
+
+  function build() {
+    const p = palette();
+    widget = new TradingView.widget({
+      container: "chart",
+      library_path: "tv/",
+      datafeed,
+      symbol: cfg.symbol || "",
+      interval: resOf(cfg.tf),
+      locale: "en",
+      autosize: true,
+      theme: p.dark === false ? "light" : "dark",
+      timezone: "Etc/UTC",
+      // The app has its own toolbar, timeframe picker and indicator menu around this view, so the library's
+      // own chrome would be a second set of the same controls.
+      disabled_features: [
+        "header_widget", "left_toolbar", "timeframes_toolbar", "control_bar", "legend_context_menu",
+        "symbol_search_hot_key", "compare_symbol", "border_around_the_chart", "popup_hints",
+        "go_to_date", "display_market_status", "context_menus",
+      ],
+      enabled_features: ["hide_left_toolbar_by_default", "iframe_loading_compatibility_mode"],
+      overrides: overrides(),
+      loading_screen: { backgroundColor: p.bg || "#000000", foregroundColor: p.ember || "#f97316" },
+      custom_css_url: undefined,
+    });
+
+    widget.onChartReady(() => {
+      chart = widget.activeChart();
+      try { chart.setChartType(STYLE[cfg.chartType] ?? 1); } catch (_) {}
+      drawStudies(cfg.indicators);
+      post({ type: "ready" });
+    });
+  }
+
+  /* ----------------------------------------------------------------- the bridge */
+
+  function recv(m) {
+    if (!m || typeof m !== "object") return;
+    switch (m.type) {
+      case "init":
+        cfg = m;
+        if (!widget) build();
+        return;
+
+      case "bars": {
+        bars = (m.bars || []).map(toBar).filter(Boolean);
+        exhausted = false;
+        // A fresh history means a different symbol or timeframe: the library is told to re-read from us.
+        if (chart && cfg) { try { chart.resetData(); } catch (_) {} }
+        return;
+      }
+
+      case "older": {
+        const add = (m.bars || []).map(toBar).filter(Boolean);
+        exhausted = !!m.exhausted;
+        bars = add.concat(bars);
+        if (olderWait) {
+          const w = olderWait;
+          olderWait = null;
+          w.onHistory(add, { noData: add.length === 0 });
+        }
+        return;
+      }
+
+      case "bar": {
+        const b = toBar(m.bar);
+        if (!b) return;
+        const last = bars[bars.length - 1];
+        if (last && last.time === b.time) bars[bars.length - 1] = b;
+        else bars.push(b);
+        if (onTick) onTick(b);
+        return;
+      }
+
+      case "quote": return drawQuote(m.bid, m.ask);
+      case "lines": return drawLines(m.lines);
+      case "indicators": return drawStudies(m.indicators);
+
+      case "chartType":
+        if (cfg) cfg.chartType = m.chartType;
+        if (chart) { try { chart.setChartType(STYLE[m.chartType] ?? 1); } catch (_) {} }
+        return;
+
+      case "palette":
+        if (cfg) cfg.palette = m.palette;
+        if (!widget) return;
+        try {
+          widget.changeTheme(m.palette && m.palette.dark === false ? "light" : "dark").then(() => widget.applyOverrides(overrides()));
+        } catch (_) {
+          try { widget.applyOverrides(overrides()); } catch (_) {}
+        }
+        return;
+    }
+  }
+
+  /** The app sends milliseconds; TradingView wants them too, but only for a bar it can use. */
+  function toBar(b) {
+    if (!b) return null;
+    const t = num(b.t ?? b.time), o = num(b.o ?? b.open), h = num(b.h ?? b.high), l = num(b.l ?? b.low), c = num(b.c ?? b.close);
+    if (t === null || o === null || h === null || l === null || c === null) return null;
+    const v = num(b.v ?? b.volume);
+    return { time: t < 1e11 ? t * 1000 : t, open: o, high: h, low: l, close: c, ...(v === null ? {} : { volume: v }) };
+  }
+
+  window.K = {
+    recv(msg) { recv(typeof msg === "string" ? JSON.parse(msg) : msg); },
+    /** Several commands in one call (the app coalesces quotes, bars and lines to one call per frame). */
+    batch(msgs) {
+      const list = typeof msgs === "string" ? JSON.parse(msgs) : msgs;
+      for (const m of list) recv(m);
+    },
+  };
+
+  // If the library is not there at all, say so in the app's colours rather than leaving a blank pane.
+  if (typeof TradingView === "undefined" || !TradingView.widget) {
+    document.getElementById("fail").style.display = "grid";
+    post({ type: "ready" });
+  }
+})();
+</script>
+</body>
+</html>

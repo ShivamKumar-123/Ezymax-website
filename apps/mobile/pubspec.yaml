@@ -70,8 +70,13 @@ flutter:
     - assets/stocks/
     - assets/people/
     - assets/flags/
-    # Ezymex Trader's chart page: lightweight-charts 5.2.1 (offline, Apache 2.0) + its bridge (agent D)
+    # Ezymex Trader's chart page: the licensed TradingView library (assets/chart/tv, copied in by
+    # scripts/sync-assets.mjs and never committed) with lightweight-charts 5.2.1 as the fallback when a build
+    # has no copy of it. Flutter will not build if a listed folder is missing, so the sync always creates
+    # assets/chart/tv even when it has nothing to put in it.
     - assets/chart/
+    - assets/chart/tv/
+    - assets/chart/tv/bundles/
     # news story covers (the web's own photo library, apps/crm/public/assets/photos, 720 px)
     - assets/photos/
     # the dashboard hero's clip and its still frame

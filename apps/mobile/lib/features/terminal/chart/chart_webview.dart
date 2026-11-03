@@ -1,6 +1,15 @@
-// The chart on Android: assets/chart/chart.html (lightweight-charts 5.2.1, offline) in a WebView. Commands go in
-// through `window.K.recv(...)` / `window.K.batch(...)` (one call per frame), events come back on the `EzymexChart`
-// JavaScript channel.
+// The chart on Android, in a WebView. Commands go in through `window.K.recv(...)` / `window.K.batch(...)` (one
+// call per frame), events come back on the `EzymexChart` JavaScript channel.
+//
+// Two pages answer that bridge and the app does not care which: the licensed TradingView library
+// (assets/chart/tv-chart.html, the same chart the web terminal runs) when the build has it, and
+// assets/chart/chart.html (lightweight-charts, offline) when it does not. TradingView runs part of itself in
+// an iframe and so needs a real origin, which file:// cannot give it; chart_server.dart serves the app's own
+// assets over loopback for it. The fallback page keeps loading straight from the asset, as it always did.
+//
+// Neither page fetches anything. Every bar, tick and line comes from Flutter over the bridge, so whichever is
+// drawing, the prices are the ones the rest of the app is using.
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -9,6 +18,7 @@ import 'package:flutter/widgets.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import 'chart_bridge.dart';
+import 'chart_server.dart';
 import 'chart_surface.dart';
 
 Widget webViewChartSurface(ChartSurfaceController c) => _WebViewChart(controller: c);
@@ -33,9 +43,21 @@ class _WebViewChartState extends State<_WebViewChart> {
       ..setBackgroundColor(const Color(0x00000000))
       ..addJavaScriptChannel('EzymexChart', onMessageReceived: (m) => _onMessage(m.message))
       ..setNavigationDelegate(
-        NavigationDelegate(onNavigationRequest: (r) => r.url.startsWith('file:') ? NavigationDecision.navigate : NavigationDecision.prevent),
+        // the chart's own two origins and nothing else: a page that tries to navigate away is stopped
+        NavigationDelegate(onNavigationRequest: (r) => r.url.startsWith('file:') || r.url.startsWith('http://127.0.0.1:') ? NavigationDecision.navigate : NavigationDecision.prevent),
       );
-    _web.loadFlutterAsset('assets/chart/chart.html');
+    unawaited(_load());
+  }
+
+  /// TradingView where the build has it, the app's own chart where it does not - and also where the loopback
+  /// server could not start, because a chart that draws is worth more than the one we would rather draw.
+  Future<void> _load() async {
+    final server = ChartServer.instance;
+    if (await server.hasTradingView) {
+      final base = await server.base();
+      if (base != null && mounted) return _web.loadRequest(base.resolve('tv-chart.html'));
+    }
+    if (mounted) await _web.loadFlutterAsset('assets/chart/chart.html');
   }
 
   void _onMessage(String raw) {
