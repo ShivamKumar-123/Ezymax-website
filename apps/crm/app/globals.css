@@ -291,13 +291,9 @@
     background: radial-gradient(circle at 30% 25%, color-mix(in oklab, var(--k-ember) 62%, #fff), var(--k-ember) 62%);
     box-shadow: 0 10px 22px -10px var(--k-ember), inset 0 1px 0 rgba(255, 255, 255, 0.32);
   }
-  .k-acct-live {
-    background:
-      radial-gradient(110% 130% at 0% 0%, color-mix(in oklab, var(--k-ember) 52%, #fff) 0%, transparent 52%),
-      radial-gradient(100% 120% at 100% 100%, color-mix(in oklab, var(--k-ember) 62%, #3c0f58) 0%, transparent 62%),
-      linear-gradient(135deg, color-mix(in oklab, var(--k-ember) 90%, #fff), color-mix(in oklab, var(--k-ember) 78%, #5a1470));
-    box-shadow: 0 30px 50px -28px color-mix(in oklab, var(--k-ember) 75%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
-  }
+  /* Both account cards wear the dark face. What the card is - REAL or DEMO - is said on the card itself, by
+     the badges across its top, rather than by its colour. One definition for both so they cannot drift apart. */
+  .k-acct-live,
   .k-acct-demo {
     background:
       radial-gradient(110% 130% at 0% 0%, color-mix(in oklab, var(--k-ember) 30%, #45404f) 0%, transparent 55%),

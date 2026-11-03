@@ -295,40 +295,25 @@ class AccountCardVisual extends StatelessWidget {
     final t = context.t;
     final k = context.k;
     final a = account;
-    final live = a.live && !a.prop;
     final e = k.ember;
     const white = Colors.white;
-    final layers = live
-        ? [
-            LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [mixOklab(e, white, 0.9), mixOklab(e, const Color(0xFF5A1470), 0.78)]),
-            RadialGradient(
-              center: Alignment.topLeft,
-              radius: 1.3,
-              colors: [mixOklab(e, white, 0.52), mixOklab(e, white, 0.52).withValues(alpha: 0)],
-              stops: const [0, 0.52],
-            ),
-            RadialGradient(
-              center: Alignment.bottomRight,
-              radius: 1.2,
-              colors: [mixOklab(e, const Color(0xFF3C0F58), 0.62), mixOklab(e, const Color(0xFF3C0F58), 0.62).withValues(alpha: 0)],
-              stops: const [0, 0.62],
-            ),
-          ]
-        : [
-            const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF2C2935), Color(0xFF121016)]),
-            RadialGradient(
-              center: Alignment.topLeft,
-              radius: 1.3,
-              colors: [mixOklab(e, const Color(0xFF45404F), 0.3), mixOklab(e, const Color(0xFF45404F), 0.3).withValues(alpha: 0)],
-              stops: const [0, 0.55],
-            ),
-            RadialGradient(
-              center: Alignment.bottomRight,
-              radius: 1.1,
-              colors: [mixOklab(e, const Color(0xFF1A1720), 0.22), mixOklab(e, const Color(0xFF1A1720), 0.22).withValues(alpha: 0)],
-              stops: const [0, 0.6],
-            ),
-          ];
+    // Both cards wear the dark face (web .k-acct-live / .k-acct-demo, now one rule). What the card is - REAL
+    // or DEMO - is said on the card itself, by the badges across its top, rather than by its colour.
+    final layers = [
+      const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF2C2935), Color(0xFF121016)]),
+      RadialGradient(
+        center: Alignment.topLeft,
+        radius: 1.3,
+        colors: [mixOklab(e, const Color(0xFF45404F), 0.3), mixOklab(e, const Color(0xFF45404F), 0.3).withValues(alpha: 0)],
+        stops: const [0, 0.55],
+      ),
+      RadialGradient(
+        center: Alignment.bottomRight,
+        radius: 1.1,
+        colors: [mixOklab(e, const Color(0xFF1A1720), 0.22), mixOklab(e, const Color(0xFF1A1720), 0.22).withValues(alpha: 0)],
+        stops: const [0, 0.6],
+      ),
+    ];
     final badge = a.prop ? t('accounts.badge.prop') : (a.live ? t('accounts.badge.live') : t('accounts.badge.demo'));
     final title = '${a.groupName} · ${t.dyn('accounts.mode.${a.mode}', fallback: a.mode)}';
     final caption = context.text.micro.copyWith(color: white.withValues(alpha: 0.75), letterSpacing: 1.0);
@@ -337,7 +322,7 @@ class AccountCardVisual extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: live ? e.withValues(alpha: 0.55) : Colors.black.withValues(alpha: 0.5),
+            color: Colors.black.withValues(alpha: 0.5),
             offset: const Offset(0, 26),
             blurRadius: 44,
             spreadRadius: -26,
@@ -355,7 +340,7 @@ class AccountCardVisual extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(24),
                 border: Border(
-                  top: BorderSide(color: white.withValues(alpha: live ? 0.35 : 0.12)),
+                  top: BorderSide(color: white.withValues(alpha: 0.12)),
                 ),
               ),
             ),
