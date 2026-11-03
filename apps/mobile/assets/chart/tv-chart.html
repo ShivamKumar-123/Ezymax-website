@@ -49,6 +49,7 @@
   let bars = [];              // every bar we hold, oldest first
   let onTick = null;          // the datafeed's realtime callback
   let olderWait = null;       // the getBars resolver waiting for an `older` message
+  let firstWait = null;       // the first getBars, parked until the app's `bars` message has arrived
   let exhausted = false;      // the app has told us there is no more history
   const lines = new Map();    // id -> { obj, kind, sig }
   const studies = new Map();  // uid -> study id
@@ -93,7 +94,13 @@
     }), 0),
 
     getBars: (_symbol, _res, period, onHistory, onError) => {
-      if (period.firstDataRequest) return onHistory(bars.slice(), { noData: bars.length === 0 });
+      if (period.firstDataRequest) {
+        if (bars.length) return onHistory(bars.slice(), { noData: false });
+        // The library asks before the app has sent its history. Answering "no data" here would be believed -
+        // the library then stops asking - so the request is parked and answered when the bars arrive.
+        firstWait = { onHistory, onError };
+        return;
+      }
       // Scroll-back: the app owns the history, so it is asked and the answer is awaited. Only one request is
       // ever in flight, which is what TradingView does anyway.
       if (olderWait) return onError("busy");
@@ -294,6 +301,13 @@
       case "bars": {
         bars = (m.bars || []).map(toBar).filter(Boolean);
         exhausted = false;
+        if (firstWait) {
+          // the library asked first; this is its answer
+          const w = firstWait;
+          firstWait = null;
+          w.onHistory(bars.slice(), { noData: bars.length === 0 });
+          return;
+        }
         // A fresh history means a different symbol or timeframe: the library is told to re-read from us.
         if (chart && cfg) { try { chart.resetData(); } catch (_) {} }
         return;
@@ -343,11 +357,18 @@
   }
 
   /** The app sends milliseconds; TradingView wants them too, but only for a bar it can use. */
+  /**
+   * One bar as the app sends it: the array `[t, o, h, l, c, v]` that chart_bridge.dart's `_bar` builds and
+   * chart.html reads by index, with `t` in seconds. TradingView wants milliseconds, so seconds are scaled up;
+   * an object form is accepted too, so a future sender need not match the array exactly.
+   */
   function toBar(b) {
     if (!b) return null;
-    const t = num(b.t ?? b.time), o = num(b.o ?? b.open), h = num(b.h ?? b.high), l = num(b.l ?? b.low), c = num(b.c ?? b.close);
+    const a = Array.isArray(b);
+    const t = num(a ? b[0] : (b.t ?? b.time)), o = num(a ? b[1] : (b.o ?? b.open)), h = num(a ? b[2] : (b.h ?? b.high));
+    const l = num(a ? b[3] : (b.l ?? b.low)), c = num(a ? b[4] : (b.c ?? b.close));
     if (t === null || o === null || h === null || l === null || c === null) return null;
-    const v = num(b.v ?? b.volume);
+    const v = num(a ? b[5] : (b.v ?? b.volume));
     return { time: t < 1e11 ? t * 1000 : t, open: o, high: h, low: l, close: c, ...(v === null ? {} : { volume: v }) };
   }
 

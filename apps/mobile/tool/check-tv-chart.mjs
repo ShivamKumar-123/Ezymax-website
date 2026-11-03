@@ -46,7 +46,8 @@ const el = { style: {} };
 const ctx = {
   console,
   setTimeout,
-  TradingView: { widget: function () { calls.push("widget()"); return widget; } },
+  // the datafeed the page hands the library is kept, so the test can play the library's side of it
+  TradingView: { widget: function (opts) { calls.push("widget()"); ctx.__datafeed = opts.datafeed; return widget; } },
   document: { getElementById: () => el },
   window: { EzymexChart: { postMessage: (s) => posted.push(JSON.parse(s)) } },
 };
@@ -55,7 +56,10 @@ vm.createContext(ctx);
 vm.runInContext(src, ctx);
 
 const K = ctx.window.K;
-const bar = (t, c) => ({ t, o: c, h: c + 1, l: c - 1, c, v: 10 });
+// A bar exactly as chart_bridge.dart `_bar` sends it: the ARRAY [t, o, h, l, c, v], t in seconds. The first
+// version of this check invented an object shape instead of reading the Dart, passed, and shipped a page that
+// threw every real bar away. The fixture is the contract now.
+const bar = (t, c) => [t, c, c + 1, c - 1, c, 10];
 
 // The handshake comes first. The app sends nothing until the page has said ready - not even the init that
 // builds the chart - so ready has to be posted by the time the script has run, before anything is received.
@@ -71,6 +75,13 @@ K.recv({ type: "quote", bid: 1.49, ask: 1.51 });
 K.recv({ type: "init", digits: 5, intraday: true, palette: { dark: true, bg: "#000", up: "#0f0", down: "#f00" }, symbol: "EURUSD", tf: "M5", step: 300, chartType: "candles", indicators: [{ uid: "u1", type: "rsi", params: { len: 14 }, visible: true }] });
 onReadyCb();
 
+// The library's first request lands before the app has sent its history. It must be parked, not answered
+// "no data" (which the library would believe and never ask again), and answered once the bars arrive - with
+// the bars decoded from the array form, time scaled from seconds to milliseconds.
+let firstAnswer = null;
+ctx.__datafeed.getBars("EURUSD", "5", { firstDataRequest: true }, (b, meta) => { firstAnswer = { b, meta }; }, () => { firstAnswer = "error"; });
+const parked = firstAnswer === null;
+
 K.recv({ type: "bars", bars: [bar(1_700_000_000, 1.1), bar(1_700_000_300, 1.2)] });
 K.recv({ type: "bar", bar: bar(1_700_000_600, 1.3) });
 K.recv({ type: "quote", bid: 1.2999, ask: 1.3001 });
@@ -85,6 +96,10 @@ const fail = [];
 const want = (cond, msg) => { if (!cond) fail.push(msg); };
 
 want(readyFirst, "ready must be posted as soon as the script runs, before any message is received");
+want(parked, "a first getBars before the bars message must be parked, not answered");
+want(firstAnswer && firstAnswer !== "error" && firstAnswer.b.length === 2, "the parked first getBars was not answered with the two bars");
+want(firstAnswer && firstAnswer.b[0].time === 1_700_000_000_000 && firstAnswer.b[0].open === 1.1 && firstAnswer.b[0].volume === 10, "a bar sent as [t,o,h,l,c,v] in seconds was not decoded to milliseconds");
+want(firstAnswer && firstAnswer.meta && firstAnswer.meta.noData === false, "the first answer must not claim no data");
 want(made.length >= 3, "a line sent before the chart was ready was never drawn after it was");
 want(calls.includes("widget()"), "widget was never built");
 want(calls.includes("study:Relative Strength Index"), "RSI study not created");
