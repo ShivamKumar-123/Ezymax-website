@@ -85,6 +85,20 @@ pub fn deposit_bonus(deposit: D, pct: D, cap: D, min_deposit: D) -> Option<D> {
     (b > ZERO).then_some(b)
 }
 
+/// Of the deposits a client made after claiming, the one the grant pays on: the earliest that actually
+/// earns a bonus, with what it earns.
+///
+/// Not simply the earliest. A client who tops up 50 and then pays in 500 has made the deposit the offer asks
+/// for, but stopping at the 50 would fail the minimum and pick the same 50 again on every pass - a bonus that
+/// can never arrive, with nothing on screen to say why. The offer is for a qualifying deposit, so the search
+/// is for a qualifying deposit.
+pub fn paying_deposit(deposits: &[(i64, D)], pct: D, cap: D, min_deposit: D) -> Option<(i64, D, D)> {
+    deposits
+        .iter()
+        .filter_map(|&(txn, amount)| deposit_bonus(amount, pct, cap, min_deposit).map(|b| (txn, amount, b)))
+        .min_by_key(|&(txn, _, _)| txn)
+}
+
 /// Lots to trade to release the whole bonus.
 pub fn lots_required(amount: D, release_per_lot: D) -> D {
     if release_per_lot <= ZERO { ZERO } else { r4(amount / release_per_lot) }
@@ -439,6 +453,24 @@ mod tests {
         assert_eq!(deposit_bonus(dec("500"), dec("30"), dec("250"), dec("100")), Some(dec("150")));
         assert_eq!(deposit_bonus(dec("50"), dec("30"), dec("250"), dec("100")), None, "below minimum deposit");
         assert_eq!(deposit_bonus(dec("500"), dec("30"), ZERO, ZERO), Some(dec("150")), "cap 0 = uncapped");
+    }
+
+    #[test]
+    fn a_grant_pays_on_the_first_deposit_that_qualifies() {
+        let (pct, cap, min) = (dec("25"), dec("1000"), dec("100"));
+        // a top-up too small for the offer does not become the deposit the grant is stuck on
+        let mixed = [(10_i64, dec("50")), (11, dec("62")), (12, dec("500"))];
+        assert_eq!(paying_deposit(&mixed, pct, cap, min), Some((12, dec("500"), dec("125"))));
+        // when the first one does qualify, it is still the first one
+        let big_first = [(10_i64, dec("400")), (11, dec("900"))];
+        assert_eq!(paying_deposit(&big_first, pct, cap, min), Some((10, dec("400"), dec("100"))));
+        // nothing qualifies: the grant keeps waiting rather than paying on a deposit that is too small
+        let all_small = [(10_i64, dec("50")), (11, dec("62"))];
+        assert_eq!(paying_deposit(&all_small, pct, cap, min), None);
+        assert_eq!(paying_deposit(&[], pct, cap, min), None);
+        // the ledger is not guaranteed to arrive in order; the earliest qualifying one still wins
+        let shuffled = [(12_i64, dec("500")), (10, dec("50")), (11, dec("300"))];
+        assert_eq!(paying_deposit(&shuffled, pct, cap, min), Some((11, dec("300"), dec("75"))));
         // $150 bonus releasing $5 per lot needs 30 lots
         assert_eq!(lots_required(dec("150"), dec("5")), dec("30"));
         assert_eq!(release_for(dec("2"), dec("5"), dec("150")), dec("10"));
