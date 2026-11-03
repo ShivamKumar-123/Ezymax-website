@@ -17,12 +17,12 @@ import '../../ui/ui.dart';
 import '../common/pickers.dart';
 import 'sign_in_sheet.dart';
 
-/// The picture's own amber (assets/photos/welcome.jpg: brighter in the middle, a little deeper at the sides); the page
-/// is this colour above the picture, which starts under the headline.
-const Color _amber = Color(0xFFEF9B00);
-const LinearGradient _amberFill = LinearGradient(colors: [Color(0xFFEB9800), Color(0xFFF29E00), Color(0xFFEB9800)]);
+/// The picture's own near-black (assets/photos/welcome.jpg: the Ezymex coin on wet rock, lit red). It is the
+/// page's colour behind the picture, which covers the whole screen - sampled from the picture's own edges, so
+/// nothing shows a seam where the two meet.
+const Color _ink = Color(0xFF0A0708);
 
-/// The headline, the pills and the demo link in the picture's near-black.
+/// The pills' face over a dark picture: white, with this near-black for their text.
 const Color _inkOnPhoto = Color(0xFF0C0C0F);
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -77,8 +77,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final mq = MediaQuery.of(context);
     final h = mq.size.height;
     // the broker's colour may be dark: then the texts and pills swap to white
-    final bg = ezymex ? _amber : k.ember;
-    final onDark = !ezymex && ThemeData.estimateBrightnessForColor(bg) == Brightness.dark;
+    final bg = ezymex ? _ink : k.ember;
+    // Ezymex's own picture is dark, so its texts take the dark treatment too: white headline, white pills with
+    // dark text. A broker's colour decides the same thing for itself.
+    final onDark = ezymex || ThemeData.estimateBrightnessForColor(bg) == Brightness.dark;
     final ink = onDark ? Colors.white : _inkOnPhoto;
     final inkFg = onDark ? _inkOnPhoto : Colors.white;
     final demo = ezymex && t.has('auth.demo.tryCta');
@@ -89,46 +91,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       backgroundColor: bg,
       resizeToAvoidBottomInset: false,
       body: AnnotatedRegion<SystemUiOverlayStyle>(
-        // dark status-bar icons over the bright picture
+        // light status-bar icons over the dark picture, dark ones over a bright broker colour
         value: KTheme.overlay(onDark ? Brightness.dark : Brightness.light),
         child: Stack(
           fit: StackFit.expand,
           children: [
             if (ezymex) ...[
-              const DecoratedBox(decoration: BoxDecoration(gradient: _amberFill)),
-              // the picture starts under the headline (its figure's head is right at its top), its top edge fading
-              // into the same amber
-              Positioned(
-                left: 0,
-                right: 0,
-                top: h * 0.34,
-                bottom: 0,
-                child: ShaderMask(
-                  shaderCallback: (r) => LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: const [Color(0x00FFFFFF), Color(0xFFFFFFFF)],
-                    stops: [0, (36 / r.height).clamp(0.0, 1.0)],
-                  ).createShader(r),
-                  blendMode: BlendMode.dstIn,
-                  child: Image.asset('assets/photos/welcome.jpg', fit: BoxFit.cover, alignment: Alignment.topCenter, filterQuality: FilterQuality.high),
-                ),
+              const ColoredBox(color: _ink),
+              // The picture is one composition - the coin centred, rock above and below - so it fills the screen
+              // rather than starting under the headline as the old one did. Centred, so a taller phone crops the
+              // rock at the edges and never the coin.
+              Positioned.fill(
+                child: Image.asset('assets/photos/welcome.jpg', fit: BoxFit.cover, filterQuality: FilterQuality.high),
               ),
             ],
-            // a soft dark gradient behind the legal line and the buttons only
+            // A dark gradient behind the legal line and the buttons. It is deeper than a bright picture needed,
+            // because this one is at its brightest exactly there - the lava pooled under the coin - and the
+            // legal line is plain white text with nothing of its own behind it. It starts below the coin, so
+            // what it darkens is the reflection and not the subject.
             Positioned(
               left: 0,
               right: 0,
               bottom: 0,
-              height: h * 0.42,
+              height: h * 0.34,
               child: IgnorePointer(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [Colors.black.withValues(alpha: 0), Colors.black.withValues(alpha: 0.22), Colors.black.withValues(alpha: 0.6)],
-                      stops: const [0, 0.45, 1],
+                      colors: [Colors.black.withValues(alpha: 0), Colors.black.withValues(alpha: 0.5), Colors.black.withValues(alpha: 0.88)],
+                      stops: const [0, 0.4, 1],
                     ),
                   ),
                 ),
