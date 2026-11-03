@@ -53,10 +53,9 @@
   let exhausted = false;      // the app has told us there is no more history
   const lines = new Map();    // id -> { obj, kind, sig }
   const studies = new Map();  // uid -> study id
-  let quoteLines = null;      // the bid / ask pair
   // What arrived before the library was ready to draw it. The app sends lines and quotes the moment it has
   // them, which can be before TradingView has finished starting, and a line that came then must not be lost.
-  let lastLines = null, lastQuote = null, lastIndicators = null;
+  let lastLines = null, lastIndicators = null;
 
   const palette = () => (cfg && cfg.palette) || {};
   const num = (v) => (typeof v === "number" && isFinite(v) ? v : null);
@@ -142,6 +141,8 @@
       "scalesProperties.textColor": p.fg2 || "#a1a1aa",
       "scalesProperties.lineColor": line,
       "scalesProperties.showSeriesLastValue": true,
+      // one number on the scale, the price: an indicator's value was a second badge beside it
+      "scalesProperties.showStudyLastValue": false,
       "scalesProperties.showBidAskLabels": false,
       "mainSeriesProperties.showPriceLine": true,
       "mainSeriesProperties.priceLineColor": down,
@@ -233,24 +234,6 @@
     }
   }
 
-  function drawQuote(bid, ask) {
-    if (!chart || num(bid) === null || num(ask) === null) return;
-    const p = palette();
-    if (!quoteLines) {
-      try {
-        quoteLines = { bid: chart.createOrderLine(), ask: chart.createOrderLine() };
-      } catch (_) { quoteLines = null; return; }
-      for (const [k, o] of Object.entries(quoteLines)) {
-        o.setText(k.toUpperCase()).setLineStyle(1).setEditable(false).setLineWidth(1)
-          .setBodyBackgroundColor(p.panel || "#11151c").setBodyTextColor(p.fg3 || "#8b929e").setBodyBorderColor(p.line || "#242a33");
-      }
-      quoteLines.bid.setLineColor(p.down || "#dc2626");
-      quoteLines.ask.setLineColor(p.up || "#16a34a");
-    }
-    quoteLines.bid.setPrice(bid);
-    quoteLines.ask.setPrice(ask);
-  }
-
   /* ----------------------------------------------------------------- indicators */
 
   // The app names its indicators as traders do, and so does TradingView, so almost all of them match on the
@@ -322,7 +305,6 @@
       try { chart.setChartType(STYLE[cfg.chartType] ?? 1); } catch (_) {}
       drawStudies(lastIndicators || cfg.indicators);
       if (lastLines) drawLines(lastLines);
-      if (lastQuote) drawQuote(lastQuote.bid, lastQuote.ask);
     });
   }
 
@@ -373,7 +355,9 @@
         return;
       }
 
-      case "quote": lastQuote = { bid: m.bid, ask: m.ask }; return drawQuote(m.bid, m.ask);
+      // The quote is not drawn: the one price line on the chart is the library's own, at the last bar's close
+      // (the bid), with the one badge on the scale. Bid and Ask are on the Sell / Buy buttons under the chart.
+      case "quote": return;
       case "lines": lastLines = m.lines || []; return drawLines(lastLines);
       case "indicators": lastIndicators = m.indicators || []; return drawStudies(lastIndicators);
 

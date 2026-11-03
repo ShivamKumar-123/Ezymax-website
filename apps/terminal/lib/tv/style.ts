@@ -58,6 +58,9 @@ export function chartOverrides(c: Palette): Record<string, unknown> {
     // The price the chart is moving at: one dashed line across the plot and one badge on the scale, red rather
     // than the grey it used to be - it is a price, not a gridline, and grey lost it among the scale's own labels.
     "scalesProperties.showSeriesLastValue": true,
+    // An indicator's last value is not on the scale either: a moving average's badge sat right under the price's
+    // and read as a second price. Its value is in the legend.
+    "scalesProperties.showStudyLastValue": false,
     // One badge, not three. Bid and Ask used to be labelled on the scale as well, so the trader read three numbers
     // a few cents apart where there is only one price to act on. Our bars close on the bid (lib/tv/datafeed.ts), so
     // the last-value badge already is the sell price - the Bid label was a second copy of it and the Ask label was
