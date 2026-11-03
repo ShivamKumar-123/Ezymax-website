@@ -5,6 +5,7 @@ import { FlutedGlass } from "@paper-design/shaders-react";
 import { motion } from "motion/react";
 import { useT } from "@ezymex/i18n/react";
 import { Delta, LanguageMenu, Logo, PriceText, SymbolAvatar, ThemeToggle, useBrand, useQuote } from "@/components/kit";
+import { GetTheApp } from "./get-the-app";
 
 /**
  * Split auth layout (adapted from "auth-section-3"): the form card on the left,
@@ -35,6 +36,8 @@ export function AuthSection({ children }: { children: ReactNode }) {
               {children}
             </motion.div>
           </div>
+          {/* the app, offered where someone is already signing in; it hides itself on iPhone and once dismissed */}
+          <GetTheApp className="relative mx-6 mb-4 lg:mx-10" />
           <p className="relative px-6 pb-6 text-[11px] leading-relaxed text-fg-3 lg:px-10">
             {t("common.riskWarning")}
           </p>

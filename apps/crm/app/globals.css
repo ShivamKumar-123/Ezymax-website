@@ -291,15 +291,22 @@
     background: radial-gradient(circle at 30% 25%, color-mix(in oklab, var(--k-ember) 62%, #fff), var(--k-ember) 62%);
     box-shadow: 0 10px 22px -10px var(--k-ember), inset 0 1px 0 rgba(255, 255, 255, 0.32);
   }
-  /* Both account cards wear the dark face. What the card is - REAL or DEMO - is said on the card itself, by
-     the badges across its top, rather than by its colour. One definition for both so they cannot drift apart. */
-  .k-acct-live,
+  /* Both account cards are dark. They are told apart by warmth rather than by lightness: the real one is lit
+     by the brand colour, the demo one by nothing, so a glance down the carousel reads real money as warm and
+     practice money as grey. The badges on the face still say which is which in words. */
+  .k-acct-live {
+    background:
+      radial-gradient(110% 130% at 0% 0%, color-mix(in oklab, var(--k-ember) 60%, #45404f) 0%, transparent 56%),
+      radial-gradient(90% 110% at 100% 100%, color-mix(in oklab, var(--k-ember) 46%, #1a1720) 0%, transparent 62%),
+      linear-gradient(135deg, #322830, #160f13);
+    box-shadow: 0 30px 50px -28px color-mix(in oklab, var(--k-ember) 48%, rgba(20, 14, 30, 0.7)), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
   .k-acct-demo {
     background:
-      radial-gradient(110% 130% at 0% 0%, color-mix(in oklab, var(--k-ember) 30%, #45404f) 0%, transparent 55%),
-      radial-gradient(90% 110% at 100% 100%, color-mix(in oklab, var(--k-ember) 22%, #1a1720) 0%, transparent 60%),
-      linear-gradient(135deg, #2c2935, #121016);
-    box-shadow: 0 30px 50px -28px rgba(20, 14, 30, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      radial-gradient(110% 130% at 0% 0%, #46424f 0%, transparent 55%),
+      radial-gradient(90% 110% at 100% 100%, #1a1821 0%, transparent 60%),
+      linear-gradient(135deg, #2b2932, #121115);
+    box-shadow: 0 30px 50px -28px rgba(16, 16, 22, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
   /* the currency pill of the wide account card: white on the gradient, so its text is a fixed dark in both themes */
   .k-acct-pill {

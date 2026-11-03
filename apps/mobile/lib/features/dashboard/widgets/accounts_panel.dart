@@ -297,22 +297,20 @@ class AccountCardVisual extends StatelessWidget {
     final a = account;
     final e = k.ember;
     const white = Colors.white;
-    // Both cards wear the dark face (web .k-acct-live / .k-acct-demo, now one rule). What the card is - REAL
-    // or DEMO - is said on the card itself, by the badges across its top, rather than by its colour.
+    // Both cards are dark (web .k-acct-live / .k-acct-demo). They are told apart by warmth rather than by
+    // lightness: the real one is lit by the brand colour, the demo one by nothing, so a glance down the
+    // carousel reads real money as warm and practice money as grey. The badges still say which in words.
+    final live = a.live && !a.prop;
+    final glowTop = live ? mixOklab(e, const Color(0xFF45404F), 0.6) : const Color(0xFF46424F);
+    final glowBottom = live ? mixOklab(e, const Color(0xFF1A1720), 0.46) : const Color(0xFF1A1821);
     final layers = [
-      const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF2C2935), Color(0xFF121016)]),
-      RadialGradient(
-        center: Alignment.topLeft,
-        radius: 1.3,
-        colors: [mixOklab(e, const Color(0xFF45404F), 0.3), mixOklab(e, const Color(0xFF45404F), 0.3).withValues(alpha: 0)],
-        stops: const [0, 0.55],
+      LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: live ? const [Color(0xFF322830), Color(0xFF160F13)] : const [Color(0xFF2B2932), Color(0xFF121115)],
       ),
-      RadialGradient(
-        center: Alignment.bottomRight,
-        radius: 1.1,
-        colors: [mixOklab(e, const Color(0xFF1A1720), 0.22), mixOklab(e, const Color(0xFF1A1720), 0.22).withValues(alpha: 0)],
-        stops: const [0, 0.6],
-      ),
+      RadialGradient(center: Alignment.topLeft, radius: 1.3, colors: [glowTop, glowTop.withValues(alpha: 0)], stops: const [0, 0.56]),
+      RadialGradient(center: Alignment.bottomRight, radius: 1.1, colors: [glowBottom, glowBottom.withValues(alpha: 0)], stops: const [0, 0.62]),
     ];
     final badge = a.prop ? t('accounts.badge.prop') : (a.live ? t('accounts.badge.live') : t('accounts.badge.demo'));
     final title = '${a.groupName} · ${t.dyn('accounts.mode.${a.mode}', fallback: a.mode)}';
@@ -322,7 +320,7 @@ class AccountCardVisual extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.5),
+            color: live ? e.withValues(alpha: 0.4) : Colors.black.withValues(alpha: 0.5),
             offset: const Offset(0, 26),
             blurRadius: 44,
             spreadRadius: -26,
@@ -340,7 +338,7 @@ class AccountCardVisual extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(24),
                 border: Border(
-                  top: BorderSide(color: white.withValues(alpha: 0.12)),
+                  top: BorderSide(color: white.withValues(alpha: live ? 0.2 : 0.1)),
                 ),
               ),
             ),

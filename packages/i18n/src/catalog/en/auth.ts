@@ -178,5 +178,9 @@ const auth = {
   "apiError.terms": "Please confirm you are over 18 and accept the terms.",
   "apiError.codeOtherChange": "This code was sent for a different change. Request a new code.",
   "apiError.codeUseReset": "Use the reset form for this code.",
+  // "Get the app" on the sign-in pages (components/ui/get-the-app.tsx). Android only: there is no iOS build.
+  "getApp.title": "Get the Ezymex app",
+  "getApp.sub": "Trade, deposit and withdraw from your phone.",
+  "getApp.cta": "Download",
 };
 export default auth;
