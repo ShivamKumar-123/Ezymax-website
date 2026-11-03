@@ -88,13 +88,13 @@ interface Ready {
   coords: ChartCoords & { calibrate: (price: number, offsetY: number) => void; dispose: () => void };
 }
 
-/** One horizontal line to draw: a trade line (position, order, SL / TP, alert). */
+/** One horizontal line to draw: a trade line (position, order, SL / TP, alert), or the Buy price line. */
 interface Shape {
   id: string;
   price: number;
   color: string;
   style: number;
-  /** false: the line is drawn but prints no badge on the price scale (Bid and Ask) */
+  /** false: the line is drawn but prints no badge on the price scale (the Buy price) */
   label?: boolean;
 }
 
@@ -125,7 +125,7 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
    *  plot, and without this list such a line could never be removed again (see sweepOrphans) */
   const created = React.useRef(new Set<string>());
   const drawnRef = React.useRef<DrawnLine[]>([]);
-  /** the account's executable prices: the Sell / Buy pair in the header */
+  /** the account's executable prices: the Sell / Buy pair in the header, and the Buy line (see syncShapes) */
   const quoteRef = React.useRef<{ bid: number; ask: number }>({ bid: 0, ask: 0 });
   const [legendTop, setLegendTop] = React.useState<number | null>(null);
   const [popup, setPopup] = React.useState(false);
@@ -557,11 +557,15 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
       for (const r of shapes.current.values()) if (r.entity) live.add(r.entity);
       for (const id of [...created.current]) if (!live.has(id)) drop(id);
     };
-    // No Bid or Ask line. The chart carries one price line, the library's own at the last bar's close (our bars
-    // close on the bid, lib/tv/datafeed.ts), with one badge on the scale - the way the chart the traders know
-    // draws it. The two quote lines that used to sit beside it put three lines a few cents apart on the plot,
-    // and the Ask's figure is on the Buy button and in the header pair in any case.
-    const all: Shape[] = drawnRef.current.map((l) => ({ id: l.id, price: l.price, color: lineColor(l.line, c, l.bad), style: l.line.kind === "pos" ? 0 : l.line.kind === "alert" ? 1 : 2 }));
+    // Two price lines, the way the chart the traders know draws them: the Sell price in red with its badge, and
+    // the Buy price above it as a dotted blue line with no badge. The Sell line is the library's own price line at
+    // the last bar's close (our bars close on the bid, lib/tv/datafeed.ts), so it is on the chart even while the
+    // quotes channel is quiet; only the Buy line is drawn here. A Sell line drawn here as well sat on top of the
+    // library's - that was the third line.
+    const c0 = palette.current;
+    const q = quoteRef.current;
+    const askLine: Shape[] = !c0 || !(q.ask > 0) ? [] : [{ id: "q:ask", price: q.ask, color: c0.buy, style: 1, label: false }];
+    const all: Shape[] = [...drawnRef.current.map((l) => ({ id: l.id, price: l.price, color: lineColor(l.line, c, l.bad), style: l.line.kind === "pos" ? 0 : l.line.kind === "alert" ? 1 : 2 })), ...askLine];
     const want = new Map(all.map((l) => [l.id, l]));
     for (const [id, r] of shapes.current) {
       if (want.has(id)) continue;

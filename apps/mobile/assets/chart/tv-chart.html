@@ -55,7 +55,9 @@
   const studies = new Map();  // uid -> study id
   // What arrived before the library was ready to draw it. The app sends lines and quotes the moment it has
   // them, which can be before TradingView has finished starting, and a line that came then must not be lost.
-  let lastLines = null, lastIndicators = null;
+  let lastLines = null, lastQuote = null, lastIndicators = null;
+  // The Buy price line: { id, price }, id null while the library is still creating it.
+  let askLine = null;
 
   const palette = () => (cfg && cfg.palette) || {};
   const num = (v) => (typeof v === "number" && isFinite(v) ? v : null);
@@ -234,6 +236,49 @@
     }
   }
 
+  /* ----------------------------------------------------------------- the quote */
+
+  // Two price lines, as the web terminal draws them: the Sell price is the library's own price line at the last
+  // bar's close (the bars close on the bid), red with its badge; the Buy price is this dotted blue line above it,
+  // with no badge. One shape, moved on every quote rather than drawn again.
+  function drawQuote(ask) {
+    if (!chart || num(ask) === null) return;
+    const colour = palette().buy || "#4a7bff";
+    if (askLine && askLine.id) {
+      if (askLine.price === ask) return;
+      try {
+        const s = chart.getShapeById(askLine.id);
+        s.setPoints([{ price: ask, time: s.getPoints()[0]?.time }]);
+        askLine.price = ask;
+        return;
+      } catch (_) {
+        askLine = null; // the handle is gone (a new layout); drawn afresh below
+      }
+    }
+    if (askLine) { askLine.price = ask; return; } // being created: it picks this price up when it is there
+    const rec = askLine = { id: null, price: ask };
+    let time;
+    try { time = Math.floor(chart.getVisibleRange().to); } catch (_) { time = Math.floor(Date.now() / 1000); }
+    let made;
+    try {
+      made = chart.createShape({ price: ask, time }, {
+        shape: "horizontal_line", lock: true, disableSelection: true, disableSave: true, disableUndo: true,
+        showInObjectsTree: false, zOrder: "top",
+        overrides: { linecolor: colour, linestyle: 1, linewidth: 1, showPrice: false, showLabel: false },
+      });
+    } catch (_) { askLine = null; return; }
+    Promise.resolve(made).then((id) => {
+      if (askLine !== rec) { try { chart.removeEntity(id); } catch (_) {} return; }
+      rec.id = id;
+      if (rec.price !== ask) { const latest = rec.price; rec.price = NaN; drawQuote(latest); }
+    }).catch(() => { if (askLine === rec) askLine = null; });
+  }
+
+  function recolourQuote() {
+    if (!chart || !askLine || !askLine.id) return;
+    try { chart.getShapeById(askLine.id).setProperties({ linecolor: palette().buy || "#4a7bff" }); } catch (_) {}
+  }
+
   /* ----------------------------------------------------------------- indicators */
 
   // The app names its indicators as traders do, and so does TradingView, so almost all of them match on the
@@ -305,6 +350,7 @@
       try { chart.setChartType(STYLE[cfg.chartType] ?? 1); } catch (_) {}
       drawStudies(lastIndicators || cfg.indicators);
       if (lastLines) drawLines(lastLines);
+      if (lastQuote) drawQuote(lastQuote.ask);
     });
   }
 
@@ -355,9 +401,7 @@
         return;
       }
 
-      // The quote is not drawn: the one price line on the chart is the library's own, at the last bar's close
-      // (the bid), with the one badge on the scale. Bid and Ask are on the Sell / Buy buttons under the chart.
-      case "quote": return;
+      case "quote": lastQuote = { bid: m.bid, ask: m.ask }; return drawQuote(m.ask);
       case "lines": lastLines = m.lines || []; return drawLines(lastLines);
       case "indicators": lastIndicators = m.indicators || []; return drawStudies(lastIndicators);
 
@@ -373,6 +417,7 @@
           widget.changeTheme(m.palette && m.palette.dark === false ? "light" : "dark").then(() => {
             widget.applyOverrides(overrides());
             try { widget.applyStudiesOverrides(studyOverrides()); } catch (_) {}
+            recolourQuote();
           });
         } catch (_) {
           try { widget.applyOverrides(overrides()); } catch (_) {}

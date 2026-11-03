@@ -27,8 +27,27 @@ const orderLine = () => {
   return o;
 };
 
+// the one horizontal_line shape the page creates for the Buy price, and where it was last moved to
+const shapes = new Map();
+let shapeSeq = 0;
 let onReadyCb = null;
 const chart = {
+  getVisibleRange: () => ({ from: 1_699_990_000, to: 1_700_000_600 }),
+  createShape: (point, opts) => {
+    const id = `shape-${++shapeSeq}`;
+    shapes.set(id, { price: point.price, props: { ...opts.overrides }, shape: opts.shape, showPrice: opts.overrides.showPrice });
+    calls.push(`createShape:${opts.shape}`);
+    return Promise.resolve(id);
+  },
+  getShapeById: (id) => {
+    const s = shapes.get(id);
+    if (!s) throw new Error("no such shape");
+    return {
+      getPoints: () => [{ price: s.price, time: 1_700_000_600 }],
+      setPoints: (pts) => { s.price = pts[0].price; calls.push("shape.setPoints"); },
+      setProperties: (p) => Object.assign(s.props, p),
+    };
+  },
   setChartType: (t) => calls.push(`setChartType:${t}`),
   resetData: () => calls.push("resetData"),
   createOrderLine: orderLine,
@@ -91,6 +110,9 @@ K.recv({ type: "chartType", chartType: "line" });
 K.recv({ type: "palette", palette: { dark: false, bg: "#fff" } });
 K.recv({ type: "indicators", indicators: [] });
 K.batch([{ type: "bar", bar: bar(1_700_000_600, 1.35) }, { type: "quote", bid: 1.34, ask: 1.36 }]);
+// createShape resolves on a microtask; the quotes above landed while it was being created
+await new Promise((r) => setTimeout(r, 0));
+K.recv({ type: "quote", bid: 1.37, ask: 1.39 });
 
 const fail = [];
 const want = (cond, msg) => { if (!cond) fail.push(msg); };
@@ -110,6 +132,11 @@ want(calls.includes("study:Relative Strength Index"), "RSI study not created");
 want(calls.filter((c) => c === "line.remove").length >= 1, "the removed SL line was not cleaned up");
 want(calls.includes("setChartType:2"), "line chart type not applied");
 want(calls.includes("theme:light"), "palette switch did not change the theme");
+// the Buy price: one dotted blue line, no badge, moved to the latest ask rather than drawn again
+const ask = [...shapes.values()].filter((s) => s.shape === "horizontal_line");
+want(ask.length === 1, `expected one Buy line, found ${ask.length}`);
+want(ask[0] && ask[0].price === 1.39, `the Buy line is at ${ask[0] && ask[0].price}, not the latest ask 1.39`);
+want(ask[0] && ask[0].showPrice === false && ask[0].props.linestyle === 1 && ask[0].props.linecolor === "#4a7bff", "the Buy line is not a dotted blue line without a badge");
 
 console.log("posted :", posted.map((p) => p.type).join(", "));
 console.log("calls  :", [...new Set(calls)].join(", "));
