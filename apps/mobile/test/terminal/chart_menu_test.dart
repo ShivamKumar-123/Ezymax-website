@@ -78,7 +78,7 @@ void main() {
     final c1 = ProviderContainer(overrides: [prefsProvider.overrideWithValue(prefs)]);
     final ws = c1.read(workspaceProvider);
     expect(ws.chartOf('XAUUSD').type, 'candles');
-    expect(ws.chartOf('XAUUSD').indicators.map((i) => (i.type, i.params['period'])), [('ema', 50), ('sma', 20)]);
+    expect(ws.chartOf('XAUUSD').indicators, isEmpty);
     c1.read(workspaceProvider.notifier).updateChart('XAUUSD', (c) => c.copyWith(type: 'area', indicators: [makeInstance(reg, 'rsi', const [])]));
     c1.read(workspaceProvider.notifier).toggleIndicatorFavourite('atr');
     c1.dispose();
@@ -87,7 +87,7 @@ void main() {
     final again = c2.read(workspaceProvider);
     expect(again.chartOf('XAUUSD').type, 'area');
     expect(again.chartOf('XAUUSD').indicators.single.type, 'rsi');
-    expect(again.chartOf('EURUSD').indicators, hasLength(2));
+    expect(again.chartOf('EURUSD').indicators, isEmpty);
     expect(again.indicatorFavourites, [...kDefaultIndicatorFavourites, 'atr']);
     expect(jsonDecode(jsonEncode(again.toJson())), again.toJson());
   });
@@ -103,6 +103,11 @@ void main() {
       await tester.runAsync(() async {
         h = await Harness.create(extra: [indicatorRegistryProvider.overrideWith((ref) async => reg)]);
         await h.container.read(indicatorRegistryProvider.future);
+        // the chart under test starts with two indicators on it (a chart starts bare now)
+        h.container.read(workspaceProvider.notifier).updateChart('XAUUSD', (c) => c.copyWith(indicators: [
+          IndInstance(uid: newIndicatorUid(), type: 'ema', params: const {'period': 50, 'source': 'close'}),
+          IndInstance(uid: newIndicatorUid(), type: 'sma', params: const {'period': 20, 'source': 'close'}),
+        ]));
       });
       await tester.pumpWidget(
         UncontrolledProviderScope(

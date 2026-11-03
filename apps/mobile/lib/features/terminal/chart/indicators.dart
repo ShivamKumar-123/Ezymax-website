@@ -303,11 +303,10 @@ IndInstance makeInstance(IndRegistry r, String type, List<IndInstance> existing,
   return inst;
 }
 
-/// The web chart's default indicators (store.tsx defaultWorkspace: EMA 50, SMA 20).
-List<IndInstance> defaultIndicators() => [
-  IndInstance(uid: newIndicatorUid(), type: 'ema', params: const {'period': 50, 'source': 'close'}),
-  IndInstance(uid: newIndicatorUid(), type: 'sma', params: const {'period': 20, 'source': 'close'}),
-];
+/// A chart's indicators until the client adds some: none. The web terminal's chart opens bare, and the EMA 50 and
+/// SMA 20 the app used to start with drew two curves through every chart that nobody had asked for. A symbol
+/// whose chart the client has changed keeps its own list (workspace.dart chartOf).
+List<IndInstance> defaultIndicators() => [];
 
 /// The web's indicator favourites until the client stars others (state.ts).
 const kDefaultIndicatorFavourites = ['sma', 'ema', 'bb', 'rsi', 'macd'];

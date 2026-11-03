@@ -106,7 +106,7 @@ class Workspace {
   final List<PriceAlert> alerts;
   final String? lastLogin;
 
-  /// Chart type and indicators per symbol (a symbol without its own: candles with EMA 50 and SMA 20).
+  /// Chart type and indicators per symbol (a symbol without its own: candles, no indicators).
   final Map<String, ChartSettings> charts;
 
   /// Starred indicator types of the indicators list.

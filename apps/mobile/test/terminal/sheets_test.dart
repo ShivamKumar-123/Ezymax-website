@@ -107,24 +107,19 @@ void main() {
     await tester.pump();
     expect(find.text('Buy 0.50 lot BTCUSD at market'), findsOneWidget);
 
-    // a volume preset
-    await tester.tap(find.text('0.1'));
-    await tester.pump();
-    expect(find.text('Buy 0.10 lot BTCUSD at market'), findsOneWidget);
-
     // stop loss on: a starting distance in pips, shown as money at risk
     await tester.tap(find.byType(CupertinoSwitch).first);
     await tester.pump();
     expect(find.textContaining('Risk -'), findsOneWidget);
 
-    await tester.tap(find.text('Buy 0.10 lot BTCUSD at market'));
+    await tester.tap(find.text('Buy 0.50 lot BTCUSD at market'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     expect(actions.orders, hasLength(1));
     final o = actions.orders.single;
     expect(o.side, 'buy');
     expect(o.type, 'market');
-    expect(o.volume, 0.1);
+    expect(o.volume, 0.5);
     expect(o.sl, isNotNull);
     expect(o.sl!, lessThan(63418));
     expect(o.tp, isNull);

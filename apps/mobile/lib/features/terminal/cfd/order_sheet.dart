@@ -1,8 +1,9 @@
 // The order sheet = the web order form (apps/terminal/components/order/order-ticket.tsx, dialog variant), exchange
 // style: Sell | Buy with live prices · order type (Market / Limit / Stop / Stop limit, each explained) · price, limit
-// price, expiry · volume with presets and sizing by risk · Stop loss and Take profit by price, pips or money · More
-// options (trailing stop, OCO, comment, max price change) · summary (margin, pip value, size, free margin after, swap
-// as % a year or points) · ONE confirm button that names the trade. With one-click trading on, Sell / Buy send at once.
+// price, expiry · volume with sizing by risk · Stop loss and Take profit by price, pips or money · summary (margin,
+// pip value, free margin after) · ONE confirm button that names the trade. With one-click trading on, Sell / Buy send
+// at once. It carries exactly what the web ticket does: the volume presets, the More options fold (trailing stop,
+// OCO, comment, max price change) and the size and swap rows the sheet used to add on top made it twice as long.
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -32,7 +33,6 @@ Future<void> showOrderSheet(BuildContext context, {required String symbol, Strin
       builder: (_) => OrderForm(symbol: symbol, side: side, type: type, price: price, volume: volume),
     );
 
-const List<double> _presets = [0.01, 0.1, 0.5, 1, 2];
 
 class OrderForm extends ConsumerStatefulWidget {
   const OrderForm({super.key, required this.symbol, this.side, this.type = 'market', this.price, this.volume, this.onDone});
@@ -56,14 +56,8 @@ class _OrderFormState extends ConsumerState<OrderForm> {
   String _stopLimit = '';
   StopInput _sl = const StopInput();
   StopInput _tp = const StopInput();
-  bool _trailing = false;
-  String _trailPips = '20';
   String _expiry = 'GTC';
   late String _expiryDate = _tomorrow();
-  bool _oco = false;
-  String _ocoPrice = '';
-  String _comment = '';
-  bool _more = false;
   bool _calcOpen = false;
   String _riskMode = 'pct';
   String _risk = '1';
@@ -94,7 +88,6 @@ class _OrderFormState extends ConsumerState<OrderForm> {
       _symbol = s;
       _price = '';
       _stopLimit = '';
-      _ocoPrice = '';
       if (_sl.mode == 'price') _sl = _sl.copyWith(value: '');
       if (_tp.mode == 'price') _tp = _tp.copyWith(value: '');
       _side = null;
@@ -197,11 +190,8 @@ class _OrderFormState extends ConsumerState<OrderForm> {
       stopLimit: _type == 'stop-limit' ? (double.tryParse(_stopLimit) ?? double.tryParse(_price)) : null,
       sl: stopPrice(_sl, 'sl', side, entry, spec, pipValue: pv, cent: cent),
       tp: stopPrice(_tp, 'tp', side, entry, spec, pipValue: pv, cent: cent),
-      trailingPips: _trailing ? double.tryParse(_trailPips) : null,
       expiry: _pending ? _expiry : 'GTC',
       expiryDate: _pending && _expiry == 'Date' ? _expiryDate : null,
-      comment: _comment.isEmpty ? null : _comment,
-      ocoPrice: _pending && _oco && _type != 'stop-limit' && _ocoPrice.isNotEmpty ? double.tryParse(_ocoPrice) : null,
     );
     final bad = validateOrder(
       req,
@@ -512,183 +502,48 @@ class _OrderFormState extends ConsumerState<OrderForm> {
         ),
       ],
       const SizedBox(height: 8),
-      // volume
+      // volume, with sizing by risk beside it (the web's calculator button in the field)
       TFieldRow(
         label: Text(t('desk.op.volume')),
         help: THelp(title: t('desk.g.lot.t'), text: t('desk.g.lot')),
-        child: SizedBox(
-          width: 150,
-          child: TStepper(
-            value: _volume,
-            onChanged: (v) => setState(() => _volume = v),
-            step: spec.lotStep,
-            min: spec.lotMin,
-            max: spec.lotMax,
-            semanticLabel: t('order.ticket.volume'),
-          ),
-        ),
-      ),
-      const SizedBox(height: 6),
-      Row(
-        children: [
-          Expanded(
-            child: TQuickStrip<double>(
-              options: _presets,
-              labels: [for (final p in _presets) p < 1 ? '$p' : p.toStringAsFixed(0)],
-              selected: _presets.where((p) => (p - _vol).abs() < 1e-9).firstOrNull,
-              onPick: (v) => setState(() => _volume = v.toStringAsFixed(2)),
-            ),
-          ),
-          const SizedBox(width: 6),
-          KPressable(
-            minSize: 32,
-            semanticLabel: t('desk.op.byRisk'),
-            onTap: () => setState(() => _calcOpen = !_calcOpen),
-            child: Container(
-              width: 32,
-              height: 30,
-              decoration: BoxDecoration(
-                color: _calcOpen ? k.emberSoft : k.surface2,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: k.line),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            KPressable(
+              minSize: 32,
+              semanticLabel: t('desk.op.byRisk'),
+              onTap: () => setState(() => _calcOpen = !_calcOpen),
+              child: Container(
+                width: 32,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: _calcOpen ? k.emberSoft : k.surface2,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: k.line),
+                ),
+                child: Icon(LucideIcons.calculator, size: 15, color: _calcOpen ? k.ember : k.fg2),
               ),
-              child: Icon(LucideIcons.calculator, size: 15, color: _calcOpen ? k.ember : k.fg2),
             ),
-          ),
-        ],
+            const SizedBox(width: 6),
+            SizedBox(
+              width: 150,
+              child: TStepper(
+                value: _volume,
+                onChanged: (v) => setState(() => _volume = v),
+                step: spec.lotStep,
+                min: spec.lotMin,
+                max: spec.lotMax,
+                semanticLabel: t('order.ticket.volume'),
+              ),
+            ),
+          ],
+        ),
       ),
       if (_calcOpen) ...[const SizedBox(height: 8), _calculator(context, spec, acc, q)],
       const SizedBox(height: 8),
       _stopRow(context, 'sl', spec, q, cent, slMoney),
       const SizedBox(height: 6),
       _stopRow(context, 'tp', spec, q, cent, tpMoney),
-      const SizedBox(height: 6),
-      // more options
-      KPressable(
-        pressedScale: 1,
-        onTap: () => setState(() => _more = !_more),
-        child: SizedBox(
-          height: 34,
-          child: Row(
-            children: [
-              Icon(_more ? LucideIcons.chevronDown : LucideIcons.chevronRight, size: 14, color: k.fg3),
-              const SizedBox(width: 6),
-              Text(
-                t('desk.op.more'),
-                style: context.text.label.copyWith(color: k.fg2, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  [t('desk.op.trailing'), if (_pending && _type != 'stop-limit') 'OCO', t('desk.op.comment'), t('desk.op.maxDev')].join(' · '),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.text.footnote.copyWith(color: k.fg3, fontSize: 12),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      if (_more) ...[
-        TFieldRow(
-          label: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TSmallSwitch(value: _trailing, onChanged: (v) => setState(() => _trailing = v), semanticLabel: t('desk.op.trailing')),
-              const SizedBox(width: 8),
-              Flexible(child: Text(t('desk.op.trailing'), maxLines: 1, overflow: TextOverflow.ellipsis)),
-            ],
-          ),
-          help: THelp(title: t('desk.op.trailing'), text: t('desk.op.trailingHint')),
-          child: _trailing
-              ? SizedBox(
-                  width: 110,
-                  child: TStepper(
-                    value: _trailPips,
-                    onChanged: (v) => setState(() => _trailPips = v),
-                    step: 1,
-                    min: 1,
-                    decimals: 0,
-                    semanticLabel: t('order.ticket.trailingPips'),
-                  ),
-                )
-              : Text(t('desk.op.off'), style: context.text.footnote.copyWith(color: k.fg3)),
-        ),
-        if (_pending && _type != 'stop-limit') ...[
-          const SizedBox(height: 6),
-          TFieldRow(
-            label: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TSmallSwitch(value: _oco, onChanged: (v) => setState(() => _oco = v), semanticLabel: t('desk.op.oco')),
-                const SizedBox(width: 8),
-                const Text('OCO'),
-              ],
-            ),
-            help: THelp(title: 'OCO', text: t('desk.op.oco')),
-            child: _oco
-                ? SizedBox(
-                    width: 140,
-                    child: TStepper(
-                      value: _ocoPrice,
-                      onChanged: (v) => setState(() => _ocoPrice = v),
-                      step: stepPrice,
-                      decimals: spec.digits,
-                      placeholder: fmtPrice(spec.digits, q.bid),
-                      semanticLabel: t('desk.op.ocoPrice'),
-                    ),
-                  )
-                : Text(t('desk.op.off'), style: context.text.footnote.copyWith(color: k.fg3)),
-          ),
-        ],
-        const SizedBox(height: 6),
-        TFieldRow(
-          label: Text(t('desk.op.comment')),
-          child: SizedBox(
-            width: 160,
-            child: TextField(
-              maxLength: 31,
-              textAlign: TextAlign.end,
-              style: context.text.callout.copyWith(fontSize: 13),
-              decoration: InputDecoration(
-                isCollapsed: true,
-                border: InputBorder.none,
-                counterText: '',
-                hintText: t('common.optional'),
-                hintStyle: context.text.callout.copyWith(fontSize: 13, color: k.fg3),
-              ),
-              onChanged: (v) => _comment = v,
-            ),
-          ),
-        ),
-        const SizedBox(height: 6),
-        Consumer(
-          builder: (context, ref, _) {
-            final dev = ref.watch(workspaceProvider.select((w) => w.maxDeviation));
-            return TFieldRow(
-              label: Text(t('desk.op.maxDev')),
-              help: THelp(title: t('desk.set.maxDeviation'), text: t('desk.set.maxDeviationHint')),
-              child: SizedBox(
-                width: 130,
-                child: TStepper(
-                  value: dev == null ? '' : '$dev',
-                  placeholder: t('order.ticket.anyPrice'),
-                  step: 1,
-                  decimals: 0,
-                  semanticLabel: t('order.ticket.maxDeviation'),
-                  onChanged: (v) => ref
-                      .read(workspaceProvider.notifier)
-                      .update(
-                        (w) =>
-                            v.trim().isEmpty ? w.copyWith(clearDeviation: true) : w.copyWith(maxDeviation: (double.tryParse(v) ?? 0).round().clamp(0, 1 << 20)),
-                      ),
-                ),
-              ),
-            );
-          },
-        ),
-      ],
       const SizedBox(height: 10),
       const KDivider(),
       const SizedBox(height: 6),
@@ -1014,7 +869,7 @@ class _OrderFormState extends ConsumerState<OrderForm> {
     );
   }
 
-  /// Margin, pip value, size, free margin after, swap (web LiveSummary).
+  /// Margin, pip value, free margin after (web LiveSummary in the dialog, without the size and swap rows).
   Widget _summary(BuildContext context, SymbolSpec spec, TAccount acc, TQuote q) {
     final t = context.t;
     final k = context.k;
@@ -1025,7 +880,6 @@ class _OrderFormState extends ConsumerState<OrderForm> {
     final pct = m.free > 0 ? margin / m.free * 100 : double.infinity;
     final short = margin > m.free;
     final ccy = accCcy(acc.cent);
-    final size = _vol * spec.contractSize;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1053,28 +907,8 @@ class _OrderFormState extends ConsumerState<OrderForm> {
           value: Text('${accMoney(acc.cent, pipV)} $ccy'),
         ),
         TSummaryRow(
-          label: t('desk.op.summary.size'),
-          value: Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(text: Fmt2.compactNumber(size)),
-                TextSpan(
-                  text: ' ${unitLabel(t, spec)}',
-                  style: TextStyle(color: k.fg3),
-                ),
-              ],
-            ),
-          ),
-        ),
-        TSummaryRow(
           label: t('desk.op.summary.free'),
           value: Text('${accMoney(acc.cent, m.free - margin)} $ccy', style: TextStyle(color: short ? k.down : null)),
-        ),
-        TSummaryRow(
-          label: t('desk.sw.title'),
-          ltr: false,
-          help: THelp(title: t('desk.g.swap.t'), text: t('desk.g.swap')),
-          value: Text(swapSummary(t, spec), style: context.text.footnote.copyWith(color: k.fg2, fontSize: 11.5)),
         ),
         if (short)
           Padding(
