@@ -94,9 +94,7 @@ class ChartServer {
       // The path is resolved against the chart directory and then checked to be still inside it, so a request
       // dressed up with `..` cannot read the rest of the bundle.
       final rel = Uri.decodeComponent(req.uri.path).replaceFirst(RegExp(r'^/+'), '');
-      final clean = _normalise('$_root/${rel.isEmpty ? 'chart.html' : rel}');
-      // the spelling is changed only after the path has been checked, so it cannot be used to escape
-      final path = clean == null ? null : assetFor(clean);
+      final path = _normalise('$_root/${rel.isEmpty ? 'chart.html' : rel}');
       if (path == null) {
         res.statusCode = HttpStatus.forbidden;
         return await res.close();
@@ -127,16 +125,6 @@ class ChartServer {
         // the client went away mid-response; there is nothing left to tell
       }
     }
-  }
-
-  /// Flutter will not carry an asset whose name begins with a dot, and about half of TradingView's bundles
-  /// are named `._<hash>.js`. `scripts/sync-assets.mjs` copies those with the dot spelled out, so a request
-  /// for the real name is spelled the same way here before the bundle is read.
-  @visibleForTesting
-  static String assetFor(String path) {
-    final slash = path.lastIndexOf('/');
-    final name = path.substring(slash + 1);
-    return name.startsWith('.') ? '${path.substring(0, slash + 1)}__dot__${name.substring(1)}' : path;
   }
 
   /// `assets/chart/...` with `.` and `..` resolved, or null when it climbs out of the chart directory.

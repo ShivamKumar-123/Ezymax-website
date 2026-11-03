@@ -1,6 +1,6 @@
 // Copies shared brand/photo/icon assets into each app's public/assets folder, and the licensed TradingView Advanced
 // Charts library into the terminal when it is present.
-import { cpSync, existsSync, mkdirSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -26,20 +26,17 @@ const tvDest = join(root, "apps", "terminal", "public", "charting_library");
 const tvMobile = join(root, "apps", "mobile", "assets", "chart", "tv");
 /** Everything the browser loads. The type definitions and the module builds are for compiling against, and the
  *  phone never compiles against them, so they stay out of the download. */
-const tvWanted = (name) => !name.endsWith(".d.ts") && !["charting_library.cjs.js", "charting_library.esm.js", "charting_library.js", "package.json"].includes(name);
+// `._name` files are macOS AppleDouble metadata that came along in the vendor's archive - 212 bytes each,
+// one beside every real file, and nothing asks for them. Flutter would skip them anyway (it leaves out assets
+// whose name starts with a dot), so dropping them here only keeps the count honest.
+const tvWanted = (name) => !name.startsWith("._") && !name.endsWith(".d.ts") && !["charting_library.cjs.js", "charting_library.esm.js", "charting_library.js", "package.json"].includes(name);
 
 rmSync(tvDest, { recursive: true, force: true });
 rmSync(tvMobile, { recursive: true, force: true });
 mkdirSync(join(tvMobile, "bundles"), { recursive: true });  // pubspec lists both folders, and Flutter will not build if either is missing
 if (existsSync(join(tvSource, "charting_library.standalone.js"))) {
   cpSync(tvSource, tvDest, { recursive: true });
-  // Flutter leaves out any asset whose name begins with a dot, and roughly half of TradingView's bundles are
-  // named "._<hash>.js". Left alone they are simply absent from the APK and the library stops half-loaded, so
-  // they are copied under a name Flutter will carry; chart_server.dart turns the request back on the way out.
   cpSync(tvSource, tvMobile, { recursive: true, filter: (src) => tvWanted(basename(src)) });
-  for (const name of readdirSync(join(tvMobile, "bundles"))) {
-    if (name.startsWith(".")) renameSync(join(tvMobile, "bundles", name), join(tvMobile, "bundles", `__dot__${name.slice(1)}`));
-  }
   const bytes = (d) => readdirSync(d, { withFileTypes: true }).reduce((n, e) => n + (e.isDirectory() ? bytes(join(d, e.name)) : statSync(join(d, e.name)).size), 0);
   console.log(`TradingView library synced from ${tvSource} (phone copy ${(bytes(tvMobile) / 1048576).toFixed(1)} MB)`);
 } else {
