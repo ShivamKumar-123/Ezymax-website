@@ -23,6 +23,8 @@ import '../../ui/tokens.dart';
 double _num(Object? v) => v is num ? v.toDouble() : double.tryParse('${v ?? ''}') ?? 0;
 int _int(Object? v) => v is num ? v.toInt() : int.tryParse('${v ?? ''}') ?? 0;
 String? _s(Object? v) => v == null ? null : '$v';
+/// A decimal the service sends as a string; absent reads as zero, never as an empty figure.
+String _s0(Object? v) => v == null ? '0' : '$v';
 DateTime _date(Object? v) => DateTime.tryParse('${v ?? ''}') ?? DateTime.now();
 DateTime? _dateOrNull(Object? v) => v == null ? null : DateTime.tryParse('$v');
 Map<String, dynamic> _map(Object? v) => v is Map ? v.cast<String, dynamic>() : const {};
@@ -547,6 +549,63 @@ class WalletNotices {
       WalletNotices(items: [for (final n in _list(j['items'])) WalletNotice.fromJson(n)], unread: _int(j['unread']));
 }
 
+/* ------------------------------------------------------------------ deposit turnover */
+
+/// One deposit's own requirement, for the breakdown a client expands when they have funded more than once.
+class TurnoverDeposit {
+  const TurnoverDeposit({required this.id, required this.deposit, required this.required_, required this.completed, required this.remaining, required this.percent, required this.status});
+
+  final int id;
+  final String deposit, required_, completed, remaining;
+  final int percent;
+
+  /// `pending` | `completed` | `waived`.
+  final String status;
+
+  static TurnoverDeposit fromJson(Map<String, dynamic> j) => TurnoverDeposit(
+    id: _int(j['id']),
+    deposit: _s0(j['deposit_amount']),
+    required_: _s0(j['required_volume']),
+    completed: _s0(j['completed_volume']),
+    remaining: _s0(j['remaining_volume']),
+    percent: _int(j['completion_percentage']),
+    status: _s0(j['status']),
+  );
+}
+
+/// `GET wallet/turnover`: how much trading volume the client still owes before a deposit can be withdrawn.
+///
+/// The broker decides whether this applies at all; when the policy is off every client reads as eligible and
+/// nothing about it is shown. The block itself is enforced in the wallet service, not here.
+class Turnover {
+  const Turnover({required this.deposits, required this.required_, required this.completed, required this.remaining, required this.percent, required this.eligible, required this.enforced, required this.rows});
+
+  final String deposits, required_, completed, remaining;
+  final int percent;
+
+  /// Whether the client may withdraw. False only while the policy is on and volume is owed.
+  final bool eligible;
+
+  /// Whether the broker's switch is currently on.
+  final bool enforced;
+
+  final List<TurnoverDeposit> rows;
+
+  /// Nothing is shown to a client who owes nothing.
+  bool get owes => !eligible && (double.tryParse(remaining) ?? 0) > 0;
+
+  static Turnover fromJson(Map<String, dynamic> j) => Turnover(
+    deposits: _s0(j['total_deposits']),
+    required_: _s0(j['required_volume']),
+    completed: _s0(j['completed_volume']),
+    remaining: _s0(j['remaining_volume']),
+    percent: _int(j['completion_percentage']),
+    eligible: j['eligible'] == true,
+    enforced: j['enforced'] == true,
+    rows: [for (final d in _list(j['deposits'])) TurnoverDeposit.fromJson(d)],
+  );
+}
+
 /* ------------------------------------------------------------------ providers (one per web useWallet) */
 
 /// `useWallet("config")`: once per page.
@@ -558,6 +617,12 @@ final walletCfgProvider = FutureProvider.autoDispose<WalletConfig>((ref) async {
 final walletOverviewEveryProvider = FutureProvider.autoDispose.family<WalletOverviewData, int>((ref, ms) async {
   ref.pollEvery(Duration(milliseconds: ms));
   return WalletOverviewData.fromJson(await ref.watch(apiProvider).get<Map<String, dynamic>>('wallet/overview'));
+});
+
+/// `useTurnover()`: the wallet, dashboard and withdraw screens poll this every 30 s.
+final turnoverProvider = FutureProvider.autoDispose<Turnover>((ref) async {
+  ref.pollEvery(const Duration(seconds: 30));
+  return Turnover.fromJson(await ref.watch(apiProvider).get<Map<String, dynamic>>('wallet/turnover'));
 });
 
 /// The query of `useWallet("activity?…", ms)`: `type` / `page` are sent only when set (as the web's path).

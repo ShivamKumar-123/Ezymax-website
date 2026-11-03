@@ -39,6 +39,7 @@ import '../rewards/widgets/bonus_steps.dart';
 import '../support/ask_ai.dart';
 import '../updates/updates_api.dart';
 import '../updates/widgets/updates_section.dart';
+import '../wallet/widgets/turnover.dart';
 import 'dashboard_data.dart';
 import 'dashboard_hero.dart';
 import 'widgets/accounts_panel.dart';
@@ -431,6 +432,8 @@ class DashboardScreen extends ConsumerWidget {
           // 0. targeted banner
           const DashboardBannerSlot(),
           // the banner above promises the cashback; this says what it takes to get it
+          // a trading requirement belongs where the client already is, not only on the way out
+          const TurnoverPanel(bottom: 16),
           const BonusSteps(on: BonusStepsOn.dashboard),
           const SizedBox(height: 16),
           // 1. header: the greeting as the title, the name in bold; the eye hides every amount on the dashboard

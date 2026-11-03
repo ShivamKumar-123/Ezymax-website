@@ -25,6 +25,7 @@ import '../../core/notifications/notifications.dart';
 import '../../i18n/i18n.dart';
 import '../../ui/ui.dart';
 import 'wallet_api.dart';
+import 'widgets/turnover.dart';
 import 'widgets/wallet_ui.dart';
 import 'widgets/withdraw_gate.dart';
 
@@ -49,6 +50,25 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     _ => null,
   };
   bool _gateAsked = false;
+  bool _turnoverAsked = false;
+
+  /// Deposit turnover (widgets/turnover.dart). The service refuses the request either way; this is so the
+  /// client is told why by a screen that explains it, rather than by an error on a form they filled in.
+  void _askTurnover(Turnover d) {
+    if (_turnoverAsked) return;
+    _turnoverAsked = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final trade = await showTurnoverGate(context, d);
+      if (!mounted) return;
+      // off to the terminal, or back to the wallet - either way not to a payout form that would be refused
+      if (trade) {
+        unawaited(context.push('/trader'));
+      } else {
+        context.go('/wallet');
+      }
+    });
+  }
 
   void _reload(WidgetRef ref) {
     refreshWalletData(ref);
@@ -80,10 +100,15 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     final list = ref.watch(withdrawalsProvider);
     final failed = (cfg.hasError && !cfg.hasValue) || (o.hasError && !o.hasValue);
 
+    final turnover = ref.watch(turnoverProvider).value;
+    final owes = turnover != null && turnover.owes;
+    if (owes) _askTurnover(turnover);
+
     final chains = cfg.value?.chains.where((c) => c.withdrawalsEnabled).toList() ?? const <WalletChain>[];
     final upi = cfg.value?.upi;
-    // a choice only exists when both rails are open; otherwise the one rail is the answer
-    final needsGate = _picked == null && chains.isNotEmpty && upi != null;
+    // a choice only exists when both rails are open; otherwise the one rail is the answer. The turnover gate
+    // comes first: there is no point choosing a rail for a payout that cannot be made yet.
+    final needsGate = !owes && _picked == null && chains.isNotEmpty && upi != null;
     if (needsGate) _askGate(chains, upi);
     final via = _picked ?? (chains.isNotEmpty ? 'usdt' : 'upi');
 
@@ -106,7 +131,10 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
         else ...[
           KycNotice(status: kyc),
           if (kycNoticeTitle(kyc) != null) const SizedBox(height: kWalletGap),
-          if (cfg.hasValue && o.hasValue && !needsGate)
+          const TurnoverCleared(bottom: kWalletGap),
+          if (owes)
+            const TurnoverPanel()
+          else if (cfg.hasValue && o.hasValue && !needsGate)
             WithdrawForm(cfg: cfg.requireValue, o: o.requireValue, kyc: kyc, via: via, onDone: () => _reload(ref))
           else
             const KSkeletonCard(height: 420, lines: 6),

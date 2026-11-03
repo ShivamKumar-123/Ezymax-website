@@ -21,6 +21,7 @@ import '../../core/models/user.dart';
 import '../../i18n/i18n.dart';
 import '../../ui/ui.dart';
 import 'wallet_api.dart';
+import 'widgets/turnover.dart';
 import 'widgets/wallet_ui.dart';
 
 class WalletScreen extends ConsumerWidget {
@@ -71,6 +72,7 @@ class WalletScreen extends ConsumerWidget {
         else ...[
           _BalanceCard(o: overview),
           if (!readOnly) ...[const SizedBox(height: kWalletGap), _QuickActions(kyc: kyc), KycNotice(status: kyc, top: kWalletGap)],
+          const TurnoverPanel(bottom: kWalletGap),
           if (overview != null) _InProgress(o: overview),
           const SizedBox(height: kWalletGap),
           _RecentActivity(act: act, readOnly: readOnly),
