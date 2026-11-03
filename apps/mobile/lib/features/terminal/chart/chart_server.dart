@@ -12,7 +12,6 @@
 
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -74,7 +73,7 @@ class ChartServer {
 
   Future<Uri?> _start() async {
     try {
-      final s = await HttpServer.bind(InternetAddress.loopbackIPv4, 0, shared: false);
+      final s = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       _server = s;
       s.listen(_serve, onError: (Object e) => debugPrint('chart server: $e'));
       return Uri.parse('http://${s.address.address}:${s.port}/');
