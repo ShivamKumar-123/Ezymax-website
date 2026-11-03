@@ -115,27 +115,64 @@
 
   /* ----------------------------------------------------------------- theme */
 
+  // A colour at `a` opacity, for the volume bars and the area fill (hex or rgba in; the palette sends both).
+  function fade(colour, a) {
+    const hex = /^#([0-9a-f]{6})$/i.exec(colour || "");
+    if (hex) return `rgba(${parseInt(hex[1].slice(0, 2), 16)},${parseInt(hex[1].slice(2, 4), 16)},${parseInt(hex[1].slice(4, 6), 16)},${a})`;
+    const m = /^rgba?\(([^)]+)\)/i.exec(colour || "");
+    if (!m) return colour;
+    const [r, g, b] = m[1].split(",").map((x) => x.trim());
+    return `rgba(${r},${g},${b},${a})`;
+  }
+
+  // The web terminal's chart colours (apps/terminal/lib/tv/style.ts chartOverrides): rising candles in the buy
+  // blue, falling in red, the same grid and scales, the last price as one red dashed line with its badge. The
+  // palette's `up` green stays for P&L and TP lines; it is not the candle colour on either platform.
   function overrides() {
     const p = palette();
-    const up = p.up || "#16a34a", down = p.down || "#dc2626";
-    return {
-      "paneProperties.background": p.bg || "#000000",
+    const up = p.buy || "#4a7bff", down = p.down || "#f04438";
+    const line = p.line || (p.dark === false ? "rgba(15,15,20,0.1)" : "rgba(255,255,255,0.07)");
+    const o = {
       "paneProperties.backgroundType": "solid",
-      "paneProperties.vertGridProperties.color": p.grid || "#1b1f27",
-      "paneProperties.horzGridProperties.color": p.grid || "#1b1f27",
-      "scalesProperties.textColor": p.fg3 || "#8b929e",
-      "scalesProperties.lineColor": p.line || "#242a33",
-      "mainSeriesProperties.candleStyle.upColor": up,
-      "mainSeriesProperties.candleStyle.downColor": down,
-      "mainSeriesProperties.candleStyle.borderUpColor": up,
-      "mainSeriesProperties.candleStyle.borderDownColor": down,
-      "mainSeriesProperties.candleStyle.wickUpColor": up,
-      "mainSeriesProperties.candleStyle.wickDownColor": down,
+      "paneProperties.background": p.bg || (p.dark === false ? "#ffffff" : "#0a0a0d"),
+      "paneProperties.vertGridProperties.color": p.grid || line,
+      "paneProperties.horzGridProperties.color": p.grid || line,
+      "paneProperties.separatorColor": line,
+      "paneProperties.crossHairProperties.color": p.fg3 || "#63636e",
+      "scalesProperties.textColor": p.fg2 || "#a1a1aa",
+      "scalesProperties.lineColor": line,
+      "scalesProperties.showSeriesLastValue": true,
+      "scalesProperties.showBidAskLabels": false,
+      "mainSeriesProperties.showPriceLine": true,
+      "mainSeriesProperties.priceLineColor": down,
+      "mainSeriesProperties.priceLineWidth": 1,
+      "mainSeriesProperties.bidAsk.visible": false,
+      "mainSeriesProperties.bidAsk.lineStyle": 1,
+      "mainSeriesProperties.bidAsk.lineWidth": 1,
+      "mainSeriesProperties.bidAsk.bidLineColor": down,
+      "mainSeriesProperties.bidAsk.askLineColor": up,
+      "mainSeriesProperties.lineStyle.color": up,
+      "mainSeriesProperties.areaStyle.linecolor": up,
+      "mainSeriesProperties.areaStyle.color1": fade(up, 0.28),
+      "mainSeriesProperties.areaStyle.color2": fade(up, 0.02),
       "mainSeriesProperties.barStyle.upColor": up,
       "mainSeriesProperties.barStyle.downColor": down,
-      "mainSeriesProperties.lineStyle.color": p.ember || "#f97316",
-      "mainSeriesProperties.areaStyle.linecolor": p.ember || "#f97316",
     };
+    for (const s of ["candleStyle", "hollowCandleStyle", "haStyle"]) {
+      o[`mainSeriesProperties.${s}.upColor`] = up;
+      o[`mainSeriesProperties.${s}.downColor`] = down;
+      o[`mainSeriesProperties.${s}.borderUpColor`] = up;
+      o[`mainSeriesProperties.${s}.borderDownColor`] = down;
+      o[`mainSeriesProperties.${s}.wickUpColor`] = up;
+      o[`mainSeriesProperties.${s}.wickDownColor`] = down;
+    }
+    return o;
+  }
+
+  // Indicator defaults (style.ts studyOverrides): the volume bars in the candle colours.
+  function studyOverrides() {
+    const p = palette();
+    return { "volume.volume.color.0": fade(p.down || "#f04438", 0.32), "volume.volume.color.1": fade(p.buy || "#4a7bff", 0.32) };
   }
 
   const STYLE = { candles: 1, bars: 0, line: 2, area: 3 };
@@ -275,6 +312,7 @@
       ],
       enabled_features: ["hide_left_toolbar_by_default", "iframe_loading_compatibility_mode"],
       overrides: overrides(),
+      studies_overrides: studyOverrides(),
       loading_screen: { backgroundColor: p.bg || "#000000", foregroundColor: p.ember || "#f97316" },
       custom_css_url: undefined,
     });
@@ -348,7 +386,10 @@
         if (cfg) cfg.palette = m.palette;
         if (!widget) return;
         try {
-          widget.changeTheme(m.palette && m.palette.dark === false ? "light" : "dark").then(() => widget.applyOverrides(overrides()));
+          widget.changeTheme(m.palette && m.palette.dark === false ? "light" : "dark").then(() => {
+            widget.applyOverrides(overrides());
+            try { widget.applyStudiesOverrides(studyOverrides()); } catch (_) {}
+          });
         } catch (_) {
           try { widget.applyOverrides(overrides()); } catch (_) {}
         }

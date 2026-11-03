@@ -127,6 +127,11 @@ class PreviewServer {
   final math.Random _rng = math.Random(7);
   final Map<String, double> _mid = {};
   final Map<String, double> _open = {};
+
+  /// Prices fed from the broker's live market data (the in-app demo on a phone, lib/features/terminal/core/
+  /// market.dart). A symbol with one is priced at it - bid and ask as they came, the account group's spread
+  /// already in them - and is no longer walked; it keeps the last price fed when the feed stops.
+  final Map<String, ({double bid, double ask})> _live = {};
   final Map<int, _Account> _accounts = {};
   final Map<String, int> _tokens = {};
   final Set<_MarketChannel> _markets = {};
@@ -146,7 +151,16 @@ class PreviewServer {
     return s.spread * (group == 'raw' || group == 'pro' ? 0.6 : 1);
   }
 
+  /// A live price for `symbol`: from now on the server prices it at this, not at its own walk.
+  void feedQuote(String symbol, double bid, double ask) {
+    if (bid <= 0 || ask <= 0) return;
+    _live[symbol] = (bid: bid, ask: ask);
+    _mid[symbol] = (bid + ask) / 2;
+  }
+
   ({double bid, double ask}) _quote(String symbol, [String group = 'standard']) {
+    final live = _live[symbol];
+    if (live != null) return live;
     final s = _sym(symbol);
     final mid = _mid[symbol] ?? 0;
     if (s == null) return (bid: mid, ask: mid);
@@ -897,6 +911,7 @@ class PreviewServer {
     _tick++;
     final active = <String>{for (final m in _markets) ...m.active};
     for (final s in _symbols) {
+      if (_live.containsKey(s.symbol)) continue;
       if (!active.contains(s.symbol) && _tick % 6 != 0) continue;
       final vol = s.cls == 'crypto' ? 0.00025 : (s.cls == 'forex' ? 0.00004 : 0.0001);
       final mid = _mid[s.symbol]!;

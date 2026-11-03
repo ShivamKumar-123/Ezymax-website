@@ -34,6 +34,12 @@ class DemoMode extends Notifier<bool> {
 
 final demoModeProvider = NotifierProvider<DemoMode, bool>(DemoMode.new);
 
+/// The demo prices at the broker's live market data: quotes, candles and the chart come from the market-data
+/// service (public, no sign-in), and the sample trade server fills and values its positions at those prices
+/// instead of walking its own. The account, wallet and history stay sample data. Widget tests turn this off
+/// (test_app.dart), where a live socket has nowhere to go.
+final demoLivePricesProvider = Provider<bool>((ref) => ref.watch(demoModeProvider));
+
 /// The transport: Dio's default, the sample-data adapter in previews and the demo, a fake in tests (override).
 /// `apiProvider` watches it, so every API client is rebuilt when the demo starts or ends.
 final httpAdapterProvider = Provider<HttpClientAdapter?>((ref) => Env.preview || ref.watch(demoModeProvider) ? PreviewAdapter() : null);

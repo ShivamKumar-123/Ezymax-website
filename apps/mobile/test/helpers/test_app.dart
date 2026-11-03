@@ -102,6 +102,8 @@ Future<ProviderContainer> pumpApp(
       else
         apiBaseProvider.overrideWithValue('http://127.0.0.1:9/api/mobile'),
       biometricsProvider.overrideWithValue(const NoBiometrics()),
+      // the demo's live market data would open a real socket here; the sample trade server prices it instead
+      demoLivePricesProvider.overrideWithValue(false),
       if (config != null) configProvider.overrideWith(() => _FixedConfig(config)),
       ...overrides,
     ],

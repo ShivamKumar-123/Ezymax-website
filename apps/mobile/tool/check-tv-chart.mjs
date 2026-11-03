@@ -47,7 +47,7 @@ const ctx = {
   console,
   setTimeout,
   // the datafeed the page hands the library is kept, so the test can play the library's side of it
-  TradingView: { widget: function (opts) { calls.push("widget()"); ctx.__datafeed = opts.datafeed; return widget; } },
+  TradingView: { widget: function (opts) { calls.push("widget()"); ctx.__datafeed = opts.datafeed; ctx.__opts = opts; return widget; } },
   document: { getElementById: () => el },
   window: { EzymexChart: { postMessage: (s) => posted.push(JSON.parse(s)) } },
 };
@@ -72,7 +72,7 @@ K.recv({ type: "lines", lines: [{ id: "early:1", kind: "alert", price: 1.5, labe
 K.recv({ type: "quote", bid: 1.49, ask: 1.51 });
 
 // init builds the widget; the library only reports ready once it says so
-K.recv({ type: "init", digits: 5, intraday: true, palette: { dark: true, bg: "#000", up: "#0f0", down: "#f00" }, symbol: "EURUSD", tf: "M5", step: 300, chartType: "candles", indicators: [{ uid: "u1", type: "rsi", params: { len: 14 }, visible: true }] });
+K.recv({ type: "init", digits: 5, intraday: true, palette: { dark: true, bg: "#000", up: "#0f0", down: "#f04438", buy: "#4a7bff" }, symbol: "EURUSD", tf: "M5", step: 300, chartType: "candles", indicators: [{ uid: "u1", type: "rsi", params: { len: 14 }, visible: true }] });
 onReadyCb();
 
 // The library's first request lands before the app has sent its history. It must be parked, not answered
@@ -102,6 +102,10 @@ want(firstAnswer && firstAnswer.b[0].time === 1_700_000_000_000 && firstAnswer.b
 want(firstAnswer && firstAnswer.meta && firstAnswer.meta.noData === false, "the first answer must not claim no data");
 want(made.length >= 3, "a line sent before the chart was ready was never drawn after it was");
 want(calls.includes("widget()"), "widget was never built");
+// the web terminal's candles: rising in the buy blue, not the P&L green; the volume bars in the same two colours
+const ov = (ctx.__opts || {}).overrides || {};
+want(ov["mainSeriesProperties.candleStyle.upColor"] === "#4a7bff" && ov["mainSeriesProperties.candleStyle.wickDownColor"] === "#f04438", "candles are not in the web terminal's colours (buy blue / red)");
+want(((ctx.__opts || {}).studies_overrides || {})["volume.volume.color.1"] === "rgba(74,123,255,0.32)", "volume bars are not in the candle colours");
 want(calls.includes("study:Relative Strength Index"), "RSI study not created");
 want(calls.filter((c) => c === "line.remove").length >= 1, "the removed SL line was not cleaned up");
 want(calls.includes("setChartType:2"), "line chart type not applied");

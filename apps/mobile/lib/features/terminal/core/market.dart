@@ -182,6 +182,7 @@ class MarketFeed {
   final Map<String, ({double open, double high, double low})> _day = {};
   final Map<String, TQuote> _snap = {};
   final Map<String, Set<TQuoteListener>> _fns = {};
+  final Set<TQuoteListener> _taps = {};
   bool _started = false;
 
   SocketStatus get status => _stream.status;
@@ -243,7 +244,7 @@ class MarketFeed {
             delayed: q['d'] == 1 || q['d'] == true,
             time: (q['t'] as num?)?.toInt() ?? 0,
           );
-          for (final fn in [...?_fns[e.key]]) {
+          for (final fn in [...?_fns[e.key], ..._taps]) {
             fn(_snap[e.key]!);
           }
         }
@@ -299,6 +300,16 @@ class MarketFeed {
   /// Symbols an owner wants live (favourites, positions and orders, the chart).
   void want(String owner, Iterable<String> symbols) => _stream.want(owner, symbols);
 
+  /// Every price that arrives, stream or snapshot, whichever symbol (no demand). Returns the unsubscribe.
+  void Function() tap(TQuoteListener fn) {
+    _taps.add(fn);
+    final un = _stream.tap((q) => fn(_wrap(q)));
+    return () {
+      un();
+      _taps.remove(fn);
+    };
+  }
+
   void Function() subscribeBars(String symbol, String tf, BarListener fn) => _stream.subscribeBars(symbol, tf, fn);
   void Function() subscribeDepth(String symbol, DepthListener fn) => _stream.subscribeDepth(symbol, fn);
 
@@ -323,8 +334,12 @@ class MarketFeed {
   }
 }
 
+/// Prices from the sample trade server rather than the market-data service: previews, and the in-app demo while
+/// it is not on live prices (demoLivePricesProvider).
+bool _sampleMarket(Ref ref) => Env.preview || (ref.watch(demoModeProvider) && !ref.watch(demoLivePricesProvider));
+
 /// How the market-data socket connects (previews and the in-app demo: the preview server; tests override it).
-final marketConnectorProvider = Provider<SocketConnector?>((ref) => Env.preview || ref.watch(demoModeProvider) ? PreviewServer.instance.marketConnector : null);
+final marketConnectorProvider = Provider<SocketConnector?>((ref) => _sampleMarket(ref) ? PreviewServer.instance.marketConnector : null);
 
 /// The terminal's market feed (one per open terminal; closed with it).
 final marketFeedProvider = Provider.autoDispose<MarketFeed>((ref) {
@@ -334,8 +349,13 @@ final marketFeedProvider = Provider.autoDispose<MarketFeed>((ref) {
     httpUrl: cfg.marketDataHttp,
     symbols: const [],
     connector: ref.watch(marketConnectorProvider),
-    sample: ref.watch(demoModeProvider),
+    sample: _sampleMarket(ref),
   );
+  // The demo on live prices: the sample trade server fills and values its positions at the prices on screen, so
+  // the chart, the ticket and the P&L agree. Without this it would keep walking its own made-up prices.
+  if (ref.watch(demoModeProvider) && ref.watch(demoLivePricesProvider)) {
+    ref.onDispose(feed.tap((q) => PreviewServer.instance.feedQuote(q.symbol, q.bid, q.ask)));
+  }
   ref.onDispose(feed.stop);
   return feed;
 });

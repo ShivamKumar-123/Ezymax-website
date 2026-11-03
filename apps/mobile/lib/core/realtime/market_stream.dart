@@ -77,6 +77,7 @@ class MarketStream {
 
   final Map<String, Quote> _quotes = {};
   final Map<String, Set<QuoteListener>> _listeners = {};
+  final Set<QuoteListener> _taps = {};
   final Map<String, Set<String>> _wants = {};
   final Map<String, Set<BarListener>> _bars = {};
   final Map<String, Set<DepthListener>> _depth = {};
@@ -122,6 +123,13 @@ class MarketStream {
       }
       _scheduleDemand();
     };
+  }
+
+  /// Every quote the socket delivers, whichever symbol, without counting as demand (the in-app demo feeds its
+  /// sample trade server from here). Returns the unsubscribe.
+  void Function() tap(QuoteListener fn) {
+    _taps.add(fn);
+    return () => _taps.remove(fn);
   }
 
   /// Symbols `owner` wants streamed live (replaces its previous set; empty clears it): favourites, the account's
@@ -238,6 +246,9 @@ class MarketStream {
         );
         _quotes[s] = q;
         for (final fn in [...?_listeners[s]]) {
+          fn(q);
+        }
+        for (final fn in [..._taps]) {
           fn(q);
         }
       case 'bar':

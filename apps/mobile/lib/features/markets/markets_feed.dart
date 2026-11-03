@@ -41,8 +41,9 @@ class MarketsFeedState {
   MarketQuote? operator [](String s) => quotes[s];
 }
 
-/// Sample prices instead of the market-data service: preview builds and tests (the sample-data transport).
-bool useSampleMarkets(Ref ref) => Env.preview || ref.read(httpAdapterProvider) is PreviewAdapter;
+/// Sample prices instead of the market-data service: preview builds and tests (the sample-data transport). The
+/// in-app demo is on the sample transport too, but prices at the live service (demoLivePricesProvider).
+bool useSampleMarkets(Ref ref) => Env.preview || (ref.read(httpAdapterProvider) is PreviewAdapter && !ref.read(demoLivePricesProvider));
 
 final _http = Dio(BaseOptions(connectTimeout: const Duration(seconds: 10), receiveTimeout: const Duration(seconds: 15)));
 
