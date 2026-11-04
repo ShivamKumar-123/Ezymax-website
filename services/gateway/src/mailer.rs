@@ -121,7 +121,7 @@ impl Mailer {
 <p style="margin:0 0 22px;font-size:15px;line-height:1.6;color:{FG2}">{lead_html}</p>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="background:{BG};border:1px solid {LINE};border-radius:12px;padding:20px 12px">
 <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:{FG3};margin-bottom:8px">{your_code}</div>
-<div{code_dir} style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:34px;font-weight:700;letter-spacing:6px;color:{EMBER}">{spaced}</div>
+<div{code_dir} style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:32px;line-height:1.2;font-weight:700;letter-spacing:8px;white-space:nowrap;color:{EMBER}">{code}</div>
 <div style="font-size:12px;color:{FG3};margin-top:10px">{expires_html}</div>
 </td></tr></table>
 <p style="margin:22px 0 0;font-size:13px;line-height:1.6;color:{FG3}">{warn}</p>"#

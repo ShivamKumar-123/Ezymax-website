@@ -105,12 +105,18 @@ pub fn html(f: &Frame) -> String {
         Some(u) => format!(r#"background:{BG} url('{}') center top / cover no-repeat"#, escape(u)),
         None => format!("background:{BG}"),
     };
-    let hero = match f.hero_src {
-        Some(u) => format!(
-            r#"<td width="190" valign="top" align="right" style="padding:0 0 0 18px"><img src="{}" width="190" alt="" style="display:block;border:0;outline:none;width:190px;max-width:190px;height:auto"></td>"#,
-            escape(u)
+    // The text and the hero are two inline-blocks (not table cells): side by side where the card is wide enough
+    // (348 + 18 + 190 = 556 = the card's inner width), and the hero wraps under the text on a phone, so the text
+    // column is never squeezed to half the screen (a one-time code must stay on one line). Outlook gets a table.
+    let (text_max, hero) = match f.hero_src {
+        Some(u) => (
+            "348px",
+            format!(
+                r#"<!--[if mso]></td><td width="190" valign="top"><![endif]--><div style="display:inline-block;vertical-align:top;width:190px;max-width:100%;padding:0 0 0 18px"><img src="{}" width="190" alt="" style="display:block;border:0;outline:none;width:190px;max-width:100%;height:auto"></div>"#,
+                escape(u)
+            ),
         ),
-        None => String::new(),
+        None => ("100%", String::new()),
     };
     let facts = if f.facts.is_empty() {
         String::new()
@@ -159,13 +165,15 @@ pub fn html(f: &Frame) -> String {
 <td valign="middle" align="right" style="font-size:13px;color:{FG2};white-space:nowrap"><span style="display:inline-block;width:7px;height:7px;border-radius:999px;background:{RED};vertical-align:middle;margin-right:7px"></span>{tag}</td>
 </tr></table>
 <div style="width:56px;height:3px;background:{RED};margin:22px 0 22px"></div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
-<td valign="top"{dir}>
+<div style="font-size:0;line-height:0;text-align:left">
+<!--[if mso]><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td valign="top"><![endif]-->
+<div{dir} style="display:inline-block;vertical-align:top;width:100%;max-width:{text_max};font-size:15px;line-height:1.6">
 <h1 style="margin:0 0 16px;font-size:30px;line-height:1.15;font-weight:800;letter-spacing:-0.5px;color:{FG}">{title}</h1>
 {body}
-</td>
+</div>
 {hero}
-</tr></table>
+<!--[if mso]></td></tr></table><![endif]-->
+</div>
 {facts}{note}{button}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid {LINE}"><tr><td{dir} style="padding:16px 0 0;font-size:12.5px;line-height:1.6;color:{FG3}">
 <span style="display:inline-block;width:16px;height:16px;line-height:16px;border:1px solid {FG3};border-radius:999px;text-align:center;font-size:10px;font-weight:700;vertical-align:middle;margin-right:8px">i</span>{footer}
