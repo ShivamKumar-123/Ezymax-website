@@ -151,6 +151,8 @@ impl Config {
             max_media_bytes: MAX_MEDIA_BYTES,
             workers: false,
             sync_secs: 30,
+            platform_tz_offset_min: 180,
+            birthday_hour: 9,
             deals_secs: 5,
             leaderboard_secs: 15,
             log_json: false,
