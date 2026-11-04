@@ -303,7 +303,27 @@ pub async fn deliver(st: &AppState, tenant: &str, n: NewNotification) -> anyhow:
             Some(to) => {
                 let url = n.link.as_deref().map(|l| if l.starts_with("http") { l.to_string() } else { format!("{}{}", st.cfg.app_url, l) });
                 let footer = format!("You get this email because {} notifications are on. Change it in the Client Area under Profile -> Notifications.", PREF_KEYS.iter().find(|x| x.key == key).map(|x| x.label.to_lowercase()).unwrap_or_default());
-                let (text, html) = mailer::render(&title, &body, url.as_deref().map(|u| ("Open Ezymex", u)), &footer);
+                // facts and a note travel in `data` when the producer has them: {"facts": [{"label","value"}…], "note": "…"}
+                let facts: Vec<(String, String)> = n.data["facts"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .filter_map(|f| Some((f["label"].as_str()?.trim().to_string(), f["value"].as_str()?.trim().to_string())))
+                    .filter(|(k, v)| !k.is_empty() && !v.is_empty())
+                    .take(4)
+                    .collect();
+                let note = n.data["note"].as_str().map(|s| clean(s, 200)).filter(|s| !s.is_empty());
+                let tag = PREF_KEYS.iter().find(|x| x.key == key).map(|x| x.label).unwrap_or("Notice");
+                let (text, html) = mailer::render(&mailer::Mail {
+                    title: &title,
+                    tag,
+                    body: &body,
+                    facts: &facts,
+                    note: note.as_deref(),
+                    button: url.as_deref().map(|u| ("Open Ezymex", u)),
+                    footer_note: &footer,
+                    app_url: &st.cfg.app_url,
+                });
                 let subject = n.email_subject.clone().unwrap_or_else(|| title.clone());
                 queue_email(st, tenant, &to, &subject, &text, &html, &n.kind).await?;
                 emailed = true;

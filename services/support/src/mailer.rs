@@ -47,40 +47,54 @@ impl Mailer {
     }
 }
 
-/// A simple branded email: title, paragraphs, optional button. Returns (text, html).
-pub fn render(title: &str, body: &str, button: Option<(&str, &str)>, footer_note: &str) -> (String, String) {
+/// One notification as an email: the title, the paragraphs, facts and a note when the producer sent them, the
+/// button, and why the client got it - in the shared frame (crates/mailframe). Returns (text, html).
+pub struct Mail<'a> {
+    pub title: &'a str,
+    pub tag: &'a str,
+    pub body: &'a str,
+    pub facts: &'a [(String, String)],
+    pub note: Option<&'a str>,
+    pub button: Option<(&'a str, &'a str)>,
+    pub footer_note: &'a str,
+    /// The Client Area's origin: the logo, hero and ground images live under its /assets/email.
+    pub app_url: &'a str,
+}
+
+pub fn render(m: &Mail) -> (String, String) {
+    let (title, body, button, footer_note) = (m.title, m.body, m.button, m.footer_note);
     let paras: Vec<&str> = body.split("\n\n").map(str::trim).filter(|p| !p.is_empty()).collect();
     let mut text = format!("{title}\n\n{}\n", paras.join("\n\n"));
+    for (k, v) in m.facts {
+        text.push_str(&format!("{k}: {v}\n"));
+    }
+    if let Some(n) = m.note {
+        text.push_str(&format!("\n{n}\n"));
+    }
     if let Some((label, url)) = button {
         text.push_str(&format!("\n{label}: {url}\n"));
     }
     text.push_str(&format!("\n{footer_note}\n\nEzymex · ezymex.com\n"));
-    let body_html: String = paras
-        .iter()
-        .map(|p| format!(r#"<p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:#c7c7cf">{}</p>"#, html_escape(p).replace('\n', "<br>")))
-        .collect();
-    let button_html = button
-        .map(|(label, url)| {
-            format!(
-                r#"<table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 6px"><tr><td style="background:#ff5a1f;border-radius:10px"><a href="{}" style="display:inline-block;padding:12px 22px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none">{}</a></td></tr></table>"#,
-                html_escape(url),
-                html_escape(label)
-            )
-        })
-        .unwrap_or_default();
-    let html = format!(
-        r#"<!doctype html><html><body style="margin:0;background:#0b0b0e;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0b0b0e;padding:32px 12px"><tr><td align="center">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px">
-<tr><td style="padding:0 4px 18px;font-size:18px;font-weight:700;letter-spacing:0.5px;color:#f5f5f7">Ezymex</td></tr>
-<tr><td style="background:#141418;border:1px solid #26262e;border-radius:16px;padding:28px 26px">
-<h1 style="margin:0 0 14px;font-size:21px;line-height:1.3;font-weight:700;color:#f5f5f7">{}</h1>
-{body_html}{button_html}
-</td></tr>
-<tr><td style="padding:18px 6px 0;font-size:12px;line-height:1.6;color:#8e8e98">{}</td></tr>
-</table></td></tr></table></body></html>"#,
-        html_escape(title),
-        html_escape(footer_note)
-    );
-    (text, html)
+    let assets = format!("{}/assets/email", m.app_url.trim_end_matches('/'));
+    let (logo, hero, bg) = (format!("{assets}/logo.png"), format!("{assets}/hero.png"), format!("{assets}/bg.jpg"));
+    let html = mailframe::html(&mailframe::Frame {
+        lang: "en",
+        rtl: false,
+        preheader: paras.first().copied().unwrap_or(""),
+        logo_src: &logo,
+        tag: m.tag,
+        title,
+        hero_src: Some(&hero),
+        body_html: &mailframe::paragraphs_html(body),
+        facts: m.facts,
+        note: m.note,
+        button,
+        footer_html: &mailframe::escape(footer_note),
+        site_url: "https://ezymex.com",
+        brand: "Ezymex",
+        year: chrono::Utc::now().format("%Y").to_string().parse().unwrap_or(2026),
+        bg_src: Some(&bg),
+    });
+    return (text, html);
 }
+

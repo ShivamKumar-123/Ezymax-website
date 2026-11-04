@@ -1,0 +1,10 @@
+[package]
+name = "mailframe"
+version = "0.1.0"
+edition = "2024"
+description = "The one HTML frame every Ezymex email is sent in"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]

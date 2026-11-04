@@ -126,7 +126,8 @@ impl Mailer {
 </td></tr></table>
 <p style="margin:22px 0 0;font-size:13px;line-height:1.6;color:{FG3}">{warn}</p>"#
         );
-        self.send_in(lang, to, subject, &format!("{title}: {code}"), &text, &body).await
+        let tag = if matches!(purpose, Purpose::VerifyEmail) { "Verification" } else { "Security" };
+        self.send_in(lang, to, subject, &format!("{title}: {code}"), &text, &body, tag).await
     }
 
     /// Sent once, right after a client verifies their email address.
@@ -179,7 +180,7 @@ impl Mailer {
 </tr></table>
 <p style="margin:22px 0 0;font-size:13px;line-height:1.6;color:{FG3}">{questions}</p>"#
         );
-        self.send_in(lang, to, t.welcome_subject, t.welcome_preheader, &text, &body).await
+        self.send_in(lang, to, t.welcome_subject, t.welcome_preheader, &text, &body, "Welcome").await
     }
 
     /// Identity verification (KYC) status emails: submitted, approved, rejected (with reason), more information needed.
@@ -226,7 +227,7 @@ impl Mailer {
             text.push_str(&format!("\n{n}\n"));
         }
         text.push_str(&format!("\n{}: {}\n\nReference {}.\n\n{}", c.button, c.href, c.reference, self.text_footer()));
-        self.send(to, &c.subject, &c.preheader, &text, &body).await
+        self.send_in("en", to, &c.subject, &c.preheader, &text, &body, "Verification").await
     }
 
     /// Back Office invite: a one-time link to set a password (the first sign-in then asks for an emailed code).
@@ -245,16 +246,13 @@ impl Mailer {
 </tr></table>
 <p style="margin:22px 0 0;font-size:13px;line-height:1.6;color:{FG3}">The link works once and expires in {hours} hours. Every sign-in also asks for a one-time code sent to this address. If you weren't expecting this, ignore this email.</p>"#
         );
-        self.send(to, &format!("Your invite to the {tenant} Back Office"), "Set your password to activate your staff account.", &text, &body).await
+        self.send_in("en", to, &format!("Your invite to the {tenant} Back Office"), "Set your password to activate your staff account.", &text, &body, "Back Office").await
     }
 
-    async fn send(&self, to: &str, subject: &str, preheader: &str, text: &str, body_html: &str) -> anyhow::Result<()> {
-        self.send_in("en", to, subject, preheader, text, body_html).await
-    }
-
-    /// `lang` sets the layout's language, text direction and footer copy (`mail_i18n`).
-    async fn send_in(&self, lang: &str, to: &str, subject: &str, preheader: &str, text: &str, body_html: &str) -> anyhow::Result<()> {
-        let html = self.layout(lang, preheader, body_html);
+    /// `lang` sets the layout's language, text direction and footer copy (`mail_i18n`); `tag` is the small
+    /// category label at the top of the frame.
+    async fn send_in(&self, lang: &str, to: &str, subject: &str, preheader: &str, text: &str, body_html: &str, tag: &str) -> anyhow::Result<()> {
+        let html = self.layout(lang, preheader, body_html, tag);
         let logo = Attachment::new_inline(LOGO_CID.to_string()).body(LOGO_PNG.to_vec(), "image/png".parse()?);
         let reply_to: Mailbox = format!("Ezymex Support <{}>", self.links.support_email).parse()?;
         let msg = Message::builder()
@@ -275,32 +273,38 @@ impl Mailer {
         Ok(())
     }
 
-    fn layout(&self, lang: &str, preheader: &str, body: &str) -> String {
-        let Links { site, support_email, .. } = &self.links;
-        let site_host = site.trim_start_matches("https://").trim_start_matches("http://");
-        let preheader = html_escape(preheader);
+    /// The shared frame (crates/mailframe). Each template writes its heading as the first `<h1>` of its body; the
+    /// frame draws that heading itself, big and in the brand's red, so it is lifted out here.
+    fn layout(&self, lang: &str, preheader: &str, body: &str, tag: &str) -> String {
+        let Links { site, support_email, app, .. } = &self.links;
         let lang = mail_i18n::normalize(lang);
         let t = mail_i18n::texts(lang);
-        let (footer_reason, risk_warning) = (t.footer_reason, t.risk_warning);
-        let dir = if mail_i18n::is_rtl(lang) { r#" dir="rtl""# } else { "" };
-        format!(
-            r#"<!doctype html><html lang="{lang}"{dir}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark light"><title>Ezymex</title></head>
-<body style="margin:0;padding:0;background:{BG};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:{FG}">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:{BG}">{preheader}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{BG}"><tr><td align="center" style="padding:32px 14px">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px">
-<tr><td style="padding:0 4px 18px"><img src="cid:{LOGO_CID}" width="120" height="40" alt="Ezymex" style="display:block;border:0;outline:none;width:120px;height:40px"></td></tr>
-<tr><td style="background:{CARD};border:1px solid {LINE};border-radius:16px;overflow:hidden">
-<div style="height:3px;background:{EMBER};background-image:linear-gradient(90deg,{EMBER},{GOLD})"></div>
-<div{dir} style="padding:30px 28px 28px">{body}</div>
-</td></tr>
-<tr><td{dir} style="padding:20px 6px 0;font-size:12px;line-height:1.6;color:{FG3}">
-<a href="{site}" style="color:{FG2};text-decoration:none">{site_host}</a> · <a href="mailto:{support_email}" style="color:{FG2};text-decoration:none">{support_email}</a><br>
-{footer_reason}<br><br>
-<span style="color:#6b6b75">{risk_warning}</span>
-</td></tr>
-</table></td></tr></table></body></html>"#
-        )
+        let (title, body) = split_heading(body);
+        let footer = format!(
+            r#"{}<br><a href="mailto:{support_email}" style="color:{FG2};text-decoration:none">{support_email}</a><br><br><span style="color:#6b6b75">{}</span>"#,
+            t.footer_reason, t.risk_warning
+        );
+        let assets = format!("{}/assets/email", app.trim_end_matches('/'));
+        let hero = format!("{assets}/hero.png");
+        let bg = format!("{assets}/bg.jpg");
+        mailframe::html(&mailframe::Frame {
+            lang,
+            rtl: mail_i18n::is_rtl(lang),
+            preheader,
+            logo_src: &format!("cid:{LOGO_CID}"),
+            tag,
+            title: &title,
+            hero_src: Some(&hero),
+            body_html: body,
+            facts: &[],
+            note: None,
+            button: None,
+            footer_html: &footer,
+            site_url: site,
+            brand: "Ezymex",
+            year: chrono::Utc::now().format("%Y").to_string().parse().unwrap_or(2026),
+            bg_src: Some(&bg),
+        })
     }
 
     fn text_footer(&self) -> String {
@@ -422,6 +426,19 @@ impl Mailer {
         self.transport.send(msg).await?;
         Ok(())
     }
+}
+
+/// The text of a body's first `<h1>` (HTML entities left as they are) and the body without it.
+fn split_heading(body: &str) -> (String, &str) {
+    let b = body.trim_start();
+    if !b.starts_with("<h1") {
+        return (String::new(), body);
+    }
+    let Some(open_end) = b.find('>') else { return (String::new(), body) };
+    let Some(close) = b.find("</h1>") else { return (String::new(), body) };
+    let inner = &b[open_end + 1..close];
+    let title = inner.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"").replace("&#39;", "'");
+    (title, b[close + "</h1>".len()..].trim_start())
 }
 
 fn html_escape(s: &str) -> String {
