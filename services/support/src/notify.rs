@@ -36,6 +36,7 @@ pub const PREF_KEYS: &[PrefKey] = &[
     PrefKey { key: "copy", label: "Copy trading and PAMM", hint: "Copied trades, skipped trades, protection stops, new terms, fees and fund rollovers", in_app: true, email: true, locked: false, audience: &["user"] },
     PrefKey { key: "prop", label: "Prop challenges", hint: "Phase passed or failed, funded account and payouts", in_app: true, email: true, locked: false, audience: &["user"] },
     PrefKey { key: "staking", label: "Staking (Earn)", hint: "Subscriptions confirmed, monthly returns credited and principal returned at maturity", in_app: true, email: true, locked: false, audience: &["user"] },
+    PrefKey { key: "birthday", label: "Birthday wishes", hint: "A greeting from the team on your birthday", in_app: true, email: true, locked: false, audience: &["user"] },
     PrefKey { key: "support", label: "Support replies", hint: "Replies from our support team", in_app: true, email: true, locked: false, audience: &["user", "staff"] },
     PrefKey { key: "system", label: "Platform notices", hint: "Maintenance and service announcements", in_app: true, email: true, locked: false, audience: &["user", "staff"] },
     PrefKey { key: "marketing", label: "News and offers", hint: "Promotions, contests and product news", in_app: true, email: false, locked: false, audience: &["user"] },
@@ -55,6 +56,7 @@ pub fn pref_key(kind: &str) -> &'static str {
         "prop" => "prop",
         "staking" => "staking",
         "support" => "support",
+        "birthday" => "birthday",
         "marketing" | "broadcast" => "marketing",
         _ => "system",
     }

@@ -1,7 +1,7 @@
 //! Background loops. Each loop logs and carries on after an error; all work is idempotent.
 
 use crate::state::AppState;
-use crate::{bonus, contests, db, deals, journeys, loyalty, payouts, profiles};
+use crate::{birthdays, bonus, contests, db, deals, journeys, loyalty, payouts, profiles};
 use std::future::Future;
 use std::time::Duration;
 
@@ -72,6 +72,7 @@ pub async fn run_job(st: &AppState, job: &str) -> anyhow::Result<serde_json::Val
             }
             json!({"expired": n})
         }
+        "birthdays" => json!({"greeted": birthdays::tick(st).await?}),
         "journeys" => {
             let mut facts = 0;
             for t in db::tenants(&st.pool).await? {
@@ -133,6 +134,10 @@ pub fn spawn(st: &AppState) {
         for t in db::tenants(&st.pool).await? {
             journeys::sync_facts(&st, &t).await?;
         }
+        Ok(())
+    });
+    every(st, "birthdays", secs(300), |st| async move {
+        birthdays::tick(&st).await?;
         Ok(())
     });
     every(st, "journeys", secs(15), |st| async move {

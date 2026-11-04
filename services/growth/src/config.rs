@@ -32,6 +32,9 @@ pub struct Config {
     /// Background loops. Tests turn them off.
     pub workers: bool,
     pub sync_secs: u64,
+    /// The platform's clock for greetings (minutes east of UTC; 180 = GMT+3) and the hour birthday greetings go.
+    pub platform_tz_offset_min: i32,
+    pub birthday_hour: u32,
     pub deals_secs: u64,
     pub leaderboard_secs: u64,
     pub log_json: bool,
@@ -83,6 +86,8 @@ impl fmt::Debug for Config {
             .field("storage_dir", &self.storage_dir)
             .field("workers", &self.workers)
             .field("sync_secs", &self.sync_secs)
+            .field("platform_tz_offset_min", &self.platform_tz_offset_min)
+            .field("birthday_hour", &self.birthday_hour)
             .field("deals_secs", &self.deals_secs)
             .field("leaderboard_secs", &self.leaderboard_secs)
             .finish()
@@ -116,6 +121,8 @@ impl Config {
             max_media_bytes: MAX_MEDIA_BYTES,
             workers: var("GROWTH_WORKERS", "true") != "false",
             sync_secs: var("GROWTH_SYNC_SECS", "30").parse().unwrap_or(30).max(1),
+            platform_tz_offset_min: var("PLATFORM_TZ_OFFSET_MINUTES", "180").parse().unwrap_or(180).clamp(-840, 840),
+            birthday_hour: var("BIRTHDAY_HOUR", "9").parse().unwrap_or(9).min(23),
             deals_secs: var("GROWTH_DEALS_SECS", "5").parse().unwrap_or(5).max(1),
             leaderboard_secs: var("GROWTH_LEADERBOARD_SECS", "15").parse().unwrap_or(15).max(2),
             log_json: var("GROWTH_LOG_FORMAT", "json") == "json",

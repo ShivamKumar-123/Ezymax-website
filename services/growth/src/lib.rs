@@ -6,6 +6,7 @@
 
 pub mod api;
 pub mod audit;
+pub mod birthdays;
 pub mod bonus;
 pub mod calc;
 pub mod cashback;
