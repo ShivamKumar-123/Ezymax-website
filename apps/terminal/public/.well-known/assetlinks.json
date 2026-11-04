@@ -3,6 +3,9 @@
   "target": {
     "namespace": "android_app",
     "package_name": "com.ezymex.app",
-    "sha256_cert_fingerprints": ["D6:01:73:B3:D5:3B:41:98:1F:BA:DB:A2:DC:50:C9:3A:E1:25:69:D0:6E:0D:6B:34:90:80:69:89:68:16:ED:48"]
+    "sha256_cert_fingerprints": [
+      "D6:01:73:B3:D5:3B:41:98:1F:BA:DB:A2:DC:50:C9:3A:E1:25:69:D0:6E:0D:6B:34:90:80:69:89:68:16:ED:48",
+      "DD:30:4B:D8:11:62:C7:8E:B5:33:E9:9E:CF:FC:87:DD:8A:D5:59:2F:3A:6A:9D:44:B5:1A:2A:60:A9:86:3C:31"
+    ]
   }
 }]
