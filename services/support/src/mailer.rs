@@ -4,7 +4,6 @@
 //! logged (`DEV email`). Emails are queued in `email_outbox` and sent by a background loop (`workers.rs`).
 
 use crate::config::Config;
-use crate::util::html_escape;
 use lettre::message::{Mailbox, MultiPart, SinglePart, header::ContentType};
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::transport::smtp::extension::ClientId;

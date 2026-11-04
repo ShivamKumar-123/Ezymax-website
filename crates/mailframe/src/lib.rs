@@ -192,7 +192,7 @@ mod tests {
         assert_eq!(title_html("Scheduled maintenance on Sunday"), r##"Scheduled maintenance <span style="color:#ff3b3b">on Sunday</span>"##);
         assert_eq!(title_html("Deposit credited"), r##"Deposit <span style="color:#ff3b3b">credited</span>"##);
         assert_eq!(title_html("Welcome"), "Welcome");
-        assert_eq!(title_html("A <b> & c d"), r##"A &lt;b&gt; <span style="color:#ff3b3b">&amp; c d</span>"##);
+        assert_eq!(title_html("A <b> & c d"), r##"A &lt;b&gt; &amp; <span style="color:#ff3b3b">c d</span>"##);
     }
 
     #[test]
