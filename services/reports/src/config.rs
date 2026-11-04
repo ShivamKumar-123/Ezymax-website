@@ -40,6 +40,13 @@ pub struct Config {
     pub company_name: String,
     pub company_site: String,
     pub support_email: String,
+    /// The support hub for client report emails (weekly summary, monthly statement): `SUPPORT_URL` (`off` =
+    /// none, kept empty), `SUPPORT_INTERNAL_TOKEN`; `CLIENT_REPORTS=false` turns them off; `CLIENT_REPORTS_HOUR`
+    /// is the server-time hour they go on a Monday / the 1st.
+    pub support_url: String,
+    pub support_token: String,
+    pub client_reports: bool,
+    pub client_reports_hour: u32,
 }
 
 pub fn redact_url(url: &str) -> String {
@@ -86,6 +93,10 @@ impl fmt::Debug for Config {
             .field("smtp_user", &self.smtp_user)
             .field("smtp_password", &redact(&self.smtp_password))
             .field("smtp_from", &self.smtp_from)
+            .field("support_url", &self.support_url)
+            .field("support_token", &redact(&self.support_token))
+            .field("client_reports", &self.client_reports)
+            .field("client_reports_hour", &self.client_reports_hour)
             .finish()
     }
 }
@@ -137,6 +148,13 @@ impl Config {
             company_name: var("REPORTS_COMPANY_NAME", "Ezymex"),
             company_site: var("REPORTS_COMPANY_SITE", "ezymex.com"),
             support_email: var("REPORTS_SUPPORT_EMAIL", "support@ezymex.com"),
+            support_url: {
+                let u = url("SUPPORT_URL", "http://127.0.0.1:8100");
+                if u.eq_ignore_ascii_case("off") { String::new() } else { u }
+            },
+            support_token: var("SUPPORT_INTERNAL_TOKEN", ""),
+            client_reports: var("CLIENT_REPORTS", "true") != "false",
+            client_reports_hour: var("CLIENT_REPORTS_HOUR", "8").parse::<u32>().unwrap_or(8).min(23),
         })
     }
 }

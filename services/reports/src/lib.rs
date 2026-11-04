@@ -5,6 +5,7 @@
 pub mod api;
 pub mod broker;
 pub mod client;
+pub mod client_reports;
 pub mod config;
 pub mod db;
 pub mod error;

@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use reports::config::Config;
 use reports::state::Svc;
-use reports::{api, db, schedules, sync};
+use reports::{api, client_reports, db, schedules, sync};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -31,6 +31,7 @@ async fn main() -> anyhow::Result<()> {
     if cfg.workers {
         tokio::spawn(sync::run(app.clone()));
         tokio::spawn(schedules::runner(app.clone()));
+        tokio::spawn(client_reports::runner(app.clone()));
         tracing::info!(sync_secs = cfg.sync_secs, "mirror and scheduler running");
     }
     let listener = tokio::net::TcpListener::bind(&cfg.bind).await?;

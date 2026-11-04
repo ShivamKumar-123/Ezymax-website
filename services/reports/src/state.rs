@@ -13,6 +13,8 @@ pub struct Svc {
     pub up: Upstream,
     pub specs: Specs,
     pub mailer: Option<Mailer>,
+    /// For the support hub (client report emails).
+    pub http: reqwest::Client,
     /// Per-login lock so an on-demand sync and the poller never mirror the same account at once.
     pub sync_locks: tokio::sync::Mutex<std::collections::HashMap<(String, i64), Arc<tokio::sync::Mutex<()>>>>,
 }
@@ -36,7 +38,7 @@ impl Svc {
                 }
             }
         };
-        Self { up: Upstream::new(&cfg), cfg, pool, specs, mailer, sync_locks: Default::default() }
+        Self { up: Upstream::new(&cfg), cfg, pool, specs, mailer, http: reqwest::Client::new(), sync_locks: Default::default() }
     }
 
     pub async fn lock_for(&self, tenant: &str, login: i64) -> Arc<tokio::sync::Mutex<()>> {

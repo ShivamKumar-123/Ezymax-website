@@ -73,6 +73,8 @@ pub const KNOWN_KINDS: &[(&str, &str)] = &[
     ("support.reply", "Support reply"),
     ("system.broadcast", "Platform notice (broadcast)"),
     ("birthday.wish", "Birthday greeting"),
+    ("reports.weekly_summary", "Weekly trading summary"),
+    ("reports.monthly_statement", "Monthly statement ready"),
     ("marketing.journey", "Marketing journey email"),
 ];
 
