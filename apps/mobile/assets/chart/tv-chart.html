@@ -542,13 +542,28 @@
     function render() {
       const want = new Set();
       const sc = rect && scale();
+      const entries = [];
       if (sc) {
-        const p = palette();
         for (const l of shown) {
           const price = drag && drag.line && drag.id === l.id ? drag.price : l.price;
           const y = toY(sc, price);
           if (y === null || y < sc.top + 4 || y > sc.top + sc.h - 4) continue;
-          // the chip: the label, the money on it, x - at the scale's edge, the way the web terminal places it
+          entries.push({ l, y });
+        }
+      }
+      // Chips closer than a chip's height (a pending order at a position's stop loss, two trades at one price…)
+      // share one row, side by side from the price scale leftwards, instead of covering each other - the web
+      // terminal's chipRows. Each line's band stays at its own price.
+      entries.sort((x, z) => x.y - z.y);
+      const rows = [];
+      for (const e of entries) {
+        const last = rows[rows.length - 1];
+        if (last && e.y - last.y < 24) last.items.push(e); else rows.push({ y: e.y, items: [e] });
+      }
+      const p = palette();
+      for (const row of rows) {
+        let right = rect.scaleWidth + 6;
+        for (const { l, y } of row.items) {
           let el = chips.get(l.id);
           if (!el) {
             el = makeChip();
@@ -565,26 +580,9 @@
           el.nt.style.display = l.note ? "" : "none";
           el.nt.style.color = l.tone === "down" ? (p.down || "#f04438") : l.tone === "up" ? (p.up || "#16a34a") : colour;
           el.x.style.display = canClose(l) ? "" : "none";
-          el.style.right = (rect.scaleWidth + 6) + "px";
-          el.style.top = Math.round(y) + "px";
-          const chipW = el.offsetWidth || 60;
-          // the band over the line: the finger moves the line from anywhere along it
-          if (canDrag(l)) {
-            const gk = l.id + "|grab";
-            want.add(gk);
-            let g = grabs.get(gk);
-            if (!g) {
-              g = document.createElement("div");
-              g.className = "grab";
-              g.addEventListener("pointerdown", (e) => { const ln = g.__line; if (ln && (e.button === 0 || e.pointerType !== "mouse")) startLine(e, ln, g); });
-              ov.insertBefore(g, ov.firstChild);
-              grabs.set(gk, g);
-            }
-            g.__line = l;
-            g.style.left = rect.left + "px";
-            g.style.width = rect.width + "px";
-            g.style.top = Math.round(y) + "px";
-          }
+          el.style.right = right + "px";
+          el.style.top = Math.round(row.y) + "px";
+          right += (el.offsetWidth || 60) + 6;
           for (const which of ["sl", "tp"]) {
             if (!(which === "sl" ? l.addSl : l.addTp)) continue;
             const key = l.id + "|" + which;
@@ -602,10 +600,26 @@
             const col = which === "sl" ? (p.down || "#f04438") : (p.up || "#16a34a");
             h.style.color = col;
             h.style.borderColor = col;
-            // left of the chip, SL on the left of TP
-            const right = rect.scaleWidth + 6 + chipW + 6 + (which === "sl" && l.addTp ? 34 : 0);
             h.style.right = right + "px";
-            h.style.top = Math.round(y) + "px";
+            h.style.top = Math.round(row.y) + "px";
+            right += (h.offsetWidth || 30) + 6;
+          }
+          // the band over the line: the finger moves the line from anywhere along it
+          if (canDrag(l)) {
+            const gk = l.id + "|grab";
+            want.add(gk);
+            let g = grabs.get(gk);
+            if (!g) {
+              g = document.createElement("div");
+              g.className = "grab";
+              g.addEventListener("pointerdown", (e) => { const ln = g.__line; if (ln && (e.button === 0 || e.pointerType !== "mouse")) startLine(e, ln, g); });
+              ov.insertBefore(g, ov.firstChild);
+              grabs.set(gk, g);
+            }
+            g.__line = l;
+            g.style.left = rect.left + "px";
+            g.style.width = rect.width + "px";
+            g.style.top = Math.round(y) + "px";
           }
         }
       }
@@ -614,15 +628,15 @@
         el.remove();
         chips.delete(id);
       }
-      for (const [key, el] of [...grabs]) {
-        if (want.has(key)) continue;
-        el.remove();
-        grabs.delete(key);
-      }
       for (const [key, el] of [...handles]) {
         if (want.has(key)) continue;
         el.remove();
         handles.delete(key);
+      }
+      for (const [key, el] of [...grabs]) {
+        if (want.has(key)) continue;
+        el.remove();
+        grabs.delete(key);
       }
     }
     function loop() {
