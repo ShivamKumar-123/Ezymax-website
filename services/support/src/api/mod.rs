@@ -5,6 +5,7 @@
 //! The WebSocket stream authenticates with a one-time ticket from `POST /v1/stream/ticket`.
 
 pub mod admin;
+pub mod email;
 pub mod client;
 pub mod notifications;
 pub mod stream;
@@ -44,6 +45,7 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/notifications/me/read", post(notifications::my_read))
         .route("/v1/notifications/me/clear", post(notifications::my_clear))
         .route("/v1/notifications/me/prefs", get(notifications::my_prefs).put(notifications::my_prefs_put))
+        .route("/v1/notifications/me/emails", get(email::my_emails))
         // Back Office
         .route("/v1/support/admin/conversations", get(admin::conversations))
         .route("/v1/support/admin/conversations/{id}", get(admin::conversation))
@@ -75,6 +77,15 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/notifications/admin/broadcasts", get(notifications::broadcasts).post(notifications::broadcast))
         .route("/v1/notifications/admin/broadcasts/preview", post(notifications::broadcast_preview))
         .route("/v1/notifications/admin/types", get(notifications::types))
+        .route("/v1/notifications/admin/email/stats", get(email::stats))
+        .route("/v1/notifications/admin/email/logs", get(email::logs))
+        .route("/v1/notifications/admin/email/logs/{id}", get(email::log_get))
+        .route("/v1/notifications/admin/email/logs/{id}/retry", post(email::retry))
+        .route("/v1/notifications/admin/email/settings", get(email::settings).put(email::settings_put))
+        .route("/v1/notifications/admin/email/templates", get(email::templates))
+        .route("/v1/notifications/admin/email/templates/{kind}", put(email::template_put).delete(email::template_delete))
+        .route("/v1/notifications/admin/email/templates/{kind}/preview", post(email::template_preview))
+        .route("/v1/notifications/admin/email/templates/{kind}/test", post(email::template_test))
         .layer(DefaultBodyLimit::max(256 * 1024))
         .layer(middleware::from_fn_with_state(st.clone(), internal_only));
     Router::new()

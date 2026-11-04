@@ -263,7 +263,15 @@ pub async fn deliver(st: &AppState, tenant: &str, n: NewNotification) -> anyhow:
     let p = prefs(st, tenant, n.audience, &n.recipient).await?;
     let key = pref_key(&n.kind);
     let in_app = n.in_app && p.get(key).and_then(|v| v["inApp"].as_bool()).unwrap_or(true);
-    let email = n.email == EmailMode::Prefs && n.audience == "user" && p.get(key).and_then(|v| v["email"].as_bool()).unwrap_or(false);
+    let mut email = n.email == EmailMode::Prefs && n.audience == "user" && p.get(key).and_then(|v| v["email"].as_bool()).unwrap_or(false);
+    if email {
+        // the Back Office switches (Content -> Email): every email off, or this category off - never security
+        let locked = PREF_KEYS.iter().any(|x| x.key == key && x.locked);
+        let settings = crate::db::settings(&st.pool, tenant).await.unwrap_or_default();
+        if !locked && (!settings.email_enabled || settings.email_off_categories.iter().any(|c| c == key)) {
+            email = false;
+        }
+    }
     let title = clean(&n.title, 200);
     let body = clean(&n.body, 2000);
     let row = sqlx::query(
@@ -316,18 +324,31 @@ pub async fn deliver(st: &AppState, tenant: &str, n: NewNotification) -> anyhow:
                     .collect();
                 let note = n.data["note"].as_str().map(|s| clean(s, 200)).filter(|s| !s.is_empty());
                 let tag = PREF_KEYS.iter().find(|x| x.key == key).map(|x| x.label).unwrap_or("Notice");
+                // an admin's template for this kind (Content -> Email) replaces the producer's wording
+                let (subject, e_title, e_body) = match template_for(st, tenant, &n.kind).await {
+                    Some((t_subject, t_title, t_body)) => {
+                        let mut vars = serde_json::Map::new();
+                        vars.insert("title".into(), json!(title));
+                        vars.insert("body".into(), json!(body));
+                        let name = if n.audience == "user" { crate::upstream::user(st, tenant, n.recipient.parse().unwrap_or(0)).await.and_then(|u| u["name"].as_str().map(str::to_string)) } else { None };
+                        vars.insert("name".into(), json!(name.unwrap_or_default()));
+                        vars.insert("data".into(), n.data.clone());
+                        (crate::api::email::fill(&t_subject, &vars), crate::api::email::fill(&t_title, &vars), crate::api::email::fill(&t_body, &vars))
+                    }
+                    None => (n.email_subject.clone().unwrap_or_else(|| title.clone()), title.clone(), body.clone()),
+                };
                 let (text, html) = mailer::render(&mailer::Mail {
-                    title: &title,
+                    title: &e_title,
                     tag,
-                    body: &body,
+                    body: &e_body,
                     facts: &facts,
                     note: note.as_deref(),
                     button: url.as_deref().map(|u| ("Open Ezymex", u)),
                     footer_note: &footer,
                     app_url: &st.cfg.app_url,
                 });
-                let subject = n.email_subject.clone().unwrap_or_else(|| title.clone());
-                queue_email(st, tenant, &to, &subject, &text, &html, &n.kind).await?;
+                let user_id = if n.audience == "user" { n.recipient.parse::<i64>().ok() } else { None };
+                queue_email(st, tenant, &to, &subject, &text, &html, &n.kind, user_id).await?;
                 emailed = true;
             }
             None => tracing::warn!(user = %n.recipient, kind = %n.kind, "no email address for notification"),
@@ -336,14 +357,21 @@ pub async fn deliver(st: &AppState, tenant: &str, n: NewNotification) -> anyhow:
     Ok(Outcome { id: Some(item.id), duplicate: false, in_app, emailed })
 }
 
-pub async fn queue_email(st: &AppState, tenant: &str, to: &str, subject: &str, text: &str, html: &str, kind: &str) -> anyhow::Result<()> {
-    sqlx::query("INSERT INTO email_outbox (tenant, to_addr, subject, text_body, html_body, kind) VALUES ($1,$2,$3,$4,$5,$6)")
+/// The admin's template for a kind, when there is one and it is on: (subject, title, body).
+async fn template_for(st: &AppState, tenant: &str, kind: &str) -> Option<(String, String, String)> {
+    let r = sqlx::query("SELECT subject, title, body FROM email_templates WHERE tenant = $1 AND kind = $2 AND enabled").bind(tenant).bind(kind).fetch_optional(&st.pool).await.ok().flatten()?;
+    Some((r.get("subject"), r.get("title"), r.get("body")))
+}
+
+pub async fn queue_email(st: &AppState, tenant: &str, to: &str, subject: &str, text: &str, html: &str, kind: &str, user_id: Option<i64>) -> anyhow::Result<()> {
+    sqlx::query("INSERT INTO email_outbox (tenant, to_addr, subject, text_body, html_body, kind, user_id) VALUES ($1,$2,$3,$4,$5,$6,$7)")
         .bind(tenant)
         .bind(to)
         .bind(subject)
         .bind(text)
         .bind(html)
         .bind(kind)
+        .bind(user_id)
         .execute(&st.pool)
         .await?;
     st.wake_mail.notify_one();
@@ -365,8 +393,8 @@ pub async fn flush_outbox(st: &AppState) -> anyhow::Result<usize> {
                 sqlx::query("UPDATE email_outbox SET status = 'logged', sent_at = now(), attempts = attempts + 1 WHERE id = $1").bind(id).execute(&st.pool).await?;
             }
             Some(m) => match m.send(&to, &subject, &r.get::<String, _>("text_body"), &r.get::<String, _>("html_body")).await {
-                Ok(()) => {
-                    sqlx::query("UPDATE email_outbox SET status = 'sent', sent_at = now(), attempts = attempts + 1 WHERE id = $1").bind(id).execute(&st.pool).await?;
+                Ok(answer) => {
+                    sqlx::query("UPDATE email_outbox SET status = 'sent', sent_at = now(), attempts = attempts + 1, provider_message_id = $2 WHERE id = $1").bind(id).bind(&answer).execute(&st.pool).await?;
                 }
                 Err(e) => {
                     let failed = attempts + 1 >= 5;

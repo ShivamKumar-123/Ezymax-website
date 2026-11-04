@@ -31,7 +31,8 @@ impl Mailer {
         Ok(Self { transport: builder.build(), from })
     }
 
-    pub async fn send(&self, to: &str, subject: &str, text: &str, html: &str) -> anyhow::Result<()> {
+    /// Sends, and returns the relay's answer ("250 2.0.0 Ok: queued as …") for the log.
+    pub async fn send(&self, to: &str, subject: &str, text: &str, html: &str) -> anyhow::Result<String> {
         let msg = Message::builder()
             .from(self.from.clone())
             .to(to.parse()?)
@@ -41,8 +42,8 @@ impl Mailer {
                     .singlepart(SinglePart::builder().header(ContentType::TEXT_PLAIN).body(text.to_string()))
                     .singlepart(SinglePart::builder().header(ContentType::TEXT_HTML).body(html.to_string())),
             )?;
-        self.transport.send(msg).await?;
-        Ok(())
+        let r = self.transport.send(msg).await?;
+        Ok(format!("{} {}", r.code(), r.message().next().unwrap_or("")).trim().chars().take(200).collect())
     }
 }
 

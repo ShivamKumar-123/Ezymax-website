@@ -37,6 +37,10 @@ pub struct Settings {
     pub bot_per_hour: i64,
     /// Email the client an agent's reply when they are not connected.
     pub email_replies: bool,
+    /// Back Office -> Content -> Email: every notification email on or off (security notices still go), and the
+    /// preference categories whose emails are off for everyone.
+    pub email_enabled: bool,
+    pub email_off_categories: Vec<String>,
 }
 
 impl Default for Settings {
@@ -49,6 +53,8 @@ impl Default for Settings {
             sla_reply_secs: 600,
             bot_per_hour: 40,
             email_replies: true,
+            email_enabled: true,
+            email_off_categories: Vec::new(),
         }
     }
 }
