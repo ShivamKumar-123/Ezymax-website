@@ -7,6 +7,8 @@ import { Avatar, Button, Card, Chip, Dialog, DialogClose, Field, Flag, Icon3D, I
 import { EML_LANGS, EML_TEMPLATES, EML_VARIABLES, type EmlContent, type EmlLang, type EmlTemplate, type EmlVersion } from "@ezymex/mock/admin-email-templates";
 import { PEOPLE } from "@ezymex/mock";
 import { EmailPreview } from "@/components/content/email-preview";
+import { IS_DEMO } from "@ezymex/mock/mode";
+import { LiveEmail } from "@/components/support-live/email";
 
 const SAMPLES = Object.fromEntries(EML_VARIABLES.map((v) => [v.key, v.sample]));
 const GROUPS: EmlTemplate["group"][] = ["Account", "Security", "Funding", "Compliance", "Trading", "Partners"];
@@ -17,7 +19,7 @@ const fmtAt = (iso: string) => {
 
 type Drafts = Record<string, EmlContent>; // `${id}:${lang}`
 
-export default function EmailTemplatesPage() {
+function DemoEmailTemplatesPage() {
   const [id, setId] = React.useState(EML_TEMPLATES[0]!.id);
   const [lang, setLang] = React.useState<EmlLang>("en");
   const [drafts, setDrafts] = React.useState<Drafts>({});
@@ -474,6 +476,17 @@ export default function EmailTemplatesPage() {
           ))}
         </div>
       </Dialog>
+    </div>
+  );
+}
+
+/** The live page: what the platform emailed, the log, the switches and the templates (services/support). */
+export default function EmailPage() {
+  if (IS_DEMO) return <DemoEmailTemplatesPage />;
+  return (
+    <div className="pb-10">
+      <PageHeader title="Email" subtitle="Every email the platform sends from a notification: what went out, what did not, the switches, and your own wording per kind." />
+      <LiveEmail />
     </div>
   );
 }

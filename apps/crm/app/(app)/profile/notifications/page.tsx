@@ -120,6 +120,54 @@ export default function NotificationPreferencesPage() {
           </div>
         </Card>
       </Reveal>
+      <Reveal delay={0.05}>
+        <EmailHistory />
+      </Reveal>
     </div>
+  );
+}
+
+type SentEmail = { id: number; kind: string; subject: string; status: string; createdAt: string; sentAt: string | null };
+
+/** The emails the platform sent to this client - theirs only - newest first, with a "load more". */
+function EmailHistory() {
+  const t = useT();
+  const [items, setItems] = React.useState<SentEmail[] | null>(IS_DEMO ? [] : null);
+  const [next, setNext] = React.useState<number | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
+  const load = React.useCallback(async (before?: number) => {
+    const r = await fetch(`/api/notifications/emails?limit=20${before ? `&before=${before}` : ""}`, { cache: "no-store" }).catch(() => null);
+    const d = r ? ((await r.json().catch(() => ({}))) as { items?: SentEmail[]; next?: number | null; error?: { message?: string } }) : {};
+    if (!r?.ok || !d.items) return setError(d.error?.message ?? t("profile.notifications.emails.loadError"));
+    setItems((cur) => (before ? [...(cur ?? []), ...d.items!] : d.items!));
+    setNext(d.next ?? null);
+  }, [t]);
+  React.useEffect(() => {
+    if (!IS_DEMO) void load();
+  }, [load]);
+  const when = (iso: string) => new Date(iso).toLocaleString(undefined, { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  return (
+    <Card className="mt-4 max-w-3xl">
+      <CardHeader title={t("profile.notifications.emails.title")} subtitle={t("profile.notifications.emails.subtitle")} />
+      <div className="px-4 pb-4 sm:px-6">
+        {error && <div className="py-6 text-center text-[13px] text-down">{error}</div>}
+        {!items && !error && <div className="py-6 text-center text-[13px] text-fg-3">{t("common.loading")}</div>}
+        {items && items.length === 0 && <div className="py-6 text-center text-[13px] text-fg-3">{t("profile.notifications.emails.empty")}</div>}
+        {items?.map((e) => (
+          <div key={e.id} className="flex items-center justify-between gap-3 border-b border-line py-3 last:border-b-0">
+            <div className="min-w-0">
+              <div className="truncate text-[13.5px] font-medium">{e.subject}</div>
+              <div className="mt-0.5 text-[12px] text-fg-3">{when(e.sentAt ?? e.createdAt)}</div>
+            </div>
+            <span className={`shrink-0 text-[12px] ${e.status === "sent" ? "text-up" : e.status === "failed" ? "text-down" : "text-fg-3"}`}>{t.dyn(`profile.notifications.emails.status.${e.status}`, e.status)}</span>
+          </div>
+        ))}
+        {next && (
+          <button type="button" onClick={() => void load(next)} className="mt-3 text-[13px] text-fg-2 hover:text-fg">
+            {t("profile.notifications.emails.more")}
+          </button>
+        )}
+      </div>
+    </Card>
   );
 }

@@ -9,6 +9,7 @@ import { sameOrigin, sessionUser } from "@/lib/trading";
 //   POST clear                          hide everything from the bell
 //   GET  prefs                          {catalog, prefs}
 //   PUT  prefs                          {prefs: {key: {inApp?, email?}}}
+//   GET  emails?before&limit            the emails sent to this client {items, next}
 
 type Ctx = { params: Promise<{ path?: string[] }> };
 const NO_STORE = { "cache-control": "no-store" };
@@ -19,7 +20,7 @@ function error(status: number, code: string, message: string) {
 
 async function handle(req: NextRequest, ctx: Ctx, method: "GET" | "POST" | "PUT") {
   const path = ((await ctx.params).path ?? []).join("/");
-  const allowed = (method === "GET" && (path === "" || path === "prefs")) || (method === "POST" && (path === "read" || path === "clear")) || (method === "PUT" && path === "prefs");
+  const allowed = (method === "GET" && (path === "" || path === "prefs" || path === "emails")) || (method === "POST" && (path === "read" || path === "clear")) || (method === "PUT" && path === "prefs");
   if (!allowed) return error(404, "not_found", "Not found.");
   let body: unknown;
   if (method !== "GET") {

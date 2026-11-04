@@ -39,9 +39,18 @@ const ROUTES: Route[] = [
   { method: "POST", re: /^notifications\/(read|clear)$/, perm: null, target: (p) => `/v1/notifications/staff/me/${p.split("/")[1]}` },
   { method: "GET", re: /^broadcasts$/, perm: "notifications.write", target: () => "/v1/notifications/admin/broadcasts" },
   { method: "POST", re: /^broadcasts(\/preview)?$/, perm: "notifications.write", target: (p) => `/v1/notifications/admin/${p}` },
+  // Content -> Email: the log, the dashboard, the switches and the templates (services/support api/email.rs)
+  { method: "GET", re: /^email\/(stats|logs|settings|templates)$/, perm: "support.read", target: (p) => `/v1/notifications/admin/${p}` },
+  { method: "GET", re: new RegExp(`^email/logs/${ID}$`), perm: "support.read", target: (p) => `/v1/notifications/admin/${p}` },
+  { method: "POST", re: new RegExp(`^email/logs/${ID}/retry$`), perm: "notifications.write", target: (p) => `/v1/notifications/admin/${p}` },
+  { method: "PUT", re: /^email\/settings$/, perm: "notifications.write", target: (p) => `/v1/notifications/admin/${p}` },
+  { method: "PUT", re: /^email\/templates\/[a-z0-9_.]{1,64}$/, perm: "notifications.write", target: (p) => `/v1/notifications/admin/${p}` },
+  { method: "DELETE", re: /^email\/templates\/[a-z0-9_.]{1,64}$/, perm: "notifications.write", target: (p) => `/v1/notifications/admin/${p}` },
+  { method: "POST", re: /^email\/templates\/[a-z0-9_.]{1,64}\/preview$/, perm: "support.read", target: (p) => `/v1/notifications/admin/${p}` },
+  { method: "POST", re: /^email\/templates\/[a-z0-9_.]{1,64}\/test$/, perm: "notifications.write", target: (p) => `/v1/notifications/admin/${p}` },
 ];
 
-const QUERY_KEYS = ["queue", "q", "limit", "user_id", "category", "source", "days", "before", "action", "unread"];
+const QUERY_KEYS = ["queue", "q", "limit", "user_id", "category", "source", "days", "before", "action", "unread", "status", "kind", "from", "to", "page", "per_page"];
 const MAX_UPLOAD = 10 * 1024 * 1024;
 
 async function handle(req: NextRequest, parts: string[], method: Method) {
