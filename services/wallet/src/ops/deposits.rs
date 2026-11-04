@@ -323,7 +323,7 @@ pub async fn process(st: &AppState, id: i64) -> anyhow::Result<()> {
             "deposit.pending",
             "Deposit detected - waiting for confirmations",
             &format!("Your deposit of {} USDT on {} is on the network. It is credited to your wallet after {required} confirmations.", s(amount), chain.as_str()),
-            json!({"deposit_id": id, "tx_hash": hash, "chain": chain, "facts": super::facts(&[("Amount", format!("{} USDT", s(amount))), ("Network", chain.as_str().to_uppercase()), ("Transaction", super::short_hash(hash)), ("Needs", format!("{required} confirmations"))])}),
+            json!({"deposit_id": id, "tx_hash": hash, "chain": chain.as_str(), "facts": super::facts(&[("Amount", format!("{} USDT", s(amount))), ("Network", chain.as_str().to_uppercase()), ("Transaction", super::short_hash(hash.as_ref())), ("Needs", format!("{required} confirmations"))])}),
         )
         .await?;
         ntx.commit().await?;
@@ -384,7 +384,7 @@ pub async fn process(st: &AppState, id: i64) -> anyhow::Result<()> {
                     "deposit.under_review",
                     "Deposit under review",
                     &format!("Your deposit of {} USDT on {} was received and needs a manual check before it is credited. Our team is reviewing it; no action is needed unless we write to you.", s(amount), chain.as_str()),
-                    json!({"deposit_id": id, "tx_hash": hash, "chain": chain, "facts": super::facts(&[("Amount", format!("{} USDT", s(amount))), ("Network", chain.as_str().to_uppercase()), ("Transaction", super::short_hash(hash)), ("Status", "Under review".into())])}),
+                    json!({"deposit_id": id, "tx_hash": hash, "chain": chain.as_str(), "facts": super::facts(&[("Amount", format!("{} USDT", s(amount))), ("Network", chain.as_str().to_uppercase()), ("Transaction", super::short_hash(hash.as_ref())), ("Status", "Under review".into())])}),
                 )
                 .await?;
                 ntx.commit().await?;
@@ -415,7 +415,7 @@ async fn fail(st: &AppState, id: i64, reason: &str) -> anyhow::Result<()> {
             "deposit.failed",
             "Deposit could not be credited",
             &format!("The transaction you submitted for a deposit{} on {} did not go through: {reason}. Nothing was taken from your wallet. If the money left your account, contact support with the transaction hash.", amount.map(|a| format!(" of {} USDT", s(a))).unwrap_or_default(), chain.to_uppercase()),
-            json!({"deposit_id": id, "tx_hash": hash, "chain": chain, "facts": super::facts(&[("Amount", amount.map(|a| format!("{} USDT", s(a))).unwrap_or_default()), ("Network", chain.to_uppercase()), ("Transaction", super::short_hash(&hash)), ("Reason", reason.to_string())])}),
+            json!({"deposit_id": id, "tx_hash": hash, "chain": chain.as_str(), "facts": super::facts(&[("Amount", amount.map(|a| format!("{} USDT", s(a))).unwrap_or_default()), ("Network", chain.to_uppercase()), ("Transaction", super::short_hash(&hash)), ("Reason", reason.to_string())])}),
         )
         .await?;
         ntx.commit().await?;
@@ -476,7 +476,7 @@ pub async fn credit(st: &AppState, id: i64) -> anyhow::Result<()> {
         "deposit.credited",
         "Deposit credited",
         &format!("{} USDT was credited to your wallet.", s(credit)),
-        json!({"deposit_id": id, "tx_hash": hash, "chain": chain, "facts": super::facts(&[("Credited", format!("{} USDT", s(credit))), ("Network", chain.as_str().to_uppercase()), ("Transaction", super::short_hash(hash)), ("Balance", balance)]), "note": format!("Deposit successful - confirmed on {}.", chain.as_str().to_uppercase())}),
+        json!({"deposit_id": id, "tx_hash": hash, "chain": chain.as_str(), "facts": super::facts(&[("Credited", format!("{} USDT", s(credit))), ("Network", chain.as_str().to_uppercase()), ("Transaction", super::short_hash(hash.as_ref())), ("Balance", balance)]), "note": format!("Deposit successful - confirmed on {}.", chain.as_str().to_uppercase())}),
     )
     .await?;
     tx.commit().await?;
