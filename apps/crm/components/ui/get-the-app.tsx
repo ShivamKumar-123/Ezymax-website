@@ -55,17 +55,19 @@ export function GetTheApp({ className }: { className?: string }) {
   };
 
   return (
-    <div className={cn("relative flex items-center gap-3 rounded-md border border-line bg-surface-2/60 py-3 pe-10 ps-3.5", className)}>
+    // The row wraps: on a narrow phone the button drops under the words rather than squeezing them into a column
+    // three lines tall beside it. The words keep at least 150px, so the title stays on one line.
+    <div className={cn("relative flex flex-wrap items-center gap-x-3 gap-y-2.5 rounded-md border border-line bg-surface-2/60 py-3 pe-10 ps-3.5", className)}>
       <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-ember-soft text-ember">
         <Smartphone className="size-[18px]" />
       </span>
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 basis-[150px]">
         <p className="text-[13.5px] font-medium leading-tight">{t("auth.getApp.title")}</p>
         <p className="mt-0.5 text-[12px] leading-snug text-fg-3">{t("auth.getApp.sub")}</p>
       </div>
       <a
         href={APK}
-        className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-ember px-3.5 py-2 text-[12.5px] font-medium text-white transition-opacity hover:opacity-90"
+        className="ms-auto inline-flex shrink-0 items-center gap-1.5 rounded-full bg-ember px-3.5 py-2 text-[12.5px] font-medium text-white transition-opacity hover:opacity-90"
       >
         <Download className="size-3.5" /> {t("auth.getApp.cta")}
       </a>
