@@ -44,6 +44,7 @@ const chart = {
     calls.push(`createShape:${opts.shape}`);
     return Promise.resolve(id);
   },
+  removeEntity: (id) => { shapes.delete(id); calls.push(`removeEntity:${id}`); },
   getShapeById: (id) => {
     const s = shapes.get(id);
     if (!s) throw new Error("no such shape");
@@ -57,7 +58,6 @@ const chart = {
   resetData: () => calls.push("resetData"),
   createOrderLine: orderLine,
   createStudy: (n) => { calls.push(`study:${n}`); return Promise.resolve(`id-${n}`); },
-  removeEntity: (id) => calls.push(`removeEntity:${id}`),
 };
 const widget = {
   onChartReady: (cb) => { onReadyCb = cb; },
@@ -98,6 +98,8 @@ K.recv({ type: "quote", bid: 1.49, ask: 1.51 });
 // init builds the widget; the library only reports ready once it says so
 K.recv({ type: "init", digits: 5, intraday: true, palette: { dark: true, bg: "#000", up: "#0f0", down: "#f04438", buy: "#4a7bff" }, symbol: "EURUSD", tf: "M5", step: 300, chartType: "candles", indicators: [{ uid: "u1", type: "rsi", params: { len: 14 }, visible: true }] });
 onReadyCb();
+// the line that arrived early is on the chart the moment it is ready (the app's later sets replace it)
+const earlyDrawn = [...shapes.values()].some((s) => s.shape === "horizontal_line" && s.price === 1.5);
 
 // The library's first request lands before the app has sent its history. It must be parked, not answered
 // "no data" (which the library would believe and never ask again), and answered once the bars arrive - with
@@ -111,14 +113,19 @@ K.recv({ type: "bar", bar: bar(1_700_000_600, 1.3) });
 K.recv({ type: "quote", bid: 1.2999, ask: 1.3001 });
 // the lines as chart_bridge.dart ChartLine.toJson sends them: `drag` and `close`, not draggable / closable
 K.recv({ type: "lines", lines: [{ id: "pos:1", kind: "pos", price: 1.25, label: "Buy 0.10", side: "buy", close: true, note: "+12.40", addSl: true, addTp: true }, { id: "sl:1", kind: "sl", price: 1.2, label: "SL", side: "buy", drag: true, close: true }] });
-// the SL line is dragged to 1.18 and dropped: the app hears drag + dragend with that price
-const slLine = made.find((o) => o.price === 1.2);
-if (slLine && slLine.move) { slLine.price = 1.18; slLine.move(); }
+// shapes resolve on a microtask: let the lines land before they are dragged
+await new Promise((r) => setTimeout(r, 0));
+const tradeShape = (price) => [...shapes.values()].find((s) => s.shape === "horizontal_line" && s.showPrice === true && s.price === price);
+const slDrawn = !!tradeShape(1.2) && !!tradeShape(1.25);
+// the SL line is dragged to 1.18 and dropped: the shape moves, and the app hears drag + dragend with that price
+ctx.window.__tvTest.dragLine("sl:1", 1.18);
+const slMoved = !!tradeShape(1.18);
 // the app refused the move and sends the old price back: the line goes back to 1.2 without being redrawn
 K.recv({ type: "lines", lines: [{ id: "pos:1", kind: "pos", price: 1.25, label: "Buy 0.10", side: "buy", close: true, note: "+12.40", addSl: true, addTp: true }, { id: "sl:1", kind: "sl", price: 1.2, label: "SL", side: "buy", drag: true, close: true }] });
-const slBack = slLine ? slLine.price : null;
-if (slLine && slLine.cancel) slLine.cancel();
+const slBack = !!tradeShape(1.2) && !tradeShape(1.18);
+ctx.window.__tvTest.closeLine("sl:1");
 K.recv({ type: "lines", lines: [{ id: "pos:1", kind: "pos", price: 1.25, label: "Buy 0.10", side: "buy", close: true, note: "+12.40" }] });
+const slGone = !tradeShape(1.2) && calls.some((c) => c.startsWith("removeEntity:"));
 K.recv({ type: "chartType", chartType: "line" });
 K.recv({ type: "palette", palette: { dark: false, bg: "#fff" } });
 K.recv({ type: "indicators", indicators: [] });
@@ -135,22 +142,23 @@ want(parked, "a first getBars before the bars message must be parked, not answer
 want(firstAnswer && firstAnswer !== "error" && firstAnswer.b.length === 2, "the parked first getBars was not answered with the two bars");
 want(firstAnswer && firstAnswer.b[0].time === 1_700_000_000_000 && firstAnswer.b[0].open === 1.1 && firstAnswer.b[0].volume === 10, "a bar sent as [t,o,h,l,c,v] in seconds was not decoded to milliseconds");
 want(firstAnswer && firstAnswer.meta && firstAnswer.meta.noData === false, "the first answer must not claim no data");
-want(made.length >= 3, "a line sent before the chart was ready was never drawn after it was");
-want(slLine && slLine.editable === true, "a line the app marks `drag: true` is not editable on the chart");
+want(earlyDrawn, "a line sent before the chart was ready was never drawn after it was");
+want(slDrawn, "the position and SL lines were not drawn as shapes");
+want(slMoved, "a dragged line's shape did not move with the finger");
 want(posted.some((p) => p.type === "drag" && p.id === "sl:1" && p.price === 1.18) && posted.some((p) => p.type === "dragend" && p.id === "sl:1"), "a dropped line did not reach the app as drag + dragend");
-want(slBack === 1.2, `a refused move left the line at ${slBack}, not back at 1.2`);
+want(slBack, "a refused move did not put the line back at 1.2");
 want(posted.some((p) => p.type === "close" && p.id === "sl:1"), "the x of a line the app marks `close: true` does not reach the app");
+want(slGone, "a line the app no longer sends was not removed from the chart");
 want(calls.includes("widget()"), "widget was never built");
 // the web terminal's candles: rising in the buy blue, not the P&L green; the volume bars in the same two colours
 const ov = (ctx.__opts || {}).overrides || {};
 want(ov["mainSeriesProperties.candleStyle.upColor"] === "#4a7bff" && ov["mainSeriesProperties.candleStyle.wickDownColor"] === "#f04438", "candles are not in the web terminal's colours (buy blue / red)");
 want(((ctx.__opts || {}).studies_overrides || {})["volume.volume.color.1"] === "rgba(74,123,255,0.32)", "volume bars are not in the candle colours");
 want(calls.includes("study:Relative Strength Index"), "RSI study not created");
-want(calls.filter((c) => c === "line.remove").length >= 1, "the removed SL line was not cleaned up");
 want(calls.includes("setChartType:2"), "line chart type not applied");
 want(calls.includes("theme:light"), "palette switch did not change the theme");
 // the Buy price: one dotted blue line, no badge, moved to the latest ask rather than drawn again
-const ask = [...shapes.values()].filter((s) => s.shape === "horizontal_line");
+const ask = [...shapes.values()].filter((s) => s.shape === "horizontal_line" && s.showPrice === false);
 want(ask.length === 1, `expected one Buy line, found ${ask.length}`);
 want(ask[0] && ask[0].price === 1.39, `the Buy line is at ${ask[0] && ask[0].price}, not the latest ask 1.39`);
 want(ask[0] && ask[0].showPrice === false && ask[0].props.linestyle === 1 && ask[0].props.linecolor === "#4a7bff", "the Buy line is not a dotted blue line without a badge");

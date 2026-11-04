@@ -31,6 +31,13 @@
         height: 22px; padding: 0 7px; border-radius: 6px; border: 1px solid; background: rgba(10,10,13,0.92);
         transform: translateY(-50%); letter-spacing: 0.02em; user-select: none; -webkit-user-select: none; }
   .hd.on { filter: brightness(1.25); }
+  .chip { position: absolute; pointer-events: auto; touch-action: none; display: flex; align-items: center; gap: 6px;
+          height: 22px; padding: 0 3px 0 8px; border-radius: 6px; border: 1px solid; background: rgba(10,10,13,0.92);
+          transform: translateY(-50%); white-space: nowrap; max-width: 62vw; user-select: none; -webkit-user-select: none; }
+  .chip.on { filter: brightness(1.25); }
+  .chip .nt { font-weight: 500; }
+  .chip .x { display: grid; place-items: center; width: 18px; height: 18px; border-radius: 4px; font-size: 14px;
+             line-height: 1; opacity: 0.85; }
   #ghost { position: absolute; left: 0; top: 0; display: none; border-top: 1px dashed; width: 100%; }
   #glabel { position: absolute; left: 0; top: 0; display: none; padding: 4px 7px; border-radius: 6px; color: #fff;
             font: 600 11px/1.3 -apple-system, "Segoe UI", Roboto, sans-serif; white-space: nowrap; overflow: hidden;
@@ -64,7 +71,7 @@
   let olderWait = null;       // the getBars resolver waiting for an `older` message
   let firstWait = null;       // the first getBars, parked until the app's `bars` message has arrived
   let exhausted = false;      // the app has told us there is no more history
-  const lines = new Map();    // id -> { obj, kind, sig }
+  const lines = new Map();    // id -> { entity, price, key }: one horizontal_line shape per trade line
   const studies = new Map();  // uid -> study id
   // What arrived before the library was ready to draw it. The app sends lines and quotes the moment it has
   // them, which can be before TradingView has finished starting, and a line that came then must not be lost.
@@ -212,52 +219,68 @@
   /** Everything that decides how a line looks, so an unchanged line is left alone between frames. */
   const sigOf = (l) => [l.kind, l.price, l.label, l.note, l.side, canDrag(l), canClose(l)].join("|");
 
+  // Trade lines are horizontal_line shapes with a chip of ours over the frame (overlay below), the way the web
+  // terminal draws them (tv-chart.tsx syncShapes + trade-overlay.tsx). The first version used the library's
+  // createOrderLine, which drew nothing on a handset while the shapes did; every line now goes the way that works.
+  const lineStyle = (l) => (l.kind === "pos" ? 0 : l.kind === "alert" ? 1 : 2);
+
+  /** Moves one line's shape (a drag in progress): the app's own price follows at the drop. */
+  function moveShape(id, price) {
+    const r = lines.get(id);
+    if (!r || !r.entity || !chart) return;
+    try {
+      const sh = chart.getShapeById(r.entity);
+      sh.setPoints([{ price, time: sh.getPoints()[0]?.time }]);
+      r.price = price;
+    } catch (_) {}
+  }
+
   function drawLines(list) {
     if (!chart) return;
-    const seen = new Set();
-    for (const l of list || []) {
-      if (num(l.price) === null) continue;
-      seen.add(l.id);
-      const had = lines.get(l.id);
-      if (had && had.sig === sigOf(l)) {
-        // The same line as before, but the library may have left it where a finger dropped it: the server refused
-        // the move (or the app did, a pending order on the wrong side), and the app sends the old price back.
-        try { if (had.obj.getPrice() !== l.price) had.obj.setPrice(l.price); } catch (_) {}
-        continue;
-      }
-      if (had) { try { had.obj.remove(); } catch (_) {} }
-      let obj;
-      try {
-        obj = chart.createOrderLine();
-      } catch (_) {
-        continue;
-      }
-      const colour = lineColour(l);
-      let moving = false;
-      obj.setPrice(l.price)
-        .setText(l.label || "")
-        .setQuantity(l.note || "")
-        .setLineColor(colour)
-        .setBodyBorderColor(colour)
-        .setBodyTextColor(colour)
-        .setQuantityBackgroundColor(colour)
-        .setQuantityBorderColor(colour)
-        .setBodyBackgroundColor(palette().panel || "#11151c")
-        .setLineStyle(l.kind === "pending" || l.kind === "alert" ? 2 : 0)
-        .setEditable(canDrag(l));
-      if (canDrag(l)) {
-        // the app holds its line updates from the first movement to the drop, so the line stays under the finger
-        obj.onMoving(() => { if (!moving) { moving = true; post({ type: "dragstart", id: l.id }); } });
-        obj.onMove(() => { moving = false; post({ type: "drag", id: l.id, price: obj.getPrice() }); post({ type: "dragend", id: l.id }); });
-      }
-      if (canClose(l)) { obj.setCancelTooltip("Close").onCancel(() => post({ type: "close", id: l.id })); }
-      obj.onModify(() => post({ type: "tap", id: l.id }));
-      lines.set(l.id, { obj, kind: l.kind, sig: sigOf(l) });
-    }
-    for (const [id, v] of [...lines]) {
-      if (seen.has(id)) continue;
-      try { v.obj.remove(); } catch (_) {}
+    const want = new Map();
+    for (const l of list || []) if (num(l.price) !== null) want.set(l.id, l);
+    for (const [id, r] of [...lines]) {
+      if (want.has(id)) continue;
+      if (r.entity) { try { chart.removeEntity(r.entity); } catch (_) {} }
       lines.delete(id);
+    }
+    for (const l of want.values()) {
+      const colour = lineColour(l);
+      const key = colour + "|" + lineStyle(l);
+      const r = lines.get(l.id);
+      if (r) {
+        if (!r.entity) continue; // being created: it picks the latest up when it is there
+        try {
+          const sh = chart.getShapeById(r.entity);
+          if (r.price !== l.price) sh.setPoints([{ price: l.price, time: sh.getPoints()[0]?.time }]);
+          if (r.key !== key) sh.setProperties({ linecolor: colour, linestyle: lineStyle(l) });
+          r.price = l.price;
+          r.key = key;
+          continue;
+        } catch (_) {
+          // the handle is gone (a new layout): drawn afresh below
+          try { chart.removeEntity(r.entity); } catch (_) {}
+          lines.delete(l.id);
+        }
+      }
+      const rec = { entity: null, price: l.price, key };
+      lines.set(l.id, rec);
+      let time;
+      try { time = Math.floor(chart.getVisibleRange().to); } catch (_) { time = Math.floor(Date.now() / 1000); }
+      let made;
+      try {
+        made = chart.createShape({ price: l.price, time }, {
+          shape: "horizontal_line", lock: true, disableSelection: true, disableSave: true, disableUndo: true,
+          showInObjectsTree: false, zOrder: "top",
+          overrides: { linecolor: colour, linestyle: lineStyle(l), linewidth: 1, showPrice: true, showLabel: false },
+        });
+      } catch (_) { lines.delete(l.id); continue; }
+      Promise.resolve(made).then((id) => {
+        if (lines.get(l.id) !== rec) { try { chart.removeEntity(id); } catch (_) {} return; }
+        rec.entity = id;
+        const now = lastLines && lastLines.find((x) => x.id === l.id);
+        if (now && now.price !== rec.price) { rec.price = NaN; drawLines(lastLines); }
+      }).catch(() => { if (lines.get(l.id) === rec) lines.delete(l.id); });
     }
     overlay.setLines(list || []);
   }
@@ -282,6 +305,7 @@
     let held = null;           // lines that arrived while a handle was dragged: drawn at the drop
     let drag = null;           // the handle drag in progress
     const handles = new Map(); // "id|which" -> element
+    const chips = new Map();   // id -> element
     let loopOn = false;
 
     const mainPane = () => {
@@ -379,6 +403,74 @@
       if (after) ghostTimer = setTimeout(go, after); else go();
     }
 
+    /* ---- the chips ---- */
+    const setText = (el, v) => { if (el.textContent !== v) el.textContent = v; };
+    function makeChip() {
+      const el = document.createElement("div");
+      el.className = "chip";
+      el.lb = document.createElement("span");
+      el.nt = document.createElement("span");
+      el.nt.className = "nt";
+      el.x = document.createElement("span");
+      el.x.className = "x";
+      el.x.textContent = "\u00d7";
+      el.append(el.lb, el.nt, el.x);
+      // the x: its own pointer, never the chip's drag
+      el.x.addEventListener("pointerdown", (e) => e.stopPropagation());
+      el.x.addEventListener("pointerup", (e) => { e.stopPropagation(); const l = el.__line; if (l && canClose(l)) post({ type: "close", id: l.id }); });
+      el.addEventListener("pointerdown", (e) => { const l = el.__line; if (l && (e.button === 0 || e.pointerType !== "mouse")) startLine(e, l, el); });
+      return el;
+    }
+
+    /** A finger on a chip: moved, the line follows it and the app hears drag + dragend at the drop (lines the app
+     *  may not move stay put); not moved, a tap. The app's lines wait while the chip is held. */
+    function startLine(e, l, el) {
+      e.preventDefault();
+      e.stopPropagation();
+      const startY = e.clientY;
+      const d0 = drag = { id: l.id, line: true, price: l.price, moved: false };
+      el.classList.add("on");
+      try { el.setPointerCapture(e.pointerId); } catch (_) {}
+      const move = (ev) => {
+        if (drag !== d0) return;
+        if (!d0.moved) {
+          if (Math.abs(ev.clientY - startY) <= 4) return;
+          d0.moved = true;
+          if (canDrag(l)) post({ type: "dragstart", id: l.id });
+        }
+        if (!canDrag(l)) return;
+        const sc = scale();
+        if (!sc) return;
+        const y = Math.max(sc.top + 2, Math.min(sc.top + sc.h - 2, ev.clientY));
+        d0.price = Math.round(toPrice(sc, y) * pow()) / pow();
+        moveShape(l.id, d0.price);
+      };
+      const up = () => {
+        el.removeEventListener("pointermove", move);
+        el.removeEventListener("pointerup", up);
+        el.removeEventListener("pointercancel", up);
+        el.removeEventListener("lostpointercapture", up);
+        el.classList.remove("on");
+        if (drag !== d0) return;
+        drag = null;
+        if (!d0.moved) {
+          if (held) { const h = held; held = null; drawLines(h); }
+          post({ type: "tap", id: l.id });
+          return;
+        }
+        // the line stays where it was dropped; the app's next lines say where it really is (the server's answer,
+        // or the old price when the move was refused)
+        held = null;
+        if (!canDrag(l)) return;
+        post({ type: "drag", id: l.id, price: d0.price });
+        post({ type: "dragend", id: l.id });
+      };
+      el.addEventListener("pointermove", move);
+      el.addEventListener("pointerup", up);
+      el.addEventListener("pointercancel", up);
+      el.addEventListener("lostpointercapture", up);
+    }
+
     /* ---- the handles ---- */
     function startStop(e, l, which, el) {
       e.preventDefault();
@@ -447,31 +539,57 @@
       if (sc) {
         const p = palette();
         for (const l of shown) {
+          const price = drag && drag.line && drag.id === l.id ? drag.price : l.price;
+          const y = toY(sc, price);
+          if (y === null || y < sc.top + 4 || y > sc.top + sc.h - 4) continue;
+          // the chip: the label, the money on it, x - at the scale's edge, the way the web terminal places it
+          let el = chips.get(l.id);
+          if (!el) {
+            el = makeChip();
+            ov.appendChild(el);
+            chips.set(l.id, el);
+          }
+          want.add(l.id);
+          el.__line = l;
+          const colour = lineColour(l);
+          el.style.color = colour;
+          el.style.borderColor = colour;
+          setText(el.lb, l.label || "");
+          setText(el.nt, l.note || "");
+          el.nt.style.display = l.note ? "" : "none";
+          el.nt.style.color = l.tone === "down" ? (p.down || "#f04438") : l.tone === "up" ? (p.up || "#16a34a") : colour;
+          el.x.style.display = canClose(l) ? "" : "none";
+          el.style.right = (rect.scaleWidth + 6) + "px";
+          el.style.top = Math.round(y) + "px";
+          const chipW = el.offsetWidth || 60;
           for (const which of ["sl", "tp"]) {
             if (!(which === "sl" ? l.addSl : l.addTp)) continue;
             const key = l.id + "|" + which;
-            const y = toY(sc, l.price);
-            if (y === null || y < sc.top + 4 || y > sc.top + sc.h - 4) continue;
             want.add(key);
-            let el = handles.get(key);
-            if (!el) {
-              el = document.createElement("div");
-              el.className = "hd";
-              el.textContent = which.toUpperCase();
-              el.addEventListener("pointerdown", (e) => { if (e.button === 0 || e.pointerType !== "mouse") startStop(e, l, which, el); });
-              ov.appendChild(el);
-              handles.set(key, el);
+            let h = handles.get(key);
+            if (!h) {
+              h = document.createElement("div");
+              h.className = "hd";
+              h.textContent = which.toUpperCase();
+              h.addEventListener("pointerdown", (e) => { const ln = h.__line; if (ln && (e.button === 0 || e.pointerType !== "mouse")) startStop(e, ln, which, h); });
+              ov.appendChild(h);
+              handles.set(key, h);
             }
-            el.__line = l;
+            h.__line = l;
             const col = which === "sl" ? (p.down || "#f04438") : (p.up || "#16a34a");
-            el.style.color = col;
-            el.style.borderColor = col;
-            // beside the price scale, SL on the left of TP, clear of the chip at the line's other end
-            const right = rect.scaleWidth + 6 + (which === "sl" && l.addTp ? 34 : 0);
-            el.style.right = right + "px";
-            el.style.top = Math.round(y) + "px";
+            h.style.color = col;
+            h.style.borderColor = col;
+            // left of the chip, SL on the left of TP
+            const right = rect.scaleWidth + 6 + chipW + 6 + (which === "sl" && l.addTp ? 34 : 0);
+            h.style.right = right + "px";
+            h.style.top = Math.round(y) + "px";
           }
         }
+      }
+      for (const [id, el] of [...chips]) {
+        if (want.has(id)) continue;
+        el.remove();
+        chips.delete(id);
       }
       for (const [key, el] of [...handles]) {
         if (want.has(key)) continue;
@@ -535,10 +653,17 @@
         raf(loop);
       },
       setLines(list) { shown = list; },
-      /** Lines from the app wait while a handle is held: the chip and its handle stay under the finger. */
+      /** Lines from the app wait while a chip or a handle is held: what is under the finger stays there. */
       hold(list) { if (!drag) return false; held = list; return true; },
+      /** The check's way in (tool/check-tv-chart.mjs): what a finger would do, without a finger. */
+      test: {
+        dragLine(id, price) { moveShape(id, price); post({ type: "drag", id, price }); post({ type: "dragend", id }); },
+        closeLine(id) { post({ type: "close", id }); },
+        chips: () => shown.map((l) => l.id),
+      },
     };
   })();
+  window.__tvTest = overlay.test;
 
   /* ----------------------------------------------------------------- the quote */
 
