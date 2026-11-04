@@ -460,8 +460,19 @@ pub async fn my_emails(State(st): State<AppState>, c: Client, Query(q): Query<My
 
 #[cfg(test)]
 mod tests {
-    use super::fill;
+    use super::{KNOWN_KINDS, fill};
     use serde_json::json;
+
+    #[test]
+    fn known_kinds_are_unique_and_well_formed() {
+        let mut seen = std::collections::HashSet::new();
+        for (k, label) in KNOWN_KINDS {
+            assert!(seen.insert(*k), "duplicate kind {k}");
+            assert!(k.contains('.') && k.chars().all(|c| c.is_ascii_lowercase() || c == '.' || c == '_'), "bad kind {k}");
+            assert!(!label.is_empty());
+        }
+        assert!(KNOWN_KINDS.iter().any(|(k, _)| *k == "reports.weekly_summary"));
+    }
 
     #[test]
     fn variables_fill_and_unknown_ones_stay() {

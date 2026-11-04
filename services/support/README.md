@@ -110,11 +110,13 @@ Every route except `GET /health` and `GET /v1/stream` needs `X-Ezymex-Internal: 
 ```
 
 - Recipients: `userId` or `userIds` (clients), `staffId` or `staffIds` (staff); at most 1000 per call.
-- `type` is `category.event`, lower-case. The category decides the preference topic: `security.*` (always on), `trading.margin_call` / `trading.stop_out` (margin call and stop-out), other `trading.*` (fills and closes), `wallet.*`, `kyc.*`, `ib.*`, `copy.*` / `pamm.*`, `prop.*`, `support.*`, `marketing.*`, anything else = platform notices.
+- `type` is `category.event`, lower-case. The category decides the preference topic: `security.*` (always on), `trading.margin_call` / `trading.stop_out` (margin call and stop-out), other `trading.*` (fills and closes), `wallet.*`, `kyc.*`, `ib.*`, `copy.*` / `pamm.*`, `prop.*`, `staking.*`, `reports.*` (weekly summary and monthly statement, off by default), `birthday.*`, `support.*`, `marketing.*`, anything else = platform notices.
+- `data.facts` (`[{"label", "value"}]`, up to 8) and `data.note` (one sentence) are rendered in the email as the facts strip and the green note; everything else in `data` is kept on the notification.
 - `severity`: `info` (default), `success`, `warning`, `critical`. `link`: an app path (`/wallet`) or `https://` URL.
 - `dedupeKey` makes the call idempotent per recipient (safe to retry; a repeat returns `duplicate: true`).
 - Email follows the recipient's preference for the topic; `"email": false` sends in-app only (use it when your service already emails). `emailTo` skips the gateway lookup; `emailSubject` overrides the subject.
 - Response: `{"results": [{"audience", "recipient", "id", "duplicate", "inApp", "emailed"}]}`.
+- Before an email is queued the Back Office switches apply (every notification email off, or the category off: `settings.email_enabled` / `email_off_categories`; security is exempt), then an enabled admin template for the type replaces the producer's subject, headline and body (`{{title}}`, `{{body}}`, `{{name}}`, `{{data.<key>}}`).
 
 ```bash
 curl -s localhost:8100/v1/notify -H "x-ezymex-internal: $SUPPORT_INTERNAL_TOKEN" -H "x-ezymex-service: wallet" \
@@ -132,10 +134,28 @@ Producers that push directly (each from an outbox written with the business chan
 
 Polling adapters (`src/adapters.rs`) cover the rest: engine closing deals (`trading.stop_out`, `trading.sl`, `trading.tp`, `trading.dealer_close`), engine margin-call flags (`trading.margin_call`) and gateway KYC decisions (`kyc.verified`, `kyc.rejected`, in-app only because the gateway emails them). The wallet adapter (wallet notifications of clients seen on the stream in the last 24 hours) stays as a safety net and uses the wallet's dedupe key, so nothing is shown twice. Each adapter starts from "now" on its first run. Copy/PAMM should call `POST /v1/notify` at the moment of the event too.
 
+### Email management (Back Office -> Content -> Email)
+
+`/v1/notifications/admin/email/…` with the agent session; `support.read` to look, `notifications.write` to change (every change is audited):
+
+| Endpoint | |
+|---|---|
+| `GET …/stats` | totals, today / this week, success rate, pending, by kind (30 days), by day (14 days), `smtp` and `enabled` flags |
+| `GET …/logs?q&status&kind&from&to&page&per_page` | the outbox, newest first; `GET …/logs/{id}` adds the text and HTML |
+| `POST …/logs/{id}/retry` | a failed or logged email goes back to `pending` (attempts kept) |
+| `GET/PUT …/settings` | `{enabled, offCategories}` plus the category catalog; a locked category (security) cannot be switched off |
+| `GET …/templates` | every known kind with its last sample, the count sent in 30 days and the override, plus the variables |
+| `PUT/DELETE …/templates/{kind}` | `{subject, title, body, enabled}`; delete restores the producer's wording |
+| `POST …/templates/{kind}/preview` | renders the frame with sample values; `POST …/templates/{kind}/test` `{to, …}` queues one email to that address only |
+
+`GET /v1/notifications/me/emails?before&limit` (client session) lists the emails sent to that client: `{items: [{id, kind, subject, status, createdAt, sentAt}], next}`.
+
 ### Broadcasts
 
 `POST /v1/notifications/admin/broadcasts` `{title, body, link?, category: "system"|"marketing"|"security", segment, inApp, email}` with `segment` = `{kind: "all"}`, `{kind: "kyc_verified"}`, `{kind: "kyc_unverified"}`, `{kind: "countries", countries: ["ae","in"]}` or `{kind: "users", userIds: [..]}` (active gateway clients of the tenant). Sent in the background (status `sending` → `sent`), respecting each client's preferences, deduplicated per broadcast, and audited.
 
 ## Data
 
-`conversations`, `messages`, `attachments`, `canned_replies`, `kb_articles`, `agents`, `notifications` (unique `(tenant, audience, recipient, dedupe_key)`), `notification_prefs`, `broadcasts`, `email_outbox` (sent in the background, 5 attempts), `settings`, `cursors`, `audit_log` (append-only, trigger).
+`conversations`, `messages`, `attachments`, `canned_replies`, `kb_articles`, `agents`, `notifications` (unique `(tenant, audience, recipient, dedupe_key)`), `notification_prefs`, `broadcasts`, `email_outbox` (sent in the background, 5 attempts; `user_id`, `provider_message_id` = the relay's answer), `email_templates` (per tenant and kind), `settings`, `cursors`, `audit_log` (append-only, trigger).
+
+Producers reach this service at `SUPPORT_URL` (unset = `http://127.0.0.1:8100`; `off` = no delivery) with `SUPPORT_INTERNAL_TOKEN`: the gateway (security notices), trading (opened / closed / pending orders / margin call), wallet, growth (`birthday.wish`, `PLATFORM_TZ_OFFSET_MINUTES` + `BIRTHDAY_HOUR`), reports (`reports.*`, `CLIENT_REPORTS_HOUR`), ib and prop.

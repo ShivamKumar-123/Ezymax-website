@@ -284,7 +284,8 @@ The gateway RBAC (`services/gateway/src/rbac.rs`) defines `marketing.read`, `mar
 | `GATEWAY_URL` / `GATEWAY_INTERNAL_TOKEN` | `http://127.0.0.1:8080` | profiles feed |
 | `TRADING_URL` / `TRADING_INTERNAL_TOKEN` | `http://127.0.0.1:8090` | deals, accounts, ledgers, bonus / credit postings |
 | `WALLET_URL` / `WALLET_INTERNAL_TOKEN` | `http://127.0.0.1:8095` | payouts |
-| `NOTIFY_URL` / `SUPPORT_INTERNAL_TOKEN` | `http://127.0.0.1:8100` | support notifications (journey in-app steps) |
+| `NOTIFY_URL` / `SUPPORT_INTERNAL_TOKEN` | `http://127.0.0.1:8100` | support notifications (journey in-app steps, birthday greetings) |
+| `PLATFORM_TZ_OFFSET_MINUTES` / `BIRTHDAY_HOUR` | `180` / `9` | the platform's clock for "today" and the hour the birthday greeting (`birthday.wish`, once a year per client, 29 Feb on 28 Feb in a common year) is sent; claimed in `birthday_sends` |
 | `REPORTS_URL` / `REPORTS_INTERNAL_TOKEN` | `http://127.0.0.1:8102` | client facts for journey triggers |
 | `INSTRUMENTS_FILE` | `config/instruments.json` | symbol → asset class |
 | `GROWTH_STORAGE_DIR` | `~/.ezymex-data/growth` | uploaded images (created 0700 on start; files 0600). Back it up with the database |

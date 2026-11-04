@@ -51,6 +51,7 @@ It creates and migrates `ezymex_reports` on first start and reads `REPORTS_*` pl
 - **Snapshots.** Each pass upserts today's row per account (`snapshots`, server day) from the engine's live balance and equity, so the last write of a day is its end-of-day value. The first sync of an account backfills past days from its ledger (`source = backfill`: equity = balance + credit + bonus, since past floating P&L is unknown). Days without a row carry the previous day forward.
 - **Freshness.** Client statements and analytics first refresh that client's accounts from the engine (`GET /v1/accounts?user_id=`, then the incremental pull), so a trade made seconds ago is included. Broker reports read the mirror (at most one pass old); `POST /v1/admin/sync` runs a pass now.
 - **Idempotent.** Every mirrored row is keyed by its source id; overlaps and retries never double count.
+- **Client report emails.** Every Monday (`CLIENT_REPORTS_HOUR`, server time) clients who closed a trade in the previous week get `reports.weekly_summary` (trades, win rate, net result, volume, best and worst trade), and on the 1st every client with any deal or ledger posting in the previous month gets `reports.monthly_statement` (plus deposits, withdrawals and balance, with a link to Portfolio -> Statements). Both are posted to the support hub, so the client's opt-in `reports` preference, the Back Office switches, templates and the email log apply. Each client and period is claimed in `client_report_sends` before it is built (`sent` / `skipped` / `failed`), so a restart never sends a period twice.
 - **Scheduler.** Every minute it runs due schedules, builds the report for the previous server day / 7 days / calendar month, and emails it (XLSX or CSV attachment plus a totals summary) through SMTP. Without `SMTP_HOST` a run is recorded as `logged`.
 
 ## Definitions
@@ -168,6 +169,8 @@ The gateway RBAC already defines `reports.read` ("View reports") and `reports.ex
 | `TRADING_URL` / `TRADING_INTERNAL_TOKEN`, `WALLET_*`, `GATEWAY_*`, `IB_*`, `PROP_*` | local defaults | sources |
 | `MARKET_DATA_URL` / `MARKET_DATA_ADMIN_TOKEN` | `http://127.0.0.1:8081` | spread markups |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `REPORTS_SMTP_FROM` | – / 587 / – / – / `Ezymex Reports <no-reply@ezymex.com>` | scheduled report emails (same relay as the gateway) |
+| `SUPPORT_URL` / `SUPPORT_INTERNAL_TOKEN` | `http://127.0.0.1:8100` / – | client report emails through the support hub; `off` = none |
+| `CLIENT_REPORTS` / `CLIENT_REPORTS_HOUR` | `true` / `8` | weekly summary and monthly statement emails, and the server-time hour they go |
 
 Production runs `deploy/systemd/ezymex-reports.service`; `deploy/deploy.sh` builds it, generates `REPORTS_INTERNAL_TOKEN` once, derives `REPORTS_DATABASE_URL` (database `ezymex_reports`) from `GATEWAY_DATABASE_URL`, and writes `REPORTS_URL` / `REPORTS_INTERNAL_TOKEN` into the CRM and admin env.
 
