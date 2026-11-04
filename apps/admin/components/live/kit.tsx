@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Button, Chip, EmptyState, IconButton, Skeleton, cn, formatDateTime, type ChipTone } from "@ezymex/ui";
 import { readCached, writeCached } from "@ezymex/ui/swr-cache";
 import { downloadTablePdf } from "@ezymex/ui/table-pdf";
+import { downloadTableXlsx } from "@ezymex/ui/table-xlsx";
 
 export type ApiErr = { code: string; message: string; field?: string };
 
@@ -331,6 +332,13 @@ export function downloadPdf(name: string, title: string, header: string[], rows:
   toast.success(`${name}.pdf downloaded`, {
     description: dropped > 0 ? `${rows.length} rows · some characters are not in this format's font` : `${rows.length} rows`,
   });
+}
+
+/** The same rows as an Excel workbook: numbers stay numbers, any script goes in as it is, the header row is
+ *  frozen with a filter on it. The caption under the title says which rows these are, as on the PDF. */
+export function downloadXlsx(name: string, title: string, header: string[], rows: (string | number | null | undefined)[][], subtitle?: string) {
+  downloadTableXlsx(name, header, rows, { title, subtitle });
+  toast.success(`${name}.xlsx downloaded`, { description: `${rows.length} rows` });
 }
 
 /* ---------- states ---------- */

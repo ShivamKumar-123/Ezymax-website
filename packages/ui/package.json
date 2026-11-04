@@ -14,6 +14,7 @@
     "./primitives": "./src/components/primitives.tsx",
     "./swr-cache": "./src/lib/swr-cache.ts",
     "./table-pdf": "./src/lib/table-pdf.ts",
+    "./table-xlsx": "./src/lib/table-xlsx.ts",
     "./illustration": "./src/components/illustration.tsx",
     "./*": "./src/*"
   },

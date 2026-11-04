@@ -13,7 +13,7 @@ import { OnlineNow, PRESENCE_POLL_MS, PresenceCell } from "@/components/clients/
 import { RestrictionChips } from "@/components/clients/restrictions-card";
 import { ClientManageMenu, ClientStateChips, type ManageResult } from "@/components/clients/manage";
 import { ClientDetailView } from "./client-detail";
-import { EmailChip, ErrorState, KycChip, Mono, Pager, TableSkeleton, ago, countryName, day, downloadCsv, downloadPdf, qs, sendJson, useApi, useDebounced, useNow, when } from "./kit";
+import { EmailChip, ErrorState, KycChip, Mono, Pager, TableSkeleton, ago, countryName, day, downloadCsv, downloadPdf, downloadXlsx, qs, sendJson, useApi, useDebounced, useNow, when } from "./kit";
 import type { Client, Stats, UsersPage } from "./types";
 
 type Kyc = "all" | "unverified" | "pending" | "verified" | "rejected";
@@ -78,7 +78,7 @@ export function LiveClients() {
     return `${n.toLocaleString("en-US")} client${n === 1 ? "" : "s"}${parts.length ? ` · ${parts.join(" · ")}` : ""} · ${when(new Date().toISOString())}`;
   }
 
-  async function exportAll(format: "csv" | "pdf") {
+  async function exportAll(format: "csv" | "pdf" | "xlsx") {
     const rows: Client[] = [];
     for (let p = 1; p <= 50; p++) {
       // the same filters the table is showing, so what downloads is what is on the screen
@@ -91,14 +91,15 @@ export function LiveClients() {
     }
     const name = `clients-${new Date().toISOString().slice(0, 10)}`;
     const header = ["ID", "First name", "Last name", "Email", "Phone", "Country", "Date of birth", "Email verified", "KYC", "Status", "Referral code", "Referred by ID", "Registered", "Last sign-in"];
-    // a CSV is read by a machine and keeps its timestamps as they came; a PDF is read by a person, and a
-    // microsecond-precision UTC string costs three printed lines to say what one line of local time says better
+    // a CSV is read by a machine and keeps its timestamps as they came; a PDF or a workbook is read by a person,
+    // and a microsecond-precision UTC string costs three printed lines to say what one line of local time says better
     const stamp = (iso: string | null) => (format === "csv" ? iso : iso ? when(iso) : "");
     const body = rows.map((u) => [
       u.id, u.first_name, u.last_name, u.email, `${u.phone_dial} ${u.phone}`, u.country.toUpperCase(), u.date_of_birth,
       u.email_verified ? "yes" : "no", u.kyc_status, u.status, u.referral_code, u.referred_by, stamp(u.created_at), stamp(u.last_login_at),
     ]);
     if (format === "pdf") downloadPdf(name, "Clients", header, body, caption(rows.length));
+    else if (format === "xlsx") downloadXlsx(name, "Clients", header, body, caption(rows.length));
     else downloadCsv(name, header, body);
   }
 
@@ -179,6 +180,26 @@ export function LiveClients() {
 
   const filtered = !!dq || kyc !== "all" || verified !== "all" || presence !== "all" || restricted || showHidden || !!from || !!to;
   const hiddenCount = (data?.counts?.hidden ?? 0) + (data?.counts?.deleted ?? 0);
+  const clearFilters = () => {
+    setQ("");
+    setKyc("all");
+    setVerified("all");
+    setPresence("all");
+    setRestricted(false);
+    setShowHidden(false);
+    setFrom("");
+    setTo("");
+  };
+  /** The filters in force, in words, for the chip beside the export buttons. */
+  const filterWords = [
+    dq ? `“${dq}”` : null,
+    kyc !== "all" ? `KYC ${kyc}` : null,
+    verified !== "all" ? (verified === "true" ? "verified emails" : "unverified emails") : null,
+    presence !== "all" ? presence : null,
+    restricted ? "restricted" : null,
+    showHidden ? "incl. hidden" : null,
+    from && to ? `${from} → ${to}` : from ? `from ${from}` : to ? `up to ${to}` : null,
+  ].filter(Boolean) as string[];
 
   return (
     <div className="pb-10">
@@ -187,16 +208,32 @@ export function LiveClients() {
         subtitle={s ? `${s.total.toLocaleString("en-US")} registered · ${s.registered_today} today · ${s.email_verified.toLocaleString("en-US")} verified emails` : "Everyone registered in the Client Area"}
         actions={
           <>
+            {/* What a download will contain: the filters in force and the count, next to the buttons that
+                export exactly that set. Without it a filtered PDF looked like a partial export. */}
+            {filtered && data && (
+              <span className="flex h-9 max-w-[420px] items-center gap-2 rounded-full border border-ember/30 bg-ember-soft px-3.5 text-[12.5px] text-fg" data-testid="filter-chip">
+                <span className="truncate">
+                  <span className="font-medium">{data.total.toLocaleString("en-US")} client{data.total === 1 ? "" : "s"}</span>
+                  <span className="text-fg-2"> · {filterWords.join(" · ")}</span>
+                </span>
+                <button type="button" onClick={clearFilters} className="shrink-0 text-fg-3 hover:text-fg" aria-label="Clear filters">
+                  ×
+                </button>
+              </span>
+            )}
             <OnlineNow />
             <Button variant="surface" onClick={reload}>
               <RefreshCw /> Refresh
             </Button>
             {canExport && (
               <>
-                <Button variant="surface" onClick={() => exportAll("pdf")} disabled={!data || data.total === 0}>
+                <Button variant="surface" onClick={() => exportAll("pdf")} disabled={!data || data.total === 0} title={filtered ? "The filtered clients as a PDF" : "Every client as a PDF"}>
                   <Download /> PDF
                 </Button>
-                <Button variant="ember" onClick={() => exportAll("csv")} disabled={!data || data.total === 0}>
+                <Button variant="surface" onClick={() => exportAll("xlsx")} disabled={!data || data.total === 0} title={filtered ? "The filtered clients as an Excel workbook" : "Every client as an Excel workbook"}>
+                  <Download /> Excel
+                </Button>
+                <Button variant="ember" onClick={() => exportAll("csv")} disabled={!data || data.total === 0} title={filtered ? "The filtered clients as a CSV" : "Every client as a CSV"}>
                   <Download /> CSV
                 </Button>
               </>
@@ -279,20 +316,7 @@ export function LiveClients() {
               <EyeOff /> Show hidden{hiddenCount ? ` · ${hiddenCount}` : ""}
             </Button>
             {filtered && (
-              <Button
-                size="xs"
-                variant="ghost"
-                onClick={() => {
-                  setQ("");
-                  setKyc("all");
-                  setVerified("all");
-                  setPresence("all");
-                  setRestricted(false);
-                  setShowHidden(false);
-                  setFrom("");
-                  setTo("");
-                }}
-              >
+              <Button size="xs" variant="ghost" onClick={clearFilters}>
                 Clear filters
               </Button>
             )}
