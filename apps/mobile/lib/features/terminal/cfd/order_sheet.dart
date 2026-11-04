@@ -1,6 +1,6 @@
 // The order sheet = the web order form (apps/terminal/components/order/order-ticket.tsx, dialog variant), exchange
-// style: Sell | Buy with live prices · order type (Market / Limit / Stop / Stop limit, each explained) · price, limit
-// price, expiry · volume with sizing by risk · Stop loss and Take profit by price, pips or money · summary (margin,
+// style: Sell | Buy with live prices · Market | Pending, the pending kind (Limit / Stop / Stop limit) as a chip in
+// the price field it governs, each explained · price, limit price, expiry · volume with sizing by risk · Stop loss and Take profit by price, pips or money · summary (margin,
 // pip value, free margin after) · ONE confirm button that names the trade. With one-click trading on, Sell / Buy send
 // at once. It carries exactly what the web ticket does: the volume presets, the More options fold (trailing stop,
 // OCO, comment, max price change) and the size and swap rows the sheet used to add on top made it twice as long.
@@ -50,6 +50,8 @@ class OrderForm extends ConsumerStatefulWidget {
 class _OrderFormState extends ConsumerState<OrderForm> {
   late String _symbol = widget.symbol;
   late String _type = widget.type;
+  /// The pending kind last used, so Pending comes back to it rather than always to Limit (web lastPending).
+  late String _lastPending = widget.type == 'market' ? 'limit' : widget.type;
   late String? _side = widget.side;
   late String _volume = (widget.volume ?? ref.read(workspaceProvider).lot).toStringAsFixed(2);
   String _price = '';
@@ -231,14 +233,15 @@ class _OrderFormState extends ConsumerState<OrderForm> {
     _ => t('desk.op.type.stopLimit'),
   };
 
+  /// Which kind of pending order (the chip in the price field): Limit, Stop or Stop limit.
   Future<void> _pickType() async {
     final t = context.t;
     final ty = await showKActionSheet<String>(
       context,
       title: t('desk.op.typeTitle'),
-      actions: [for (final x in kOrderTypes) KAction(label: '${_typeWord(t, x)} · ${x == 'market' ? t('desk.op.typeNow') : t('desk.op.typeLater')}', value: x)],
+      actions: [for (final x in kOrderTypes) if (x != 'market') KAction(label: _typeWord(t, x), value: x)],
     );
-    if (ty != null && mounted) setState(() => _type = ty);
+    if (ty != null && mounted) setState(() => _type = _lastPending = ty);
   }
 
   Future<void> _pickExpiry() async {
@@ -386,28 +389,14 @@ class _OrderFormState extends ConsumerState<OrderForm> {
       // order type and the spread
       Row(
         children: [
-          KPressable(
-            minSize: 34,
-            onTap: _pickType,
-            child: Container(
-              height: 30,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              decoration: BoxDecoration(
-                color: k.surface2,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: k.line),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    _typeWord(t, _type),
-                    style: context.text.label.copyWith(color: k.fg, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(LucideIcons.chevronDown, size: 14, color: k.fg3),
-                ],
-              ),
+          // now, or at a price: the first question (web Segmented Market | Pending)
+          SizedBox(
+            width: 168,
+            child: TQuickStrip<String>(
+              options: const ['market', 'pending'],
+              labels: [t('desk.op.market'), t('desk.op.pending')],
+              selected: _pending ? 'pending' : 'market',
+              onPick: (v) => setState(() => _type = v == 'market' ? 'market' : _lastPending),
             ),
           ),
           const SizedBox(width: 4),
@@ -452,16 +441,45 @@ class _OrderFormState extends ConsumerState<OrderForm> {
         const SizedBox(height: 8),
         TFieldRow(
           label: Text(_type == 'limit' ? t('desk.op.orderPrice') : t('desk.op.stopPrice')),
-          child: SizedBox(
-            width: 150,
-            child: TStepper(
-              value: _price,
-              onChanged: (v) => setState(() => _price = v),
-              step: stepPrice,
-              decimals: spec.digits,
-              placeholder: fmtPrice(spec.digits, _side == 'sell' ? q.bid : q.ask),
-              semanticLabel: t('order.ticket.orderPrice'),
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // which kind of pending order: a chip in the field it governs, not a row of its own (web)
+              KPressable(
+                minSize: 32,
+                semanticLabel: t('desk.op.typeTitle'),
+                onTap: _pickType,
+                child: Container(
+                  height: 26,
+                  padding: const EdgeInsets.symmetric(horizontal: 7),
+                  decoration: BoxDecoration(
+                    color: k.surface2,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: k.line),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(_typeWord(t, _type), style: context.text.label.copyWith(fontSize: 11.5, color: k.fg2, fontWeight: FontWeight.w600)),
+                      const SizedBox(width: 2),
+                      Icon(LucideIcons.chevronDown, size: 12, color: k.fg3),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              SizedBox(
+                width: 140,
+                child: TStepper(
+                  value: _price,
+                  onChanged: (v) => setState(() => _price = v),
+                  step: stepPrice,
+                  decimals: spec.digits,
+                  placeholder: fmtPrice(spec.digits, _side == 'sell' ? q.bid : q.ask),
+                  semanticLabel: t('order.ticket.orderPrice'),
+                ),
+              ),
+            ],
           ),
         ),
         if (_type == 'stop-limit') ...[
