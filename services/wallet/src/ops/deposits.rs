@@ -311,6 +311,23 @@ pub async fn process(st: &AppState, id: i64) -> anyhow::Result<()> {
     .bind(first.log_index)
     .execute(&st.pool)
     .await?;
+    // first sight of the transaction: the client hears it is on its way (once - only from `pending`)
+    if d.get::<String, _>("status") == "pending"
+        && let Some(user_id) = d.get::<Option<i64>, _>("user_id")
+    {
+        let mut ntx = st.pool.begin().await?;
+        notify(
+            &mut ntx,
+            tenant_id,
+            user_id,
+            "deposit.pending",
+            "Deposit detected - waiting for confirmations",
+            &format!("Your deposit of {} USDT on {} is on the network. It is credited to your wallet after {required} confirmations.", s(amount), chain.as_str()),
+            json!({"deposit_id": id, "tx_hash": hash, "chain": chain, "facts": super::facts(&[("Amount", format!("{} USDT", s(amount))), ("Network", chain.as_str().to_uppercase()), ("Transaction", super::short_hash(hash)), ("Needs", format!("{required} confirmations"))])}),
+        )
+        .await?;
+        ntx.commit().await?;
+    }
     if conf < required {
         return Ok(());
     }
@@ -355,8 +372,23 @@ pub async fn process(st: &AppState, id: i64) -> anyhow::Result<()> {
         }
         if !reasons.is_empty() {
             let reason = reasons.join("; ");
-            sqlx::query("UPDATE deposits SET status = 'review', review_reason = $2, updated_at = now() WHERE id = $1 AND status = 'confirming'").bind(id).bind(&reason).execute(&st.pool).await?;
+            let held = sqlx::query("UPDATE deposits SET status = 'review', review_reason = $2, updated_at = now() WHERE id = $1 AND status = 'confirming'").bind(id).bind(&reason).execute(&st.pool).await?.rows_affected();
             tracing::warn!(deposit = id, %reason, "deposit held for review");
+            if held == 1 {
+                // the reasons are the desk's; the client is told a person is looking, and that nothing is lost
+                let mut ntx = st.pool.begin().await?;
+                notify(
+                    &mut ntx,
+                    tenant_id,
+                    user_id,
+                    "deposit.under_review",
+                    "Deposit under review",
+                    &format!("Your deposit of {} USDT on {} was received and needs a manual check before it is credited. Our team is reviewing it; no action is needed unless we write to you.", s(amount), chain.as_str()),
+                    json!({"deposit_id": id, "tx_hash": hash, "chain": chain, "facts": super::facts(&[("Amount", format!("{} USDT", s(amount))), ("Network", chain.as_str().to_uppercase()), ("Transaction", super::short_hash(hash)), ("Status", "Under review".into())])}),
+                )
+                .await?;
+                ntx.commit().await?;
+            }
             return Ok(());
         }
     }
@@ -364,12 +396,30 @@ pub async fn process(st: &AppState, id: i64) -> anyhow::Result<()> {
 }
 
 async fn fail(st: &AppState, id: i64, reason: &str) -> anyhow::Result<()> {
-    sqlx::query("UPDATE deposits SET status = 'failed', failure_reason = $2, checks = checks + 1, last_checked_at = now(), updated_at = now() WHERE id = $1 AND status IN ('pending', 'confirming')")
+    let failed = sqlx::query("UPDATE deposits SET status = 'failed', failure_reason = $2, checks = checks + 1, last_checked_at = now(), updated_at = now() WHERE id = $1 AND status IN ('pending', 'confirming') RETURNING tenant_id, user_id, chain, tx_hash, amount, expected_amount")
         .bind(id)
         .bind(reason)
-        .execute(&st.pool)
+        .fetch_optional(&st.pool)
         .await?;
     tracing::warn!(deposit = id, reason, "deposit failed");
+    if let Some(r) = failed
+        && let Some(user_id) = r.get::<Option<i64>, _>("user_id")
+    {
+        let amount: Option<D> = r.get::<Option<D>, _>("amount").or_else(|| r.get::<Option<D>, _>("expected_amount"));
+        let (chain, hash): (String, String) = (r.get("chain"), r.get("tx_hash"));
+        let mut ntx = st.pool.begin().await?;
+        notify(
+            &mut ntx,
+            r.get("tenant_id"),
+            user_id,
+            "deposit.failed",
+            "Deposit could not be credited",
+            &format!("The transaction you submitted for a deposit{} on {} did not go through: {reason}. Nothing was taken from your wallet. If the money left your account, contact support with the transaction hash.", amount.map(|a| format!(" of {} USDT", s(a))).unwrap_or_default(), chain.to_uppercase()),
+            json!({"deposit_id": id, "tx_hash": hash, "chain": chain, "facts": super::facts(&[("Amount", amount.map(|a| format!("{} USDT", s(a))).unwrap_or_default()), ("Network", chain.to_uppercase()), ("Transaction", super::short_hash(&hash)), ("Reason", reason.to_string())])}),
+        )
+        .await?;
+        ntx.commit().await?;
+    }
     Ok(())
 }
 
@@ -418,7 +468,17 @@ pub async fn credit(st: &AppState, id: i64) -> anyhow::Result<()> {
     if let Some(intent) = d.get::<Option<String>, _>("intent_id") {
         sqlx::query("UPDATE deposit_intents SET status = 'completed' WHERE id = $1").bind(intent).execute(&mut *tx).await?;
     }
-    notify(&mut tx, tenant_id, user_id, "deposit.credited", "Deposit credited", &format!("{} USDT was credited to your wallet.", s(credit)), json!({"deposit_id": id, "tx_hash": hash, "chain": chain})).await?;
+    let balance = super::available(&mut tx, tenant_id, user_id, "USDT").await;
+    notify(
+        &mut tx,
+        tenant_id,
+        user_id,
+        "deposit.credited",
+        "Deposit credited",
+        &format!("{} USDT was credited to your wallet.", s(credit)),
+        json!({"deposit_id": id, "tx_hash": hash, "chain": chain, "facts": super::facts(&[("Credited", format!("{} USDT", s(credit))), ("Network", chain.as_str().to_uppercase()), ("Transaction", super::short_hash(hash)), ("Balance", balance)]), "note": format!("Deposit successful - confirmed on {}.", chain.as_str().to_uppercase())}),
+    )
+    .await?;
     tx.commit().await?;
     tracing::info!(deposit = id, tenant_id, user_id, amount = %credit, %chain, "deposit credited");
     Ok(())

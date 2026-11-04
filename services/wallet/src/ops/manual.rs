@@ -733,6 +733,22 @@ pub async fn create(st: &AppState, ctx: &Ctx, n: NewRequest) -> ApiResult<Value>
         Err(e) if is_unique_violation(&e, "reference") => return Err(ApiError::conflict("reference_used", "A deposit request with this reference was already sent")),
         Err(e) => return Err(e.into()),
     };
+    // the receipt: what was sent, what it should credit, and that a person checks it before it does
+    {
+        let m: sqlx::types::Json<Value> = r.get("method");
+        let method_name = m.0["name"].as_str().unwrap_or("").to_string();
+        let expected: D = r.get("expected_credit");
+        notify(
+            &mut tx,
+            t,
+            n.user_id,
+            "deposit.received",
+            "Deposit request received",
+            &format!("We received your {method_name} payment of {} {currency} (ref {reference}). It is under review and will be credited to your wallet once our team has checked it - usually within a few hours.", s(amount)),
+            json!({"manual_deposit_id": r.get::<i64, _>("id"), "status": "pending", "facts": super::facts(&[("Amount", format!("{} {currency}", s(amount))), ("Expected credit", format!("{} USDT", s(expected))), ("Method", method_name.clone()), ("Reference", reference.clone())])}),
+        )
+        .await?;
+    }
     tx.commit().await?;
     tracing::info!(tenant = t, user = n.user_id, request = r.get::<i64, _>("id"), %kind, %amount, %currency, "manual deposit requested");
     let mut v = client_json(&r);
@@ -1014,6 +1030,7 @@ pub async fn approve(st: &AppState, s_ctx: &StaffCtx, id: i64, credit: Option<D>
     )
     .await?;
     let label = if kind == "crypto" { "Crypto deposit" } else { "Bank deposit" };
+    let balance = super::available(&mut tx, t, user_id, "USDT").await;
     notify(
         &mut tx,
         t,
@@ -1021,7 +1038,9 @@ pub async fn approve(st: &AppState, s_ctx: &StaffCtx, id: i64, credit: Option<D>
         "deposit.credited",
         &format!("{label} credited"),
         &format!("{} USDT was credited to your wallet for your {} payment of {} {currency}.", s(credit), method["name"].as_str().unwrap_or(""), s(amount)),
-        json!({"manual_deposit_id": id, "kind": lkind, "amount": s(credit), "reference": reference}),
+        json!({"manual_deposit_id": id, "kind": lkind, "amount": s(credit), "reference": reference,
+               "facts": super::facts(&[("Paid", format!("{} {currency}", s(amount))), ("Credited", format!("{} USDT", s(credit))), ("Method", method["name"].as_str().unwrap_or("").to_string()), ("Reference", reference.to_string()), ("Balance", balance)]),
+               "note": "Deposit successful - the money is in your wallet."}),
     )
     .await?;
     tx.commit().await?;
@@ -1060,7 +1079,7 @@ pub async fn reject(st: &AppState, s_ctx: &StaffCtx, id: i64, reason: &str) -> A
         "deposit.rejected",
         "Deposit request not approved",
         &format!("Your {} deposit request of {} {} (ref {}) was not approved: {reason}", method["name"].as_str().unwrap_or(""), s(cur.get::<D, _>("amount")), cur.get::<String, _>("currency"), cur.get::<String, _>("reference")),
-        json!({"manual_deposit_id": id}),
+        json!({"manual_deposit_id": id, "facts": super::facts(&[("Amount", format!("{} {}", s(cur.get::<D, _>("amount")), cur.get::<String, _>("currency"))), ("Method", method["name"].as_str().unwrap_or("").to_string()), ("Reference", cur.get::<String, _>("reference")), ("Reason", reason.to_string())])}),
     )
     .await?;
     tx.commit().await?;

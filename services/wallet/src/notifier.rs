@@ -29,7 +29,7 @@ pub fn support_type(kind: &str) -> String {
 }
 
 pub fn severity(kind: &str) -> &'static str {
-    if kind.contains("rejected") || kind.contains("failed") {
+    if kind.contains("rejected") || kind.contains("failed") || kind.contains("under_review") {
         "warning"
     } else if kind.contains("credited") || kind.contains("completed") || kind.contains("approved") || kind == "wallet.credit" || (kind.starts_with("adjustment.") && kind.ends_with("_in")) {
         "success"

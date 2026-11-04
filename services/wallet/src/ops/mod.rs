@@ -28,6 +28,30 @@ pub async fn notify(tx: &mut Transaction<'_, Postgres>, tenant_id: i64, user_id:
     Ok(())
 }
 
+/// Label / value pairs for the facts strip of a notice's email (`data.facts`).
+pub fn facts(pairs: &[(&str, String)]) -> Value {
+    serde_json::json!(pairs.iter().filter(|(_, v)| !v.is_empty()).map(|(k, v)| serde_json::json!({"label": k, "value": v})).collect::<Vec<_>>())
+}
+
+/// A transaction hash short enough for a notice: the first ten and last six characters.
+pub fn short_hash(h: &str) -> String {
+    if h.len() > 20 { format!("{}...{}", &h[..10], &h[h.len() - 6..]) } else { h.to_string() }
+}
+
+/// The client's available wallet balance in `ccy`, as the notice's "Balance" fact (inside the caller's transaction,
+/// so it is the balance the posting just produced).
+pub async fn available(tx: &mut Transaction<'_, Postgres>, tenant_id: i64, user_id: i64, ccy: &str) -> String {
+    let b: Option<crate::money::D> = sqlx::query_scalar("SELECT available FROM wallet_balances WHERE tenant_id = $1 AND user_id = $2 AND currency = $3")
+        .bind(tenant_id)
+        .bind(user_id)
+        .bind(ccy)
+        .fetch_optional(&mut **tx)
+        .await
+        .ok()
+        .flatten();
+    b.map(|b| format!("{} {ccy}", crate::money::s(b))).unwrap_or_default()
+}
+
 /// Remembers the client's IP for the withdrawal risk checklist (best effort).
 pub async fn record_ip(pool: &PgPool, tenant_id: i64, user_id: i64, ip: Option<&str>) {
     let Some(ip) = ip.filter(|i| !i.is_empty() && *i != "unknown") else { return };

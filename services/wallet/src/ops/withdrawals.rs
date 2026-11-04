@@ -370,7 +370,16 @@ async fn check_or_request(st: &AppState, ctx: &Ctx, r: RequestIn, dry_run: bool)
         Err(e) => return Err(e.into()),
     };
     let w = sqlx::query("UPDATE withdrawals SET lock_txn_id = $2 WHERE id = $1 RETURNING *").bind(id).bind(lock).fetch_one(&mut *tx).await?;
-    notify(&mut tx, tenant_id, r.user_id, "withdrawal.requested", "Withdrawal requested", &format!("Your withdrawal of {} USDT is waiting for review.", s(amount)), json!({"withdrawal_id": id})).await?;
+    notify(
+        &mut tx,
+        tenant_id,
+        r.user_id,
+        "withdrawal.requested",
+        "Withdrawal requested",
+        &format!("Your withdrawal of {} USDT is waiting for review. The amount is reserved in your wallet until it is paid or cancelled.", s(amount)),
+        json!({"withdrawal_id": id, "facts": super::facts(&[("Amount", format!("{} USDT", s(amount))), ("Fee", format!("{} USDT", s(w.get::<D, _>("fee")))), ("You receive", format!("{} USDT", s(w.get::<D, _>("net_amount")))), ("To", w.get::<String, _>("to_address")), ("Request", format!("#{id}"))])}),
+    )
+    .await?;
     tx.commit().await?;
     record_ip(&st.pool, tenant_id, r.user_id, ctx.ip.as_deref()).await;
     tracing::info!(withdrawal = id, tenant_id, user_id = r.user_id, amount = %amount, method, chain = ?chain.map(|c| c.as_str()), "withdrawal requested");
@@ -407,6 +416,17 @@ pub async fn cancel(st: &AppState, tenant_id: i64, user_id: i64, id: i64) -> Api
     }
     let t = unlock(&mut tx, &w, "Cancelled by client", &format!("user:{user_id}")).await?;
     let w = sqlx::query("UPDATE withdrawals SET status = 'cancelled', final_txn_id = $2, updated_at = now() WHERE id = $1 RETURNING *").bind(id).bind(t).fetch_one(&mut *tx).await?;
+    let amount: D = w.get("amount");
+    notify(
+        &mut tx,
+        tenant_id,
+        user_id,
+        "withdrawal.cancelled",
+        "Withdrawal cancelled",
+        &format!("Your withdrawal request #{id} of {} USDT was cancelled and the amount is available in your wallet again.", s(amount)),
+        json!({"withdrawal_id": id, "facts": super::facts(&[("Amount", format!("{} USDT", s(amount))), ("Request", format!("#{id}")), ("Status", "Cancelled by you".into())])}),
+    )
+    .await?;
     tx.commit().await?;
     Ok(client_json(&w))
 }
@@ -425,7 +445,16 @@ pub async fn approve(st: &AppState, s_ctx: &StaffCtx, id: i64, note: Option<&str
         .fetch_one(&mut *tx)
         .await?;
     audit::staff(&mut tx, s_ctx, Entry { action: "wallet.withdrawal.approved", target_kind: "withdrawal", target_id: id.to_string(), reason: note.as_deref(), before: Some(json!({"status": "requested"})), after: Some(json!({"status": "approved"})) }).await?;
-    notify(&mut tx, s_ctx.ctx.tenant.id, r.get("user_id"), "withdrawal.approved", "Withdrawal approved", &format!("Your withdrawal of {} USDT was approved and will be sent shortly.", s(r.get::<D, _>("amount"))), json!({"withdrawal_id": id})).await?;
+    notify(
+        &mut tx,
+        s_ctx.ctx.tenant.id,
+        r.get("user_id"),
+        "withdrawal.approved",
+        "Withdrawal approved",
+        &format!("Your withdrawal of {} USDT was approved and will be sent shortly.", s(r.get::<D, _>("amount"))),
+        json!({"withdrawal_id": id, "facts": super::facts(&[("Amount", format!("{} USDT", s(r.get::<D, _>("amount")))), ("You receive", format!("{} USDT", s(r.get::<D, _>("net_amount")))), ("To", r.get::<String, _>("to_address")), ("Request", format!("#{id}")), ("Status", "Approved - being paid".into())])}),
+    )
+    .await?;
     tx.commit().await?;
     Ok(withdrawal_json(&r))
 }
@@ -450,7 +479,16 @@ pub async fn reject(st: &AppState, s_ctx: &StaffCtx, id: i64, reason: &str) -> A
         .fetch_one(&mut *tx)
         .await?;
     audit::staff(&mut tx, s_ctx, Entry { action: "wallet.withdrawal.rejected", target_kind: "withdrawal", target_id: id.to_string(), reason: Some(reason), before: Some(json!({"status": status})), after: Some(json!({"status": "rejected"})) }).await?;
-    notify(&mut tx, s_ctx.ctx.tenant.id, r.get("user_id"), "withdrawal.rejected", "Withdrawal rejected", &format!("Your withdrawal of {} USDT was rejected: {reason}. The funds are back in your wallet.", s(r.get::<D, _>("amount"))), json!({"withdrawal_id": id})).await?;
+    notify(
+        &mut tx,
+        s_ctx.ctx.tenant.id,
+        r.get("user_id"),
+        "withdrawal.rejected",
+        "Withdrawal rejected",
+        &format!("Your withdrawal of {} USDT was rejected: {reason}. The funds are back in your wallet.", s(r.get::<D, _>("amount"))),
+        json!({"withdrawal_id": id, "facts": super::facts(&[("Amount", format!("{} USDT", s(r.get::<D, _>("amount")))), ("Request", format!("#{id}")), ("Reason", reason.to_string())]), "note": "The amount is available in your wallet again."}),
+    )
+    .await?;
     tx.commit().await?;
     Ok(withdrawal_json(&r))
 }
@@ -481,6 +519,16 @@ pub async fn mark_paid(st: &AppState, s_ctx: &StaffCtx, id: i64, reference: &str
         .fetch_one(&mut *tx)
         .await?;
     audit::staff(&mut tx, s_ctx, Entry { action: "wallet.withdrawal.paid", target_kind: "withdrawal", target_id: id.to_string(), reason: None, before: Some(json!({"status": status})), after: Some(json!({"status": "paid", "payout_tx_hash": hash})) }).await?;
+    notify(
+        &mut tx,
+        s_ctx.ctx.tenant.id,
+        r.get("user_id"),
+        "withdrawal.processing",
+        "Withdrawal sent - waiting for the network",
+        &format!("{} USDT was sent to {}. It is yours once the network has confirmed the transfer; we will write again then.", s(r.get::<D, _>("net_amount")), r.get::<String, _>("to_address")),
+        json!({"withdrawal_id": id, "tx_hash": hash, "facts": super::facts(&[("Sent", format!("{} USDT", s(r.get::<D, _>("net_amount")))), ("To", r.get::<String, _>("to_address")), ("Transaction", super::short_hash(&hash)), ("Request", format!("#{id}"))])}),
+    )
+    .await?;
     tx.commit().await?;
     if let Err(e) = verify_payout(st, id).await {
         tracing::warn!(withdrawal = id, error = %e, "payout check failed; the watcher retries");
@@ -525,13 +573,24 @@ async fn off_chain_paid(st: &AppState, s_ctx: &StaffCtx, mut tx: Transaction<'_,
 
 async fn payout_failed(st: &AppState, id: i64, reason: &str) -> anyhow::Result<()> {
     let mut tx = st.pool.begin().await?;
-    let r = sqlx::query("UPDATE withdrawals SET status = 'approved', payout_error = $2, payout_tx_hash = NULL, payout_confirmations = 0, updated_at = now() WHERE id = $1 AND status = 'paid' RETURNING tenant_id")
+    let r = sqlx::query("UPDATE withdrawals SET status = 'approved', payout_error = $2, payout_tx_hash = NULL, payout_confirmations = 0, updated_at = now() WHERE id = $1 AND status = 'paid' RETURNING tenant_id, user_id, net_amount")
         .bind(id)
         .bind(reason)
         .fetch_optional(&mut *tx)
         .await?;
     if let Some(r) = r {
         audit::system(&mut tx, r.get("tenant_id"), "wallet.withdrawal.payout_rejected", "withdrawal", id.to_string(), Some(json!({"reason": reason}))).await?;
+        // the client is told of the delay, not the chain error: their money stays reserved and the desk re-sends
+        notify(
+            &mut tx,
+            r.get("tenant_id"),
+            r.get("user_id"),
+            "withdrawal.failed",
+            "Withdrawal payout delayed",
+            &format!("The transfer for your withdrawal #{id} of {} USDT could not be confirmed on the network, so our team is sending it again. The amount stays reserved for this withdrawal; no action is needed from you.", s(r.get::<D, _>("net_amount"))),
+            json!({"withdrawal_id": id, "facts": super::facts(&[("Amount", format!("{} USDT", s(r.get::<D, _>("net_amount")))), ("Request", format!("#{id}")), ("Status", "Being re-sent".into())])}),
+        )
+        .await?;
     }
     tx.commit().await?;
     tracing::warn!(withdrawal = id, reason, "payout verification failed");
@@ -623,7 +682,24 @@ async fn complete(st: &AppState, id: i64) -> anyhow::Result<()> {
         (Some(a), Some(c)) => format!("{} {c} was sent to {}.", s(a), w.get::<String, _>("to_address")),
         _ => format!("{} USDT was sent to your wallet.", s(net)),
     };
-    notify(&mut tx, tenant_id, user_id, "withdrawal.completed", "Withdrawal sent", &sent, json!({"withdrawal_id": id, "tx_hash": w.get::<Option<String>, _>("payout_tx_hash"), "reference": w.get::<Option<String>, _>("payout_reference")})).await?;
+    let (tx_hash, reference): (Option<String>, Option<String>) = (w.get("payout_tx_hash"), w.get("payout_reference"));
+    let balance = super::available(&mut tx, tenant_id, user_id, "USDT").await;
+    let (sent_fact, note) = match (w.get::<Option<D>, _>("payout_amount"), w.get::<Option<String>, _>("payout_currency")) {
+        (Some(a), Some(c)) => (format!("{} {c}", s(a)), "Paid - allow up to 24 hours for your bank or UPI app to show it.".to_string()),
+        _ => (format!("{} USDT", s(net)), format!("Confirmed on {} - the transfer is complete.", rail.to_uppercase())),
+    };
+    notify(
+        &mut tx,
+        tenant_id,
+        user_id,
+        "withdrawal.completed",
+        "Withdrawal sent",
+        &sent,
+        json!({"withdrawal_id": id, "tx_hash": tx_hash, "reference": reference,
+               "facts": super::facts(&[("Sent", sent_fact), ("To", w.get::<String, _>("to_address")), ("Reference", tx_hash.as_deref().map(super::short_hash).or(reference.clone()).unwrap_or_default()), ("Request", format!("#{id}")), ("Balance", balance)]),
+               "note": note}),
+    )
+    .await?;
     tx.commit().await?;
     tracing::info!(withdrawal = id, tenant_id, user_id, net = %net, "withdrawal completed");
     Ok(())
