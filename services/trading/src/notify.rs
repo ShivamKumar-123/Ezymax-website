@@ -67,9 +67,15 @@ pub fn notify_body(kind: &str, user_id: i64, data: &Value, dedupe_key: &str) -> 
     b
 }
 
-/// The support client from `SUPPORT_URL` / `SUPPORT_INTERNAL_TOKEN` (None when unset).
+/// The support client from `SUPPORT_URL` / `SUPPORT_INTERNAL_TOKEN`. Unset means the loopback default every
+/// other service uses (production sets none); `off` means no delivery. Until now unset meant off, and every
+/// notice this service queued stayed in the outbox.
 pub fn client_from_env() -> Option<WalletClient> {
-    let url = std::env::var("SUPPORT_URL").ok().filter(|v| !v.trim().is_empty())?;
+    let url = match std::env::var("SUPPORT_URL").ok().map(|v| v.trim().trim_end_matches('/').to_string()).filter(|v| !v.is_empty()) {
+        Some(u) if u.eq_ignore_ascii_case("off") => return None,
+        Some(u) => u,
+        None => "http://127.0.0.1:8100".to_string(),
+    };
     let token = std::env::var("SUPPORT_INTERNAL_TOKEN").unwrap_or_default();
     Some(WalletClient::new(&url, &token))
 }

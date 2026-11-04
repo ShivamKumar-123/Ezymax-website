@@ -12,6 +12,7 @@ pub mod engine;
 pub mod feed;
 pub mod model;
 pub mod money;
+pub mod notices;
 pub mod notify;
 pub mod options;
 pub mod persist;

@@ -857,6 +857,8 @@ impl Shard {
 
     fn publish(&self, env: &Env, tx: &Tx, audit: &[Value]) {
         let login = tx.st.login();
+        // the client's notices (bell, email) go whether or not anyone is connected - that is when they matter most
+        crate::notices::publish(self.sh.pool.clone(), tx);
         let acct = self.sh.streams.account(login);
         let desk = self.sh.streams.dealing(tx.st.account.tenant_id);
         if acct.is_none() && desk.is_none() {
