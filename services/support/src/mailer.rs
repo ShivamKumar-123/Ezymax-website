@@ -75,7 +75,7 @@ pub fn render(m: &Mail) -> (String, String) {
     }
     text.push_str(&format!("\n{footer_note}\n\nEzymex · ezymex.com\n"));
     let assets = format!("{}/assets/email", m.app_url.trim_end_matches('/'));
-    let (logo, hero, bg) = (format!("{assets}/logo.png"), format!("{assets}/hero.png"), format!("{assets}/bg.jpg"));
+    let (logo, hero, bg) = (format!("{assets}/logo.png"), format!("{assets}/hero.png"), format!("{assets}/ground.jpg"));
     let html = mailframe::html(&mailframe::Frame {
         lang: "en",
         rtl: false,

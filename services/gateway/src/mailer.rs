@@ -286,7 +286,7 @@ impl Mailer {
         );
         let assets = format!("{}/assets/email", app.trim_end_matches('/'));
         let hero = format!("{assets}/hero.png");
-        let bg = format!("{assets}/bg.jpg");
+        let bg = format!("{assets}/ground.jpg");
         mailframe::html(&mailframe::Frame {
             lang,
             rtl: mail_i18n::is_rtl(lang),
