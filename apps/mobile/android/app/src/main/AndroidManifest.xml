@@ -46,8 +46,11 @@
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="ezymex"/>
             </intent-filter>
-            <!-- Web links of the Client Area and Ezymex Trader. Verified App Links (autoVerify) need
-                 /.well-known/assetlinks.json on these hosts with the release key's fingerprint: later. -->
+            <!-- Web links of the Client Area and Ezymex Trader. Verified App Links (autoVerify): both hosts serve
+                 /.well-known/assetlinks.json (apps/crm/public and apps/terminal/public, the same file twice) with the
+                 fingerprint of every key a build of this app is signed with - the website's APK key, and Play's
+                 app-signing key for the Play release. A key missing there and Android 12+ opens the link in the
+                 browser instead (the Play Console's Deep links page says so). -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
