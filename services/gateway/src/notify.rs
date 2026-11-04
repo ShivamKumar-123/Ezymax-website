@@ -5,7 +5,7 @@
 //! Everything here is best effort and off the request path: the notice is posted from a spawned task after the
 //! change has been committed and audited, so a support outage never fails a sign-in, a password change or a
 //! restriction. Nothing is sent without `SUPPORT_URL`. The dedupe key makes a retried request, or two
-//! replicas, announce a change once.
+//! replicas, announce a change once. `SUPPORT_URL=off` switches the notices off.
 //!
 //! No secret ever goes in a notice: no password, token or code - a device, an address, a time and what changed.
 
@@ -28,7 +28,8 @@ pub struct Notice {
     pub dedupe: String,
 }
 
-/// Where the support service is: `SUPPORT_URL` (empty = notices off) and the internal token it checks.
+/// Where the support service is: `SUPPORT_URL` (the loopback default every service uses; `off` = no notices) and
+/// the internal token it checks.
 struct Support {
     http: reqwest::Client,
     url: String,
@@ -41,7 +42,11 @@ fn support() -> &'static Support {
         let var = |k: &str| std::env::var(k).ok().map(|v| v.trim().trim_end_matches('/').to_string()).filter(|v| !v.is_empty());
         Support {
             http: reqwest::Client::builder().timeout(std::time::Duration::from_secs(8)).build().expect("reqwest client"),
-            url: var("SUPPORT_URL").unwrap_or_default(),
+            url: match var("SUPPORT_URL") {
+                Some(u) if u.eq_ignore_ascii_case("off") => String::new(),
+                Some(u) => u,
+                None => "http://127.0.0.1:8100".into(),
+            },
             token: var("SUPPORT_INTERNAL_TOKEN").unwrap_or_default(),
         }
     })
