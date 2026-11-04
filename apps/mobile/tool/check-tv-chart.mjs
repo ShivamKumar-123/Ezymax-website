@@ -145,7 +145,10 @@ want(firstAnswer && firstAnswer.meta && firstAnswer.meta.noData === false, "the 
 want(earlyDrawn, "a line sent before the chart was ready was never drawn after it was");
 want(slDrawn, "the position and SL lines were not drawn as shapes");
 want(slMoved, "a dragged line's shape did not move with the finger");
-want(posted.some((p) => p.type === "drag" && p.id === "sl:1" && p.price === 1.18) && posted.some((p) => p.type === "dragend" && p.id === "sl:1"), "a dropped line did not reach the app as drag + dragend");
+// the app's protocol: a drop that moved the line is `drag` with the price and nothing else - a `dragend` after
+// it makes the app put the old price back, which is exactly what made every drag look broken once
+want(posted.some((p) => p.type === "drag" && p.id === "sl:1" && p.price === 1.18), "a dropped line did not reach the app as drag with its price");
+want(!posted.some((p) => p.type === "dragend" && p.id === "sl:1"), "a drop that moved the line must not also send dragend (the app would snap the line back)");
 want(slBack, "a refused move did not put the line back at 1.2");
 want(posted.some((p) => p.type === "close" && p.id === "sl:1"), "the x of a line the app marks `close: true` does not reach the app");
 want(slGone, "a line the app no longer sends was not removed from the chart");

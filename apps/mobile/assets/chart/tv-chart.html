@@ -463,12 +463,13 @@
           post({ type: "tap", id: l.id });
           return;
         }
-        // the line stays where it was dropped; the app's next lines say where it really is (the server's answer,
-        // or the old price when the move was refused)
+        // The app's protocol (chart.html, chart_bridge.dart): a drop that moves the line is `drag` with the price,
+        // and nothing else - `dragend` is only for a drag that ends without a move to send, and it makes the app
+        // put its own lines back, old price included. Sending both after a move was what snapped every dragged
+        // line straight back to where it started. The line stays at the drop until the app answers with its lines.
         held = null;
         if (!canDrag(l)) return;
         post({ type: "drag", id: l.id, price: d0.price });
-        post({ type: "dragend", id: l.id });
       };
       el.addEventListener("pointermove", move);
       el.addEventListener("pointerup", up);
@@ -684,7 +685,7 @@
       hold(list) { if (!drag) return false; held = list; return true; },
       /** The check's way in (tool/check-tv-chart.mjs): what a finger would do, without a finger. */
       test: {
-        dragLine(id, price) { moveShape(id, price); post({ type: "drag", id, price }); post({ type: "dragend", id }); },
+        dragLine(id, price) { moveShape(id, price); post({ type: "drag", id, price }); },
         closeLine(id) { post({ type: "close", id }); },
         chips: () => shown.map((l) => l.id),
       },
