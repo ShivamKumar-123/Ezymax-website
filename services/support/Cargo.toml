@@ -12,7 +12,6 @@ path = "src/main.rs"
 
 [dependencies]
 mailframe = { path = "../../crates/mailframe" }
-mailframe = { path = "../../crates/mailframe" }
 anyhow = "1.0.104"
 axum = { version = "0.8.9", features = ["ws"] }
 bytes = "1"
