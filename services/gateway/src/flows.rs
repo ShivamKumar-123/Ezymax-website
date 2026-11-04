@@ -52,6 +52,9 @@ pub async fn check_password(st: &AppState, ctx: &Ctx, kind: Kind, tenant_id: i64
         .await;
         if let Some(until) = lock {
             tracing::warn!(kind = k, id = p.id, "account locked after repeated failures");
+            if kind == Kind::User {
+                crate::notify::locked(st, ctx, tenant_id, p.id, pol.max_failures as u32, (until - now).num_minutes().max(1));
+            }
             return Err(ApiError::Locked { retry_after: (until - now).num_seconds() });
         }
         return Err(ApiError::InvalidCredentials);

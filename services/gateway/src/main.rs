@@ -24,6 +24,7 @@ mod internal;
 mod mail_i18n;
 mod mailer;
 mod marketing;
+mod notify;
 mod owner;
 mod ratelimit;
 mod rbac;

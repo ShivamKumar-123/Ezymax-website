@@ -380,6 +380,7 @@ pub async fn change_password(State(st): State<AppState>, ctx: Ctx, req: Result<J
         meta: json!({"sign_out_others": r.sign_out_others, "sessions_revoked": revoked}),
     })
     .await;
+    crate::notify::password_changed(&st, &ctx, s.tenant_id, s.subject_id, revoked as u64);
     Ok(Json(json!({ "status": "ok", "sessions_revoked": revoked })))
 }
 

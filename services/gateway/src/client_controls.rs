@@ -810,6 +810,7 @@ pub async fn set_restriction(st: &AppState, ctx: &Ctx, me: &Staff, id: i64, kind
         meta: json!({ "kind": kind, "label": label(kind), "reason": reason, "expires_at": expires_at, "replaced": replaced, "sessions_ended": ended }),
     })
     .await;
+    crate::notify::restricted(st, me.tenant_id, id, kind, label(kind), reason, expires_at);
     Ok(Changed { sessions_ended: ended, replaced })
 }
 
@@ -849,6 +850,7 @@ pub async fn lift_restriction(st: &AppState, ctx: &Ctx, me: &Staff, id: i64, kin
         meta: json!({ "kind": kind, "label": label(kind), "reason": reason }),
     })
     .await;
+    crate::notify::restriction_lifted(st, me.tenant_id, id, kind, label(kind));
     Ok(Some(Changed { sessions_ended: 0, replaced: false }))
 }
 

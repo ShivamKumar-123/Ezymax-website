@@ -66,6 +66,17 @@ pub(crate) async fn signed_in(st: &AppState, ctx: &Ctx, tenant_id: i64, user_id:
     let s = identity::create_session(st, ctx, K, tenant_id, user_id).await?;
     let country = identity::COUNTRY.try_with(|c| c.clone()).ok().flatten();
     audit::record(&st.pool, ctx, Entry { tenant_id, actor_kind: "user", actor_id: Some(user_id), action: "user.login", target: None, meta: json!({"via": via, "country": country}) }).await;
+    // A device this account has not used before is announced (bell + email, security notices can't be switched
+    // off), then remembered - in password-only mode nothing else would, and every later sign-in from it would
+    // read as new. Registration is the first sign-in by definition and is covered by the welcome email.
+    if via != "register" {
+        if let Some((new, key)) = crate::notify::is_new_device(st, ctx, user_id).await {
+            if new {
+                crate::notify::new_device(st, ctx, tenant_id, user_id, via, &key);
+            }
+            identity::trust_device(st, ctx, K, tenant_id, user_id, None).await?;
+        }
+    }
     Ok(json!({ "status": "ok", "session": { "token": s.token, "expires_at": s.expires_at }, "user": user_json(st, user_id).await? }))
 }
 
@@ -543,6 +554,7 @@ pub async fn reset(State(st): State<AppState>, ctx: Ctx, req: Result<Json<ResetR
     identity::revoke_all(&st.pool, K, v.subject_id).await?;
     identity::trust_device(&st, &ctx, K, v.tenant_id, v.subject_id, v.device_hash).await?;
     audit::record(&st.pool, &ctx, Entry { tenant_id: v.tenant_id, actor_kind: "user", actor_id: Some(v.subject_id), action: "user.password_reset", target: Some(("user", v.subject_id)), meta: json!({}) }).await;
+    crate::notify::password_reset(&st, &ctx, v.tenant_id, v.subject_id);
     Ok(Json(json!({ "status": "ok" })))
 }
 

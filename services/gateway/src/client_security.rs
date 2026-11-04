@@ -676,6 +676,9 @@ pub async fn create_request(State(st): State<AppState>, ctx: Ctx, req: Result<Js
     .ok_or(ApiError::Coded { status: StatusCode::CONFLICT, code: "request_pending", message: "You already have a request of this kind in progress." })?;
     let v = request_json(&row);
     audit::record(&st.pool, &ctx, entry(s.tenant_id, s.subject_id, if kind == "closure" { "user.closure_requested" } else { "user.data_export_requested" }, json!({ "request_id": v["id"] }))).await;
+    if kind == "closure" {
+        crate::notify::closure_requested(&st, s.tenant_id, s.subject_id);
+    }
     Ok((StatusCode::CREATED, Json(json!({ "request": v }))))
 }
 
