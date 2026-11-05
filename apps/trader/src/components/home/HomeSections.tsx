@@ -3,7 +3,6 @@ import { Globe2 } from 'lucide-react';
 import { SectionHead, Reveal } from '@/components/ui/Section';
 import { Headline } from '@/components/motion/Headline';
 import { PixelStat } from '@/components/motion/PixelStat';
-import { HorizontalShowcase, type ShowcaseSlide } from '@/components/motion/HorizontalShowcase';
 import { BrowserFrame } from '@/components/ui/Frames';
 import { Picture } from '@/components/ui/Picture';
 import { Art } from '@/components/ui/Art';
@@ -82,6 +81,18 @@ export function WhyEzymex() {
       t: 'Money in, in about a minute',
       d: 'Deposit USDT on BNB Chain or TRON from 10 USDT; deposits are usually credited within a minute. Moving money between your wallet and your accounts is instant and free.',
     },
+    {
+      t: 'Books that check themselves',
+      d: 'The trading engine is event-sourced: every fill, every balance and every ledger entry is written as one event in one transaction. On every restart it replays all of them and re-checks that the ledger balances — and refuses to start if it does not. Your balance is never a number someone edited.',
+    },
+    {
+      t: 'Your account, under your control',
+      d: 'Signing in takes a second factor. You can grant read-only access to someone and revoke it whenever you like. And if our staff open a session on your account, you see it while it runs, with who opened it and how long is left on it.',
+    },
+    {
+      t: 'Withdrawals follow a procedure',
+      d: 'Verification unlocks withdrawals, and every request is reviewed before it is paid. Ezymex SIP returns are settled once a month, and a settlement has to be approved by a second member of staff before a single payout leaves.',
+    },
   ];
   return (
     <section className="section" aria-labelledby="why-title">
@@ -126,7 +137,7 @@ export function StatsBand() {
   const stats = [
     { v: 1389, label: 'Instruments on Ezymex Trader' },
     { v: OPTIONS.underlyingsLive.length, label: 'Markets with an option chain' },
-    { v: 22, label: 'Languages, right to left included' },
+    { v: 23, label: 'Languages, right to left included' },
     { v: 1000, prefix: '1:', label: 'Maximum leverage (Standard, Cent)', group: false },
   ];
   return (
@@ -187,7 +198,7 @@ export function AccountsTeaser() {
             id="acc-title"
             kicker="Account types"
             lines={['An account', 'for how you trade.']}
-            lead="Five live account types plus demo. Pick all-in pricing or raw spreads with a commission, hedging or netting, US dollars or US cents."
+            lead="Three live account types plus demo: Standard with an all-in spread and no commission, Pro and VIP with tighter pricing and a fixed commission per lot."
           />
           <div data-reveal>
             <Button href="/accounts" variant="outline">
@@ -195,7 +206,7 @@ export function AccountsTeaser() {
             </Button>
           </div>
         </div>
-        <div className="no-scrollbar -mx-[var(--gutter)] mt-12 flex snap-x snap-mandatory gap-4 overflow-x-auto px-[var(--gutter)] pb-2 lg:mx-0 lg:grid lg:grid-cols-5 lg:overflow-visible lg:px-0">
+        <div className="no-scrollbar -mx-[var(--gutter)] mt-12 flex snap-x snap-mandatory gap-4 overflow-x-auto px-[var(--gutter)] pb-2 lg:mx-0 lg:grid lg:grid-cols-3 lg:overflow-visible lg:px-0">
           {ACCOUNTS.map((a, i) => (
             <Link
               key={a.id}
@@ -236,76 +247,6 @@ export function AccountsTeaser() {
         </p>
       </div>
     </section>
-  );
-}
-
-/* ── Platform showcase (pinned horizontal) ───────────────────────────────── */
-const SLIDES: ShowcaseSlide[] = [
-  {
-    src: '/images/product/focus-chart.webp',
-    w: 2472,
-    h: 1568,
-    url: 'trade.ezymex.com',
-    t: 'A big, clean chart',
-    d: '4 chart types, 9 timeframes, 35 indicators and drawing tools. Drag your stop loss, take profit and alerts on the chart.',
-    alt: 'Ezymex Trader chart on XAUUSD with moving averages and stop loss, take profit, alert and pending order lines',
-  },
-  {
-    src: '/images/product/focus-chain.webp',
-    w: 2472,
-    h: 916,
-    url: 'trade.ezymex.com · Options',
-    t: 'The option chain',
-    d: 'Calls and puts around every strike, with the breakeven and the model’s chance shown beside each price.',
-    alt: 'EURUSD option chain around the at-the-money strike: calls left, puts right, breakeven and chance columns',
-  },
-  {
-    src: '/images/product/focus-analytics.webp',
-    w: 2200,
-    h: 1088,
-    url: 'trade.ezymex.com · Analytics',
-    t: 'Analytics that explain',
-    d: 'Volatility smile, term structure, open interest and the put/call ratio for every underlying.',
-    alt: 'Options analytics: volatility smile, term structure, open interest by strike and the put/call ratio',
-  },
-  {
-    src: '/images/product/focus-depth.webp',
-    w: 2248,
-    h: 1600,
-    url: 'trade.ezymex.com',
-    t: 'Depth beside the chart',
-    d: 'A depth ladder next to the chart, with one-click trading on and off, and a full chart mode.',
-    alt: 'Ezymex Trader chart with the depth of market ladder beside it',
-  },
-  {
-    src: '/images/product/focus-client.webp',
-    w: 2940,
-    h: 1040,
-    url: 'app.ezymex.com',
-    t: 'The Client Area',
-    d: 'Accounts, wallet, copy trading, PAMM, partner earnings and the academy in one place. Illustrative data.',
-    alt: 'Ezymex Client Area overview with equity, P&L, wallet, accounts and total balance (illustrative data)',
-  },
-];
-
-export function PlatformShowcase() {
-  return (
-    <HorizontalShowcase
-      slides={SLIDES}
-      intro={
-        <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
-          <div className="flex flex-col gap-5">
-            <span className="kicker" data-reveal>
-              The platform
-            </span>
-            <Headline lines={['One terminal. Every market.']} className="t-h2 sc-title text-balance" />
-          </div>
-          <p className="t-lead max-w-md" data-reveal>
-            Ezymex Trader runs in the browser, on desktop and phone. Nothing to install, nothing to update.
-          </p>
-        </div>
-      }
-    />
   );
 }
 

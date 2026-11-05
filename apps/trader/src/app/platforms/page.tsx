@@ -145,9 +145,16 @@ export default function PlatformsPage() {
                   lines={['Ezymex on Android.']}
                   lead="The Client Area, Ezymex Trader and Ezymex FX Options in one app, in all 22 languages, with biometric sign-in. Download the APK below; the Play Store listing follows."
                 />
-                <div className="mt-8 flex flex-wrap gap-3" data-reveal>
+                <p
+                  className="mt-7 inline-flex items-center gap-2 rounded-full border border-ember/40 bg-ember/15 px-3 py-1 text-[11.5px] font-medium text-ember"
+                  data-reveal
+                >
+                  <span className="size-1.5 rounded-full bg-ember" aria-hidden />
+                  New version {ANDROID_APP.version} &middot; updated {ANDROID_APP.releasedOn}
+                </p>
+                <div className="mt-5 flex flex-wrap gap-3" data-reveal>
                   <Button href={ANDROID_APP.href} arrow={false}>
-                    Download for Android
+                    Download the new version
                   </Button>
                   <Button href={TRADER_URL} variant="outline">
                     Open Ezymex Trader
@@ -161,6 +168,13 @@ export default function PlatformsPage() {
                   </a>
                   .{ANDROID_APP.sha256 ? ` SHA-256 ${ANDROID_APP.sha256.slice(0, 16)}…` : ''}
                 </p>
+                {ANDROID_APP.requiresReinstall ? (
+                  <p className="mt-3 max-w-md rounded-xl border border-white/[0.09] bg-white/[0.03] px-4 py-3 text-[13px] leading-relaxed text-fg-3" data-reveal>
+                    <span className="text-fg">Already have the app?</span> Uninstall it first, then install this
+                    one. This release is signed with a new certificate, so Android will not install it over the
+                    older build. Your account and funds are unaffected &mdash; just sign in again.
+                  </p>
+                ) : null}
               </div>
               <Reveal>
                 <PhoneFrame src="/images/product/phone-dashboard.webp" alt="The Ezymex Client Area on a phone" />

@@ -39,7 +39,15 @@ const PRINCIPLES = [
   },
   {
     t: 'Made for every market',
-    d: 'Ezymex Trader and the Client Area are translated into 22 languages, right-to-left included, and run in any modern browser on desktop and phone.',
+    d: 'Ezymex Trader and the Client Area are translated into 23 languages, right-to-left included, and run in any modern browser on desktop and phone.',
+  },
+  {
+    t: 'Your money has a route',
+    d: 'Deposits arrive in your USDT wallet and move to a trading account when you choose; both are instant and free. Withdrawals open once your identity is verified, and every request is reviewed before it is paid. Every movement - deposit, transfer, trade, fee, payout - is a ledger entry you can read in the Client Area, and the engine re-checks that those entries balance every time it starts.',
+  },
+  {
+    t: 'We say which side we are on',
+    d: 'Ezymex is the counterparty to your trades: your orders are executed against us, not passed to a third-party venue. That puts us on the other side of your position, and we would rather write that down than leave you to work it out. We price every instrument from an independent market data feed, publish the margin call and stop-out level on every account, and set out the whole arrangement in the risk warning.',
   },
 ];
 

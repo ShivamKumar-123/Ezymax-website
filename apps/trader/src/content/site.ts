@@ -62,6 +62,7 @@ export const FOOTER_COLUMNS: { title: string; links: NavLink[] }[] = [
 ];
 
 export const LEGAL_LINKS: NavLink[] = [
+  { label: 'Security', href: '/security' },
   { label: 'Risk warning', href: '/risk-warning' },
   { label: 'Risk disclosure', href: '/risk' },
   { label: 'Terms & conditions', href: '/terms' },

@@ -53,7 +53,7 @@ const SECTIONS: { h: string; body: string; list?: string[]; trailing?: string }[
   },
   {
     h: '6. Counterparty & Platform Risk',
-    body: `Trades placed on the ${BRAND_NAME} platform are subject to the operational performance of the platform and its third-party liquidity providers. Internet connectivity, platform outages, hardware faults, and force-majeure events may temporarily prevent the execution or modification of orders.`,
+    body: `${BRAND_NAME} is the counterparty to your trades. Your orders are executed against ${BRAND_NAME} itself rather than being passed to a third-party venue, which means you carry ${BRAND_NAME}'s performance as a counterparty, and that ${BRAND_NAME} is on the other side of your position. Where a client profits, ${BRAND_NAME} bears that cost, and where a client loses, ${BRAND_NAME} retains it — a conflict of interest that we disclose rather than obscure, and that we manage by pricing every instrument from an independent market data feed and by publishing the margin call and stop-out levels that apply to every account. Trades are also subject to the operational performance of the platform: internet connectivity, outages, hardware faults and force-majeure events may temporarily prevent the execution or modification of orders.`,
   },
   {
     h: '7. Bonus & Promotion Risks',

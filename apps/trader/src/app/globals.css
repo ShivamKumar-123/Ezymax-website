@@ -810,6 +810,44 @@ html.lenis body {
   }
 }
 
+/* ── Hero video stage ───────────────────────────────────────
+   The still frame and the clip share one class, so they are framed identically and the clip can appear over the
+   picture without anything shifting. Landscape: the hero is already about 16:9, so the clip fills it. Portrait
+   below 1024px: the hero is full-height, and covering it would blow a 16:9 clip up several times over, so it keeps
+   its own 16:9 box under the nav with feathered edges and the copy stacks beneath — as the robot artwork did. */
+.hero-video {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  /* the still frame, chosen by the same query that chooses the clip, so the hero is framed correctly before any
+     script runs and stays correct if none does */
+  background: #0a0203 url('/videos/hero-poster.jpg') center / cover no-repeat;
+}
+.hero-video-portrait {
+  display: none;
+}
+@media (orientation: portrait) and (max-width: 1023px) {
+  .hero-video {
+    background-image: url('/videos/hero-portrait-poster.jpg');
+  }
+  .hero-video-wide {
+    display: none;
+  }
+  .hero-video-portrait {
+    display: block;
+  }
+}
+/* covers at every width: the copy sits over the clip on a phone exactly as it does on a desktop, and the portrait
+   text scrim below keeps the headline readable against the brighter part of the frame */
+.hero-video-art {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 /* ── Hero robot: motion (transform / opacity only) ─────────────────────────────
    Intro (once): the scene fades up from black, settling from 1.08 to 1; the eye ignites; the button rises.
    Idle: the eye breathes (3.5 s) with a rare inner flicker, a highlight runs along the visor (5 s), and a streak of

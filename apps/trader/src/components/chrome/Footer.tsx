@@ -123,9 +123,6 @@ export default function Footer() {
           </p>
         </div>
       </div>
-      <div aria-hidden className="pointer-events-none relative -mb-[3.2vw] select-none px-[var(--gutter)]">
-        <EzymexLogo className="h-auto w-full text-white/[0.035]" title="" />
-      </div>
     </footer>
   );
 }

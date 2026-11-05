@@ -24,7 +24,7 @@ const GROUPS: Group[] = [
     items: [
       {
         q: 'Which account types are there?',
-        a: `Five live account types, Standard, Pro, ECN, Cent and VIP, plus free demo accounts. Standard, Pro and Cent use an all-in spread with no commission; ECN and VIP trade on raw spreads with a fixed commission per lot. Minimum deposits: ${minDeposits}.`,
+        a: `Three live account types, Standard, Pro and VIP, plus free demo accounts. Standard uses an all-in spread with no commission; Pro and VIP trade on tighter spreads with a fixed commission per lot. Minimum deposits: ${minDeposits}.`,
       },
       {
         q: 'How do I open an account?',
@@ -72,7 +72,7 @@ const GROUPS: Group[] = [
       },
       {
         q: 'What is the maximum leverage?',
-        a: 'Up to 1:1000 on Standard and Cent accounts and 1:500 on Pro, ECN and VIP. The leverage on a single trade is also capped by the instrument, for example 1:20 on the main cryptocurrencies.',
+        a: 'Up to 1:1000 on Standard accounts and 1:500 on Pro and VIP. The leverage on a single trade is also capped by the instrument, for example 1:20 on the main cryptocurrencies.',
       },
       {
         q: 'What are the margin call and stop-out levels?',

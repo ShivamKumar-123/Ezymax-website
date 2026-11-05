@@ -12,9 +12,9 @@ import { REGISTER_HREF } from '@/lib/crm';
 import { cn } from '@/lib/cn';
 
 export const metadata: Metadata = {
-  title: 'Account types: Standard, Pro, ECN, Cent, VIP and demo',
+  title: 'Account types: Standard, Pro, VIP and demo',
   description:
-    'Compare Ezymex trading accounts: minimum deposit from $10, leverage up to 1:1000, all-in spreads or raw spreads with commission, hedging or netting, and free demo accounts.',
+    'Compare Ezymex trading accounts: minimum deposit from $20, leverage up to 1:1000, all-in spreads or raw spreads with commission, hedging or netting, and free demo accounts.',
   alternates: { canonical: '/accounts' },
 };
 
@@ -46,11 +46,7 @@ const FAQ = [
   },
   {
     q: 'What is the difference between hedging and netting?',
-    a: 'In hedging mode you can hold buy and sell positions on the same instrument at once, each with its own stop loss and take profit. In netting mode each instrument has one position, and new trades add to it or reduce it. Pro accounts come in both modes.',
-  },
-  {
-    q: 'What is a Cent account?',
-    a: 'Its balance is shown in US cents, so a $10 deposit appears as 1,000 cents. You trade the same markets at a smaller size, which makes it a good way to test a strategy with real money.',
+    a: 'In hedging mode you can hold buy and sell positions on the same instrument at once, each with its own stop loss and take profit. In netting mode each instrument has one position, and new trades add to it or reduce it. Every account type uses hedging mode.',
   },
   {
     q: 'Can I change my leverage later?',
@@ -62,7 +58,7 @@ const FAQ = [
   },
   {
     q: 'What does “raw spread” mean?',
-    a: 'The spread from our price feed with no markup added. ECN and VIP accounts trade on it and pay a fixed commission per lot instead. Standard, Pro and Cent accounts add a fixed markup and charge no commission.',
+    a: 'The spread from our price feed with no markup added. VIP accounts trade on it and pay a fixed commission per lot. Pro accounts add a small markup plus a lower commission; Standard accounts add a fixed markup and charge no commission.',
   },
 ];
 
@@ -71,8 +67,8 @@ export default function AccountsPage() {
     <>
       <PageHero
         kicker="Account types"
-        lines={['Five live accounts.', <span key="b" className="text-fg-3">Free demo.</span>]}
-        lead="Standard, Pro, ECN, Cent and VIP: choose all-in pricing or raw spreads with a commission, hedging or netting, dollars or cents. Every account trades CFDs and Ezymex FX Options."
+        lines={['Three live accounts.', <span key="b" className="text-fg-3">Free demo.</span>]}
+        lead="Standard, Pro and VIP: from an all-in spread with no commission to raw pricing with a fixed commission per lot. Every account trades CFDs and Ezymex FX Options."
         actions={
           <>
             <Button href={REGISTER_HREF}>Open account</Button>
