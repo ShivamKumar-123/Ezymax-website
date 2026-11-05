@@ -9,9 +9,9 @@ import { ANDROID_APP, TRADER } from '@/content/facts';
 import { CRM_URL, REGISTER_HREF, TRADER_URL } from '@/lib/crm';
 
 export const metadata: Metadata = {
-  title: 'Platforms: Ezymex Trader web terminal, Client Area and mobile',
+  title: 'Platforms: Ezymex Trader, Client Area and Android app',
   description:
-    'Ezymex Trader is an MT5-style web terminal for CFDs and options: a big chart, 35 indicators, one-click trading, a depth ladder and full chart mode. The Client Area runs everything around it. Now also as an Android app.',
+    'Ezymex Trader: an MT5-style web terminal for CFDs and options with 35 indicators, one-click trading and a depth ladder. Plus the Client Area and an Android app.',
   alternates: { canonical: '/platforms' },
 };
 

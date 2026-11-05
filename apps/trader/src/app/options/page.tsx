@@ -19,7 +19,7 @@ export const revalidate = 60;
 export const metadata: Metadata = {
   title: 'Ezymex FX Options: the first forex options platform',
   description:
-    'Buy or sell calls and puts on 9 FX pairs, gold, silver and oil with daily, weekly and monthly expiries. Quick trade in three taps, a strategy builder and plain-language risk, in the same account as your CFDs.',
+    'Calls and puts on 9 FX pairs, gold, silver and oil with daily, weekly and monthly expiries. Three-tap quick trade and a strategy builder, in the same account as your CFDs.',
   alternates: { canonical: '/options' },
 };
 

@@ -14,7 +14,7 @@ import { cn } from '@/lib/cn';
 export const metadata: Metadata = {
   title: 'Account types: Standard, Pro, VIP and demo',
   description:
-    'Compare Ezymex trading accounts: minimum deposit from $20, leverage up to 1:1000, all-in spreads or raw spreads with commission, hedging or netting, and free demo accounts.',
+    'Compare Ezymex accounts: minimum deposit from $20, leverage up to 1:1000, all-in spreads or raw spreads with a commission, and free demo accounts.',
   alternates: { canonical: '/accounts' },
 };
 

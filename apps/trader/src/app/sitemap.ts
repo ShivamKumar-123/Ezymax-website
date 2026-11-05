@@ -15,6 +15,7 @@ const PAGES: { path: string; priority: number; freq: MetadataRoute.Sitemap[numbe
   { path: '/about', priority: 0.6, freq: 'monthly' },
   { path: '/contact', priority: 0.5, freq: 'yearly' },
   { path: '/faq', priority: 0.6, freq: 'monthly' },
+  { path: '/security', priority: 0.3, freq: 'yearly' },
   { path: '/risk-warning', priority: 0.3, freq: 'yearly' },
   { path: '/risk', priority: 0.3, freq: 'yearly' },
   { path: '/terms', priority: 0.3, freq: 'yearly' },

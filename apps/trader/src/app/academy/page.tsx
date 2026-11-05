@@ -11,7 +11,7 @@ import { cn } from '@/lib/cn';
 export const metadata: Metadata = {
   title: 'Ezymex Academy: 118 lessons in 9 phases',
   description:
-    'Learn to trade with Ezymex Academy: 118 lessons from markets and instruments to macro regimes and FX options, a quiz after every lesson, phase exams and verifiable certificates.',
+    '118 lessons in 9 phases, from markets and instruments to macro regimes and FX options, with a quiz after every lesson, phase exams and verifiable certificates.',
   alternates: { canonical: '/academy' },
 };
 

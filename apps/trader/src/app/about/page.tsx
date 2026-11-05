@@ -10,9 +10,9 @@ import { INSTRUMENTS, OPTIONS } from '@/content/facts';
 import { REGISTER_HREF } from '@/lib/crm';
 
 export const metadata: Metadata = {
-  title: 'About Ezymex',
+  title: 'About us',
   description:
-    'Ezymex is a global multi-asset trading platform: Ezymex FX Options, CFDs on 1,389 instruments, copy trading and PAMM, built on our own technology and translated into 22 languages.',
+    'Who Ezymex is: a multi-asset broker built on its own technology and the counterparty to your trades, with FX options, 1,389 CFDs and copy trading in 22 languages.',
   alternates: { canonical: '/about' },
 };
 

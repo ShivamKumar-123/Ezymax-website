@@ -12,7 +12,7 @@ import { cn } from '@/lib/cn';
 export const metadata: Metadata = {
   title: 'Partners (IB): earn on every lot your network trades',
   description:
-    'Every Ezymex client is a partner from sign-up. Per-lot commission on three tiers of referrals, CPA rewards, five partner levels from Bronze to Diamond, weekly payouts in USDT.',
+    'Every Ezymex client is a partner from sign-up: per-lot commission on three referral tiers, CPA rewards, five levels from Bronze to Diamond and weekly USDT payouts.',
   alternates: { canonical: '/partners' },
 };
 

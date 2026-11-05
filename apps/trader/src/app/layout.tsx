@@ -7,7 +7,7 @@ import GoogleTranslate from '@/components/chrome/GoogleTranslate';
 import SmoothScroll from '@/components/motion/SmoothScroll';
 import RevealRoot, { REVEAL_BOOT } from '@/components/motion/RevealRoot';
 import CampaignForwarder from '@/components/util/CampaignForwarder';
-import { BRAND_NAME, SITE_URL } from '@/lib/brand';
+import { BRAND_NAME, BRAND_SUPPORT_EMAIL, SITE_URL } from '@/lib/brand';
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist', display: 'swap' });
 const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono', display: 'swap', preload: false });
@@ -16,7 +16,7 @@ const pixel = Doto({ subsets: ['latin'], weight: ['800', '900'], variable: '--fo
 
 const TITLE = `${BRAND_NAME}: forex options, CFDs and copy trading on one account`;
 const DESCRIPTION =
-  'Ezymex is a global multi-asset trading platform: Ezymex FX Options with real option chains on forex, gold and oil, 1,389 CFD instruments, copy trading and PAMM, in 22 languages.';
+  'Global multi-asset trading platform: Ezymex FX Options on forex, gold and oil, 1,389 CFD instruments, copy trading and PAMM, in 22 languages.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -44,12 +44,29 @@ export const viewport: Viewport = {
   colorScheme: 'dark',
 };
 
+/* Organization + WebSite structured data. Google wants a raster logo of at least 112px; the SVG mark is kept for
+   the page itself. sameAs lists the official profiles so search engines tie them to this site. */
 const ORG_LD = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
+  '@id': `${SITE_URL}/#organization`,
   name: BRAND_NAME,
   url: SITE_URL,
-  logo: `${SITE_URL}/brand/ezymex-mark.svg`,
+  logo: { '@type': 'ImageObject', url: `${SITE_URL}/icons/icon-512.png`, width: 512, height: 512 },
+  email: BRAND_SUPPORT_EMAIL,
+  contactPoint: [{ '@type': 'ContactPoint', contactType: 'customer support', email: BRAND_SUPPORT_EMAIL, availableLanguage: ['en'] }],
+  sameAs: ['https://www.facebook.com/61595944184306', 'https://www.instagram.com/ezymex.official/'],
+};
+
+const SITE_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  '@id': `${SITE_URL}/#website`,
+  name: BRAND_NAME,
+  url: SITE_URL,
+  description: DESCRIPTION,
+  inLanguage: 'en',
+  publisher: { '@id': `${SITE_URL}/#organization` },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -63,6 +80,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: REVEAL_BOOT }} />
         <link rel="preconnect" href="https://api.ezymex.com" crossOrigin="anonymous" />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ORG_LD) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(SITE_LD) }} />
       </head>
       <body suppressHydrationWarning>
         <a href="#main" className="skip-link">

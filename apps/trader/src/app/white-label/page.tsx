@@ -11,7 +11,7 @@ import { REGISTER_HREF } from '@/lib/crm';
 export const metadata: Metadata = {
   title: 'White-label brokerage and API & algo trading',
   description:
-    'Launch your own brokerage on the Ezymex platform with your brand and domains, or automate trading with webhooks, a REST API, a visual strategy builder and backtests.',
+    'Launch your own brokerage on the Ezymex platform with your brand and domains, or automate trading with webhooks, a REST API, a strategy builder and backtests.',
   alternates: { canonical: '/white-label' },
 };
 

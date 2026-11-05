@@ -10,9 +10,9 @@ import { INSTRUMENTS, LEVERAGE } from '@/content/facts';
 import { REGISTER_HREF } from '@/lib/crm';
 
 export const metadata: Metadata = {
-  title: 'Markets: 1,389 instruments across forex, metals, energies, indices, crypto and stocks',
+  title: 'Markets: 1,389 CFDs on forex, metals, indices and crypto',
   description:
-    'Trade CFDs on 63 forex pairs, 16 metals, 4 energies, 34 indices and 167 cryptocurrencies, with 1,100 US, Hong Kong and Tokyo stocks coming soon. Search every instrument with live prices.',
+    'CFDs on 63 forex pairs, 16 metals, 4 energies, 34 indices and 167 cryptocurrencies, with live prices on every instrument. 1,100 US and Asian stocks coming soon.',
   alternates: { canonical: '/markets' },
 };
 

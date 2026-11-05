@@ -11,7 +11,7 @@ import { REGISTER_HREF } from '@/lib/crm';
 export const metadata: Metadata = {
   title: 'Copy trading, PAMM and MAM',
   description:
-    'Follow verified masters with your own risk controls, invest in PAMM funds, or link your account to a MAM manager. Or become a master and earn a performance fee on new highs.',
+    'Follow verified masters with your own risk controls, invest in PAMM funds or link to a MAM manager. Or become a master and earn a performance fee on new highs.',
   alternates: { canonical: '/copy-trading' },
 };
 
