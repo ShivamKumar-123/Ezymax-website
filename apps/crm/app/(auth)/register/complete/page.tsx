@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { WEBSITE_URL } from "@/lib/live";
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, CalendarDays, Gift, UserRound } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -162,9 +163,9 @@ export default function CompleteProfilePage() {
                   <Trans
                     k="auth.register.terms"
                     tags={{
-                      agreement: (c) => <a className="text-fg underline-offset-2 hover:underline">{c}</a>,
-                      risk: (c) => <a className="text-fg hover:underline">{c}</a>,
-                      privacy: (c) => <a className="text-fg hover:underline">{c}</a>,
+                      agreement: (c) => <a href={`${WEBSITE_URL}/terms`} target="_blank" rel="noopener noreferrer" className="text-fg underline-offset-2 hover:underline">{c}</a>,
+                      risk: (c) => <a href={`${WEBSITE_URL}/risk`} target="_blank" rel="noopener noreferrer" className="text-fg underline-offset-2 hover:underline">{c}</a>,
+                      privacy: (c) => <a href={`${WEBSITE_URL}/privacy`} target="_blank" rel="noopener noreferrer" className="text-fg underline-offset-2 hover:underline">{c}</a>,
                     }}
                   />
                 </span>

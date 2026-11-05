@@ -29,3 +29,6 @@ export function soonFor(pathname: string): SoonModule | undefined {
 export const TERMINAL_URL = (process.env.NEXT_PUBLIC_TERMINAL_URL ?? "http://localhost:3002").replace(/\/+$/, "");
 
 export const SUPPORT_EMAIL = "support@ezymex.com";
+
+/** The public website, where the legal documents live (Client Agreement, Risk Disclosure, Privacy Policy). */
+export const WEBSITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://ezymex.com").replace(/\/+$/, "");
