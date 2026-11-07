@@ -364,7 +364,7 @@ const List<(String, String)> _pageNames = [
   ('/portfolio/history', 'security.page.tradeHistory'),
   ('/portfolio/ledger', 'security.page.ledger'),
   ('/portfolio/statements', 'security.page.statements'),
-  ('/portfolio/analytics', 'security.page.analytics'),
+  ('/portfolio/performance', 'security.page.analytics'),
   ('/portfolio', 'security.page.portfolio'),
   ('/accounts/', 'security.page.account'),
   ('/accounts', 'security.page.accounts'),

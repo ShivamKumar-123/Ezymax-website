@@ -443,7 +443,7 @@ function DemoPortfolioPage() {
                 <FileText /> Statements
               </Button>
             </Link>
-            <Link href="/portfolio/analytics">
+            <Link href="/portfolio/performance">
               <Button variant="ember" shimmer>
                 <BarChart3 /> Analytics
               </Button>
@@ -487,7 +487,7 @@ function DemoPortfolioPage() {
             <div className="text-[15px] font-medium">Want to know what's driving your returns?</div>
             <div className="text-[13px] text-fg-3">Win rate, best sessions, charges and behaviour insights are in Analytics.</div>
           </div>
-          <Link href="/portfolio/analytics">
+          <Link href="/portfolio/performance">
             <Button variant="surface">
               Open analytics <ArrowUpRight />
             </Button>

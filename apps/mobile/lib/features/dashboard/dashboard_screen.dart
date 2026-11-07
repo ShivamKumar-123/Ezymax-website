@@ -503,7 +503,7 @@ class DashboardScreen extends ConsumerWidget {
                           label: t('dashboard.home.todayPct', {'pct': '${todayPct >= 0 ? '+' : ''}${todayPct.toStringAsFixed(2)}'}),
                           tone: (today ?? totals.profit) >= 0 ? KChipTone.up : KChipTone.down,
                         ),
-                  onTap: () => context.go('/portfolio/analytics'),
+                  onTap: () => context.go('/portfolio/performance'),
                 ),
                 if (walletOn) ...[
                   const SizedBox(width: 12),

@@ -354,7 +354,7 @@ export function PortfolioTab({ a, trades }: { a: TradingAccount; trades: ClosedT
                 </div>
                 <DivergingBar value={longs.reduce((s, t) => s + t.volume, 0) - shorts.reduce((s, t) => s + t.volume, 0)} max={volTotal / 2} />
               </div>
-              <Link href="/portfolio/analytics" className="mt-5 inline-flex items-center gap-1 text-[12.5px] text-fg-3 hover:text-ember">
+              <Link href="/portfolio/performance" className="mt-5 inline-flex items-center gap-1 text-[12.5px] text-fg-3 hover:text-ember">
                 {t("accountDetail.longShort.deepAnalytics")} <ArrowUpRight className="size-3.5 rtl:-scale-x-100" />
               </Link>
             </div>

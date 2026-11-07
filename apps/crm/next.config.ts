@@ -15,7 +15,11 @@ const config: NextConfig = {
   experimental: { staleTimes: { dynamic: 60 } },
   // Trading lives in the separate Ezymex Trader app (trade.ezymex.com); query params are forwarded.
   async redirects() {
-    return [{ source: "/trade", destination: `${TERMINAL_URL}/`, permanent: false }];
+    return [
+      { source: "/trade", destination: `${TERMINAL_URL}/`, permanent: false },
+      // the Performance page moved from /portfolio/analytics (sidebar label and URL now agree)
+      { source: "/portfolio/analytics", destination: "/portfolio/performance", permanent: true },
+    ];
   },
   // Illustrations (public/illustrations, made by scripts/process-illustrations.mjs): every URL carries a content hash
   // (?v=, see Illustration in @ezymex/ui), so browsers and the CDN may keep a file for a year.

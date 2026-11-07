@@ -95,7 +95,7 @@ class _AccountAnalyticsPanelState extends ConsumerState<AccountAnalyticsPanel> {
               icon: LucideIcons.gauge,
               variant: KButtonVariant.ghost,
               size: KButtonSize.sm,
-              onPressed: () => context.go('/portfolio/analytics'),
+              onPressed: () => context.go('/portfolio/performance'),
             ),
           ],
         ),

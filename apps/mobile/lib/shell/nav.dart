@@ -50,7 +50,7 @@ const List<NavModule> kNav = [
       // /options is not offered yet and is left out the same way /academy/coach is (apps/crm/lib/live.ts
       // LIVE_GATED); reaching it anyway lands on the Coming soon stub
       NavSub('/portfolio', 'shell.nav.portfolio', LucideIcons.chartPie),
-      NavSub('/portfolio/analytics', 'shell.nav.performance', LucideIcons.chartColumn),
+      NavSub('/portfolio/performance', 'shell.nav.performance', LucideIcons.chartColumn),
       NavSub('/portfolio/history', 'shell.nav.tradeHistory', LucideIcons.history),
       NavSub('/portfolio/ledger', 'shell.nav.ledger', LucideIcons.bookText),
       NavSub('/portfolio/statements', 'shell.nav.statements', LucideIcons.fileText),

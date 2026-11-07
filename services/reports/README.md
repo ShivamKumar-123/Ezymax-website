@@ -150,7 +150,7 @@ The gateway RBAC already defines `reports.read` ("View reports") and `reports.ex
 
 | App | Integration |
 |---|---|
-| **Client Area** | `/api/reports/*` (`apps/crm/app/api/reports/[...path]/route.ts`) resolves the user from the session and calls the client routes. Pages: Portfolio → Analytics (`/portfolio/analytics`), Statements (`/portfolio/statements`: PDF / CSV / Excel for any period, monthly list), the account page's Analytics tab |
+| **Client Area** | `/api/reports/*` (`apps/crm/app/api/reports/[...path]/route.ts`) resolves the user from the session and calls the client routes. Pages: Portfolio → Analytics (`/portfolio/performance`), Statements (`/portfolio/statements`: PDF / CSV / Excel for any period, monthly list), the account page's Analytics tab |
 | **Back Office** | `/api/reports/*` → staff routes. Analytics → Broker P&L, Traders (profitable vs losing, flags, routing hints), Broker risk (exposure, margin levels, capital strength, scenario builder), Deposits & FTD, Funnel, Cohorts & LTV, Accounts & activity, Partners, Regulatory exports, Scheduled reports (every report type, `traders` and `risk` included) |
 
 ## Environment

@@ -237,7 +237,7 @@ function DemoOverview() {
       kpis={
         <div className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 [&>*]:w-[78%] [&>*]:shrink-0 [&>*]:snap-start sm:[&>*]:w-auto">
           <KpiCard label={t("dashboard.equity.title")} icon={<TrendingUp />} value={<Money value={DASHBOARD.totalEquity} />} chip={t("dashboard.kpi.today", { pct: DASHBOARD.equityChangeTodayPct })} chipTone="up" href="/portfolio" />
-          <KpiCard label={t("dashboard.home.todayPnl")} icon={<LineChart />} value={<Money value={DASHBOARD.equityChangeToday} signed tone="up" />} chip={t("dashboard.kpi.vsLastMonth", { pct: DASHBOARD.monthPnlPct })} chipTone="up" href="/portfolio/analytics" accent="var(--k-up)" delay={0.05} />
+          <KpiCard label={t("dashboard.home.todayPnl")} icon={<LineChart />} value={<Money value={DASHBOARD.equityChangeToday} signed tone="up" />} chip={t("dashboard.kpi.vsLastMonth", { pct: DASHBOARD.monthPnlPct })} chipTone="up" href="/portfolio/performance" accent="var(--k-up)" delay={0.05} />
           <KpiCard
             label={t("dashboard.home.walletBalance")}
             icon={<Wallet />}

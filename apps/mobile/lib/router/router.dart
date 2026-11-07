@@ -135,6 +135,8 @@ final ModuleScreens _c1Screens = {
   '/wallet/transfer': (s) => TransferScreen(query: s.uri.queryParameters),
   '/wallet/history': (s) => WalletHistoryScreen(query: s.uri.queryParameters),
   '/portfolio': (s) => PortfolioScreen(query: s.uri.queryParameters),
+  '/portfolio/performance': (s) => AnalyticsScreen(query: s.uri.queryParameters),
+  // the page's old web URL (app.ezymex.com links open in the app)
   '/portfolio/analytics': (s) => AnalyticsScreen(query: s.uri.queryParameters),
   '/portfolio/history': (s) => TradeHistoryScreen(query: s.uri.queryParameters),
   '/portfolio/ledger': (s) => LedgerScreen(query: s.uri.queryParameters),

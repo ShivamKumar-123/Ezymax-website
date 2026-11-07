@@ -695,7 +695,7 @@ export function AccountAnalyticsPanel({ login }: { login: number }) {
               <Download /> {t("portfolio.an.pdfStatement")}
             </Button>
           </a>
-          <Link href="/portfolio/analytics">
+          <Link href="/portfolio/performance">
             <Button size="sm" variant="ghost">
               <GaugeIcon /> {t("portfolio.an.allAccounts")}
             </Button>
