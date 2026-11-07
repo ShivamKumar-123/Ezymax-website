@@ -143,6 +143,11 @@ final ModuleScreens _c1Screens = {
   '/portfolio/history': (s) => TradeHistoryScreen(query: s.uri.queryParameters),
   '/portfolio/ledger': (s) => LedgerScreen(query: s.uri.queryParameters),
   '/portfolio/statements': (s) => StatementsScreen(query: s.uri.queryParameters),
+  // the pages' web URLs (app.ezymex.com links open in the app)
+  '/performance': (s) => AnalyticsScreen(query: s.uri.queryParameters),
+  '/history': (s) => TradeHistoryScreen(query: s.uri.queryParameters),
+  '/ledger': (s) => LedgerScreen(query: s.uri.queryParameters),
+  '/statements': (s) => StatementsScreen(query: s.uri.queryParameters),
   '/profile': (s) => ProfileScreen(query: s.uri.queryParameters),
   '/profile/security': (s) => SecurityScreen(query: s.uri.queryParameters),
   '/profile/verification': (s) => VerificationScreen(query: s.uri.queryParameters),

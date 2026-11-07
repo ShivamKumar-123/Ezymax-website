@@ -27,16 +27,22 @@ const ACTIVITY = new Set(["viewer.login", "viewer.logout", "viewer.login_failed"
 const activityLabel = (t: T, action: string) => (ACTIVITY.has(action) ? t.dyn(`security.activity.${action.slice(7)}`, action) : action);
 
 const PAGE_NAMES = [
-  ["/portfolio/history", "security.page.tradeHistory"],
-  ["/portfolio/ledger", "security.page.ledger"],
-  ["/portfolio/statements", "security.page.statements"],
-  ["/portfolio/performance", "security.page.analytics"],
-  ["/overview", "security.page.portfolio"],
-  ["/portfolio", "security.page.portfolio"],
   ["/accounts/", "security.page.account"],
   ["/accounts", "security.page.accounts"],
   ["/wallet/history", "security.page.walletHistory"],
   ["/wallet", "security.page.wallet"],
+  ["/history", "security.page.tradeHistory"],
+  ["/ledger", "security.page.ledger"],
+  ["/statements", "security.page.statements"],
+  ["/performance", "security.page.analytics"],
+  ["/overview", "security.page.portfolio"],
+  // page views recorded before the portfolio pages moved to the root
+  ["/portfolio/history", "security.page.tradeHistory"],
+  ["/portfolio/ledger", "security.page.ledger"],
+  ["/portfolio/statements", "security.page.statements"],
+  ["/portfolio/performance", "security.page.analytics"],
+  ["/portfolio/analytics", "security.page.analytics"],
+  ["/portfolio", "security.page.portfolio"],
   ["/partner", "security.page.partner"],
   ["/markets", "security.page.markets"],
   ["/news", "security.page.news"],

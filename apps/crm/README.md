@@ -4,7 +4,7 @@ Next.js app on http://localhost:3000. Live builds (default) show real data only.
 
 ## Trading accounts (live builds)
 
-`/accounts`, `/accounts/new`, `/accounts/[login]`, `/portfolio`, `/portfolio/history`, `/portfolio/ledger` and `/portfolio/statements` read from the trading engine (`services/trading`, see its README "Client Area API"). They go through the BFF at `app/api/trading/[...path]/route.ts`:
+`/accounts`, `/accounts/new`, `/accounts/[login]`, `/portfolio`, `/history`, `/ledger` and `/statements` read from the trading engine (`services/trading`, see its README "Client Area API"). They go through the BFF at `app/api/trading/[...path]/route.ts`:
 
 - The client is resolved on the server from the HttpOnly `ezymex_session` cookie, using the gateway's `/v1/auth/me`. The engine receives that id in `X-Ezymex-User-Id`. The BFF never uses a user id sent by the browser.
 - CSRF protection: POSTs must be JSON and carry a same-origin `Origin` header.

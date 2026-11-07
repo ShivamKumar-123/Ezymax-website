@@ -103,7 +103,7 @@ export function LiveHistoryPage() {
   const t = useT();
   return (
     <Wrap>
-      <PickerPage base="/portfolio/history" title={t("portfolio.history.title")} subtitle={t("portfolio.history.subtitle")}>
+      <PickerPage base="/history" title={t("portfolio.history.title")} subtitle={t("portfolio.history.subtitle")}>
         {(a) => <HistoryPanel a={a} title={t("portfolio.history.panelTitle", { login: a.login })} />}
       </PickerPage>
     </Wrap>
@@ -114,7 +114,7 @@ export function LiveLedgerPage() {
   const t = useT();
   return (
     <Wrap>
-      <PickerPage base="/portfolio/ledger" title={t("portfolio.ledger.title")} subtitle={t("portfolio.ledger.subtitle")}>
+      <PickerPage base="/ledger" title={t("portfolio.ledger.title")} subtitle={t("portfolio.ledger.subtitle")}>
         {(a) => <LedgerPanel a={a} title={t("portfolio.ledger.panelTitle", { login: a.login })} />}
       </PickerPage>
     </Wrap>
@@ -409,7 +409,7 @@ export function LiveStatementsPage() {
   const t = useT();
   return (
     <Wrap>
-      <PickerPage base="/portfolio/statements" title={t("portfolio.st.title")} subtitle={t("portfolio.st.subtitle")}>
+      <PickerPage base="/statements" title={t("portfolio.st.title")} subtitle={t("portfolio.st.subtitle")}>
         {(a) => <Statements a={a} />}
       </PickerPage>
     </Wrap>
@@ -466,7 +466,7 @@ export function LivePortfolio() {
         subtitle={tx("portfolio.subtitle")}
         actions={
           <>
-            <Link href="/portfolio/statements">
+            <Link href="/statements">
               <Button variant="surface">
                 <FileText /> {tx("portfolio.st.title")}
               </Button>
@@ -642,9 +642,9 @@ export function LivePortfolio() {
 
               <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
                 {[
-                  { href: "/portfolio/history", icon: <History />, title: tx("portfolio.history.title"), text: tx("portfolio.links.history") },
-                  { href: "/portfolio/ledger", icon: <BookText />, title: tx("portfolio.ledger.title"), text: tx("portfolio.links.ledger") },
-                  { href: "/portfolio/statements", icon: <FileText />, title: tx("portfolio.st.title"), text: tx("portfolio.links.statements") },
+                  { href: "/history", icon: <History />, title: tx("portfolio.history.title"), text: tx("portfolio.links.history") },
+                  { href: "/ledger", icon: <BookText />, title: tx("portfolio.ledger.title"), text: tx("portfolio.links.ledger") },
+                  { href: "/statements", icon: <FileText />, title: tx("portfolio.st.title"), text: tx("portfolio.links.statements") },
                 ].map((l) => (
                   <Link key={l.href} href={l.href} className="k-card flex items-center gap-3 rounded-[20px] px-5 py-4 transition-colors hover:border-[var(--k-border-top)]">
                     <span className="grid size-10 shrink-0 place-items-center rounded-full border border-line bg-surface-2 text-fg-2 [&_svg]:size-4">{l.icon}</span>

@@ -240,7 +240,7 @@ export function SignalsCard() {
         }
         subtitle="Today · server time GMT+3"
         action={
-          <Link href="/portfolio/history">
+          <Link href="/history">
             <Button size="xs" variant="ghost">
               History
             </Button>

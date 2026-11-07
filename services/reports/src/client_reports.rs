@@ -141,9 +141,9 @@ fn signed(v: f64) -> String {
 pub fn notice(kind: &str, period_label: &str, f: &Figures, user_id: i64, period: &str) -> Value {
     let weekly = kind == "weekly";
     let (title, subject, link) = if weekly {
-        ("Your week in trading".to_string(), format!("Your trading summary for {period_label}"), "/portfolio")
+        ("Your week in trading".to_string(), format!("Your trading summary for {period_label}"), "/overview")
     } else {
-        (format!("Your {period_label} statement is ready"), format!("Your account statement for {period_label}"), "/portfolio/statements")
+        (format!("Your {period_label} statement is ready"), format!("Your account statement for {period_label}"), "/statements")
     };
     let result = if f.net >= 0.0 { "finished ahead" } else { "finished behind" };
     let plural = |n: usize| if n == 1 { "" } else { "s" };
@@ -337,7 +337,7 @@ mod tests {
         assert_eq!(facts[2]["value"], "+$184.50");
         assert!(facts.iter().all(|x| x["label"] != "Deposits"));
         let m = notice("monthly", "October 2026", &f, 613, "2026-10");
-        assert_eq!(m["link"], "/portfolio/statements");
+        assert_eq!(m["link"], "/statements");
         assert_eq!(m["emailSubject"], "Your account statement for October 2026");
         let facts = m["data"]["facts"].as_array().unwrap();
         assert!(facts.iter().any(|x| x["label"] == "Deposits" && x["value"] == "$500.00"));

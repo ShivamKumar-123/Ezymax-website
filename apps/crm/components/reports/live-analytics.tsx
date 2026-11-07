@@ -635,7 +635,7 @@ export function LiveAnalyticsPage() {
             />
             <Segmented value={period} onChange={setPeriod} options={PERIODS.map((p) => ({ value: p, label: t(`portfolio.an.period.${p}`) }))} />
             {account === "all" ? (
-              <Link href="/portfolio/statements">
+              <Link href="/statements">
                 <Button variant="ember">
                   <FileText /> {t("portfolio.st.title")}
                 </Button>
@@ -695,7 +695,7 @@ export function AccountAnalyticsPanel({ login }: { login: number }) {
               <Download /> {t("portfolio.an.pdfStatement")}
             </Button>
           </a>
-          <Link href="/portfolio/performance">
+          <Link href="/performance">
             <Button size="sm" variant="ghost">
               <GaugeIcon /> {t("portfolio.an.allAccounts")}
             </Button>

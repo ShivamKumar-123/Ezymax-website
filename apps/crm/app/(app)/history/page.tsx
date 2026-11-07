@@ -140,7 +140,7 @@ function DemoTradeHistoryPage() {
         subtitle="Every closed trade across your live accounts. Unlimited history, times in GMT+3."
         actions={
           <>
-            <Link href="/portfolio/statements">
+            <Link href="/statements">
               <Button variant="surface">Statements</Button>
             </Link>
             <Button variant="surface" onClick={exportPdf}>

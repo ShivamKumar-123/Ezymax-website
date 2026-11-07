@@ -438,12 +438,12 @@ function DemoPortfolioPage() {
         subtitle="Your live accounts, PAMM, copy trading and partner earnings in one view (USD)."
         actions={
           <>
-            <Link href="/portfolio/statements">
+            <Link href="/statements">
               <Button variant="surface">
                 <FileText /> Statements
               </Button>
             </Link>
-            <Link href="/portfolio/performance">
+            <Link href="/performance">
               <Button variant="ember" shimmer>
                 <BarChart3 /> Analytics
               </Button>
@@ -487,7 +487,7 @@ function DemoPortfolioPage() {
             <div className="text-[15px] font-medium">Want to know what's driving your returns?</div>
             <div className="text-[13px] text-fg-3">Win rate, best sessions, charges and behaviour insights are in Analytics.</div>
           </div>
-          <Link href="/portfolio/performance">
+          <Link href="/performance">
             <Button variant="surface">
               Open analytics <ArrowUpRight />
             </Button>

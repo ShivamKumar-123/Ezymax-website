@@ -361,11 +361,15 @@ String viewerActivityLabel(T t, String action) =>
     kViewerActivity.contains(action) ? t.dyn('security.activity.${action.substring(7)}', fallback: action) : action;
 
 const List<(String, String)> _pageNames = [
+  ('/history', 'security.page.tradeHistory'),
+  ('/ledger', 'security.page.ledger'),
+  ('/statements', 'security.page.statements'),
+  ('/performance', 'security.page.analytics'),
+  ('/overview', 'security.page.portfolio'),
   ('/portfolio/history', 'security.page.tradeHistory'),
   ('/portfolio/ledger', 'security.page.ledger'),
   ('/portfolio/statements', 'security.page.statements'),
   ('/portfolio/performance', 'security.page.analytics'),
-  ('/overview', 'security.page.portfolio'),
   ('/portfolio', 'security.page.portfolio'),
   ('/accounts/', 'security.page.account'),
   ('/accounts', 'security.page.accounts'),

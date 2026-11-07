@@ -29,7 +29,7 @@ type SectionDef = { label: string; hint: string; home: string; pages: string[]; 
 export const VIEWER_SECTIONS: Record<ViewerSection, SectionDef> = {
   dashboard: { label: "Dashboard", hint: "Overview, markets, news and calendar", home: "/", pages: ["/", "/markets", "/news", "/calendar", "/updates"], api: ["/api/trading/accounts", "/api/news", "/api/growth/banners", "/api/growth/posts", "/api/growth/media"] },
   accounts: { label: "Accounts & positions", hint: "Balances, open positions and orders", home: "/accounts", pages: ["/accounts"], api: ["/api/trading/accounts", "/api/trading/groups"] },
-  history: { label: "Trade history & statements", hint: "Closed trades, ledger and statements", home: "/portfolio/history", pages: ["/overview", "/portfolio"], api: ["/api/trading/accounts", "/api/reports"] },
+  history: { label: "Trade history & statements", hint: "Closed trades, ledger and statements", home: "/history", pages: ["/overview", "/performance", "/history", "/ledger", "/statements"], api: ["/api/trading/accounts", "/api/reports"] },
   wallet: { label: "Wallet balances", hint: "USDT balance and wallet history", home: "/wallet", pages: ["/wallet", "/wallet/history"], api: ["/api/wallet/overview", "/api/wallet/activity", "/api/wallet/config", "/api/wallet/ledger"] },
   partner: { label: "Partner dashboard", hint: "IB clients and commissions", home: "/partner", pages: ["/partner"], api: ["/api/partner"] },
 };
