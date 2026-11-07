@@ -107,7 +107,7 @@ function Inner() {
           value={loading ? <Skeleton className="h-8 w-32" /> : <Money value={t.equity} countUp={false} />}
           chip={t.live.length ? tt("accounts.kpi.balanceChip", { amount: `$${t.balance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` }) : tt("accounts.empty.noLive")}
           chipTone="neutral"
-          href="/portfolio"
+          href="/overview"
         />
         <KpiCard
           label={tt("accounts.label.freeMargin")}

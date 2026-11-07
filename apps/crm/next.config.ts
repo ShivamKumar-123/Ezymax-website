@@ -19,6 +19,8 @@ const config: NextConfig = {
       { source: "/trade", destination: `${TERMINAL_URL}/`, permanent: false },
       // the Performance page moved from /portfolio/analytics (sidebar label and URL now agree)
       { source: "/portfolio/analytics", destination: "/portfolio/performance", permanent: true },
+      // the portfolio Overview moved to /overview
+      { source: "/portfolio", destination: "/overview", permanent: true },
     ];
   },
   // Illustrations (public/illustrations, made by scripts/process-illustrations.mjs): every URL carries a content hash

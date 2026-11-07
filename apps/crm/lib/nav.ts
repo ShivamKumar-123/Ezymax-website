@@ -68,7 +68,7 @@ export const CRM_NAV: NavModule[] = [
     label: "Trading",
     icon: Layers,
     href: "/accounts",
-    match: ["/accounts", "/options", "/portfolio"],
+    match: ["/accounts", "/options", "/overview", "/portfolio"],
     section: "main",
     sub: [
       { href: "/accounts", label: "My accounts", icon: Layers },
@@ -76,7 +76,7 @@ export const CRM_NAV: NavModule[] = [
       // opens the account picker rather than a page: the terminal signs in to one account, so one has to be chosen
       { href: "/terminal", label: "Ezymex Terminal", icon: CandlestickChart, action: "terminal" },
       { href: "/options", label: "Options", icon: ChartSpline },
-      { href: "/portfolio", label: "Portfolio", icon: PieChart },
+      { href: "/overview", label: "Portfolio", icon: PieChart },
       { href: "/portfolio/performance", label: "Performance", icon: BarChart3 },
       { href: "/portfolio/history", label: "Trade history", icon: History },
       { href: "/portfolio/ledger", label: "Ledger", icon: BookText },
@@ -294,7 +294,7 @@ const SUB_KEYS: Record<string, MessageKey> = {
   "/wallet/withdraw": "shell.nav.withdraw",
   "/wallet/transfer": "shell.nav.transfer",
   "/wallet/history": "shell.nav.history",
-  "/portfolio": "shell.nav.overview",
+  "/overview": "shell.nav.overview",
   "/portfolio/performance": "shell.nav.performance",
   "/portfolio/history": "shell.nav.tradeHistory",
   "/portfolio/ledger": "shell.nav.ledger",

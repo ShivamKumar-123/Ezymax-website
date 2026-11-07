@@ -43,7 +43,7 @@ const List<NavModule> kNav = [
     icon: LucideIcons.layers,
     href: '/accounts',
     section: 'main',
-    match: ['/accounts', '/options', '/portfolio'],
+    match: ['/accounts', '/options', '/overview', '/portfolio'],
     sub: [
       NavSub('/accounts', 'shell.nav.myAccounts', LucideIcons.layers),
       NavSub('/accounts/new', 'shell.nav.openAccount', LucideIcons.circlePlus),
@@ -268,7 +268,7 @@ List<NavModule> navForFeatures(List<NavModule> nav, AppConfig cfg) {
 const Map<String, List<String>> _viewerPages = {
   'dashboard': ['/', '/markets', '/news', '/calendar', '/updates'],
   'accounts': ['/accounts'],
-  'history': ['/portfolio'],
+  'history': ['/overview', '/portfolio'],
   'wallet': ['/wallet', '/wallet/history'],
   'partner': ['/partner'],
 };
