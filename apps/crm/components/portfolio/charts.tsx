@@ -305,58 +305,143 @@ export function ColumnBars({
 }
 
 /* ------------------------------------------------------------------ */
-/* Weekday × hour heatmap                                              */
+/* P&L calendar (one cell per day)                                     */
 /* ------------------------------------------------------------------ */
 
-export function HourHeatmap({ rows, className }: { rows: { day: string; cells: { pnl: number; trades: number }[] }[]; className?: string }) {
-  const [hover, setHover] = React.useState<{ d: number; h: number } | null>(null);
-  const max = Math.max(...rows.flatMap((r) => r.cells.map((c) => Math.abs(c.pnl))), 1);
-  const cell = hover ? rows[hover.d]!.cells[hover.h]! : null;
+export type CalendarDay = { date: string; pnl: number; trades: number; winRate: number };
+
+const DAY_MS = 86_400_000;
+const utcDay = (iso: string) => Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10));
+const isoOf = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+const WEEKDAY_KEYS = ["portfolio.an.day.mon", "portfolio.an.day.tue", "portfolio.an.day.wed", "portfolio.an.day.thu", "portfolio.an.day.fri", "portfolio.an.day.sat", "portfolio.an.day.sun"] as const;
+
+/** "12 Oct" in the active locale; `long` adds the weekday and year. */
+export function fmtCalendarDay(iso: string, long = false) {
+  return new Date(utcDay(iso)).toLocaleDateString(intlTag(tr.locale), long ? { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" } : { day: "numeric", month: "short", timeZone: "UTC" });
+}
+
+/**
+ * Month-by-month calendar of the net P&L of the trades closed on each day (server time). Shows the whole
+ * period when it spans up to four months, otherwise only the months that have trades. Up to two months
+ * are drawn large with the amount inside each cell; more months are drawn as compact squares.
+ */
+export function PnlCalendar({ days, from, to, className }: { days: CalendarDay[]; from: string; to: string; className?: string }) {
+  const [hover, setHover] = React.useState<string | null>(null);
+  const byDate = React.useMemo(() => new Map(days.map((d) => [d.date, d])), [days]);
+  const months = React.useMemo(() => {
+    const traded = days.filter((d) => d.trades > 0).map((d) => d.date).sort();
+    let start = utcDay(from);
+    let end = utcDay(to);
+    const monthsInPeriod = (new Date(end).getUTCFullYear() - new Date(start).getUTCFullYear()) * 12 + new Date(end).getUTCMonth() - new Date(start).getUTCMonth() + 1;
+    if (monthsInPeriod > 4 && traded.length) {
+      start = Math.max(start, utcDay(traded[0]!));
+      end = Math.min(end, utcDay(traded[traded.length - 1]!));
+    }
+    const out: { key: string; label: string; first: number; days: number; net: number }[] = [];
+    for (let d = new Date(start); d.getTime() <= end; d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1))) {
+      const first = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1);
+      const count = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+      let net = 0;
+      for (let i = 0; i < count; i++) net += byDate.get(isoOf(first + i * DAY_MS))?.pnl ?? 0;
+      out.push({ key: isoOf(first), label: d.toLocaleDateString(intlTag(tr.locale), { month: "long", year: "numeric", timeZone: "UTC" }), first, days: count, net });
+    }
+    return out;
+  }, [days, from, to, byDate]);
+  const max = Math.max(...days.map((d) => Math.abs(d.pnl)), 1);
+  const large = months.length <= 2;
+  const inRange = (iso: string) => iso >= from && iso <= to;
+  const green = days.filter((d) => d.trades > 0 && d.pnl > 0).length;
+  const red = days.filter((d) => d.trades > 0 && d.pnl < 0).length;
+  const cell = hover ? byDate.get(hover) : undefined;
+  const signed = (v: number, digits = 2) => `${v >= 0 ? "+" : "-"}${formatMoney(Math.abs(v), "USD", digits)}`;
+
+  if (!days.some((d) => d.trades > 0)) {
+    return <div className={cn("py-10 text-center text-[13px] text-fg-3", className)}>{tr("portfolio.an.calendar.empty")}</div>;
+  }
+
+  let n = 0;
   return (
     <div className={cn("min-w-0", className)}>
-      <div className="overflow-x-auto pb-1">
-        <div className="min-w-[640px]">
-          <div className="grid grid-cols-[36px_repeat(24,minmax(0,1fr))] gap-[3px]">
-            <span />
-            {Array.from({ length: 24 }, (_, h) => (
-              <span key={h} className="k-num text-center font-mono text-[9.5px] text-fg-3">
-                {h % 3 === 0 ? String(h).padStart(2, "0") : ""}
-              </span>
-            ))}
-            {rows.map((r, d) => (
-              <React.Fragment key={r.day}>
-                <span className="self-center text-[11px] text-fg-3">{r.day}</span>
-                {r.cells.map((c, h) => {
-                  const a = Math.min(1, Math.abs(c.pnl) / max);
-                  const bg = c.trades === 0 ? "var(--k-surface-2)" : c.pnl >= 0 ? `color-mix(in oklab, var(--k-up) ${Math.round(12 + a * 78)}%, var(--k-surface-2))` : `color-mix(in oklab, var(--k-down) ${Math.round(12 + a * 78)}%, var(--k-surface-2))`;
-                  const on = hover?.d === d && hover?.h === h;
+      <div className={cn("grid gap-5", large ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3")}>
+        {months.map((m) => {
+          const lead = (new Date(m.first).getUTCDay() + 6) % 7; // Monday first
+          const weeks = Math.ceil((lead + m.days) / 7);
+          return (
+            <div key={m.key} className="min-w-0">
+              <div className="mb-2 flex items-baseline justify-between gap-2">
+                <span className="text-[12.5px] font-medium text-fg">{m.label}</span>
+                <span className={cn("k-num text-[11.5px]", m.net > 0 ? "text-up" : m.net < 0 ? "text-down" : "text-fg-3")}>{m.net ? signed(m.net, 0) : "—"}</span>
+              </div>
+              <div className="grid grid-cols-[repeat(7,minmax(0,1fr))_minmax(0,1.3fr)] gap-[3px]">
+                {WEEKDAY_KEYS.map((k) => (
+                  <span key={k} className="pb-0.5 text-center text-[9.5px] uppercase tracking-wide text-fg-3">
+                    {tr(k)}
+                  </span>
+                ))}
+                <span className="pb-0.5 text-center text-[9.5px] uppercase tracking-wide text-fg-3">{tr("portfolio.an.calendar.week")}</span>
+                {Array.from({ length: weeks }, (_, w) => {
+                  let weekNet = 0;
+                  let weekTrades = 0;
+                  const cells = Array.from({ length: 7 }, (_, i) => {
+                    const dayNo = w * 7 + i - lead + 1;
+                    if (dayNo < 1 || dayNo > m.days) return <span key={i} />;
+                    const iso = isoOf(m.first + (dayNo - 1) * DAY_MS);
+                    const d = byDate.get(iso);
+                    const traded = !!d && d.trades > 0;
+                    if (traded) {
+                      weekNet += d.pnl;
+                      weekTrades += d.trades;
+                    }
+                    const a = traded ? Math.min(1, Math.abs(d.pnl) / max) : 0;
+                    const bg = !traded ? "var(--k-surface-2)" : d.pnl >= 0 ? `color-mix(in oklab, var(--k-up) ${Math.round(12 + a * 78)}%, var(--k-surface-2))` : `color-mix(in oklab, var(--k-down) ${Math.round(12 + a * 78)}%, var(--k-surface-2))`;
+                    const idx = n++;
+                    return (
+                      <motion.span
+                        key={i}
+                        initial={{ opacity: 0, scale: 0.6 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.3, delay: Math.min(0.6, idx * 0.004) }}
+                        onMouseEnter={() => traded && setHover(iso)}
+                        onMouseLeave={() => setHover(null)}
+                        className={cn(
+                          "relative flex min-w-0 flex-col justify-between rounded-[5px] border border-line/60 p-1",
+                          large ? "min-h-[46px]" : "aspect-square",
+                          traded && "cursor-crosshair",
+                          !inRange(iso) && "opacity-35",
+                          hover === iso && "ring-2 ring-fg/60",
+                        )}
+                        style={{ background: bg }}
+                      >
+                        <span className={cn("k-num font-mono leading-none", large ? "text-[10px]" : "text-[9px]", traded ? "text-fg" : "text-fg-3")}>{dayNo}</span>
+                        {large && traded && <span className="k-num self-end truncate font-mono text-[10.5px] leading-none text-fg">{signed(d.pnl, 0)}</span>}
+                      </motion.span>
+                    );
+                  });
                   return (
-                    <motion.span
-                      key={h}
-                      initial={{ opacity: 0, scale: 0.6 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.3, delay: (d * 24 + h) * 0.0025 }}
-                      onMouseEnter={() => setHover({ d, h })}
-                      onMouseLeave={() => setHover(null)}
-                      className={cn("aspect-square cursor-crosshair rounded-[5px] border border-line/60", on && "ring-2 ring-fg/60")}
-                      style={{ background: bg }}
-                    />
+                    <React.Fragment key={w}>
+                      {cells}
+                      <span className={cn("k-num flex items-center justify-center truncate rounded-[5px] bg-surface-2/60 px-1 font-mono", large ? "text-[10.5px]" : "text-[9px]", weekTrades ? (weekNet >= 0 ? "text-up" : "text-down") : "text-fg-3")}>
+                        {weekTrades ? signed(weekNet, 0) : "—"}
+                      </span>
+                    </React.Fragment>
                   );
                 })}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-[11.5px] text-fg-3">
         <div className="k-num h-5">
           {hover && cell ? (
             <span>
-              <span className="text-fg-2">{rows[hover.d]!.day} {String(hover.h).padStart(2, "0")}:00–{String(hover.h + 1).padStart(2, "0")}:00</span> · {tr("portfolio.trades", { count: cell.trades })} ·{" "}
-              <span className={cell.pnl >= 0 ? "text-up" : "text-down"}>{cell.pnl >= 0 ? "+" : "-"}{formatMoney(Math.abs(cell.pnl))}</span>
+              <span className="text-fg-2">{fmtCalendarDay(hover, true)}</span> · {tr("portfolio.trades", { count: cell.trades })} ·{" "}
+              <span className={cell.pnl >= 0 ? "text-up" : "text-down"}>{signed(cell.pnl)}</span> · {tr("portfolio.an.session.win", { rate: Math.round(cell.winRate) })}
             </span>
           ) : (
-            tr("portfolio.chart.hoverHint")
+            <span>
+              {tr("portfolio.an.calendar.days", { green, red })} · {tr("portfolio.chart.hoverHint")}
+            </span>
           )}
         </div>
         <div className="flex items-center gap-2">

@@ -7,7 +7,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Activity, AlertTriangle, ArrowDownRight, ArrowUpRight, Clock3, Download, FileText, Gauge as GaugeIcon, Percent, RefreshCw, Scale, ShieldCheck, Target, TrendingDown, Trophy, Zap } from "lucide-react";
 import { Button, Card, CardHeader, Chip, Donut, EmptyState, KpiCard, Menu, Money, PageHeader, Reveal, Segmented, Skeleton, cn, formatMoney } from "@/components/kit";
-import { ColumnBars, DrawdownChart, HourHeatmap, MultiLineChart, PnlBars, Waterfall } from "@/components/portfolio/charts";
+import { ColumnBars, DrawdownChart, MultiLineChart, PnlBars, PnlCalendar, Waterfall, fmtCalendarDay } from "@/components/portfolio/charts";
 import { tr, useT } from "@ezymex/i18n/react";
 // engine symbols include Ezymex FX Options series codes, which the static instrument list (SymbolAvatar) doesn't know
 import { TradeSymbolAvatar, symbolLabel } from "@/components/trading/instrument";
@@ -63,6 +63,8 @@ export type Analytics = {
   short: Stats;
   bySymbol: Group[];
   byWeekday: Group[];
+  /** Net P&L of the trades closed on each server-time day, key = YYYY-MM-DD. */
+  byDay: Group[];
   bySession: { session: string; hours: string; trades: number; net: number; winRate: number }[];
   hourHeatmap: number[][];
   hourTrades: number[][];
@@ -317,9 +319,11 @@ export function AnalyticsBody({ d, label, periodLabel }: { d: Analytics; label: 
     const g = d.byWeekday.find((x) => x.key === String(i));
     return { label: t(name), value: g?.net ?? 0, sub: g ? t("portfolio.an.weekday.sub", { count: g.trades }) : undefined };
   });
-  const heat = DAYS.map((day, i) => ({ day: t(day), cells: (d.hourHeatmap[i] ?? []).map((pnl, h) => ({ pnl, trades: d.hourTrades?.[i]?.[h] ?? 0 })) }));
-  let best = { d: 0, h: 0, v: -Infinity };
-  d.hourHeatmap.forEach((r, i) => r.forEach((v, h) => (d.hourTrades?.[i]?.[h] ?? 0) > 0 && v > best.v && (best = { d: i, h, v })));
+  const calendar = (d.byDay ?? []).map((g) => ({ date: g.key, pnl: g.net, trades: g.trades, winRate: g.winRate }));
+  const bestDay = calendar.reduce<(typeof calendar)[number] | null>((b, x) => (x.trades > 0 && (!b || x.pnl > b.pnl) ? x : b), null);
+  // the period's last day: `to` is exclusive, and never past today (server time is GMT+3)
+  const calFrom = d.from.slice(0, 10);
+  const calTo = new Date(Math.min(Date.parse(d.to) - 1000, Date.now() + 3 * 3600_000)).toISOString().slice(0, 10);
   const sessions = [...d.bySession].sort((a, b) => b.net - a.net);
   const mf = d.moneyFlow;
   const ch = d.charges;
@@ -443,12 +447,12 @@ export function AnalyticsBody({ d, label, periodLabel }: { d: Analytics; label: 
         <Reveal delay={0.05} className="xl:col-span-8">
           <Card className="h-full">
             <CardHeader
-              title={t("portfolio.an.hour.title")}
-              subtitle={t("portfolio.an.hour.subtitle")}
-              action={best.v > 0 ? <Chip tone="up">{t("portfolio.an.hour.best", { day: t(DAYS[best.d]!), hour: String(best.h).padStart(2, "0") })}</Chip> : undefined}
+              title={t("portfolio.an.calendar.title")}
+              subtitle={t("portfolio.an.calendar.subtitle")}
+              action={bestDay && bestDay.pnl > 0 ? <Chip tone="up">{t("portfolio.an.calendar.best", { date: fmtCalendarDay(bestDay.date) })}</Chip> : undefined}
             />
             <div className="px-4 pb-5 pt-4 sm:px-6">
-              <HourHeatmap rows={heat} />
+              <PnlCalendar days={calendar} from={calFrom} to={calTo} />
             </div>
           </Card>
         </Reveal>

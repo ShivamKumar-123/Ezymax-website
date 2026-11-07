@@ -25,7 +25,6 @@ import {
 import { HISTORY, equitySeries, seeded } from "@ezymex/mock";
 import {
   CHARGES_BREAKDOWN,
-  HOUR_HEATMAP,
   INSIGHTS,
   LIVE_ACCOUNTS,
   MONEY_FLOW,
@@ -36,7 +35,7 @@ import {
   serverParts,
   tradeStats,
 } from "@ezymex/mock/portfolio-extra";
-import { ColumnBars, DrawdownChart, HourHeatmap, MultiLineChart, PnlBars, Waterfall } from "@/components/portfolio/charts";
+import { ColumnBars, DrawdownChart, MultiLineChart, PnlBars, PnlCalendar, Waterfall, fmtCalendarDay } from "@/components/portfolio/charts";
 import { IS_DEMO as DEMO_BUILD } from "@ezymex/mock/mode";
 import { LiveAnalyticsPage } from "@/components/reports/live-analytics";
 import { TERMINAL_URL } from "@/lib/live";
@@ -96,6 +95,13 @@ function DemoAnalyticsPage() {
       return { label: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d]!, value: e?.pnl ?? 0, sub: e ? `${e.trades} tr` : undefined };
     });
   }, [trades]);
+  const calendar = React.useMemo(
+    () => groupPnl(trades, (t) => serverParts(t.closeTime).date).map((g) => ({ date: g.key, pnl: g.pnl, trades: g.trades, winRate: (g.wins / Math.max(1, g.trades)) * 100 })),
+    [trades],
+  );
+  const bestDay = calendar.reduce<(typeof calendar)[number] | null>((b, x) => (!b || x.pnl > b.pnl ? x : b), null);
+  const calFrom = serverParts(new Date(PORTFOLIO_NOW - (days - 1) * 86400_000).toISOString()).date;
+  const calTo = serverParts(new Date(PORTFOLIO_NOW).toISOString()).date;
   const longs = React.useMemo(() => tradeStats(trades.filter((t) => t.side === "buy")), [trades]);
   const shorts = React.useMemo(() => tradeStats(trades.filter((t) => t.side === "sell")), [trades]);
 
@@ -303,9 +309,9 @@ function DemoAnalyticsPage() {
       <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-12">
         <Reveal delay={0.05} className="xl:col-span-8">
           <Card className="h-full">
-            <CardHeader title="By hour of day" subtitle="P&L heatmap · weekday × hour (GMT+3)" action={<Chip tone="up">Best: Tue 11:00</Chip>} />
+            <CardHeader title="By day" subtitle="P&L calendar · net result of the trades closed each day (GMT+3)" action={bestDay && bestDay.pnl > 0 ? <Chip tone="up">Best: {fmtCalendarDay(bestDay.date)}</Chip> : undefined} />
             <div className="px-4 pb-5 pt-4 sm:px-6">
-              <HourHeatmap rows={HOUR_HEATMAP} />
+              <PnlCalendar days={calendar} from={calFrom} to={calTo} />
             </div>
           </Card>
         </Reveal>

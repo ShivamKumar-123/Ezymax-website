@@ -159,26 +159,6 @@ export function groupPnl<K extends string | number>(list: ClosedTrade[], key: (t
   return [...m.values()];
 }
 
-/** Weekday × hour P&L grid (server time) used for the heatmap — seeded with realistic session bias. */
-export const HOUR_HEATMAP: { day: string; cells: { pnl: number; trades: number }[] }[] = (() => {
-  const r = seeded(8812);
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  return days.map((day, di) => ({
-    day,
-    cells: Array.from({ length: 24 }, (_, h) => {
-      const weekend = di >= 5;
-      const london = h >= 10 && h < 13;
-      const overlap = h >= 15 && h < 19;
-      const asia = h >= 2 && h < 8;
-      const late = h >= 22 || h < 2;
-      const base = weekend ? (r.bool(0.25) ? 1 : 0) : london ? r.int(4, 12) : overlap ? r.int(5, 14) : asia ? r.int(0, 4) : late ? r.int(0, 2) : r.int(1, 6);
-      const trades = base;
-      const bias = london ? 62 : overlap ? 34 : asia ? -22 : late ? -48 : 6;
-      const pnl = trades === 0 ? 0 : +(trades * (bias + r.normal() * 55) + (di === 4 && overlap ? -180 : 0)).toFixed(2);
-      return { pnl, trades };
-    }),
-  }));
-})();
 
 export const SESSIONS_PERF = [
   { session: "London open", hours: "10:00–13:00", pnl: 6412.8, winRate: 71.4, trades: 612 },
