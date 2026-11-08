@@ -242,9 +242,15 @@ pub async fn end_grant(tx: &mut sqlx::PgConnection, grant_id: i64, status: &str,
 // ---------------------------------------------------------------- workers
 
 /// Awaiting-deposit grants: find the first qualifying deposit after the claim, or expire the claim.
+///
+/// The deposit the grant pays on is a transfer into a trading account made after the claim. The money behind
+/// it is checked against the wallet from the day the campaign opened, not from the claim: the usual order for
+/// a new client is to pay into the wallet first, find the offer and press Claim, and only then move the money
+/// to a trading account. Counting from the claim would see no money at all for that client and leave the
+/// grant waiting for ever, with nothing on screen to say why. It is the same window the automatic grant uses.
 pub async fn deposit_tick(st: &AppState) -> anyhow::Result<usize> {
     let rows = sqlx::query(
-        "SELECT g.id, g.tenant, g.user_id, g.login, g.claimed_at, g.claim_deadline, c.pct, c.cap, c.min_deposit, c.account_groups, c.release_per_lot, c.expiry_days
+        "SELECT g.id, g.tenant, g.user_id, g.login, g.claimed_at, g.claim_deadline, c.starts_at, c.pct, c.cap, c.min_deposit, c.account_groups, c.release_per_lot, c.expiry_days
          FROM bonus_grants g JOIN bonus_campaigns c ON c.id = g.campaign_id
          WHERE g.status = 'awaiting_deposit' AND (g.ledger_checked IS NULL OR g.ledger_checked < now() - interval '10 seconds') ORDER BY g.id LIMIT 200",
     )
@@ -269,6 +275,7 @@ pub async fn deposit_tick(st: &AppState) -> anyhow::Result<usize> {
             None => clients::accounts_of(st, &tenant, user, Some("live")).await?,
         };
         let claimed: DateTime<Utc> = g.get("claimed_at");
+        let funded_since: DateTime<Utc> = g.get("starts_at");
         for acc in accounts.iter().filter(|a| a.kind == "live" && (groups.is_empty() || groups.iter().any(|x| x.eq_ignore_ascii_case(&a.group)))) {
             let ledger = clients::ledger(st, &tenant, acc.login, user, claimed).await?;
             let deposits: Vec<(i64, D)> = ledger
@@ -278,9 +285,9 @@ pub async fn deposit_tick(st: &AppState) -> anyhow::Result<usize> {
                 .collect();
             // A trading account is funded by moving money out of the client's own wallet, so a transfer in is
             // not proof that any money came into the platform. The wallet is asked what the client has really
-            // paid in since they claimed, and the offer pays on no more than that: otherwise a client can
-            // shuttle the same balance between their two pockets and be paid for it every time.
-            let Some(paid_in) = clients::wallet_deposited(st, &tenant, user, claimed).await else { continue };
+            // paid in since the campaign opened, and the offer pays on no more than that: otherwise a client
+            // can shuttle the same balance between their two pockets and be paid for it every time.
+            let Some(paid_in) = clients::wallet_deposited(st, &tenant, user, funded_since.min(claimed)).await else { continue };
             let backed: Vec<(i64, D)> = deposits.iter().map(|&(txn, amount)| (txn, amount.min(paid_in))).collect();
             let Some((dep_txn, dep_amount, bonus)) = calc::paying_deposit(&backed, g.get("pct"), g.get("cap"), g.get("min_deposit")) else { continue };
             let mut tx = st.pool.begin().await?;
