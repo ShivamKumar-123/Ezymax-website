@@ -18,7 +18,7 @@ import {
 } from "@/components/kit";
 import { useT } from "@ezymex/i18n/react";
 import { useReadOnly, useSession } from "@/components/session";
-import type { ClientStatus, PartnerApiError } from "./api";
+import { fmtDay, type ClientStatus, type PartnerApiError } from "./api";
 
 /* ------------------------------------------------------------------ */
 /* Referral link not active yet                                        */
@@ -193,6 +193,13 @@ const COMMISSION_STATUS: Record<
   rejected: { label: "Rejected", tone: "down" },
   void: { label: "Void", tone: "neutral" },
 };
+
+/** "Payable from 3 Dec" under a pending line whose hold has not run out yet (a CPA bonus, for one). */
+export function HoldNote({ status, availableAt, className }: { status: string; availableAt: string; className?: string }) {
+  const t = useT();
+  if (status !== "pending" || !(Date.parse(availableAt) > Date.now())) return null;
+  return <span className={cn("block whitespace-nowrap text-[11px] text-fg-3", className)}>{t("partner.payableFrom", { date: fmtDay(availableAt) })}</span>;
+}
 
 export function CommissionStatusChip({ status }: { status: string }) {
   const t = useT();

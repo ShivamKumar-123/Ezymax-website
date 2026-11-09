@@ -28,6 +28,8 @@ const partner: NsMessages<"partner"> = {
   tradedThisMonth: "今月取引あり",
   noCommission: "報酬はまだありません",
   pendingCommission: "保留中の報酬",
+  onHold: "{amount} は {date} まで保留",
+  payableFrom: "{date} から支払可能",
   paidAllTime: "累計支払額",
   // {date} e.g. "Mon 5 Oct"
   batchCloses: "バッチ締め日 {date}",

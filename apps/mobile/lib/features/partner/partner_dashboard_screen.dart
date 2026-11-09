@@ -176,7 +176,9 @@ class PartnerDashboardScreen extends ConsumerWidget {
                 label: t('partner.pendingCommission'),
                 icon: LucideIcons.coins,
                 value: KMoney(due, style: context.text.moneyL),
-                chip: KChip(label: t('partner.batchCloses', {'date': pf.day(d.programme.nextClose)}), tone: KChipTone.ember),
+                chip: d.onHold > 0 && d.holdUntil != null
+                    ? KChip(label: t('partner.onHold', {'amount': Fmt.money(d.onHold), 'date': pf.day(d.holdUntil)}), tone: KChipTone.warn)
+                    : KChip(label: t('partner.batchCloses', {'date': pf.day(d.programme.nextClose)}), tone: KChipTone.ember),
                 onTap: () => context.go('/partner/payouts'),
               ),
               const SizedBox(width: 12),

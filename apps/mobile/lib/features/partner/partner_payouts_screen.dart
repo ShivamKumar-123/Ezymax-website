@@ -125,8 +125,10 @@ class _PartnerPayoutsScreenState extends ConsumerState<PartnerPayoutsScreen> {
                 width: kpiWidth,
                 label: t('partner.pay.notBatched'),
                 icon: LucideIcons.hourglass,
-                value: KMoney(data.unbatched, style: context.text.moneyL),
-                chip: KChip(label: t('partner.pendingCommission'), tone: KChipTone.warn),
+                value: KMoney(data.unbatched - data.onHold, style: context.text.moneyL),
+                chip: data.onHold > 0 && data.holdUntil != null
+                    ? KChip(label: t('partner.onHold', {'amount': Fmt.money(data.onHold), 'date': pf.day(data.holdUntil)}), tone: KChipTone.warn)
+                    : KChip(label: t('partner.pendingCommission'), tone: KChipTone.warn),
               ),
               const SizedBox(width: 12),
               KKpiCard(
@@ -276,7 +278,9 @@ class _Hero extends StatelessWidget {
     final k = context.k;
     final pf = PartnerFmt(t);
     final current = _periodOf(pf, d.schedule, d.nextClose);
-    final below = d.unbatched > 0 && d.unbatched < d.minAmount;
+    // what the next batch can pay: the held part (inside its hold period) is shown on its own line
+    final payable = d.unbatched - d.onHold;
+    final below = payable > 0 && payable < d.minAmount;
     return KCard(
       hot: true,
       padding: const EdgeInsets.all(20),
@@ -288,9 +292,24 @@ class _Hero extends StatelessWidget {
             style: context.text.caption.copyWith(color: k.ember, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
-          KMoney(d.unbatched, style: context.text.moneyXL.copyWith(fontSize: 38, fontWeight: FontWeight.w600)),
+          KMoney(payable, style: context.text.moneyXL.copyWith(fontSize: 38, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           Text(t('partner.pay.accruingHint'), style: context.text.footnote.copyWith(color: k.fg2)),
+          if (d.onHold > 0 && d.holdUntil != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(LucideIcons.hourglass, size: 14, color: k.fg3),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    t('partner.onHold', {'amount': Fmt.money(d.onHold), 'date': pf.day(d.holdUntil)}),
+                    style: context.text.footnote.copyWith(color: k.fg3),
+                  ),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 12),
           Align(
             alignment: AlignmentDirectional.centerStart,

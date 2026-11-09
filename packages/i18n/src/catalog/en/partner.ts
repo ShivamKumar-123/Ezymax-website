@@ -30,6 +30,9 @@ const partner = {
   tradedThisMonth: "Traded this month",
   noCommission: "No commission yet",
   pendingCommission: "Pending commission",
+  // {amount} is money, {date} a day: commission earned but still inside its hold period at the next batch close
+  onHold: "{amount} on hold until {date}",
+  payableFrom: "Payable from {date}",
   paidAllTime: "Paid all-time",
   // {date} e.g. "Mon 5 Oct"
   batchCloses: "Batch closes {date}",

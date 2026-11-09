@@ -107,6 +107,23 @@ pub async fn programme(State(st): State<AppState>, u: UserCtx) -> ApiResult<Json
     Ok(Json(programme_json(&s, &levels)))
 }
 
+/// Commission the partner has earned but the next batch will not pay: pending, unbatched lines whose hold
+/// (`available_at`) runs past the next close, with the earliest date one of them becomes payable. A CPA bonus
+/// is held for the programme's hold period, and without this the partner only sees it under "pending" next to
+/// a batch date it will not make.
+async fn held(st: &AppState, tenant: &str, me: i64, next_close: DateTime<Utc>) -> anyhow::Result<(D, Option<DateTime<Utc>>)> {
+    let r = sqlx::query(
+        "SELECT coalesce(sum(amount), 0) AS amount, min(available_at) AS until FROM commissions
+         WHERE tenant = $1 AND beneficiary_id = $2 AND status = 'pending' AND batch_id IS NULL AND available_at > $3",
+    )
+    .bind(tenant)
+    .bind(me)
+    .bind(next_close)
+    .fetch_one(&st.pool)
+    .await?;
+    Ok((r.get("amount"), r.get("until")))
+}
+
 async fn sum_status(st: &AppState, tenant: &str, me: i64) -> anyhow::Result<HashMap<String, D>> {
     let rows = sqlx::query("SELECT status, sum(amount) AS amount FROM commissions WHERE tenant = $1 AND beneficiary_id = $2 GROUP BY status").bind(tenant).bind(me).fetch_all(&st.pool).await?;
     Ok(rows.iter().map(|r| (r.get::<String, _>("status"), r.get::<D, _>("amount"))).collect())
@@ -129,6 +146,7 @@ pub async fn dashboard(State(st): State<AppState>, u: UserCtx) -> ApiResult<Json
     let next = calc::next_level(&levels, &me.level_key);
     let by = sum_status(&st, t, me.user_id).await?;
     let get = |k: &str| by.get(k).copied().unwrap_or(ZERO);
+    let (on_hold, hold_until) = held(&st, t, me.user_id, payouts::next_close(&s.payout.schedule, s.payout.weekday, s.payout.month_day)).await?;
 
     let r = sqlx::query(
         "SELECT
@@ -224,6 +242,7 @@ pub async fn dashboard(State(st): State<AppState>, u: UserCtx) -> ApiResult<Json
             "month": num(r.get("month")), "prevMonth": num(r.get("prev")),
             "lifetime": num(get("pending") + get("approved") + get("paid")),
             "cpaEarned": num(r.get("cpa")), "cpaCount": r.get::<i64, _>("cpa_count"), "cpaWaiting": c.get::<i64, _>("cpa_waiting"),
+            "onHold": num(on_hold), "holdUntil": hold_until,
         },
         "counts": {"referrals": c.get::<i64, _>("total"), "referralsThisMonth": c.get::<i64, _>("month"), "funded": c.get::<i64, _>("funded"), "subIbs": c.get::<i64, _>("sub_ibs")},
         "funnel": {"clicks": clicks, "signups": c.get::<i64, _>("total"), "ftds": c.get::<i64, _>("funded")},
@@ -609,6 +628,8 @@ pub async fn payouts(State(st): State<AppState>, u: UserCtx) -> ApiResult<Json<V
         .bind(me.user_id)
         .fetch_one(&st.pool)
         .await?;
+    let next_close = payouts::next_close(&s.payout.schedule, s.payout.weekday, s.payout.month_day);
+    let (on_hold, hold_until) = held(&st, &u.tenant, me.user_id, next_close).await?;
     let items: Vec<Value> = rows
         .iter()
         .map(|r| {
@@ -630,8 +651,10 @@ pub async fn payouts(State(st): State<AppState>, u: UserCtx) -> ApiResult<Json<V
     Ok(Json(json!({
         "items": items,
         "unbatched": num(unbatched.unwrap_or(ZERO)),
+        // part of `unbatched` that the next batch will not include (still inside its hold), and when it frees up
+        "onHold": num(on_hold), "holdUntil": hold_until,
         "schedule": s.payout.schedule, "minAmount": num(s.payout.min_amount),
-        "nextClose": payouts::next_close(&s.payout.schedule, s.payout.weekday, s.payout.month_day),
+        "nextClose": next_close,
     })))
 }
 

@@ -28,6 +28,8 @@ const partner: NsMessages<"partner"> = {
   tradedThisMonth: "Bu ay işlem yaptı",
   noCommission: "Henüz komisyon yok",
   pendingCommission: "Bekleyen komisyon",
+  onHold: "{amount} {date} tarihine kadar beklemede",
+  payableFrom: "{date} itibarıyla ödenebilir",
   paidAllTime: "Toplam ödenen",
   // {date} e.g. "Mon 5 Oct"
   batchCloses: "Dönem kapanışı {date}",

@@ -105,7 +105,9 @@ function Countdown({ target }: { target: string }) {
 function Hero({ d }: { d: PayoutsResp }) {
   const t = useT();
   const current = periodOf(d.schedule, d.nextClose);
-  const below = d.unbatched > 0 && d.unbatched < d.minAmount;
+  // what the next batch can pay: the held part (inside its hold period) is shown on its own line
+  const payable = d.unbatched - d.onHold;
+  const below = payable > 0 && payable < d.minAmount;
   return (
     <Card hot className="h-full overflow-hidden">
       <div className="relative flex h-full flex-col gap-6 p-5 sm:p-7">
@@ -115,13 +117,22 @@ function Hero({ d }: { d: PayoutsResp }) {
               {t("partner.pay.accruingNow", { period: current })}
             </div>
             <Money
-              value={d.unbatched}
+              value={payable}
               countUp={false}
               className="mt-2 block text-[40px] font-semibold leading-none tracking-tight"
             />
             <div className="mt-2 text-[13px] text-fg-2">
               {t("partner.pay.accruingHint")}
             </div>
+            {d.onHold > 0 && d.holdUntil && (
+              <div className="mt-2 flex items-center gap-1.5 text-[12.5px] text-fg-3">
+                <Hourglass className="size-3.5" />
+                {t("partner.onHold", {
+                  amount: formatMoney(d.onHold),
+                  date: fmtDay(d.holdUntil),
+                })}
+              </div>
+            )}
           </div>
           <Chip tone="gold">
             {t("partner.schedulePayouts", {
@@ -414,8 +425,15 @@ export function LivePartnerPayouts() {
         <KpiCard
           label={t("partner.pay.notBatched")}
           icon={<Hourglass />}
-          value={<Money value={data.unbatched} countUp={false} />}
-          chip={t("partner.pendingCommission")}
+          value={<Money value={data.unbatched - data.onHold} countUp={false} />}
+          chip={
+            data.onHold > 0 && data.holdUntil
+              ? t("partner.onHold", {
+                  amount: formatMoney(data.onHold),
+                  date: fmtDay(data.holdUntil),
+                })
+              : t("partner.pendingCommission")
+          }
           chipTone="warn"
           delay={0.08}
         />

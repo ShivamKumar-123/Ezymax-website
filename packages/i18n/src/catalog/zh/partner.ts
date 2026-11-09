@@ -28,6 +28,8 @@ const partner: NsMessages<"partner"> = {
   tradedThisMonth: "本月有交易",
   noCommission: "暂无佣金",
   pendingCommission: "待定佣金",
+  onHold: "{amount} 暂扣至 {date}",
+  payableFrom: "{date} 起可支付",
   paidAllTime: "累计已支付",
   // {date} e.g. "Mon 5 Oct"
   batchCloses: "批次于 {date} 截止",

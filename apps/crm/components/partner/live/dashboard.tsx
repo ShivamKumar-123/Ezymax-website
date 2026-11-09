@@ -68,6 +68,7 @@ import {
 import {
   CardEmpty,
   CommissionStatusChip,
+  HoldNote,
   InactiveLinkNote,
   PageFallback,
   PersonCell,
@@ -741,6 +742,7 @@ function RecentCard({ d }: { d: Dashboard }) {
                   {formatMoney(Math.abs(e.amount))}
                 </span>
                 <CommissionStatusChip status={e.status} />
+                <HoldNote status={e.status} availableAt={e.availableAt} />
               </div>
             </div>
           ))
@@ -1007,10 +1009,17 @@ export function LivePartnerDashboard() {
           icon={<Coins />}
           value={<Money value={due} countUp={false} />}
           hot
-          chip={t("partner.batchCloses", {
-            date: fmtDay(d.programme.payout.nextClose),
-          })}
-          chipTone="ember"
+          chip={
+            d.earnings.onHold > 0 && d.earnings.holdUntil
+              ? t("partner.onHold", {
+                  amount: formatMoney(d.earnings.onHold),
+                  date: fmtDay(d.earnings.holdUntil),
+                })
+              : t("partner.batchCloses", {
+                  date: fmtDay(d.programme.payout.nextClose),
+                })
+          }
+          chipTone={d.earnings.onHold > 0 ? "warn" : "ember"}
           href="/partner/payouts"
           delay={0.12}
         />

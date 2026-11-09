@@ -244,6 +244,8 @@ class PDashboard {
     required this.cpaEarned,
     required this.cpaCount,
     required this.cpaWaiting,
+    required this.onHold,
+    this.holdUntil,
     required this.referrals,
     required this.referralsThisMonth,
     required this.clicks,
@@ -271,6 +273,10 @@ class PDashboard {
   // earnings
   final double pending, approved, paid, lifetime, cpaEarned;
   final int cpaCount, cpaWaiting;
+
+  /// Pending commission still inside its hold at the next batch close (a CPA bonus, mostly), and when the first of it frees up.
+  final double onHold;
+  final String? holdUntil;
   // counts, funnel
   final int referrals, referralsThisMonth, clicks, signups, ftds;
 
@@ -308,6 +314,8 @@ class PDashboard {
     cpaEarned: cpaEarned,
     cpaCount: cpaCount,
     cpaWaiting: cpaWaiting,
+    onHold: onHold,
+    holdUntil: holdUntil,
     referrals: referrals,
     referralsThisMonth: referralsThisMonth,
     clicks: clicks,
@@ -349,6 +357,8 @@ class PDashboard {
       cpaEarned: _d(e['cpaEarned']),
       cpaCount: _i(e['cpaCount']),
       cpaWaiting: _i(e['cpaWaiting']),
+      onHold: _d(e['onHold']),
+      holdUntil: e['holdUntil'] is String ? e['holdUntil'] as String : null,
       referrals: _i(c['referrals']),
       referralsThisMonth: _i(c['referralsThisMonth']),
       clicks: _i(f['clicks']),
@@ -663,9 +673,13 @@ class PPayout {
 }
 
 class PPayouts {
-  const PPayouts({required this.items, required this.unbatched, required this.schedule, required this.minAmount, required this.nextClose});
+  const PPayouts({required this.items, required this.unbatched, required this.onHold, this.holdUntil, required this.schedule, required this.minAmount, required this.nextClose});
   final List<PPayout> items;
   final double unbatched;
+
+  /// Part of [unbatched] the next batch will not include (still inside its hold), and when the first of it frees up.
+  final double onHold;
+  final String? holdUntil;
   final String schedule;
   final double minAmount;
   final String nextClose;
@@ -762,6 +776,8 @@ final partnerPayoutsProvider = FutureProvider.autoDispose<PPayouts>((ref) async 
   return PPayouts(
     items: [for (final x in _ms(j['items'])) PPayout.fromJson(x)],
     unbatched: _d(j['unbatched']),
+    onHold: _d(j['onHold']),
+    holdUntil: j['holdUntil'] is String ? j['holdUntil'] as String : null,
     schedule: _s(j['schedule'], 'weekly'),
     minAmount: _d(j['minAmount']),
     nextClose: _s(j['nextClose']),

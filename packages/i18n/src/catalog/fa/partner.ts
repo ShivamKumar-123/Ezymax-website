@@ -28,6 +28,8 @@ const partner: NsMessages<"partner"> = {
   tradedThisMonth: "معامله در این ماه",
   noCommission: "هنوز کمیسیونی ثبت نشده",
   pendingCommission: "کمیسیون در انتظار",
+  onHold: "{amount} تا {date} در انتظار",
+  payableFrom: "قابل پرداخت از {date}",
   paidAllTime: "پرداخت‌شده از ابتدا",
   // {date} e.g. "Mon 5 Oct"
   batchCloses: "بسته شدن دوره: {date}",

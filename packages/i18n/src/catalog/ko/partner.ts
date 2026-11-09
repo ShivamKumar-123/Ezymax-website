@@ -29,6 +29,8 @@ const partner: NsMessages<"partner"> = {
   tradedThisMonth: "이번 달 거래함",
   noCommission: "아직 커미션 없음",
   pendingCommission: "대기 중인 커미션",
+  onHold: "{amount} {date}까지 보류",
+  payableFrom: "{date}부터 지급 가능",
   paidAllTime: "누적 지급액",
   // {date} 예: "10월 5일 (월)"
   batchCloses: "{date} 배치 마감",

@@ -29,6 +29,8 @@ const partner: NsMessages<"partner"> = {
   tradedThisMonth: "تداولوا هذا الشهر",
   noCommission: "لا عمولة بعد",
   pendingCommission: "العمولة المعلّقة",
+  onHold: "{amount} معلّق حتى {date}",
+  payableFrom: "يُدفع اعتبارًا من {date}",
   paidAllTime: "المدفوع منذ البداية",
   // {date} e.g. "Mon 5 Oct"
   batchCloses: "تُغلق الدفعة في {date}",

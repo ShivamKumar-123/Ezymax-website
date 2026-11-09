@@ -28,6 +28,8 @@ const partner: NsMessages<"partner"> = {
   tradedThisMonth: "இந்த மாதம் டிரேட் செய்தவர்",
   noCommission: "இதுவரை கமிஷன் இல்லை",
   pendingCommission: "நிலுவையிலுள்ள கமிஷன்",
+  onHold: "{amount} {date} வரை நிறுத்தி வைக்கப்பட்டுள்ளது",
+  payableFrom: "{date} முதல் செலுத்தத்தக்கது",
   paidAllTime: "இதுவரை செலுத்தியது",
   // {date} e.g. "Mon 5 Oct"
   batchCloses: "பேட்ச் {date} அன்று மூடப்படும்",

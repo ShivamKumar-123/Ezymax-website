@@ -121,6 +121,9 @@ export interface Dashboard {
     cpaEarned: number;
     cpaCount: number;
     cpaWaiting: number;
+    /** Pending commission still inside its hold at the next batch close (a CPA bonus, mostly), and when the first of it frees up. */
+    onHold: number;
+    holdUntil: string | null;
   };
   counts: {
     referrals: number;
@@ -275,6 +278,9 @@ export interface Payout {
 export interface PayoutsResp {
   items: Payout[];
   unbatched: number;
+  /** Part of `unbatched` the next batch will not include (still inside its hold), and when the first of it frees up. */
+  onHold: number;
+  holdUntil: string | null;
   schedule: string;
   minAmount: number;
   nextClose: string;

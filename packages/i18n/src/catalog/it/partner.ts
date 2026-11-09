@@ -28,6 +28,8 @@ const partner: NsMessages<"partner"> = {
   tradedThisMonth: "Ha operato questo mese",
   noCommission: "Ancora nessuna commissione",
   pendingCommission: "Commissione in sospeso",
+  onHold: "{amount} in attesa fino al {date}",
+  payableFrom: "Pagabile dal {date}",
   paidAllTime: "Pagato in totale",
   batchCloses: "La tranche si chiude {date}",
   schedulePayouts: "Pagamenti {schedule}",

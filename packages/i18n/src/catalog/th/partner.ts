@@ -29,6 +29,8 @@ const partner: NsMessages<"partner"> = {
   tradedThisMonth: "เทรดเดือนนี้",
   noCommission: "ยังไม่มีค่าคอมมิชชัน",
   pendingCommission: "ค่าคอมมิชชันรอดำเนินการ",
+  onHold: "{amount} ถูกพักไว้จนถึง {date}",
+  payableFrom: "จ่ายได้ตั้งแต่ {date}",
   paidAllTime: "จ่ายแล้วทั้งหมด",
   // {date} e.g. "Mon 5 Oct"
   batchCloses: "รอบปิด {date}",

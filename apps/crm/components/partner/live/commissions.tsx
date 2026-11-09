@@ -62,6 +62,7 @@ import {
 import {
   CardEmpty,
   CommissionStatusChip,
+  HoldNote,
   LoadProblem,
   PageFallback,
   PersonCell,
@@ -861,7 +862,12 @@ function LedgerCard() {
       key: "status",
       header: t("common.status"),
       align: "right",
-      cell: (e) => <CommissionStatusChip status={e.status} />,
+      cell: (e) => (
+        <span className="flex flex-col items-end gap-1">
+          <CommissionStatusChip status={e.status} />
+          <HoldNote status={e.status} availableAt={e.availableAt} />
+        </span>
+      ),
     },
   ];
 

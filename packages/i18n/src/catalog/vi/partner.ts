@@ -30,6 +30,8 @@ const partner: NsMessages<"partner"> = {
   tradedThisMonth: "Đã giao dịch tháng này",
   noCommission: "Chưa có hoa hồng",
   pendingCommission: "Hoa hồng đang chờ",
+  onHold: "{amount} tạm giữ đến {date}",
+  payableFrom: "Có thể thanh toán từ {date}",
   paidAllTime: "Tổng đã trả",
   // {date} e.g. "Mon 5 Oct"
   batchCloses: "Đợt chốt vào {date}",

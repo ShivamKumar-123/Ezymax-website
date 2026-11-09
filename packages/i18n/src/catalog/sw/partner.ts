@@ -28,6 +28,8 @@ const partner: NsMessages<"partner"> = {
   tradedThisMonth: "Amefanya biashara mwezi huu",
   noCommission: "Bado hakuna kamisheni",
   pendingCommission: "Kamisheni inayosubiri",
+  onHold: "{amount} imezuiliwa hadi {date}",
+  payableFrom: "Inalipwa kuanzia {date}",
   paidAllTime: "Imelipwa tangu mwanzo",
   // {date} e.g. "Mon 5 Oct"
   batchCloses: "Kundi linafungwa {date}",

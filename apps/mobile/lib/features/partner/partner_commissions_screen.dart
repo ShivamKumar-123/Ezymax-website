@@ -1083,6 +1083,10 @@ class _LedgerRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 CommissionStatusChip(e.status),
+                if (_held(e)) ...[
+                  const SizedBox(height: 2),
+                  Text(t('partner.payableFrom', {'date': pf.day(e.availableAt)}), style: context.text.caption.copyWith(fontSize: 11, color: k.fg3, fontWeight: FontWeight.w400)),
+                ],
               ],
             ),
           ],
@@ -1090,6 +1094,9 @@ class _LedgerRow extends StatelessWidget {
       ),
     );
   }
+
+  /// A pending line whose hold has not run out yet (a CPA bonus, for one): the web's HoldNote.
+  static bool _held(PCommission e) => e.status == 'pending' && (DateTime.tryParse(e.availableAt)?.isAfter(DateTime.now()) ?? false);
 
   /// All of the web table's columns for one line (phones hide tier and rate in the list).
   static void _openLine(BuildContext context, PCommission e) {
@@ -1130,7 +1137,21 @@ class _LedgerRow extends StatelessWidget {
                   ? ctx.k.up
                   : ctx.k.down,
             ),
-            KKV(t('common.status'), null, valueWidget: CommissionStatusChip(e.status)),
+            KKV(
+              t('common.status'),
+              null,
+              valueWidget: _held(e)
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CommissionStatusChip(e.status),
+                        const SizedBox(height: 2),
+                        Text(t('partner.payableFrom', {'date': pf.day(e.availableAt)}), style: ctx.text.caption.copyWith(fontSize: 11, color: ctx.k.fg3, fontWeight: FontWeight.w400)),
+                      ],
+                    )
+                  : CommissionStatusChip(e.status),
+            ),
           ]),
         ],
       ),
