@@ -463,7 +463,10 @@ class TradeSymbolAvatar extends StatelessWidget {
       );
     }
     for (final c in _coins) {
-      if (up.startsWith(c) && (up.length == c.length || up.endsWith('USD') || up.endsWith('USDT'))) return KCoinIcon(c, size: size);
+      // XXXUSD / XXXUSDT, and the crosses quoted in another currency or coin (BTCJPY, ETHBTC)
+      if (up.startsWith(c) && (up.length == c.length || up.endsWith('USD') || up.endsWith('USDT') || RegExp(r'^[A-Z]{3}$').hasMatch(up.substring(c.length)))) {
+        return KCoinIcon(c, size: size);
+      }
     }
     final k = context.k;
     final initials = up.replaceAll(RegExp(r'[^A-Z0-9]'), '');

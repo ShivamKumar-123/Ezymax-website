@@ -88,12 +88,29 @@ function change(symbol) {
   return Math.round((((h >>> 0) % 4001) / 1000 - 2) * 100) / 100;
 }
 
+// A hand-added crypto cross (BTCJPY, ETHBTC: scripts/gen-catalogue.mjs CRYPTO_CROSSES) has no snapshot row of its own;
+// its reference price is the base coin's USDT close converted into the quote currency with the snapshot's FX close.
+function crossClose(x) {
+  if (x.asset_class !== "crypto" || !x.base_ccy || !x.quote_ccy) return null;
+  const usd = (c) => {
+    if (c === "USD") return 1;
+    const direct = byCodeAny.get(`${c}USDT`)?.close ?? byCodeAny.get(`${c}USD`)?.close;
+    if (direct) return direct;
+    const inverse = byCodeAny.get(`USD${c}`)?.close;
+    return inverse ? 1 / inverse : null;
+  };
+  const b = usd(x.base_ccy);
+  const q = usd(x.quote_ccy);
+  return b && q ? b / q : null;
+}
+
 const rows = [];
 for (const x of instruments) {
   if (x.tier !== "catalogue") continue;
   const snap = byCode.get(`${x.provider.market}|${x.provider.code}`) ?? byCodeAny.get(x.provider.code);
-  if (!snap?.close) throw new Error(`no snapshot close for ${x.symbol} (${x.provider.market}/${x.provider.code})`);
-  const price = +Number(snap.close).toFixed(x.digits);
+  const close = snap?.close ?? crossClose(x);
+  if (!close) throw new Error(`no snapshot close for ${x.symbol} (${x.provider.market}/${x.provider.code})`);
+  const price = +Number(close).toFixed(x.digits);
   // live trading default from the row (the engine applies Back Office switches on top): "live": true, unless kept off
   const live = x.live === true && !x.live_off ? 1 : 0;
   rows.push([x.symbol, x.name ?? x.symbol, x.asset_class, x.digits, x.base_spread, price, change(x.symbol), specOf(x).contract_size ?? 1, x.session ?? "", x.quote_ccy ?? "", x.base_ccy ?? "", x.exchange ?? "", icon(x), live, x.live_off ?? ""]);

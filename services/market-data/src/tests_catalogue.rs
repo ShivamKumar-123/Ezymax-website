@@ -43,7 +43,13 @@ fn repo_catalogue_loads() {
     }
     assert_eq!(classes.into_iter().collect::<Vec<_>>(), vec!["crypto", "energies", "forex", "indices", "metals", "stocks"]);
     // provider codes map back (FX by code, crypto USDT → USD symbol, stocks with exchange suffix)
-    assert_eq!(c.from_provider("crypto", "BNBUSDT").unwrap().symbol, "BNBUSD");
+    assert_eq!(c.from_provider("crypto", "XAUTUSDT").unwrap().symbol, "XAUTUSD");
+    assert_eq!(c.from_provider("crypto", "ETHBTC").unwrap().symbol, "ETHBTC");
+    // the crypto list is hand-picked (founder decision 2026-11-09, scripts/gen-catalogue.mjs): the core USD pairs,
+    // four BTC / ETH crosses, and two generated rows kept while positions on them are open
+    let mut crypto: Vec<&str> = c.list.iter().filter(|i| i.asset_class == "crypto").map(|i| i.symbol.as_str()).collect();
+    crypto.sort_unstable();
+    assert_eq!(crypto, ["BTCAUD", "BTCJPY", "BTCTHB", "BTCUSD", "ETHBTC", "ETHUSD", "SOLUSD", "WBTCUSD", "XAUTUSD", "XRPUSD"]);
     assert_eq!(c.from_provider("stock", "MSFT.US").unwrap().symbol, "MSFT");
     assert_eq!(c.from_provider("stock", "00700.HK").unwrap().symbol, "00700.HK");
     assert_eq!(c.from_provider("japan", "7203.JP").unwrap().symbol, "7203.JP");

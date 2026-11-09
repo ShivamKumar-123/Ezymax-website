@@ -16,7 +16,9 @@
 //   energies  every provider energy, NYMEX calendar (OIL).
 //   indices   every index with a price and a convertible currency; the calendar of its home exchange where Ezymex
 //             has one (NYSE, HKEX, JPY, EUR, CHF, AUD, CAD).
-//   crypto    spot USDT pairs as XXXUSD; stablecoins, tokenized stocks and coins with no live price are left out.
+//   crypto    a hand-picked list (founder decision 2026-11-09), not everything the provider quotes: the core USD pairs,
+//             the BTC / ETH crosses in CRYPTO_CROSSES (Binance pairs, like every crypto feed here) and the USDT rows
+//             named in CRYPTO_KEEP (kept while positions on them are open). Every other provider coin is skipped.
 //   stocks    main-board listings with a price, ranked by recent daily turnover: US top 800 (NYSE / Nasdaq / NYSE
 //             American, ETFs included; warrants, units and rights left out), Hong Kong top 150, Tokyo top 150.
 //             Sessions: us_equity / hk_equity / jp_equity with the NYSE / HKEX / JPY holiday calendars.
@@ -59,7 +61,6 @@ const TOP = { STOCK_US: opt("--us", 800), STOCK_HK: opt("--hk", 150), STOCK_JP: 
 const EXOTIC = new Set(["HKD", "SGD", "CNH", "CNY", "MYR", "TWD", "THB", "TRY", "RUB"]);
 // market convention: the earlier currency is the base
 const RANK = ["EUR", "GBP", "AUD", "NZD", "USD", "CAD", "CHF", "SGD", "HKD", "CNH", "CNY", "MYR", "TWD", "THB", "TRY", "RUB", "JPY"];
-const STABLE = new Set(["USDC", "FDUSD", "TUSD", "BUSD", "DAI", "USDE", "USD1", "PYUSD", "FRAX", "EUR", "U"]);
 // index profit currencies (the provider's currency field is missing or wrong for several CFDs)
 const INDEX_CCY = {
   AEX: "EUR", AUS200: "AUD", CN50: "USD", DJT: "USD", DJU: "USD", DXY: "USD", ESP35: "EUR", EUSTX50: "EUR", FRA40: "EUR",
@@ -267,18 +268,29 @@ for (const r of snap.rows.filter((r) => r.type === "INDICES")) {
 
 /* ----------------------------------------------------------------- crypto */
 
-const usStocks = new Map(snap.rows.filter((r) => r.type === "STOCK_US").map((r) => [r.code.replace(/\.US$/, ""), r]));
-const firstWord = (s) => (s || "").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)[0] ?? "";
+// The crypto list is hand-picked (founder decision 2026-11-09): a short list of BTC / ETH markets rather than every
+// coin Binance quotes. Generated USDT rows survive only while CRYPTO_KEEP names them: positions were still open on
+// these two when the list was cut, so they stay until those close, then the code is removed here.
+const CRYPTO_KEEP = new Set(["WBTCUSDT", "XAUTUSDT"]);
+// Crosses have no snapshot row (the Infoway snapshot lists USDT pairs only), so they are written out here: digits
+// from Binance's tick size (BTCJPY / BTCTHB 1, BTCAUD 0.01, ETHBTC 0.00001), spread = BTCUSD's 0.18 USD in the quote
+// currency (ETHBTC: ETHUSD's 1.6 USD), one coin per lot like BTCUSD / ETHUSD. BTCZAR is not here because the provider
+// has no USDZAR to convert ZAR profit; BTCCNH, BTCXAU and BTCXAG are not here because Binance has no such pairs.
+const CRYPTO_CROSSES = [
+  { symbol: "BTCJPY", code: "BTCJPY", name: "Bitcoin / Japanese Yen", base: "BTC", quote: "JPY", digits: 0, spread: 30 },
+  { symbol: "BTCAUD", code: "BTCAUD", name: "Bitcoin / Australian Dollar", base: "BTC", quote: "AUD", digits: 2, spread: 0.28 },
+  { symbol: "BTCTHB", code: "BTCTHB", name: "Bitcoin / Thai Baht", base: "BTC", quote: "THB", digits: 0, spread: 6 },
+  { symbol: "ETHBTC", code: "ETHBTC", name: "Ethereum / Bitcoin", base: "ETH", quote: "BTC", digits: 5, spread: 0.00002 },
+];
+// a market quoted in BTC converts to USD through the core BTCUSD
+usdPair.add("BTC");
+for (const x of CRYPTO_CROSSES) {
+  out.push({ symbol: x.symbol, asset_class: "crypto", digits: x.digits, base_spread: x.spread, provider: { market: "crypto", code: x.code }, session: "24x7", tier: "catalogue", name: x.name, base_ccy: x.base, quote_ccy: x.quote, template: "crypto", contract_size: 1, live: true });
+}
 for (const r of snap.rows.filter((r) => r.type === "CRYPTO")) {
   const base = r.code.endsWith("USDT") ? r.code.slice(0, -4) : null;
-  const tokenized = base && base.endsWith("B") && usStocks.has(base.slice(0, -1)) && firstWord(usStocks.get(base.slice(0, -1)).name) === firstWord(r.name);
-  if (!/^[A-Z0-9]+$/.test(r.code)) add(r, "not an ASCII code");
-  else if (!base) add(r, "not quoted in USDT");
-  else if (coreCodes.has(`crypto/${r.code}`)) add(r, "core instrument");
-  else if (STABLE.has(base)) add(r, "stablecoin");
-  else if (tokenized || /\bETF\b/.test(r.name)) add(r, "tokenized stock / ETF");
-  else if (!(r.close > 0)) add(r, "no price");
-  else if ((check.symbols[`${base}USD`]?.ticks ?? 1) === 0) add(r, "no live price at all (delisted or migrated coin)");
+  if (coreCodes.has(`crypto/${r.code}`)) add(r, "core instrument");
+  else if (!base || !CRYPTO_KEEP.has(r.code)) add(r, "not on the hand-picked crypto list");
   else out.push(row(r, "crypto", "crypto", { symbol: `${base}USD`, base, quote: "USD" }));
 }
 

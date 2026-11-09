@@ -86,6 +86,9 @@ pub async fn sync_instruments(pool: &PgPool, cat: &Catalogue) -> anyhow::Result<
     .bind(&session)
     .execute(pool)
     .await?;
+    // a symbol the file no longer has leaves the table too, so nothing that reads the table still lists it (its
+    // candles and ticks stay: history is history, and the symbol may come back)
+    sqlx::query("DELETE FROM instruments WHERE symbol <> ALL($1)").bind(&symbol).execute(pool).await?;
     Ok(())
 }
 
