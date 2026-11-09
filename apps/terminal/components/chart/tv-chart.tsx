@@ -531,6 +531,17 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
   }, [ready, tab.id, tab.symbol, tab.tf]);
 
   /* ---------------- trade lines as library shapes ---------------- */
+  /** Removes a shape the library still has. `removeEntity` on an id the library already dropped (a symbol or layout
+   *  change clears every shape) does not throw: it writes "Can't find a source with id" to the console, one line per
+   *  trade line redrawn, so the lookup comes first. `have` is the shapes on the chart when the caller has them. */
+  const removeShape = (chart: TvChartApi, id: string, have?: Set<string>) => {
+    if (!(have ?? new Set(chart.getAllShapes().map((s) => s.id))).has(id)) return;
+    try {
+      chart.removeEntity(id, { disableUndo: true });
+    } catch {
+      /* gone between the lookup and the call */
+    }
+  };
   const syncShapes = (w: TvWidget) => {
     const c = palette.current;
     if (!c) return;
@@ -542,11 +553,7 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
     }
     const drop = (id: string) => {
       created.current.delete(id);
-      try {
-        chart.removeEntity(id, { disableUndo: true });
-      } catch {
-        /* already gone with a layout or symbol change */
-      }
+      removeShape(chart, id);
     };
     /** Removes shapes this chart drew that no record points at any more. Without it a handle lost on any path - a
      *  lookup that throws, a removal that throws while the map is cleared - leaves a line on the plot for good, and
@@ -616,13 +623,8 @@ export function TvChart({ tab, active, onActivate, compact, variant = "desktop",
     const w = readyRef.current?.widget;
     if (!w) return;
     const chart = w.activeChart();
-    for (const r of shapes.current.values()) {
-      try {
-        if (r.entity) chart.removeEntity(r.entity, { disableUndo: true });
-      } catch {
-        /* the layout already dropped it */
-      }
-    }
+    const have = new Set(chart.getAllShapes().map((s) => s.id));
+    for (const r of shapes.current.values()) if (r.entity) removeShape(chart, r.entity, have);
     shapes.current.clear();
     syncShapes(w);
   };
