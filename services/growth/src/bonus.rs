@@ -254,20 +254,6 @@ pub fn activation_problem(status: &str, ends: Option<DateTime<Utc>>, now: DateTi
     }
 }
 
-/// Why a campaign cannot be `active` with these dates. A running campaign needs an end, because the lifecycle
-/// worker is what closes it (the Back Office asks for the dates when a campaign is activated), and an end that
-/// has already passed would close it on the next tick.
-pub fn activation_problem(status: &str, ends: Option<DateTime<Utc>>, now: DateTime<Utc>) -> Option<(&'static str, &'static str)> {
-    if status != "active" {
-        return None;
-    }
-    match ends {
-        None => Some(("endsAt", "Set when the campaign ends. It closes itself at that time.")),
-        Some(e) if e <= now => Some(("endsAt", "The end date has passed. Move it forward to run the campaign again.")),
-        Some(_) => None,
-    }
-}
-
 // ---------------------------------------------------------------- workers
 
 /// Awaiting-deposit grants: find the first qualifying deposit after the claim, or expire the claim.
@@ -672,19 +658,6 @@ mod tests {
 
     fn t(s: &str) -> DateTime<Utc> {
         DateTime::parse_from_rfc3339(s).unwrap().with_timezone(&Utc)
-    }
-
-    #[test]
-    fn an_active_campaign_needs_an_end_that_is_still_ahead() {
-        let now = t("2026-11-09T12:00:00Z");
-        assert_eq!(activation_problem("active", None, now).map(|p| p.0), Some("endsAt"));
-        assert!(activation_problem("active", Some(t("2026-11-09T04:42:00Z")), now).is_some(), "an end already behind us");
-        assert!(activation_problem("active", Some(now), now).is_some(), "an end right now closes at once");
-        assert!(activation_problem("active", Some(t("2026-11-30T00:00:00Z")), now).is_none());
-        // a draft or paused campaign may keep an open end: it is not running
-        assert!(activation_problem("paused", None, now).is_none());
-        assert!(activation_problem("draft", Some(t("2026-01-01T00:00:00Z")), now).is_none());
-        assert!(activation_problem("ended", None, now).is_none());
     }
 
     #[test]
