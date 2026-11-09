@@ -68,7 +68,7 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/growth/admin/cashback/payouts", get(admin::cashback_payouts))
         .route("/v1/growth/admin/cashback/payouts/run", post(admin::run_cashback))
         .route("/v1/growth/admin/bonuses/campaigns", get(admin::campaigns).post(admin::create_campaign))
-        .route("/v1/growth/admin/bonuses/campaigns/{id}", patch(admin::patch_campaign))
+        .route("/v1/growth/admin/bonuses/campaigns/{id}", patch(admin::patch_campaign).delete(admin::delete_campaign))
         .route("/v1/growth/admin/bonuses/grants", get(admin::grants).post(admin::manual_grant))
         .route("/v1/growth/admin/bonuses/grants/{id}/cancel", post(admin::cancel_grant))
         .route("/v1/growth/admin/promos", get(admin::promos).post(admin::create_promo))

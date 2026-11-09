@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { CalendarClock, Gift, HandCoins, Pause, Pencil, Play, Plus, RefreshCw, ShieldAlert, TrendingUp, Wallet } from "lucide-react";
+import { CalendarClock, Gift, HandCoins, Pause, Pencil, Play, Plus, RefreshCw, ShieldAlert, Trash2, TrendingUp, Wallet } from "lucide-react";
 import { Button, Card, CardHeader, Chip, DataTable, KpiCard, PageHeader, Progress, Reveal, Segmented, cn, type Column } from "@ezymex/ui";
 import { FilterSelect, Pager, TableSkeleton, day, qs, useApi, when } from "@/components/live/kit";
 import { M, mkSend, type Campaign, type CampaignInput, type Grant, type Overview, type Paged } from "./api";
@@ -45,6 +45,7 @@ export function LiveBonuses() {
   const [filter, setFilter] = React.useState<Filter>("all");
   const [editing, setEditing] = React.useState<Campaign | null>(null);
   const [open, setOpen] = React.useState(false);
+  const [running, setRunning] = React.useState<Campaign | null>(null);
   const [grantOpen, setGrantOpen] = React.useState(false);
   const [grantsTick, setGrantsTick] = React.useState(0);
   const items = camps.data?.items ?? [];
@@ -56,22 +57,37 @@ export function LiveBonuses() {
     setEditing(c);
     setOpen(true);
   };
+  const reload = () => {
+    camps.reload();
+    ov.reload();
+  };
+  // Activate asks when the campaign runs (RunDialog); pausing is a plain confirmation.
   const toggle = (c: Campaign) => {
-    const next = c.status === "active" ? "paused" : "active";
+    if (c.status !== "active") return setRunning(c);
     act.ask({
-      title: next === "paused" ? `Pause ${c.name}` : `Activate ${c.name}`,
-      description: next === "paused" ? "No new claims. Grants already open keep releasing per lot until they complete or expire." : "Eligible clients can claim the campaign from now (inside its window).",
-      confirmLabel: next === "paused" ? "Pause campaign" : "Activate campaign",
-      confirmVariant: next === "paused" ? "surface" : "ember",
+      title: `Pause ${c.name}`,
+      description: "No new claims. Grants already open keep releasing per lot until they complete or expire.",
+      confirmLabel: "Pause campaign",
+      confirmVariant: "surface",
       note: "none",
-      run: () => mkSend(`bonuses/campaigns/${c.id}`, { status: next }, "PATCH"),
-      success: next === "paused" ? `${c.name} paused` : `${c.name} is active`,
-      onDone: () => {
-        camps.reload();
-        ov.reload();
-      },
+      run: () => mkSend(`bonuses/campaigns/${c.id}`, { status: "paused" }, "PATCH"),
+      success: `${c.name} paused`,
+      onDone: reload,
     });
   };
+  const remove = (c: Campaign) =>
+    act.ask({
+      title: `Delete ${c.name}`,
+      description:
+        (c.active > 0 ? `${int(c.active)} grants are still releasing: that bonus stays on the clients' accounts and keeps releasing per lot. ` : "") +
+        "Claims still waiting for a deposit are cancelled. The campaign disappears from this list and from the Client Area, and cannot be run again.",
+      confirmLabel: "Delete campaign",
+      confirmVariant: "ember",
+      note: "none",
+      run: () => mkSend(`bonuses/campaigns/${c.id}`, {}, "DELETE"),
+      success: `${c.name} deleted`,
+      onDone: reload,
+    });
 
   return (
     <div className="pb-16">
@@ -151,7 +167,7 @@ export function LiveBonuses() {
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {list.map((c) => (
-              <CampaignCard key={c.id} c={c} canWrite={perms.write} onEdit={() => edit(c)} onToggle={() => toggle(c)} />
+              <CampaignCard key={c.id} c={c} canWrite={perms.write} onEdit={() => edit(c)} onToggle={() => toggle(c)} onDelete={() => remove(c)} />
             ))}
           </div>
         )}
@@ -161,7 +177,8 @@ export function LiveBonuses() {
         <GrantsCard campaigns={items} canApprove={perms.approve} tick={grantsTick} ask={act.ask} onChanged={() => ov.reload()} />
       </Reveal>
 
-      <CampaignDialog open={open} onOpenChange={setOpen} campaign={editing} onSaved={() => (camps.reload(), ov.reload())} />
+      <CampaignDialog open={open} onOpenChange={setOpen} campaign={editing} onSaved={reload} />
+      <RunDialog campaign={running} onOpenChange={(o) => !o && setRunning(null)} onSaved={reload} />
       <ManualGrantDialog open={grantOpen} onOpenChange={setGrantOpen} campaigns={items} onSaved={() => (setGrantsTick((n) => n + 1), camps.reload(), ov.reload())} />
       {act.node}
     </div>
@@ -191,9 +208,10 @@ function termsDrift(terms: string, c: { kind: string; pct: number; cap: number; 
   return Math.abs(said - credit) < 0.005 ? null : { said, credit, deposit };
 }
 
-function CampaignCard({ c, canWrite, onEdit, onToggle }: { c: Campaign; canWrite: boolean; onEdit: () => void; onToggle: () => void }) {
+function CampaignCard({ c, canWrite, onEdit, onToggle, onDelete }: { c: Campaign; canWrite: boolean; onEdit: () => void; onToggle: () => void; onDelete: () => void }) {
   const drift = termsDrift(c.terms, c);
   const releasedPct = c.issued > 0 ? (c.released / c.issued) * 100 : 0;
+  const scheduled = c.status === "active" && Date.parse(c.startsAt) > Date.now();
   return (
     <Card className="flex h-full flex-col" data-testid={`campaign-card-${c.id}`}>
       <div className="px-5 pt-5">
@@ -212,9 +230,10 @@ function CampaignCard({ c, canWrite, onEdit, onToggle }: { c: Campaign; canWrite
                 </Chip>
               )}
               {c.autoGrant && <Chip size="sm" tone="ember">Auto</Chip>}
+              {scheduled && <Chip size="sm" tone="info">Starts {day(c.startsAt)}</Chip>}
             </div>
           </div>
-          {canWrite && (c.status === "active" || c.status === "paused" || c.status === "draft") && (
+          {canWrite && !c.system && (
             <Button size="xs" variant="surface" onClick={onToggle} aria-label={c.status === "active" ? `Pause ${c.name}` : `Activate ${c.name}`}>
               {c.status === "active" ? <Pause /> : <Play />}
               {c.status === "active" ? "Pause" : "Activate"}
@@ -260,12 +279,19 @@ function CampaignCard({ c, canWrite, onEdit, onToggle }: { c: Campaign; canWrite
         <div className="mt-4 flex items-center justify-between gap-2">
           <span className="flex min-w-0 items-center gap-1.5 truncate text-[12px] text-fg-3">
             <CalendarClock className="size-3.5 shrink-0" />
-            {day(c.startsAt)} – {c.endsAt ? day(c.endsAt) : "no end"}
+            {c.status === "ended" && c.endsAt ? `Ended ${day(c.endsAt)}` : `${day(c.startsAt)} – ${c.endsAt ? `${day(c.endsAt)} · closes itself` : "no end"}`}
           </span>
           {canWrite && (
-            <Button size="xs" variant="surface" onClick={onEdit}>
-              <Pencil /> Edit
-            </Button>
+            <span className="flex shrink-0 items-center gap-1.5">
+              <Button size="xs" variant="surface" onClick={onEdit}>
+                <Pencil /> Edit
+              </Button>
+              {!c.system && (
+                <Button size="xs" variant="surface" onClick={onDelete} aria-label={`Delete ${c.name}`} className="text-down hover:text-down">
+                  <Trash2 /> Delete
+                </Button>
+              )}
+            </span>
           )}
         </div>
       </div>
@@ -409,6 +435,8 @@ function CampaignDialog({ open, onOpenChange, campaign, onSaved }: { open: boole
     const endsAt = fromLocalInput(d.endsAt);
     const startsAt = fromLocalInput(d.startsAt);
     if (startsAt && endsAt && endsAt <= startsAt) return "Ends must be after Starts.";
+    if (d.status === "active" && !endsAt) return "An active campaign needs an end date. It closes itself at that time.";
+    if (d.status === "active" && endsAt && Date.parse(endsAt) <= Date.now()) return "The end date has passed. Move it forward to run the campaign.";
     const body: CampaignInput = {
       name: d.name.trim(),
       description: d.description.trim(),
@@ -503,7 +531,7 @@ function CampaignDialog({ open, onOpenChange, campaign, onSaved }: { open: boole
           <NumF label="New users within" value={d.newUsersDays} onChange={(v) => set("newUsersDays", v)} suffix="days" placeholder="Anyone" step={1} />
           <TextF label="Account groups" value={d.accountGroups} onChange={(v) => set("accountGroups", v)} placeholder="All groups" hint="comma separated" />
           <DateTimeF label="Starts" value={d.startsAt} onChange={(v) => set("startsAt", v)} />
-          <DateTimeF label="Ends" value={d.endsAt} onChange={(v) => set("endsAt", v)} hint="optional" />
+          <DateTimeF label="Ends" value={d.endsAt} onChange={(v) => set("endsAt", v)} hint={d.status === "active" ? "required · the campaign closes itself at this time" : "optional until the campaign is activated"} />
         </div>
         <div className="k-row divide-y divide-line px-4">
           {d.kind === "deposit" && (
@@ -555,6 +583,50 @@ function CampaignDialog({ open, onOpenChange, campaign, onSaved }: { open: boole
 /* ------------------------------------------------------------------ */
 /* Grants                                                               */
 /* ------------------------------------------------------------------ */
+
+/**
+ * Activate = say when the campaign runs. The end is required: the growth service closes the campaign by itself
+ * when it passes (no new claims; bonus already granted keeps releasing), so nobody has to remember to pause it.
+ */
+function RunDialog({ campaign, onOpenChange, onSaved }: { campaign: Campaign | null; onOpenChange: (o: boolean) => void; onSaved: () => void }) {
+  const [startsAt, setStartsAt] = React.useState("");
+  const [endsAt, setEndsAt] = React.useState("");
+  React.useEffect(() => {
+    if (!campaign) return;
+    const now = Date.now();
+    // a start still ahead is kept (a scheduled campaign); a past one means "from now"
+    setStartsAt(toLocalInput(Date.parse(campaign.startsAt) > now ? campaign.startsAt : new Date().toISOString()));
+    setEndsAt(campaign.endsAt && Date.parse(campaign.endsAt) > now ? toLocalInput(campaign.endsAt) : "");
+  }, [campaign]);
+  const submit = () => {
+    if (!campaign) return "Nothing to activate.";
+    const s = fromLocalInput(startsAt);
+    const e = fromLocalInput(endsAt);
+    if (!e) return "Set when the campaign ends. It closes itself at that time.";
+    if (Date.parse(e) <= Date.now()) return "The end is already in the past.";
+    if (s && e <= s) return "Ends must be after Starts.";
+    return mkSend<{ campaign: Campaign }>(`bonuses/campaigns/${campaign.id}`, { status: "active", ...(s ? { startsAt: s } : {}), endsAt: e }, "PATCH");
+  };
+  return (
+    <FormDialog
+      open={!!campaign}
+      onOpenChange={onOpenChange}
+      width={480}
+      title={campaign ? `Run · ${campaign.name}` : ""}
+      description="Eligible clients can claim between these times. When the end passes the campaign closes itself: no new claims, and bonus already granted keeps releasing per lot."
+      submitLabel="Activate campaign"
+      submitTestId="campaign-run-submit"
+      submit={submit}
+      success={campaign ? `${campaign.name} is active` : ""}
+      onDone={onSaved}
+    >
+      <div className="grid gap-3 sm:grid-cols-2">
+        <DateTimeF label="Starts" value={startsAt} onChange={setStartsAt} hint="now, or a later date to schedule it" />
+        <DateTimeF label="Ends" value={endsAt} onChange={setEndsAt} hint="required · closes automatically" />
+      </div>
+    </FormDialog>
+  );
+}
 
 function GrantsCard({ campaigns, canApprove, tick, ask, onChanged }: { campaigns: Campaign[]; canApprove: boolean; tick: number; ask: ReturnType<typeof useAction>["ask"]; onChanged: () => void }) {
   const [status, setStatus] = React.useState("all");

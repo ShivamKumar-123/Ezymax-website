@@ -33,7 +33,7 @@ const ROUTES: Route[] = [
   { method: "PUT", re: /^(settings|tiers)$/, perm: "marketing.write" },
   { method: "POST", re: /^(rules|catalogue|cashback\/programmes|bonuses\/campaigns|promos|banners|contests)$/, perm: "marketing.write" },
   { method: "PATCH", re: R(`(rules|catalogue|cashback/programmes|bonuses/campaigns|promos|banners|contests)/${ID}`), perm: "marketing.write" },
-  { method: "DELETE", re: R(`banners/${ID}`), perm: "marketing.write" },
+  { method: "DELETE", re: R(`(banners|bonuses/campaigns)/${ID}`), perm: "marketing.write" },
   { method: "POST", re: R(`contests/${ID}/(cancel|refresh|finalize)`), perm: "marketing.write" },
   { method: "POST", re: R(`contests/${ID}/entries/${ID}/(disqualify|reinstate)`), perm: "marketing.write" },
   { method: "POST", re: R(`contests/${ID}/flags/${ID}/resolve`), perm: "marketing.write" },

@@ -66,6 +66,8 @@ export type Campaign = CampaignInput & {
   released: number;
   forfeited: number;
   outstanding: number;
+  /** The loyalty redemption campaign: run by the platform, never deleted. */
+  system?: boolean;
 };
 
 export type GrantStatus = "awaiting_deposit" | "pending" | "active" | "completed" | "forfeited" | "expired" | "cancelled" | "failed";

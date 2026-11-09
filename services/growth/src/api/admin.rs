@@ -746,7 +746,9 @@ fn draft() -> String {
     "draft".into()
 }
 
-async fn write_campaign(st: &AppState, s: &StaffCtx, id: Option<i64>, mut c: CampaignIn, before: Option<Value>) -> ApiResult<Json<Value>> {
+/// `system` = the loyalty redemption campaign, which the platform runs without an end; every staff-made campaign
+/// must say when it ends when it is active (the lifecycle worker closes it then).
+async fn write_campaign(st: &AppState, s: &StaffCtx, id: Option<i64>, mut c: CampaignIn, before: Option<Value>, system: bool) -> ApiResult<Json<Value>> {
     c.name = text(&c.name, "name", 80, true)?;
     c.description = text(&c.description, "description", 500, false)?;
     c.terms = text(&c.terms, "terms", 5000, false)?;
@@ -793,6 +795,11 @@ async fn write_campaign(st: &AppState, s: &StaffCtx, id: Option<i64>, mut c: Cam
     if ends.is_some_and(|e| e <= starts) {
         return Err(invalid("endsAt", "The end must be after the start."));
     }
+    if !system {
+        if let Some((field, msg)) = bonus::activation_problem(&c.status, ends, Utc::now()) {
+            return Err(invalid(field, msg));
+        }
+    }
     let mut tx = st.pool.begin().await?;
     let row = match id {
         None => sqlx::query(
@@ -803,7 +810,7 @@ async fn write_campaign(st: &AppState, s: &StaffCtx, id: Option<i64>, mut c: Cam
         Some(_) => sqlx::query(
             "UPDATE bonus_campaigns SET name = $2, description = $3, terms = $4, kind = $5, pct = $6, cap = $7, fixed_amount = $8, min_deposit = $9, release_per_lot = $10,
                expiry_days = $11, forfeit_on_withdrawal = $12, claim_window_days = $13, account_groups = $14, max_claims = $15, per_user_limit = $16, new_users_days = $17,
-               kyc_required = $18, visibility = $19, status = $20, starts_at = $21, ends_at = $22, auto_grant = $25, updated_at = now() WHERE id = $24 AND tenant = $1 AND $23::text IS NOT NULL RETURNING *",
+               kyc_required = $18, visibility = $19, status = $20, starts_at = $21, ends_at = $22, auto_grant = $25, updated_at = now() WHERE id = $24 AND tenant = $1 AND deleted_at IS NULL AND $23::text IS NOT NULL RETURNING *",
         ),
     }
     .bind(&s.tenant)
@@ -848,7 +855,7 @@ pub async fn campaigns(State(st): State<AppState>, s: StaffCtx) -> ApiResult<Jso
                 (SELECT COALESCE(sum(e.amount), 0) FROM bonus_events e JOIN bonus_grants g ON g.id = e.grant_id WHERE g.campaign_id = c.id AND e.kind = 'release' AND e.status = 'booked') AS released,
                 (SELECT COALESCE(sum(e.amount), 0) FROM bonus_events e JOIN bonus_grants g ON g.id = e.grant_id WHERE g.campaign_id = c.id AND e.kind = 'remove' AND e.status = 'booked') AS forfeited,
                 (SELECT COALESCE(sum(g.amount - g.released - g.removed), 0) FROM bonus_grants g WHERE g.campaign_id = c.id AND g.status IN ('active','pending')) AS outstanding
-         FROM bonus_campaigns c WHERE c.tenant = $1 ORDER BY c.id DESC",
+         FROM bonus_campaigns c WHERE c.tenant = $1 AND c.deleted_at IS NULL ORDER BY c.id DESC",
     )
     .bind(&s.tenant)
     .fetch_all(&st.pool)
@@ -868,14 +875,37 @@ pub async fn campaigns(State(st): State<AppState>, s: StaffCtx) -> ApiResult<Jso
 
 pub async fn create_campaign(State(st): State<AppState>, s: StaffCtx, Json(body): Json<Value>) -> ApiResult<Json<Value>> {
     s.require(ROLES_WRITE)?;
-    write_campaign(&st, &s, None, parse(body)?, None).await
+    write_campaign(&st, &s, None, parse(body)?, None, false).await
 }
 
 pub async fn patch_campaign(State(st): State<AppState>, s: StaffCtx, Path(id): Path<i64>, Json(body): Json<Value>) -> ApiResult<Json<Value>> {
     s.require(ROLES_WRITE)?;
-    let cur = sqlx::query("SELECT * FROM bonus_campaigns WHERE id = $1 AND tenant = $2").bind(id).bind(&s.tenant).fetch_optional(&st.pool).await?.ok_or(ApiError::NotFound)?;
+    let cur = sqlx::query("SELECT * FROM bonus_campaigns WHERE id = $1 AND tenant = $2 AND deleted_at IS NULL").bind(id).bind(&s.tenant).fetch_optional(&st.pool).await?.ok_or(ApiError::NotFound)?;
+    let system = cur.get::<Option<String>, _>("created_by").as_deref() == Some("system:loyalty");
     let before = bonus::campaign_json(&cur);
-    write_campaign(&st, &s, Some(id), parse(merge(before.clone(), &body))?, Some(before)).await
+    write_campaign(&st, &s, Some(id), parse(merge(before.clone(), &body))?, Some(before), system).await
+}
+
+/// `DELETE /bonuses/campaigns/{id}`: the campaign leaves every list and can never run again. Claims still waiting
+/// for a deposit are cancelled; bonus already granted keeps releasing per lot (that credit sits on the client's
+/// account under terms they accepted) until it completes, expires or is forfeited.
+pub async fn delete_campaign(State(st): State<AppState>, s: StaffCtx, Path(id): Path<i64>) -> ApiResult<Json<Value>> {
+    s.require(ROLES_WRITE)?;
+    let mut tx = st.pool.begin().await?;
+    let cur = sqlx::query("SELECT * FROM bonus_campaigns WHERE id = $1 AND tenant = $2 AND deleted_at IS NULL FOR UPDATE").bind(id).bind(&s.tenant).fetch_optional(&mut *tx).await?.ok_or(ApiError::NotFound)?;
+    if cur.get::<Option<String>, _>("created_by").as_deref() == Some("system:loyalty") {
+        return Err(ApiError::Conflict { code: "system_campaign", message: "The loyalty redemption campaign is run by the platform and cannot be deleted.".into() });
+    }
+    let waiting: Vec<i64> = sqlx::query_scalar("SELECT id FROM bonus_grants WHERE campaign_id = $1 AND status = 'awaiting_deposit' ORDER BY id FOR UPDATE").bind(id).fetch_all(&mut *tx).await?;
+    for g in &waiting {
+        bonus::end_grant(&mut tx, *g, "cancelled", "campaign deleted").await?;
+    }
+    let releasing: i64 = sqlx::query_scalar("SELECT count(*) FROM bonus_grants WHERE campaign_id = $1 AND status IN ('active', 'pending')").bind(id).fetch_one(&mut *tx).await?;
+    sqlx::query("UPDATE bonus_campaigns SET deleted_at = now(), status = 'ended', updated_at = now() WHERE id = $1").bind(id).execute(&mut *tx).await?;
+    let note = format!("{} waiting claims cancelled, {releasing} grants keep releasing", waiting.len());
+    audit::record(&mut *tx, &s.tenant, &s.actor(), "campaign.delete", Some(format!("campaign:{id}")), Some(bonus::campaign_json(&cur)), None, Some(&note)).await?;
+    tx.commit().await?;
+    Ok(Json(json!({"deleted": true, "id": id, "cancelledClaims": waiting.len(), "releasing": releasing})))
 }
 
 pub async fn grants(State(st): State<AppState>, s: StaffCtx, Query(q): Query<ListQ>) -> ApiResult<Json<Value>> {
@@ -918,7 +948,7 @@ pub struct ManualGrant {
 pub async fn manual_grant(State(st): State<AppState>, s: StaffCtx, Json(b): Json<ManualGrant>) -> ApiResult<Json<Value>> {
     s.require(ROLES_APPROVE)?;
     let note = text(&b.note, "note", 300, true)?;
-    let c = sqlx::query("SELECT * FROM bonus_campaigns WHERE id = $1 AND tenant = $2").bind(b.campaign_id).bind(&s.tenant).fetch_optional(&st.pool).await?.ok_or(ApiError::NotFound)?;
+    let c = sqlx::query("SELECT * FROM bonus_campaigns WHERE id = $1 AND tenant = $2 AND deleted_at IS NULL").bind(b.campaign_id).bind(&s.tenant).fetch_optional(&st.pool).await?.ok_or(ApiError::NotFound)?;
     let acc = bonus::check_account(&st, &s.tenant, b.user_id, b.login, &c.get::<Vec<String>, _>("account_groups")).await?;
     let amount = match (c.get::<String, _>("kind").as_str(), b.amount) {
         (_, Some(a)) if a > ZERO => a,
@@ -1003,7 +1033,7 @@ async fn write_promo(st: &AppState, s: &StaffCtx, id: Option<i64>, mut p: PromoI
     match p.kind.as_str() {
         "bonus" => {
             let cid = p.campaign_id.ok_or_else(|| invalid("campaignId", "Choose the bonus campaign."))?;
-            let ok: Option<i64> = sqlx::query_scalar("SELECT id FROM bonus_campaigns WHERE id = $1 AND tenant = $2").bind(cid).bind(&s.tenant).fetch_optional(&st.pool).await?;
+            let ok: Option<i64> = sqlx::query_scalar("SELECT id FROM bonus_campaigns WHERE id = $1 AND tenant = $2 AND deleted_at IS NULL").bind(cid).bind(&s.tenant).fetch_optional(&st.pool).await?;
             if ok.is_none() {
                 return Err(invalid("campaignId", "Unknown campaign."));
             }
