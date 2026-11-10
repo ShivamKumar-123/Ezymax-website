@@ -1,6 +1,6 @@
 // Ezymex Trader, full screen (its own route above the Client Area; back returns to it). The web's PHONE layout
 // (apps/terminal/components/mobile/mobile-terminal.tsx) in the app's iOS look:
-//   header      back · account pill (login, Live / Demo, CFD / Options, read-only, equity, floating P&L) · bell
+//   header      back · one line: login, Live / Demo (Options, read-only), equity, floating P&L · bell
 //   CFD         Watchlist · Chart · Trade · History · Account (bottom bar; the chart opens first)
 //   Options     its own body and bottom bar (options/options_terminal.dart)
 // An account trades one product: a CFD account shows the CFD body, an Options account the Options one (no switch);
@@ -247,23 +247,21 @@ class _Header extends ConsumerWidget {
       child: SafeArea(
         bottom: false,
         child: SizedBox(
-          height: 52,
+          height: 40,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 2),
             child: Row(
               children: [
                 KIconButton(
                   icon: rtl ? LucideIcons.chevronRight : LucideIcons.chevronLeft,
-                  size: 36,
+                  size: 34,
                   semanticLabel: t('common.back'),
                   onPressed: () => context.canPop() ? context.pop() : context.go('/'),
                 ),
-                const SizedBox(width: 2),
                 const Expanded(child: _AccountPill()),
-                const SizedBox(width: 2),
                 KIconButton(
                   icon: LucideIcons.bell,
-                  size: 36,
+                  size: 34,
                   badge: unread,
                   semanticLabel: t('dashboard.notifications.title'),
                   onPressed: () => showBellSheet(context),
@@ -277,8 +275,9 @@ class _Header extends ConsumerWidget {
   }
 }
 
-/// The account on screen (web header block): login + Live / Demo, CFD / Options (+ read-only), equity and floating
-/// P&L. Tap: the account switcher.
+/// The account on screen, on one line (founder decision 2026-11-10: the boxed two-line pill took too much of the
+/// phone): login, Live / Demo (and Options, read-only, the stream warning when they apply), then the equity and the
+/// floating P&L at the end. Tap: the account switcher.
 class _AccountPill extends ConsumerWidget {
   const _AccountPill();
 
@@ -292,77 +291,54 @@ class _AccountPill extends ConsumerWidget {
     final m = st.metrics;
     final login = a?.login ?? sessions.active ?? sessions.busyLogin;
     final streamDown = st.synced && (st.stream == SocketStatus.reconnecting || st.stream == SocketStatus.connecting);
+    final floatingColor = m.floating > 0.004 ? k.up : (m.floating < -0.004 ? k.down : k.fg3);
     return KPressable(
-      minSize: 40,
+      minSize: 36,
       semanticLabel: t('trader.account.switch'),
       onTap: () => showAccountSwitcher(context),
-      child: Container(
-        height: 40,
-        padding: const EdgeInsets.symmetric(horizontal: 9),
-        decoration: BoxDecoration(
-          color: k.surface2,
-          borderRadius: BorderRadius.circular(11),
-          border: Border.all(color: k.line),
-        ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
         child: Row(
           children: [
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          login ?? t('shell.ezymexTrader'),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: login == null ? context.text.label.copyWith(fontWeight: FontWeight.w600) : context.text.mono(12.5, weight: FontWeight.w600),
-                        ),
-                      ),
-                      if (a != null) ...[
-                        const SizedBox(width: 4),
-                        TBadge(t.dyn('trader.accountType.${a.type}', fallback: a.type), tone: a.live ? TBadgeTone.ember : TBadgeTone.gold),
-                        ProductTag(a.product, gap: 3),
-                      ],
-                      if (st.readOnly) ...[const SizedBox(width: 3), TBadge(t('trader.badge.readOnly'), tone: TBadgeTone.warn)],
-                      if (streamDown) ...[
-                        const SizedBox(width: 4),
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(color: k.warn, shape: BoxShape.circle),
-                        ),
-                      ],
-                    ],
-                  ),
-                  if (a != null)
-                    Text.rich(
-                      TextSpan(
-                        children: [
-                          TextSpan(
-                            text: accMoney(a.cent, m.equity),
-                            style: context.text.mono(11, weight: FontWeight.w600),
-                          ),
-                          const TextSpan(text: ' '),
-                          TextSpan(
-                            text: accMoney(a.cent, m.floating, signed: true),
-                            style: context.text.mono(10.5, color: m.floating > 0.004 ? k.up : (m.floating < -0.004 ? k.down : k.fg3)),
-                          ),
-                          TextSpan(
-                            text: ' ${accCcy(a.cent)}',
-                            style: context.text.mono(10, color: k.fg3),
-                          ),
-                        ],
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                ],
+            Flexible(
+              child: Text(
+                login ?? t('shell.ezymexTrader'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: login == null ? context.text.label.copyWith(fontWeight: FontWeight.w600) : context.text.mono(13, weight: FontWeight.w600),
               ),
             ),
-            Icon(LucideIcons.chevronsUpDown, size: 14, color: k.fg3),
+            if (a != null) ...[
+              const SizedBox(width: 5),
+              TBadge(t.dyn('trader.accountType.${a.type}', fallback: a.type), tone: a.live ? TBadgeTone.ember : TBadgeTone.gold),
+              // CFD is the default product; only another one is worth a tag
+              if (a.product != 'cfd') ProductTag(a.product, gap: 3),
+            ],
+            if (st.readOnly) ...[const SizedBox(width: 3), TBadge(t('trader.badge.readOnly'), tone: TBadgeTone.warn)],
+            if (streamDown) ...[
+              const SizedBox(width: 4),
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(color: k.warn, shape: BoxShape.circle),
+              ),
+            ],
+            const Spacer(),
+            if (a != null)
+              Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(text: accMoney(a.cent, m.equity), style: context.text.mono(12.5, weight: FontWeight.w600)),
+                    const TextSpan(text: '  '),
+                    TextSpan(text: accMoney(a.cent, m.floating, signed: true), style: context.text.mono(11.5, color: floatingColor)),
+                  ],
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textDirection: TextDirection.ltr,
+              ),
+            const SizedBox(width: 4),
+            Icon(LucideIcons.chevronsUpDown, size: 13, color: k.fg3),
           ],
         ),
       ),
