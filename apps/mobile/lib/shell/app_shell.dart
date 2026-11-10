@@ -32,6 +32,7 @@ import '../ui/ui.dart';
 import 'chrome.dart';
 import 'menus.dart';
 import 'nav.dart';
+import 'rail_drawer.dart';
 import 'session_keeper.dart';
 
 /// Tab index of each bottom-bar entry (the shell route's branches, in this order).
@@ -151,6 +152,8 @@ class _AppShellState extends ConsumerState<AppShell> {
       child: Scaffold(
         backgroundColor: k.bg,
         resizeToAvoidBottomInset: false,
+        // the web's rail, from the brand mark or a swipe from the edge
+        drawer: RailDrawer(path: widget.path, nav: nav),
         body: AnnotatedRegion<SystemUiOverlayStyle>(
           value: overlay,
           child: Stack(
@@ -262,9 +265,10 @@ class _Header extends ConsumerWidget {
               padding: const EdgeInsetsDirectional.only(start: 14, end: 8),
               child: Row(
                 children: [
+                  // the brand mark opens the side navigation (web: the rail stands beside the page)
                   KPressable(
-                    onTap: () => context.go('/'),
-                    semanticLabel: t('shell.nav.dashboard'),
+                    onTap: () => Scaffold.of(context).openDrawer(),
+                    semanticLabel: t('shell.more'),
                     child: KBrandAvatar(size: 36, letter: cfg.tenantDefault ? null : cfg.tenantName.characters.first.toUpperCase()),
                   ),
                   const SizedBox(width: 10),
@@ -438,7 +442,7 @@ class _HeroControls extends ConsumerWidget {
             padding: const EdgeInsetsDirectional.only(start: 14, end: 12, top: 8),
             child: Row(
               children: [
-                KPressable(onTap: () => context.go('/'), semanticLabel: t('shell.nav.dashboard'), child: const KBrandAvatar(size: 38)),
+                KPressable(onTap: () => Scaffold.of(context).openDrawer(), semanticLabel: t('shell.more'), child: const KBrandAvatar(size: 38)),
                 const Spacer(),
                 Theme(
                   data: KTheme.lightOf(context),
