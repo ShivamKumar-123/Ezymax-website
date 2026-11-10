@@ -293,7 +293,8 @@ class _AccountPill extends ConsumerWidget {
     // the account's nickname when the client gave it one, else the login (founder decision 2026-11-10)
     final nick = a != null && a.name.trim().isNotEmpty ? a.name.trim() : null;
     final streamDown = st.synced && (st.stream == SocketStatus.reconnecting || st.stream == SocketStatus.connecting);
-    final floatingColor = m.floating > 0.004 ? k.up : (m.floating < -0.004 ? k.down : k.fg3);
+    // the arrow takes the floating P&L's colour, a hint of what the sheet will say
+    final floatingColor = m.floating > 0.004 ? k.up : (m.floating < -0.004 ? k.down : k.fg2);
     return KPressable(
       minSize: 36,
       semanticLabel: t('trader.account.switch'),
@@ -312,7 +313,8 @@ class _AccountPill extends ConsumerWidget {
             ),
             if (a != null) ...[
               const SizedBox(width: 5),
-              TBadge(t.dyn('trader.accountType.${a.type}', fallback: a.type), tone: a.live ? TBadgeTone.ember : TBadgeTone.gold),
+              // Real in green (founder decision 2026-11-10), Demo in gold
+              TBadge(t.dyn('trader.accountType.${a.type}', fallback: a.type), tone: a.live ? TBadgeTone.up : TBadgeTone.gold),
               // CFD is the default product; only another one is worth a tag
               if (a.product != 'cfd') ProductTag(a.product, gap: 3),
             ],
@@ -326,23 +328,99 @@ class _AccountPill extends ConsumerWidget {
               ),
             ],
             const Spacer(),
-            if (a != null)
-              Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(text: accMoney(a.cent, m.equity), style: context.text.mono(12.5, weight: FontWeight.w600)),
-                    const TextSpan(text: '  '),
-                    TextSpan(text: accMoney(a.cent, m.floating, signed: true), style: context.text.mono(11.5, color: floatingColor)),
-                  ],
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textDirection: TextDirection.ltr,
-              ),
-            const SizedBox(width: 4),
             Icon(LucideIcons.chevronsUpDown, size: 13, color: k.fg3),
+            // the figures (equity, floating P&L, margin …) sit behind a small arrow and open as a sheet, so the
+            // nickname keeps the line (founder decision 2026-11-10)
+            if (a != null) ...[
+              const SizedBox(width: 6),
+              KPressable(
+                minSize: 36,
+                semanticLabel: t('desk.ah.equity'),
+                onTap: () => showAccountFigures(context),
+                child: Container(
+                  width: 26,
+                  height: 26,
+                  decoration: BoxDecoration(color: k.surface2, shape: BoxShape.circle, border: Border.all(color: k.line)),
+                  child: Icon(LucideIcons.chevronDown, size: 15, color: floatingColor),
+                ),
+              ),
+            ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// The account's figures as a sheet (web: the header block's equity and floating P&L, plus the Account tab's margin
+/// rows): balance, credit, equity, floating P&L, margin, free margin and margin level, live while open.
+Future<void> showAccountFigures(BuildContext context) => showKSheet<void>(context, builder: (_) => const _AccountFiguresSheet());
+
+class _AccountFiguresSheet extends ConsumerWidget {
+  const _AccountFiguresSheet();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = context.t;
+    final k = context.k;
+    final st = ref.watch(terminalProvider);
+    final a = st.account;
+    final m = st.metrics;
+    if (a == null) return const SizedBox.shrink();
+    final cent = a.cent;
+    final nick = a.name.trim();
+    final floatingColor = m.floating > 0.004 ? k.up : (m.floating < -0.004 ? k.down : k.fg3);
+    final levelColor = m.margin <= 0 ? k.fg3 : (m.level < 100 ? k.down : (m.level < 200 ? k.warn : k.up));
+    Widget money(double v, {bool signed = false, Color? color}) =>
+        Text('${accMoney(cent, v, signed: signed)} ${accCcy(cent)}', style: context.text.mono(13.5, weight: FontWeight.w600, color: color ?? k.fg));
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(nick.isNotEmpty ? nick : a.login, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.headline),
+                    Text(
+                      '${nick.isNotEmpty ? '${a.login} · ' : ''}${a.group} · ${a.mode} · ${t.dyn('trader.accountType.${a.type}', fallback: a.type)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.caption.copyWith(color: k.fg3, fontWeight: FontWeight.w400),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(accMoney(cent, m.equity), style: context.text.moneyL.copyWith(fontSize: 22)),
+                  Text(accMoney(cent, m.floating, signed: true), style: context.text.mono(12.5, weight: FontWeight.w600, color: floatingColor)),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          KListSection(
+            margin: EdgeInsets.zero,
+            children: [
+              KListRow(title: t('desk.ah.balance'), trailing: money(m.balance)),
+              if (m.credit.abs() > 0.004) KListRow(title: t('desk.ah.credit'), trailing: money(m.credit)),
+              KListRow(title: t('desk.ah.equity'), trailing: money(m.equity)),
+              KListRow(title: t('desk.ah.pnl'), trailing: money(m.floating, signed: true, color: floatingColor)),
+              KListRow(title: t('desk.ah.margin'), trailing: money(m.margin)),
+              KListRow(title: t('desk.ah.free'), trailing: money(m.free)),
+              KListRow(
+                title: t('desk.ah.level'),
+                trailing: Text(m.margin <= 0 ? '—' : '${m.level.toStringAsFixed(0)}%', style: context.text.mono(13.5, weight: FontWeight.w600, color: levelColor)),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
