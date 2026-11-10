@@ -91,13 +91,15 @@ export function MobileTerminal() {
         {/* the accounts: the Account tab (CFD), the accounts sheet (Options: its own tab bar has no Account tab) */}
         <button onClick={() => (options ? setSheet(true) : setTab("account"))} aria-label={t("trader.account.switch")} aria-haspopup={options ? "dialog" : undefined} className="min-w-0 text-left leading-tight">
           <div className="flex items-center gap-1.5 text-[12.5px] font-semibold">
-            <span className="font-mono">{a.login}</span>
+            {/* the account's nickname when the client gave it one, else the login (founder decision 2026-11-10) */}
+            <span className={a.nickname ? "truncate" : "font-mono"}>{a.nickname || a.login}</span>
             <Badge tone={a.type === "live" ? "ember" : "gold"}>{t.dyn(`trader.accountType.${a.type}`, a.type)}</Badge>
             <ProductBadge account={a} />
             {T.readOnly && <Badge tone="warn">{t("trader.badge.readOnly")}</Badge>}
             <ChevronDown className="size-3.5 shrink-0 text-fg-3" />
           </div>
           <div className="truncate text-[10.5px] text-fg-3">
+            {a.nickname && <span className="font-mono">{a.login} · </span>}
             {a.group} · {a.mode} · {a.server}
           </div>
         </button>

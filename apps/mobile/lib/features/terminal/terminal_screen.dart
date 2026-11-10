@@ -290,6 +290,8 @@ class _AccountPill extends ConsumerWidget {
     final a = st.account ?? sessions.current?.account;
     final m = st.metrics;
     final login = a?.login ?? sessions.active ?? sessions.busyLogin;
+    // the account's nickname when the client gave it one, else the login (founder decision 2026-11-10)
+    final nick = a != null && a.name.trim().isNotEmpty ? a.name.trim() : null;
     final streamDown = st.synced && (st.stream == SocketStatus.reconnecting || st.stream == SocketStatus.connecting);
     final floatingColor = m.floating > 0.004 ? k.up : (m.floating < -0.004 ? k.down : k.fg3);
     return KPressable(
@@ -302,10 +304,10 @@ class _AccountPill extends ConsumerWidget {
           children: [
             Flexible(
               child: Text(
-                login ?? t('shell.ezymexTrader'),
+                nick ?? login ?? t('shell.ezymexTrader'),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: login == null ? context.text.label.copyWith(fontWeight: FontWeight.w600) : context.text.mono(13, weight: FontWeight.w600),
+                style: nick != null || login == null ? context.text.label.copyWith(fontWeight: FontWeight.w600) : context.text.mono(13, weight: FontWeight.w600),
               ),
             ),
             if (a != null) ...[
