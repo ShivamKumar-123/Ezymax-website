@@ -173,6 +173,13 @@ class LocaleFormat {
   /// "24 Sep".
   String dayMonth(DateTime d) => latinDigits(_date('dm', () => DateFormat.MMMd(_tag)).format(toServerTime(d)));
 
+  /// "October 2026" for a calendar month (a UTC date inside it; no server-time shift).
+  String monthYear(DateTime d) => latinDigits(_date('my', () => DateFormat.yMMMM(_tag)).format(d));
+
+  /// "12 Oct" for a calendar day; `long` adds the weekday and the year (web fmtCalendarDay). A UTC date, no shift.
+  String calendarDay(DateTime d, {bool long = false}) =>
+      latinDigits(_date(long ? 'cdl' : 'cd', () => long ? DateFormat.yMMMEd(_tag) : DateFormat.MMMd(_tag)).format(d));
+
   /// "24 Sep, 21:40".
   String dateTime(DateTime d) => latinDigits(_date('dt', () => DateFormat.MMMd(_tag).add_Hm()).format(toServerTime(d)));
 

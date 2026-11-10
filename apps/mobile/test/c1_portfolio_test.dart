@@ -395,7 +395,7 @@ void main() {
         'Performance by symbol',
         'By weekday',
         'Long vs short',
-        'By hour of day',
+        'By day',
         'By session',
         'Money flow',
         'Commission, swap and fees paid',

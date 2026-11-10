@@ -1,10 +1,11 @@
 // The Analytics page's charts (port of apps/crm/components/portfolio/charts.tsx): equity vs balance, drawdown,
-// P&L by symbol, weekday columns, the weekday x hour heatmap and the money-flow waterfall. Painted directly (no
+// P&L by symbol, weekday columns, the P&L calendar (one cell per day) and the money-flow waterfall. Painted directly (no
 // chart package); touch shows the web's hover read-outs. Time axes stay left to right in RTL, as on the web's SVGs.
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' show DateFormat;
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/format/format.dart';
 import '../../../i18n/i18n.dart';
@@ -682,170 +683,259 @@ class _ColumnBarsState extends State<ColumnBars> {
   }
 }
 
-/* ------------------------------------------------------------------ weekday x hour heatmap */
+/* ------------------------------------------------------------------ P&L calendar (one cell per day) */
 
-/// A weekday row of the heatmap: its label and 24 hour cells (P&L, trades).
-typedef HeatRow = ({String day, List<({double pnl, int trades})> cells});
+/// A day of the calendar (web CalendarDay): the net P&L, the trades closed and the win rate of that server day.
+typedef CalendarDay = ({String date, double pnl, int trades, double winRate});
 
-/// Weekday x hour P&L heatmap (web HourHeatmap): green for profit, red for loss, grey without trades; touch a cell
-/// to read it.
-class HourHeatmap extends StatefulWidget {
-  const HourHeatmap({super.key, required this.rows});
-  final List<HeatRow> rows;
+/// A YYYY-MM-DD as a UTC date.
+DateTime calendarUtcDay(String iso) => DateTime.utc(int.parse(iso.substring(0, 4)), int.parse(iso.substring(5, 7)), int.parse(iso.substring(8, 10)));
+String _isoOf(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+const List<String> _weekdayKeys = ['portfolio.an.day.mon', 'portfolio.an.day.tue', 'portfolio.an.day.wed', 'portfolio.an.day.thu', 'portfolio.an.day.fri', 'portfolio.an.day.sat', 'portfolio.an.day.sun'];
+
+typedef _Month = ({String key, DateTime first, int days, double net, int trades});
+
+/// Calendar of the net P&L of the trades closed on each day (server time), one month at a time with previous / next
+/// (web PnlCalendar). The months are the period's when it spans up to four, otherwise the months that have trades;
+/// it opens on the latest month that has trades. Touch a day to read it.
+class PnlCalendar extends StatefulWidget {
+  const PnlCalendar({super.key, required this.days, required this.from, required this.to});
+  final List<CalendarDay> days;
+
+  /// The period, YYYY-MM-DD, inclusive.
+  final String from, to;
 
   @override
-  State<HourHeatmap> createState() => _HourHeatmapState();
+  State<PnlCalendar> createState() => _PnlCalendarState();
 }
 
-class _HourHeatmapState extends State<HourHeatmap> {
-  ({int d, int h})? _hover;
-  static const double _label = 32, _gap = 2;
+class _PnlCalendarState extends State<PnlCalendar> {
+  String? _picked; // a month's key
+  String? _touched; // a day's date
+
+  List<_Month> _months(Map<String, CalendarDay> byDate) {
+    final traded = [for (final d in widget.days) if (d.trades > 0) d.date]..sort();
+    var start = calendarUtcDay(widget.from);
+    var end = calendarUtcDay(widget.to);
+    if (end.isBefore(start)) end = start;
+    final span = (end.year - start.year) * 12 + end.month - start.month + 1;
+    if (span > 4 && traded.isNotEmpty) {
+      final a = calendarUtcDay(traded.first), b = calendarUtcDay(traded.last);
+      if (a.isAfter(start)) start = a;
+      if (b.isBefore(end)) end = b;
+    }
+    final out = <_Month>[];
+    for (var d = DateTime.utc(start.year, start.month); !d.isAfter(end); d = DateTime.utc(d.year, d.month + 1)) {
+      final count = DateTime.utc(d.year, d.month + 1, 0).day;
+      var net = 0.0;
+      var trades = 0;
+      for (var i = 1; i <= count; i++) {
+        final x = byDate[_isoOf(DateTime.utc(d.year, d.month, i))];
+        net += x?.pnl ?? 0;
+        trades += x?.trades ?? 0;
+      }
+      out.add((key: _isoOf(d), first: d, days: count, net: net, trades: trades));
+    }
+    return out;
+  }
 
   @override
   Widget build(BuildContext context) {
     final t = context.t;
     final k = context.k;
-    final rows = widget.rows;
-    var max = 1.0;
-    for (final r in rows) {
-      for (final c in r.cells) {
-        max = math.max(max, c.pnl.abs());
-      }
+    final f = LocaleFormat(t.locale);
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    final days = widget.days;
+    final byDate = {for (final d in days) d.date: d};
+    final months = _months(byDate);
+    if (months.isEmpty || !days.any((d) => d.trades > 0)) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 36),
+        child: Center(child: Text(t('portfolio.an.calendar.empty'), style: context.text.callout.copyWith(color: k.fg3))),
+      );
     }
-    final hv = _hover;
-    final cell = hv == null ? null : rows[hv.d].cells[hv.h];
-    final hourStyle = context.text.mono(9, color: k.fg3);
+    var idx = months.indexWhere((m) => m.key == _picked);
+    if (idx < 0) {
+      idx = months.lastIndexWhere((m) => m.trades > 0);
+      if (idx < 0) idx = months.length - 1;
+    }
+    final m = months[idx];
+    var max = 1.0;
+    for (final d in days) {
+      max = math.max(max, d.pnl.abs());
+    }
+    final green = days.where((d) => d.trades > 0 && d.pnl > 0).length;
+    final red = days.where((d) => d.trades > 0 && d.pnl < 0).length;
+    final touched = _touched == null ? null : byDate[_touched!];
+    String money(double v, [int digits = 2]) => '${v >= 0 ? '+' : '-'}\$${f.number(v.abs(), digits)}';
+    // what fits in a day cell: the sign and the number, thousands as "k"
+    String short(double v) => '${v >= 0 ? '+' : '-'}${v.abs() >= 10000 ? '${f.number(v.abs() / 1000, 1)}k' : f.number(v.abs(), 0)}';
+    final lead = (m.first.weekday - 1) % 7; // Monday first
+    final weeks = ((lead + m.days) / 7).ceil();
+    final head = context.text.micro.copyWith(fontSize: 9.5, color: k.fg3, letterSpacing: 0.6);
+    final caption = context.text.caption.copyWith(color: k.fg3, fontWeight: FontWeight.w400);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Directionality(
-          textDirection: TextDirection.ltr,
-          child: LayoutBuilder(
-            builder: (context, c) {
-              final size = (c.maxWidth - _label - _gap * 24) / 24;
-              void touch(Offset p) {
-                final h = ((p.dx - _label) / (size + _gap)).floor();
-                final d = ((p.dy - 14) / (size + _gap)).floor();
-                if (h < 0 || h > 23 || d < 0 || d >= rows.length) return;
-                if (hv?.d != d || hv?.h != h) {
-                  KHaptics.selection();
-                  setState(() => _hover = (d: d, h: h));
+        // the month, previous / next, and its result
+        Row(
+          children: [
+            KIconButton(
+              icon: rtl ? LucideIcons.chevronRight : LucideIcons.chevronLeft,
+              size: 32,
+              semanticLabel: t('accountDetail.cal.prevMonth'),
+              onPressed: () => setState(() => _picked = months[math.max(0, idx - 1)].key),
+            ),
+            Expanded(
+              child: Text(f.monthYear(m.first), textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.label.copyWith(fontWeight: FontWeight.w600)),
+            ),
+            KIconButton(
+              icon: rtl ? LucideIcons.chevronLeft : LucideIcons.chevronRight,
+              size: 32,
+              semanticLabel: t('accountDetail.cal.nextMonth'),
+              onPressed: () => setState(() => _picked = months[math.min(months.length - 1, idx + 1)].key),
+            ),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(m.trades > 0 ? money(m.net) : '—', style: context.text.figure.copyWith(color: m.net > 0 ? k.up : (m.net < 0 ? k.down : k.fg3))),
+                Text(t('portfolio.trades', {'count': m.trades}), style: context.text.mono(10.5, color: k.fg3)),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        LayoutBuilder(
+          builder: (context, c) {
+            const gap = 3.0;
+            final unit = (c.maxWidth - gap * 7) / 8.3;
+            final cellW = unit, weekW = unit * 1.3;
+            final cellH = math.max(44.0, cellW);
+            Widget headCell(String s, double w) => SizedBox(width: w, child: Text(s.toUpperCase(), textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.clip, style: head));
+            final rows = <Widget>[
+              Row(
+                children: [
+                  for (var i = 0; i < 7; i++) ...[headCell(t(_weekdayKeys[i]), cellW), const SizedBox(width: gap)],
+                  headCell(t('portfolio.an.calendar.week'), weekW),
+                ],
+              ),
+            ];
+            for (var w = 0; w < weeks; w++) {
+              var weekNet = 0.0;
+              var weekTrades = 0;
+              final cells = <Widget>[];
+              for (var i = 0; i < 7; i++) {
+                final dayNo = w * 7 + i - lead + 1;
+                if (dayNo < 1 || dayNo > m.days) {
+                  cells
+                    ..add(SizedBox(width: cellW, height: cellH))
+                    ..add(const SizedBox(width: gap));
+                  continue;
                 }
-              }
-
-              return GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTapDown: (d) => touch(d.localPosition),
-                onPanStart: (d) => touch(d.localPosition),
-                onPanUpdate: (d) => touch(d.localPosition),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SizedBox(
-                      height: 14,
-                      child: Row(
-                        children: [
-                          const SizedBox(width: _label),
-                          for (var h = 0; h < 24; h++)
-                            SizedBox(
-                              width: size + _gap,
-                              child: h % 3 == 0 ? Text(h.toString().padLeft(2, '0'), style: hourStyle, softWrap: false, overflow: TextOverflow.visible) : null,
-                            ),
-                        ],
-                      ),
-                    ),
-                    for (var d = 0; d < rows.length; d++)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: _gap),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width: _label,
-                              child: Text(
-                                rows[d].day,
-                                maxLines: 1,
-                                style: context.text.micro.copyWith(color: k.fg3, fontWeight: FontWeight.w500),
-                              ),
-                            ),
-                            for (var h = 0; h < 24; h++) ...[
-                              Container(
-                                width: size,
-                                height: size,
-                                decoration: BoxDecoration(
-                                  color: _cellColor(k, rows[d].cells[h], max),
-                                  borderRadius: BorderRadius.circular(size * 0.22),
-                                  border: Border.all(
-                                    color: hv?.d == d && hv?.h == h ? k.fg.withValues(alpha: 0.7) : k.line.withValues(alpha: 0.6),
-                                    width: hv?.d == d && hv?.h == h ? 1.6 : 0.6,
-                                  ),
+                final iso = _isoOf(DateTime.utc(m.first.year, m.first.month, dayNo));
+                final d = byDate[iso];
+                final traded = d != null && d.trades > 0;
+                if (traded) {
+                  weekNet += d.pnl;
+                  weekTrades += d.trades;
+                }
+                final a = traded ? math.min(1.0, d.pnl.abs() / max) : 0.0;
+                final bg = !traded ? k.surface2 : Color.lerp(k.surface2, d.pnl >= 0 ? k.up : k.down, 0.12 + a * 0.78)!;
+                final inRange = iso.compareTo(widget.from) >= 0 && iso.compareTo(widget.to) <= 0;
+                final sel = _touched == iso;
+                cells
+                  ..add(
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: !traded
+                          ? null
+                          : () {
+                              KHaptics.selection();
+                              setState(() => _touched = sel ? null : iso);
+                            },
+                      child: Opacity(
+                        opacity: inRange ? 1 : 0.35,
+                        child: Container(
+                          width: cellW,
+                          height: cellH,
+                          padding: const EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                            color: bg,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: sel ? k.fg.withValues(alpha: 0.6) : k.line.withValues(alpha: 0.6), width: sel ? 1.6 : 0.6),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('$dayNo', style: context.text.mono(10.5, color: traded ? k.fg : k.fg3)),
+                              if (traded)
+                                Align(
+                                  alignment: AlignmentDirectional.centerEnd,
+                                  child: Text(short(d.pnl), maxLines: 1, overflow: TextOverflow.clip, style: context.text.mono(10, weight: FontWeight.w600, color: k.fg)),
                                 ),
-                              ),
-                              const SizedBox(width: _gap),
                             ],
-                          ],
+                          ),
                         ),
                       ),
-                  ],
+                    ),
+                  )
+                  ..add(const SizedBox(width: gap));
+              }
+              cells.add(
+                Container(
+                  width: weekW,
+                  height: cellH,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(color: k.surface2.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(6)),
+                  child: Text(
+                    weekTrades > 0 ? short(weekNet) : '—',
+                    maxLines: 1,
+                    overflow: TextOverflow.clip,
+                    style: context.text.mono(10.5, color: weekTrades == 0 ? k.fg3 : (weekNet >= 0 ? k.up : k.down)),
+                  ),
                 ),
               );
-            },
-          ),
+              rows.add(Padding(padding: const EdgeInsets.only(top: gap), child: Row(children: cells)));
+            }
+            return Column(children: rows);
+          },
         ),
         const SizedBox(height: 10),
-        if (hv != null && cell != null)
+        if (touched != null)
           Text.rich(
             TextSpan(
               children: [
-                TextSpan(
-                  text: '${rows[hv.d].day} ${hv.h.toString().padLeft(2, '0')}:00–${(hv.h + 1).toString().padLeft(2, '0')}:00',
-                  style: TextStyle(color: k.fg2),
-                ),
-                TextSpan(text: ' · ${t('portfolio.trades', {'count': cell.trades})} · '),
-                TextSpan(
-                  text: '${cell.pnl >= 0 ? '+' : '-'}${Fmt.money(cell.pnl.abs())}',
-                  style: TextStyle(color: cell.pnl >= 0 ? k.up : k.down),
-                ),
+                TextSpan(text: f.calendarDay(calendarUtcDay(touched.date), long: true), style: TextStyle(color: k.fg2)),
+                TextSpan(text: ' · ${t('portfolio.trades', {'count': touched.trades})} · '),
+                TextSpan(text: money(touched.pnl), style: TextStyle(color: touched.pnl >= 0 ? k.up : k.down)),
+                TextSpan(text: ' · ${t('portfolio.an.session.win', {'rate': touched.winRate.round()})}'),
               ],
             ),
-            style: context.text.caption.copyWith(color: k.fg3, fontWeight: FontWeight.w400, fontFeatures: kTabular),
+            style: caption.copyWith(fontFeatures: kTabular),
           )
         else
-          Text(
-            t('portfolio.chart.hoverHint'),
-            style: context.text.caption.copyWith(color: k.fg3, fontWeight: FontWeight.w400),
-          ),
+          Text('${t('portfolio.an.calendar.days', {'green': green, 'red': red})} · ${t('portfolio.chart.hoverHint')}', style: caption),
         const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            Text(
-              t('common.loss'),
-              style: context.text.caption.copyWith(color: k.fg3, fontWeight: FontWeight.w400),
-            ),
+            Text(t('common.loss'), style: caption),
             const SizedBox(width: 8),
             Container(
               width: 90,
               height: 8,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4),
-                gradient: LinearGradient(colors: [k.down, k.surface3, k.up]),
-              ),
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(4), gradient: LinearGradient(colors: [k.down, k.surface3, k.up])),
             ),
             const SizedBox(width: 8),
-            Text(
-              t('common.profit'),
-              style: context.text.caption.copyWith(color: k.fg3, fontWeight: FontWeight.w400),
-            ),
+            Text(t('common.profit'), style: caption),
           ],
         ),
       ],
     );
-  }
-
-  Color _cellColor(KTokens k, ({double pnl, int trades}) c, double max) {
-    if (c.trades == 0) return k.surface2;
-    final a = math.min(1.0, c.pnl.abs() / max);
-    return Color.lerp(k.surface2, c.pnl >= 0 ? k.up : k.down, 0.12 + a * 0.78)!;
   }
 }
 

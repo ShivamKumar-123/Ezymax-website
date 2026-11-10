@@ -424,6 +424,20 @@ Map<String, dynamic> previewPortfolioAnalytics(Map<String, String> query) {
         {'session': 'New York', 'hours': '15:00–23:00', 'trades': 18, 'net': 659.9, 'winRate': 55.6},
       ],
     ],
+    // one row per weekday with closed trades, deterministic so the calendar reads the same on every run
+    'byDay': [
+      if (known)
+        for (var day = from; !day.isAfter(to); day = day.add(const Duration(days: 1)))
+          if (day.weekday <= 5 && (day.day * 7 + day.month) % 3 != 0)
+            {
+              'key': _day(day),
+              'trades': 1 + day.day % 3,
+              'wins': day.day % 2,
+              'winRate': day.day % 2 == 0 ? 50.0 : 66.7,
+              'net': (math.sin(day.day * 1.7) * 260).roundToDouble(),
+              'lots': 0.5 + day.day % 3,
+            },
+    ],
     'hourHeatmap': known ? heat : <Object>[],
     'hourTrades': known ? heatTrades : <Object>[],
     'moneyFlow': {

@@ -249,6 +249,7 @@ class Analytics {
     required this.short,
     required this.bySymbol,
     required this.byWeekday,
+    required this.byDay,
     required this.bySession,
     required this.hourHeatmap,
     required this.hourTrades,
@@ -264,6 +265,9 @@ class Analytics {
   final AnCurve curve;
   final TradeStats stats, long, short;
   final List<AnGroup> bySymbol, byWeekday;
+
+  /// Net P&L of the trades closed on each server-time day, key = YYYY-MM-DD (web byDay).
+  final List<AnGroup> byDay;
   final List<AnSession> bySession;
 
   /// 7 weekdays (Monday first) x 24 hours: net P&L and trades of the closes.
@@ -287,6 +291,7 @@ class Analytics {
     short: TradeStats.fromJson(_m(j['short'])),
     bySymbol: [for (final g in _ms(j['bySymbol'])) AnGroup.fromJson(g)],
     byWeekday: [for (final g in _ms(j['byWeekday'])) AnGroup.fromJson(g)],
+    byDay: [for (final g in _ms(j['byDay'])) AnGroup.fromJson(g)],
     bySession: [for (final s in _ms(j['bySession'])) AnSession.fromJson(s)],
     hourHeatmap: [
       for (final r in (j['hourHeatmap'] is List ? j['hourHeatmap'] as List : const [])) [for (final v in (r is List ? r : const [])) _d(v)],

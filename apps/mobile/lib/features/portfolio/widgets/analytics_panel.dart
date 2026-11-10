@@ -223,7 +223,7 @@ class AnalyticsBody extends StatelessWidget {
         gap,
         _SideCard(d: d),
         gap,
-        _HourCard(d: d),
+        _CalendarCard(d: d),
         gap,
         _SessionCard(d: d),
         gap,
@@ -707,47 +707,45 @@ class _SideCard extends StatelessWidget {
   }
 }
 
-class _HourCard extends StatelessWidget {
-  const _HourCard({required this.d});
+/// The P&L calendar of the period (web: the Calendar card; it replaced the hour heatmap on 7 Nov 2026).
+class _CalendarCard extends StatelessWidget {
+  const _CalendarCard({required this.d});
   final Analytics d;
 
   @override
   Widget build(BuildContext context) {
     final t = context.t;
-    final rows = <HeatRow>[
-      for (var i = 0; i < 7; i++)
-        (
-          day: t(_days[i]),
-          cells: [
-            for (var h = 0; h < 24; h++)
-              (
-                pnl: i < d.hourHeatmap.length && h < d.hourHeatmap[i].length ? d.hourHeatmap[i][h] : 0.0,
-                trades: i < d.hourTrades.length && h < d.hourTrades[i].length ? d.hourTrades[i][h] : 0,
-              ),
-          ],
-        ),
-    ];
-    var best = (d: 0, h: 0, v: double.negativeInfinity);
-    for (var i = 0; i < rows.length; i++) {
-      for (var h = 0; h < 24; h++) {
-        final c = rows[i].cells[h];
-        if (c.trades > 0 && c.pnl > best.v) best = (d: i, h: h, v: c.pnl);
-      }
+    final f = LocaleFormat(t.locale);
+    final days = <CalendarDay>[for (final g in d.byDay) (date: g.key, pnl: g.net, trades: g.trades, winRate: g.winRate)];
+    CalendarDay? best;
+    for (final x in days) {
+      if (x.trades > 0 && (best == null || x.pnl > best.pnl)) best = x;
+    }
+    final from = d.from.length >= 10 ? d.from.substring(0, 10) : d.from;
+    // the period's last day (its `to` is exclusive), or today in server time when the period runs on (web calTo)
+    String to;
+    if (d.to.length == 10) {
+      to = d.to;
+    } else {
+      final end = DateTime.tryParse(d.to);
+      final now = DateTime.now().toUtc().add(const Duration(hours: 3));
+      final last = end == null ? now : (end.subtract(const Duration(seconds: 1)).isBefore(now) ? end.subtract(const Duration(seconds: 1)) : now);
+      to = last.toIso8601String().substring(0, 10);
     }
     return KCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          KCardHeader(title: t('portfolio.an.hour.title'), subtitle: t('portfolio.an.hour.subtitle')),
-          if (best.v > 0) ...[
+          KCardHeader(title: t('portfolio.an.calendar.title'), subtitle: t('portfolio.an.calendar.subtitle')),
+          if (best != null && best.pnl > 0) ...[
             const SizedBox(height: 10),
             Align(
               alignment: AlignmentDirectional.centerStart,
-              child: KChip(label: t('portfolio.an.hour.best', {'day': t(_days[best.d]), 'hour': best.h.toString().padLeft(2, '0')}), tone: KChipTone.up),
+              child: KChip(label: t('portfolio.an.calendar.best', {'date': f.calendarDay(calendarUtcDay(best.date))}), tone: KChipTone.up),
             ),
           ],
           const SizedBox(height: 14),
-          HourHeatmap(rows: rows),
+          PnlCalendar(days: days, from: from, to: to),
         ],
       ),
     );
