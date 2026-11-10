@@ -76,6 +76,7 @@
   let olderWait = null;       // the getBars resolver waiting for an `older` message
   let firstWait = null;       // the first getBars, parked until the app's `bars` message has arrived
   let exhausted = false;      // the app has told us there is no more history
+  let awaiting = false;       // a new symbol / timeframe: ticks are dropped until its history (`bars`) has arrived
   const lines = new Map();    // id -> { entity, price, key }: one horizontal_line shape per trade line
   const studies = new Map();  // uid -> study id
   // What arrived before the library was ready to draw it. The app sends lines and quotes the moment it has
@@ -856,16 +857,44 @@
   function recv(m) {
     if (!m || typeof m !== "object") return;
     switch (m.type) {
-      case "init":
+      case "init": {
+        const prev = cfg;
         cfg = m;
-        if (!widget) build();
-        // the app changed the timeframe (or confirmed the one picked in the header): the library follows
-        else if (chart) { try { if (chart.resolution() !== resOf(m.tf)) chart.setResolution(resOf(m.tf)); } catch (_) {} }
+        if (!widget) { build(); return; }
+        // Another market, or another timeframe (the app's choice, or the one picked in the header being
+        // confirmed): the bars held here belong to the old one, so they go, ticks are ignored until the new
+        // history arrives, and the library is told to re-resolve the symbol (its name, digits) and re-read.
+        const symbolChanged = !prev || prev.symbol !== m.symbol || prev.digits !== m.digits;
+        const tfChanged = !prev || resOf(prev.tf) !== resOf(m.tf);
+        if (!symbolChanged && !tfChanged) return;
+        bars = [];
+        exhausted = false;
+        olderWait = null;
+        awaiting = true;
+        if (!chart) return;
+        if (symbolChanged) {
+          // the library drops the shapes of the old symbol with it: forget their handles, redraw once it is there
+          for (const [id, r] of [...lines]) { if (r.entity) { try { chart.removeEntity(r.entity); } catch (_) {} } lines.delete(id); }
+          if (askLine && askLine.id) { try { chart.removeEntity(askLine.id); } catch (_) {} }
+          askLine = null;
+          lastQuote = null;
+          try {
+            widget.setSymbol(m.symbol || "", resOf(m.tf), () => {
+              if (cfg !== m) return;
+              if (lastLines) drawLines(lastLines);
+              if (lastQuote) drawQuote(lastQuote.ask);
+            });
+          } catch (_) {}
+        } else {
+          try { if (chart.resolution() !== resOf(m.tf)) chart.setResolution(resOf(m.tf)); } catch (_) {}
+        }
         return;
+      }
 
       case "bars": {
         bars = (m.bars || []).map(toBar).filter(Boolean);
         exhausted = false;
+        awaiting = false;
         if (firstWait) {
           // the library asked first; this is its answer
           const w = firstWait;
@@ -891,6 +920,8 @@
       }
 
       case "bar": {
+        // a tick of a market whose history has not arrived yet would be merged into the old market's last bar
+        if (awaiting) return;
         const b = toBar(m.bar);
         if (!b) return;
         const last = bars[bars.length - 1];
