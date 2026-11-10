@@ -26,7 +26,6 @@ import '../../core/auth/auth_controller.dart';
 import '../../core/config/app_config.dart';
 import '../../core/format/format.dart';
 import '../../core/models/account.dart';
-import '../../core/models/trading.dart';
 import '../../core/models/user.dart';
 import '../../core/models/wallet.dart';
 import '../../core/notifications/notifications.dart';
