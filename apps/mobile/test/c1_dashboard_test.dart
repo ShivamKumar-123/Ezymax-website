@@ -211,7 +211,7 @@ void main() {
       var lastY = double.negativeInfinity;
       // 'Overview' is the sheet's sub-nav label, shown only when the module has more than one page
       for (final s in [
-        'Total equity',
+        'Wallet balance',
         'Your accounts',
         'Quick actions',
         'Statistics',
