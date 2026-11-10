@@ -459,7 +459,8 @@ class _TradeBarState extends ConsumerState<_TradeBar> {
           final enabled = open && !delayed && q != null && q.valid && !_busy;
           Widget side(String s) {
             final buy = s == 'buy';
-            final bg = enabled ? (buy ? k.buyFill : k.sellFill) : k.surface3;
+            // the web terminal's phone bar: Sell on the down red, Buy on the buy blue darkened 16 % (mobile-terminal.tsx)
+            final bg = enabled ? (buy ? Color.lerp(k.buy, Colors.black, 0.16)! : k.down) : k.surface3;
             final fg = enabled ? Colors.white : k.fg3;
             return Expanded(
               child: KPressable(
