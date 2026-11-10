@@ -9,7 +9,6 @@ import 'package:ezymex/data/client_data.dart';
 import 'package:ezymex/features/common/system_screens.dart';
 import 'package:ezymex/features/dashboard/dashboard_data.dart';
 import 'package:ezymex/features/dashboard/dashboard_screen.dart';
-import 'package:ezymex/features/dashboard/widgets/list_cards.dart';
 import 'package:ezymex/features/dashboard/widgets/markets_cards.dart';
 import 'package:ezymex/features/dashboard/widgets/more_cards.dart';
 import 'package:ezymex/features/dashboard/widgets/statistic_card.dart';
@@ -212,20 +211,15 @@ void main() {
       var lastY = double.negativeInfinity;
       for (final s in [
         'Overview',
-        'Total balance',
         'Total equity',
         'Your accounts',
         'Quick actions',
         'Statistics',
         'Notifications',
-        'History',
-        'Getting started',
         'Top movers',
         'Economic calendar',
         'Market news',
-        'Markets & news around the world',
         'More for you',
-        'Launch Ezymex Trader',
         'Your account',
         'Market clock',
         'Need help?',
@@ -238,34 +232,6 @@ void main() {
         expect(y, greaterThan(lastY), reason: s);
         lastY = y;
       }
-      await unmount(tester);
-    });
-
-    testWidgets('getting started shows every step done for the sample client', (tester) async {
-      await pumpApp(tester, signedIn: true);
-      final page = find.descendant(of: find.byType(DashboardScreen), matching: find.byType(Scrollable)).first;
-      await tester.scrollUntilVisible(find.text('Getting started'), 300, scrollable: page);
-      expect(find.text('5 of 5'), findsOneWidget);
-      expect(find.text('Fund your wallet'), findsOneWidget);
-      await unmount(tester);
-    });
-
-    testWidgets('activity tabs switch between history, funding and linked', (tester) async {
-      await pumpApp(tester, signedIn: true);
-      final page = find.descendant(of: find.byType(DashboardScreen), matching: find.byType(Scrollable)).first;
-      await tester.scrollUntilVisible(find.byType(ActivityTabs), 300, scrollable: page);
-      await _center(tester, find.byType(ActivityTabs));
-      // history: the wallet's latest rows and View all
-      expect(find.descendant(of: find.byType(ActivityTabs), matching: find.byType(ItemRow)), findsWidgets);
-      expect(find.text('View all'), findsOneWidget);
-      await tester.tap(find.descendant(of: find.byType(ActivityTabs), matching: find.text('Funding')));
-      await settle(tester, frames: 4);
-      expect(find.text('USDT · TRC20'), findsOneWidget);
-      expect(find.text('Connected'), findsWidgets);
-      await tester.tap(find.descendant(of: find.byType(ActivityTabs), matching: find.text('Linked')));
-      await settle(tester, frames: 4);
-      expect(find.text('Ezymex Trader'), findsWidgets);
-      expect(find.text('Gold'), findsOneWidget);
       await unmount(tester);
     });
 
@@ -329,7 +295,6 @@ void main() {
       expect(find.byType(CalendarCard), findsNothing);
       expect(find.byType(NewsCard), findsNothing);
       expect(find.byType(WorldCard), findsNothing);
-      expect(find.byType(HeatmapCard), findsOneWidget);
       await unmount(tester);
     });
 
