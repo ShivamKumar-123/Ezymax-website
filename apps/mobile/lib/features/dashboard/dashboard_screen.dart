@@ -2,7 +2,7 @@
 // in OverviewLayout's phone order, max-md:order-*):
 //   0 hero carousel (brand banners, featured events / posts) and the targeted banner (growth, placement "dashboard")
 //   1 header (Overview + greeting + Verified), then Ask Ezymex AI (the pill; not for view-only / read-only sessions)
-//   3 KPI cards (equity, today's P&L, wallet, rewards)
+//   3 the wallet balance card (the equity, today's P&L and rewards cards were dropped on 2026-11-10)
 //   4 your accounts (carousel, details, Trade / Fund or Refill / ⋯)
 //   5 quick actions
 //   6 statistics (equity / P&L curve)
@@ -219,7 +219,7 @@ class DashboardScreen extends ConsumerWidget {
     final config = ref.watch(configProvider);
     bool on(String href) => pageOn(config, href);
     final walletOn = on('/wallet');
-    final rewardsOn = on('/rewards');
+    // rewards: the drawer and the More list carry them; the dashboard no longer reads the figure
 
     final acc = ref.watch(accountsProvider);
     final all = acc.value;
@@ -229,17 +229,6 @@ class DashboardScreen extends ConsumerWidget {
     // the wallet's and the rewards' figures only while they're offered (their API answers 403 module_disabled)
     final wallet = walletOn ? ref.watch(walletOverviewProvider).value : null;
     final walletTotal = wallet?.usdt.total;
-    final rewards = rewardsOn ? ref.watch(rewardsProvider).value : null;
-
-    // today's P&L: today's equity move net of deposits / withdrawals (reports), else the live accounts' floating P&L
-    final week = ref.watch(equityCurveProvider(14)).value;
-    double? today, todayPct;
-    if (week != null && week.length > 1) {
-      final last = week[week.length - 1], prev = week[week.length - 2];
-      today = last.equity - prev.equity - last.flow;
-      todayPct = prev.equity > 0 ? today / prev.equity * 100 : null;
-    }
-    final hasLive = totals.live.isNotEmpty;
 
     // carousel: live first, then demo, then prop
     final ordered = [...totals.live, ...totals.demo, ...?accounts?.where((a) => a.prop)];
@@ -302,8 +291,6 @@ class DashboardScreen extends ConsumerWidget {
       ),
     ];
 
-    final width = MediaQuery.sizeOf(context).width;
-    final kpiWidth = (width - 2 * _gutter) * 0.78;
     final rtl = Directionality.of(context) == TextDirection.rtl;
 
     // the module's pages under the sheet's grabber (the shell's sub-nav, in the sheet while the picture shows)
@@ -364,80 +351,27 @@ class DashboardScreen extends ConsumerWidget {
           // 1b. Ask Ezymex AI (the AI assistant, answered over the support chat: both modules)
           if (!readOnly && modulesOn(config, 'ai_assistant&support')) ...[const SizedBox(height: 16), AskAi(chips: aiChips)],
           const SizedBox(height: 24),
-          // 3. KPI cards
-          SizedBox(
-            height: 186,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              clipBehavior: Clip.none,
-              physics: const PageScrollPhysics(parent: BouncingScrollPhysics()),
-              children: [
-                KKpiCard(
-                  width: kpiWidth,
-                  label: t('dashboard.equity.title'),
-                  icon: LucideIcons.trendingUp,
-                  value: accounts == null ? const Text('—') : KMoney(totals.equity, style: context.text.moneyL, hidden: hidden),
-                  chip: KChip(
-                    label: hasLive
-                        ? t('dashboard.home.accountsChip', {'live': totals.live.length, 'positions': totals.positions})
-                        : t('dashboard.accounts.openLive.title'),
-                  ),
-                  onTap: () => context.go('/accounts'),
-                ),
-                const SizedBox(width: 12),
-                KKpiCard(
-                  width: kpiWidth,
-                  label: today != null ? t('dashboard.home.todayPnl') : t('dashboard.home.floating'),
-                  icon: LucideIcons.chartLine,
-                  value: accounts == null
-                      ? const Text('—')
-                      : KMoney(today ?? totals.profit, signed: true, tone: KMoneyTone.auto, style: context.text.moneyL, hidden: hidden),
-                  chip: todayPct == null || hidden
-                      ? null
-                      : KChip(
-                          label: t('dashboard.home.todayPct', {'pct': '${todayPct >= 0 ? '+' : ''}${todayPct.toStringAsFixed(2)}'}),
-                          tone: (today ?? totals.profit) >= 0 ? KChipTone.up : KChipTone.down,
-                        ),
-                  onTap: () => context.go('/portfolio/performance'),
-                ),
-                if (walletOn) ...[
-                  const SizedBox(width: 12),
-                  KKpiCard(
-                    width: kpiWidth,
-                    label: t('dashboard.home.walletBalance'),
-                    icon: LucideIcons.wallet,
-                    value: walletTotal == null ? const Text('—') : KMoney(walletTotal, style: context.text.moneyL, hidden: hidden),
-                    footer: Row(
-                      children: [
-                        const KCoinIcon('usdt', size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          'USDT · TRC20 · BEP20',
-                          style: context.text.caption.copyWith(color: k.fg3, fontWeight: FontWeight.w600),
-                        ),
-                      ],
-                    ),
-                    onTap: () => context.go('/wallet'),
+          // 3. the wallet balance (founder decision 2026-11-10: the equity, today's P&L and rewards cards are gone from
+          // here; the accounts carousel and the Wallet tab carry those figures)
+          if (walletOn) ...[
+            KKpiCard(
+              label: t('dashboard.home.walletBalance'),
+              icon: LucideIcons.wallet,
+              value: walletTotal == null ? const Text('—') : KMoney(walletTotal, style: context.text.moneyL, hidden: hidden),
+              footer: Row(
+                children: [
+                  const KCoinIcon('usdt', size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'USDT · TRC20 · BEP20',
+                    style: context.text.caption.copyWith(color: k.fg3, fontWeight: FontWeight.w600),
                   ),
                 ],
-                if (rewardsOn) ...[
-                  const SizedBox(width: 12),
-                  KKpiCard(
-                    width: kpiWidth,
-                    label: t('dashboard.home.rewards'),
-                    icon: LucideIcons.award,
-                    value: rewards == null ? const Text('—') : KMoney(rewards.points * rewards.pointValue, style: context.text.moneyL, hidden: hidden),
-                    chip: KChip(
-                      label: rewards == null || hidden ? t('shell.nav.loyalty') : t('dashboard.home.points', {'points': Fmt.number(rewards.points, 0)}),
-                      tone: KChipTone.gold,
-                    ),
-                    onTap: () => context.go('/rewards/loyalty'),
-                  ),
-                ],
-              ],
+              ),
+              onTap: () => context.go('/wallet'),
             ),
-          ),
-          const SizedBox(height: 24),
+            const SizedBox(height: 24),
+          ],
           // 4. your accounts
           AccountsPanel(
             accounts: accounts == null ? null : ordered.take(8).toList(),
