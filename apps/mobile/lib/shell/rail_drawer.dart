@@ -105,40 +105,41 @@ class _RailDrawerState extends ConsumerState<RailDrawer> {
             child: KFrosted(
               color: k.bar,
               child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // the brand: the mark, and the broker's name beside it (Ezymex: its wordmark)
-                KPressable(
-                  onTap: () => _go('/'),
-                  semanticLabel: t('shell.nav.dashboard'),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Row(
-                      children: [
-                        KBrandAvatar(size: 36, letter: cfg.tenantDefault ? null : cfg.tenantName.characters.first.toUpperCase()),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: cfg.tenantDefault
-                              ? Align(alignment: AlignmentDirectional.centerStart, child: KLogo(height: 17, color: k.fg))
-                              : Text(
-                                  cfg.tenantName,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: context.text.headline.copyWith(fontSize: 15.5, fontWeight: FontWeight.w700),
-                                ),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // the brand: the mark, and the broker's name beside it (Ezymex: its wordmark)
+                      KPressable(
+                        onTap: () => _go('/'),
+                        semanticLabel: t('shell.nav.dashboard'),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Row(
+                            children: [
+                              KBrandAvatar(size: 36, letter: cfg.tenantDefault ? null : cfg.tenantName.characters.first.toUpperCase()),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: cfg.tenantDefault
+                                    ? Align(alignment: AlignmentDirectional.centerStart, child: KLogo(height: 17, color: k.fg))
+                                    : Text(
+                                        cfg.tenantName,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: context.text.headline.copyWith(fontSize: 15.5, fontWeight: FontWeight.w700),
+                                      ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
+                      ),
+                      Container(height: 1, color: k.line, margin: const EdgeInsets.fromLTRB(4, 16, 4, 12)),
+                      Expanded(child: ListView(padding: EdgeInsets.zero, clipBehavior: Clip.none, children: rows)),
+                    ],
                   ),
                 ),
-                Container(height: 1, color: k.line, margin: const EdgeInsets.fromLTRB(4, 16, 4, 12)),
-                Expanded(child: ListView(padding: EdgeInsets.zero, clipBehavior: Clip.none, children: rows)),
-              ],
-            ),
-          ),
+              ),
             ),
           ),
           PositionedDirectional(top: 0, bottom: 0, end: 0, child: Container(width: 0.8, color: k.line)),
