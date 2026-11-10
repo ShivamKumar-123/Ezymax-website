@@ -72,7 +72,7 @@
   let chart = null;           // its active chart, once it is ready
   let cfg = null;             // the init message
   let bars = [];              // every bar we hold, oldest first
-  let onTick = null;          // the datafeed's realtime callback
+  const ticks = new Map();    // the datafeed's realtime callbacks, by the library's listener id
   let olderWait = null;       // the getBars resolver waiting for an `older` message
   let firstWait = null;       // the first getBars, parked until the app's `bars` message has arrived
   let exhausted = false;      // the app has told us there is no more history
@@ -145,8 +145,11 @@
       post({ type: "older", before: Math.floor(bars[0].time / 1000) });
     },
 
-    subscribeBars: (_symbol, _res, cb) => { onTick = cb; },
-    unsubscribeBars: () => { onTick = null; },
+    // Kept by the library's own listener id: on a symbol or resolution change it subscribes the new series and
+    // only then unsubscribes the old one, so a single callback slot would be cleared by that late unsubscribe and
+    // the chart would stop moving (it did: every market after the first one stood still).
+    subscribeBars: (_symbol, _res, cb, guid) => { ticks.set(guid, cb); },
+    unsubscribeBars: (guid) => { ticks.delete(guid); },
   };
 
   /* ----------------------------------------------------------------- theme */
@@ -927,7 +930,7 @@
         const last = bars[bars.length - 1];
         if (last && last.time === b.time) bars[bars.length - 1] = b;
         else bars.push(b);
-        if (onTick) onTick(b);
+        for (const cb of ticks.values()) { try { cb(b); } catch (_) {} }
         return;
       }
 
