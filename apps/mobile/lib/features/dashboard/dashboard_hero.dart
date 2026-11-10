@@ -37,7 +37,7 @@ class DashboardHeroPicture extends StatelessWidget {
         children: [
           // the dusk skyline with the charts in the glass (founder's picture, 10 Nov 2026): centred, so the tower and
           // the glass front share the phone's width while the sky at the start stays clear for the copy
-          Image.asset('assets/images/hero-dusk.jpg', fit: BoxFit.cover, alignment: Alignment.center, filterQuality: FilterQuality.high),
+          Image.asset('assets/images/hero-dusk.jpg', fit: BoxFit.cover, filterQuality: FilterQuality.high),
           DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
