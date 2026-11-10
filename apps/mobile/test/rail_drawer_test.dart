@@ -8,7 +8,7 @@ import 'helpers/test_app.dart';
 
 void main() {
   testWidgets('the brand mark opens the rail with every module; Trading unfolds its pages', (tester) async {
-    await pumpApp(tester, signedIn: true, location: '/accounts');
+    await pumpApp(tester, signedIn: true);
     expect(find.byType(RailDrawer), findsNothing);
     await tester.tap(find.byType(KBrandAvatar).first);
     await settle(tester, frames: 6);
@@ -18,7 +18,10 @@ void main() {
     for (final label in ['Dashboard', 'Trading', 'Wallet', 'Analytics']) {
       expect(find.descendant(of: drawer, matching: find.text(label)), findsOneWidget, reason: label);
     }
-    // the current module's pages are open on arrival
+    // the Dashboard has no pages, so nothing is open on arrival; a module's row unfolds its pages
+    expect(find.descendant(of: drawer, matching: find.text('Open account')), findsNothing);
+    await tester.tap(find.descendant(of: drawer, matching: find.text('Trading')));
+    await settle(tester, frames: 4);
     expect(find.descendant(of: drawer, matching: find.text('Open account')), findsOneWidget);
     // another module's chevron swaps the open group
     await tester.tap(find.descendant(of: drawer, matching: find.text('Wallet')));
