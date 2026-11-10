@@ -332,6 +332,9 @@ sealed class ChartEvent {
       case 'ind':
         final uid = m['uid'];
         return uid is String ? ChartIndicatorTapped(uid) : null;
+      case 'tf':
+        final tf = m['tf'];
+        return tf is String ? ChartTimeframeChanged(tf) : null;
       case 'stop':
         final id = m['id'], which = m['which'], price = n(m['price']);
         return id is String && which is String && (which == 'sl' || which == 'tp') && price != null ? ChartStopDragged(id, which, price) : null;
@@ -343,6 +346,12 @@ sealed class ChartEvent {
 /// The page is loaded and listening.
 class ChartReady extends ChartEvent {
   const ChartReady();
+}
+
+/// The trader picked a timeframe in the page's own header (the TradingView page): the app's name for it (M1 … MN).
+class ChartTimeframeChanged extends ChartEvent {
+  const ChartTimeframeChanged(this.tf);
+  final String tf;
 }
 
 /// A trade line's chip started moving under the finger (the app holds its line updates until the drag ends).

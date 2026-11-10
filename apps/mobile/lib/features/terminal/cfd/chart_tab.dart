@@ -1,5 +1,8 @@
-// Chart tab (web MChart): the symbol and timeframes strip, the chart with its trade lines, and the bottom bar
-// SELL (bid) · volume · BUY (ask). One-click trading on: Sell / Buy trade at once (haptic); off: the order sheet.
+// Chart tab (web MChart): the symbol row, the chart with its trade lines, and the bottom bar SELL (bid) · volume ·
+// BUY (ask). One-click trading on: Sell / Buy trade at once (haptic); off: the order sheet.
+// The timeframes, the chart type and Indicators are the chart page's own header (the TradingView page, as on the
+// web terminal's phone layout), not a strip of the app's (founder decision 2026-11-10): the page reports a picked
+// timeframe over the bridge and the workspace keeps it.
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -61,56 +64,14 @@ class ChartTab extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    Center(
-                      child: Container(width: 0.8, height: 16, color: k.line, margin: const EdgeInsets.symmetric(horizontal: 4)),
-                    ),
-                    for (final tf in kTimeframes)
-                      Center(
-                        child: KPressable(
-                          minSize: 34,
-                          pressedScale: 1,
-                          onTap: () {
-                            KHaptics.selection();
-                            ref.read(workspaceProvider.notifier).update((w) => w.copyWith(tf: tf));
-                          },
-                          child: Container(
-                            height: 27,
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(color: ws.tf == tf ? k.emberSoft : Colors.transparent, borderRadius: BorderRadius.circular(6)),
-                            child: Text(
-                              tf,
-                              style: context.text.mono(11, weight: FontWeight.w600, color: ws.tf == tf ? k.ember : k.fg3),
-                            ),
-                          ),
-                        ),
-                      ),
                   ],
                 ),
               ),
-              Container(width: 0.8, height: 16, color: k.line),
-              // chart type, indicators and templates (web chart toolbar)
-              ChartMenuButton(symbol: symbol),
-              const SizedBox(width: 2),
             ],
           ),
         ),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(4),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(9),
-              child: DecoratedBox(
-                position: DecorationPosition.foreground,
-                decoration: BoxDecoration(
-                  border: Border.all(color: k.line),
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                child: _Chart(symbol: symbol, tf: ws.tf),
-              ),
-            ),
-          ),
-        ),
+        // edge to edge, like the web terminal's phone chart: the page draws its own frame and toolbars
+        Expanded(child: _Chart(symbol: symbol, tf: ws.tf)),
         if (!readOnly) _TradeBar(symbol: symbol),
       ],
     );
@@ -242,6 +203,9 @@ class _Chart extends ConsumerWidget {
       chartType: chart.type,
       indicators: chart.indicators,
       onIndicatorTapped: (uid) => unawaited(showIndicatorActions(context, ref, symbol, uid)),
+      onTimeframeChanged: (tf) {
+        if (kTimeframes.contains(tf)) ref.read(workspaceProvider.notifier).update((w) => w.copyWith(tf: tf));
+      },
       onLongPress: ro ? null : (price) => _longPress(context, ref, price),
     );
   }

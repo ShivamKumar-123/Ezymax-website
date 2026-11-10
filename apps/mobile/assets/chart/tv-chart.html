@@ -64,6 +64,7 @@
   // The app's timeframe names and TradingView's resolutions are the same ladder under two spellings.
   const TF_TO_RES = { M1: "1", M5: "5", M15: "15", M30: "30", H1: "60", H4: "240", D1: "1D", W1: "1W", MN: "1M" };
   const resOf = (tf) => TF_TO_RES[String(tf || "").toUpperCase()] || "1";
+  const tfOf = (res) => (Object.entries(TF_TO_RES).find(([, r]) => r === String(res)) || [null])[0];
 
   /* ----------------------------------------------------------------- state */
 
@@ -118,8 +119,17 @@
       data_status: "streaming",
     }), 0),
 
-    getBars: (_symbol, _res, period, onHistory, onError) => {
+    getBars: (_symbol, res, period, onHistory, onError) => {
       if (period.firstDataRequest) {
+        // The trader picked another resolution in the library's own header: the bars held here are the old
+        // timeframe's, so the request is parked and the app is asked for the new one (it answers with init + bars).
+        if (cfg && String(res) !== resOf(cfg.tf)) {
+          bars = [];
+          firstWait = { onHistory, onError };
+          const tf = tfOf(res);
+          if (tf) post({ type: "tf", tf });
+          return;
+        }
         if (bars.length) return onHistory(bars.slice(), { noData: false });
         // The library asks before the app has sent its history. Answering "no data" here would be believed -
         // the library then stops asking - so the request is parked and answered when the bars arrive.
@@ -802,14 +812,17 @@
       autosize: true,
       theme: p.dark === false ? "light" : "dark",
       timezone: "Etc/UTC",
-      // The app has its own toolbar, timeframe picker and indicator menu around this view, so the library's
-      // own chrome would be a second set of the same controls.
+      // The library's own chrome, as the web terminal shows it on a phone (apps/terminal/lib/tv/style.ts
+      // features("phone")): the header with the resolutions, the chart type and Indicators, and the drawing
+      // toolbar on the left. The app draws only the symbol row above and the trade bar below.
       disabled_features: [
-        "header_widget", "left_toolbar", "timeframes_toolbar", "control_bar", "legend_context_menu",
-        "symbol_search_hot_key", "compare_symbol", "border_around_the_chart", "popup_hints",
-        "go_to_date", "display_market_status", "context_menus",
+        "header_saveload", "header_fullscreen_button", "header_symbol_search", "header_compare", "header_undo_redo",
+        "header_screenshot", "header_quick_search", "header_settings", "timezone_menu", "timeframes_toolbar",
+        "control_bar", "legend_context_menu", "symbol_search_hot_key", "compare_symbol", "border_around_the_chart",
+        "popup_hints", "go_to_date", "display_market_status", "context_menus",
       ],
-      enabled_features: ["hide_left_toolbar_by_default", "iframe_loading_compatibility_mode"],
+      enabled_features: ["iframe_loading_compatibility_mode"],
+      favorites: { intervals: ["1", "30", "60", "240", "1D"] },
       overrides: overrides(),
       studies_overrides: studyOverrides(),
       loading_screen: { backgroundColor: p.bg || "#000000", foregroundColor: p.ember || "#f97316" },
@@ -818,6 +831,16 @@
 
     widget.onChartReady(() => {
       chart = widget.activeChart();
+      // The library adds a Volume study to every new chart (the "Volume" row and the histogram). The web terminal
+      // removes it on each open and so does this page; Volume is still there under Indicators.
+      try { for (const st of chart.getAllStudies()) if (st.name === "Volume") chart.removeEntity(st.id, { disableUndo: true }); } catch (_) {}
+      // a resolution picked in the header goes to the app, which owns the timeframe (and sends the bars)
+      try {
+        chart.onIntervalChanged().subscribe(null, (res) => {
+          const tf = tfOf(res);
+          if (tf && cfg && tf !== String(cfg.tf || "").toUpperCase()) post({ type: "tf", tf });
+        });
+      } catch (_) {}
       try { chart.setChartType(STYLE[cfg.chartType] ?? 1); } catch (_) {}
       drawStudies(lastIndicators || cfg.indicators);
       if (lastLines) drawLines(lastLines);
@@ -834,6 +857,8 @@
       case "init":
         cfg = m;
         if (!widget) build();
+        // the app changed the timeframe (or confirmed the one picked in the header): the library follows
+        else if (chart) { try { if (chart.resolution() !== resOf(m.tf)) chart.setResolution(resOf(m.tf)); } catch (_) {} }
         return;
 
       case "bars": {

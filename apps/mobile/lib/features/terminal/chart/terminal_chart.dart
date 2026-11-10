@@ -80,6 +80,7 @@ class TerminalChart extends ConsumerStatefulWidget {
     this.chartType = 'candles',
     this.indicators = const [],
     this.onIndicatorTapped,
+    this.onTimeframeChanged,
   });
 
   /// The market (also the cache key when no source is given).
@@ -88,6 +89,9 @@ class TerminalChart extends ConsumerStatefulWidget {
   /// M1 … MN
   final String tf;
   final ChartSource? source;
+
+  /// The trader picked a timeframe in the chart page's own header; the owner sets [tf] accordingly.
+  final void Function(String tf)? onTimeframeChanged;
   final List<ChartLine> lines;
 
   /// A line dropped at `price`. Until a returned future completes the line stays at the drop price on the chart
@@ -372,6 +376,8 @@ class _TerminalChartState extends ConsumerState<TerminalChart> {
         widget.onLongPress?.call(price);
       case ChartIndicatorTapped(:final uid):
         widget.onIndicatorTapped?.call(uid);
+      case ChartTimeframeChanged(:final tf):
+        if (tf != widget.tf) widget.onTimeframeChanged?.call(tf);
       case ChartReady():
         // a reloaded page: draw everything again
         unawaited(_load());
