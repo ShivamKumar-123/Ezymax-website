@@ -98,10 +98,13 @@ class _RailDrawerState extends ConsumerState<RailDrawer> {
       backgroundColor: Colors.transparent,
       elevation: 0,
       shape: const RoundedRectangleBorder(),
-      child: KFrosted(
-        color: k.bar,
-        border: BorderDirectional(end: BorderSide(color: k.line, width: 0.8)),
-        child: SafeArea(
+      // the hairline on the page side is drawn on top: a one-sided border cannot share a rounded clip
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: KFrosted(
+              color: k.bar,
+              child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
             child: Column(
@@ -136,7 +139,10 @@ class _RailDrawerState extends ConsumerState<RailDrawer> {
               ],
             ),
           ),
-        ),
+            ),
+          ),
+          PositionedDirectional(top: 0, bottom: 0, end: 0, child: Container(width: 0.8, color: k.line)),
+        ],
       ),
     );
   }
