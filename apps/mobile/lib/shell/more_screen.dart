@@ -1,5 +1,5 @@
-// "More" (web MobileBar's drawer, as an iOS grouped list): every module outside the bottom bar with its pages (tap
-// the chevron to show them), then language, appearance, preferences and log out.
+// "More" (web MobileBar's drawer, as an iOS grouped list): every module with its pages (tap the chevron to show
+// them), then language, appearance, preferences and log out.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -32,7 +32,8 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
     final k = context.k;
     final cfg = ref.watch(configProvider);
     final me = ref.watch(meProvider);
-    final nav = navFor(cfg, me).where((m) => !kPrimaryModules.contains(m.key)).toList();
+    // every module, the bottom bar's four included (founder decision 2026-11-10): the list reads like the web's rail
+    final nav = navFor(cfg, me);
     final rtl = Directionality.of(context) == TextDirection.rtl;
     final locale = localeInfo(ref.watch(localeProvider));
     final dark = Theme.of(context).brightness == Brightness.dark;
