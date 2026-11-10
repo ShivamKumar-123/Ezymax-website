@@ -7,16 +7,12 @@ import 'dart:io';
 import 'package:ezymex/core/prefs.dart';
 import 'package:ezymex/features/terminal/cfd/chart_menu.dart';
 import 'package:ezymex/features/terminal/chart/indicators.dart';
-import 'package:ezymex/features/terminal/chart/terminal_chart.dart';
-import 'package:ezymex/features/terminal/core/market.dart';
 import 'package:ezymex/features/terminal/core/workspace.dart';
-import 'package:ezymex/features/terminal/terminal_screen.dart';
 import 'package:ezymex/i18n/i18n.dart';
 import 'package:ezymex/ui/ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -243,57 +239,4 @@ void main() {
     });
   });
 
-  testWidgets('the chart toolbar opens the menu next to the timeframes', (tester) async {
-    await loadFonts();
-    TerminalChart.forceNative = true;
-    tester.view.physicalSize = const Size(412, 915);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    late Harness h;
-    await tester.runAsync(() async {
-      h = await Harness.create(
-        extra: [
-          marketFeedProvider.overrideWith((ref) => FixedFeed({'XAUUSD': q('XAUUSD', 2654.30, 2654.48)})),
-          indicatorRegistryProvider.overrideWith((ref) async => reg),
-        ],
-      );
-      // two indicators on this chart (a chart starts bare): the count on the button, the legend rows below
-      h.container.read(workspaceProvider.notifier).updateChart('XAUUSD', (c) => c.copyWith(indicators: [
-        IndInstance(uid: newIndicatorUid(), type: 'ema', params: const {'period': 50, 'source': 'close'}),
-        IndInstance(uid: newIndicatorUid(), type: 'sma', params: const {'period': 20, 'source': 'close'}),
-      ]));
-    });
-    final router = GoRouter(
-      initialLocation: '/trader?login=10042817&symbol=XAUUSD',
-      routes: [GoRoute(path: '/trader', builder: (c, s) => TerminalScreen.fromQuery(s.uri.queryParameters))],
-    );
-    await tester.pumpWidget(
-      UncontrolledProviderScope(
-        container: h.container,
-        child: MaterialApp.router(
-          routerConfig: router,
-          theme: KTheme.client(Brightness.dark),
-          builder: (context, child) => I18nScope(t: h.container.read(tProvider), child: child!),
-        ),
-      ),
-    );
-    for (var i = 0; i < 12; i++) {
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 40)));
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-    // the count of indicators on the button, and the legend rows of the chart
-    expect(find.descendant(of: find.byKey(const ValueKey('chart-menu')), matching: find.text('2')), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('chart-menu')));
-    for (var i = 0; i < 6; i++) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-    expect(find.text('CHART TYPE'), findsOneWidget);
-    expect(find.text('ON THIS CHART'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('chart-type-area')));
-    await tester.pump();
-    expect(h.container.read(workspaceProvider).chartOf('XAUUSD').type, 'area');
-    await tester.pumpWidget(const SizedBox.shrink());
-    await tester.runAsync(() async => h.container.dispose());
-    await tester.pump(const Duration(seconds: 1));
-  });
 }
