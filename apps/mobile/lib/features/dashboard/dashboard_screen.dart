@@ -37,15 +37,12 @@ import '../../shell/nav.dart';
 import '../../ui/ui.dart';
 import '../accounts/account_actions.dart';
 import '../rewards/widgets/bonus_steps.dart';
-import '../support/ask_ai.dart';
 import '../updates/updates_api.dart';
-import '../updates/widgets/updates_section.dart';
 import '../wallet/widgets/turnover.dart';
 import 'dashboard_data.dart';
 import 'dashboard_hero.dart';
 import 'widgets/accounts_panel.dart';
 import 'widgets/balance_panel.dart';
-import 'widgets/banner_slot.dart';
 import 'widgets/markets_cards.dart';
 import 'widgets/more_cards.dart';
 import 'widgets/notifications_panel.dart';
@@ -258,39 +255,6 @@ class DashboardScreen extends ConsumerWidget {
         ),
     ];
 
-    // Ask Ezymex AI: suggestions answered by the real support bot; account questions also show the client's own figures
-    final liveAccts = totals.live;
-    final aiChips = [
-      if (on('/wallet/deposit'))
-        AiChip(
-          key: 'deposit',
-          label: t('dashboard.ai.chip.deposit'),
-          extra: AiLink(href: '/wallet/deposit', label: t('common.deposit')),
-        ),
-      AiChip(
-        key: 'freeMargin',
-        label: t('dashboard.ai.chip.freeMargin'),
-        extra: AiFacts(
-          title: t('dashboard.ai.yourAccounts'),
-          rows: [for (final a in liveAccts) (label: '#${a.login} · ${a.groupName}', value: a.money(a.freeMargin), tone: null)],
-        ),
-      ),
-      AiChip(
-        key: 'marginLevel',
-        label: t('dashboard.ai.chip.marginLevel'),
-        extra: AiFacts(
-          title: t('dashboard.ai.yourAccounts'),
-          rows: [for (final a in liveAccts) (label: '#${a.login} · ${a.groupName}', value: fmtLevel(a.marginLevel), tone: levelTone(a.marginLevel))],
-        ),
-      ),
-      AiChip(
-        key: 'openAccount',
-        label: t('dashboard.ai.chip.openAccount'),
-        question: t('dashboard.ai.q.openAccount'),
-        extra: AiLink(href: '/accounts/new', label: t('dashboard.accounts.open')),
-      ),
-    ];
-
     final rtl = Directionality.of(context) == TextDirection.rtl;
 
     // the module's pages under the sheet's grabber (the shell's sub-nav, in the sheet while the picture shows)
@@ -321,8 +285,8 @@ class DashboardScreen extends ConsumerWidget {
         padding: const EdgeInsets.fromLTRB(_gutter, 16, _gutter, 24),
         hero: hero,
         children: [
-          // 0. targeted banner
-          const DashboardBannerSlot(),
+          // the targeted banners and the brand carousel, Ask Ezymex AI and Events & updates are gone from here
+          // (founder decision 2026-11-10); the Updates and Support pages keep their content
           // the banner above promises the cashback; this says what it takes to get it
           // a trading requirement belongs where the client already is, not only on the way out
           const TurnoverPanel(bottom: 16),
@@ -348,8 +312,6 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ],
           ),
-          // 1b. Ask Ezymex AI (the AI assistant, answered over the support chat: both modules)
-          if (!readOnly && modulesOn(config, 'ai_assistant&support')) ...[const SizedBox(height: 16), AskAi(chips: aiChips)],
           const SizedBox(height: 24),
           // 3. the wallet balance (founder decision 2026-11-10: the equity, today's P&L and rewards cards are gone from
           // here; the accounts carousel and the Wallet tab carry those figures)
@@ -419,8 +381,6 @@ class DashboardScreen extends ConsumerWidget {
           const SizedBox(height: 24),
           // 7. notifications
           if (!readOnly) ...[NotificationsPanel(prompts: prompts), const SizedBox(height: 24)],
-          // Events & updates (brand events and posts; module promotions)
-          const DashboardUpdatesSection(),
           // Markets
           const SizedBox(height: 36),
           KSectionTitle(t('dashboard.home.marketsTitle'), large: true),
