@@ -259,6 +259,9 @@ class _Header extends ConsumerWidget {
                   onPressed: () => context.canPop() ? context.pop() : context.go('/'),
                 ),
                 const Expanded(child: _AccountPill()),
+                // the account's figures (equity, floating P&L, margin …) open as a sheet from this arrow, beside the
+                // bell (founder decision 2026-11-10); its colour hints at the floating P&L
+                const _FiguresArrow(),
                 KIconButton(
                   icon: LucideIcons.bell,
                   size: 34,
@@ -288,13 +291,10 @@ class _AccountPill extends ConsumerWidget {
     final st = ref.watch(terminalProvider);
     final sessions = ref.watch(tradeSessionsProvider);
     final a = st.account ?? sessions.current?.account;
-    final m = st.metrics;
     final login = a?.login ?? sessions.active ?? sessions.busyLogin;
     // the account's nickname when the client gave it one, else the login (founder decision 2026-11-10)
     final nick = a != null && a.name.trim().isNotEmpty ? a.name.trim() : null;
     final streamDown = st.synced && (st.stream == SocketStatus.reconnecting || st.stream == SocketStatus.connecting);
-    // the arrow takes the floating P&L's colour, a hint of what the sheet will say
-    final floatingColor = m.floating > 0.004 ? k.up : (m.floating < -0.004 ? k.down : k.fg2);
     return KPressable(
       minSize: 36,
       semanticLabel: t('trader.account.switch'),
@@ -329,24 +329,34 @@ class _AccountPill extends ConsumerWidget {
             ],
             const Spacer(),
             Icon(LucideIcons.chevronsUpDown, size: 13, color: k.fg3),
-            // the figures (equity, floating P&L, margin …) sit behind a small arrow and open as a sheet, so the
-            // nickname keeps the line (founder decision 2026-11-10)
-            if (a != null) ...[
-              const SizedBox(width: 6),
-              KPressable(
-                minSize: 36,
-                semanticLabel: t('desk.ah.equity'),
-                onTap: () => showAccountFigures(context),
-                child: Container(
-                  width: 26,
-                  height: 26,
-                  decoration: BoxDecoration(color: k.surface2, shape: BoxShape.circle, border: Border.all(color: k.line)),
-                  child: Icon(LucideIcons.chevronDown, size: 15, color: floatingColor),
-                ),
-              ),
-            ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _FiguresArrow extends ConsumerWidget {
+  const _FiguresArrow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = context.t;
+    final k = context.k;
+    final has = ref.watch(terminalProvider.select((s) => s.account != null));
+    final floating = ref.watch(terminalProvider.select((s) => s.metrics.floating));
+    if (!has) return const SizedBox.shrink();
+    final colour = floating > 0.004 ? k.up : (floating < -0.004 ? k.down : k.fg2);
+    return KPressable(
+      minSize: 36,
+      semanticLabel: t('desk.ah.equity'),
+      onTap: () => showAccountFigures(context),
+      child: Container(
+        width: 26,
+        height: 26,
+        margin: const EdgeInsets.symmetric(horizontal: 2),
+        decoration: BoxDecoration(color: k.surface2, shape: BoxShape.circle, border: Border.all(color: k.line)),
+        child: Icon(LucideIcons.chevronDown, size: 15, color: colour),
       ),
     );
   }
