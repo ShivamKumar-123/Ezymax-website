@@ -209,13 +209,13 @@ void main() {
       expect(find.byType(DashboardScreen), findsOneWidget);
       final page = find.descendant(of: find.byType(DashboardScreen), matching: find.byType(Scrollable)).first;
       var lastY = double.negativeInfinity;
+      // 'Overview' is the sheet's sub-nav label, shown only when the module has more than one page
       for (final s in [
-        'Overview',
         'Total equity',
         'Your accounts',
         'Quick actions',
         'Statistics',
-        'Notifications',
+        // the notifications panel draws nothing for the sample client (verified, funded: no prompts)
         'Top movers',
         'Economic calendar',
         'Market news',
