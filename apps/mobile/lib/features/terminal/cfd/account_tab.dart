@@ -134,9 +134,10 @@ class AccountTab extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 12),
+        // "Dashboard" (founder decision 2026-11-10): it leads to the app's home
         KButton(
-          label: t('trader.clientArea'),
-          icon: LucideIcons.wallet,
+          label: t('shell.nav.dashboard'),
+          icon: LucideIcons.layoutGrid,
           trailingIcon: LucideIcons.arrowUpRight,
           variant: KButtonVariant.surface,
           expand: true,
