@@ -278,9 +278,10 @@ fn every_live_catalogue_symbol_opens_values_stops_out_and_closes() {
     }
     prices.extend(derived);
     let mut kit = catalogue_kit(Overrides::default());
-    // conversion pairs: every core FX pair and catalogue FX pair at its snapshot price
+    // conversion pairs: every FX pair, metal and coin (core or catalogue) at its snapshot price, so a profit in JPY,
+    // XAU or BTC converts
     let quote_all = |kit: &Kit| {
-        for r in rows.iter().filter(|r| r["asset_class"] == "forex") {
+        for r in rows.iter().filter(|r| ["forex", "metals", "crypto"].contains(&r["asset_class"].as_str().unwrap_or(""))) {
             let (sym, code, digits) = (r["symbol"].as_str().unwrap(), r["provider"]["code"].as_str().unwrap(), r["digits"].as_u64().unwrap() as u32);
             if let Some(p) = prices.get(code) {
                 let spec = kit.specs.get(sym).unwrap();
