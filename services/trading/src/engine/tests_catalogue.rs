@@ -82,9 +82,10 @@ fn catalogue_loads_with_templates_sessions_and_calendars() {
     assert_eq!(s.get("00700.HK").unwrap().quote_ccy, "HKD");
     assert_eq!(s.get("00700.HK").unwrap().contract_size, D::from(100));
     assert_eq!(s.get("XCUUSD").unwrap().contract_size, D::from(10000), "per-symbol override over the template");
-    let bnb = s.get("BNBUSD").unwrap();
-    assert!(bnb.swap_all_days && bnb.session == Session::Always && bnb.max_leverage == 10);
-    assert_eq!(bnb.swap_mode, crate::specs::SwapMode::PercentYear);
+    // (a catalogue crypto row: BNBUSD until 9 Nov 2026, BTCUSDT since the hand-picked list)
+    let btc = s.get("BTCUSDT").unwrap();
+    assert!(btc.swap_all_days && btc.session == Session::Always && btc.max_leverage == 10);
+    assert_eq!(btc.swap_mode, crate::specs::SwapMode::PercentYear);
     assert_eq!(s.get("EURUSD").unwrap().swap_mode, crate::specs::SwapMode::Points, "core swaps stay in points");
     // kept off live trading by default, with the reason
     assert!(s.get("USDTRY").unwrap().live_off.is_some() && !s.get("USDTRY").unwrap().live);
@@ -103,7 +104,9 @@ fn sessions_and_holidays_per_class() {
     assert!(open("AUDCAD", "2026-09-25T20:59:00Z") && !open("AUDCAD", "2026-09-26T10:00:00Z"));
     assert!(open("AUDCAD", "2026-11-26T15:00:00Z"), "FX trades on US Thanksgiving");
     // crypto: around the clock
-    assert!(open("BNBUSD", "2026-09-26T10:00:00Z") && open("BNBUSD", "2026-12-25T10:00:00Z"));
+    assert!(open("BTCUSDT", "2026-09-26T10:00:00Z") && open("BTCUSDT", "2026-12-25T10:00:00Z"));
+    // a cross with a gold leg keeps the FX week: no price on a Saturday
+    assert!(!open("BTCXAU", "2026-09-26T10:00:00Z") && open("BTCXAU", "2026-09-28T10:00:00Z"));
     // US stocks: NYSE hours and holidays, early close; the core AAPL keeps its original rules (no calendar)
     assert!(open("MSFT", "2026-11-25T15:00:00Z"));
     assert!(!open("MSFT", "2026-11-26T15:00:00Z"), "Thanksgiving");
@@ -212,11 +215,11 @@ fn live_defaults_class_and_symbol_switches() {
 #[test]
 fn percent_swaps_follow_the_position_value() {
     let kit = catalogue_kit(Overrides::default());
-    let spec = kit.specs.get("BNBUSD").unwrap().clone();
-    kit.quote("BNBUSD", "770.00", "770.20");
+    let spec = kit.specs.get("BTCUSDT").unwrap().clone();
+    kit.quote("BTCUSDT", "770.00", "770.20");
     let mut h = Harness::live(&kit, "hedge", "100000");
-    h.run(&kit, |tx, env| trade::place_order(tx, env, buy("BNBUSD", "1"))).unwrap();
-    // the rollover after opening: crypto swaps every night, −20 % a year / 365 of 1 lot × 10 coins × 770.10 (mid)
+    h.run(&kit, |tx, env| trade::place_order(tx, env, buy("BTCUSDT", "1"))).unwrap();
+    // the rollover after opening: crypto swaps every night, −20 % a year / 365 of 1 lot × 1 coin × 770.10 (mid)
     let day = chrono::NaiveDate::from_ymd_opt(2026, 9, 28).unwrap();
     h.run(&kit, |tx, env| {
         super::risk::rollover(tx, env, day, t("2026-09-28T21:00:00Z"));
@@ -226,7 +229,7 @@ fn percent_swaps_follow_the_position_value() {
     let swap = h.st.positions.values().next().unwrap().swap;
     let want = crate::money::r2(d("-20") / d("100") / d("365") * spec.contract_size * d("770.10"));
     assert_eq!(swap, want);
-    assert_eq!(want, d("-4.22"));
+    assert_eq!(want, d("-0.42"));
     // core swaps are unchanged (points)
     let eu = kit.specs.get("EURUSD").unwrap();
     assert_eq!(eu.swap_per_night(true, D::ONE, d("1.1")), d("-7.2") * eu.point * eu.contract_size);
@@ -253,8 +256,23 @@ fn px(x: f64, digits: u32) -> D {
 /// protection included), it closes, and the ledger and the event replay stay exact.
 #[test]
 fn every_live_catalogue_symbol_opens_values_stops_out_and_closes() {
-    let prices = snapshot_prices();
+    let mut prices = snapshot_prices();
     let rows = instruments();
+    // a synthetic row (market-data instruments.rs Synthetic) is priced from its legs, as market-data prices it live
+    let code_of = |sym: &str| rows.iter().find(|r| r["symbol"] == sym).map(|r| r["provider"]["code"].as_str().unwrap().to_string());
+    for r in rows.iter().filter(|r| r["provider"]["market"] == "synthetic") {
+        let code = r["provider"]["code"].as_str().unwrap();
+        let (a, op, b) = if let Some((a, b)) = code.split_once('/') { (a, '/', Some(b)) } else if let Some((a, b)) = code.split_once('*') { (a, '*', Some(b)) } else { (code, ' ', None) };
+        let pa = code_of(a).and_then(|c| prices.get(&c).copied());
+        let pb = b.and_then(|s| code_of(s)).and_then(|c| prices.get(&c).copied());
+        let p = match (pa, pb, op) {
+            (Some(a), Some(b), '/') => a / b,
+            (Some(a), Some(b), '*') => a * b,
+            (Some(a), None, _) => a,
+            _ => panic!("{}: no snapshot price for its legs", r["symbol"]),
+        };
+        prices.insert(code.to_string(), p);
+    }
     let mut kit = catalogue_kit(Overrides::default());
     // conversion pairs: every core FX pair and catalogue FX pair at its snapshot price
     let quote_all = |kit: &Kit| {

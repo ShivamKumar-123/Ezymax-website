@@ -70,7 +70,7 @@ fn ticks_follow_each_class_session_and_holidays() {
     let c = repo();
     let open = |s: &str, at: &str| c.get(s).unwrap().in_session(t(at));
     assert!(open("AUDCAD", "2026-11-26T15:00:00Z") && !open("AUDCAD", "2026-09-26T10:00:00Z"));
-    assert!(open("BNBUSD", "2026-09-26T10:00:00Z"));
+    assert!(open("BTCUSDT", "2026-09-26T10:00:00Z"));
     assert!(!open("MSFT", "2026-11-26T15:00:00Z") && open("AAPL", "2026-11-26T15:00:00Z"), "NYSE holiday for the catalogue only");
     assert!(!open("MSFT", "2026-09-24T12:00:00Z") && open("MSFT", "2026-09-24T14:00:00Z"), "pre-market prints are ignored");
     assert!(!open("00700.HK", "2026-10-07T04:30:00Z") && open("00700.HK", "2026-10-07T06:00:00Z"));
@@ -125,15 +125,15 @@ async fn sync_restore_and_delayed_quotes_against_postgres() {
     assert_eq!(mk.forming("MSFT", Tf::D1).unwrap().c, 519.0);
     // a delayed snapshot never replaces a newer live price; a live tick clears the delayed flag
     mk.set_streaming(["MSFT".to_string()].into());
-    mk.set_snapshot("BNBUSD", 612.0, Some((600.0, 615.0, 598.0)), Utc::now().timestamp_millis());
-    let bnb = mk.quote("BNBUSD").unwrap();
-    assert!(bnb.delayed && bnb.last == 612.0);
-    assert_eq!(mk.day_stats(mk.cat.get("BNBUSD").unwrap()), Some((600.0, 615.0, 598.0)));
+    mk.set_snapshot("BTCUSDT", 612.0, Some((600.0, 615.0, 598.0)), Utc::now().timestamp_millis());
+    let btc = mk.quote("BTCUSDT").unwrap();
+    assert!(btc.delayed && btc.last == 612.0);
+    assert_eq!(mk.day_stats(mk.cat.get("BTCUSDT").unwrap()), Some((600.0, 615.0, 598.0)));
     let ts = Utc::now().timestamp_millis();
-    mk.on_trade("BNBUSD", 613.0, 1.0, ts);
-    assert!(!mk.quote("BNBUSD").unwrap().delayed);
-    mk.set_snapshot("BNBUSD", 500.0, None, ts - 60_000);
-    assert_eq!(mk.quote("BNBUSD").unwrap().last, 613.0, "older snapshot ignored");
+    mk.on_trade("BTCUSDT", 613.0, 1.0, ts);
+    assert!(!mk.quote("BTCUSDT").unwrap().delayed);
+    mk.set_snapshot("BTCUSDT", 500.0, None, ts - 60_000);
+    assert_eq!(mk.quote("BTCUSDT").unwrap().last, 613.0, "older snapshot ignored");
 
     pool.close().await;
     let mut admin = sqlx::ConnectOptions::connect(&server.database("postgres")).await.unwrap();
