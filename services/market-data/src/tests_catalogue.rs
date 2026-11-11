@@ -85,12 +85,12 @@ fn plan_streams_core_always_and_catalogue_on_demand_within_the_limit() {
     let limits = Limits { default_per_market: 600, total: 28, ..Limits::default() };
     let mut d = Demand::new(c.core(), limits);
     d.add("MSFT", Tier::Watch, now);
-    d.add("BNBUSD", Tier::Hold, now);
+    d.add("USDTHB", Tier::Hold, now);
     d.add("AUDCAD", Tier::Focus, now);
     let p = d.plan(&c, &BTreeSet::new(), now);
     // total 28: 26 core + the held and the charted symbol; the watched one waits
     assert_eq!(p.len(), 28);
-    assert!(p.symbols().contains("BNBUSD") && p.symbols().contains("AUDCAD") && !p.symbols().contains("MSFT"));
+    assert!(p.symbols().contains("USDTHB") && p.symbols().contains("AUDCAD") && !p.symbols().contains("MSFT"));
     assert_eq!(p.dropped, vec![("MSFT".to_string(), Tier::Watch)]);
     assert!(c.core().iter().all(|s| p.symbols().contains(s)));
 }

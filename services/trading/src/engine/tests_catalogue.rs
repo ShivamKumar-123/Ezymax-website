@@ -1,4 +1,4 @@
-//! Instrument catalogue: the 28 core instruments keep exactly their specs, catalogue instruments take their
+//! Instrument catalogue: the core instruments keep exactly their specs, catalogue instruments take their
 //! templates (with Back Office overrides), sessions follow their exchange and holiday calendar, forex / metals /
 //! energies / indices / crypto trade live by default (stocks and kept-off symbols do not, unless switched on), and
 //! every live-enabled catalogue symbol opens, values, stops out and closes with a balanced ledger.
@@ -30,17 +30,22 @@ fn key(s: &crate::specs::Spec) -> String {
     )
 }
 
+/// SOLUSD and XRPUSD left the core rows on 11 Nov 2026 (the founder's crypto list); the other 26 are unchanged
+/// since the 7 Oct 2026 fixture.
+const DROPPED_CORE: [&str; 2] = ["SOLUSD", "XRPUSD"];
+
 #[test]
-fn the_28_core_instruments_keep_exactly_their_specs() {
+fn the_core_instruments_keep_exactly_their_specs() {
     let old = Specs::parse(OLD_INSTRUMENTS, OLD_SPECS).unwrap();
     let new = repo();
     assert_eq!(old.len(), 28);
-    for o in old.all() {
+    for o in old.all().filter(|o| !DROPPED_CORE.contains(&o.symbol.as_str())) {
         let n = new.get(&o.symbol).unwrap_or_else(|| panic!("{} disappeared", o.symbol));
         assert_eq!(key(o), key(n), "{} changed", o.symbol);
         assert!(n.core && n.live && n.holidays.is_none() && n.template.is_none(), "{} must stay a core, live instrument", o.symbol);
     }
-    assert_eq!(new.all().filter(|s| s.core).count(), 28);
+    assert_eq!(new.all().filter(|s| s.core).count(), 26);
+    assert!(DROPPED_CORE.iter().all(|s| new.get(s).is_none()));
     // conversion pairs of the core currencies are unchanged by the catalogue (core pairs win)
     for ccy in ["JPY", "EUR", "GBP", "CAD", "CHF", "INR", "AUD"] {
         assert_eq!(new.usd_pair(ccy), old.usd_pair(ccy), "{ccy}");
@@ -52,7 +57,7 @@ fn catalogue_loads_with_templates_sessions_and_calendars() {
     let s = repo();
     assert!(s.len() > 1000, "catalogue has {} instruments", s.len());
     let cat: Vec<_> = s.all().filter(|x| !x.core).collect();
-    assert_eq!(cat.len() + 28, s.len());
+    assert_eq!(cat.len() + 26, s.len());
     for x in &cat {
         let default_on = ["forex", "metals", "energies", "indices", "crypto"].contains(&x.asset_class.as_str()) && x.live_off.is_none();
         assert!(x.template.is_some(), "{}", x.symbol);
