@@ -258,21 +258,25 @@ fn px(x: f64, digits: u32) -> D {
 fn every_live_catalogue_symbol_opens_values_stops_out_and_closes() {
     let mut prices = snapshot_prices();
     let rows = instruments();
-    // a synthetic row (market-data instruments.rs Synthetic) is priced from its legs, as market-data prices it live
-    let code_of = |sym: &str| rows.iter().find(|r| r["symbol"] == sym).map(|r| r["provider"]["code"].as_str().unwrap().to_string());
-    for r in rows.iter().filter(|r| r["provider"]["market"] == "synthetic") {
+    // a row without a snapshot row of its own (a hand-written cross such as BTCJPY, or a row market-data prices
+    // from two legs: BTCXAU, BTCCNH…) is priced from its currencies' USD snapshot prices, as the mock generator does
+    let usd_of = |c: &str| -> Option<f64> {
+        if c == "USD" {
+            return Some(1.0);
+        }
+        prices.get(&format!("{c}USDT")).or_else(|| prices.get(&format!("{c}USD"))).copied().or_else(|| prices.get(&format!("USD{c}")).map(|p| 1.0 / p))
+    };
+    let mut derived = Vec::new();
+    for r in rows.iter().filter(|r| r["asset_class"] == "crypto") {
         let code = r["provider"]["code"].as_str().unwrap();
-        let (a, op, b) = if let Some((a, b)) = code.split_once('/') { (a, '/', Some(b)) } else if let Some((a, b)) = code.split_once('*') { (a, '*', Some(b)) } else { (code, ' ', None) };
-        let pa = code_of(a).and_then(|c| prices.get(&c).copied());
-        let pb = b.and_then(|s| code_of(s)).and_then(|c| prices.get(&c).copied());
-        let p = match (pa, pb, op) {
-            (Some(a), Some(b), '/') => a / b,
-            (Some(a), Some(b), '*') => a * b,
-            (Some(a), None, _) => a,
-            _ => panic!("{}: no snapshot price for its legs", r["symbol"]),
-        };
-        prices.insert(code.to_string(), p);
+        if prices.contains_key(code) {
+            continue;
+        }
+        let (base, quote) = (r["base_ccy"].as_str().unwrap(), r["quote_ccy"].as_str().unwrap());
+        let (Some(b), Some(q)) = (usd_of(base), usd_of(quote)) else { panic!("{}: no snapshot price for {base} or {quote}", r["symbol"]) };
+        derived.push((code.to_string(), b / q));
     }
+    prices.extend(derived);
     let mut kit = catalogue_kit(Overrides::default());
     // conversion pairs: every core FX pair and catalogue FX pair at its snapshot price
     let quote_all = |kit: &Kit| {
