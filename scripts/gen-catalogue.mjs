@@ -268,10 +268,10 @@ for (const r of snap.rows.filter((r) => r.type === "INDICES")) {
 
 /* ----------------------------------------------------------------- crypto */
 
-// The crypto list is hand-picked (founder decision 2026-11-09): a short list of BTC / ETH markets rather than every
-// coin Binance quotes. Generated USDT rows survive only while CRYPTO_KEEP names them: positions were still open on
-// these two when the list was cut, so they stay until those close, then the code is removed here.
-const CRYPTO_KEEP = new Set(["WBTCUSDT", "XAUTUSDT"]);
+// The crypto list is hand-picked (founder decisions 2026-11-09 and 2026-11-11): a short list of BTC / ETH markets
+// rather than every coin Binance quotes. A generated USDT row survives only while CRYPTO_KEEP names it (none now:
+// WBTCUSD and XAUTUSD went on 11 Nov 2026, SOLUSD and XRPUSD left the core rows the same day).
+const CRYPTO_KEEP = new Set([]);
 // Crosses have no snapshot row (the Infoway snapshot lists USDT pairs only), so they are written out here: digits
 // from Binance's tick size (BTCJPY / BTCTHB 1, BTCAUD 0.01, ETHBTC 0.00001), spread = BTCUSD's 0.18 USD in the quote
 // currency (ETHBTC: ETHUSD's 1.6 USD), one coin per lot like BTCUSD / ETHUSD.

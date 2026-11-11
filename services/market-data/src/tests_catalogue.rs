@@ -28,11 +28,11 @@ fn repo_catalogue_loads() {
     let c = repo();
     assert!(c.list.len() > 1000, "{} instruments", c.list.len());
     let core = c.core();
-    assert_eq!(core.len(), 28);
+    assert_eq!(core.len(), 26);
     // the core rows come first, unchanged in order
     assert_eq!(&c.list[0].symbol, "EURUSD");
-    assert_eq!(&c.list[27].symbol, "NFLX");
-    assert!(c.list[..28].iter().all(|i| i.is_core() && i.calendar.is_none()));
+    assert_eq!(&c.list[25].symbol, "NFLX");
+    assert!(c.list[..26].iter().all(|i| i.is_core() && i.calendar.is_none()));
     let mut classes = BTreeSet::new();
     for i in c.list.iter().filter(|i| !i.is_core()) {
         classes.insert(i.asset_class.as_str());
@@ -43,14 +43,13 @@ fn repo_catalogue_loads() {
     }
     assert_eq!(classes.into_iter().collect::<Vec<_>>(), vec!["crypto", "energies", "forex", "indices", "metals", "stocks"]);
     // provider codes map back (FX by code, crypto USDT → USD symbol, stocks with exchange suffix)
-    assert_eq!(c.from_provider("crypto", "XAUTUSDT").unwrap().symbol, "XAUTUSD");
+    assert_eq!(c.from_provider("crypto", "BTCUSDT").unwrap().symbol, "BTCUSD");
     assert_eq!(c.from_provider("crypto", "ETHBTC").unwrap().symbol, "ETHBTC");
     // the crypto list is hand-picked (founder decisions 2026-11-09 and 2026-11-11, scripts/gen-catalogue.mjs): the
-    // core USD pairs, the BTC / ETH crosses Binance streams, the crosses priced here from two legs, and the rows
-    // kept only while positions on them are open (SOLUSD, XRPUSD, WBTCUSD, XAUTUSD)
+    // core USD pairs, the BTC / ETH crosses Binance streams, and the crosses priced here from two legs
     let mut crypto: Vec<&str> = c.list.iter().filter(|i| i.asset_class == "crypto").map(|i| i.symbol.as_str()).collect();
     crypto.sort_unstable();
-    assert_eq!(crypto, ["BTCAUD", "BTCCNH", "BTCJPY", "BTCTHB", "BTCUSD", "BTCUSDT", "BTCXAG", "BTCXAU", "ETHBTC", "ETHUSD", "SOLUSD", "WBTCUSD", "XAUTUSD", "XRPUSD"]);
+    assert_eq!(crypto, ["BTCAUD", "BTCCNH", "BTCJPY", "BTCTHB", "BTCUSD", "BTCUSDT", "BTCXAG", "BTCXAU", "ETHBTC", "ETHUSD"]);
     for (s, legs) in [("BTCXAU", "BTCUSD/XAUUSD"), ("BTCXAG", "BTCUSD/XAGUSD"), ("BTCCNH", "BTCUSD*USDCNH"), ("BTCUSDT", "BTCUSD")] {
         let i = c.get(s).unwrap();
         assert_eq!(i.provider.code, legs, "{s}");
@@ -83,14 +82,14 @@ fn ticks_follow_each_class_session_and_holidays() {
 fn plan_streams_core_always_and_catalogue_on_demand_within_the_limit() {
     let c = repo();
     let now = Instant::now();
-    let limits = Limits { default_per_market: 600, total: 30, ..Limits::default() };
+    let limits = Limits { default_per_market: 600, total: 28, ..Limits::default() };
     let mut d = Demand::new(c.core(), limits);
     d.add("MSFT", Tier::Watch, now);
     d.add("BNBUSD", Tier::Hold, now);
     d.add("AUDCAD", Tier::Focus, now);
     let p = d.plan(&c, &BTreeSet::new(), now);
-    // total 30: 28 core + the held and the charted symbol; the watched one waits
-    assert_eq!(p.len(), 30);
+    // total 28: 26 core + the held and the charted symbol; the watched one waits
+    assert_eq!(p.len(), 28);
     assert!(p.symbols().contains("BNBUSD") && p.symbols().contains("AUDCAD") && !p.symbols().contains("MSFT"));
     assert_eq!(p.dropped, vec![("MSFT".to_string(), Tier::Watch)]);
     assert!(c.core().iter().all(|s| p.symbols().contains(s)));

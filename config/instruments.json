@@ -210,26 +210,6 @@
     }
   },
   {
-    "symbol": "SOLUSD",
-    "asset_class": "crypto",
-    "digits": 3,
-    "base_spread": 0.12,
-    "provider": {
-      "market": "crypto",
-      "code": "SOLUSDT"
-    }
-  },
-  {
-    "symbol": "XRPUSD",
-    "asset_class": "crypto",
-    "digits": 4,
-    "base_spread": 0.0012,
-    "provider": {
-      "market": "crypto",
-      "code": "XRPUSDT"
-    }
-  },
-  {
     "symbol": "AAPL",
     "asset_class": "stocks",
     "digits": 2,
@@ -390,8 +370,6 @@
   {"symbol":"BTCXAG","asset_class":"crypto","digits":2,"base_spread":0.01,"provider":{"market":"synthetic","code":"BTCUSD/XAGUSD"},"session":"fx","tier":"catalogue","name":"Bitcoin / Silver","base_ccy":"BTC","quote_ccy":"XAG","template":"crypto","contract_size":1,"live":true},
   {"symbol":"BTCXAU","asset_class":"crypto","digits":4,"base_spread":0.0001,"provider":{"market":"synthetic","code":"BTCUSD/XAUUSD"},"session":"fx","tier":"catalogue","name":"Bitcoin / Gold","base_ccy":"BTC","quote_ccy":"XAU","template":"crypto","contract_size":1,"live":true},
   {"symbol":"ETHBTC","asset_class":"crypto","digits":5,"base_spread":0.00002,"provider":{"market":"crypto","code":"ETHBTC"},"session":"24x7","tier":"catalogue","name":"Ethereum / Bitcoin","base_ccy":"ETH","quote_ccy":"BTC","template":"crypto","contract_size":1,"live":true},
-  {"symbol":"WBTCUSD","asset_class":"crypto","digits":2,"base_spread":6.59,"provider":{"market":"crypto","code":"WBTCUSDT"},"session":"24x7","tier":"catalogue","name":"Wrapped Bitcoin","base_ccy":"WBTC","quote_ccy":"USD","template":"crypto","contract_size":1,"live":true},
-  {"symbol":"XAUTUSD","asset_class":"crypto","digits":2,"base_spread":0.01,"provider":{"market":"crypto","code":"XAUTUSDT"},"session":"24x7","tier":"catalogue","name":"Tether Gold","base_ccy":"XAUT","quote_ccy":"USD","template":"crypto","contract_size":1,"live":true},
   {"symbol":"00001.HK","asset_class":"stocks","digits":3,"base_spread":0.136,"provider":{"market":"stock","code":"00001.HK"},"session":"hk_equity","tier":"catalogue","name":"CKH HOLDINGS","quote_ccy":"HKD","exchange":"SEHK","calendar":"HKEX","template":"stocks-hk"},
   {"symbol":"00002.HK","asset_class":"stocks","digits":3,"base_spread":0.152,"provider":{"market":"stock","code":"00002.HK"},"session":"hk_equity","tier":"catalogue","name":"CLP HOLDINGS","quote_ccy":"HKD","exchange":"SEHK","calendar":"HKEX","template":"stocks-hk"},
   {"symbol":"00003.HK","asset_class":"stocks","digits":3,"base_spread":0.014,"provider":{"market":"stock","code":"00003.HK"},"session":"hk_equity","tier":"catalogue","name":"HK & CHINA GAS","quote_ccy":"HKD","exchange":"SEHK","calendar":"HKEX","template":"stocks-hk"},

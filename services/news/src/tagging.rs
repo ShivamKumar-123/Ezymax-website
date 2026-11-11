@@ -12,7 +12,7 @@ pub const INSTRUMENTS: &[(&str, &str)] = &[
     ("XAUUSD", "metals"), ("XAGUSD", "metals"),
     ("US30", "indices"), ("NAS100", "indices"), ("SPX500", "indices"), ("GER40", "indices"), ("UK100", "indices"), ("JP225", "indices"),
     ("USOIL", "energies"), ("UKOIL", "energies"),
-    ("BTCUSD", "crypto"), ("ETHUSD", "crypto"), ("SOLUSD", "crypto"), ("XRPUSD", "crypto"),
+    ("BTCUSD", "crypto"), ("ETHUSD", "crypto"),
     ("AAPL", "stocks"), ("TSLA", "stocks"), ("NVDA", "stocks"), ("META", "stocks"), ("NFLX", "stocks"),
 ];
 
@@ -106,8 +106,6 @@ const SYMBOL_RULES: &[(&str, &[&str])] = &[
     ("UKOIL", &["brent", "ukoil", "opec", "opec+"]),
     ("BTCUSD", &["bitcoin", "btc", "btcusd", "btc/usd", "crypto", "cryptocurrency", "cryptocurrencies", "spot bitcoin etf"]),
     ("ETHUSD", &["ethereum", "ether", "eth", "ethusd"]),
-    ("SOLUSD", &["solana", "sol", "solusd"]),
-    ("XRPUSD", &["xrp", "ripple", "xrpusd"]),
     ("AAPL", &["apple", "aapl", "iphone", "tim cook"]),
     ("TSLA", &["tesla", "tsla", "elon musk", "musk"]),
     ("NVDA", &["nvidia", "nvda", "jensen huang"]),
@@ -272,8 +270,6 @@ pub fn map_provider_symbol(s: &str) -> String {
         "JPN225" | "NIKKEI" => "JP225".into(),
         "BTCUSDT" => "BTCUSD".into(),
         "ETHUSDT" => "ETHUSD".into(),
-        "SOLUSDT" => "SOLUSD".into(),
-        "XRPUSDT" => "XRPUSD".into(),
         "EUR/USD" => "EURUSD".into(),
         _ => u.replace('/', ""),
     }

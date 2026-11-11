@@ -92,8 +92,6 @@ const List<Instrument> kInstruments = [
   Instrument('UKOIL', 'Brent Crude Oil', AssetClass.energies, 2, 75.12, 0.03, -1.11, 1000, EnergyIcon('BRN')),
   Instrument('BTCUSD', 'Bitcoin', AssetClass.crypto, 2, 63412, 18, 2.84, 1, CoinIcon('btc')),
   Instrument('ETHUSD', 'Ethereum', AssetClass.crypto, 2, 2618.44, 1.6, 1.92, 1, CoinIcon('eth')),
-  Instrument('SOLUSD', 'Solana', AssetClass.crypto, 3, 148.212, 0.12, 4.61, 1, CoinIcon('sol')),
-  Instrument('XRPUSD', 'Ripple', AssetClass.crypto, 4, 0.5874, 0.0012, -2.14, 1, CoinIcon('xrp')),
   Instrument('AAPL', 'Apple Inc.', AssetClass.stocks, 2, 228.14, 0.06, 0.72, 1, StockIcon('apple', Color(0xFF1D1D1F))),
   Instrument('TSLA', 'Tesla Inc.', AssetClass.stocks, 2, 254.28, 0.08, -3.18, 1, StockIcon('tesla', Color(0xFFCC0000))),
   Instrument('NVDA', 'NVIDIA Corp.', AssetClass.stocks, 2, 121.44, 0.05, 2.26, 1, StockIcon('nvidia', Color(0xFF76B900))),

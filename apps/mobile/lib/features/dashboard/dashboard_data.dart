@@ -1,6 +1,6 @@
 // The dashboard's own data, with the web's paths and refresh times (apps/crm/components/dashboard/live-dashboard.tsx,
 // movers.tsx, news-live/dashboard.tsx, growth/banner-slot.tsx):
-// - the 28 core markets and their live prices come from the Markets module (lib/features/markets: kInstruments,
+// - the 26 core markets and their live prices come from the Markets module (lib/features/markets: kInstruments,
 //   marketsFeedProvider = the web's price layer: `/v1/quotes` snapshot + the stream); the movers' 1W / 1M ranges
 //   rank on closes (`GET /v1/candles`, fetchCandles);
 // - headlines (`news/feed?limit=6`, 2 min), today's calendar (`news/calendar?impact=2,3`, 5 min), the news map

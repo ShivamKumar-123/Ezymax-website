@@ -43,8 +43,6 @@
     "UKOIL":  { "quote_ccy": "USD", "pip_size": 0.01 },
     "BTCUSD": { "quote_ccy": "USD", "pip_size": 1,      "swap_long": -4200.0, "swap_short": -2100.0 },
     "ETHUSD": { "quote_ccy": "USD", "pip_size": 0.1,    "swap_long": -1400.0, "swap_short": -700.0 },
-    "SOLUSD": { "quote_ccy": "USD", "pip_size": 0.01,   "swap_long": -750.0,  "swap_short": -380.0 },
-    "XRPUSD": { "quote_ccy": "USD", "pip_size": 0.0001, "swap_long": -30.0,   "swap_short": -15.0 },
     "AAPL":   { "quote_ccy": "USD", "pip_size": 0.01 },
     "TSLA":   { "quote_ccy": "USD", "pip_size": 0.01 },
     "NVDA":   { "quote_ccy": "USD", "pip_size": 0.01 },

@@ -151,8 +151,8 @@ void main() {
     });
 
     test('movers: 1D by today\'s change, 1W / 1M by the range change', () {
-      final today = {for (final i in kInstruments) i.symbol: 0.0, 'SOLUSD': 4.6, 'TSLA': -3.2, 'XAUUSD': 0.8};
-      expect(topMovers(today, gainers: true).first.symbol, 'SOLUSD');
+      final today = {for (final i in kInstruments) i.symbol: 0.0, 'ETHUSD': 4.6, 'TSLA': -3.2, 'XAUUSD': 0.8};
+      expect(topMovers(today, gainers: true).first.symbol, 'ETHUSD');
       expect(topMovers(today, gainers: false).first.symbol, 'TSLA');
       expect(topMovers(today, gainers: true), hasLength(6));
       final range = {'EURUSD': 1.0, 'BTCUSD': 9.0, 'NFLX': -5.0};

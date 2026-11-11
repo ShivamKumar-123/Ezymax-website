@@ -30,8 +30,6 @@ const ALIASES: [RegExp, string][] = [
   [/\bsilver\b/, "XAGUSD"],
   [/\b(bitcoin|btc)\b/, "BTCUSD"],
   [/\b(ether(eum)?|eth)\b/, "ETHUSD"],
-  [/\b(solana|sol)\b/, "SOLUSD"],
-  [/\b(ripple|xrp)\b/, "XRPUSD"],
   [/\b(nasdaq|nas ?100|us ?100|ustec)\b/, "NAS100"],
   [/\b(dow( jones)?|us ?30)\b/, "US30"],
   [/\b(s&p ?500|spx|us ?500)\b/, "SPX500"],
