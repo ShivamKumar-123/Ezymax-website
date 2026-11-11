@@ -34,7 +34,8 @@ class SupportStream {
         _everOpen = true;
       },
       backoff: Backoff(),
-      silentAfter: const Duration(seconds: 60),
+      // the server pings every 25 s: one missed ping plus a margin, so a dead connection is replaced within ~35 s
+      silentAfter: const Duration(seconds: 35),
       connector: connector,
     );
   }

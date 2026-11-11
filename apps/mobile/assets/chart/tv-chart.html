@@ -26,13 +26,16 @@
   /* Ours, over the library's frame: the TP / SL handles of a trade without a stop, and the ghost stop a handle
      drags out. The frame swallows every pointer event, so only these elements take them. */
   #ov { position: absolute; inset: 0; z-index: 5; pointer-events: none; overflow: hidden;
-        font: 600 11px/1 -apple-system, "Segoe UI", Roboto, sans-serif; }
+        font: 600 11px/1 -apple-system, "Segoe UI", Roboto, sans-serif;
+        /* the app's palette (set from `init` / `palette`): dark chips on the dark theme, light ones on the light */
+        --ov-bg: rgba(10,10,13,0.92); --ov-fg: #f3f1ee; --ov-line: rgba(255,255,255,0.12); color: var(--ov-fg); }
   .hd { position: absolute; pointer-events: auto; touch-action: none; display: flex; align-items: center;
-        height: 22px; padding: 0 7px; border-radius: 6px; border: 1px solid; background: rgba(10,10,13,0.92);
+        height: 22px; padding: 0 7px; border-radius: 6px; border: 1px solid; background: var(--ov-bg);
         transform: translateY(-50%); letter-spacing: 0.02em; user-select: none; -webkit-user-select: none; }
   .hd.on { filter: brightness(1.25); }
   .chip { position: absolute; pointer-events: auto; touch-action: none; display: flex; align-items: center; gap: 6px;
-          height: 22px; padding: 0 3px 0 0; border-radius: 6px; border: 1px solid; background: rgba(10,10,13,0.92);
+          height: 22px; padding: 0 3px 0 0; border-radius: 6px; border: 1px solid; background: var(--ov-bg);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.18);
           transform: translateY(-50%); white-space: nowrap; max-width: 62vw; user-select: none; -webkit-user-select: none;
           overflow: hidden; }
   /* the solid tag (web trade-overlay.tsx: "bg-down text-white" and friends) */
@@ -820,8 +823,19 @@
 
   /* ----------------------------------------------------------------- the widget */
 
+  /** The overlay's surfaces from the app's palette: the panel colour under the chips, the text colour on it. */
+  function applyOverlayPalette() {
+    const p = palette();
+    const ov = document.getElementById("ov");
+    if (!ov) return;
+    ov.style.setProperty("--ov-bg", p.dark === false ? (p.panel || "#ffffff") : "rgba(10,10,13,0.92)");
+    ov.style.setProperty("--ov-fg", p.fg || (p.dark === false ? "#15151a" : "#f3f1ee"));
+    ov.style.setProperty("--ov-line", p.line || (p.dark === false ? "rgba(15,15,20,0.12)" : "rgba(255,255,255,0.12)"));
+  }
+
   function build() {
     const p = palette();
+    applyOverlayPalette();
     widget = new TradingView.widget({
       container: "chart",
       library_path: "tv/",
@@ -961,6 +975,7 @@
 
       case "palette":
         if (cfg) cfg.palette = m.palette;
+        applyOverlayPalette();
         if (!widget) return;
         try {
           widget.changeTheme(m.palette && m.palette.dark === false ? "light" : "dark").then(() => {

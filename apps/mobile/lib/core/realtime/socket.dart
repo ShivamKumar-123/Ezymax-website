@@ -73,6 +73,9 @@ class ReconnectingSocket {
   StreamSubscription<dynamic>? _sub;
   Timer? _retry;
   Timer? _watchdog;
+  /// When the last frame arrived: a socket that stayed silent through a spell in the background is dead on Android
+  /// even when no close event ever reaches us.
+  DateTime _lastFrameAt = DateTime.now();
   int _silentTicks = 0;
   bool _running = false;
   bool _connecting = false;
@@ -115,9 +118,16 @@ class ReconnectingSocket {
     unawaited(_open());
   }
 
-  /// Back in the foreground: connect at once if the socket is down (instead of waiting for the backoff).
+  /// Back in the foreground: connect at once if the socket is down (instead of waiting for the backoff), or if it has
+  /// been silent for longer than a ping interval (the OS dropped it while the app was in the background and no close
+  /// event came): a fresh connection resyncs at once instead of waiting for the silence watchdog.
   void resume() {
-    if (_running && _ch == null && !_connecting) reconnect();
+    if (!_running) return;
+    if (_ch == null && !_connecting) {
+      reconnect();
+    } else if (_ch != null && DateTime.now().difference(_lastFrameAt) > const Duration(seconds: 30)) {
+      reconnect();
+    }
   }
 
   void send(Object json) {
@@ -180,6 +190,7 @@ class ReconnectingSocket {
       final ch = _connect(url);
       _ch = ch;
       _silentTicks = 0;
+    _lastFrameAt = DateTime.now();
       _sub = ch.stream.listen((data) => _frame(data, gen), onDone: () => _closed(gen), onError: (Object _) => _closed(gen), cancelOnError: true);
       await ch.ready;
       _connecting = false;
@@ -196,6 +207,7 @@ class ReconnectingSocket {
   void _frame(Object? data, int gen) {
     if (gen != _generation) return;
     _silentTicks = 0;
+    _lastFrameAt = DateTime.now();
     Map<String, dynamic> f;
     try {
       final v = data is String ? jsonDecode(data) : (data is List<int> ? jsonDecode(utf8.decode(data)) : null);
