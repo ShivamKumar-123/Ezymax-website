@@ -7,8 +7,50 @@ use std::sync::Arc;
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Provider {
-    pub market: String, // common | crypto | stock
+    /// `common` | `crypto` | `stock` | `japan` … at the provider; `synthetic` for a price made here from two
+    /// other instruments (see [`Synthetic`]).
+    pub market: String,
     pub code: String,
+}
+
+/// The provider market of a price made here, not streamed: the code names its legs, `A/B` (BTCXAU = BTCUSD /
+/// XAUUSD), `A*B` (BTCCNH = BTCUSD * USDCNH) or a bare `A` (BTCUSDT, the same price as BTCUSD). The legs are
+/// instruments of the catalogue with their own feed, never synthetic themselves. Such a row is never subscribed at
+/// a provider nor asked for history; its quote follows its legs tick by tick (state.rs `derive`) and its candles
+/// are built from theirs (backfill.rs `synthetic_history`).
+pub const SYNTHETIC: &str = "synthetic";
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SynthOp {
+    Alias,
+    Div,
+    Mul,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Synthetic {
+    pub a: String,
+    pub op: SynthOp,
+    /// None for an alias.
+    pub b: Option<String>,
+}
+
+impl Synthetic {
+    /// `A/B`, `A*B` or `A`; None for anything else (an empty leg, two operators…).
+    pub fn parse(code: &str) -> Option<Self> {
+        let leg = |s: &str| (!s.is_empty() && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '.')).then(|| s.to_string());
+        if let Some((a, b)) = code.split_once('/') {
+            return Some(Self { a: leg(a)?, op: SynthOp::Div, b: Some(leg(b)?) });
+        }
+        if let Some((a, b)) = code.split_once('*') {
+            return Some(Self { a: leg(a)?, op: SynthOp::Mul, b: Some(leg(b)?) });
+        }
+        Some(Self { a: leg(code)?, op: SynthOp::Alias, b: None })
+    }
+
+    pub fn legs(&self) -> impl Iterator<Item = &str> {
+        std::iter::once(self.a.as_str()).chain(self.b.as_deref())
+    }
 }
 
 /// One instrument of `config/instruments.json`. The 28 core instruments carry only the original fields; the
@@ -66,6 +108,11 @@ impl Instrument {
     /// One of the hand-maintained core instruments.
     pub fn is_core(&self) -> bool {
         self.tier.as_deref() != Some("catalogue")
+    }
+
+    /// The legs of a price made here from other instruments (provider market `synthetic`); None for a streamed one.
+    pub fn synthetic(&self) -> Option<Synthetic> {
+        (self.provider.market == SYNTHETIC).then(|| Synthetic::parse(&self.provider.code)).flatten()
     }
 
     /// The session without a calendar, exactly as before the catalogue existed: `us_equity`, crypto around the
@@ -149,6 +196,17 @@ impl Catalogue {
                 anyhow::bail!("{} and {}: same provider code {}/{}", list_symbol(&by_symbol, j), x.symbol, x.provider.market, x.provider.code);
             }
         }
+        // a synthetic price needs its legs in the list, each with a feed of its own
+        for x in list.iter().filter(|x| x.provider.market == SYNTHETIC) {
+            let Some(s) = x.synthetic() else { anyhow::bail!("{}: synthetic code {:?} is not A, A/B or A*B", x.symbol, x.provider.code) };
+            for leg in s.legs() {
+                match by_symbol.get(leg).map(|&j| &list[j]) {
+                    None => anyhow::bail!("{}: leg {leg} is not in the catalogue", x.symbol),
+                    Some(l) if l.provider.market == SYNTHETIC => anyhow::bail!("{}: leg {leg} is synthetic itself", x.symbol),
+                    Some(_) => {}
+                }
+            }
+        }
         Ok(Self { list, by_symbol, by_provider })
     }
 
@@ -158,8 +216,9 @@ impl Catalogue {
     pub fn from_provider(&self, market: &str, code: &str) -> Option<&Instrument> {
         self.by_provider.get(&(market.to_string(), code.to_string())).map(|&i| &self.list[i])
     }
+    /// The provider's markets (businesses) the catalogue streams from; a synthetic row has none.
     pub fn markets(&self) -> Vec<String> {
-        let mut m: Vec<String> = self.list.iter().map(|x| x.provider.market.clone()).collect();
+        let mut m: Vec<String> = self.list.iter().filter(|x| x.provider.market != SYNTHETIC).map(|x| x.provider.market.clone()).collect();
         m.sort();
         m.dedup();
         m
@@ -248,6 +307,28 @@ mod tests {
         assert!(Catalogue::from_list(vec![no_calendar]).unwrap_err().to_string().contains("calendar"));
         let c = Catalogue::from_list(vec![a]).unwrap();
         assert_eq!(c.from_provider("stock", "AAPL.US").unwrap().symbol, "AAPL");
+    }
+
+    fn synth(symbol: &str, code: &str) -> Instrument {
+        Instrument { symbol: symbol.into(), asset_class: "crypto".into(), digits: 4, base_spread: 0.0001, provider: Provider { market: SYNTHETIC.into(), code: code.into() }, ..Default::default() }
+    }
+
+    #[test]
+    fn synthetic_rows_name_their_legs() {
+        assert_eq!(Synthetic::parse("BTCUSD/XAUUSD"), Some(Synthetic { a: "BTCUSD".into(), op: SynthOp::Div, b: Some("XAUUSD".into()) }));
+        assert_eq!(Synthetic::parse("BTCUSD*USDCNH"), Some(Synthetic { a: "BTCUSD".into(), op: SynthOp::Mul, b: Some("USDCNH".into()) }));
+        assert_eq!(Synthetic::parse("BTCUSD"), Some(Synthetic { a: "BTCUSD".into(), op: SynthOp::Alias, b: None }));
+        assert_eq!(Synthetic::parse("BTCUSD/"), None);
+        assert_eq!(Synthetic::parse("A/B/C"), None);
+        let fx = |s: &str| Instrument { symbol: s.into(), asset_class: "forex".into(), digits: 5, base_spread: 0.0001, provider: Provider { market: "common".into(), code: s.into() }, ..Default::default() };
+        let btc = Instrument { asset_class: "crypto".into(), provider: Provider { market: "crypto".into(), code: "BTCUSDT".into() }, ..fx("BTCUSD") };
+        let ok = Catalogue::from_list(vec![btc.clone(), fx("XAUUSD"), synth("BTCXAU", "BTCUSD/XAUUSD"), synth("BTCUSDT", "BTCUSD")]).unwrap();
+        assert_eq!(ok.markets(), vec!["common", "crypto"], "a synthetic row is no provider business");
+        assert_eq!(ok.get("BTCXAU").unwrap().synthetic().unwrap().b.as_deref(), Some("XAUUSD"));
+        assert!(ok.get("BTCUSD").unwrap().synthetic().is_none());
+        assert!(Catalogue::from_list(vec![btc.clone(), synth("BTCXAU", "BTCUSD/XAUUSD")]).unwrap_err().to_string().contains("leg XAUUSD is not in the catalogue"));
+        assert!(Catalogue::from_list(vec![btc.clone(), synth("BTCUSDT", "BTCUSD"), synth("X", "BTCUSDT")]).unwrap_err().to_string().contains("synthetic itself"));
+        assert!(Catalogue::from_list(vec![btc, synth("X", "BTCUSD/")]).unwrap_err().to_string().contains("not A, A/B or A*B"));
         assert_eq!(c.core(), vec!["AAPL".to_string()]);
     }
 }

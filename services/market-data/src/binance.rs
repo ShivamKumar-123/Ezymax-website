@@ -42,13 +42,14 @@ const STREAMS_PER_MESSAGE: usize = 150;
 /// more often than this.
 const IDLE_TIMEOUT: Duration = Duration::from_secs(60);
 
-/// The Binance symbols of every crypto instrument, lower-cased the way the stream names want them.
+/// The Binance symbols of every crypto instrument the provider streams (a synthetic cross has no stream of its
+/// own: it follows its legs), lower-cased the way the stream names want them.
 pub fn symbols(market: &Market) -> Vec<String> {
     let mut v: Vec<String> = market
         .cat
         .list
         .iter()
-        .filter(|i| i.asset_class == "crypto")
+        .filter(|i| i.asset_class == "crypto" && i.provider.market == BUSINESS)
         .map(|i| i.provider.code.to_ascii_lowercase())
         .collect();
     v.sort();

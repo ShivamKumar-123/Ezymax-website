@@ -18,7 +18,7 @@ use std::sync::{Arc, Mutex as StdMutex};
 use crate::config::{Config, Keys};
 use crate::db::{self, Bar, Source};
 use crate::gate::{Gate, Prio};
-use crate::instruments::Instrument;
+use crate::instruments::{Instrument, SynthOp, Synthetic};
 use crate::state::{HistoryJob, Market};
 use crate::timeframes::Tf;
 
@@ -157,6 +157,19 @@ async fn worker(cfg: Config, pv: Arc<Provider>, mk: Arc<Market>, mut rx: tokio::
                 if fresh.lock().unwrap().get(&symbol).is_some_and(|t| t.elapsed() < RECENT_TTL) || !busy.lock().unwrap().insert(symbol.clone()) {
                     continue;
                 }
+                // a synthetic row has no provider history: its bars come from its legs' bars already stored
+                if let Some(sy) = inst.synthetic() {
+                    let (mk, busy, fresh) = (mk.clone(), busy.clone(), fresh.clone());
+                    tokio::spawn(async move {
+                        match synthetic_history(&mk, &inst, &sy).await {
+                            Ok(n) => tracing::info!(symbol = %inst.symbol, bars = n, "synthetic history built from the legs"),
+                            Err(e) => tracing::warn!(symbol = %inst.symbol, error = %e, "synthetic history failed"),
+                        }
+                        fresh.lock().unwrap().insert(inst.symbol.clone(), std::time::Instant::now());
+                        busy.lock().unwrap().remove(&inst.symbol);
+                    });
+                    continue;
+                }
                 let permit = slots.clone().acquire_owned().await.expect("semaphore");
                 let (pv, mk, cfg, busy, fresh, deep_started) = (pv.clone(), mk.clone(), cfg.clone(), busy.clone(), fresh.clone(), deep_started.clone());
                 tokio::spawn(async move {
@@ -237,13 +250,77 @@ async fn deep_all(cfg: &Config, pv: &Provider, mk: &Arc<Market>, inst: &Instrume
     daily_before_h1(pv, mk, inst, Some(Utc.from_utc_datetime(&from.and_hms_opt(0, 0, 0).unwrap())), Prio::Background).await
 }
 
+/// The candles of a synthetic instrument (instruments.rs `Synthetic`) from its legs' stored candles, every
+/// timeframe both legs have, bar by bar at the same open time: `A/B` opens at open_a / open_b and closes at
+/// close_a / close_b, its high the larger of high_a / low_b and the two, its low the smaller of low_a / high_b and
+/// the two (the extremes of a ratio need not fall on the legs' extremes, so these are bounds, as a tick-built bar
+/// would be); `A*B` likewise with products; an alias copies. Only bars the row does not have yet are written (the
+/// live tick-built ones stay), rounded to the row's digits, as provider history.
+async fn synthetic_history(mk: &Market, inst: &Instrument, sy: &Synthetic) -> anyhow::Result<u64> {
+    let digits = inst.digits as i32;
+    let n = match (sy.op, sy.b.as_deref()) {
+        (SynthOp::Alias, _) => sqlx::query(
+            "INSERT INTO candles (symbol, tf, t, o, h, l, c, v, source)
+             SELECT $1, tf, t, round(o::numeric, $3)::float8, round(h::numeric, $3)::float8, round(l::numeric, $3)::float8, round(c::numeric, $3)::float8, 0, 1
+             FROM candles WHERE symbol = $2
+             ON CONFLICT (symbol, tf, t) DO NOTHING",
+        )
+        .bind(&inst.symbol)
+        .bind(&sy.a)
+        .bind(digits)
+        .execute(&mk.pool)
+        .await?
+        .rows_affected(),
+        (SynthOp::Div, Some(b)) => sqlx::query(
+            "INSERT INTO candles (symbol, tf, t, o, h, l, c, v, source)
+             SELECT $1, a.tf, a.t,
+                    round((a.o / b.o)::numeric, $4)::float8,
+                    round(GREATEST(a.h / b.l, a.o / b.o, a.c / b.c)::numeric, $4)::float8,
+                    round(LEAST(a.l / b.h, a.o / b.o, a.c / b.c)::numeric, $4)::float8,
+                    round((a.c / b.c)::numeric, $4)::float8, 0, 1
+             FROM candles a JOIN candles b ON b.symbol = $3 AND b.tf = a.tf AND b.t = a.t
+             WHERE a.symbol = $2 AND b.o > 0 AND b.h > 0 AND b.l > 0 AND b.c > 0
+             ON CONFLICT (symbol, tf, t) DO NOTHING",
+        )
+        .bind(&inst.symbol)
+        .bind(&sy.a)
+        .bind(b)
+        .bind(digits)
+        .execute(&mk.pool)
+        .await?
+        .rows_affected(),
+        (SynthOp::Mul, Some(b)) => sqlx::query(
+            "INSERT INTO candles (symbol, tf, t, o, h, l, c, v, source)
+             SELECT $1, a.tf, a.t,
+                    round((a.o * b.o)::numeric, $4)::float8,
+                    round(GREATEST(a.h * b.h, a.o * b.o, a.c * b.c)::numeric, $4)::float8,
+                    round(LEAST(a.l * b.l, a.o * b.o, a.c * b.c)::numeric, $4)::float8,
+                    round((a.c * b.c)::numeric, $4)::float8, 0, 1
+             FROM candles a JOIN candles b ON b.symbol = $3 AND b.tf = a.tf AND b.t = a.t
+             WHERE a.symbol = $2
+             ON CONFLICT (symbol, tf, t) DO NOTHING",
+        )
+        .bind(&inst.symbol)
+        .bind(&sy.a)
+        .bind(b)
+        .bind(digits)
+        .execute(&mk.pool)
+        .await?
+        .rows_affected(),
+        _ => anyhow::bail!("{}: synthetic code {:?} has no second leg", inst.symbol, inst.provider.code),
+    };
+    Ok(n)
+}
+
 /// Delayed prices of symbols that are not streamed: the provider's current daily bar (close = last price, open /
-/// high / low = the provider's day), one request per market and batch.
+/// high / low = the provider's day), one request per market and batch. A synthetic row is never asked for: its
+/// price is its legs'.
 async fn snapshot(pv: &Provider, mk: &Arc<Market>, symbols: &[String], prio: Prio) -> anyhow::Result<usize> {
     let mut by_market: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for s in symbols {
         if let Some(i) = mk.cat.get(s)
             && !mk.is_streaming(s)
+            && i.synthetic().is_none()
         {
             by_market.entry(i.provider.market.clone()).or_default().push(i.provider.code.clone());
         }
@@ -485,9 +562,12 @@ async fn reconcile_loop(pv: &Provider, mk: &Arc<Market>) {
         let (boundary, at) = if now < minute + Duration::seconds(4) { (minute, minute + Duration::seconds(4)) } else { (boundary, at) };
         tokio::time::sleep((at - now).to_std().unwrap_or_default()).await;
         // only streamed symbols build live bars; the others get history when they are next viewed or streamed
+        // (a synthetic row's bars are its own: the provider has no final values for them)
         let mut by_market: BTreeMap<String, Vec<String>> = BTreeMap::new();
         for s in mk.streaming() {
-            if let Some(i) = mk.cat.get(&s) {
+            if let Some(i) = mk.cat.get(&s)
+                && i.synthetic().is_none()
+            {
                 by_market.entry(i.provider.market.clone()).or_default().push(i.provider.code.clone());
             }
         }

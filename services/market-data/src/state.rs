@@ -11,7 +11,7 @@ use tokio::sync::{Notify, broadcast, mpsc};
 use crate::db::{self, Bar, Source};
 use crate::demand::Demand;
 use crate::depth::FeedDepth;
-use crate::instruments::{Catalogue, Instrument};
+use crate::instruments::{Catalogue, Instrument, SynthOp};
 use crate::spreads::Spreads;
 use crate::timeframes::Tf;
 
@@ -81,6 +81,8 @@ pub struct Market {
     pub history: OnceLock<mpsc::UnboundedSender<HistoryJob>>,
     /// The provider's REST client (none in relay mode).
     pub provider: OnceLock<Arc<crate::backfill::Provider>>,
+    /// leg symbol → the synthetic symbols priced from it (instruments.rs `Synthetic`).
+    synth_by_leg: HashMap<String, Vec<String>>,
 }
 
 #[derive(Default, Clone, Serialize)]
@@ -117,7 +119,16 @@ impl Stats {
 impl Market {
     pub fn new(cat: Catalogue, pool: PgPool, spreads: Spreads, store_ticks: bool, demand: Demand) -> Arc<Self> {
         let (tx, _) = broadcast::channel(8192);
+        let mut synth_by_leg: HashMap<String, Vec<String>> = HashMap::new();
+        for i in &cat.list {
+            if let Some(s) = i.synthetic() {
+                for leg in s.legs() {
+                    synth_by_leg.entry(leg.to_string()).or_default().push(i.symbol.clone());
+                }
+            }
+        }
         Arc::new(Self {
+            synth_by_leg,
             demand: Arc::new(Mutex::new(demand)),
             demand_changed: Arc::new(Notify::new()),
             streaming: RwLock::new(BTreeSet::new()),
@@ -309,6 +320,7 @@ impl Market {
 
     /// Top-of-book update from the provider depth stream.
     pub fn on_book(&self, symbol: &str, bid: f64, ask: f64, t: i64) {
+        // (a synthetic row never has dependants of its own: instruments.rs refuses a leg that is synthetic)
         let Some(inst) = self.cat.get(symbol) else { return };
         let (bid, ask) = (inst.round(bid), inst.round(ask));
         if !inst.in_session(DateTime::<Utc>::from_timestamp_millis(t).unwrap_or_else(Utc::now)) {
@@ -330,6 +342,42 @@ impl Market {
             *e
         };
         let _ = self.tx.send(Event::Quote { symbol: symbol.into(), quote: q });
+        self.derive(symbol, t, false);
+    }
+
+    /// A leg moved: re-price every synthetic instrument made from it (instruments.rs `Synthetic`). The book is
+    /// combined leg by leg (`A/B`: bid = bid_a / ask_b, ask = ask_a / bid_b; `A*B`: bid = bid_a * bid_b, ask =
+    /// ask_a * ask_b), the last trade from the legs' last prices. A delayed or empty leg prices nothing: a synthetic
+    /// quote is only ever as live as both its legs. `trade`: the leg printed a trade (a bar update, not just a new
+    /// top of book), so the synthetic prints one too.
+    fn derive(&self, leg: &str, t: i64, trade: bool) {
+        let Some(deps) = self.synth_by_leg.get(leg) else { return };
+        for s in deps {
+            let Some(inst) = self.cat.get(s) else { continue };
+            let Some(sy) = inst.synthetic() else { continue };
+            let live = |q: Option<Quote>| q.filter(|q| !q.delayed && q.bid > 0.0 && q.ask > 0.0);
+            let Some(qa) = live(self.quote(&sy.a)) else { continue };
+            let last = |q: &Quote| if q.last > 0.0 { q.last } else { (q.bid + q.ask) / 2.0 };
+            let (bid, ask, px) = match sy.op {
+                SynthOp::Alias => (qa.bid, qa.ask, last(&qa)),
+                SynthOp::Div | SynthOp::Mul => {
+                    let Some(qb) = sy.b.as_deref().and_then(|b| live(self.quote(b))) else { continue };
+                    if sy.op == SynthOp::Mul {
+                        (qa.bid * qb.bid, qa.ask * qb.ask, last(&qa) * last(&qb))
+                    } else {
+                        (qa.bid / qb.ask, qa.ask / qb.bid, last(&qa) / last(&qb))
+                    }
+                }
+            };
+            if !(bid > 0.0 && ask > 0.0 && px > 0.0) {
+                continue;
+            }
+            // the derived book first, so the trade prints inside it (on_trade re-centres on a print outside the book)
+            self.on_book(s, bid, ask, t);
+            if trade {
+                self.on_trade(s, px, 0.0, t);
+            }
+        }
     }
 
     /// Trade/price tick from the provider: updates the quote (if no book yet) and every timeframe's bar.
@@ -406,6 +454,7 @@ impl Market {
         if !changed.is_empty() {
             let _ = self.tx.send(Event::Bars { symbol: sym, bars: changed.into() });
         }
+        self.derive(symbol, t_ms, true);
     }
 
     /// A closed `src` bar was corrected to the provider's final values: widen every higher timeframe's
@@ -447,5 +496,56 @@ impl Market {
     pub fn reset_minute_counter(&self) -> u64 {
         let mut s = self.stats.lock().unwrap();
         std::mem::take(&mut s.ticks_last_min)
+    }
+}
+
+#[cfg(test)]
+mod synthetic_tests {
+    use super::*;
+    use crate::instruments::{Provider, SYNTHETIC};
+
+    fn inst(symbol: &str, class: &str, digits: u32, market: &str, code: &str) -> Instrument {
+        Instrument { symbol: symbol.into(), asset_class: class.into(), digits, base_spread: 0.01, provider: Provider { market: market.into(), code: code.into() }, session: Some("24x7".into()), ..Default::default() }
+    }
+
+    fn market() -> Arc<Market> {
+        let cat = Catalogue::from_list(vec![
+            inst("BTCUSD", "crypto", 2, "crypto", "BTCUSDT"),
+            inst("XAUUSD", "metals", 2, "common", "XAUUSD"),
+            inst("USDCNH", "forex", 4, "common", "USDCNH"),
+            inst("BTCXAU", "crypto", 4, SYNTHETIC, "BTCUSD/XAUUSD"),
+            inst("BTCCNH", "crypto", 1, SYNTHETIC, "BTCUSD*USDCNH"),
+            inst("BTCUSDT", "crypto", 2, SYNTHETIC, "BTCUSD"),
+        ])
+        .unwrap();
+        let pool = sqlx::postgres::PgPoolOptions::new().connect_lazy("postgres://nobody@127.0.0.1:1/none").unwrap();
+        Market::new(cat, pool, crate::spreads::Spreads::default(), false, crate::demand::Demand::new(Vec::<String>::new(), Default::default()))
+    }
+
+    #[test]
+    fn a_synthetic_quote_follows_both_legs() {
+        let m = market();
+        let t = 1_700_000_000_000;
+        m.on_book("BTCUSD", 74_000.0, 74_000.2, t);
+        // one leg alone prices nothing but the alias
+        assert!(m.quote("BTCXAU").is_none() && m.quote("BTCCNH").is_none());
+        let alias = m.quote("BTCUSDT").unwrap();
+        assert_eq!((alias.bid, alias.ask), (74_000.0, 74_000.2));
+        m.on_book("XAUUSD", 4_000.0, 4_000.5, t);
+        m.on_book("USDCNH", 7.1000, 7.1002, t);
+        let x = m.quote("BTCXAU").unwrap();
+        assert_eq!((x.bid, x.ask), (18.4977, 18.5001), "bid_a / ask_b and ask_a / bid_b, to 4 digits");
+        let c = m.quote("BTCCNH").unwrap();
+        assert_eq!((c.bid, c.ask), (525_400.0, 525_416.2), "bid_a * bid_b and ask_a * ask_b, to 1 digit");
+        // a trade on a leg prints a trade on the cross, from the legs' last prices
+        m.on_trade("XAUUSD", 4_000.2, 1.0, t + 10);
+        m.on_trade("BTCUSD", 74_000.1, 0.5, t + 20);
+        assert_eq!(m.quote("BTCXAU").unwrap().last, 18.4991);
+        assert!(m.forming("BTCXAU", Tf::M1).is_some(), "the cross builds bars from its derived prints");
+        assert!(m.forming("BTCUSDT", Tf::M1).is_some());
+        // a delayed leg stops the cross from pretending to be live
+        m.set_snapshot("XAUUSD", 4_100.0, None, t + 30);
+        m.on_book("BTCUSD", 75_000.0, 75_000.2, t + 40);
+        assert_eq!(m.quote("BTCXAU").unwrap().bid, 18.4977, "unchanged: the gold leg is a snapshot, not a price");
     }
 }

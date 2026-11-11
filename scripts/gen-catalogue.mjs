@@ -274,18 +274,31 @@ for (const r of snap.rows.filter((r) => r.type === "INDICES")) {
 const CRYPTO_KEEP = new Set(["WBTCUSDT", "XAUTUSDT"]);
 // Crosses have no snapshot row (the Infoway snapshot lists USDT pairs only), so they are written out here: digits
 // from Binance's tick size (BTCJPY / BTCTHB 1, BTCAUD 0.01, ETHBTC 0.00001), spread = BTCUSD's 0.18 USD in the quote
-// currency (ETHBTC: ETHUSD's 1.6 USD), one coin per lot like BTCUSD / ETHUSD. BTCZAR is not here because the provider
-// has no USDZAR to convert ZAR profit; BTCCNH, BTCXAU and BTCXAG are not here because Binance has no such pairs.
+// currency (ETHBTC: ETHUSD's 1.6 USD), one coin per lot like BTCUSD / ETHUSD.
+//
+// The crosses Binance does not quote (founder decision 2026-11-11: the crypto list of the reference broker) are
+// priced by market-data itself from two legs (`market: "synthetic"`, code `A/B` or `A*B`; services/market-data
+// instruments.rs): BTCXAU = BTCUSD / XAUUSD, BTCXAG = BTCUSD / XAGUSD, BTCCNH = BTCUSD * USDCNH. They keep the FX
+// session, since a gold, silver or yuan leg stops over the weekend and a cross priced from a stale leg is no price.
+// BTCUSDT is BTCUSD's own Binance price under the name clients look for (one provider code cannot carry two rows,
+// so it is an alias, code `BTCUSD`), settled in USD like BTCUSD. BTCZAR is not here: Binance has halted the pair
+// and the provider has no USDZAR to convert ZAR profit.
 const CRYPTO_CROSSES = [
   { symbol: "BTCJPY", code: "BTCJPY", name: "Bitcoin / Japanese Yen", base: "BTC", quote: "JPY", digits: 0, spread: 30 },
   { symbol: "BTCAUD", code: "BTCAUD", name: "Bitcoin / Australian Dollar", base: "BTC", quote: "AUD", digits: 2, spread: 0.28 },
   { symbol: "BTCTHB", code: "BTCTHB", name: "Bitcoin / Thai Baht", base: "BTC", quote: "THB", digits: 0, spread: 6 },
   { symbol: "ETHBTC", code: "ETHBTC", name: "Ethereum / Bitcoin", base: "ETH", quote: "BTC", digits: 5, spread: 0.00002 },
+  { symbol: "BTCUSDT", code: "BTCUSD", market: "synthetic", name: "Bitcoin / Tether", base: "BTC", quote: "USD", digits: 2, spread: 0.18 },
+  { symbol: "BTCXAU", code: "BTCUSD/XAUUSD", market: "synthetic", name: "Bitcoin / Gold", base: "BTC", quote: "XAU", digits: 4, spread: 0.0001, session: "fx" },
+  { symbol: "BTCXAG", code: "BTCUSD/XAGUSD", market: "synthetic", name: "Bitcoin / Silver", base: "BTC", quote: "XAG", digits: 2, spread: 0.01, session: "fx" },
+  { symbol: "BTCCNH", code: "BTCUSD*USDCNH", market: "synthetic", name: "Bitcoin / Offshore Chinese Yuan", base: "BTC", quote: "CNH", digits: 1, spread: 1.3, session: "fx" },
 ];
-// a market quoted in BTC converts to USD through the core BTCUSD
+// a market quoted in BTC converts to USD through the core BTCUSD; one quoted in gold or silver through the core metals
 usdPair.add("BTC");
+usdPair.add("XAU");
+usdPair.add("XAG");
 for (const x of CRYPTO_CROSSES) {
-  out.push({ symbol: x.symbol, asset_class: "crypto", digits: x.digits, base_spread: x.spread, provider: { market: "crypto", code: x.code }, session: "24x7", tier: "catalogue", name: x.name, base_ccy: x.base, quote_ccy: x.quote, template: "crypto", contract_size: 1, live: true });
+  out.push({ symbol: x.symbol, asset_class: "crypto", digits: x.digits, base_spread: x.spread, provider: { market: x.market ?? "crypto", code: x.code }, session: x.session ?? "24x7", tier: "catalogue", name: x.name, base_ccy: x.base, quote_ccy: x.quote, template: "crypto", contract_size: 1, live: true });
 }
 for (const r of snap.rows.filter((r) => r.type === "CRYPTO")) {
   const base = r.code.endsWith("USDT") ? r.code.slice(0, -4) : null;

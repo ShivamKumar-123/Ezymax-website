@@ -45,11 +45,20 @@ fn repo_catalogue_loads() {
     // provider codes map back (FX by code, crypto USDT → USD symbol, stocks with exchange suffix)
     assert_eq!(c.from_provider("crypto", "XAUTUSDT").unwrap().symbol, "XAUTUSD");
     assert_eq!(c.from_provider("crypto", "ETHBTC").unwrap().symbol, "ETHBTC");
-    // the crypto list is hand-picked (founder decision 2026-11-09, scripts/gen-catalogue.mjs): the core USD pairs,
-    // four BTC / ETH crosses, and two generated rows kept while positions on them are open
+    // the crypto list is hand-picked (founder decisions 2026-11-09 and 2026-11-11, scripts/gen-catalogue.mjs): the
+    // core USD pairs, the BTC / ETH crosses Binance streams, the crosses priced here from two legs, and the rows
+    // kept only while positions on them are open (SOLUSD, XRPUSD, WBTCUSD, XAUTUSD)
     let mut crypto: Vec<&str> = c.list.iter().filter(|i| i.asset_class == "crypto").map(|i| i.symbol.as_str()).collect();
     crypto.sort_unstable();
-    assert_eq!(crypto, ["BTCAUD", "BTCJPY", "BTCTHB", "BTCUSD", "ETHBTC", "ETHUSD", "SOLUSD", "WBTCUSD", "XAUTUSD", "XRPUSD"]);
+    assert_eq!(crypto, ["BTCAUD", "BTCCNH", "BTCJPY", "BTCTHB", "BTCUSD", "BTCUSDT", "BTCXAG", "BTCXAU", "ETHBTC", "ETHUSD", "SOLUSD", "WBTCUSD", "XAUTUSD", "XRPUSD"]);
+    for (s, legs) in [("BTCXAU", "BTCUSD/XAUUSD"), ("BTCXAG", "BTCUSD/XAGUSD"), ("BTCCNH", "BTCUSD*USDCNH"), ("BTCUSDT", "BTCUSD")] {
+        let i = c.get(s).unwrap();
+        assert_eq!(i.provider.code, legs, "{s}");
+        assert!(i.synthetic().is_some(), "{s}");
+    }
+    // a cross with a weekday leg closes with it: a stale gold or yuan price is no price for a crypto cross
+    assert!(!c.get("BTCXAU").unwrap().in_session(t("2026-11-14T12:00:00Z")) && c.get("BTCUSDT").unwrap().in_session(t("2026-11-14T12:00:00Z")));
+    assert!(!c.markets().iter().any(|m| m == "synthetic"));
     assert_eq!(c.from_provider("stock", "MSFT.US").unwrap().symbol, "MSFT");
     assert_eq!(c.from_provider("stock", "00700.HK").unwrap().symbol, "00700.HK");
     assert_eq!(c.from_provider("japan", "7203.JP").unwrap().symbol, "7203.JP");
