@@ -38,8 +38,10 @@
           box-shadow: 0 2px 8px rgba(0,0,0,0.18);
           transform: translateY(-50%); white-space: nowrap; max-width: 62vw; user-select: none; -webkit-user-select: none;
           overflow: hidden; }
-  /* the solid tag (web trade-overlay.tsx: "bg-down text-white" and friends) */
-  .chip .lb { display: flex; align-items: center; align-self: stretch; padding: 0 7px; color: #fff; }
+  /* the whole chip is the solid tag (the founder, 11 Nov 2026: a tag inside a framed box read as two boxes) */
+  .chip .lb { display: flex; align-items: center; align-self: stretch; padding: 0 0 0 7px; }
+  .chip .nt { opacity: 0.92; }
+  .chip .x { opacity: 0.9; }
   .chip.on { filter: brightness(1.25); }
   /* a line the app lets the finger move: a band over its whole width takes the finger, as the web terminal's grab
      strips do - the chip alone was too small a target, and nobody looks for it at the scale's edge */
@@ -604,14 +606,12 @@
           el.__line = l;
           const colour = lineColour(l);
           const tag = chipColour(l);
-          el.style.color = p.fg || "#f3f1ee";
+          el.style.color = chipDarkText(l) ? "#1a1204" : "#fff";
           el.style.borderColor = tag;
-          el.lb.style.background = tag;
-          el.lb.style.color = chipDarkText(l) ? "#1a1204" : "#fff";
+          el.style.background = tag;
           setText(el.lb, l.label || "");
           setText(el.nt, l.note || "");
           el.nt.style.display = l.note ? "" : "none";
-          el.nt.style.color = l.tone === "down" ? (p.down || "#f04438") : l.tone === "up" ? (p.up || "#16a34a") : colour;
           el.x.style.display = canClose(l) ? "" : "none";
           el.style.right = right + "px";
           el.style.top = Math.round(row.y) + "px";
