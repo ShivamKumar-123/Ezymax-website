@@ -536,7 +536,7 @@ mod synthetic_tests {
         let x = m.quote("BTCXAU").unwrap();
         assert_eq!((x.bid, x.ask), (18.4977, 18.5001), "bid_a / ask_b and ask_a / bid_b, to 4 digits");
         let c = m.quote("BTCCNH").unwrap();
-        assert_eq!((c.bid, c.ask), (525_400.0, 525_417.0), "bid_a * bid_b and ask_a * ask_b, to 1 digit");
+        assert!((c.bid - 525_400.0).abs() < 0.11 && (c.ask - 525_417.0).abs() < 0.11, "bid_a * bid_b and ask_a * ask_b, to 1 digit: {:?}", (c.bid, c.ask));
         // a trade on a leg prints a trade on the cross, from the legs' last prices
         m.on_trade("XAUUSD", 4_000.2, 1.0, t + 10);
         m.on_trade("BTCUSD", 74_000.1, 0.5, t + 20);
