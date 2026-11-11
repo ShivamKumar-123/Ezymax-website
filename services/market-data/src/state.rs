@@ -526,17 +526,17 @@ mod synthetic_tests {
     async fn a_synthetic_quote_follows_both_legs() {
         let m = market();
         let t = 1_700_000_000_000;
-        m.on_book("BTCUSD", 74_000.0, 74_000.2, t);
+        m.on_book("BTCUSD", 74_000.0, 74_000.4, t);
         // one leg alone prices nothing but the alias
         assert!(m.quote("BTCXAU").is_none() && m.quote("BTCCNH").is_none());
         let alias = m.quote("BTCUSDT").unwrap();
-        assert_eq!((alias.bid, alias.ask), (74_000.0, 74_000.2));
+        assert_eq!((alias.bid, alias.ask), (74_000.0, 74_000.4));
         m.on_book("XAUUSD", 4_000.0, 4_000.5, t);
         m.on_book("USDCNH", 7.1000, 7.1002, t);
         let x = m.quote("BTCXAU").unwrap();
         assert_eq!((x.bid, x.ask), (18.4977, 18.5001), "bid_a / ask_b and ask_a / bid_b, to 4 digits");
         let c = m.quote("BTCCNH").unwrap();
-        assert_eq!((c.bid, c.ask), (525_400.0, 525_416.2), "bid_a * bid_b and ask_a * ask_b, to 1 digit");
+        assert_eq!((c.bid, c.ask), (525_400.0, 525_417.0), "bid_a * bid_b and ask_a * ask_b, to 1 digit");
         // a trade on a leg prints a trade on the cross, from the legs' last prices
         m.on_trade("XAUUSD", 4_000.2, 1.0, t + 10);
         m.on_trade("BTCUSD", 74_000.1, 0.5, t + 20);

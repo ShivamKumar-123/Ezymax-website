@@ -49,7 +49,7 @@ pub fn symbols(market: &Market) -> Vec<String> {
         .cat
         .list
         .iter()
-        .filter(|i| i.asset_class == "crypto" && i.provider.market == BUSINESS)
+        .filter(|i| i.asset_class == "crypto" && i.provider.market == "crypto")
         .map(|i| i.provider.code.to_ascii_lowercase())
         .collect();
     v.sort();
