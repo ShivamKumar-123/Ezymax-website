@@ -307,6 +307,7 @@ mod tests {
         assert!(Catalogue::from_list(vec![no_calendar]).unwrap_err().to_string().contains("calendar"));
         let c = Catalogue::from_list(vec![a]).unwrap();
         assert_eq!(c.from_provider("stock", "AAPL.US").unwrap().symbol, "AAPL");
+        assert_eq!(c.core(), vec!["AAPL".to_string()]);
     }
 
     fn synth(symbol: &str, code: &str) -> Instrument {
@@ -329,6 +330,5 @@ mod tests {
         assert!(Catalogue::from_list(vec![btc.clone(), synth("BTCXAU", "BTCUSD/XAUUSD")]).unwrap_err().to_string().contains("leg XAUUSD is not in the catalogue"));
         assert!(Catalogue::from_list(vec![btc.clone(), synth("BTCUSDT", "BTCUSD"), synth("X", "BTCUSDT")]).unwrap_err().to_string().contains("synthetic itself"));
         assert!(Catalogue::from_list(vec![btc, synth("X", "BTCUSD/")]).unwrap_err().to_string().contains("not A, A/B or A*B"));
-        assert_eq!(c.core(), vec!["AAPL".to_string()]);
     }
 }
