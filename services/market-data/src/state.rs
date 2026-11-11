@@ -522,8 +522,8 @@ mod synthetic_tests {
         Market::new(cat, pool, crate::spreads::Spreads::default(), false, crate::demand::Demand::new(Vec::<String>::new(), Default::default()))
     }
 
-    #[test]
-    fn a_synthetic_quote_follows_both_legs() {
+    #[tokio::test]
+    async fn a_synthetic_quote_follows_both_legs() {
         let m = market();
         let t = 1_700_000_000_000;
         m.on_book("BTCUSD", 74_000.0, 74_000.2, t);
