@@ -287,7 +287,8 @@ fn every_live_catalogue_symbol_opens_values_stops_out_and_closes() {
         }
     };
     let live: Vec<_> = kit.specs.all().filter(|s| !s.core && s.live).map(|s| s.symbol.clone()).collect();
-    assert!(live.len() > 200, "{} live catalogue symbols", live.len());
+    // 233 until the crypto list was cut to a hand-picked few (9 Nov 2026); 85 since
+    assert!(live.len() > 80, "{} live catalogue symbols", live.len());
     let mut checked = 0;
     for sym in live {
         let spec = kit.specs.get(&sym).unwrap().clone();
@@ -341,7 +342,7 @@ fn every_live_catalogue_symbol_opens_values_stops_out_and_closes() {
         h.assert_replay();
         checked += 1;
     }
-    assert!(checked > 200);
+    assert!(checked > 80);
 }
 
 #[test]
