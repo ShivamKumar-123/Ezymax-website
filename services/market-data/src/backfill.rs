@@ -128,6 +128,12 @@ pub fn spawn(cfg: &Config, market: Arc<Market>) {
         let (pv, mk, cfg) = (provider.clone(), market.clone(), cfg.clone());
         tokio::spawn(async move { worker(cfg, pv, mk, rx).await });
     }
+    // the synthetic rows' history from their legs' stored bars, at once: the planner may have marked them
+    // streaming before the worker existed, and their legs' bars are already here from the last run
+    {
+        let mk = market.clone();
+        tokio::spawn(async move { synthetic_all(&mk).await });
+    }
     if cfg.snapshot_every_secs > 0 {
         let (mk, every) = (market.clone(), cfg.snapshot_every_secs);
         tokio::spawn(async move { snapshot_sweep(mk, every).await });
@@ -312,6 +318,17 @@ async fn synthetic_history(mk: &Market, inst: &Instrument, sy: &Synthetic) -> an
     Ok(n)
 }
 
+/// Every synthetic row's history from its legs (idempotent: only missing bars are written).
+async fn synthetic_all(mk: &Market) {
+    for inst in mk.cat.list.iter().filter(|i| i.synthetic().is_some()) {
+        let sy = inst.synthetic().unwrap();
+        match synthetic_history(mk, inst, &sy).await {
+            Ok(n) => tracing::info!(symbol = %inst.symbol, bars = n, "synthetic history built from the legs"),
+            Err(e) => tracing::warn!(symbol = %inst.symbol, error = %e, "synthetic history failed"),
+        }
+    }
+}
+
 /// Delayed prices of symbols that are not streamed: the provider's current daily bar (close = last price, open /
 /// high / low = the provider's day), one request per market and batch. A synthetic row is never asked for: its
 /// price is its legs'.
@@ -390,6 +407,8 @@ async fn run(cfg: &Config, pv: &Provider, mk: &Arc<Market>) -> anyhow::Result<()
         tracing::info!(symbol = %inst.symbol, "quick backfill done");
     }
     tracing::info!("phase 1 complete — charts available for all symbols");
+    // the legs' latest bars are in: the synthetic rows get the bars they were missing since the last run
+    synthetic_all(mk).await;
 
     // ---- phase 2: deep history, resumable ----
     let now = Utc::now();

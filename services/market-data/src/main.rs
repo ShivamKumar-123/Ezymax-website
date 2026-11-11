@@ -40,7 +40,13 @@ async fn main() -> anyhow::Result<()> {
     db::sync_instruments(&pool, &cat).await?;
     let spreads = spreads::Spreads::load(&pool).await?;
     // on-demand provider subscriptions within the plan (demand.rs); the core instruments always stream by default
-    let always = cfg.always_on.clone().unwrap_or_else(|| cat.core());
+    let mut always = cfg.always_on.clone().unwrap_or_else(|| cat.core());
+    // the legs of a synthetic price stream whenever it does, and a crypto row always does (ingest::spawn_planner)
+    for leg in cat.list.iter().filter_map(|i| i.synthetic()).flat_map(|s| s.legs().map(str::to_string).collect::<Vec<_>>()) {
+        if !always.contains(&leg) {
+            always.push(leg);
+        }
+    }
     let limits = demand::Limits {
         per_market: cfg.max_symbols_by_market.iter().cloned().collect(),
         default_per_market: cfg.max_symbols_per_market,
