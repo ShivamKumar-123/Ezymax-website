@@ -39,7 +39,7 @@
           transform: translateY(-50%); white-space: nowrap; max-width: 62vw; user-select: none; -webkit-user-select: none;
           overflow: hidden; }
   /* the whole chip is the solid tag (the founder, 11 Nov 2026: a tag inside a framed box read as two boxes) */
-  .chip .lb { display: flex; align-items: center; align-self: stretch; padding: 0 0 0 7px; }
+  .chip .lb { display: flex; align-items: center; align-self: stretch; padding: 0 0 0 10px; }
   .chip .nt { opacity: 0.92; }
   .chip .x { opacity: 0.9; }
   .chip.on { filter: brightness(1.25); }
@@ -615,7 +615,8 @@
           el.x.style.display = canClose(l) ? "" : "none";
           el.style.right = right + "px";
           el.style.top = Math.round(row.y) + "px";
-          right += (el.offsetWidth || 60) + 6;
+          // the measured width, to the sub-pixel: a rounded-down one let the next handle ride over the chip's start
+          right += Math.ceil(el.getBoundingClientRect().width || 60) + 8;
           for (const which of ["sl", "tp"]) {
             if (!(which === "sl" ? l.addSl : l.addTp)) continue;
             const key = l.id + "|" + which;
@@ -635,7 +636,7 @@
             h.style.borderColor = col;
             h.style.right = right + "px";
             h.style.top = Math.round(row.y) + "px";
-            right += (h.offsetWidth || 30) + 6;
+            right += Math.ceil(h.getBoundingClientRect().width || 30) + 8;
           }
           // the band over the line: the finger moves the line from anywhere along it
           if (canDrag(l)) {
