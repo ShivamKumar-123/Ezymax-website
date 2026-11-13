@@ -8,19 +8,20 @@ import { EzymexLogo } from '@/components/brand/Logo';
 import { NAV_MORE, NAV_PRIMARY } from '@/content/site';
 import { LOGIN_HREF, REGISTER_HREF } from '@/lib/crm';
 import { LanguagePicker, LanguageSelect } from '@/components/chrome/LanguagePicker';
-import { ANDROID_APP, RISK_WARNING } from '@/content/facts';
+import { ANDROID_APP, PLAY_STORE_URL, RISK_WARNING } from '@/content/facts';
 import { cn } from '@/lib/cn';
 
 /**
- * The Android app (APK) in one tap: a plain link with `download`, served as an attachment by the server. iPhones and
- * iPads can't install an APK, so there the button opens the Platforms page instead.
+ * The Android app in one tap: the Google Play listing (the founder, 13 November 2026: people install from Play, the
+ * APK stays on the Platforms page for phones without it). iPhones and iPads have no Play, so there the button opens
+ * the Platforms page instead.
  */
 function useApkLink() {
   const [ios, setIos] = useState(false);
   useEffect(() => {
     setIos(/iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
   }, []);
-  return ios ? { href: '/platforms' } : { href: ANDROID_APP.href, download: `Ezymex-${ANDROID_APP.version}.apk` };
+  return ios ? { href: '/platforms' } : { href: PLAY_STORE_URL, target: '_blank', rel: 'noopener' };
 }
 
 export default function Nav() {
@@ -164,12 +165,12 @@ export default function Nav() {
             <LanguagePicker className="hidden lg:block" />
             <a
               {...apk}
-              aria-label={`Download the Ezymex Android app, new version ${ANDROID_APP.version} (APK, ${ANDROID_APP.sizeMb} MB)`}
-              title={`Android app ${ANDROID_APP.version} · updated ${ANDROID_APP.releasedOn} · ${ANDROID_APP.sizeMb} MB`}
+              aria-label={`Get the Ezymex Android app on Google Play (version ${ANDROID_APP.version})`}
+              title={`Ezymex on Google Play · version ${ANDROID_APP.version} · updated ${ANDROID_APP.releasedOn}`}
               className="glass relative grid h-10 w-10 place-items-center rounded-full text-fg transition-colors hover:text-ember-2 max-[359px]:hidden sm:h-11 sm:w-11 lg:flex lg:h-10 lg:w-auto lg:gap-2 lg:px-4 lg:text-[14px] lg:font-medium"
             >
               <Download size={16} aria-hidden />
-              <span className="hidden lg:inline">Download APK</span>
+              <span className="hidden lg:inline">Get it on Google Play</span>
               {/* the version, so the button looks different the day a release lands */}
               <span className="hidden rounded-full bg-ember/20 px-1.5 text-[11px] font-semibold leading-[17px] text-ember lg:inline">
                 {ANDROID_APP.version}
@@ -253,7 +254,7 @@ export default function Nav() {
           <div className="flex flex-col gap-3">
             <a {...apk} tabIndex={menu ? 0 : -1} className="btn btn-outline w-full gap-2">
               <Download size={18} aria-hidden />
-              Download Android app {ANDROID_APP.version} (APK · {ANDROID_APP.sizeMb} MB)
+              Get the Android app on Google Play
             </a>
             <Link href={REGISTER_HREF} tabIndex={menu ? 0 : -1} className="btn btn-ember w-full">
               Open account

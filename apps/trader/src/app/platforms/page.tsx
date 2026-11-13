@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { BrowserFrame, PhoneFrame } from '@/components/ui/Frames';
 import { Art } from '@/components/ui/Art';
 import { CtaBand } from '@/components/ui/CtaBand';
-import { ANDROID_APP, TRADER } from '@/content/facts';
+import { ANDROID_APP, PLAY_STORE_URL, TRADER } from '@/content/facts';
 import { CRM_URL, REGISTER_HREF, TRADER_URL } from '@/lib/crm';
 
 export const metadata: Metadata = {
@@ -137,13 +137,13 @@ export default function PlatformsPage() {
             <div className="grid items-center gap-12 p-6 sm:p-12 lg:grid-cols-[1.2fr_0.8fr] lg:p-16">
               <div>
                 <span className="chip chip-ember" data-reveal>
-                  Android · v{ANDROID_APP.version}
+                  Android · on Google Play
                 </span>
                 <SectionHead
                   id="mob-title"
                   className="mt-6"
                   lines={['Ezymex on Android.']}
-                  lead="The Client Area, Ezymex Trader and Ezymex FX Options in one app, in all 22 languages, with biometric sign-in. Download the APK below; the Play Store listing follows."
+                  lead="The Client Area, Ezymex Trader and Ezymex FX Options in one app, in all 22 languages, with biometric sign-in. Get it on Google Play; an APK is here for phones without it."
                 />
                 <p
                   className="mt-7 inline-flex items-center gap-2 rounded-full border border-ember/40 bg-ember/15 px-3 py-1 text-[11.5px] font-medium text-ember"
@@ -153,20 +153,20 @@ export default function PlatformsPage() {
                   New version {ANDROID_APP.version} &middot; updated {ANDROID_APP.releasedOn}
                 </p>
                 <div className="mt-5 flex flex-wrap gap-3" data-reveal>
-                  <Button href={ANDROID_APP.href} arrow={false}>
-                    Download the new version
+                  <Button href={PLAY_STORE_URL} arrow={false}>
+                    Get it on Google Play
                   </Button>
                   <Button href={TRADER_URL} variant="outline">
                     Open Ezymex Trader
                   </Button>
                 </div>
                 <p className="mt-4 max-w-md text-[13px] leading-relaxed text-fg-3" data-reveal>
-                  APK · {ANDROID_APP.minAndroid} or newer{ANDROID_APP.sizeMb ? ` · ${ANDROID_APP.sizeMb} MB` : ''}. Android asks once to allow installs from your browser.
-                  Older 32-bit phones:{' '}
-                  <a href={ANDROID_APP.hrefUniversal} className="underline decoration-fg-3/40 underline-offset-2 hover:text-fg">
-                    universal APK
-                  </a>
-                  .{ANDROID_APP.sha256 ? ` SHA-256 ${ANDROID_APP.sha256.slice(0, 16)}…` : ''}
+                  No Google Play on your phone?{' '}
+                  <a href={ANDROID_APP.href} className="underline decoration-fg-3/40 underline-offset-2 hover:text-fg">
+                    Download the APK
+                  </a>{' '}
+                  (version {ANDROID_APP.version} · {ANDROID_APP.minAndroid} or newer{ANDROID_APP.sizeMb ? ` · ${ANDROID_APP.sizeMb} MB` : ''}). Android asks once to allow installs from your browser.
+                  {ANDROID_APP.sha256 ? ` SHA-256 ${ANDROID_APP.sha256.slice(0, 16)}…` : ''}
                 </p>
                 {ANDROID_APP.requiresReinstall ? (
                   <p className="mt-3 max-w-md rounded-xl border border-white/[0.09] bg-white/[0.03] px-4 py-3 text-[13px] leading-relaxed text-fg-3" data-reveal>

@@ -209,14 +209,18 @@ export const OPTIONS_RISK =
   'Buying an option can lose 100% of the premium paid. Selling an option can lose more than the premium received and uses margin.';
 
 /** The Android app on the website (served by nginx from /srv/ezymex/downloads on the server). Update on each release. */
+/** The app on Google Play (live since 4 November 2026): where the site sends people to install it. */
+export const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.ezymex.app';
+
+/** The APK for phones without Google Play (the Play listing is the normal way in). */
 export const ANDROID_APP = {
-  version: '1.0.30',
-  build: 32,
+  version: '1.0.32',
+  build: 34,
   // versioned so a new release is never served from the CDN's copy of the last one
-  href: '/download/ezymex-android-1.0.30.apk',
-  hrefUniversal: '/download/ezymex-android-1.0.30.apk',
+  href: '/download/ezymex-android-1.0.32.apk',
+  hrefUniversal: '/download/ezymex-android-1.0.32.apk',
   sizeMb: 113,
-  sha256: '99e75cb67f410b4914e90a427fba61f226e91ae63fbcfe702b45cfb90daf6e7a',
+  sha256: 'c71113cc44c7919b76d8cc1dc41244c0d5ffd091f192ec5251038d2165ef33d2',
   minAndroid: 'Android 7.0',
   releasedOn: '13 November 2026',
   /** Signed with the same key as every build since 1.0.10, so it installs over those; only a build older than 1.0.10 (another key) needs a reinstall. */
