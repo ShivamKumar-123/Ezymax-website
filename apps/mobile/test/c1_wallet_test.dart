@@ -514,9 +514,11 @@ void main() {
       await settle(tester, frames: 4);
       // the gate: the two brands, OxaPay first
       expect(find.text('How do you want to deposit?'), findsOneWidget);
-      expect(find.text('OxaPay'), findsOneWidget);
-      expect(find.text('PhonePe'), findsOneWidget);
-      await _tap(tester, find.text('OxaPay'));
+      // (the checkout panel under the sheet names the brand too: look inside the sheet)
+      final sheet = find.byType(BottomSheet);
+      expect(find.descendant(of: sheet, matching: find.text('OxaPay')), findsOneWidget);
+      expect(find.descendant(of: sheet, matching: find.text('PhonePe')), findsOneWidget);
+      await _tap(tester, find.descendant(of: sheet, matching: find.text('OxaPay')));
       // the terms: nothing continues until the line is ticked
       expect(find.text('Terms & Conditions'), findsOneWidget);
       final go = find.widgetWithText(KButton, 'Continue to OxaPay');
