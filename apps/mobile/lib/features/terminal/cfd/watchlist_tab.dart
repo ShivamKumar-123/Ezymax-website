@@ -24,6 +24,22 @@ bool inSegment(SymbolSpec s, String seg, List<String> favourites) =>
 
 String segmentLabel(T t, String s) => s == 'all' ? t('common.all') : t.dyn('market.segment.$s', fallback: s);
 
+/// The web instrument panel's order for browsing: by asset class (the segments' order), the core markets first
+/// inside a class, then the catalogue in the server's order. Every market the account may see is listed, as on the
+/// web (the founder, 13 Nov 2026: the app browsed the 26 core markets only, the rest reachable by search alone).
+List<SymbolSpec> browseOrder(List<SymbolSpec> all) {
+  final order = {for (var i = 0; i < kSegments.length; i++) kSegments[i]: i};
+  final idx = {for (var i = 0; i < all.length; i++) all[i].symbol: i};
+  final out = List<SymbolSpec>.of(all);
+  out.sort((a, b) {
+    final c = (order[a.assetClass] ?? 99).compareTo(order[b.assetClass] ?? 99);
+    if (c != 0) return c;
+    if (a.core != b.core) return a.core ? -1 : 1;
+    return idx[a.symbol]!.compareTo(idx[b.symbol]!);
+  });
+  return out;
+}
+
 /// The segment chips with counts (web SegmentChips size md): empty classes are left out; All and ★ always show.
 class SegmentChips extends StatelessWidget {
   const SegmentChips({super.key, required this.instruments, required this.value, required this.favourites, required this.onChanged});
@@ -100,8 +116,7 @@ class _WatchlistTabState extends ConsumerState<WatchlistTab> {
     final book = ref.watch(symbolBookProvider);
     final ws = ref.watch(workspaceProvider);
     final live = ref.watch(terminalProvider.select((s) => s.account?.live ?? true));
-    final visible = book.visible(live: live);
-    final core = book.core;
+    final visible = browseOrder(book.visible(live: live));
     final seg = ws.segment;
     final q = _q.trim().toLowerCase();
     final List<SymbolSpec> list;
@@ -109,7 +124,6 @@ class _WatchlistTabState extends ConsumerState<WatchlistTab> {
       list = visible
           .where((i) => inSegment(i, seg, ws.favourites))
           .where((i) => i.symbol.toLowerCase().contains(q) || i.name.toLowerCase().contains(q))
-          .take(60)
           .toList();
     } else if (seg == 'favourites') {
       list = [
@@ -117,7 +131,7 @@ class _WatchlistTabState extends ConsumerState<WatchlistTab> {
           if (book.isVisible(f, live: live)) book[f]!,
       ];
     } else {
-      list = core.where((i) => inSegment(i, seg, ws.favourites)).toList();
+      list = visible.where((i) => inSegment(i, seg, ws.favourites)).toList();
     }
     return Column(
       children: [
@@ -126,7 +140,7 @@ class _WatchlistTabState extends ConsumerState<WatchlistTab> {
           child: Column(
             children: [
               SegmentChips(
-                instruments: core,
+                instruments: visible,
                 value: seg,
                 favourites: ws.favourites,
                 onChanged: (s) => ref.read(workspaceProvider.notifier).update((w) => w.copyWith(segment: s)),

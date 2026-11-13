@@ -38,12 +38,12 @@ class _SymbolSearchState extends ConsumerState<_SymbolSearch> {
     final book = ref.watch(symbolBookProvider);
     final ws = ref.watch(workspaceProvider);
     final live = ref.watch(terminalProvider.select((s) => s.account?.live ?? true));
-    final visible = book.visible(live: live);
+    // every market the account may see, in the web panel's order (the list is lazy, so the whole catalogue is fine)
+    final visible = browseOrder(book.visible(live: live));
     final q = _q.trim().toLowerCase();
     final list = visible
         .where((i) => inSegment(i, _seg, ws.favourites))
         .where((i) => q.isEmpty || i.symbol.toLowerCase().contains(q) || i.name.toLowerCase().contains(q))
-        .take(q.isEmpty ? 200 : 60)
         .toList();
     return Column(
       children: [
