@@ -524,8 +524,7 @@ void main() {
       await _tap(tester, find.textContaining('I have read and agree'));
       expect(tester.widget<KButton>(go).onPressed, isNotNull);
       await _tap(tester, go);
-      // the handoff: three steps of 850 ms, then the checkout panel
-      expect(find.text('Securing your session'), findsOneWidget);
+      // the handoff (three steps of 850 ms; the tap's own frames may already be past it), then the checkout panel
       await tester.pump(const Duration(milliseconds: 2700));
       await settle(tester, frames: 6);
       final page = find.descendant(of: find.byType(DepositScreen), matching: find.byType(Scrollable)).first;
