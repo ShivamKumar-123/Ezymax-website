@@ -2,7 +2,8 @@
 //   header (Deposit USDT + ← Wallet; "Deposit" when the broker also takes bank / crypto payments)
 //   the gate (widgets/deposit_gate.dart): on a fresh visit with the crypto checkout or a bank method on, a sheet
 //     with the payment brands (OxaPay, PhonePe), the terms, the handoff; dismissed without a choice -> /wallet
-//   chooser: Crypto checkout | USDT · automatic | Bank / UPI | Crypto (?via=checkout|bank|crypto keeps it)
+//   with the gate's brands on, the page carries no chooser (founder, 13 Nov 2026): one row reopens the gate to
+//     change the method; without them, the chooser: USDT · automatic | Bank / UPI | Crypto (?via=… keeps it)
 //   Crypto checkout (widgets/checkout_panels.dart): amount in USD -> OxaPay's page in the browser -> the open
 //     checkout polled until it is credited (?checkout=<order_id> is the one the payer was sent back to)
 //   USDT · automatic:
@@ -18,6 +19,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/api/api_error.dart';
 import '../../i18n/i18n.dart';
@@ -185,7 +187,11 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
         // what the dashboard banner promised, and what it takes to actually get it
         const BonusSteps(on: BonusStepsOn.deposit),
         const SizedBox(height: kWalletGap),
-        if (!valid && !cfgPending) DepositChooser(value: via, onChanged: _choose, checkout: checkoutOn, usdt: autoOn, bank: bank.isNotEmpty, crypto: crypto.isNotEmpty),
+        if (!valid && !cfgPending)
+          if (checkoutOn || bank.isNotEmpty)
+            _ChangeMethod(onTap: () => _openGate(hasCheckout: checkoutOn, hasBank: bank.isNotEmpty))
+          else
+            DepositChooser(value: via, onChanged: _choose, usdt: autoOn, bank: bank.isNotEmpty, crypto: crypto.isNotEmpty),
         main,
         if (via == DepositVia.checkout) ...[
           // the web's checkout tab carries no how-it-works card: the note under the form says it all
@@ -203,4 +209,36 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
   /// The Client Area doesn't serve manual payments or the checkout (an older server, or the module is off): the page
   /// stays the USDT deposit, without an error.
   static bool _notServed(Object? e) => e is ApiException && (e.status == 404 || e.isModuleDisabled);
+}
+
+/// One row in the chooser's place while the gate's brands are on: the method is chosen in the gate, and this
+/// reopens it. (The founder, 13 Nov 2026: with OxaPay and PhonePe on offer, the four-way list went.)
+class _ChangeMethod extends StatelessWidget {
+  const _ChangeMethod({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.t;
+    final k = context.k;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: kWalletGap),
+      child: KPressable(
+        onTap: onTap,
+        semanticLabel: t('payments.chooser.title'),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+          decoration: BoxDecoration(color: k.surface2, borderRadius: BorderRadius.circular(14), border: Border.all(color: k.line)),
+          child: Row(
+            children: [
+              Icon(LucideIcons.arrowLeftRight, size: 16, color: k.fg3),
+              const SizedBox(width: 10),
+              Expanded(child: Text(t('payments.chooser.title'), style: context.text.callout.copyWith(fontWeight: FontWeight.w500))),
+              Icon(LucideIcons.chevronRight, size: 16, color: k.fg3),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
