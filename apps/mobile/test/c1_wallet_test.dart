@@ -412,7 +412,8 @@ void main() {
     });
 
     testWidgets('deposit: network -> amount -> address + copy -> hash -> status polled every 5 s', (tester) async {
-      await _open(tester, '/wallet/deposit');
+      // ?via=usdt: the automatic deposit, past the gate (the sample broker has the checkout and a bank method)
+      await _open(tester, '/wallet/deposit?via=usdt');
       expect(find.byType(DepositScreen), findsOneWidget);
       expect(find.text('New deposit'), findsOneWidget);
       // (the sample broker also takes bank / crypto payments: the chooser sits above, so the page is longer)
@@ -501,7 +502,49 @@ void main() {
       expect(sent, hasLength(1));
       expect(sent.single.body['stepup_token'], 'preview-stepup');
       expect(sent.single.body['idempotency_key'], matches(RegExp(r'^[0-9a-f]{24}$')));
-      expect(find.text('Withdrawal requested'), findsWidgets);
+      // the tracker takes the form's place
+      expect(find.text('Withdrawal on its way'), findsOneWidget);
+      await unmount(tester);
+    });
+
+    testWidgets('deposit: the gate -> OxaPay checkout -> paid on their page -> credited', (tester) async {
+      await _open(tester, '/wallet/deposit');
+      await settle(tester, frames: 4);
+      // the gate: the two brands, OxaPay first
+      expect(find.text('How do you want to deposit?'), findsOneWidget);
+      expect(find.text('OxaPay'), findsOneWidget);
+      expect(find.text('PhonePe'), findsOneWidget);
+      await _tap(tester, find.text('OxaPay'));
+      // the terms: nothing continues until the line is ticked
+      expect(find.text('Terms & Conditions'), findsOneWidget);
+      final go = find.widgetWithText(KButton, 'Continue to OxaPay');
+      expect(tester.widget<KButton>(go).onPressed, isNull);
+      await _tap(tester, find.textContaining('I have read and agree'));
+      expect(tester.widget<KButton>(go).onPressed, isNotNull);
+      await _tap(tester, go);
+      // the handoff: three steps of 850 ms, then the checkout panel
+      expect(find.text('Securing your session'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 2700));
+      await settle(tester, frames: 6);
+      expect(find.text('Crypto checkout'), findsWidgets);
+      expect(find.text('Between 10.00 and 5,000.00 USD'), findsOneWidget);
+      // the amount: an invoice is opened with it and OxaPay's page is asked to open (nothing opens in a test)
+      await tester.enterText(find.byType(TextField).first, '100');
+      await tester.pump();
+      await _tap(tester, find.widgetWithText(KButton, 'Continue to payment'));
+      await settle(tester, frames: 6);
+      expect(_writes('wallet/oxapay/invoices').single.body, {'amount': '100'});
+      expect(find.text('Your checkout'), findsOneWidget);
+      expect(find.text('100.00 USD'), findsOneWidget);
+      expect(find.text('Awaiting payment'), findsOneWidget);
+      // paid on OxaPay's page (the sample backend's stand-in for the webhook): the next poll shows it credited
+      final id = (_writes('wallet/oxapay/invoices').single.body, previewWalletReads.where((r) => r.startsWith('wallet/oxapay/invoices/')).last);
+      final live = id.$2.substring('wallet/oxapay/invoices/'.length);
+      previewWallet('POST', 'wallet/oxapay/invoices/$live/pay', const {}, const {});
+      await tester.pump(const Duration(seconds: 6));
+      await settle(tester, frames: 6);
+      expect(find.text('Payment received'), findsOneWidget);
+      expect(find.textContaining('USDT was credited'), findsOneWidget);
       await unmount(tester);
     });
 

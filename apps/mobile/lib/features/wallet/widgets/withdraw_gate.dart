@@ -153,7 +153,7 @@ class _UpiMark extends StatelessWidget {
 typedef GateBadge = ({String coin, String label});
 
 class GateTile extends StatelessWidget {
-  const GateTile({required this.colour, required this.mark, required this.name, required this.sub, required this.badges, required this.onTap});
+  const GateTile({super.key, required this.colour, required this.mark, required this.name, required this.sub, required this.badges, required this.onTap});
   final Color colour;
   final Widget mark;
   final String name, sub;
@@ -210,6 +210,7 @@ class GateTile extends StatelessWidget {
 
 class GateTerms extends StatelessWidget {
   const GateTerms({
+    super.key,
     required this.colour,
     required this.name,
     required this.mark,
@@ -303,7 +304,7 @@ class GateTerms extends StatelessWidget {
 /// The handoff: the rail's mark inside a sweeping halo, one status line at a time, a segment per step. Each
 /// line names something the screen is really about to do, so the pause is a handoff and not a loader.
 class GateHandoff extends StatefulWidget {
-  const GateHandoff({required this.colour, required this.mark, required this.steps, required this.secure, required this.onDone});
+  const GateHandoff({super.key, required this.colour, required this.mark, required this.steps, required this.secure, required this.onDone});
   final Color colour;
   final Widget mark;
   final List<String> steps;
