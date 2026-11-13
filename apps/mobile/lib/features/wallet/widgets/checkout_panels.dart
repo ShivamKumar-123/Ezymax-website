@@ -103,7 +103,7 @@ class GatewayBanner extends StatelessWidget {
 }
 
 /// The whole Crypto-checkout tab of the deposit page (web CheckoutPanel).
-class CheckoutPanel extends ConsumerWidget {
+class CheckoutPanel extends ConsumerStatefulWidget {
   const CheckoutPanel({super.key, required this.list, required this.returning});
   final AsyncValue<CheckoutList> list;
 
@@ -111,22 +111,48 @@ class CheckoutPanel extends ConsumerWidget {
   final String? returning;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CheckoutPanel> createState() => _CheckoutPanelState();
+}
+
+class _CheckoutPanelState extends ConsumerState<CheckoutPanel> {
+  /// The checkout kept on screen after it closed (credited while the client watched): the web keeps the one the
+  /// payer was sent back to; the app, where paying happens in the browser, keeps the one just paid until the
+  /// client asks for a new deposit, so "Payment received" is not a flash.
+  int? _keep;
+
+  void _reload() => ref.invalidate(checkoutsProvider);
+
+  @override
+  Widget build(BuildContext context) {
     final t = context.t;
     final k = context.k;
-    void reload() => ref.invalidate(checkoutsProvider);
-    if (list.hasError && !list.hasValue) return WalletUnavailable(onRetry: reload);
+    final list = widget.list;
+    if (list.hasError && !list.hasValue) return WalletUnavailable(onRetry: _reload);
     final data = list.value;
     if (data == null) return const KSkeletonCard(height: 420, lines: 6);
     if (!data.enabled) {
       return KCard(child: Text(t('payments.checkout.off'), style: context.text.callout.copyWith(color: k.fg2)));
     }
-    final open = data.open(returning);
+    final open = data.open(widget.returning) ?? (_keep == null ? null : data.items.where((c) => c.id == _keep).firstOrNull);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (open != null) _OpenCheckout(key: ValueKey('checkout-${open.id}'), c: open, onChanged: reload) else _StartCheckout(list: data, onCreated: reload),
-        _Recent(items: data.items),
+        if (open != null)
+          _OpenCheckout(
+            key: ValueKey('checkout-${open.id}'),
+            c: open,
+            onChanged: (c) {
+              if (c.status == 'credited') _keep = c.id;
+              _reload();
+            },
+            onDone: () => setState(() {
+              _keep = null;
+              _reload();
+            }),
+          )
+        else
+          _StartCheckout(list: data, onCreated: _reload),
+        _Recent(items: data.items.where((c) => c.id != open?.id).toList()),
       ],
     );
   }
@@ -144,9 +170,14 @@ Future<bool> openPaymentPage(String url) async {
 /* ------------------------------------------------------------------ open */
 
 class _OpenCheckout extends ConsumerStatefulWidget {
-  const _OpenCheckout({super.key, required this.c, required this.onChanged});
+  const _OpenCheckout({super.key, required this.c, required this.onChanged, required this.onDone});
   final Checkout c;
-  final VoidCallback onChanged;
+
+  /// The checkout moved on (paid, cancelled, expired…): the list is behind it.
+  final ValueChanged<Checkout> onChanged;
+
+  /// "New deposit" after it was credited.
+  final VoidCallback onDone;
 
   @override
   ConsumerState<_OpenCheckout> createState() => _OpenCheckoutState();
@@ -164,8 +195,8 @@ class _OpenCheckoutState extends ConsumerState<_OpenCheckout> {
       _err = null;
     });
     try {
-      await ref.read(apiProvider).post<Map<String, dynamic>>('wallet/oxapay/invoices/${widget.c.id}/cancel', body: const {});
-      if (mounted) widget.onChanged();
+      final r = await ref.read(apiProvider).post<Map<String, dynamic>>('wallet/oxapay/invoices/${widget.c.id}/cancel', body: const {});
+      if (mounted) widget.onChanged(r['checkout'] is Map ? Checkout.fromJson((r['checkout'] as Map).cast<String, dynamic>()) : widget.c);
     } catch (e) {
       if (mounted) setState(() => _err = walletErrorText(e, t, fallback: t('payments.checkout.cancelFailed')));
     } finally {
@@ -180,9 +211,9 @@ class _OpenCheckoutState extends ConsumerState<_OpenCheckout> {
     // while it is open, keep asking: the list is behind the live row
     final live = ref.watch(checkoutLiveProvider(widget.c.id));
     final now = live.value ?? widget.c;
-    ref.listen(checkoutLiveProvider(widget.c.id), (_, next) {
+    ref.listen(checkoutLiveProvider(widget.c.id), (prev, next) {
       final c = next.value;
-      if (c != null && !c.isOpen) widget.onChanged();
+      if (c != null && !c.isOpen && c.status != prev?.value?.status) widget.onChanged(c);
     });
 
     if (now.status == 'credited') {
@@ -192,7 +223,7 @@ class _OpenCheckoutState extends ConsumerState<_OpenCheckout> {
           children: [
             KCardHeader(title: t('payments.checkout.creditedTitle'), subtitle: t('payments.checkout.creditedText', {'amount': fmt(now.credited)})),
             const SizedBox(height: 16),
-            KButton(label: t('payments.checkout.another'), icon: LucideIcons.wallet, expand: true, onPressed: widget.onChanged),
+            KButton(label: t('payments.checkout.another'), icon: LucideIcons.wallet, expand: true, onPressed: widget.onDone),
           ],
         ),
       );
