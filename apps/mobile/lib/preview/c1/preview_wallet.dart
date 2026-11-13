@@ -22,6 +22,7 @@ void resetPreviewWallet() {
   previewWalletReads.clear();
   _s = _WalletState();
   resetPreviewManual();
+  _resetCheckouts();
 }
 
 _WalletState _s = _WalletState();
@@ -451,6 +452,10 @@ Map<String, dynamic> _page(List<Map<String, dynamic>> all, Map<String, String> q
   final manual = previewManual(method, route, body, query);
   if (manual != null) return manual;
 
+  // the crypto checkout (OxaPay)
+  final checkout = _previewCheckout(method, route, body, query);
+  if (checkout != null) return checkout;
+
   if (method == 'GET') {
     switch (route) {
       case 'config':
@@ -583,6 +588,94 @@ Map<String, dynamic> _page(List<Map<String, dynamic>> all, Map<String, String> q
       ..available += a
       ..locked = math.max(0, _s.locked - a);
     return (200, {'withdrawal': w});
+  }
+  return (404, _err('not_found', 'Not found.'));
+}
+
+/* ------------------------------------------------------------------ the crypto checkout (OxaPay) */
+
+/// A sample invoice: open until the test marks it paid (POST …/{id}/pay, the preview's stand-in for the webhook).
+class _Checkout {
+  _Checkout(this.id, this.amount, this.createdAt);
+  final int id;
+  final String amount;
+  final DateTime createdAt;
+  String status = 'waiting';
+  String? credited;
+
+  String get orderId => 'EZ-${_hex(500 + id, 10).toUpperCase()}';
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'order_id': orderId,
+    'amount': amount,
+    'currency': 'USD',
+    'status': status,
+    'payment_url': status == 'waiting' || status == 'new' ? 'https://pay.oxapay.com/preview/$orderId' : null,
+    'credited': credited,
+    'tx_hash': status == 'credited' ? '0x${_hex(900 + id, 64)}' : null,
+    'network': status == 'credited' ? 'TRC20' : null,
+    'paid_currency': status == 'credited' ? 'USDT' : null,
+    'expires_at': createdAt.add(const Duration(minutes: 60)).toUtc().toIso8601String(),
+    'credited_at': status == 'credited' ? DateTime.now().toUtc().toIso8601String() : null,
+    'created_at': createdAt.toUtc().toIso8601String(),
+  };
+}
+
+final List<_Checkout> _checkouts = [_Checkout(71, '250.00', DateTime.now().subtract(const Duration(days: 3)))..status = 'credited'..credited = '249.10'];
+int _nextCheckout = 72;
+
+/// Back to the sample state (resetPreviewWallet).
+void _resetCheckouts() {
+  _checkouts
+    ..clear()
+    ..add(_Checkout(71, '250.00', DateTime.now().subtract(const Duration(days: 3)))..status = 'credited'..credited = '249.10');
+  _nextCheckout = 72;
+}
+
+(int, Object)? _previewCheckout(String method, String route, Map<String, dynamic> body, Map<String, String> query) {
+  if (!route.startsWith('oxapay/')) return null;
+  final r = route.substring('oxapay/'.length);
+  Map<String, dynamic> list() => {
+    'items': [for (final c in [..._checkouts]..sort((a, b) => b.createdAt.compareTo(a.createdAt))) c.toJson()],
+    'total': _checkouts.length,
+    'enabled': true,
+    'min_amount': '10',
+    'max_amount': '5000',
+  };
+  if (method == 'GET') {
+    if (r == 'invoices') return (200, list());
+    final one = RegExp(r'^invoices/(\d+)$').firstMatch(r);
+    if (one != null) {
+      final c = _checkouts.where((x) => x.id == int.parse(one.group(1)!)).firstOrNull;
+      if (c == null) return (404, _err('not_found', 'Not found.'));
+      return (200, {'checkout': c.toJson()});
+    }
+    return (404, _err('not_found', 'Not found.'));
+  }
+  if (r == 'invoices') {
+    final amount = '${body['amount'] ?? ''}'.trim();
+    if (!RegExp(r'^\d{1,9}(\.\d{1,2})?$').hasMatch(amount)) return (422, _err('validation', 'Enter an amount with up to 2 decimals.', 'amount'));
+    if (_d(amount) < 10) return (422, _err('below_minimum', 'The minimum is 10 USD.', 'amount'));
+    if (_d(amount) > 5000) return (422, _err('above_maximum', 'The maximum is 5,000 USD.', 'amount'));
+    final c = _Checkout(_nextCheckout++, amount, DateTime.now());
+    _checkouts.add(c);
+    return (200, {'checkout': c.toJson()});
+  }
+  final act = RegExp(r'^invoices/(\d+)/(cancel|pay)$').firstMatch(r);
+  if (act != null) {
+    final c = _checkouts.where((x) => x.id == int.parse(act.group(1)!)).firstOrNull;
+    if (c == null) return (404, _err('not_found', 'Not found.'));
+    if (act.group(2) == 'cancel') {
+      if (c.status != 'waiting' && c.status != 'new') return (409, _err('not_cancellable', 'This checkout can no longer be cancelled.'));
+      c.status = 'cancelled';
+      return (200, {'checkout': c.toJson()});
+    }
+    c
+      ..status = 'credited'
+      ..credited = (_d(c.amount) * 0.996).toStringAsFixed(2);
+    _s.available += _d(c.credited!);
+    return (200, {'checkout': c.toJson()});
   }
   return (404, _err('not_found', 'Not found.'));
 }

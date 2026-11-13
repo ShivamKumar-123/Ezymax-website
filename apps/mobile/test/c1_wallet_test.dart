@@ -489,7 +489,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
       await settle(tester, frames: 6);
       final quote = _writes('wallet/withdrawals/quote');
-      expect(quote.last.body, {'chain': 'tron', 'amount': '120', 'to_address': 'TXLAQ63Xg1NAzckPwKHvzw7CSEmLMEqcdj'});
+      expect(quote.last.body, {'method': 'crypto', 'chain': 'tron', 'amount': '120', 'to_address': 'TXLAQ63Xg1NAzckPwKHvzw7CSEmLMEqcdj'});
       expect(find.text('118.00 USDT'), findsOneWidget);
       await _tap(tester, _button(LucideIcons.arrowUpFromLine));
       expect(find.text('Confirm your withdrawal'), findsOneWidget);

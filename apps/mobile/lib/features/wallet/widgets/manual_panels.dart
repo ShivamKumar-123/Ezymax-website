@@ -13,11 +13,13 @@ import 'manual_form.dart';
 import 'manual_requests.dart';
 import 'wallet_ui.dart';
 
-/// How the client pays (web Via): the automatic USDT deposit, or a method the broker verifies.
-enum DepositVia { usdt, bank, crypto }
+/// How the client pays (web Via): the crypto checkout (OxaPay), the automatic USDT deposit, or a method the
+/// broker verifies.
+enum DepositVia { checkout, usdt, bank, crypto }
 
-/// `?via=bank|crypto|usdt` -> the choice (null for anything else).
+/// `?via=checkout|usdt|bank|crypto` -> the choice (null for anything else).
 DepositVia? depositViaOf(String? v) => switch (v) {
+  'checkout' => DepositVia.checkout,
   'usdt' => DepositVia.usdt,
   'bank' => DepositVia.bank,
   'crypto' => DepositVia.crypto,
@@ -28,13 +30,14 @@ DepositVia? depositViaOf(String? v) => switch (v) {
 
 /// "How do you want to pay?" (web DepositChooser): the ways the broker offers; nothing with fewer than two.
 class DepositChooser extends StatelessWidget {
-  const DepositChooser({super.key, required this.value, required this.onChanged, required this.usdt, required this.bank, required this.crypto});
+  const DepositChooser({super.key, required this.value, required this.onChanged, required this.usdt, required this.bank, required this.crypto, this.checkout = false});
   final DepositVia value;
   final ValueChanged<DepositVia> onChanged;
-  final bool usdt, bank, crypto;
+  final bool usdt, bank, crypto, checkout;
 
-  /// The choices shown, in order.
-  static List<DepositVia> offered({required bool usdt, required bool bank, required bool crypto}) => [
+  /// The choices shown, in order (web: checkout, usdt, bank, crypto).
+  static List<DepositVia> offered({required bool usdt, required bool bank, required bool crypto, bool checkout = false}) => [
+    if (checkout) DepositVia.checkout,
     if (usdt) DepositVia.usdt,
     if (bank) DepositVia.bank,
     if (crypto) DepositVia.crypto,
@@ -44,7 +47,7 @@ class DepositChooser extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.t;
     final k = context.k;
-    final options = offered(usdt: usdt, bank: bank, crypto: crypto);
+    final options = offered(usdt: usdt, bank: bank, crypto: crypto, checkout: checkout);
     if (options.length < 2) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(bottom: kWalletGap),
@@ -63,16 +66,19 @@ class DepositChooser extends StatelessWidget {
               selected: options[i] == value,
               onTap: () => onChanged(options[i]),
               icon: switch (options[i]) {
+                DepositVia.checkout => const _RoundIcon(LucideIcons.sparkles),
                 DepositVia.usdt => const _UsdtAuto(),
                 DepositVia.bank => const _RoundIcon(LucideIcons.landmark),
                 DepositVia.crypto => const _RoundIcon(LucideIcons.wallet),
               },
               title: switch (options[i]) {
+                DepositVia.checkout => t('payments.chooser.checkout'),
                 DepositVia.usdt => t('payments.chooser.usdt'),
                 DepositVia.bank => t('payments.chooser.bank'),
                 DepositVia.crypto => t('payments.chooser.crypto'),
               },
               text: switch (options[i]) {
+                DepositVia.checkout => t('payments.chooser.checkoutText'),
                 DepositVia.usdt => t('payments.chooser.usdtText'),
                 DepositVia.bank => t('payments.chooser.bankText'),
                 DepositVia.crypto => t('payments.chooser.cryptoText'),

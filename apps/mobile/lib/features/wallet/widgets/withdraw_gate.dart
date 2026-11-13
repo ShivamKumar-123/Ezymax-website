@@ -2,7 +2,8 @@
 //
 // Opening Withdraw with more than one way out shows a sheet with the rails the broker has open - USDT to the
 // client's own wallet, UPI to their own ID. Choosing one shows what the client is agreeing to; agreeing runs a
-// short handoff animation and returns the rail, which the screen preselects.
+// short handoff animation and returns the rail, which the screen preselects. The tile, the terms step and the
+// handoff are shared with the deposit gate (deposit_gate.dart).
 //
 // The consent step is not decoration. A payout is irreversible and goes to an address or an ID the client types
 // themselves, so the line they tick is the one thing standing between a typo and lost money.
@@ -70,19 +71,20 @@ class _GateState extends State<_Gate> {
       curve: Curves.easeOutCubic,
       alignment: Alignment.topCenter,
       child: switch (_step) {
-        'handoff' => _Handoff(
+        'handoff' => GateHandoff(
           colour: _colour,
           mark: _mark(44),
           steps: [t('wallet.withdrawGate.step1'), t('wallet.withdrawGate.step2', {'rail': _name}), t('wallet.withdrawGate.step3')],
           secure: t('wallet.withdrawGate.secure'),
           onDone: () => Navigator.of(context).pop(_sel),
         ),
-        'terms' => _Terms(
+        'terms' => GateTerms(
           colour: _colour,
           name: _name,
           mark: _mark(30),
           body: _isUpi ? t('wallet.withdrawGate.termsUpi', {'currency': widget.upi?.currency ?? 'INR'}) : t('wallet.withdrawGate.termsUsdt'),
           agreeLabel: _isUpi ? t('wallet.withdrawGate.agreeUpi') : t('wallet.withdrawGate.agreeUsdt'),
+          continueLabel: t('wallet.withdrawGate.continueTo', {'rail': _name}),
           agreed: _agreed,
           onToggle: () {
             KHaptics.tap();
@@ -100,7 +102,7 @@ class _GateState extends State<_Gate> {
             ),
             const SizedBox(height: 16),
             if (widget.chains.isNotEmpty) ...[
-              _RailTile(
+              GateTile(
                 colour: _usdtGreen,
                 mark: const KCoinIcon('usdt', size: 44),
                 name: 'USDT',
@@ -112,7 +114,7 @@ class _GateState extends State<_Gate> {
               const SizedBox(height: 10),
             ],
             if (widget.upi != null) ...[
-              _RailTile(
+              GateTile(
                 colour: _upiPurple,
                 mark: const _UpiMark(),
                 name: 'UPI',
@@ -148,14 +150,14 @@ class _UpiMark extends StatelessWidget {
   );
 }
 
-typedef _Badge = ({String coin, String label});
+typedef GateBadge = ({String coin, String label});
 
-class _RailTile extends StatelessWidget {
-  const _RailTile({required this.colour, required this.mark, required this.name, required this.sub, required this.badges, required this.onTap});
+class GateTile extends StatelessWidget {
+  const GateTile({required this.colour, required this.mark, required this.name, required this.sub, required this.badges, required this.onTap});
   final Color colour;
   final Widget mark;
   final String name, sub;
-  final List<_Badge> badges;
+  final List<GateBadge> badges;
   final VoidCallback onTap;
 
   @override
@@ -206,20 +208,21 @@ class _RailTile extends StatelessWidget {
   }
 }
 
-class _Terms extends StatelessWidget {
-  const _Terms({
+class GateTerms extends StatelessWidget {
+  const GateTerms({
     required this.colour,
     required this.name,
     required this.mark,
     required this.body,
     required this.agreeLabel,
+    required this.continueLabel,
     required this.agreed,
     required this.onToggle,
     required this.onBack,
     required this.onContinue,
   });
   final Color colour;
-  final String name, body, agreeLabel;
+  final String name, body, agreeLabel, continueLabel;
   final Widget mark;
   final bool agreed;
   final VoidCallback onToggle, onBack;
@@ -289,11 +292,7 @@ class _Terms extends StatelessWidget {
           children: [
             KButton(label: t('common.back'), variant: KButtonVariant.ghost, onPressed: onBack),
             const Spacer(),
-            KButton(
-              label: t('wallet.withdrawGate.continueTo', {'rail': name}),
-              trailingIcon: LucideIcons.arrowRight,
-              onPressed: onContinue,
-            ),
+            KButton(label: continueLabel, trailingIcon: LucideIcons.arrowRight, onPressed: onContinue),
           ],
         ),
       ],
@@ -303,8 +302,8 @@ class _Terms extends StatelessWidget {
 
 /// The handoff: the rail's mark inside a sweeping halo, one status line at a time, a segment per step. Each
 /// line names something the screen is really about to do, so the pause is a handoff and not a loader.
-class _Handoff extends StatefulWidget {
-  const _Handoff({required this.colour, required this.mark, required this.steps, required this.secure, required this.onDone});
+class GateHandoff extends StatefulWidget {
+  const GateHandoff({required this.colour, required this.mark, required this.steps, required this.secure, required this.onDone});
   final Color colour;
   final Widget mark;
   final List<String> steps;
@@ -312,10 +311,10 @@ class _Handoff extends StatefulWidget {
   final VoidCallback onDone;
 
   @override
-  State<_Handoff> createState() => _HandoffState();
+  State<GateHandoff> createState() => GateHandoffState();
 }
 
-class _HandoffState extends State<_Handoff> with SingleTickerProviderStateMixin {
+class GateHandoffState extends State<GateHandoff> with SingleTickerProviderStateMixin {
   static const _stepMs = 850;
   late final AnimationController _spin = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500))..repeat();
   final List<Timer> _timers = [];
