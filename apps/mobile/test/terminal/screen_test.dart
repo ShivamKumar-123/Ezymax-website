@@ -66,7 +66,8 @@ void main() {
   testWidgets('symbol and side open the chart of that market and the order sheet', (tester) async {
     await open(tester, '/trader?login=10042817&symbol=btcusd&side=buy');
     expect(h.container.read(workspaceProvider).symbol, 'BTCUSD');
-    expect(find.text('10042817'), findsWidgets);
+    // the header names the account by its nickname (the sample account 10042817 is "Main"), not its login
+    expect(find.text('Main'), findsWidgets);
     expect(find.text('Buy 0.50 lot BTCUSD at market'), findsOneWidget);
     await close(tester);
   });
