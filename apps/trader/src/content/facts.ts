@@ -210,15 +210,15 @@ export const OPTIONS_RISK =
 
 /** The Android app on the website (served by nginx from /srv/ezymex/downloads on the server). Update on each release. */
 export const ANDROID_APP = {
-  version: '1.0.29',
-  build: 31,
+  version: '1.0.30',
+  build: 32,
   // versioned so a new release is never served from the CDN's copy of the last one
-  href: '/download/ezymex-android-1.0.29.apk',
-  hrefUniversal: '/download/ezymex-android-1.0.29.apk',
+  href: '/download/ezymex-android-1.0.30.apk',
+  hrefUniversal: '/download/ezymex-android-1.0.30.apk',
   sizeMb: 113,
-  sha256: 'eaf7c055fdd0518f2fffcc43ec12d0871413fd63d105c5fc9928fd8c309d2a7c',
+  sha256: '99e75cb67f410b4914e90a427fba61f226e91ae63fbcfe702b45cfb90daf6e7a',
   minAndroid: 'Android 7.0',
-  releasedOn: '11 November 2026',
+  releasedOn: '13 November 2026',
   /** Signed with the same key as every build since 1.0.10, so it installs over those; only a build older than 1.0.10 (another key) needs a reinstall. */
   requiresReinstall: false,
 };
