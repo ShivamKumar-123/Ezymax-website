@@ -15,6 +15,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/api/api_providers.dart';
+import '../../../core/notifications/notifications.dart';
+import '../../../env.dart';
 import '../../../i18n/i18n.dart';
 import '../../../ui/ui.dart';
 import '../checkout_api.dart';
@@ -159,7 +161,12 @@ class _CheckoutPanelState extends ConsumerState<CheckoutPanel> {
 }
 
 /// Opens OxaPay's page in the phone's browser. False when nothing could open it (a test, a phone with no browser).
-Future<bool> openPaymentPage(String url) async {
+/// On sample data (the demo, a preview) there is no invoice behind the link: a note says what would open.
+Future<bool> openPaymentPage(BuildContext context, WidgetRef ref, String url) async {
+  if (Env.preview || ref.read(demoModeProvider)) {
+    ref.read(notificationsProvider.notifier).toast(NotificationKind.info, context.t('app.demo.sampleData'), description: context.t('payments.checkout.demoOpen'));
+    return false;
+  }
   try {
     return await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
   } catch (_) {
@@ -275,7 +282,7 @@ class _OpenCheckoutState extends ConsumerState<_OpenCheckout> {
               icon: LucideIcons.arrowUpRight,
               size: KButtonSize.lg,
               expand: true,
-              onPressed: () => openPaymentPage(now.paymentUrl!),
+              onPressed: () => openPaymentPage(context, ref, now.paymentUrl!),
             ),
           if (now.status != 'paying') ...[
             const SizedBox(height: 8),
@@ -322,7 +329,7 @@ class _StartCheckoutState extends ConsumerState<_StartCheckout> {
       final r = await ref.read(apiProvider).post<Map<String, dynamic>>('wallet/oxapay/invoices', body: {'amount': _amount.text.trim()});
       final c = Checkout.fromJson((r['checkout'] as Map).cast<String, dynamic>());
       // OxaPay's page, with their own choice of coins; the open checkout shows here meanwhile
-      if (c.paymentUrl != null) await openPaymentPage(c.paymentUrl!);
+      if (c.paymentUrl != null && mounted) await openPaymentPage(context, ref, c.paymentUrl!);
       if (mounted) widget.onCreated();
     } catch (e) {
       if (mounted) setState(() => _err = walletErrorText(e, t, fallback: t('payments.checkout.startFailed')));

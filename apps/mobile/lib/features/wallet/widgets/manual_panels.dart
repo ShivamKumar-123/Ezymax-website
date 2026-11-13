@@ -9,9 +9,15 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../i18n/i18n.dart';
 import '../../../ui/ui.dart';
 import '../manual_api.dart';
+import 'checkout_panels.dart';
 import 'manual_form.dart';
 import 'manual_requests.dart';
 import 'wallet_ui.dart';
+
+/// The brand behind a manual payment method, matched on the name the broker gave it ("Phone Pe", "PhonePe UPI",
+/// …), as the web's brandForMethod: such a method shows PhonePe's own mark and banner. Any other name keeps the
+/// generic bank icon, the right default for a plain bank account.
+bool manualIsPhonePe(String name) => name.toLowerCase().replaceAll(RegExp(r'[^a-z]'), '').contains('phonepe');
 
 /// How the client pays (web Via): the crypto checkout (OxaPay), the automatic USDT deposit, or a method the
 /// broker verifies.
@@ -210,6 +216,8 @@ class ManualMethodIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // a method the broker named after a brand we know shows that brand's own mark
+    if (manualIsPhonePe(m.name)) return PhonePeMark(size: size);
     if (m.bank) return _RoundIcon(LucideIcons.landmark, size: size);
     final token = m.token.toLowerCase();
     final coin = const {'usdt', 'btc', 'eth'}.contains(token) ? token : 'usdt';
@@ -469,14 +477,17 @@ class ManualMethodDetails extends StatelessWidget {
           ),
         ),
     ];
+    final phonePe = manualIsPhonePe(m.name);
     return KCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // the provider's banner tops the card (web GatewayBanner): the page reads as that gateway, not a form
+          if (phonePe) ...[const GatewayBanner(mark: PhonePeMark(size: 28), name: 'PhonePe', colour: kPhonePePurple), const SizedBox(height: 14)],
           KCardHeader(
             title: crypto ? t('payments.card.payToAddress') : t('payments.card.payTo'),
             subtitle: m.name,
-            icon: crypto ? LucideIcons.wallet : LucideIcons.landmark,
+            icon: crypto ? LucideIcons.wallet : (phonePe ? LucideIcons.smartphone : LucideIcons.landmark),
           ),
           if (manualHasQr(m)) ...[const SizedBox(height: 18), ManualQr(m: m, locked: locked)],
           const SizedBox(height: 16),

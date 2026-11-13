@@ -23,7 +23,7 @@ List<Map<String, dynamic>> _methods() => [
   {
     'id': 1,
     'kind': 'bank',
-    'name': 'HDFC Bank · UPI',
+    'name': 'PhonePe · UPI',
     'status': 'active',
     'sort_order': 0,
     'currency': 'INR',
