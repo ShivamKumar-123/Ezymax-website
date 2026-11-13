@@ -242,29 +242,59 @@ class _OpenCheckoutState extends ConsumerState<_OpenCheckout> {
         children: [
           const GatewayBanner(mark: OxaPayMark(size: 28), name: 'OxaPay', colour: kOxaPayBlue),
           const SizedBox(height: 14),
-          KCardHeader(title: t('payments.checkout.openTitle'), subtitle: t('payments.checkout.openText'), action: WalletStatusChip(checkoutStatus(now.status))),
+          KCardHeader(title: t('payments.checkout.openTitle'), subtitle: t('payments.checkout.openText')),
           const SizedBox(height: 14),
+          // the amount with the status beside it, the reference on its own line: an order id is long on a phone
           Container(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+            padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
             decoration: BoxDecoration(color: k.surface2, borderRadius: BorderRadius.circular(14), border: Border.all(color: k.line)),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(t('common.amount'), style: context.text.caption.copyWith(color: k.fg3, fontWeight: FontWeight.w400)),
-                      const SizedBox(height: 2),
-                      Text('${fmt(now.amount)} USD', style: context.text.title2.copyWith(fontSize: 20, fontWeight: FontWeight.w600, fontFeatures: const [FontFeature.tabularFigures()])),
-                    ],
-                  ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(t('payments.checkout.reference'), style: context.text.caption.copyWith(color: k.fg3, fontWeight: FontWeight.w400)),
-                    const SizedBox(height: 2),
-                    Text(now.orderId, style: context.text.label.copyWith(fontSize: 12.5, fontFamily: 'monospace', fontFeatures: const [FontFeature.tabularFigures()])),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(t('common.amount'), style: context.text.caption.copyWith(color: k.fg3, fontWeight: FontWeight.w400)),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${fmt(now.amount)} USD',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.text.title2.copyWith(fontSize: 22, fontWeight: FontWeight.w600, fontFeatures: const [FontFeature.tabularFigures()]),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Padding(padding: const EdgeInsets.only(top: 2), child: WalletStatusChip(checkoutStatus(now.status))),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Container(height: 1, color: k.line),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(t('payments.checkout.reference'), style: context.text.caption.copyWith(color: k.fg3, fontWeight: FontWeight.w400)),
+                          const SizedBox(height: 2),
+                          Text(
+                            now.orderId,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textDirection: TextDirection.ltr,
+                            style: context.text.label.copyWith(fontSize: 12.5, fontFamily: 'monospace', fontFeatures: const [FontFeature.tabularFigures()]),
+                          ),
+                        ],
+                      ),
+                    ),
+                    KIconButton(icon: LucideIcons.copy, size: 32, semanticLabel: t('payments.checkout.reference'), onPressed: () => kCopy(context, now.orderId)),
                   ],
                 ),
               ],
