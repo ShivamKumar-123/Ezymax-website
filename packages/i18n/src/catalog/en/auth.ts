@@ -181,6 +181,6 @@ const auth = {
   // "Get the app" on the sign-in pages (components/ui/get-the-app.tsx). Android only: there is no iOS build.
   "getApp.title": "Get the Ezymex app",
   "getApp.sub": "Trade, deposit and withdraw from your phone.",
-  "getApp.cta": "Download",
+  "getApp.cta": "Google Play",
 };
 export default auth;

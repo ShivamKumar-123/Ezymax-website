@@ -1,22 +1,23 @@
 "use client";
 
-// "Get the app" on the sign-in pages: the Android build, offered where someone is already about to sign in.
+// "Get the app" on the sign-in pages: the Android app on Google Play, offered where someone is already about to
+// sign in (the founder, 13 November 2026: the listing, not the APK, is where people install from).
 //
-// It is hidden on iPhone, because there is no iOS build and an .apk is nothing an iPhone can do anything with -
-// offering it there would be offering a dead end. Everywhere else it shows, including on a desktop, where the
-// file is still worth having to send to a phone.
+// It is hidden on iPhone, because there is no iOS build and Google Play is nothing an iPhone can do anything
+// with - offering it there would be offering a dead end. Everywhere else it shows, including on a desktop, where
+// the listing is still worth opening to send to a phone.
 //
 // Dismissing it is remembered in this browser, so it asks once rather than on every visit. That memory is a
 // convenience and nothing more: a cleared browser or a private window simply sees it again, which is why
 // nothing here depends on the value being there.
 
 import * as React from "react";
-import { Download, Smartphone, X } from "lucide-react";
+import { ExternalLink, Smartphone, X } from "lucide-react";
 import { useT } from "@ezymex/i18n/react";
 import { cn } from "@/components/kit";
 
-/** Served by nginx from /srv/ezymex/downloads on this same host, so it needs no absolute URL. */
-const APK = "/download/ezymex.apk";
+/** The app's Google Play listing (live since 4 November 2026). */
+const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.ezymex.app";
 const DISMISSED = "ezymex:get-the-app:dismissed";
 
 /** Whether this browser can do anything with an Android package. */
@@ -66,10 +67,12 @@ export function GetTheApp({ className }: { className?: string }) {
         <p className="mt-0.5 text-[12px] leading-snug text-fg-3">{t("auth.getApp.sub")}</p>
       </div>
       <a
-        href={APK}
+        href={PLAY_STORE_URL}
+        target="_blank"
+        rel="noopener noreferrer"
         className="ms-auto inline-flex shrink-0 items-center gap-1.5 rounded-full bg-ember px-3.5 py-2 text-[12.5px] font-medium text-white transition-opacity hover:opacity-90"
       >
-        <Download className="size-3.5" /> {t("auth.getApp.cta")}
+        {t("auth.getApp.cta")} <ExternalLink className="size-3.5" />
       </a>
       <button
         type="button"
