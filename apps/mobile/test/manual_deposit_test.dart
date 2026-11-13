@@ -432,7 +432,7 @@ void main() {
   });
 
   group('deposit page', () {
-    testWidgets('with the gate's brands on: no chooser, one row reopens the gate, "Deposit" header', (tester) async {
+    testWidgets('with the gate brands on: no chooser, one row reopens the gate, "Deposit" header', (tester) async {
       // ?via=usdt: the automatic deposit, past the gate (the sample broker has the checkout and a PhonePe method)
       await _open(tester, '/wallet/deposit?via=usdt');
       expect(find.byType(DepositScreen), findsOneWidget);
@@ -468,7 +468,7 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('only bank methods: still the gate's row, never the chooser', (tester) async {
+    testWidgets("only bank methods: still the gate's row, never the chooser", (tester) async {
       previewManualMethods.removeWhere((m) => m['kind'] == 'crypto');
       await _open(tester, '/wallet/deposit?via=bank');
       expect(find.text('How do you want to pay?'), findsOneWidget);
