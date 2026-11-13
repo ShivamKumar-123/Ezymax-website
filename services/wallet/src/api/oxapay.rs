@@ -6,6 +6,8 @@
 //! | `GET /v1/oxapay/invoices/{id}?user_id=&poll=` · `POST …/{id}/cancel` | client | – |
 //! | `POST /v1/oxapay/callback` | OxaPay, through the Client Area BFF | the `HMAC` header |
 //! | `GET /v1/admin/oxapay/invoices` · `POST …/{id}/recheck` | staff | finance.read |
+//! | `GET /v1/admin/oxapay/strays` | staff | finance.read |
+//! | `POST /v1/admin/oxapay/strays/{id}/resolve` | staff | finance.approve |
 //!
 //! The callback sits behind the same `X-Ezymex-Internal` guard as everything else: it reaches us through the
 //! Client Area's public BFF route, which adds that header and passes OxaPay's bytes through untouched. The
@@ -22,7 +24,7 @@ use serde_json::{Value, json};
 use super::{Body, Q, ok};
 use crate::error::{ApiError, ApiResult};
 use crate::ops::oxapay;
-use crate::state::{AppState, Ctx, ROLES_READ, StaffCtx};
+use crate::state::{AppState, Ctx, ROLES_APPROVE, ROLES_READ, StaffCtx};
 
 fn uid(v: Option<i64>) -> ApiResult<i64> {
     v.filter(|v| *v > 0).ok_or_else(|| ApiError::validation("user_id", "user_id must be a positive integer"))
@@ -90,4 +92,23 @@ pub async fn admin_list(State(st): State<AppState>, s_ctx: StaffCtx, Q(q): Q<oxa
 pub async fn admin_recheck(State(st): State<AppState>, s_ctx: StaffCtx, Path(id): Path<i64>) -> ApiResult<Json<Value>> {
     can_read(&s_ctx)?;
     Ok(ok(json!({"checkout": oxapay::admin_recheck(&st, &s_ctx, id).await?})))
+}
+
+/// Payments that reached the address of a closed invoice (ops::oxapay scan_strays).
+pub async fn admin_strays(State(st): State<AppState>, s_ctx: StaffCtx, Q(q): Q<oxapay::StrayQuery>) -> ApiResult<Json<Value>> {
+    can_read(&s_ctx)?;
+    Ok(ok(oxapay::admin_strays(&st, &s_ctx, q).await?))
+}
+
+#[derive(Deserialize)]
+pub struct ResolveBody {
+    #[serde(default)]
+    note: String,
+}
+
+pub async fn admin_resolve_stray(State(st): State<AppState>, s_ctx: StaffCtx, Path(id): Path<i64>, Body(b): Body<ResolveBody>) -> ApiResult<Json<Value>> {
+    if !s_ctx.has_perm("finance.approve", ROLES_APPROVE) {
+        return Err(ApiError::Forbidden("Your role doesn't allow this (finance.approve)".into()));
+    }
+    Ok(ok(json!({"stray": oxapay::admin_resolve_stray(&st, &s_ctx, id, &b.note).await?})))
 }

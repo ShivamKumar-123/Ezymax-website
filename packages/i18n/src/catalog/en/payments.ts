@@ -170,6 +170,7 @@ const payments = {
   "checkout.amountAria": "Deposit amount in US dollars",
   "checkout.go": "Continue to payment",
   "checkout.note": "You finish the payment on our payment provider's secure page and come back here. The network fee is shown there before you pay.",
+  "checkout.addressWarning": "Every checkout gets a fresh address that is valid only for this payment. Never send money to an address from an earlier deposit or from a saved address book: such a payment is not matched to your account and cannot be credited automatically.",
   "checkout.off": "The crypto checkout isn't available right now. Please use one of the other deposit options.",
   "checkout.openTitle": "Your checkout",
   "checkout.openText": "Finish the payment on the provider's page. This page updates on its own once it confirms.",

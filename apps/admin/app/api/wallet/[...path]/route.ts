@@ -53,6 +53,10 @@ const ROUTES: Route[] = [
   // crypto checkouts (OxaPay). Recheck only asks the provider again and credits what it already owes,
   // so it needs no approval right of its own.
   { method: "GET", re: /^oxapay\/invoices$/, perm: "finance.read" },
+  // payments that reached the address of a closed checkout: listed for anyone who reads finance, closed by
+  // whoever may approve (they credit the client by an adjustment first)
+  { method: "GET", re: /^oxapay\/strays$/, perm: "finance.read" },
+  { method: "POST", re: new RegExp(`^oxapay/strays/${N}/resolve$`), perm: "finance.approve" },
   // deposit turnover: anyone who can read finance sees it; lifting one takes the approval permission
   { method: "GET", re: new RegExp(`^turnover/${N}$`), perm: "finance.read" },
   { method: "POST", re: new RegExp(`^turnover/requirements/${N}/waive$`), perm: "finance.approve" },

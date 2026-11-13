@@ -304,6 +304,9 @@ class _OpenCheckoutState extends ConsumerState<_OpenCheckout> {
             const SizedBox(height: 12),
             Text(t('payments.checkout.payingNote'), style: context.text.footnote.copyWith(color: k.fg2, fontSize: 12.5, height: 1.45)),
           ],
+          const SizedBox(height: 12),
+          // the one rule that loses money when broken (13 Nov 2026: 200 USDT paid to the address of a closed checkout)
+          KNotice(tone: KChipTone.warn, icon: LucideIcons.triangleAlert, text: t('payments.checkout.addressWarning')),
           WalletInlineError(_err, top: 12),
           const SizedBox(height: 16),
           if (now.paymentUrl != null)
@@ -407,6 +410,8 @@ class _StartCheckoutState extends ConsumerState<_StartCheckout> {
           ),
           const SizedBox(height: 12),
           Text(t('payments.checkout.note'), style: context.text.caption.copyWith(color: k.fg3, fontWeight: FontWeight.w400, height: 1.45)),
+          const SizedBox(height: 12),
+          KNotice(tone: KChipTone.warn, icon: LucideIcons.triangleAlert, text: t('payments.checkout.addressWarning')),
         ],
       ),
     );

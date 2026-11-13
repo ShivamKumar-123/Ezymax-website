@@ -11,7 +11,7 @@
 // credits it if the webhook has not arrived yet (the poll asks OxaPay directly).
 
 import * as React from "react";
-import { ArrowUpRight, Check, Clock, CircleAlert, Loader2, Wallet } from "lucide-react";
+import { ArrowUpRight, Check, Clock, CircleAlert, Loader2, TriangleAlert, Wallet } from "lucide-react";
 import { Button, Card, CardHeader, Field, Input, Skeleton, cn } from "@/components/kit";
 import { useT } from "@ezymex/i18n/react";
 import { WalletError, fmt, useWallet, walletApi } from "./api";
@@ -47,6 +47,17 @@ export const isOpen = (c: Checkout) => c.status === "new" || c.status === "waiti
 
 export function useCheckouts() {
   return useWallet<CheckoutList>("oxapay/invoices");
+}
+
+/** The one rule that loses money when broken (13 Nov 2026: 200 USDT paid to the address of a closed checkout). */
+function AddressWarning() {
+  const t = useT();
+  return (
+    <div className="flex items-start gap-2 rounded-[12px] border border-warn/30 bg-warn-soft px-3 py-2.5 text-[12.5px] leading-relaxed text-fg-2">
+      <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warn" />
+      <span>{t("payments.checkout.addressWarning")}</span>
+    </div>
+  );
 }
 
 function Status({ c }: { c: Checkout }) {
@@ -119,6 +130,7 @@ function OpenCheckout({ c, onChanged }: { c: Checkout; onChanged: () => void }) 
           </div>
         </div>
         {now.status === "paying" && <div className="text-[12.5px] text-fg-2">{t("payments.checkout.payingNote")}</div>}
+        <AddressWarning />
         <InlineError>{err}</InlineError>
         <div className="flex flex-wrap gap-2">
           {now.payment_url && (
@@ -188,6 +200,7 @@ function StartCheckout({ list, onCreated }: { list: CheckoutList; onCreated: () 
           {busy ? <Loader2 className="animate-spin" /> : <ArrowUpRight />} {t("payments.checkout.go")}
         </Button>
         <p className="text-[12px] leading-relaxed text-fg-3">{t("payments.checkout.note")}</p>
+        <AddressWarning />
       </form>
     </Card>
   );

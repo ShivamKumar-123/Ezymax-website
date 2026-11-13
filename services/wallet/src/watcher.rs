@@ -1,12 +1,13 @@
 //! Background workers (one instance only, `WALLET_WORKERS=true`):
 //! - every `poll_secs`: verify / confirm / credit open deposits, verify paid withdrawals, settle pending
 //!   trading transfers, expire intents;
-//! - every `scan_secs`: scan the receiving addresses for incoming transfers nobody claimed.
+//! - every `scan_secs`: scan the receiving addresses for incoming transfers nobody claimed, and the addresses
+//!   of closed OxaPay invoices for payments that reached them too late (ops::oxapay scan_strays).
 
 use std::time::Duration;
 
 use crate::chain::ChainId;
-use crate::ops::{adjustments, deposits, trading, turnover, withdrawals};
+use crate::ops::{adjustments, deposits, oxapay, trading, turnover, withdrawals};
 use crate::state::AppState;
 
 /// One pass of the fast loop. Returns (deposits checked, payouts checked, transfers recovered).
@@ -44,6 +45,11 @@ pub async fn scan_all(st: &AppState) {
                 Err(e) => tracing::warn!(tenant_id, %chain, error = %e, "scan failed"),
             }
         }
+    }
+    match oxapay::scan_strays(st).await {
+        Ok(n) if n > 0 => tracing::warn!(new = n, "stray payments to closed OxaPay invoices recorded"),
+        Ok(_) => {}
+        Err(e) => tracing::warn!(error = %e, "oxapay stray scan failed"),
     }
 }
 

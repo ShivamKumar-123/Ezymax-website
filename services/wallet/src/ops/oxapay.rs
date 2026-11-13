@@ -25,6 +25,7 @@ use sqlx::Row;
 use std::time::Duration;
 
 use crate::api::paging;
+use crate::chain::ChainId;
 use crate::error::{ApiError, ApiResult};
 use crate::ledger::{self, Leg, NewTxn, PostError};
 use crate::money::{D, WALLET_DP, ceil_dp, check_amount, floor_dp, s, s_opt};
@@ -109,6 +110,16 @@ struct Tx {
     network: Option<String>,
     #[serde(default)]
     amount: Value,
+    /// The invoice's own address the coins went to (OxaPay names it once something was paid).
+    #[serde(default)]
+    address: Option<String>,
+}
+
+/// One page of OxaPay's merchant payment history (`GET /v1/payment?page&size`).
+#[derive(Deserialize)]
+struct PaymentList {
+    #[serde(default)]
+    list: Vec<Payment>,
 }
 
 /// What the payment's transactions actually carried, in `want` (the invoice's own currency).
@@ -477,6 +488,15 @@ fn urlish(v: &str) -> String {
 /// Applies an authoritative payment to our invoice: credits it once, or records the end state.
 async fn settle(st: &AppState, id: i64, track: &str, p: Payment, callback_status: Option<&str>) -> ApiResult<()> {
     let status = p.status.clone().or_else(|| callback_status.map(str::to_string)).unwrap_or_default();
+    // whatever becomes of the invoice, the addresses its money went to are watched from now on (strays below)
+    if !p.txs.is_empty() {
+        let tenant: Option<i64> = sqlx::query_scalar("SELECT tenant_id FROM oxapay_invoices WHERE id = $1").bind(id).fetch_optional(&st.pool).await?;
+        if let Some(t) = tenant
+            && let Err(e) = remember_addresses(&st.pool, t, id, &p.txs).await
+        {
+            tracing::warn!(invoice = id, error = %e, "oxapay addresses not remembered");
+        }
+    }
     let raw = serde_json::to_value(json!({
         "track_id": id_text(&p.track_id),
         "status": p.status,
@@ -646,9 +666,14 @@ pub async fn reconcile(st: &AppState) -> ApiResult<usize> {
     Ok(seen)
 }
 
-/// The reconciler's own loop, started with the other workers (main.rs).
+/// The reconciler's own loop, started with the other workers (main.rs). First, once, the addresses of every
+/// paid invoice in OxaPay's history, so the stray watcher knows them from the start.
 pub fn spawn(st: AppState) {
     tokio::spawn(async move {
+        match backfill_addresses(&st).await {
+            Ok(n) => tracing::info!(invoices = n, "oxapay addresses backfilled"),
+            Err(e) => tracing::warn!(error = e.code(), "oxapay address backfill failed"),
+        }
         let mut t = tokio::time::interval(Duration::from_secs(st.cfg.scan_secs.max(30)));
         t.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         loop {
@@ -796,6 +821,302 @@ pub async fn admin_list(st: &AppState, s_ctx: &StaffCtx, q: AdminQuery) -> ApiRe
               "counts": by_status, "credited_total": s(credited_total), "enabled": st.cfg.oxapay_enabled()}))
 }
 
+// ── Payments to the address of a closed invoice ─────────────────────────────
+//
+// OxaPay gives every invoice its own address and books money to it only while the invoice is open. A client
+// who pays a saved address from an earlier deposit (13 Nov 2026: 200 USDT to the address of an invoice
+// credited ten days before) has sent money OxaPay holds but attributes to nothing: no webhook, no poll
+// answer, nothing on OxaPay's own dashboard. So every address a paid invoice used is remembered
+// (`oxapay_addresses`), watched on chain afterwards, and any later transfer is recorded as a stray payment
+// (`oxapay_stray_payments`) for staff to recover from OxaPay and credit by hand. Nothing here books money.
+
+/// The chain an OxaPay network name stands for; None for a coin the wallet cannot read.
+fn chain_of_network(network: &str) -> Option<ChainId> {
+    let n = network.to_ascii_lowercase();
+    if n.contains("binance") || n.contains("bsc") || n.contains("bep20") || n.contains("bnb") {
+        Some(ChainId::Bsc)
+    } else if n.contains("tron") || n.contains("trc20") {
+        Some(ChainId::Tron)
+    } else {
+        None
+    }
+}
+
+/// Keeps the addresses an invoice's USDT transactions went to, on the chains the wallet can read.
+async fn remember_addresses(pool: &sqlx::PgPool, tenant_id: i64, invoice_id: i64, txs: &[Tx]) -> sqlx::Result<()> {
+    for t in txs {
+        let (Some(network), Some(raw)) = (t.network.as_deref(), t.address.as_deref()) else { continue };
+        if !t.currency.as_deref().is_some_and(|c| c.eq_ignore_ascii_case("USDT")) {
+            continue;
+        }
+        let Some(chain) = chain_of_network(network) else { continue };
+        let Some(address) = chain.normalize_address(raw) else { continue };
+        sqlx::query("INSERT INTO oxapay_addresses (tenant_id, invoice_id, chain, address) VALUES ($1, $2, $3, $4) ON CONFLICT (chain, address) DO NOTHING")
+            .bind(tenant_id)
+            .bind(invoice_id)
+            .bind(chain.as_str())
+            .bind(&address)
+            .execute(pool)
+            .await?;
+    }
+    Ok(())
+}
+
+/// The addresses of every paid invoice in OxaPay's merchant history (a few pages of 50): run once at start,
+/// so invoices paid before this existed are watched too.
+pub async fn backfill_addresses(st: &AppState) -> ApiResult<usize> {
+    if !st.cfg.oxapay_enabled() {
+        return Ok(0);
+    }
+    let mut n = 0;
+    for page in 1..=20 {
+        let res = http()?
+            .get(format!("{}/v1/payment?page={page}&size=50", st.cfg.oxapay_api_url))
+            .header("merchant_api_key", &st.cfg.oxapay_api_key)
+            .send()
+            .await
+            .map_err(|e| gateway_down(&format!("send: {e}")))?;
+        let list: PaymentList = envelope(res).await?;
+        let count = list.list.len();
+        for p in &list.list {
+            if p.txs.is_empty() {
+                continue;
+            }
+            let Some(order) = p.order_id.as_deref() else { continue };
+            let row: Option<(i64, i64)> = sqlx::query_as("SELECT id, tenant_id FROM oxapay_invoices WHERE order_id = $1").bind(order).fetch_optional(&st.pool).await?;
+            let Some((id, t)) = row else { continue };
+            remember_addresses(&st.pool, t, id, &p.txs).await?;
+            n += 1;
+        }
+        if count < 50 {
+            break;
+        }
+    }
+    Ok(n)
+}
+
+/// Addresses one pass looks at per chain, how long an address rests between looks, and how far one look may
+/// catch up (BSC reads 5,000 blocks per call; an address first seen from its own payment's block can be days
+/// behind).
+const STRAY_BATCH: i64 = 15;
+const STRAY_REST_MINS: i32 = 10;
+const STRAY_CATCH_UP_CALLS: usize = 8;
+
+/// One pass of the stray watcher (watcher::scan_all): every remembered address, the transfers that reached it
+/// since the last look, less the invoice's own payment. New ones are recorded and audited; nothing is credited.
+pub async fn scan_strays(st: &AppState) -> anyhow::Result<usize> {
+    let mut found = 0;
+    for (tenant_id, _) in st.tenants.all() {
+        for chain in ChainId::ALL {
+            let Ok(client) = st.chain(chain) else { continue };
+            let rows = sqlx::query(
+                "SELECT a.id, a.invoice_id, a.address, i.tx_hash, i.last_payment, i.user_id
+                 FROM oxapay_addresses a JOIN oxapay_invoices i ON i.id = a.invoice_id
+                 WHERE a.tenant_id = $1 AND a.chain = $2 AND i.created_at > now() - interval '180 days'
+                   AND (a.scanned_at IS NULL OR a.scanned_at < now() - make_interval(mins => $3::int))
+                 ORDER BY a.scanned_at NULLS FIRST, a.id
+                 LIMIT $4",
+            )
+            .bind(tenant_id)
+            .bind(chain.as_str())
+            .bind(STRAY_REST_MINS)
+            .bind(STRAY_BATCH)
+            .fetch_all(&st.pool)
+            .await?;
+            if rows.is_empty() {
+                continue;
+            }
+            let head = match client.head().await {
+                Ok(h) => h,
+                Err(e) => {
+                    tracing::warn!(%chain, error = %e, "stray scan: chain head unavailable");
+                    continue;
+                }
+            };
+            for r in &rows {
+                let (aid, invoice_id, address) = (r.get::<i64, _>("id"), r.get::<i64, _>("invoice_id"), r.get::<String, _>("address"));
+                let own_hash: Option<String> = r.get("tx_hash");
+                let owner: i64 = r.get("user_id");
+                // the invoice's own transactions are not strays
+                let mut known: Vec<String> = own_hash.iter().map(|h| h.to_ascii_lowercase()).collect();
+                if let Some(txs) = r.get::<Option<sqlx::types::Json<Value>>, _>("last_payment").and_then(|j| j.0.get("txs").cloned()) {
+                    for t in txs.as_array().into_iter().flatten() {
+                        if let Some(h) = t.get("tx_hash").and_then(Value::as_str) {
+                            known.push(h.to_ascii_lowercase());
+                        }
+                    }
+                }
+                let cursor: Option<i64> = sqlx::query_scalar("SELECT position FROM chain_cursors WHERE tenant_id = $1 AND chain = $2 AND address = $3")
+                    .bind(tenant_id)
+                    .bind(chain.as_str())
+                    .bind(&address)
+                    .fetch_optional(&st.pool)
+                    .await?;
+                // the first look starts where the invoice's own payment was, so anything paid since is seen
+                let mut cursor = match (cursor, own_hash.as_deref()) {
+                    (Some(c), _) => Some(c),
+                    (None, Some(h)) => match client.lookup(h).await {
+                        Ok(l) => match chain {
+                            ChainId::Bsc => l.block.map(|b| b - 1),
+                            ChainId::Tron => l.block_time.map(|t| t.timestamp_millis()),
+                        },
+                        Err(_) => None,
+                    },
+                    (None, None) => None,
+                };
+                for _ in 0..STRAY_CATCH_UP_CALLS {
+                    let (items, next) = match client.incoming(&address, cursor).await {
+                        Ok(x) => x,
+                        Err(e) => {
+                            tracing::warn!(tenant_id, %chain, address = %address, error = %e, "stray scan failed");
+                            break;
+                        }
+                    };
+                    for it in items {
+                        let Some(hash) = chain.normalize_hash(&it.tx_hash) else { continue };
+                        if known.contains(&hash.to_ascii_lowercase()) {
+                            continue;
+                        }
+                        let ins = sqlx::query(
+                            "INSERT INTO oxapay_stray_payments (tenant_id, invoice_id, chain, address, tx_hash, log_index, from_address, amount, block_number, block_time)
+                             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT DO NOTHING",
+                        )
+                        .bind(tenant_id)
+                        .bind(invoice_id)
+                        .bind(chain.as_str())
+                        .bind(&address)
+                        .bind(&hash)
+                        .bind(it.log_index)
+                        .bind(&it.from)
+                        .bind(it.amount)
+                        .bind(it.block)
+                        .bind(it.time)
+                        .execute(&st.pool)
+                        .await?;
+                        if ins.rows_affected() == 1 {
+                            found += 1;
+                            tracing::warn!(tenant_id, %chain, invoice = invoice_id, tx = %hash, amount = %it.amount, "payment to the address of a closed OxaPay invoice");
+                            let mut tx = st.pool.begin().await?;
+                            crate::audit::system(
+                                &mut tx,
+                                tenant_id,
+                                "wallet.oxapay.stray_payment",
+                                "oxapay_invoice",
+                                invoice_id.to_string(),
+                                Some(json!({"tx_hash": hash, "amount": s(it.amount), "chain": chain.as_str(), "address": address, "from": it.from, "invoice_owner_user_id": owner})),
+                            )
+                            .await?;
+                            tx.commit().await?;
+                        }
+                    }
+                    cursor = Some(next);
+                    // caught up with the chain: BSC reads a bounded window per call, TRON answers to now
+                    if chain != ChainId::Bsc || next >= head - 1 {
+                        break;
+                    }
+                }
+                if let Some(c) = cursor {
+                    sqlx::query(
+                        "INSERT INTO chain_cursors (tenant_id, chain, address, position) VALUES ($1, $2, $3, $4)
+                         ON CONFLICT (tenant_id, chain, address) DO UPDATE SET position = EXCLUDED.position, updated_at = now()",
+                    )
+                    .bind(tenant_id)
+                    .bind(chain.as_str())
+                    .bind(&address)
+                    .bind(c)
+                    .execute(&st.pool)
+                    .await?;
+                }
+                sqlx::query("UPDATE oxapay_addresses SET scanned_at = now() WHERE id = $1").bind(aid).execute(&st.pool).await?;
+            }
+        }
+    }
+    Ok(found)
+}
+
+fn stray_json(r: &sqlx::postgres::PgRow) -> Value {
+    json!({
+        "id": r.get::<i64, _>("id"),
+        "invoice_id": r.get::<i64, _>("invoice_id"),
+        "invoice_order_id": r.get::<Option<String>, _>("invoice_order_id"),
+        "invoice_user_id": r.get::<Option<i64>, _>("invoice_user_id"),
+        "invoice_credited_at": r.get::<Option<chrono::DateTime<chrono::Utc>>, _>("invoice_credited_at"),
+        "chain": r.get::<String, _>("chain"),
+        "address": r.get::<String, _>("address"),
+        "tx_hash": r.get::<String, _>("tx_hash"),
+        "from_address": r.get::<Option<String>, _>("from_address"),
+        "amount": s(r.get::<D, _>("amount")),
+        "block_time": r.get::<Option<chrono::DateTime<chrono::Utc>>, _>("block_time"),
+        "status": r.get::<String, _>("status"),
+        "note": r.get::<Option<String>, _>("note"),
+        "resolved_by": r.get::<Option<String>, _>("resolved_by"),
+        "resolved_at": r.get::<Option<chrono::DateTime<chrono::Utc>>, _>("resolved_at"),
+        "created_at": r.get::<chrono::DateTime<chrono::Utc>, _>("created_at"),
+    })
+}
+
+#[derive(Deserialize, Default)]
+pub struct StrayQuery {
+    pub status: Option<String>,
+    pub page: Option<i64>,
+    pub limit: Option<i64>,
+}
+
+/// The Back Office list of stray payments (open first).
+pub async fn admin_strays(st: &AppState, s_ctx: &StaffCtx, q: StrayQuery) -> ApiResult<Value> {
+    let t = s_ctx.ctx.tenant.id;
+    let (page, limit, offset) = paging(q.page, q.limit, 25, 200);
+    let status = q.status.as_deref().map(str::trim).filter(|s| !s.is_empty() && *s != "all").map(str::to_string);
+    let rows = sqlx::query(
+        "SELECT p.*, i.order_id AS invoice_order_id, i.user_id AS invoice_user_id, i.credited_at AS invoice_credited_at, count(*) OVER () AS total
+         FROM oxapay_stray_payments p JOIN oxapay_invoices i ON i.id = p.invoice_id
+         WHERE p.tenant_id = $1 AND ($2::text IS NULL OR p.status = $2)
+         ORDER BY (p.status = 'open') DESC, p.id DESC LIMIT $3 OFFSET $4",
+    )
+    .bind(t)
+    .bind(&status)
+    .bind(limit)
+    .bind(offset)
+    .fetch_all(&st.pool)
+    .await?;
+    let total = rows.first().map(|r| r.get::<i64, _>("total")).unwrap_or(0);
+    let open: i64 = sqlx::query_scalar("SELECT count(*) FROM oxapay_stray_payments WHERE tenant_id = $1 AND status = 'open'").bind(t).fetch_one(&st.pool).await?;
+    let watched: i64 = sqlx::query_scalar("SELECT count(*) FROM oxapay_addresses WHERE tenant_id = $1").bind(t).fetch_one(&st.pool).await?;
+    Ok(json!({"items": rows.iter().map(stray_json).collect::<Vec<_>>(), "page": page, "limit": limit, "total": total, "open": open, "watched_addresses": watched}))
+}
+
+/// Staff close a stray payment once it is dealt with (recovered from OxaPay and credited by an adjustment,
+/// or found to need nothing); the note says which.
+pub async fn admin_resolve_stray(st: &AppState, s_ctx: &StaffCtx, id: i64, note: &str) -> ApiResult<Value> {
+    let t = s_ctx.ctx.tenant.id;
+    let note = note.trim();
+    if note.is_empty() || note.chars().count() > 500 {
+        return Err(ApiError::validation("note", "Say what was done about it (up to 500 characters)"));
+    }
+    let who = s_ctx.staff.name.chars().take(120).collect::<String>();
+    let mut tx = st.pool.begin().await?;
+    let done = sqlx::query("UPDATE oxapay_stray_payments SET status = 'resolved', note = $3, resolved_by = $4, resolved_at = now() WHERE tenant_id = $1 AND id = $2 AND status = 'open'")
+        .bind(t)
+        .bind(id)
+        .bind(note)
+        .bind(&who)
+        .execute(&mut *tx)
+        .await?;
+    if done.rows_affected() == 0 {
+        return Err(ApiError::not_found("Stray payment"));
+    }
+    crate::audit::system(&mut tx, t, "wallet.oxapay.stray_resolved", "oxapay_stray_payment", id.to_string(), Some(json!({"note": note, "by": who}))).await?;
+    tx.commit().await?;
+    let r = sqlx::query(
+        "SELECT p.*, i.order_id AS invoice_order_id, i.user_id AS invoice_user_id, i.credited_at AS invoice_credited_at
+         FROM oxapay_stray_payments p JOIN oxapay_invoices i ON i.id = p.invoice_id WHERE p.id = $1",
+    )
+    .bind(id)
+    .fetch_one(&st.pool)
+    .await?;
+    Ok(stray_json(&r))
+}
+
 /// Staff ask OxaPay again for one checkout (a callback that never arrived).
 pub async fn admin_recheck(st: &AppState, s_ctx: &StaffCtx, id: i64) -> ApiResult<Value> {
     let t = s_ctx.ctx.tenant.id;
@@ -843,6 +1164,15 @@ mod tests {
 
     // RFC 4231 test case 1 for HMAC-SHA512: the key and data are the standard ones, so a wrong digest or a
     // wrong key handling shows up here rather than on a live callback.
+    #[test]
+    fn oxapay_network_names_map_to_the_chains_the_wallet_reads() {
+        assert_eq!(chain_of_network("Binance Smart Chain"), Some(ChainId::Bsc));
+        assert_eq!(chain_of_network("BEP20"), Some(ChainId::Bsc));
+        assert_eq!(chain_of_network("Tron (TRC20)"), Some(ChainId::Tron));
+        assert_eq!(chain_of_network("Polygon Network"), None);
+        assert_eq!(chain_of_network("Ethereum"), None);
+    }
+
     #[test]
     fn hmac_matches_rfc_4231() {
         let got = sign(&"\x0b".repeat(20), b"Hi There");

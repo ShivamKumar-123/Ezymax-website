@@ -101,6 +101,8 @@ pub fn router(st: AppState) -> Router {
         .route("/v1/admin/manual/deposits/{id}/reject", post(manual::reject))
         .route("/v1/admin/oxapay/invoices", get(oxapay::admin_list))
         .route("/v1/admin/oxapay/invoices/{id}/recheck", post(oxapay::admin_recheck))
+        .route("/v1/admin/oxapay/strays", get(oxapay::admin_strays))
+        .route("/v1/admin/oxapay/strays/{id}/resolve", post(oxapay::admin_resolve_stray))
         .layer(DefaultBodyLimit::max(64 * 1024))
         .layer(middleware::from_fn_with_state(st.clone(), internal_only));
     Router::new()
