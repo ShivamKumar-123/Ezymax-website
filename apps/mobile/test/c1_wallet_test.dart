@@ -530,6 +530,10 @@ void main() {
       // ignore: avoid_print
       print('DEBUG screens=${find.byType(DepositScreen).evaluate().length} sheets=${find.byType(BottomSheet).evaluate().length} texts=${tester.widgetList<Text>(find.byType(Text)).map((t) => t.data).whereType<String>().take(40).toList()}');
       final page = find.descendant(of: find.byType(DepositScreen), matching: find.byType(Scrollable)).first;
+      await tester.drag(page, const Offset(0, -1600));
+      await settle(tester, frames: 6);
+      // ignore: avoid_print
+      print('DEBUG2 skeleton=${find.byType(KSkeletonCard).evaluate().length} texts=${tester.widgetList<Text>(find.byType(Text)).map((t) => t.data).whereType<String>().toList()}');
       await tester.scrollUntilVisible(find.text('Between 10.00 and 5,000.00 USD'), 200, scrollable: page);
       expect(find.text('Crypto checkout'), findsWidgets);
       // the amount: an invoice is opened with it and OxaPay's page is asked to open (nothing opens in a test)
