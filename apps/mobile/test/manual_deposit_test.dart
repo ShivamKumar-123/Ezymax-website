@@ -432,18 +432,20 @@ void main() {
   });
 
   group('deposit page', () {
-    testWidgets('with manual methods: the chooser, "Deposit" header, USDT · automatic first', (tester) async {
-      await _open(tester, '/wallet/deposit');
+    testWidgets('with the gate's brands on: no chooser, one row reopens the gate, "Deposit" header', (tester) async {
+      // ?via=usdt: the automatic deposit, past the gate (the sample broker has the checkout and a PhonePe method)
+      await _open(tester, '/wallet/deposit?via=usdt');
       expect(find.byType(DepositScreen), findsOneWidget);
       expect(find.text('Deposit'), findsWidgets);
-      expect(find.text('HOW DO YOU WANT TO PAY?'), findsOneWidget);
-      for (final v in ['usdt', 'bank', 'crypto']) {
-        expect(find.byKey(ValueKey('deposit-via-$v')), findsOneWidget, reason: v);
+      // the four-way chooser went with the gate (founder, 13 Nov 2026): one row in its place reopens the gate
+      expect(find.text('HOW DO YOU WANT TO PAY?'), findsNothing);
+      expect(find.text('How do you want to pay?'), findsOneWidget);
+      for (final v in ['checkout', 'usdt', 'bank', 'crypto']) {
+        expect(find.byKey(ValueKey('deposit-via-$v')), findsNothing, reason: v);
       }
-      expect(find.text('USDT · automatic'), findsOneWidget);
-      // the automatic deposit is the default, as before
-      expect(find.text('New deposit'), findsOneWidget);
       final page = find.descendant(of: find.byType(DepositScreen), matching: find.byType(Scrollable)).first;
+      await tester.scrollUntilVisible(find.text('New deposit'), 300, scrollable: page);
+      expect(find.text('New deposit'), findsOneWidget);
       await tester.scrollUntilVisible(find.text('How deposits work'), 300, scrollable: page);
       expect(find.text('How deposits work'), findsOneWidget);
       expect(find.text('Deposit requests'), findsNothing);
@@ -453,23 +455,25 @@ void main() {
 
     testWidgets('without manual methods the page stays the USDT deposit (no chooser, no requests)', (tester) async {
       previewManualMethods.clear();
-      await _open(tester, '/wallet/deposit');
+      await _open(tester, '/wallet/deposit?via=usdt');
       expect(find.text('HOW DO YOU WANT TO PAY?'), findsNothing);
       expect(find.byKey(const ValueKey('deposit-via-bank')), findsNothing);
       expect(find.text('Deposit USDT'), findsOneWidget);
-      expect(find.text('New deposit'), findsOneWidget);
       final page = find.descendant(of: find.byType(DepositScreen), matching: find.byType(Scrollable)).first;
+      await tester.scrollUntilVisible(find.text('New deposit'), 300, scrollable: page);
+      expect(find.text('New deposit'), findsOneWidget);
       await tester.scrollUntilVisible(find.text('How deposits work'), 300, scrollable: page);
       expect(find.text('How deposits work'), findsOneWidget);
       expect(previewWalletReads.where((r) => r.startsWith('wallet/manual/deposits')), isEmpty);
       await unmount(tester);
     });
 
-    testWidgets('only bank methods: Bank / UPI next to USDT, no Crypto', (tester) async {
+    testWidgets('only bank methods: still the gate's row, never the chooser', (tester) async {
       previewManualMethods.removeWhere((m) => m['kind'] == 'crypto');
-      await _open(tester, '/wallet/deposit');
-      expect(find.byKey(const ValueKey('deposit-via-usdt')), findsOneWidget);
-      expect(find.byKey(const ValueKey('deposit-via-bank')), findsOneWidget);
+      await _open(tester, '/wallet/deposit?via=bank');
+      expect(find.text('How do you want to pay?'), findsOneWidget);
+      expect(find.byKey(const ValueKey('deposit-via-usdt')), findsNothing);
+      expect(find.byKey(const ValueKey('deposit-via-bank')), findsNothing);
       expect(find.byKey(const ValueKey('deposit-via-crypto')), findsNothing);
       await unmount(tester);
     });
@@ -483,8 +487,7 @@ void main() {
     });
 
     testWidgets('bank: details with copy + UPI QR, ≈ USDT, the request JSON, sent, see my requests', (tester) async {
-      await _open(tester, '/wallet/deposit');
-      await _tap(tester, find.byKey(const ValueKey('deposit-via-bank')));
+      await _open(tester, '/wallet/deposit?via=bank');
       // two bank methods: the picker, HDFC first
       expect(find.text('CHOOSE AN ACCOUNT'), findsOneWidget);
       expect(find.byKey(const ValueKey('manual-method-1')), findsOneWidget);
@@ -632,8 +635,7 @@ void main() {
     });
 
     testWidgets('crypto: networks, address + QR, warnings, ≈ USDT of a BTC amount', (tester) async {
-      await _open(tester, '/wallet/deposit');
-      await _tap(tester, find.byKey(const ValueKey('deposit-via-crypto')));
+      await _open(tester, '/wallet/deposit?via=crypto');
       expect(find.text('CHOOSE A NETWORK'), findsOneWidget);
       expect(find.text('Send to this address'), findsOneWidget);
       expect(find.text('TXYZ7r8Lw3q2pHn9KbT1cV4mZs6UeJfRgA'), findsOneWidget);
