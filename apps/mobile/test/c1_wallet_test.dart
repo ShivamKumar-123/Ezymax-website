@@ -527,6 +527,8 @@ void main() {
       // the handoff (three steps of 850 ms; the tap's own frames may already be past it), then the checkout panel
       await tester.pump(const Duration(milliseconds: 2700));
       await settle(tester, frames: 6);
+      // ignore: avoid_print
+      print('DEBUG screens=${find.byType(DepositScreen).evaluate().length} sheets=${find.byType(BottomSheet).evaluate().length} texts=${tester.widgetList<Text>(find.byType(Text)).map((t) => t.data).whereType<String>().take(40).toList()}');
       final page = find.descendant(of: find.byType(DepositScreen), matching: find.byType(Scrollable)).first;
       await tester.scrollUntilVisible(find.text('Between 10.00 and 5,000.00 USD'), 200, scrollable: page);
       expect(find.text('Crypto checkout'), findsWidgets);
