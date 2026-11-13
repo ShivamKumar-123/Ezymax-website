@@ -415,9 +415,11 @@ void main() {
       // ?via=usdt: the automatic deposit, past the gate (the sample broker has the checkout and a bank method)
       await _open(tester, '/wallet/deposit?via=usdt');
       expect(find.byType(DepositScreen), findsOneWidget);
-      expect(find.text('New deposit'), findsOneWidget);
-      // (the sample broker also takes bank / crypto payments: the chooser sits above, so the page is longer)
+      // (the sample broker also has the checkout and bank / crypto payments: the chooser sits above, so the form
+      // starts below the first screen of the lazy list)
       final page = find.descendant(of: find.byType(DepositScreen), matching: find.byType(Scrollable)).first;
+      await tester.scrollUntilVisible(find.text('New deposit'), 200, scrollable: page);
+      expect(find.text('New deposit'), findsOneWidget);
       await tester.scrollUntilVisible(find.text('How deposits work'), 300, scrollable: page);
       expect(find.text('How deposits work'), findsOneWidget);
       await tester.scrollUntilVisible(find.text('TRON · pay with TronLink'), -300, scrollable: page);
@@ -526,14 +528,17 @@ void main() {
       expect(find.text('Securing your session'), findsOneWidget);
       await tester.pump(const Duration(milliseconds: 2700));
       await settle(tester, frames: 6);
+      final page = find.descendant(of: find.byType(DepositScreen), matching: find.byType(Scrollable)).first;
+      await tester.scrollUntilVisible(find.text('Between 10.00 and 5,000.00 USD'), 200, scrollable: page);
       expect(find.text('Crypto checkout'), findsWidgets);
-      expect(find.text('Between 10.00 and 5,000.00 USD'), findsOneWidget);
       // the amount: an invoice is opened with it and OxaPay's page is asked to open (nothing opens in a test)
       await tester.enterText(find.byType(TextField).first, '100');
       await tester.pump();
+      await tester.scrollUntilVisible(find.widgetWithText(KButton, 'Continue to payment'), 200, scrollable: page);
       await _tap(tester, find.widgetWithText(KButton, 'Continue to payment'));
       await settle(tester, frames: 6);
       expect(_writes('wallet/oxapay/invoices').single.body, {'amount': '100'});
+      await tester.scrollUntilVisible(find.text('Your checkout'), 200, scrollable: page);
       expect(find.text('Your checkout'), findsOneWidget);
       expect(find.text('100.00 USD'), findsOneWidget);
       expect(find.text('Awaiting payment'), findsOneWidget);
@@ -543,6 +548,7 @@ void main() {
       previewWallet('POST', 'wallet/oxapay/invoices/$live/pay', const {}, const {});
       await tester.pump(const Duration(seconds: 6));
       await settle(tester, frames: 6);
+      await tester.scrollUntilVisible(find.text('Payment received'), 200, scrollable: page);
       expect(find.text('Payment received'), findsOneWidget);
       expect(find.textContaining('USDT was credited'), findsOneWidget);
       await unmount(tester);

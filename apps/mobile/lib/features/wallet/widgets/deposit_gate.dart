@@ -29,6 +29,28 @@ class _Gate extends StatefulWidget {
   State<_Gate> createState() => _GateState();
 }
 
+/// A step's own heading under the sheet's title (the web dialog retitles itself per step).
+class _Heading extends StatelessWidget {
+  const _Heading({required this.title, required this.text});
+  final String title, text;
+
+  @override
+  Widget build(BuildContext context) {
+    final k = context.k;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: context.text.headline.copyWith(fontSize: 15.5, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 3),
+          Text(text, style: context.text.footnote.copyWith(color: k.fg3)),
+        ],
+      ),
+    );
+  }
+}
+
 class _GateState extends State<_Gate> {
   /// pick → terms → handoff
   String _step = 'pick';
@@ -58,27 +80,39 @@ class _GateState extends State<_Gate> {
       curve: Curves.easeOutCubic,
       alignment: Alignment.topCenter,
       child: switch (_step) {
-        'handoff' => GateHandoff(
-          colour: _colour,
-          mark: _mark(44),
-          steps: [t('payments.gate.step1'), t('payments.gate.step2', {'brand': _name}), t('payments.gate.step3')],
-          secure: t('payments.gate.secure'),
-          onDone: () => Navigator.of(context).pop(_sel),
+        'handoff' => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _Heading(title: t('payments.gate.connecting', {'brand': _name}), text: t('payments.gate.connectingSub')),
+            GateHandoff(
+              colour: _colour,
+              mark: _mark(44),
+              steps: [t('payments.gate.step1'), t('payments.gate.step2', {'brand': _name}), t('payments.gate.step3')],
+              secure: t('payments.gate.secure'),
+              onDone: () => Navigator.of(context).pop(_sel),
+            ),
+          ],
         ),
-        'terms' => GateTerms(
-          colour: _colour,
-          name: _name,
-          mark: _mark(30),
-          body: t('payments.gate.termsBody', {'brand': _name}),
-          agreeLabel: t('payments.gate.agree'),
-          continueLabel: t('payments.gate.continueTo', {'brand': _name}),
-          agreed: _agreed,
-          onToggle: () {
-            KHaptics.tap();
-            setState(() => _agreed = !_agreed);
-          },
-          onBack: () => setState(() => _step = 'pick'),
-          onContinue: _agreed ? () => setState(() => _step = 'handoff') : null,
+        'terms' => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _Heading(title: t('payments.gate.termsTitle'), text: t('payments.gate.termsFor', {'brand': _name})),
+            GateTerms(
+              colour: _colour,
+              name: _name,
+              mark: _mark(30),
+              body: t('payments.gate.termsBody', {'brand': _name}),
+              agreeLabel: t('payments.gate.agree'),
+              continueLabel: t('payments.gate.continueTo', {'brand': _name}),
+              agreed: _agreed,
+              onToggle: () {
+                KHaptics.tap();
+                setState(() => _agreed = !_agreed);
+              },
+              onBack: () => setState(() => _step = 'pick'),
+              onContinue: _agreed ? () => setState(() => _step = 'handoff') : null,
+            ),
+          ],
         ),
         _ => Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
