@@ -177,8 +177,10 @@ function StrayPayments({ canApprove }: { canApprove: boolean }) {
         <div className="min-w-0 flex-1">
           <div className="text-[14px] font-semibold">Payments to closed checkout addresses</div>
           <p className="mt-0.5 text-[12.5px] leading-relaxed text-fg-3">
-            Money sent to the address of a checkout that was already paid or expired. OxaPay holds it but books it to nothing: open a ticket with OxaPay quoting the
-            transaction, credit the client by a wallet adjustment once it is recovered, then mark the row resolved.
+            Money sent to the address of a checkout that was already paid or expired. A hint, not a fact: OxaPay reassigns a closed address to other merchants, so a
+            transfer here may be someone else's payment (15 Nov 2026: two TRON transfers were). Act only when a client of ours reports the payment: open a ticket with
+            OxaPay quoting the transaction, credit the client by a wallet adjustment once it is recovered (OxaPay refunds to the sending wallet, less 5% and the network
+            fee, never to the merchant balance), then mark the row resolved.
           </p>
         </div>
         <Button size="sm" variant="ghost" onClick={() => setAll((v) => !v)}>
