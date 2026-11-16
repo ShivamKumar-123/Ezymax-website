@@ -136,7 +136,7 @@ async fn back_office_live_switch_and_templates_drive_the_engine() {
     hub.open(account(live_login, AccountKind::Live), ("h".into(), "i".into()), "test").await.unwrap();
     hub.open(account(demo_login, AccountKind::Demo), ("h".into(), "i".into()), "test").await.unwrap();
     exec(&hub, live_login, Box::new(|tx, env| funds::transfer(tx, env, funds::Direction::In, d("10000"), "it-cat-fund", None).map(|_| Value::Null))).await.unwrap();
-    let buy = || -> Op { Box::new(|tx, env| trade::place_order(tx, env, OrderReq::market("BTCUSDT", Side::Buy, d("0.5"))).map(|r| json!(format!("{r:?}")))) };
+    let buy = || -> Op { Box::new(|tx, env| trade::place_order(tx, env, OrderReq::market("BTCUSDT", Side::Buy, d("0.05"))).map(|r| json!(format!("{r:?}")))) };
 
     // crypto trades live by default; demo too; stocks wait (demo only)
     exec(&hub, live_login, buy()).await.expect("crypto is live by default");
