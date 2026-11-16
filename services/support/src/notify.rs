@@ -380,9 +380,62 @@ pub async fn queue_email(st: &AppState, tenant: &str, to: &str, subject: &str, t
     Ok(())
 }
 
+/// How many announcement emails the relay may carry in an hour.
+///
+/// The relay is one mailbox, shared with the sign-in codes and every other transactional email, and it has
+/// refused us before ("554 5.7.1 Outbound sending is disabled for this account", 4 November 2026). A broadcast
+/// to every client is 765 emails where the busiest day so far was 142, so announcements are spread over hours
+/// and a sign-in code is never the message the relay turns down.
+pub const BULK_PER_HOUR: i64 = 60;
+
+/// `LIKE` patterns for announcement mail, used by both [`is_bulk`] and the outbox query, so the two cannot drift.
+pub const BULK_KINDS: [&str; 3] = ["%.announcement", "marketing.%", "system.broadcast"];
+
+/// `LIKE` with at most one `%`, at either end - all [`BULK_KINDS`] needs.
+fn like(pat: &str, s: &str) -> bool {
+    match (pat.strip_prefix('%'), pat.strip_suffix('%')) {
+        (Some(p), _) => s.ends_with(p),
+        (_, Some(p)) => s.starts_with(p),
+        _ => s == pat,
+    }
+}
+
+/// Announcement mail, which is paced; everything else leaves as soon as it is queued.
+pub fn is_bulk(kind: &str) -> bool {
+    BULK_KINDS.iter().any(|p| like(p, kind))
+}
+
+/// Announcements still allowed in this hour.
+async fn bulk_budget(st: &AppState) -> anyhow::Result<i64> {
+    let used: i64 = sqlx::query_scalar("SELECT count(*) FROM email_outbox WHERE status = 'sent' AND sent_at > now() - interval '1 hour' AND kind LIKE ANY($1)")
+        .bind(&BULK_KINDS[..])
+        .fetch_one(&st.pool)
+        .await?;
+    Ok((BULK_PER_HOUR - used).max(0))
+}
+
 /// Sends pending emails (SMTP, or logged as `DEV email` without SMTP). Returns how many were processed.
+///
+/// Transactional mail first and in full; announcements only up to what [`BULK_PER_HOUR`] leaves, the rest on a
+/// later pass.
 pub async fn flush_outbox(st: &AppState) -> anyhow::Result<usize> {
-    let rows = sqlx::query("SELECT id, to_addr, subject, text_body, html_body, kind, attempts FROM email_outbox WHERE status = 'pending' ORDER BY id LIMIT 50").fetch_all(&st.pool).await?;
+    const COLS: &str = "id, to_addr, subject, text_body, html_body, kind, attempts";
+    let mut rows = sqlx::query(&format!("SELECT {COLS} FROM email_outbox WHERE status = 'pending' AND NOT (kind LIKE ANY($1)) ORDER BY id LIMIT 50"))
+        .bind(&BULK_KINDS[..])
+        .fetch_all(&st.pool)
+        .await?;
+    let room = 50 - rows.len() as i64;
+    if room > 0 {
+        let take = bulk_budget(st).await?.min(room);
+        if take > 0 {
+            let bulk = sqlx::query(&format!("SELECT {COLS} FROM email_outbox WHERE status = 'pending' AND kind LIKE ANY($1) ORDER BY id LIMIT $2"))
+                .bind(&BULK_KINDS[..])
+                .bind(take)
+                .fetch_all(&st.pool)
+                .await?;
+            rows.extend(bulk);
+        }
+    }
     for r in &rows {
         let id: i64 = r.get("id");
         let to: String = r.get("to_addr");
@@ -465,6 +518,21 @@ pub async fn clear(st: &AppState, tenant: &str, audience: &str, recipient: &str)
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn announcements_are_paced_and_transactional_mail_is_not() {
+        assert!(is_bulk("system.announcement"));
+        assert!(is_bulk("marketing.announcement"));
+        assert!(is_bulk("security.announcement"));
+        assert!(is_bulk("marketing.journey"));
+        assert!(is_bulk("system.broadcast"));
+        assert!(!is_bulk("security.login_code"));
+        assert!(!is_bulk("security.new_device"));
+        assert!(!is_bulk("wallet.deposit_credited"));
+        assert!(!is_bulk("support.reply"));
+        assert!(!is_bulk("trading.stop_out"));
+        assert!(!is_bulk("announcement"), "a bare word is not a `category.event` announcement");
+    }
 
     #[test]
     fn maps_types_to_preference_keys() {
