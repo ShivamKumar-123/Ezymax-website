@@ -419,20 +419,25 @@ async fn bulk_budget(st: &AppState) -> anyhow::Result<i64> {
 /// Transactional mail first and in full; announcements only up to what [`BULK_PER_HOUR`] leaves, the rest on a
 /// later pass.
 pub async fn flush_outbox(st: &AppState) -> anyhow::Result<usize> {
-    const COLS: &str = "id, to_addr, subject, text_body, html_body, kind, attempts";
-    let mut rows = sqlx::query(&format!("SELECT {COLS} FROM email_outbox WHERE status = 'pending' AND NOT (kind LIKE ANY($1)) ORDER BY id LIMIT 50"))
-        .bind(&BULK_KINDS[..])
-        .fetch_all(&st.pool)
-        .await?;
+    let mut rows = sqlx::query(
+        "SELECT id, to_addr, subject, text_body, html_body, kind, attempts FROM email_outbox
+         WHERE status = 'pending' AND NOT (kind LIKE ANY($1)) ORDER BY id LIMIT 50",
+    )
+    .bind(&BULK_KINDS[..])
+    .fetch_all(&st.pool)
+    .await?;
     let room = 50 - rows.len() as i64;
     if room > 0 {
         let take = bulk_budget(st).await?.min(room);
         if take > 0 {
-            let bulk = sqlx::query(&format!("SELECT {COLS} FROM email_outbox WHERE status = 'pending' AND kind LIKE ANY($1) ORDER BY id LIMIT $2"))
-                .bind(&BULK_KINDS[..])
-                .bind(take)
-                .fetch_all(&st.pool)
-                .await?;
+            let bulk = sqlx::query(
+                "SELECT id, to_addr, subject, text_body, html_body, kind, attempts FROM email_outbox
+                 WHERE status = 'pending' AND kind LIKE ANY($1) ORDER BY id LIMIT $2",
+            )
+            .bind(&BULK_KINDS[..])
+            .bind(take)
+            .fetch_all(&st.pool)
+            .await?;
             rows.extend(bulk);
         }
     }
