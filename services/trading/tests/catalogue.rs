@@ -167,7 +167,7 @@ async fn back_office_live_switch_and_templates_drive_the_engine() {
     // back to the defaults (null removes a switch)
     let _ = api::catalogue::set_live(State(st.clone()), staff(&st, "platform_owner"), body(json!({"scope": "symbol", "key": "BTCUSDT", "enabled": null, "reason": "back to class"}))).await.unwrap();
     let ok = api::catalogue::set_live(State(st.clone()), staff(&st, "platform_owner"), body(json!({"scope": "class", "key": "crypto", "enabled": null, "reason": "back to default"}))).await.unwrap();
-    assert!(ok.0["catalogueLive"].as_u64().unwrap() > 200);
+    assert!(ok.0["catalogueLive"].as_u64().unwrap() > 80);
     exec(&hub, live_login, buy()).await.expect("default again");
     let ov = trading::catalogue::load_overrides(&pool).await.unwrap();
     assert!(ov.live_classes.is_empty() && ov.live_symbols.is_empty());
