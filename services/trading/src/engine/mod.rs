@@ -254,6 +254,36 @@ impl Tx {
         Some(id)
     }
 
+    /// Books a transfer between two of the client's own sub-ledgers (`from` → `to`, both of this account), with the
+    /// reason and note the statement shows. Nothing leaves or enters the account: the house is not a party.
+    pub fn post_between(&mut self, env: &Env, kind: TxnKind, idem: String, from: &str, to: &str, amount: D, reason_code: Option<String>, note: Option<String>) -> Option<i64> {
+        let amount = r2(amount);
+        if amount.is_zero() {
+            return None;
+        }
+        let ccy = self.st.account.ccy();
+        let login = self.st.account.login;
+        let txn = LedgerTxn {
+            id: env.ids.txn(),
+            tenant_id: self.st.account.tenant_id,
+            idempotency_key: idem,
+            kind,
+            login,
+            reference: None,
+            reason_code,
+            note,
+            at: env.now,
+            postings: vec![
+                Posting { account: acct_code(login, from), ccy: ccy.into(), amount: -amount },
+                Posting { account: acct_code(login, to), ccy: ccy.into(), amount },
+            ],
+        };
+        debug_assert!(txn.is_balanced());
+        let id = txn.id;
+        self.emit(Event::Ledger { txn });
+        Some(id)
+    }
+
     /// Books a multi-leg transaction (legs: (ledger account, amount) in the account currency).
     pub fn post_legs(&mut self, env: &Env, kind: TxnKind, idem: String, legs: Vec<(String, D)>, reference: Option<String>) -> Option<i64> {
         let ccy = self.st.account.ccy();

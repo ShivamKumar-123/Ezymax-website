@@ -600,8 +600,10 @@ async fn post_round(st: &AppState) -> anyhow::Result<usize> {
     Ok(n)
 }
 
-/// Campaigns whose end has passed, grant expiry, and removal on a withdrawal / transfer out while the bonus is
-/// active.
+/// Campaigns whose end has passed, grant expiry, removal on a withdrawal / transfer out while the bonus is
+/// active, and the bonus the engine itself used up: since 16 Nov 2026 a stop-out deficit is covered by the bonus
+/// on the account before the house writes anything off (trading engine apply_nbp), which the grant has to
+/// reflect, or its per-lot releases would try to move bonus that is no longer there.
 pub async fn lifecycle_tick(st: &AppState) -> anyhow::Result<usize> {
     let mut n = 0;
     // a campaign closes itself when its end passes: no new claims; grants already open keep releasing per lot
@@ -625,17 +627,64 @@ pub async fn lifecycle_tick(st: &AppState) -> anyhow::Result<usize> {
         n += 1;
     }
     let rows = sqlx::query(
-        "SELECT g.id, g.tenant, g.user_id, g.login, g.granted_at FROM bonus_grants g JOIN bonus_campaigns c ON c.id = g.campaign_id
-         WHERE g.status = 'active' AND c.forfeit_on_withdrawal AND (g.ledger_checked IS NULL OR g.ledger_checked < now() - interval '20 seconds') ORDER BY g.id LIMIT 200",
+        "SELECT g.id, g.tenant, g.user_id, g.login, g.granted_at, c.forfeit_on_withdrawal, c.name AS campaign
+         FROM bonus_grants g JOIN bonus_campaigns c ON c.id = g.campaign_id
+         WHERE g.status = 'active' AND (g.ledger_checked IS NULL OR g.ledger_checked < now() - interval '20 seconds') ORDER BY g.id LIMIT 200",
     )
     .fetch_all(&st.pool)
     .await?;
     for g in rows {
         let id: i64 = g.get("id");
         let tenant: String = g.get("tenant");
+        let user: i64 = g.get("user_id");
+        let campaign: String = g.get("campaign");
         let (Some(login), Some(since)) = (g.get::<Option<i64>, _>("login"), g.get::<Option<DateTime<Utc>>, _>("granted_at")) else { continue };
         sqlx::query("UPDATE bonus_grants SET ledger_checked = now() WHERE id = $1").bind(id).execute(&st.pool).await?;
-        let ledger = clients::ledger(st, &tenant, login, g.get("user_id"), since).await?;
+        let ledger = clients::ledger(st, &tenant, login, user, since).await?;
+        // the engine used bonus to cover a stop-out deficit: book it against this grant, once per engine transaction
+        for l in ledger.iter().filter(|l| l.kind == "nbp" && l.sub_ledger == "bonus" && l.amount < ZERO && l.at >= since) {
+            let used = -l.amount;
+            let reference = format!("nbp:{}", l.txn);
+            let mut tx = st.pool.begin().await?;
+            // another grant on the same account may already carry this transaction
+            let seen: Option<i64> = sqlx::query_scalar("SELECT 1 FROM bonus_events WHERE kind = 'remove' AND ref = $1").bind(&reference).fetch_optional(&mut *tx).await?;
+            if seen.is_some() {
+                tx.rollback().await?;
+                continue;
+            }
+            let row = sqlx::query("SELECT amount, released, removed FROM bonus_grants WHERE id = $1 AND status = 'active' FOR UPDATE").bind(id).fetch_optional(&mut *tx).await?;
+            let Some(row) = row else {
+                tx.rollback().await?;
+                continue;
+            };
+            let remaining = (row.get::<D, _>("amount") - row.get::<D, _>("released") - row.get::<D, _>("removed")).max(ZERO);
+            let applied = used.min(remaining);
+            if applied <= ZERO {
+                tx.rollback().await?;
+                continue;
+            }
+            // already booked by the engine: the event records it, nothing is sent
+            sqlx::query("INSERT INTO bonus_events (grant_id, tenant, kind, amount, ref, status, booked_at) VALUES ($1, $2, 'remove', $3, $4, 'booked', now()) ON CONFLICT DO NOTHING")
+                .bind(id)
+                .bind(&tenant)
+                .bind(applied)
+                .bind(&reference)
+                .execute(&mut *tx)
+                .await?;
+            let gone = applied >= remaining;
+            if gone {
+                sqlx::query("UPDATE bonus_grants SET removed = removed + $2, status = 'forfeited', ended_at = now(), end_reason = 'stop_out' WHERE id = $1").bind(id).bind(applied).execute(&mut *tx).await?;
+            } else {
+                sqlx::query("UPDATE bonus_grants SET removed = removed + $2 WHERE id = $1").bind(id).bind(applied).execute(&mut *tx).await?;
+            }
+            audit::record(&mut *tx, &tenant, &Actor::system(), "bonus.consumed", Some(format!("grant:{id}")), None, Some(json!({"login": login, "used": num(applied), "txn": l.txn, "ended": gone})), Some("covered a stop-out deficit")).await?;
+            tx.commit().await?;
+            clients::notify(st, &tenant, user, "bonus.removed", format!("{campaign}: bonus used"), format!("${} of your bonus covered a trading loss on account {login}.", applied.normalize()), "/rewards/promotions");
+            n += 1;
+        }
+        if !g.get::<bool, _>("forfeit_on_withdrawal") {
+            continue;
+        }
         let out = ledger.iter().find(|l| calc::is_withdrawal_kind(&l.kind) && l.sub_ledger == "balance" && l.amount < ZERO && l.at >= since);
         if let Some(w) = out {
             let mut tx = st.pool.begin().await?;

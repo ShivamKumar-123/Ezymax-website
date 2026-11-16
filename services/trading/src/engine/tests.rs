@@ -416,6 +416,80 @@ fn margin_call_then_stop_out_closes_largest_loser_first_and_nbp() {
     h.assert_replay();
 }
 
+/// Bonus and credit on the account cover a stop-out deficit before the house does (16 Nov 2026, account 10000014).
+fn stop_out_with_a_deficit(bonus: &str, credit: &str) -> (Kit, Harness) {
+    let kit = Kit::new();
+    kit.quote("EURUSD", "1.10000", "1.10000");
+    let mut h = Harness::live(&kit, "hedge", "300");
+    if bonus != "0" {
+        h.run(&kit, |tx, env| funds::adjust(tx, env, AdjustKind::Bonus, d(bonus), "b1", "GRW-01", "welcome bonus")).unwrap();
+    }
+    if credit != "0" {
+        h.run(&kit, |tx, env| funds::adjust(tx, env, AdjustKind::Credit, d(credit), "c1", "ADJ", "credit")).unwrap();
+    }
+    // 0.4 lot at 1.1000: margin 440 against an equity of 300 + bonus + credit
+    place(&mut h, &kit, buy("EURUSD", "0.4"));
+    // −125 pips × 0.4 lot = −500: equity ≤ 0 → stop-out closes it, balance 300 − 500 = −200
+    kit.quote("EURUSD", "1.08750", "1.08750");
+    h.tick(&kit, "EURUSD");
+    assert!(h.st.positions.is_empty());
+    assert!(h.log.iter().any(|x| matches!(x, Event::StopOut { .. })));
+    h.assert_ledger();
+    h.assert_replay();
+    (kit, h)
+}
+
+fn nbp_txns(h: &Harness) -> Vec<crate::model::LedgerTxn> {
+    h.log.iter().filter_map(|x| match x { Event::Ledger { txn } if txn.kind == crate::model::TxnKind::Nbp => Some(txn.clone()), _ => None }).collect()
+}
+
+#[test]
+fn a_stop_out_deficit_is_covered_by_the_bonus_before_the_house() {
+    let (kit, h) = stop_out_with_a_deficit("200", "0");
+    let login = h.st.account.login;
+    assert_eq!((h.st.balance, h.st.bonus, h.st.credit), (d("0.00"), d("0.00"), d("0.00")));
+    let nbp = nbp_txns(&h);
+    assert_eq!(nbp.len(), 1, "one posting: bonus → balance");
+    assert_eq!(nbp[0].effect(login, "bonus"), d("-200.00"));
+    assert_eq!(nbp[0].effect(login, "balance"), d("200.00"));
+    assert!(nbp[0].postings.iter().all(|p| p.account.starts_with("acct:")), "the house is not a party: {:?}", nbp[0].postings);
+    let m = metrics(&kit.env(&h.st), &h.st);
+    assert_eq!((m.equity, m.margin, m.free_margin), (d("0.00"), d("0.00"), d("0.00")));
+}
+
+#[test]
+fn a_deficit_beyond_the_bonus_is_written_off_by_the_house() {
+    let (_kit, h) = stop_out_with_a_deficit("120", "0");
+    let login = h.st.account.login;
+    assert_eq!((h.st.balance, h.st.bonus), (d("0.00"), d("0.00")));
+    let nbp = nbp_txns(&h);
+    assert_eq!(nbp.len(), 2);
+    assert_eq!(nbp[0].effect(login, "bonus"), d("-120.00"));
+    assert_eq!(nbp[1].effect(login, "balance"), d("80.00"), "only the rest is the house's write-off");
+    assert!(nbp[1].postings.iter().any(|p| p.account.starts_with("house:nbp:")));
+}
+
+#[test]
+fn credit_covers_what_the_bonus_cannot_before_the_house() {
+    let (_kit, h) = stop_out_with_a_deficit("50", "100");
+    let login = h.st.account.login;
+    assert_eq!((h.st.balance, h.st.bonus, h.st.credit), (d("0.00"), d("0.00"), d("0.00")));
+    let nbp = nbp_txns(&h);
+    assert_eq!(nbp.len(), 3);
+    assert_eq!(nbp[0].effect(login, "bonus"), d("-50.00"));
+    assert_eq!(nbp[1].effect(login, "credit"), d("-100.00"));
+    assert_eq!(nbp[2].effect(login, "balance"), d("50.00"));
+    assert!(nbp[2].postings.iter().any(|p| p.account.starts_with("house:nbp:")));
+}
+
+#[test]
+fn a_bonus_larger_than_the_deficit_is_only_partly_used() {
+    let (kit, h) = stop_out_with_a_deficit("500", "0");
+    assert_eq!((h.st.balance, h.st.bonus), (d("0.00"), d("300.00")));
+    assert_eq!(nbp_txns(&h).len(), 1);
+    assert_eq!(metrics(&kit.env(&h.st), &h.st).equity, d("300.00"), "what is left of the bonus is the equity");
+}
+
 #[test]
 fn swaps_triple_day_weekend_and_swap_free() {
     let mut kit = Kit::new();

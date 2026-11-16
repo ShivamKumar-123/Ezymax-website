@@ -707,12 +707,41 @@ pub fn close_part(tx: &mut Tx, env: &Env, ticket: i64, volume: D, price: D, meta
 }
 
 /// D16: a negative balance with no open positions is reset to 0 (house absorbs the loss).
+/// Negative balance protection, once the account is flat and its balance is below zero.
+///
+/// The deficit is first covered by the broker's own money already on the account - the bonus credit, then the
+/// credit - and only what is left after that is written off against the house. Until 16 November 2026 the house
+/// wrote off the whole deficit while the bonus stayed on the account: a client whose own funds were gone kept
+/// the full bonus as equity (account 10000014 showed 108.76 after a stop-out that took it to -96.48), could
+/// trade on it again, and the next stop-out was written off again - a bonus of 40.69 cost the house 146 over
+/// four stop-outs on one account. A bonus counts toward equity and margin, so it also carries the losses margin
+/// let the client run; it is not money the client keeps when their own is gone.
+///
+/// Idempotent per account version like every posting: a replay books the same transactions once.
 pub fn apply_nbp(tx: &mut Tx, env: &Env) {
-    if tx.st.positions.is_empty() && tx.st.balance < ZERO {
+    if !tx.st.positions.is_empty() || tx.st.balance >= ZERO {
+        return;
+    }
+    let login = tx.st.account.login;
+    let ccy = tx.st.account.ccy();
+    let v = tx.st.version;
+    for (sub, held) in [("bonus", tx.st.bonus), ("credit", tx.st.credit)] {
+        let deficit = -tx.st.balance;
+        if deficit <= ZERO {
+            break;
+        }
+        let take = crate::money::r2(held.min(deficit));
+        if take <= ZERO {
+            continue;
+        }
+        tx.post_between(env, TxnKind::Nbp, format!("nbp:{login}:{v}:{sub}"), sub, "balance", take, Some("NBP".into()), Some(format!("Negative balance covered by {sub}")));
+        tx.note("nbp", format!("Negative balance: {} {ccy} covered by the account's {sub}", take.normalize()), json!({"amount": crate::money::num(take), "from": sub}));
+    }
+    if tx.st.balance < ZERO {
         let amt = -tx.st.balance;
-        let key = format!("nbp:{}:{}", tx.st.account.login, tx.st.version);
+        let key = format!("nbp:{login}:{v}");
         tx.post(env, TxnKind::Nbp, key, "balance", "nbp", amt, None, Some("NBP".into()), Some("Negative balance protection".into()));
-        tx.note("nbp", format!("Negative balance of {} {} was reset to 0", amt.normalize(), tx.st.account.ccy()), json!({"amount": crate::money::num(amt)}));
+        tx.note("nbp", format!("Negative balance of {} {ccy} was reset to 0", amt.normalize()), json!({"amount": crate::money::num(amt)}));
     }
 }
 
