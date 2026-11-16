@@ -372,7 +372,9 @@ mod tests {
     fn catalogue_specs_load_with_templates_and_sessions() {
         let s = Specs::repo();
         assert!(s.len() > 1000, "{} instruments", s.len());
-        assert_eq!(s.all().filter(|x| x.core).count(), 28);
+        // SOLUSD and XRPUSD left the core rows on 11 Nov 2026 (the founder's crypto list); the other 26 are unchanged
+        const DROPPED_CORE: [&str; 2] = ["SOLUSD", "XRPUSD"];
+        assert_eq!(s.all().filter(|x| x.core).count(), 26);
         // core unchanged: identical to the specs built from the original core-only files
         let old = Specs::parse(
             include_str!("../../trading/tests/fixtures/instruments-core-2026-10-07.json"),
@@ -380,9 +382,10 @@ mod tests {
         )
         .unwrap();
         assert_eq!(old.len(), 28);
-        for o in old.all() {
+        for o in old.all().filter(|o| !DROPPED_CORE.contains(&o.symbol.as_str())) {
             assert_eq!(format!("{o:?}"), format!("{:?}", s.get(&o.symbol).unwrap()), "{} changed", o.symbol);
         }
+        assert!(DROPPED_CORE.iter().all(|x| s.get(x).is_none()));
         let msft = s.get("MSFT").unwrap();
         assert_eq!((msft.lot_min, msft.lot_step, msft.contract_size), (1.0, 1.0, 1.0));
         assert_eq!(session_key(&msft.session), "us_equity");
