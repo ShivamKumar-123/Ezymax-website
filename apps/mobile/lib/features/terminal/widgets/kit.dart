@@ -362,6 +362,10 @@ class PnlText extends StatelessWidget {
   }
 }
 
+/// Which way the market has to move to reach a pending order (`TOrder.reach`), as the ▲ / ▼ of P&L: a limit can now
+/// wait on either side of the market, so the arrow is the only thing that says which way it is waiting.
+String reachArrow(String reach) => reach == 'rise' ? '▲' : '▼';
+
 /* ---------------- badges, labels ---------------- */
 
 enum TBadgeTone { neutral, ember, gold, warn, up, down, info }

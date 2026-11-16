@@ -329,6 +329,12 @@ const Map<String, String> _sources = {
 /// Engine source -> terminal source (web mapSource).
 String mapSource(String s) => _sources[s] ?? 'manual';
 
+/// Which way the market has to move for a pending order's price to be reached (the engine's `Reach`): `rise` when the
+/// price sits above the market, `fall` when it sits below. The engine sends it with every pending order; a server
+/// older than flexible limits does not, and then the kind of order says the same thing, because a limit could only sit
+/// on the side the market had to come down (buy) or up (sell) to.
+String conventionalReach(String type, String side) => (type == 'limit') == (side == 'buy') ? 'fall' : 'rise';
+
 /// A pending order (web mapOrder): `type` limit | stop | stop-limit; a triggered stop-limit is a limit at its
 /// stop-limit price (MT5).
 @immutable
@@ -350,6 +356,7 @@ class TOrder {
     required this.source,
     required this.comment,
     required this.oco,
+    required this.reach,
   });
 
   final String ticket, symbol, side, type;
@@ -367,6 +374,9 @@ class TOrder {
   /// The OCO pair id (the lower ticket of the two).
   final String? oco;
 
+  /// rise | fall: which way the market has to move to reach the order (see `conventionalReach`).
+  final String reach;
+
   bool get buy => side == 'buy';
 
   /// Translation key of "buy limit" etc. (web pendingLabelKey).
@@ -383,11 +393,14 @@ class TOrder {
     final stopLimit = _dn(o['stopLimit']);
     final ticket = _i(o['ticket']);
     final oco = _i(o['oco']);
+    final side = o['side'] == 'sell' ? 'sell' : 'buy';
+    final type = triggered ? 'limit' : (rawType == 'stop_limit' ? 'stop-limit' : rawType);
+    final reach = '${o['reach']}';
     return TOrder(
       ticket: '${o['ticket']}',
       symbol: '${o['symbol'] ?? ''}',
-      side: o['side'] == 'sell' ? 'sell' : 'buy',
-      type: triggered ? 'limit' : (rawType == 'stop_limit' ? 'stop-limit' : rawType),
+      side: side,
+      type: type,
       volume: _d(o['volume']),
       price: triggered && stopLimit != null ? stopLimit : _d(o['price']),
       stopLimit: !triggered ? stopLimit : null,
@@ -400,6 +413,7 @@ class TOrder {
       source: mapSource('${o['source'] ?? 'manual'}'),
       comment: o['comment'] is String && (o['comment'] as String).isNotEmpty ? o['comment'] as String : null,
       oco: oco > 0 ? '${oco < ticket ? oco : ticket}' : null,
+      reach: reach == 'rise' || reach == 'fall' ? reach : conventionalReach(type, side),
     );
   }
 }

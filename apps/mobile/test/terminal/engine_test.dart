@@ -1,6 +1,7 @@
 // The engine's shapes as the terminal reads them (web map.ts): accounts (cent accounts / 100), positions, pending
-// orders (a triggered stop-limit is a limit), closed trades from deals (commission share of the entry), equity frames,
-// option entries kept apart; and the rejection texts (symbol_demo_only, stale_price, market_closed…).
+// orders (a triggered stop-limit is a limit, which way the market has to move to reach one), closed trades from deals
+// (commission share of the entry), equity frames, option entries kept apart; and the rejection texts
+// (symbol_demo_only, stale_price, market_closed…).
 import 'package:ezymex/core/api/api_error.dart';
 import 'package:ezymex/features/terminal/core/models.dart';
 import 'package:ezymex/features/terminal/core/trade_errors.dart';
@@ -87,6 +88,31 @@ void main() {
     expect(w.type, 'stop-limit');
     expect(w.stopLimit, 59950);
     expect(w.label, 'sell stop limit');
+  });
+
+  test('pending orders: `reach` says which way the market has to move; without it the kind of order does', () {
+    TOrder order(String side, String type, {String? reach}) => TOrder.fromJson({
+      'ticket': 40,
+      'symbol': 'EURUSD',
+      'side': side,
+      'type': type,
+      'volume': 0.1,
+      'price': 1.09,
+      'reach': ?reach,
+      'expiry': 'GTC',
+    });
+    // a limit can sit on either side of the market, so only the engine knows which way this one waits
+    expect(order('buy', 'limit', reach: 'rise').reach, 'rise');
+    expect(order('buy', 'limit', reach: 'fall').reach, 'fall');
+    expect(order('sell', 'limit', reach: 'fall').reach, 'fall');
+    // a server older than flexible limits sends none: the conventional side of the market says the same thing
+    expect(order('buy', 'limit').reach, 'fall');
+    expect(order('sell', 'limit').reach, 'rise');
+    expect(order('buy', 'stop').reach, 'rise');
+    expect(order('sell', 'stop').reach, 'fall');
+    expect(order('buy', 'stop_limit').reach, 'rise');
+    // and anything else the server might send reads as the conventional one
+    expect(order('buy', 'limit', reach: 'sideways').reach, 'fall');
   });
 
   test('closed trades: one row per exit deal, newest first, entry commission shared, profit net', () {

@@ -1,8 +1,10 @@
-// The order sheet (web order form) and the position sheet (web PositionDialog) on the preview trade server, with
-// fixed quotes and the trade actions recorded instead of sent.
+// The order sheet (web order form), the position sheet (web PositionDialog) and the pending order's row and sheet on
+// the preview trade server, with fixed quotes and the trade actions recorded instead of sent.
 import 'package:ezymex/features/terminal/cfd/order_sheet.dart';
 import 'package:ezymex/features/terminal/cfd/position_sheet.dart';
+import 'package:ezymex/features/terminal/cfd/trade_tab.dart';
 import 'package:ezymex/features/terminal/core/market.dart';
+import 'package:ezymex/features/terminal/core/models.dart';
 import 'package:ezymex/features/terminal/core/order.dart';
 import 'package:ezymex/features/terminal/core/sessions.dart';
 import 'package:ezymex/features/terminal/core/terminal_controller.dart';
@@ -143,6 +145,37 @@ void main() {
     expect(find.text('Enter the order price'), findsOneWidget);
     expect(find.text('Order price'), findsOneWidget);
     expect(find.text('Expires'), findsOneWidget);
+    await done(tester);
+  });
+
+  testWidgets('a pending order shows which way the market has to move to reach it, in the row and in its sheet', (tester) async {
+    await boot(tester);
+    TOrder pending(String side, String type, double price, {String? reach}) => TOrder.fromJson({
+      'ticket': 91,
+      'symbol': 'XAUUSD',
+      'side': side,
+      'type': type,
+      'volume': 0.3,
+      'price': price,
+      'reach': ?reach,
+      'expiry': 'GTC',
+      'placedAt': '2026-11-16T09:00:00Z',
+    });
+
+    // the ask is 2654.48 and a pip of gold is 0.10: a buy limit above it waits for the price to rise to it, which the
+    // engine takes now, and one below it waits for a fall
+    await show(tester, PendingRow(order: pending('buy', 'limit', 2680, reach: 'rise')));
+    expect(find.textContaining('0.30 at 2680.00 · ▲ 255.2 pips · GTC', findRichText: true), findsOneWidget);
+
+    await show(tester, PendingRow(order: pending('buy', 'limit', 2600, reach: 'fall')));
+    expect(find.textContaining('▼ 544.8 pips', findRichText: true), findsOneWidget);
+
+    // the sheet of the account's own pending order (a buy limit under the market: it waits for a fall)
+    final o = h.container.read(terminalProvider).orders.firstWhere((x) => x.symbol == 'XAUUSD');
+    expect(o.reach, 'fall');
+    await show(tester, PendingForm(ticket: o.ticket));
+    expect(find.text('Price'), findsOneWidget);
+    expect(find.textContaining('▼ Waiting for the market to fall to 2628.50 · 259.8 pips', findRichText: true), findsOneWidget);
     await done(tester);
   });
 

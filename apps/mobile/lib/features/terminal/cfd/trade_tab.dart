@@ -271,7 +271,8 @@ class PositionRow extends ConsumerWidget {
   }
 }
 
-/// One pending order (web MTrade pendings): symbol, label, volume at price · expiry, ×.
+/// One pending order (web MTrade pendings): symbol, label, volume at price · which way the market has to move and how
+/// far · expiry, ×.
 class PendingRow extends ConsumerWidget {
   const PendingRow({super.key, required this.order});
   final TOrder order;
@@ -282,7 +283,8 @@ class PendingRow extends ConsumerWidget {
     final k = context.k;
     final o = order;
     final readOnly = ref.watch(terminalProvider.select((s) => s.readOnly));
-    final digits = ref.watch(symbolBookProvider.select((b) => b[o.symbol]?.digits ?? 5));
+    final spec = ref.watch(symbolBookProvider.select((b) => b[o.symbol]));
+    final digits = spec?.digits ?? 5;
     final expiry = o.expiry == 'Date' ? (o.expiryDate ?? '') : (o.expiry == 'Today' ? t('order.expiry.today') : t('order.expiry.gtc'));
     return KPressable(
       pressedScale: 1,
@@ -318,9 +320,29 @@ class PendingRow extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  Text(
-                    '${t('trader.mobile.volumeAt', {'volume': fmtVol(o.volume), 'price': fmtPrice(digits, o.price)})} · $expiry',
-                    style: context.text.mono(10.5, color: k.fg3),
+                  // a limit can wait on either side of the market now, so the row says which way the market has to
+                  // move to reach the order (the engine's `reach`) and how far it still has to go, like the web's
+                  // pendings table
+                  QuoteBuilder(
+                    symbol: o.symbol,
+                    throttle: const Duration(milliseconds: 500),
+                    builder: (context, q) {
+                      final mkt = q == null ? null : (o.buy ? q.ask : q.bid);
+                      final pips = mkt == null || spec == null ? null : pipsBetween(spec, o.price, mkt);
+                      final rise = o.reach == 'rise';
+                      return Text.rich(
+                        TextSpan(
+                          style: context.text.mono(10.5, color: k.fg3),
+                          children: [
+                            TextSpan(text: '${t('trader.mobile.volumeAt', {'volume': fmtVol(o.volume), 'price': fmtPrice(digits, o.price)})} · '),
+                            TextSpan(text: reachArrow(o.reach), style: TextStyle(color: rise ? k.up : k.down)),
+                            TextSpan(text: pips == null ? ' · $expiry' : ' ${t('desk.pos.pipsAway', {'n': pips.toStringAsFixed(1)})} · $expiry'),
+                          ],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      );
+                    },
                   ),
                 ],
               ),

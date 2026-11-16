@@ -223,6 +223,8 @@ class PreviewServer {
       'price': 2628.5,
       'stopLimit': null,
       'triggered': false,
+      // under the market (XAUUSD walks around 2654): it waits for the price to fall to it
+      'reach': 'fall',
       'sl': 2612,
       'tp': 2672,
       'trailingPoints': null,
@@ -242,6 +244,8 @@ class PreviewServer {
       'price': 1.2742,
       'stopLimit': null,
       'triggered': false,
+      // a sell stop under the market (GBPUSD walks around 1.2788): it waits for the price to fall to it
+      'reach': 'fall',
       'sl': 1.2791,
       'tp': 1.2655,
       'trailingPoints': null,
@@ -631,6 +635,11 @@ class PreviewServer {
       for (final k in ['price', 'sl', 'tp', 'stopLimit', 'volume']) {
         if (body.containsKey(k)) o[k] = body[k];
       }
+      // the engine decides again which way the market has to move whenever the order's price moves
+      if (body['price'] is num) {
+        final q = _quote(o['symbol'] as String, _spreadGroup(a));
+        o['reach'] = (body['price'] as num) > (o['side'] == 'buy' ? q.ask : q.bid) ? 'rise' : 'fall';
+      }
       _push(a, {'type': 'order', 'op': 'upsert', 'order': o});
       return (200, {'order': o});
     }
@@ -695,6 +704,8 @@ class PreviewServer {
       'price': price,
       'stopLimit': b['stopLimit'],
       'triggered': false,
+      // which way the market has to move to reach it, as the engine decides it when the order is placed
+      'reach': price > (side == 'buy' ? q.ask : q.bid) ? 'rise' : 'fall',
       'sl': b['sl'],
       'tp': b['tp'],
       'trailingPoints': b['trailingPoints'],
@@ -938,15 +949,18 @@ class PreviewServer {
       final q = _quote(o['symbol'] as String, g);
       final buy = o['side'] == 'buy';
       final price = (o['price'] as num).toDouble();
+      final fill = buy ? q.ask : q.bid;
+      // a limit can sit on either side of the market, so it fills the way the engine recorded when it was placed
+      // (`reach`); a stop is always on its own side and buys into a rise or sells into a fall
+      final rise = o['reach'] == 'rise' || (o['reach'] != 'fall' && !buy);
       final hit = switch (o['type']) {
-        'limit' => buy ? q.ask <= price : q.bid >= price,
-        'stop' || 'stop_limit' => buy ? q.ask >= price : q.bid <= price,
+        'limit' => rise ? fill >= price : fill <= price,
+        'stop' || 'stop_limit' => buy ? fill >= price : fill <= price,
         _ => false,
       };
       if (!hit) continue;
       a.orders.remove(o);
       _push(a, {'type': 'order', 'op': 'remove', 'ticket': o['ticket'], 'status': 'filled'});
-      final fill = buy ? q.ask : q.bid;
       _openPosition(
         a,
         o['symbol'] as String,

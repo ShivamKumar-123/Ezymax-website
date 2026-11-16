@@ -116,6 +116,9 @@ int spreadPoints(SymbolSpec s, double bid, double ask) => ((ask - bid) / s.point
 /// The price step of price inputs (a tenth of a pip, at least one point; web priceStep).
 double priceStep(SymbolSpec s) => s.pipSize / 10 >= s.point ? s.pipSize / 10 : s.point;
 
+/// How far two prices are apart in pips, unsigned: how much further the market has to travel to reach a pending order.
+double pipsBetween(SymbolSpec s, double a, double b) => s.pipSize > 0 ? (a - b).abs() / s.pipSize : 0;
+
 /// A swap rate as shown to traders: "−20.00% / year" or "−7.20 pts" (a real minus sign).
 String swapRateText(T t, double v, String unit) {
   final n = '${v < 0 ? '−' : (v > 0 ? '+' : '')}${v.abs().toStringAsFixed(2)}';

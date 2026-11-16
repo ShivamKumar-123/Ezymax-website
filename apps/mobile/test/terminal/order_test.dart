@@ -1,6 +1,6 @@
 // The order sheet's rules before anything is sent (volume limits and step, a pending price, stops on the right side,
-// the comment, the account's restrictions, the market state), the body of `POST trade/orders`, SL / TP by pips or
-// money (cent accounts type money in USC) and sizing by risk.
+// the comment, the account's restrictions, the market state), which prices a pending order's entry can take, the body
+// of `POST trade/orders`, SL / TP by pips or money (cent accounts type money in USC) and sizing by risk.
 import 'package:ezymex/features/terminal/core/order.dart';
 import 'package:ezymex/features/terminal/core/trade_math.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -85,6 +85,30 @@ void main() {
     test('the comment holds 31 characters', () {
       expect(check(o(comment: 'x' * 31)), isNull);
       expect(check(o(comment: 'x' * 32)), 'order.reject.validation');
+    });
+  });
+
+  group('a pending price against the market (chart drags, the engine\'s own rule)', () {
+    test('a limit may sit on either side of the market; only the market price itself is refused', () {
+      // a buy limit above the Ask: it waits for the price to rise to it, which the engine now takes
+      expect(pendingProblem('limit', 'buy', ask, ask + 0.0010), isNull);
+      expect(pendingProblem('limit', 'buy', ask, ask - 0.0010), isNull);
+      expect(pendingProblem('limit', 'sell', bid, bid - 0.0010), isNull);
+      expect(pendingProblem('limit', 'sell', bid, bid + 0.0010), isNull);
+      // on the market there is nothing left to wait for, whichever side the order is
+      expect(pendingProblem('limit', 'buy', ask, ask), 'chart.line.bad.pendAbove');
+      expect(pendingProblem('limit', 'sell', bid, bid), 'chart.line.bad.pendAbove');
+    });
+
+    test('a stop still belongs to its own side: a buy stop above the market, a sell stop below it', () {
+      expect(pendingProblem('stop', 'buy', ask, ask + 0.0010), isNull);
+      expect(pendingProblem('stop', 'buy', ask, ask - 0.0010), 'chart.line.bad.pendAbove');
+      expect(pendingProblem('stop', 'buy', ask, ask), 'chart.line.bad.pendAbove');
+      expect(pendingProblem('stop', 'sell', bid, bid - 0.0010), isNull);
+      expect(pendingProblem('stop', 'sell', bid, bid + 0.0010), 'chart.line.bad.pendBelow');
+      // a stop-limit is triggered by its stop price, so it follows the stop rule
+      expect(pendingProblem('stop-limit', 'buy', ask, ask - 0.0010), 'chart.line.bad.pendAbove');
+      expect(pendingProblem('stop-limit', 'sell', bid, bid - 0.0010), isNull);
     });
   });
 

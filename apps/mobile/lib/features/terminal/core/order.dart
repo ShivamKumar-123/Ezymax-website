@@ -1,5 +1,6 @@
-// An order as the order sheet builds it, its checks before sending, and the body of `POST trade/orders` (web:
-// apps/terminal/lib/engine/actions.ts toBody / placeOrder, components/order/order-ticket.tsx).
+// An order as the order sheet builds it, its checks before sending, which prices a pending order's entry can take,
+// and the body of `POST trade/orders` (web: apps/terminal/lib/engine/actions.ts toBody / placeOrder,
+// components/order/order-ticket.tsx, components/chart/trade-overlay.tsx pendingProblem).
 import 'package:flutter/foundation.dart';
 
 import 'models.dart';
@@ -100,6 +101,28 @@ String? validateOrder(
   }
   if ((o.comment ?? '').length > 31) return 'order.reject.validation';
   return null;
+}
+
+/// Why a pending order's entry cannot sit at `price`, as a translation key (null when it can; web trade-overlay.tsx
+/// `pendingProblem`, the engine's own rule). `mkt` is the price the order would open at: the Ask for a buy, the Bid
+/// for a sell.
+///
+/// A limit may sit on either side of the market: above it the order waits for the price to rise to it, below it for
+/// the price to fall, so the only price the engine refuses is the market price itself, where the order would have
+/// nothing left to wait for. A stop is still how you buy into a rise or sell into a fall, so a buy stop stays above
+/// the market and a sell stop below it; a stop-limit is triggered by its stop price and follows the stop rule.
+///
+/// The instrument's stops level (the web's `gap`) is left out: only a dragged line comes through here, and
+/// `modify_order` does not ask for it, so a price the server would take is never refused.
+String? pendingProblem(String type, String side, double mkt, double price) {
+  if (type == 'limit') {
+    if (price != mkt) return null;
+    // sitting on the market, it can move either way; the message names the side above it, as the web does
+    return 'chart.line.bad.pendAbove';
+  }
+  final below = side == 'sell';
+  if (below ? price < mkt : price > mkt) return null;
+  return below ? 'chart.line.bad.pendBelow' : 'chart.line.bad.pendAbove';
 }
 
 /// The price the order opens at: the ask for a buy, the bid for a sell; a pending order's own (stop-limit: limit) price.

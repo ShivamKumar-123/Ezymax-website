@@ -223,15 +223,6 @@ class _Chart extends ConsumerWidget {
   /// The SL / TP line of a pending order (`osl:` / `otp:`), not of a position.
   static bool _ofOrder(ChartLine l) => l.id.startsWith('osl:') || l.id.startsWith('otp:');
 
-  /// Which side of the market a pending order's entry must sit on (web trade-overlay.tsx `pendingProblem`, the
-  /// engine's own rule): a limit waits for a better price than the market, a stop for a worse one. Returns the
-  /// message key, or null when the price is fine.
-  static String? _pendingProblem(String type, String side, double mkt, double price) {
-    final below = (type == 'limit') == (side == 'buy');
-    if (below ? price < mkt : price > mkt) return null;
-    return below ? 'chart.line.bad.pendBelow' : 'chart.line.bad.pendAbove';
-  }
-
   /// A dropped line (web commitLineDrag). The future says whether the server took it (the chart keeps the line at
   /// the drop price until then).
   Future<bool> _commitDrag(WidgetRef ref, ChartLine l, double price) async {
@@ -246,12 +237,13 @@ class _Chart extends ConsumerWidget {
         return _ofOrder(l) ? actions.modifyOrder(l.ref, tp: price) : actions.modifyPosition(l.ref, tp: price);
       case 'pending':
         {
-          // the wrong side of the market: the server would refuse it, so nothing is sent and the line goes back
+          // a price the server would refuse (a stop on the wrong side of the market, a limit on top of it): nothing is
+          // sent and the line goes back
           final o = ref.read(terminalProvider).orders.where((x) => x.ticket == l.ref).firstOrNull;
           final q = ref.read(marketFeedProvider).quote(symbol);
           if (o != null && q != null) {
             final mkt = o.side == 'buy' ? q.ask : q.bid;
-            final bad = _pendingProblem(o.type, o.side, mkt, price);
+            final bad = pendingProblem(o.type, o.side, mkt, price);
             if (bad != null) {
               final tt = ref.read(tProvider);
               ref
@@ -376,13 +368,14 @@ class _Chart extends ConsumerWidget {
                   );
             },
           ),
-          if (below) ...[
-            KAction(label: t('chart.menu.buyLimitAt', {'lot': lots, 'price': ps}), onTap: () => unawaited(order('buy', 'limit'))),
-            KAction(label: t('chart.menu.sellStopAt', {'lot': lots, 'price': ps}), onTap: () => unawaited(order('sell', 'stop'))),
-          ] else ...[
-            KAction(label: t('chart.menu.sellLimitAt', {'lot': lots, 'price': ps}), onTap: () => unawaited(order('sell', 'limit'))),
+          // both limits, in either direction: the engine takes a limit on either side of the market now. Only the
+          // stop still belongs to one side, so the menu offers the one the market can reach from here.
+          KAction(label: t('chart.menu.buyLimitAt', {'lot': lots, 'price': ps}), onTap: () => unawaited(order('buy', 'limit'))),
+          KAction(label: t('chart.menu.sellLimitAt', {'lot': lots, 'price': ps}), onTap: () => unawaited(order('sell', 'limit'))),
+          if (below)
+            KAction(label: t('chart.menu.sellStopAt', {'lot': lots, 'price': ps}), onTap: () => unawaited(order('sell', 'stop')))
+          else
             KAction(label: t('chart.menu.buyStopAt', {'lot': lots, 'price': ps}), onTap: () => unawaited(order('buy', 'stop'))),
-          ],
           KAction(
             label: t('chart.menu.newOrder'),
             onTap: () => unawaited(showOrderSheet(context, symbol: symbol)),

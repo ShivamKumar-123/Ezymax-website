@@ -614,6 +614,27 @@ class _PendingFormState extends ConsumerState<PendingForm> {
             onChanged: (v) => _price = v,
             semanticLabel: t('order.ticket.orderPrice'),
           ),
+          const SizedBox(height: 5),
+          // a limit can wait on either side of the market now, so the price alone no longer says what the order is
+          // waiting for: this is the engine's own direction (`reach`) and how far the market still has to travel
+          QuoteBuilder(
+            symbol: o.symbol,
+            throttle: const Duration(milliseconds: 400),
+            builder: (context, q) {
+              final mkt = q == null ? null : (o.buy ? q.ask : q.bid);
+              final away = mkt == null ? '' : ' · ${t('desk.pos.pipsAway', {'n': pipsBetween(spec, o.price, mkt).toStringAsFixed(1)})}';
+              return Text.rich(
+                TextSpan(
+                  style: context.text.footnote.copyWith(color: k.fg3, fontSize: 11.5),
+                  children: [
+                    TextSpan(text: '${reachArrow(o.reach)} ', style: TextStyle(color: o.reach == 'rise' ? k.up : k.down)),
+                    TextSpan(text: '${t('desk.pos.reach.${o.reach}', {'price': fmtPrice(spec.digits, o.price)})}$away'),
+                  ],
+                ),
+                maxLines: 2,
+              );
+            },
+          ),
           const SizedBox(height: 10),
           Row(
             children: [
