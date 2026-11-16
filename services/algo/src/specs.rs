@@ -389,9 +389,9 @@ mod tests {
         let ts = |x: &str| DateTime::parse_from_rfc3339(x).unwrap().with_timezone(&Utc);
         assert!(!msft.is_open(ts("2026-11-26T15:00:00Z")), "NYSE Thanksgiving");
         assert!(s.get("AAPL").unwrap().is_open(ts("2026-11-26T15:00:00Z")), "core keeps its rules");
-        let bnb = s.get("BNBUSD").unwrap();
-        assert_eq!(session_key(&bnb.session), "always");
-        assert!(bnb.swap_all_days);
+        let btc = s.get("BTCUSDT").unwrap();
+        assert_eq!(session_key(&btc.session), "always");
+        assert!(btc.swap_all_days);
         assert_eq!(s.get("AUDCAD").unwrap().floor_volume(0.129), Some(0.12));
         assert_eq!(s.get("AUDCAD").unwrap().quote_ccy, "CAD");
         assert_eq!(s.usd_pair("JPY"), Some(("USDJPY".into(), false)));

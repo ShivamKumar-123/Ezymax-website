@@ -127,16 +127,16 @@ async fn back_office_live_switch_and_templates_drive_the_engine() {
         gateway: Arc::new(trading::controls::Gateway::new("", "")),
     };
 
-    // BNBUSD: a catalogue crypto (24/7, so the test runs any day)
+    // BTCUSDT: a catalogue crypto (24/7, so the test runs any day)
     let now = Utc::now().timestamp_millis();
     for g in ["standard", "pro", "ecn", "cent", "raw"] {
-        quotes.set(g, "BNBUSD", Quote { bid: d("610.00"), ask: d("610.40"), t_ms: now });
+        quotes.set(g, "BTCUSDT", Quote { bid: d("90000.00"), ask: d("90040.00"), t_ms: now });
     }
     let (live_login, demo_login) = (10_000_301i64, 50_000_301i64);
     hub.open(account(live_login, AccountKind::Live), ("h".into(), "i".into()), "test").await.unwrap();
     hub.open(account(demo_login, AccountKind::Demo), ("h".into(), "i".into()), "test").await.unwrap();
     exec(&hub, live_login, Box::new(|tx, env| funds::transfer(tx, env, funds::Direction::In, d("10000"), "it-cat-fund", None).map(|_| Value::Null))).await.unwrap();
-    let buy = || -> Op { Box::new(|tx, env| trade::place_order(tx, env, OrderReq::market("BNBUSD", Side::Buy, d("0.5"))).map(|r| json!(format!("{r:?}")))) };
+    let buy = || -> Op { Box::new(|tx, env| trade::place_order(tx, env, OrderReq::market("BTCUSDT", Side::Buy, d("0.5"))).map(|r| json!(format!("{r:?}")))) };
 
     // crypto trades live by default; demo too; stocks wait (demo only)
     exec(&hub, live_login, buy()).await.expect("crypto is live by default");
@@ -159,13 +159,13 @@ async fn back_office_live_switch_and_templates_drive_the_engine() {
     exec(&hub, demo_login, buy()).await.expect("demo is never switched off");
 
     // a symbol switched on wins over its class
-    let _ = api::catalogue::set_live(State(st.clone()), staff(&st, "super_admin"), body(json!({"scope": "symbol", "key": "BNBUSD", "enabled": true, "reason": "BNB only"}))).await.unwrap();
+    let _ = api::catalogue::set_live(State(st.clone()), staff(&st, "super_admin"), body(json!({"scope": "symbol", "key": "BTCUSDT", "enabled": true, "reason": "BTC only"}))).await.unwrap();
     exec(&hub, live_login, buy()).await.expect("symbol switch on");
     // stored: a restart loads the same switches
     let ov = trading::catalogue::load_overrides(&pool).await.unwrap();
-    assert_eq!((ov.live_classes.get("crypto"), ov.live_symbols.get("BNBUSD")), (Some(&false), Some(&true)));
+    assert_eq!((ov.live_classes.get("crypto"), ov.live_symbols.get("BTCUSDT")), (Some(&false), Some(&true)));
     // back to the defaults (null removes a switch)
-    let _ = api::catalogue::set_live(State(st.clone()), staff(&st, "platform_owner"), body(json!({"scope": "symbol", "key": "BNBUSD", "enabled": null, "reason": "back to class"}))).await.unwrap();
+    let _ = api::catalogue::set_live(State(st.clone()), staff(&st, "platform_owner"), body(json!({"scope": "symbol", "key": "BTCUSDT", "enabled": null, "reason": "back to class"}))).await.unwrap();
     let ok = api::catalogue::set_live(State(st.clone()), staff(&st, "platform_owner"), body(json!({"scope": "class", "key": "crypto", "enabled": null, "reason": "back to default"}))).await.unwrap();
     assert!(ok.0["catalogueLive"].as_u64().unwrap() > 200);
     exec(&hub, live_login, buy()).await.expect("default again");
@@ -183,11 +183,11 @@ async fn back_office_live_switch_and_templates_drive_the_engine() {
     assert_eq!(code(r.unwrap_err()), "forbidden");
     let _ = api::catalogue::set_template(State(st.clone()), staff(&st, "platform_owner"), Path("crypto".into()), body(json!({"fields": {"max_leverage": 3, "lot_max": 2}, "reason": "safer"}))).await.unwrap();
     let now_specs = hub.shared.specs.load();
-    assert_eq!(now_specs.get("BNBUSD").unwrap().max_leverage, 3);
+    assert_eq!(now_specs.get("BTCUSDT").unwrap().max_leverage, 3);
     assert_eq!(now_specs.get("ETHUSD").unwrap().max_leverage, specs.get("ETHUSD").unwrap().max_leverage, "core crypto untouched");
     // back to the file template
     let _ = api::catalogue::set_template(State(st.clone()), staff(&st, "platform_owner"), Path("crypto".into()), body(json!({"fields": null, "reason": "revert"}))).await.unwrap();
-    assert_eq!(hub.shared.specs.load().get("BNBUSD").unwrap().max_leverage, 10);
+    assert_eq!(hub.shared.specs.load().get("BTCUSDT").unwrap().max_leverage, 10);
 
     // the Back Office listing and the audit trail
     let cat = api::catalogue::catalogue(State(st.clone()), staff(&st, "dealer")).await.unwrap().0;
