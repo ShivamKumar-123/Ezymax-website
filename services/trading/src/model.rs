@@ -54,6 +54,45 @@ impl OrderType {
     }
 }
 
+/// Which way the market has to travel to reach a pending order's price.
+///
+/// A conventional pending order's direction follows from its kind and side, but a limit order may be placed on
+/// either side of the market (16 November 2026): a buy limit above the market is a breakout entry and must wait
+/// for the market to rise to it, not fill the moment it is placed. So the direction is decided once, against the
+/// market as it stood when the order was placed or last repriced, and the trigger obeys it from then on.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Reach {
+    /// The price is above the market: wait for it to rise.
+    Rise,
+    /// The price is below the market: wait for it to fall.
+    Fall,
+}
+
+impl Reach {
+    /// Where a conventional pending order of this kind and side waits.
+    pub fn conventional(kind: OrderType, side: Side) -> Reach {
+        match (kind, side) {
+            (OrderType::Limit, Side::Buy) => Reach::Fall,
+            (OrderType::Limit, Side::Sell) => Reach::Rise,
+            (OrderType::Stop | OrderType::StopLimit, Side::Buy) => Reach::Rise,
+            (OrderType::Stop | OrderType::StopLimit, Side::Sell) => Reach::Fall,
+            // a market order does not wait; the value is never read
+            (OrderType::Market, _) => Reach::Fall,
+        }
+    }
+    /// The side of the market the price sits on (`at` = the market, `price` = the order's price).
+    pub fn of(price: D, at: D) -> Reach {
+        if price > at { Reach::Rise } else { Reach::Fall }
+    }
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Reach::Rise => "rise",
+            Reach::Fall => "fall",
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Expiry {
@@ -689,6 +728,10 @@ pub struct Order {
     /// Arms the order when the underlying's raw mid crosses a level (`triggered` turns true).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub trigger: Option<Trigger>,
+    /// Which way the market must move to reach `active_price()`, decided when the order was placed or last
+    /// repriced. Orders placed before flexible limits have none and fall back to the conventional direction.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reach: Option<Reach>,
 }
 
 impl Order {
@@ -702,6 +745,11 @@ impl Order {
     /// Effective behaviour now (a triggered stop-limit behaves as a limit).
     pub fn active_kind(&self) -> OrderType {
         if self.kind == OrderType::StopLimit && self.triggered { OrderType::Limit } else { self.kind }
+    }
+    /// Which way the market must move to reach `active_price()`. Stored since flexible limits; an order from
+    /// before that waits where its kind and side say it does, which is what it was placed on.
+    pub fn reach(&self) -> Reach {
+        self.reach.unwrap_or_else(|| Reach::conventional(self.active_kind(), self.side))
     }
 }
 

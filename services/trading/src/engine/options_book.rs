@@ -1146,6 +1146,7 @@ pub fn place_stop(tx: &mut Tx, env: &Env, r: StopReq) -> Result<Order, Reject> {
         }),
         combo_id: None,
         trigger: (r.source == StopSource::Underlying).then(|| Trigger { symbol: u.symbol.clone(), op: r.op, price: r.trigger }),
+        reach: None,
     };
     tx.emit(Event::OrderPlaced { order: order.clone() });
     tx.note("order_placed", format!("Book stop #{ticket} placed: {} {} {} when the {} is {} {}", req.side.as_str(), req.qty.normalize(), terms.series, r.source.as_str(), r.op.as_str(), r.trigger.normalize()), json!({"ticket": ticket, "book": true, "options": true}));

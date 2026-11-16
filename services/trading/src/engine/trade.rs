@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 use serde_json::json;
 
 use super::{Env, Reject, Tx, pnl, total_margin};
-use crate::model::{AccountKind, Book, Deal, DealEntry, DealReason, Expiry, Mode, Order, OrderStatus, OrderType, Position, RouteEvent, Side, Source, Status, Trailing, TxnKind, acct_code, house_code};
+use crate::model::{AccountKind, Book, Deal, DealEntry, DealReason, Expiry, Mode, Order, OrderStatus, OrderType, Position, Reach, RouteEvent, Side, Source, Status, Trailing, TxnKind, acct_code, house_code};
 use crate::money::{D, ZERO, r2, rdp};
 use crate::rules::{ControlMode, Product, RouteCtx, resolve_route};
 use crate::specs::{Spec, end_of_server_day};
@@ -338,19 +338,34 @@ pub fn place_order(tx: &mut Tx, env: &Env, req: OrderReq) -> Result<PlaceResult,
     let mkt = q.open_price(req.side);
     let gap = D::from(spec.stops_level_points) * spec.point;
     let buy = req.side == Side::Buy;
-    match req.kind {
+    // Where the order waits. A limit may sit on either side of the market: below it for the conventional better
+    // price, above it to buy a breakout (and the mirror for a sell). Either way it waits for the market to come
+    // to it from where the market is now, so the side it is placed on is what decides its trigger direction.
+    // A stop keeps its one lawful side, or it would be a limit.
+    let reach = match req.kind {
         OrderType::Limit => {
-            if if buy { price >= mkt - gap } else { price <= mkt + gap } {
-                return Err(Reject::new("invalid_price", format!("{} limit must be {} the market ({})", if buy { "Buy" } else { "Sell" }, if buy { "below" } else { "above" }, mkt.normalize())));
+            if price < mkt - gap {
+                Reach::Fall
+            } else if price > mkt + gap {
+                Reach::Rise
+            } else {
+                return Err(Reject::new(
+                    "invalid_price",
+                    match spec.stops_level_points {
+                        0 => format!("A limit order waits for the market: put the price above or below {}", mkt.normalize()),
+                        n => format!("A limit order must be at least {n} points above or below the market ({})", mkt.normalize()),
+                    },
+                ));
             }
         }
         OrderType::Stop | OrderType::StopLimit => {
             if if buy { price <= mkt + gap } else { price >= mkt - gap } {
                 return Err(Reject::new("invalid_price", format!("{} stop must be {} the market ({})", if buy { "Buy" } else { "Sell" }, if buy { "above" } else { "below" }, mkt.normalize())));
             }
+            Reach::conventional(req.kind, req.side)
         }
         OrderType::Market => unreachable!(),
-    }
+    };
     let stop_limit = if req.kind == OrderType::StopLimit {
         let l = spec.round_price(req.stop_limit.filter(|p| *p > ZERO).ok_or_else(|| Reject::new("invalid_price", "Enter the limit price of the stop-limit order"))?);
         if if buy { l > price } else { l < price } {
@@ -408,6 +423,7 @@ pub fn place_order(tx: &mut Tx, env: &Env, req: OrderReq) -> Result<PlaceResult,
         option: None,
         combo_id: None,
         trigger: None,
+        reach: Some(reach),
     };
     tx.emit(Event::OrderPlaced { order });
     if let Some(o) = req.oco_with {
@@ -985,13 +1001,28 @@ pub fn modify_order(tx: &mut Tx, env: &Env, ticket: i64, patch: OrderPatch, deal
     let mkt = q.open_price(o.side);
     let buy = o.side == Side::Buy;
     let px = n.active_price();
+    // a limit may be repriced to either side of the market, but not onto it; a stop keeps its side
     let ok = match n.active_kind() {
-        OrderType::Limit => if buy { px < mkt } else { px > mkt },
+        OrderType::Limit => px != mkt,
         OrderType::Stop | OrderType::StopLimit => if buy { px > mkt } else { px < mkt },
         OrderType::Market => true,
     };
-    if !ok && (patch.price.is_some() || patch.stop_limit.is_some()) {
-        return Err(Reject::new("invalid_price", format!("Order price is on the wrong side of the market ({})", mkt.normalize())));
+    let repriced = patch.price.is_some() || patch.stop_limit.is_some();
+    if !ok && repriced {
+        return Err(Reject::new(
+            "invalid_price",
+            match n.active_kind() {
+                OrderType::Limit => format!("A limit order waits for the market: put the price above or below {}", mkt.normalize()),
+                _ => format!("Order price is on the wrong side of the market ({})", mkt.normalize()),
+            },
+        ));
+    }
+    // the new price decides afresh which way the market has to move to reach it
+    if repriced {
+        n.reach = Some(match n.active_kind() {
+            OrderType::Limit => Reach::of(px, mkt),
+            k => Reach::conventional(k, o.side),
+        });
     }
     if n.kind == OrderType::StopLimit && !n.triggered
         && let Some(l) = n.stop_limit

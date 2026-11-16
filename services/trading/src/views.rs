@@ -177,6 +177,7 @@ pub fn order_json(o: &Order) -> Value {
         "price": num(o.price),
         "stopLimit": num_opt(o.stop_limit),
         "triggered": o.triggered,
+        "reach": o.reach().as_str(),
         "sl": num_opt(o.sl),
         "tp": num_opt(o.tp),
         "trailingPoints": o.trailing.as_ref().map(|t| t.distance_points),
@@ -309,6 +310,7 @@ pub fn desk_order_json(st: &AccountState, o: &Order) -> Value {
         "comment": o.comment,
         "book": o.book.map(|b| b.as_str()),
         "triggered": o.triggered,
+        "reach": o.reach().as_str(),
         "oco": o.oco.map(|t| t.to_string()),
     });
     merge(v, order_option_json(o))

@@ -6,18 +6,22 @@ use serde_json::json;
 
 use super::trade::{CloseMeta, Fill, apply_nbp, close_part, fill, gate};
 use super::{Env, Quote, Tx, metrics, position_floating};
-use crate::model::{DealReason, OrderStatus, OrderType, Position, Side};
+use crate::model::{DealReason, OrderStatus, OrderType, Position, Reach, Side};
 use crate::money::{D, ZERO, num, r2};
 use crate::state::Event;
 
-/// Has pending order `o` reached its price on quote `q`?
-fn reached(kind: OrderType, side: Side, price: D, q: &Quote) -> bool {
-    match (kind, side) {
-        (OrderType::Limit, Side::Buy) => q.ask <= price,
-        (OrderType::Limit, Side::Sell) => q.bid >= price,
-        (OrderType::Stop | OrderType::StopLimit, Side::Buy) => q.ask >= price,
-        (OrderType::Stop | OrderType::StopLimit, Side::Sell) => q.bid <= price,
-        (OrderType::Market, _) => true,
+/// Has the market reached `price` from the side the order waits on?
+///
+/// The comparison is against the price the order would open at (a buy watches the ask, a sell the bid) and the
+/// direction is the order's own: a price that was above the market when the order was placed is reached by a
+/// rise, one that was below it by a fall. For a conventional order that is exactly the old rule - a buy limit
+/// below the market still fills when the ask comes down to it - and it is also what keeps a flexible limit from
+/// filling the instant it is placed on the other side of the market.
+fn reached(reach: Reach, side: Side, price: D, q: &Quote) -> bool {
+    let px = q.open_price(side);
+    match reach {
+        Reach::Rise => px >= price,
+        Reach::Fall => px <= price,
     }
 }
 
@@ -39,15 +43,17 @@ pub fn on_tick(tx: &mut Tx, env: &Env, symbol: &str) {
     let tickets: Vec<i64> = tx.st.orders.values().filter(|o| o.symbol == symbol && o.option.is_none()).map(|o| o.ticket).collect();
     for t in tickets {
         let Some(mut o) = tx.st.orders.get(&t).cloned() else { continue }; // OCO partner may be gone
-        if o.kind == OrderType::StopLimit && !o.triggered && reached(OrderType::Stop, o.side, o.price, &q) {
+        if o.kind == OrderType::StopLimit && !o.triggered && reached(Reach::conventional(OrderType::Stop, o.side), o.side, o.price, &q) {
             o.triggered = true;
+            // the limit leg sits at or beyond the stop, so the market has to come back to it the conventional way
+            o.reach = Some(Reach::conventional(OrderType::Limit, o.side));
             tx.emit(Event::OrderUpdated { order: o.clone(), change: "stop_limit_triggered".into() });
             tx.note("order_triggered", format!("Stop-limit #{t} triggered: now a limit order at {}", o.active_price().normalize()), json!({"ticket": t}));
         }
         if o.kind == OrderType::StopLimit && !o.triggered {
             continue;
         }
-        if reached(o.active_kind(), o.side, o.active_price(), &q) {
+        if reached(o.reach(), o.side, o.active_price(), &q) {
             trigger_fill(tx, env, o.ticket, &q);
         }
     }

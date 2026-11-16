@@ -6,7 +6,7 @@ use super::funds::{self, AdjustKind, Direction};
 use super::testkit::{Harness, Kit, d, group, t};
 use super::trade::{self, BulkFilter, CloseReq, DealerCtx, OrderReq, PlaceResult, PositionPatch};
 use super::{metrics, risk};
-use crate::model::{AccountKind, Book, DealReason, Expiry, OrderType, Side, Status};
+use crate::model::{AccountKind, Book, DealReason, Expiry, OrderType, Reach, Side, Status};
 use crate::money::{D, r2};
 use crate::rules::Product;
 use crate::state::Event;
@@ -302,8 +302,8 @@ fn pending_limit_stop_and_stop_limit() {
     kit.quote("EURUSD", "1.10000", "1.10010");
     let mut h = Harness::live(&kit, "hedge", "100000");
     let mut lim = OrderReq { kind: OrderType::Limit, price: Some(d("1.09900")), ..buy("EURUSD", "1") };
-    // a buy limit above the market is refused
-    assert!(h.run(&kit, |tx, env| trade::place_order(tx, env, OrderReq { price: Some(d("1.2")), ..lim.clone() })).is_err());
+    // a buy limit on the market itself is refused (it would fill at once); either side of it is fine
+    assert!(h.run(&kit, |tx, env| trade::place_order(tx, env, OrderReq { price: Some(d("1.10010")), ..lim.clone() })).is_err());
     lim.sl = Some(d("1.09000"));
     let PlaceResult::Pending { ticket: lt, .. } = place(&mut h, &kit, lim) else { panic!() };
     let PlaceResult::Pending { ticket: st, .. } = place(&mut h, &kit, OrderReq { kind: OrderType::Stop, price: Some(d("1.10500")), ..buy("EURUSD", "1") }) else { panic!() };
@@ -326,6 +326,158 @@ fn pending_limit_stop_and_stop_limit() {
     kit.quote("EURUSD", "1.10500", "1.10510");
     h.tick(&kit, "EURUSD");
     assert_eq!(h.st.positions[&st].open_price, d("1.10510"));
+    h.assert_replay();
+}
+
+/* ------------------------------------------------------------------ flexible limit orders */
+
+/// GBP/JPY as the trader saw it in the ticket that started this: 210.390 / 210.396.
+fn gbpjpy(kit: &Kit) {
+    kit.quote("GBPJPY", "210.390", "210.396");
+    kit.quote("USDJPY", "150.000", "150.010"); // the leg that turns JPY money into the account's USD
+}
+
+fn limit(side: Side, price: &str) -> OrderReq {
+    OrderReq { kind: OrderType::Limit, price: Some(d(price)), ..OrderReq::market("GBPJPY", side, d("0.5")) }
+}
+
+fn stop(side: Side, price: &str) -> OrderReq {
+    OrderReq { kind: OrderType::Stop, price: Some(d(price)), ..OrderReq::market("GBPJPY", side, d("0.5")) }
+}
+
+fn pending_ticket(r: PlaceResult) -> i64 {
+    match r {
+        PlaceResult::Pending { ticket, .. } => ticket,
+        other => panic!("not pending: {other:?}"),
+    }
+}
+
+/// Every placement in the brief, on both sides of the market, and the prices that are still refused.
+#[test]
+fn a_limit_order_is_accepted_on_either_side_of_the_market() {
+    let kit = Kit::new();
+    gbpjpy(&kit);
+    let mut h = Harness::live(&kit, "hedge", "20000");
+    // the order, and the way the market has to move to reach it
+    let cases = [
+        (limit(Side::Buy, "210.500"), Reach::Rise),
+        (limit(Side::Buy, "210.200"), Reach::Fall),
+        (limit(Side::Sell, "210.230"), Reach::Fall),
+        (limit(Side::Sell, "210.500"), Reach::Rise),
+        (stop(Side::Buy, "210.500"), Reach::Rise),
+        (stop(Side::Sell, "210.200"), Reach::Fall),
+    ];
+    for (req, reach) in cases {
+        let (side, price) = (req.side, req.price.unwrap());
+        let t = pending_ticket(place(&mut h, &kit, req));
+        let o = &h.st.orders[&t];
+        assert_eq!((o.price, o.reach()), (price, reach), "{} at {price}", side.as_str());
+    }
+    assert_eq!(h.st.orders.len(), 6);
+    // a price is still a price: not negative, not zero
+    for bad in ["-210.200", "0"] {
+        let e = h.run(&kit, |tx, env| trade::place_order(tx, env, limit(Side::Buy, bad))).unwrap_err();
+        assert_eq!(e.code, "invalid_price");
+    }
+    let e = h.run(&kit, |tx, env| trade::place_order(tx, env, limit(Side::Buy, "210.396"))).unwrap_err();
+    assert_eq!(e.code, "invalid_price", "a buy limit at the ask would fill the moment it is placed");
+    // a stop keeps its one lawful side
+    assert_eq!(h.run(&kit, |tx, env| trade::place_order(tx, env, stop(Side::Buy, "210.200"))).unwrap_err().code, "invalid_price");
+    assert_eq!(h.run(&kit, |tx, env| trade::place_order(tx, env, stop(Side::Sell, "210.500"))).unwrap_err().code, "invalid_price");
+    // more decimals than the instrument has: rounded to its tick, not taken as given
+    let t = pending_ticket(place(&mut h, &kit, limit(Side::Buy, "210.20049")));
+    assert_eq!(h.st.orders[&t].price, d("210.200"));
+    h.assert_replay();
+}
+
+/// The point of the whole feature: a limit on the far side of the market waits there.
+#[test]
+fn a_limit_on_the_far_side_waits_for_the_market_to_come_to_it() {
+    let kit = Kit::new();
+    gbpjpy(&kit);
+    let mut h = Harness::live(&kit, "hedge", "20000");
+    let up = pending_ticket(place(&mut h, &kit, limit(Side::Buy, "210.500")));
+    let down = pending_ticket(place(&mut h, &kit, limit(Side::Sell, "210.230")));
+    // the quote they were placed on: neither may fill on it
+    h.tick(&kit, "GBPJPY");
+    assert!(h.st.positions.is_empty(), "a flexible limit must not fill where it was placed");
+    assert_eq!(h.st.orders.len(), 2);
+    // the market rises to the buy limit: it fills at the ask it reached
+    kit.quote("GBPJPY", "210.494", "210.500");
+    h.tick(&kit, "GBPJPY");
+    assert!(!h.st.orders.contains_key(&up));
+    assert_eq!(h.st.positions[&up].open_price, d("210.500"));
+    assert!(h.st.orders.contains_key(&down), "a rise is nothing to the sell limit below");
+    // and falls to the sell limit
+    kit.quote("GBPJPY", "210.230", "210.236");
+    h.tick(&kit, "GBPJPY");
+    assert_eq!(h.st.positions[&down].open_price, d("210.230"));
+    assert_eq!(h.st.positions.len(), 2);
+    h.assert_ledger();
+    h.assert_replay();
+}
+
+/// A conventional limit is unchanged: it waits below (buy) and fills at the better price.
+#[test]
+fn a_conventional_limit_still_fills_the_way_it_always_did() {
+    let kit = Kit::new();
+    gbpjpy(&kit);
+    let mut h = Harness::live(&kit, "hedge", "20000");
+    let t = pending_ticket(place(&mut h, &kit, limit(Side::Buy, "210.200")));
+    h.tick(&kit, "GBPJPY");
+    assert!(h.st.orders.contains_key(&t));
+    kit.quote("GBPJPY", "210.180", "210.186");
+    h.tick(&kit, "GBPJPY");
+    assert_eq!(h.st.positions[&t].open_price, d("210.186"), "filled at the ask, better than the limit");
+    h.assert_replay();
+}
+
+/// A gap straight through a flexible limit fills it once, at the price the market actually had.
+#[test]
+fn a_gap_through_a_flexible_limit_fills_it_once() {
+    let kit = Kit::new();
+    gbpjpy(&kit);
+    let mut h = Harness::live(&kit, "hedge", "20000");
+    let t = pending_ticket(place(&mut h, &kit, limit(Side::Buy, "210.500")));
+    kit.quote("GBPJPY", "210.694", "210.700"); // the market opens well above the order
+    h.tick(&kit, "GBPJPY");
+    assert_eq!(h.st.positions[&t].open_price, d("210.700"));
+    let opened = h.log.iter().filter(|e| matches!(e, Event::PositionOpened { .. })).count();
+    // every further tick, through the price and past it: no second fill
+    for q in [("210.700", "210.706"), ("210.494", "210.500"), ("210.200", "210.206")] {
+        kit.quote("GBPJPY", q.0, q.1);
+        h.tick(&kit, "GBPJPY");
+    }
+    assert_eq!(h.st.positions.len(), 1);
+    assert_eq!(h.log.iter().filter(|e| matches!(e, Event::PositionOpened { .. })).count(), opened);
+    assert!(!h.st.orders.contains_key(&t));
+    h.assert_ledger();
+    h.assert_replay();
+}
+
+/// Repricing decides the direction afresh, and a cancelled order never fills.
+#[test]
+fn repricing_a_flexible_limit_moves_which_side_it_waits_on() {
+    let kit = Kit::new();
+    gbpjpy(&kit);
+    let mut h = Harness::live(&kit, "hedge", "20000");
+    let t = pending_ticket(place(&mut h, &kit, limit(Side::Buy, "210.500")));
+    assert_eq!(h.st.orders[&t].reach(), Reach::Rise);
+    let patch = trade::OrderPatch { price: Some(d("210.200")), ..Default::default() };
+    h.run(&kit, |tx, env| trade::modify_order(tx, env, t, patch, None)).unwrap();
+    assert_eq!((h.st.orders[&t].price, h.st.orders[&t].reach()), (d("210.200"), Reach::Fall));
+    // a rise no longer reaches it
+    kit.quote("GBPJPY", "210.594", "210.600");
+    h.tick(&kit, "GBPJPY");
+    assert!(h.st.orders.contains_key(&t));
+    // onto the market itself is refused and the order is left as it was
+    let onto = trade::OrderPatch { price: Some(d("210.600")), ..Default::default() };
+    assert_eq!(h.run(&kit, |tx, env| trade::modify_order(tx, env, t, onto, None)).unwrap_err().code, "invalid_price");
+    assert_eq!(h.st.orders[&t].price, d("210.200"));
+    h.run(&kit, |tx, env| trade::cancel_order(tx, env, t, "client")).unwrap();
+    kit.quote("GBPJPY", "210.100", "210.106");
+    h.tick(&kit, "GBPJPY");
+    assert!(h.st.positions.is_empty(), "a cancelled order does not fill");
     h.assert_replay();
 }
 

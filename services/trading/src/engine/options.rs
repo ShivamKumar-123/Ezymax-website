@@ -935,6 +935,7 @@ pub fn place(tx: &mut Tx, env: &Env, req: OptOrderReq) -> Result<PlaceOut, Rejec
         option: Some(OptionOrder { legs: specs.iter().map(|s| OptLeg { terms: s.terms.clone(), side: s.side, contracts: s.contracts }).collect(), limit_premium: req.limit_premium, book: None }),
         combo_id: None,
         trigger: req.trigger.clone(),
+        reach: None,
     };
     tx.emit(Event::OrderPlaced { order });
     tx.note("order_placed", format!("Options order #{ticket} placed"), json!({"ticket": ticket, "options": true}));
