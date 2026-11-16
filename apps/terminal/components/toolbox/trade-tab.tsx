@@ -7,11 +7,11 @@
 // click on it shows the trades one by one (the chart groups and opens them the same way).
 import * as React from "react";
 import { toast } from "@/lib/notify";
-import { ArrowLeftRight, Check, ChevronRight, Crosshair, Edit3, Layers, ListCollapse, ListTree, MoreHorizontal, Plus, Scissors, Share2, ShoppingCart, X, XCircle } from "lucide-react";
+import { ArrowDown, ArrowLeftRight, ArrowUp, Check, ChevronRight, Crosshair, Edit3, Layers, ListCollapse, ListTree, MoreHorizontal, Plus, Scissors, Share2, ShoppingCart, X, XCircle } from "lucide-react";
 import { getInstrument, priceFeed } from "@ezymex/mock";
 import { SymbolAvatar, cn, useQuote } from "@ezymex/ui";
 import { useGroupOpen, usePositionProfit, usePositionsProfit, useTerminal } from "@/lib/store";
-import { PENDING_LABEL, SOURCE_LABEL, accMoney, fmtPrice, fmtServer, fmtVol, pipSize, profitAt, type PendingOrder, type TPosition, swapSummary } from "@/lib/trading";
+import { PENDING_LABEL, SOURCE_LABEL, accMoney, fmtPrice, fmtServer, fmtVol, orderReach, pipSize, profitAt, type PendingOrder, type TPosition, swapSummary } from "@/lib/trading";
 import { Td, Th } from "@/components/ui/panel";
 import { Pnl, Stepper } from "@/components/ui/primitives";
 import { Button, EmptyState, HelpTip, IconButton, Tip } from "@/components/ui/kit";
@@ -462,6 +462,7 @@ export function PendingTab() {
             <Th>{t("desk.pos.col.type")}</Th>
             <Th right>{t("desk.pos.col.volume")}</Th>
             <Th right>{t("desk.pos.col.price")}</Th>
+            <Th right>{t("desk.pos.col.marketPrice")}</Th>
             <Th right>{t("desk.pos.col.distance")}</Th>
             <Th right>{t("desk.pos.col.sl")}</Th>
             <Th right>{t("desk.pos.col.tp")}</Th>
@@ -500,6 +501,7 @@ function PendingRow({ o, picking, selected, onSelect, onOpen, onMenu }: { o: Pen
   const digits = inst.digits;
   const cur = o.side === "buy" ? q.ask : q.bid;
   const dist = Math.abs(o.price - cur) / pipSize(inst);
+  const rise = orderReach(o) === "rise";
   return (
     <tr onClick={picking ? () => shareUi.toggle(o.ticket) : onSelect} onDoubleClick={onOpen} onContextMenu={onMenu} className={cn("group cursor-default", selected ? "bg-ember-soft/40" : "hover:bg-surface-2/70")}>
       {picking && (
@@ -529,8 +531,15 @@ function PendingRow({ o, picking, selected, onSelect, onOpen, onMenu }: { o: Pen
         </span>
       </Td>
       <Td right mono className="text-fg-2">
-        <Tip content={`${t("desk.op.now", { price: fmtPrice(o.symbol, cur) })}`}>
-          <span tabIndex={0}>{t("desk.pos.pipsAway", { n: dist.toFixed(1) })}</span>
+        <span dir="ltr">{fmtPrice(o.symbol, cur)}</span>
+      </Td>
+      <Td right mono className="text-fg-2">
+        {/* which way the market has to move to reach the order: a limit may now be waiting on either side of it */}
+        <Tip content={t(rise ? "desk.pos.reach.rise" : "desk.pos.reach.fall", { price: fmtPrice(o.symbol, o.price) })}>
+          <span tabIndex={0} className="inline-flex items-center gap-1">
+            {rise ? <ArrowUp className="size-3 text-up" /> : <ArrowDown className="size-3 text-down" />}
+            {t("desk.pos.pipsAway", { n: dist.toFixed(1) })}
+          </span>
         </Tip>
       </Td>
       <Td right mono className={o.sl !== undefined ? "text-down" : "text-fg-3"}>

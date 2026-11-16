@@ -149,6 +149,21 @@ export function marginState(level: number, a: TradingAccount): "ok" | "low" | "c
 export type OrderType = "market" | "limit" | "stop" | "stop-limit";
 export type Expiry = "GTC" | "Today" | "Date";
 
+/**
+ * Which way the market has to move to reach a pending order's price (the engine's `Reach`).
+ *
+ * A limit order may be placed on either side of the market, so its price alone no longer says what it is waiting
+ * for: a buy limit above the market is a breakout entry that waits for a rise, not an order that fills at once.
+ * The engine decides the direction when the order is placed or repriced and sends it with the order.
+ */
+export type Reach = "rise" | "fall";
+
+/** Where an order of this kind and side waits when nothing else says: below the market for a buy limit and a sell
+ *  stop, above it for the other two. Orders placed before flexible limits carry no direction of their own. */
+export const conventionalReach = (type: Exclude<OrderType, "market">, side: "buy" | "sell"): Reach => ((type === "limit") === (side === "buy") ? "fall" : "rise");
+
+export const orderReach = (o: { type: Exclude<OrderType, "market">; side: "buy" | "sell"; reach?: Reach }): Reach => o.reach ?? conventionalReach(o.type, o.side);
+
 export interface PendingOrder {
   ticket: string;
   login: string;
@@ -157,6 +172,8 @@ export interface PendingOrder {
   type: Exclude<OrderType, "market">;
   volume: number;
   price: number;
+  /** the way the market must move to reach `price` (absent on orders from before flexible limits) */
+  reach?: Reach;
   stopLimit?: number;
   sl?: number;
   tp?: number;

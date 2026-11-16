@@ -64,6 +64,8 @@ export interface EngOrder {
   price: number;
   stopLimit: number | null;
   triggered: boolean;
+  /** "rise" | "fall": which way the market must move to reach the order (missing on an older engine) */
+  reach?: string;
   sl: number | null;
   tp: number | null;
   trailingPoints: number | null;

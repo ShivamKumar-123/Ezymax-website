@@ -128,18 +128,24 @@ export function stopProblem(which: "sl" | "tp", side: "buy" | "sell", ref: numbe
 }
 
 /**
- * Which side of the market a pending order's entry must sit on, the trade engine's own rule (engine/trade.rs): a
- * limit waits for a better price than the market, a stop waits for a worse one, both measured against the price the
- * order would open at - the Ask for a buy, the Bid for a sell. A stop-limit is triggered by its stop price, so it
- * follows the stop rule.
+ * Which side of the market a pending order's entry may sit on, the trade engine's own rule (engine/trade.rs),
+ * measured against the price the order would open at - the Ask for a buy, the Bid for a sell.
+ *
+ * A limit may wait on either side: below the market for the conventional better price, above it to buy a breakout
+ * (and the mirror for a sell). Only the market itself is refused, because an order there would fill the moment it
+ * was placed. A stop keeps its one lawful side - above the market to buy, below it to sell - or it would be a
+ * limit. A stop-limit is triggered by its stop price, so it follows the stop rule.
  *
  * `gap` is the symbol's stops level. Placing a new order has to clear it; `modify_order` does not ask for it, so a
  * drag of an order that already exists passes 0 rather than refusing a price the server would take.
  */
 export function pendingProblem(type: OrderType, side: "buy" | "sell", mkt: number, price: number, gap = 0): { key: MessageKey; at: number } | null {
-  const buy = side === "buy";
-  // a buy limit and a sell stop sit below the market; a sell limit and a buy stop sit above it
-  const below = (type === "limit") === buy;
+  if (type === "limit") {
+    if (price < mkt - gap || price > mkt + gap) return null;
+    // the nearer edge of the band, so the message names the price the trader was heading for
+    return price < mkt ? { key: "chart.line.bad.pendBelow", at: mkt - gap } : { key: "chart.line.bad.pendAbove", at: mkt + gap };
+  }
+  const below = side === "sell";
   const at = below ? mkt - gap : mkt + gap;
   if (below ? price < at : price > at) return null;
   return { key: below ? "chart.line.bad.pendBelow" : "chart.line.bad.pendAbove", at };

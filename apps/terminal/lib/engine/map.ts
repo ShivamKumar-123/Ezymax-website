@@ -124,6 +124,8 @@ export function mapOrder(o: EngOrder): PendingOrder {
     volume: o.volume,
     price: triggered && o.stopLimit !== null ? o.stopLimit : o.price,
     stopLimit: !triggered && o.stopLimit !== null ? o.stopLimit : undefined,
+    // a triggered stop-limit waits for its limit price the conventional way, which is what the engine sends
+    reach: o.reach === "rise" || o.reach === "fall" ? o.reach : undefined,
     sl: opt(o.sl),
     tp: opt(o.tp),
     trailing: o.trailingPoints ? o.trailingPoints * pointSize(o.symbol) : undefined,

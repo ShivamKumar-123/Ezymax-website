@@ -15,11 +15,13 @@ import {
   accCcy,
   accMoney,
   fmtPrice,
+  conventionalReach,
   fmtVol,
   marginRequired,
   nextTicket,
   pointSize,
   profitAt,
+  orderReach,
   profitUsd,
   roundPrice,
   serverTime,
@@ -28,6 +30,7 @@ import {
   type Expiry,
   type OrderType,
   type PendingOrder,
+  type Reach,
   type TClosed,
   type TPosition,
   type Timeframe,
@@ -876,9 +879,11 @@ export function TerminalProvider({ initialSession, engineSessions, guestMode, ch
 
       const price = roundPrice(o.symbol, o.price ?? (o.side === "buy" ? q.ask : q.bid));
       const ref = o.side === "buy" ? q.ask : q.bid;
-      const typeOk =
-        o.type === "limit" ? (o.side === "buy" ? price < ref : price > ref) : o.side === "buy" ? price > ref : price < ref;
+      // a limit may wait on either side of the market, a stop only on its own; the side it is placed on is what
+      // decides which way the market has to move to reach it (engine/trade.rs place_order)
+      const typeOk = o.type === "limit" ? price !== ref : o.side === "buy" ? price > ref : price < ref;
       if (!typeOk) return fail(desc, "Invalid price");
+      const reach: Reach = o.type === "limit" ? (price > ref ? "rise" : "fall") : conventionalReach(o.type as Exclude<OrderType, "market">, o.side);
       if (o.type === "stop-limit" && o.stopLimit !== undefined && (o.side === "buy" ? o.stopLimit > price : o.stopLimit < price)) return fail(desc, "Invalid stop-limit price");
       if (!validStops(o.side, o.type === "stop-limit" ? (o.stopLimit ?? price) : price, o.sl, o.tp)) return fail(desc, "Invalid stops");
       const oco = o.ocoPrice !== undefined ? uid() : undefined;
@@ -890,6 +895,7 @@ export function TerminalProvider({ initialSession, engineSessions, guestMode, ch
         type: o.type as PendingOrder["type"],
         volume: vol,
         price,
+        reach,
         stopLimit: o.type === "stop-limit" ? roundPrice(o.symbol, o.stopLimit ?? price) : undefined,
         sl: o.sl,
         tp: o.tp,
@@ -1032,10 +1038,12 @@ export function TerminalProvider({ initialSession, engineSessions, guestMode, ch
       const ref = o.side === "buy" ? q.ask : q.bid;
       const text = `modify order #${ticket} ${PENDING_LABEL(o)} ${fmtVol(o.volume)} ${o.symbol} at ${fmtPrice(o.symbol, price)}`;
       if (!isMarketOpen(o.symbol)) return marketClosed(`'${o.login}': ${text}`);
-      const typeOk = o.type === "limit" ? (o.side === "buy" ? price < ref : price > ref) : o.side === "buy" ? price > ref : price < ref;
+      const typeOk = o.type === "limit" ? price !== ref : o.side === "buy" ? price > ref : price < ref;
       if (!typeOk) return fail(text, "Invalid price");
       if (!validStops(o.side, price, sl, tp)) return fail(text, "Invalid stops");
-      commit((c) => ({ ...c, pendings: c.pendings.map((x) => (x.ticket === ticket ? { ...x, price, sl, tp } : x)) }));
+      // the new price decides afresh which way the market has to move to reach it
+      const reach: Reach = o.type === "limit" ? (price > ref ? "rise" : "fall") : conventionalReach(o.type, o.side);
+      commit((c) => ({ ...c, pendings: c.pendings.map((x) => (x.ticket === ticket ? { ...x, price, sl, tp, reach } : x)) }));
       log("Trade", `'${o.login}': ${text} done`);
       toast.success(tr("order.toast.orderModified", { ticket }), { description: tr("order.toast.orderAtDesc", { label: tr(pendingLabelKey(o)), price: fmtPrice(o.symbol, price) }) });
       return true;
@@ -1455,10 +1463,12 @@ export function TerminalProvider({ initialSession, engineSessions, guestMode, ch
         for (const o of engine ? [] : coreRef.current.pendings) {
           if (o.symbol !== q.symbol) continue;
           const ref = o.side === "buy" ? q.ask : q.bid;
-          const hit = o.type === "limit" ? (o.side === "buy" ? ref <= o.price : ref >= o.price) : o.side === "buy" ? ref >= o.price : ref <= o.price;
+          // the order's own direction, not its kind: a limit placed above the market waits for a rise to it
+          const hit = orderReach(o) === "rise" ? ref >= o.price : ref <= o.price;
           if (!hit) continue;
           if (o.type === "stop-limit") {
-            const lim: PendingOrder = { ...o, type: "limit", price: o.stopLimit ?? o.price, stopLimit: undefined };
+            // the limit leg sits at or beyond the stop, so the market has to come back to it the conventional way
+            const lim: PendingOrder = { ...o, type: "limit", price: o.stopLimit ?? o.price, stopLimit: undefined, reach: conventionalReach("limit", o.side) };
             commit((cc) => ({ ...cc, pendings: cc.pendings.map((x) => (x.ticket === o.ticket ? lim : x)) }));
             log("Trade", `'${o.login}': order #${o.ticket} ${o.side} stop limit ${o.symbol} activated, ${o.side} limit at ${fmtPrice(o.symbol, lim.price)} placed`);
             continue;
