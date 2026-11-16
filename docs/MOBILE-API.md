@@ -201,6 +201,13 @@ Signing out of the gateway stops trading at once, because every trade call re-ch
 | `POST trade/options/explain` | "Explain it to me": `{locale, strategy}` → `{configured, text}` |
 | `POST trade/ai-trader` | `{prompt, symbol?, timeframe?}` → `{configured, result: {status, questions, assumptions, strategy}, warnings}` |
 
+A **limit** order may be placed on either side of the market: below it for the conventional better price, above it
+to enter a breakout (and the mirror for a sell). Only a price at the market itself is refused, since the order would
+fill the moment it was placed. A **stop** still has to be above the market to buy and below it to sell. Every pending
+order comes back with `reach`: `"rise"` when the market has to rise to reach it and `"fall"` when it has to fall,
+decided when the order is placed and again when its price is changed - so a buy limit above the market waits for the
+market to come up to it instead of filling at once.
+
 AI calls cost money. They need a live, non-view-only session and are limited to 10 a minute and 200 a day per
 client:
 - `401 signin`;

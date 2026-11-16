@@ -2,11 +2,12 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Archive, ArchiveRestore, ArrowLeftRight, Ban, CandlestickChart, CirclePause, CirclePlay, Coins, Gauge as GaugeIcon, Gift, Layers, List, Lock, LockOpen, MoreHorizontal, RefreshCw, Search, ShieldAlert, SlidersHorizontal, UserRound, Wallet } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowDown, ArrowLeftRight, ArrowUp, Ban, CandlestickChart, CirclePause, CirclePlay, Coins, Gauge as GaugeIcon, Gift, Layers, List, Lock, LockOpen, MoreHorizontal, RefreshCw, Search, ShieldAlert, SlidersHorizontal, UserRound, Wallet } from "lucide-react";
 import { Button, Card, Chip, DataTable, Dialog, EmptyState, Field, Input, KpiCard, Menu, PageHeader, Reveal, Segmented, SymbolCell, Tabs, Toggle, cn, formatNumber, type Column } from "@ezymex/ui";
 import { ErrorState, FilterSelect, Pager, TableSkeleton, ago, qs, useApi, useDebounced, useNow, when } from "@/components/live/kit";
 import { useCan, useStaff } from "@/components/staff-session";
 import { BulkDialog, BulkMenu, CloseAccountDialog, ReopenAccountDialog, type BulkKind } from "./account-ops";
+import { orderReach } from "@ezymex/mock/admin-trading";
 import { MiniClient, SideChip, fmtPrice } from "@/components/trading/shared";
 import { BookChip, DeskDialog, MetaTile } from "@/components/trading-desk/kit";
 import { CreateTradeDrawer } from "@/components/trading-desk/create-trade";
@@ -505,6 +506,17 @@ function OrdersList({ rows }: { rows: DeskOrder[] }) {
     { key: "s", header: "Symbol", cell: (r) => <SymbolCell symbol={r.symbol} size={20} sub={r.type} /> },
     { key: "v", header: "Volume", align: "right", cell: (r) => <span className="k-num font-mono text-[12px]">{r.volume}</span> },
     { key: "p", header: "Price", align: "right", cell: (r) => <span className="k-num font-mono text-[12px]">{fmtPrice(r.symbol, r.price)}</span> },
+    // a limit may now wait on either side of the market, so the type no longer tells a dealer which way it waits
+    {
+      key: "w",
+      header: "Waits for",
+      cell: (r) =>
+        orderReach(r) === "rise" ? (
+          <span className="inline-flex items-center gap-1 text-[12px] text-up"><ArrowUp className="size-3" /> rise</span>
+        ) : (
+          <span className="inline-flex items-center gap-1 text-[12px] text-down"><ArrowDown className="size-3" /> fall</span>
+        ),
+    },
     { key: "e", header: "Expiry", cell: (r) => <span className="text-[12px] text-fg-2">{r.expiry}</span> },
   ];
   return <DataTable columns={cols} rows={rows} dense pageSize={10} rowKey={(r) => r.ticket} empty={<EmptyState title="No pending orders" text="Limit, stop and stop-limit orders appear here." illustration="receipt" className="py-8" />} />;

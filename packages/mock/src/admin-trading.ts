@@ -110,7 +110,18 @@ export interface AdminOrder {
   group: TradingGroup;
   source?: OrderSource;
   comment?: string;
+  /** the way the market must move to reach the order (the engine's `reach`) */
+  reach?: "rise" | "fall";
 }
+
+/**
+ * Which way the market has to move to reach a pending order.
+ *
+ * A limit may be placed on either side of the market, so the type alone no longer says it; the engine sends the
+ * direction with the order and this is the conventional answer for an order placed before it did.
+ */
+export const orderReach = (o: Pick<AdminOrder, "type" | "reach">): "rise" | "fall" =>
+  o.reach ?? (o.type === "Buy Limit" || o.type === "Sell Stop" || o.type === "Sell Stop Limit" ? "fall" : "rise");
 
 export const ADMIN_ORDERS: AdminOrder[] = (() => {
   const r = seeded(33120);
