@@ -145,7 +145,7 @@ pub async fn max_ids(pool: &PgPool) -> anyhow::Result<(i64, i64, i64, i64, i64)>
                 GREATEST((SELECT max(id) FROM deals), 2000000) AS deal,
                 COALESCE((SELECT max(id) FROM ledger_txns), 0) AS txn,
                 GREATEST((SELECT max(login) FROM accounts WHERE kind = 'live'), 10000000) AS live,
-                GREATEST((SELECT max(login) FROM accounts WHERE kind = 'demo'), 50000000) AS demo",
+                GREATEST((SELECT max(login) FROM accounts WHERE kind = 'demo'), 50000000) AS demo", // model::DEMO_LOGIN_BASE
     )
     .fetch_one(pool)
     .await?;

@@ -25,6 +25,7 @@ use serde_json::{Value, json};
 use sqlx::{PgPool, Row};
 use std::time::Duration;
 
+use crate::model::AccountKind;
 use crate::social::wallet::WalletClient;
 
 /// Queues a notification for `user_id` (no-op on a repeated `dedupe_key`).
@@ -47,6 +48,19 @@ pub async fn enqueue_or_log(pool: &PgPool, tenant_id: i64, user_id: i64, kind: &
     }
 }
 
+/// Is this notice about a demo account?
+///
+/// Demo trading is where most of the platform's notices come from - in a month, 768 stop losses and 722 opened
+/// trades on demo against 556 and 906 on real money - and one mailbox carrying all of it is what had outbound
+/// sending suspended twice in November 2026. So a demo account's notices stay in the app: the bell still shows
+/// every one of them, and the relay is kept for the mail that matters, like sign-in codes and real-money alerts.
+fn about_a_demo_account(data: &Value) -> bool {
+    data.get("data")
+        .and_then(|d| d.get("login"))
+        .and_then(Value::as_i64)
+        .is_some_and(|login| AccountKind::of_login(login) == AccountKind::Demo)
+}
+
 /// The support `/v1/notify` body of an outbox row.
 pub fn notify_body(kind: &str, user_id: i64, data: &Value, dedupe_key: &str) -> Value {
     let mut b = json!({
@@ -61,7 +75,7 @@ pub fn notify_body(kind: &str, user_id: i64, data: &Value, dedupe_key: &str) -> 
             b[k] = json!(v);
         }
     }
-    if data.get("email").and_then(Value::as_bool) == Some(false) {
+    if data.get("email").and_then(Value::as_bool) == Some(false) || about_a_demo_account(data) {
         b["email"] = json!(false);
     }
     b
@@ -151,6 +165,17 @@ pub async fn flush(pool: &PgPool, client: &WalletClient) -> usize {
 mod tests {
     use super::notify_body;
     use serde_json::json;
+
+    #[test]
+    fn a_demo_account_is_told_in_the_app_and_not_by_email() {
+        let demo = json!({"title": "Stop-out on account 50000334", "data": {"login": 50_000_334, "symbol": "EURUSD"}});
+        assert_eq!(super::notify_body("trading.stop_out", 7, &demo, "k1")["email"], false);
+        let live = json!({"title": "Stop-out on account 10000334", "data": {"login": 10_000_334, "symbol": "EURUSD"}});
+        assert!(super::notify_body("trading.stop_out", 7, &live, "k2").get("email").is_none(), "a real account keeps its preference");
+        // a notice with no account behind it is nobody's demo
+        let plain = json!({"title": "Welcome", "data": {}});
+        assert!(super::notify_body("account.opened", 7, &plain, "k3").get("email").is_none());
+    }
 
     #[test]
     fn builds_the_support_body() {

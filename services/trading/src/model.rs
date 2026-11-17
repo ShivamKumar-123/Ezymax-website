@@ -139,7 +139,14 @@ pub enum AccountKind {
     Demo,
 }
 
+/// Demo logins are handed out from here up, live ones from 10 000 000 (`persist::max_ids`).
+pub const DEMO_LOGIN_BASE: i64 = 50_000_000;
+
 impl AccountKind {
+    /// Which kind a login belongs to, by the range it came from.
+    pub fn of_login(login: i64) -> AccountKind {
+        if login >= DEMO_LOGIN_BASE { AccountKind::Demo } else { AccountKind::Live }
+    }
     pub fn as_str(self) -> &'static str {
         match self {
             AccountKind::Live => "live",
