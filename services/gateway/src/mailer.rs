@@ -3,6 +3,10 @@
 //! (IP-authenticated relay such as smtp-relay.gmail.com). Sending runs in the background so request
 //! latency (and therefore timing) does not depend on the mail server.
 //!
+//! A relay that drops the connection is not an answer about the client's address, so every email is tried
+//! again (`Tries`), and a second relay takes over when `SMTP_FALLBACK_HOST` names one. Sign-in codes went
+//! missing on 11, 16 and 17 November 2026 because one broken TLS connection was the end of the matter.
+//!
 //! Every email has a plain-text and an HTML part. The Ezymex logo is embedded inline (cid:), so it shows
 //! without remote images and without the web apps being publicly reachable.
 
@@ -30,8 +34,73 @@ const GOLD: &str = "#e9b949";
 #[derive(Clone)]
 pub struct Mailer {
     transport: AsyncSmtpTransport<Tokio1Executor>,
+    /// Second relay, used when the first will not take a message (`SMTP_FALLBACK_HOST`).
+    backup: Option<AsyncSmtpTransport<Tokio1Executor>>,
     from: Mailbox,
     links: Links,
+}
+
+/// How hard to try before giving up on a message.
+#[derive(Clone, Copy, PartialEq, Debug)]
+enum Tries {
+    /// Somebody is sitting in front of the screen waiting for this email: a sign-in code, a reset, a
+    /// verification. Keep at it for about three minutes, which still fits inside the five minutes the
+    /// shortest code lives.
+    Waiting,
+    /// Sent while a request is held open, so it cannot wait: one quick second try.
+    Quick,
+}
+
+impl Tries {
+    /// Seconds to wait before each attempt (the first is immediate).
+    fn pauses(self) -> &'static [u64] {
+        match self {
+            Tries::Waiting => &[0, 3, 12, 45, 120],
+            Tries::Quick => &[0, 2],
+        }
+    }
+}
+
+/// Is this failure worth another try?
+///
+/// A rejected recipient is final - the address does not exist, or its mailbox is full - and trying again only
+/// annoys the relay. Everything else says nothing about this message: a dropped connection, a TLS session that
+/// ended early, a throttle, an authentication hiccup, the whole mailbox suspended. Hostinger has done all of
+/// those to us, and each one cost a client their sign-in code.
+fn worth_another_try(error: &str) -> bool {
+    let e = error.to_ascii_lowercase();
+    ![
+        "5.1.1", // user unknown
+        "5.1.3", // bad address syntax
+        "5.2.1", // mailbox disabled
+        "5.2.2", // mailbox full
+        "user unknown",
+        "no such user",
+        "does not exist",
+        "mailbox full",
+        "mailbox unavailable",
+        "recipient address rejected",
+        "reserved for documentation", // RFC 2606 test domains
+    ]
+    .iter()
+    .any(|m| e.contains(m))
+}
+
+/// One SMTP relay from its settings: port 465 implicit TLS, anything else STARTTLS, and no login at all
+/// without a user (a relay that trusts the server's IP, such as Google Workspace).
+fn relay(s: &SmtpSettings<'_>, hello_domain: &str) -> anyhow::Result<AsyncSmtpTransport<Tokio1Executor>> {
+    let builder = if s.port == 465 {
+        AsyncSmtpTransport::<Tokio1Executor>::relay(s.host)?
+    } else {
+        AsyncSmtpTransport::<Tokio1Executor>::starttls_relay(s.host)?
+    };
+    // Greet the relay with our sending domain (Google's IP relay expects a domain of the Workspace).
+    let hello = ClientId::Domain(hello_domain.to_string());
+    let mut builder = builder.port(s.port).hello_name(hello).timeout(Some(std::time::Duration::from_secs(20)));
+    if !s.user.is_empty() {
+        builder = builder.credentials(Credentials::new(s.user.to_string(), s.password.to_string()));
+    }
+    Ok(builder.build())
 }
 
 /// Public URLs used in email buttons and the footer.
@@ -52,26 +121,24 @@ pub struct SmtpSettings<'a> {
 }
 
 impl Mailer {
-    pub fn new(s: SmtpSettings, links: Links) -> anyhow::Result<Self> {
-        let builder = if s.port == 465 {
-            AsyncSmtpTransport::<Tokio1Executor>::relay(s.host)?
-        } else {
-            AsyncSmtpTransport::<Tokio1Executor>::starttls_relay(s.host)?
-        };
+    /// `backup` is the relay to fall back on; without one, a provider that stops taking our mail stops sign-in.
+    pub fn new(s: SmtpSettings, backup: Option<SmtpSettings>, links: Links) -> anyhow::Result<Self> {
         let from: Mailbox = s.from.parse()?;
-        // Greet the relay with our sending domain (Google's IP relay expects a domain of the Workspace).
-        let hello = ClientId::Domain(from.email.domain().to_string());
-        let mut builder = builder.port(s.port).hello_name(hello).timeout(Some(std::time::Duration::from_secs(20)));
-        // No user = relay trusted by the server's IP (e.g. Google Workspace SMTP relay); no password is stored.
-        if !s.user.is_empty() {
-            builder = builder.credentials(Credentials::new(s.user.to_string(), s.password.to_string()));
-        }
-        Ok(Self { transport: builder.build(), from, links })
+        let domain = from.email.domain().to_string();
+        let transport = relay(&s, &domain)?;
+        let backup = backup.as_ref().map(|b| relay(b, &domain)).transpose()?;
+        Ok(Self { transport, backup, from, links })
     }
 
     /// Checks the SMTP connection (used once at startup so a bad setup shows up in the log immediately).
     pub async fn test_connection(&self) -> anyhow::Result<bool> {
         Ok(self.transport.test_connection().await?)
+    }
+
+    /// The same check for the backup relay, or `None` when none is configured.
+    pub async fn test_backup(&self) -> Option<anyhow::Result<bool>> {
+        let b = self.backup.as_ref()?;
+        Some(b.test_connection().await.map_err(Into::into))
     }
 
     /// `detail` names the change being confirmed (step-up codes only).
@@ -269,8 +336,50 @@ impl Mailer {
                             .singlepart(logo),
                     ),
             )?;
-        self.transport.send(msg).await?;
-        Ok(())
+        self.deliver(msg, to, Tries::Waiting).await
+    }
+
+    /// Hands a message to a relay, trying again while the client could still use it.
+    ///
+    /// Each attempt offers the message to the first relay and then, if it is refused, to the backup. The
+    /// message is only dropped once a relay says the recipient itself is wrong, or the tries run out - never
+    /// because one connection broke.
+    async fn deliver(&self, msg: Message, to: &str, tries: Tries) -> anyhow::Result<()> {
+        let masked = crate::validate::mask_email(to);
+        let mut last = String::new();
+        let pauses = tries.pauses();
+        for (i, pause) in pauses.iter().enumerate() {
+            if *pause > 0 {
+                tokio::time::sleep(std::time::Duration::from_secs(*pause)).await;
+            }
+            for (name, transport) in self.relays() {
+                match transport.send(msg.clone()).await {
+                    Ok(_) => {
+                        if i > 0 || name != "primary" {
+                            tracing::warn!(to = %masked, attempt = i + 1, relay = name, "the email went out after the first try failed");
+                        }
+                        return Ok(());
+                    }
+                    Err(e) => {
+                        last = e.to_string();
+                        if !worth_another_try(&last) {
+                            return Err(anyhow::anyhow!(last));
+                        }
+                        tracing::warn!(to = %masked, attempt = i + 1, of = pauses.len(), relay = name, error = %last, "the relay did not take the email; trying again");
+                    }
+                }
+            }
+        }
+        Err(anyhow::anyhow!(last))
+    }
+
+    /// The relays to offer a message to, in order.
+    fn relays(&self) -> Vec<(&'static str, &AsyncSmtpTransport<Tokio1Executor>)> {
+        let mut v: Vec<(&'static str, &AsyncSmtpTransport<Tokio1Executor>)> = vec![("primary", &self.transport)];
+        if let Some(b) = &self.backup {
+            v.push(("backup", b));
+        }
+        v
     }
 
     /// The shared frame (crates/mailframe). Each template writes its heading as the first `<h1>` of its body; the
@@ -423,8 +532,36 @@ impl Mailer {
             alt.singlepart(html_part)
         };
         let msg = Message::builder().from(from).reply_to(reply_to).to(to.parse()?).subject(&m.subject).multipart(alt)?;
-        self.transport.send(msg).await?;
-        Ok(())
+        // sent from a request that is being held open, so this one cannot sit through the long schedule
+        self.deliver(msg, to, Tries::Quick).await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{worth_another_try, Tries};
+
+    #[test]
+    fn a_broken_connection_is_told_from_a_wrong_address() {
+        // the relay, not the recipient: the code is still worth sending
+        assert!(worth_another_try("network error: peer closed connection without sending TLS close_notify"));
+        assert!(worth_another_try("permanent error (554): 5.7.1 Outbound sending is disabled for this account"));
+        assert!(worth_another_try("transient error (421): 4.7.0 Try again later"));
+        assert!(worth_another_try("Connection error: tls handshake eof"));
+        assert!(worth_another_try("timed out"));
+        // this address will never work, however often we ask
+        assert!(!worth_another_try("permanent error (550): 5.1.1 <nope@gmail.com> User unknown"));
+        assert!(!worth_another_try("permanent error (552): 5.2.2 Mailbox full"));
+        assert!(!worth_another_try("permanent error (554): 5.7.1 Recipient domain is reserved for documentation (RFC 2606)"));
+    }
+
+    #[test]
+    fn a_waiting_client_is_given_three_minutes_a_held_request_two_seconds() {
+        let waiting: u64 = Tries::Waiting.pauses().iter().sum();
+        assert!(waiting >= 150 && waiting < 300, "inside the five minutes the shortest code lives, got {waiting}s");
+        assert!(Tries::Waiting.pauses().len() > Tries::Quick.pauses().len());
+        assert!(Tries::Quick.pauses().iter().sum::<u64>() <= 5, "a held-open request cannot wait");
+        assert_eq!(Tries::Waiting.pauses()[0], 0, "the first try is immediate");
     }
 }
 

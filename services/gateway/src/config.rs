@@ -20,6 +20,13 @@ pub struct Config {
     pub smtp_user: String,
     pub smtp_password: String,
     pub smtp_from: String,
+    /// A second relay to fall back on when the first refuses a message (`SMTP_FALLBACK_HOST`, empty = none).
+    /// Hostinger suspended our mailbox twice in November 2026 and every sign-in code sent in those hours was
+    /// lost; with a fallback configured, codes keep going out.
+    pub smtp_fallback_host: String,
+    pub smtp_fallback_port: u16,
+    pub smtp_fallback_user: String,
+    pub smtp_fallback_password: String,
     /// Public URLs and support address used in emails.
     pub site_url: String,
     pub app_url: String,
@@ -70,6 +77,10 @@ impl fmt::Debug for Config {
             .field("smtp_user", &self.smtp_user)
             .field("smtp_password", &redact(&self.smtp_password))
             .field("smtp_from", &self.smtp_from)
+            .field("smtp_fallback_host", &self.smtp_fallback_host)
+            .field("smtp_fallback_port", &self.smtp_fallback_port)
+            .field("smtp_fallback_user", &self.smtp_fallback_user)
+            .field("smtp_fallback_password", &redact(&self.smtp_fallback_password))
             .field("site_url", &self.site_url)
             .field("app_url", &self.app_url)
             .field("trade_url", &self.trade_url)
@@ -112,6 +123,10 @@ impl Config {
             smtp_user: var("SMTP_USER", ""),
             smtp_password: var("SMTP_PASSWORD", ""),
             smtp_from: var("SMTP_FROM", "Ezymex <no-reply@ezymex.com>"),
+            smtp_fallback_host: var("SMTP_FALLBACK_HOST", ""),
+            smtp_fallback_port: var("SMTP_FALLBACK_PORT", "587").parse().unwrap_or(587),
+            smtp_fallback_user: var("SMTP_FALLBACK_USER", ""),
+            smtp_fallback_password: var("SMTP_FALLBACK_PASSWORD", ""),
             site_url: var("PUBLIC_SITE_URL", "https://ezymex.com"),
             app_url: var("PUBLIC_APP_URL", "https://app.ezymex.com"),
             trade_url: var("PUBLIC_TRADE_URL", "https://trade.ezymex.com"),

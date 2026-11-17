@@ -78,13 +78,20 @@ async fn main() -> anyhow::Result<()> {
     kyc::init();
 
     let mailer = if cfg.smtp_configured {
+        let fallback = (!cfg.smtp_fallback_host.is_empty()).then(|| mailer::SmtpSettings {
+            host: &cfg.smtp_fallback_host,
+            port: cfg.smtp_fallback_port,
+            user: &cfg.smtp_fallback_user,
+            password: &cfg.smtp_fallback_password,
+            from: &cfg.smtp_from,
+        });
         let m = mailer::Mailer::new(mailer::SmtpSettings {
             host: &cfg.smtp_host,
             port: cfg.smtp_port,
             user: &cfg.smtp_user,
             password: &cfg.smtp_password,
             from: &cfg.smtp_from,
-        }, mailer::Links {
+        }, fallback, mailer::Links {
             site: cfg.site_url.clone(),
             app: cfg.app_url.clone(),
             trade: cfg.trade_url.clone(),
@@ -94,6 +101,13 @@ async fn main() -> anyhow::Result<()> {
             Ok(true) => tracing::info!(host = %cfg.smtp_host, "SMTP login ok"),
             Ok(false) => tracing::error!(host = %cfg.smtp_host, "SMTP server did not accept the connection"),
             Err(e) => tracing::error!(host = %cfg.smtp_host, error = %e, "SMTP connection failed"),
+        }
+        match m.test_backup().await {
+            Some(Ok(true)) => tracing::info!(host = %cfg.smtp_fallback_host, "fallback SMTP login ok"),
+            Some(Ok(false)) => tracing::error!(host = %cfg.smtp_fallback_host, "fallback SMTP server did not accept the connection"),
+            Some(Err(e)) => tracing::error!(host = %cfg.smtp_fallback_host, error = %e, "fallback SMTP connection failed"),
+            // nothing to fall back on: a provider that stops taking our mail stops sign-in codes with it
+            None => tracing::warn!("no fallback SMTP relay configured (SMTP_FALLBACK_HOST)"),
         }
         Some(m)
     } else {
