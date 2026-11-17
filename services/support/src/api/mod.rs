@@ -98,7 +98,7 @@ pub fn router(st: AppState) -> Router {
 
 async fn health(State(st): State<AppState>) -> impl IntoResponse {
     let db = sqlx::query_scalar::<_, i32>("SELECT 1").fetch_one(&st.pool).await.is_ok();
-    Json(json!({"status": if db { "ok" } else { "degraded" }, "db": db, "service": "support", "ai": !st.cfg.anthropic_key.is_empty(), "smtp": st.mailer.is_some()}))
+    Json(json!({"status": if db { "ok" } else { "degraded" }, "db": db, "service": "support", "ai": !st.cfg.anthropic_key.is_empty(), "smtp": st.mailer.is_some(), "mailPaused": st.mail_block().is_some()}))
 }
 
 async fn internal_only(State(st): State<AppState>, req: Request, next: Next) -> Response {

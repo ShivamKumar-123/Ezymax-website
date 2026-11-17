@@ -151,6 +151,16 @@ pub struct AppState {
     pub wake_mail: Arc<Notify>,
     /// One bot answer at a time per conversation.
     pub bot_locks: Arc<Mutex<HashMap<i64, Arc<tokio::sync::Mutex<()>>>>>,
+    /// Set when the relay refused a message for a reason that has nothing to do with the recipient; see
+    /// [`crate::notify::flush_outbox`].
+    mail_block: Arc<Mutex<Option<MailBlock>>>,
+}
+
+/// The relay turning us away: when it started and what it said.
+#[derive(Clone, Debug)]
+pub struct MailBlock {
+    pub since: chrono::DateTime<chrono::Utc>,
+    pub error: String,
 }
 
 impl AppState {
@@ -175,6 +185,34 @@ impl AppState {
                 }
             }
         };
-        Self { pool, cfg: Arc::new(cfg), http, hub: Hub::default(), limiter: Limiter::default(), mailer, wake_mail: Arc::new(Notify::new()), bot_locks: Default::default() }
+        Self {
+            pool,
+            cfg: Arc::new(cfg),
+            http,
+            hub: Hub::default(),
+            limiter: Limiter::default(),
+            mailer,
+            wake_mail: Arc::new(Notify::new()),
+            bot_locks: Default::default(),
+            mail_block: Default::default(),
+        }
+    }
+
+    /// The relay is turning every message away (since when, and what it said).
+    pub fn mail_block(&self) -> Option<MailBlock> {
+        self.mail_block.lock().unwrap().clone()
+    }
+
+    /// Remembers a refusal, keeping the time of the first one in a run so the Back Office can say how long mail
+    /// has been stuck.
+    pub fn set_mail_block(&self, error: &str) {
+        let mut b = self.mail_block.lock().unwrap();
+        let since = b.as_ref().map(|x| x.since).unwrap_or_else(chrono::Utc::now);
+        *b = Some(MailBlock { since, error: error.chars().take(300).collect() });
+    }
+
+    /// The relay took a message: whatever was wrong is over.
+    pub fn clear_mail_block(&self) -> Option<MailBlock> {
+        self.mail_block.lock().unwrap().take()
     }
 }

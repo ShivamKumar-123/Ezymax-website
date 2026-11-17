@@ -405,6 +405,37 @@ pub fn is_bulk(kind: &str) -> bool {
     BULK_KINDS.iter().any(|p| like(p, kind))
 }
 
+/// How long the outbox waits before trying the relay again after it refused a message outright.
+const RELAY_RETRY_SECS: i64 = 300;
+
+/// Is this the relay turning us away, rather than one bad address?
+///
+/// Hostinger suspended outbound sending for the whole mailbox on 5 and again on 16 November 2026. Every queued
+/// message then burned its five attempts against a relay that was never going to take it and was dropped as
+/// failed: clients lost sign-in codes, stop-out notices and a withdrawal confirmation that nobody re-sent. A
+/// refusal like that says nothing about the recipient, so the message is kept, the outbox stops for a while, and
+/// sending picks up by itself when the relay answers again.
+pub fn relay_refusal(error: &str) -> bool {
+    let e = error.to_ascii_lowercase();
+    [
+        "outbound sending is disabled", // Hostinger, the whole mailbox
+        "[sdc] blocked",                // MailChannels, the relay behind it
+        "sending limit",
+        "rate limit",
+        "too many messages",
+        "authentication",
+        "535 ", // bad credentials
+        "421 ", // service not available
+        "connection",
+        "timed out",
+        "timeout",
+        "tls",
+        "dns",
+    ]
+    .iter()
+    .any(|m| e.contains(m))
+}
+
 /// Announcements still allowed in this hour.
 async fn bulk_budget(st: &AppState) -> anyhow::Result<i64> {
     let used: i64 = sqlx::query_scalar("SELECT count(*) FROM email_outbox WHERE status = 'sent' AND sent_at > now() - interval '1 hour' AND kind LIKE ANY($1)")
@@ -419,6 +450,12 @@ async fn bulk_budget(st: &AppState) -> anyhow::Result<i64> {
 /// Transactional mail first and in full; announcements only up to what [`BULK_PER_HOUR`] leaves, the rest on a
 /// later pass.
 pub async fn flush_outbox(st: &AppState) -> anyhow::Result<usize> {
+    // the relay refused us a moment ago: everything stays in the queue until it is worth another try
+    if let Some(b) = st.mail_block()
+        && (Utc::now() - b.since).num_seconds() < RELAY_RETRY_SECS
+    {
+        return Ok(0);
+    }
     let mut rows = sqlx::query(
         "SELECT id, to_addr, subject, text_body, html_body, kind, attempts FROM email_outbox
          WHERE status = 'pending' AND NOT (kind LIKE ANY($1)) ORDER BY id LIMIT 50",
@@ -454,15 +491,26 @@ pub async fn flush_outbox(st: &AppState) -> anyhow::Result<usize> {
             }
             Some(m) => match m.send(&to, &subject, &r.get::<String, _>("text_body"), &r.get::<String, _>("html_body")).await {
                 Ok(answer) => {
+                    if let Some(b) = st.clear_mail_block() {
+                        tracing::info!(stuck_since = %b.since, "the relay is taking mail again");
+                    }
                     sqlx::query("UPDATE email_outbox SET status = 'sent', sent_at = now(), attempts = attempts + 1, provider_message_id = $2 WHERE id = $1").bind(id).bind(&answer).execute(&st.pool).await?;
                 }
                 Err(e) => {
+                    let msg = e.to_string();
+                    if relay_refusal(&msg) {
+                        // the recipient is blameless: keep the message, keep its attempts, and stop for now
+                        st.set_mail_block(&msg);
+                        tracing::error!(error = %msg, id, kind = %kind, "the relay refused us: email paused, nothing dropped");
+                        sqlx::query("UPDATE email_outbox SET last_error = $2 WHERE id = $1").bind(id).bind(msg.chars().take(500).collect::<String>()).execute(&st.pool).await?;
+                        return Ok(0);
+                    }
                     let failed = attempts + 1 >= 5;
-                    tracing::warn!(error = %e, id, attempts = attempts + 1, "email send failed");
+                    tracing::warn!(error = %msg, id, attempts = attempts + 1, "email send failed");
                     sqlx::query("UPDATE email_outbox SET status = CASE WHEN $2 THEN 'failed' ELSE 'pending' END, attempts = attempts + 1, last_error = $3 WHERE id = $1")
                         .bind(id)
                         .bind(failed)
-                        .bind(e.to_string().chars().take(500).collect::<String>())
+                        .bind(msg.chars().take(500).collect::<String>())
                         .execute(&st.pool)
                         .await?;
                 }
@@ -523,6 +571,21 @@ pub async fn clear(st: &AppState, tenant: &str, audience: &str, recipient: &str)
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_relay_turning_us_away_is_told_from_a_bad_address() {
+        // the whole mailbox is refused: keep the message and wait
+        assert!(relay_refusal("permanent error (554): 5.7.1 Outbound sending is disabled for this account"));
+        assert!(relay_refusal("permanent error (550): 5.7.1 [SDC] Blocked by MailChannels"));
+        assert!(relay_refusal("Connection error: tls handshake eof"));
+        assert!(relay_refusal("network error: peer closed connection without sending TLS close_notify"));
+        assert!(relay_refusal("transient error (421): 4.7.0 Try again later, sending limit reached"));
+        assert!(relay_refusal("permanent error (535): 5.7.8 Authentication credentials invalid"));
+        // this one address is wrong: the message is the problem, not the relay
+        assert!(!relay_refusal("permanent error (554): 5.7.1 Recipient domain is reserved for documentation (RFC 2606) and cannot receive mail"));
+        assert!(!relay_refusal("permanent error (550): 5.1.1 User unknown"));
+        assert!(!relay_refusal("permanent error (552): 5.2.2 Mailbox full"));
+    }
 
     #[test]
     fn announcements_are_paced_and_transactional_mail_is_not() {

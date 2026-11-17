@@ -15,6 +15,7 @@ import { ago, errMsg, sapi, usePerms } from "./common";
 type Stats = {
   total: number; sent: number; failed: number; pending: number; logged: number; today: number; todaySent: number; todayFailed: number; week: number; birthdayMonth: number;
   successRate: number; smtp: boolean; enabled: boolean;
+  relayPaused?: boolean; relaySince?: string | null; relayError?: string | null;
   byKind: { kind: string; n: number; sent: number; failed: number }[];
   byDay: { day: string; sent: number; failed: number }[];
 };
@@ -80,6 +81,15 @@ function Overview() {
       {!s.enabled && (
         <div className="flex items-center gap-2 rounded-[12px] border border-down/30 bg-down-soft px-3 py-2 text-[12.5px] text-down">
           <MailX className="size-4 shrink-0" /> Notification emails are switched off (Switches tab). Security notices still go.
+        </div>
+      )}
+      {s.relayPaused && (
+        <div className="flex items-start gap-2 rounded-[12px] border border-down/30 bg-down-soft px-3 py-2 text-[12.5px] text-down">
+          <MailX className="mt-0.5 size-4 shrink-0" />
+          <span>
+            Sending is paused since {when(s.relaySince ?? null)}: the relay is refusing every message, so nothing is being dropped and the queue keeps growing. It tries again every
+            five minutes. {s.relayError ? <span className="text-fg-2">Relay said: {s.relayError}</span> : null}
+          </span>
         </div>
       )}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
