@@ -388,6 +388,12 @@ pub async fn queue_email(st: &AppState, tenant: &str, to: &str, subject: &str, t
 /// and a sign-in code is never the message the relay turns down.
 pub const BULK_PER_HOUR: i64 = 60;
 
+/// Seconds between two announcement emails. The hourly budget alone let the first minutes of every hour send
+/// all sixty at once - nine a minute - and that burst is what MailChannels called "too many emails per minute"
+/// when it blocked the mailbox on 20 November 2026 (Hostinger support, Marija). One a minute, evenly, is the
+/// same sixty an hour without the burst.
+pub const BULK_MIN_GAP_SECS: i64 = 60;
+
 /// `LIKE` patterns for announcement mail, used by both [`is_bulk`] and the outbox query, so the two cannot drift.
 pub const BULK_KINDS: [&str; 3] = ["%.announcement", "marketing.%", "system.broadcast"];
 
@@ -437,6 +443,15 @@ pub fn relay_refusal(error: &str) -> bool {
 }
 
 /// Announcements still allowed in this hour.
+/// Has it been [`BULK_MIN_GAP_SECS`] since the last announcement went out?
+async fn bulk_slot_open(st: &AppState) -> anyhow::Result<bool> {
+    let last: Option<DateTime<Utc>> = sqlx::query_scalar("SELECT max(sent_at) FROM email_outbox WHERE status = 'sent' AND kind LIKE ANY($1)")
+        .bind(&BULK_KINDS[..])
+        .fetch_one(&st.pool)
+        .await?;
+    Ok(last.is_none_or(|t| (Utc::now() - t).num_seconds() >= BULK_MIN_GAP_SECS))
+}
+
 async fn bulk_budget(st: &AppState) -> anyhow::Result<i64> {
     let used: i64 = sqlx::query_scalar("SELECT count(*) FROM email_outbox WHERE status = 'sent' AND sent_at > now() - interval '1 hour' AND kind LIKE ANY($1)")
         .bind(&BULK_KINDS[..])
@@ -465,7 +480,8 @@ pub async fn flush_outbox(st: &AppState) -> anyhow::Result<usize> {
     .await?;
     let room = 50 - rows.len() as i64;
     if room > 0 {
-        let take = bulk_budget(st).await?.min(room);
+        // one announcement per slot, and only while the hour's budget lasts: sixty an hour, never sixty at once
+        let take = if bulk_budget(st).await? > 0 && bulk_slot_open(st).await? { 1 } else { 0 };
         if take > 0 {
             let bulk = sqlx::query(
                 "SELECT id, to_addr, subject, text_body, html_body, kind, attempts FROM email_outbox
