@@ -182,6 +182,8 @@ export interface NetworkClient {
   tier: number;
   name: string;
   email: string | null;
+  /** with the email: the number as the client typed it, null while the broker masks clients */
+  phone: string | null;
   country: string;
   joinedAt: string;
   kycStatus: string;

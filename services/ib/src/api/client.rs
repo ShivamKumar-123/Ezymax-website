@@ -415,7 +415,7 @@ pub async fn clients(State(st): State<AppState>, u: UserCtx, Query(q): Query<Cli
             SELECT user_id, 1 FROM members WHERE tenant = $1 AND parent_id = $2
             UNION ALL SELECT m.user_id, d.tier + 1 FROM members m JOIN down d ON m.parent_id = d.user_id WHERE d.tier < $3
          )
-         SELECT m.user_id, d.tier, m.first_name, m.last_name, m.email, m.country, m.joined_at, m.kyc_status, m.level_key, m.parent_id,
+         SELECT m.user_id, d.tier, m.first_name, m.last_name, m.email, m.phone, m.country, m.joined_at, m.kyc_status, m.level_key, m.parent_id,
                 m.first_deposit_at, m.first_deposit_amount, m.first_trade_at, c.name AS campaign,
                 (SELECT count(*) FROM members x WHERE x.parent_id = m.user_id) AS referrals,
                 (SELECT coalesce(sum(x.lots), 0) FROM deals x WHERE x.user_id = m.user_id AND x.qualified AND NOT x.reversed AND x.close_time >= $4) AS lots_month,
@@ -453,6 +453,8 @@ pub async fn clients(State(st): State<AppState>, u: UserCtx, Query(q): Query<Cli
                 "id": r.get::<i64, _>("user_id"), "tier": r.get::<i32, _>("tier"),
                 "name": shown_name(&r.get::<String, _>("first_name"), &r.get::<String, _>("last_name"), full),
                 "email": if full { json!(r.get::<String, _>("email")) } else { Value::Null },
+                // the phone goes with the email: shown in full, withheld when the broker masks clients
+                "phone": if full { json!(r.get::<String, _>("phone")) } else { Value::Null },
                 "country": r.get::<String, _>("country"), "joinedAt": r.get::<DateTime<Utc>, _>("joined_at"),
                 "kycStatus": r.get::<String, _>("kyc_status"), "level": r.get::<String, _>("level_key"), "parentId": r.get::<Option<i64>, _>("parent_id"),
                 "campaign": r.get::<Option<String>, _>("campaign"), "referrals": r.get::<i64, _>("referrals"),

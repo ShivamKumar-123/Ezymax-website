@@ -109,6 +109,8 @@ pub async fn referral_users(State(st): State<AppState>, q: Result<Query<Referral
                 "first_name": first,
                 "last_name": last,
                 "country": r.get::<String, _>("country"),
+                // dial code and number together, the way the client typed it; a deleted client has none
+                "phone": if deleted { String::new() } else { phone.clone() },
                 "referral_code": r.get::<String, _>("referral_code"),
                 // the code from before name-free codes (2026-10-10); links with it still attribute
                 "referral_code_legacy": r.get::<Option<String>, _>("referral_code_legacy"),

@@ -467,6 +467,7 @@ class PClient {
     required this.tier,
     required this.name,
     this.email,
+    this.phone,
     required this.country,
     required this.joinedAt,
     required this.kycStatus,
@@ -488,6 +489,9 @@ class PClient {
   final int id, tier;
   final String name;
   final String? email;
+
+  /// With the email: the number as the client typed it, null while the broker masks clients.
+  final String? phone;
   final String country, joinedAt, kycStatus, level;
   final int? parentId;
   final String? campaign;
@@ -508,6 +512,7 @@ class PClient {
     tier: _i(j['tier']),
     name: _s(j['name']),
     email: _sn(j['email']),
+    phone: _sn(j['phone']),
     country: _s(j['country']),
     joinedAt: _s(j['joinedAt']),
     kycStatus: _s(j['kycStatus'], 'unverified'),

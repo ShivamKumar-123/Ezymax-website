@@ -48,10 +48,10 @@ pub async fn upsert_member(st: &AppState, u: &GwUser) -> anyhow::Result<()> {
     let row = sqlx::query(
         "INSERT INTO members (user_id, tenant, email, first_name, last_name, country, referral_code, parent_id, signup_parent_id,
                               campaign_id, campaign_raw, level_key, kyc_status, gateway_status, email_verified, identity, ips, devices,
-                              joined_at, changed_at, referral_code_legacy)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+                              joined_at, changed_at, referral_code_legacy, phone)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
          ON CONFLICT (user_id) DO UPDATE SET
-            email = EXCLUDED.email, first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name, country = EXCLUDED.country,
+            email = EXCLUDED.email, first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name, country = EXCLUDED.country, phone = EXCLUDED.phone,
             referral_code = EXCLUDED.referral_code, referral_code_legacy = EXCLUDED.referral_code_legacy, kyc_status = EXCLUDED.kyc_status, gateway_status = EXCLUDED.gateway_status,
             email_verified = EXCLUDED.email_verified, identity = EXCLUDED.identity, ips = EXCLUDED.ips, devices = EXCLUDED.devices,
             changed_at = EXCLUDED.changed_at, synced_at = now()
@@ -77,6 +77,7 @@ pub async fn upsert_member(st: &AppState, u: &GwUser) -> anyhow::Result<()> {
     .bind(u.created_at)
     .bind(u.changed_at)
     .bind(&u.referral_code_legacy)
+    .bind(&u.phone)
     .fetch_one(&st.pool)
     .await?;
     let inserted: bool = row.get("inserted");

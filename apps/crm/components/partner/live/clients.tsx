@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { EyeOff, Filter, Mail, UserPlus } from "lucide-react";
+import { Download, EyeOff, Filter, Mail, Phone, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import {
   Button,
@@ -41,6 +41,7 @@ import {
   type PartnerApiError,
 } from "./api";
 import { tr, useT } from "@ezymex/i18n/react";
+import { downloadTablePdf } from "@ezymex/ui/table-pdf";
 import {
   CardEmpty,
   ClientStatusChip,
@@ -274,6 +275,13 @@ function ClientDialog({
               <CopyButton value={c.email} label={t("common.email")} />
             </div>
           )}
+          {c.phone && (
+            <div className="k-row flex items-center gap-3 px-3.5 py-2.5 text-[13px]">
+              <Phone className="size-4 shrink-0 text-fg-3" />
+              <span className="k-num min-w-0 flex-1 truncate" dir="ltr">{c.phone}</span>
+              <CopyButton value={c.phone} label={t("common.phone")} />
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {(
@@ -418,6 +426,35 @@ export function LivePartnerClients() {
   const viaName = (c: NetworkClient) =>
     c.parentId ? (byId.get(c.parentId)?.name ?? null) : null;
 
+  // The clients who signed up with this partner's own link, as a sheet to keep or print. Built from the rows the
+  // page already holds (packages/ui table-pdf), so it shows exactly what the broker lets the partner see: a
+  // masked broker gives initials and the client id, no email and no phone.
+  const downloadDirect = () => {
+    const direct = all.filter((c) => c.tier === 1);
+    if (direct.length === 0) {
+      toast.error(t("partner.clients.pdfNothing"), { description: t("partner.clients.pdfNothingDesc") });
+      return;
+    }
+    const headers = [t("partner.client"), t("common.email"), t("common.phone"), t("common.country"), t("partner.clients.joined"), t("common.status")];
+    const rows = direct.map((c) => [
+      full ? c.name : `${c.name} ${clientId(c.id)}`,
+      c.email ?? "",
+      c.phone ?? "",
+      c.country,
+      fmtDate(c.joinedAt),
+      tr.dyn(`partner.clientStatus.${c.status}`, c.status),
+    ]);
+    const file = "ezymex-direct-referrals";
+    const { dropped } = downloadTablePdf(file, headers, rows, {
+      title: t("partner.clients.pdfTitle"),
+      subtitle: t("partner.clients.pdfSubtitle", { count: direct.length, date: fmtDate(new Date().toISOString()) }),
+      footer: "Ezymex",
+    });
+    toast.success(t("partner.clients.pdfDone", { file: `${file}.pdf` }), {
+      description: dropped > 0 ? t("partner.clients.pdfDropped") : t("partner.clients.pdfDoneDesc", { count: direct.length }),
+    });
+  };
+
   const columns: Column<NetworkClient>[] = [
     {
       key: "name",
@@ -535,20 +572,27 @@ export function LivePartnerClients() {
         title={TITLE}
         subtitle={subtitle}
         actions={
-          link ? (
-            <Button
-              variant="ember"
-              size="lg"
-              onClick={() => {
-                navigator.clipboard?.writeText(link).catch(() => {});
-                toast.success(t("partner.toast.linkCopied"), {
-                  description: shortUrl(link),
-                });
-              }}
-            >
-              <UserPlus /> {t("partner.clients.invite")}
-            </Button>
-          ) : undefined
+          <div className="flex flex-wrap items-center gap-2">
+            {direct > 0 && (
+              <Button variant="surface" size="lg" onClick={downloadDirect}>
+                <Download /> {t("partner.clients.downloadPdf")}
+              </Button>
+            )}
+            {link && (
+              <Button
+                variant="ember"
+                size="lg"
+                onClick={() => {
+                  navigator.clipboard?.writeText(link).catch(() => {});
+                  toast.success(t("partner.toast.linkCopied"), {
+                    description: shortUrl(link),
+                  });
+                }}
+              >
+                <UserPlus /> {t("partner.clients.invite")}
+              </Button>
+            )}
+          </div>
         }
       />
 

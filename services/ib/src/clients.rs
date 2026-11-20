@@ -31,6 +31,9 @@ pub struct GwUser {
     pub last_name: String,
     #[serde(default)]
     pub country: String,
+    /// Dial code and number together ("+91…"); empty for a deleted client or a feed from before 2026-11-20.
+    #[serde(default)]
+    pub phone: String,
     pub referral_code: String,
     /// The code from before name-free codes (first name + digits); links with it still attribute.
     #[serde(default)]

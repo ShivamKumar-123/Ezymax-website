@@ -493,6 +493,22 @@ class _ClientSheet extends StatelessWidget {
             ),
           ),
         ],
+        if (c.phone != null && c.phone!.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          PartnerRow(
+            padding: const EdgeInsetsDirectional.fromSTEB(14, 4, 4, 4),
+            child: Row(
+              children: [
+                Icon(LucideIcons.phone, size: 16, color: k.fg3),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(c.phone!, maxLines: 1, overflow: TextOverflow.ellipsis, textDirection: TextDirection.ltr, style: context.text.callout),
+                ),
+                PartnerCopyButton(value: c.phone!, size: 40),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 14),
         for (var i = 0; i < stats.length; i += 2) ...[
           if (i > 0) const SizedBox(height: 8),
