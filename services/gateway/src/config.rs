@@ -94,6 +94,16 @@ fn var(key: &str, default: &str) -> String {
     env::var(key).ok().filter(|v| !v.trim().is_empty()).unwrap_or_else(|| default.to_string())
 }
 
+/// The gateway's own relay setting when one is given, else the platform-wide one.
+///
+/// Sign-in codes are the mail that cannot wait, and the shared mailbox is the one that gets blocked when the
+/// support service sends a broadcast through it. `GATEWAY_SMTP_*` lets the codes travel by a relay of their own
+/// (Brevo since 21 Nov 2026) while notifications, statements and announcements keep the shared `SMTP_*` one.
+fn relay_var(key: &str, default: &str) -> String {
+    let own = var(&format!("GATEWAY_{key}"), "");
+    if own.is_empty() { var(key, default) } else { own }
+}
+
 impl Config {
     pub fn from_env() -> anyhow::Result<Self> {
         let session_secret = var("SESSION_SECRET", "");
@@ -105,7 +115,7 @@ impl Config {
         if internal_token.is_empty() && !dev_mode {
             anyhow::bail!("GATEWAY_INTERNAL_TOKEN is required in production");
         }
-        let smtp_configured = !var("SMTP_HOST", "").is_empty();
+        let smtp_configured = !relay_var("SMTP_HOST", "").is_empty();
         let password_only = match var("LOGIN_EMAIL_CODES", "auto").as_str() {
             "off" => true,
             "on" => false,
@@ -118,11 +128,11 @@ impl Config {
             internal_token,
             dev_mode,
             smtp_configured,
-            smtp_host: var("SMTP_HOST", ""),
-            smtp_port: var("SMTP_PORT", "465").parse().unwrap_or(465),
-            smtp_user: var("SMTP_USER", ""),
-            smtp_password: var("SMTP_PASSWORD", ""),
-            smtp_from: var("SMTP_FROM", "Ezymex <no-reply@ezymex.com>"),
+            smtp_host: relay_var("SMTP_HOST", ""),
+            smtp_port: relay_var("SMTP_PORT", "465").parse().unwrap_or(465),
+            smtp_user: relay_var("SMTP_USER", ""),
+            smtp_password: relay_var("SMTP_PASSWORD", ""),
+            smtp_from: relay_var("SMTP_FROM", "Ezymex <no-reply@ezymex.com>"),
             smtp_fallback_host: var("SMTP_FALLBACK_HOST", ""),
             smtp_fallback_port: var("SMTP_FALLBACK_PORT", "587").parse().unwrap_or(587),
             smtp_fallback_user: var("SMTP_FALLBACK_USER", ""),
