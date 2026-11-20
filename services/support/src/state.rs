@@ -156,10 +156,15 @@ pub struct AppState {
     mail_block: Arc<Mutex<Option<MailBlock>>>,
 }
 
-/// The relay turning us away: when it started and what it said.
+/// The relay turning us away: when it started, when to try again, and what it said.
 #[derive(Clone, Debug)]
 pub struct MailBlock {
     pub since: chrono::DateTime<chrono::Utc>,
+    /// No attempt before this. It moves forward on every refusal, so a relay that keeps saying no is asked
+    /// once per pause, not once per tick: on 20 Nov 2026 the pause ran out after five minutes and the outbox
+    /// then knocked every 30 seconds for forty minutes, each knock another strike against a mailbox that
+    /// Hostinger had already suspended for volume.
+    pub until: chrono::DateTime<chrono::Utc>,
     pub error: String,
 }
 
@@ -203,12 +208,13 @@ impl AppState {
         self.mail_block.lock().unwrap().clone()
     }
 
-    /// Remembers a refusal, keeping the time of the first one in a run so the Back Office can say how long mail
-    /// has been stuck.
-    pub fn set_mail_block(&self, error: &str) {
+    /// Remembers a refusal: the first one in a run keeps its time so the Back Office can say how long mail has
+    /// been stuck, and every one pushes the next attempt `retry_secs` away.
+    pub fn set_mail_block(&self, error: &str, retry_secs: i64) {
         let mut b = self.mail_block.lock().unwrap();
-        let since = b.as_ref().map(|x| x.since).unwrap_or_else(chrono::Utc::now);
-        *b = Some(MailBlock { since, error: error.chars().take(300).collect() });
+        let now = chrono::Utc::now();
+        let since = b.as_ref().map(|x| x.since).unwrap_or(now);
+        *b = Some(MailBlock { since, until: now + chrono::Duration::seconds(retry_secs), error: error.chars().take(300).collect() });
     }
 
     /// The relay took a message: whatever was wrong is over.

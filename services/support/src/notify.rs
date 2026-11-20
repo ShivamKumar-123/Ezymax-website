@@ -452,7 +452,7 @@ async fn bulk_budget(st: &AppState) -> anyhow::Result<i64> {
 pub async fn flush_outbox(st: &AppState) -> anyhow::Result<usize> {
     // the relay refused us a moment ago: everything stays in the queue until it is worth another try
     if let Some(b) = st.mail_block()
-        && (Utc::now() - b.since).num_seconds() < RELAY_RETRY_SECS
+        && Utc::now() < b.until
     {
         return Ok(0);
     }
@@ -500,7 +500,7 @@ pub async fn flush_outbox(st: &AppState) -> anyhow::Result<usize> {
                     let msg = e.to_string();
                     if relay_refusal(&msg) {
                         // the recipient is blameless: keep the message, keep its attempts, and stop for now
-                        st.set_mail_block(&msg);
+                        st.set_mail_block(&msg, RELAY_RETRY_SECS);
                         tracing::error!(error = %msg, id, kind = %kind, "the relay refused us: email paused, nothing dropped");
                         sqlx::query("UPDATE email_outbox SET last_error = $2 WHERE id = $1").bind(id).bind(msg.chars().take(500).collect::<String>()).execute(&st.pool).await?;
                         return Ok(0);
