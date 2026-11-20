@@ -412,7 +412,9 @@ pub fn is_bulk(kind: &str) -> bool {
 }
 
 /// How long the outbox waits before trying the relay again after it refused a message outright.
-const RELAY_RETRY_SECS: i64 = 300;
+/// Fifteen minutes, not five: Hostinger's guidance while a MailChannels block clears (20 Nov 2026) is to stop
+/// automatic retries for the one to two hours it takes, so a stuck relay is probed a handful of times, not dozens.
+const RELAY_RETRY_SECS: i64 = 900;
 
 /// Is this the relay turning us away, rather than one bad address?
 ///
@@ -462,7 +464,7 @@ async fn bulk_budget(st: &AppState) -> anyhow::Result<i64> {
 
 /// Sends pending emails (SMTP, or logged as `DEV email` without SMTP). Returns how many were processed.
 ///
-/// Transactional mail first and in full; announcements only up to what [`BULK_PER_HOUR`] leaves, the rest on a
+/// Transactional mail first, one per tick; announcements only when none is waiting and [`BULK_PER_HOUR`] allows, the rest on a
 /// later pass.
 pub async fn flush_outbox(st: &AppState) -> anyhow::Result<usize> {
     // the relay refused us a moment ago: everything stays in the queue until it is worth another try
@@ -473,14 +475,16 @@ pub async fn flush_outbox(st: &AppState) -> anyhow::Result<usize> {
     }
     let mut rows = sqlx::query(
         "SELECT id, to_addr, subject, text_body, html_body, kind, attempts FROM email_outbox
-         WHERE status = 'pending' AND NOT (kind LIKE ANY($1)) ORDER BY id LIMIT 50",
+         WHERE status = 'pending' AND NOT (kind LIKE ANY($1)) ORDER BY id LIMIT 1",
     )
     .bind(&BULK_KINDS[..])
     .fetch_all(&st.pool)
     .await?;
-    let room = 50 - rows.len() as i64;
+    // One email per tick, every 30 seconds, whatever its kind: the relay's sustained ceiling is about two a minute
+    // (Hostinger, 20 Nov 2026) and a burst of stop-out notices is as much a burst as a broadcast. Transactional
+    // mail takes the slot first; an announcement only when there is none waiting, one per minute, within the hour's budget.
+    let room = 1 - rows.len() as i64;
     if room > 0 {
-        // one announcement per slot, and only while the hour's budget lasts: sixty an hour, never sixty at once
         let take = if bulk_budget(st).await? > 0 && bulk_slot_open(st).await? { 1 } else { 0 };
         if take > 0 {
             let bulk = sqlx::query(
