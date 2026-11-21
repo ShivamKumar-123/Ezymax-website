@@ -308,7 +308,15 @@ class _TerminalChartState extends ConsumerState<TerminalChart> {
       if (gen == _gen) _c.send(ChartCmd.quote(bid, ask));
     });
     if (q != null) _unsubs.add(q);
-    final fresh = await src.history(tf);
+    var fresh = await src.history(tf);
+    // A timeframe picked in the page's header parks the library's request until our `bars` arrive, so a history
+    // call that comes back empty (a dropped connection, a timed-out request) must not be the end of it: the chart
+    // would sit on its spinner until the trader picked the timeframe again. Try again, briefly, before giving up.
+    for (var attempt = 1; fresh.isEmpty && attempt <= 3; attempt++) {
+      await Future<void>.delayed(Duration(seconds: attempt));
+      if (!mounted || gen != _gen) return;
+      fresh = await src.history(tf);
+    }
     if (!mounted || gen != _gen) return;
     if (fresh.isNotEmpty) {
       // keep a forming bar that arrived while the request was in flight
@@ -317,6 +325,10 @@ class _TerminalChartState extends ConsumerState<TerminalChart> {
       if (last != null && last.t > _data.last.t) _data.add(last);
       _cache[key] = [..._data];
       _c.send(ChartCmd.bars(_data.map(_bar).toList()));
+    } else if (_data.isEmpty) {
+      // nothing to show and nothing cached: answer the page anyway, so the library stops waiting and shows "no
+      // data" instead of a spinner, and asks again on the next symbol or timeframe
+      _c.send(ChartCmd.bars(const []));
     }
     final b = src.bars(tf, (bar) {
       if (gen != _gen || _data.isEmpty) return;
