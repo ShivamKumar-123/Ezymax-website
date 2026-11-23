@@ -582,7 +582,20 @@ class TurnoverDeposit {
 /// The broker decides whether this applies at all; when the policy is off every client reads as eligible and
 /// nothing about it is shown. The block itself is enforced in the wallet service, not here.
 class Turnover {
-  const Turnover({required this.deposits, required this.unit, required this.required_, required this.completed, required this.remaining, required this.percent, required this.eligible, required this.enforced, required this.rows});
+  const Turnover({
+    required this.deposits,
+    required this.unit,
+    required this.required_,
+    required this.completed,
+    required this.remaining,
+    required this.percent,
+    required this.eligible,
+    required this.enforced,
+    required this.policyEnabled,
+    required this.policyMultiplier,
+    required this.policyUnit,
+    required this.rows,
+  });
 
   final String deposits;
 
@@ -596,6 +609,12 @@ class Turnover {
 
   /// Whether the broker's switch is currently on.
   final bool enforced;
+
+  /// The rule itself, for the deposit page: `policyUnit` is `lots` (multiplier = lots per 100 deposited) or
+  /// `notional` (times the deposit).
+  final bool policyEnabled;
+  final String policyMultiplier;
+  final String policyUnit;
 
   final List<TurnoverDeposit> rows;
 
@@ -611,6 +630,9 @@ class Turnover {
     percent: _int(j['completion_percentage']),
     eligible: j['eligible'] == true,
     enforced: j['enforced'] == true,
+    policyEnabled: j['policy'] is Map && (j['policy'] as Map)['enabled'] == true,
+    policyMultiplier: j['policy'] is Map ? _s0((j['policy'] as Map)['multiplier']) : '0',
+    policyUnit: j['policy'] is Map && (j['policy'] as Map)['unit'] == 'lots' ? 'lots' : 'notional',
     rows: [for (final d in _list(j['deposits'])) TurnoverDeposit.fromJson(d)],
   );
 }

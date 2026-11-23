@@ -19,9 +19,39 @@ import '../../../env.dart';
 import '../../../i18n/i18n.dart';
 import '../../../ui/ui.dart';
 import '../wallet_api.dart';
+import 'wallet_ui.dart';
 
 /// `$1,234.56`, the figures the service sends as decimal strings.
 String _usd(String v) => Fmt.money(double.tryParse(v) ?? 0);
+
+/// The rule, stated where the money comes in (port of the web's TurnoverNote): one line on the deposit page
+/// whenever the broker has the policy on, in the unit and at the rate the service reports.
+class TurnoverNote extends ConsumerWidget {
+  const TurnoverNote({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final d = ref.watch(turnoverProvider).value;
+    if (d == null || !d.policyEnabled || (double.tryParse(d.policyMultiplier) ?? 0) <= 0) return const SizedBox.shrink();
+    final k = context.k;
+    final text = d.policyUnit == 'lots'
+        ? context.t('wallet.turnover.depositNote', {'lots': d.policyMultiplier})
+        : context.t('wallet.turnover.depositNoteNotional', {'mult': d.policyMultiplier});
+    return Padding(
+      padding: const EdgeInsets.only(bottom: kWalletGap),
+      child: KCard(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(LucideIcons.target, size: 16, color: k.ember),
+            const SizedBox(width: 10),
+            Expanded(child: Text(text, style: context.text.footnote.copyWith(color: k.fg2, height: 1.35))),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 /// A volume figure in the unit the service counted it in: "0.30 lots", or dollars for the older notional rule.
 String _vol(BuildContext context, String v, String unit) =>

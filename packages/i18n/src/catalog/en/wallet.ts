@@ -608,6 +608,8 @@ const wallet = {
   "turnover.deposited": "Deposited",
   "turnover.required": "Required trading",
   "turnover.lots": "{n} lots",
+  "turnover.depositNote": "Deposits must be traded before they can be withdrawn: at least {lots} lots closed for every 100 USD deposited. Your progress is shown here under Wallet.",
+  "turnover.depositNoteNotional": "Deposits must be traded before they can be withdrawn: {mult}x the deposit in the value of positions closed. Your progress is shown here under Wallet.",
   "turnover.completed": "Completed",
   "turnover.remaining": "Remaining",
   "turnover.percentDone": "{pct}% completed",

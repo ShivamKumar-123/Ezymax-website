@@ -88,6 +88,11 @@ const SECTIONS: PolicySection[] = [
         { kind: 'bullets', items: ['Incorrect wallet addresses', 'Unsupported wallets', 'Wrong blockchain networks', 'User input errors'] },
         { kind: 'p', text: 'Transactions confirmed on the blockchain cannot be reversed.' },
       ] },
+      { kind: 'sub', n: '4.5', title: 'Trading Requirement', blocks: [
+        { kind: 'p', text: 'Funds deposited must be traded before they can be withdrawn. For every 100 USD deposited, at least 0.3 standard lots must be closed on the real trading account the deposit funds, counting the volume of closed positions only.' },
+        { kind: 'p', text: 'The requirement is fixed for each deposit at the rate in force when it is credited, applies only to deposits made from 23 November 2026, and does not apply to bonus credit, which has its own release terms. Your progress against it is shown in the Client Portal under Wallet, and a withdrawal request will state the volume still outstanding.' },
+        { kind: 'p', text: `${BRAND_NAME} may waive the requirement on a deposit at its discretion, for example where a client is unable to trade or a review has been completed.` },
+      ] },
     ],
   },
   {

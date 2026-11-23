@@ -29,6 +29,7 @@ import 'checkout_api.dart';
 import 'manual_api.dart';
 import 'wallet_api.dart';
 import 'widgets/checkout_panels.dart';
+import 'widgets/turnover.dart';
 import 'widgets/deposit_gate.dart';
 import 'widgets/deposit_panels.dart';
 import 'widgets/manual_panels.dart';
@@ -186,6 +187,8 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
         ),
         // what the dashboard banner promised, and what it takes to actually get it
         const BonusSteps(on: BonusStepsOn.deposit),
+        // the trading requirement a deposit carries, said before the money arrives
+        const TurnoverNote(),
         const SizedBox(height: kWalletGap),
         if (!valid && !cfgPending)
           if (checkoutOn || bank.isNotEmpty)

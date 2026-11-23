@@ -52,6 +52,29 @@ export function useTurnover(ms = 30_000) {
   return useWallet<Turnover>("turnover", ms);
 }
 
+/**
+ * The rule, stated where the money comes in. A requirement that holds a client's own deposit has to be known
+ * before they deposit, not discovered at Withdraw, so the deposit page says it in one line whenever the broker
+ * has the policy on - in the unit and at the rate the service reports, never a number typed here.
+ */
+export function TurnoverNote({ className }: { className?: string }) {
+  const t = useT();
+  const { data } = useTurnover(120_000);
+  if (!data?.policy.enabled || Number(data.policy.multiplier) <= 0) return null;
+  const text =
+    data.policy.unit === "lots"
+      ? t("wallet.turnover.depositNote", { lots: data.policy.multiplier })
+      : t("wallet.turnover.depositNoteNotional", { mult: data.policy.multiplier });
+  return (
+    <Card className={cn("border-line", className)}>
+      <div className="flex items-start gap-3 px-5 py-3.5 text-[12.5px] leading-relaxed text-fg-2 sm:px-6">
+        <Target className="mt-0.5 size-4 shrink-0 text-ember" />
+        <span>{text}</span>
+      </div>
+    </Card>
+  );
+}
+
 /** A requirement only matters while something is owed; a client with none should never see any of this. */
 export function owesVolume(t: Turnover | null | undefined): boolean {
   return !!t && !t.eligible && Number(t.remaining_volume) > 0;
