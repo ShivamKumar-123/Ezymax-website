@@ -234,7 +234,9 @@ const wallet = {
   "withdraw.upiError": "Enter a UPI ID like name@bank",
   // UPI is not instant like a chain transfer: the payout is made by hand from the broker's own bank, so the
   // client is told the window up front and again while they wait, instead of wondering on the second day.
-  "withdraw.upiSettle": "Payments to UPI settle within 24 hours of the request. The UTR appears here as soon as your bank has been paid.",
+  // The window is section 4.3 of the Deposit & Withdrawal Policy (ezymex.com/deposit-withdrawal), word for
+  // word: change them together or the page and the policy will promise different things.
+  "withdraw.upiSettle": "Approved payments to UPI are generally made within 24 business hours. The UTR appears here as soon as your bank has been paid.",
   "withdraw.upiNote": "We email you a code to confirm. Use a UPI ID in your own name — payments to someone else's ID are rejected at review.",
   // Said instead of the two notes above while the emailed confirmation is stood down (WITHDRAWAL_STEPUP=off):
   // promising a code that is not coming is worse than not mentioning one.
