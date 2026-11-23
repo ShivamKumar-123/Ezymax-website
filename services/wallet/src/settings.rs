@@ -22,6 +22,8 @@ pub struct Limits {
     pub turnover_enabled: bool,
     pub turnover_multiplier: D,
     pub turnover_min_deposit: D,
+    /// `lots` (the multiplier is lots per 100 deposited) or `notional` (times the deposit, in USD).
+    pub turnover_unit: String,
 }
 
 impl Limits {
@@ -37,6 +39,7 @@ impl Limits {
             "turnover_enabled": self.turnover_enabled,
             "turnover_multiplier": s(self.turnover_multiplier),
             "turnover_min_deposit": s(self.turnover_min_deposit),
+            "turnover_unit": self.turnover_unit,
         })
     }
 }
@@ -160,6 +163,7 @@ pub async fn limits(pool: &PgPool, tenant_id: i64) -> sqlx::Result<Limits> {
             turnover_enabled: r.get("turnover_enabled"),
             turnover_multiplier: r.get("turnover_multiplier"),
             turnover_min_deposit: r.get("turnover_min_deposit"),
+            turnover_unit: r.get("turnover_unit"),
         },
         None => Limits {
             withdraw_min: D::from(10),
@@ -172,6 +176,7 @@ pub async fn limits(pool: &PgPool, tenant_id: i64) -> sqlx::Result<Limits> {
             turnover_enabled: false,
             turnover_multiplier: D::ZERO,
             turnover_min_deposit: D::ZERO,
+            turnover_unit: "notional".into(),
         },
     })
 }

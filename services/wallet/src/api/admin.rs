@@ -371,6 +371,8 @@ pub struct LimitsPatch {
     turnover_multiplier: Option<D>,
     #[serde(default, deserialize_with = "crate::money::de_opt_dec")]
     turnover_min_deposit: Option<D>,
+    #[serde(default)]
+    turnover_unit: Option<String>,
     #[serde(default, deserialize_with = "de_opt_dec")]
     withdraw_fee_flat: Option<D>,
     #[serde(default, deserialize_with = "de_opt_dec")]
@@ -462,6 +464,7 @@ pub async fn update_settings(State(st): State<AppState>, s_ctx: StaffCtx, Body(b
             turnover_enabled: l.turnover_enabled.unwrap_or(cur.turnover_enabled),
             turnover_multiplier: nonneg("turnover_multiplier", l.turnover_multiplier)?.unwrap_or(cur.turnover_multiplier),
             turnover_min_deposit: nonneg("turnover_min_deposit", l.turnover_min_deposit)?.unwrap_or(cur.turnover_min_deposit),
+            turnover_unit: l.turnover_unit.map(|u| u.trim().to_lowercase()).unwrap_or(cur.turnover_unit),
         };
         if next.withdraw_min <= D::ZERO {
             return Err(ApiError::validation("withdraw_min", "The minimum withdrawal must be above 0"));
@@ -478,21 +481,31 @@ pub async fn update_settings(State(st): State<AppState>, s_ctx: StaffCtx, Body(b
         if !(5..=1440).contains(&next.intent_ttl_minutes) {
             return Err(ApiError::validation("intent_ttl_minutes", "Use 5 to 1440 minutes"));
         }
+        if !matches!(next.turnover_unit.as_str(), "notional" | "lots") {
+            return Err(ApiError::validation("turnover_unit", "The turnover unit must be lots or notional"));
+        }
         // A turnover requirement holds a client's own money against a trading target, so the ceiling is low
         // on purpose: anything beyond a few times the deposit stops being a turnover rule and becomes a trap.
-        if next.turnover_multiplier > D::TEN {
-            return Err(ApiError::validation("turnover_multiplier", "The turnover multiplier must be 10x or less"));
+        // In lots the ceiling is lower still, and for the same reason read in money: at Ezymex's spreads one
+        // lot of gold costs about 53 USD to trade, so 5 lots for every 100 deposited is already the whole
+        // deposit spent on clearing the requirement.
+        let ceiling = if next.turnover_unit == "lots" { D::from(5) } else { D::TEN };
+        if next.turnover_multiplier > ceiling {
+            return Err(ApiError::validation(
+                "turnover_multiplier",
+                if next.turnover_unit == "lots" { "Ask for 5 lots per 100 deposited or less" } else { "The turnover multiplier must be 10x or less" },
+            ));
         }
         if next.turnover_enabled && next.turnover_multiplier <= D::ZERO {
             return Err(ApiError::validation("turnover_multiplier", "Set a multiplier above 0 before turning the requirement on"));
         }
         sqlx::query(
             "INSERT INTO tenant_settings (tenant_id, withdraw_min, withdraw_max, withdraw_daily_max, withdraw_fee_flat, withdraw_fee_pct, deposit_cooldown_hours, intent_ttl_minutes,
-                 turnover_enabled, turnover_multiplier, turnover_min_deposit, updated_at, updated_by)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $10, $11, $12, now(), $9)
+                 turnover_enabled, turnover_multiplier, turnover_min_deposit, turnover_unit, updated_at, updated_by)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $10, $11, $12, $13, now(), $9)
              ON CONFLICT (tenant_id) DO UPDATE SET withdraw_min = $2, withdraw_max = $3, withdraw_daily_max = $4, withdraw_fee_flat = $5, withdraw_fee_pct = $6,
                  deposit_cooldown_hours = $7, intent_ttl_minutes = $8, turnover_enabled = $10, turnover_multiplier = $11, turnover_min_deposit = $12,
-                 updated_at = now(), updated_by = $9",
+                 turnover_unit = $13, updated_at = now(), updated_by = $9",
         )
         .bind(t)
         .bind(next.withdraw_min)
@@ -506,6 +519,7 @@ pub async fn update_settings(State(st): State<AppState>, s_ctx: StaffCtx, Body(b
         .bind(next.turnover_enabled)
         .bind(next.turnover_multiplier)
         .bind(next.turnover_min_deposit)
+        .bind(&next.turnover_unit)
         .execute(&mut *tx)
         .await?;
         audit::staff(&mut tx, &s_ctx, Entry { action: "wallet.settings.limits", target_kind: "settings", target_id: "limits".into(), reason: Some(&reason), before: Some(cur.json()), after: Some(next.json()) }).await?;

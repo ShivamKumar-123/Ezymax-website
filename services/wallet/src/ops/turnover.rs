@@ -45,33 +45,78 @@ const FEED_PAGE: i64 = 500;
 /* policy                                                             */
 /* ------------------------------------------------------------------ */
 
+/// What a requirement counts.
+///
+/// `Notional` is the US dollar value of the positions closed - lots x contract size x price. It reads like a
+/// strict rule and is not one: leverage means a single 0.01-lot gold trade is worth about 3,650 USD, so even
+/// ten times a small deposit is cleared by one click. `Lots` counts the standard lots closed, which leverage
+/// cannot inflate, and reads the multiplier per 100 units of deposit - the figure a broker writes in its
+/// terms ("0.3 lots for every 100 USD deposited"). Ezymex moved to lots on 23 November 2026.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Unit {
+    Notional,
+    Lots,
+}
+
+impl Unit {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Unit::Notional => "notional",
+            Unit::Lots => "lots",
+        }
+    }
+
+    /// An unknown unit reads as the one every row had before units existed, so a column this code has not
+    /// heard of can never quietly release a requirement.
+    pub fn parse(s: &str) -> Unit {
+        match s {
+            "lots" => Unit::Lots,
+            _ => Unit::Notional,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Policy {
     pub enabled: bool,
     pub multiplier: D,
     pub min_deposit: D,
+    pub unit: Unit,
 }
 
 impl Policy {
     /// What a deposit of `amount` has to be traded before it can leave, or `None` when this deposit raises no
     /// requirement at all.
+    ///
+    /// Rounded down, and `None` rather than zero when the rounding leaves nothing: a deposit too small to ask
+    /// anything of should raise no requirement at all, not one that is met before it is made.
     pub fn required_for(&self, amount: D) -> Option<D> {
         if !self.enabled || self.multiplier <= D::ZERO || amount < self.min_deposit || amount <= D::ZERO {
             return None;
         }
-        Some(floor_dp(amount * self.multiplier, ENGINE_DP))
+        let raw = match self.unit {
+            Unit::Notional => amount * self.multiplier,
+            Unit::Lots => amount / D::ONE_HUNDRED * self.multiplier,
+        };
+        let required = floor_dp(raw, ENGINE_DP);
+        (required > D::ZERO).then_some(required)
     }
 
     pub fn json(&self) -> Value {
-        json!({ "enabled": self.enabled, "multiplier": s(self.multiplier), "min_deposit": s(self.min_deposit) })
+        json!({ "enabled": self.enabled, "multiplier": s(self.multiplier), "min_deposit": s(self.min_deposit), "unit": self.unit.as_str() })
     }
 }
 
 pub async fn policy(pool: &PgPool, tenant_id: i64) -> sqlx::Result<Policy> {
-    let r = sqlx::query("SELECT turnover_enabled, turnover_multiplier, turnover_min_deposit FROM tenant_settings WHERE tenant_id = $1").bind(tenant_id).fetch_optional(pool).await?;
+    let r = sqlx::query("SELECT turnover_enabled, turnover_multiplier, turnover_min_deposit, turnover_unit FROM tenant_settings WHERE tenant_id = $1").bind(tenant_id).fetch_optional(pool).await?;
     Ok(match r {
-        Some(r) => Policy { enabled: r.get("turnover_enabled"), multiplier: r.get("turnover_multiplier"), min_deposit: r.get("turnover_min_deposit") },
-        None => Policy { enabled: false, multiplier: D::ZERO, min_deposit: D::ZERO },
+        Some(r) => Policy {
+            enabled: r.get("turnover_enabled"),
+            multiplier: r.get("turnover_multiplier"),
+            min_deposit: r.get("turnover_min_deposit"),
+            unit: Unit::parse(r.get::<String, _>("turnover_unit").as_str()),
+        },
+        None => Policy { enabled: false, multiplier: D::ZERO, min_deposit: D::ZERO, unit: Unit::Notional },
     })
 }
 
@@ -88,11 +133,13 @@ pub struct Summary {
     /// Whether the broker's switch is currently on. Off, the outstanding requirements are kept but hold
     /// nobody: see `met`.
     pub enforced: bool,
+    /// What `required` and `completed` are counted in.
+    pub unit: Unit,
 }
 
 impl Default for Summary {
     fn default() -> Self {
-        Summary { deposits: D::ZERO, required: D::ZERO, completed: D::ZERO, open: 0, enforced: true }
+        Summary { deposits: D::ZERO, required: D::ZERO, completed: D::ZERO, open: 0, enforced: true, unit: Unit::Notional }
     }
 }
 
@@ -132,6 +179,7 @@ impl Summary {
             "remaining_volume": s(self.remaining()),
             "completion_percentage": self.percent(),
             "open_requirements": self.open,
+            "unit": self.unit.as_str(),
             "enforced": self.enforced,
             "eligible": self.met(),
             "status": if self.met() { "completed" } else { "pending" },
@@ -146,29 +194,45 @@ impl Summary {
 /// because the work that earned the first 83% has quietly left the sum. Progress a client has made does not
 /// stop being progress. A waiver is different - the obligation was lifted, so it is gone rather than met.
 pub async fn summary(pool: &PgPool, tenant_id: i64, user_id: i64) -> sqlx::Result<Summary> {
-    let r = sqlx::query(
-        "SELECT COALESCE(sum(deposit_amount), 0) AS deposits, COALESCE(sum(required), 0) AS required,
+    let pol = policy(pool, tenant_id).await?;
+    let rows = sqlx::query(
+        "SELECT unit, COALESCE(sum(deposit_amount), 0) AS deposits, COALESCE(sum(required), 0) AS required,
                 COALESCE(sum(completed), 0) AS completed, count(*) FILTER (WHERE status = 'pending') AS open
-         FROM turnover_requirements WHERE tenant_id = $1 AND user_id = $2 AND status <> 'waived'",
+         FROM turnover_requirements WHERE tenant_id = $1 AND user_id = $2 AND status <> 'waived' GROUP BY unit",
     )
     .bind(tenant_id)
     .bind(user_id)
-    .fetch_one(pool)
+    .fetch_all(pool)
     .await?;
-    Ok(Summary {
-        deposits: r.get("deposits"),
-        required: r.get("required"),
-        completed: r.get("completed"),
-        open: r.get("open"),
-        enforced: policy(pool, tenant_id).await?.enabled,
-    })
+    let per_unit: Vec<Summary> = rows
+        .iter()
+        .map(|r| Summary {
+            deposits: r.get("deposits"),
+            required: r.get("required"),
+            completed: r.get("completed"),
+            open: r.get("open"),
+            enforced: pol.enabled,
+            unit: Unit::parse(r.get::<String, _>("unit").as_str()),
+        })
+        .collect();
+    // Lots and dollars cannot be added together, so one summary is one unit: the one still holding the gate
+    // shut, because that is the requirement the client has to act on and the answer `met` must give. A broker
+    // that never changed the unit has a single row here and this picks it. Falling back to the policy's unit
+    // keeps an empty answer talking in the units of the deposit the client is about to make.
+    if let Some(binding) = per_unit.iter().find(|x| !x.met()) {
+        return Ok(binding.clone());
+    }
+    if let Some(done) = per_unit.into_iter().find(|x| x.unit == pol.unit) {
+        return Ok(done);
+    }
+    Ok(Summary { enforced: pol.enabled, unit: pol.unit, ..Summary::default() })
 }
 
 /// Requirement by requirement, newest first: what the withdrawal modal expands into when a client has funded
 /// more than once and wants to know which deposit is holding things up.
 pub async fn breakdown(pool: &PgPool, tenant_id: i64, user_id: i64, limit: i64) -> sqlx::Result<Vec<Value>> {
     let rows = sqlx::query(
-        "SELECT id, ledger_txn_id, currency, deposit_amount, multiplier, required, completed, status, waived_reason, created_at, completed_at
+        "SELECT id, ledger_txn_id, currency, deposit_amount, multiplier, unit, required, completed, status, waived_reason, created_at, completed_at
          FROM turnover_requirements WHERE tenant_id = $1 AND user_id = $2 ORDER BY id DESC LIMIT $3",
     )
     .bind(tenant_id)
@@ -181,13 +245,15 @@ pub async fn breakdown(pool: &PgPool, tenant_id: i64, user_id: i64, limit: i64) 
         .map(|r| {
             let required: D = r.get("required");
             let completed: D = r.get("completed");
-            let one = Summary { deposits: r.get("deposit_amount"), required, completed, open: 1, enforced: true };
+            let unit = Unit::parse(r.get::<String, _>("unit").as_str());
+            let one = Summary { deposits: r.get("deposit_amount"), required, completed, open: 1, enforced: true, unit };
             json!({
                 "id": r.get::<i64, _>("id"),
                 "deposit_txn": r.get::<i64, _>("ledger_txn_id"),
                 "currency": r.get::<String, _>("currency"),
                 "deposit_amount": s(r.get("deposit_amount")),
                 "multiplier": s(r.get("multiplier")),
+                "unit": unit.as_str(),
                 "required_volume": s(required),
                 "completed_volume": s(completed),
                 "remaining_volume": s(one.remaining()),
@@ -253,7 +319,10 @@ pub async fn gate(pool: &PgPool, tenant_id: i64, user_id: i64) -> ApiResult<Summ
     }
     Err(ApiError::unprocessable(
         "turnover_pending",
-        format!("Trade {} USD more before withdrawing: your deposits require {} USD of volume and {} is done.", s(sum.remaining()), s(sum.required), s(sum.completed)),
+        match sum.unit {
+            Unit::Lots => format!("Trade {} lots more before withdrawing: your deposits require {} lots of closed trades and {} is done.", s(sum.remaining()), s(sum.required), s(sum.completed)),
+            Unit::Notional => format!("Trade {} USD more before withdrawing: your deposits require {} USD of volume and {} is done.", s(sum.remaining()), s(sum.required), s(sum.completed)),
+        },
     ))
 }
 
@@ -290,8 +359,8 @@ pub async fn deposit_tick(st: &AppState, tenant_id: i64) -> anyhow::Result<usize
         // turning the switch on applies to what comes next, never to money already in.
         if let Some(required) = pol.required_for(amount) {
             let n = sqlx::query(
-                "INSERT INTO turnover_requirements (tenant_id, user_id, ledger_txn_id, currency, deposit_amount, multiplier, required)
-                 VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (ledger_txn_id) DO NOTHING",
+                "INSERT INTO turnover_requirements (tenant_id, user_id, ledger_txn_id, currency, deposit_amount, multiplier, required, unit)
+                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (ledger_txn_id) DO NOTHING",
             )
             .bind(tenant_id)
             .bind(r.get::<i64, _>("user_id"))
@@ -300,6 +369,7 @@ pub async fn deposit_tick(st: &AppState, tenant_id: i64) -> anyhow::Result<usize
             .bind(amount)
             .bind(pol.multiplier)
             .bind(required)
+            .bind(pol.unit.as_str())
             .execute(&st.pool)
             .await?
             .rows_affected();
@@ -339,22 +409,31 @@ pub struct DealIn {
 /// client reading "deposit 1: $500 to go" is reading the deposit their next trade will actually pay down.
 /// Volume beyond every open requirement is kept on the deal but allocated nowhere - a later deposit starts its
 /// own requirement from zero, because trading done before money arrives cannot have been done to free it.
-pub async fn allocate(tx: &mut Transaction<'_, Postgres>, tenant_id: i64, d: &DealIn, notional: D) -> sqlx::Result<D> {
-    let open = sqlx::query("SELECT id, required, completed FROM turnover_requirements WHERE tenant_id = $1 AND user_id = $2 AND status = 'pending' ORDER BY id FOR UPDATE")
+pub async fn allocate(tx: &mut Transaction<'_, Postgres>, tenant_id: i64, d: &DealIn, notional: D, lots: D) -> sqlx::Result<D> {
+    let open = sqlx::query("SELECT id, unit, required, completed FROM turnover_requirements WHERE tenant_id = $1 AND user_id = $2 AND status = 'pending' ORDER BY id FOR UPDATE")
         .bind(tenant_id)
         .bind(d.user_id)
         .fetch_all(&mut **tx)
         .await?;
-    let mut left = notional;
+    // One budget per unit. A closed trade is worth both its dollars and its lots, and a requirement draws on
+    // the measure it was raised in, so the two never compete: a broker that changed the unit while a
+    // requirement was outstanding pays down both kinds from the same trade.
+    let mut left_notional = notional;
+    let mut left_lots = lots;
     let mut used = D::ZERO;
     for r in &open {
-        if left <= D::ZERO {
-            break;
+        let unit = Unit::parse(r.get::<String, _>("unit").as_str());
+        let left = match unit {
+            Unit::Notional => &mut left_notional,
+            Unit::Lots => &mut left_lots,
+        };
+        if *left <= D::ZERO {
+            continue;
         }
         let id: i64 = r.get("id");
         let required: D = r.get("required");
         let completed: D = r.get("completed");
-        let take = left.min((required - completed).max(D::ZERO));
+        let take = (*left).min((required - completed).max(D::ZERO));
         if take <= D::ZERO {
             continue;
         }
@@ -375,7 +454,7 @@ pub async fn allocate(tx: &mut Transaction<'_, Postgres>, tenant_id: i64, d: &De
             .bind(take)
             .execute(&mut **tx)
             .await?;
-        left -= take;
+        *left -= take;
         used += take;
     }
     Ok(used)
@@ -384,6 +463,7 @@ pub async fn allocate(tx: &mut Transaction<'_, Postgres>, tenant_id: i64, d: &De
 /// Records one deal and credits it. Returns None when the deal was already counted.
 pub async fn ingest(pool: &PgPool, tenant_id: i64, d: &DealIn) -> sqlx::Result<Option<D>> {
     let notional = d.notional.unwrap_or(D::ZERO).max(D::ZERO);
+    let lots = d.lots.max(D::ZERO);
     let mut tx = pool.begin().await?;
     let inserted = sqlx::query(
         "INSERT INTO turnover_volume (deal_id, tenant_id, user_id, login, symbol, lots, notional, rate, closed_at, reversed)
@@ -407,7 +487,8 @@ pub async fn ingest(pool: &PgPool, tenant_id: i64, d: &DealIn) -> sqlx::Result<O
         return Ok(None);
     }
     // a reopened deal is recorded so the feed stops offering it, but it never counts
-    let used = if d.reversed || notional <= D::ZERO { D::ZERO } else { allocate(&mut tx, tenant_id, d, notional).await? };
+    let nothing = notional <= D::ZERO && lots <= D::ZERO;
+    let used = if d.reversed || nothing { D::ZERO } else { allocate(&mut tx, tenant_id, d, notional, lots).await? };
     tx.commit().await?;
     Ok(Some(used))
 }
@@ -575,7 +656,15 @@ mod tests {
     }
 
     fn pol(enabled: bool, mult: &str, min: &str) -> Policy {
-        Policy { enabled, multiplier: d(mult), min_deposit: d(min) }
+        Policy { enabled, multiplier: d(mult), min_deposit: d(min), unit: Unit::Notional }
+    }
+
+    fn lots(enabled: bool, per_hundred: &str, min: &str) -> Policy {
+        Policy { enabled, multiplier: d(per_hundred), min_deposit: d(min), unit: Unit::Lots }
+    }
+
+    fn sum(required: &str, completed: &str, unit: Unit) -> Summary {
+        Summary { deposits: d("100"), required: d(required), completed: d(completed), open: 1, enforced: true, unit }
     }
 
     #[test]
@@ -596,20 +685,54 @@ mod tests {
     }
 
     #[test]
+    fn a_lots_requirement_is_read_per_hundred_deposited() {
+        // the owner's rule of 23 Nov 2026: 0.3 lots for every 100 USD
+        assert_eq!(lots(true, "0.3", "0").required_for(d("100")), Some(d("0.30")));
+        assert_eq!(lots(true, "0.3", "0").required_for(d("1000")), Some(d("3.00")));
+        assert_eq!(lots(true, "0.3", "0").required_for(d("10000")), Some(d("30.00")));
+        // the client's own deposit: 101 USD asks for 0.303 lots, rounded down to a size they can trade
+        assert_eq!(lots(true, "0.3", "0").required_for(d("101")), Some(d("0.30")));
+        // a deposit too small to ask anything of raises no requirement rather than one that is already met
+        assert_eq!(lots(true, "0.3", "0").required_for(d("3")), None, "0.009 lots rounds to nothing");
+        assert_eq!(lots(true, "0.3", "0").required_for(d("4")), Some(d("0.01")), "the first size that can be traded");
+    }
+
+    #[test]
+    fn lots_are_what_leverage_cannot_inflate() {
+        // Why the unit changed. One 0.01-lot gold trade is about 3,650 USD of notional, so against a 101 USD
+        // deposit even the maximum notional multiple is cleared by a single click; in lots the same trade is
+        // 0.01 of the 0.30 owed.
+        let one_gold_trade_notional = d("3650");
+        let one_gold_trade_lots = d("0.01");
+        let notional_rule = pol(true, "10", "0").required_for(d("101")).unwrap();
+        let lots_rule = lots(true, "0.3", "0").required_for(d("101")).unwrap();
+        assert!(one_gold_trade_notional > notional_rule, "one trade clears ten times the deposit");
+        assert!(one_gold_trade_lots < lots_rule, "the same trade is a thirtieth of the lots owed");
+    }
+
+    #[test]
+    fn a_summary_speaks_in_the_unit_it_counted() {
+        assert_eq!(sum("0.30", "0.18", Unit::Lots).json()["unit"], "lots");
+        assert_eq!(sum("300", "180", Unit::Notional).json()["unit"], "notional");
+        assert_eq!(sum("0.30", "0.18", Unit::Lots).remaining(), d("0.12"));
+        assert_eq!(sum("0.30", "0.18", Unit::Lots).percent(), 60);
+    }
+
+    #[test]
     fn progress_never_reads_complete_while_a_dollar_is_owed() {
-        let nearly = Summary { deposits: d("2000"), required: d("2000"), completed: d("1999.99"), open: 1, enforced: true };
+        let nearly = Summary { deposits: d("2000"), required: d("2000"), completed: d("1999.99"), open: 1, enforced: true, unit: Unit::Notional };
         assert_eq!(nearly.percent(), 99);
         assert!(!nearly.met());
-        let done = Summary { deposits: d("2000"), required: d("2000"), completed: d("2000"), open: 1, enforced: true };
+        let done = Summary { deposits: d("2000"), required: d("2000"), completed: d("2000"), open: 1, enforced: true, unit: Unit::Notional };
         assert_eq!((done.percent(), done.met()), (100, true));
         // over-trading does not overflow the bar
-        let over = Summary { deposits: d("2000"), required: d("2000"), completed: d("5000"), open: 1, enforced: true };
+        let over = Summary { deposits: d("2000"), required: d("2000"), completed: d("5000"), open: 1, enforced: true, unit: Unit::Notional };
         assert_eq!((over.percent(), over.remaining()), (100, D::ZERO));
     }
 
     #[test]
     fn turning_the_policy_off_releases_everyone_at_once() {
-        let owed = Summary { deposits: d("2000"), required: d("2000"), completed: d("100"), open: 1, enforced: true };
+        let owed = Summary { deposits: d("2000"), required: d("2000"), completed: d("100"), open: 1, enforced: true, unit: Unit::Notional };
         assert!(!owed.met(), "while it is on, the volume is owed");
         let released = Summary { enforced: false, ..owed.clone() };
         assert!(released.met(), "switching it off must let them withdraw, not leave them held");
@@ -628,7 +751,7 @@ mod tests {
     #[test]
     fn the_spec_worked_example() {
         // deposit 1 of $2,000 and deposit 2 of $1,000, $2,500 traded
-        let s = Summary { deposits: d("3000"), required: d("3000"), completed: d("2500"), open: 2, enforced: true };
+        let s = Summary { deposits: d("3000"), required: d("3000"), completed: d("2500"), open: 2, enforced: true, unit: Unit::Notional };
         assert_eq!(s.remaining(), d("500"));
         assert_eq!(s.percent(), 83);
         assert!(!s.met());
