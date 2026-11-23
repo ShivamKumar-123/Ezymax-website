@@ -79,7 +79,15 @@ pub trait Engine: Send + Sync {
 /// One row of the engine's volume feed. `notional` is absent when the engine could not value the deal in USD,
 /// and stays absent here: inventing a zero would cost the client a trade they really made.
 fn parse_deal(v: &Value) -> Option<DealIn> {
-    let dec = |k: &str| v.get(k).and_then(Value::as_str).and_then(crate::money::parse);
+    // The engine writes these as JSON numbers ("lots": 0.01), and a number read as a string is nothing: every
+    // deal came through with no lots and no value, so nothing was ever credited and the feed stood still on the
+    // first deal it could not price (found 23 Nov 2026). A number's own text goes to the decimal parser, so
+    // 0.01 stays 0.01 rather than passing through a float.
+    let dec = |k: &str| match v.get(k) {
+        Some(Value::String(s)) => crate::money::parse(s),
+        Some(Value::Number(n)) => crate::money::parse(&n.to_string()),
+        _ => None,
+    };
     Some(DealIn {
         deal: v.get("deal")?.as_i64()?,
         user_id: v.get("userId")?.as_i64()?,
@@ -92,6 +100,26 @@ fn parse_deal(v: &Value) -> Option<DealIn> {
         reversed: v.get("reversed").and_then(Value::as_bool).unwrap_or(false),
         option: v.get("option").and_then(Value::as_bool).unwrap_or(false),
     })
+}
+
+#[cfg(test)]
+mod parse_tests {
+    use super::*;
+    use std::str::FromStr;
+
+    #[test]
+    fn the_feed_sends_numbers_and_they_are_read_as_such() {
+        let v: Value = serde_json::from_str(r#"{"deal":2014203,"userId":605,"login":10000338,"symbol":"BTCUSD","lots":0.01,"notional":600.8999,"rate":1.0,"at":"2026-11-22T09:36:09.049825Z","reversed":false,"option":false}"#).unwrap();
+        let d = parse_deal(&v).expect("a well-formed row");
+        assert_eq!(d.lots, D::from_str("0.01").unwrap());
+        assert_eq!(d.notional, Some(D::from_str("600.8999").unwrap()));
+        assert_eq!(d.rate, Some(D::ONE));
+        // strings keep working, and a missing value stays missing rather than becoming zero
+        let v: Value = serde_json::from_str(r#"{"deal":1,"userId":1,"symbol":"X","lots":"2.5","at":"2026-11-22T09:36:09Z"}"#).unwrap();
+        let d = parse_deal(&v).unwrap();
+        assert_eq!(d.lots, D::from_str("2.5").unwrap());
+        assert_eq!(d.notional, None);
+    }
 }
 
 pub struct HttpEngine {
