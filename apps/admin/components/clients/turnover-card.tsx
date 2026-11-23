@@ -18,8 +18,11 @@ import { TextArea } from "@/components/config/kit";
 import { useCan } from "@/components/staff-session";
 import { ErrorState, sendJson, useApi, when } from "@/components/live/kit";
 
+type Unit = "lots" | "notional";
+
 type Requirement = {
   id: number;
+  unit: Unit;
   deposit_amount: string;
   multiplier: string;
   required_volume: string;
@@ -40,13 +43,18 @@ type Turnover = {
   completed_volume: string;
   remaining_volume: string;
   completion_percentage: number;
+  unit: Unit;
   eligible: boolean;
   deposits: Requirement[];
   history: Allocation[];
-  policy: { enabled: boolean; multiplier: string; min_deposit: string };
+  policy: { enabled: boolean; multiplier: string; min_deposit: string; unit: Unit };
 };
 
 const usd = (v: string) => `$${Number(v).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+/** A volume figure in the unit it was counted in: lots since 23 Nov 2026, dollars for requirements raised before. */
+const vol = (v: string, unit: Unit) => (unit === "lots" ? `${Number(v).toFixed(2)} lots` : usd(v));
+/** How the rule reads for one requirement: "0.3 lots per $100" or "3x the deposit". */
+const rule = (multiplier: string, unit: Unit) => (unit === "lots" ? `${multiplier} lots per $100` : `${multiplier}x the deposit`);
 
 const TONE: Record<Requirement["status"], "up" | "warn" | "neutral"> = { completed: "up", pending: "warn", waived: "neutral" };
 
@@ -79,7 +87,7 @@ function WaiveDialog({ req, onClose, onDone }: { req: Requirement | null; onClos
       onOpenChange={(o) => !o && onClose()}
       width={480}
       title={`Waive the requirement on a ${usd(req.deposit_amount)} deposit`}
-      description={`${usd(req.remaining_volume)} of volume is still owed on it. Waiving lifts that: no money moves, and the client can withdraw against this deposit.`}
+      description={`${vol(req.remaining_volume, req.unit)} is still owed on it. Waiving lifts that: no money moves, and the client can withdraw against this deposit.`}
       footer={
         <>
           <Button size="sm" variant="ghost" onClick={onClose}>
@@ -112,7 +120,7 @@ export function ClientTurnoverCard({ userId }: { userId: number }) {
     <Card>
       <CardHeader
         title="Deposit turnover"
-        subtitle={data.policy.enabled ? `${data.policy.multiplier}x each deposit${Number(data.policy.min_deposit) > 0 ? ` over ${usd(data.policy.min_deposit)}` : ""}` : "Policy is off — these are requirements raised while it was on"}
+        subtitle={data.policy.enabled ? `${rule(data.policy.multiplier, data.policy.unit)} on each deposit${Number(data.policy.min_deposit) > 0 ? ` over ${usd(data.policy.min_deposit)}` : ""}` : "Policy is off — these are requirements raised while it was on"}
         icon={<Target />}
         action={
           data.eligible ? (
@@ -120,7 +128,7 @@ export function ClientTurnoverCard({ userId }: { userId: number }) {
               <BadgeCheck className="size-3" /> Can withdraw
             </Chip>
           ) : (
-            <Chip size="sm" tone="warn">{usd(data.remaining_volume)} to trade</Chip>
+            <Chip size="sm" tone="warn">{vol(data.remaining_volume, data.unit)} to trade</Chip>
           )
         }
       />
@@ -128,9 +136,9 @@ export function ClientTurnoverCard({ userId }: { userId: number }) {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
             ["Deposits", usd(data.total_deposits)],
-            ["Required", usd(data.required_volume)],
-            ["Completed", usd(data.completed_volume)],
-            ["Remaining", usd(data.remaining_volume)],
+            ["Required", vol(data.required_volume, data.unit)],
+            ["Completed", vol(data.completed_volume, data.unit)],
+            ["Remaining", vol(data.remaining_volume, data.unit)],
           ].map(([label, value]) => (
             <div key={label} className="min-w-0">
               <div className="truncate text-[11.5px] text-fg-3">{label}</div>
@@ -145,7 +153,7 @@ export function ClientTurnoverCard({ userId }: { userId: number }) {
               <div key={r.id} className="k-row px-3.5 py-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="k-num text-[13.5px] font-medium">{usd(r.deposit_amount)}</span>
-                  <span className="text-[12px] text-fg-3">× {r.multiplier} → {usd(r.required_volume)}</span>
+                  <span className="text-[12px] text-fg-3">{rule(r.multiplier, r.unit)} → {vol(r.required_volume, r.unit)}</span>
                   <Chip size="sm" tone={TONE[r.status]}>{r.status}</Chip>
                   <span className="ms-auto text-[11.5px] text-fg-3">{when(r.created_at)}</span>
                 </div>
@@ -154,7 +162,7 @@ export function ClientTurnoverCard({ userId }: { userId: number }) {
                     <Bar pct={r.completion_percentage} />
                     <div className="mt-1 flex items-center justify-between text-[11.5px] text-fg-3">
                       <span>
-                        {usd(r.completed_volume)} of {usd(r.required_volume)} · {r.completion_percentage}%
+                        {vol(r.completed_volume, r.unit)} of {vol(r.required_volume, r.unit)} · {r.completion_percentage}%
                       </span>
                       {canWaive && (
                         <button type="button" onClick={() => setWaiving(r)} className="text-ember hover:underline" data-testid={`waive-${r.id}`}>
@@ -179,7 +187,7 @@ export function ClientTurnoverCard({ userId }: { userId: number }) {
                   <span className="w-20 shrink-0 text-fg-3">deal {h.deal_id}</span>
                   <span className="w-20 shrink-0">{h.symbol}</span>
                   <span className="w-16 shrink-0 text-fg-3">{h.lots} lots</span>
-                  <span className={cn("k-num", h.kind === "reversal" ? "text-down" : "text-fg")}>{usd(h.amount)}</span>
+                  <span className={cn("k-num", h.kind === "reversal" ? "text-down" : "text-fg")}>{vol(h.amount, data.unit)}</span>
                   <span className="ms-auto text-fg-3">{when(h.closed_at)}</span>
                 </li>
               ))}

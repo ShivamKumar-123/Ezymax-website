@@ -46,6 +46,8 @@ type Limits = {
   turnover_enabled: boolean;
   turnover_multiplier: string;
   turnover_min_deposit: string;
+  /** lots: the multiplier is lots per 100 deposited; notional: times the deposit, in USD value of positions */
+  turnover_unit: "lots" | "notional";
 };
 
 type Settings = {
@@ -277,17 +279,30 @@ export function LiveWalletSettingsPage() {
                 <div className="min-w-0">
                   <h3 className="text-[14px] font-semibold">Deposit turnover requirement</h3>
                   <p className="mt-0.5 max-w-prose text-[12.5px] leading-relaxed text-fg-3">
-                    When this is on, each new deposit asks the client to trade a matching amount of volume (deposit x multiplier, in USD notional) before they can
-                    withdraw. It applies to deposits taken from the moment you switch it on - never to money already paid in - and each deposit keeps the multiplier
-                    that was in force when it landed.
+                    When this is on, each new deposit asks the client to trade before they can withdraw: either a number of lots for every 100 deposited, or a
+                    multiple of the deposit in the USD value of the positions closed. Lots is the measure that leverage cannot inflate - one 0.01-lot gold trade
+                    is about 3,650 USD of notional, so a notional multiple is met by a single click. It applies to deposits taken from the moment you switch it on -
+                    never to money already paid in - and each deposit keeps the rule that was in force when it landed.
                   </p>
                 </div>
                 <label className="flex items-center gap-2 text-[13px]">
                   <Toggle checked={limits.turnover_enabled} onChange={(v) => canEdit && setLimits((l) => (l ? { ...l, turnover_enabled: v } : l))} /> Enabled
                 </label>
               </div>
-              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Field label="Turnover multiplier (x deposit)" hint="1.0 asks for the deposit once over. 10x is the ceiling the service accepts.">
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <Field label="Counted in" hint="Lots since 23 Nov 2026. Changing it only affects deposits from then on.">
+                  <div className="flex gap-1.5">
+                    {(["lots", "notional"] as const).map((u) => (
+                      <Button key={u} size="sm" variant={limits.turnover_unit === u ? "ember" : "surface"} disabled={!canEdit} onClick={() => setLimits((l) => (l ? { ...l, turnover_unit: u } : l))}>
+                        {u === "lots" ? "Lots" : "USD notional"}
+                      </Button>
+                    ))}
+                  </div>
+                </Field>
+                <Field
+                  label={limits.turnover_unit === "lots" ? "Lots per 100 deposited" : "Turnover multiplier (x deposit)"}
+                  hint={limits.turnover_unit === "lots" ? "0.3 asks for 0.3 lots for every 100 USD deposited. 5 is the ceiling the service accepts." : "1.0 asks for the deposit once over. 10x is the ceiling the service accepts."}
+                >
                   <Input disabled={!canEdit} value={limits.turnover_multiplier} onChange={(e) => setLimits((l) => (l ? { ...l, turnover_multiplier: e.target.value } : l))} aria-label="Turnover multiplier" />
                 </Field>
                 <Field label="Only deposits of at least (USDT)" hint="0 applies it to every deposit.">

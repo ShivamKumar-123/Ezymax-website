@@ -23,6 +23,10 @@ import '../wallet_api.dart';
 /// `$1,234.56`, the figures the service sends as decimal strings.
 String _usd(String v) => Fmt.money(double.tryParse(v) ?? 0);
 
+/// A volume figure in the unit the service counted it in: "0.30 lots", or dollars for the older notional rule.
+String _vol(BuildContext context, String v, String unit) =>
+    unit == 'lots' ? context.t('wallet.turnover.lots', {'n': (double.tryParse(v) ?? 0).toStringAsFixed(2)}) : _usd(v);
+
 /// The amounts, the bar and the sentence — shared by the panel and the sheet.
 class _Body extends StatelessWidget {
   const _Body({required this.d, this.compact = false});
@@ -43,14 +47,14 @@ class _Body extends StatelessWidget {
         Row(
           children: [
             _Figure(label: t('wallet.turnover.deposited'), value: _usd(d.deposits)),
-            _Figure(label: t('wallet.turnover.required'), value: _usd(d.required_)),
+            _Figure(label: t('wallet.turnover.required'), value: _vol(context, d.required_, d.unit)),
           ],
         ),
         const SizedBox(height: 10),
         Row(
           children: [
-            _Figure(label: t('wallet.turnover.completed'), value: _usd(d.completed)),
-            _Figure(label: t('wallet.turnover.remaining'), value: _usd(d.remaining), strong: true),
+            _Figure(label: t('wallet.turnover.completed'), value: _vol(context, d.completed, d.unit)),
+            _Figure(label: t('wallet.turnover.remaining'), value: _vol(context, d.remaining, d.unit), strong: true),
           ],
         ),
         const SizedBox(height: 14),
@@ -60,12 +64,12 @@ class _Body extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(t('wallet.turnover.percentDone', {'pct': d.percent}), style: context.text.caption.copyWith(color: k.fg3)),
-            Text(t('wallet.turnover.left', {'amount': _usd(d.remaining)}), style: context.text.caption.copyWith(color: k.ember, fontWeight: FontWeight.w600)),
+            Text(t('wallet.turnover.left', {'amount': _vol(context, d.remaining, d.unit)}), style: context.text.caption.copyWith(color: k.ember, fontWeight: FontWeight.w600)),
           ],
         ),
         const SizedBox(height: 12),
         Text(
-          t('wallet.turnover.explain', {'deposited': _usd(d.deposits), 'completed': _usd(d.completed), 'remaining': _usd(d.remaining)}),
+          t('wallet.turnover.explain', {'deposited': _usd(d.deposits), 'completed': _vol(context, d.completed, d.unit), 'remaining': _vol(context, d.remaining, d.unit)}),
           style: context.text.footnote.copyWith(color: k.fg2, fontSize: 12.5, height: 1.4),
         ),
         // deposit by deposit, for a client who has funded more than once and wants to know which one is holding up
@@ -80,7 +84,7 @@ class _Body extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(t('wallet.turnover.depositOf', {'amount': _usd(r.deposit)}), style: context.text.caption.copyWith(color: k.fg2)),
-                Text('${_usd(r.completed)} / ${_usd(r.required_)}', style: context.text.caption.copyWith(color: k.fg3)),
+                Text('${_vol(context, r.completed, r.unit)} / ${_vol(context, r.required_, r.unit)}', style: context.text.caption.copyWith(color: k.fg3)),
               ],
             ),
             const SizedBox(height: 5),

@@ -19,8 +19,12 @@ import { Button, Card, Dialog, cn } from "@/components/kit";
 import { TERMINAL_URL } from "@/lib/live";
 import { useWallet } from "./api";
 
+/** What a requirement is counted in: standard lots closed, or the USD value of the positions closed. */
+export type TurnoverUnit = "lots" | "notional";
+
 export type TurnoverDeposit = {
   id: number;
+  unit: TurnoverUnit;
   deposit_amount: string;
   required_volume: string;
   completed_volume: string;
@@ -37,9 +41,10 @@ export type Turnover = {
   remaining_volume: string;
   completion_percentage: number;
   open_requirements: number;
+  unit: TurnoverUnit;
   eligible: boolean;
   deposits: TurnoverDeposit[];
-  policy: { enabled: boolean; multiplier: string; min_deposit: string };
+  policy: { enabled: boolean; multiplier: string; min_deposit: string; unit: TurnoverUnit };
 };
 
 /** Polled rather than read once: a client who leaves this open while trading should watch the bar move. */
@@ -53,6 +58,12 @@ export function owesVolume(t: Turnover | null | undefined): boolean {
 }
 
 const usd = (v: string) => `$${Number(v).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+
+/** A volume figure in the unit the service counted it in: "0.30 lots", or dollars for the older notional rule. */
+function useVol() {
+  const t = useT();
+  return (v: string, unit: TurnoverUnit) => (unit === "lots" ? t("wallet.turnover.lots", { n: Number(v).toFixed(2) }) : usd(v));
+}
 
 function Bar({ pct, className }: { pct: number; className?: string }) {
   return (
@@ -74,6 +85,7 @@ function Figure({ label, value, strong }: { label: string; value: string; strong
 /** Deposit by deposit, for a client who has funded more than once and wants to know which one is holding up. */
 function Breakdown({ rows }: { rows: TurnoverDeposit[] }) {
   const t = useT();
+  const vol = useVol();
   const [open, setOpen] = React.useState(false);
   const shown = rows.filter((r) => r.status === "pending");
   if (shown.length < 2) return null;
@@ -90,7 +102,7 @@ function Breakdown({ rows }: { rows: TurnoverDeposit[] }) {
               <div className="flex items-baseline justify-between gap-3 text-[12.5px]">
                 <span className="text-fg-2">{t("wallet.turnover.depositOf", { amount: usd(r.deposit_amount) })}</span>
                 <span className="k-num shrink-0 text-fg-3">
-                  {usd(r.completed_volume)} / {usd(r.required_volume)}
+                  {vol(r.completed_volume, r.unit)} / {vol(r.required_volume, r.unit)}
                 </span>
               </div>
               <Bar pct={r.completion_percentage} className="mt-1.5 h-1.5" />
@@ -105,23 +117,24 @@ function Breakdown({ rows }: { rows: TurnoverDeposit[] }) {
 /** The figures, shared by the panel and the gate. */
 function Body({ d }: { d: Turnover }) {
   const t = useT();
+  const vol = useVol();
   return (
     <div className="space-y-3.5">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Figure label={t("wallet.turnover.deposited")} value={usd(d.total_deposits)} />
-        <Figure label={t("wallet.turnover.required")} value={usd(d.required_volume)} />
-        <Figure label={t("wallet.turnover.completed")} value={usd(d.completed_volume)} />
-        <Figure label={t("wallet.turnover.remaining")} value={usd(d.remaining_volume)} strong />
+        <Figure label={t("wallet.turnover.required")} value={vol(d.required_volume, d.unit)} />
+        <Figure label={t("wallet.turnover.completed")} value={vol(d.completed_volume, d.unit)} />
+        <Figure label={t("wallet.turnover.remaining")} value={vol(d.remaining_volume, d.unit)} strong />
       </div>
       <div>
         <Bar pct={d.completion_percentage} />
         <div className="mt-1.5 flex items-center justify-between text-[11.5px] text-fg-3">
           <span>{t("wallet.turnover.percentDone", { pct: d.completion_percentage })}</span>
-          <span className="k-num font-medium text-ember">{t("wallet.turnover.left", { amount: usd(d.remaining_volume) })}</span>
+          <span className="k-num font-medium text-ember">{t("wallet.turnover.left", { amount: vol(d.remaining_volume, d.unit) })}</span>
         </div>
       </div>
       <p className="text-[12.5px] leading-relaxed text-fg-2">
-        {t("wallet.turnover.explain", { deposited: usd(d.total_deposits), completed: usd(d.completed_volume), remaining: usd(d.remaining_volume) })}
+        {t("wallet.turnover.explain", { deposited: usd(d.total_deposits), completed: vol(d.completed_volume, d.unit), remaining: vol(d.remaining_volume, d.unit) })}
       </p>
       <Breakdown rows={d.deposits ?? []} />
     </div>

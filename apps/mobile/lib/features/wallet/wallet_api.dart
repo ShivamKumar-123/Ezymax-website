@@ -553,9 +553,12 @@ class WalletNotices {
 
 /// One deposit's own requirement, for the breakdown a client expands when they have funded more than once.
 class TurnoverDeposit {
-  const TurnoverDeposit({required this.id, required this.deposit, required this.required_, required this.completed, required this.remaining, required this.percent, required this.status});
+  const TurnoverDeposit({required this.id, required this.unit, required this.deposit, required this.required_, required this.completed, required this.remaining, required this.percent, required this.status});
 
   final int id;
+
+  /// What the volume figures count: `lots` (standard lots closed) or `notional` (USD value of positions closed).
+  final String unit;
   final String deposit, required_, completed, remaining;
   final int percent;
 
@@ -564,6 +567,7 @@ class TurnoverDeposit {
 
   static TurnoverDeposit fromJson(Map<String, dynamic> j) => TurnoverDeposit(
     id: _int(j['id']),
+    unit: j['unit'] == 'lots' ? 'lots' : 'notional',
     deposit: _s0(j['deposit_amount']),
     required_: _s0(j['required_volume']),
     completed: _s0(j['completed_volume']),
@@ -578,9 +582,13 @@ class TurnoverDeposit {
 /// The broker decides whether this applies at all; when the policy is off every client reads as eligible and
 /// nothing about it is shown. The block itself is enforced in the wallet service, not here.
 class Turnover {
-  const Turnover({required this.deposits, required this.required_, required this.completed, required this.remaining, required this.percent, required this.eligible, required this.enforced, required this.rows});
+  const Turnover({required this.deposits, required this.unit, required this.required_, required this.completed, required this.remaining, required this.percent, required this.eligible, required this.enforced, required this.rows});
 
-  final String deposits, required_, completed, remaining;
+  final String deposits;
+
+  /// What the volume figures count: `lots` or `notional` (see TurnoverDeposit.unit).
+  final String unit;
+  final String required_, completed, remaining;
   final int percent;
 
   /// Whether the client may withdraw. False only while the policy is on and volume is owed.
@@ -596,6 +604,7 @@ class Turnover {
 
   static Turnover fromJson(Map<String, dynamic> j) => Turnover(
     deposits: _s0(j['total_deposits']),
+    unit: j['unit'] == 'lots' ? 'lots' : 'notional',
     required_: _s0(j['required_volume']),
     completed: _s0(j['completed_volume']),
     remaining: _s0(j['remaining_volume']),
