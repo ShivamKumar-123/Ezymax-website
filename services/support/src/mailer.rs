@@ -2,6 +2,12 @@
 //! `SMTP_PASSWORD`, `SMTP_FROM`). Port 465 = implicit TLS, any other port STARTTLS; no `SMTP_USER` = an
 //! IP-allowlisted relay such as smtp-relay.gmail.com:587 (production). Without `SMTP_HOST` emails are only
 //! logged (`DEV email`). Emails are queued in `email_outbox` and sent by a background loop (`workers.rs`).
+//!
+//! A second relay can be named in `SUPPORT_SMTP_BACKUP_HOST` / `_PORT` / `_USER` / `_PASSWORD`, and is tried
+//! only when the first one refuses the message. Ezymex needs it because the house relay has twice stopped
+//! taking outbound mail for days at a time while the service had nowhere else to go, and a client waiting on
+//! a withdrawal notice should not wait on someone else's outage. The sender stays `SMTP_FROM` on both, so the
+//! backup has to be a relay that is allowed to send as that address.
 
 use crate::config::Config;
 use lettre::message::{Mailbox, MultiPart, SinglePart, header::ContentType};
@@ -9,41 +15,79 @@ use lettre::transport::smtp::authentication::Credentials;
 use lettre::transport::smtp::extension::ClientId;
 use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
 
+type Relay = AsyncSmtpTransport<Tokio1Executor>;
+
+/// One relay, built the way lettre wants it: 465 is implicit TLS, anything else STARTTLS, and credentials
+/// only when there is a user (an IP-allowlisted relay has none).
+fn relay(host: &str, port: u16, user: &str, password: &str, hello: ClientId) -> anyhow::Result<Relay> {
+    let builder = if port == 465 { Relay::relay(host)? } else { Relay::starttls_relay(host)? };
+    let mut builder = builder.port(port).hello_name(hello).timeout(Some(std::time::Duration::from_secs(20)));
+    if !user.is_empty() {
+        builder = builder.credentials(Credentials::new(user.to_string(), password.to_string()));
+    }
+    Ok(builder.build())
+}
+
 #[derive(Clone)]
 pub struct Mailer {
-    transport: AsyncSmtpTransport<Tokio1Executor>,
+    transport: Relay,
+    /// Tried only after `transport` has refused the message.
+    backup: Option<Relay>,
+    backup_host: String,
     from: Mailbox,
 }
 
 impl Mailer {
     pub fn new(cfg: &Config) -> anyhow::Result<Self> {
-        let builder = if cfg.smtp_port == 465 {
-            AsyncSmtpTransport::<Tokio1Executor>::relay(&cfg.smtp_host)?
-        } else {
-            AsyncSmtpTransport::<Tokio1Executor>::starttls_relay(&cfg.smtp_host)?
-        };
         let from: Mailbox = cfg.smtp_from.parse()?;
         let hello = ClientId::Domain(from.email.domain().to_string());
-        let mut builder = builder.port(cfg.smtp_port).hello_name(hello).timeout(Some(std::time::Duration::from_secs(20)));
-        if !cfg.smtp_user.is_empty() {
-            builder = builder.credentials(Credentials::new(cfg.smtp_user.clone(), cfg.smtp_password.clone()));
-        }
-        Ok(Self { transport: builder.build(), from })
+        let transport = relay(&cfg.smtp_host, cfg.smtp_port, &cfg.smtp_user, &cfg.smtp_password, hello.clone())?;
+        let backup = if cfg.smtp_backup_host.is_empty() {
+            None
+        } else {
+            Some(relay(&cfg.smtp_backup_host, cfg.smtp_backup_port, &cfg.smtp_backup_user, &cfg.smtp_backup_password, hello)?)
+        };
+        Ok(Self { transport, backup, backup_host: cfg.smtp_backup_host.clone(), from })
     }
 
-    /// Sends, and returns the relay's answer ("250 2.0.0 Ok: queued as …") for the log.
+    /// True when a second relay stands behind the first.
+    pub fn has_backup(&self) -> bool {
+        self.backup.is_some()
+    }
+
+    /// Sends, and returns the relay's answer ("250 2.0.0 Ok: queued as …") for the log. The backup relay is
+    /// tried when the first refuses; its answer is marked so the outbox row says which relay carried the mail.
+    /// When both refuse, the first relay's error is the one returned, because that is the one to go and fix.
     pub async fn send(&self, to: &str, subject: &str, text: &str, html: &str) -> anyhow::Result<String> {
-        let msg = Message::builder()
-            .from(self.from.clone())
-            .to(to.parse()?)
-            .subject(subject)
-            .multipart(
-                MultiPart::alternative()
-                    .singlepart(SinglePart::builder().header(ContentType::TEXT_PLAIN).body(text.to_string()))
-                    .singlepart(SinglePart::builder().header(ContentType::TEXT_HTML).body(html.to_string())),
-            )?;
-        let r = self.transport.send(msg).await?;
-        Ok(format!("{} {}", r.code(), r.message().next().unwrap_or("")).trim().chars().take(200).collect())
+        let build = || -> anyhow::Result<Message> {
+            Ok(Message::builder()
+                .from(self.from.clone())
+                .to(to.parse()?)
+                .subject(subject)
+                .multipart(
+                    MultiPart::alternative()
+                        .singlepart(SinglePart::builder().header(ContentType::TEXT_PLAIN).body(text.to_string()))
+                        .singlepart(SinglePart::builder().header(ContentType::TEXT_HTML).body(html.to_string())),
+                )?)
+        };
+        let answer = |r: lettre::transport::smtp::response::Response| -> String {
+            format!("{} {}", r.code(), r.message().next().unwrap_or("")).trim().chars().take(200).collect()
+        };
+        let first = match self.transport.send(build()?).await {
+            Ok(r) => return Ok(answer(r)),
+            Err(e) => e,
+        };
+        let Some(backup) = &self.backup else { return Err(first.into()) };
+        match backup.send(build()?).await {
+            Ok(r) => {
+                tracing::warn!(error = %first, host = %self.backup_host, "the first relay refused: sent through the backup");
+                Ok(format!("via backup {}: {}", self.backup_host, answer(r)).chars().take(200).collect())
+            }
+            Err(second) => {
+                tracing::error!(error = %second, host = %self.backup_host, "the backup relay refused as well");
+                Err(first.into())
+            }
+        }
     }
 }
 

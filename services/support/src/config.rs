@@ -29,6 +29,13 @@ pub struct Config {
     pub smtp_user: String,
     pub smtp_password: String,
     pub smtp_from: String,
+    /// A second relay, tried only when the first refuses (`SUPPORT_SMTP_BACKUP_*`). Deliberately not the
+    /// gateway's `SMTP_FALLBACK_*`: there the primary is Brevo and the fallback Hostinger, here it is the
+    /// other way round, so one pair of names could not serve both.
+    pub smtp_backup_host: String,
+    pub smtp_backup_port: u16,
+    pub smtp_backup_user: String,
+    pub smtp_backup_password: String,
     pub academy_glossary: String,
     /// Background loops (email outbox, SLA, polling adapters). Tests turn them off.
     pub workers: bool,
@@ -76,6 +83,8 @@ impl fmt::Debug for Config {
             .field("smtp_host", &self.smtp_host)
             .field("smtp_port", &self.smtp_port)
             .field("smtp_user", &redact(&self.smtp_user))
+            .field("smtp_backup_host", &self.smtp_backup_host)
+            .field("smtp_backup_user", &redact(&self.smtp_backup_user))
             .field("workers", &self.workers)
             .field("adapters", &self.adapters)
             .finish()
@@ -116,6 +125,10 @@ impl Config {
             smtp_user: var("SMTP_USER", ""),
             smtp_password: var("SMTP_PASSWORD", ""),
             smtp_from: var("SMTP_FROM", "Ezymex <no-reply@ezymex.com>"),
+            smtp_backup_host: var("SUPPORT_SMTP_BACKUP_HOST", ""),
+            smtp_backup_port: var("SUPPORT_SMTP_BACKUP_PORT", "587").parse().unwrap_or(587),
+            smtp_backup_user: var("SUPPORT_SMTP_BACKUP_USER", ""),
+            smtp_backup_password: var("SUPPORT_SMTP_BACKUP_PASSWORD", ""),
             academy_glossary: var("SUPPORT_GLOSSARY_FILE", concat!(env!("CARGO_MANIFEST_DIR"), "/../../content/academy/en/glossary.yaml")),
             workers: var("SUPPORT_WORKERS", "true") != "false",
             adapters: var("SUPPORT_ADAPTERS", "true") != "false",
@@ -149,6 +162,10 @@ impl Config {
             smtp_user: String::new(),
             smtp_password: String::new(),
             smtp_from: "Ezymex <no-reply@ezymex.com>".into(),
+            smtp_backup_host: String::new(),
+            smtp_backup_port: 587,
+            smtp_backup_user: String::new(),
+            smtp_backup_password: String::new(),
             academy_glossary: concat!(env!("CARGO_MANIFEST_DIR"), "/../../content/academy/en/glossary.yaml").into(),
             workers: false,
             adapters: false,

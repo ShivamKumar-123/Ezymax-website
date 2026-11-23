@@ -183,7 +183,14 @@ impl AppState {
             None
         } else {
             match Mailer::new(&cfg) {
-                Ok(m) => Some(m),
+                Ok(m) => {
+                    if m.has_backup() {
+                        tracing::info!(host = %cfg.smtp_backup_host, "a backup SMTP relay stands behind the first");
+                    } else {
+                        tracing::info!("no backup SMTP relay configured: an outage at the relay holds every email");
+                    }
+                    Some(m)
+                }
                 Err(e) => {
                     tracing::error!(error = %e, "SMTP settings invalid: emails will only be logged");
                     None
