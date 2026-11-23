@@ -232,6 +232,9 @@ const wallet = {
   "withdraw.methodUpiSub": "To your UPI ID, in {currency}",
   "withdraw.upiDestination": "Your UPI ID",
   "withdraw.upiError": "Enter a UPI ID like name@bank",
+  // UPI is not instant like a chain transfer: the payout is made by hand from the broker's own bank, so the
+  // client is told the window up front and again while they wait, instead of wondering on the second day.
+  "withdraw.upiSettle": "Payments to UPI settle within 24 hours of the request. The UTR appears here as soon as your bank has been paid.",
   "withdraw.upiNote": "We email you a code to confirm. Use a UPI ID in your own name — payments to someone else's ID are rejected at review.",
   // Said instead of the two notes above while the emailed confirmation is stood down (WITHDRAWAL_STEPUP=off):
   // promising a code that is not coming is worse than not mentioning one.

@@ -325,6 +325,9 @@ function RequestForm({ cfg, o, kyc, via, onCreated }: { cfg: WalletConfig; o: Ov
             ? (upi?.instructions ?? t(stepUpOn ? "wallet.withdraw.upiNote" : "wallet.withdraw.noteNoCode"))
             : t(stepUpOn ? "wallet.withdraw.emailNote" : "wallet.withdraw.noteNoCodeChain", { network: CHAIN_LABEL[chain].name })}
         </p>
+        {/* The settlement window stands apart from the note above, which the broker can overwrite with its own
+            instructions: a client paid off chain should always read how long the money takes. */}
+        {isUpi && <p className="text-[12px] text-fg-3">{t("wallet.withdraw.upiSettle")}</p>}
       </div>
       <StepUpDialog
         open={confirm}
@@ -415,6 +418,9 @@ function Tracker({ w, onNew, onChanged }: { w: Withdrawal; onNew: () => void; on
         )}
         {w.status === "requested" && <div className="rounded-[12px] border border-warn/30 bg-warn-soft px-3 py-2.5 text-[12.5px] text-fg-2">{t("wallet.withdraw.trackReview")}</div>}
         {w.status === "paid" && w.method !== "upi" && <div className="rounded-[12px] border border-info/30 bg-info-soft px-3 py-2.5 text-[12.5px] text-fg-2">{t("wallet.withdraw.trackConfirming", { n: w.payout_confirmations })}</div>}
+        {w.method === "upi" && (w.status === "requested" || w.status === "approved") && (
+          <div className="rounded-[12px] border border-info/30 bg-info-soft px-3 py-2.5 text-[12.5px] text-fg-2">{t("wallet.withdraw.upiSettle")}</div>
+        )}
         {bad && <InlineError>{w.reason ?? t("wallet.withdraw.cancelledText")}</InlineError>}
         <div className="flex flex-wrap gap-2">
           {w.status === "requested" && (

@@ -135,10 +135,19 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
           if (owes)
             const TurnoverPanel()
           else if (cfg.hasValue && o.hasValue && !needsGate)
-            WithdrawForm(cfg: cfg.requireValue, o: o.requireValue, kyc: kyc, via: via, onDone: () => _reload(ref))
+            WithdrawForm(
+              cfg: cfg.requireValue,
+              o: o.requireValue,
+              kyc: kyc,
+              via: via,
+              // the rail is chosen inside the form as well as at the gate, and the limits card below is
+              // quoted in the money of whichever one is selected
+              onVia: (v) => setState(() => _picked = v),
+              onDone: () => _reload(ref),
+            )
           else
             const KSkeletonCard(height: 420, lines: 6),
-          if (cfg.hasValue && o.hasValue) ...[const SizedBox(height: kWalletGap), _LimitsCard(cfg: cfg.requireValue, o: o.requireValue)],
+          if (cfg.hasValue && o.hasValue) ...[const SizedBox(height: kWalletGap), _LimitsCard(cfg: cfg.requireValue, o: o.requireValue, via: via)],
           const SizedBox(height: kWalletGap),
           _MyWithdrawals(list: list.value, onChange: () => _reload(ref)),
         ],
@@ -151,13 +160,16 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
 
 /// The withdrawal form (web WithdrawForm), with its debounced quote and the step-up confirmation.
 class WithdrawForm extends ConsumerStatefulWidget {
-  const WithdrawForm({super.key, required this.cfg, required this.o, required this.kyc, required this.via, required this.onDone});
+  const WithdrawForm({super.key, required this.cfg, required this.o, required this.kyc, required this.via, required this.onDone, this.onVia});
   final WalletConfig cfg;
   final WalletOverviewData o;
   final KycStatus kyc;
 
   /// The rail the gate (or `?via=`) settled on: `usdt` or `upi`.
   final String via;
+
+  /// Said when the client picks a different rail here, so the rest of the screen can follow.
+  final ValueChanged<String>? onVia;
   final VoidCallback onDone;
 
   @override
@@ -234,6 +246,7 @@ class _WithdrawFormState extends ConsumerState<WithdrawForm> {
       _chain = chain;
       _err = null;
     });
+    widget.onVia?.call(chain == null ? 'upi' : 'usdt');
     _changed();
   }
 
@@ -503,6 +516,15 @@ class _WithdrawFormState extends ConsumerState<WithdrawForm> {
             _isUpi ? (upi?.instructions ?? t('wallet.withdraw.upiNote')) : t('wallet.withdraw.emailNote', {'network': chainLabel(_chain).name}),
             style: context.text.caption.copyWith(color: k.fg3, fontWeight: FontWeight.w400, fontSize: 12),
           ),
+          // Kept out of the note above, which the broker can overwrite with its own instructions: a client paid
+          // off chain should always read how long the money takes.
+          if (_isUpi) ...[
+            const SizedBox(height: 6),
+            Text(
+              t('wallet.withdraw.upiSettle'),
+              style: context.text.caption.copyWith(color: k.fg3, fontWeight: FontWeight.w400, fontSize: 12),
+            ),
+          ],
         ],
       ),
     );
@@ -625,6 +647,8 @@ class _TrackerState extends ConsumerState<_Tracker> {
             ],
             if (w.status == 'requested') _Note(text: t('wallet.withdraw.trackReview'), tint: k.warnSoft, edge: k.warn),
             if (w.status == 'paid' && !isUpi) _Note(text: t('wallet.withdraw.trackConfirming', {'n': w.payoutConfirmations}), tint: k.infoSoft, edge: k.info),
+            if (isUpi && (w.status == 'requested' || w.status == 'approved'))
+              _Note(text: t('wallet.withdraw.upiSettle'), tint: k.infoSoft, edge: k.info),
             if (bad) WalletInlineError(w.reason ?? t('wallet.withdraw.cancelledText'), top: 8),
             const SizedBox(height: 18),
             Wrap(
@@ -661,10 +685,15 @@ class _Note extends StatelessWidget {
 
 /* ------------------------------------------------------------------ limits and fees */
 
+/// `via` decides the currency the whole card is quoted in: a client reading rupees everywhere else should not
+/// meet their limits in tether. The limits themselves are the wallet's, so they are converted, not different.
 class _LimitsCard extends StatelessWidget {
-  const _LimitsCard({required this.cfg, required this.o});
+  const _LimitsCard({required this.cfg, required this.o, required this.via});
   final WalletConfig cfg;
   final WalletOverviewData o;
+
+  /// The rail the gate settled on: `usdt` or `upi`.
+  final String via;
 
   @override
   Widget build(BuildContext context) {
@@ -673,6 +702,14 @@ class _LimitsCard extends StatelessWidget {
     final l = cfg.limits;
     final used = limitUsed(o.usedToday, o.dailyMax);
     final cooldown = o.cooldownUntil;
+    // The priced off-chain method, when that is the rail: everything on the card is then read in its currency.
+    final m = via == 'upi' ? cfg.upi : null;
+    final rate = double.tryParse(m?.rate ?? '') ?? 1;
+    final ccy = m?.currency ?? 'USDT';
+    String at(Object? v) => fmt((double.tryParse('${v ?? ''}') ?? 0) * rate);
+    // Off chain the wallet's flat and percentage fee are not charged, so the tile shows the method's own fee and
+    // drops the percentage: the client reads the charge the service will actually make, which today is none.
+    final fee = m == null ? feeLabel(l) : '${at(m.feeFlat)} $ccy';
     return KCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -688,10 +725,10 @@ class _LimitsCard extends StatelessWidget {
                 TextSpan(
                   children: [
                     TextSpan(
-                      text: fmt(o.usedToday),
+                      text: at(o.usedToday),
                       style: TextStyle(color: k.fg),
                     ),
-                    TextSpan(text: ' / ${fmt(o.dailyMax)} USDT'),
+                    TextSpan(text: ' / ${at(o.dailyMax)} $ccy'),
                   ],
                 ),
                 textDirection: TextDirection.ltr,
@@ -705,11 +742,11 @@ class _LimitsCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: WalletTile(label: t('wallet.minimum'), value: '${fmt(l.withdrawMin)} USDT'),
+                child: WalletTile(label: t('wallet.minimum'), value: '${at(l.withdrawMin)} $ccy'),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: WalletTile(label: t('wallet.maximum'), value: '${fmt(l.withdrawMax)} USDT'),
+                child: WalletTile(label: t('wallet.maximum'), value: '${at(l.withdrawMax)} $ccy'),
               ),
             ],
           ),
@@ -717,7 +754,7 @@ class _LimitsCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: WalletTile(label: t('wallet.fee'), value: feeLabel(l)),
+                child: WalletTile(label: t('wallet.fee'), value: fee),
               ),
               const SizedBox(width: 8),
               Expanded(
