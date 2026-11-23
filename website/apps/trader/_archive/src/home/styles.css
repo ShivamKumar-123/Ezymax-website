@@ -1,0 +1,201 @@
+/* ─────────────────────────────────────────────────────────────────────
+   Brand marketing home — theme tokens, fonts, glass, marquee, fades.
+   Scoped to .brand-home so it does NOT leak into the trader dashboard
+   (which keeps its own dark theme).
+   ───────────────────────────────────────────────────────────────────── */
+
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+@import "@fontsource/inter/800.css";
+
+.brand-home {
+  /* Belt-and-braces: never let any descendant cause horizontal page scroll on mobile. */
+  overflow-x: hidden;
+
+  /* ── Raw palette (HSL triplets, no hsl() so Tailwind alpha works) ──
+     2026-09-01 redesign: inverted from the dark/coral skin to the light
+     institutional palette. These triplets feed the `.brand-home .bg-*`
+     / `.text-*` mappings below, so flipping them here re-skins every
+     home + landing component at once without editing their markup. */
+  --ink:           0 0% 4%;         /* #0b0b0c — near-black ink */
+  --paper:         0 0% 100%;       /* #ffffff — page canvas */
+  --brand-red:     2 80% 49%;       /* #E12019 — single action colour */
+  --brand-blue:   226 78% 49%;      /* #1b4ae0 — editorial accent */
+
+  --background:               var(--paper);
+  --foreground:               var(--ink);
+  --card:                     0 0% 95%;
+  --card-foreground:          var(--ink);
+  --primary:                  var(--brand-red);
+  --primary-foreground:       0 0% 100%;
+  --secondary:                var(--brand-blue);
+  --secondary-foreground:     0 0% 100%;
+  --muted:                    220 14% 96%;
+  --muted-foreground:         220 8% 39%;
+  --accent:                   var(--brand-red);
+  --accent-foreground:        0 0% 100%;
+  --destructive:              var(--brand-red);
+  --destructive-foreground:   0 0% 100%;
+  --border:                   0 0% 6%;
+  --input:                    0 0% 6%;
+  --ring:                     var(--brand-red);
+  --radius:                   0.625rem;
+
+  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-body:    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+
+  --gutter: clamp(16px, 4.2vw, 56px);
+  --max:    1440px;
+
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-body);
+  /* The old skin padded word-spacing to 0.14em to make thin Montserrat
+     breathe on black. Inter on white needs no such help, and the extra
+     gap reads as broken justification at the reference's type sizes. */
+  word-spacing: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+.brand-home .font-display { font-family: var(--font-display); }
+.brand-home .font-body    { font-family: var(--font-body); }
+
+/* The old skin set every display heading in ALL CAPS with wide tracking —
+   a display-type mannerism that fights the reference's institutional
+   sentence-case headlines and badly hurts scan-ability at h2 size. Undone
+   here in one rule rather than across the 21 `font-display uppercase`
+   call sites, so no page markup or copy changes. Small all-caps labels
+   (kickers, eyebrows, badges) don't use .font-display and are untouched. */
+.brand-home .font-display.uppercase {
+  text-transform: none;
+  font-weight: 800;
+  letter-spacing: -0.024em;
+}
+
+/* Tailwind utilities used by the home (mapped to CSS vars so we don't
+   need to rebuild the trader's tailwind config). The pages still use
+   classes like `bg-background`, `text-foreground`, but we resolve them
+   here via direct CSS so they work on the existing Tailwind v3 setup. */
+.brand-home .bg-background          { background-color: hsl(var(--background)); }
+.brand-home .bg-background\/30      { background-color: hsl(var(--background) / 0.3); }
+.brand-home .bg-background\/40      { background-color: hsl(var(--background) / 0.4); }
+.brand-home .bg-background\/80      { background-color: hsl(var(--background) / 0.8); }
+.brand-home .text-background        { color: hsl(var(--background)); }
+.brand-home .text-foreground        { color: hsl(var(--foreground)); }
+.brand-home .text-foreground\/40    { color: hsl(var(--foreground) / 0.4); }
+.brand-home .text-foreground\/55    { color: hsl(var(--foreground) / 0.55); }
+.brand-home .text-foreground\/60    { color: hsl(var(--foreground) / 0.6); }
+.brand-home .text-foreground\/65    { color: hsl(var(--foreground) / 0.65); }
+.brand-home .text-foreground\/70    { color: hsl(var(--foreground) / 0.7); }
+.brand-home .text-foreground\/75    { color: hsl(var(--foreground) / 0.75); }
+.brand-home .text-foreground\/80    { color: hsl(var(--foreground) / 0.8); }
+.brand-home .text-foreground\/85    { color: hsl(var(--foreground) / 0.85); }
+.brand-home .bg-foreground          { background-color: hsl(var(--foreground)); }
+.brand-home .bg-primary             { background-color: hsl(var(--primary)); }
+.brand-home .bg-primary\/25         { background-color: hsl(var(--primary) / 0.25); }
+.brand-home .bg-primary\/60         { background-color: hsl(var(--primary) / 0.6); }
+.brand-home .text-primary           { color: hsl(var(--primary)); }
+.brand-home .text-primary\/70       { color: hsl(var(--primary) / 0.7); }
+/* The Button `hero` and `default` variants both set text-primary-foreground.
+   That utility is in neither this block nor tailwind.config, so it was
+   inert — every red CTA inherited the page's near-black --foreground and
+   rendered dark-on-red. Mapping it here turns the label white wherever a
+   filled CTA appears inside .brand-home. */
+.brand-home .text-primary-foreground { color: hsl(var(--primary-foreground)); }
+.brand-home .from-primary           { --tw-gradient-from: hsl(var(--primary)); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, hsl(var(--primary)/0)); }
+.brand-home .border-border          { border-color: hsl(var(--border) / 0.18); }
+.brand-home .bg-border              { background-color: hsl(var(--border) / 0.18); }
+.brand-home .ring-ring              { --tw-ring-color: hsl(var(--ring)); }
+.brand-home .ring-offset-background { --tw-ring-offset-color: hsl(var(--background)); }
+.brand-home .from-secondary\/60     { --tw-gradient-from: hsl(var(--secondary) / 0.6); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, hsl(var(--secondary)/0)); }
+.brand-home .bg-foreground\/90      { background-color: hsl(var(--foreground) / 0.9); }
+
+/* ── Marquee animations (used by Testimonials + LiveTickerBar) ── */
+.brand-home {
+  --animate-marquee:     marquee 28s linear infinite;
+  --animate-marquee-rev: marquee-rev 32s linear infinite;
+}
+
+@keyframes brand-marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@keyframes brand-marquee-rev {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
+@keyframes brand-accordion-down {
+  from { height: 0; }
+  to   { height: var(--radix-accordion-content-height); }
+}
+@keyframes brand-accordion-up {
+  from { height: var(--radix-accordion-content-height); }
+  to   { height: 0; }
+}
+
+.brand-home {
+  --animate-marquee:        brand-marquee 28s linear infinite;
+  --animate-marquee-rev:    brand-marquee-rev 32s linear infinite;
+}
+
+.brand-home .marquee-mask {
+  -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+          mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+
+/* ── Card surfaces ────────────────────────────────────────────────────
+   Formerly "liquid glass": translucent panels with a neon coral→red
+   gradient border, which only worked against a black canvas. On the
+   light redesign they became invisible fills with a garish edge, so
+   both now resolve to the reference's flat tile — a light grey fill,
+   a hairline, and depth only on hover. Class names are kept so the
+   ~40 call sites across the home + landing pages need no edits. */
+.brand-home .liquid-glass,
+.brand-home .liquid-glass-strong {
+  position: relative;
+  overflow: hidden;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border) / 0.10);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transition: background-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* The ::before ring drew the neon gradient edge — neutralised rather
+   than deleted so any rule that positions against it still resolves. */
+.brand-home .liquid-glass::before,
+.brand-home .liquid-glass-strong::before {
+  content: none;
+}
+
+/* A tile sitting directly on the white canvas needs the grey fill; one
+   on a grey band needs white. Sections opt in with .on-band. */
+.brand-home .on-band .liquid-glass,
+.brand-home .on-band .liquid-glass-strong {
+  background: #ffffff;
+}
+
+.brand-home a:hover > .liquid-glass,
+.brand-home .liquid-glass-hover:hover,
+.brand-home .liquid-glass-strong:hover {
+  border-color: hsl(var(--border) / 0.18);
+  box-shadow: 0 14px 38px rgba(11, 11, 12, 0.10);
+}
+
+.brand-home .gradient-fade-t {
+  background: linear-gradient(to top, transparent 0%, hsl(var(--background)) 100%);
+}
+.brand-home .gradient-fade-b {
+  background: linear-gradient(to bottom, transparent 0%, hsl(var(--background)) 100%);
+}
+
+/* Radix accordion height transitions */
+.brand-home [data-state='open'].brand-accordion-content { animation: brand-accordion-down 0.2s ease-out; }
+.brand-home [data-state='closed'].brand-accordion-content { animation: brand-accordion-up 0.2s ease-out; }

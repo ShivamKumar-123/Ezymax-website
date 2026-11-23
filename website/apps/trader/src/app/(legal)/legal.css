@@ -1,0 +1,62 @@
+/* Variables and classes the legal documents were written against (previous marketing system), mapped onto the
+   dark Ezymex theme so their markup stays untouched. */
+.legal-page {
+  --mk-text: #f5f5f7;
+  --mk-text-muted: #b4b4bd;
+  --mk-text-faint: #8d8d97;
+  --mk-accent: #ff8a3d;
+  --mk-accent-soft: rgba(255, 90, 31, 0.1);
+  --mk-accent-line: rgba(255, 90, 31, 0.35);
+  --mk-radius: 20px;
+  --mk-space-4: 1rem;
+  --mk-space-5: 1.25rem;
+  --mk-text-xs: 0.75rem;
+  --mk-text-sm: 0.9rem;
+  --mk-text-body: 1rem;
+  --mk-text-h3: clamp(1.25rem, 1.6vw, 1.5rem);
+  --mk-text-label: 0.72rem;
+  --mk-tracking-label: 0.16em;
+  --mk-transition: 0.25s ease;
+}
+.legal-page .mk-body {
+  color: #b4b4bd;
+  font-size: 0.98rem;
+  line-height: 1.75;
+}
+.legal-page .mk-h2,
+.legal-page .mk-h3 {
+  font-family: var(--font-display), var(--font-geist), sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: #f5f5f7;
+}
+.legal-page .mk-h2 {
+  font-size: clamp(1.35rem, 1.8vw, 1.65rem);
+}
+.legal-page .mk-h3 {
+  font-size: 1.15rem;
+}
+.legal-page .mk-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+  border-radius: 24px;
+  padding: 1.5rem;
+}
+.legal-page .mk-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 44px;
+  padding: 0 1.25rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.legal-page .mk-btn--primary {
+  background: linear-gradient(120deg, #ff5a1f, #ff8a3d);
+  color: #120804;
+}
+.legal-page a:not(.btn):not(.mk-btn) {
+  text-underline-offset: 3px;
+}

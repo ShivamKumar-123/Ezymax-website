@@ -1,0 +1,626 @@
+/* ══════════════════════════════════════════════
+   Auth Pages — ported from login_page template
+   ══════════════════════════════════════════════ */
+
+:root {
+  /* 2026-09-01 redesign — light institutional skin, matching the
+     marketing site's tokens in src/marketing/tokens.css. */
+  --auth-bg: #ffffff;
+  --auth-input-bg: #ffffff;
+  --auth-border: rgba(11, 11, 12, 0.14);
+  --auth-accent: #E12019;        /* action red */
+  --auth-accent-light: #f0342b;
+  --auth-accent-dark: #c11a12;
+  --auth-text: #0b0b0c;
+  --auth-muted: #5b6069;
+  --auth-radius-md: 12px;
+  --auth-radius-lg: 16px;
+}
+
+/* ── OUTER WRAPPER — centers the card ── */
+/* Full-bleed two-column split: artwork on the left, form on the right.
+   This replaced a centred rounded card floating on a grey page — the
+   card's own left panel was a gradient, so half the screen was spent on
+   decoration that said nothing about the product. */
+.auth-wrapper {
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  min-height: 100vh;
+  height: 100vh;
+  width: 100%;
+  padding: 0;
+  background: #ffffff !important;
+  color: var(--auth-text);
+  color-scheme: light;
+  overflow: hidden;
+}
+
+.auth-wrapper *, .auth-wrapper *::before, .auth-wrapper *::after {
+  color-scheme: light;
+}
+
+
+.auth-card-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  border-radius: 0;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.auth-card {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  overflow: hidden;
+  background: #ffffff;
+  backdrop-filter: none;
+}
+
+/* Glossy shine sweep — removed in the light redesign (it only read on a
+   dark card; on white it left a grey diagonal wash). */
+.auth-card::before { content: none; }
+
+/* Glossy top edge highlight — removed for the same reason. */
+.auth-card::after { content: none; }
+
+/* ── LEFT PANEL — artwork ──
+   Holds <AuthLeftPanel />: a fill <Image> plus the back-to-site button.
+   The gradient/mandala/step-list rules that used to live here are gone
+   along with the markup that used them. */
+.auth-left {
+  position: relative;
+  width: 50%;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 0;
+  background: var(--auth-text);
+}
+
+.auth-left__image {
+  object-fit: cover;
+  object-position: center;
+}
+
+/* Circular back button, floated over the artwork. */
+.auth-back {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  z-index: 10;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(6px);
+  transition: background 0.2s;
+}
+
+.auth-back:hover {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+/* Faded mandala motif on the left panel — static, no rotation */
+/* ── STEP CARD ── */
+/* ── RIGHT PANEL — form ── */
+.auth-right {
+  width: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 52px;
+  background: #ffffff !important;
+  color: var(--auth-text);
+  border-radius: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+/* The register form is tall enough to overflow on short viewports; align
+   it to the top there so the first field is never scrolled out of view. */
+.auth-right--top {
+  align-items: flex-start;
+}
+
+.auth-right::-webkit-scrollbar {
+  display: none;
+}
+
+.auth-form {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 8px;
+  padding-bottom: 16px;
+}
+
+.auth-form__title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--auth-text) !important;
+}
+
+.auth-form__subtitle {
+  color: var(--auth-muted) !important;
+  font-size: 0.82rem;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+/* ── INPUT FIELD ── */
+.auth-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-field__label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: var(--auth-text) !important;
+}
+
+.auth-field__wrap {
+  position: relative;
+}
+
+.auth-field__input {
+  width: 100%;
+  background: #ffffff !important;
+  border: 1px solid var(--auth-border);
+  border-radius: var(--auth-radius-md);
+  padding: 11px 14px;
+  color: var(--auth-text) !important;
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.auth-field__input::placeholder {
+  color: #9ca3af !important;
+}
+
+.auth-field__input:focus {
+  border-color: var(--auth-accent);
+  box-shadow: 0 0 0 3px rgba(225, 32, 25, 0.16);
+}
+
+.auth-field__input--has-icon {
+  padding-right: 44px;
+}
+
+.auth-field__input--error {
+  border-color: #f87171;
+}
+
+.auth-field__input--error:focus {
+  border-color: #f87171;
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.12);
+}
+
+.auth-field__icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--auth-muted) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.auth-field__icon:hover {
+  color: #9ca3af;
+}
+
+.auth-field__helper {
+  color: var(--auth-muted) !important;
+  font-size: 0.72rem;
+  margin-top: 5px;
+}
+
+.auth-field__error {
+  color: #f87171;
+  font-size: 0.72rem;
+  margin-top: 5px;
+}
+
+/* ── CTA BUTTON ── */
+.auth-btn {
+  width: 100%;
+  height: 46px;
+  background: var(--auth-accent) !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  font-size: 0.9rem;
+  border-radius: var(--auth-radius-md);
+  border: 1px solid var(--auth-border);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: box-shadow 0.2s, transform 0.2s, filter 0.2s;
+  box-shadow: 0 8px 22px rgba(225, 32, 25, 0.22);
+}
+
+.auth-btn:hover:not(:disabled) {
+  background: var(--auth-accent-dark) !important;
+  box-shadow: 0 10px 28px rgba(225, 32, 25, 0.28);
+}
+
+.auth-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.auth-btn--outline {
+  background: transparent !important;
+  color: var(--auth-text) !important;
+  border: 1px solid var(--auth-border);
+}
+
+.auth-btn--outline:hover:not(:disabled) {
+  background: var(--mk-surface, #f1f2f5);
+  border-color: var(--auth-text);
+  box-shadow: none;
+  transform: none;
+}
+
+.auth-btn--demo {
+  background: transparent !important;
+  color: var(--auth-muted) !important;
+  border: 1px solid var(--auth-border);
+  font-weight: 500;
+  font-size: 0.82rem;
+  height: 42px;
+}
+
+.auth-btn--demo:hover:not(:disabled) {
+  background: var(--mk-surface, #f1f2f5);
+  border-color: var(--auth-text);
+  box-shadow: none;
+  transform: none;
+  color: var(--auth-text);
+}
+
+@keyframes authSpin {
+  to { transform: rotate(360deg); }
+}
+
+.auth-spinner {
+  animation: authSpin 1s linear infinite;
+}
+
+/* One-line disclosure that stands in for a whole optional field — used by
+   the referral row on /auth/register. */
+.auth-reveal {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--auth-muted);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--auth-border);
+}
+
+.auth-reveal:hover {
+  color: var(--auth-text);
+  text-decoration-color: currentColor;
+}
+
+/* "Apply" affordance beside the referral input. Previously a stack of
+   inline styles on an .auth-field__icon, which is absolutely positioned —
+   it needed four overrides just to sit back in the flow. */
+.auth-apply-btn {
+  flex-shrink: 0;
+  padding: 0 0.95rem;
+  border-radius: var(--auth-radius-md);
+  border: 1px solid var(--auth-border);
+  background: var(--mk-surface, #f1f2f5);
+  color: var(--auth-text);
+  font-weight: 600;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.auth-apply-btn:hover:not(:disabled) {
+  background: #ffffff;
+  border-color: var(--auth-text);
+}
+
+.auth-apply-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Inline link inside the form's subtitle — "Don't have an account? Sign
+   up". The reference design used blue here; Bullza's action colour is the
+   same red the submit button and the marketing site use, so a blue link
+   would be the only blue pixel on the page. */
+.auth-inline-link {
+  color: var(--auth-accent) !important;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-inline-link:hover {
+  color: var(--auth-accent-dark) !important;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ── FOOTER ── */
+.auth-footer {
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--auth-muted) !important;
+}
+
+.auth-footer a {
+  color: var(--auth-accent-light) !important;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.auth-footer a:hover {
+  color: var(--auth-accent);
+}
+
+/* ── TERMS & PRIVACY CONSENT ──
+   Sits between the Turnstile widget and the Sign Up button on /auth/register.
+   Tightly themed against the dark form: subtle border, green accent
+   checkbox, link colour matches the footer "Log in" anchor so the page
+   has a single accent throughout. */
+.auth-terms {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--mk-surface, #f1f2f5);
+  border: 1px solid var(--auth-border);
+  border-radius: var(--auth-radius-md);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.auth-terms:hover {
+  border-color: var(--auth-text);
+  background: var(--mk-surface, #f1f2f5);
+}
+
+.auth-terms__checkbox {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0 0;
+  accent-color: var(--auth-accent);
+  cursor: pointer;
+}
+
+.auth-terms__text {
+  flex: 1;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: #9ca3af;
+  user-select: none;
+}
+
+.auth-terms__link {
+  color: var(--auth-accent-light);
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(125, 194, 79, 0.35);
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.auth-terms__link:hover {
+  color: var(--auth-accent);
+  border-bottom-color: var(--auth-accent);
+}
+
+.auth-terms__error {
+  color: #f87171;
+  font-size: 0.72rem;
+  margin-top: 6px;
+  display: block;
+}
+
+/* ── DIVIDER ── */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.auth-divider__line {
+  flex: 1;
+  height: 1px;
+  background: var(--auth-border);
+}
+
+.auth-divider__text {
+  color: var(--auth-muted);
+  font-size: 0.78rem;
+}
+
+/* ── DEMO BADGE ── */
+.auth-demo-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(225, 32, 25, 0.08);
+  border: 1px solid rgba(225, 32, 25, 0.26);
+  border-radius: 10px;
+  color: var(--auth-accent-light);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.auth-demo-badge__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--auth-accent-light);
+  box-shadow: 0 0 8px rgba(225, 32, 25, 0.45);
+  flex-shrink: 0;
+}
+
+/* ── NAME ROW (Signup) ── */
+.auth-name-row {
+  display: flex;
+  gap: 12px;
+}
+
+.auth-name-row > * {
+  flex: 1;
+}
+
+/* ── PASSWORD STRENGTH ── */
+.auth-strength {
+  display: flex;
+  gap: 4px;
+}
+
+.auth-strength__bar {
+  flex: 1;
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--auth-border);
+  transition: background 0.3s;
+}
+
+/* ── FORGOT MODAL ── */
+.auth-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+}
+
+.auth-modal {
+  width: 100%;
+  max-width: 400px;
+  background: #ffffff !important;
+  border: 1px solid var(--auth-border);
+  border-radius: 20px;
+  padding: 28px;
+  color: var(--auth-text);
+  box-shadow: 0 24px 60px rgba(11, 11, 12, 0.22);
+}
+
+.auth-modal__title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--auth-text) !important;
+  margin-bottom: 4px;
+}
+
+.auth-modal__desc {
+  font-size: 0.78rem;
+  color: var(--auth-muted) !important;
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+.auth-modal__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.auth-modal__actions > * {
+  flex: 1;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .auth-wrapper {
+    padding: 0;
+    height: auto;
+    min-height: 100vh;
+    align-items: stretch;
+    overflow: auto;
+  }
+
+  .auth-card-wrapper {
+    max-width: none;
+    height: auto;
+    min-height: 100vh;
+    border-radius: 0;
+    padding: 0;
+    animation: none;
+    background: none;
+    box-shadow: none;
+  }
+
+  .auth-card {
+    flex-direction: column;
+    border-radius: 0;
+  }
+
+  .auth-card::before,
+  .auth-card::after {
+    display: none;
+  }
+
+  /* Stacked: the artwork becomes a short banner above the form. The
+     <Image> inside is `fill`, so it takes its height from here. */
+  .auth-left {
+    width: 100%;
+    height: 180px;
+    min-height: 180px;
+    border-radius: 0;
+    flex-shrink: 0;
+  }
+
+  .auth-back {
+    top: 16px;
+    left: 16px;
+  }
+
+  .auth-right,
+  .auth-right--top {
+    width: 100%;
+    flex: 1;
+    padding: 32px 24px 48px;
+    border-radius: 0;
+    align-items: flex-start;
+  }
+
+  .auth-field__input {
+    font-size: 16px;
+  }
+}

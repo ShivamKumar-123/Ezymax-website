@@ -1,0 +1,408 @@
+/* ─────────────────────────────────────────────────────────────────────
+   MARKETING DESIGN SYSTEM — single source of truth.
+
+   Every public-facing page (home, company, markets, products, services,
+   legal) reads from this one block. Change a value here and the whole
+   marketing site follows; no component edit needed.
+
+   Scoped to `.mk` (applied by the (landing) layout) so none of it leaks
+   into the authenticated trader app, which keeps its own theme tokens
+   in app/globals.css.
+
+   ── 2026-09-01 redesign ──────────────────────────────────────────────
+   Retheme from the previous dark/coral marketing skin to a light,
+   institutional broker aesthetic: white canvas, near-black ink, a single
+   red action colour, and a black chrome band (footer).
+   Structure is unchanged — only the visual language moved — so all 44
+   landing pages inherit the new look without touching their markup.
+   ───────────────────────────────────────────────────────────────────── */
+
+.mk {
+  /* ── Colour ─────────────────────────────────────────────────────── */
+  /* A white canvas with light-grey bands is what carries the "premium
+     broker" read. Cards are a hair darker than the raised band so they
+     still separate when they sit on one. */
+  --mk-bg:            #ffffff;   /* page canvas */
+  --mk-bg-raised:     #f4f5f7;   /* section bands that lift off the canvas */
+  --mk-surface:       #f1f2f5;   /* cards */
+  --mk-surface-2:     #e7e9ee;   /* nested / hovered cards */
+
+  /* Ink — the black used by the utility bar, footer and dark CTAs. Kept
+     separate from --mk-text so a tenant can warm the body copy without
+     turning the chrome grey. */
+  --mk-ink:           #000000;
+  --mk-ink-soft:      #16181d;   /* raised rows inside a black band */
+
+  --mk-line:          rgba(11, 11, 12, 0.10);   /* default hairline */
+  --mk-line-strong:   rgba(11, 11, 12, 0.22);   /* emphasised edge */
+  --mk-line-invert:   rgba(255, 255, 255, 0.16); /* hairlines on black */
+
+  --mk-text:          #0b0b0c;
+  --mk-text-muted:    #5b6069;   /* body copy on light */
+  --mk-text-faint:    #868b95;   /* labels, meta, captions */
+  --mk-text-invert:   #ffffff;   /* copy on black bands */
+  --mk-text-invert-muted: rgba(255, 255, 255, 0.66);
+
+  --mk-accent:        #E12019;   /* action red — CTAs only, never decoration */
+  --mk-accent-hover:  #B31810;
+  --mk-accent-soft:   rgba(225, 32, 25, 0.07);   /* tinted fills */
+  --mk-accent-line:   rgba(225, 32, 25, 0.30);
+
+  /* Secondary editorial colour for feature tiles. Used sparingly — the
+     reference pairs one blue tile against the red CTA so the CTA keeps
+     its meaning. */
+  --mk-info:          #1b4ae0;
+  --mk-info-soft:     #e8edfd;
+
+  --mk-up:            #0f9d58;   /* semantic: gains — never brand */
+  --mk-down:          #E12019;   /* semantic: losses */
+
+  /* ── Type scale (fluid: clamp(min, preferred, max)) ─────────────── */
+  /* Inter across the marketing site: a neo-grotesque reads as neutral
+     and institutional where the old geometric read as consumer-app. */
+  --mk-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --mk-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+
+  --mk-text-display: clamp(2.5rem, 1.5rem + 3.9vw, 4.5rem);    /* hero headline */
+  --mk-text-h1:      clamp(2rem, 1.45rem + 2.4vw, 3.25rem);    /* page title */
+  --mk-text-h2:      clamp(1.65rem, 1.3rem + 1.6vw, 2.5rem);   /* section title */
+  --mk-text-h3:      clamp(1.125rem, 1.03rem + 0.4vw, 1.375rem); /* card title */
+  --mk-text-lead:    clamp(1rem, 0.96rem + 0.24vw, 1.125rem);  /* standfirst */
+  --mk-text-body:    1rem;
+  --mk-text-sm:      0.875rem;
+  --mk-text-xs:      0.75rem;
+  --mk-text-label:   0.6875rem;                                 /* eyebrow / kicker */
+
+  --mk-leading-tight: 1.04;
+  --mk-leading-snug:  1.26;
+  --mk-leading-body:  1.62;
+  --mk-tracking-label: 0.14em;
+
+  /* ── Spacing scale ──────────────────────────────────────────────── */
+  --mk-space-1: 0.25rem;
+  --mk-space-2: 0.5rem;
+  --mk-space-3: 0.75rem;
+  --mk-space-4: 1rem;
+  --mk-space-5: 1.5rem;
+  --mk-space-6: 2rem;
+  --mk-space-7: 3rem;
+  --mk-space-8: 4rem;
+  --mk-space-9: 6rem;
+
+  /* Vertical rhythm between page sections, and the page gutter. The
+     reference runs noticeably airier than the old skin. */
+  --mk-section-y:  clamp(4rem, 2.4rem + 6.4vw, 8rem);
+  --mk-gutter:     clamp(1.125rem, 0.5rem + 2.4vw, 2.5rem);
+  --mk-container:  1200px;
+
+  /* ── Shape + depth ──────────────────────────────────────────────── */
+  /* Tighter than the old skin: big radii read as consumer, small-to-mid
+     radii read as institutional. Buttons stay fully pill. */
+  --mk-radius-sm:  6px;
+  --mk-radius:     10px;
+  --mk-radius-lg:  16px;
+  --mk-radius-pill: 999px;
+
+  /* Light-theme shadows have to be far softer than the dark skin's —
+     on white, anything heavier than this reads as dirt. */
+  --mk-shadow-card: 0 1px 2px rgba(11, 11, 12, 0.05);
+  --mk-shadow-lift: 0 14px 38px rgba(11, 11, 12, 0.10);
+  --mk-shadow-glow: 0 8px 22px rgba(225, 32, 25, 0.22);
+
+  --mk-transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Base text settings for everything inside the marketing surface. */
+  color: var(--mk-text);
+  background-color: var(--mk-bg);
+  font-family: var(--mk-font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Primitives ───────────────────────────────────────────────────── */
+
+.mk-container {
+  width: 100%;
+  max-width: var(--mk-container);
+  margin-inline: auto;
+  padding-inline: var(--mk-gutter);
+}
+
+/* Wider variant for full-bleed card grids that would look cramped at
+   1200px (markets grid, platform screenshots). */
+.mk-container--wide { max-width: 1320px; }
+
+.mk-section { padding-block: var(--mk-section-y); }
+.mk-section--raised { background: var(--mk-bg-raised); }
+.mk-section--ink {
+  background: var(--mk-ink);
+  color: var(--mk-text-invert);
+}
+.mk-section--tight { padding-block: calc(var(--mk-section-y) * 0.6); }
+
+/* Top-only trim, for a section that directly follows a full-bleed band
+   (the market ticker). A full section-y there reads as dead space because
+   the band already separates the two blocks. */
+.mk-section--tight-top { padding-block-start: calc(var(--mk-section-y) * 0.5); }
+
+/* Eyebrow / kicker above a section title. */
+.mk-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mk-space-2);
+  font-size: var(--mk-text-label);
+  font-weight: 700;
+  letter-spacing: var(--mk-tracking-label);
+  text-transform: uppercase;
+  color: var(--mk-accent);
+}
+
+/* On black bands the red kicker vibrates; go muted-white instead. */
+.mk-section--ink .mk-kicker { color: var(--mk-text-invert-muted); }
+
+.mk-display {
+  font-size: var(--mk-text-display);
+  line-height: var(--mk-leading-tight);
+  font-weight: 800;
+  letter-spacing: -0.033em;
+}
+.mk-h1 { font-size: var(--mk-text-h1); line-height: var(--mk-leading-tight); font-weight: 800; letter-spacing: -0.028em; }
+.mk-h2 { font-size: var(--mk-text-h2); line-height: var(--mk-leading-snug); font-weight: 800; letter-spacing: -0.024em; }
+.mk-h3 { font-size: var(--mk-text-h3); line-height: var(--mk-leading-snug); font-weight: 700; letter-spacing: -0.012em; }
+.mk-lead { font-size: var(--mk-text-lead); line-height: var(--mk-leading-body); color: var(--mk-text-muted); }
+.mk-body { font-size: var(--mk-text-body); line-height: var(--mk-leading-body); color: var(--mk-text-muted); }
+.mk-meta { font-size: var(--mk-text-sm); line-height: 1.5; color: var(--mk-text-faint); }
+
+/* Inverted copy for black bands. */
+.mk-section--ink .mk-h1,
+.mk-section--ink .mk-h2,
+.mk-section--ink .mk-h3,
+.mk-section--ink .mk-display { color: var(--mk-text-invert); }
+.mk-section--ink .mk-lead,
+.mk-section--ink .mk-body { color: var(--mk-text-invert-muted); }
+
+.mk-card {
+  background: var(--mk-surface);
+  border: 1px solid transparent;
+  border-radius: var(--mk-radius-lg);
+  padding: var(--mk-space-6);
+  transition: border-color var(--mk-transition), background-color var(--mk-transition),
+              transform var(--mk-transition), box-shadow var(--mk-transition);
+}
+.mk-card--hover:hover {
+  background: var(--mk-surface-2);
+  transform: translateY(-2px);
+  box-shadow: var(--mk-shadow-lift);
+}
+
+/* A card that sits on a raised band needs to be white to separate. */
+.mk-section--raised .mk-card { background: #ffffff; }
+.mk-section--raised .mk-card--hover:hover { background: #ffffff; }
+
+/* Outlined variant — used where a card must not read as a filled tile
+   (pricing rows, comparison tables, legal callouts). */
+.mk-card--outline {
+  background: transparent;
+  border-color: var(--mk-line);
+}
+
+/* A card on a black band has to invert too. Without this the card keeps
+   its light fill while the heading rules above force white text onto it,
+   which is invisible. Any section that opts into --ink gets correct
+   cards for free. */
+.mk-section--ink .mk-card {
+  background: var(--mk-ink-soft);
+  border-color: var(--mk-line-invert);
+}
+.mk-section--ink .mk-card--hover:hover {
+  background: #22252c;
+  box-shadow: none;
+}
+.mk-section--ink .mk-card--outline {
+  background: transparent;
+  border-color: var(--mk-line-invert);
+}
+.mk-section--ink .mk-badge {
+  background: rgba(255, 255, 255, 0.10);
+  color: var(--mk-text-invert-muted);
+}
+
+/* ── Accent (red) surfaces ─────────────────────────────────
+   The reference closes each page with red conversion surfaces — one
+   full-width band and one half-width panel sitting beside a product
+   shot. Both need the same inversion the black bands get, so the rules
+   are scoped to a class either surface can carry rather than being tied
+   to .mk-section the way --ink is. */
+.mk-surface--accent {
+  background: var(--mk-accent);
+  color: var(--mk-text-invert);
+}
+.mk-surface--accent .mk-h1,
+.mk-surface--accent .mk-h2,
+.mk-surface--accent .mk-h3 { color: var(--mk-text-invert); }
+.mk-surface--accent .mk-lead,
+.mk-surface--accent .mk-body { color: rgba(255, 255, 255, 0.86); }
+.mk-surface--accent .mk-meta,
+.mk-surface--accent .mk-kicker { color: rgba(255, 255, 255, 0.75); }
+.mk-surface--accent .mk-rule { background: rgba(255, 255, 255, 0.24); }
+
+/* A red button on red disappears, so the filled variant flips to white
+   with accent ink and the ghost keeps a white hairline. */
+.mk-surface--accent .mk-btn--primary {
+  background: #ffffff;
+  color: var(--mk-accent);
+}
+.mk-surface--accent .mk-btn--primary:hover {
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: none;
+}
+.mk-surface--accent .mk-btn--ghost {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.55);
+  color: var(--mk-text-invert);
+}
+.mk-surface--accent .mk-btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: #ffffff;
+}
+
+/* ── Media placeholders ───────────────────────────────────────────────
+   The redesign reserves real space for artwork rather than shipping
+   stand-in photography. `.mk-media` is a neutral, labelled box that
+   holds the reference's aspect ratio so layout is final once assets
+   land — swap the box for an <Image> and nothing reflows. */
+.mk-media {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--mk-radius);
+  background:
+    linear-gradient(135deg, rgba(11, 11, 12, 0.05) 0%, rgba(11, 11, 12, 0.02) 100%);
+  border: 1px dashed var(--mk-line-strong);
+  color: var(--mk-text-faint);
+  font-size: var(--mk-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.mk-media--ratio-16x9 { aspect-ratio: 16 / 9; }
+.mk-media--ratio-4x3  { aspect-ratio: 4 / 3; }
+.mk-media--ratio-1x1  { aspect-ratio: 1 / 1; }
+.mk-media--ratio-3x2  { aspect-ratio: 3 / 2; }
+.mk-media--ratio-21x9 { aspect-ratio: 21 / 9; }
+/* Portrait device shot (phone mock in the hero). */
+.mk-media--ratio-9x16 { aspect-ratio: 9 / 16; }
+
+/* On black bands the dashed box has to invert or it disappears. */
+.mk-section--ink .mk-media,
+.mk-media--on-ink {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.03) 100%);
+  border-color: var(--mk-line-invert);
+  color: var(--mk-text-invert-muted);
+}
+
+/* Same problem on the red surfaces — a touch brighter so the dashed
+   edge still reads against the accent fill. */
+.mk-surface--accent .mk-media {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.08) 100%);
+  border-color: rgba(255, 255, 255, 0.45);
+  color: rgba(255, 255, 255, 0.82);
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────── */
+
+.mk-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mk-space-2);
+  padding: 0.8rem 1.6rem;
+  border-radius: var(--mk-radius-pill);
+  font-size: var(--mk-text-sm);
+  font-weight: 600;
+  line-height: 1;
+  transition: background-color var(--mk-transition), border-color var(--mk-transition),
+              color var(--mk-transition), transform var(--mk-transition),
+              box-shadow var(--mk-transition);
+  white-space: nowrap;
+}
+.mk-btn:active { transform: scale(0.985); }
+
+.mk-btn--primary { background: var(--mk-accent); color: #fff; }
+.mk-btn--primary:hover { background: var(--mk-accent-hover); box-shadow: var(--mk-shadow-glow); }
+
+/* Secondary on light — white pill with a hairline, per the reference's
+   "Create demo account" button. */
+.mk-btn--ghost {
+  background: #ffffff;
+  border: 1px solid var(--mk-line-strong);
+  color: var(--mk-text);
+}
+.mk-btn--ghost:hover { background: var(--mk-surface); border-color: var(--mk-text); }
+
+/* On black bands the ghost has to invert. */
+.mk-section--ink .mk-btn--ghost {
+  background: transparent;
+  border-color: var(--mk-line-invert);
+  color: var(--mk-text-invert);
+}
+.mk-section--ink .mk-btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--mk-text-invert);
+}
+
+.mk-btn--dark { background: var(--mk-ink); color: #fff; }
+.mk-btn--dark:hover { background: #2a2d34; }
+
+.mk-btn--lg { padding: 1rem 2rem; font-size: var(--mk-text-body); }
+.mk-btn--sm { padding: 0.6rem 1.1rem; font-size: var(--mk-text-xs); }
+
+/* Text link that behaves like a CTA — the reference's "View all markets"
+   / "Learn more" arrows. */
+.mk-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: var(--mk-text-sm);
+  font-weight: 600;
+  color: var(--mk-accent);
+  transition: gap var(--mk-transition), color var(--mk-transition);
+}
+.mk-link:hover { gap: 0.6rem; color: var(--mk-accent-hover); }
+.mk-section--ink .mk-link { color: var(--mk-text-invert); }
+
+/* ── Utility chrome ───────────────────────────────────────────────── */
+
+/* Divider that matches the hairline weight used across the site. */
+.mk-rule { height: 1px; background: var(--mk-line); border: 0; }
+.mk-section--ink .mk-rule { background: var(--mk-line-invert); }
+
+/* Pill badge — market labels, "New", plan tags. */
+.mk-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--mk-radius-pill);
+  background: var(--mk-surface);
+  color: var(--mk-text-muted);
+  font-size: var(--mk-text-xs);
+  font-weight: 600;
+}
+.mk-badge--accent { background: var(--mk-accent-soft); color: var(--mk-accent); }
+
+/* Numeric figures (prices, stats) — tabular so columns don't jitter. */
+.mk-num { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+/* Respect the OS reduced-motion setting across every marketing animation. */
+@media (prefers-reduced-motion: reduce) {
+  .mk *, .mk *::before, .mk *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

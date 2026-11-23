@@ -1,0 +1,27 @@
+{
+  "name": "/images/brand/hero-robot",
+  "native": 1672,
+  "height": 941,
+  "widths": [
+    1672,
+    960
+  ],
+  "backdrop": "/images/brand/hero-robot-backdrop.webp",
+  "masks": {
+    "rim": "/images/brand/hero-robot-mask-rim.png",
+    "waves": "/images/brand/hero-robot-mask-waves.png",
+    "visor": "/images/brand/hero-robot-mask-visor.png",
+    "gloss": "/images/brand/hero-robot-mask-gloss.png"
+  },
+  "eye": {
+    "x": 54.69497607655502,
+    "y": 26.748140276301807
+  },
+  "circle": {
+    "x": 61.20215311004784,
+    "y": -11.392136025504783,
+    "r": 47.79306220095694
+  },
+  "source": "src-hero-robot",
+  "scale": 1
+}

@@ -1,0 +1,20 @@
+{
+  "name": "ezymex-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "EZYMEX website (apps/trader). Log in / sign up hand off to the Ezymex Client Area.",
+  "scripts": {
+    "dev": "npm --prefix apps/trader run dev",
+    "build": "npm --prefix apps/trader run build",
+    "start": "npm --prefix apps/trader run start",
+    "lint": "npm --prefix apps/trader run lint",
+    "install:all": "npm install && npm --prefix apps/trader ci"
+  },
+  "devDependencies": {
+    "next": "15.5.14"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "//deploy": "The 'next' devDependency above is a detection shim, not a build input. Vercel reads the package.json at the deployment Root Directory to identify the framework, and this repo's root is only a monorepo orchestrator. Without it the build fails with 'No Next.js version detected'. Keep the version in step with apps/trader. The alternative, and the cleaner setup, is to set Root Directory to apps/trader in the Vercel project settings, which makes vercel.json and this shim unnecessary."
+}

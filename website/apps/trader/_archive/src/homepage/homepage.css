@@ -1,0 +1,302 @@
+/* ─────────────────────────────────────────────────────────────────────
+   Homepage skin — matches the reference design.
+   Scoped to .kx so nothing leaks into the trader app or other landing pages.
+   ───────────────────────────────────────────────────────────────────── */
+
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+@import "@fontsource/inter/800.css";
+
+.kx {
+  --kx-cream: #f4f1ec;
+  --kx-ink: #0a0a0a;
+  --kx-muted: #5a5a5a;
+  --kx-line: #0a0a0a;
+  --kx-orange: #ff3d0d;
+  --kx-dark-card: #141414;
+  --kx-dark-line: #2c2c2c;
+
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--kx-cream);
+  color: var(--kx-ink);
+  overflow-x: clip;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  letter-spacing: -0.005em;
+}
+
+.kx * {
+  box-sizing: border-box;
+}
+
+.kx-container {
+  width: 100%;
+  max-width: 1240px;
+  margin-inline: auto;
+  padding-inline: 24px;
+}
+
+@media (min-width: 1024px) {
+  .kx-container {
+    padding-inline: 32px;
+  }
+}
+
+/* Orange radial glow used behind the hero, the dark AI panel and the footer corner */
+.kx-glow {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+  background: radial-gradient(
+    closest-side,
+    rgba(255, 96, 28, 0.95) 0%,
+    rgba(255, 120, 50, 0.55) 40%,
+    rgba(255, 140, 70, 0.18) 65%,
+    transparent 100%
+  );
+  filter: blur(48px);
+}
+
+/* Headline type — tight, heavy, like the reference */
+.kx-h1 {
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.02;
+  font-size: clamp(40px, 5.6vw, 84px);
+}
+
+.kx-h2 {
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.06;
+  font-size: clamp(32px, 3.6vw, 56px);
+}
+
+.kx-h3 {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+  font-size: clamp(28px, 3vw, 46px);
+}
+
+/* Pills */
+.kx-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  padding-inline: 26px;
+  border-radius: 9999px;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid var(--kx-ink);
+  transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+.kx-btn:active {
+  transform: translateY(1px);
+}
+.kx-btn-solid {
+  background: var(--kx-ink);
+  color: #fff;
+}
+.kx-btn-solid:hover {
+  background: #262626;
+}
+.kx-btn-outline {
+  background: transparent;
+  color: var(--kx-ink);
+}
+.kx-btn-outline:hover {
+  background: var(--kx-ink);
+  color: #fff;
+}
+.kx-btn-sm {
+  height: 40px;
+  padding-inline: 20px;
+  font-size: 14px;
+}
+
+/* Image placeholders — dark blocks reserved for artwork, same footprint as the reference */
+.kx-placeholder {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  background: #121212;
+  border: 1px solid #262626;
+  box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.45);
+}
+.kx-placeholder--photo {
+  background: #2b2b2b;
+}
+.kx-placeholder-label {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.28);
+  pointer-events: none;
+}
+
+/* ── Scroll reveal ──────────────────────────────────────────────────
+   Elements start hidden and transition in when Reveal adds .is-visible.
+   Direction variants only change the starting transform. */
+.kx-reveal {
+  --kx-ease: cubic-bezier(0.16, 1, 0.3, 1); /* long, gentle settle */
+  opacity: 0;
+  filter: blur(3px);
+  transform: translate3d(0, 24px, 0);
+  transition:
+    opacity 1s var(--kx-ease),
+    transform 1.4s var(--kx-ease),
+    filter 1s var(--kx-ease);
+  will-change: opacity, transform;
+}
+.kx-reveal--left {
+  transform: translate3d(-36px, 0, 0);
+}
+.kx-reveal--right {
+  transform: translate3d(36px, 0, 0);
+}
+.kx-reveal--scale {
+  transform: translate3d(0, 24px, 0) scale(0.975);
+}
+.kx-reveal.is-visible {
+  opacity: 1;
+  filter: blur(0);
+  transform: none;
+}
+/* Release the compositor hint once settled so idle scrolling stays cheap */
+.kx-reveal.is-settled {
+  will-change: auto;
+}
+
+/* Navbar slides down on first paint */
+@keyframes kx-nav-in {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.kx-nav-in {
+  animation: kx-nav-in 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Glows drift slowly so the page feels alive while idle */
+@keyframes kx-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-24px, 18px, 0) scale(1.06);
+  }
+}
+.kx-glow {
+  animation: kx-drift 12s ease-in-out infinite;
+}
+
+/* Feature-card arrow nudges on hover */
+.kx-arrow {
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+article:hover > .kx-arrow {
+  transform: translateX(6px);
+}
+
+/* Cards lift a little on hover */
+.kx-lift {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease;
+}
+.kx-lift:hover {
+  transform: translateY(-4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kx-reveal,
+  .kx-reveal--left,
+  .kx-reveal--right,
+  .kx-reveal--scale {
+    opacity: 1;
+    filter: none;
+    transform: none;
+    transition: none;
+  }
+  .kx-nav-in,
+  .kx-glow {
+    animation: none;
+  }
+}
+
+/* Marquee */
+@keyframes kx-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.kx-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: kx-marquee 30s linear infinite;
+}
+.kx-marquee:hover .kx-marquee-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kx-marquee-track {
+    animation: none;
+  }
+}
+
+/* Desktop dropdown */
+.kx-dd {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translate(-50%, 6px);
+  min-width: 220px;
+  padding: 8px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid rgba(10, 10, 10, 0.1);
+  box-shadow: 0 18px 44px rgba(10, 10, 10, 0.14);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.16s ease, transform 0.16s ease, visibility 0.16s;
+  z-index: 60;
+}
+.kx-dd-parent:hover .kx-dd,
+.kx-dd-parent:focus-within .kx-dd {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+.kx-dd a {
+  display: block;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(10, 10, 10, 0.78);
+  white-space: nowrap;
+}
+.kx-dd a:hover {
+  background: #f2efe9;
+  color: var(--kx-ink);
+}

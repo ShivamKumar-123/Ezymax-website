@@ -1,0 +1,1020 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Ezymex website. Dark only: near-black ink, one ember accent, warm rim light.
+   Tokens follow the platform (packages/ui/src/styles.css in the Ezymex repo).
+   ───────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --ink: #07070a;
+  --ink-2: #0c0c10;
+  --ink-3: #111114;
+  --ink-4: #17171c;
+  --fg: #f5f5f7;
+  --fg-2: #b4b4bd;
+  --fg-3: #8d8d97;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-2: rgba(255, 255, 255, 0.14);
+  --ember: #ff5a1f;
+  --ember-2: #ff8a3d;
+  --ember-grad: linear-gradient(120deg, #ff5a1f 0%, #ff8a3d 100%);
+  --glass-bg: rgba(18, 18, 22, 0.58);
+  --glass-line: rgba(255, 255, 255, 0.1);
+  --gutter: clamp(16px, 4vw, 40px);
+  --section-y: clamp(80px, 11vw, 168px);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  color-scheme: dark;
+}
+
+@layer base {
+  html {
+    background: var(--ink);
+    color: var(--fg);
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    background: var(--ink);
+    color: var(--fg);
+    font-family: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: clip;
+    min-height: 100vh;
+  }
+  ::selection {
+    background: rgba(255, 90, 31, 0.35);
+    color: #fff;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ember);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+  img,
+  video,
+  canvas {
+    max-width: 100%;
+  }
+  /* Google Translate injects a banner and shifts the body; keep the layout still. */
+  body {
+    top: 0 !important;
+  }
+  .skiptranslate iframe,
+  .goog-te-banner-frame,
+  #goog-gt-tt,
+  .goog-te-balloon-frame {
+    display: none !important;
+  }
+  .goog-text-highlight {
+    background: none !important;
+    box-shadow: none !important;
+  }
+}
+
+/* Lenis smooth scroll */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+@layer components {
+  .container-site {
+    width: 100%;
+    max-width: 1360px;
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+
+  .section {
+    padding-block: var(--section-y);
+    position: relative;
+  }
+
+  /* ── Type ─────────────────────────────────────────────────────────────── */
+  .t-mega {
+    font-family: var(--font-display), var(--font-geist), sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.055em;
+    line-height: 0.88;
+    font-size: clamp(3.4rem, 11.5vw, 11.5rem);
+  }
+  .t-hero {
+    font-family: var(--font-display), var(--font-geist), sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.052em;
+    line-height: 0.9;
+    font-size: clamp(3.3rem, 8vw, 8.2rem);
+  }
+  .t-display {
+    font-family: var(--font-display), var(--font-geist), sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.05em;
+    line-height: 0.92;
+    font-size: clamp(2.75rem, 7.4vw, 7.25rem);
+  }
+  .t-h1 {
+    font-family: var(--font-display), var(--font-geist), sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.048em;
+    line-height: 0.95;
+    font-size: clamp(2.6rem, 6.2vw, 6rem);
+  }
+  .t-h2 {
+    font-family: var(--font-display), var(--font-geist), sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.042em;
+    line-height: 0.98;
+    font-size: clamp(2.1rem, 4.6vw, 4.25rem);
+  }
+  .t-h3 {
+    font-family: var(--font-display), var(--font-geist), sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.032em;
+    line-height: 1.05;
+    font-size: clamp(1.4rem, 2.1vw, 1.9rem);
+  }
+  .t-lead {
+    font-size: clamp(1.02rem, 1.25vw, 1.2rem);
+    line-height: 1.6;
+    color: var(--fg-2);
+  }
+  .t-body {
+    font-size: 0.975rem;
+    line-height: 1.65;
+    color: var(--fg-2);
+  }
+  .t-pixel {
+    font-family: var(--font-pixel), var(--font-geist-mono), monospace;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 0.9;
+    font-variant-numeric: tabular-nums;
+  }
+  .kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--fg-2);
+  }
+  .kicker::before {
+    content: '';
+    width: 1.6rem;
+    height: 1px;
+    background: var(--ember);
+  }
+  .text-ember-grad {
+    background: var(--ember-grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* ── Surfaces ─────────────────────────────────────────────────────────── */
+  .glass {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-line);
+    -webkit-backdrop-filter: blur(22px) saturate(140%);
+    backdrop-filter: blur(22px) saturate(140%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 24px 60px -24px rgba(0, 0, 0, 0.7);
+  }
+  .glass-strong {
+    background: rgba(14, 14, 18, 0.78);
+    border: 1px solid var(--glass-line);
+    -webkit-backdrop-filter: blur(28px) saturate(150%);
+    backdrop-filter: blur(28px) saturate(150%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  }
+  .card {
+    position: relative;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012));
+    border: 1px solid var(--line);
+    border-radius: 28px;
+    overflow: hidden;
+  }
+  .card-hover {
+    transition:
+      border-color 0.4s var(--ease-out),
+      transform 0.6s var(--ease-out),
+      background 0.4s var(--ease-out);
+  }
+  .card-hover:hover {
+    border-color: rgba(255, 138, 61, 0.35);
+  }
+  .hairline {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--line-2), transparent);
+  }
+
+  /* ── Buttons ──────────────────────────────────────────────────────────── */
+  .btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    height: 48px;
+    padding: 0 1.4rem;
+    border-radius: 999px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    transition:
+      background 0.35s var(--ease-out),
+      color 0.35s var(--ease-out),
+      border-color 0.35s var(--ease-out),
+      box-shadow 0.35s var(--ease-out),
+      transform 0.35s var(--ease-out);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-sm {
+    height: 40px;
+    padding: 0 1.05rem;
+    font-size: 0.875rem;
+  }
+  .btn-ember {
+    background: var(--ember-grad);
+    color: #120804;
+    box-shadow:
+      0 0 0 1px rgba(255, 138, 61, 0.3),
+      0 12px 36px -12px rgba(255, 90, 31, 0.75);
+  }
+  .btn-ember:hover {
+    box-shadow:
+      0 0 0 1px rgba(255, 138, 61, 0.55),
+      0 16px 48px -10px rgba(255, 90, 31, 0.9);
+  }
+  .btn-outline {
+    color: var(--fg);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.02);
+  }
+  .btn-outline:hover {
+    border-color: rgba(255, 138, 61, 0.7);
+    background: rgba(255, 90, 31, 0.08);
+  }
+  .btn-light {
+    background: var(--fg);
+    color: #0b0b0e;
+  }
+  .btn-light:hover {
+    background: #fff;
+  }
+  .btn .arrow {
+    display: inline-grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    margin-right: -0.85rem;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.85);
+    color: var(--ember-2);
+    transition: transform 0.45s var(--ease-out);
+  }
+  .btn-outline .arrow,
+  .btn-light .arrow {
+    background: var(--ember);
+    color: #120804;
+  }
+  .btn:hover .arrow {
+    transform: rotate(45deg);
+  }
+  .btn-sm .arrow {
+    width: 26px;
+    height: 26px;
+    margin-right: -0.7rem;
+  }
+
+  .arrow-circle {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: var(--fg);
+    transition:
+      background 0.4s var(--ease-out),
+      border-color 0.4s var(--ease-out),
+      color 0.4s var(--ease-out),
+      transform 0.5s var(--ease-out);
+  }
+  .group:hover .arrow-circle,
+  .arrow-circle:hover {
+    background: var(--ember);
+    border-color: var(--ember);
+    color: #120804;
+    transform: rotate(45deg);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    height: 28px;
+    padding: 0 0.75rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--fg-2);
+    border: 1px solid var(--line-2);
+    background: rgba(255, 255, 255, 0.03);
+    white-space: nowrap;
+  }
+  .chip-ember {
+    color: #ffb48a;
+    border-color: rgba(255, 90, 31, 0.4);
+    background: rgba(255, 90, 31, 0.1);
+  }
+
+  /* ── Atmosphere ───────────────────────────────────────────────────────── */
+  .grain {
+    pointer-events: none;
+    position: fixed;
+    inset: -50%;
+    z-index: 60;
+    opacity: 0.07;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    mix-blend-mode: overlay;
+  }
+  .gridlines {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+  .gridlines > div {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.11) 50%, transparent 50%);
+    background-size: 1px 8px;
+    opacity: 0.55;
+  }
+  .glow-ember {
+    pointer-events: none;
+    position: absolute;
+    border-radius: 999px;
+    background: radial-gradient(closest-side, rgba(255, 90, 31, 0.55), rgba(255, 90, 31, 0.12) 55%, transparent 75%);
+    filter: blur(20px);
+  }
+  .rim {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.06),
+      0 -1px 0 0 rgba(255, 138, 61, 0.35),
+      0 40px 120px -40px rgba(255, 90, 31, 0.45);
+  }
+
+  .underline-ember {
+    position: relative;
+  }
+  .underline-ember::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -2px;
+    height: 1px;
+    background: var(--ember);
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.5s var(--ease-out);
+  }
+  .underline-ember:hover::after,
+  .underline-ember[aria-current='page']::after {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+
+  /* Link inside prose */
+  .prose-link {
+    color: #ffb48a;
+    text-decoration: underline;
+    text-decoration-color: rgba(255, 138, 61, 0.45);
+    text-underline-offset: 3px;
+  }
+  .prose-link:hover {
+    text-decoration-color: var(--ember-2);
+  }
+
+  .skip-link {
+    position: fixed;
+    left: 16px;
+    top: -60px;
+    z-index: 200;
+    padding: 10px 16px;
+    border-radius: 999px;
+    background: var(--fg);
+    color: var(--ink);
+    font-weight: 600;
+    transition: top 0.2s;
+  }
+  .skip-link:focus {
+    top: 16px;
+  }
+
+  /* Reveal (CSS first: content is visible without JS; JS adds .reveal-armed only when it will animate). */
+  .reveal-armed [data-reveal] {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0);
+  }
+  .reveal-armed [data-reveal].is-in {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity 1s var(--ease-out),
+      transform 1.1s var(--ease-out);
+    transition-delay: var(--reveal-delay, 0s);
+  }
+
+  /* Pixel stat underline */
+  .stat-line {
+    height: 1px;
+    background: linear-gradient(90deg, var(--ember), rgba(255, 90, 31, 0.15));
+    transform-origin: left;
+  }
+
+  /* Tables */
+  .table-clean th {
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fg-3);
+    text-align: left;
+  }
+  .num {
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Hide scrollbars on horizontal rails while keeping them scrollable */
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal-armed [data-reveal] {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── Headline line reveal (components/motion/Headline.tsx) ───────────────── */
+.headline .hl-line {
+  display: block;
+  overflow: hidden;
+  /* room for descenders (g, y, p) inside the reveal mask */
+  padding-bottom: 0.2em;
+  margin-bottom: -0.2em;
+}
+.headline .hl-in {
+  display: inline-block;
+  /* extend the box over descenders so gradient (background-clip: text) fills paint them; layout unchanged */
+  padding-bottom: 0.2em;
+  margin-bottom: -0.2em;
+}
+.reveal-armed [data-split=''] .hl-in {
+  transform: translate3d(0, 110%, 0) rotate(2.5deg);
+  transform-origin: 0 100%;
+}
+.reveal-armed [data-split=''].is-in .hl-in {
+  transform: none;
+  transition: transform 1.15s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(var(--d, 0s) + var(--i) * 0.09s);
+}
+@keyframes hl-up {
+  from {
+    transform: translate3d(0, 110%, 0) rotate(2.5deg);
+  }
+  to {
+    transform: none;
+  }
+}
+[data-split='now'] .hl-in {
+  transform-origin: 0 100%;
+  animation: hl-up 1.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--d, 0s) + var(--i) * 0.11s);
+}
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0);
+  }
+}
+.fade-up-now {
+  animation: fade-up 1.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--d, 0.3s);
+}
+.gt-on [data-split] .hl-in,
+.gt-on .fade-up-now {
+  transform: none !important;
+  animation: none !important;
+}
+
+/* Product frames */
+@media (min-width: 1024px) {
+  .frame-tilt {
+    transform: perspective(1800px) rotateY(-9deg) rotateX(5deg) rotateZ(1deg);
+    transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .frame-tilt:hover {
+    transform: perspective(1800px) rotateY(-4deg) rotateX(2deg);
+  }
+}
+
+/* Home hero portal: a radial feather (the portal is round), so the carved wall dissolves into the crimson black */
+.hero-portal-mask {
+  -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 42%, #000 52%, rgba(0, 0, 0, 0.6) 72%, transparent 100%);
+  mask-image: radial-gradient(ellipse 50% 50% at 50% 42%, #000 52%, rgba(0, 0, 0, 0.6) 72%, transparent 100%);
+}
+.text-crimson-grad {
+  background: linear-gradient(120deg, #e3192f 0%, #ff4a3f 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.kicker-crimson::before {
+  background: #e3192f;
+}
+
+/* Footer beam: soft left and right edges so the image never shows a box on the black */
+.beam-mask {
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 18%, #000 82%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, #000 18%, #000 82%, transparent 100%);
+}
+
+/* ── Platform showcase (components/motion/HorizontalShowcase.tsx) ─────────────
+   Default (phones, short screens, reduced motion): a swipeable snap carousel, caption under each screenshot.
+   Pinned (≥1024 wide and ≥700 tall): screenshot height follows the viewport, caption beside it. */
+.sc-track {
+  display: flex;
+  gap: 16px;
+  margin-top: 40px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  padding-inline: var(--gutter);
+  scroll-padding-inline: var(--gutter);
+}
+.sc-slide {
+  flex: none;
+  width: min(88vw, 760px);
+  scroll-snap-align: start;
+}
+.sc-frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.sc-bar {
+  display: none;
+}
+.sc .arrow-circle:hover:not(:disabled) {
+  transform: none;
+}
+.sc .arrow-circle:disabled {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.18);
+  color: var(--fg);
+}
+@media (min-width: 1024px) and (min-height: 700px) and (prefers-reduced-motion: no-preference) {
+  .sc {
+    --sc-h: min(64svh, calc(100svh - 280px));
+    height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 92px 0 28px;
+  }
+  .sc-intro .sc-title {
+    font-size: clamp(2.4rem, 3.4vw, 3.4rem);
+  }
+  .sc-track {
+    width: max-content;
+    margin-top: 28px;
+    gap: 64px;
+    overflow: visible;
+    scroll-snap-type: none;
+    align-items: flex-end;
+    padding-left: max(var(--gutter), calc((100vw - 1360px) / 2 + var(--gutter)));
+    padding-right: 10vw;
+  }
+  .sc-slide {
+    width: auto;
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: flex-end;
+    gap: 28px;
+  }
+  /* As tall as the screen allows, but never wider than the screen minus the caption column. */
+  .sc-frame {
+    flex: none;
+    width: min(
+      calc((var(--sc-h) - 36px) * var(--ar) + 2px),
+      calc(100vw - max(var(--gutter), (100vw - 1360px) / 2 + var(--gutter)) - 278px - 32px)
+    );
+  }
+  .sc-cap {
+    width: 250px;
+    flex: none;
+    margin: 0 0 6px;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .sc-nav {
+    display: none;
+  }
+  .sc-bar {
+    display: block;
+    margin-top: 24px;
+  }
+}
+
+/* Options band model: the left edge (where the crossed leg meets the frame) melts into the band's orange */
+.band-model-mask {
+  -webkit-mask-image:
+    linear-gradient(to bottom, transparent 0%, #000 10%),
+    linear-gradient(to right, transparent 0%, #000 14%, #000 88%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to bottom, transparent 0%, #000 10%),
+    linear-gradient(to right, transparent 0%, #000 14%, #000 88%, transparent 100%);
+  mask-composite: intersect;
+}
+/* Short, wide screens (not pinned): keep the carousel, but caption beside a screenshot that fits the height */
+@media (min-width: 1024px) and (max-height: 699px) {
+  .sc-slide {
+    width: auto;
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: flex-end;
+    gap: 28px;
+  }
+  .sc-frame {
+    flex: none;
+    width: min(calc((100svh - 150px) * var(--ar)), calc(100vw - 2 * var(--gutter) - 320px));
+  }
+  .sc-cap {
+    width: 250px;
+    flex: none;
+    margin: 0 0 6px;
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+
+/* ── Home hero: the founder's robot artwork ─────────────────────────────────
+   --cap: the largest crisp width (native px / screen density). --want: the width that would cover the frame.
+   The core box is min(want, cap) wide; at full size it covers the frame, otherwise it sits centre-right (landscape)
+   or centred (portrait) and the blurred backdrop, 3x the core box and centred on it, continues the scene. */
+.hero-robot {
+  --dpr: 1;
+  --fh: max(520px, min(100svh, 56.28vw));
+  height: var(--fh);
+}
+@media (min-resolution: 1.25dppx) {
+  .hero-robot {
+    --dpr: 1.5;
+  }
+}
+@media (min-resolution: 1.75dppx) {
+  .hero-robot {
+    --dpr: 2;
+  }
+}
+@media (min-resolution: 2.5dppx) {
+  .hero-robot {
+    --dpr: 3;
+  }
+}
+.hero-robot-stage {
+  --cap: calc(var(--native) * 1px / var(--dpr));
+  --want: max(100vw, calc(var(--fh) / var(--ratio)));
+  --cw: min(var(--want), var(--cap));
+  --ch: calc(var(--cw) * var(--ratio));
+  --tx: 0.64;
+  background: #0a0203;
+}
+.hero-robot-core {
+  position: absolute;
+  width: var(--cw);
+  height: var(--ch);
+  /* helmet centre (57.7%) at --tx of the frame, clamped so a full-size core always covers the frame */
+  left: clamp(min(0px, 100vw - var(--cw)), calc(var(--tx) * 100vw - 0.577 * var(--cw)), max(0px, 100vw - var(--cw)));
+  /* landscape: bottom-anchored (the jacket runs off the frame); at full size, crop mostly from the bottom */
+  top: max(calc(0.22 * (var(--fh) - var(--ch))), calc(var(--fh) - 0.96 * var(--ch)));
+}
+.hero-robot-backdrop {
+  position: absolute;
+  left: -100%;
+  top: -100%;
+  width: 300%;
+  height: 300%;
+  max-width: none;
+  pointer-events: none;
+}
+.hero-robot-art {
+  position: absolute;
+  inset: 0;
+  display: block;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 11%, #000 91%, transparent 100%),
+    linear-gradient(to bottom, transparent 0%, #000 12%, #000 100%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent 0%, #000 11%, #000 91%, transparent 100%),
+    linear-gradient(to bottom, transparent 0%, #000 12%, #000 100%);
+  mask-composite: intersect;
+}
+.hero-robot-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.hero-copy {
+  justify-content: center;
+  padding-top: 88px;
+  padding-bottom: 40px;
+}
+.hero-copy-inner {
+  max-width: min(46vw, 640px);
+}
+/* Sized so the headline always ends well left of the helmet (which starts at 45% of the picture). */
+.t-hero-robot {
+  font-family: var(--font-display), var(--font-geist), sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.05em;
+  line-height: 0.92;
+  font-size: clamp(3.1rem, 5.2vw, 6rem);
+}
+.hero-text-scrim {
+  background: linear-gradient(90deg, rgba(5, 1, 2, 0.62) 0%, rgba(5, 1, 2, 0.42) 26%, rgba(5, 1, 2, 0.12) 40%, transparent 48%);
+}
+@media (orientation: portrait) and (max-width: 1023px) {
+  .hero-copy {
+    justify-content: flex-end;
+    padding-bottom: max(40px, 5svh);
+  }
+  .hero-copy-inner {
+    max-width: none;
+  }
+  .hero-text-scrim {
+    background: linear-gradient(180deg, transparent 38%, rgba(5, 1, 2, 0.5) 55%, rgba(5, 1, 2, 0.82) 75%);
+  }
+  .hero-robot {
+    --fh: max(560px, 100svh);
+  }
+  .hero-robot-stage {
+    --tx: 0.5;
+  }
+  .hero-robot-core {
+    /* the picture sits high, just under the nav; the text stacks below the helmet */
+    top: 56px;
+  }
+  .hero-robot-art {
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 8%, #000 92%, transparent 100%),
+      linear-gradient(to bottom, transparent 0%, #000 14%, #000 84%, transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0%, #000 8%, #000 92%, transparent 100%),
+      linear-gradient(to bottom, transparent 0%, #000 14%, #000 84%, transparent 100%);
+  }
+}
+
+/* ── Hero video stage ───────────────────────────────────────
+   The still frame and the clip share one class, so they are framed identically and the clip can appear over the
+   picture without anything shifting. Landscape: the hero is already about 16:9, so the clip fills it. Portrait
+   below 1024px: the hero is full-height, and covering it would blow a 16:9 clip up several times over, so it keeps
+   its own 16:9 box under the nav with feathered edges and the copy stacks beneath — as the robot artwork did. */
+.hero-video {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  /* the still frame, chosen by the same query that chooses the clip, so the hero is framed correctly before any
+     script runs and stays correct if none does */
+  background: #0a0203 url('/videos/hero-poster.jpg') center / cover no-repeat;
+}
+.hero-video-portrait {
+  display: none;
+}
+@media (orientation: portrait) and (max-width: 1023px) {
+  .hero-video {
+    background-image: url('/videos/hero-portrait-poster.jpg');
+  }
+  .hero-video-wide {
+    display: none;
+  }
+  .hero-video-portrait {
+    display: block;
+  }
+}
+/* covers at every width: the copy sits over the clip on a phone exactly as it does on a desktop, and the portrait
+   text scrim below keeps the headline readable against the brighter part of the frame */
+.hero-video-art {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── Hero robot: motion (transform / opacity only) ─────────────────────────────
+   Intro (once): the scene fades up from black, settling from 1.08 to 1; the eye ignites; the button rises.
+   Idle: the eye breathes (3.5 s) with a rare inner flicker, a highlight runs along the visor (5 s), and a streak of
+   light travels round the big circle's rim (6.5 s). Phones skip the rim. Reduced motion: a still with the eye lit. */
+.hero-robot-core {
+  animation: hr-in 1.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: 58% 40%;
+}
+@keyframes hr-in {
+  from {
+    opacity: 0;
+    transform: scale(1.08);
+  }
+}
+.hr-fx {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.hr-eye-bloom,
+.hr-eye-core {
+  position: absolute;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  mix-blend-mode: screen;
+  transform: translate(-50%, -50%);
+}
+.hr-eye-bloom {
+  width: 9%;
+  opacity: 0.55;
+  background: radial-gradient(closest-side, rgba(255, 92, 48, 0.6), rgba(255, 40, 20, 0.2) 45%, transparent 72%);
+  animation:
+    hr-ignite 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) 1.45s both,
+    hr-breathe 3.5s ease-in-out 1.9s infinite;
+}
+.hr-eye-core {
+  width: 2.4%;
+  opacity: 0.7;
+  background: radial-gradient(closest-side, rgba(255, 214, 170, 0.85), rgba(255, 110, 60, 0.35) 55%, transparent 80%);
+  animation:
+    hr-ignite-core 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) 1.45s both,
+    hr-flicker 7.3s steps(1, end) 3s infinite;
+}
+@keyframes hr-ignite {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3);
+  }
+}
+@keyframes hr-ignite-core {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.2);
+  }
+}
+@keyframes hr-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+}
+@keyframes hr-flicker {
+  0%,
+  90%,
+  93%,
+  96%,
+  100% {
+    opacity: 0.7;
+  }
+  91.5% {
+    opacity: 0.35;
+  }
+  94.5% {
+    opacity: 0.85;
+  }
+}
+.hr-masked {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  -webkit-mask-image: var(--mask);
+  mask-image: var(--mask);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+.hr-band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 60%;
+  width: 6%;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 236, 214, 0.95), transparent);
+  mix-blend-mode: screen;
+  animation: hr-visor 5s cubic-bezier(0.45, 0, 0.55, 1) 2.6s infinite;
+}
+@keyframes hr-visor {
+  0% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+  3% {
+    opacity: 1;
+  }
+  19% {
+    opacity: 1;
+  }
+  22%,
+  100% {
+    opacity: 0;
+    transform: translateX(260%);
+  }
+}
+.hr-wedge {
+  position: absolute;
+  aspect-ratio: 1;
+  opacity: 0;
+  transform: translate(-50%, -50%) rotate(115deg);
+  /* a narrow bright wedge at 0deg (up); rotated round the circle's centre, the rim mask turns it into a streak */
+  background: conic-gradient(
+    from -10deg,
+    transparent 0deg,
+    rgba(255, 196, 150, 0.15) 4deg,
+    rgba(255, 238, 220, 0.95) 9deg,
+    rgba(255, 196, 150, 0.15) 13deg,
+    transparent 16deg,
+    transparent 360deg
+  );
+  mix-blend-mode: screen;
+  animation: hr-rim 6.5s cubic-bezier(0.55, 0, 0.45, 1) 3.4s infinite;
+}
+@keyframes hr-rim {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(112deg);
+  }
+  6% {
+    opacity: 1;
+  }
+  42% {
+    opacity: 1;
+  }
+  48%,
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(282deg);
+  }
+}
+.hero-robot[data-paused] .hr-fx *,
+.hero-robot[data-paused] .hr-fx {
+  animation-play-state: paused !important;
+}
+@media (max-width: 767px) {
+  .hr-rim {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hr-band,
+  .hr-wedge {
+    display: none;
+  }
+}
