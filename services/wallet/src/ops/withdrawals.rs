@@ -806,6 +806,7 @@ mod tests {
             turnover_enabled: false,
             turnover_multiplier: D::ZERO,
             turnover_min_deposit: D::ZERO,
+            turnover_unit: "notional".into(),
         };
         // on chain: 1 flat + 0.5% of 101 = 0.505 → 0.51 (rounded up) + the chain's network fee (0.5 here)
         assert_eq!(fee_for(&l, D::from_str("0.5").unwrap(), D::from(101), true), D::from_str("2.01").unwrap());

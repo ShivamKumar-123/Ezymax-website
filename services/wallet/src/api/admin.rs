@@ -464,7 +464,7 @@ pub async fn update_settings(State(st): State<AppState>, s_ctx: StaffCtx, Body(b
             turnover_enabled: l.turnover_enabled.unwrap_or(cur.turnover_enabled),
             turnover_multiplier: nonneg("turnover_multiplier", l.turnover_multiplier)?.unwrap_or(cur.turnover_multiplier),
             turnover_min_deposit: nonneg("turnover_min_deposit", l.turnover_min_deposit)?.unwrap_or(cur.turnover_min_deposit),
-            turnover_unit: l.turnover_unit.map(|u| u.trim().to_lowercase()).unwrap_or(cur.turnover_unit),
+            turnover_unit: l.turnover_unit.map(|u| u.trim().to_lowercase()).unwrap_or_else(|| cur.turnover_unit.clone()),
         };
         if next.withdraw_min <= D::ZERO {
             return Err(ApiError::validation("withdraw_min", "The minimum withdrawal must be above 0"));
