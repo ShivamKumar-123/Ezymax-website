@@ -501,11 +501,15 @@ pub async fn ingest(pool: &PgPool, tenant_id: i64, d: &DealIn) -> sqlx::Result<O
 pub async fn volume_tick(st: &AppState, tenant_id: i64, tenant: &str) -> anyhow::Result<usize> {
     let after = cursor(&st.pool, tenant_id, "volume").await?;
     let feed = st.engine.volume(tenant, after, FEED_PAGE).await.map_err(|e| anyhow::anyhow!("engine volume feed: {e:?}"))?;
+    // A missing USD value only matters to a requirement counted in dollars. In lots the deal is already fully
+    // known, and holding the cursor for a conversion nobody needs stalled the whole feed for six weeks on two
+    // October deals the engine could not price (23 Nov 2026): no trade after them was ever credited.
+    let needs_usd = policy(&st.pool, tenant_id).await?.unit == Unit::Notional;
     let mut counted = 0;
     let mut seen = after;
     let mut held = false;
     for d in &feed {
-        if d.notional.is_none() && !d.option && !d.reversed {
+        if needs_usd && d.notional.is_none() && !d.option && !d.reversed {
             tracing::warn!(deal = d.deal, symbol = %d.symbol, "no USD value for a closed deal yet; turnover cursor held");
             held = true;
         }
