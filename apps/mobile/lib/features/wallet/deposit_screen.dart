@@ -29,10 +29,10 @@ import 'checkout_api.dart';
 import 'manual_api.dart';
 import 'wallet_api.dart';
 import 'widgets/checkout_panels.dart';
-import 'widgets/turnover.dart';
 import 'widgets/deposit_gate.dart';
 import 'widgets/deposit_panels.dart';
 import 'widgets/manual_panels.dart';
+import 'widgets/turnover.dart';
 import 'widgets/wallet_ui.dart';
 
 class DepositScreen extends ConsumerStatefulWidget {
