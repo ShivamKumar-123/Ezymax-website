@@ -12,6 +12,8 @@ import { STATUS_LABEL, curOf, errorToast, fmtLevel, levelTone, openTerminal, pro
 import { DeleteAccountDialog, FlavorChip, RenameDialog, accountFlavor, copyingName } from "./archive";
 import { CloseAccountDialog } from "./closure";
 import { ChangeTypeDialog, DefaultStar, DemoBalanceDialog, TransferBetweenDialog, setDefaultAccount } from "./extras";
+import { HideBalancesButton, MASK, useBalancesHidden } from "@/components/dashboard/home/hide-balances";
+import { Ribbon } from "@/components/dashboard/home/accounts-panel";
 
 /** Prop-challenge accounts live in engine groups named prop*: simulated capital that is never funded from the
  * wallet (the wallet refuses transfers to them) and never counted in the client's own live equity. */
@@ -268,93 +270,115 @@ function CopyActions({ a }: { a: EngineAccount }) {
   );
 }
 
-export function LiveAccountRow({ a, onChanged, compact }: { a: EngineAccount; onChanged?: () => void; compact?: boolean }) {
+/** One trading account, as a card.
+ *
+ *  The card is dark in both themes, warm for real money and grey for practice, which is the same finish the
+ *  dashboard's account cards carry - a client should recognise their account by its face wherever they meet it.
+ *  `k-on-dark` pins the dark token set on the subtree so the buttons, chips and muted text inside read against
+ *  it without each one being given a colour of its own.
+ *
+ *  The face carries what the client checks at a glance - whose account it is, what it holds, whether it can
+ *  take a trade - and the line above the buttons carries everything that is true only sometimes: open
+ *  positions and floating P&L, an unfunded live account, who is being copied, how many demo refills are left.
+ *  None of that is decoration, so none of it was dropped to make the card tidy. */
+export function LiveAccountCard({ a, onChanged }: { a: EngineAccount; onChanged?: () => void }) {
   const t = useT();
   const cur = curOf(a);
   const tone = levelTone(a.marginLevel);
   const readOnly = useReadOnly();
   const flavor = accountFlavor(a);
   const copying = flavor === "copy" ? copyingName(a) : null;
+  const prop = isPropAccount(a);
+  const hidden = useBalancesHidden();
+  const live = a.type === "live" && !prop;
+  const unfunded = a.type === "live" && a.balance === 0 && a.equity === 0;
+
+  const amount = (value: number, className: string) =>
+    hidden ? <span className={cn("k-num block", className)}>{MASK}</span> : <Money value={value} currency={cur} countUp={false} className={cn("block truncate", className)} />;
+
   return (
-    <div className="k-row group relative overflow-hidden p-4 transition-colors hover:border-[var(--k-border-top)] sm:p-5">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <KindBadge type={a.type} prop={isPropAccount(a)} />
+    <div className={cn("k-on-dark relative isolate flex flex-col overflow-hidden rounded-[22px] p-5", live ? "k-acct-live" : "k-acct-demo")}>
+      <Ribbon />
+
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+          <KindBadge type={a.type} prop={prop} />
+          <StatusBadge a={a} />
+          <DefaultStar a={a} />
+        </div>
+        <div className="flex shrink-0 items-start gap-1">
+          <div className="text-end">
+            <div className="text-[9.5px] font-semibold uppercase tracking-[0.12em] text-fg-3">{t("accounts.label.login")}</div>
+            <div dir="ltr" className="k-num font-mono text-[13.5px] font-semibold">#{a.login}</div>
+          </div>
+          <CopyButton value={String(a.login)} label={t("accounts.label.login")} />
+        </div>
+      </div>
+
+      <Link href={`/accounts/${a.login}`} className="mt-3 block min-w-0 text-[19px] font-semibold leading-tight tracking-[-0.01em] hover:text-ember-2">
+        {a.groupName} · {t.dyn(`accounts.mode.${a.mode}`, a.mode)}
+      </Link>
+      {a.name && <div className="mt-0.5 truncate text-[12.5px] text-fg-2">“{a.name}”</div>}
+
+      <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
         <ProductBadge a={a} />
         <FlavorChip a={a} />
-        <Link href={`/accounts/${a.login}`} className="text-[15px] font-medium text-fg hover:text-ember">
-          {a.groupName} · {t.dyn(`accounts.mode.${a.mode}`, a.mode)}
-        </Link>
-        <span className="inline-flex items-center gap-1 font-mono text-[13px] text-fg-2">
-          #{a.login}
-          <CopyButton value={String(a.login)} label={t("accounts.label.login")} />
-        </span>
-        {a.name && <span className="truncate text-[13px] text-fg-3">“{a.name}”</span>}
+        <Chip size="sm" className="font-semibold tracking-wider">
+          {t.dyn(`accounts.mode.${a.mode}`, a.mode)}
+        </Chip>
         {a.cent && (
           <Chip size="sm" tone="gold">
             USC
           </Chip>
         )}
-        <DefaultStar a={a} />
-        <StatusBadge a={a} />
-        {a.closureRequest?.status === "pending" && (
-          <Chip size="sm" tone="info">
-            {t("accounts.close.pendingChip")}
-          </Chip>
-        )}
-        {a.dormantSince && (
-          <Chip size="sm" tone="warn">
-            {t("accounts.dormant.chip")}
-          </Chip>
-        )}
-        <div className="ms-auto flex items-center gap-2 text-xs text-fg-3">
-          <span className="hidden font-mono sm:inline">{serverOf(a)}</span>
-          {productOf(a) !== "options" && <Chip size="sm">1:{a.leverage.toLocaleString("en-US")}</Chip>}
+        {productOf(a) !== "options" && <Chip size="sm">1:{a.leverage.toLocaleString("en-US")}</Chip>}
+      </div>
+
+      <div className="mt-4 flex items-end gap-2">
+        {amount(a.balance, "text-[27px] font-bold leading-none tracking-[-0.02em]")}
+        <span className="pb-0.5 text-[12.5px] font-medium text-fg-2">{a.cent ? "USC" : "USD"}</span>
+        <HideBalancesButton className="-mb-1.5 ms-auto size-8" />
+      </div>
+
+      <div className="mt-4 grid grid-cols-3 gap-3 border-t border-line pt-3.5">
+        <div className="min-w-0">
+          <div className="text-[11px] text-fg-3">{t("common.equity")}</div>
+          {amount(a.equity, "mt-0.5 text-[14.5px] font-semibold")}
+        </div>
+        <div className="min-w-0 border-s border-line ps-3">
+          <div className="text-[11px] text-fg-3">{t("accounts.label.freeMargin")}</div>
+          {amount(a.freeMargin, "mt-0.5 text-[14.5px] font-semibold")}
+        </div>
+        <div className="min-w-0 border-s border-line ps-3">
+          <div className="whitespace-nowrap text-[11px] text-fg-3">{t("accounts.label.marginLevel")}</div>
+          <div className={cn("k-num mt-0.5 text-[14.5px] font-semibold", tone === "up" && "text-up", tone === "warn" && "text-warn", tone === "down" && "text-down")}>{fmtLevel(a.marginLevel)}</div>
         </div>
       </div>
-      <div className={cn("mt-4 grid items-end gap-4", compact ? "grid-cols-2 sm:grid-cols-3 xl:grid-cols-[1fr_1fr_1fr_auto]" : "grid-cols-2 sm:grid-cols-4 xl:grid-cols-[1fr_1fr_1fr_1fr_auto]")}>
-        <div className="min-w-0">
-          <div className="text-[12px] text-fg-3">{t("common.balance")}</div>
-          <Money value={a.balance} currency={cur} countUp={false} className="mt-1 block truncate text-[16px] font-semibold sm:text-[19px]" />
-        </div>
-        <div className="min-w-0">
-          <div className="text-[12px] text-fg-3">{t("common.equity")}</div>
-          <Money value={a.equity} currency={cur} countUp={false} className="mt-1 block truncate text-[16px] font-semibold sm:text-[19px]" />
-        </div>
-        {!compact && (
-          <div className="hidden min-w-0 sm:block">
-            <div className="text-[12px] text-fg-3">{t("accounts.label.freeMargin")}</div>
-            <Money value={a.freeMargin} currency={cur} countUp={false} className="mt-1 block text-[15px] font-medium text-fg-2" />
-          </div>
-        )}
-        <div>
-          <div className="whitespace-nowrap text-[12px] text-fg-3">{t("accounts.label.marginLevel")}</div>
-          <div className={cn("k-num mt-1 text-[17px] font-semibold", tone === "up" && "text-up", tone === "warn" && "text-warn", tone === "down" && "text-down")}>{fmtLevel(a.marginLevel)}</div>
-        </div>
-        {!readOnly && (
-          <div className="col-span-full flex flex-wrap items-center justify-end gap-2 xl:col-span-1">
-            <AccountActions a={a} onChanged={onChanged} />
-            {a.type === "live" ? !isPropAccount(a) && <FundButton a={a} /> : <RefillButton a={a} onDone={onChanged} />}
-            {flavor === "copy" ? <CopyActions a={a} /> : <TradeButton a={a} />}
-          </div>
-        )}
-      </div>
-      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11.5px] text-fg-3">
+
+      <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[11.5px] text-fg-3">
         {copying && <span className="font-medium text-fg-2">{t("accounts.copy.copying", { name: copying })}</span>}
         {a.positions > 0 || a.orders > 0 ? (
           <span>
             {t("accounts.row.openPositions", { count: a.positions })} · {t("accounts.row.pendingOrders", { count: a.orders })} · {t("accounts.row.floating")}{" "}
-            <Money value={a.profit} currency={cur} signed tone="auto" countUp={false} />
+            {hidden ? MASK : <Money value={a.profit} currency={cur} signed tone="auto" countUp={false} />}
           </span>
         ) : (
           <span>{t("accounts.row.noPositions")}</span>
         )}
-        {a.type === "live" && a.balance === 0 && a.equity === 0 && <span className="text-warn">{t("accounts.row.notFunded")}</span>}
-        {a.type === "demo" && a.demo && (
-          <span>
-            {t("accounts.row.demoRefills", { left: refillsLeft(a), total: a.demo.refillsPerDay, days: a.demo.expiryDays })}
-          </span>
-        )}
+        {unfunded && <span className="text-warn">{t("accounts.row.notFunded")}</span>}
+        {a.type === "demo" && a.demo && <span>{t("accounts.row.demoRefills", { left: refillsLeft(a), total: a.demo.refillsPerDay, days: a.demo.expiryDays })}</span>}
+        {a.closureRequest?.status === "pending" && <span className="text-info">{t("accounts.close.pendingChip")}</span>}
+        {a.dormantSince && <span className="text-warn">{t("accounts.dormant.chip")}</span>}
+        <span className="ms-auto font-mono">{serverOf(a)}</span>
       </div>
+
+      {!readOnly && (
+        <div className="mt-4 flex items-center gap-2">
+          {a.type === "live" ? !prop && <FundButton a={a} /> : <RefillButton a={a} onDone={onChanged} />}
+          {flavor === "copy" ? <CopyActions a={a} /> : <TradeButton a={a} className="flex-1" />}
+          <AccountActions a={a} onChanged={onChanged} />
+        </div>
+      )}
     </div>
   );
 }

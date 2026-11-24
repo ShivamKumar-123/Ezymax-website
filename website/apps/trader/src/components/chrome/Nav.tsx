@@ -123,7 +123,11 @@ export default function Nav() {
                 )}
               >
                 {l.label}
-                {l.note && <span className="h-1.5 w-1.5 rounded-full bg-ember shadow-[0_0_8px_#ff5a1f]" aria-label="new" />}
+                {l.soon ? (
+                  <span className="rounded-full border border-ember/40 bg-ember-soft px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-ember-2">Soon</span>
+                ) : (
+                  l.note && <span className="h-1.5 w-1.5 rounded-full bg-ember shadow-[0_0_8px_#ff5a1f]" aria-label="new" />
+                )}
               </Link>
             ))}
             <div ref={moreRef} className="relative">

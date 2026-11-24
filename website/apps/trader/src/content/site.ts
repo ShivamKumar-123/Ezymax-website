@@ -1,8 +1,9 @@
-export type NavLink = { label: string; href: string; note?: string };
+/** `soon` marks a product that is not open to clients yet: the nav says so rather than badging it as new. */
+export type NavLink = { label: string; href: string; note?: string; soon?: boolean };
 
 /** Primary navigation (desktop pill). */
 export const NAV_PRIMARY: NavLink[] = [
-  { label: 'Options', href: '/options', note: 'New' },
+  { label: 'Options', href: '/options', note: 'Coming soon', soon: true },
   { label: 'Markets', href: '/markets' },
   { label: 'Accounts', href: '/accounts' },
   { label: 'Platforms', href: '/platforms' },

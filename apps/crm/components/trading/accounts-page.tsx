@@ -9,7 +9,7 @@ import { useT } from "@ezymex/i18n/react";
 import { isArchived, productOf, toUsd, useAccounts, useGroups, type EngineAccount } from "./api";
 import { ArchivedAccountRow } from "./archive";
 import { EngineGroupCard } from "./group-card";
-import { LiveAccountRow, isPropAccount, refillsLeft } from "./ui";
+import { LiveAccountCard, isPropAccount, refillsLeft } from "./ui";
 import { useReadOnly } from "@/components/session";
 import { useFeatures } from "@/components/tenant-config";
 
@@ -181,8 +181,16 @@ function Inner() {
                     }
                   />
                 )}
-                {list.map((a) =>
-                  active === "archived" ? <ArchivedAccountRow key={a.login} a={a} onChanged={reload} /> : <LiveAccountRow key={a.login} a={a} onChanged={reload} />,
+                {active === "archived" ? (
+                  list.map((a) => <ArchivedAccountRow key={a.login} a={a} onChanged={reload} />)
+                ) : (
+                  // three to a row at the widest, which is what a client with a full set of accounts has; the
+                  // cards keep their shape rather than stretching, so two of them do not become two banners
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
+                    {list.map((a) => (
+                      <LiveAccountCard key={a.login} a={a} onChanged={reload} />
+                    ))}
+                  </div>
                 )}
                 {!readOnly && active !== "archived" && <Link
                   href={`/accounts/new?type=${active}`}

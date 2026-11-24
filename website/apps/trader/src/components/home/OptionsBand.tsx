@@ -20,6 +20,7 @@ export function OptionsBand() {
           <p className="flex items-center gap-3 text-[0.75rem] font-semibold uppercase tracking-[0.16em] text-black/70" data-reveal>
             <span className="h-px w-7 bg-[#140904]" />
             Ezymex FX Options
+            <span className="rounded-full bg-[#140904] px-2 py-0.5 text-[10.5px] tracking-[0.1em] text-[#ffb15c]">Coming soon</span>
           </p>
           <Headline id="band-title" lines={['Options on forex,', 'made simple.']} className="t-display max-w-[13ch]" />
           <p className="max-w-[34rem] text-[1.08rem] leading-relaxed text-black/75" data-reveal>
@@ -49,7 +50,7 @@ export function OptionsBand() {
               </span>
             </Link>
             <Link href={REGISTER_HREF} className="btn border border-[#140904]/40 text-[#140904] hover:bg-[#140904]/10">
-              Try it on demo
+              Create your account
             </Link>
           </div>
         </div>

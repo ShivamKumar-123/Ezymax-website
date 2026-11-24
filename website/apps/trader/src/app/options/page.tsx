@@ -116,7 +116,7 @@ export default async function OptionsPage() {
   return (
     <>
       <PageHero
-        kicker="Ezymex FX Options · New"
+        kicker="Ezymex FX Options · Coming soon"
         lines={['The first forex', <span key="o" className="text-ember-grad">options platform.</span>]}
         lead="Buy or sell calls and puts on 9 FX pairs, gold, silver and oil, with daily, weekly and monthly expiries. Settled in cash in US dollars, in the same account as your CFDs."
         actions={
@@ -129,7 +129,15 @@ export default async function OptionsPage() {
             </Button>
           </>
         }
-        footer={<p className="text-sm text-fg-3">Inside Ezymex Trader. Start on a free demo account.</p>}
+        // The page describes the product in full, so the one thing it must not leave unsaid is that you cannot
+        // trade it yet. It sits with the buttons rather than further down, because that is where someone decides.
+        footer={
+          <p className="flex flex-wrap items-center gap-2 text-sm text-fg-3">
+            <span className="rounded-full border border-ember/40 bg-ember-soft px-2.5 py-1 text-[11.5px] font-semibold uppercase tracking-wide text-ember-2">Coming soon</span>
+            FX Options are not open to clients yet. Open an account now to trade CFDs, and you will have options on the
+            same account the day they go live.
+          </p>
+        }
         visual={
           <div className="relative">
             <BrowserFrame

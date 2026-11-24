@@ -70,7 +70,7 @@ export function ProductsBento() {
         <div className="mt-14 grid gap-4 lg:mt-20 lg:grid-cols-12 lg:gap-5">
           {/* Options */}
           <Tile href="/options" tone="ember" className="lg:col-span-7 lg:row-span-2 lg:min-h-[640px]">
-            <TileHead tone="ember" kicker="New · Ezymex FX Options" title={<>Option chains<br />on forex, gold and oil.</>} />
+            <TileHead tone="ember" kicker="Coming soon · Ezymex FX Options" title={<>Option chains<br />on forex, gold and oil.</>} />
             <p className="mt-5 max-w-md text-[0.98rem] leading-relaxed text-black/75">
               Calls and puts with daily, weekly and monthly expiries. Quick trade in three taps, a strategy builder for
               straddles, spreads and iron condors, and a plain-language card that says what happens before you confirm.

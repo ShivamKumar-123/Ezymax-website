@@ -214,6 +214,21 @@
     color: #fff;
     box-shadow: 0 8px 24px -8px rgba(255, 90, 31, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.25);
   }
+  /* Pins the dark token set on a subtree, for a panel that is dark in both themes - an account card, a poster.
+     Everything inside it (buttons, chips, muted text, borders) then reads against the dark ground without each
+     one being told separately, and the same markup still works when the page around it is light. */
+  .k-on-dark {
+    --k-surface: #1c161c;
+    --k-surface-2: rgba(255, 255, 255, 0.09);
+    --k-surface-3: rgba(255, 255, 255, 0.16);
+    --k-border: rgba(255, 255, 255, 0.16);
+    --k-border-top: rgba(255, 255, 255, 0.26);
+    --k-fg: #ffffff;
+    --k-fg-2: rgba(255, 255, 255, 0.74);
+    --k-fg-3: rgba(255, 255, 255, 0.56);
+    --k-shadow-card: none;
+    color: var(--k-fg);
+  }
   .k-hot-card {
     background:
       radial-gradient(120% 90% at 100% 0%, rgba(255, 90, 31, 0.35), transparent 60%),
