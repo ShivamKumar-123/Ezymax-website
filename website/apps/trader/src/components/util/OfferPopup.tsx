@@ -81,7 +81,6 @@ export default function OfferPopup() {
       setDays(left);
       returnTo.current = document.activeElement;
       setOpen(true);
-      requestAnimationFrame(() => setShown(true));
     }, DELAY_MS);
     return () => window.clearTimeout(timer);
   }, []);
@@ -89,11 +88,16 @@ export default function OfferPopup() {
   useEffect(() => {
     if (!open) return;
     card.current?.focus();
+    // the fade has to start from the rendered state, so it is asked for a frame after React has committed it
+    const frame = requestAnimationFrame(() => setShown(true));
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') close();
     };
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener('keydown', onKey);
+    };
   }, [open, close]);
 
   if (!open) return null;
