@@ -171,16 +171,18 @@ const List<NavModule> kNav = [
       NavSub('/developer/docs', 'shell.nav.docs', LucideIcons.bookOpen),
     ],
   ),
+  // Support stands on its own rather than under Education: a client looking for help is not looking
+  // for a course, and burying it one level down made it the hardest page on the shell to reach.
+  NavModule(key: 'support', labelKey: 'shell.nav.support', icon: LucideIcons.lifeBuoy, href: '/support', section: 'account'),
   NavModule(
     key: 'help',
     labelKey: 'shell.nav.help',
-    icon: LucideIcons.lifeBuoy,
-    href: '/support',
+    icon: LucideIcons.graduationCap,
+    href: '/academy',
     section: 'account',
-    match: ['/support', '/academy'],
+    match: ['/academy'],
     // /academy/coach is gated in live builds (apps/crm/lib/live.ts LIVE_GATED)
     sub: [
-      NavSub('/support', 'shell.nav.support', LucideIcons.lifeBuoy),
       NavSub('/academy', 'shell.nav.courses', LucideIcons.graduationCap),
       NavSub('/academy/glossary', 'shell.nav.glossary', LucideIcons.bookOpen),
       NavSub('/academy/progress', 'shell.nav.myProgress', LucideIcons.award),

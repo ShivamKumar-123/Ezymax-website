@@ -198,15 +198,17 @@ export const CRM_NAV: NavModule[] = [
       { href: "/developer/docs", label: "Docs", icon: BookOpen },
     ],
   },
+  // Support stands on its own rather than under Education: a client looking for help is not looking
+  // for a course, and burying it one level down made it the hardest page on the shell to reach.
+  { key: "support", label: "Support", icon: LifeBuoy, href: "/support", section: "account" },
   {
     key: "help",
     label: "Education",
-    icon: LifeBuoy,
-    href: "/support",
-    match: ["/support", "/academy"],
+    icon: GraduationCap,
+    href: "/academy",
+    match: ["/academy"],
     section: "account",
     sub: [
-      { href: "/support", label: "Support", icon: LifeBuoy },
       { href: "/academy", label: "Courses", icon: GraduationCap },
       { href: "/academy/glossary", label: "Glossary", icon: BookOpen },
       { href: "/academy/progress", label: "My progress", icon: Award },
