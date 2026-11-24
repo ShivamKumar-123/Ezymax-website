@@ -3,15 +3,23 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/api/api_providers.dart';
+import '../core/config/app_config.dart';
 import '../core/lifecycle.dart';
 import '../core/models/account.dart';
 import '../core/models/wallet.dart';
 
 /// `GET trading/accounts` (web useAccounts: every 10 s on the dashboard, 5 s on the Accounts page).
+///
+/// Accounts on a product the broker has switched off are left out, archived ones included, exactly as the web
+/// hook does it. When a product is withdrawn its accounts are archived, but the Archived tab would still show
+/// them, and a client should not go on reading an account for a product that is no longer offered. Nothing is
+/// deleted: switch the module back on and they return. Every other product is untouched.
 final accountsProvider = FutureProvider.autoDispose<List<EngineAccount>>((ref) async {
   ref.pollEvery(const Duration(seconds: 10));
+  final optionsOn = ref.watch(configProvider.select((c) => c.moduleOn('options')));
   final j = await ref.watch(apiProvider).get<Map<String, dynamic>>('trading/accounts');
-  return [for (final a in (j['accounts'] as List? ?? const [])) EngineAccount.fromJson((a as Map).cast<String, dynamic>())];
+  final all = [for (final a in (j['accounts'] as List? ?? const [])) EngineAccount.fromJson((a as Map).cast<String, dynamic>())];
+  return optionsOn ? all : [for (final a in all) if (!a.isOptions) a];
 });
 
 /// `GET wallet/overview` (every 30 s).

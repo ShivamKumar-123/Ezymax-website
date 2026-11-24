@@ -9,6 +9,7 @@ import { tr } from "@ezymex/i18n/react";
 import { intlTag } from "@ezymex/i18n/locales";
 import type { MessageKey } from "@ezymex/i18n";
 import { readCached, writeCached } from "@ezymex/ui/swr-cache";
+import { useFeatures } from "@/components/tenant-config";
 import type { DealOption, InstrumentFilter, PositionOption } from "./option-deal";
 
 /* ------------------------------------------------------------------ */
@@ -298,7 +299,21 @@ export function usePoll<T>(path: string | null, ms: number) {
   return { data, error, loading: data === null && error === null, reload };
 }
 
-export const useAccounts = (ms = 5000) => usePoll<{ accounts: EngineAccount[] }>("accounts", ms);
+/** The client's accounts, minus any on a product the broker has switched off.
+ *
+ *  When a product is withdrawn its accounts are archived, but archived accounts still have a tab of their own,
+ *  so without this the client would go on reading an account for a product that is no longer offered and that
+ *  they can do nothing with. Filtering here rather than on the accounts page keeps every list in the Client
+ *  Area saying the same thing. Nothing is deleted: the accounts, their history and the ledger are untouched,
+ *  and switching the module back on brings them straight back. Accounts on every other product are unaffected. */
+export const useAccounts = (ms = 5000) => {
+  const r = usePoll<{ accounts: EngineAccount[] }>("accounts", ms);
+  const optionsOn = useFeatures()?.modules.options !== false;
+  return React.useMemo(() => {
+    if (optionsOn || !r.data) return r;
+    return { ...r, data: { ...r.data, accounts: r.data.accounts.filter((a) => productOf(a) !== "options") } };
+  }, [r, optionsOn]);
+};
 export const useGroups = () => usePoll<{ groups: EngineGroup[] }>("groups", 0);
 
 /** The product of an account or group (engine `product`, missing = cfd). Decide by this, never by the group code. */
