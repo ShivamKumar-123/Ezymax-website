@@ -7,6 +7,7 @@ const offers = {
   claim: "Take this offer",
   dismiss: "Hide this offer",
   endsIn: { one: "Ends tomorrow", other: "Ends in {count} days" },
+  leavingSoon: "Leaving soon",
   runsUntil: "Runs until {date}",
   emptyTitle: "No offers right now",
   emptyText: "When we run a promotion it appears here, and you will see a mark on Offers in the menu.",

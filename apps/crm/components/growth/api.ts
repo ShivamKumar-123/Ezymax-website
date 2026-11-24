@@ -334,13 +334,15 @@ export interface BannerView {
   /** A place, or an https:// link for online events. */
   location?: string | null;
   publishedAt?: string;
+  /** When the run ends; null or absent = open ended. What the "Leaving soon" mark is read from. */
+  endsAt?: string | null;
 }
 
 /** An offer (GET offers): a banner of kind "offer", plus what the Offers page needs on top of it. */
 export interface OfferView extends BannerView {
   /** False once the client has been shown it: what the rail badges, and what the "New" chip marks. */
   isNew: boolean;
-  /** When the offer stops running, for the "ends in" line. Null = open ended. */
+  /** When the offer stops running, for the "ends in" line. Null = open ended. Always sent for an offer. */
   endsAt: string | null;
   /** The terms, in the Academy's markdown subset. */
   content: string;

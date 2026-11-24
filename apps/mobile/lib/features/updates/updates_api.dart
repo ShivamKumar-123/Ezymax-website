@@ -38,6 +38,7 @@ class PromoItem {
     this.eventState,
     this.location,
     this.publishedAt,
+    this.endsAt,
     this.content,
   });
 
@@ -48,6 +49,18 @@ class PromoItem {
   final String? eventState;
   final bool dismissible;
   final DateTime? eventStartsAt, eventEndsAt, publishedAt;
+
+  /// When the run ends; null = open ended.
+  final DateTime? endsAt;
+
+  /// A promotion in its last fortnight, which is worth saying so on. Mirrors leavingSoon in the web
+  /// hero-carousel.tsx, including the fourteen days.
+  bool get leavingSoon {
+    final e = endsAt;
+    if (e == null) return false;
+    final ms = e.difference(DateTime.now()).inMilliseconds;
+    return ms > 0 && ms <= 14 * 86400000;
+  }
 
   /// The markdown body of an event / post page (`posts/{id}` only).
   final String? content;
@@ -87,6 +100,7 @@ class PromoItem {
     eventState: _str(j['eventState']),
     location: _str(j['location']),
     publishedAt: _time(j['publishedAt']),
+    endsAt: _time(j['endsAt']),
     content: j['content'] is String ? j['content'] as String : null,
   );
 }

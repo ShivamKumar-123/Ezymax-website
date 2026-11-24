@@ -7,6 +7,7 @@ import GoogleTranslate from '@/components/chrome/GoogleTranslate';
 import SmoothScroll from '@/components/motion/SmoothScroll';
 import RevealRoot, { REVEAL_BOOT } from '@/components/motion/RevealRoot';
 import CampaignForwarder from '@/components/util/CampaignForwarder';
+import OfferPopup from '@/components/util/OfferPopup';
 import { BRAND_NAME, BRAND_SUPPORT_EMAIL, SITE_URL } from '@/lib/brand';
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist', display: 'swap' });
@@ -93,6 +94,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SmoothScroll />
         <RevealRoot />
         <CampaignForwarder />
+        <OfferPopup />
         <GoogleTranslate />
       </body>
     </html>

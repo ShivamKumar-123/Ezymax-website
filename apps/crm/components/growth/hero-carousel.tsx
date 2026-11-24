@@ -10,7 +10,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowUpRight, CalendarDays, ChevronLeft, ChevronRight, MapPin, Pause, Play, Video, X } from "lucide-react";
+import { ArrowUpRight, CalendarDays, ChevronLeft, ChevronRight, Clock3, MapPin, Pause, Play, Video, X } from "lucide-react";
 import { useT } from "@ezymex/i18n/react";
 import { buttonVariants, cn } from "@/components/kit";
 import type { BannerView } from "./api";
@@ -29,6 +29,17 @@ const isPoster = (b: BannerView) => b.layout === "poster" || (!!b.imageUrl && !b
 
 /** Until the artwork loads we have to reserve some shape, and most posters are drawn 16:9. */
 const POSTER_RATIO = 16 / 9;
+
+/** A promotion is worth hurrying someone about only once its end is in sight. Two weeks is what the Offers page
+ *  already treats as "ends in N days", and the carousel says the same thing in one word rather than a count,
+ *  because a slide moves on after six seconds and a number nobody finished reading helps no one. */
+const LEAVING_SOON_DAYS = 14;
+
+const leavingSoon = (endsAt: string | null | undefined) => {
+  if (!endsAt) return false;
+  const ms = new Date(endsAt).getTime() - Date.now();
+  return Number.isFinite(ms) && ms > 0 && ms <= LEAVING_SOON_DAYS * 86_400_000;
+};
 
 /** A tall poster would push the accounts off the screen, so the box stops here and the artwork letterboxes
  *  inside it rather than losing its edges. Set above what a banner-shaped poster needs - 8:3 artwork runs
@@ -277,6 +288,17 @@ function Slide({ b, active, label, onDismiss, onRatio }: { b: BannerView; active
         )
       ) : (
         copy
+      )}
+      {/* The one thing worth writing over finished artwork: that it is about to stop. It sits in the corner the
+          dismiss button leaves free, so the two never collide. */}
+      {leavingSoon(b.endsAt) && (
+        <span
+          data-testid="hero-leaving-soon"
+          className="pointer-events-none absolute start-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 text-[11.5px] font-semibold text-white backdrop-blur"
+        >
+          <Clock3 className="size-3.5" />
+          {t("offers.leavingSoon")}
+        </span>
       )}
       {b.dismissible && (
         <button

@@ -244,6 +244,9 @@ pub fn banner_view(r: &PgRow) -> Value {
         "eventState": event_state(&kind, starts, ends, Utc::now()),
         "location": r.get::<Option<String>, _>("location"),
         "publishedAt": r.get::<DateTime<Utc>, _>("starts_at"),
+        // When the run ends (null = open ended). The Offers page has always had it; the carousel needs it too,
+        // because a promotion in its last days is worth saying so on, and only the service knows the date.
+        "endsAt": r.get::<Option<DateTime<Utc>>, _>("ends_at"),
     })
 }
 
@@ -346,7 +349,6 @@ pub async fn offers(State(st): State<AppState>, u: UserCtx) -> ApiResult<Json<Va
             let mut v = banner_view(r);
             if let Some(o) = v.as_object_mut() {
                 o.insert("isNew".into(), json!(!seen.contains(&r.get::<i64, _>("id"))));
-                o.insert("endsAt".into(), json!(r.get::<Option<DateTime<Utc>>, _>("ends_at")));
                 o.insert("content".into(), json!(r.get::<String, _>("content")));
             }
             v

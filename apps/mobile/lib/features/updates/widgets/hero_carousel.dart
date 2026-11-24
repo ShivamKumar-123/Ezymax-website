@@ -393,6 +393,28 @@ class _Slide extends ConsumerWidget {
                   ],
                 ),
               ),
+            // The one thing worth writing over finished artwork: that it is about to stop. It takes the corner
+            // the dismiss button leaves free, so the two never collide.
+            if (p.leavingSoon)
+              PositionedDirectional(
+                top: 8,
+                start: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(color: const Color(0x8C000000), borderRadius: BorderRadius.circular(999)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(LucideIcons.clock3, size: 13, color: Colors.white),
+                      const SizedBox(width: 5),
+                      Text(
+                        t('offers.leavingSoon'),
+                        style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             if (p.dismissible)
               PositionedDirectional(
                 top: 8,
