@@ -21,21 +21,20 @@ export function isPropAccount(a: Pick<EngineAccount, "group">) {
   return a.group.toLowerCase().startsWith("prop");
 }
 
-export function KindBadge({ type, prop }: { type: "live" | "demo"; prop?: boolean }) {
+/** `solid` is for a badge standing on the account card: the card's own ground is ember, so an ember chip on it
+ *  disappears. A solid white pill is the one thing that reads against every one of those gradients. */
+export function KindBadge({ type, prop, solid }: { type: "live" | "demo"; prop?: boolean; solid?: boolean }) {
   const t = useT();
-  if (prop)
+  const label = prop ? t("accounts.badge.prop") : type === "live" ? t("accounts.badge.live") : t("accounts.badge.demo");
+  if (solid)
     return (
-      <Chip tone="neutral" size="sm" className="font-semibold tracking-wider">
-        {t("accounts.badge.prop")}
-      </Chip>
+      <span className="rounded-full bg-white px-2.5 py-1 text-[10.5px] font-bold uppercase leading-none tracking-wider text-[#17101f]">
+        {label}
+      </span>
     );
-  return type === "live" ? (
-    <Chip tone="ember" size="sm" className="font-semibold tracking-wider">
-      {t("accounts.badge.live")}
-    </Chip>
-  ) : (
-    <Chip tone="gold" size="sm" className="font-semibold tracking-wider">
-      {t("accounts.badge.demo")}
+  return (
+    <Chip tone={prop ? "neutral" : type === "live" ? "ember" : "gold"} size="sm" className="font-semibold tracking-wider">
+      {label}
     </Chip>
   );
 }
@@ -302,7 +301,7 @@ export function LiveAccountCard({ a, onChanged }: { a: EngineAccount; onChanged?
 
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-          <KindBadge type={a.type} prop={prop} />
+          <KindBadge type={a.type} prop={prop} solid />
           <StatusBadge a={a} />
           <DefaultStar a={a} />
         </div>

@@ -39,6 +39,8 @@ type Limits = {
   withdraw_min: string;
   withdraw_max: string;
   withdraw_daily_max: string;
+  /** How many withdrawals one client may request in a server day. 0 = no limit. */
+  withdraw_daily_count: number;
   withdraw_fee_flat: string;
   withdraw_fee_pct: string;
   deposit_cooldown_hours: number;
@@ -65,6 +67,7 @@ const LIMIT_FIELDS: [keyof Limits, string, string][] = [
   ["withdraw_min", "Minimum withdrawal", "USDT"],
   ["withdraw_max", "Maximum per withdrawal", "USDT"],
   ["withdraw_daily_max", "Daily limit per client", "USDT"],
+  ["withdraw_daily_count", "Withdrawals a day per client", "0 = no limit"],
   ["withdraw_fee_flat", "Crypto withdrawal fee (flat)", "USDT"],
   ["withdraw_fee_pct", "Crypto withdrawal fee (percent)", "%"],
   ["deposit_cooldown_hours", "Wait after a deposit", "hours"],

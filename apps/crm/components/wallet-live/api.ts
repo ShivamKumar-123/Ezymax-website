@@ -129,7 +129,7 @@ export interface Overview {
   balances: Balance[];
   pending_deposits: Deposit[];
   open_withdrawals: Withdrawal[];
-  limits: { used_today: string; remaining_today: string; daily_max: string; cooldown_until: string | null };
+  limits: { used_today: string; remaining_today: string; daily_max: string; cooldown_until: string | null; daily_count: number; made_today: number };
   notifications_unread: number;
 }
 

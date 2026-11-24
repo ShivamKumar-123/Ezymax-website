@@ -532,7 +532,18 @@ function LimitsCard({ cfg, o, via }: { cfg: WalletConfig; o: Overview; via: Via 
           <Tile label={t("wallet.maximum")} value={<span dir="ltr">{fmt(at(L.withdraw_max))} {ccy}</span>} />
           <Tile label={t("wallet.fee")} value={<span dir="ltr">{`${fmt(at(feeFlat))} ${ccy}${feePct > 0 ? ` + ${feePct}%` : ""}`}</span>} />
           <Tile label={t("wallet.withdraw.afterDeposit")} value={L.deposit_cooldown_hours ? t("wallet.withdraw.hoursWait", { hours: L.deposit_cooldown_hours }) : t("wallet.withdraw.noWait")} />
+          {o.limits.daily_count > 0 && (
+            <Tile
+              label={t("wallet.withdraw.perDayLabel")}
+              value={t("wallet.withdraw.perDayValue", { count: o.limits.daily_count })}
+            />
+          )}
         </div>
+        {/* Said before the form is filled, not after it is refused: the client's one withdrawal of the day is
+            spent the moment they request it, so knowing beforehand is what lets them ask for the right amount. */}
+        {o.limits.daily_count > 0 && o.limits.made_today >= o.limits.daily_count && (
+          <div className="text-[12px] text-warn">{t("wallet.withdraw.perDayUsed", { count: o.limits.daily_count })}</div>
+        )}
         {o.limits.cooldown_until && <div className="text-[12px] text-warn">{t("wallet.withdraw.cooldown", { date: formatDateTime(o.limits.cooldown_until) })}</div>}
       </div>
     </Card>

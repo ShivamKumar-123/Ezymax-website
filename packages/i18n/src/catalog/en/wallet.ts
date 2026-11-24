@@ -236,6 +236,10 @@ const wallet = {
   // client is told the window up front and again while they wait, instead of wondering on the second day.
   // The window is section 4.3 of the Deposit & Withdrawal Policy (ezymex.com/deposit-withdrawal), word for
   // word: change them together or the page and the policy will promise different things.
+  "withdraw.perDayLabel": "How often",
+  // The rule is a count of requests, not of money: the daily amount limit above answers "how much".
+  "withdraw.perDayValue": { one: "Once a day", other: "{count} a day" },
+  "withdraw.perDayUsed": { one: "You have made today's withdrawal. The next one opens after 00:00 GMT+3.", other: "You have made all {count} of today's withdrawals. The next one opens after 00:00 GMT+3." },
   "withdraw.upiSettle": "Approved payments to UPI are generally made within 24 business hours. The UTR appears here as soon as your bank has been paid.",
   "withdraw.upiNote": "We email you a code to confirm. Use a UPI ID in your own name — payments to someone else's ID are rejected at review.",
   // Said instead of the two notes above while the emailed confirmation is stood down (WITHDRAWAL_STEPUP=off):

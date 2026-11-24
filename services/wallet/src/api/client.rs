@@ -157,6 +157,7 @@ pub async fn overview(State(st): State<AppState>, ctx: Ctx, Path(user_id): Path<
         .collect();
     let limits = settings::limits(&st.pool, t).await?;
     let used = withdrawals::used_today(&st.pool, t, user_id).await?;
+    let made = withdrawals::count_today(&st.pool, t, user_id).await?;
     let cooldown = withdrawals::cooldown_until(&st.pool, t, user_id, limits.deposit_cooldown_hours).await?;
     let unread: i64 = sqlx::query_scalar("SELECT count(*) FROM notifications WHERE tenant_id = $1 AND user_id = $2 AND read_at IS NULL").bind(t).bind(user_id).fetch_one(&st.pool).await?;
     Ok(ok(json!({
@@ -168,6 +169,10 @@ pub async fn overview(State(st): State<AppState>, ctx: Ctx, Path(user_id): Path<
             "used_today": s(used),
             "remaining_today": s((limits.withdraw_daily_max - used).max(D::ZERO)),
             "daily_max": s(limits.withdraw_daily_max),
+            // How many are allowed in a server day and how many are gone, so the withdraw page can say the rule
+            // before the client fills the form instead of refusing them after it.
+            "daily_count": limits.withdraw_daily_count,
+            "made_today": made,
             "cooldown_until": cooldown,
         },
         "notifications_unread": unread,

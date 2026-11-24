@@ -378,6 +378,7 @@ pub struct LimitsPatch {
     #[serde(default, deserialize_with = "de_opt_dec")]
     withdraw_fee_pct: Option<D>,
     #[serde(default)]
+    withdraw_daily_count: Option<i32>,
     deposit_cooldown_hours: Option<i32>,
     #[serde(default)]
     intent_ttl_minutes: Option<i32>,
@@ -457,6 +458,7 @@ pub async fn update_settings(State(st): State<AppState>, s_ctx: StaffCtx, Body(b
             withdraw_min: nonneg("withdraw_min", l.withdraw_min)?.unwrap_or(cur.withdraw_min),
             withdraw_max: nonneg("withdraw_max", l.withdraw_max)?.unwrap_or(cur.withdraw_max),
             withdraw_daily_max: nonneg("withdraw_daily_max", l.withdraw_daily_max)?.unwrap_or(cur.withdraw_daily_max),
+            withdraw_daily_count: l.withdraw_daily_count.unwrap_or(cur.withdraw_daily_count),
             withdraw_fee_flat: nonneg("withdraw_fee_flat", l.withdraw_fee_flat)?.unwrap_or(cur.withdraw_fee_flat),
             withdraw_fee_pct: nonneg("withdraw_fee_pct", l.withdraw_fee_pct)?.unwrap_or(cur.withdraw_fee_pct),
             deposit_cooldown_hours: l.deposit_cooldown_hours.unwrap_or(cur.deposit_cooldown_hours),
@@ -474,6 +476,10 @@ pub async fn update_settings(State(st): State<AppState>, s_ctx: StaffCtx, Body(b
         }
         if next.withdraw_fee_pct >= D::TEN {
             return Err(ApiError::validation("withdraw_fee_pct", "The percentage fee must be below 10%"));
+        }
+        // 0 lifts the rule; beyond a handful a day it is not a limit any more, it is a formality
+        if !(0..=50).contains(&next.withdraw_daily_count) {
+            return Err(ApiError::validation("withdraw_daily_count", "Use 0 (no limit) to 50 withdrawals a day"));
         }
         if !(0..=720).contains(&next.deposit_cooldown_hours) {
             return Err(ApiError::validation("deposit_cooldown_hours", "Use 0 to 720 hours"));
@@ -501,11 +507,11 @@ pub async fn update_settings(State(st): State<AppState>, s_ctx: StaffCtx, Body(b
         }
         sqlx::query(
             "INSERT INTO tenant_settings (tenant_id, withdraw_min, withdraw_max, withdraw_daily_max, withdraw_fee_flat, withdraw_fee_pct, deposit_cooldown_hours, intent_ttl_minutes,
-                 turnover_enabled, turnover_multiplier, turnover_min_deposit, turnover_unit, updated_at, updated_by)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $10, $11, $12, $13, now(), $9)
+                 turnover_enabled, turnover_multiplier, turnover_min_deposit, turnover_unit, withdraw_daily_count, updated_at, updated_by)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $10, $11, $12, $13, $14, now(), $9)
              ON CONFLICT (tenant_id) DO UPDATE SET withdraw_min = $2, withdraw_max = $3, withdraw_daily_max = $4, withdraw_fee_flat = $5, withdraw_fee_pct = $6,
                  deposit_cooldown_hours = $7, intent_ttl_minutes = $8, turnover_enabled = $10, turnover_multiplier = $11, turnover_min_deposit = $12,
-                 turnover_unit = $13, updated_at = now(), updated_by = $9",
+                 turnover_unit = $13, withdraw_daily_count = $14, updated_at = now(), updated_by = $9",
         )
         .bind(t)
         .bind(next.withdraw_min)
@@ -520,6 +526,7 @@ pub async fn update_settings(State(st): State<AppState>, s_ctx: StaffCtx, Body(b
         .bind(next.turnover_multiplier)
         .bind(next.turnover_min_deposit)
         .bind(&next.turnover_unit)
+        .bind(next.withdraw_daily_count)
         .execute(&mut *tx)
         .await?;
         audit::staff(&mut tx, &s_ctx, Entry { action: "wallet.settings.limits", target_kind: "settings", target_id: "limits".into(), reason: Some(&reason), before: Some(cur.json()), after: Some(next.json()) }).await?;

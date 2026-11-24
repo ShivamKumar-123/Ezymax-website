@@ -765,6 +765,19 @@ class _LimitsCard extends StatelessWidget {
               ),
             ],
           ),
+          if (o.dailyCount > 0) ...[
+            const SizedBox(height: 8),
+            WalletTile(label: t('wallet.withdraw.perDayLabel'), value: t('wallet.withdraw.perDayValue', {'count': o.dailyCount})),
+          ],
+          // Said before the form is filled, not after it is refused: the client's one withdrawal of the day is
+          // spent the moment they request it, so knowing beforehand is what lets them ask for the right amount.
+          if (o.dailyCount > 0 && o.madeToday >= o.dailyCount) ...[
+            const SizedBox(height: 12),
+            Text(
+              t('wallet.withdraw.perDayUsed', {'count': o.dailyCount}),
+              style: context.text.caption.copyWith(color: k.warn, fontWeight: FontWeight.w400, fontSize: 12),
+            ),
+          ],
           if (cooldown != null) ...[
             const SizedBox(height: 12),
             Text(

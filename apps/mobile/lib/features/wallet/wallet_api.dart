@@ -422,6 +422,8 @@ class WalletOverviewData {
     required this.usedToday,
     required this.remainingToday,
     required this.dailyMax,
+    required this.dailyCount,
+    required this.madeToday,
     required this.cooldownUntil,
     required this.notificationsUnread,
   });
@@ -430,6 +432,9 @@ class WalletOverviewData {
   final List<Deposit> pendingDeposits;
   final List<Withdrawal> openWithdrawals;
   final String usedToday, remainingToday, dailyMax;
+
+  /// How many withdrawals a day the broker allows (0 = no limit) and how many of them are gone today.
+  final int dailyCount, madeToday;
   final DateTime? cooldownUntil;
   final int notificationsUnread;
 
@@ -445,6 +450,8 @@ class WalletOverviewData {
       usedToday: '${l['used_today'] ?? '0'}',
       remainingToday: '${l['remaining_today'] ?? '0'}',
       dailyMax: '${l['daily_max'] ?? '0'}',
+      dailyCount: _int(l['daily_count']),
+      madeToday: _int(l['made_today']),
       cooldownUntil: _dateOrNull(l['cooldown_until']),
       notificationsUnread: _int(j['notifications_unread']),
     );

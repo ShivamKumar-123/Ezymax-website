@@ -136,6 +136,31 @@ pub async fn used_today(pool: &sqlx::PgPool, tenant_id: i64, user_id: i64) -> sq
     Ok(v.unwrap_or_default())
 }
 
+/// How many withdrawals the client has asked for today (not rejected / cancelled), for the daily count limit.
+/// A cancelled request does not count: the client asked for nothing in the end, and spending their one
+/// withdrawal on a typo they corrected themselves would be a punishment, not a limit.
+pub async fn count_today(pool: &sqlx::PgPool, tenant_id: i64, user_id: i64) -> sqlx::Result<i64> {
+    sqlx::query_scalar("SELECT count(*) FROM withdrawals WHERE tenant_id = $1 AND user_id = $2 AND status NOT IN ('rejected', 'cancelled') AND created_at >= $3")
+        .bind(tenant_id)
+        .bind(user_id)
+        .bind(server_day_start(Utc::now()))
+        .fetch_one(pool)
+        .await
+}
+
+/// What a client is told when today's withdrawal is already made. The day is the server day (GMT+3), the same
+/// one the daily amount limit counts in, so one message can name both.
+fn daily_count_error(max: i32) -> ApiError {
+    ApiError::unprocessable(
+        "daily_count_limit",
+        if max == 1 {
+            "You can make one withdrawal a day. Your next one opens after 00:00 GMT+3.".to_string()
+        } else {
+            format!("You can make {max} withdrawals a day. Your next one opens after 00:00 GMT+3.")
+        },
+    )
+}
+
 /// Until when the post-deposit cooldown blocks withdrawals (None = not blocked).
 pub async fn cooldown_until(pool: &sqlx::PgPool, tenant_id: i64, user_id: i64, hours: i32) -> sqlx::Result<Option<DateTime<Utc>>> {
     if hours <= 0 {
@@ -292,6 +317,9 @@ async fn check_or_request(st: &AppState, ctx: &Ctx, r: RequestIn, dry_run: bool)
     crate::ops::turnover::gate(&st.pool, tenant_id, r.user_id).await?;
 
     if dry_run {
+        if limits.withdraw_daily_count > 0 && count_today(&st.pool, tenant_id, r.user_id).await? >= limits.withdraw_daily_count as i64 {
+            return Err(daily_count_error(limits.withdraw_daily_count));
+        }
         let used = used_today(&st.pool, tenant_id, r.user_id).await?;
         if used + amount > limits.withdraw_daily_max {
             return Err(ApiError::unprocessable("daily_limit", format!("This exceeds your daily withdrawal limit ({} of {} USDT used today)", s(used), s(limits.withdraw_daily_max))));
@@ -319,6 +347,19 @@ async fn check_or_request(st: &AppState, ctx: &Ctx, r: RequestIn, dry_run: bool)
         .bind(server_day_start(Utc::now()))
         .fetch_one(&mut *tx)
         .await?;
+    // Counted inside the same transaction as the amount, and behind the same row lock, so two requests sent
+    // together cannot both read "none yet" and both be let through.
+    if limits.withdraw_daily_count > 0 {
+        let n: i64 = sqlx::query_scalar("SELECT count(*) FROM withdrawals WHERE tenant_id = $1 AND user_id = $2 AND status NOT IN ('rejected', 'cancelled') AND created_at >= $3")
+            .bind(tenant_id)
+            .bind(r.user_id)
+            .bind(server_day_start(Utc::now()))
+            .fetch_one(&mut *tx)
+            .await?;
+        if n >= limits.withdraw_daily_count as i64 {
+            return Err(daily_count_error(limits.withdraw_daily_count));
+        }
+    }
     let used = used.unwrap_or_default();
     if used + amount > limits.withdraw_daily_max {
         return Err(ApiError::unprocessable("daily_limit", format!("This exceeds your daily withdrawal limit ({} of {} USDT used today)", s(used), s(limits.withdraw_daily_max))));
@@ -799,6 +840,7 @@ mod tests {
             withdraw_min: D::from(10),
             withdraw_max: D::from(1000),
             withdraw_daily_max: D::from(2000),
+            withdraw_daily_count: 1,
             withdraw_fee_flat: D::ONE,
             withdraw_fee_pct: D::from_str("0.5").unwrap(),
             deposit_cooldown_hours: 24,
