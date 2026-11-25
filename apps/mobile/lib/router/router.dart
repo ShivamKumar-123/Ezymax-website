@@ -259,8 +259,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: _moduleRoutes(
               'dashboard',
-              screens: {'/': (_) => const DashboardScreen(), ..._c2Screens},
-              extra: [...marketsRoutes, ...newsRoutes, ...calendarRoutes, ...updatesRoutes],
+              screens: {'/': (_) => const DashboardScreen()},
+              extra: [...updatesRoutes],
             ),
           ),
           StatefulShellBranch(
@@ -276,7 +276,16 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
           StatefulShellBranch(routes: _moduleRoutes('wallet', screens: _c1Screens)),
-          StatefulShellBranch(routes: _moduleRoutes('analytics', screens: _c1Screens)),
+          // Markets, News and Calendar are this tab's three pages, and all three are C2 screens: handing the branch
+          // _c1Screens left every one of them without a screen, so the pager fell through to the Coming soon stub
+          // while the same pages were live on the web.
+          StatefulShellBranch(
+            routes: _moduleRoutes(
+              'analytics',
+              screens: _c2Screens,
+              extra: [...marketsRoutes, ...newsRoutes, ...calendarRoutes],
+            ),
+          ),
           StatefulShellBranch(
             routes: [
               GoRoute(path: '/more', pageBuilder: (c, s) => _tab(const MoreScreen(), s)),
