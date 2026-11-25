@@ -13,7 +13,7 @@ import { SymbolAvatar, cn, useQuote } from "@ezymex/ui";
 import { getInstrument } from "@ezymex/mock";
 import { usePositionProfit, usePositionsProfit, useTerminal } from "@/lib/store";
 import { accMoney, fmtServer, fmtVol, type TPosition } from "@/lib/trading";
-import { TDialog } from "@/components/ui/primitives";
+import { Stepper, TDialog } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/kit";
 import { useT } from "@ezymex/i18n/react";
 
@@ -41,7 +41,8 @@ export function CloseLayer() {
     emit();
   }, []);
   if (!target) return null;
-  return <CloseBody target={target} onClose={close} />;
+  const key = target.kind === "one" ? `one:${target.ticket}` : target.kind === "symbol" ? `sym:${target.symbol}` : "all";
+  return <CloseBody key={key} target={target} onClose={close} />;
 }
 
 /** The trades a target stands for, and the one row's details when it is a single trade. */
@@ -68,6 +69,17 @@ function CloseBody({ target, onClose }: { target: CloseTarget; onClose: () => vo
   const rest = all.length - rows.length;
   const go = React.useRef<HTMLButtonElement>(null);
 
+  // Part of one trade. The field starts at the whole trade, so a client who just wants out presses the button
+  // they came for; the share closing scales the figure, swap included, since the engine charges swap per lot.
+  const [vol, setVol] = React.useState(() => (one ? fmtVol(one.volume) : ""));
+  const total = one?.volume ?? 0;
+  const v = one ? Math.min(total, Math.max(0.01, Math.round((parseFloat(vol) || 0) * 100) / 100)) : 0;
+  const part = !!one && v < total - 1e-9;
+  const share = one ? v / total : 1;
+  const shownNet = net * share;
+  const splittable = !!one && total >= 0.02;
+  const pick = (f: number) => setVol(fmtVol(f >= 1 ? total : Math.max(0.01, Math.floor(total * f * 100) / 100)));
+
   React.useEffect(() => {
     // nothing left to close (the trade hit its stop while the dialog was open): leave rather than close nothing
     if (!rows.length) onClose();
@@ -83,7 +95,7 @@ function CloseBody({ target, onClose }: { target: CloseTarget; onClose: () => vo
     fn();
   };
   const closeTarget = run(() => {
-    if (target.kind === "one") void T.closePosition(target.ticket);
+    if (target.kind === "one") void T.closePosition(target.ticket, part ? v : undefined);
     else if (target.kind === "symbol") T.bulkClose("symbol", target.symbol);
     else T.bulkClose("all");
   });
@@ -93,7 +105,9 @@ function CloseBody({ target, onClose }: { target: CloseTarget; onClose: () => vo
     target.kind === "one" ? t("desk.closeBox.titleOne") : target.kind === "symbol" ? t("desk.closeBox.titleSymbol", { symbol: target.symbol }) : t("desk.closeBox.titleAll");
   const confirmLabel =
     target.kind === "one"
-      ? t("desk.closeBox.doOne")
+      ? part
+        ? t("desk.closeBox.doPart", { volume: fmtVol(v), total: fmtVol(total) })
+        : t("desk.closeBox.doOne")
       : target.kind === "symbol"
         ? t("desk.closeBox.doSymbol", { symbol: target.symbol, count: rows.length })
         : t("desk.closeBox.doAll", { count: rows.length });
@@ -125,15 +139,34 @@ function CloseBody({ target, onClose }: { target: CloseTarget; onClose: () => vo
       <div className="px-4 py-3.5">
         {one ? <OneLine p={one} /> : <ManyLine rows={rows} lots={lots} />}
 
+        {splittable && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="me-auto text-[12.5px] font-medium text-fg-2">{t("desk.closeBox.howMuch")}</span>
+            <Stepper size="md" ariaLabel={t("desk.closeBox.howMuch")} value={vol} onChange={setVol} step={0.01} min={0.01} decimals={2} className="w-[128px]" />
+            <div className="flex gap-1">
+              {[0.25, 0.5, 1].map((f) => {
+                const want = f >= 1 ? total : Math.max(0.01, Math.floor(total * f * 100) / 100);
+                const on = Math.abs(v - want) < 1e-9;
+                return (
+                  <button key={f} type="button" onClick={() => pick(f)} className={cn("h-8 rounded-[7px] border px-2.5 font-mono text-[12px]", on ? "border-fg/30 bg-surface-3 text-fg" : "border-line text-fg-2 hover:bg-surface-3 hover:text-fg")}>
+                    {f >= 1 ? t("desk.closeBox.all") : `${f * 100}%`}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* the number the client is actually asking about, on its own, in their account's money */}
         <div className="mt-3.5 rounded-[10px] border border-line bg-surface-2/60 px-3.5 py-3 text-center">
-          <div className="text-[11.5px] font-medium uppercase tracking-wide text-fg-3">{net >= 0 ? t("desk.closeBox.youGain") : t("desk.closeBox.youLose")}</div>
-          <div dir="ltr" className={cn("mt-1 font-mono text-[26px] font-semibold leading-none tabular-nums", net >= 0 ? "text-up" : "text-down")}>
-            {accMoney(a, net, { signed: true })}
+          <div className="text-[11.5px] font-medium uppercase tracking-wide text-fg-3">{shownNet >= 0 ? t("desk.closeBox.youGain") : t("desk.closeBox.youLose")}</div>
+          <div dir="ltr" className={cn("mt-1 font-mono text-[26px] font-semibold leading-none tabular-nums", shownNet >= 0 ? "text-up" : "text-down")}>
+            {accMoney(a, shownNet, { signed: true })}
           </div>
           {Math.abs(swap) >= 0.005 && (
-            <div className="mt-1.5 text-[11.5px] text-fg-3">{t("desk.closeBox.swapNote", { pnl: accMoney(a, pnl, { signed: true }), swap: accMoney(a, swap, { signed: true }) })}</div>
+            <div className="mt-1.5 text-[11.5px] text-fg-3">{t("desk.closeBox.swapNote", { pnl: accMoney(a, pnl * share, { signed: true }), swap: accMoney(a, swap * share, { signed: true }) })}</div>
           )}
+          {part && <div className="mt-1.5 text-[11.5px] text-fg-3">{t("desk.closeBox.partNote", { rest: fmtVol(total - v) })}</div>}
         </div>
 
         <p className="mt-3 text-[12.5px] leading-[18px] text-fg-3">{t("desk.closeBox.atMarket")}</p>
