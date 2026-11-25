@@ -19,6 +19,7 @@ import { useContextMenu, type MenuItem } from "@/components/ui/menu";
 import { PickBox } from "@/components/share/share-dialogs";
 import { shareUi, useShareUi } from "@/lib/share";
 import { askConfirm } from "@/components/dialogs/confirm";
+import { askClose } from "@/components/dialogs/close-dialog";
 import { tr, useT } from "@ezymex/i18n/react";
 import type { T as Translate } from "@ezymex/i18n";
 
@@ -73,7 +74,7 @@ export function PositionsTab() {
   const posMenu = (p: TPosition): MenuItem[] => {
     const opp = T.positions.filter((x) => x.symbol === p.symbol && x.side !== p.side);
     return [
-      { label: t("toolbox.menu.closeTicket", { ticket: p.ticket }), icon: <X />, danger: true, onSelect: () => T.closePosition(p.ticket) },
+      { label: t("toolbox.menu.closeTicket", { ticket: p.ticket }), icon: <X />, danger: true, onSelect: () => askClose({ kind: "one", ticket: p.ticket }) },
       { label: t("toolbox.menu.closePartial"), icon: <Scissors />, onSelect: () => T.setUi({ positionDialog: p.ticket }) },
       { label: t("toolbox.menu.close50"), disabled: p.volume < 0.02, onSelect: () => T.closePosition(p.ticket, Math.max(0.01, Math.floor((p.volume / 2) * 100) / 100)) },
       { label: t("toolbox.menu.modifyOrDelete"), icon: <Edit3 />, onSelect: () => T.setUi({ positionDialog: p.ticket }) },
@@ -187,7 +188,7 @@ function PositionGroup({ symbol, positions, picking, row, onMenu }: { symbol: st
   const one = !buys.length || !sells.length ? positions[0]!.side : null;
   const cur = one === "buy" ? q.bid : q.ask;
   const avg = avgOpen(positions);
-  const closeAll = () => askConfirm({ title: t("toolbox.group.closeTitle", { symbol }), text: tr("desk.cf.closeSomeText"), confirmLabel: `${t("toolbox.group.closeAll")} (${positions.length})`, run: () => T.bulkClose("symbol", symbol) });
+  const closeAll = () => askClose({ kind: "symbol", symbol });
   const menu: MenuItem[] = [
     { label: shown ? t("toolbox.group.hide") : t("toolbox.group.show"), icon: shown ? <ListCollapse /> : <ListTree />, disabled: !!picking, onSelect: toggle },
     { label: `${t("toolbox.group.closeAll")} (${positions.length})`, icon: <XCircle />, danger: true, onSelect: closeAll },
@@ -330,7 +331,7 @@ const PositionRow = React.memo(function PositionRow({ p, nested, picking, select
       <Td className="pe-2">
         {!T.readOnly && (
           <span className="flex items-center justify-end gap-1">
-            <Button size="sm" variant="secondary" tip={t("desk.pos.closeTip", { ticket: p.ticket })} onClick={(e) => (e.stopPropagation(), T.closePosition(p.ticket))} aria-label={t("toolbox.trade.closePositionAria", { ticket: p.ticket })} className="hover:border-down/40 hover:bg-down-soft hover:text-down">
+            <Button size="sm" variant="secondary" tip={t("desk.pos.closeTip", { ticket: p.ticket })} onClick={(e) => (e.stopPropagation(), askClose({ kind: "one", ticket: p.ticket }))} aria-label={t("toolbox.trade.closePositionAria", { ticket: p.ticket })} className="hover:border-down/40 hover:bg-down-soft hover:text-down">
               <X /> {t("desk.pos.close")}
             </Button>
             <IconButton

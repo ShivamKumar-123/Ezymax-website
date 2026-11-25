@@ -9,7 +9,7 @@ import { INSTRUMENTS, getInstrument } from "@ezymex/mock";
 import { useMarketScope } from "@/lib/scope";
 import { LogoMark, PriceText, SymbolAvatar, cn, useQuote } from "@ezymex/ui";
 import { lotOf, useGroupOpen, useMetrics, usePositionProfit, usePositionsProfit, useTerminal } from "@/lib/store";
-import { askConfirm } from "@/components/dialogs/confirm";
+import { askClose } from "@/components/dialogs/close-dialog";
 import { avgOpen, bySymbol } from "@/components/toolbox/trade-tab";
 import type { TPosition } from "@/lib/trading";
 import { useT } from "@ezymex/i18n/react";
@@ -373,7 +373,7 @@ function MPositionGroup({ symbol, positions }: { symbol: string; positions: TPos
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              askConfirm({ title: t("toolbox.group.closeTitle", { symbol }), text: t("desk.cf.closeSomeText"), confirmLabel: `${t("toolbox.group.closeAll")} (${positions.length})`, run: () => T.bulkClose("symbol", symbol) });
+              askClose({ kind: "symbol", symbol });
             }}
             className="grid size-7 place-items-center rounded-[6px] border border-line text-fg-3"
             aria-label={`${t("toolbox.group.closeAll")} (${positions.length})`}
@@ -406,7 +406,7 @@ function MPosition({ ticket, nested }: { ticket: string; nested?: boolean }) {
       </div>
       <Pnl value={pr} text={accMoney(T.account, pr, { signed: true })} format={(v) => accMoney(T.account, v, { signed: true })} arrow className="text-[13px] font-semibold" />
       {!T.readOnly && (
-        <button onClick={(e) => (e.stopPropagation(), T.closePosition(p.ticket))} className="grid size-7 place-items-center rounded-[6px] border border-line text-fg-3" aria-label={t("trader.mobile.closePosition")}>
+        <button onClick={(e) => (e.stopPropagation(), askClose({ kind: "one", ticket: p.ticket }))} className="grid size-7 place-items-center rounded-[6px] border border-line text-fg-3" aria-label={t("trader.mobile.closePosition")}>
           <X className="size-3.5" />
         </button>
       )}

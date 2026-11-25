@@ -23,6 +23,7 @@ import { AboutDialog, GlossaryDialog, OptionsDialog, ShortcutsDialog, SpecDialog
 import { IndicatorDialogs } from "./chart/indicators/dialogs";
 import { ShareLayer } from "./share/share-dialogs";
 import { ConfirmLayer } from "./dialogs/confirm";
+import { CloseLayer } from "./dialogs/close-dialog";
 import { ControlsBanner } from "./shell/controls-banner";
 import { CopyBanner } from "./shell/copy-banner";
 import { accountForLink, linkProduct, productOf, rememberLinkUnderlying, useTradeMode, type TradeMode } from "@/lib/options/mode";
@@ -239,6 +240,7 @@ function Shell({ intent, note }: { intent: { symbol: string | null; side: string
       <IndicatorDialogs />
       <ShareLayer />
       <ConfirmLayer />
+      <CloseLayer />
       {T.live && <LoginDialog />}
     </>
   );

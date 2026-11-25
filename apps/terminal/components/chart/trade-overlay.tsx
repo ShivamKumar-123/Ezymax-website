@@ -15,6 +15,7 @@ import type { MessageKey } from "@ezymex/i18n";
 import { useGroupOpen, usePositionProfit, usePositionsProfit, useTerminal } from "@/lib/store";
 import { dragPendingDraft, pendingDraft, usePendingDraft } from "@/lib/pending-draft";
 import { askConfirm } from "@/components/dialogs/confirm";
+import { askClose } from "@/components/dialogs/close-dialog";
 import { accMoney, fmtPrice, fmtVol, pointSize, profitAt, roundPrice, type OrderType, type PendingOrder, type TPosition } from "@/lib/trading";
 import { OneClickPanel } from "./one-click";
 import type { Palette } from "./engine";
@@ -317,7 +318,7 @@ export function useTradeLineState(symbol: string) {
   const removeLine = (l: TLine) => {
     const group = l.group;
     if (group) askConfirm({ title: t("chart.line.groupClose", { label: l.label }), text: t("desk.cf.closeSomeText"), confirmLabel: `${t("toolbox.group.closeAll")} (${group.length})`, run: () => group.forEach((ticket) => T.closePosition(ticket)) });
-    else if (l.kind === "pos") T.closePosition(l.ref);
+    else if (l.kind === "pos") askClose({ kind: "one", ticket: l.ref });
     else if (l.kind === "sl" || l.kind === "tp") {
       const patch = l.kind === "sl" ? { sl: null } : { tp: null };
       if (l.owner === "pnd") T.modifyPending(l.ref, patch);
