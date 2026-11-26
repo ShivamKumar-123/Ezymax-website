@@ -2,8 +2,8 @@
 
 // The step between "Close" and the trade actually closing. Closing is the one action in the table that cannot be
 // undone and that a mis-click reaches in a single click, so it asks first - and while it is asking, it answers the
-// question the client actually has: how much money comes back. The table's P&L column leaves swap out (the account's
-// Floating P&L puts it back), so the figure here is the two added up, which is what lands on the balance.
+// question the client actually has: how much money comes back - the position's profit with swap folded in (lib/store
+// usePositionProfit), which is what lands on the balance.
 //
 // It replaces the ⋯ menu as the ordinary way in: three plain choices instead of ten, and "Close all trades" among
 // them, because a client who wants out of everything was reaching for a Close button on one row.
@@ -62,15 +62,13 @@ function CloseBody({ target, onClose }: { target: CloseTarget; onClose: () => vo
   const t = useT();
   const { rows, one, all } = useTargeted(target);
   const a = T.account;
-  const pnl = usePositionsProfit(rows);
-  const swap = rows.reduce((s, p) => s + p.swap, 0);
-  const net = pnl + swap;
+  const net = usePositionsProfit(rows);
   const lots = rows.reduce((s, p) => s + p.volume, 0);
   const rest = all.length - rows.length;
   const go = React.useRef<HTMLButtonElement>(null);
 
   // Part of one trade. The field starts at the whole trade, so a client who just wants out presses the button
-  // they came for; the share closing scales the figure, swap included, since the engine charges swap per lot.
+  // they came for; the share closing scales the figure, since the engine charges swap per lot too.
   const [vol, setVol] = React.useState(() => (one ? fmtVol(one.volume) : ""));
   const total = one?.volume ?? 0;
   const v = one ? Math.min(total, Math.max(0.01, Math.round((parseFloat(vol) || 0) * 100) / 100)) : 0;
@@ -163,9 +161,6 @@ function CloseBody({ target, onClose }: { target: CloseTarget; onClose: () => vo
           <div dir="ltr" className={cn("mt-1 font-mono text-[26px] font-semibold leading-none tabular-nums", shownNet >= 0 ? "text-up" : "text-down")}>
             {accMoney(a, shownNet, { signed: true })}
           </div>
-          {Math.abs(swap) >= 0.005 && (
-            <div className="mt-1.5 text-[11.5px] text-fg-3">{t("desk.closeBox.swapNote", { pnl: accMoney(a, pnl * share, { signed: true }), swap: accMoney(a, swap * share, { signed: true }) })}</div>
-          )}
           {part && <div className="mt-1.5 text-[11.5px] text-fg-3">{t("desk.closeBox.partNote", { rest: fmtVol(total - v) })}</div>}
         </div>
 
@@ -217,8 +212,7 @@ function ManyLine({ rows, lots }: { rows: TPosition[]; lots: number }) {
 function Row({ p }: { p: TPosition }) {
   const T = useTerminal();
   const t = useT();
-  const pr = usePositionProfit(p);
-  const net = pr + p.swap;
+  const net = usePositionProfit(p);
   return (
     <div className="flex items-center gap-2 py-1 text-[12px]">
       <SymbolAvatar symbol={p.symbol} size={14} />

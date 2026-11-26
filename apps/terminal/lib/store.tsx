@@ -593,14 +593,16 @@ export function useMetrics(login?: string): Metrics & { account: TradingAccount 
   return { ...computeMetrics(acc, t.balances[l] ?? 0, pos, qs), account: acc };
 }
 
-/** Floating profit (USD) of an open position: the engine's value in live builds, else computed from quotes. */
+/** Floating profit (USD) of an open position, swap included: the engine's value in live builds, else computed from
+ *  quotes. Swap is folded in rather than shown on its own, so the one figure a client sees for a trade is the one that
+ *  reaches the balance when it closes (the account's floating P&L, lib/store useAccountMetrics, counts it the same way). */
 export function usePositionProfit(p: TPosition): number {
   const t = useTerminal();
   const q = useQuotes(t.engine ? [] : [p.symbol])[p.symbol];
   const live = useLivePosition(t.engine ? p.login : null, p.ticket);
-  if (live) return live.profit;
-  if (t.engine) return (p as TPosition & { profit?: number }).profit ?? 0;
-  return q ? profitUsd(p, q.bid, q.ask) : 0;
+  if (live) return live.profit + live.swap;
+  if (t.engine) return ((p as TPosition & { profit?: number }).profit ?? 0) + p.swap;
+  return (q ? profitUsd(p, q.bid, q.ask) : 0) + p.swap;
 }
 
 /** Floating profit (USD) of several positions of one account together, as usePositionProfit counts each. */
@@ -617,6 +619,7 @@ export function usePositionsProfit(ps: TPosition[]): number {
       const q = qs[p.symbol];
       if (q) sum += profitUsd(p, q.bid, q.ask);
     }
+    sum += p.swap;
   }
   return sum;
 }

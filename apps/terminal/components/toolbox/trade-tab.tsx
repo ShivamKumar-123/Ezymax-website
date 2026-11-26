@@ -1,8 +1,8 @@
 "use client";
 
 // Positions and Orders tabs of the activity panel (docs/TERMINAL-DESIGN.md §2.4 Tables): one row per trade with the
-// market, side, volume, open → current price, inline-editable stop loss / take profit, a big P&L and a visible Close
-// button. Everything else (partial close, breakeven, close by, share, copy ticket…) is in the ⋯ menu, which is the
+// market, side, volume, open → current price, inline-editable stop loss / take profit, a big P&L (swap folded in,
+// see lib/store usePositionProfit) and a visible Close button. Everything else (partial close, breakeven, close by, share, copy ticket…) is in the ⋯ menu, which is the
 // same as the right-click menu. Several trades on one symbol share a group row, "EURUSD (3)", with their totals; a
 // click on it shows the trades one by one (the chart groups and opens them the same way).
 import * as React from "react";
@@ -11,10 +11,10 @@ import { ArrowDown, ArrowLeftRight, ArrowUp, Check, ChevronRight, Crosshair, Edi
 import { getInstrument, priceFeed } from "@ezymex/mock";
 import { SymbolAvatar, cn, useQuote } from "@ezymex/ui";
 import { useGroupOpen, usePositionProfit, usePositionsProfit, useTerminal } from "@/lib/store";
-import { PENDING_LABEL, SOURCE_LABEL, accMoney, fmtPrice, fmtServer, fmtVol, orderReach, pipSize, profitAt, type PendingOrder, type TPosition, swapSummary } from "@/lib/trading";
+import { PENDING_LABEL, SOURCE_LABEL, accMoney, fmtPrice, fmtServer, fmtVol, orderReach, pipSize, profitAt, type PendingOrder, type TPosition } from "@/lib/trading";
 import { Td, Th } from "@/components/ui/panel";
 import { Pnl, Stepper } from "@/components/ui/primitives";
-import { Button, EmptyState, HelpTip, IconButton, Tip } from "@/components/ui/kit";
+import { Button, EmptyState, IconButton, Tip } from "@/components/ui/kit";
 import { useContextMenu, type MenuItem } from "@/components/ui/menu";
 import { PickBox } from "@/components/share/share-dialogs";
 import { shareUi, useShareUi } from "@/lib/share";
@@ -120,12 +120,6 @@ export function PositionsTab() {
               <Th right>{t("desk.pos.col.openCurrent")}</Th>
               <Th>{t("desk.pos.col.sl")}</Th>
               <Th>{t("desk.pos.col.tp")}</Th>
-              <Th right>
-                <span className="inline-flex items-center gap-1">
-                  {t("desk.pos.col.swap")}
-                  <HelpTip title={t("desk.g.swap.t")} text={t("desk.g.swap")} side="bottom" />
-                </span>
-              </Th>
               <Th right>{t("desk.pos.col.pnl")}</Th>
               <Th className="w-[140px]" />
             </tr>
@@ -238,9 +232,6 @@ function PositionGroup({ symbol, positions, picking, row, onMenu }: { symbol: st
         </Td>
         <Td />
         <Td />
-        <Td right mono className="text-fg-2">
-          <span dir="ltr">{accMoney(a, positions.reduce((s, p) => s + p.swap, 0))}</span>
-        </Td>
         <Td right className="text-[13px] font-semibold">
           <span dir="ltr">
             <Pnl value={pr} text={accMoney(a, pr, { signed: true })} format={(v) => accMoney(a, v, { signed: true })} arrow />
@@ -319,9 +310,6 @@ const PositionRow = React.memo(function PositionRow({ p, nested, picking, select
       </Td>
       <Td className="py-0.5">
         <InlineStop p={p} kind="tp" />
-      </Td>
-      <Td right mono className="text-fg-2">
-        <span dir="ltr" title={swapSummary(t, p.symbol)}>{accMoney(a, p.swap)}</span>
       </Td>
       <Td right className="text-[13px] font-semibold">
         <span dir="ltr">

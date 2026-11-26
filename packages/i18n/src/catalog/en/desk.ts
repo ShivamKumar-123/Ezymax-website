@@ -384,7 +384,6 @@ const desk = {
   "closeBox.doAll": "Close all trades ({count})",
   "closeBox.youGain": "You will receive",
   "closeBox.youLose": "You will lose",
-  "closeBox.swapNote": "Trade {pnl}, swap {swap}",
   "closeBox.summary": { one: "{count} trade · {lots} lots", other: "{count} trades · {lots} lots" },
   "closeBox.atMarket": "Closes now at the current market price. The final amount can differ slightly if the price moves while the order is sent.",
   "ai.signin": "Sign in to use AI",

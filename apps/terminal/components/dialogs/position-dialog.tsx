@@ -105,7 +105,6 @@ function PositionDialogBody({ ticket, onClose }: { ticket: string; onClose: () =
               [t("order.position.openPrice"), fmtPrice(p.symbol, p.openPrice)],
               [t("order.position.current"), <PriceText key="c" symbol={p.symbol} value={cur} dir={q.dir} />],
               [t("order.position.opened"), <span key="o" dir="ltr">{fmtServer(p.openTime)}</span>],
-              [t("desk.pos.col.swap"), accMoney(a, p.swap)],
               [t("order.position.source"), t.dyn(`order.source.${p.source}`, p.source)],
             ].map(([k, val]) => (
               <div key={String(k)} className="flex justify-between gap-2">
