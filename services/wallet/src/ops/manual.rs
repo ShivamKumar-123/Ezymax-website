@@ -805,6 +805,9 @@ pub struct AdminFilter {
     pub method_id: Option<i64>,
     pub user_id: Option<i64>,
     pub q: Option<String>,
+    /// On `created_at`: `from` inclusive, `to` exclusive.
+    pub from: Option<DateTime<Utc>>,
+    pub to: Option<DateTime<Utc>>,
 }
 
 impl AdminFilter {
@@ -829,7 +832,9 @@ const ADMIN_WHERE: &str = "tenant_id = $1
            AND ($4::bigint IS NULL OR method_id = $4)
            AND ($5::bigint IS NULL OR user_id = $5)
            AND ($6::text IS NULL OR reference_key LIKE '%' || $6 || '%' OR lower(COALESCE(user_email, '')) LIKE '%' || $6 || '%'
-                OR lower(COALESCE(user_name, '')) LIKE '%' || $6 || '%' OR id::text = $6 OR user_id::text = $6)";
+                OR lower(COALESCE(user_name, '')) LIKE '%' || $6 || '%' OR id::text = $6 OR user_id::text = $6)
+           AND ($7::timestamptz IS NULL OR created_at >= $7)
+           AND ($8::timestamptz IS NULL OR created_at < $8)";
 
 /// A search term for LIKE (wildcards escaped; a 0x hash prefix dropped like in reference_key).
 fn term(q: &Option<String>) -> Option<String> {
@@ -842,7 +847,7 @@ pub async fn admin_list(st: &AppState, tenant_id: i64, f: &AdminFilter, limit: i
     f.check()?;
     let rows = sqlx::query(sqlx::AssertSqlSafe(format!(
         "SELECT *, count(*) OVER () AS total FROM manual_deposits WHERE {ADMIN_WHERE}
-         ORDER BY CASE WHEN status = 'pending' THEN 0 ELSE 1 END, CASE WHEN status = 'pending' THEN id END ASC, id DESC LIMIT $7 OFFSET $8"
+         ORDER BY CASE WHEN status = 'pending' THEN 0 ELSE 1 END, CASE WHEN status = 'pending' THEN id END ASC, id DESC LIMIT $9 OFFSET $10"
     )))
     .bind(tenant_id)
     .bind(&f.status)
@@ -850,6 +855,8 @@ pub async fn admin_list(st: &AppState, tenant_id: i64, f: &AdminFilter, limit: i
     .bind(f.method_id)
     .bind(f.user_id)
     .bind(term(&f.q))
+    .bind(f.from)
+    .bind(f.to)
     .bind(limit)
     .bind(offset)
     .fetch_all(&st.pool)
@@ -1103,6 +1110,8 @@ pub async fn export_csv(st: &AppState, s_ctx: &StaffCtx, f: &AdminFilter) -> Api
         .bind(f.method_id)
         .bind(f.user_id)
         .bind(term(&f.q))
+        .bind(f.from)
+        .bind(f.to)
         .fetch_all(&st.pool)
         .await?;
     let mut out = String::from(

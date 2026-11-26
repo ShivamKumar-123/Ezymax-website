@@ -5,7 +5,7 @@ import Link from "next/link";
 import { BadgeCheck, Clock, Download, ExternalLink, ImageIcon, Inbox, Loader2, RefreshCw, Search, Settings2, TriangleAlert, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CopyButton, DataTable, Dialog, EmptyState, Field, Input, KpiCard, PageHeader, Tabs, buttonVariants, cn, type Column } from "@ezymex/ui";
-import { ErrorState, FilterSelect, Pager, TableSkeleton, ago, useDebounced, useNow, when } from "@/components/live/kit";
+import { DateRange, ErrorState, FilterSelect, Pager, TableSkeleton, ago, useDebounced, useNow, when } from "@/components/live/kit";
 import { useCan } from "@/components/staff-session";
 import { Row, Status, usd, usd2 } from "./kit";
 import { KindChip, MANUAL_STATUS, ManualClient, manualAction, money, rateLines, short, type ManualDeposit, type ManualDepositDetail } from "./manual-kit";
@@ -345,11 +345,13 @@ export function LiveManualDepositsPage() {
   const [kind, setKind] = React.useState("all");
   const [method, setMethod] = React.useState("all");
   const [q, setQ] = React.useState("");
+  const [from, setFrom] = React.useState("");
+  const [to, setTo] = React.useState("");
   const [page, setPage] = React.useState(1);
   const [open, setOpen] = React.useState<number | null>(null);
   const [exporting, setExporting] = React.useState(false);
   const dq = useDebounced(q.trim(), 300);
-  React.useEffect(() => setPage(1), [tab, kind, method, dq]);
+  React.useEffect(() => setPage(1), [tab, kind, method, dq, from, to]);
 
   // ?method_id= (from Payment methods) and ?id= (a direct link to one request)
   React.useEffect(() => {
@@ -363,7 +365,7 @@ export function LiveManualDepositsPage() {
     return () => window.removeEventListener("ezymex:open-manual-deposit", onOpen);
   }, []);
 
-  const filters = { status: tab, kind, method_id: method, q: dq };
+  const filters = { status: tab, kind, method_id: method, q: dq, from, to };
   const { data, error, loading, reload } = useManualDeposits({ ...filters, page, limit: PER });
   const methods = useManualMethods();
   const c = data?.counts;
@@ -476,6 +478,7 @@ export function LiveManualDepositsPage() {
           <div className="flex w-full flex-wrap items-center gap-2 lg:ml-auto lg:w-auto">
             <FilterSelect label="Kind" value={kind} onChange={setKind} options={[{ value: "all", label: "All" }, { value: "bank", label: "Bank & UPI" }, { value: "crypto", label: "Crypto" }]} />
             <FilterSelect label="Method" value={method} onChange={setMethod} options={[{ value: "all", label: "All methods" }, ...(methods.data?.methods ?? []).filter((m) => kind === "all" || m.kind === kind).map((m) => ({ value: String(m.id), label: m.name })), ...(method !== "all" && !methods.data?.methods.some((m) => String(m.id) === method) ? [{ value: method, label: `Method #${method}` }] : [])]} />
+            <DateRange from={from} to={to} onFrom={setFrom} onTo={setTo} />
             <div className="flex h-9 w-full min-w-0 items-center gap-2 rounded-full border border-line bg-surface-2 px-3.5 sm:w-auto">
               <Search className="size-3.5 shrink-0 text-fg-3" />
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Reference, client or ID" className="w-full min-w-0 bg-transparent text-[13px] outline-none placeholder:text-fg-3 sm:w-48" aria-label="Search manual deposits" />

@@ -4,7 +4,7 @@ import * as React from "react";
 import { ArrowUpRight, CircleDollarSign, Clock, RefreshCw, Search, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, CopyButton, DataTable, Dialog, EmptyState, Field, Input, KpiCard, PageHeader, Tabs, type Column } from "@ezymex/ui";
-import { ErrorState, FilterSelect, Pager, TableSkeleton, ago, qs, useApi, useDebounced, useNow, when } from "@/components/live/kit";
+import { DateRange, ErrorState, FilterSelect, Pager, TableSkeleton, ago, dayAfter, qs, useApi, useDebounced, useNow, when } from "@/components/live/kit";
 import { useCan } from "@/components/staff-session";
 import { Addr, ChainTag, Check, ClientCell, Row, Status, TxLink, WD_STATUS, payoutView, usd, usd2, walletWrite, type AuditItem, type Paged, type Summary, type Withdrawal } from "./kit";
 
@@ -261,11 +261,13 @@ export function LiveWithdrawalsPage() {
   const [tab, setTab] = React.useState<Tab>("requested");
   const [chain, setChain] = React.useState("all");
   const [q, setQ] = React.useState("");
+  const [from, setFrom] = React.useState("");
+  const [to, setTo] = React.useState("");
   const [page, setPage] = React.useState(1);
   const [open, setOpen] = React.useState<number | null>(null);
   const dq = useDebounced(q.trim(), 300);
-  React.useEffect(() => setPage(1), [tab, chain, dq]);
-  const { data, error, loading, reload } = useApi<Paged<Withdrawal>>(`/api/wallet/withdrawals${qs({ status: tab === "all" ? undefined : tab, chain, q: dq, page, limit: PER })}`, { refreshMs: 10_000 });
+  React.useEffect(() => setPage(1), [tab, chain, dq, from, to]);
+  const { data, error, loading, reload } = useApi<Paged<Withdrawal>>(`/api/wallet/withdrawals${qs({ status: tab === "all" ? undefined : tab, chain, q: dq, from, to: dayAfter(to), page, limit: PER })}`, { refreshMs: 10_000 });
   const sum = useApi<Summary>("/api/wallet/summary", { refreshMs: 15_000 });
   const s = sum.data;
 
@@ -332,6 +334,7 @@ export function LiveWithdrawalsPage() {
           />
           <div className="ml-auto flex flex-wrap items-center gap-2">
             <FilterSelect label="Network" value={chain} onChange={setChain} options={[{ value: "all", label: "All" }, { value: "bsc", label: "BNB Chain" }, { value: "tron", label: "TRON" }]} />
+            <DateRange from={from} to={to} onFrom={setFrom} onTo={setTo} />
             <div className="flex h-9 items-center gap-2 rounded-full border border-line bg-surface-2 px-3.5">
               <Search className="size-3.5 text-fg-3" />
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ID, address or payout hash" className="w-48 bg-transparent text-[13px] outline-none placeholder:text-fg-3" aria-label="Search withdrawals" />
@@ -352,7 +355,7 @@ export function LiveWithdrawalsPage() {
               rowKey={(r) => String(r.id)}
               onRowClick={(r) => setOpen(r.id)}
               exportName="withdrawals"
-              empty={<EmptyState title="Nothing here" text="Withdrawal requests from the Client Area appear here." illustration="inbox_tray" />}
+              empty={<EmptyState title={from || to ? "No withdrawals on these days" : "Nothing here"} text={from || to ? "Widen the dates or clear them." : "Withdrawal requests from the Client Area appear here."} illustration="inbox_tray" />}
             />
             <Pager page={data.page} perPage={data.limit} total={data.total} onPage={setPage} />
           </div>

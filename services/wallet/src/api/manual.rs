@@ -21,7 +21,7 @@ use axum::response::{IntoResponse, Response};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use super::{Body, Q, ok, paging};
+use super::{Body, Q, day_bound, ok, paging};
 use crate::audit::{self, Entry};
 use crate::error::{ApiError, ApiResult};
 use crate::media::{self, Reader};
@@ -232,21 +232,32 @@ pub struct ListQ {
     method_id: Option<i64>,
     user_id: Option<i64>,
     q: Option<String>,
+    /// Day range on `created_at`: `from` inclusive, `to` exclusive (the UI sends the day after its last day).
+    from: Option<String>,
+    to: Option<String>,
     page: Option<i64>,
     limit: Option<i64>,
 }
 
 impl ListQ {
-    fn filter(&self) -> manual::AdminFilter {
+    fn filter(&self) -> ApiResult<manual::AdminFilter> {
         let opt = |v: &Option<String>| v.as_deref().map(str::trim).filter(|s| !s.is_empty() && *s != "all").map(str::to_string);
-        manual::AdminFilter { status: opt(&self.status), kind: opt(&self.kind), method_id: self.method_id, user_id: self.user_id, q: opt(&self.q) }
+        Ok(manual::AdminFilter {
+            status: opt(&self.status),
+            kind: opt(&self.kind),
+            method_id: self.method_id,
+            user_id: self.user_id,
+            q: opt(&self.q),
+            from: day_bound(&self.from, "from")?,
+            to: day_bound(&self.to, "to")?,
+        })
     }
 }
 
 pub async fn admin_deposits(State(st): State<AppState>, s_ctx: StaffCtx, Q(q): Q<ListQ>) -> ApiResult<Json<Value>> {
     can_read(&s_ctx)?;
     let (page, limit, offset) = paging(q.page, q.limit, 50, 200);
-    let mut v = manual::admin_list(&st, s_ctx.ctx.tenant.id, &q.filter(), limit, offset).await?;
+    let mut v = manual::admin_list(&st, s_ctx.ctx.tenant.id, &q.filter()?, limit, offset).await?;
     v["page"] = json!(page);
     v["limit"] = json!(limit);
     Ok(ok(v))
@@ -277,7 +288,7 @@ pub async fn reject(State(st): State<AppState>, s_ctx: StaffCtx, Path(id): Path<
 
 pub async fn export(State(st): State<AppState>, s_ctx: StaffCtx, Q(q): Q<ListQ>) -> ApiResult<Response> {
     s_ctx.require_perm("finance.export", ROLES_WRITE)?;
-    let csv = manual::export_csv(&st, &s_ctx, &q.filter()).await?;
+    let csv = manual::export_csv(&st, &s_ctx, &q.filter()?).await?;
     let name = format!("manual-deposits-{}.csv", chrono::Utc::now().format("%Y-%m-%d"));
     Ok((
         [

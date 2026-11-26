@@ -13,6 +13,7 @@ use axum::http::StatusCode;
 use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post, put};
+use chrono::{DateTime, FixedOffset, NaiveDate, TimeZone, Utc};
 use serde_json::{Value, json};
 use subtle::ConstantTimeEq;
 
@@ -157,6 +158,20 @@ impl<S: Send + Sync, T: serde::de::DeserializeOwned> axum::extract::FromRequestP
 }
 
 /// (page, limit, offset), clamped.
+/// A list's `from` / `to` bound: `YYYY-MM-DD` means midnight of that day in server time (GMT+3, the day the Back
+/// Office prints and the day its "today" figures count), so a row shown as "26 Nov 2026, 01:30" is found by
+/// filtering 26 Nov; an RFC 3339 instant is taken as is. Empty and "all" mean no bound.
+pub fn day_bound(v: &Option<String>, field: &'static str) -> Result<Option<DateTime<Utc>>, ApiError> {
+    let Some(x) = v.as_deref().map(str::trim).filter(|s| !s.is_empty() && *s != "all") else { return Ok(None) };
+    if let Ok(t) = DateTime::parse_from_rfc3339(x) {
+        return Ok(Some(t.with_timezone(&Utc)));
+    }
+    let d = NaiveDate::parse_from_str(x, "%Y-%m-%d").map_err(|_| ApiError::validation(field, "Use YYYY-MM-DD"))?;
+    let tz = FixedOffset::east_opt(3 * 3600).expect("offset");
+    let local = d.and_hms_opt(0, 0, 0).expect("midnight");
+    Ok(Some(tz.from_local_datetime(&local).single().expect("unambiguous").with_timezone(&Utc)))
+}
+
 pub fn paging(page: Option<i64>, limit: Option<i64>, default: i64, max: i64) -> (i64, i64, i64) {
     let limit = limit.unwrap_or(default).clamp(1, max);
     let page = page.unwrap_or(1).clamp(1, 100_000);
@@ -165,4 +180,24 @@ pub fn paging(page: Option<i64>, limit: Option<i64>, default: i64, max: i64) -> 
 
 pub fn ok(v: Value) -> Json<Value> {
     Json(v)
+}
+
+#[cfg(test)]
+mod day_bound_tests {
+    use super::day_bound;
+
+    #[test]
+    fn a_day_is_midnight_in_server_time() {
+        // 26 Nov in GMT+3 starts at 21:00 UTC the evening before, so a deposit shown as "26 Nov 2026, 01:30" is found
+        let t = day_bound(&Some("2026-11-26".into()), "from").unwrap().unwrap();
+        assert_eq!(t.to_rfc3339(), "2026-11-25T21:00:00+00:00");
+        // an exact instant passes through
+        let t = day_bound(&Some("2026-11-26T10:00:00Z".into()), "from").unwrap().unwrap();
+        assert_eq!(t.to_rfc3339(), "2026-11-26T10:00:00+00:00");
+        // empty and "all" are no bound; nonsense is a validation error, not a 500
+        assert!(day_bound(&Some("  ".into()), "from").unwrap().is_none());
+        assert!(day_bound(&Some("all".into()), "to").unwrap().is_none());
+        assert!(day_bound(&None, "to").unwrap().is_none());
+        assert!(day_bound(&Some("yesterday".into()), "to").is_err());
+    }
 }

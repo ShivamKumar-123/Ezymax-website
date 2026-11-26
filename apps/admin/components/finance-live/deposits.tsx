@@ -4,7 +4,7 @@ import * as React from "react";
 import { ArrowDownLeft, Inbox, Landmark, RefreshCw, Search, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, DataTable, Dialog, EmptyState, Field, Input, KpiCard, PageHeader, Tabs, type Column } from "@ezymex/ui";
-import { ErrorState, FilterSelect, Pager, TableSkeleton, ago, qs, useApi, useDebounced, useNow, when } from "@/components/live/kit";
+import { DateRange, ErrorState, FilterSelect, Pager, TableSkeleton, ago, dayAfter, qs, useApi, useDebounced, useNow, when } from "@/components/live/kit";
 import { useCan } from "@/components/staff-session";
 import { Addr, ChainTag, ClientCell, DEP_STATUS, Row, Status, TxLink, usd, usd2, walletWrite, type Deposit, type Paged, type Summary } from "./kit";
 
@@ -159,12 +159,14 @@ export function LiveDepositsPage() {
   const [tab, setTab] = React.useState<Tab>("queue");
   const [chain, setChain] = React.useState("all");
   const [q, setQ] = React.useState("");
+  const [from, setFrom] = React.useState("");
+  const [to, setTo] = React.useState("");
   const [page, setPage] = React.useState(1);
   const [open, setOpen] = React.useState<number | null>(null);
   const dq = useDebounced(q.trim(), 300);
-  React.useEffect(() => setPage(1), [tab, chain, dq]);
+  React.useEffect(() => setPage(1), [tab, chain, dq, from, to]);
   const status = tab === "all" ? undefined : tab;
-  const { data, error, loading, reload } = useApi<Paged<Deposit>>(`/api/wallet/deposits${qs({ status, chain, q: dq, page, limit: PER })}`, { refreshMs: 10_000 });
+  const { data, error, loading, reload } = useApi<Paged<Deposit>>(`/api/wallet/deposits${qs({ status, chain, q: dq, from, to: dayAfter(to), page, limit: PER })}`, { refreshMs: 10_000 });
   const sum = useApi<Summary>("/api/wallet/summary", { refreshMs: 15_000 });
   const s = sum.data;
 
@@ -212,6 +214,7 @@ export function LiveDepositsPage() {
           />
           <div className="ml-auto flex flex-wrap items-center gap-2">
             <FilterSelect label="Network" value={chain} onChange={setChain} options={[{ value: "all", label: "All" }, { value: "bsc", label: "BNB Chain" }, { value: "tron", label: "TRON" }]} />
+            <DateRange from={from} to={to} onFrom={setFrom} onTo={setTo} />
             <div className="flex h-9 items-center gap-2 rounded-full border border-line bg-surface-2 px-3.5">
               <Search className="size-3.5 text-fg-3" />
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tx hash or sender" className="w-44 bg-transparent text-[13px] outline-none placeholder:text-fg-3" aria-label="Search deposits" />
@@ -232,7 +235,13 @@ export function LiveDepositsPage() {
               rowKey={(r) => String(r.id)}
               onRowClick={(r) => setOpen(r.id)}
               exportName="deposits"
-              empty={<EmptyState title={tab === "queue" ? "The queue is empty" : "No deposits"} text={tab === "queue" ? "Unclaimed transfers and deposits held by the auto-credit rules appear here." : "Deposits appear here as clients pay."} illustration="inbox_tray" />}
+              empty={
+                <EmptyState
+                  title={from || to ? "No deposits on these days" : tab === "queue" ? "The queue is empty" : "No deposits"}
+                  text={from || to ? "Widen the dates or clear them." : tab === "queue" ? "Unclaimed transfers and deposits held by the auto-credit rules appear here." : "Deposits appear here as clients pay."}
+                  illustration="inbox_tray"
+                />
+              }
             />
             <Pager page={data.page} perPage={data.limit} total={data.total} onPage={setPage} />
           </div>

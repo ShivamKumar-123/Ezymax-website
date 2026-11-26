@@ -8,7 +8,7 @@ use serde_json::{Value, json};
 use sqlx::Row;
 use std::collections::BTreeMap;
 
-use super::{Body, Q, ok, paging};
+use super::{Body, Q, day_bound, ok, paging};
 use crate::audit::{self, Entry};
 use crate::chain::ChainId;
 use crate::error::{ApiError, ApiResult};
@@ -24,6 +24,9 @@ pub struct ListQ {
     chain: Option<String>,
     user_id: Option<i64>,
     q: Option<String>,
+    /// Day range on `created_at`: `from` inclusive, `to` exclusive (the UI sends the day after its last day).
+    from: Option<String>,
+    to: Option<String>,
     page: Option<i64>,
     limit: Option<i64>,
     user_ids: Option<String>,
@@ -82,6 +85,7 @@ pub async fn deposits(State(st): State<AppState>, s_ctx: StaffCtx, Q(q): Q<ListQ
     let queue = status == Some("queue");
     let chain = opt(&q.chain).map(|c| ChainId::parse(c).map(|c| c.as_str()).ok_or_else(|| ApiError::BadRequest("Unknown chain".into()))).transpose()?;
     let term = opt(&q.q).map(|t| t.to_ascii_lowercase());
+    let (from, to) = (day_bound(&q.from, "from")?, day_bound(&q.to, "to")?);
     let rows = sqlx::query(
         "SELECT *, count(*) OVER () AS total FROM deposits
          WHERE tenant_id = $1
@@ -89,13 +93,17 @@ pub async fn deposits(State(st): State<AppState>, s_ctx: StaffCtx, Q(q): Q<ListQ
            AND ($3::text IS NULL OR chain = $3)
            AND ($4::bigint IS NULL OR user_id = $4)
            AND ($5::text IS NULL OR lower(tx_hash) LIKE '%' || $5 || '%' OR lower(from_address) = $5 OR intent_id = $5)
-         ORDER BY id DESC LIMIT $6 OFFSET $7",
+           AND ($6::timestamptz IS NULL OR created_at >= $6)
+           AND ($7::timestamptz IS NULL OR created_at < $7)
+         ORDER BY id DESC LIMIT $8 OFFSET $9",
     )
     .bind(s_ctx.ctx.tenant.id)
     .bind(if queue { Some("queue") } else { status })
     .bind(chain)
     .bind(q.user_id)
     .bind(term)
+    .bind(from)
+    .bind(to)
     .bind(limit)
     .bind(offset)
     .fetch_all(&st.pool)
@@ -169,6 +177,7 @@ pub async fn withdrawals(State(st): State<AppState>, s_ctx: StaffCtx, Q(q): Q<Li
     let status = opt(&q.status);
     let chain = opt(&q.chain).map(|c| ChainId::parse(c).map(|c| c.as_str()).ok_or_else(|| ApiError::BadRequest("Unknown chain".into()))).transpose()?;
     let term = opt(&q.q).map(|t| t.to_string());
+    let (from, to) = (day_bound(&q.from, "from")?, day_bound(&q.to, "to")?);
     let rows = sqlx::query(
         "SELECT *, count(*) OVER () AS total FROM withdrawals
          WHERE tenant_id = $1
@@ -176,14 +185,18 @@ pub async fn withdrawals(State(st): State<AppState>, s_ctx: StaffCtx, Q(q): Q<Li
            AND ($3::text IS NULL OR chain = $3)
            AND ($4::bigint IS NULL OR user_id = $4)
            AND ($5::text IS NULL OR to_address = $5 OR payout_tx_hash = lower($5) OR id::text = $5)
+           AND ($6::timestamptz IS NULL OR created_at >= $6)
+           AND ($7::timestamptz IS NULL OR created_at < $7)
          ORDER BY CASE status WHEN 'requested' THEN 0 WHEN 'approved' THEN 1 WHEN 'paid' THEN 2 ELSE 3 END, id DESC
-         LIMIT $6 OFFSET $7",
+         LIMIT $8 OFFSET $9",
     )
     .bind(s_ctx.ctx.tenant.id)
     .bind(status)
     .bind(chain)
     .bind(q.user_id)
     .bind(term)
+    .bind(from)
+    .bind(to)
     .bind(limit)
     .bind(offset)
     .fetch_all(&st.pool)

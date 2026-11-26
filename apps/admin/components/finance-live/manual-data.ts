@@ -9,7 +9,7 @@
 import * as React from "react";
 import { IS_DEMO } from "@ezymex/mock/mode";
 import { MANUAL_NETWORKS, manualDemoSeed, manualExpectedCredit, manualSum } from "@ezymex/mock/admin-manual-payments";
-import { downloadCsv, downloadPdf, qs, sendJson, useApi, type ApiErr } from "@/components/live/kit";
+import { dayAfter, downloadCsv, downloadPdf, qs, sendJson, type ApiErr, useApi } from "@/components/live/kit";
 import type { AuditItem } from "./kit";
 import { networkPreset, type DepositsResp, type ManualCounts, type ManualDeposit, type ManualDepositDetail, type MethodInput, type MethodsResp, type PaymentMethod } from "./manual-kit";
 
@@ -125,14 +125,19 @@ export function useManualMethods(): Loaded<MethodsResp> {
   return { data, error: null, loading: false, reload: noop };
 }
 
-export type DepositQuery = { status: string; kind: string; method_id: string; q: string; page: number; limit: number };
+/** `from` and `to` are Back Office days (`YYYY-MM-DD`, GMT+3), both inclusive; "" means no bound. */
+export type DepositQuery = { status: string; kind: string; method_id: string; q: string; from: string; to: string; page: number; limit: number };
 
-const filterQs = (f: Omit<DepositQuery, "page" | "limit">) => ({ status: f.status, kind: f.kind, method_id: f.method_id, q: f.q });
+const filterQs = (f: Omit<DepositQuery, "page" | "limit">) => ({ status: f.status, kind: f.kind, method_id: f.method_id, q: f.q, from: f.from, to: dayAfter(f.to) });
+
+/** The GMT+3 day a timestamp falls on, as `YYYY-MM-DD` - the day the table prints for it. */
+const serverDay = (iso: string) => new Date(Date.parse(iso) + 3 * 3_600_000).toISOString().slice(0, 10);
 
 function demoFilter(ds: ManualDeposit[], f: Omit<DepositQuery, "page" | "limit">) {
   const t = f.q.trim().toLowerCase().replace(/^0x/, "");
   return ds
     .filter((d) => (f.status === "all" || d.status === f.status) && (f.kind === "all" || d.kind === f.kind) && (f.method_id === "all" || String(d.method_id) === f.method_id))
+    .filter((d) => (!f.from || serverDay(d.created_at) >= f.from) && (!f.to || serverDay(d.created_at) <= f.to))
     .filter((d) => !t || d.reference.toLowerCase().replace(/^0x/, "").includes(t) || (d.user_email ?? "").toLowerCase().includes(t) || (d.user_name ?? "").toLowerCase().includes(t) || String(d.id) === t || String(d.user_id) === t)
     .sort((a, b) => {
       const pa = a.status === "pending" ? 0 : 1;
@@ -146,12 +151,12 @@ export function useManualDeposits(f: DepositQuery): Loaded<DepositsResp> {
   const url = `/api/wallet/manual/deposits${qs({ ...filterQs(f), page: f.page, limit: f.limit })}`;
   const live = useApi<DepositsResp>(IS_DEMO ? null : url, { refreshMs: 15_000 });
   const d = useDemo();
-  const { status, kind, method_id, q, page, limit } = f;
+  const { status, kind, method_id, q, from, to, page, limit } = f;
   const data = React.useMemo<DepositsResp | null>(() => {
     if (!d) return null;
-    const all = demoFilter(d.deposits, { status, kind, method_id, q });
+    const all = demoFilter(d.deposits, { status, kind, method_id, q, from, to });
     return { items: all.slice((page - 1) * limit, page * limit), total: all.length, counts: demoCounts(d.deposits), page, limit };
-  }, [d, status, kind, method_id, q, page, limit]);
+  }, [d, status, kind, method_id, q, from, to, page, limit]);
   if (!IS_DEMO) return live;
   return { data, error: null, loading: false, reload: noop };
 }

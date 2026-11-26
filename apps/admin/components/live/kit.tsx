@@ -425,6 +425,34 @@ export function Mono({ children, className }: { children: React.ReactNode; class
   return <span className={cn("font-mono text-[12.5px]", className)}>{children}</span>;
 }
 
+/**
+ * From / to day pickers for a list. Both are the Back Office's days (GMT+3, the same day `when()` prints), `to` is
+ * the last day shown - inclusive, the way a person reads "to 26 Nov" - and `dayAfter(to)` is what the service takes.
+ */
+export function DateRange({ from, to, onFrom, onTo }: { from: string; to: string; onFrom: (v: string) => void; onTo: (v: string) => void }) {
+  const pill = "flex h-9 items-center gap-2 rounded-full border border-line bg-surface-2 px-3.5 text-[12.5px] text-fg-3";
+  return (
+    <>
+      <label className={pill}>
+        From
+        <input type="date" value={from} max={to || undefined} onChange={(e) => onFrom(e.target.value)} className="bg-transparent text-fg outline-none" aria-label="From date" />
+      </label>
+      <label className={pill}>
+        To
+        <input type="date" value={to} min={from || undefined} onChange={(e) => onTo(e.target.value)} className="bg-transparent text-fg outline-none" aria-label="To date" />
+      </label>
+      {(from || to) && (
+        <button type="button" onClick={() => (onFrom(""), onTo(""))} className="h-9 rounded-full border border-line px-3 text-[12.5px] text-fg-3 hover:bg-surface-2 hover:text-fg" aria-label="Clear dates">
+          Clear dates
+        </button>
+      )}
+    </>
+  );
+}
+
+/** The day after a `YYYY-MM-DD`, for a service whose `to` is exclusive; "" stays "". */
+export const dayAfter = (ymd: string) => (ymd ? new Date(Date.parse(ymd + "T00:00:00Z") + 86_400_000).toISOString().slice(0, 10) : "");
+
 /** Filter pill select (native select styled like the kit). */
 export function FilterSelect({ value, onChange, options, label }: { value: string; onChange: (v: string) => void; options: { value: string; label: string }[]; label: string }) {
   return (
